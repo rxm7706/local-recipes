@@ -12,32 +12,83 @@
 # reads both, so there is no second parser to drift.
 #
 # project: scribe
-# stories: 36
+# stories: 89
 development_status:
   1-1-package-scaffold-direct-capture-into-team-memory: done
   1-2-claude-md-wiring-team-memory-loads-automatically: done
   1-3-promotion-workflow-proposal-then-confirm-team-voice-rewrite: done
   1-4-pointer-stub-write-back-idempotent-re-invocation: done
   1-5-seed-promotion-the-end-to-end-proof: done
+  10-1-in-flight-story-specs-join-the-compile: done
+  11-1-recall-withholds-sources-committed-after-compile: done
+  12-1-portal-and-marshal-inherit-default-recall: done
+  13-1-planning-pointers-join-the-compile: done
+  14-1-named-docs-join-the-compile: done
+  15-1-graphify-target-list-joins-the-compile: done
+  16-1-recall-modes-join-the-cli: done
+  17-1-marshal-codegraph-owns-symbol-navigation: done
+  18-1-retrieve-and-sessions-pass-mode-planning: done
+  19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness: done
+  19-2-scribe-capture-and-recall-run-from-the-session-default-environment: done
+  19-3-the-instruction-surface-is-version-aware-claude-code-s-built-in-agents-md-mod: done
   2-1-graphstore-port-flat-file-v1-adapter: done
   2-2-nightly-compile-from-named-tool-surfaces: done
   2-3-fact-supersession-in-the-compiled-graph: done
   2-4-scribe-recall-grounded-cited-answers: done
+  20-1-the-parity-meta-test-reds-a-todo-inside-the-managed-block: done
+  21-1-agents-md-opens-with-what-this-repository-is: done
+  21-2-agents-md-says-what-runs-governance-currency: done
+  22-1-scribe-pg-up-succeeds-from-a-long-path-worktree: done
+  23-1-the-skf-managed-block-lives-in-agents-md-only: done
   3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: done
   3-2-transcripts-join-the-compile-sources: done
   3-3-the-nightly-compile-gets-a-schedule-and-a-cost-ceiling: done
   4-1-register-graphstore-as-cap-18-plugins: done
-  5-1-skf-skill-and-persona-for-scribe: done
-  5-2-first-portal-slice-recall-query: done
+  5-1-skf-skill-ownership-and-bmad-persona-for-scribe: done
+  5-2-first-portal-slice-one-recall-query: done
   6-1-the-graphify-ingest-extra-and-its-move-list-verbs: done
   6-2-the-cocoindex-incremental-ingest-extra: done
   6-3-the-graph-node-staleness-flag: done
   7-1-three-docs-skills-are-scribe-wielded: done
-  8-1-the-nightly-compile-gets-a-trigger-the-estate-owns-and-a-freshness-signal-that-proves-it-fired: backlog
+  8-1-the-nightly-compile-gets-a-trigger-the-estate-owns-and-a-freshness-signal-that-proves-it-fired: done
+  8-2-the-nightly-compile-keeps-the-graphify-code-surface: done
+  8-3-herald-fact-ledgers-join-the-compile: done
+  8-4-the-compile-keeps-knowledge-layers-honest: done
+  8-5-default-recall-omits-the-code-surface: done
+  8-6-session-path-names-scribe-recall: done
+  9-1-scoped-recall-admits-the-projects-own-fact-ledger: done
   epic-1: done
   epic-1-retrospective: optional
+  epic-10: done
+  epic-10-retrospective: optional
+  epic-11: done
+  epic-11-retrospective: optional
+  epic-12: done
+  epic-12-retrospective: optional
+  epic-13: done
+  epic-13-retrospective: optional
+  epic-14: done
+  epic-14-retrospective: optional
+  epic-15: done
+  epic-15-retrospective: optional
+  epic-16: done
+  epic-16-retrospective: optional
+  epic-17: done
+  epic-17-retrospective: optional
+  epic-18: done
+  epic-18-retrospective: optional
+  epic-19: done
+  epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
+  epic-20: done
+  epic-20-retrospective: optional
+  epic-21: done
+  epic-21-retrospective: optional
+  epic-22: done
+  epic-22-retrospective: optional
+  epic-23: done
+  epic-23-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done
@@ -48,5 +99,7 @@ development_status:
   epic-6-retrospective: done
   epic-7: done
   epic-7-retrospective: optional
-  epic-8: backlog
+  epic-8: done
   epic-8-retrospective: optional
+  epic-9: done
+  epic-9-retrospective: optional

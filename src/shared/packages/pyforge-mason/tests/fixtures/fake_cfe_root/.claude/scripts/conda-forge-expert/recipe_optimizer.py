@@ -13,6 +13,7 @@ fixture's own convention, not the real wrapper's subprocess-delegation one).
 Invocable as `[interpreter, script, *extra_argv]`; extra argv (including a
 `recipe_path` positional) is ignored, never rejected.
 """
+
 import sys
 from pathlib import Path
 
@@ -20,11 +21,13 @@ sys.path.insert(0, str(Path(__file__).parent))
 import _stub_support  # noqa: E402
 
 if __name__ == "__main__":
-    sys.exit(_stub_support.emit(
-        '{"success": true, "suggestions_found": 1, "suggestions": '
-        '[{"code": "ABT-001", "message": "Missing \'license_file\' in about '
-        'section.", "suggestion": "Add \'license_file: LICENSE\' (adjust '
-        'filename to match the repo: LICENSE.md, LICENSE.txt, etc.).", '
-        '"confidence": 0.95}]}',
-        default_exit_code=1,
-    ))
+    sys.exit(
+        _stub_support.emit(
+            '{"success": true, "suggestions_found": 1, "suggestions": '
+            '[{"code": "ABT-001", "message": "Missing \'license_file\' in about '
+            'section.", "suggestion": "Add \'license_file: LICENSE\' (adjust '
+            'filename to match the repo: LICENSE.md, LICENSE.txt, etc.).", '
+            '"confidence": 0.95}]}',
+            default_exit_code=1,
+        )
+    )

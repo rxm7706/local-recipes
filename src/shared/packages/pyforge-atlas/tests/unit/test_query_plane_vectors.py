@@ -10,9 +10,7 @@ import duckdb
 import pytest
 
 from pyforge.atlas.duckdb_writer import ATLAS_DUCKDB_NAME
-from pyforge.atlas.query_plane_vectors import extract_real_arrays_onto_plane
-from pyforge.atlas.query_plane_vectors import nearest_neighbor
-from pyforge.atlas.query_plane_vectors import open_plane_rag_store
+from pyforge.atlas.query_plane_vectors import extract_real_arrays_onto_plane, nearest_neighbor, open_plane_rag_store
 from pyforge.atlas.rag import HashingEmbedder
 from pyforge.atlas.rag.store import load_vss_offline
 

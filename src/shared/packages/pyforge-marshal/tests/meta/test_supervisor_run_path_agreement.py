@@ -36,6 +36,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.adapters.harness_bmadloop import BmadLoopHarness
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.supervisor import __main__ as supervisor_module
@@ -46,15 +47,11 @@ _RUN_ID = "acme-20260803T054512123Z-a1b2c3d4"
 
 
 def test_tier3_path_agrees():
-    assert supervisor_module._tier3_path(_HOME, _SLUG) == spin_module._tier3_path(
-        _HOME, _SLUG
-    )
+    assert supervisor_module._tier3_path(_HOME, _SLUG) == spin_module._tier3_path(_HOME, _SLUG)
 
 
 def test_run_dir_agrees():
-    assert supervisor_module._run_dir(_HOME, _SLUG, _RUN_ID) == spin_module._run_dir(
-        _HOME, _SLUG, _RUN_ID
-    )
+    assert supervisor_module._run_dir(_HOME, _SLUG, _RUN_ID) == spin_module._run_dir(_HOME, _SLUG, _RUN_ID)
 
 
 def test_journal_filename_agrees():
@@ -106,9 +103,7 @@ def test_bmad_loop_state_json_path_agrees_with_the_adapters_own_derivation(tmp_p
         "the adapter could not read a minimal synthetic state.json -- this "
         "test cannot pin the path agreement without a successful read"
     )
-    assert snapshot.sample_path == supervisor_module._bmad_loop_state_json_path(
-        tmp_path, run_id
-    )
+    assert snapshot.sample_path == supervisor_module._bmad_loop_state_json_path(tmp_path, run_id)
 
 
 @pytest.mark.parametrize(
@@ -121,9 +116,7 @@ def test_bmad_loop_state_json_path_agrees_with_the_adapters_own_derivation(tmp_p
     ],
 )
 def test_entry_timestamp_format_agrees(moment):
-    assert supervisor_module._format_entry_ts(moment) == spin_module._format_entry_ts(
-        moment
-    )
+    assert supervisor_module._format_entry_ts(moment) == spin_module._format_entry_ts(moment)
 
 
 def test_the_supervisor_still_does_not_import_the_cli():

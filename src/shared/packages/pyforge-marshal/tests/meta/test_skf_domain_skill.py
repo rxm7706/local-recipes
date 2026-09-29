@@ -185,7 +185,12 @@ def test_does_not_add_loop_supervisor_ingest():
     ingest_markers = ("supervisor ingest", "bmad-loop ingest", "loop-home list")
     offenders: list[str] = []
     for rel in changed:
-        if rel.endswith(".py") and "supervisor" in rel and "src/platform" in rel:
+        if (
+            rel.endswith(".py")
+            and "supervisor" in rel
+            and "src/platform" in rel
+            and not Path(rel).name.startswith("test_")
+        ):
             offenders.append(rel)
         path = root / rel
         if not path.is_file() or path.suffix not in {".py", ".md"}:

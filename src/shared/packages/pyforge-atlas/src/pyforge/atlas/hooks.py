@@ -76,9 +76,7 @@ class ProjectHooks:
             try:
                 dataset = catalog[name]
             except Exception:  # noqa: BLE001 - one bad entry must not abort injection
-                logger.exception(
-                    "could not materialize catalog entry %r for TTL injection", name
-                )
+                logger.exception("could not materialize catalog entry %r for TTL injection", name)
                 continue
             if isinstance(dataset, IncrementalParquetDataset):
                 dataset.ttl_seconds = ttls[name]
@@ -91,8 +89,7 @@ class ProjectHooks:
         flipped = {
             name
             for name, cfg in (conf_catalog or {}).items()
-            if isinstance(cfg, dict)
-            and str(cfg.get("type", "")).endswith(_INCREMENTAL_TYPE_SUFFIX)
+            if isinstance(cfg, dict) and str(cfg.get("type", "")).endswith(_INCREMENTAL_TYPE_SUFFIX)
         }
         missing = sorted(flipped - set(ttls))
         if missing:

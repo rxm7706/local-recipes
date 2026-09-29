@@ -118,8 +118,10 @@ scribe-install-nightly-trigger: installed crontab entry (30 2 * * *)
 
 The crontab entry it writes runs the same
 `pyforge-scribe-nightly-compile` pixi task every backend schedules
-(`scripts/scribe_nightly_trigger.py`, which invokes `scribe graph compile
---nightly` and propagates its exit code unchanged), at 02:30 daily,
+(`scripts/scribe_nightly_trigger.py`, which sets `SCRIBE_GRAPHIFY_EXTRA=1`
+when unset so the full rebuild keeps `code:` nodes, then invokes
+`scribe graph compile --nightly` and propagates its exit code unchanged),
+at 02:30 daily,
 appending both streams to `~/.cache/scribe-nightly-compile.log` — `tail`
 that file to see what recent runs did. Re-running the installer is
 idempotent: it finds and replaces its own prior entry (matched by a fixed

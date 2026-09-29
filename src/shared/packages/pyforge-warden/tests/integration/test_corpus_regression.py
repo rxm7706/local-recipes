@@ -145,8 +145,7 @@ def test_corpus_extraction_never_raises_uncaught_and_holds_the_unparseable_rate_
 
     assert not uncaught, (
         f"{len(uncaught)} corpus file(s) raised an UNCAUGHT exception "
-        f"(never UnparsableManifestError -- a genuine extractor bug):\n"
-        + "\n".join(uncaught[:20])
+        f"(never UnparsableManifestError -- a genuine extractor bug):\n" + "\n".join(uncaught[:20])
     )
 
     rate = (degraded_count + unparseable_count) / len(files)
@@ -170,9 +169,9 @@ def test_adversarial_set_degrades_gracefully_and_never_raises():
     recipe_extractor = RecipeV1Extractor(router)
     meta_extractor = MetaV0Extractor(router)
 
-    adversarial_files = [
-        (path, RECIPE_YAML_KIND) for path in sorted(ADVERSARIAL_DIR.rglob("recipe.yaml"))
-    ] + [(path, META_YAML_KIND) for path in sorted(ADVERSARIAL_DIR.rglob("meta.yaml"))]
+    adversarial_files = [(path, RECIPE_YAML_KIND) for path in sorted(ADVERSARIAL_DIR.rglob("recipe.yaml"))] + [
+        (path, META_YAML_KIND) for path in sorted(ADVERSARIAL_DIR.rglob("meta.yaml"))
+    ]
     assert adversarial_files, "the adversarial set must not be empty"
 
     for path, kind in adversarial_files:

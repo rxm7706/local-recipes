@@ -11,6 +11,7 @@ import re
 
 import pytest
 from pyforge.core.errors import PyforgeError
+
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.regions.markers import (
     REGION_NAME_PATTERN,
@@ -115,12 +116,13 @@ def test_render_end_slashstar_raises_not_implemented():
 
 def test_parse_marker_line_slashstar_raises_not_implemented():
     with pytest.raises(NotImplementedError):
-        parse_marker_line(RegionFormat.SLASHSTAR, "/* marshal-seed:begin region=tiers"
-                           " model-version=1.0.0 sha=a1b2c3d4 */")
+        parse_marker_line(
+            RegionFormat.SLASHSTAR, "/* marshal-seed:begin region=tiers model-version=1.0.0 sha=a1b2c3d4 */"
+        )
 
 
 def test_slashstar_produces_no_marker_text_on_render_failure():
-    """"no marker text is produced" -- the exception fires before any
+    """ "no marker text is produced" -- the exception fires before any
     string is returned; there is nothing for a caller to accidentally use."""
     with pytest.raises(NotImplementedError):
         render_begin(RegionFormat.SLASHSTAR, "tiers", ModelVersion(1, 0, 0), "a1b2c3d4")
@@ -294,8 +296,10 @@ def test_wrong_format_delimiter_returns_none_not_an_error():
     """A hash-style line handed to the HTML parser does not open with
     HTML's own delimiter, so it is simply not a candidate marker line in
     that format -- not a malformed one."""
-    assert parse_marker_line(RegionFormat.HTML, "# marshal-seed:begin region=tiers"
-                              " model-version=1.0.0 sha=a1b2c3d4") is None
+    assert (
+        parse_marker_line(RegionFormat.HTML, "# marshal-seed:begin region=tiers model-version=1.0.0 sha=a1b2c3d4")
+        is None
+    )
 
 
 def test_extra_whitespace_after_open_delimiter_returns_none_not_an_error():
@@ -305,10 +309,13 @@ def test_extra_whitespace_after_open_delimiter_returns_none_not_an_error():
     so it never reaches tag detection at all and is ordinary content to
     this module, not a raised error. Recovering that variance is S-8.2's
     job, once it re-normalizes a file before consulting this grammar."""
-    assert parse_marker_line(
-        RegionFormat.HTML,
-        "<!--  marshal-seed:begin region=tiers model-version=1.0.0 sha=a1b2c3d4 -->",
-    ) is None
+    assert (
+        parse_marker_line(
+            RegionFormat.HTML,
+            "<!--  marshal-seed:begin region=tiers model-version=1.0.0 sha=a1b2c3d4 -->",
+        )
+        is None
+    )
 
 
 def test_extra_whitespace_before_close_delimiter_raises_marker_error():

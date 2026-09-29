@@ -1,3 +1,4 @@
+{{- if .Values.sidecar.enabled }}
 # Internal-only Service for Pattern-B DB-GPT dispatch (config/
 # engine_patterns.py::get_sidecar_base_url reads DBGPT_SIDECAR_BASE_URL).
 # No Ingress/Route — platform pods reach this in-namespace only.
@@ -18,3 +19,4 @@ spec:
   selector:
     {{- include "platform.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: dbgpt
+{{- end }}

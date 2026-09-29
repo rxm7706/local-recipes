@@ -3,9 +3,10 @@ title: DB-GPT on conda-forge — the multi-output agent stack
 type: dream
 owner: mason
 status: archived
-archived-reason: terminal
+archived-reason: folded-into-station-dream
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `db-gpt-packaging`).
 # DB-GPT on conda-forge
 
 ## The Dream

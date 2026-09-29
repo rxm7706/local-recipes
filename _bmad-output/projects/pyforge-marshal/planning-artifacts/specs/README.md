@@ -14,5 +14,5 @@ This directory also holds Dream-level Specs for Marshal-owned satellite
 Dreams (`spec-<dream-slug>/SPEC.md`, distinct from the per-story
 `spec-<epic>-<story>-...md` files above) — e.g. `spec-artifact-console`,
 `spec-loop-home-fleet-refresh`, `spec-dashboard-project-path-derivation`.
-See `_bmad-output/DREAM-TRIAGE-2026-08-08.md` for which of these are ready to
+See `archive/_bmad-output/DREAM-TRIAGE-2026-08-08.md` for which of these are ready to
 fold into real epics versus still needing an operator decision.

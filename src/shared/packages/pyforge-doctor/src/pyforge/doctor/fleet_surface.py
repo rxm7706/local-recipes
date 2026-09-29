@@ -33,9 +33,7 @@ from .models import Finding
 FLEET_SURFACE_SCHEMA_VERSION = 1
 
 
-def build_surface(
-    findings: Sequence[Finding], *, axes: Sequence[str]
-) -> dict[str, object]:
+def build_surface(findings: Sequence[Finding], *, axes: Sequence[str]) -> dict[str, object]:
     """Pure -- a deterministic function of ``(findings, axes)`` only, no
     wall-clock read anywhere (FR-11 AC2's idempotency requirement). ``axes``
     is recorded verbatim (sorted, de-duplicated) so the surface documents
@@ -73,9 +71,7 @@ def build_surface(
     }
 
 
-def write_surface(
-    path: Path, findings: Sequence[Finding], *, axes: Sequence[str]
-) -> dict[str, object]:
+def write_surface(path: Path, findings: Sequence[Finding], *, axes: Sequence[str]) -> dict[str, object]:
     """Writes :func:`build_surface`'s document to ``path`` as sorted-key
     JSON (mirrors ``__main__._emit_json``'s own ``sort_keys=True``
     discipline) and returns the document. The write itself is the ONE

@@ -21,6 +21,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+
 from pyforge.herald import db
 from pyforge.herald import progress as progress_module
 from pyforge.herald.errors import HeraldError
@@ -315,9 +316,7 @@ def test_write_all_round_trips_field_for_field(tmp_path: Path):
     assert read_all(progress_path) == [record]
 
 
-def test_two_concurrent_upserts_for_different_stations_both_land(
-    tmp_path: Path, monkeypatch
-):
+def test_two_concurrent_upserts_for_different_stations_both_land(tmp_path: Path, monkeypatch):
     """Story 13.1/13.3 regression: two ``upsert`` calls for different
     ``(station, date)`` keys racing the same database must both survive --
     forced, deterministic interleaving (not a timing-dependent sleep
@@ -377,9 +376,7 @@ def test_two_concurrent_upserts_for_different_stations_both_land(
     assert stations == {"warden", "atlas"}
 
 
-def test_write_all_is_not_silently_discarded_by_a_concurrent_upsert(
-    tmp_path: Path, monkeypatch
-):
+def test_write_all_is_not_silently_discarded_by_a_concurrent_upsert(tmp_path: Path, monkeypatch):
     """``write_all`` is public, so it must open the same ``db.transaction``
     ``upsert`` does. A writer that skipped it would land in the middle of
     ``upsert``'s read-modify-write span and be clobbered by ``upsert``'s
@@ -443,6 +440,5 @@ def test_write_all_is_not_silently_discarded_by_a_concurrent_upsert(
 
     stations = [r.station for r in read_all(progress_path)]
     assert stations == ["atlas"], (
-        f"write_all's whole-table write was silently discarded by a "
-        f"concurrent upsert: {stations}"
+        f"write_all's whole-table write was silently discarded by a concurrent upsert: {stations}"
     )

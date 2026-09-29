@@ -242,9 +242,7 @@ def test_check_managed_region_is_unaffected_by_content_outside_the_region():
     ``check_managed_region`` still returns ``None`` (body-only hashing)."""
     body_line = "line1"
     text_before = _doc("intro v1", _begin("tiers"), body_line, _end("tiers"), "outro v1")
-    text_after = _doc(
-        "intro v2, heavily edited", _begin("tiers"), body_line, _end("tiers"), "outro v2, edited"
-    )
+    text_after = _doc("intro v2, heavily edited", _begin("tiers"), body_line, _end("tiers"), "outro v2, edited")
     (span_before,) = parse_regions(text_before, RegionFormat.HTML)
     (span_after,) = parse_regions(text_after, RegionFormat.HTML)
     recorded = hash_content(region_body_text(text_before, span_before))

@@ -173,6 +173,7 @@ from .. import fs
 from ..apply.run import ApplyResult, CommitAction, run_apply
 from ..derive import adapters as derive_adapters
 from ..derive import projects_index as derive_projects_index
+from ..detect.findings import Finding
 from ..detect.hashes import hash_content, region_body_text
 from ..detect.inventory import (
     ArtifactState,
@@ -182,7 +183,6 @@ from ..detect.inventory import (
     writable_exemptions,
 )
 from ..detect.referenced_deps import referenced_dep_findings
-from ..detect.findings import Finding
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
 from ..migrate import registry as migrate_registry
@@ -247,7 +247,13 @@ def _git_status_porcelain(repo_root: Path, *extra_pathspec: str) -> str | None:
     docstring for the full rationale)."""
     try:
         result = PosixProcess().run(
-            ["git", "status", "--porcelain", "--untracked-files=normal", *(("--", *extra_pathspec) if extra_pathspec else ())],
+            [
+                "git",
+                "status",
+                "--porcelain",
+                "--untracked-files=normal",
+                *(("--", *extra_pathspec) if extra_pathspec else ()),
+            ],
             cwd=repo_root,
             timeout_s=_GIT_TIMEOUT_S,
         )
@@ -292,9 +298,7 @@ def _manifest_for_update(manifest: Manifest) -> Manifest:
     ``{{ slug }}``-templated path has no target ``update`` could ever
     materialize correctly, and ``update`` -- like ``adopt`` -- has no
     ``--slug`` flag to resolve it with)."""
-    entries = tuple(
-        entry for entry in manifest.entries if entry.applies_to in (AppliesTo.ADOPT, AppliesTo.BOTH)
-    )
+    entries = tuple(entry for entry in manifest.entries if entry.applies_to in (AppliesTo.ADOPT, AppliesTo.BOTH))
     return Manifest(model_version=manifest.model_version, never_write=manifest.never_write, entries=entries)
 
 
@@ -304,7 +308,7 @@ def _read_text_or_blank(target: Path) -> str:
         return ""
     try:
         return target.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return ""
 
 
@@ -359,7 +363,7 @@ def _region_shas_for_record(
         return tuple(region_shas)
     try:
         current_spans = {span.name: span for span in parse_regions(current_text, entry.format)}
-    except (RegionParseError, MarkerError, NotImplementedError):
+    except RegionParseError, MarkerError, NotImplementedError:
         return tuple(region_shas)
     for name in other_names:
         span = current_spans.get(name)
@@ -368,9 +372,7 @@ def _region_shas_for_record(
     return tuple(region_shas)
 
 
-def _managed_records(
-    state: SeedState | None, manifest: Manifest, repo_root: Path
-) -> tuple[ManagedRecord, ...]:
+def _managed_records(state: SeedState | None, manifest: Manifest, repo_root: Path) -> tuple[ManagedRecord, ...]:
     """Mirrors ``verbs/adopt.py``'s identical helper, EXTENDED (review
     finding): translates ``state.managed`` into rung 6's own input shape,
     excluding a record whose manifest entry has since been retired or
@@ -397,9 +399,7 @@ def _managed_records(
                 )
             )
         else:
-            records.append(
-                ManagedRecord(artifact_id=artifact.id, path=artifact.path, body_sha=artifact.body_sha)
-            )
+            records.append(ManagedRecord(artifact_id=artifact.id, path=artifact.path, body_sha=artifact.body_sha))
     return tuple(records)
 
 
@@ -469,15 +469,11 @@ def _wholesale_regenerate_actions(
                 ),
             )
         )
-        hashes.append(
-            (entry.id, hash_content(_read_text_or_blank(inventory.repo_root / entry.path)))
-        )
+        hashes.append((entry.id, hash_content(_read_text_or_blank(inventory.repo_root / entry.path))))
     return tuple(actions), tuple(hashes)
 
 
-def _migration_action_hashes(
-    repo_root: Path, migration_actions: tuple[Action, ...]
-) -> tuple[tuple[str, str], ...]:
+def _migration_action_hashes(repo_root: Path, migration_actions: tuple[Action, ...]) -> tuple[tuple[str, str], ...]:
     """One ``(artifact_id, sha)`` pair per action in ``migration_actions``,
     hashing the CURRENT on-disk content at each action's ``target_path`` --
     ``migrate.compose`` never does this itself (module docstring's own
@@ -567,9 +563,7 @@ def _staged_bytes_for(staged_paths: Sequence[Path], target_path: str) -> bytes:
     """Mirrors ``verbs/adopt.py``'s identical helper verbatim -- the bytes of
     whichever ``staged_paths`` entry's relative path TAILS ``target_path``."""
     target_parts = Path(target_path).parts
-    matches = [
-        candidate for candidate in staged_paths if candidate.parts[-len(target_parts) :] == target_parts
-    ]
+    matches = [candidate for candidate in staged_paths if candidate.parts[-len(target_parts) :] == target_parts]
     if not matches:
         raise InternalError(
             f"materialize() produced no staged content for {target_path!r}",
@@ -738,13 +732,10 @@ def _update_commit(
         if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
             assert entry.format is not None  # ManifestEntry.__post_init__ guarantees this
             for region_name, _matched_anchor in action.chosen_anchor:
-                region = next(
-                    (candidate for candidate in entry.regions if candidate.name == region_name), None
-                )
+                region = next((candidate for candidate in entry.regions if candidate.name == region_name), None)
                 if region is None:
                     raise InternalError(
-                        f"action names region {region_name!r}, which entry {entry.id!r} does"
-                        " not declare",
+                        f"action names region {region_name!r}, which entry {entry.id!r} does not declare",
                         remedy=(
                             "this is a plan/manifest inconsistency -- a broken installation,"
                             " not a problem with the repository being updated"
@@ -783,8 +774,7 @@ def _update_commit(
                         never_write=never_write,
                     )
         elif (
-            entry.id in derive_adapters.ADAPTER_COMPOSITION
-            and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
+            entry.id in derive_adapters.ADAPTER_COMPOSITION and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
         ):
             content = derive_adapters.render_adapter(entry.id, template_path=template_path)
             fs.write(target, content.encode("utf-8"), repo_root=repo_root, never_write=never_write)
@@ -806,8 +796,7 @@ def _read_materialized_text(target: Path, artifact_id: str) -> str:
     being updated)."""
     if not target.is_file():
         raise InternalError(
-            f"artifact {artifact_id!r} was not materialized at {target} -- commit() left no"
-            " regular file there",
+            f"artifact {artifact_id!r} was not materialized at {target} -- commit() left no regular file there",
             remedy=(
                 "this indicates the commit callback silently failed to write the target it"
                 " was asked to -- a broken installation, not a problem with the repository"
@@ -818,8 +807,7 @@ def _read_materialized_text(target: Path, artifact_id: str) -> str:
         return target.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         raise InternalError(
-            f"artifact {artifact_id!r} could not be read back from {target} after"
-            f" materialization: {exc}",
+            f"artifact {artifact_id!r} could not be read back from {target} after materialization: {exc}",
             remedy=(
                 "this indicates the commit callback wrote unreadable or non-UTF-8 content --"
                 " a broken installation, not a problem with the repository being updated"
@@ -856,8 +844,7 @@ def _managed_artifact_after_apply(action: Action, entry: ManifestEntry, repo_roo
         span = spans.get(region_name)
         if span is None:
             raise InternalError(
-                f"region {region_name!r} was not found in {entry.path!r} immediately after"
-                " update",
+                f"region {region_name!r} was not found in {entry.path!r} immediately after update",
                 remedy=(
                     "this indicates the region write silently failed to insert/substitute"
                     " the region it was asked to -- a broken installation, not a problem"
@@ -870,9 +857,7 @@ def _managed_artifact_after_apply(action: Action, entry: ManifestEntry, repo_roo
             path=entry.path,
             artifact_class=entry.artifact_class.value,
             body_sha=hash_content(body),
-            inserted_region_span=RegionSpanRecord(
-                name=span.name, start=span.body_span[0], end=span.body_span[1]
-            ),
+            inserted_region_span=RegionSpanRecord(name=span.name, start=span.body_span[0], end=span.body_span[1]),
         )
     content = _read_materialized_text(target, entry.id)
     return ManagedArtifact(
@@ -936,13 +921,10 @@ def _build_state_after_apply(
     )
     managed = tuple(sorted((*carried_over, *new_records), key=lambda record: record.id))
     legacy = tuple(
-        LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of)
-        for record in inventory.legacy
+        LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of) for record in inventory.legacy
     )
     newly_applied = {str(migration.to_version) for migration in migrations}
-    migrations_applied = tuple(
-        sorted({*state.migrations_applied, *newly_applied}, key=_migration_version_sort_key)
-    )
+    migrations_applied = tuple(sorted({*state.migrations_applied, *newly_applied}, key=_migration_version_sort_key))
     now = utc_timestamp()
     return SeedState(
         model_version=manifest.model_version,
@@ -1028,16 +1010,12 @@ def run_update(
     managed_ids = frozenset(record.id for record in state.managed) if state is not None else frozenset()
     build_actions = tuple(action for action in base_plan.actions if action.artifact_id not in managed_ids)
     build_action_ids = {action.artifact_id for action in build_actions}
-    build_hashes = tuple(
-        pair for pair in base_plan.repo_fingerprint.artifact_hashes if pair[0] in build_action_ids
-    )
+    build_hashes = tuple(pair for pair in base_plan.repo_fingerprint.artifact_hashes if pair[0] in build_action_ids)
 
     migrations = (
         ()
         if state is None
-        else migrate_registry.chain(
-            state, filtered_manifest.model_version, registry=migrate_registry.MIGRATIONS
-        )
+        else migrate_registry.chain(state, filtered_manifest.model_version, registry=migrate_registry.MIGRATIONS)
     )
     migration_plan = (
         migrate_registry.compose(
@@ -1054,9 +1032,7 @@ def run_update(
     )
     migration_hashes = _migration_action_hashes(repo_root, migration_plan.actions)
 
-    wholesale_actions_raw, wholesale_hashes_raw = _wholesale_regenerate_actions(
-        state, filtered_manifest, inventory
-    )
+    wholesale_actions_raw, wholesale_hashes_raw = _wholesale_regenerate_actions(state, filtered_manifest, inventory)
     # Symmetric exclusion: a migration this run ALREADY claims an id (in its
     # own actions or its own `copied-seeded` offers) supersedes the generic
     # "refresh to latest template" wholesale-regenerate treatment for that
@@ -1069,9 +1045,7 @@ def run_update(
     wholesale_actions = tuple(
         action for action in wholesale_actions_raw if action.artifact_id not in migration_claimed_ids
     )
-    wholesale_hashes = tuple(
-        pair for pair in wholesale_hashes_raw if pair[0] not in migration_claimed_ids
-    )
+    wholesale_hashes = tuple(pair for pair in wholesale_hashes_raw if pair[0] not in migration_claimed_ids)
 
     plan = _merge_plan_sources(
         build_actions=build_actions,
@@ -1128,14 +1102,10 @@ def run_update(
 
     apply_plan = dataclasses.replace(
         plan,
-        repo_fingerprint=dataclasses.replace(
-            plan.repo_fingerprint, dirty=_repo_is_dirty_now(repo_root)
-        ),
+        repo_fingerprint=dataclasses.replace(plan.repo_fingerprint, dirty=_repo_is_dirty_now(repo_root)),
     )
 
-    result: ApplyResult = run_apply(
-        apply_plan, repo_root=repo_root, never_write=never_write, commit=effective_commit
-    )
+    result: ApplyResult = run_apply(apply_plan, repo_root=repo_root, never_write=never_write, commit=effective_commit)
 
     if state is not None and plan.actions:
         new_state = _build_state_after_apply(
@@ -1149,6 +1119,4 @@ def run_update(
         )
         write_state(new_state, repo_root=repo_root, never_write=never_write)
 
-    return UpdateResult(
-        plan=plan, applied=result.applied, declined=False, referenced_dep_findings=ref_findings
-    )
+    return UpdateResult(plan=plan, applied=result.applied, declined=False, referenced_dep_findings=ref_findings)

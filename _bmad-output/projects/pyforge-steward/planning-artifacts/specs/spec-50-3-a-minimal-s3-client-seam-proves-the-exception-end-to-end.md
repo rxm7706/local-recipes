@@ -92,3 +92,16 @@ against Story 50.2's local backend. No existing feature is migrated onto it.
   `shipped`/`realized`.
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `914b86a6f2` (2026-09-18, "marshal: twin Story 50.3's deferral (MRS-DISP-043 silent for uncatalogued models) into the tracked ledger"); also `d8672d9287` (2026-09-10, "feat(platform): minimal S3-client seam proves the AD-1 exception (Story 50.3)"). Ledger row `50-3-a-minimal-s3-client-seam-proves-the-exception-end-to-end: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

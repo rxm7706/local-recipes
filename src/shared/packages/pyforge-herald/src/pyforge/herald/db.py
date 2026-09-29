@@ -175,9 +175,7 @@ def _connect(db_path: Path) -> sqlite3.Connection:
         # `(station, date)` key the schema now enforces), not a corrupt
         # database file.
         conn.close()
-        raise errors.HeraldError(
-            f"{db_path}: legacy data could not be imported: {exc}"
-        ) from exc
+        raise errors.HeraldError(f"{db_path}: legacy data could not be imported: {exc}") from exc
     except sqlite3.DatabaseError as exc:
         conn.close()
         raise errors.HeraldError(f"{db_path} is not a valid database: {exc}") from exc
@@ -199,10 +197,7 @@ def _has_legacy_data(db_path: Path, *names: str) -> bool:
     beside a not-yet-created database, ``read_all`` was served from the
     empty in-memory database and returned ``[]``, while a write on the same
     store correctly reported that the legacy file could not be read."""
-    return any(
-        not _is_definitely_absent(db_path.parent / name)
-        for name in (names or _LEGACY_FILENAMES)
-    )
+    return any(not _is_definitely_absent(db_path.parent / name) for name in (names or _LEGACY_FILENAMES))
 
 
 def _is_definitely_absent(db_path: Path) -> bool:
@@ -225,7 +220,7 @@ def _is_definitely_absent(db_path: Path) -> bool:
     ``_connect``, whose own error handling reports the real fault."""
     try:
         db_path.stat()
-    except (FileNotFoundError, NotADirectoryError):
+    except FileNotFoundError, NotADirectoryError:
         return True
     except OSError:
         return False
@@ -371,9 +366,7 @@ def transaction(db_path: Path) -> Iterator[sqlite3.Connection]:
             try:
                 conn.commit()
             except sqlite3.Error as exc:
-                raise errors.HeraldError(
-                    f"{db_path} could not be written: {exc}"
-                ) from exc
+                raise errors.HeraldError(f"{db_path} could not be written: {exc}") from exc
     finally:
         # Remove THIS frame's own entry, not whatever is on top: an
         # out-of-LIFO exit (an `ExitStack` holding transactions for two
@@ -510,10 +503,7 @@ def _import_legacy_v1(conn: sqlite3.Connection, db_path: Path) -> None:
     from . import progress as progress_mod
 
     def already_populated(*tables: str) -> bool:
-        return any(
-            conn.execute(f"SELECT 1 FROM {table} LIMIT 1").fetchone() is not None
-            for table in tables
-        )
+        return any(conn.execute(f"SELECT 1 FROM {table} LIMIT 1").fetchone() is not None for table in tables)
 
     legacy_dir = db_path.parent
 
@@ -534,9 +524,7 @@ def _import_legacy_v1(conn: sqlite3.Connection, db_path: Path) -> None:
             return None
         return candidate
 
-    progress_file, claims_file, notices_file = (
-        legacy(name) for name in _LEGACY_FILENAMES
-    )
+    progress_file, claims_file, notices_file = (legacy(name) for name in _LEGACY_FILENAMES)
 
     if progress_file is not None and not already_populated("progress"):
         for record in progress_mod._read_legacy_json(progress_file):
@@ -572,8 +560,7 @@ def _import_legacy_v1(conn: sqlite3.Connection, db_path: Path) -> None:
         )
     for old, new in document["redirects"].items():
         conn.execute(
-            "INSERT INTO notices_redirects (old_component, new_component) "
-            "VALUES (?, ?)",
+            "INSERT INTO notices_redirects (old_component, new_component) VALUES (?, ?)",
             (old, new),
         )
 
@@ -604,17 +591,13 @@ def _migrate_v1(conn: sqlite3.Connection, db_path: Path) -> None:
     _import_legacy_v1(conn, db_path)
 
 
-_SCHEMA_MIGRATIONS: tuple[tuple[int, Callable[[sqlite3.Connection], None]], ...] = (
-    (1, _schema_v1),
-)
+_SCHEMA_MIGRATIONS: tuple[tuple[int, Callable[[sqlite3.Connection], None]], ...] = ((1, _schema_v1),)
 """Structure only, in version order -- what a database's shape is built
 from when there is no data to migrate. Every entry here must have a
 matching version in ``_MIGRATIONS`` below; ``_MIGRATIONS`` is the full
 step (structure plus whatever data work that version needs)."""
 
-_MIGRATIONS: tuple[tuple[int, Callable[[sqlite3.Connection, Path], None]], ...] = (
-    (1, _migrate_v1),
-)
+_MIGRATIONS: tuple[tuple[int, Callable[[sqlite3.Connection, Path], None]], ...] = ((1, _migrate_v1),)
 
 SCHEMA_VERSION = _MIGRATIONS[-1][0]
 """The highest ``user_version`` this build knows how to produce or read.

@@ -36,14 +36,13 @@ import os
 import re
 import secrets
 import sys
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import yaml
-
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
@@ -52,49 +51,44 @@ from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
-from ..core import dispatch_fleet
-from ..core import harness_profile
-from ..core import policy
+from ..core import dispatch_fleet, dispatch_re_preflight, gate, harness_profile, policy
+from ..core import promotion as promotion_core
 from ..core.dispatch_completion import (
-    DispatchCompletionInput,
     DispatchGitFacts,
     DispatchSessionVerdict,
-    judge_dispatch_completion,
+    is_spec_only_narration,
     zombie_redispatch_evidence,
 )
-from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_verdict
+from ..core.dispatch_harness_done import (
+    blocks_harness_relaunch,
+    followup_review_recommended,
+    land_fail_operator_message,
+    parse_blocking_condition,
+    parse_spec_status,
+)
+from ..core.dispatch_landing import DispatchLandingVerdict
 from ..core.dispatch_retry import (
     DispatchBlockKind,
     classify_dispatch_block,
     exclude_harness_profiles_after_transient_failure,
     prune_blocked_stories_merged_on_main,
 )
-from ..core import dispatch_re_preflight
-from ..core.dispatch_harness_done import (
-    blocks_harness_relaunch,
-    followup_review_recommended,
-    land_fail_operator_message,
-    parse_spec_status,
+from ..core.dispatch_supervisor_finalize import (
+    finalize_attempt_failed,
+    finalize_attempt_journaled,
+    finalize_failure_worktree_path,
 )
-from ..core.dispatch_landing import DispatchLandingVerdict
 from ..core.dispatch_verification import (
     DispatchVerificationInput,
     DispatchVerificationVerdict,
     judge_dispatch_verification,
 )
-from ..core.dispatch_supervisor_finalize import (
-    finalize_attempt_journaled,
-    finalize_attempt_failed,
-    finalize_failure_worktree_path,
+from ..core.identity import (
+    MalformedStoryKeyError,
+    StoryKey,
+    normalize,
+    render_feed_key,
 )
-from ..core import gate
-from ..core import promotion as promotion_core
-from ..core.spec_deps import story_deps_from_epics, story_transitively_depends_on
-from ..core.spec_surface import SurfaceParseError, parse_declared_surface
-from ..dispatch_land import execute_dispatch_land
-from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
-from ..dispatch_verify import evaluate_dispatch_verification
-from ..core.identity import StoryKey, normalize, render_feed_key
 from ..core.journal import (
     JournalEntryId,
     Phase,
@@ -102,11 +96,25 @@ from ..core.journal import (
     fold,
     mint_run_id,
     prepare_for_write,
+    resolve_land_findings_from_payload,
     resolve_scope_violation_advisories_from_payload,
     sidecar_texts_for_lines,
 )
 from ..core.model import Finding, Severity, build_envelope
+from ..core.model_cost import (
+    adapter_provider,
+    catalog_declared,
+    is_harness_default_model,
+    provider_declaring_model,
+)
+from ..core.refs import ORIGIN_MAIN
+from ..core.spec_deps import story_deps_from_epics, story_transitively_depends_on
+from ..core.spec_surface import SurfaceParseError, parse_declared_surface
+from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_verdict
 from ..core.verdict import compute_verdict, exit_code_for
+from ..dispatch_land import execute_dispatch_land
+from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
+from ..dispatch_verify import evaluate_dispatch_verification
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -122,6 +130,7 @@ from .config import (
     conventional_project_policy_path,
     read_repo_policy_defaults,
 )
+from .land import _parse_sprint_ledger_statuses
 from .seed import packaged_seed_model_version
 
 if TYPE_CHECKING:
@@ -172,7 +181,7 @@ _JOURNAL_FILENAME = "journal.jsonl"
 _LOG_FILENAME = "session.log"
 _SUPERVISOR_LOG_FILENAME = "dispatch-supervisor.log"
 _FLEET_SUPERVISOR_LOG_FILENAME = "fleet-drain-supervisor.log"
-_BASE_REF = "origin/main"
+_BASE_REF = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
 
 #: How long the detached campaign supervisor waits between cycles -- passed
 #: to it, never slept on here. A cycle is cheap (ledger reads + git/process
@@ -267,11 +276,18 @@ def _random_token() -> str:
     return secrets.token_hex(4)
 
 
-def _dispatch_scope_refusal(repo_root: Path, slug: str) -> Finding | None:
-    """Story 33.9 / FR-190 CAP-1 third call site: refuse before any launch work.
+def _dispatch_scope_refusal(slug: str) -> Finding | None:
+    """Story 33.9 / FR-190 CAP-1 third call site: refuse before any launch work
+    when the parent shell's own ``BMAD_ACTIVE_PROJECT`` disagrees with the
+    dispatch slug.
 
-    Checks the parent ``BMAD_ACTIVE_PROJECT`` env (when set) and the sole
-    ``verify_scope`` triangle against the dispatch slug.
+    Story 64.1 (CAP-273, FR-219) retires the primary-checkout
+    ``verify_scope`` branch this function used to also run here: the
+    PRIMARY checkout's marker/links are never read or written by dispatch
+    at all now (another station may own the shared marker with no effect
+    on this launch). The triangle that actually matters is the dispatch
+    WORKTREE's own, checked once ``_ensure_dispatch_worktree`` resolves it
+    -- see ``_seed_dispatch_worktree_scope`` below.
     """
     env_slug = os.environ.get("BMAD_ACTIVE_PROJECT", "").strip()
     if env_slug and env_slug != slug:
@@ -284,12 +300,52 @@ def _dispatch_scope_refusal(repo_root: Path, slug: str) -> Finding | None:
                 f"_bmad-output/projects/{slug}/ and never scripts/bmad-switch"
             ),
         )
-    drift = verify_scope(repo_root, slug)
+    return None
+
+
+def _seed_dispatch_worktree_scope(*, fs: FsPort, worktree: Path, slug: str) -> Finding | None:
+    """Story 64.1 (CAP-273, FR-219): give the dispatch WORKTREE its own
+    scope triangle -- never the shared primary checkout's -- then refuse
+    via the unmodified ``verify_scope`` (``scope.py``) on any drift that
+    remains.
+
+    Mirrors ``cli/init.py``'s MRS-INIT-003 loop-home seeding shape but is
+    strictly narrower: a corner that already exists here -- correct,
+    foreign, or unrecognized -- is NEVER repointed or overwritten; only a
+    corner that is genuinely absent gets written, through ``FsPort`` only
+    (AD-11). ``fs.read_text``/``fs.read_symlink_target`` return ``None``
+    for "missing"; a link corner also needs ``fs.exists`` to tell a
+    dangling/absent path apart from a real, non-symlink file squatting
+    there (which counts as an existing corner too, per
+    ``ports/fs.py``'s own ``exists`` docstring) -- never touched either
+    way. A write failure degrades to ``MRS-DISP-006`` ("cannot provision"),
+    matching this module's other worktree-provisioning failures; it never
+    raises past this function.
+    """
+    marker_path = worktree / "_bmad" / "custom" / ".active-project"
+    planning_link = worktree / "_bmad-output" / "planning-artifacts"
+    implementation_link = worktree / "_bmad-output" / "implementation-artifacts"
+    try:
+        if fs.read_text(marker_path) is None:
+            fs.write_text_atomic(marker_path, f"{slug}\n")
+        for link, name in (
+            (planning_link, "planning-artifacts"),
+            (implementation_link, "implementation-artifacts"),
+        ):
+            if fs.read_symlink_target(link) is None and not fs.exists(link):
+                fs.repoint_symlink_atomic(link, Path("projects") / slug / name)
+    except FsError as exc:
+        return Finding(
+            code="MRS-DISP-006",
+            severity=Severity.ERROR,
+            message=f"cannot provision dispatch worktree scope triangle at {worktree!r}: {exc}",
+        )
+    drift = verify_scope(worktree, slug)
     if drift is not None:
         return Finding(
             code="MRS-DISP-041",
             severity=Severity.ERROR,
-            message=format_scope_drift(drift),
+            message=f"{format_scope_drift(drift)} (dispatch worktree {worktree!r})",
         )
     return None
 
@@ -324,7 +380,7 @@ def _emit(
             for finding in findings:
                 lines.append(f"finding {finding.code}: {finding.message}")
             print("\n".join(lines), flush=True)
-    except (OSError, UnicodeEncodeError):
+    except OSError, UnicodeEncodeError:
         _suppress_downstream_pipe_close()
     return exit_code_for(envelope.verdict)
 
@@ -332,17 +388,13 @@ def _emit(
 def _policy_flags_from_harness_arg(raw: str | None) -> dict[str, object]:
     if raw is None or not str(raw).strip():
         return {}
-    profiles = tuple(
-        part.strip() for part in str(raw).split(",") if part.strip()
-    )
+    profiles = tuple(part.strip() for part in str(raw).split(",") if part.strip())
     if not profiles:
         return {}
     return {"harness_preference": profiles}
 
 
-def _compose_policy(
-    slug: str, *, flags: dict[str, object] | None = None
-) -> policy.EffectivePolicy:
+def _compose_policy(slug: str, *, flags: dict[str, object] | None = None) -> policy.EffectivePolicy:
     # Story 22.8: the repo-defaults layer (AD-16 layer 2) composes here too
     # -- `harness_preference` is repo-expressed on this machine
     # (`_bmad-output/policy-defaults.toml`). An unreadable file degrades to
@@ -394,16 +446,50 @@ def _surface_worktree_wip_before_dispatch(
     return Finding(
         code="MRS-DISP-036",
         severity=Severity.WARN,
-        message=(
-            f"worktree {worktree!r} already carries uncommitted changes before "
-            f"this dispatch proceeds: {detail}"
-        ),
+        message=(f"worktree {worktree!r} already carries uncommitted changes before this dispatch proceeds: {detail}"),
     )
 
 
-def _seed_dispatch_output_layer(
-    *, fs: FsPort, worktree: Path, context_payload: Mapping[str, object]
-) -> Finding | None:
+_SESSION_CHECK_ARGV = ("pixi", "run", "--frozen", "-e", "pyforge-guild", "steward", "session", "check", "--json")
+_SESSION_CHECK_TIMEOUT_S = 60.0
+
+
+def _surface_session_precondition_findings(*, process: ProcessPort, repo_root: Path) -> Finding | None:
+    """Story 63.4 (spec-pyforge-steward CAP-5): shell ``steward session check
+    --json`` right after ``repo_root`` resolves and fold a non-ok
+    session-precondition verdict (pixi/pyforge-guild, bmad-method drift, the
+    token-economy kit + codegraph index, gh auth/rate-limit, the Tier-3
+    sprint-status feed) into a WARN finding -- non-blocking, mirroring
+    ``_surface_worktree_wip_before_dispatch``'s shape. Never escalated to
+    ERROR: a session-precondition gap is worth flagging before a dispatch
+    launches, not worth refusing the launch over.
+    """
+    try:
+        result = process.run(list(_SESSION_CHECK_ARGV), cwd=repo_root, timeout_s=_SESSION_CHECK_TIMEOUT_S)
+    except ProcessError as exc:
+        return Finding(
+            code="MRS-DISP-049",
+            severity=Severity.WARN,
+            message=f"steward session check could not run: {exc} -- session preconditions unverified",
+        )
+    if result.returncode == 0:
+        return None
+    detail: str
+    try:
+        payload = json.loads(result.stdout)
+        non_ok = [row.get("name", "?") for row in payload.get("findings", []) if not row.get("ok", True)]
+        detail = f"non-ok findings: {', '.join(non_ok)}" if non_ok else "reported findings"
+    except json.JSONDecodeError, AttributeError, TypeError:
+        tail_lines = (result.stderr or result.stdout or "").strip().splitlines()
+        detail = tail_lines[-1] if tail_lines else "steward session check reported findings"
+    return Finding(
+        code="MRS-DISP-049",
+        severity=Severity.WARN,
+        message=f"steward session check reported a non-ok session-precondition verdict: {detail}",
+    )
+
+
+def _seed_dispatch_output_layer(*, fs: FsPort, worktree: Path, context_payload: Mapping[str, object]) -> Finding | None:
     """Story 28.30 (CAP-3, dispatch half of the ``output`` layer): deploy
     the caveman output-compression skill into a fresh dispatch worktree
     when ``[context].output`` is enabled.
@@ -456,14 +542,10 @@ def _seed_dispatch_output_layer(
     return None
 
 
-def _spec_text_prefer_worktree(
-    spec_path: Path, repo_root: Path, worktree: Path, main_text: str
-) -> str:
+def _spec_text_prefer_worktree(spec_path: Path, repo_root: Path, worktree: Path, main_text: str) -> str:
     """Prefer the worktree copy: main often still says ready-for-dev."""
     try:
-        worktree_spec = dispatch_core.relocated_spec_path(
-            spec_path, repo_root, worktree
-        )
+        worktree_spec = dispatch_core.relocated_spec_path(spec_path, repo_root, worktree)
     except ValueError:
         return main_text
     try:
@@ -497,11 +579,9 @@ def _verification_verdict_for_cap4(
             process=process,
             vcs=vcs,
         )
-    except (ProcessError, VcsCommandError, OSError, TypeError, AttributeError):
+    except ProcessError, VcsCommandError, OSError, TypeError, AttributeError:
         return DispatchVerificationVerdict.REFUSED
-    return judge_dispatch_verification(
-        DispatchVerificationInput(findings=tuple(envelope.findings))
-    )
+    return judge_dispatch_verification(DispatchVerificationInput(findings=tuple(envelope.findings)))
 
 
 def _attempt_harness_done_cap4(
@@ -546,9 +626,7 @@ def _attempt_harness_done_cap4(
     return result.verdict, str(named), envelope
 
 
-def _latest_story_run_dir(
-    fs: FsPort, repo_root: Path, slug: str, story_key: str
-) -> Path | None:
+def _latest_story_run_dir(fs: FsPort, repo_root: Path, slug: str, story_key: str) -> Path | None:
     feed_story = render_feed_key(normalize(story_key))
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
@@ -631,9 +709,7 @@ def gather_fleet_finalize_escalations(
     return escalations
 
 
-def _last_failed_dispatch_session_log(
-    fs: FsPort, repo_root: Path, slug: str, story_key: str
-) -> str | None:
+def _last_failed_dispatch_session_log(fs: FsPort, repo_root: Path, slug: str, story_key: str) -> str | None:
     feed_story = render_feed_key(normalize(story_key))
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
@@ -645,9 +721,7 @@ def _last_failed_dispatch_session_log(
     return None
 
 
-def _count_prior_failed_dispatch_attempts(
-    fs: FsPort, repo_root: Path, slug: str, story_key: str
-) -> int:
+def _count_prior_failed_dispatch_attempts(fs: FsPort, repo_root: Path, slug: str, story_key: str) -> int:
     """Count failed dispatch runs for this story since the last completion.
 
     Story 33.6 (CAP-2): mirrors spin's per-run struggle counter — a
@@ -677,9 +751,7 @@ class DispatchWorktreeResolution:
     refusal: str | None = None
 
 
-def _ensure_dispatch_worktree(
-    vcs: VcsPort, repo_root: Path, slug: str, story_key: str
-) -> DispatchWorktreeResolution:
+def _ensure_dispatch_worktree(vcs: VcsPort, repo_root: Path, slug: str, story_key: str) -> DispatchWorktreeResolution:
     """Provision (or reuse) this station's dispatch worktree.
 
     Story 22.9: the branch carries the station, so two stations sharing a
@@ -698,30 +770,40 @@ def _ensure_dispatch_worktree(
         vcs, repo_root, slug=slug, story_key=story_key, worktree=worktree
     )
     if resolution.refusal is not None:
-        return DispatchWorktreeResolution(
-            branch=resolution.branch, refusal=resolution.refusal
-        )
+        return DispatchWorktreeResolution(branch=resolution.branch, refusal=resolution.refusal)
     branch = resolution.effective_branch
     existing = vcs.worktree_path_for_branch(repo_root, branch)
     if existing is not None:
-        return DispatchWorktreeResolution(
-            branch=branch, worktree=existing, legacy=resolution.legacy
-        )
+        return DispatchWorktreeResolution(branch=branch, worktree=existing, legacy=resolution.legacy)
     if worktree.exists():
-        return DispatchWorktreeResolution(
-            branch=branch, worktree=worktree, legacy=resolution.legacy
-        )
+        return DispatchWorktreeResolution(branch=branch, worktree=worktree, legacy=resolution.legacy)
     vcs.add_worktree(repo_root, worktree, branch, base=_BASE_REF)
-    return DispatchWorktreeResolution(
-        branch=branch, worktree=worktree, legacy=resolution.legacy
-    )
+    return DispatchWorktreeResolution(branch=branch, worktree=worktree, legacy=resolution.legacy)
+
+
+#: Parallel-wave journals live under ``dispatch-runs/waves/<wave-id>/``
+#: (Story 28.16). That container must never be treated as a per-story run
+#: dir: sorted-by-name, ``waves`` sorts after every ``<slug>-<ts>-<hex>``
+#: run id, so ``latest_dispatch_run_dir`` would otherwise return the empty
+#: container and ``marshal status`` / ``fleet-picture`` go blind to a live
+#: headroom/claude session (found 2026-09-18 on pyforge-marshal 46.4).
+_DISPATCH_WAVES_DIRNAME = "waves"
 
 
 def iter_dispatch_run_dirs(repo_root: Path, slug: str) -> tuple[Path, ...]:
     runs_parent = dispatch_core.dispatch_runs_dir(repo_root, slug)
     if not runs_parent.is_dir():
         return ()
-    return tuple(sorted((p for p in runs_parent.iterdir() if p.is_dir()), key=lambda p: p.name))
+    return tuple(
+        sorted(
+            (
+                p
+                for p in runs_parent.iterdir()
+                if p.is_dir() and p.name != _DISPATCH_WAVES_DIRNAME and (p / _JOURNAL_FILENAME).is_file()
+            ),
+            key=lambda p: p.name,
+        )
+    )
 
 
 def latest_dispatch_run_dir(repo_root: Path, slug: str) -> Path | None:
@@ -731,9 +813,7 @@ def latest_dispatch_run_dir(repo_root: Path, slug: str) -> Path | None:
     return dirs[-1]
 
 
-def gather_dispatch_journal_facts(
-    fs: FsPort, run_dir: Path, run_id: str
-) -> dispatch_core.DispatchJournalFacts:
+def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dispatch_core.DispatchJournalFacts:
     journal_path = run_dir / _JOURNAL_FILENAME
     text = fs.read_text(journal_path)
     if text is None:
@@ -796,11 +876,16 @@ def gather_dispatch_journal_facts(
             if isinstance(stop_val, str):
                 completion_stop_reason = stop_val
     landing_verdict: str | None = None
+    landing_findings: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAND):
-        if entry.phase == Phase.OUTCOME and entry.payload.get("ok"):
-            verdict_val = entry.payload.get("verdict")
-            if isinstance(verdict_val, str):
-                landing_verdict = verdict_val
+        if entry.phase == Phase.OUTCOME:
+            if entry.payload.get("ok"):
+                verdict_val = entry.payload.get("verdict")
+                if isinstance(verdict_val, str):
+                    landing_verdict = verdict_val
+            # Story 53.2 review (I1): read regardless of `ok` -- a refused
+            # landing (MRS-DISP-048) is exactly the case this must surface.
+            landing_findings = resolve_land_findings_from_payload(entry.payload)
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION):
         if entry.phase == Phase.OUTCOME:
             vval = entry.payload.get("verdict")
@@ -858,6 +943,7 @@ def gather_dispatch_journal_facts(
         verification_failed_gate=verification_failed_gate,
         verification_scope_advisories=verification_scope_advisories,
         landing_verdict=landing_verdict,
+        landing_findings=landing_findings,
         story_started_at=story_started_at,
         story_ended_at=story_ended_at,
         baseline_revision=baseline_revision,
@@ -876,11 +962,16 @@ def resolve_dispatch_session_verdict(
     journal: dispatch_core.DispatchJournalFacts,
     effective_policy: policy.EffectivePolicy,
     run_dir: Path | None = None,
+    spec_relative_path: str | None = None,
 ) -> DispatchSessionVerdict | None:
     if journal.completion_verdict in {
         DispatchSessionVerdict.COMPLETED.value,
         DispatchSessionVerdict.FAILED.value,
         DispatchSessionVerdict.STOPPED_EXTERNALLY.value,
+        # Story 51.11 (CAP-258): an already-committed `blocked` verdict must
+        # not be re-derived from fresh git facts, which would re-introduce
+        # the exact bug this story fixes (stale facts read STOPPED_EXTERNALLY).
+        DispatchSessionVerdict.BLOCKED.value,
     }:
         return DispatchSessionVerdict(journal.completion_verdict)
     from ..core.dispatch_supervisor_state import landing_journal_indicates_complete
@@ -889,9 +980,7 @@ def resolve_dispatch_session_verdict(
         return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
-    session_alive = (
-        journal.session_pid is not None and process.is_alive(journal.session_pid)
-    )
+    session_alive = journal.session_pid is not None and process.is_alive(journal.session_pid)
     if journal.baseline_head_sha is None:
         return DispatchSessionVerdict.LIVE if session_alive else None
     try:
@@ -905,7 +994,7 @@ def resolve_dispatch_session_verdict(
             baseline_head_sha=journal.baseline_head_sha,
             merge_subject_template=effective_policy.merge_subject_template.value,
         )
-    except (VcsCommandError, ValueError):
+    except VcsCommandError, ValueError:
         return DispatchSessionVerdict.LIVE if session_alive else None
     session_log: str | None = None
     if run_dir is not None:
@@ -916,6 +1005,7 @@ def resolve_dispatch_session_verdict(
         verification_verdict=journal.verification_verdict,
         detach_reason=journal.completion_stop_reason,
         session_log=session_log,
+        spec_relative_path=spec_relative_path,
     )
 
 
@@ -933,20 +1023,22 @@ def _live_dispatch_evidence(
 ) -> str:
     story_key = journal.story_key or "unknown"
     if journal.baseline_head_sha is None or journal.worktree_path is None:
-        return zombie_redispatch_evidence(
-            story_key=story_key,
-            verdict=verdict,
-            git=DispatchGitFacts(
-                baseline_head_sha="",
-                current_head_sha="",
-                changed_paths=(),
-                branch_merged=False,
-                story_merged_on_main=False,
-            ),
-            session_alive=journal.session_pid is not None
-            and process.is_alive(journal.session_pid),
-            harness_reported_failure=harness_reported_failure,
-        ) or f"story {story_key!r} dispatch session is still live"
+        return (
+            zombie_redispatch_evidence(
+                story_key=story_key,
+                verdict=verdict,
+                git=DispatchGitFacts(
+                    baseline_head_sha="",
+                    current_head_sha="",
+                    changed_paths=(),
+                    branch_merged=False,
+                    story_merged_on_main=False,
+                ),
+                session_alive=journal.session_pid is not None and process.is_alive(journal.session_pid),
+                harness_reported_failure=harness_reported_failure,
+            )
+            or f"story {story_key!r} dispatch session is still live"
+        )
     git_facts = gather_dispatch_git_facts(
         vcs,
         fs=fs,
@@ -957,14 +1049,16 @@ def _live_dispatch_evidence(
         baseline_head_sha=journal.baseline_head_sha,
         merge_subject_template=effective_policy.merge_subject_template.value,
     )
-    return zombie_redispatch_evidence(
-        story_key=story_key,
-        verdict=verdict,
-        git=git_facts,
-        session_alive=journal.session_pid is not None
-        and process.is_alive(journal.session_pid),
-        harness_reported_failure=harness_reported_failure,
-    ) or f"story {story_key!r} dispatch session is still live"
+    return (
+        zombie_redispatch_evidence(
+            story_key=story_key,
+            verdict=verdict,
+            git=git_facts,
+            session_alive=journal.session_pid is not None and process.is_alive(journal.session_pid),
+            harness_reported_failure=harness_reported_failure,
+        )
+        or f"story {story_key!r} dispatch session is still live"
+    )
 
 
 def _epics_path(repo_root: Path, slug: str) -> Path:
@@ -1003,9 +1097,7 @@ def _effective_surface_for_spec(
         spec_surface = parse_declared_surface(spec_text)
     except SurfaceParseError:
         return None
-    policy_surface = gate.resolve_policy_surface(
-        effective_policy.epic_surfaces.value, story_key.epic, slug
-    )
+    policy_surface = gate.resolve_policy_surface(effective_policy.epic_surfaces.value, story_key.epic, slug)
     return gate.compute_effective_surface(policy_surface, spec_surface)
 
 
@@ -1058,6 +1150,80 @@ def _live_dispatch_story_keys(
         if verdict == DispatchSessionVerdict.LIVE:
             live.append(journal.story_key)
     return tuple(live)
+
+
+def station_finalize_pending_story(
+    *,
+    fs: FsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    backlog: Sequence[str],
+    effective_policy: policy.EffectivePolicy,
+) -> tuple[str, str] | None:
+    """``(story, evidence)`` when this station's head is mid-finalize (50.1).
+
+    Part A's impure half: walk the MOST RECENT dispatch run, read the four
+    facts the journal already carries (``story_key``, ``supervisor_pid``,
+    ``completion_verdict``, ``landing_verdict``), and hand them plus the
+    tracked-ledger fact to the pure ``is_finalize_pending``.
+
+    This is deliberately NOT a second completion judgment:
+    ``resolve_dispatch_session_verdict`` / ``judge_dispatch_completion``
+    are untouched, and nothing here reads the session's own self-report.
+    ``spin``'s in-flight probe has treated a live ``supervisor_pid`` as in
+    flight since Story 34.1; the dispatch path simply never learned it.
+    """
+    # The verdict stays on journal + process facts (Epic 50 HARD boundary);
+    # the policy is accepted for call-site symmetry with every other
+    # station-level probe, never consulted.
+    del effective_policy
+    from ..core.dispatch_supervisor_state import landing_journal_indicates_complete
+
+    run_dir = latest_dispatch_run_dir(repo_root, slug)
+    if run_dir is None:
+        return None
+    journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+    if journal.story_key is None:
+        return None
+    on_backlog: str | None = None
+    for raw in backlog:
+        try:
+            if render_feed_key(normalize(raw)) == journal.story_key:
+                on_backlog = raw
+                break
+        except MalformedStoryKeyError:
+            continue
+    supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
+    landing_complete = landing_journal_indicates_complete(journal.landing_verdict)
+    session_alive = journal.session_pid is not None and process.is_alive(journal.session_pid)
+    if session_alive and not landing_complete:
+        # A session still running is plain in-flight, not finalize-pending:
+        # CAP-2's own verdict already reads LIVE and the MRS-DISP-011 relay
+        # reports it. Clause (a) is about the window AFTER the session exits,
+        # so it must never pre-empt that already-correct path.
+        return None
+    if not dispatch_fleet.is_finalize_pending(
+        supervisor_alive=supervisor_alive,
+        completion_journaled=journal.completion_verdict is not None,
+        landing_complete=landing_complete,
+        story_on_backlog=on_backlog is not None,
+    ):
+        return None
+    assert on_backlog is not None
+    if landing_complete:
+        evidence = (
+            f"run {run_dir.name!r} journaled dispatch-land "
+            f"{journal.landing_verdict!r} and the tracked ledger still says "
+            "backlog -- finalize (ledger sync + spec promotion) is mid-flight"
+        )
+    else:
+        evidence = (
+            f"run {run_dir.name!r} has a live supervisor "
+            f"(pid {journal.supervisor_pid}) and no dispatch-completion "
+            "entry -- the landing path has not finished"
+        )
+    return on_backlog, evidence
 
 
 def station_in_flight_conflict(
@@ -1132,25 +1298,19 @@ def station_in_flight_conflict(
         if not parallel_dispatch:
             return DispatchPreflightConflict(
                 code="MRS-DISP-021",
-                message=(
-                    f"refusing dispatch: station {slug!r} already has in-flight "
-                    f"story {in_flight!r} ({evidence})"
-                ),
+                message=(f"refusing dispatch: station {slug!r} already has in-flight story {in_flight!r} ({evidence})"),
                 in_flight_story_key=in_flight,
             )
         if story_transitively_depends_on(feed_story, in_flight, graph):
             return DispatchPreflightConflict(
                 code="MRS-DISP-035",
                 message=(
-                    f"refusing dispatch: story {feed_story!r} depends on "
-                    f"in-flight story {in_flight!r} ({evidence})"
+                    f"refusing dispatch: story {feed_story!r} depends on in-flight story {in_flight!r} ({evidence})"
                 ),
                 in_flight_story_key=in_flight,
             )
         if candidate_surface is not None:
-            in_flight_spec = dispatch_core.resolve_story_spec_path(
-                repo_root, slug, in_flight
-            )
+            in_flight_spec = dispatch_core.resolve_story_spec_path(repo_root, slug, in_flight)
             if in_flight_spec is not None:
                 try:
                     in_flight_text = in_flight_spec.read_text(encoding="utf-8")
@@ -1163,16 +1323,10 @@ def station_in_flight_conflict(
                         slug=slug,
                         effective_policy=effective_policy,
                     )
-                    overlapping = dispatch_core.find_declared_surface_overlaps(
-                        candidate_surface, in_flight_surface
-                    )
+                    overlapping = dispatch_core.find_declared_surface_overlaps(candidate_surface, in_flight_surface)
                     if overlapping:
-                        pair_desc = ", ".join(
-                            f"{left!r} ∩ {right!r}" for left, right in overlapping
-                        )
-                        paths = tuple(
-                            f"{left} ∩ {right}" for left, right in overlapping
-                        )
+                        pair_desc = ", ".join(f"{left!r} ∩ {right!r}" for left, right in overlapping)
+                        paths = tuple(f"{left} ∩ {right}" for left, right in overlapping)
                         return DispatchPreflightConflict(
                             code="MRS-DISP-034",
                             message=(
@@ -1193,14 +1347,7 @@ def _iter_spin_run_dirs(home: Path, slug: str) -> tuple[Path, ...]:
     order, but returns every matching directory so a guard can walk newest-
     first rather than inspecting only the lexicographically latest id.
     """
-    runs_dir = (
-        home
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "runs"
-    )
+    runs_dir = home / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
     try:
         return tuple(
             sorted(
@@ -1251,17 +1398,11 @@ def spin_loop_home_in_flight_conflict(
         launch_pid = journal_facts.launch_pid
         supervisor_pid = journal_facts.supervisor_pid
         launch_alive = launch_pid is not None and process.is_alive(launch_pid)
-        supervisor_alive = (
-            supervisor_pid is not None and process.is_alive(supervisor_pid)
-        )
+        supervisor_alive = supervisor_pid is not None and process.is_alive(supervisor_pid)
         if not launch_alive and not supervisor_alive:
             continue
         harness_run_id = journal_facts.harness_run_id
-        snapshot = (
-            harness.run_status_snapshot(home, harness_run_id)
-            if harness_run_id
-            else None
-        )
+        snapshot = harness.run_status_snapshot(home, harness_run_id) if harness_run_id else None
         if snapshot is not None and snapshot.finished:
             continue
         evidence_parts = [f"run {run_id!r}"]
@@ -1272,10 +1413,7 @@ def spin_loop_home_in_flight_conflict(
         evidence = ", ".join(evidence_parts)
         return DispatchPreflightConflict(
             code="MRS-DISP-021",
-            message=(
-                f"refusing spin: station {slug!r} already has in-flight "
-                f"spin ({evidence})"
-            ),
+            message=(f"refusing spin: station {slug!r} already has in-flight spin ({evidence})"),
             in_flight_story_key=run_id,
         )
     return None
@@ -1301,10 +1439,7 @@ def cross_station_surface_overlap_advisories(
             journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
             if journal.story_key is None:
                 continue
-            if (
-                station_slug == requested_slug
-                and journal.story_key == feed_requested
-            ):
+            if station_slug == requested_slug and journal.story_key == feed_requested:
                 continue
             verdict = resolve_dispatch_session_verdict(
                 fs=fs,
@@ -1318,9 +1453,7 @@ def cross_station_surface_overlap_advisories(
             )
             if verdict != DispatchSessionVerdict.LIVE:
                 continue
-            in_flight_spec = dispatch_core.resolve_story_spec_path(
-                repo_root, station_slug, journal.story_key
-            )
+            in_flight_spec = dispatch_core.resolve_story_spec_path(repo_root, station_slug, journal.story_key)
             if in_flight_spec is None:
                 continue
             try:
@@ -1328,9 +1461,7 @@ def cross_station_surface_overlap_advisories(
             except OSError:
                 continue
             in_flight_surface = parse_declared_surface(in_flight_text)
-            overlapping = dispatch_core.find_declared_surface_overlaps(
-                requested_surface, in_flight_surface
-            )
+            overlapping = dispatch_core.find_declared_surface_overlaps(requested_surface, in_flight_surface)
             if not overlapping:
                 continue
             advisories.append(
@@ -1373,6 +1504,38 @@ def station_story_block_facts(
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
         if journal.story_key != feed_story:
             continue
+
+        # Story 51.4 (CAP-252): resolve the worktree's own tracked spec once
+        # per run, before verdict resolution -- a deliberate `status: blocked`
+        # (the 27.3 incident) or a diff that collapses to just that spec file
+        # (narration, not work -- the 51.3 incident) must both read as
+        # no-progress to `resolve_dispatch_session_verdict` itself, not only
+        # to the block-reason checks below it (2026-09-19 review pass: the
+        # original placement inside the `verdict == FAILED` branch meant
+        # `resolve_dispatch_session_verdict`'s own `has_git_progress` call
+        # never saw a narration-only diff as no-progress, so the campaign
+        # could resolve LIVE/STOPPED_EXTERNALLY instead of FAILED for it).
+        spec_status: str | None = None
+        spec_blocking_condition: str | None = None
+        spec_relative_path: str | None = None
+        if journal.worktree_path is not None:
+            worktree_path = Path(journal.worktree_path)
+            spec_path = dispatch_core.resolve_story_spec_path(repo_root, slug, feed_story)
+            if spec_path is not None:
+                try:
+                    worktree_spec_path = dispatch_core.relocated_spec_path(spec_path, repo_root, worktree_path)
+                except ValueError:
+                    worktree_spec_path = None
+                if worktree_spec_path is not None:
+                    spec_text = fs.read_text(worktree_spec_path)
+                    if spec_text is not None:
+                        spec_status = parse_spec_status(spec_text)
+                        spec_blocking_condition = parse_blocking_condition(spec_text)
+                    try:
+                        spec_relative_path = str(worktree_spec_path.resolve().relative_to(worktree_path.resolve()))
+                    except ValueError:
+                        spec_relative_path = None
+
         verdict = resolve_dispatch_session_verdict(
             fs=fs,
             vcs=vcs,
@@ -1382,11 +1545,13 @@ def station_story_block_facts(
             journal=journal,
             effective_policy=effective_policy,
             run_dir=run_dir,
+            spec_relative_path=spec_relative_path,
         )
         if verdict == DispatchSessionVerdict.FAILED:
             session_log = fs.read_text(run_dir / _LOG_FILENAME)
             changed_path_count = 0
             git_progress_unknown = False
+            git_changed_paths: tuple[str, ...] = ()
             if journal.worktree_path is not None and journal.baseline_head_sha:
                 try:
                     git_facts = gather_dispatch_git_facts(
@@ -1400,12 +1565,61 @@ def station_story_block_facts(
                         merge_subject_template=effective_policy.merge_subject_template.value,
                     )
                     changed_path_count = len(git_facts.changed_paths)
-                except (VcsCommandError, ValueError):
+                    git_changed_paths = git_facts.changed_paths
+                except VcsCommandError, ValueError:
                     git_progress_unknown = True
+
+            # Story 50.1 Part B: ahead of the transient/terminal split, so
+            # an already-landed head is never re-dispatched (TRANSIENT) NOR
+            # halts the station (TERMINAL) -- it advances, exactly the way
+            # MRS-DISP-040 does. ``git_progress_unknown`` means the campaign
+            # could not observe the changed paths at all, and an unobserved
+            # zero is never treated as an observed one. Checked before the
+            # blocked-spec check below (2026-09-19 review pass) so a worktree
+            # that is both already-landed and carries a stale `blocked` spec
+            # still reports the more definitive, terminal fact.
+            if not git_progress_unknown and dispatch_fleet.is_already_landed_self_refusal(
+                changed_path_count=changed_path_count,
+                session_log=session_log,
+            ):
+                return dispatch_fleet.StationBlockEvidence(
+                    reason=(
+                        f"{dispatch_fleet.ALREADY_LANDED_ADVANCE_PREFIX}: the "
+                        f"last dispatch of {feed_story!r} (run "
+                        f"{run_dir.name!r}) refused itself with zero changed "
+                        "paths and merged evidence in its session log -- the "
+                        "work is already landed, so the station advances "
+                        "instead of relaunching it"
+                    ),
+                    block_class=dispatch_fleet.FleetBlockClass.STORY,
+                )
+
+            # Story 51.4 (CAP-252): the worktree's own tracked spec may name
+            # the block reason itself -- a deliberate `status: blocked` (the
+            # 27.3 incident) surfaces here, before the transient/terminal
+            # classification below.
+            if spec_status == "blocked":
+                return dispatch_fleet.StationBlockEvidence(
+                    reason=(
+                        f"the last dispatch of {feed_story!r} (run "
+                        f"{run_dir.name!r}) left its tracked spec "
+                        f"status: blocked (blocking condition: "
+                        f"{spec_blocking_condition or 'not stated'})"
+                    ),
+                    block_class=dispatch_fleet.FleetBlockClass.STORY,
+                )
+            # Story 51.4 (CAP-252): a diff that collapses to just the
+            # tracked spec file is narration, not work -- read it as
+            # zero-progress here so a harness-ceiling termination (the
+            # 51.3 incident) classifies TRANSIENT/re-dispatchable via the
+            # existing session-log check below, not TERMINAL.
+            classify_changed_path_count = changed_path_count
+            if not git_progress_unknown and is_spec_only_narration(git_changed_paths, spec_relative_path):
+                classify_changed_path_count = 0
             block_kind = classify_dispatch_block(
                 session_log=session_log,
                 failed_gate=journal.verification_failed_gate,
-                changed_path_count=changed_path_count,
+                changed_path_count=classify_changed_path_count,
             )
             if block_kind is DispatchBlockKind.TRANSIENT:
                 return None
@@ -1425,9 +1639,7 @@ def station_story_block_facts(
             )
             if git_progress_unknown:
                 block_class = dispatch_fleet.FleetBlockClass.STORY
-            return dispatch_fleet.StationBlockEvidence(
-                reason=reason, block_class=block_class
-            )
+            return dispatch_fleet.StationBlockEvidence(reason=reason, block_class=block_class)
         return None
     return None
 
@@ -1621,7 +1833,11 @@ def dispatch_once(
         )
         return _done()
 
-    scope_refusal = _dispatch_scope_refusal(repo_root, slug)
+    session_finding = _surface_session_precondition_findings(process=process, repo_root=repo_root)
+    if session_finding is not None:
+        findings.append(session_finding)
+
+    scope_refusal = _dispatch_scope_refusal(slug)
     if scope_refusal is not None:
         findings.append(scope_refusal)
         return _done()
@@ -1655,23 +1871,17 @@ def dispatch_once(
 
     effective_policy = _compose_policy(slug, flags=policy_flags)
     difficulty = dispatch_core.read_declared_difficulty(spec_text)
-    session_log = _last_failed_dispatch_session_log(
-        fs, repo_root, slug, render_feed_key(story_key)
-    )
-    prior_failed_attempts = _count_prior_failed_dispatch_attempts(
-        fs, repo_root, slug, render_feed_key(story_key)
-    )
+    session_log = _last_failed_dispatch_session_log(fs, repo_root, slug, render_feed_key(story_key))
+    prior_failed_attempts = _count_prior_failed_dispatch_attempts(fs, repo_root, slug, render_feed_key(story_key))
     tier_resolution = dispatch_core.resolve_tier_harness(
         effective_policy,
         difficulty=difficulty,
         session_log=session_log,
     )
-    model, escalated, from_model, to_model = (
-        dispatch_core.resolve_dispatch_model_with_retry_escalation(
-            effective_policy,
-            difficulty=difficulty,
-            prior_failed_attempts=prior_failed_attempts,
-        )
+    model, escalated, from_model, to_model = dispatch_core.resolve_dispatch_model_with_retry_escalation(
+        effective_policy,
+        difficulty=difficulty,
+        prior_failed_attempts=prior_failed_attempts,
     )
     budget_env = dispatch_core.build_budget_env(effective_policy)
     data["model"] = model
@@ -1714,21 +1924,24 @@ def dispatch_once(
     # every skipped candidate is a structured finding, never silent.
     # Story 28.11 (CAP-12): when the tier map names a harness for dev,
     # that profile leads the walk instead of the flat preference alone.
+    # Story 50.3 (CAP-246): an EXPLICIT `--harness` (the composed
+    # `harness_preference` FLAG layer, never the default/repo/project
+    # layer) outranks that tier-map lead -- the walk starts from the
+    # flag's own profiles and a tier-map harness the flag does not name
+    # contributes nothing to it. Without the flag (layer stays default/
+    # repo_defaults/project) this is unchanged: the tier map still leads.
     preference = tuple(effective_policy.harness_preference.value)
-    if tier_resolution.harness_profile is not None:
+    explicit_harness_flag = effective_policy.harness_preference.layer == policy.PolicyLayer.FLAG
+    if tier_resolution.harness_profile is not None and not explicit_harness_flag:
         preference = (tier_resolution.harness_profile,) + tuple(
             name for name in preference if name != tier_resolution.harness_profile
         )
-    preference = exclude_harness_profiles_after_transient_failure(
-        preference, session_log
-    )
+    preference = exclude_harness_profiles_after_transient_failure(preference, session_log)
     if not preference:
         preference = tuple(effective_policy.harness_preference.value)
     resolution = build_harness.binary_present(preference, repo_root=repo_root)
     for profile_error in resolution.profile_errors:
-        findings.append(
-            Finding(code="MRS-DISP-028", severity=Severity.WARN, message=profile_error)
-        )
+        findings.append(Finding(code="MRS-DISP-028", severity=Severity.WARN, message=profile_error))
     for skip in resolution.skipped:
         findings.append(
             Finding(
@@ -1751,6 +1964,100 @@ def dispatch_once(
         )
         return _done()
     data["harness_profile"] = resolution.profile
+
+    # 2026-09-12 (dispatch-tier-routing-fails-safe): the tier-mapped model
+    # was resolved BEFORE this live binary+authcheck walk ran, from a
+    # bare-string model_tier_map entry that carries no harness of its own
+    # (see core/tier_routing.py::resolve_tier_launch) -- so it can name a
+    # model that belongs to a DIFFERENT provider than whichever profile the
+    # walk above actually landed on (harness_preference has no bmad-loop
+    # counterpart, a candidate's auth/binary failed, a transient exclusion
+    # kicked in, etc.). render_policy_toml (the bmad-loop `spin` engine)
+    # already guards this same mismatch at render time; this is the SAME
+    # guard for the `dispatch` engine, applied once the REAL harness is
+    # known. A mismatch drops the model override entirely (never launches a
+    # real, live-verified harness with a model it was never meant to
+    # receive) rather than block the dispatch outright -- the harness's own
+    # default model is always a safe fallback.
+    resolved_provider = adapter_provider(resolution.profile)
+    catalog = effective_policy.model_cost_catalog.value
+    model_provider = provider_declaring_model(catalog, data["model"]) if data["model"] else None
+    # Story 51.5 (CAP-253): `provider_declaring_model` returns `None` both
+    # for a genuinely uncatalogued model id and, by documented design, for
+    # the harness's own default/alias ids (`sonnet`/`opus`/`haiku` -- the
+    # catalog is a declared PRICE snapshot, not a model registry, see
+    # `is_harness_default_model`). The ORIGINAL guard below only fired on
+    # the cross-provider case (`model_provider` names a DIFFERENT
+    # provider); widen it so a model catalogued under NO provider at all,
+    # and not one of the harness's own default/alias ids, ALSO WARNs --
+    # a genuinely foreign or mistyped model id must not reach a live
+    # launch uncaught -- while the cross-provider case and the harness's
+    # own default/alias ids stay exactly as before.
+    #
+    # `provider_declaring_model` also returns `None` whenever NO catalog is
+    # declared at all -- most stations (e.g. a cursor-only
+    # `harness_preference` with no `model_cost_catalog` block) never
+    # declare one. Without gating on `catalog_declared`, a correctly
+    # tier-mapped, correctly resolved model on one of those stations reads
+    # as "uncatalogued" too and gets its override dropped on every real
+    # dispatch. There is nothing to compare against when no catalog was
+    # ever declared, so that case must stay silent, same as pre-story --
+    # only a DECLARED catalog that omits the model is suspicious.
+    model_uncatalogued = (
+        data["model"] is not None
+        and model_provider is None
+        and not is_harness_default_model(data["model"])
+        and catalog_declared(catalog)
+    )
+    model_cross_provider = model_provider is not None and model_provider != resolved_provider
+    if model_cross_provider or model_uncatalogued:
+        if model_provider is not None:
+            provider_clause = (
+                f"is catalogued under provider {model_provider!r}, but the "
+                f"live-verified harness {resolution.profile!r} resolves to "
+                f"provider {resolved_provider!r}"
+            )
+        else:
+            provider_clause = (
+                "is catalogued under no known provider despite a declared "
+                "cost catalog, and is not the live-verified harness "
+                f"{resolution.profile!r}'s own default/alias model id"
+            )
+        findings.append(
+            Finding(
+                code="MRS-DISP-043",
+                severity=Severity.WARN,
+                message=(
+                    f"tier-mapped model {data['model']!r} {provider_clause} "
+                    "-- dropping the model override for this dispatch; the "
+                    "harness's own default applies"
+                ),
+            )
+        )
+        # Story 50.3: `model` (not just `data["model"]`) must drop too --
+        # it is what the intent journal entry and the live
+        # `build_harness.dispatch(model=model, ...)` call below actually
+        # use. Leaving the local variable at its mismatched value would
+        # journal and LAUNCH the foreign-provider model even though the
+        # envelope's own `data["model"]` correctly reported the drop.
+        model = None
+        # The escalation triple is read straight from these locals when the
+        # intent entry is built further down (`if escalated: ...`) -- if
+        # only `model` were reset, a run that had escalated before the
+        # mismatch fired would journal `model: null` alongside a stale
+        # `escalated: true`/`from_model`/`to_model`, a self-contradictory
+        # persisted entry.
+        escalated = False
+        from_model = None
+        to_model = None
+        data["model"] = None
+        data.pop("escalated", None)
+        data.pop("from_model", None)
+        data.pop("to_model", None)
+        if "resolved_models" in data:
+            data["resolved_models"] = {
+                stage: stage_model for stage, stage_model in data["resolved_models"].items() if stage != "dev"
+            }
 
     conflict = station_in_flight_conflict(
         fs=fs,
@@ -1788,9 +2095,7 @@ def dispatch_once(
     )
 
     try:
-        provisioned = _ensure_dispatch_worktree(
-            vcs, repo_root, slug, render_feed_key(story_key)
-        )
+        provisioned = _ensure_dispatch_worktree(vcs, repo_root, slug, render_feed_key(story_key))
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -1841,15 +2146,15 @@ def dispatch_once(
         )
         return _done()
     data["worktree_path"] = str(worktree)
-    output_finding = _seed_dispatch_output_layer(
-        fs=fs, worktree=worktree, context_payload=context_payload
-    )
+    worktree_scope_refusal = _seed_dispatch_worktree_scope(fs=fs, worktree=worktree, slug=slug)
+    if worktree_scope_refusal is not None:
+        findings.append(worktree_scope_refusal)
+        return _done()
+    output_finding = _seed_dispatch_output_layer(fs=fs, worktree=worktree, context_payload=context_payload)
     if output_finding is not None:
         findings.append(output_finding)
     try:
-        spec_path = dispatch_core.relocated_spec_path(
-            spec_path, repo_root, worktree
-        )
+        spec_path = dispatch_core.relocated_spec_path(spec_path, repo_root, worktree)
     except ValueError as exc:
         findings.append(
             Finding(
@@ -1902,9 +2207,7 @@ def dispatch_once(
     # Story 29.2: worktree spec status: done (follow-up not recommended)
     # is session-terminal. CAP-4 only — never another bmad-build-auto
     # because main's ledger is still backlog.
-    live_spec_text = _spec_text_prefer_worktree(
-        spec_path, repo_root, worktree, spec_text
-    )
+    live_spec_text = _spec_text_prefer_worktree(spec_path, repo_root, worktree, spec_text)
     if blocks_harness_relaunch(
         parse_spec_status(live_spec_text),
         followup_review_recommended(live_spec_text),
@@ -1936,6 +2239,26 @@ def dispatch_once(
                     story_key=render_feed_key(story_key),
                     named_target=named_target,
                     land_verdict=land_verdict.value,
+                ),
+            )
+        )
+        return _done()
+
+    # Story 51.4 (spec-pyforge-marshal CAP-252): a worktree spec left
+    # `status: blocked` by its last session (the 27.3 incident) must not be
+    # relaunched without an operator decision -- distinct from the `done`
+    # branch above, this never attempts a CAP-4 land either.
+    if parse_spec_status(live_spec_text) == "blocked":
+        data["harness_blocked_no_relaunch"] = True
+        findings.append(
+            Finding(
+                code="MRS-DISP-045",
+                severity=Severity.ERROR,
+                message=(
+                    f"story {render_feed_key(story_key)!r} worktree spec is "
+                    f"status: blocked -- not relaunching bmad-build-auto without "
+                    f"an operator decision (blocking condition: "
+                    f"{parse_blocking_condition(live_spec_text) or 'not stated'})"
                 ),
             )
         )
@@ -2096,10 +2419,7 @@ def dispatch_once(
             Finding(
                 code="MRS-DISP-009",
                 severity=Severity.WARN,
-                message=(
-                    f"session launched (pid {launch.pid}) but outcome journal "
-                    f"write failed: {exc}"
-                ),
+                message=(f"session launched (pid {launch.pid}) but outcome journal write failed: {exc}"),
             )
         )
 
@@ -2109,8 +2429,7 @@ def dispatch_once(
                 code="MRS-DISP-010",
                 severity=Severity.WARN,
                 message=(
-                    f"session harness reported pid {launch.pid} but the "
-                    "process is not alive immediately after launch"
+                    f"session harness reported pid {launch.pid} but the process is not alive immediately after launch"
                 ),
             )
         )
@@ -2247,13 +2566,8 @@ def _ensure_dispatch_supervision(
         "run_id": run_id,
         "story_key": journal.story_key,
     }
-    session_alive = (
-        journal.session_pid is not None and process.is_alive(journal.session_pid)
-    )
-    supervisor_alive = (
-        journal.supervisor_pid is not None
-        and process.is_alive(journal.supervisor_pid)
-    )
+    session_alive = journal.session_pid is not None and process.is_alive(journal.session_pid)
+    supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     verdict = resolve_dispatch_session_verdict(
         fs=fs,
         vcs=vcs,
@@ -2285,8 +2599,7 @@ def _ensure_dispatch_supervision(
                 code="MRS-DISP-023",
                 severity=Severity.ERROR,
                 message=(
-                    f"no live dispatch session on station {slug!r} "
-                    f"(session pid {journal.session_pid} is not alive)"
+                    f"no live dispatch session on station {slug!r} (session pid {journal.session_pid} is not alive)"
                 ),
             )
         )
@@ -2408,7 +2721,7 @@ def run_dispatch_attach(
                 file=sys.stderr,
                 flush=True,
             )
-        except (OSError, UnicodeEncodeError):
+        except OSError, UnicodeEncodeError:
             _suppress_downstream_pipe_close()
         return exit_code_for(compute_verdict((finding,)))
     loaded = _load_latest_dispatch_context(fs=fs, vcs=vcs, process=process, slug=slug)
@@ -2424,7 +2737,7 @@ def run_dispatch_attach(
                 file=sys.stderr,
                 flush=True,
             )
-        except (OSError, UnicodeEncodeError):
+        except OSError, UnicodeEncodeError:
             _suppress_downstream_pipe_close()
         return exit_code_for(compute_verdict((finding,)))
     repo_root, run_dir, run_id, journal, effective_policy = loaded
@@ -2449,7 +2762,7 @@ def run_dispatch_attach(
                         file=sys.stderr,
                         flush=True,
                     )
-        except (OSError, UnicodeEncodeError):
+        except OSError, UnicodeEncodeError:
             _suppress_downstream_pipe_close()
         return exit_code_for(compute_verdict(tuple(findings)))
     log_path = Path(str(data["log"]))
@@ -2476,7 +2789,7 @@ def run_dispatch_attach(
                 file=sys.stderr,
                 flush=True,
             )
-        except (OSError, UnicodeEncodeError):
+        except OSError, UnicodeEncodeError:
             _suppress_downstream_pipe_close()
         return exit_code_for(compute_verdict((finding,)))
     return 0
@@ -2610,10 +2923,7 @@ def add_factory_drain_subparser(factory_subparsers: argparse._SubParsersAction) 
         "--leave-remaining",
         type=int,
         default=1,
-        help=(
-            "Under --mode leave_one, how many backlog stories to leave "
-            "untouched per station (default: 1)."
-        ),
+        help=("Under --mode leave_one, how many backlog stories to leave untouched per station (default: 1)."),
     )
     parser.add_argument(
         "--once",
@@ -2681,9 +2991,7 @@ def add_factory_drain_subparser(factory_subparsers: argparse._SubParsersAction) 
     parser.set_defaults(handler=run_fleet_drain)
 
 
-def _preflight_explicit_story_specs(
-    repo_root: Path, slug: str, stories: tuple[str, ...]
-) -> tuple[str, ...]:
+def _preflight_explicit_story_specs(repo_root: Path, slug: str, stories: tuple[str, ...]) -> tuple[str, ...]:
     """Stories in ``stories`` with no tracked spec -- fast-fail before mint."""
     missing: list[str] = []
     for story in stories:
@@ -2716,10 +3024,67 @@ def _predicate_from_payload(raw: object) -> dispatch_re_preflight.RefusePredicat
     )
 
 
+def _primary_checkout_is_clean_main(vcs: VcsPort, repo_root: Path) -> bool:
+    """``True`` only when the primary checkout (``repo_root``) is a clean,
+    unmoved local ``main`` -- the same "is this checkout safe to trust"
+    gate ``cli/land.py::_resync_home_branch`` already encodes for
+    fast-forwarding (Story 51.9, re-mint of 51.3). Any git failure is
+    treated as "not safe to trust" rather than propagated -- the caller
+    falls back to reading ``origin/main`` directly in that case, never
+    crashes the campaign's own ledger read."""
+    try:
+        if vcs.has_uncommitted_changes(repo_root):
+            return False
+        return vcs.worktree_head_sha(repo_root) == vcs.resolve_ref(repo_root, "main")
+    except VcsCommandError:
+        return False
+
+
+def _station_ledger_statuses(
+    *,
+    harness: HarnessPort,
+    vcs: VcsPort,
+    repo_root: Path,
+    ledger_path: Path,
+) -> tuple[tuple[str, str], ...]:
+    """One station's ledger statuses (Story 51.9, re-mint of 51.3).
+
+    ``_promote_sprint_ledger`` (CAP-5) publishes a promotion onto
+    ``origin/main`` WITHOUT ever touching the primary checkout's own
+    working tree -- so a sibling station's finalize can promote a story to
+    ``done`` while this campaign's primary checkout sits stale, dirty, or
+    on a different branch. Trusts the local ``HarnessPort`` read only when
+    ``repo_root`` is verifiably a clean, unmoved ``main`` (byte-identical
+    to before this story); otherwise reads ``origin/main``'s own copy of
+    the ledger via ``VcsPort.file_text_at_ref`` and the pre-existing
+    ``_parse_sprint_ledger_statuses`` text scanner, falling back to the
+    local ``HarnessPort`` read when the remote read fails or the ledger is
+    absent at ``origin/main``. Raises only what
+    ``HarnessPort.ledger_story_statuses`` itself already raises -- every
+    call site's own pre-existing exception handling is unchanged."""
+    if _primary_checkout_is_clean_main(vcs, repo_root):
+        return harness.ledger_story_statuses(ledger_path)
+    remote_text: str | None = None
+    try:
+        rel_path = ledger_path.relative_to(dispatch_core.canonical_repo_root(repo_root)).as_posix()
+        # Review pass 2026-09-19 (VG1): refresh the local cache of
+        # `origin/main` first -- without this, a stale cached ref could
+        # silently defeat the fallback in exactly the scenario it exists
+        # to fix. Same swallow-and-fall-back handling as the read itself.
+        vcs.fetch(repo_root, "origin", "main")
+        remote_text = vcs.file_text_at_ref(repo_root, _BASE_REF, rel_path)
+    except VcsCommandError, ValueError:
+        remote_text = None
+    if remote_text is None:
+        return harness.ledger_story_statuses(ledger_path)
+    return tuple(_parse_sprint_ledger_statuses(remote_text).items())
+
+
 def gather_fleet_missing_spec_escalations(
     *,
     fs: FsPort,
     harness: HarnessPort,
+    vcs: VcsPort,
     repo_root: Path,
 ) -> dict[str, dispatch_fleet.MissingSpecEscalation]:
     """Active ``MRS-DISP-005`` campaign blocks that still lack a tracked spec.
@@ -2746,8 +3111,10 @@ def gather_fleet_missing_spec_escalations(
                 continue
             ledger_path = dispatch_fleet.station_ledger_path(repo_root, slug)
             try:
-                statuses = harness.ledger_story_statuses(ledger_path)
-            except (HarnessError, OSError, ValueError):
+                statuses = _station_ledger_statuses(
+                    harness=harness, vcs=vcs, repo_root=repo_root, ledger_path=ledger_path
+                )
+            except HarnessError, OSError, ValueError:
                 continue
             backlog = dispatch_fleet.station_backlog(statuses)
             if not backlog:
@@ -2822,15 +3189,29 @@ def _reconcile_campaign_blocked(
     try:
         fetch(repo_root, "origin", "main")
         subjects = vcs.commit_subjects(repo_root, _BASE_REF)
-    except (VcsCommandError, AttributeError):
+    except VcsCommandError, AttributeError:
         return blocked
     reconciled: dict[str, dict[str, str]] = {}
     for slug, station_blocked in blocked.items():
         effective_policy = _compose_policy(slug)
-        merged = promotion_core.merged_story_keys(
+
+        def _spec_status_for(candidate_key: StoryKey, *, _slug: str = slug) -> str | None:
+            # Story 51.7/CAP-255: the same station-branch corroboration
+            # `dispatch_land`/`dispatch_supervisor` apply -- a mint/
+            # fallout/fix PR's station-branch merge must not prune a
+            # campaign's blocked entry as though it had actually landed.
+            # Fails closed (never corroborates) on any git read failure.
+            try:
+                spec_text = dispatch_core.spec_text_at_ref(vcs, repo_root, _slug, str(candidate_key))
+            except VcsCommandError:
+                return None
+            return promotion_core.read_spec_status(spec_text)
+
+        merged = promotion_core.corroborated_merged_story_keys(
             subjects,
             effective_policy.merge_subject_template.value,
             slug,
+            spec_status_for=_spec_status_for,
         )
         merged_feed = frozenset(render_feed_key(key) for key in merged)
         reconciled[slug] = prune_blocked_stories_merged_on_main(
@@ -2986,7 +3367,7 @@ def _station_blocked_map(
                 story_key=story,
                 effective_policy=effective_policy,
             )
-        except (VcsCommandError, ValueError):
+        except VcsCommandError, ValueError:
             facts = None
         if facts is None:
             break
@@ -3014,19 +3395,14 @@ def _classify_attempt(
         # Advisories (e.g. CAP-5's MRS-DISP-022 overlap) still surface.
         findings.extend(attempt.findings)
         return dispatch_fleet.StationCycleStatus.DISPATCHED, None, findings
-    liveness = next(
-        (f for f in errors if f.code in {"MRS-DISP-011", "MRS-DISP-021"}), None
-    )
+    liveness = next((f for f in errors if f.code in {"MRS-DISP-011", "MRS-DISP-021"}), None)
     if liveness is not None:
         in_flight = attempt.data.get("in_flight_story")
         findings.append(
             Finding(
                 code="MRS-DRAIN-006",
                 severity=Severity.WARN,
-                message=(
-                    f"station {slug!r}: no dispatch this cycle -- "
-                    f"{liveness.code} {liveness.message}"
-                ),
+                message=(f"station {slug!r}: no dispatch this cycle -- {liveness.code} {liveness.message}"),
             )
         )
         detail = f"{liveness.code}: in flight {in_flight!r}" if in_flight else liveness.code
@@ -3077,9 +3453,7 @@ def _journal_dispatch_wave(
         }
         for r in wave.refused
     ]
-    wave_run = (
-        dispatch_core.dispatch_runs_dir(repo_root, slug) / "waves" / wave.wave_id
-    )
+    wave_run = dispatch_core.dispatch_runs_dir(repo_root, slug) / _DISPATCH_WAVES_DIRNAME / wave.wave_id
     fs.ensure_dir(wave_run)
     intent = build_entry(
         id=JournalEntryId(_wave_journal_writer_id(wave.wave_id), 0),
@@ -3137,9 +3511,7 @@ def execute_fleet_cycle(
     overrides, configured_skips, config_findings = _read_fleet_queue_config(fs, repo_root)
     findings.extend(config_findings)
 
-    slugs = dispatch_fleet.fleet_station_slugs(
-        dispatch_core.list_station_slugs(repo_root)
-    )
+    slugs = dispatch_fleet.fleet_station_slugs(dispatch_core.list_station_slugs(repo_root))
     if station is not None:
         normalized_station = dispatch_fleet.normalize_station_slug(station)
         if normalized_station not in slugs:
@@ -3185,7 +3557,7 @@ def execute_fleet_cycle(
     for slug in slugs:
         ledger_path = dispatch_fleet.station_ledger_path(repo_root, slug)
         try:
-            statuses = harness.ledger_story_statuses(ledger_path)
+            statuses = _station_ledger_statuses(harness=harness, vcs=vcs, repo_root=repo_root, ledger_path=ledger_path)
         except (HarnessError, OSError, ValueError) as exc:
             findings.append(
                 Finding(
@@ -3215,15 +3587,46 @@ def execute_fleet_cycle(
             else dispatch_fleet.station_backlog(
                 statuses,
                 order_override=overrides.get(slug),
-                deps_by_story=(
-                    None
-                    if overrides.get(slug)
-                    else _load_station_story_deps(fs, repo_root, slug)
-                ),
+                deps_by_story=(None if overrides.get(slug) else _load_station_story_deps(fs, repo_root, slug)),
             )
         )
         effective_policy = _compose_policy(slug, flags=policy_flags)
         station_skips = configured_skips.get(slug, {})
+        # Story 50.1 Part A: the ~45 s window between session exit and ledger
+        # promotion. Reported IN_FLIGHT (deliberately absent from
+        # TERMINAL_STATION_STATUSES), so this station provisions nothing this
+        # cycle and the campaign chains its next ready story on the following
+        # one instead of re-dispatching or blocking on the story it just landed.
+        finalize_pending = station_finalize_pending_story(
+            fs=fs,
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            backlog=backlog,
+            effective_policy=effective_policy,
+        )
+        if finalize_pending is not None:
+            pending_story, pending_evidence = finalize_pending
+            results.append(
+                dispatch_fleet.StationCycleResult(
+                    slug=slug,
+                    status=dispatch_fleet.StationCycleStatus.IN_FLIGHT,
+                    remaining=len(backlog),
+                    story=pending_story,
+                    detail=pending_evidence,
+                )
+            )
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-006",
+                    severity=Severity.WARN,
+                    message=(
+                        f"station {slug!r}: no dispatch this cycle -- story "
+                        f"{pending_story!r} is finalizing: {pending_evidence}"
+                    ),
+                )
+            )
+            continue
         blocked, block_classes = _station_blocked_map(
             fs=fs,
             vcs=vcs,
@@ -3246,20 +3649,18 @@ def execute_fleet_cycle(
             declared_skips=station_skips,
         )
         for story, reason in plan.skipped:
-            basis = (
-                "declared skip policy"
-                if story in station_skips
-                else (
-                    "harness-done CAP-4 (MRS-DISP-040); remaining backlog continues"
-                    if dispatch_fleet.is_harness_done_advance_reason(reason)
-                    else (
-                        "environment-classified block"
-                        if block_classes.get(story)
-                        is dispatch_fleet.FleetBlockClass.ENVIRONMENT
-                        else f"blocked, and {mode.value} skips past it"
-                    )
-                )
-            )
+            if story in station_skips:
+                basis = "declared skip policy"
+            elif dispatch_fleet.is_harness_done_advance_reason(reason):
+                basis = "harness-done CAP-4 (MRS-DISP-040); remaining backlog continues"
+            elif reason.startswith(dispatch_fleet.ALREADY_LANDED_ADVANCE_PREFIX):
+                # Story 50.1 Part B: named for what it is -- an advance past
+                # work that already landed -- never mislabelled "blocked".
+                basis = "already landed (Story 50.1); remaining backlog continues"
+            elif block_classes.get(story) is dispatch_fleet.FleetBlockClass.ENVIRONMENT:
+                basis = "environment-classified block"
+            else:
+                basis = f"blocked, and {mode.value} skips past it"
             findings.append(
                 Finding(
                     code="MRS-DRAIN-004",
@@ -3371,19 +3772,11 @@ def execute_fleet_cycle(
                 )
                 continue
             deps_graph = _load_station_deps_graph(repo_root, slug)
-            ready = dispatch_fleet.ordered_ready_backlog(
-                backlog, statuses, deps_graph
-            )
-            eligible = tuple(
-                story
-                for story in ready
-                if story not in blocked and story not in station_skips
-            )
+            ready = dispatch_fleet.ordered_ready_backlog(backlog, statuses, deps_graph)
+            eligible = tuple(story for story in ready if story not in blocked and story not in station_skips)
             surfaces: dict[str, tuple[str, ...] | None] = {}
             for story in eligible:
-                spec_path = dispatch_core.resolve_story_spec_path(
-                    repo_root, slug, story
-                )
+                spec_path = dispatch_core.resolve_story_spec_path(repo_root, slug, story)
                 if spec_path is None:
                     surfaces[story] = None
                     continue
@@ -3401,9 +3794,7 @@ def execute_fleet_cycle(
                     )
                 except ValueError:
                     surfaces[story] = None
-            wave_id = mint_run_id(
-                slug, _format_utc_compact(_now_utc()), _random_token()
-            )
+            wave_id = mint_run_id(slug, _format_utc_compact(_now_utc()), _random_token())
             wave = dispatch_fleet.build_wave_batch(
                 wave_id=wave_id,
                 ready=eligible,
@@ -3413,30 +3804,18 @@ def execute_fleet_cycle(
             )
             stories_to_dispatch = wave.members
             if wave.members:
-                _journal_dispatch_wave(
-                    fs, repo_root, slug, wave, surfaces=surfaces
-                )
+                _journal_dispatch_wave(fs, repo_root, slug, wave, surfaces=surfaces)
             for ref in wave.refused:
-                overlap = (
-                    f" (overlap with {ref.overlap_with}: {', '.join(ref.paths)})"
-                    if ref.overlap_with
-                    else ""
-                )
+                overlap = f" (overlap with {ref.overlap_with}: {', '.join(ref.paths)})" if ref.overlap_with else ""
                 findings.append(
                     Finding(
                         code="MRS-DRAIN-016",
                         severity=Severity.WARN,
-                        message=(
-                            f"station {slug!r}: wave {wave_id} refused "
-                            f"{ref.story!r}: {ref.reason}{overlap}"
-                        ),
+                        message=(f"station {slug!r}: wave {wave_id} refused {ref.story!r}: {ref.reason}{overlap}"),
                     )
                 )
             if wave.members:
-                wave_detail = (
-                    f"wave {wave_id}: {', '.join(wave.members)} "
-                    f"(max_parallel={parallel_cap})"
-                )
+                wave_detail = f"wave {wave_id}: {', '.join(wave.members)} (max_parallel={parallel_cap})"
 
         if not stories_to_dispatch:
             results.append(
@@ -3492,14 +3871,9 @@ def execute_fleet_cycle(
             status, detail, attempt_findings = _classify_attempt(slug, story, attempt)
             findings.extend(attempt_findings)
             if status is dispatch_fleet.StationCycleStatus.REFUSED:
-                campaign_blocked.setdefault(slug, {})[story] = (
-                    detail or "dispatch refused"
-                )
+                campaign_blocked.setdefault(slug, {})[story] = detail or "dispatch refused"
                 refused_any = True
-                if (
-                    parallel_cap <= 1
-                    and dispatch_fleet.is_harness_done_advance_reason(detail or "")
-                ):
+                if parallel_cap <= 1 and dispatch_fleet.is_harness_done_advance_reason(detail or ""):
                     follow_blocked, follow_classes = _station_blocked_map(
                         fs=fs,
                         vcs=vcs,
@@ -3582,22 +3956,15 @@ def execute_fleet_cycle(
         "stations": [result.to_payload() for result in results],
         "remaining_total": sum(result.remaining for result in results),
         "dispatched": [
-            result.slug
-            for result in results
-            if result.status is dispatch_fleet.StationCycleStatus.DISPATCHED
+            result.slug for result in results if result.status is dispatch_fleet.StationCycleStatus.DISPATCHED
         ],
         # What `complete` does NOT mean: `complete` is "this campaign can do
         # nothing more", and these stations still have work marshal could not
         # take (unreadable ledger, blocked head story, everything skipped,
         # `leave_one`'s deliberate tail).
-        "unresolved": [
-            {"station": r.slug, "status": r.status.value, "remaining": r.remaining}
-            for r in unresolved
-        ],
+        "unresolved": [{"station": r.slug, "status": r.status.value, "remaining": r.remaining} for r in unresolved],
     }
-    return FleetCycleReport(
-        results=tuple(results), findings=tuple(findings), data=data
-    )
+    return FleetCycleReport(results=tuple(results), findings=tuple(findings), data=data)
 
 
 def _campaign_blocked_from_journal(
@@ -3615,7 +3982,7 @@ def _campaign_blocked_from_journal(
     predicates: dict[str, dict[str, dispatch_re_preflight.RefusePredicate]] = {}
     try:
         text = fs.read_text(run_dir / _JOURNAL_FILENAME)
-    except (FsError, ValueError):
+    except FsError, ValueError:
         return blocked, predicates
     if text is None:
         return blocked, predicates
@@ -3638,7 +4005,7 @@ def _campaign_blocked_from_journal(
     for ref in _sidecar_refs_for_fold(lines):
         try:
             sidecars[ref] = fs.read_text(run_dir / ref)
-        except (FsError, ValueError):
+        except FsError, ValueError:
             sidecars[ref] = None
     folded = fold(lines, sidecars=sidecars)
     for entry in folded.by_kind(dispatch_fleet.KIND_FLEET_CYCLE):
@@ -3657,9 +4024,7 @@ def _campaign_blocked_from_journal(
             if not isinstance(slug, str) or not isinstance(story, str):
                 continue
             detail = row.get("detail")
-            blocked.setdefault(slug, {})[story] = (
-                detail if isinstance(detail, str) and detail else "dispatch refused"
-            )
+            blocked.setdefault(slug, {})[story] = detail if isinstance(detail, str) and detail else "dispatch refused"
             predicate = _predicate_from_payload(row.get("refuse_predicate"))
             if predicate is not None:
                 predicates.setdefault(slug, {})[story] = predicate
@@ -3795,9 +4160,7 @@ def run_fleet_drain(
     try:
         mode = dispatch_fleet.parse_campaign_mode(getattr(args, "mode", None))
     except dispatch_fleet.InvalidCampaignModeError as exc:
-        findings.append(
-            Finding(code="MRS-DRAIN-001", severity=Severity.ERROR, message=str(exc))
-        )
+        findings.append(Finding(code="MRS-DRAIN-001", severity=Severity.ERROR, message=str(exc)))
         return _emit(args, data, findings, command="factory drain")
     data["mode"] = mode.value
 
@@ -3908,9 +4271,7 @@ def run_fleet_drain(
         # launch in every way that matters here, so it is validated like
         # one rather than trusted as a resume (review finding, Story
         # 22.11 patch pass).
-        is_resumed = raw_campaign is not None and fs.is_dir(
-            dispatch_fleet.fleet_run_dir(repo_root, str(raw_campaign))
-        )
+        is_resumed = raw_campaign is not None and fs.is_dir(dispatch_fleet.fleet_run_dir(repo_root, str(raw_campaign)))
         if not is_resumed:
             assert station is not None  # enforced above: --stories requires --station
             # Check station liveness BEFORE touching the filesystem for its
@@ -3919,9 +4280,7 @@ def run_fleet_drain(
             # MRS-DRAIN-015 ledger-read failure (review finding, Story 22.11
             # patch pass; `execute_fleet_cycle` re-checks this too, cheaply,
             # on every cycle).
-            live_slugs = dispatch_fleet.fleet_station_slugs(
-                dispatch_core.list_station_slugs(repo_root)
-            )
+            live_slugs = dispatch_fleet.fleet_station_slugs(dispatch_core.list_station_slugs(repo_root))
             if station not in live_slugs:
                 findings.append(
                     Finding(
@@ -3936,7 +4295,9 @@ def run_fleet_drain(
                 return _emit(args, data, findings, command="factory drain")
             ledger_path = dispatch_fleet.station_ledger_path(repo_root, station)
             try:
-                statuses = harness.ledger_story_statuses(ledger_path)
+                statuses = _station_ledger_statuses(
+                    harness=harness, vcs=vcs, repo_root=repo_root, ledger_path=ledger_path
+                )
             except (HarnessError, OSError, ValueError) as exc:
                 findings.append(
                     Finding(
@@ -3952,9 +4313,7 @@ def run_fleet_drain(
                 )
                 return _emit(args, data, findings, command="factory drain")
             backlog = dispatch_fleet.station_backlog(statuses)
-            unresolved = dispatch_fleet.unresolved_story_sequence_keys(
-                explicit_stories, backlog
-            )
+            unresolved = dispatch_fleet.unresolved_story_sequence_keys(explicit_stories, backlog)
             if unresolved:
                 findings.append(
                     Finding(
@@ -3969,9 +4328,7 @@ def run_fleet_drain(
                     )
                 )
                 return _emit(args, data, findings, command="factory drain")
-            missing_specs = _preflight_explicit_story_specs(
-                repo_root, station, explicit_stories
-            )
+            missing_specs = _preflight_explicit_story_specs(repo_root, station, explicit_stories)
             if missing_specs:
                 findings.append(
                     Finding(
@@ -3989,9 +4346,7 @@ def run_fleet_drain(
 
     policy_flags = _policy_flags_from_harness_arg(getattr(args, "harness", None))
     if policy_flags:
-        data["harness_preference_override"] = list(
-            policy_flags.get("harness_preference", ())
-        )
+        data["harness_preference_override"] = list(policy_flags.get("harness_preference", ()))
 
     run_id = raw_campaign or mint_run_id(
         dispatch_fleet.FLEET_JOURNAL_SLUG,
@@ -4040,9 +4395,7 @@ def run_fleet_drain(
         return _emit(args, data, findings, command="factory drain")
 
     try:
-        campaign_blocked, prior_predicates = _campaign_blocked_from_journal(
-            fs, run_dir, run_id
-        )
+        campaign_blocked, prior_predicates = _campaign_blocked_from_journal(fs, run_dir, run_id)
         campaign_blocked = _reconcile_campaign_blocked(
             vcs=vcs,
             repo_root=repo_root,
@@ -4069,9 +4422,7 @@ def run_fleet_drain(
             explicit_stories=explicit_stories,
             policy_flags=policy_flags or None,
             max_in_flight=getattr(args, "max_in_flight", None),
-            retry_environment_blocks=bool(
-                getattr(args, "retry_environment_blocks", False)
-            ),
+            retry_environment_blocks=bool(getattr(args, "retry_environment_blocks", False)),
         )
         _journal_fleet_cycle(fs, run_dir, run_id, report, findings)
     finally:
@@ -4130,6 +4481,6 @@ def run_fleet_drain(
     if getattr(args, "format", "text") != "json":
         try:
             print(dispatch_fleet.render_cycle_summary(report.results), flush=True)
-        except (OSError, UnicodeEncodeError):
+        except OSError, UnicodeEncodeError:
             _suppress_downstream_pipe_close()
     return _emit(args, data, findings, command="factory drain")

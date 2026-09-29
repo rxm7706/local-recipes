@@ -2,7 +2,7 @@
 title: Marshal gains the missing liveness primitive
 type: feature
 created: '2026-08-24'
-status: shipped
+status: done
 updated: '2026-08-24'
 context: []
 warnings: []
@@ -44,8 +44,14 @@ baseline_revision: 4f978f3213b
 
 ## Auto Run Result
 
-Status: shipped
+Status: done
+Reconciled 2026-09-20: `shipped` is the Spec-level word; a story's terminal state is `done` (ledger row `24-1-marshal-gains-the-missing-liveness-primitive: done`).
 PR: https://github.com/rxm7706/local-recipes/pull/718 (admin merge — GitHub Actions billing blocker; local tests green: 6291 passed)
 Merge SHA: `67ae6237a4d731da2ca4a039fdf9e647f9730e0e`
 Implementation: `HarnessPort.engine_liveness` + `BmadLoopHarness.engine_liveness` via `bmad-loop status <run_id> --json` gate + `list --json` liveness-aware status mapping; spec-3-7 deferred entry updated.
 Spec change: `list --json` carries `discover_runs`' engine liveness tri-state; `status --json` alone is run-state-only.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `24-1-marshal-gains-the-missing-liveness-primitive: done`).
+- Auto Run Result `Status: shipped` → `done` (see the reconcile line under it).

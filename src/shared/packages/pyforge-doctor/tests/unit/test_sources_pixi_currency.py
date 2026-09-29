@@ -91,7 +91,7 @@ def _write_dream_and_pixi(repo: Path) -> None:
     dream = repo / "docs" / "dreams"
     dream.mkdir(parents=True, exist_ok=True)
     (dream / "pixi-candidate-currency.md").write_text(_MINIMAL_DREAM, encoding="utf-8")
-    (repo / "pixi.toml").write_text("[project]\nname = \"test\"\n", encoding="utf-8")
+    (repo / "pixi.toml").write_text('[project]\nname = "test"\n', encoding="utf-8")
 
 
 def test_within_threshold_reports_ok(tmp_path: Path) -> None:
@@ -104,16 +104,14 @@ def test_within_threshold_reports_ok(tmp_path: Path) -> None:
     assert findings[0].check == "pixi-currency-ledger-current"
 
 
-def test_past_threshold_reports_warn_per_ledger(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_past_threshold_reports_warn_per_ledger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pixi_currency, "PIXI_CURRENCY_LEDGER_STALENESS_PIXI_COMMITS", 1)
     _init_repo(tmp_path)
     _write_dream_and_pixi(tmp_path)
     _commit_all(tmp_path, "seed dream and pixi")
     pixi = tmp_path / "pixi.toml"
     for i in range(3):
-        pixi.write_text(f"[project]\nname = \"test-{i}\"\n", encoding="utf-8")
+        pixi.write_text(f'[project]\nname = "test-{i}"\n', encoding="utf-8")
         _commit_all(tmp_path, f"pixi bump {i}")
     findings = pixi_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "pixi-currency-ledger-stale"]
@@ -124,7 +122,7 @@ def test_past_threshold_reports_warn_per_ledger(
 
 def test_unreadable_dream_degrades_to_named_finding(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    (tmp_path / "pixi.toml").write_text("[project]\nname = \"x\"\n", encoding="utf-8")
+    (tmp_path / "pixi.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     _commit_all(tmp_path, "pixi only")
     findings = pixi_currency.gather(tmp_path)
     assert len(findings) == 1
@@ -152,7 +150,7 @@ def test_unreadable_ledger_section_degrades_to_named_finding(tmp_path: Path) -> 
         "# missing ledger headings\n",
         encoding="utf-8",
     )
-    (tmp_path / "pixi.toml").write_text("[project]\nname = \"x\"\n", encoding="utf-8")
+    (tmp_path / "pixi.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     _commit_all(tmp_path, "broken dream")
     findings = pixi_currency.gather(tmp_path)
     unreadable = [f for f in findings if f.check == "pixi-currency-ledger-unreadable"]

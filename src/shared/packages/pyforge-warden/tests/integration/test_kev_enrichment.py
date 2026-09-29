@@ -35,8 +35,8 @@ from pyforge.warden import feeds
 from pyforge.warden.cli import main
 from pyforge.warden.engines import OsvEngine
 from pyforge.warden.inventory import PypiIdentity, ResolvedInventory
-from pyforge.warden.models import AXIS_VULNERABILITY, ScannedManifest
-from pyforge.warden.vuln import OSV_DB_CACHE_ENV_VAR, db_zip_path
+from pyforge.warden.models import ScannedManifest
+from pyforge.warden.vuln import OSV_DB_CACHE_ENV_VAR
 
 TESTS_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = TESTS_ROOT / "fixtures"
@@ -126,13 +126,9 @@ def _kev_cache_without_match(tmp_path: Path) -> Path:
 # --- OsvEngine.run() level: kev/kev_date stamping + kev_data provenance -----
 
 
-def test_kev_match_stamps_kev_true_and_kev_date(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_kev_match_stamps_kev_true_and_kev_date(monkeypatch, tmp_path, offline_cache, component_factory):
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_with_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_with_match(tmp_path)))
     inventory = _inventory(component_factory)
 
     result = OsvEngine(fail_on_kev=True).run(tmp_path, inventory)
@@ -147,13 +143,9 @@ def test_kev_match_stamps_kev_true_and_kev_date(
     assert result.kev_data.max_age_ok is True
 
 
-def test_no_kev_match_stamps_kev_false(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_no_kev_match_stamps_kev_false(monkeypatch, tmp_path, offline_cache, component_factory):
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_without_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_without_match(tmp_path)))
     inventory = _inventory(component_factory)
 
     result = OsvEngine(fail_on_kev=True).run(tmp_path, inventory)
@@ -165,16 +157,12 @@ def test_no_kev_match_stamps_kev_false(
     assert result.kev_data is not None
 
 
-def test_fail_on_kev_false_never_consults_the_kev_cache(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_fail_on_kev_false_never_consults_the_kev_cache(monkeypatch, tmp_path, offline_cache, component_factory):
     """Matrix row 3: with the gate off, the KEV cache is never even opened
     -- every finding's kev stays None, and kev_data stays None, even though
     a real match is sitting right there waiting to be found."""
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_with_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_with_match(tmp_path)))
     inventory = _inventory(component_factory)
 
     result = OsvEngine(fail_on_kev=False).run(tmp_path, inventory)
@@ -187,9 +175,7 @@ def test_fail_on_kev_false_never_consults_the_kev_cache(
     assert not any(f.id.startswith("indeterminate:kev-") for f in result.findings)
 
 
-def test_kev_feed_absent_forces_whole_axis_indeterminate(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_kev_feed_absent_forces_whole_axis_indeterminate(monkeypatch, tmp_path, offline_cache, component_factory):
     """Matrix row 4: no usable KEV cache -- the whole vulnerability axis
     lands indeterminate via one kev-data-unavailable finding; kev_data is
     None; the underlying vuln: finding's own kev stays None (never
@@ -218,16 +204,12 @@ def test_kev_cache_vanishing_between_load_and_provenance_is_unavailable_not_a_cr
     -- never let the race propagate as an uncaught ``OSError`` that would
     crash the whole engine run and discard every vuln finding."""
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_with_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_with_match(tmp_path)))
 
     def _raise_missing(**_kwargs):
         raise FileNotFoundError("cache file vanished between read and stat")
 
-    monkeypatch.setattr(
-        "pyforge.warden.engines.feeds.feed_provenance", _raise_missing
-    )
+    monkeypatch.setattr("pyforge.warden.engines.feeds.feed_provenance", _raise_missing)
     inventory = _inventory(component_factory)
 
     result = OsvEngine(fail_on_kev=True).run(tmp_path, inventory)
@@ -310,9 +292,7 @@ def test_kev_match_forces_exit_1_regardless_of_cvss_tier(monkeypatch, tmp_path, 
     and a KEV cache carrying its aliased CVE, the composed status is
     policy-violation and the exit code is 1 -- independent of the CVSS
     tier that would otherwise only warn."""
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_with_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_with_match(tmp_path)))
     rc, out, err = run_scan(capsys, VULN_KEV)
     document = parse_report(out)
 
@@ -330,17 +310,13 @@ def test_kev_match_forces_exit_1_regardless_of_cvss_tier(monkeypatch, tmp_path, 
     assert err == ""
 
 
-def test_fail_on_kev_false_is_byte_identical_cvss_only_gating(
-    monkeypatch, tmp_path, capsys
-):
+def test_fail_on_kev_false_is_byte_identical_cvss_only_gating(monkeypatch, tmp_path, capsys):
     """AC2, end to end: the SAME KEV-matching cache, but `fail-on-kev =
     false` in the fixture's own [tool.pyforge-warden] table -- the KEV
     cache is never consulted (matrix "Policy off" row), every finding's
     kev stays null, and the MEDIUM-tier match's default warn/exit-0
     CVSS-only gating survives untouched."""
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_with_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_kev_cache_with_match(tmp_path)))
     rc, out, err = run_scan(capsys, VULN_KEV_FAIL_ON_KEV_FALSE)
     document = parse_report(out)
 
@@ -356,9 +332,7 @@ def test_fail_on_kev_false_is_byte_identical_cvss_only_gating(
     assert err == ""
 
 
-def test_kev_feed_absent_end_to_end_composes_indeterminate(
-    monkeypatch, tmp_path, capsys
-):
+def test_kev_feed_absent_end_to_end_composes_indeterminate(monkeypatch, tmp_path, capsys):
     """Matrix row 4, end to end: no usable KEV cache while fail-on-kev is
     active composes indeterminate/exit 1 -- never a silent pass, even
     though the underlying CVSS match would otherwise only warn."""

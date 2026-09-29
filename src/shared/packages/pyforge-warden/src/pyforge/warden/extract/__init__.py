@@ -50,12 +50,12 @@ class UnparsableManifestError(PyforgeError, ValueError):
 
 # Imported AFTER UnparsableManifestError so extractor modules can import the
 # class from this (then partially-initialized) package without a cycle.
+from .environment_yml import EnvironmentYmlExtractor  # noqa: E402
 from .lockfiles import CondaLockExtractor, PixiLockExtractor  # noqa: E402
+from .meta_v0 import MetaV0Extractor  # noqa: E402
+from .pixi import PixiTomlExtractor  # noqa: E402
 from .pyproject import PyprojectExtractor  # noqa: E402
 from .recipe_v1 import RecipeV1Extractor  # noqa: E402
-from .meta_v0 import MetaV0Extractor  # noqa: E402
-from .environment_yml import EnvironmentYmlExtractor  # noqa: E402
-from .pixi import PixiTomlExtractor  # noqa: E402
 
 
 def extractor_for(

@@ -18,9 +18,7 @@ def test_bites_on_spurious_column():
     """A node growing a column the expected frame does not have MUST fail
     (the B1 under-check derived columns from EXPECTED only, so this passed)."""
     expected = pd.DataFrame([{"a": 1, "b": "x"}, {"a": 2, "b": "y"}])
-    actual = pd.DataFrame(
-        [{"a": 1, "b": "x", "sneaky": 9}, {"a": 2, "b": "y", "sneaky": 9}]
-    )
+    actual = pd.DataFrame([{"a": 1, "b": "x", "sneaky": 9}, {"a": 2, "b": "y", "sneaky": 9}])
     result = compare_frames(actual, expected)
     assert not result.ok
     assert "sneaky" in result.spurious_columns
@@ -82,12 +80,8 @@ def test_does_not_false_fail_on_json_null_vs_nan():
 
 def test_does_not_false_fail_on_list_valued_columns():
     """List cells (subdirs/maintainers) compare by content, unhashable-safe."""
-    expected = pd.DataFrame(
-        [{"pkg": "a", "subdirs": ["linux-64", "noarch"]}, {"pkg": "b", "subdirs": []}]
-    )
-    actual = pd.DataFrame(
-        [{"pkg": "b", "subdirs": []}, {"pkg": "a", "subdirs": ["linux-64", "noarch"]}]
-    )
+    expected = pd.DataFrame([{"pkg": "a", "subdirs": ["linux-64", "noarch"]}, {"pkg": "b", "subdirs": []}])
+    actual = pd.DataFrame([{"pkg": "b", "subdirs": []}, {"pkg": "a", "subdirs": ["linux-64", "noarch"]}])
     assert compare_frames(actual, expected).ok
 
 

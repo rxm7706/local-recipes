@@ -2,8 +2,11 @@
 title: A normalized data model and REST API pattern, waiting for a PyForge-native subject
 type: dream
 owner: atlas
-status: dreamt
+status: archived
+sibling-acknowledged: b1040120b8ca40658449f004523d9555a32e1e874c15cdd627f15a64d5d1de71
 ---
+
+> **Consolidated into** [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) on 2026-09-17 (one-chain-per-station CAP-3). This file is the record; new work appends to the station Dream.
 
 # A normalized data model and REST API pattern, waiting for a PyForge-native subject
 

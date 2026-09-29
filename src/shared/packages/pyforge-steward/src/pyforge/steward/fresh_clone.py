@@ -18,17 +18,15 @@ from .suite import (
     INSTALL_MATRIX_REL,
     SUITE_PACKAGES,
     probe_wired,
+)
+from .suite import (
     repo_root as suite_repo_root,
 )
 
 FRESH_CLONE_HEADING = "## Fresh-clone class-path (CAP-3)"
-_NATIVE_CMD = re.compile(
-    r"`((?:npx |uv tool install |corepack |pnpm |cd )[^`]+)`"
-)
+_NATIVE_CMD = re.compile(r"`((?:npx |uv tool install |corepack |pnpm |cd )[^`]+)`")
 _IMPROVISED_INSTALLER = re.compile(r"\bnew\s+Installer\b|\bInstaller\s*\(")
-_MODULE_SKF_COMMAND = re.compile(
-    r"steward\s+provision\s+--module\s+skf\b", re.IGNORECASE
-)
+_MODULE_SKF_COMMAND = re.compile(r"steward\s+provision\s+--module\s+skf\b", re.IGNORECASE)
 _DELETED_DASHBOARD_TASKS = (
     "dashboard-gen",
     "dashboard-watch",
@@ -116,9 +114,7 @@ def matrix_path(repo: Path) -> Path:
 def fresh_clone_section(playbook_text: str) -> str:
     idx = playbook_text.find(FRESH_CLONE_HEADING)
     if idx < 0:
-        raise FreshCloneError(
-            f"playbook missing {FRESH_CLONE_HEADING!r} — CAP-3 path is undocumented"
-        )
+        raise FreshCloneError(f"playbook missing {FRESH_CLONE_HEADING!r} — CAP-3 path is undocumented")
     rest = playbook_text[idx:]
     nxt = rest.find("\n## ", 1)
     return rest if nxt < 0 else rest[:nxt]
@@ -233,8 +229,5 @@ def prove(repo: Path | None = None) -> FreshCloneReport:
         )
     for outcome in outcomes:
         if not outcome.ok:
-            failures.append(
-                f"{outcome.name}: expected {outcome.expected!r} got {outcome.actual!r}"
-                f" ({outcome.detail})"
-            )
+            failures.append(f"{outcome.name}: expected {outcome.expected!r} got {outcome.actual!r} ({outcome.detail})")
     return FreshCloneReport(outcomes=tuple(outcomes), failures=tuple(failures))

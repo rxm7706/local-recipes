@@ -1,9 +1,10 @@
 ---
+fold-exemption: governance
 spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-09-11"
+updated: "2026-09-12"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -452,9 +453,21 @@ they are why this is not merely a UI project.
     with no access to any operator's home directory, and a completed run's timing survives the
     workstation that produced it.
   - **verified:** front-door `/runs/` from `RunState` + no home-dir literals live in
-    `src/platform/tests/test_front_door_queries_supervisor.py:57-243`; marshal loop homes still
-    filesystem-backed (`pyforge-marshal/src/pyforge/marshal/cli/init.py:336`); deployed
-    egress-blocked proof unexercised.
+    `src/platform/tests/test_front_door_queries_supervisor.py:57-243`; marshal's own publisher +
+    held-run lifecycle landed (Story 33.4, 33.12 — `pyforge-marshal/tests/meta/test_publisher_single_importer.py`,
+    `pyforge-marshal/tests/meta/test_no_loop_home_run_state_read.py`) and doctor/`cli/init.py`/`cli/spin.py`
+    read the published plane first, filesystem only as fallback when it's unreachable; the
+    mechanism-tier proof (`platform-ci-local --test` publish→exit→timing-survives + egress guard +
+    no-hostPath invariant) is landed and passing (Story 33.13). **The deployed, egress-blocked CRC
+    exercise is DONE (2026-09-12, `spec-run-state-one-publisher/verification-2026-09-12.md`):** a real
+    `HostPublisher` process, run from a workstation against a real deployed CRC cluster with
+    `networkPolicy.enabled: true` live, published a run through `/stations/marshal/mcp`, heartbeat'd
+    and completed it, then exited; a completely separate process querying `/runs/` afterward showed
+    the run under "Completed timing" with its real duration — timing surviving the workstation that
+    produced it, proven live, not simulated. Closing this required fixing a genuinely un-specced gap
+    found along the way (the mcp-host sidecar had never hosted any station's real MCP tools;
+    `docs/dreams/mcp-host-real-station-tools.md` / `spec-mcp-host-real-station-tools`, shipped the
+    same day) plus a second, previously-unreachable client/server wire-contract bug it uncovered.
   - *(Added 2026-08-24 by operator ruling. The retired console read `~/.bmad-loops`, tmux sessions
     and journal files directly, so three of its surfaces degraded to `unavailable` when published.
     Choosing to keep those surfaces is what makes this a capability rather than an answered

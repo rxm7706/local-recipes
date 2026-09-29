@@ -66,11 +66,7 @@ def _parse(path: Path) -> ast.Module:
 
 
 def _seed_attribute_violations(tree: ast.Module) -> list[int]:
-    return sorted(
-        node.lineno
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Attribute) and node.attr == "_seed"
-    )
+    return sorted(node.lineno for node in ast.walk(tree) if isinstance(node, ast.Attribute) and node.attr == "_seed")
 
 
 def test_package_scan_surface_is_not_empty():
@@ -92,9 +88,7 @@ def test_no_seed_attribute_access_outside_policy(module_path: Path):
 
 def test_policy_module_defines_seed_view():
     assert hasattr(policy, "EffectivePolicy"), "core/policy.py is missing EffectivePolicy"
-    assert hasattr(policy.EffectivePolicy, "seed_view"), (
-        "core/policy.py's EffectivePolicy is missing seed_view"
-    )
+    assert hasattr(policy.EffectivePolicy, "seed_view"), "core/policy.py's EffectivePolicy is missing seed_view"
 
 
 # --- detector self-test: non-vacuous proof ----------------------------------
@@ -113,8 +107,6 @@ def test_guard_is_alive_synthetic_violation_fires_and_policy_defines_seed_view()
     class_methods: dict[str, set[str]] = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
-            class_methods[node.name] = {
-                item.name for item in node.body if isinstance(item, ast.FunctionDef)
-            }
+            class_methods[node.name] = {item.name for item in node.body if isinstance(item, ast.FunctionDef)}
     assert "EffectivePolicy" in class_methods
     assert "seed_view" in class_methods["EffectivePolicy"]

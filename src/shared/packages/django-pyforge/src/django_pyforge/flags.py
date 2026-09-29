@@ -121,6 +121,15 @@ def evaluate_boolean(key: str = FLAG_KEY, default: bool = False) -> bool:
     return bool(api.get_client().get_boolean_value(key, default))
 
 
+def evaluate_cutover_root(source: Path | str | None = None) -> str:
+    """In-process cutover root — same file the FILE provider serves."""
+    from pyforge.core.cutover_root import read_cutover_root
+
+    path = resolve_flags_path(source)
+    return read_cutover_root(path)
+
+
+
 def materialize_tree_bytes(data: bytes, dest: Path) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(data)

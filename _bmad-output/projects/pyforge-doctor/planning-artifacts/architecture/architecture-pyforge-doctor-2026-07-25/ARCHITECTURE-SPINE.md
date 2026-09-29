@@ -1,22 +1,65 @@
 ---
-name: 'pyforge-doctor'
+name: pyforge-doctor
 type: architecture-spine
 purpose: build-substrate
 altitude: feature
-paradigm: 'facade over existing instruments (pipes-and-filters gather → normalize → rank)'
-scope: 'pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an in-repo pixi workspace member consolidating pyforge-warden + cf_atlas'
+paradigm: facade over existing instruments (pipes-and-filters gather → normalize →
+  rank)
+scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an in-repo
+  pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-09-07'  # RE-STAMPED 2026-09-07: currency-only cascade (spec memlog -> PRD -> spine) from marshal Story 31.1's cross-station classify()/orphan-file rule additions (factory.py, hygiene_definitions.py) for TEA's new test-design artifact shape; no AD added, changed, or removed. Prior: RE-STAMPED 2026-09-04: currency-only cascade (spec memlog -> PRD -> spine) from the fleet hygiene pass, PR #1043; no AD added, changed, or removed.
-currency_review: "Reviewed 2026-08-29 — chain-currency sweep cascade (the PRD re-dated 2026-08-29 after its own spec-pyforge-doctor reconciliation, five bookkeeping entries, no new capability). Appended § Currency reconciliation — 2026-08-29: the four sources/ modules named (chain.py, marshal.py, factory.py, board.py) are already in the as-built inventory below; PRs #903/#904/#906/#907 are bug fixes inside them, no module boundary moved, no AD reopened. No content change required. Prior: Reviewed 2026-08-26 — chain-currency sweep cascade (the PRD re-dated after reconciling against SPEC-doctor + the 2026-08-08 research refresh). Appended § Currency reconciliation — 2026-08-26: as-built module inventory vs. the Structural Seed (normalize.py and a standalone cli.py never shipped as drawn; sources/ grew to a 13-module conformance-verdict home with its own dispatcher), AD-1..AD-6 verified held, AD-11..AD-13's standing confirmed, Epic 17 hooks + Epic 18 Canopy tiers recorded. AD-11..AD-13 were appended 2026-08-08/2026-08-21 without a frontmatter bump at the time — this stamp covers them. Prior: Reviewed 2026-08-02 — the PRD's 2026-08-02 dream-consolidation pass added §4.5 (FR-10..FR-13); added the Frontier section (AD-7..AD-10)."
-binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13]
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+currency_review: 'Reviewed 2026-09-24 — prd→arch cascade (doctor Story 30.3 landing;
+  the PRD re-dated 2026-09-24 reconciling against spec-pyforge-doctor''s 2026-09-24T06:55
+  memlog move). No AD added or changed — the five reference-page generators are
+  facade/pipes-and-filters instruments over existing tree sources, exactly this
+  spine''s existing paradigm; no new component crosses a station boundary. Reviewed
+  2026-09-17 (prd→arch cascade after the one-chain doctor
+  fold). No AD added or changed. Reviewed 2026-09-14 — chain-currency sweep cascade
+  (the PRD re-dated 2026-09-14 after reconciling against spec-pyforge-doctor''s 2026-09-12
+  SPEC.md + 2026-09-14 memlog). Appended § Currency reconciliation — 2026-09-14: the
+  as-built sources/ divergence bullet was found STALE against live code and corrected
+  (20 modules, 22 dispatcher entries); the four new sources named by the Spec delta
+  (capability_ledger, capability_effect, general_docs_consistency, status_body_consistency,
+  pixi_currency, platform_policy, frozen_path, bmad_config) are all one-module-behind-the-dispatcher
+  additions — no module boundary moved, no AD reopened. Prior: Reviewed 2026-08-29
+  — chain-currency sweep cascade (the PRD re-dated 2026-08-29 after its own spec-pyforge-doctor
+  reconciliation, five bookkeeping entries, no new capability). Appended § Currency
+  reconciliation — 2026-08-29: the four sources/ modules named (chain.py, marshal.py,
+  factory.py, board.py) are already in the as-built inventory below; PRs #903/#904/#906/#907
+  are bug fixes inside them, no module boundary moved, no AD reopened. No content
+  change required. Prior: Reviewed 2026-08-26 — chain-currency sweep cascade (the
+  PRD re-dated after reconciling against SPEC-doctor + the 2026-08-08 research refresh).
+  Appended § Currency reconciliation — 2026-08-26: as-built module inventory vs. the
+  Structural Seed (normalize.py and a standalone cli.py never shipped as drawn; sources/
+  grew to a 13-module conformance-verdict home with its own dispatcher), AD-1..AD-6
+  verified held, AD-11..AD-13''s standing confirmed, Epic 17 hooks + Epic 18 Canopy
+  tiers recorded. AD-11..AD-13 were appended 2026-08-08/2026-08-21 without a frontmatter
+  bump at the time — this stamp covers them. Prior: Reviewed 2026-08-02 — the PRD''s
+  2026-08-02 dream-consolidation pass added §4.5 (FR-10..FR-13); added the Frontier
+  section (AD-7..AD-10).'
+binds:
+- FR-1
+- FR-2
+- FR-3
+- FR-4
+- FR-5
+- FR-6
+- FR-7
+- FR-8
+- FR-9
+- FR-10
+- FR-11
+- FR-12
+- FR-13
 sources:
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md'
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md'
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md'
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-07-25.md'
-  - 'src/shared/packages/pyforge-warden/src/pyforge/warden/{engines,cli,models,verdict}.py'
-  - 'src/shared/packages/pyforge-atlas/pyproject.toml'
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-07-25.md
+- src/shared/packages/pyforge-warden/src/pyforge/warden/{engines,cli,models,verdict}.py
+- src/shared/packages/pyforge-atlas/pyproject.toml
 companions: []
 ---
 
@@ -402,15 +445,24 @@ program was executed with unusual fidelity."
 - **`cli.py` never shipped**; verb parsing + dispatch live in `__main__.py`
   (console script `doctor = pyforge.doctor.__main__:main`).
 - **`sources/` outgrew the seed by an order of magnitude.** Drawn with two modules
-  (warden, atlas); as-built it is the fleet's conformance-verdict home (FR-15/AD-11):
-  `atlas`, `warden`, `marshal`, `ledger`, `board`, `chain`, `deps`, `factory`,
-  `hygiene`, `bmad_method`, `backlog_intake`, `sibling_dreams`, plus a
-  `python -m pyforge.doctor.sources` dispatcher exposing 14 addressable sources
-  (`bmad-drift`, `bmad-method-version-drift`, `chain-completeness` [with `--dreams` /
-  `--layers --project` audit modes], `check-layout`, `dashboard-drift`,
-  `deferred-work`, `dream-chain`, `due-for-verification`, `forward-dependency`,
-  `ledger-direction`, `ledger-regression`, `sibling-dreams-drift`, `spec-surface`,
-  `story-status`). Epic 6.9 retired the legacy `scripts/` shims onto this dispatcher.
+  (warden, atlas); as-built it is the fleet's conformance-verdict home (FR-15/AD-11).
+  **Re-counted live 2026-09-14** (the prior count, 12 modules / 14 dispatcher entries,
+  was the 2026-08-29 state): 20 source modules — `atlas`, `backlog_intake`,
+  `bmad_config`, `bmad_method`, `board`, `capability_effect`, `capability_ledger`,
+  `chain`, `deps`, `factory`, `frozen_path`, `general_docs_consistency`, `hygiene`,
+  `ledger`, `marshal`, `pixi_currency`, `platform_policy`, `sibling_dreams`,
+  `status_body_consistency`, `warden` — plus a `python -m pyforge.doctor.sources`
+  dispatcher exposing **22** addressable sources (`bmad-drift`,
+  `bmad-method-version-drift`, `bmad-render-config-ambiguity`, `capability-effect`,
+  `capability-ledger`, `chain-completeness` [with `--dreams` / `--layers --project`
+  audit modes], `check-layout`, `dashboard-drift`, `deferred-work`, `dream-chain`,
+  `due-for-verification`, `forward-dependency`, `frozen-path-changed`,
+  `general-docs-consistency`, `ledger-direction`, `ledger-regression`,
+  `pixi-currency-ledger`, `platform-policy-suite`, `sibling-dreams-drift`,
+  `spec-surface`, `status-body-consistency`, `story-status`). Epic 6.9 retired the
+  legacy `scripts/` shims onto this dispatcher. **The growth is quantitative, not
+  structural** — every addition is one more module behind the same dispatcher, which
+  is why this stays a divergence-from-the-seed note rather than an AD.
 - **Frontier modules are all real now:** `score.py` (AD-7), `fleet_surface.py` (AD-8),
   the adoption Source (AD-9), `Prescription`'s safe-upgrade pairing (AD-10) — the
   "not yet built" markers in the Capability → Architecture Map are historical.
@@ -455,3 +507,93 @@ reopen, no module boundary moved, nothing to add to the divergence list above.
 
 **No content change required.** `updated:` bumped to record that the cascade ran.
 
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14 after reconciling against
+`spec-pyforge-doctor`'s 2026-09-12 SPEC.md and 2026-09-14 memlog, which fires the
+`prd→arch` edge. This section is the as-built check: does the spine above still
+describe the package.*
+
+**One real divergence found, and corrected in place.** The as-built `sources/` bullet
+above carried the **2026-08-29** count — twelve modules and "14 addressable
+dispatcher sources". Read against live code this pass
+(`python -m pyforge.doctor.sources --help`, plus the package listing), it is **20
+modules and 22 dispatcher entries**. Eight sources had landed since that count
+without the bullet following: `bmad_config`, `capability_effect`,
+`capability_ledger`, `frozen_path`, `general_docs_consistency`, `pixi_currency`,
+`platform_policy`, `status_body_consistency`. The bullet is rewritten above with the
+live list and a dated re-count marker. This is the reason this cascade is not a bare
+re-stamp: the spine was genuinely describing a smaller package than the one that
+exists.
+
+**No AD reopened, and the growth is deliberately still a divergence note rather than
+a new AD.** Every one of the eight is the same shape the seed's divergence already
+describes — one module registered behind the one dispatcher, returning closed-shape
+`Finding`s, normalizing in its own gather filter. AD-1 (no reimplementation of
+warden), AD-3 (closed `Source` taxonomy), AD-4 (`prescribe` stays pure), AD-11
+(`sources/` is the conformance-verdict home), AD-12 and AD-13 all hold unchanged.
+The Spec's own 2026-09-11 `verified:` sweep re-confirmed AD-1 and AD-4 independently
+(`tests/meta/test_source_independence.py`, 264/264 meta tests green; `score.py` and
+`prescribe`'s `recommend_safe_upgrade()` both free of subprocess/MCP calls).
+
+**Two invariant arms widened inside `board.py`, neither a structural change.** INV-A
+gained a delivered-Spec branch and INV-B gained an epic arm — both inside
+`chain-completeness`, a source FR-15 already names and this spine already places.
+Worth recording as an architectural *observation* rather than a decision: both were
+the same defect class — an invariant that filtered out a whole key class in its first
+statement and could therefore never fire on it. No structural rule in this spine
+prevents that; it is a review property, not an architecture property, and is left
+where it belongs (the Spec's guidance and the PRD's reconciliation note) rather than
+minted as an AD here.
+
+**No further content change required.** `updated:` bumped to record the cascade and
+the re-count.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-24
+
+*`prd→arch` cascade (CHAIN-CURRENCY-RUNBOOK.md): the PRD re-dated to 2026-09-24 (Story 30.3
+landing — the five reference-page generators, `docs_currency.py`'s `generated-page-stale`
+check) past this spine's 2026-09-20 stamp, past the 2-day feeds grace window. The generators
+are read-only-over-the-tree facade instruments — each reads its own source of truth (`pixi.toml`
+task tables, a station CLI's `--help`, `scripts/detectors.py`'s registry, `SKILL.md`
+frontmatter, `[environments]`) and writes one page plus a stamp — the same
+gather-then-render paradigm this spine already names; no new component, no new station
+boundary crossed. No AD added or changed. `updated:` bumped to record the cascade.*
+
+## Currency reconciliation — 2026-09-27
+
+*`prd→arch` cascade for FR-18 / CAP-85 (Epic 31, Doctor names the refs it judges by their full
+refname). A pure `pyforge.doctor.refs` module (`local_branch_ref`, `remote_tracking_ref`, `display_ref`,
+`MAIN`, `ORIGIN_MAIN`) is the one source the git-reading sources draw their refs from; it is Doctor's
+own, since Doctor imports no station's internals (marshal's `core/refs.py` stays marshal's). No
+new component, port or station boundary. No AD added or changed. `updated:` bumped.*
+
+## Currency reconciliation — 2026-09-28
+
+*`prd→arch` cascade for FR-19 / CAP-86 (Epic 33, a done story's recommended follow-up review is carried, checked on every
+PR). The check is one more finding kind in the existing `deferred-work` source (`sources/chain.py`), in the same
+gather → normalize pipeline: it reads the tracked story specs' frontmatter the source already parses (Story 25.6) and the
+tracked ledger text it already reads, and emits a `Finding` like its siblings. Its predicate is marshal Story 66.2's,
+reimplemented in Doctor — Doctor imports no station's internals — and pinned by fixtures. No new component, port or
+station boundary; AD-2's exit domain is unchanged (a FAIL is `2`, as for every other deferred-work violation). No AD added
+or changed. `updated:` bumped.*
+
+## Currency reconciliation — 2026-09-28 (night)
+
+*`prd→arch` cascade for FR-20 / CAP-87 (Epic 35, capability-ledger's post-PIN check reads only live Specs). The change
+sits inside the existing `capability-ledger` source (`sources/capability_ledger.py`), in the same gather pipeline: the
+post-PIN loop reads each added `SPEC.md`'s frontmatter `status` with the reader `iter_live_specs` already uses and skips a
+non-live Spec. No new component, port, finding kind or station boundary. AD-2's exit domain is unchanged (the finding is
+still a WARN, which never changes the exit code), and the source stays read-only. No AD added or changed. `updated:`
+bumped.*

@@ -32,9 +32,9 @@ from enum import Enum
 from typing import Any, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pyforge.core.errors import PyforgeError
 
 from pyforge.atlas.semantic import METRIC_PROVENANCE
-from pyforge.core.errors import PyforgeError
 
 # Bumped only on a breaking schema change; travels on the wire so a receiver can reject
 # an incompatible producer instead of mis-parsing it.
@@ -205,9 +205,7 @@ def decode_payload(payload_json: str) -> AtlasPayload:
     kind = obj.get("kind")
     model = _KIND_TO_MODEL.get(kind) if isinstance(kind, str) else None
     if model is None:
-        raise A2ADecodeError(
-            f"unknown payload kind {kind!r}; known kinds: {sorted(_KIND_TO_MODEL)}"
-        )
+        raise A2ADecodeError(f"unknown payload kind {kind!r}; known kinds: {sorted(_KIND_TO_MODEL)}")
     try:
         return model.model_validate(obj)
     except ValueError as exc:  # pydantic ValidationError is a ValueError

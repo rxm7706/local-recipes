@@ -348,10 +348,8 @@ def _load_registry() -> dict[str, object]:
     untrusted input, but the loader stays the same hardened primitive every
     other YAML read in this package uses."""
     try:
-        raw = (
-            resources.files("pyforge.warden") / "data" / "lts-registry.yaml"
-        ).read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+        raw = (resources.files("pyforge.warden") / "data" / "lts-registry.yaml").read_text(encoding="utf-8")
+    except OSError, UnicodeDecodeError:
         # UnicodeDecodeError is a ValueError, not an OSError -- a corrupted
         # install's invalid UTF-8 must degrade like any other unreadable
         # registry, per this docstring's own never-raises contract.
@@ -406,9 +404,7 @@ def _registry_alias_index(products: Mapping[str, object]) -> dict[str, str]:
     return index
 
 
-def _registry_feed_provenance(
-    document: Mapping[str, object], *, now: datetime
-) -> FeedProvenance | None:
+def _registry_feed_provenance(document: Mapping[str, object], *, now: datetime) -> FeedProvenance | None:
     """The bundled registry's own ``FeedProvenance`` (see module docstring's
     schema-shape judgment call): ``snapshot_at`` derives from the registry's
     OWN declared ``updated:`` field (a curated date, not a git-checkout file
@@ -488,9 +484,7 @@ def _best_match(entries: Sequence[tuple[str, date, object]], version: str) -> in
     return best_index
 
 
-def _resolve_from_lines(
-    lines: Sequence[object], version: str, *, now: datetime
-) -> _Resolution | None:
+def _resolve_from_lines(lines: Sequence[object], version: str, *, now: datetime) -> _Resolution | None:
     """Tier 1: resolve against a registry product's own ``lts_lines`` (fully
     self-contained — no endoflife.date consultation needed). ``None`` when
     no line's identifier prefix-matches ``version``, or when the line list
@@ -514,9 +508,7 @@ def _resolve_from_lines(
     _matched_identifier, matched_released, matched_eol = parsed[match_index]
     newest_identifier = parsed[-1][0]
     lag = sum(1 for _, released, _ in parsed if released > matched_released)
-    verdict = (
-        CurrencyVerdict.EOL if matched_eol <= now.date() else CurrencyVerdict.SUPPORTED
-    )
+    verdict = CurrencyVerdict.EOL if matched_eol <= now.date() else CurrencyVerdict.SUPPORTED
     return _Resolution(
         tier="lts-registry",
         verdict=verdict,
@@ -526,9 +518,7 @@ def _resolve_from_lines(
     )
 
 
-def _resolve_from_cycles(
-    cycles: Sequence[object], version: str, *, now: datetime
-) -> _Resolution | None:
+def _resolve_from_cycles(cycles: Sequence[object], version: str, *, now: datetime) -> _Resolution | None:
     """Tier 2: resolve against a cached endoflife.date cycle array. ``None``
     when no cycle's identifier prefix-matches ``version``, the cycle list
     carries no usable entry, or the matched cycle's own ``eol`` value is
@@ -597,11 +587,7 @@ def _resolve_from_cycles(
         matched_eol_date = _as_date(matched_eol)
         if matched_eol_date is None:
             return None
-        verdict = (
-            CurrencyVerdict.EOL
-            if matched_eol_date <= now.date()
-            else CurrencyVerdict.SUPPORTED
-        )
+        verdict = CurrencyVerdict.EOL if matched_eol_date <= now.date() else CurrencyVerdict.SUPPORTED
         eol_date_iso = matched_eol_date.isoformat()
     return _Resolution(
         tier="endoflife-date",
@@ -693,15 +679,9 @@ def _currency_finding(
         # 2026-07-23). The one cause knowable HERE (no version to look up)
         # gets its own accurate tail.
         if version:
-            message = (
-                f"{name}: currency could not be resolved "
-                "(no usable registry/feed data)"
-            )
+            message = f"{name}: currency could not be resolved (no usable registry/feed data)"
         else:
-            message = (
-                f"{name}: currency could not be resolved "
-                "(component has no version to assess)"
-            )
+            message = f"{name}: currency could not be resolved (component has no version to assess)"
     else:
         latest, lag, eol_date, tier = (
             resolution.latest,
@@ -719,9 +699,7 @@ def _currency_finding(
         message=message,
         subject=subject,
         severity=None,
-        currency=CurrencyInfo(
-            verdict=verdict, latest=latest, lag=lag, eol_date=eol_date, tier=tier
-        ),
+        currency=CurrencyInfo(verdict=verdict, latest=latest, lag=lag, eol_date=eol_date, tier=tier),
     )
 
 

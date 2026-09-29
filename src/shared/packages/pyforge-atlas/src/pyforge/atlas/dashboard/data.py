@@ -30,9 +30,7 @@ from ..semantic import models
 
 # GROUNDED — single migrated datasets the BSL models bind to directly.
 FEEDSTOCK_HEALTH_PARQUET = "primary/core_feedstock_health/core_feedstock_health.parquet"
-PACKAGE_MAINTAINERS_PARQUET = (
-    "intermediate/vcs_package_maintainers/vcs_package_maintainers.parquet"
-)
+PACKAGE_MAINTAINERS_PARQUET = "intermediate/vcs_package_maintainers/vcs_package_maintainers.parquet"
 
 # COMPOSED — the per-package "packages" table ``build_packages_model`` binds to
 # (conda_name + latest_status + feedstock_archived + latest_conda_upload +
@@ -57,45 +55,27 @@ ESTATE_CACHE_PARQUET = "primary/query_plane_estate/query_plane_estate.parquet"
 VULN_HISTORY_PARQUET = "primary/vuln_history/vuln_history.parquet"
 VERSION_DOWNLOADS_PARQUET = "primary/version_downloads/version_downloads.parquet"
 RELEASE_CADENCE_PARQUET = "primary/release_cadence/release_cadence.parquet"
-ALTERNATIVE_CANDIDATES_PARQUET = (
-    "primary/alternative_candidates/alternative_candidates.parquet"
-)
+ALTERNATIVE_CANDIDATES_PARQUET = "primary/alternative_candidates/alternative_candidates.parquet"
 SCAN_RESULT_LATEST_PARQUET = "primary/scan_project_latest/scan_project_latest.parquet"
 ENV_INSPECT_LATEST_PARQUET = "primary/env_inspect_latest/env_inspect_latest.parquet"
-DISTRIBUTION_BREAKDOWN_PARQUET = (
-    "primary/distribution_breakdown/distribution_breakdown.parquet"
-)
+DISTRIBUTION_BREAKDOWN_PARQUET = "primary/distribution_breakdown/distribution_breakdown.parquet"
 PURL_EXPORT_MANIFEST_PARQUET = "primary/purl_export_manifest/purl_export_manifest.parquet"
 MAPPING_GAP_PARQUET = "primary/mapping_gap/mapping_gap.parquet"
-UNIVERSE_SBOM_SUMMARY_PARQUET = (
-    "primary/universe_sbom_summary/universe_sbom_summary.parquet"
-)
-INVENTORY_MATCH_LATEST_PARQUET = (
-    "primary/inventory_match_latest/inventory_match_latest.parquet"
-)
+UNIVERSE_SBOM_SUMMARY_PARQUET = "primary/universe_sbom_summary/universe_sbom_summary.parquet"
+INVENTORY_MATCH_LATEST_PARQUET = "primary/inventory_match_latest/inventory_match_latest.parquet"
 ADD_HANDOFF_LATEST_PARQUET = "primary/add_handoff_latest/add_handoff_latest.parquet"
-LIBRARY_FUTURES_LATEST_PARQUET = (
-    "primary/library_futures_latest/library_futures_latest.parquet"
-)
+LIBRARY_FUTURES_LATEST_PARQUET = "primary/library_futures_latest/library_futures_latest.parquet"
 RECOMMEND_2027_PARQUET = "primary/recommend_2027/recommend_2027.parquet"
 LTS_REGISTRY_GAP_PARQUET = "primary/lts_registry_gap/lts_registry_gap.parquet"
 CWE_SEED_GAP_PARQUET = "primary/cwe_seed_gap/cwe_seed_gap.parquet"
 SPDX_SCHEMA_GAP_PARQUET = "primary/spdx_schema_gap/spdx_schema_gap.parquet"
 LICENSE_MAP_GAP_PARQUET = "primary/license_map_gap/license_map_gap.parquet"
-IDENTITY_COMPLETE_EXPORT_PARQUET = (
-    "derived/identity_complete_export/identity_complete_export.parquet"
-)
-ENTERPRISE_JFROG_CONSUMPTION_PARQUET = (
-    "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
-)
+IDENTITY_COMPLETE_EXPORT_PARQUET = "derived/identity_complete_export/identity_complete_export.parquet"
+ENTERPRISE_JFROG_CONSUMPTION_PARQUET = "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
 # Story 21.9 (CAP-5) — Epic 21 bootstrap verification operator pages
-BOOTSTRAP_INDEX_HEALTH_PARQUET = (
-    "derived/bootstrap_index_health/bootstrap_index_health.parquet"
-)
+BOOTSTRAP_INDEX_HEALTH_PARQUET = "derived/bootstrap_index_health/bootstrap_index_health.parquet"
 IDENTITY_EXPORT_PARQUET = "derived/identity_export_parquet/identity_export_parquet.parquet"
-LIVE_CATALOG_COVERAGE_PARQUET = (
-    "derived/live_catalog_coverage/live_catalog_coverage.parquet"
-)
+LIVE_CATALOG_COVERAGE_PARQUET = "derived/live_catalog_coverage/live_catalog_coverage.parquet"
 
 # Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
 IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (
@@ -200,9 +180,7 @@ def load_my_feedstocks(parquet: str | os.PathLike[str] | None = None) -> pd.Data
 # ---------------------------------------------------------------------------
 
 
-def load_staleness(
-    parquet: str | os.PathLike[str] | None = None, *, now: int
-) -> pd.DataFrame:
+def load_staleness(parquet: str | os.PathLike[str] | None = None, *, now: int) -> pd.DataFrame:
     """`staleness-report` — build_packages_model.staleness_age_days (+ adoption stage)."""
     return _bsl_query_or_empty(
         parquet,
@@ -212,9 +190,7 @@ def load_staleness(
     )
 
 
-def load_query_atlas(
-    parquet: str | os.PathLike[str] | None = None, *, now: int
-) -> pd.DataFrame:
+def load_query_atlas(parquet: str | os.PathLike[str] | None = None, *, now: int) -> pd.DataFrame:
     """`query-atlas` — the actionable-scope surface: is_actionable + adoption stage per
     package with the downloads measure (build_packages_model)."""
     return _bsl_query_or_empty(
@@ -239,9 +215,7 @@ def load_estate_cache(parquet: str | os.PathLike[str] | None = None) -> pd.DataF
     )
 
 
-def load_detail(
-    parquet: str | os.PathLike[str] | None = None, *, now: int
-) -> pd.DataFrame:
+def load_detail(parquet: str | os.PathLike[str] | None = None, *, now: int) -> pd.DataFrame:
     """`detail-cf-atlas` — the full per-package metric row (build_packages_model)."""
     return _bsl_query_or_empty(
         parquet,
@@ -301,9 +275,7 @@ def load_find_alternative(parquet: str | os.PathLike[str] | None = None) -> pd.D
     )
 
 
-def load_adoption_stage(
-    parquet: str | os.PathLike[str] | None = None, *, now: int
-) -> pd.DataFrame:
+def load_adoption_stage(parquet: str | os.PathLike[str] | None = None, *, now: int) -> pd.DataFrame:
     """`adoption-stage` — the dedicated portfolio-wide lifecycle VIEW; re-uses
     build_packages_model (no new model — the dimension already exists, AC-2 style
     reuse), over the SAME composed semantic_packages store `detail-cf-atlas` binds to."""
@@ -592,9 +564,7 @@ def identity_workbook_gap_message(
             f"Enterprise JFROG overlay missing: `{ENTERPRISE_JFROG_CONSUMPTION_PARQUET}` "
             "(Story 23.2 — page renders empty until this lands)."
         )
-    return (
-        f"Complete identity export missing: `{IDENTITY_COMPLETE_EXPORT_PARQUET}` (Story 23.5)."
-    )
+    return f"Complete identity export missing: `{IDENTITY_COMPLETE_EXPORT_PARQUET}` (Story 23.5)."
 
 
 def load_identity_workbook(
@@ -625,9 +595,9 @@ def load_identity_workbook(
     join_key = _ibis_pep503
     ent = enterprise.mutate(_join_key=join_key(enterprise.core_python_package_name))
     ent = ent.filter(ent._join_key.length() >= 2).distinct(on=["_join_key"], keep="first")
-    complete_side = complete.mutate(
-        _join_key=join_key(complete.Core_Python_Package_Name)
-    ).distinct(on=["_join_key"], keep="last")
+    complete_side = complete.mutate(_join_key=join_key(complete.Core_Python_Package_Name)).distinct(
+        on=["_join_key"], keep="last"
+    )
     feedstock_col = "Conda-Forge_FeedStock_URL"
     complete_pick = complete_side.select(
         "_join_key",

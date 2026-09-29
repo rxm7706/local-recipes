@@ -244,9 +244,7 @@ def test_conda_forge_expert_not_replaced():
     # `scripts/mason_cfe_surface_check.py` enforces for mason. A station story
     # never touches the surface; a fleet hygiene branch may carry the one
     # sanctioned retro (2026-09-04, PR #1043).
-    unsanctioned = unsanctioned_commits(
-        root, pathspec=_CFE_SURFACE, changelog_path=_CFE_CHANGELOG
-    )
+    unsanctioned = unsanctioned_commits(root, pathspec=_CFE_SURFACE, changelog_path=_CFE_CHANGELOG)
     assert not unsanctioned, (
         "conda-forge-expert changed vs origin/main outside a sanctioned `retro:` "
         f"commit that moves its CHANGELOG: {unsanctioned}"
@@ -273,9 +271,7 @@ def test_golden_transcript_is_grammar_and_mcp_only():
 
 def test_freelance_filesystem_in_transcript_fails():
     root = _repo_root()
-    events = json.loads(
-        (_persona_dir(root) / "transcripts" / GOLDEN).read_text(encoding="utf-8")
-    )
+    events = json.loads((_persona_dir(root) / "transcripts" / GOLDEN).read_text(encoding="utf-8"))
     events.append({"kind": "filesystem", "path": "src/shared/packages/pyforge-atlas/README.md"})
     try:
         validate_transcript(events)
@@ -287,9 +283,7 @@ def test_freelance_filesystem_in_transcript_fails():
 
 def test_adhoc_http_in_transcript_fails():
     root = _repo_root()
-    events = json.loads(
-        (_persona_dir(root) / "transcripts" / GOLDEN).read_text(encoding="utf-8")
-    )
+    events = json.loads((_persona_dir(root) / "transcripts" / GOLDEN).read_text(encoding="utf-8"))
     events.append({"kind": "http", "method": "GET", "url": "https://example.com"})
     try:
         validate_transcript(events)

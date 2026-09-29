@@ -33,12 +33,28 @@ tests:
           - test -d "${CONDA_PREFIX}/share/bmad-builder/skills/bmad-module-builder"
           - test -d "${CONDA_PREFIX}/share/bmad-builder/skills/bmad-workflow-builder"
           - test -f "${CONDA_PREFIX}/share/bmad-builder/.claude-plugin/marketplace.json"
+          # Run the installer, not just --help: the checks above only prove the
+          # skills are in the package, so a skill missing from the installer's
+          # own SKILLS list would still ship silently. Asserting the full set
+          # here keeps that list honest.
+          - bmad-builder-install "${TMPDIR:-/tmp}/bmad-builder-install-check"
+          - test -d "${TMPDIR:-/tmp}/bmad-builder-install-check/bmad-agent-builder"
+          - test -d "${TMPDIR:-/tmp}/bmad-builder-install-check/bmad-bmb-setup"
+          - test -d "${TMPDIR:-/tmp}/bmad-builder-install-check/bmad-eval-runner"
+          - test -d "${TMPDIR:-/tmp}/bmad-builder-install-check/bmad-module-builder"
+          - test -d "${TMPDIR:-/tmp}/bmad-builder-install-check/bmad-workflow-builder"
       - if: win
         then:
           - bmad-builder-install.bat --help
           - if not exist "%CONDA_PREFIX%\share\bmad-builder\skills" exit 1
           - if not exist "%CONDA_PREFIX%\share\bmad-builder\skills\module.yaml" exit 1
           - if not exist "%CONDA_PREFIX%\share\bmad-builder\.claude-plugin\marketplace.json" exit 1
+          - bmad-builder-install.bat "%TEMP%\bmad-builder-install-check"
+          - if not exist "%TEMP%\bmad-builder-install-check\bmad-agent-builder" exit 1
+          - if not exist "%TEMP%\bmad-builder-install-check\bmad-bmb-setup" exit 1
+          - if not exist "%TEMP%\bmad-builder-install-check\bmad-eval-runner" exit 1
+          - if not exist "%TEMP%\bmad-builder-install-check\bmad-module-builder" exit 1
+          - if not exist "%TEMP%\bmad-builder-install-check\bmad-workflow-builder" exit 1
 
 about:
   homepage: https://github.com/bmad-code-org/bmad-builder

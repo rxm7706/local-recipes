@@ -31,7 +31,24 @@ gate_mode = "none"
 # composer-2.5-fast (a Cursor-only model name), a pairing Claude Code's CLI
 # refuses outright. Found live 2026-09-10 when the drain-to-zero dispatch
 # failed identically at launch.
-harness_preference = ["cursor"]
+# 2026-09-18 (operator ruling: Cursor is out of usage for the week) -- claude-only,
+# mirroring pyforge-herald PR #1458. `--harness claude` alone cannot move a
+# station whose tier map names an inline `{ harness = "cursor", ... }` dev entry
+# (Story 28.11 leads the walk with it; spec-pyforge-marshal CAP-246 / Story 50.3
+# is the fix). Flip this line and the tier map together when Cursor returns.
+harness_preference = ["claude"]
+
+# merge_subject_template: no override -- the repo default
+# ("Merge {slug}/{key} into main", Story 50.4/spec-pyforge-marshal CAP-247)
+# is now station-scoped at the grammar layer, making this station's former
+# override redundant. It's removed here rather than kept-but-inert to avoid
+# a second truth that could silently drift from the default. History: this
+# override was added 2026-09-18 after herald PR #1457's finding that another
+# station's unscoped "Merge N-M into main" merge could read as this
+# station's own N.M already merged (Story 35.1's known_keys corroboration
+# only rejects a match whose key is NOT already tracked). The gate-side fix
+# -- the `{slug}` placeholder in the templated shape itself -- is what Story
+# 50.4 shipped.
 
 
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
@@ -243,42 +260,79 @@ verify_commands = [
   "AGENTS.md",
 ]
 
+"34" = [  # every capability ships behind a flag -- the rule, the gate, the inventory (spec-feature-flag-governance
+          # CAP-1, CAP-2, CAP-4's gate clause, CAP-7), added 2026-09-28. Guild-owned Spec, Doctor as mechanism Smith
+          # (the Epic 24 relay): the gate ships outside every pyforge.<station> package (Charter section 6), so its
+          # scripts, data, tests and reference page are admitted here beside the default surface.
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+  # 34.1-34.5: the rule, the baseline, the gate and the inventory (scripts/), their tests, their allowlist lines
+  "scripts/flag_rule.py",
+  "scripts/flag_rule_baseline.py",
+  "scripts/flag_gate_check.py",
+  "scripts/flag_inventory.py",
+  "scripts/spec_surface_allowlist.txt",
+  "tests/scripts/test_flag_rule.py",
+  "tests/scripts/test_flag_gate_check.py",
+  "tests/scripts/test_flag_inventory.py",
+  # the Guild data beside guild-roster.json, the inventory reports, the Guild Spec's memlog
+  "docs/governance/guild-roster.json",
+  "docs/governance/flag-rule-baseline.json",
+  "docs/governance/flag-inventory/**",
+  "docs/governance/spec-feature-flag-governance/.memlog.md",
+  # 34.1: the block's one written shape and the pointer to it
+  "docs/reference/story-spec-flag-block.md",
+  "docs/reference/station-verify-commands.md",
+  "docs/map.yaml",
+  "docs/MAP.md",
+  # 34.2: the Story 24.2 companion meta-test in the core suite
+  "src/shared/packages/pyforge-core/tests/meta/test_flag_gate_stays_outside_every_station.py",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
+"35" = [  # capability-ledger's post-PIN check reads only live Specs (spec-pyforge-doctor CAP-87), added 2026-09-28 (night)
+  # 35.1: sources/capability_ledger.py and tests/unit/test_capability_ledger.py, inside the default surface
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+  # co-governor reconciles (spec-pyforge-core governs every station's src)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
-# context.planning-graph (Story 28.27, token-economy CAP-6/CAP-13): verified
-# live 2026-09-10 against pyforge-marshal (the canary) -- grounded retrieval,
-# real measured savings, zero further engineering needed. scribe recall's
-# own project-scoping gap (a lexical query naming a project slug could still
-# be outscored by another project's denser-vocabulary node) was found and
-# fixed in the same pass -- see scribe Story marshal-28.27 / recall.py's own
-# scope= parameter. wire/output/structure-graph/derived-context stay
-# declared-off (undeclared = default off) pending Story 28.31 (dispatch
-# cost spike) / 28.33 (spin reference wiring).
-[context."planning-graph"]
-enabled = true
+# context (Story 28.34, token-economy CAP-3): this station declares NO
+# [context] block -- 28.31 (dispatch-cost spike) and 28.33 (spin reference
+# wiring) both landed 2026-09-10/20, so the two layers this file used to
+# hold declared-off (wire, structure-graph) are no longer blocked. Per
+# policy-defaults.toml's own composition rule (declaring ANY part of
+# [context] here wholesale-replaces the 5-layer default for this station),
+# the fix is to declare nothing and inherit the clean repo-wide default:
+# all 4 harness-agnostic layers on, wire auto-resolved per harness.
 
-# context.derived-context (Story 28.28/28.32, token-economy CAP-5): scribe's
-# `index refresh --declare` shipped and the lean pyforge-scribe env's
-# missing cocoindex dependency was fixed -- verified live 2026-09-10
-# against pyforge-marshal, mode: incremental with zero findings.
-[context."derived-context"]
-enabled = true
-
-# context.output (Story 28.30/28.32, token-economy CAP-3): caveman skill
-# deployment now reaches dispatch worktrees too (not just loop homes), and
-# bmad-build-auto's own step-01-clarify-and-route.md tells the agent to
-# invoke it.
-[context.output]
-enabled = true
-
+# 2026-09-18: back on Claude Code (see harness_preference above) -- the same
+# sonnet-dev / opus-review pairing the plain [adapter]/[adapter.review]
+# baseline uses, kept as explicit {harness, model} tables in the fails-safe
+# shape Story 33.15 established (spec-cursor-native-tier-map CAP-1). The
+# 2026-09-13 Cursor Ultra ladder (composer-2.5-fast / grok-4.6 / composer-2.5)
+# is in git history for the week Cursor usage returns.
 [model_tier_map.heavy]
-dev = "composer-2.5-fast"
-review = "composer-2.5"
+dev = { harness = "claude", model = "sonnet" }
+review = { harness = "claude", model = "opus" }
 
 [model_tier_map.medium]
-dev = "composer-2.5-fast"
-review = "composer-2.5"
+dev = { harness = "claude", model = "sonnet" }
+review = { harness = "claude", model = "opus" }
 
 [model_tier_map.easy]
-dev = "composer-2.5-fast"
-
+dev = { harness = "claude", model = "sonnet" }

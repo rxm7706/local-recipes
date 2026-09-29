@@ -95,6 +95,20 @@ class ExportConflictError(HeraldError):
     ``SeedConflictError``."""
 
 
+class ReadBackMismatchError(HeraldError):
+    """``herald deck push --prove`` (Story 23.4, CAP-6) found a pushed
+    file whose read-back, after ``deck_pipeline._strip_serve_harness``,
+    does not match the bytes actually sent.
+
+    A direct ``HeraldError`` sibling, not an ``ExportConflictError``: the
+    write itself succeeded (Design accepted it), so this is not the
+    per-file conflict FR-20/NFR-02 handles -- it is a verification failure
+    over an already-accepted write, this story's own interpretation of a
+    read-back that does not round-trip. Names every mismatched file at
+    once (batched, never a bare warning); falls through to the default
+    exit code (``1``)."""
+
+
 class OperatorAuthorizationError(HeraldError):
     """A write subcommand (``herald success publish``, ``herald notice
     author``, ...) was attempted without a verified ``operator`` role, or
@@ -163,6 +177,18 @@ class InvalidContentPlanError(HeraldError):
     ``fill_template``'s ``Presentation`` is written to disk, so no output
     file exists on this error (the I/O matrix's "No file written" rows).
     Falls through to the default exit code (``1``)."""
+
+
+class PaginationStalledError(HeraldError):
+    """``_windowed_read`` (CAP-2 from spec-design-sync-loop, Story 23.2)
+    asked the server to resume past a window's ``last_line`` and got back
+    a window whose own ``last_line`` did not advance past it (DW-FU-23-2,
+    Story 23.2's Edge Case Hunter finding: the un-guarded loop would
+    otherwise page the same window forever). Names the file and the
+    stalled line rather than looping, warning, or silently truncating.
+    Falls through to the default exit code (``1``) -- a protocol contract
+    violation for the operator to escalate, not a transport outage (the
+    server answered every call; its answers just never advanced)."""
 
 
 _EXIT_BY_ERROR: tuple[tuple[type[HeraldError], int], ...] = (

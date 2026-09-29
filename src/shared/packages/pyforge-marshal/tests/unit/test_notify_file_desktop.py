@@ -17,8 +17,9 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-import pyforge.marshal.adapters.notify_file_desktop as module
 import pytest
+
+import pyforge.marshal.adapters.notify_file_desktop as module
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.notify_file_desktop import FileDesktopNotifier
 from pyforge.marshal.core.egress import Redacted, to_redacted

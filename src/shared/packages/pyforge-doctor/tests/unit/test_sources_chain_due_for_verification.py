@@ -24,6 +24,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.cli_bridge import CliBridgeError
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import chain
@@ -103,7 +104,9 @@ def _commit_file(target: Path, rel_path: str, content: str, when: str) -> None:
     env["GIT_COMMITTER_DATE"] = when
     subprocess.run(
         ["git", "commit", "-q", "-m", f"touch {rel_path}"],
-        cwd=target, env=env, check=True,
+        cwd=target,
+        env=env,
+        check=True,
     )
 
 
@@ -129,7 +132,8 @@ def test_stale_verified_date_reports_stale_with_days_stale(tmp_path: Path) -> No
     # 2026-07-15 is 31 days before 2026-08-15 -- one day past the 30-day
     # threshold (DUE_FOR_VERIFICATION_STALENESS_DAYS).
     _write_tracked(
-        tmp_path, "proj",
+        tmp_path,
+        "proj",
         "## DW-1\nstatus: open\nverified: 2026-07-15 — checked once\n",
     )
 
@@ -159,7 +163,8 @@ def test_verified_one_day_past_threshold_reports_stale(tmp_path: Path) -> None:
 
 def test_fresh_verified_date_reports_nothing(tmp_path: Path) -> None:
     _write_tracked(
-        tmp_path, "proj",
+        tmp_path,
+        "proj",
         "## DW-1\nstatus: open\nverified: 2026-08-10 — recently checked\n",
     )
 
@@ -183,7 +188,8 @@ def test_entry_with_two_verified_lines_uses_the_most_recent_one(tmp_path: Path) 
     # the old one (review finding, patch) -- an entry re-checked long after
     # a stale first check must read as fresh, not permanently stale.
     _write_tracked(
-        tmp_path, "proj",
+        tmp_path,
+        "proj",
         "## DW-1\nstatus: open\n"
         "verified: 2026-01-01 — first check, long ago\n"
         "verified: 2026-08-10 — re-checked recently\n",
@@ -222,7 +228,8 @@ def test_closed_done_entry_with_no_verified_line_is_selected_same_as_open(
 
 def test_closed_done_entry_with_stale_verified_is_selected(tmp_path: Path) -> None:
     _write_tracked(
-        tmp_path, "proj",
+        tmp_path,
+        "proj",
         "## DW-1\nstatus: closed\nverified: 2026-07-15 — was closed already\n",
     )
 
@@ -261,7 +268,9 @@ def test_project_with_no_tracked_ledger_contributes_zero_findings(tmp_path: Path
 def test_two_projects_only_due_projects_entries_are_reported(tmp_path: Path) -> None:
     _write_tracked(tmp_path, "alpha", "## DW-1\nstatus: open\n")  # never-verified, due
     _write_tracked(
-        tmp_path, "beta", "## DW-1\nverified: 2026-08-10 — recent\n",
+        tmp_path,
+        "beta",
+        "## DW-1\nverified: 2026-08-10 — recent\n",
     )  # fresh, not due
 
     findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
@@ -361,7 +370,8 @@ def test_gather_never_emits_fail_status(tmp_path: Path) -> None:
     # A mix of never-verified and definitely-stale (far-past) entries --
     # every one of these must WARN, never FAIL (Boundaries).
     _write_tracked(
-        tmp_path, "proj",
+        tmp_path,
+        "proj",
         "## DW-1\nstatus: open\n\n## DW-2\nverified: 2000-01-01 — ancient\n",
     )
 
@@ -394,7 +404,8 @@ def test_unreadable_tracked_ledger_directory_is_isolated_as_warn(tmp_path: Path)
 
 
 def test_one_unevaluable_project_does_not_hide_another_projects_real_finding(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     """Mirrors ``test_sources_chain_deferred_work.py``'s own per-project
     isolation test: one project's unreadable ledger must not discard a
@@ -478,7 +489,8 @@ def test_single_path_untouched_since_date_gets_skip_reason_no_churn(
     _init_repo(target)
     _commit_file(target, "src/foo.py", "print('v1')\n", "2026-01-01T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
+        target,
+        "proj",
         "## DW-1\nverified: 2026-07-01 — checked once\nCode: `src/foo.py:10`\n",
     )
 
@@ -500,7 +512,8 @@ def test_single_path_touched_since_date_has_no_skip_reason(tmp_path: Path) -> No
     _commit_file(target, "src/foo.py", "print('v1')\n", "2026-01-01T00:00:00+00:00")
     _commit_file(target, "src/foo.py", "print('v2')\n", "2026-07-10T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
+        target,
+        "proj",
         "## DW-1\nverified: 2026-07-01 — checked once\nCode: `src/foo.py:10`\n",
     )
 
@@ -524,9 +537,9 @@ def test_two_paths_one_churned_blocks_the_skip(tmp_path: Path) -> None:
     _commit_file(target, "src/b.py", "b = 1\n", "2026-01-01T00:00:00+00:00")
     _commit_file(target, "src/b.py", "b = 2\n", "2026-07-10T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Touches `src/a.py` (clean) and `src/b.py` (churned).\n",
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\nTouches `src/a.py` (clean) and `src/b.py` (churned).\n",
     )
 
     findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
@@ -543,7 +556,8 @@ def test_path_never_tracked_here_blocks_the_skip(tmp_path: Path) -> None:
     _init_repo(target)
     _commit_file(target, "src/other.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
+        target,
+        "proj",
         "## DW-1\nverified: 2026-07-01 — checked once\n"
         "See `bmad_loop/verify.py:1474` (external package, not this repo).\n",
     )
@@ -563,7 +577,8 @@ def test_no_extractable_path_has_no_skip_reason(tmp_path: Path) -> None:
     _init_repo(target)
     _commit_file(target, "src/unrelated.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
+        target,
+        "proj",
         "## DW-1\nverified: 2026-07-01 — checked once\n"
         "Uses `pin_subpackage` and `compiler()` correctly, no path cited.\n",
     )
@@ -598,13 +613,17 @@ def test_authored_date_resolves_correctly_despite_id_prefix_collision(
         env["GIT_AUTHOR_DATE"] = when
         env["GIT_COMMITTER_DATE"] = when
         subprocess.run(
-            ["git", "commit", "-q", "-m", subject], cwd=target, env=env, check=True,
+            ["git", "commit", "-q", "-m", subject],
+            cwd=target,
+            env=env,
+            check=True,
         )
 
     # T1: the unrelated LONGER id is introduced first.
     _commit_ledger(
         "## DW-1-1-10 — unrelated\nstatus: open\n",
-        "2026-01-05T00:00:00+00:00", "proj: add DW-1-1-10",
+        "2026-01-05T00:00:00+00:00",
+        "proj: add DW-1-1-10",
     )
     # T2: the source path is touched -- AFTER the confusable neighbour's
     # (wrong, buggy) date but BEFORE the real entry's (correct) date. This
@@ -612,9 +631,9 @@ def test_authored_date_resolves_correctly_despite_id_prefix_collision(
     _commit_file(target, "src/shared.py", "x = 1\n", "2026-02-05T00:00:00+00:00")
     # T3: the entry actually under test is introduced.
     _commit_ledger(
-        "## DW-1-1-10 — unrelated\nstatus: open\n\n"
-        "## DW-1-1-1 — the real entry\nCode: `src/shared.py`\n",
-        "2026-03-05T00:00:00+00:00", "proj: add DW-1-1-1",
+        "## DW-1-1-10 — unrelated\nstatus: open\n\n## DW-1-1-1 — the real entry\nCode: `src/shared.py`\n",
+        "2026-03-05T00:00:00+00:00",
+        "proj: add DW-1-1-1",
     )
 
     resolved = chain._authored_date(target, tracked, "DW-1-1-1")
@@ -661,17 +680,22 @@ def test_source_spec_path_is_never_a_churn_candidate(tmp_path: Path) -> None:
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "docs/specs/thing.md", "v1\n", "2026-01-01T00:00:00+00:00",
+        target,
+        "docs/specs/thing.md",
+        "v1\n",
+        "2026-01-01T00:00:00+00:00",
     )
     _commit_file(
-        target, "docs/specs/thing.md", "v2\n", "2026-07-10T00:00:00+00:00",
+        target,
+        "docs/specs/thing.md",
+        "v2\n",
+        "2026-07-10T00:00:00+00:00",
     )  # churned AFTER the verified date -- must not block the skip
     _commit_file(target, "src/foo.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "- source_spec: `docs/specs/thing.md`\n"
-        "Code: `src/foo.py`\n",
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\n- source_spec: `docs/specs/thing.md`\nCode: `src/foo.py`\n",
     )
 
     findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
@@ -685,7 +709,8 @@ def test_source_spec_path_is_never_a_churn_candidate(tmp_path: Path) -> None:
 
 
 def test_per_entry_churn_failure_is_isolated_from_its_project_siblings(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     """Simulates a REAL ``run_git`` failure (``CliBridgeError``) for one
     path, not an artificial exception from an internal helper -- exercises
@@ -701,7 +726,8 @@ def test_per_entry_churn_failure_is_isolated_from_its_project_siblings(
     _commit_file(target, "src/clean.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
     _commit_file(target, "src/boom.py", "y = 1\n", "2026-01-01T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
+        target,
+        "proj",
         "## DW-1\nverified: 2026-07-01 — checked once\nCode: `src/clean.py`\n\n"
         "## DW-2\nverified: 2026-07-01 — checked once\nCode: `src/boom.py`\n",
     )
@@ -733,7 +759,8 @@ def test_message_appends_skip_decision_text_when_skip_reason_present(
     _init_repo(target)
     _commit_file(target, "src/foo.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
+        target,
+        "proj",
         "## DW-1\nverified: 2026-07-01 — checked once\nCode: `src/foo.py`\n",
     )
 
@@ -791,16 +818,18 @@ def test_claimed_unused_still_unused_gets_mechanical_verdict_still_open(
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        target,
+        "src/foo.py",
+        "def _foo(x):\n    return x\n",
         "2026-01-01T00:00:00+00:00",
     )
     # The ledger is COMMITTED and its own claim text backtick-cites `_foo` --
     # without the `:(exclude,glob)**/deferred-work-ledger.md` pathspec, this
     # citation alone would count as a call site and force `escalate`.
     _commit_file(
-        target, _tracked_rel("proj"),
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_foo` is unused and should be removed.\n",
+        target,
+        _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_foo` is unused and should be removed.\n",
         "2026-07-01T00:00:00+00:00",
     )
 
@@ -824,15 +853,15 @@ def test_claimed_unused_now_referenced_gets_mechanical_verdict_escalate(
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py",
-        "def _foo(x):\n    return x\n\n\ndef bar():\n"
-        "    y = _foo(1)\n    z = _foo(2)\n    return y + z\n",
+        target,
+        "src/foo.py",
+        "def _foo(x):\n    return x\n\n\ndef bar():\n    y = _foo(1)\n    z = _foo(2)\n    return y + z\n",
         "2026-01-01T00:00:00+00:00",
     )
     _commit_file(
-        target, _tracked_rel("proj"),
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_foo` is unused and should be removed.\n",
+        target,
+        _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_foo` is unused and should be removed.\n",
         "2026-07-01T00:00:00+00:00",
     )
 
@@ -863,7 +892,9 @@ def test_untracked_reference_inside_a_pruned_dir_does_not_force_escalate(
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        target,
+        "src/foo.py",
+        "def _foo(x):\n    return x\n",
         "2026-01-01T00:00:00+00:00",
     )
     # Untracked, inside a pruned dir -- no .gitignore needed: the exclude
@@ -872,9 +903,9 @@ def test_untracked_reference_inside_a_pruned_dir_does_not_force_escalate(
     decoy.parent.mkdir(parents=True, exist_ok=True)
     decoy.write_text("y = _foo(1)\nz = _foo(2)\n", encoding="utf-8")
     _commit_file(
-        target, _tracked_rel("proj"),
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_foo` is unused and should be removed.\n",
+        target,
+        _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_foo` is unused and should be removed.\n",
         "2026-07-01T00:00:00+00:00",
     )
 
@@ -895,13 +926,15 @@ def test_async_def_declaration_is_recognized_and_excluded(tmp_path: Path) -> Non
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py", "async def _foo(x):\n    return x\n",
+        target,
+        "src/foo.py",
+        "async def _foo(x):\n    return x\n",
         "2026-01-01T00:00:00+00:00",
     )
     _commit_file(
-        target, _tracked_rel("proj"),
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_foo` is unused and should be removed.\n",
+        target,
+        _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_foo` is unused and should be removed.\n",
         "2026-07-01T00:00:00+00:00",
     )
 
@@ -922,13 +955,15 @@ def test_variable_declaration_gets_no_mechanical_verdict(tmp_path: Path) -> None
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py", "_FOO_CONST = 42\n",
+        target,
+        "src/foo.py",
+        "_FOO_CONST = 42\n",
         "2026-01-01T00:00:00+00:00",
     )
     _commit_file(
-        target, _tracked_rel("proj"),
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_FOO_CONST` is unused and should be removed.\n",
+        target,
+        _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_FOO_CONST` is unused and should be removed.\n",
         "2026-07-01T00:00:00+00:00",
     )
 
@@ -950,18 +985,21 @@ def test_untracked_file_reference_is_still_detected(tmp_path: Path) -> None:
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        target,
+        "src/foo.py",
+        "def _foo(x):\n    return x\n",
         "2026-01-01T00:00:00+00:00",
     )
     _commit_file(
-        target, _tracked_rel("proj"),
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_foo` is unused and should be removed.\n",
+        target,
+        _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_foo` is unused and should be removed.\n",
         "2026-07-01T00:00:00+00:00",
     )
     # A brand-new caller, written but NEVER `git add`-ed/committed.
     (target / "src" / "new_caller.py").write_text(
-        "y = _foo(5)\n", encoding="utf-8",
+        "y = _foo(5)\n",
+        encoding="utf-8",
     )
 
     findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
@@ -982,9 +1020,9 @@ def test_churn_skipped_entry_gets_no_mechanical_check(tmp_path: Path) -> None:
     _init_repo(target)
     _commit_file(target, "src/foo.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "`_foo` is unused. See `src/foo.py:10`.\n",
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\n`_foo` is unused. See `src/foo.py:10`.\n",
     )
 
     findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
@@ -1007,9 +1045,9 @@ def test_no_recognizable_claim_has_no_mechanical_keys(tmp_path: Path) -> None:
     target = tmp_path / "target"
     _init_repo(target)
     _write_tracked(
-        target, "proj",
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Investigate feasibility of caching this lookup someday.\n",
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\nInvestigate feasibility of caching this lookup someday.\n",
     )
 
     findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
@@ -1029,9 +1067,9 @@ def test_dotted_symbol_claim_is_not_recognized(tmp_path: Path) -> None:
     _init_repo(target)
     _commit_file(target, "src/other.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `Foo.bar` is unused.\n",
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `Foo.bar` is unused.\n",
     )
 
     findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
@@ -1048,13 +1086,15 @@ def test_symbol_only_occurrence_is_its_own_def_is_still_open(tmp_path: Path) -> 
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        target,
+        "src/foo.py",
+        "def _foo(x):\n    return x\n",
         "2026-01-01T00:00:00+00:00",
     )
     _write_tracked(
-        target, "proj",
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_foo` is unused and should be removed.\n",
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_foo` is unused and should be removed.\n",
     )
 
     findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
@@ -1071,7 +1111,8 @@ def test_symbol_only_occurrence_is_its_own_def_is_still_open(tmp_path: Path) -> 
 
 
 def test_git_grep_hard_failure_is_isolated_from_its_project_siblings(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     """Simulates a REAL ``run_git`` failure (``CliBridgeError``) for one
     entry's mechanical check -- exercises ``_attach_mechanical_verdict``'s
@@ -1082,15 +1123,20 @@ def test_git_grep_hard_failure_is_isolated_from_its_project_siblings(
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        target,
+        "src/foo.py",
+        "def _foo(x):\n    return x\n",
         "2026-01-01T00:00:00+00:00",
     )
     _commit_file(
-        target, "src/bar.py", "def _bar():\n    pass\n",
+        target,
+        "src/bar.py",
+        "def _bar():\n    pass\n",
         "2026-01-01T00:00:00+00:00",
     )
     _commit_file(
-        target, _tracked_rel("proj"),
+        target,
+        _tracked_rel("proj"),
         "## DW-1\nverified: 2026-07-01 — checked once\n`_foo` is unused.\n\n"
         "## DW-2\nverified: 2026-07-01 — checked once\n`_bar` is unused.\n",
         "2026-07-01T00:00:00+00:00",
@@ -1124,13 +1170,15 @@ def test_message_appends_still_open_text_when_mechanical_verdict_present(
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        target,
+        "src/foo.py",
+        "def _foo(x):\n    return x\n",
         "2026-01-01T00:00:00+00:00",
     )
     _commit_file(
-        target, _tracked_rel("proj"),
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_foo` is unused and should be removed.\n",
+        target,
+        _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_foo` is unused and should be removed.\n",
         "2026-07-01T00:00:00+00:00",
     )
 
@@ -1152,14 +1200,15 @@ def test_message_appends_escalate_text_when_mechanical_verdict_present(
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py", "def _foo(x):\n    return x\n\n\ndef bar():\n"
-        "    y = _foo(1)\n    z = _foo(2)\n    return y + z\n",
+        target,
+        "src/foo.py",
+        "def _foo(x):\n    return x\n\n\ndef bar():\n    y = _foo(1)\n    z = _foo(2)\n    return y + z\n",
         "2026-01-01T00:00:00+00:00",
     )
     _write_tracked(
-        target, "proj",
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_foo` is unused and should be removed.\n",
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_foo` is unused and should be removed.\n",
     )
 
     findings = chain.gather_due_for_verification(target)
@@ -1202,20 +1251,23 @@ def test_gitignored_untracked_reference_is_still_detected(tmp_path: Path) -> Non
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        target,
+        "src/foo.py",
+        "def _foo(x):\n    return x\n",
         "2026-01-01T00:00:00+00:00",
     )
     _commit_file(target, ".gitignore", "ignored_dir/\n", "2026-01-01T00:00:00+00:00")
     _commit_file(
-        target, _tracked_rel("proj"),
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_foo` is unused and should be removed.\n",
+        target,
+        _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_foo` is unused and should be removed.\n",
         "2026-07-01T00:00:00+00:00",
     )
     # A brand-new caller under a gitignored directory -- never `git add`-ed.
     (target / "ignored_dir").mkdir()
     (target / "ignored_dir" / "caller.py").write_text(
-        "y = _foo(5)\n", encoding="utf-8",
+        "y = _foo(5)\n",
+        encoding="utf-8",
     )
 
     findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
@@ -1234,14 +1286,15 @@ def test_recursive_one_liner_self_call_is_counted(tmp_path: Path) -> None:
     target = tmp_path / "target"
     _init_repo(target)
     _commit_file(
-        target, "src/foo.py",
+        target,
+        "src/foo.py",
         "def _foo(x): return _foo(x - 1) if x else 0\n",
         "2026-01-01T00:00:00+00:00",
     )
     _write_tracked(
-        target, "proj",
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Claim: `_foo` is unused and should be removed.\n",
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\nClaim: `_foo` is unused and should be removed.\n",
     )
 
     findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
@@ -1359,7 +1412,8 @@ def test_multiple_due_entries_in_one_project_each_get_their_own_equal_copy(
     verifies the per-item ``dict(other_roots)`` copy directly, not just
     indirectly via a single-entry fixture)."""
     _write_tracked(
-        tmp_path, "alpha",
+        tmp_path,
+        "alpha",
         "## DW-1\nstatus: open\n\n## DW-2\nstatus: open\n",
     )
     _write_code_root_file(tmp_path, "beta", "README.md", "")
@@ -1449,11 +1503,10 @@ def _load_apply_verdicts_module():
     stale entry (e.g. a since-deleted `tmp_path` still referenced by its
     `REPO_ROOT`) colliding with any future test that loads under the same
     name."""
-    script_path = (
-        Path(__file__).resolve().parents[6] / "scripts" / "apply_verification_verdicts.py"
-    )
+    script_path = Path(__file__).resolve().parents[6] / "scripts" / "apply_verification_verdicts.py"
     spec = importlib.util.spec_from_file_location(
-        "apply_verification_verdicts_under_test", script_path,
+        "apply_verification_verdicts_under_test",
+        script_path,
     )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -1484,7 +1537,10 @@ def test_cross_project_evidence_closes_the_entry_via_apply_verification_verdicts
     structurally blocks a cross-project close" (Intent)."""
     _write_tracked(tmp_path, "alpha", "## DW-1\nstatus: open\n")
     _write_code_root_file(
-        tmp_path, "beta", "src/pyforge/beta/core/policy.py", "def fixed(): ...\n",
+        tmp_path,
+        "beta",
+        "src/pyforge/beta/core/policy.py",
+        "def fixed(): ...\n",
     )
 
     findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
@@ -1497,18 +1553,20 @@ def test_cross_project_evidence_closes_the_entry_via_apply_verification_verdicts
 
     outcome = verdicts_module._apply_project(
         "alpha",
-        [{
-            "id": "DW-1",
-            "verdict": "resolved",
-            "evidence": f"Fixed in {beta_root}/src/pyforge/beta/core/policy.py:1",
-        }],
+        [
+            {
+                "id": "DW-1",
+                "verdict": "resolved",
+                "evidence": f"Fixed in {beta_root}/src/pyforge/beta/core/policy.py:1",
+            }
+        ],
         date(2026, 8, 21),
     )
 
     assert outcome.status == "applied"
-    tracked_text = (
-        tmp_path / "_bmad-output" / "projects" / "alpha" / verdicts_module.TRACKED_REL
-    ).read_text(encoding="utf-8")
+    tracked_text = (tmp_path / "_bmad-output" / "projects" / "alpha" / verdicts_module.TRACKED_REL).read_text(
+        encoding="utf-8"
+    )
     assert "verified: 2026-08-21 — resolved — Fixed in src/shared/packages/beta" in tracked_text
 
 
@@ -1532,15 +1590,18 @@ def test_three_projects_citing_same_path_token_form_one_cluster(tmp_path: Path) 
     B, C), each citing the identical backtick-quoted path token -- exactly
     one `due-for-verification-cluster` Finding naming all 3 members."""
     _write_tracked(
-        tmp_path, "alpha",
+        tmp_path,
+        "alpha",
         "## DW-1\nstatus: open\nCode: `shared/thing.py` looks wrong here\n",
     )
     _write_tracked(
-        tmp_path, "beta",
+        tmp_path,
+        "beta",
         "## DW-2\nstatus: open\nAlso touches `shared/thing.py` differently\n",
     )
     _write_tracked(
-        tmp_path, "gamma",
+        tmp_path,
+        "gamma",
         "## DW-3\nstatus: open\nStill about `shared/thing.py` too, elsewhere\n",
     )
 
@@ -1552,7 +1613,9 @@ def test_three_projects_citing_same_path_token_form_one_cluster(tmp_path: Path) 
     assert cluster["matched_on"] == "path"
     assert cluster["matched_value"] == "shared/thing.py"
     assert sorted((m["project"], m["id"]) for m in cluster["members"]) == [
-        ("alpha", "DW-1"), ("beta", "DW-2"), ("gamma", "DW-3"),
+        ("alpha", "DW-1"),
+        ("beta", "DW-2"),
+        ("gamma", "DW-3"),
     ]
 
 
@@ -1565,15 +1628,16 @@ def test_two_entries_same_project_sharing_path_token_do_not_cluster(tmp_path: Pa
     DIFFERENT projects (Boundaries: "a shared token/text within one
     project's own ledger never clusters")."""
     _write_tracked(
-        tmp_path, "alpha",
-        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n\n"
-        "## DW-2\nstatus: open\nAlso `shared/thing.py`\n",
+        tmp_path,
+        "alpha",
+        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n\n## DW-2\nstatus: open\nAlso `shared/thing.py`\n",
     )
 
     findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
 
     assert [f["kind"] for f in findings] == [
-        "due-for-verification", "due-for-verification",
+        "due-for-verification",
+        "due-for-verification",
     ]
 
 
@@ -1588,11 +1652,13 @@ def test_two_entries_different_projects_matching_summary_text_form_one_cluster(
     members. Differing whitespace/casing on each side proves the match is
     NORMALIZED, never verbatim."""
     _write_tracked(
-        tmp_path, "alpha",
+        tmp_path,
+        "alpha",
         "## DW-1\nstatus: open\nsummary: The retry loop never backs off\n",
     )
     _write_tracked(
-        tmp_path, "beta",
+        tmp_path,
+        "beta",
         "## DW-2\nstatus: open\nsummary:   the RETRY loop   never backs off  \n",
     )
 
@@ -1603,7 +1669,8 @@ def test_two_entries_different_projects_matching_summary_text_form_one_cluster(
     cluster = clusters[0]
     assert cluster["matched_on"] == "summary"
     assert sorted((m["project"], m["id"]) for m in cluster["members"]) == [
-        ("alpha", "DW-1"), ("beta", "DW-2"),
+        ("alpha", "DW-1"),
+        ("beta", "DW-2"),
     ]
     # review finding, patch: matched_value is the ORIGINAL claim text, never
     # the casefolded/whitespace-collapsed grouping key -- _normalize_claim's
@@ -1616,11 +1683,13 @@ def test_matched_value_is_never_the_normalized_grouping_key(tmp_path: Path) -> N
     form `_normalize_claim` produces -- only the representative member's
     ORIGINAL text (review finding, patch)."""
     _write_tracked(
-        tmp_path, "alpha",
+        tmp_path,
+        "alpha",
         "## DW-1\nstatus: open\nsummary: Mixed CASE   with   extra spaces\n",
     )
     _write_tracked(
-        tmp_path, "beta",
+        tmp_path,
+        "beta",
         "## DW-2\nstatus: open\nsummary: mixed case with extra spaces\n",
     )
 
@@ -1629,7 +1698,8 @@ def test_matched_value_is_never_the_normalized_grouping_key(tmp_path: Path) -> N
     cluster = next(f for f in findings if f["kind"] == "due-for-verification-cluster")
     assert cluster["matched_value"] != chain._normalize_claim(cluster["matched_value"])
     assert cluster["matched_value"] in (
-        "Mixed CASE   with   extra spaces", "mixed case with extra spaces",
+        "Mixed CASE   with   extra spaces",
+        "mixed case with extra spaces",
     )
 
 
@@ -1639,11 +1709,13 @@ def test_reason_only_flat_shape_entries_cluster_on_reason_text(tmp_path: Path) -
     still cluster on `matched_on: "summary"` via the `reason:` fallback
     (Tasks & Acceptance: "preferring summary: then reason:")."""
     _write_tracked(
-        tmp_path, "alpha",
+        tmp_path,
+        "alpha",
         "## DW-FU-1\nstatus: open\nreason: the CLI flag was never wired up\n",
     )
     _write_tracked(
-        tmp_path, "beta",
+        tmp_path,
+        "beta",
         "## DW-FU-2\nstatus: open\nreason: the cli flag was never wired up\n",
     )
 
@@ -1653,7 +1725,8 @@ def test_reason_only_flat_shape_entries_cluster_on_reason_text(tmp_path: Path) -
     assert len(clusters) == 1
     assert clusters[0]["matched_on"] == "summary"
     assert sorted((m["project"], m["id"]) for m in clusters[0]["members"]) == [
-        ("alpha", "DW-FU-1"), ("beta", "DW-FU-2"),
+        ("alpha", "DW-FU-1"),
+        ("beta", "DW-FU-2"),
     ]
 
 
@@ -1665,11 +1738,13 @@ def test_empty_summary_field_falls_back_to_reason(tmp_path: Path) -> None:
     correct precedence, not an oversight (review finding: documented by a
     test, not just a docstring claim)."""
     _write_tracked(
-        tmp_path, "alpha",
+        tmp_path,
+        "alpha",
         "## DW-1\nstatus: open\nsummary:\nreason: the real claim text here\n",
     )
     _write_tracked(
-        tmp_path, "beta",
+        tmp_path,
+        "beta",
         "## DW-2\nstatus: open\nsummary: \nreason: the real claim text here\n",
     )
 
@@ -1690,12 +1765,13 @@ def test_two_in_one_project_plus_one_in_another_form_a_three_member_cluster(
     hit by two entries in project A and one in project B still yields one
     3-member cluster")."""
     _write_tracked(
-        tmp_path, "alpha",
-        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n\n"
-        "## DW-2\nstatus: open\nAlso `shared/thing.py`\n",
+        tmp_path,
+        "alpha",
+        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n\n## DW-2\nstatus: open\nAlso `shared/thing.py`\n",
     )
     _write_tracked(
-        tmp_path, "beta",
+        tmp_path,
+        "beta",
         "## DW-3\nstatus: open\nStill `shared/thing.py`\n",
     )
 
@@ -1704,7 +1780,9 @@ def test_two_in_one_project_plus_one_in_another_form_a_three_member_cluster(
     clusters = [f for f in findings if f["kind"] == "due-for-verification-cluster"]
     assert len(clusters) == 1
     assert sorted((m["project"], m["id"]) for m in clusters[0]["members"]) == [
-        ("alpha", "DW-1"), ("alpha", "DW-2"), ("beta", "DW-3"),
+        ("alpha", "DW-1"),
+        ("alpha", "DW-2"),
+        ("beta", "DW-3"),
     ]
 
 
@@ -1714,14 +1792,14 @@ def test_dual_match_on_path_and_text_never_merges_into_one_cluster(tmp_path: Pat
     group (Boundaries: "Never merge overlapping clusters ... out of scope
     for this story's narrow, mechanical shape")."""
     _write_tracked(
-        tmp_path, "alpha",
-        "## DW-1\nstatus: open\nsummary: the exact same claim\n"
-        "Code: `shared/thing.py`\n",
+        tmp_path,
+        "alpha",
+        "## DW-1\nstatus: open\nsummary: the exact same claim\nCode: `shared/thing.py`\n",
     )
     _write_tracked(
-        tmp_path, "beta",
-        "## DW-2\nstatus: open\nsummary: the exact same claim\n"
-        "Code: `shared/thing.py`\n",
+        tmp_path,
+        "beta",
+        "## DW-2\nstatus: open\nsummary: the exact same claim\nCode: `shared/thing.py`\n",
     )
 
     findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
@@ -1732,7 +1810,8 @@ def test_dual_match_on_path_and_text_never_merges_into_one_cluster(tmp_path: Pat
     assert matched_on_values == ["path", "summary"]
     for cluster in clusters:
         assert sorted((m["project"], m["id"]) for m in cluster["members"]) == [
-            ("alpha", "DW-1"), ("beta", "DW-2"),
+            ("alpha", "DW-1"),
+            ("beta", "DW-2"),
         ]
 
 
@@ -1749,12 +1828,13 @@ def test_duplicate_id_within_one_ledger_never_double_counts_a_member(
     by `(project, id)` specifically to bound this to "at most one entry per
     id," never a doubled count)."""
     _write_tracked(
-        tmp_path, "alpha",
-        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n\n"
-        "## DW-1\nstatus: open\nAlso `shared/thing.py` here too\n",
+        tmp_path,
+        "alpha",
+        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n\n## DW-1\nstatus: open\nAlso `shared/thing.py` here too\n",
     )
     _write_tracked(
-        tmp_path, "beta",
+        tmp_path,
+        "beta",
         "## DW-2\nstatus: open\nAlso `shared/thing.py`\n",
     )
 
@@ -1773,20 +1853,21 @@ def test_distinct_paths_and_distinct_text_do_not_cluster(tmp_path: Path) -> None
     """Due entries in different projects with distinct paths and distinct
     text -- no cluster emitted at all."""
     _write_tracked(
-        tmp_path, "alpha",
-        "## DW-1\nstatus: open\nsummary: alpha's own unrelated issue\n"
-        "Code: `alpha/only.py`\n",
+        tmp_path,
+        "alpha",
+        "## DW-1\nstatus: open\nsummary: alpha's own unrelated issue\nCode: `alpha/only.py`\n",
     )
     _write_tracked(
-        tmp_path, "beta",
-        "## DW-2\nstatus: open\nsummary: beta's own totally different issue\n"
-        "Code: `beta/only.py`\n",
+        tmp_path,
+        "beta",
+        "## DW-2\nstatus: open\nsummary: beta's own totally different issue\nCode: `beta/only.py`\n",
     )
 
     findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
 
     assert [f["kind"] for f in findings] == [
-        "due-for-verification", "due-for-verification",
+        "due-for-verification",
+        "due-for-verification",
     ]
 
 
@@ -1794,7 +1875,8 @@ def test_distinct_paths_and_distinct_text_do_not_cluster(tmp_path: Path) -> None
 
 
 def test_correlation_pass_failure_degrades_to_zero_clusters_but_keeps_per_entry_findings(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     """A project's ledger becoming unreadable SPECIFICALLY during the
     correlation pass's own re-read (not during `_check_project_due_for_
@@ -1814,11 +1896,13 @@ def test_correlation_pass_failure_degrades_to_zero_clusters_but_keeps_per_entry_
     the zero-cluster outcome is the induced degrade, not just "nothing to
     cluster"."""
     _write_tracked(
-        tmp_path, "alpha",
+        tmp_path,
+        "alpha",
         "## DW-1\nstatus: open\nCode: `shared/thing.py`\n",
     )
     _write_tracked(
-        tmp_path, "beta",
+        tmp_path,
+        "beta",
         "## DW-2\nstatus: open\nCode: `shared/thing.py`\n",
     )
 
@@ -1832,7 +1916,8 @@ def test_correlation_pass_failure_degrades_to_zero_clusters_but_keeps_per_entry_
     per_entry = [f for f in findings if f["kind"] == "due-for-verification"]
     clusters = [f for f in findings if f["kind"] == "due-for-verification-cluster"]
     assert {(f["project"], f["id"]) for f in per_entry} == {
-        ("alpha", "DW-1"), ("beta", "DW-2"),
+        ("alpha", "DW-1"),
+        ("beta", "DW-2"),
     }
     assert clusters == []
 
@@ -1849,11 +1934,13 @@ def test_cluster_finding_survives_gather_due_for_verification_public_api(
     `verified:` line on either entry -- always "never-verified", so this
     stays time-invariant (module docstring's own testing discipline)."""
     _write_tracked(
-        tmp_path, "alpha",
+        tmp_path,
+        "alpha",
         "## DW-1\nstatus: open\nCode: `shared/thing.py`\n",
     )
     _write_tracked(
-        tmp_path, "beta",
+        tmp_path,
+        "beta",
         "## DW-2\nstatus: open\nAlso `shared/thing.py`\n",
     )
 
@@ -1867,7 +1954,8 @@ def test_cluster_finding_survives_gather_due_for_verification_public_api(
     assert cluster.evidence["matched_on"] == "path"
     assert cluster.evidence["matched_value"] == "shared/thing.py"
     assert sorted((m["project"], m["id"]) for m in cluster.evidence["members"]) == [
-        ("alpha", "DW-1"), ("beta", "DW-2"),
+        ("alpha", "DW-1"),
+        ("beta", "DW-2"),
     ]
 
 
@@ -1894,12 +1982,8 @@ def test_verification_coverage_mixed_staleness_reports_correct_total_and_pct(
     text = "".join(
         f"## DW-{n}\nverified: 2026-08-{10 - n:02d}\n\n" for n in range(1, 5)
     )  # DW-1..DW-4: verified 2026-08-09..2026-08-06 -- all within 30 days
-    text += "".join(
-        f"## DW-{n}\nverified: 2026-01-01 — ancient\n\n" for n in range(5, 8)
-    )  # DW-5..DW-7: stale
-    text += "".join(
-        f"## DW-{n}\nstatus: open\n\n" for n in range(8, 11)
-    )  # DW-8..DW-10: never-verified
+    text += "".join(f"## DW-{n}\nverified: 2026-01-01 — ancient\n\n" for n in range(5, 8))  # DW-5..DW-7: stale
+    text += "".join(f"## DW-{n}\nstatus: open\n\n" for n in range(8, 11))  # DW-8..DW-10: never-verified
     _write_tracked(tmp_path, "proj", text)
 
     items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
@@ -1916,7 +2000,8 @@ def test_verification_coverage_mixed_staleness_reports_correct_total_and_pct(
 
 def test_verification_coverage_all_fresh_reports_pct_100(tmp_path: Path) -> None:
     _write_tracked(
-        tmp_path, "proj",
+        tmp_path,
+        "proj",
         "## DW-1\nverified: 2026-08-10\n\n## DW-2\nverified: 2026-08-01\n",
     )
 
@@ -1930,7 +2015,8 @@ def test_verification_coverage_all_fresh_reports_pct_100(tmp_path: Path) -> None
 
 def test_verification_coverage_none_verified_reports_pct_0(tmp_path: Path) -> None:
     _write_tracked(
-        tmp_path, "proj",
+        tmp_path,
+        "proj",
         "## DW-1\nstatus: open\n\n## DW-2\nverified: 2000-01-01 — ancient\n",
     )
 
@@ -1976,7 +2062,9 @@ def test_verification_coverage_multiple_projects_each_get_own_item(
 ) -> None:
     _write_tracked(tmp_path, "alpha", "## DW-1\nverified: 2026-08-10\n")
     _write_tracked(
-        tmp_path, "beta", "## DW-1\nstatus: open\n\n## DW-2\nstatus: open\n",
+        tmp_path,
+        "beta",
+        "## DW-1\nstatus: open\n\n## DW-2\nstatus: open\n",
     )
 
     items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
@@ -2013,13 +2101,14 @@ def test_verification_coverage_unreadable_ledger_is_isolated_per_project(
 
 def test_due_for_verification_message_verification_coverage_branch() -> None:
     item = {
-        "kind": "verification-coverage", "project": "proj",
-        "total": 10, "verified_within_window": 4,
-        "window_days": chain.DUE_FOR_VERIFICATION_STALENESS_DAYS, "pct": 40,
+        "kind": "verification-coverage",
+        "project": "proj",
+        "total": 10,
+        "verified_within_window": 4,
+        "window_days": chain.DUE_FOR_VERIFICATION_STALENESS_DAYS,
+        "pct": 40,
     }
-    assert chain._due_for_verification_message(item) == (
-        "proj: 40% of 10 tracked entries verified within 30 days."
-    )
+    assert chain._due_for_verification_message(item) == ("proj: 40% of 10 tracked entries verified within 30 days.")
 
 
 def test_gather_due_for_verification_carries_verification_coverage_item(
@@ -2030,7 +2119,8 @@ def test_gather_due_for_verification_carries_verification_coverage_item(
     carries a `verification-coverage` item with the correct total/
     verified_within_window/pct."""
     _write_tracked(
-        tmp_path, "proj",
+        tmp_path,
+        "proj",
         "## DW-1\nverified: 9999-01-01 — always fresh\n\n"
         "## DW-2\nverified: 2000-01-01 — ancient\n\n"
         "## DW-3\nstatus: open\n",
@@ -2047,9 +2137,7 @@ def test_gather_due_for_verification_carries_verification_coverage_item(
     assert finding.evidence["total"] == 3
     assert finding.evidence["verified_within_window"] == 1
     assert finding.evidence["pct"] == 33
-    assert finding.message == (
-        "proj: 33% of 3 tracked entries verified within 30 days."
-    )
+    assert finding.message == ("proj: 33% of 3 tracked entries verified within 30 days.")
 
 
 # --- Path-token precision (2026-09-08): a dotted symbol is not a file ----------
@@ -2099,9 +2187,9 @@ def test_dotted_symbol_is_never_a_churn_candidate(tmp_path: Path) -> None:
     _init_repo(target)
     _commit_file(target, "src/foo.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
     _write_tracked(
-        target, "proj",
-        "## DW-1\nverified: 2026-07-01 — checked once\n"
-        "Code: `src/foo.py` calls `os.replace` on `Finding.path`\n",
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\nCode: `src/foo.py` calls `os.replace` on `Finding.path`\n",
     )
 
     findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
@@ -2121,9 +2209,7 @@ def test_path_extensions_cover_every_cited_tracked_file() -> None:
     dropping out of the churn check.
     """
     root = Path(__file__).resolve().parents[6]
-    ledgers = sorted(
-        root.glob("_bmad-output/projects/*/planning-artifacts/deferred-work-ledger.md")
-    )
+    ledgers = sorted(root.glob("_bmad-output/projects/*/planning-artifacts/deferred-work-ledger.md"))
     if not ledgers:
         pytest.skip("tracked ledgers unavailable (packaged install)")
     # `git ls-files`, not `rglob` -- the working tree carries `.pixi`

@@ -53,9 +53,12 @@ yet"), so it produces nothing in either bucket.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from pyforge.core.landing_evidence import (
+    BranchDerivedShape,
+    LandingEvidenceMatch,
     LandingEvidenceShape,
     StoryKeyRef,
     classify_branch_name,
@@ -98,9 +101,7 @@ def _story_key_from_ref(ref: StoryKeyRef) -> StoryKey | None:
         return None
 
 
-def extract_story_key_from_bmadloop_merge_subject(
-    subject: str, project_slug: str
-) -> StoryKey | None:
+def extract_story_key_from_bmadloop_merge_subject(subject: str, project_slug: str) -> StoryKey | None:
     """Delegate to ``pyforge.core.landing_evidence`` (Story 20.10).
 
     Preserved as a public surface for callers and tests that already import
@@ -111,9 +112,7 @@ def extract_story_key_from_bmadloop_merge_subject(
     return _story_key_from_ref(ref)
 
 
-def extract_story_key_from_github_merge_subject(
-    subject: str, project_slug: str
-) -> StoryKey | None:
+def extract_story_key_from_github_merge_subject(subject: str, project_slug: str) -> StoryKey | None:
     """Delegate to ``pyforge.core.landing_evidence`` (Story 20.10).
 
     Preserved as a public surface for callers and tests that already import
@@ -149,27 +148,53 @@ def _classify_merge_subject(
     match is trusted only if its key is a member -- the caller's own
     tracked ledger is the corroborating, project-scoped signal git text
     cannot provide. ``None`` (the default) preserves today's unscoped
-    behavior for callers that have not yet been updated to supply it."""
+    behavior for callers that have not yet been updated to supply it.
+
+    Story 50.4/FR-191 CAP-247: the repo default ``merge_subject_template``
+    now carries an optional ``{slug}`` placeholder (``"Merge {slug}/{key}
+    into main"``), which self-scopes the templated shape at the grammar
+    layer -- a subject rendered under a foreign slug fails to match at all,
+    so ``classify_merge_subject`` already returns ``None`` for it before
+    this function ever sees a key to check against ``known_keys``. A
+    slug-less template (grandfathered live history, or a station's own
+    override that predates this story) still relies on ``known_keys`` here
+    exactly as before -- the two mechanisms are complementary, not
+    redundant."""
+    key, match = _classify_merge_subject_match(subject, template, project_slug)
+    if key is None:
+        return None
+    if (
+        match is not None
+        and known_keys is not None
+        and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+        and key not in known_keys
+    ):
+        return None
+    return key
+
+
+def _classify_merge_subject_match(
+    subject: str,
+    template: str,
+    project_slug: str,
+) -> tuple[StoryKey | None, LandingEvidenceMatch | None]:
+    """Shared first half of ``_classify_merge_subject`` and
+    ``corroborated_merged_story_keys`` (Story 51.7/CAP-255 review finding:
+    the two had duplicated this classification inline). Returns the parsed
+    key alongside the grammar's own ``LandingEvidenceMatch`` -- ``None`` for
+    the match specifically when the key was reached only through the
+    ``land/<station>-<epic>-<seq>`` recovery-branch fallback, which carries
+    no shape either caller's corroboration/``known_keys`` gating applies
+    to."""
     match = classify_merge_subject(subject, template=template, project_slug=project_slug)
     if match is not None:
-        key = _story_key_from_ref(match.key)
-        if key is None:
-            return None
-        if (
-            known_keys is not None
-            and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
-            and key not in known_keys
-        ):
-            return None
-        return key
+        return _story_key_from_ref(match.key), match
     gh_match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
     if gh_match is not None:
-        branch_match = classify_branch_name(
-            gh_match.group("branch"), project_slug=project_slug
-        )
+        branch_match = classify_branch_name(gh_match.group("branch"), project_slug=project_slug)
         if branch_match is not None:
-            return _story_key_from_ref(branch_match.key)
-    return None
+            return _story_key_from_ref(branch_match.key), None
+    return None, None
 
 
 def _classify_commit(sha: str, subject: str, template: str, project_slug: str) -> StoryKey | None:
@@ -212,6 +237,88 @@ def merged_story_keys(
     return frozenset(keys)
 
 
+#: Reads a story's tracked spec ``status:`` value as it stands on
+#: ``origin/main`` (or ``None`` when unreadable). Injected by the caller
+#: (marshal, never core/this module) -- ``corroborated_merged_story_keys``
+#: stays pure (AD-4): no filesystem, no git, no clock.
+SpecStatusReader = Callable[[StoryKey], str | None]
+
+
+def _requires_spec_corroboration(match: LandingEvidenceMatch) -> bool:
+    """Story 51.7/CAP-255: exactly one landing-evidence shape is also the
+    shape a mint, fallout or fix PR's branch equally well carries -- a
+    ``GITHUB_PR_MERGE_SUBJECT`` match reached through a bare station branch
+    (``BranchDerivedShape.STATION_BRANCH``). That branch names the story
+    key with no intent to land it (the 2026-09-18 ``doctor/27-4-mint``
+    incident: PR #1477 merged the MINT branch, not a landing, and
+    ``story_merged_on_main`` read true anyway).
+
+    Every other shape is unaffected and ``spec_status_for`` is never
+    called for it: the intent-scoped ``dispatch/<slug>/<key>`` branch
+    Story 22.9 mints only when marshal itself dispatched THIS key
+    (``BranchDerivedShape.DISPATCH_BRANCH``), the templated/bmad-loop/
+    recovery-commit/story-direct shapes (none of which reach this
+    function through a station branch), and the ``land/…``-branch
+    recovery fallback ``corroborated_merged_story_keys`` below tries
+    separately -- all trusted exactly as ``merged_story_keys`` already
+    trusts them."""
+    return (
+        match.shape is LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT
+        and match.branch_shape is BranchDerivedShape.STATION_BRANCH
+    )
+
+
+def corroborated_merged_story_keys(
+    subjects: tuple[str, ...],
+    template: str,
+    project_slug: str,
+    *,
+    spec_status_for: SpecStatusReader,
+    known_keys: frozenset[StoryKey] | None = None,
+) -> frozenset[StoryKey]:
+    """``merged_story_keys``, corroborated by content rather than trusting a
+    station branch's name alone (Story 51.7/CAP-255).
+
+    Same reachability surface as ``merged_story_keys`` -- every shape
+    ``classify_merge_subject`` recognizes, plus the identical ``land/
+    <station>-<epic>-<seq>`` recovery-branch fallback embedded in a GitHub
+    PR merge subject -- with exactly ONE additional gate: a match that
+    reached ``GITHUB_PR_MERGE_SUBJECT`` through a bare station branch
+    (see ``_requires_spec_corroboration``) counts as a landing only when
+    ``spec_status_for(key)`` reports the key's tracked spec as
+    ``status: done`` on ``origin/main`` -- a mint, fallout or fix PR merges
+    it at ``ready``/``backlog``, a landing merges the promoted twin.
+
+    Every other shape is trusted exactly as ``merged_story_keys`` already
+    trusts it; ``spec_status_for`` is never called for those, so a caller
+    whose reader is expensive (a git-show subprocess) pays for it only on
+    the one ambiguous shape.
+
+    ``known_keys`` (Story 35.1): forwarded verbatim, identical semantics to
+    ``merged_story_keys``'s own parameter -- this function does not relax
+    or replace that pre-existing templated-shape corroboration.
+
+    Pure (AD-4): ``spec_status_for`` is the caller's own injected reader
+    (marshal's ``cli``/dispatch-consumer layer, never core) -- no
+    filesystem or git access happens in this module."""
+    keys: set[StoryKey] = set()
+    for subject in subjects:
+        key, match = _classify_merge_subject_match(subject, template, project_slug)
+        if key is None:
+            continue
+        if match is not None:
+            if (
+                known_keys is not None
+                and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+                and key not in known_keys
+            ):
+                continue
+            if _requires_spec_corroboration(match) and spec_status_for(key) != SPEC_STATUS_DONE:
+                continue
+        keys.add(key)
+    return frozenset(keys)
+
+
 def branch_story_merge_confirmed_by_grammar(
     branch: str,
     story_key: StoryKey,
@@ -230,9 +337,7 @@ def branch_story_merge_confirmed_by_grammar(
     ``VcsPort.is_branch_merged`` alone cannot confirm a recovered branch
     whose content-equivalence check fails but whose story demonstrably
     landed via the recovery convention."""
-    merged = merged_story_keys(
-        subjects, template, project_slug, commits=commits
-    )
+    merged = merged_story_keys(subjects, template, project_slug, commits=commits)
     if story_key not in merged:
         return False
     branch_match = classify_branch_name(branch, project_slug=project_slug)
@@ -340,11 +445,7 @@ def count_conforming_subjects(subjects: tuple[str, ...], template: str, project_
     and none of them conformed to any recognized pattern" -- a silent
     zero-vs-zero ambiguity a prior version of this run reported no way to
     distinguish."""
-    return sum(
-        1
-        for subject in subjects
-        if _classify_merge_subject(subject, template, project_slug) is not None
-    )
+    return sum(1 for subject in subjects if _classify_merge_subject(subject, template, project_slug) is not None)
 
 
 @dataclass(frozen=True)
@@ -405,6 +506,30 @@ class PromotionPlan:
 # inside a comment, neither of which is a real frontmatter key).
 _STATUS_KEY_RE = re.compile(r"^status:\s")
 
+_BANNER_PREFIX = "<!--"
+_BANNER_SUFFIX = "-->"
+
+
+def _skip_leading_banner(text: str) -> str:
+    """Skip a leading HTML-comment provenance banner (Story 50.5, CAP-248)
+    -- a ``<!-- ... -->`` block, possibly spanning multiple lines, that a
+    recovered or minted tracked spec may carry ABOVE its frontmatter fence
+    instead of below it (herald's pre-#1460 ``spec-1-4``: ``<!-- Promoted
+    from implementation-artifacts/ ... -->`` as line 1). Tolerates a leading
+    BOM, blank lines, or spaces before the banner's opening marker (Story
+    51.8, CAP-256, DW-FU-50-6) -- the banner need not sit at literal text
+    offset 0. Returns ``text`` unchanged when no banner is found there, or
+    when the marker is never closed -- an unclosed banner is not a banner
+    this parser recognizes, so ``is_valid_spec_text`` still requires the
+    (absent) frontmatter fence and correctly stays invalid."""
+    stripped = text.lstrip("\ufeff \t\r\n")
+    if not stripped.startswith(_BANNER_PREFIX):
+        return text
+    end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    if end == -1:
+        return text
+    return stripped[end + len(_BANNER_SUFFIX) :].lstrip()
+
 
 def is_valid_spec_text(text: str | None) -> bool:
     """The minimal parse validation-before-promotion requires (AD-13):
@@ -418,9 +543,16 @@ def is_valid_spec_text(text: str | None) -> bool:
     when the tracked copy passes this same check -- a broken tracked copy
     never blocks re-promoting a good Tier-3 one, per AD-13's own "never
     promoted over a GOOD copy" wording, which implies a bad existing copy is
-    not one)."""
+    not one).
+
+    Story 50.5/CAP-248: a leading provenance banner (``_skip_leading_
+    banner``) is skipped before the fence check, so a tracked copy that
+    begins with one still parses valid -- the banner-BELOW-frontmatter
+    shape PR #1460 already produces fleet-wide is unaffected either way,
+    since it never starts with ``<!--`` in the first place."""
     if text is None or not text.strip():
         return False
+    text = _skip_leading_banner(text)
     if not text.startswith("---"):
         return False
     end = text.find("\n---", 3)
@@ -428,6 +560,48 @@ def is_valid_spec_text(text: str | None) -> bool:
         return False
     frontmatter = text[3:end]
     return any(_STATUS_KEY_RE.match(line.strip()) for line in frontmatter.splitlines())
+
+
+# The `status:` VALUE, not merely the key `is_valid_spec_text` proves exists
+# (Story 51.7/CAP-255) -- an optionally quoted bare token, mirroring
+# `core/dispatch.py`'s own `_DIFFICULTY_RE` value-capture convention. The
+# opening quote is captured and back-referenced at the close (review
+# finding) so a mismatched pair (`status: 'done"`) does not parse -- open
+# and close must be the same character, or both absent.
+_STATUS_VALUE_RE = re.compile(r"^status:\s*(['\"]?)([A-Za-z0-9_-]+)\1\s*$")
+
+#: A `status: done` string, the one value `corroborated_merged_story_keys`
+#: treats as landing evidence.
+SPEC_STATUS_DONE = "done"
+
+
+def read_spec_status(text: str | None) -> str | None:
+    """The tracked spec's own ``status:`` frontmatter VALUE (Story 51.7/
+    CAP-255).
+
+    ``is_valid_spec_text`` above only proves the KEY exists;
+    ``corroborated_merged_story_keys`` needs the value itself to tell a
+    landing (``status: done``) apart from a mint, fallout or fix PR's spec
+    (``status: ready``/``backlog``/…). Banner-tolerant (``_skip_leading_
+    banner``, Story 51.8/CAP-256) for the same recovered/minted-spec shapes
+    ``is_valid_spec_text`` already tolerates. Returns ``None`` for missing
+    or empty text, a missing frontmatter fence, or no ``status:`` key at
+    all -- never raises, so a caller can treat "unreadable" and "no status"
+    identically: both fail closed, never corroborating a landing."""
+    if text is None or not text.strip():
+        return None
+    text = _skip_leading_banner(text)
+    if not text.startswith("---"):
+        return None
+    end = text.find("\n---", 3)
+    if end == -1:
+        return None
+    frontmatter = text[3:end]
+    for line in frontmatter.splitlines():
+        match = _STATUS_VALUE_RE.match(line.strip())
+        if match is not None:
+            return match.group(2)
+    return None
 
 
 def classify_promotion_candidates(
@@ -455,9 +629,7 @@ def classify_promotion_candidates(
     promotion candidate (the story's own I/O matrix: "not-yet-merged story,
     spec exists in Tier-3" -> "Skipped -- not a promotion candidate yet").
     """
-    candidate_by_key: dict[StoryKey, SpecCandidate] = {
-        candidate.story_key: candidate for candidate in candidates
-    }
+    candidate_by_key: dict[StoryKey, SpecCandidate] = {candidate.story_key: candidate for candidate in candidates}
 
     to_promote: list[SpecCandidate] = []
     gaps: list[Finding] = []

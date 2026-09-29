@@ -130,8 +130,9 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 # `/entrypoint.sh` alongside its code tree -- `pixi shell-hook` renders
 # activation-time environment variables into that file, which is exactly the
 # shape a build-host credential would take if one ever leaked into the
-# builder's environment. (Today it emits only `PATH`/`CONDA_*`/`PIXI_*`;
-# the gate is what keeps that true rather than assumed.)
+# builder's environment. (Today it emits only `PATH`/`CONDA_*`/`PIXI_*` and
+# Story 27.6's `LIQUIBASE_ANALYTICS_ENABLED=false`; the gate is what keeps
+# that true rather than assumed.)
 # NOT scanned, deliberately: the rest of the `/app` monorepo checkout (never
 # copied into the runtime stage -- scanning it would just re-run Story 7.3's
 # already-proven-clean gate over content this image never ships) and the
@@ -184,6 +185,19 @@ COPY src/shared/packages/pyforge-steward/src/pyforge /app/pyforge
 COPY src/shared/packages/pyforge-core/src/pyforge/core /app/pyforge/core
 # Story 49.14: mason portal boot reconcile imports pyforge.mason.boot at runtime.
 COPY src/shared/packages/pyforge-mason/src/pyforge/mason /app/pyforge/mason
+# Herald Epic 19.1: config/station_api.py's register_station_api("herald", 1)
+# imports pyforge.herald.station_api by name at ASGI app load time (never a
+# direct `pyforge.*` import from src/platform/ itself, per that module's own
+# docstring) -- without this line the image crashes on boot with
+# ModuleNotFoundError: No module named 'pyforge.herald' the moment
+# config/asgi.py loads (never caught by Platform CI's own `test` job, which
+# runs against the separate platform-ci-test pixi env that already declares
+# pyforge-herald -- only a real container run exercises this path). Same
+# namespace-package COPY shape as steward/core/mason above; station_api.py's
+# own module-level code is zero-import beyond stdlib typing, so the heavier
+# pyforge-herald runtime deps (mcp, httpx2, playwright, python-pptx) that a
+# live webhook request would lazily need stay out of this image.
+COPY src/shared/packages/pyforge-herald/src/pyforge/herald /app/pyforge/herald
 COPY src/shared/packages/django-doctor/src/django_doctor_portal /app/django_doctor_portal
 COPY src/shared/packages/django-herald/src/django_herald_portal /app/django_herald_portal
 COPY src/shared/packages/django-marshal/src/django_marshal_portal /app/django_marshal_portal

@@ -30,7 +30,14 @@ def test_union_across_all_nine_sources_one_row_per_pep503_name():
     discovery_aoss_premium_python_raw = pd.DataFrame([{"pypi_name": "django"}])
     enterprise_jfrog_names = pd.DataFrame([{"pypi_name": "click", "conda_name": None}])
     enterprise_conda_maintainers = pd.DataFrame(
-        [{"core_python_package_name": "pytest", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]
+        [
+            {
+                "core_python_package_name": "pytest",
+                "role": "Maintainer",
+                "feedstock_slug": "x",
+                "repository_source": "CDO-ENT-CONDA",
+            }
+        ]
     )
     openteams_project_1_board_raw = pd.DataFrame([{"title": "[Conda-Forge Packaging] rich"}])
 

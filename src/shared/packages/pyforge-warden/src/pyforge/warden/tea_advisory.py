@@ -61,23 +61,28 @@ import math
 import shutil
 import subprocess
 import tempfile
+import tomllib
 from collections.abc import Callable, Mapping, MutableMapping
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from typing import Any
 
-import tomllib
+from pyforge.core.errors import PyforgeError
 
 from .hooks import PR_GATE_SCAN
 
 TEA_TEST_REVIEW_BINARY = "tea-test-review"
 
-# steward 46.3's own pixi task defaults ("tea-test-review --base origin/main
-# --min-score 80") -- this module never gates on --min-score (AD-4: the
-# advisory contributes a note, never a verdict), so it is deliberately not
-# passed here. --agent claude mirrors the CLI's own documented default.
-_DEFAULT_BASE_REF = "origin/main"
+# steward 46.3's own pixi task defaults ("tea-test-review --base
+# refs/remotes/origin/main --min-score 80") -- this module never gates on
+# --min-score (AD-4: the advisory contributes a note, never a verdict), so it
+# is deliberately not passed here. --agent claude mirrors the CLI's own
+# documented default. The base is the full refname, never the short
+# `origin/main`: TEA diffs `<base>...HEAD`, and a short name resolves to a
+# local branch or tag of that name first, so a stray `origin/main` at HEAD
+# emptied the review (warden Story 13.1, spec-pyforge-warden CAP-23).
+_DEFAULT_BASE_REF = "refs/remotes/origin/main"
 _DEFAULT_AGENT = "claude"
 _DEFAULT_TIMEOUT_SECONDS = 1800  # mirrors the CLI's own --timeout-ms default
 
@@ -88,7 +93,7 @@ _DEFAULT_TIMEOUT_SECONDS = 1800  # mirrors the CLI's own --timeout-ms default
 TeaRunner = Callable[[Path, Path], "subprocess.CompletedProcess[str] | None"]
 
 
-class TeaRosterMissingError(RuntimeError):
+class TeaRosterMissingError(PyforgeError, RuntimeError):
     """Raised by ``run_tea_test_review`` (default-resolution path only --
     ``runner is None``) when the AD-9 module roster
     (``target/_bmad/custom/config.toml``'s ``[modules.tea]`` table) has no
@@ -100,7 +105,10 @@ class TeaRosterMissingError(RuntimeError):
     Deliberately NOT caught by ``TeaAdvisoryScanPlugin``'s
     belt-and-suspenders fail-open net -- it must propagate out of the
     PR-gate scan so ``cli.py`` can record it as a loud ``CONFIG_VALIDATION``
-    error rather than a silent no-op."""
+    error rather than a silent no-op.
+
+    Story 52.1, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
 def _ad9_roster_has_tea(target: Path) -> bool:
@@ -119,7 +127,7 @@ def _ad9_roster_has_tea(target: Path) -> bool:
     try:
         with config_path.open("rb") as handle:
             document = tomllib.load(handle)
-    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+    except OSError, tomllib.TOMLDecodeError, UnicodeDecodeError:
         return False
     modules = document.get("modules")
     return isinstance(modules, Mapping) and "tea" in modules
@@ -139,16 +147,15 @@ class TeaAdvisoryResult:
     skipped_reason: str | None
 
 
-def _default_runner(
-    binary: str, target: Path, json_path: Path
-) -> subprocess.CompletedProcess[str]:
+def _default_runner(binary: str, target: Path, json_path: Path) -> subprocess.CompletedProcess[str]:
     """Shell out to the real ``tea-test-review`` binary. Both the markdown
     report and the JSON verdict are written into ``json_path``'s own
     scratch directory -- never into ``target`` -- an advisory scanner must
-    not litter the scanned tree with a stray ``test-review.md``. NEVER
-    exercised inside this repo's own test suite: the "TEA absent" test
-    relies on the real absent binary, and the "low score"/"runner errors"
-    tests inject their own ``runner`` instead."""
+    not litter the scanned tree with a stray ``test-review.md``. The real
+    binary is NEVER run inside this repo's own test suite: the "TEA absent"
+    test relies on the real absent binary, the "low score"/"runner errors"
+    tests inject their own ``runner``, and the one test that calls this
+    function (Story 13.1: the argv's ``--base``) replaces ``subprocess.run``."""
     report_path = json_path.with_name("test-review.md")
     return subprocess.run(
         [
@@ -235,10 +242,7 @@ def run_tea_test_review(
             # belt-and-suspenders per the module docstring): whatever JSON
             # happens to exist at json_path is not read at all.
             if completed is not None and completed.returncode not in (0, 1):
-                raise RuntimeError(
-                    f"tea-test-review exited {completed.returncode} -- "
-                    "verdict not trusted"
-                )
+                raise RuntimeError(f"tea-test-review exited {completed.returncode} -- verdict not trusted")
             with json_path.open("r", encoding="utf-8") as handle:
                 raw: Any = json.load(handle)
     except Exception as exc:  # noqa: BLE001 -- fail-open: any runner/parse
@@ -249,9 +253,7 @@ def run_tea_test_review(
             score=None,
             recommendation=None,
             summary="",
-            skipped_reason=(
-                f"tea-test-review run failed: {type(exc).__name__}: {exc}"
-            ),
+            skipped_reason=(f"tea-test-review run failed: {type(exc).__name__}: {exc}"),
         )
     if not isinstance(raw, Mapping):
         return TeaAdvisoryResult(
@@ -268,30 +270,20 @@ def run_tea_test_review(
             score=None,
             recommendation=None,
             summary="",
-            skipped_reason=(
-                str(reason)
-                if reason
-                else "tea-test-review reported nothing to review"
-            ),
+            skipped_reason=(str(reason) if reason else "tea-test-review reported nothing to review"),
         )
     score_raw = raw.get("qualityScore")
     score = (
         int(score_raw)
-        if isinstance(score_raw, (int, float))
-        and not isinstance(score_raw, bool)
-        and math.isfinite(score_raw)
+        if isinstance(score_raw, (int, float)) and not isinstance(score_raw, bool) and math.isfinite(score_raw)
         else None
     )
     recommendation_raw = raw.get("recommendation")
-    recommendation = (
-        str(recommendation_raw) if isinstance(recommendation_raw, str) else None
-    )
+    recommendation = str(recommendation_raw) if isinstance(recommendation_raw, str) else None
     violations = raw.get("violations")
     violations_text = ""
     if isinstance(violations, Mapping):
-        violations_text = ", ".join(
-            f"{severity}={count}" for severity, count in sorted(violations.items())
-        )
+        violations_text = ", ".join(f"{severity}={count}" for severity, count in sorted(violations.items()))
     summary = (
         f"tea-test-review: recommendation={recommendation or 'unknown'} "
         f"score={score if score is not None else 'unknown'}"

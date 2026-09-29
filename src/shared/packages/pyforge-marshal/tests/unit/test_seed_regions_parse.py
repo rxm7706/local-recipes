@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import pytest
 from pyforge.core.errors import PyforgeError
+
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.regions.markers import (
     MarkerError,
@@ -119,9 +120,7 @@ def test_body_span_is_the_substitution_contract():
     (span,) = parse_regions(text, RegionFormat.HTML)
     rebuilt = raw[: span.body_span[0]] + b"new body\n" + raw[span.body_span[1] :]
 
-    assert rebuilt.decode("utf-8") == _doc(
-        "intro", _begin("tiers"), "new body", _end("tiers"), "outro"
-    )
+    assert rebuilt.decode("utf-8") == _doc("intro", _begin("tiers"), "new body", _end("tiers"), "outro")
 
 
 def test_marker_spans_exclude_their_own_line_terminator():
@@ -299,9 +298,7 @@ def test_a_fenced_end_marker_cannot_close_a_real_region():
     (span,) = parse_regions(text, RegionFormat.HTML)
 
     assert span.name == "a"
-    assert _slice(text, span.body_span) == _doc(
-        "Regions are delimited like this:", "```", _end("a"), "```"
-    )
+    assert _slice(text, span.body_span) == _doc("Regions are delimited like this:", "```", _end("a"), "```")
 
 
 def test_a_real_region_after_a_closed_fence_still_parses():
@@ -424,9 +421,7 @@ def test_fence_awareness_is_html_only():
 
 def test_crlf_and_lf_agree_on_names_versions_and_shas():
     lf_text = _doc("intro", _begin("tiers"), "line1", _end("tiers"), "outro")
-    crlf_text = _doc(
-        "intro", _begin("tiers"), "line1", _end("tiers"), "outro", newline="\r\n"
-    )
+    crlf_text = _doc("intro", _begin("tiers"), "line1", _end("tiers"), "outro", newline="\r\n")
 
     (lf_span,) = parse_regions(lf_text, RegionFormat.HTML)
     (crlf_span,) = parse_regions(crlf_text, RegionFormat.HTML)
@@ -442,9 +437,7 @@ def test_crlf_spans_address_the_crlf_bytes():
     """Byte offsets are measured against the ORIGINAL bytes, so a CRLF
     file's spans differ from the LF file's by one byte per preceding line --
     and still slice out exactly the right content."""
-    crlf_text = _doc(
-        "intro", _begin("tiers"), "line1", _end("tiers"), "outro", newline="\r\n"
-    )
+    crlf_text = _doc("intro", _begin("tiers"), "line1", _end("tiers"), "outro", newline="\r\n")
 
     (span,) = parse_regions(crlf_text, RegionFormat.HTML)
 
@@ -458,9 +451,7 @@ def test_mixed_line_endings_in_one_document_still_parse_correctly():
     the uniform-CRLF/uniform-LF cases above, this proves per-line byte
     accounting (each line's own terminator length, not a document-wide
     assumption) is what actually makes offsets correct."""
-    text = (
-        f"intro\r\n{_begin('tiers')}\nline1\r\n{_end('tiers')}\noutro\r\n"
-    )
+    text = f"intro\r\n{_begin('tiers')}\nline1\r\n{_end('tiers')}\noutro\r\n"
 
     (span,) = parse_regions(text, RegionFormat.HTML)
 
@@ -567,9 +558,7 @@ def test_anchor_order_is_a_preference_not_a_file_position_search():
     wins over a guaranteed-fallback anchor listed after it."""
     text = _doc("intro", "# CLAUDE.md", "more content")
 
-    resolution = resolve_anchor(
-        text, RegionFormat.HTML, ("## The tiers", "# CLAUDE.md", "<top>")
-    )
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("## The tiers", "# CLAUDE.md", "<top>"))
 
     assert resolution.matched == "# CLAUDE.md"
     assert text.encode("utf-8")[resolution.offset :].startswith(b"more content")
@@ -580,9 +569,7 @@ def test_top_wins_only_when_every_earlier_anchor_is_absent():
     anchor present, `<top>` (listed last) is the one that resolves."""
     text = _doc("intro", "unrelated content")
 
-    resolution = resolve_anchor(
-        text, RegionFormat.HTML, ("## The tiers", "# CLAUDE.md", "<top>")
-    )
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("## The tiers", "# CLAUDE.md", "<top>"))
 
     assert resolution.matched == "<top>"
     assert resolution.offset == 0

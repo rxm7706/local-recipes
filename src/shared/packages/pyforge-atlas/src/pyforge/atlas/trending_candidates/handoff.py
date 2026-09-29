@@ -34,6 +34,7 @@ from typing import Any
 
 import pandas as pd
 from kedro.io.core import DatasetError
+
 from pyforge.atlas import provenance as _provenance
 from pyforge.atlas.mcp import session as _session
 from pyforge.atlas.trending_candidates.query import (
@@ -126,9 +127,7 @@ _ELIGIBLE_TIERS = frozenset({"1", "2"})
 # CAP-2 column named exactly one of these would otherwise be silently clobbered by
 # this envelope's own bookkeeping, corrupting the very data a Mason consumer reads.
 # `hand_off_candidate` asserts none of these collide before ever writing to them.
-_RESERVED_ENVELOPE_KEYS = frozenset(
-    {"schema_version", "dataset", "health_screen", "provenance", "handed_off_at"}
-)
+_RESERVED_ENVELOPE_KEYS = frozenset({"schema_version", "dataset", "health_screen", "provenance", "handed_off_at"})
 
 
 def _select_candidate_row(df: pd.DataFrame, repo_full_name: str) -> pd.DataFrame | None:
@@ -153,9 +152,7 @@ def _select_candidate_row(df: pd.DataFrame, repo_full_name: str) -> pd.DataFrame
     # The STORED value is stripped too (review finding), not just the caller's
     # `--repo` argument: a scraped row with incidental leading/trailing whitespace
     # would otherwise silently fail to match an otherwise-correct `--repo` value.
-    is_match = df["repo_full_name"].map(
-        lambda v: isinstance(v, str) and v.strip().casefold() == target
-    )
+    is_match = df["repo_full_name"].map(lambda v: isinstance(v, str) and v.strip().casefold() == target)
     matches = df[is_match]
     if matches.empty:
         return None
@@ -170,12 +167,8 @@ def _select_candidate_row(df: pd.DataFrame, repo_full_name: str) -> pd.DataFrame
         # value is untouched by this — only which row wins the tie-break changes.
         sort_frame = matches
         if "stars_total" in sort_frame.columns:
-            sort_frame = matches.assign(
-                stars_total=pd.to_numeric(matches["stars_total"], errors="coerce")
-            )
-        order = sort_frame.sort_values(
-            by=sort_cols, ascending=[c != "stars_total" for c in sort_cols]
-        ).index
+            sort_frame = matches.assign(stars_total=pd.to_numeric(matches["stars_total"], errors="coerce"))
+        order = sort_frame.sort_values(by=sort_cols, ascending=[c != "stars_total" for c in sort_cols]).index
         matches = matches.loc[order]
     return matches.iloc[[0]]
 
@@ -199,9 +192,7 @@ def hand_off_candidate(
     PRESENCE is validated here, never the TRUTH of the evidence (Never list).
     """
     if verdict != "pass":
-        raise ValueError(
-            f"health screen must PASS to hand off a candidate (verdict={verdict!r})"
-        )
+        raise ValueError(f"health screen must PASS to hand off a candidate (verdict={verdict!r})")
     abandonment_signal = "" if abandonment_signal is None else str(abandonment_signal).strip()
     if not abandonment_signal:
         raise ValueError("health screen missing required field: abandonment_signal")
@@ -237,9 +228,7 @@ def hand_off_candidate(
     matched = _select_candidate_row(df, repo_full_name)
     if matched is None:
         detail = f" ({info.reason})" if info.reason else ""
-        raise ValueError(
-            f"candidate not found in {DATASET_NAME!r}: {repo_full_name!r}{detail}"
-        )
+        raise ValueError(f"candidate not found in {DATASET_NAME!r}: {repo_full_name!r}{detail}")
 
     # Mask NaN/±inf the SAME way query.py's own envelope does (Code Map) — imported
     # directly from `query.py` rather than duplicated: an independent copy of this
@@ -259,10 +248,7 @@ def hand_off_candidate(
     # "already-on-conda-forge" and "unclassified-needs-human" by construction.
     tier = row.get("tier")
     if tier not in _ELIGIBLE_TIERS:
-        raise ValueError(
-            f"{repo_full_name!r} is not eligible for handoff: "
-            f"tier={tier!r} reason={row.get('reason')!r}"
-        )
+        raise ValueError(f"{repo_full_name!r} is not eligible for handoff: tier={tier!r} reason={row.get('reason')!r}")
 
     # Guard BEFORE the blind overwrite below (review finding): a future CAP-2 column
     # sharing one of these exact names would otherwise vanish into this envelope's

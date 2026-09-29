@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import shutil
 from pathlib import Path
 
 from pyforge.testing_kit import changed_paths_since, diff_text_since
@@ -83,7 +84,7 @@ def _load_submit_recall():
     return module.submit_recall
 
 
-def _load_parse_recall_cli():
+def _load_client_fn(name: str):
     path = (
         _repo_root()
         / "src"
@@ -97,11 +98,15 @@ def _load_parse_recall_cli():
     )
     tree = ast.parse(path.read_text(encoding="utf-8"))
     for node in tree.body:
-        if isinstance(node, ast.FunctionDef) and node.name == "parse_recall_cli":
-            ns: dict[str, object] = {}
+        if isinstance(node, ast.FunctionDef) and node.name == name:
+            ns: dict[str, object] = {"shutil": shutil}
             exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), "exec"), ns)
-            return ns["parse_recall_cli"]
-    raise AssertionError("parse_recall_cli not found")
+            return ns[name]
+    raise AssertionError(f"{name} not found")
+
+
+def _load_parse_recall_cli():
+    return _load_client_fn("parse_recall_cli")
 
 
 def test_submit_recall_runs_portal_client_call_and_returns_cited_results() -> None:
@@ -144,9 +149,9 @@ def test_submit_recall_runs_portal_client_call_and_returns_cited_results() -> No
     }
     assert results["text"] == "cited answer"
     assert results["citation"] == "memory.md:12"
-    results_html = (
-        _portal_root(_repo_root()) / "templates" / "scribe_portal" / "results.html"
-    ).read_text(encoding="utf-8")
+    results_html = (_portal_root(_repo_root()) / "templates" / "scribe_portal" / "results.html").read_text(
+        encoding="utf-8"
+    )
     rendered = results_html
     if results:
         rendered = rendered.replace("{{ results.text }}", str(results["text"]))
@@ -173,6 +178,19 @@ def test_parse_recall_cli_extracts_citation() -> None:
     }
 
 
+def test_recall_cli_argv_mode_is_optional() -> None:
+    recall_cli_argv = _load_client_fn("recall_cli_argv")
+    bare = recall_cli_argv("what did we decide?")
+    assert "--kind" not in bare
+    assert "--mode" not in bare
+    assert bare[-1] == "what did we decide?"
+    planned = recall_cli_argv("what did we decide?", mode="planning")
+    assert planned[-2:] == ["--mode", "planning"]
+    assert "--kind" not in planned
+    coded = recall_cli_argv("q", mode="code")
+    assert coded[-2:] == ["--mode", "code"]
+
+
 def test_portal_submits_recall_via_portal_client_only() -> None:
     root = _repo_root()
     views = (_portal_root(root) / "views.py").read_text(encoding="utf-8")
@@ -180,9 +198,7 @@ def test_portal_submits_recall_via_portal_client_only() -> None:
     assert "PortalClient" in views
     assert "submit_recall" in views
     helper = ast.parse((_portal_root(root) / "recall_submit.py").read_text(encoding="utf-8"))
-    assert any(
-        isinstance(node, ast.Attribute) and node.attr == "call" for node in ast.walk(helper)
-    )
+    assert any(isinstance(node, ast.Attribute) and node.attr == "call" for node in ast.walk(helper))
     assert '"recall"' in (views + (_portal_root(root) / "recall_submit.py").read_text(encoding="utf-8"))
     assert not _raw_http_imports(tree)
     assert not _pyforge_package_imports(tree)
@@ -190,9 +206,7 @@ def test_portal_submits_recall_via_portal_client_only() -> None:
     home = (_portal_root(root) / "templates" / "scribe_portal" / "home.html").read_text(
         encoding="utf-8",
     )
-    results = (
-        _portal_root(root) / "templates" / "scribe_portal" / "results.html"
-    ).read_text(encoding="utf-8")
+    results = (_portal_root(root) / "templates" / "scribe_portal" / "results.html").read_text(encoding="utf-8")
     assert 'name="query"' in home
     assert "scribe-recall-form" in home
     assert "hx-post" in home
@@ -214,6 +228,17 @@ def test_portal_tree_has_no_raw_http_or_pyforge_or_chrome_copy() -> None:
         if path.is_file() and path.name in _CHROME_COPY:
             offenders.append(f"chrome copy: {path}")
     assert offenders == []
+
+
+def test_portal_job_and_cursor_rule_inherit_default_recall() -> None:
+    root = _repo_root()
+    job = (
+        root / "src" / "shared" / "packages" / "django-pyforge" / "src" / "django_pyforge" / "assertion" / "client.py"
+    ).read_text(encoding="utf-8")
+    assert '"--kind"' not in job and "'--kind'" not in job
+    rule = (root / ".cursor" / "rules" / "scribe-recall.mdc").read_text(encoding="utf-8")
+    assert "scribe recall" in rule
+    assert "AGENTS.md" in rule
 
 
 def test_src_platform_has_no_pyforge_import() -> None:

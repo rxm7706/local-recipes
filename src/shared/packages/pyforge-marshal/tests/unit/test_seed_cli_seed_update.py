@@ -22,6 +22,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.cli import seed as seed_cli
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.errors import InternalError, PreconditionFailure, UsageError
@@ -55,8 +56,11 @@ def _manifest(*entries: ManifestEntry, model_version: ModelVersion = _V1) -> Man
 
 def _copied_managed(entry_id: str, path: str) -> ManifestEntry:
     return ManifestEntry(
-        id=entry_id, artifact_class=ArtifactClass.COPIED_MANAGED, path=path,
-        applies_to=AppliesTo.BOTH, rationale="test",
+        id=entry_id,
+        artifact_class=ArtifactClass.COPIED_MANAGED,
+        path=path,
+        applies_to=AppliesTo.BOTH,
+        rationale="test",
     )
 
 
@@ -69,8 +73,12 @@ def _hybrid(entry_id: str, path: str, region_name: str) -> ManifestEntry:
     its own, unlike a ``_copied_managed`` entry (the packaged template tree
     ships no whole-file content for an arbitrary synthetic id)."""
     return ManifestEntry(
-        id=entry_id, artifact_class=ArtifactClass.HYBRID_MANAGED_REGION, path=path,
-        applies_to=AppliesTo.BOTH, rationale="test", format=RegionFormat.HTML,
+        id=entry_id,
+        artifact_class=ArtifactClass.HYBRID_MANAGED_REGION,
+        path=path,
+        applies_to=AppliesTo.BOTH,
+        rationale="test",
+        format=RegionFormat.HTML,
         regions=(Region(name=region_name, anchor=("# anchor",)),),
     )
 
@@ -101,14 +109,19 @@ def clean_repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def _seed_state(
-    *, model_version: ModelVersion = _V1, managed: tuple[ManagedArtifact, ...] = ()
-) -> SeedState:
+def _seed_state(*, model_version: ModelVersion = _V1, managed: tuple[ManagedArtifact, ...] = ()) -> SeedState:
     return SeedState(
-        model_version=model_version, seed_model_version="0.1.0",
-        adopted_at="2026-08-21T00:00:00Z", last_update="2026-08-21T00:00:00Z",
-        mode="adopt", agents=(), managed=managed, skips=(), legacy=(),
-        migrations_applied=(), opted_out=(),
+        model_version=model_version,
+        seed_model_version="0.1.0",
+        adopted_at="2026-08-21T00:00:00Z",
+        last_update="2026-08-21T00:00:00Z",
+        mode="adopt",
+        agents=(),
+        managed=managed,
+        skips=(),
+        legacy=(),
+        migrations_applied=(),
+        opted_out=(),
     )
 
 
@@ -121,7 +134,11 @@ def _args(
     yes: bool = False,
 ) -> argparse.Namespace:
     return argparse.Namespace(
-        repo_root=repo_root, run=run, force=force, include_seeded=include_seeded, yes=yes,
+        repo_root=repo_root,
+        run=run,
+        force=force,
+        include_seeded=include_seeded,
+        yes=yes,
     )
 
 
@@ -156,10 +173,16 @@ def test_update_parser_wires_the_expected_flags(tmp_path):
 
     args = parser.parse_args(
         [
-            "seed", "update",
-            "--repo-root", str(tmp_path),
-            "--run", "--force", "--include-seeded", "--yes",
-            "--json", "--quiet",
+            "seed",
+            "update",
+            "--repo-root",
+            str(tmp_path),
+            "--run",
+            "--force",
+            "--include-seeded",
+            "--yes",
+            "--json",
+            "--quiet",
         ]
     )
 
@@ -209,9 +232,7 @@ def test_exit_code_0_on_an_applied_run(clean_repo, capsys):
 def test_exit_code_0_on_a_declined_confirmation(clean_repo, capsys):
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
 
-    code = seed_cli.run_update(
-        _args(repo_root=str(clean_repo), run=True), manifest=manifest, confirm=lambda: False
-    )
+    code = seed_cli.run_update(_args(repo_root=str(clean_repo), run=True), manifest=manifest, confirm=lambda: False)
 
     out = capsys.readouterr().out
     assert code == 0
@@ -222,9 +243,7 @@ def test_exit_code_0_on_a_declined_confirmation(clean_repo, capsys):
 def test_exit_code_0_on_an_empty_plan_apply(clean_repo, capsys):
     manifest = _manifest()
 
-    code = seed_cli.run_update(
-        _args(repo_root=str(clean_repo), run=True, yes=True), manifest=manifest
-    )
+    code = seed_cli.run_update(_args(repo_root=str(clean_repo), run=True, yes=True), manifest=manifest)
 
     out = capsys.readouterr().out
     assert code == 0
@@ -237,9 +256,7 @@ def test_exit_code_0_on_an_empty_plan_apply(clean_repo, capsys):
 def test_exit_code_3_on_a_non_git_repo_root(tmp_path, capsys):
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
 
-    code = seed_cli.run_update(
-        _args(repo_root=str(tmp_path), run=True, yes=True), manifest=manifest
-    )
+    code = seed_cli.run_update(_args(repo_root=str(tmp_path), run=True, yes=True), manifest=manifest)
 
     out = capsys.readouterr().out
     assert code == PreconditionFailure.exit_code == 3
@@ -354,9 +371,13 @@ def test_migration_offered_copied_seeded_renders_as_an_explicit_offer_never_matc
 
     def migration_fn(view, state):
         offer = Action(
-            artifact_id="offer", artifact_class=ArtifactClass.COPIED_SEEDED,
-            current_state=ArtifactState.ABSENT, target_state=ArtifactState.PRESENT_CONFORMANT,
-            target_path="OFFER.md", chosen_anchor=(), rationale="migration offer",
+            artifact_id="offer",
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            current_state=ArtifactState.ABSENT,
+            target_state=ArtifactState.PRESENT_CONFORMANT,
+            target_path="OFFER.md",
+            chosen_anchor=(),
+            rationale="migration offer",
         )
         return Plan(
             actions=(offer,),
@@ -385,7 +406,8 @@ def test_render_update_plan_text_directly_proves_the_dw_fu_11_3_fix():
         repo_fingerprint=RepoFingerprint(git_head=None, dirty=False, artifact_hashes=()),
         skipped=(
             SkippedArtifact(
-                artifact_id="offer", target_path="OFFER.md",
+                artifact_id="offer",
+                target_path="OFFER.md",
                 pattern=migrate_registry._SEEDED_OFFER_PATTERN,
             ),
         ),
@@ -421,9 +443,13 @@ def test_include_seeded_flag_reaches_the_verb(clean_repo, monkeypatch, capsys):
 
     def migration_fn(view, state):
         offer = Action(
-            artifact_id="offer", artifact_class=ArtifactClass.COPIED_SEEDED,
-            current_state=ArtifactState.ABSENT, target_state=ArtifactState.PRESENT_CONFORMANT,
-            target_path="OFFER.md", chosen_anchor=(), rationale="migration offer",
+            artifact_id="offer",
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            current_state=ArtifactState.ABSENT,
+            target_state=ArtifactState.PRESENT_CONFORMANT,
+            target_path="OFFER.md",
+            chosen_anchor=(),
+            rationale="migration offer",
         )
         return Plan(
             actions=(offer,),
@@ -434,9 +460,7 @@ def test_include_seeded_flag_reaches_the_verb(clean_repo, monkeypatch, capsys):
     monkeypatch.setattr(migrate_registry, "MIGRATIONS", (migration,))
     manifest_v2 = _manifest(model_version=_V2)
 
-    code = seed_cli.run_update(
-        _args(repo_root=str(clean_repo), include_seeded=True), manifest=manifest_v2
-    )
+    code = seed_cli.run_update(_args(repo_root=str(clean_repo), include_seeded=True), manifest=manifest_v2)
 
     out = capsys.readouterr().out
     assert code == 0

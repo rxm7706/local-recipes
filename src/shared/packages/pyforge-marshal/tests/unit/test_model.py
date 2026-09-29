@@ -42,11 +42,7 @@ def registered_code(monkeypatch: pytest.MonkeyPatch) -> str:
 
 
 def _schema() -> dict:
-    schema_text = (
-        resources.files("pyforge.marshal")
-        .joinpath("schemas", "envelope.v1.json")
-        .read_text(encoding="utf-8")
-    )
+    schema_text = resources.files("pyforge.marshal").joinpath("schemas", "envelope.v1.json").read_text(encoding="utf-8")
     return json.loads(schema_text)
 
 
@@ -107,9 +103,7 @@ def test_finding_to_json_dict_omits_path_when_none(registered_code):
 
 
 def test_finding_to_json_dict_includes_path_when_present(registered_code):
-    finding = Finding(
-        code=registered_code, severity=Severity.INFO, message="m", path="x/y"
-    )
+    finding = Finding(code=registered_code, severity=Severity.INFO, message="m", path="x/y")
     assert finding.to_json_dict()["path"] == "x/y"
 
 
@@ -237,9 +231,7 @@ def test_envelope_rejects_bare_str_assumptions():
     passing the str member check -- a bare str must be rejected at
     construction, never silently exploded into characters."""
     with pytest.raises(ValueError):
-        build_envelope(
-            command="x", verdict=Verdict.CLEAN, assumptions="assumed x"
-        )
+        build_envelope(command="x", verdict=Verdict.CLEAN, assumptions="assumed x")
 
 
 def test_envelope_data_is_defensively_copied(registered_code):
@@ -325,9 +317,7 @@ def test_envelope_rejects_non_deepcopyable_data():
     value (generator, open file, lock) surfaces as this module's ValueError
     convention, not a raw 'cannot pickle' TypeError from inside copy."""
     with pytest.raises(ValueError):
-        build_envelope(
-            command="x", verdict=Verdict.CLEAN, data={"g": (i for i in ())}
-        )
+        build_envelope(command="x", verdict=Verdict.CLEAN, data={"g": (i for i in ())})
 
 
 @pytest.mark.parametrize("bad_data_version", [0, -1, True])
@@ -388,9 +378,7 @@ def test_sample_envelope_fixture_validates_against_composed_schema():
     COMPOSED with the shared base envelope schema -- proving the composed
     schema still admits every payload that validated against the station
     schema alone."""
-    fixture_path = (
-        Path(__file__).resolve().parent.parent / "fixtures" / "sample_envelope_with_finding.json"
-    )
+    fixture_path = Path(__file__).resolve().parent.parent / "fixtures" / "sample_envelope_with_finding.json"
     document = json.loads(fixture_path.read_text(encoding="utf-8"))
     jsonschema.validate(document, _composed_schema())
 
@@ -402,9 +390,7 @@ def test_envelope_json_dict_validates_against_schema_for_every_verdict(
     for verdict in Verdict:
         severity = Severity.WARN if status_for(verdict) is Status.OK else Severity.ERROR
         finding = Finding(code=registered_code, severity=severity, message="m")
-        envelope = build_envelope(
-            command="x", verdict=verdict, data={}, findings=(finding,)
-        )
+        envelope = build_envelope(command="x", verdict=verdict, data={}, findings=(finding,))
         jsonschema.validate(envelope.to_json_dict(), schema)
 
 
@@ -540,6 +526,6 @@ def test_findings_code_pattern_matches_the_packaged_schema_pattern():
         "MRS-GATE-١٢٣",
     ]
     for probe in probes:
-        assert bool(findings.CODE_PATTERN.fullmatch(probe)) == bool(
-            re.search(schema_pattern, probe)
-        ), f"CODE_PATTERN/schema pattern diverge on {probe!r}"
+        assert bool(findings.CODE_PATTERN.fullmatch(probe)) == bool(re.search(schema_pattern, probe)), (
+            f"CODE_PATTERN/schema pattern diverge on {probe!r}"
+        )

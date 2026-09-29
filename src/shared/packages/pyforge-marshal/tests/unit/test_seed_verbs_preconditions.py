@@ -29,6 +29,7 @@ from pathlib import Path
 
 import pytest
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
+
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.errors import PreconditionFailure
@@ -99,9 +100,7 @@ def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
     """Mirrors ``test_seed_plan_build.py``/``test_vcs_git.py``'s own
     real-git-repo test convention: real ``git`` I/O against a ``tmp_path``,
     never mocked."""
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -585,9 +584,7 @@ def test_an_action_whose_target_does_not_exist_clears_the_symlink_rung(clean_rep
 
     No `_commit_all` here: the fixture's repo is already clean and this test
     writes nothing, and `git commit` with an empty index exits non-zero."""
-    assert _check(
-        _plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo
-    ) is None
+    assert _check(_plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo) is None
 
 
 def test_the_symlink_refusal_survives_a_link_that_vanishes_before_it_is_read(clean_repo, monkeypatch):
@@ -614,9 +611,7 @@ def test_the_symlink_refusal_survives_a_link_that_vanishes_before_it_is_read(cle
     assert excinfo.value.remedy.strip()
 
 
-def test_a_symlink_pointing_outside_the_repo_is_refused_by_the_earlier_containment_rung(
-    clean_repo, tmp_path_factory
-):
+def test_a_symlink_pointing_outside_the_repo_is_refused_by_the_earlier_containment_rung(clean_repo, tmp_path_factory):
     """Rung 3 resolves symlinks (as ``fs._guard`` does), so an escaping link
     is caught by containment before rung 5 ever looks -- the earlier rung
     wins, exactly as the fixed order requires."""
@@ -677,9 +672,7 @@ def _managed_file(repo: Path, path: str, text: str) -> None:
 def test_a_managed_file_whose_hash_matches_state_passes(clean_repo):
     _managed_file(clean_repo, "MANAGED.md", "owned by genesis\n")
     _commit_all(clean_repo)
-    record = ManagedRecord(
-        artifact_id="managed", path="MANAGED.md", body_sha=hash_content("owned by genesis\n")
-    )
+    record = ManagedRecord(artifact_id="managed", path="MANAGED.md", body_sha=hash_content("owned by genesis\n"))
 
     assert _check(_plan(), clean_repo, managed=(record,)) is None
 
@@ -687,9 +680,7 @@ def test_a_managed_file_whose_hash_matches_state_passes(clean_repo):
 def test_a_hand_edited_managed_file_is_refused(clean_repo):
     _managed_file(clean_repo, "MANAGED.md", "hand edited\n")
     _commit_all(clean_repo)
-    record = ManagedRecord(
-        artifact_id="managed", path="MANAGED.md", body_sha=hash_content("owned by genesis\n")
-    )
+    record = ManagedRecord(artifact_id="managed", path="MANAGED.md", body_sha=hash_content("owned by genesis\n"))
 
     with pytest.raises(PreconditionFailure) as excinfo:
         _check(_plan(), clean_repo, managed=(record,))
@@ -802,9 +793,7 @@ def test_a_managed_path_replaced_by_a_dangling_symlink_is_refused(clean_repo):
     close."""
     (clean_repo / "MANAGED.md").symlink_to("nonexistent-target.md")
     _commit_all(clean_repo)
-    record = ManagedRecord(
-        artifact_id="managed", path="MANAGED.md", body_sha=hash_content("genesis\n")
-    )
+    record = ManagedRecord(artifact_id="managed", path="MANAGED.md", body_sha=hash_content("genesis\n"))
 
     with pytest.raises(PreconditionFailure) as excinfo:
         _check(_plan(), clean_repo, managed=(record,))
@@ -820,9 +809,7 @@ def test_a_managed_path_replaced_by_a_symlink_to_matching_content_is_still_refus
     (clean_repo / "elsewhere.md").write_text("genesis\n", encoding="utf-8")
     (clean_repo / "MANAGED.md").symlink_to("elsewhere.md")
     _commit_all(clean_repo)
-    record = ManagedRecord(
-        artifact_id="managed", path="MANAGED.md", body_sha=hash_content("genesis\n")
-    )
+    record = ManagedRecord(artifact_id="managed", path="MANAGED.md", body_sha=hash_content("genesis\n"))
 
     with pytest.raises(PreconditionFailure, match="is a symlink"):
         _check(_plan(), clean_repo, managed=(record,))
@@ -940,9 +927,7 @@ def _hybrid_text(name: str, body: str, fmt: RegionFormat = RegionFormat.HTML) ->
 def _two_region_text(fmt: RegionFormat = RegionFormat.HTML) -> str:
     """One file carrying two managed regions -- the shape that separates
     "how many divergences" from "how many artifacts"."""
-    return _hybrid_text("tiers", "first body\n", fmt) + _hybrid_text(
-        "model-badge", "second body\n", fmt
-    )
+    return _hybrid_text("tiers", "first body\n", fmt) + _hybrid_text("model-badge", "second body\n", fmt)
 
 
 def test_a_managed_region_whose_body_hash_matches_state_passes(clean_repo):
@@ -1080,9 +1065,7 @@ def test_a_region_bearing_managed_record_requires_a_region_format():
     at all -- and a silently unparsed record would pass rung 6 by doing
     nothing, the exact silent-pass rung 6 exists to close."""
     with pytest.raises(ValueError, match="region_format"):
-        ManagedRecord(
-            artifact_id="hybrid", path="HYBRID.md", region_shas=(("tiers", "12345678"),)
-        )
+        ManagedRecord(artifact_id="hybrid", path="HYBRID.md", region_shas=(("tiers", "12345678"),))
 
 
 def test_a_whole_file_managed_record_needs_no_region_format():
@@ -1200,9 +1183,7 @@ def test_a_clean_repo_a_coherent_plan_and_matching_hashes_returns_none(clean_rep
     _managed_file(clean_repo, "MANAGED.md", "owned\n")
     _commit_all(clean_repo)
     plan = _plan(_action(artifact_id="agents-md", target_path="AGENTS.md"))
-    record = ManagedRecord(
-        artifact_id="managed", path="MANAGED.md", body_sha=hash_content("owned\n")
-    )
+    record = ManagedRecord(artifact_id="managed", path="MANAGED.md", body_sha=hash_content("owned\n"))
 
     assert _check(plan, clean_repo, managed=(record,)) is None
 
@@ -1253,9 +1234,7 @@ def test_skipped_artifacts_are_not_walked_by_the_structural_rungs(clean_repo):
     assert plan.actions == ()
     assert len(plan.skipped) == 1
 
-    assert (
-        _check(plan, clean_repo, never_write=NeverWrite(patterns=("docs/dreams/*.md",))) is None
-    )
+    assert _check(plan, clean_repo, never_write=NeverWrite(patterns=("docs/dreams/*.md",))) is None
 
 
 # --- the skip <-> rung-6 seam ----------------------------------------------

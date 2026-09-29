@@ -66,9 +66,7 @@ class FileDesktopNotifier:
         if not isinstance(payload, Redacted):
             # The TYPE only, never the value -- mirrors
             # `LocalFs.write_redacted_atomic`'s own contract-violation guard.
-            raise TypeError(
-                f"payload must be a Redacted instance, got {type(payload).__name__}"
-            )
+            raise TypeError(f"payload must be a Redacted instance, got {type(payload).__name__}")
         try:
             result = PosixProcess().run(
                 [_DESKTOP_NOTIFY_BINARY, _DESKTOP_NOTIFY_TITLE, payload.text],

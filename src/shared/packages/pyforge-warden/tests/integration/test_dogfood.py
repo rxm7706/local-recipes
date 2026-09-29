@@ -64,19 +64,14 @@ def parse_report(stdout: str) -> dict:
 
 
 def test_baseline_file_is_committed_and_provisioned():
-    assert BASELINE_PATH.is_file(), (
-        f"{BASELINE_PATH} missing -- the dogfood gate's committed "
-        "grandfathering file"
-    )
+    assert BASELINE_PATH.is_file(), f"{BASELINE_PATH} missing -- the dogfood gate's committed grandfathering file"
 
 
 def test_dogfood_scan_of_the_real_package_exits_zero(tmp_path, capsys):
     dest = tmp_path / "pyforge-warden"
     stage_dogfood_copy(dest)
     capsys.readouterr()
-    rc = main(
-        ["scan", str(dest), "--format", "json", "--baseline", str(BASELINE_PATH)]
-    )
+    rc = main(["scan", str(dest), "--format", "json", "--baseline", str(BASELINE_PATH)])
     captured = capsys.readouterr()
     document = parse_report(captured.out)
     assert rc == 0
@@ -92,15 +87,11 @@ def test_dogfood_seeded_violation_exits_nonzero(tmp_path, capsys):
         f"import {seed_name}  # noqa: F401\n", encoding="utf-8"
     )
     capsys.readouterr()
-    rc = main(
-        ["scan", str(dest), "--format", "json", "--baseline", str(BASELINE_PATH)]
-    )
+    rc = main(["scan", str(dest), "--format", "json", "--baseline", str(BASELINE_PATH)])
     captured = capsys.readouterr()
     document = parse_report(captured.out)
     assert rc != 0
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "policy-violation"
-    hygiene_ids = {
-        f["id"] for f in document["findings"] if f["axis"] == "hygiene"
-    }
+    hygiene_ids = {f["id"] for f in document["findings"] if f["axis"] == "hygiene"}
     assert f"hygiene:DEP001:{seed_name}" in hygiene_ids

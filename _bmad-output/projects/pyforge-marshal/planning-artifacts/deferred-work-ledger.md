@@ -1815,7 +1815,7 @@ status: open
 
 ### DW-FU-12-2: K-02: local-recipes is not genesis-aligned — adopt dry-run yields 21 filtered actions (managed regions absent, no seed-state, first-claim pending). Slow oracle fails until bootstrap adopt lands.
 
-- source_spec: `planning-artifacts/specs/spec-12-2-the-local-recipes-empty-plan-oracle.md`
+- source_spec: `planning-artifacts/specs/spec-12-2-the-local-recipes-empty-plan-oracle-critical.md`
   summary: K-02: local-recipes is not genesis-aligned — adopt dry-run yields 21 filtered actions (managed regions absent, no seed-state, first-claim pending). Slow oracle fails until bootstrap adopt lands.
   evidence: pixi run --frozen -e pyforge-marshal pyforge-marshal-test-slow -k test_local_recipes → AssertionError, 21 actions (claude-skills excluded).
   origin: spec-deferred 96f6f96ebc9f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
@@ -5495,10 +5495,10 @@ status: open
 
 ### DW-FU-28-15: The spec's own title and filename say "default unchanged" but the Approach/AC1 text and epics.md both say the default flips from hard to warn.
 
-- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md`
+- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md`
   summary: The spec's own title and filename say "default unchanged" but the Approach/AC1 text and epics.md both say the default flips from hard to warn.
   evidence: Title: 'Scope-violation enforcement mode, policy-declared, default unchanged (Story 28.15, Epic 28)'; Approach text: "Default is `warn`, not `hard`." A future grep for "default unchanged" lands on a spec that changed the default.
-  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md (title, frontmatter)
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md (title, frontmatter)
   origin: spec-deferred 45b90f34673c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -5510,10 +5510,10 @@ status: open
 
 ### DW-FU-28-15-2: The spec's own `warnings:` block and SPEC-marshal-token-economy/SPEC.md both claim pyforge-marshal's own policy was already set to `scope_violation_mode = off` as an immediate 2026-08-31 stopgap, but no `marshal-policy.toml` in the repo (past or present) ever declares that key -- the claimed stopgap action was never actually applied.
 
-- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md`
+- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md`
   summary: The spec's own `warnings:` block and SPEC-marshal-token-economy/SPEC.md both claim pyforge-marshal's own policy was already set to `scope_violation_mode = off` as an immediate 2026-08-31 stopgap, but no `marshal-policy.toml` in the repo (past or present) ever declares that key -- the claimed stopgap action was never actually applied.
   evidence: `grep -rn "scope_violation_mode" --include="*.toml" .` matches nothing outside this story's own diff/spec. Functionally moot now that this story's default (`warn`) matches the intended steady state, but the warning text is inaccurate about what was actually done.
-  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md (frontmatter `warnings:`)
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md (frontmatter `warnings:`)
   origin: spec-deferred 419b8bc6384a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -5525,7 +5525,7 @@ status: open
 
 ### DW-FU-28-15-3: epics.md's Story 28.15 operational note attributes the real 2026-08-31 stopgap to widening `[epic_surfaces]."28"` to a station-wide wildcard (Story 28.14 territory), directly conflicting with the spec/SPEC.md's claim that the stopgap was `scope_violation_mode = off` (this story's own CAP-17 territory).
 
-- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md`
+- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md`
   summary: epics.md's Story 28.15 operational note attributes the real 2026-08-31 stopgap to widening `[epic_surfaces]."28"` to a station-wide wildcard (Story 28.14 territory), directly conflicting with the spec/SPEC.md's claim that the stopgap was `scope_violation_mode = off` (this story's own CAP-17 territory).
   evidence: Two tracked planning documents disagree about which mechanism was actually used for the same named 2026-08-31 operator stopgap.
   location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md (Story 28.15 operational note) vs. this spec's `warnings:` block
@@ -5809,7 +5809,7 @@ status: open
 
 ### DW-FU-28-24: End-to-end dispatch_once integration test for MRS-DISP-039 not present; unit tests cover the helper directly.
 
-- source_spec: `planning-artifacts/specs/spec-28-24-supervisor-finalizes-when-harness-cannot-run-shell.md`
+- source_spec: `planning-artifacts/specs/spec-28-24-supervisor-finalizes-when-the-harness-cannot-run-shell.md`
   summary: End-to-end dispatch_once integration test for MRS-DISP-039 not present; unit tests cover the helper directly.
   evidence: `_redispatch_blocked_pending_supervisor_finalize` is tested in isolation; no test exercises the full dispatch launch path that emits MRS-DISP-039.
   location: src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_finalize.py
@@ -5924,7 +5924,7 @@ status: open
 
 ### DW-FU-31-1: Marshal's own generator-produced Story Coverage Matrix is nearly empty independent of TEA: 207 of 208 rows read "none observed" despite 181 real test files existing, because `_stories_linked_to_test`'s filename heuristic doesn't match this repo's real test-naming conventions.
 
-- source_spec: `planning-artifacts/specs/spec-31-1-tea-s-workflows-produce-every-station-s-test-architecture.md`
+- source_spec: `planning-artifacts/specs/spec-31-1-teas-workflows-produce-every-stations-test-architecture.md`
   summary: Marshal's own generator-produced Story Coverage Matrix is nearly empty independent of TEA: 207 of 208 rows read "none observed" despite 181 real test files existing, because `_stories_linked_to_test`'s filename heuristic doesn't match this repo's real test-naming conventions.
   evidence: Confirmed by direct inspection of `_bmad-output/projects/pyforge-marshal/planning-artifacts/test-architecture.md` (207/208 "none observed" rows) and `_bmad/scripts/bmad_tea_playwright.py`'s `_stories_linked_to_test` (matches only `test_1_2_*`/`test_story_19_1_*`-shaped filenames). Pre-existing generator limitation, not a regression from this story.
   location: _bmad/scripts/bmad_tea_playwright.py::_stories_linked_to_test
@@ -5937,7 +5937,7 @@ status: open
 
 ### DW-FU-31-1-2: Herald and Doctor's generator-reported `story_count` (64, 73) disagrees with what each TEA run counted directly from their own `epics.md` (50, 113).
 
-- source_spec: `planning-artifacts/specs/spec-31-1-tea-s-workflows-produce-every-station-s-test-architecture.md`
+- source_spec: `planning-artifacts/specs/spec-31-1-teas-workflows-produce-every-stations-test-architecture.md`
   summary: Herald and Doctor's generator-reported `story_count` (64, 73) disagrees with what each TEA run counted directly from their own `epics.md` (50, 113).
   evidence: Both TEA subagent runs independently read `epics.md` for their station and reported the differing counts; root cause not investigated (could be either side's parsing). Doctor's run additionally noted 108 of its 113 stories are already `done`/shipped, out of its own declared scope for this pass.
   location: _bmad/scripts/bmad_tea_playwright.py (story-parsing regexes) vs epics.md for pyforge-herald and pyforge-doctor
@@ -5950,7 +5950,7 @@ status: open
 
 ### DW-FU-31-1-3: Atlas's QA-effort estimate reconciliation (fixed this pass to match the detailed table) and Steward's/Doctor's manual risk-score-override notation (fixed this pass to a shared convention) are cosmetic; no sweep checks every station's remaining internal-consistency nits (e.g. whether every P0-P3 count in every station's Executive Summary matches its own detailed table) beyond what four independent reviewers happened to surface this pass.
 
-- source_spec: `planning-artifacts/specs/spec-31-1-tea-s-workflows-produce-every-station-s-test-architecture.md`
+- source_spec: `planning-artifacts/specs/spec-31-1-teas-workflows-produce-every-stations-test-architecture.md`
   summary: Atlas's QA-effort estimate reconciliation (fixed this pass to match the detailed table) and Steward's/Doctor's manual risk-score-override notation (fixed this pass to a shared convention) are cosmetic; no sweep checks every station's remaining internal-consistency nits (e.g. whether every P0-P3 count in every station's Executive Summary matches its own detailed table) beyond what four independent reviewers happened to surface this pass.
   evidence: 11 Blind Hunter + 4 Edge Case Hunter findings were verified and patched directly (see Review Triage Log); a full line-by-line audit of all 8 stations' ~250KB of TEA-generated prose for further such nits was not attempted -- out of proportion for advisory documents whose core claim (equivalence coverage) does not depend on internal cross-reference polish.
   location: all 8 stations' test-design-architecture.md / test-design-qa.md
@@ -6100,13 +6100,15 @@ status: open
   origin: diagnosed during the 2026-09-08 loop-home refresh pass; recorded rather than patched
   severity: medium
   promoted: 2026-09-08 — hand-recorded after live diagnosis
-  status: open
+  status: resolved
   note: The consequence is not cosmetic in one respect worth naming -- a station stuck at `unknown` is a station whose liveness `fleet-picture` cannot assert, which is the precondition for the duplicate-dispatch class already recorded against 2026-08-27. The likely fix is for the derivation to fall back to the dispatch journal's own terminal verdict when the harness snapshot is unresolvable, rather than degrading the whole row; that is a change to Marshal's status contract and wants its own story, not an unscoped patch.
 
   corrected: 2026-09-08 — the ORIGINAL diagnosis above named the retired-snapshot path, and that path is real and is now FIXED (`run_state_retired` + MRS-STATUS-012: a run whose harness id resolved but whose snapshot is gone reports `idle` with a WARN, while `is_run_live` keeps it conservatively live so no destructive guard is weakened). But it is NOT why pyforge-steward reads `unknown`. Reading steward's own newest loop-home run (`.bmad-loop/runs/20260820-140536-988f`) shows the true cause: its journal carries 32 events of bmad-loop's OWN vocabulary (`run-start`, `story-start`, `session-start`/`session-end`, `story-done`, `run-stop`) and NOT ONE `run-launch`/`run-resume` entry, which is the shape `cli/spin.py` writes and the only shape `_gather_run_journal_facts` folds for a launch pid. That run was started by bmad-loop DIRECTLY, not via `marshal spin`. So `launch_pid is None`, the FIRST `journal_unreadable` branch fires, and the home degrades — even though the same journal plainly records a graceful terminal `run-stop` ("2 done, 0 deferred, 0 escalated ... 8 stories remaining"). Marshal only understands runs it launched itself; a harness-native run is opaque to it, which is exactly what "needs re-spin" has been telling us.
   residual: The remaining fix is to recognise a harness-native terminal run. Deliberately NOT done here: `cli/status.py` folds only marshal's own kinds, and teaching it bmad-loop's `run-start`/`run-stop` vocabulary directly would couple the CLI to the harness's journal format, bypassing `HarnessPort` — the seam that already abstracts bmad-loop for exactly this reason. The clean shape is a `HarnessPort` capability ("is this run terminal?") that `_gather_run_journal_facts` consults when no launch pid is recoverable. That is a contract change to Marshal's status surface and wants its own story, as this entry said from the start.
 
   owned: 2026-09-08 — the residual now HAS its story: **Story 5.11, "A harness-native terminal run reads as finished, not `unknown`"** (`epics.md` Epic 5, FR-196, ledger `backlog`). Its acceptance criteria bind the seam explicitly — the capability lands in `adapters/harness_bmadloop.py`, `cli/status.py`/`core/status.py` learn no bmad-loop journal kind, an unclassifiable run stays `unknown` with `is_run_live` conservatively live, and `pyforge-steward`'s existing home is the acceptance fixture. This entry stays `open` until that story ships; nothing about the diagnosis changed, it just acquired an owner in a ledger-driven view instead of living only in this note.
+
+  verified: 2026-09-12 — Story 5.11 shipped (PR #1102, 2026-09-10; tracked ledger `5-11-...: done`). Confirmed live: `core/status.py`'s `HomeFacts` carries `harness_native_terminal: bool = False` (line 902, docstring names Story 5.11/FR-196 explicitly, distinguishing it from `journal_unreadable` and `run_state_retired`); `_derive_home_state`-adjacent logic at line 1321 branches on `facts.harness_native_terminal` to route a harness-native terminal run through `derive_home_state` instead of degrading to `unknown`. The capability lands exactly where this entry's own `owned:` note said it would (`adapters/harness_bmadloop.py` + `core/status.py`), via `HarnessPort` per the `residual:` note's own stated design (never a direct bmad-loop-journal-kind coupling in `cli/status.py`). **CLOSED.**
 
 ### DW-SPRINTPLAN-2026-09-08-1: `sprint_plan.py generate` silently rewrote the operator's `blocked` gate to `backlog` — the fail-OPEN direction — because `blocked` was never in its vocabulary
 
@@ -6198,4 +6200,674 @@ status: open
   origin: spec-deferred 0f9a025d7d75 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+  verified: 2026-09-12 — re-ran the manual check this entry names: `marshal status --project pyforge-steward` reports `state: stopped` (not `unknown`), confirming Story 5.11's fix holds against the real, live pyforge-steward home, not only the synthetic `tmp_path` fixtures the meta-tests use. Stays `open`/manual-check by design — the operator-local loop home this entry names cannot be encoded in CI, so this is a periodic re-confirmation, not a resolution.
+
+### DW-FU-33-12: CAP-3 deployed egress-blocked CRC proof exercise remains separate (attended, documentary).
+
+- source_spec: `planning-artifacts/specs/spec-33-12-cap-1-2-4-5-in-effect-held-runs-publisher-identity-and-the-loop-home-reads-retire.md`
+  summary: CAP-3 deployed egress-blocked CRC proof exercise remains separate (attended, documentary).
+  evidence: Explicit non-goal in spec; steward 49.8 owns the live verification gate at `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-49-8-cap-17-in-effect-marshal-publishes-run-state-to-the-supervisor.md`.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-49-8-cap-17-in-effect-marshal-publishes-run-state-to-the-supervisor.md
+  origin: spec-deferred 6a53678fc552 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-33-12-2: CAP-5 deployed-profile device-code/PKCE login against a real IdP not implemented.
+
+- source_spec: `planning-artifacts/specs/spec-33-12-cap-1-2-4-5-in-effect-held-runs-publisher-identity-and-the-loop-home-reads-retire.md`
+  summary: CAP-5 deployed-profile device-code/PKCE login against a real IdP not implemented.
+  evidence: Local-profile `pyforge login` wrapper lands at `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/login.py`; memlog records deployed deferral.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/login.py
+  origin: spec-deferred facc9c2dba3b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-33-12-3: Platform MCP ASGI integration tests for held-loop tools not added in this pass.
+
+- source_spec: `planning-artifacts/specs/spec-33-12-cap-1-2-4-5-in-effect-held-runs-publisher-identity-and-the-loop-home-reads-retire.md`
+  summary: Platform MCP ASGI integration tests for held-loop tools not added in this pass.
+  evidence: Supervisor unit tests cover held-run lifecycle; transport-mocked marshal tests cover client path; end-to-end JSON-RPC through `build_marshal_mcp_asgi()` untested locally without Postgres platform CI.
+  location: src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py
+  origin: spec-deferred 95cdd089b14f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-VOCAB-2026-09-14-6: `epic-29` is a ledger row with no `## Epic 29` heading — and marshal's own frontmatter already admits it
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `sprint-status-ledger.yaml` carries `epic-29: done` and `epic-29-retrospective: optional`, and `epics.md` carries `### Story 29.1` and `### Story 29.2` with matching ledger keys — but **no `## Epic 29:` heading**. The headings run 27, 28, 30. The two stories therefore render structurally under Epic 28, and `fleet-picture` (which counts epics from ledger keys) reports 36 epics for marshal against 35 declared headings.
+  evidence: Measured 2026-09-14 by parsing both files. Marshal's own `epics.md` frontmatter already records the symptom without naming the cause — `storyCount` comment: *"2026-09-05: 183 (181 + **Epic 29's two, never counted**)"*. Invisible to `chain-completeness` INV-B by construction, which discards every `epic-*` key before comparing — see doctor's DW-CHAIN-COMPLETENESS-7.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
+  severity: low
+  status: closed
+  raised: 2026-09-14 — Owner: marshal. Data fix (write the missing heading over the existing two stories); tracked separately from the detector gap so neither blocks the other.
+  closed: 2026-09-14 — Fixed as diagnosed: Epic 29 was genuinely absent at **every** heading level, unlike steward's `epic-18` twin (DW-VOCAB-2026-09-14-5), which turned out to be an H3 that only looked absent. Inserted `## Epic 29: A harness halt of \`done\` ends the session, not the review` above the existing `**Goal:** FR-193 CAP-11` block that already anchored stories 29.1–29.2, so the two stories now render under their own epic instead of Epic 28. The retroactive warrant is marshal's own frontmatter admission quoted in the evidence above — *"183 (181 + Epic 29's two, never counted)"* — which had recorded the symptom since 2026-09-05 without any detector able to read it. Now caught by construction: doctor's DW-CHAIN-COMPLETENESS-7 landed the INV-B epic arm the same day, comparing `^##\s+Epic\s+(\d+)` headings against `epic-N` keys in both directions, with `epic-N-retrospective` deliberately not counted as a second epic.
+
+### DW-COVERAGE-GATE-INDEPENDENCE-1: marshal ships, and can re-threshold, the blocking gate that judges marshal's own PRs
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: `pyforge/marshal/coverage_gate.py` and `coverage_thresholds.toml` ship inside the marshal package, and `.github/workflows/coverage-gates.yml:90` runs that gate across all eight stations — marshal included — with **zero** `continue-on-error` and **zero** `|| true` in its 158 lines. `pixi.toml` calls it, unprompted, *"the gate that actually reds a PR."* A `[stations.marshal] unit = 70.0` block is a three-line edit to a file marshal owns, needing no Doctor verdict; the file even ships the override shape as a comment. That is the object Charter §6 names verbatim: *"the Marshal may not weaken, re-threshold or disable a check that judges the Marshal — a conformance gate is amendable by its subject only through the Doctor's verdict."*
+  evidence: Found 2026-09-14 by a read-only investigation that was aimed somewhere else. The suspected surface — marshal's six-rung verdict lattice with its `GATE_FAILED` rung — was **cleared**: it judges the STORY's work (`core/gate.py:41-46` documents `GATE_FAILED` as *"a project's own gate failed"* against the `ERROR` tier's *"an internal Marshal operation failed"*, two subjects deliberately on separate rungs), and `marshal seed check`'s "(CI gate)" label is not literal here (zero hits for it in `.github/`). Doctor genuinely holds marshal's row with the estate's strongest independence (`doctor/sources/marshal.py` never imports `pyforge.marshal`, pinned by a meta-test). Charter §6's scope was ambiguous — its prohibition sits in a bullet about three named cross-cutting practices and coverage is not one — so the operator ruled it **broad** the same day: any check that can red a Marshal PR judges the Marshal. The bullet's own analogy settles it, since Mason's build is not one of the three either.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/coverage_gate.py, src/shared/packages/pyforge-marshal/src/pyforge/marshal/coverage_thresholds.toml, .github/workflows/coverage-gates.yml
+  severity: medium
+  status: open
+  raised: 2026-09-14 — Owner: doctor (holds the verdict on marshal's row), executing against `docs/dreams/coverage-gate-independence.md`. **The remedy is NOT the file move it first appears to be** and was deliberately not attempted inline: `pyforge-core` and `pyforge-testing-kit`, the two obvious homes, are **both governed by marshal's own planning tree**, so relocating there moves the violation one package over rather than ending it — and `pyforge.marshal.coverage_gate` is named in an AD-3/AD-4 import-linter contract, so the move amends a declared layering rule. The Dream carries five open questions including whether splitting the thresholds from the evaluator is sufficient, and whether the import-linter should gain a rule forbidding any `pyforge.<station>` module from evaluating that same station's CI gate — which would catch this class structurally instead of by investigation.
+
+  scope-deepened: 2026-09-14 — **There is no neutral home under current ownership, and the recursion is deeper than this entry first recorded.** The obvious relocations were already ruled out (`pyforge-core` and `pyforge-testing-kit` are both governed by marshal's planning tree; doctor cannot host a blocking gate, being constitutionally advisory). The next candidate — move the evaluator out of any station package into `scripts/` — was measured this date and **also fails**: `scripts/coverage_gates_ci.py` and `scripts/run_station_coverage_gate.py` are BOTH inside `spec-pyforge-testing-charter`'s declared `surface:`, and that Spec lives in **`_bmad-output/projects/pyforge-marshal/`**. Marshal governs the package, the core, the testing-kit and the scripts.
+    That reframes the question. It is not *"where does the file go"* — it is **"who owns the fleet's testing policy"**. `spec-pyforge-testing-charter` sets the 80/70 floors for all eight stations and is owned by one of the eight. Every relocation inside marshal's governance is cosmetic; the only structural fixes are (a) re-home `spec-pyforge-testing-charter` to a station that is not subject to it — which, since it binds all eight, means no station qualifies — or (b) accept that a fleet-wide policy Spec cannot be station-owned and give it a governance home outside `_bmad-output/projects/`, as `docs/governance/` already does for the Charter, whose own Spec sits there for exactly this reason (*"no Smith may own the document that constitutes the Smiths"*).
+    **(b) is the precedent-matching answer and is what the Spec's CAP-1 open question should be narrowed to.** Recorded rather than executed: re-homing a Spec is a governance act, and `docs/governance/spec-pyforge-charter/` exists precisely because that decision was taken once before, deliberately, by the operator.
+
+  ruled: 2026-09-14 (later) — **(b), by a narrow Charter §5 amendment — with one correction to the paragraph above.** The precedent did *not* apply as-is: the Charter reserved `owner: guild` for exactly one Dream ("Nothing else may claim it; a second `guild` is an unassigned Dream hiding behind a collective noun", closed at one on 2026-08-08), so "re-home to `docs/governance/`" was a Charter amendment, not an application of precedent. Presented as such, the operator ruled it: `guild` is legal only where no Smith *can* be accountable because the artifact judges all eight — the §5 doctrine applied to itself, with the `owner: crew` failure mode excluded by construction. What re-homed is **`coverage-gate-independence`** (Dream → `owner: guild`, `specified`; Spec → `docs/governance/spec-coverage-gate-independence/`, `ready`, all five questions answered; `guild_dreams` enumerates it), **not** `spec-pyforge-testing-charter` — that Dream is archived-absorbed into marshal's and is test *architecture*, legitimately marshal's build work; only the fleet-wide *gate* changes hands, and its `scripts/` drivers leave testing-charter's surface when the mechanism lands. The mechanism is Doctor's (§5 outcome/mechanism, the Smith §6 names as Marshal's judge): doctor Epic 24 (numbered after the docs-shelf Epic 23 PR #1358 minted the same day), Stories 24.1 (evaluator + thresholds move together — data-only ruled insufficient, §6 names *weaken, re-threshold, disable*), 24.2 (import-linter contract), 24.3 (surface reconcile), all `backlog` in doctor's ledger. `DEFERRED_SPECS` dropped the entry. This entry stays `open` until 24.1 lands — the violation it records is still physically true; only its remedy is now a bound Story rather than an unowned design question.
+### DW-AD-CITATION-2026-09-14-1: `ad_citation_check` red on `origin/main` itself — 61 NEW bare CAP/AD citations, almost all one scribe root cause — fixed; the detector's own 10-row output cap is the residual
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-consistency-standard/SPEC.md`
+  summary: Measured 2026-09-14 against a detached `origin/main` worktree (the CI view): `scripts/ad_citation_check.py` exits 1 with **61** findings not in either ratchet baseline — 4 `[ad-citation]` and 57 `[cap-citation]`. First recorded as "14" from the detector's printed output, which shows only the first ten rows per class (`new[:10]` / `cap_new[:10]`) — the same "head truncates findings out of view" trap CLAUDE.md § Reading a detector's result warns about, worn by the detector itself; the true count came from re-running it with the cap lifted. **Root cause of 50 of the 57:** scribe's parked register `spec-scribe-knowledge-layers/later-caps.md` defines its `later-caps:CAP-6..14` in a file the detector cannot treat as a definition source (neither a spine nor a `SPEC.md` capabilities block), so every hoisted Spec, memlog, `epics.md` binding and `specs/README.md` line that says "parked CAP-N" read as a dangling id. The remainder: four steward story artifacts citing satellite ADs bare (`pap:` credentials / local-first, `canopy:` secret references), three herald poster artifacts citing the Unifying Strategy's `canopy:CAP-19` bare, two herald lines describing the *shape* of doctor's ninth capability bullet (not a citation at all), and three scribe lines meaning the Unifying Strategy's `canopy:CAP-14`. Locally, a further 14 came from gitignored Tier-3 context/retro files CI never sees. The advisory posture of `detectors.yml` is why none of it blocked, and the CI outage window is when it accumulated.
+  evidence: Machine-independent reproduction: `git worktree add --detach <tmp> origin/main && cd <tmp> && python scripts/ad_citation_check.py` → exit 1; lift the two `[:10]` slices to see all 61. The findings pre-date the branch that recorded them (`maintenance/close-five-operator-rulings` touched none of the cited files before fixing them).
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/ (register + 19 hoisted-spec files), _bmad-output/projects/pyforge-steward/planning-artifacts/ (4 files), _bmad-output/projects/pyforge-herald/planning-artifacts/specs/ (5 files), scripts/ad_citation_check.py:447-455
+  severity: medium
+  status: closed
+  raised: 2026-09-14 — Owner: marshal (the detector's Spec, fleet-consistency-standard). First disposition was "record, fix later — other stations' artifacts, needs judgment, advisory in CI"; the operator overruled it the same hour (*"why do you keep skipping pre-existing findings"*), and the memory rule `pre-existing-is-not-a-reason-to-leave` gained its third correction from this: fix-now is the default, a DW entry is never closure.
+
+  closed: 2026-09-14 — **All 61 tracked findings fixed by qualification, none by baseline amnesty; the ratchet's known set shrank by 33 as a side effect.** Every site was read in context before it was touched: the scribe register is now a qualified namespace like `fnd:` — `later-caps:CAP-N` on the register's own rows and on all 47 hoisted-spec/memlog/epics/README mentions — with the three sites that meant the Unifying Strategy's semantic-recall capability qualified `canopy:CAP-14` instead, and one epics.md story binding qualified `token-economy:CAP-13` (marshal's Spec). A first regex pass over `epics.md` mis-qualified eight baselined-known sites that name the Unifying Strategy's `canopy:CAP-14` / `canopy:CAP-8` and marshal's `token-economy:CAP-13`; caught by reading the replacements in context and corrected before the run. Steward: `pap:AD-12` (48.9, 51.1 — credentials via env/secret mounts), `pap:AD-16` (platform-dev-boots-local memlog), `canopy:AD-19` (the object-storage change proposal, which already used the qualified form twice on the same page). Herald: `canopy:CAP-19` in the three Canopy-poster artifacts; the two bullet-shape descriptions reworded to `CAP-N`. The 14 gitignored Tier-3 sites were fixed the same way (`canopy:CAP-16` for the persona allowed-actions references, `sld:AD-14` for the contention proof, `pap:AD-12/13/15/16/17`, `jira:AD-10`) so `detectors-ci` — and therefore `pr-preflight` — is green on this machine, not only on a runner. Re-run after: exit 0, 0 NEW. **Residual, not closed here because it is a detector change and therefore chain work (memory rule #2):** the `[:10]` output cap in `scripts/ad_citation_check.py` hides findings by construction — a detector that prints ten of sixty-one and exits 1 is telling the reader less than it knows. Carried as `DW-AD-CITATION-2026-09-14-2`.
+### DW-AD-CITATION-2026-09-14-2: `ad_citation_check` prints at most ten NEW findings per class — sixty-one read as fourteen
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-consistency-standard/SPEC.md`
+  summary: `scripts/ad_citation_check.py:447-455` slices `new[:10]` and `cap_new[:10]` before printing, while the headline line above them reports the full count. A reader who copies the rows (as this session did, into `DW-AD-CITATION-2026-09-14-1`'s first draft) records 14 where the truth is 61; the aggregator's per-detector summary shows one line, so nothing downstream sees the rest either. This is the class CLAUDE.md § Reading a detector's result names for pipes — truncation that hides findings — implemented inside the detector.
+  evidence: 2026-09-14 — `[ad-citation] 4 NEW issue(s)` / `[cap-citation] 57 NEW issue(s)` headlines with 10 rows printed under the second; re-executing the module with both slices lifted printed all 61. The fix is a one-line removal (or a `--all` flag with the cap as default *and* a trailing "… and N more" line so the truncation is at least visible), but `scripts/*_check.py` is governed tooling — per the 2026-08-08 ruling, repo tooling defects go through a Dream/Story, not a hand-patch in a passing branch.
+  location: scripts/ad_citation_check.py:447-455 (and :393-402 — `--write-baseline` / `--write-cap-baseline` stamp `recorded:` with hard-coded literals "2026-09-08" / "2026-09-10", so a re-stamp on 2026-09-14 still reads as those dates)
+  severity: low
+  status: resolved
+  raised: 2026-09-14 — Owner: marshal (fleet-consistency-standard owns the detector). Remedy: print every NEW row (they are the actionable set; the baselined set is already summarised by count), or cap with an explicit "… and N more (run with --all)" trailer — never a silent slice. Story to be minted under the owning Spec's next currency pass.
+
+  resolved: 2026-09-14 (same day, operator: "do it") — **Story 43.1, the citation detector shows everything it knows** — its own Epic 43. First minted as 32.9 with Epic 32 reopened `done → in-progress`; `ledger-regression`, the Doctor verdict made blocking this morning, red the PR on exactly that key (locally it had been run before the ledger commit, so it saw nothing — run it *after* committing). The fleet has no precedent for a done roll-up carrying a non-done story, so the story moved to a new single-story epic and `epic-32` stays `done`. The sync also exposed a stale local feed that would have dropped Epic 42's four `backlog` rows, restored through the feed before the write. Fix: both slices removed so every NEW row prints under the headline that already carried the count; `_today()` replaces the two literals, and both baselines re-stamped once so `recorded:` is 2026-09-14 (known sets unchanged: 7 / 75). `tests/scripts/test_ad_citation_check.py` proves 13 + 17 synthetic NEW rows all print, stamps carry the stamping date, and a hand-truncated baseline still prints every remaining row; mutation-verified (restoring the slices fails 2 of 3). The "… and N more" alternative was not taken: the NEW set is the action list, and there is no reader for whom fewer rows is the better default.
+
+### DW-FU-50-2: Only Claude and Cursor have quota-marker entries in `_QUOTA_MARKERS_BY_HARNESS`; the other configured harnesses (gemini, copilot, devin, codex, antigravity, opencode) still misclassify their own usage-wall wording as `unknown`/terminal.
+
+- source_spec: `planning-artifacts/specs/spec-50-2-a-harness-s-own-usage-wall-wording-is-a-transient-outcome.md`
+  summary: Only Claude and Cursor have quota-marker entries in `_QUOTA_MARKERS_BY_HARNESS`; the other configured harnesses (gemini, copilot, devin, codex, antigravity, opencode) still misclassify their own usage-wall wording as `unknown`/terminal.
+  evidence: Real latent gap, but pre-existing (every non-Claude/Cursor harness had zero markers before this story too) and not caused by this diff. The Approach explicitly scoped this fix to Cursor's live text from the named 2026-09-18 incident, not to every configured harness. Close the next instance the same way this one was closed: from a real run journal, not a guess at wording.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_session.py:28
+  origin: spec-deferred 983c65899fd1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-50-3: The MRS-DISP-043 fails-safe guard is silent when a tier-mapped model isn't catalogued under ANY provider, so a genuinely foreign model could still reach a live launch uncaught.
+
+- source_spec: `planning-artifacts/specs/spec-50-3-harness-outranks-a-dead-tier-map-harness.md`
+  summary: The MRS-DISP-043 fails-safe guard is silent when a tier-mapped model isn't catalogued under ANY provider, so a genuinely foreign model could still reach a live launch uncaught.
+  evidence: provider_declaring_model returns None for an uncatalogued model, and the guard's condition (`model_provider is not None and model_provider != resolved_provider`) only fires when the model IS found under some OTHER provider -- an uncatalogued-but-foreign model slips through silently. Pre-existing since the guard's 2026-09-12 introduction; unchanged by Story 50.3's diff, and explicitly outside this story's boundary ("Never ... add a second gate").
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:1901-1904
+  origin: spec-deferred 43c57981dccf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done
+  verified: 2026-09-19 — resolved by marshal Story 51.5 (merge 29e4a237df): MRS-DISP-043 fires for an uncatalogued model too (`provider_declaring_model` returning None no longer means silent). Live evidence the same day: steward's cursor-only tier map put grok-4.6 on a `--harness claude` launch and the session died at boot — the exact class 51.5 now flags.
+  story: promoted to Story 51.5 (spec-pyforge-marshal CAP-253, Epic 51, minted 2026-09-19); close when 51.5 lands, citing its merge.
+
+### DW-FU-50-4: Direct-commit branch corroboration (_branch_belongs_to_project) has no production call site that supplies real branch data for the retrospective git-log-only subject scan, so this shape can never actually corroborate in that path today.
+
+- source_spec: `planning-artifacts/specs/spec-50-4-landing-evidence-carries-the-station-in-every-shape.md`
+  summary: Direct-commit branch corroboration (_branch_belongs_to_project) has no production call site that supplies real branch data for the retrospective git-log-only subject scan, so this shape can never actually corroborate in that path today.
+  evidence: Confirmed via dispatch_landing.py/dispatch_land.py: the only production caller of branch-corroboration-adjacent code (merge_subject_is_marshal_native) is a pre-flight self-consistency check on a templated subject dispatch_land.py is about to render for its own station -- not the bare direct-commit shape's retrospective use case. Every caller of parse_story_direct_commit_subject inside merged_story_keys's own scan passes no branch data, so branch=None always refuses safely by design; the gap is that no caller exists that COULD pass real branch data to let a genuine direct-commit landing corroborate. Pre-existing, not caused by this story -- Story 50.4 added the corroboration requirement, but no story has yet added a caller with branch data for this shape. Blind Hunter findings #4 and #10 (same root cause).
+  location: src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py:178 (_branch_belongs_to_project)
+  origin: spec-deferred ba205d439d0e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  note: 2026-09-19 (night) — Story 51.7 was minted to close this, then amended after run `…-0b70f736` blocked (intent gap): 51.7 now corroborates dispatch landings by tracked-spec status and leaves the retrospective scan unchanged, so this item is NOT closed by 51.7; stays open, low, its own item.
+  status: open
+  story: promoted to Story 51.7 (spec-pyforge-marshal CAP-255, Epic 51, minted 2026-09-19); close when 51.7 lands, citing its merge.
+
+### DW-FU-50-5: Three sibling frontmatter parsers share the identical pre-banner-skip fence-check bug this story fixed in `promotion.py`/`spec_surface.py`. Of the three, `spec_low_risk.py::parse_declared_low_risk` is verified reachable via a promoted, banner-topped tracked spec and silently misreads its `declared_low_risk: true` as `False`; `dispatch_harness_done.py::parse_spec_status` and `spec_difficulty.py` are verified NOT reachable that way (both only ever read Tier-3/ worktree draft spec text, which never... [truncated, 529 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-50-5-the-promoter-reads-a-spec-through-its-banner.md`
+  summary: Three sibling frontmatter parsers share the identical pre-banner-skip fence-check bug this story fixed in `promotion.py`/`spec_surface.py`. Of the three, `spec_low_risk.py::parse_declared_low_risk` is verified reachable via a promoted, banner-topped tracked spec and silently misreads its `declared_low_risk: true` as `False`; `dispatch_harness_done.py::parse_spec_status` and `spec_difficulty.py` are verified NOT reachable that way (both only ever read Tier-3/ worktree draft spec text, which never... [truncated, 529 chars total]
+  evidence: Traced `cli/gate.py::_gather_review_depth` -> `_find_spec_text` (gate.py:494-519) -> `spec_low_risk.py::parse_declared_low_risk` (spec_low_risk.py:55-68): the latter still gates on `lines[0] == "---"` with no banner-skip, so a banner-topped tracked spec's `declared_low_risk: true` is read as `False`, pushing `classify_review_tier` to a heavier review tier than declared. Separately traced `cli/dispatch.py:2098-2099`'s one call site for `dispatch_harness_done.py::parse_spec_status` through `_spec_text_prefer_worktree` (dispatch.py:465-480): it reads only the current dispatch worktree's relocated spec text, never a promoted tracked copy. Flagged by both the Blind Hunter and Verification Gap review layers on this story's 2026-09-18 review pass; explicitly out of this story's declared Surface (intent contract "Never" clause names all three modules as excluded).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_low_risk.py::parse_declared_low_risk
+  origin: spec-deferred 3bc3d91bdf95 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  note: also read as spec-deferred fdd6bce25c09 by doctor's pre-fix `_frontmatter_parse`, which splits on the first `---` anywhere and so truncated this item at the quoted fence in its evidence (location dropped) — hand-rewritten 2026-09-19 in full-parse form; seeded on docs/dreams/pyforge-doctor.md
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done 2026-09-19
+  story: promoted to Story 51.8 (spec-pyforge-marshal CAP-256, Epic 51, minted 2026-09-19); close when 51.8 lands, citing its merge.
+  verified: 2026-09-19 — RESOLVED by Story 51.8 (spec-pyforge-marshal CAP-256; PR #1495, `62c09c2e27 Merge pyforge-marshal/51-8 into main`). `core/spec_low_risk.py::parse_declared_low_risk` skips a leading banner; `test_spec_low_risk.py` pins a banner-topped `declared_low_risk: true` resolving through the gate.
+
+### DW-FU-50-6: `_skip_leading_banner` (both `promotion.py` and `spec_surface.py`) only recognizes a banner starting at literal text offset 0 — a leading blank line, BOM, or other whitespace before the `<!--` marker falls through to "no frontmatter," reproducing the same failure mode this story exists to close.
+
+- source_spec: `planning-artifacts/specs/spec-50-5-the-promoter-reads-a-spec-through-its-banner.md`
+  summary: `_skip_leading_banner` (both `promotion.py` and `spec_surface.py`) only recognizes a banner starting at literal text offset 0 — a leading blank line, BOM, or other whitespace before the `<!--` marker falls through to "no frontmatter," reproducing the same failure mode this story exists to close.
+  evidence: Raised independently by the Blind Hunter and Edge Case Hunter review layers on this story's 2026-09-18 review pass (promotion.py:433, spec_surface.py:69); not exercised by any test in this story's added coverage. Undecided from the diff/code alone: confirmed via repo-wide search (`grep -rn "Promoted from implementation-artifacts" --include="*.py"`) that no code in this repository programmatically writes the provenance banner text at all — it is always hand/LLM-authored — so whether any real authoring path ever introduces leading whitespace before the banner could not be settled from this codebase alone.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::_skip_leading_banner
+  origin: spec-deferred 5434eca8c9e5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done 2026-09-19
+  story: promoted to Story 51.8 (spec-pyforge-marshal CAP-256, Epic 51, minted 2026-09-19); close when 51.8 lands, citing its merge.
+  verified: 2026-09-19 — RESOLVED by Story 51.8 (spec-pyforge-marshal CAP-256; PR #1495, `62c09c2e27 Merge pyforge-marshal/51-8 into main`). `_skip_leading_banner` in both `core/promotion.py` and `core/spec_surface.py` (and the two siblings 51.8 extended) tolerates a leading BOM, blank lines or spaces before `<!--`; `test_promotion.py` / `test_spec_surface.py` pin the BOM/blank/space prefixes.
+
+### DW-FU-51-8-1: A bare BOM directly before the frontmatter fence with no banner present at all is still misread as invalid/undeclared.
+
+- source_spec: `planning-artifacts/specs/spec-51-8-the-banner-skip-family-is-complete.md`
+  summary: A bare BOM directly before the frontmatter fence with no banner present at all is still misread as invalid/undeclared.
+  evidence: Verified live by the 51.8 session: `is_valid_spec_text` and `parse_declared_low_risk` both return False on a fixture whose text is a BOM followed immediately by the `---` fence. Pre-existing gap in the base first-line fence check, orthogonal to banner recognition; CAP-256's intent is scoped to banner tolerance (blank line, spaces and a BOM before `<!--`), so the no-banner BOM case is excluded by the intent itself.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::is_valid_spec_text
+  origin: spec-deferred 89653d3eb8a4 (was ed1337df1626 before the tracked spec's `location:` was repointed) — hand-ingested 2026-09-19 from spec frontmatter `deferred:`: `scripts/deferred_work_intake.py --fix --project marshal` refused it as "no resolvable location" because doctor's pre-CAP-81 `chain._frontmatter_parse` splits on the first `---` anywhere and the entry's `evidence:` quotes a `---` fence (the same truncation that hid DW-FU-50-6; doctor Story 28.1 is the fix, in flight)
+  severity: low
+  promoted: 2026-09-19 — hand-ingested (see origin)
+  status: open
+
+### DW-FU-51-2-1: Story 51.2's Auto Run Result set `followup_review_recommended: true` (two mediums patched on one pass) and nothing carries that forward.
+
+- source_spec: `planning-artifacts/specs/spec-51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory.md`
+  summary: Story 51.2 landed with `followup_review_recommended: true` and `warnings: ['oversized']`; the named unverified risk is whether `BrokenForge()` + `FakeVcs(merged=False)` genuinely reaches `heal.healed=False` / `escalated_paths=()` and whether `FakeProcess.calls` matches the real `PosixProcess` argv shape. No ledger row, DW item or scheduled dispatch consumed the flag; the very next landing on the same hub files (51.3) received no review at all.
+  evidence: Post-hoc review 2026-09-19 (Blind Hunter over `git diff 9b3c5afec8..e7a71df640`): the flag is only read by bmad-build-auto's step-01 on a re-dispatch of a `done` spec — which `factory dispatch` never issues for a `done` ledger row. Location is the landing code the follow-up would re-review.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
+  origin: post-hoc review 2026-09-19 (hand-filed; the 51.2 session's record, tracked spec Auto Run Result)
+  severity: medium
+  promoted: 2026-09-19 — hand-filed
+  status: open
+  story: a follow-up review dispatch of 51.2 (`factory dispatch` of a `done` spec with the flag true is the mechanism bmad-build-auto defines) or a `spec-pyforge-marshal` CAP so the campaign schedules it; seeded on docs/dreams/pyforge-marshal.md 2026-09-19 item (5). Promoted 2026-09-28 to Stories 66.1 (spec-pyforge-marshal CAP-275, Epic 66: finalize carries a recommended follow-up review into this ledger as `DW-FRR-<story>`) and 66.2 (the one-time backfill, which mints `DW-FRR-51-2` to carry 51.2's own follow-up review from then on); close when 66.2 lands, citing both merges.
+
+### DW-FU-51-9: A failed deploy_run.write mint/write inside finalize_dispatch_land can turn an already-successful land+promote into a reported failure.
+
+- source_spec: `planning-artifacts/specs/spec-51-9-the-campaign-reads-the-ledger-it-just-promoted-re-mint-of-51-3.md`
+  summary: A failed deploy_run.write mint/write inside finalize_dispatch_land can turn an already-successful land+promote into a reported failure.
+  evidence: Edge Case Hunter (EC2) on the 51.9 review pass. Pre-existing via _promote_sprint_ledger's own two prior deploy_run.write calls in the same function, not introduced by this story; a real fix requires redesigning _DeployRun / finalize_dispatch_land's shared error-severity policy — a distinct, unscoped change. Reshaped 2026-09-19 from the session's bare-string item into the summary/evidence/ location form so `deferred-work` can see it (a bare string is invisible to the twin check).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py::finalize_dispatch_land
+  origin: spec-deferred b3476d0dd8c2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-51-1: The pre-existing "already landed" check in execute_dispatch_land reasons from local main while the new Story 51.1 merge-tree-preview check fetches and diffs against origin/main, leaving two different freshness assumptions about "main" side by side in the same function.
+
+- source_spec: `planning-artifacts/specs/spec-51-1-verification-sees-the-merge-result.md`
+  summary: The pre-existing "already landed" check in execute_dispatch_land reasons from local main while the new Story 51.1 merge-tree-preview check fetches and diffs against origin/main, leaving two different freshness assumptions about "main" side by side in the same function.
+  evidence: vcs.commit_subjects(git_repo_root, _MERGE_BASE) (_MERGE_BASE = "main", the local branch) is unchanged by this story and never fetches; the new _refuse_via_merge_tree_preview check explicitly fetches origin/main first. If the local main ref is stale, the already-landed check could give a wrong answer. This predates Story 51.1 and is outside its intent (fixing merge-result verification, not the already-landed check), so it was not fixed here.
+  location: src/pyforge/marshal/dispatch_land.py (the commit_subjects/_MERGE_BASE check)
+  origin: spec-deferred 1feedfb59a16 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-51-4: The supervisor-crash unsupervised-recovery path (dispatch_survival.py) cannot recognize a narration-only diff as no-progress because DispatchCompletionInput has no spec_relative_path field.
+
+- source_spec: `planning-artifacts/specs/spec-51-4-a-blocked-outcome-never-lands.md`
+  summary: The supervisor-crash unsupervised-recovery path (dispatch_survival.py) cannot recognize a narration-only diff as no-progress because DispatchCompletionInput has no spec_relative_path field.
+  evidence: derive_supervision_state/reconcile_unsupervised_verdict build DispatchCompletionInput(session_alive=session_alive, git=git) with no spec_relative_path, unlike the 4 correctly-threaded resolve_terminal_session_verdict call sites in dispatch_supervisor/__main__.py and the cli/dispatch.py fix landed in this pass. What would settle whether this reaches an actual wrongful landing (medium/high) versus a merely different in-flight status: a live-fire test that kills the supervisor process mid-run with a narration-only diff staged and traces whether recovery treats it as progress through to an actual land attempt.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_survival.py:89-104,113-118
+  origin: spec-deferred cd033874e1ac — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-51-4-2: KIND_DISPATCH_BLOCKED journal entries are write-only; nothing reads them back, so a block reason is unrecoverable once the worktree that backs the live spec re-read is already cleaned up.
+
+- source_spec: `planning-artifacts/specs/spec-51-4-a-blocked-outcome-never-lands.md`
+  summary: KIND_DISPATCH_BLOCKED journal entries are write-only; nothing reads them back, so a block reason is unrecoverable once the worktree that backs the live spec re-read is already cleaned up.
+  evidence: Unlike KIND_DISPATCH_FINALIZE, which has a dedicated reader in dispatch_supervisor_finalize.py, no code folds or reads KIND_DISPATCH_BLOCKED entries. station_story_block_facts's blocked detection depends entirely on a live re-read of the worktree spec; once the worktree is removed, spec_text is None and the blocked branch is silently skipped with no journal fallback. The Approach clause commits only to journaling the reason, not to a reader, so this is out of this story's bound intent -- real future hardening, not a defect in what was built.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py::_journal_dispatch_blocked
+  origin: spec-deferred f8f0fee952b7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-OPS-2026-09-19-1: five stale August bmad-loop runs sit `paused — ESCALATED` in the loop homes and pollute `marshal watch --fleet`; every loop home is 447 commits behind `main`
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: `marshal watch --fleet` (2026-09-19T19:14Z) lists doctor `20260815-112702-c77e`, herald `20260813-094918-551b`, marshal `20260813-094919-bfcb`, mason `20260820-135424-1a75`, steward `20260815-112704-748b` as `paused — ESCALATED` with August "blocked outcome" / intent-gap escalations; none is a live lane (today's work runs through `marshal factory dispatch` worktrees, which do not register there). `fleet-picture` adds "loop home is 447 commit(s) behind origin/main — resync before its next spin" for all eight stations. **Operator decision needed:** `marshal retire --execute` on the five runs + `marshal refresh` of the loop homes (destructive-ish — the escalated runs' worktrees go), or leave them and accept the noise until the next `bmad-loop` spin.
+  evidence: `pixi run --frozen -e pyforge-guild marshal watch --fleet --format text` from `lr-m50`; `fleet-picture` ATTENTION rows. The escalations' stories have since landed through other routes (e.g. marshal seed copier — Epic 46/47 chain).
+  location: ~/.bmad-loops/pyforge-{doctor,herald,marshal,mason,steward}
+  severity: low
+  status: done
+  verified: 2026-09-19 — resolved (operator ruling 'run it'). 35 August runs archived with `bmad-loop archive` (compressed, reversible: `.bmad-loop/archive/<run>.tar.gz` in each loop home) — the five named plus 30 more `paused`/`stopped` runs that surfaced behind them, each checked first: not alive, every story `done` on the tracked ledger, dated before September; one deliberately kept (marshal `20260810-192255-dbc6`, stories 7-5/7-6 not done). `marshal retire --execute` → 0 proposals. `marshal refresh` → all 8 loop homes fast-forwarded 455 → `66463b4986`, `loop/<slug>` pushed, `policy.toml` re-rendered. `marshal watch --fleet` now reports `User Action Required: None`; `fleet-picture` has no 'loop home behind' row.
+  raised: 2026-09-19 — Owner: marshal (loop-home lifecycle). Asked of the operator in the 2026-09-19 session; recorded here so the ask survives the session.
+
+### DW-OPS-2026-09-19-2: the main checkout still carries 14 stashes and eight merged `.worktrees/dispatch-*` worktrees (+ their local/remote `dispatch/*` branches) that a session cannot remove
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: Phase 0.3 of the 2026-09-19 plan (operator-approved: "export stash@{12} to a patch, drop all 14") could not be executed by the agent — the permission classifier blocks `git stash clear` and `git worktree remove` as irreversible local destruction. Patches are archived at `~/UserLocal/Projects/Github/rxm7706/_stash-archive/` (`2026-08-12-warden-14-2-stash12.patch`, `herald-21.1-unmerged.patch`). Remaining: `git stash clear`; `git worktree remove` for `.worktrees/dispatch-pyforge-{marshal-46.1,marshal-46.2,marshal-46.5,mason-16.4,steward-44.4,steward-44.5,steward-44.6,steward-59.2,herald-21.1}` (all merged / `ahead=0`), `git worktree prune`, `git branch -d` the merged `dispatch/*` locals and `git push origin --delete` their remotes. `marshal retire --execute` skips worktree-pinned branches, so this is hand work. **Operator-only.**
+  evidence: `git stash list` (14, Aug 12 → Sep 2), `git worktree list` in the main checkout, 2026-09-19.
+  location: /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees
+  severity: low
+  status: done
+  verified: 2026-09-19 — resolved by the operator in-session: `git stash clear` (14 → 0; patches archived), 12 merged `.worktrees/dispatch-*` removed + pruned (only the live lane remains), 19 local `dispatch/*` + the two unmerged branches deleted, 41 merged remote `dispatch/*` deleted (`git branch -r | grep -c origin/dispatch/` → the live lanes only).
+  raised: 2026-09-19 — Owner: marshal (dispatch worktree lifecycle; see also steward's resolved worktree-residue entry of 2026-09-08). Asked of the operator in the 2026-09-19 session.
+
+### DW-OPS-2026-09-19-3: marshal Story 46.5's key is poisoned — PR #1448 (Story 28.24, "supervisor finalize") merged from a branch named `dispatch/pyforge-marshal/46.5`, so `merged_story_keys` reads 46.5 as landed while the ledger row is `backlog`
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: `git log origin/main` carries `Merge pull request #1448 from rxm7706/dispatch/pyforge-marshal/46.5` and `wip: 46.5 (auto-checkpoint)` subjects for work that was Story 28.24; the real 46.5 ("the journal splits silent saves from configured layers…") has never been implemented. A dispatch of 46.5 will either be refused as already-landed or complete instantly with `story_merged_on_main` (the doctor 23.3 shape, 2026-09-19). Remedy is the 51.3 → 51.9 precedent: before Epic 46 dispatches, re-mint the story as 46.11 (epics.md "supersedes Story 46.5", ledger `46-5` → `done` with a hollow/poisoned note, `46-11` `backlog`, tracked spec, capability-ledger unchanged).
+  evidence: `git log origin/main --format=%s | grep -E '46\.5'` on 2026-09-19; spec-landing-evidence-grammar (`parse_station_branch_name`) reads the branch name.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
+  severity: medium
+  status: done
+  verified: 2026-09-20 — the premise was wrong, verified against main: the `wip: 46.5` commits in PR #1448 (whose TITLE named 28.24) carry 46.5's real contract — `core/layer_savings_sources.py` (`SILENT_LAYER_KEYS`/`CONFIGURED_LAYER_KEYS`/`classify_layer_kind`, `HARNESS_CURRENCY`, `read_rollup_by_harness`), `cli/status.py::_format_rollup_by_harness`, `tests/unit/test_layer_savings_sources.py`, `TestSavingsRollupByHarness` — and the tracked spec is `done` with an Auto Run Result. The only defect was the ledger row left at `backlog` because that landing was never finalized. Resolved by replaying `dispatch_land_finalize pyforge-marshal 46-5` (promote commit `4d165707d9`), which 51.7's corroboration (spec `done` + merge) admits; no re-mint, no 46.11.
+  raised: 2026-09-19 — Owner: marshal. Found while preflighting the third drain's Epic 46 lane.
+
+### DW-OPS-2026-09-19-4: the `headroom` MCP server entry points at a removed worktree's interpreter and fails to connect at every Claude Code session start; the `plugin:github` MCP answers 400 "Authorization header is badly formatted"
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: Session boot reports `headroom (ENOENT): posix_spawn '…/local-recipes-wt-token-economy-claude-session-path/.pixi/envs/local-recipes/bin/python3.14'` — the worktree was removed after the token-economy work landed, the MCP config (operator-level Claude settings) still names its env. Repoint to the main checkout's `.pixi/envs/pyforge-guild/bin/python` (headroom-ai is a Guild-env dep since Story 63.1). The GitHub plugin MCP's auth header is malformed — an operator credential/config fix. Both are operator-level config outside the repo; recorded so the session-start error stops being background noise.
+  evidence: Claude Code session-start MCP failure notices, every session since ~2026-09-16.
+  location: ~/.claude.json (mcpServers) / ~/.claude/settings.json
+  severity: low
+  status: open
+  raised: 2026-09-19 — Owner: marshal (token-economy kit). Operator-only.
+
+### DW-FU-51-5: The spin-engine sibling guard in `adapters/harness_bmadloop.py::render_policy_toml` was not widened alongside this story's dispatch-engine guard, so a genuinely foreign or mistyped tier-mapped model can still reach a live spin-engine launch unwarned.
+
+- source_spec: `planning-artifacts/specs/spec-51-5-mrs-disp-043-speaks-for-an-uncatalogued-model.md`
+  summary: The spin-engine sibling guard in `adapters/harness_bmadloop.py::render_policy_toml` was not widened alongside this story's dispatch-engine guard, so a genuinely foreign or mistyped tier-mapped model can still reach a live spin-engine launch unwarned.
+  evidence: Both the Edge Case Hunter and the Verification Gap Reviewer independently flagged this in the 2026-09-19 review pass. Confirmed unchanged by this diff (not in Story 51.5's declared Surface: `cli/dispatch.py`, `core/model_cost.py::provider_declaring_model`, `core/findings.py` / `core/verdict.py`, tests). The gap is identical in shape to how the dispatch guard read before this story, so it pre-dates this change rather than being caused by it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py::render_policy_toml
+  origin: spec-deferred 81382d5938a6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-7: An advisory (never gating) doctor detector that could flag a bare `bmad-build-auto` dispatch was named in the Approach line but left unimplemented.
+
+- source_spec: `planning-artifacts/specs/spec-46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door.md`
+  summary: An advisory (never gating) doctor detector that could flag a bare `bmad-build-auto` dispatch was named in the Approach line but left unimplemented.
+  evidence: No AC requires it, `pyforge-doctor` has no existing "bare invocation" signal to extend (verified by grep across `sources/`), and detecting a bare skill invocation from outside that session's own transcript is a separate, non-trivial design problem, not a same-sized docs edit. Belongs to a follow-on story with its own CAP.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
+  origin: spec-deferred 541f60d707ba — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-1: reclassify_pre_existing_gate_findings can downgrade a genuine S-13.7 guard failure (MRS-GATE-001) to a non-blocking MRS-GATE-014 WARN when this story's own drift is on a non-.py governed file (invisible to extract_failure_paths_from_verify_output's four .py-only patterns) and the guard's combined output also names an unrelated, genuinely pre-existing drift finding on a .py file elsewhere in the repo -- that unrelated .py path is the only one extracted, it falls outside this story's blast radius,... [truncated, 604 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session.md`
+  summary: reclassify_pre_existing_gate_findings can downgrade a genuine S-13.7 guard failure (MRS-GATE-001) to a non-blocking MRS-GATE-014 WARN when this story's own drift is on a non-.py governed file (invisible to extract_failure_paths_from_verify_output's four .py-only patterns) and the guard's combined output also names an unrelated, genuinely pre-existing drift finding on a .py file elsewhere in the repo -- that unrelated .py path is the only one extracted, it falls outside this story's blast radius,... [truncated, 604 chars total]
+  evidence: extract_failure_paths_from_verify_output (core/dispatch_verification.py) restricts all four regexes to .py paths; gather_spec_surface's "drift" finding detail (pyforge-doctor core/chain.py, _drift_findings) embeds the governed path in prose with no extension restriction, so a non-.py drift line never matches extraction while a co-occurring .py drift line elsewhere does -- reclassify_pre_existing_gate_findings' any()-over-extracted-paths check then sees only the unrelated, out-of-blast-radius .py path and downgrades. Root cause predates this story (extract_failure_paths_from_verify_output's .py-only scope is unchanged by this diff); this story is what first routes the S-13.7 guard's broad, multi-path, mixed-extension output through it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verification.py:81 (extract_failure_paths_from_verify_output), src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispat... [truncated, 262 chars total]
+  origin: spec-deferred 8762706175c0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-31-1: Dispatch structure-graph — shared index provisioning via sync-from-base was drafted after the 28.31 spike but never minted as a story.
+
+- source_spec: `planning-artifacts/specs/spec-28-31-structure-graph-codegraph-for-dispatch-provisioning-cost-weighed-against-a-single-story-session.md`
+  summary: A draft story spec (`spec-28-34-dispatch-structure-graph-shared-index-provisioning.md`, written by the 28.31 session's auto-checkpoint `6a674c4f14` on 2026-09-10) proposed provisioning the dispatch structure-graph index from a shared base instead of per-worktree; it never got a ledger row, an epics.md story, or a CAP, and Epic 28 closed done without it. Found by the 2026-09-20 fleet consistency pass as the one tracked story spec with no ledger row.
+  evidence: `git log -- _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-34-*` shows only the 28.31 auto-checkpoint; `sprint-status-ledger.yaml` has no `28-34-*` key; `epics.md` has no `### Story 28.34`.
+  location: archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-34-dispatch-structure-graph-shared-index-provisioning.md (archived 2026-09-20, never deleted — steward 41.1)
+  origin: fleet consistency pass 2026-09-20 (spec-status fallout PR)
+  severity: low
+  promoted: 2026-09-20
+  status: open — mint as a story (new epic, since Epic 28 is done) only if the token-economy layers are switched on and dispatch index provisioning cost is measured again; until then the draft is reference material.
+
+### DW-FU-53-2: The reconcile's own memlog + baseline-stamp commit is never re-run through a merge-tree preview before `forge.merge_pr`.
+
+- source_spec: `planning-artifacts/specs/spec-53-2-the-landing-reconciles-from-git-facts-and-runs-intake.md`
+  summary: The reconcile's own memlog + baseline-stamp commit is never re-run through a merge-tree preview before `forge.merge_pr`.
+  evidence: `_refuse_via_merge_tree_preview` (dispatch_land.py:846-871) validates only the pre-reconcile tree; `_reconcile_spec_surface_drift`'s own commit (memlog + baseline JSON, pushed at dispatch_land.py:873-899) is never re-checked before `forge.merge_pr` at line ~938, verified by tracing the call order at dispatch_land.py:830-935. The correct fix (re-run the preview after a successful reconcile) is a second expensive preview invocation; the reconcile only ever touches `.memlog.md`/`.spec-surface-baseline.json`, never runtime code, so practical risk is low, and re-scoping the preview call is beyond this story's Approach.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py:846-935
+  origin: spec-deferred 7cf6ae952c9e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-2-2: `_reconcile_spec_surface_drift`'s in-process `sys.path.insert` + doctor import can serve a stale, first-imported doctor module across serial dispatches in the long-lived supervisor.
+
+- source_spec: `planning-artifacts/specs/spec-53-2-the-landing-reconciles-from-git-facts-and-runs-intake.md`
+  summary: `_reconcile_spec_surface_drift`'s in-process `sys.path.insert` + doctor import can serve a stale, first-imported doctor module across serial dispatches in the long-lived supervisor.
+  evidence: The `sys.path.insert` + `from pyforge.doctor.sources.chain import gather_spec_surface` import (dispatch_land.py ~297-301) runs in-process inside the long-lived `dispatch_supervisor`, unlike `scripts/spec_surface_reconcile.py`'s identical pattern, which always runs as a fresh subprocess (that script's own docstring requires "ZERO environment" and is invoked per-call). A supervisor spanning a doctor-code deployment across serial dispatches would keep using the first-imported, now-stale module via `sys.modules` caching. The proper fix needs either subprocess-based invocation or explicit `importlib` reload handling, both larger than a direct correction; the risk window (a supervisor process outliving a doctor deploy) is narrow.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py:297-301
+  origin: spec-deferred ce81bb640e2d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-2-3: Doctor's per-path drift collapse keeps only the lowest-rank, alphabetically-first co-governing spec's row, so a second co-governor drifted on the identical path stays invisible to the reconcile.
+
+- source_spec: `planning-artifacts/specs/spec-53-2-the-landing-reconciles-from-git-facts-and-runs-intake.md`
+  summary: Doctor's per-path drift collapse keeps only the lowest-rank, alphabetically-first co-governing spec's row, so a second co-governor drifted on the identical path stays invisible to the reconcile.
+  evidence: `pyforge.doctor.sources.chain._drift_findings`'s `per_path` collapse (chain.py:1965-1974, `rows.sort(key=lambda row: (row[0], row[1])); ... rows[0]`) keeps exactly one winning spec per path. `_reconcile_spec_surface_drift` can only see and act on this already- collapsed output, so the second co-governor's drift on that exact path stays unreconciled on `main` until a later pass. Doctor's `sources/chain.py` is explicitly read-only per this story's own Boundaries, and the only story-side fix (loop reconcile-and-restamp until `gather_spec_surface` reports fully clean) is a real scope expansion beyond a single-pass reconcile.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:1965-1974
+  origin: spec-deferred 1e3e52a60cbd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-3: `supervisor_should_exit(...)` is inert at the supervisor's terminal return: both the True and the False arm return 0, so the predicate's result changes nothing and no test can observe it regressing.
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: `supervisor_should_exit(...)` is inert at the supervisor's terminal return: both the True and the False arm return 0, so the predicate's result changes nothing and no test can observe it regressing.
+  evidence: `if supervisor_should_exit(completion_verdict=..., story_merged_on_main=..., landing_verdict=...): return 0` is immediately followed by a bare `return 0`. The call still costs a journal fold and three keyword arguments. Either the False arm was meant to return a non-zero code (the supervisor stayed but the tick loop ended) or the call should go; both are production changes this story's Boundaries forbid.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1861-1867
+  origin: spec-deferred 6779243f94f0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-3-2: `verdict = DispatchSessionVerdict.FAILED` under `should_terminalize_verify_refusal` in the LIVE branch is unreachable dead defensive code, and therefore permanently uncoverable in the module whose floor this story restored.
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: `verdict = DispatchSessionVerdict.FAILED` under `should_terminalize_verify_refusal` in the LIVE branch is unreachable dead defensive code, and therefore permanently uncoverable in the module whose floor this story restored.
+  evidence: `should_terminalize_verify_refusal(...)` requires `not session_alive` and `verification_verdict == "refused"` and git progress. The only path yielding LIVE for a dead session is `resolve_terminal_session_verdict`'s marshal-initiated-stop branch (`core/supervise.py:718-720`), reached only after the refused-plus-progress case already returned FAILED at `supervise.py:714-717`. Deleting the line is a production change that buys coverage and nothing else.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1558
+  origin: spec-deferred 7aa294148775 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-3-3: The package docstring's documented entry-point argv is one positional short of what `main()` actually parses: it omits `<merge_subject_template>`.
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: The package docstring's documented entry-point argv is one positional short of what `main()` actually parses: it omits `<merge_subject_template>`.
+  evidence: The docstring shows `python -m pyforge.marshal.dispatch_supervisor <repo_root> <slug> <run_id> <session_pid> <worktree_path> <story_key> <baseline_head_sha> <log_path>` — eight positionals. `main()` registers nine, with `merge_subject_template` between `baseline_head_sha` and `log_path`. Anyone launching the supervisor by hand from the docstring passes the log path where the merge subject template belongs.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__init__.py:9-13
+  origin: spec-deferred 19e699afb20c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-3-4: `main()` parses a ninth positional `log_path` and never forwards it to `run_dispatch_supervisor(...)`, so a caller-supplied supervisor log destination is silently ignored.
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: `main()` parses a ninth positional `log_path` and never forwards it to `run_dispatch_supervisor(...)`, so a caller-supplied supervisor log destination is silently ignored.
+  evidence: `parser.add_argument("log_path")` is parsed into `args.log_path`; the `run_dispatch_supervisor(...)` call that follows passes eight keywords and `log_path` is not among them. This run pinned the current behaviour rather than changing it — `test_main_threads_every_supervisor_positional_and_ignores_the_log_path` asserts the whole eight-key call and asserts `"log_path" not in captured` — because the story's Approach forbids a production change without a proven defect, and "the argument is accepted for argv compatibility with the launcher" is a defensible reading nothing in the module contradicts.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1880-1891
+  origin: spec-deferred 3312f0b6f635 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-3-5: The touched-module coverage gate re-measures nothing on a branch that changes only tests, so a station's restored floor is defended by no lane that runs on the change most likely to break it.
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: The touched-module coverage gate re-measures nothing on a branch that changes only tests, so a station's restored floor is defended by no lane that runs on the change most likely to break it.
+  evidence: `_evaluate` derives its module list from changed `src/**/*.py` paths only and returns 0 with `no touched source modules for pyforge-marshal unit; skipping evaluate` when that list is empty — verified on this branch, which prints exactly that. This story mitigates the single module it restored, by re-measuring it in `tests/meta/test_dispatch_supervisor_main_coverage_floor.py`, but the general hole stays: every other module's floor is still only checked when a branch happens to edit its source. A fleet-level fix (a periodic full-package evaluate, or a gate that also measures modules whose *tests* a branch touches) belongs to the gate's owning chain, `spec-pyforge-steward:CAP-153`, not to a marshal dispatch.
+  location: scripts/coverage_gates_ci.py:230-246
+  origin: spec-deferred b64cbf548842 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-3-6: The `should_retry_stuck_land(...)` disjunct in the LIVE branch's landing condition is inert by construction, so `stuck_land_ticks` can never reach the threshold it guards.
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: The `should_retry_stuck_land(...)` disjunct in the LIVE branch's landing condition is inert by construction, so `stuck_land_ticks` can never reach the threshold it guards.
+  evidence: The `or should_retry_stuck_land(...)` arm's inputs are a subset of the first disjunct's conditions, so whenever the retry predicate could be True the first disjunct is already True; and `stuck_land_ticks` is reset to 0 in the same tick, immediately above, whenever those conditions do not hold. The counter therefore never accumulates to the `>= 5` the predicate requires. No unit test can drive it without a production change; a test that pretended to would be pinning a fiction.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1564-1578
+  origin: spec-deferred c4f1cb5a30a5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-3-7: `FakeFs.read_text` falls through to the real checkout on an overlay miss, so a unit result can depend on the state of the working tree rather than on the fixture alone.
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: `FakeFs.read_text` falls through to the real checkout on an overlay miss, so a unit result can depend on the state of the working tree rather than on the fixture alone.
+  evidence: The overlay is consulted first and an unseeded path reaches the real filesystem. That is load-bearing today — the supervisor reads tracked repo files (the story spec, known story keys) that the fixtures deliberately do not stub — so closing it means seeding those files in every scenario, which is a rewrite of the fixture layer rather than a review patch. Until then an edit to a tracked file the supervisor reads can change a unit result with no test edit.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_main_loop.py:101-110
+  origin: spec-deferred d2625bcbb863 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-3-8: The supervisor entrypoint has no `ClockPort`: its clock is faked by replacing the module's `time` attribute, the one seam in this suite that reaches past the ports contract the file advertises.
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: The supervisor entrypoint has no `ClockPort`: its clock is faked by replacing the module's `time` attribute, the one seam in this suite that reaches past the ports contract the file advertises.
+  evidence: `monkeypatch.setattr(supervisor_main, "time", fake)` swaps the whole stdlib module object for a `_FakeClock`. Every other collaborator is injected through `FsPort`, `VcsPort`, `ProcessPort` or `RunPublisherPort`. Adding a `ClockPort` parameter is a production change to a signature the launcher calls, so it belongs to a story of its own; the suite documents the deviation in the fixture's docstring meanwhile.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1442-1460
+  origin: spec-deferred e63c9028f578 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-3-9: `.claude/skills/conda-forge-expert/tests/unit/test_inventory_channel_auth_host_gate.py::test_malformed_base_url_does_not_crash_the_allowlist_scan` fails in any session running behind the headroom wire-compression proxy.
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: `.claude/skills/conda-forge-expert/tests/unit/test_inventory_channel_auth_host_gate.py::test_malformed_base_url_does_not_crash_the_allowlist_scan` fails in any session running behind the headroom wire-compression proxy.
+  evidence: `_fallback_configured_enterprise_hosts()` scans every `*_BASE_URL` environment variable and the test does not clear the ambient ones, so `ANTHROPIC_BASE_URL=http://127.0.0.1:9108` leaks `127.0.0.1` into the asserted set. It passes with that variable unset, and CI never sets it. The fix (clearing the environment in the test) belongs to the CFE skill's own chain under its Rule 1 / Rule 2 retro obligations, not to a marshal dispatch, which may not edit skill files under this story's Boundaries.
+  location: .claude/skills/conda-forge-expert/tests/unit/test_inventory_channel_auth_host_gate.py
+  origin: spec-deferred ae129eb64f82 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-3-10: `DW-FU-53-2-4` (dispatch finalize should promote the story spec from a tracked `done` copy) was recorded during Story 53.2 as a candidate for 53.3's sibling; this story neither addressed it nor re-recorded it, so it stays where 53.2 left it.
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: `DW-FU-53-2-4` (dispatch finalize should promote the story spec from a tracked `done` copy) was recorded during Story 53.2 as a candidate for 53.3's sibling; this story neither addressed it nor re-recorded it, so it stays where 53.2 left it.
+  evidence: The row is live in the marshal deferred-work ledger. It is out of scope here — 53.3's Approach is test-only and its Boundaries forbid the production change the promotion needs — but it is named here so the next session reading this story's deferred list sees it rather than inferring it was closed by Epic 53's completion.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md
+  origin: spec-deferred af4943422f9f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1: The substrate-nightly publisher is inert: .github/workflows/substrate-nightly.yml is not in actions-policy.toml allow_when_enabled, so it stays off even once GitHub Actions are re-enabled, and no release assets exist yet.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: The substrate-nightly publisher is inert: .github/workflows/substrate-nightly.yml is not in actions-policy.toml allow_when_enabled, so it stays off even once GitHub Actions are re-enabled, and no release assets exist yet.
+  evidence: Review 2026-09-24 (Blind + Intent, grouped). .github/actions-policy.toml has enabled = false and allow_when_enabled lists only staged-recipes-linter.yml and detectors.yml. Enabling a billed workflow is an operator billing decision, and this dispatch was told not to edit that file. Until it is enabled, bootstrap's fetch fails with a named reason and every member rebuilds locally (MRS-CTX-003/004).
+  location: .github/actions-policy.toml
+  origin: spec-deferred 2d1c015357ff — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-2: bootstrap reports no freshness: it never compares the manifest's source_commit with the clone's HEAD, so a stale pack or release installs silently as fetched, and a present member is never refreshed.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: bootstrap reports no freshness: it never compares the manifest's source_commit with the clone's HEAD, so a stale pack or release installs silently as fetched, and a present member is never refreshed.
+  evidence: Review 2026-09-24 (Blind + Intent, grouped). This is G4 of the substrate-primary reordering (spec-token-economy-claude-session-path/.memlog.md line 15), and scribe compile_surface owns it. Leaving present members untouched is this slice's spec rule. The manifest already records source_commit, so a later freshness check has the input it needs.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context_bootstrap.py
+  origin: spec-deferred 81c7dd00c9e1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-3: The rebuild fallback cannot complete in the session-default pyforge-guild env: codegraph is in no guild lock, and scribe graph compile needs the pyforge-scribe extras.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: The rebuild fallback cannot complete in the session-default pyforge-guild env: codegraph is in no guild lock, and scribe graph compile needs the pyforge-scribe extras.
+  evidence: Review 2026-09-24 (Blind + Intent, grouped). The failure is loud and named: PosixProcess turns a missing binary into ProcessError (pyforge-core process.py:179), and bootstrap reports that as MRS-CTX-004 with the reason. The env composition predates this story. Closing the gap needs a pixi.toml change (and an environment.yaml regeneration) that this dispatch may not make.
+  location: pixi.toml
+  origin: spec-deferred 5639f566297c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-4: No cloud-runner setup (the Copilot copilot-setup-steps.yml, Devin, Cursor background) calls marshal context bootstrap yet, so a bare cloud clone does not open already filled.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: No cloud-runner setup (the Copilot copilot-setup-steps.yml, Devin, Cursor background) calls marshal context bootstrap yet, so a bare cloud clone does not open already filled.
+  evidence: Review 2026-09-24 (Intent). The Surface of Story 46.1 (epics.md) names only the publisher and the CLI. Wiring runner setup while the publisher is disabled would make every cloud session fail the fetch and pay a full local rebuild. Wire it once the substrate-nightly assets exist.
+  location: .github/workflows/copilot-setup-steps.yml
+  origin: spec-deferred f1c96e369819 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-5: The new pyforge context noun alias and the context bootstrap / context pack verbs are not documented in the marshal SKILL.md, the grammar reference, or the pyforge dispatcher usage text.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: The new pyforge context noun alias and the context bootstrap / context pack verbs are not documented in the marshal SKILL.md, the grammar reference, or the pyforge dispatcher usage text.
+  evidence: Review 2026-09-24 (Blind). The fix edits an agent-context file (.claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md, SKF-generated) plus the pyforge-core dispatcher usage string. Routing a documentation refresh through the SKF skill update keeps the generated skill consistent. The CLI's own --help already lists both verbs.
+  location: .claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md
+  origin: spec-deferred f80850a51761 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-6: chain-currency-sweep-check reports a pyforge-marshal chain-audit-checkpoint-staleness fail, because this story's required memlog appends (dated 2026-09-24) are newer than the planning spine's last reconcile.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: chain-currency-sweep-check reports a pyforge-marshal chain-audit-checkpoint-staleness fail, because this story's required memlog appends (dated 2026-09-24) are newer than the planning spine's last reconcile.
+  evidence: python scripts/chain_currency_sweep_check.py exits 1 with "[chain-currency] pyforge-marshal: chain-audit-checkpoint-staleness: project pyforge-marshal: staleness checkpoint fail". At the baseline (12ec9822ff) the newest marshal memlog entry was 2026-09-20. The dispatch was required to name its governed paths on the memlogs, and clearing the checkpoint is the chain-currency reconciler's job per the runbook, not a dev-story edit.
+  location: _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md
+  origin: spec-deferred 19d46d5b1bba — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-46-6: Nothing yet documents running `marshal context advisory` as part of session close, so the AC's "session ends" trigger and epics.md's "session-close output" Surface are realized only as an on-demand capability, not as a close-time ritual.
+
+- source_spec: `planning-artifacts/specs/spec-46-6-an-interactive-session-whose-layers-lapse-gets-a-persistence-advisory.md`
+  summary: Nothing yet documents running `marshal context advisory` as part of session close, so the AC's "session ends" trigger and epics.md's "session-close output" Surface are realized only as an on-demand capability, not as a close-time ritual (the repo's one precedent, `scribe capture`, ties in by documented convention, not a hook).
+  evidence: Review Triage Log 2026-09-25, finding #14. `run_context_advisory` produces correct output when invoked, but no doc names it as part of the session-close ritual the way AGENTS.md names `scribe capture`.
+  location: AGENTS.md
+  origin: spec-deferred f19691fb2515 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+## DW-marshal-baseline-drift-supersession-2026-09-25 — `baseline-drift-check` reports three atlas defers as unrecovered forever, because its recovery rule only recognises the literal story key reading `done`
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-baseline-drift/SPEC.md` (CAP-1/CAP-2; the detector is `scripts/bmad_loop_baseline_drift_check.py`, surfaced by `fleet-picture`'s ATTENTION block)
+  summary: a baseline-drift defer counts as recovered only when `tracked_status(slug).get(story) == "done"` for the exact key the run journal recorded. A story that was retired (its key removed from the tracked ledger) or reminted under a new slug can therefore never clear, and the fleet picture carries it as "unrecovered" indefinitely — three such rows sat in the 2026-09-25 picture, none of them recoverable work.
+  evidence: `pixi run -e pyforge-guild python scripts/bmad_loop_baseline_drift_check.py --json` (2026-09-25) lists atlas `14-2-pluggable-widget-registry` and `14-3-bokeh-websocket-interactivity` (loop-home run 20260814-202328-e168) and `16-1-instance-deploy-definition` (run 20260815-112701-4285, no preserve refs). The atlas tracked ledger has no `14-2-*`/`14-3-*` key at all — the Epic-14 `views/` stories were retired by atlas 24.1 and the epic reminted at 2a63b00c27 — and `16-1` exists only as `16-1-the-from-scratch-run-is-a-chartered-capability: done`, a different slug under the same number.
+  location: scripts/bmad_loop_baseline_drift_check.py
+  severity: low
+  fix: add a supersession rule — when the exact key is absent, match on the `N-M` prefix (doctor's `_STORY_ID_RE` convention) and accept `done` there; treat a key absent from the tracked ledger whose epic is closed/retired (or named in a `rekey-*.md` note) as recovered; add fixtures for the reminted-slug and retired-key cases so the finding cannot become permanent again.
+  status: open
+
+## DW-marshal-disp020-stale-refusal-2026-09-25 — `fleet-picture` keeps showing an `MRS-DISP-020` landing refusal after the story has landed by hand, because it reads the run's last `dispatch-land` OUTCOME and never reconciles it against the ledger
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (dispatch landing; emitter `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py`, consumer `scripts/fleet_picture.py` via `landing_findings`)
+  summary: two refusals sat in the 2026-09-25 fleet picture — doctor 30.3 (PR #1585, merged 2026-09-24) and marshal 46.6 (PR #1597, merged by hand) — although both stories read `done` in their tracked ledgers and both PRs are merged. The refusal is the last OUTCOME entry of each dispatch run's `journal.jsonl`; a landing that happens outside `dispatch land` writes nothing after it, so the ATTENTION row stays until the next dispatch of that station replaces the run. It clears on its own, but until then it reads as an operator decision owed.
+  evidence: `pixi run -e pyforge-guild fleet-picture` after PR #1606 (2026-09-25) — ATTENTION block lists both; `gh pr view 1585` / `gh pr view 1597` → MERGED; the doctor and marshal ledgers carry the keys as `done`.
+  location: scripts/fleet_picture.py
+  severity: low
+  fix: when composing `landing_findings`, drop (or render as "reconciled") a refusal whose story key reads `done` in the tracked ledger and whose PR is merged; alternatively have `sprint-ledger-sync` append a `dispatch-land` reconciliation OUTCOME to the run journal when it promotes the key, so the journal itself stops lying.
+  status: closed
+  resolved: 2026-09-27 (Story 56.1, spec-pyforge-marshal CAP-266) — `marshal status` marks a refused landing whose story is on `main` (`dispatch_landing_superseded`, beside the unchanged findings, with the run's own `dispatch_story`); `fleet-picture` lists it as not waiting on the operator when the tracked ledger also reads the story `done`, and keeps a merged-but-unpromoted one in ATTENTION. Live: doctor 30.3 and marshal 46.6 both moved out of ATTENTION. The fix sits in `cli/status.py` + `scripts/fleet_picture.py` rather than `fleet_picture.py` alone, and neither of the entry's two suggested mechanisms was taken as written: the journal is never rewritten (AD-33).
+
+## DW-marshal-bmad-loop-0-12-cap-2026-09-26 — pyforge-marshal caps `bmad-loop <0.12` while the channel now serves bmad-loop 0.12.0; the pixi floor cannot follow the published build until marshal is re-verified against 0.12.x
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (Story 1.7 / AD-19: bmad-loop is a declared runtime dependency, `src/shared/packages/pyforge-marshal/pyproject.toml` `bmad-loop>=0.11.0,<0.12`)
+  summary: the 2026-09-25 bmad-suite advance published bmad-loop 0.12.0 to SelfExplainML (PR #1607). `pixi.toml`'s `local-recipes` floor stays `bmad-loop >=0.11.1` because marshal's own pyproject deliberately caps `<0.12` (pre-1.0 minor bumps may rename or remove the `bmad_loop.adapters.multiplexer/profile`, `bmad_loop.bmadconfig` and `bmad_loop.sprintstatus` modules `harness_bmadloop.py` lazily imports); raising the floor would make the `local-recipes` / `pyforge-guild` envs unsolvable against that cap. Upstream 0.12.0's pyproject diff against 0.11.1 is version + a pytest `addopts` only (no dependency or module change visible from the manifest), but the cap is about module surface, which only marshal's own suite can prove.
+  evidence: `recipes/bmad-loop/recipe.yaml` at 0.12.0 built and published 2026-09-25/26; `grep -n bmad-loop src/shared/packages/pyforge-marshal/pyproject.toml` → `"bmad-loop>=0.11.0,<0.12"`; the suite metapackage (`recipes/bmad-suite`, 2026.9.26) already pins `bmad-loop >=0.12.0`, so bmad-suite and the marshal env now disagree on the floor.
+  location: src/shared/packages/pyforge-marshal/pyproject.toml
+  severity: medium
+  fix: run marshal's suite (`pixi run -e pyforge-marshal pyforge-marshal-test`) with bmad-loop 0.12.0 installed, confirm the three lazily-imported module paths still resolve, then widen the cap to `<0.13` in the pyproject and raise the `pixi.toml` floors to `>=0.12.0` in the same PR (re-lock; `environment.yaml` re-export; `llms-full-check`). Loop homes install bmad-loop from these envs, so until then they stay on 0.11.1.
+  status: closed
+  resolved: 2026-09-26 (PR #1607, round three) — bmad-loop 0.12.0 verified: the four lazily-imported modules ship, the full marshal suite passes (8652 passed) in a re-solved env carrying 0.12.0; cap widened to `<0.13` in pyproject.toml, the package pixi.toml and the FR-52 range constants (+ 4 fixture tests moved to 0.13.2; one accepted 0.12.0's own `must contain a top-level mapping` config-shape wording). pixi.toml floors moved to `>=0.12.0`, channel-pinned to SelfExplainML because conda-forge/bmad-loop-feedstock (2026-09-20) gates `__unix` and strict priority shadowed the estate build on win-64.
+
+## DW-marshal-repair-feed-drops-trailing-metadata-2026-09-27 — `repair_feed` rewrites a Tier-3 feed as "everything before `development_status:`" plus the map, so a feed whose top-level metadata follows the map loses it
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-265 — re-scoped 2026-09-28: Story 54.1 makes the bare `sprint-ledger-sync` run this repair on every sync whose feed has drifted; before the re-scope it named `dispatch_land_finalize`)
+  summary: marshal's Tier-3 feed (`implementation-artifacts/sprint-status.yaml`) carries `generated`, `last_updated`, `project`, `project_key`, `tracking_system` and `story_location` AFTER its `development_status:` map. `scripts/promote_sprint_status.py::repair_feed` writes `head + "development_status:\n" + sorted map`, where `head` is only the text before the marker, so all six keys are dropped. By hand this is one lost block per `--repair-feed`; once Story 54.1 wires the repair into `dispatch_land_finalize`, it happens on every landing whose feed has drifted.
+  evidence: probe 2026-09-27 on a scratch copy of marshal's feed — `repair_feed(copy, parse_sprint_status(copy), twin)` restored 24 regressed + 15 missing keys and the four keys checked (`generated`, `project`, `project_key`, `story_location`) were all gone from the output; the Story 56.1 mint aligned the live feed with a layout-preserving script instead.
+  location: scripts/promote_sprint_status.py
+  severity: medium
+  fix: split the feed at the `development_status:` block's end (the first following line that starts a top-level key), not only at its start, and write `head + block + tail`; add a regression test with trailing metadata. Home: Story 54.1, which names `scripts/promote_sprint_status.py`'s repair path in its Surface — land the fix there, in the same change that makes the bare sync repair by default.
+  status: open
+
+## DW-marshal-disp020-two-meanings-2026-09-27 — `MRS-DISP-020` names two different failures: a PR that could not be merged, and a promote + ledger finalize that failed after the PR merged
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-266; AD-15, findings are coded, never free-text-only)
+  summary: `dispatch_land.py` emits ERROR `MRS-DISP-020` when `forge.merge_pr` fails and again when the `dispatch_land_finalize` subprocess fails after `data["merged"] = True`. The journaled land outcome carries no `merged` flag, so a consumer can tell the two apart only by message text. Story 56.1's review found the consequence: a git-only "landed since" predicate would call a finalize failure "not waiting on you". 56.1 closes that with the tracked ledger's `done` in `fleet-picture`, but the code itself still conflates the two. Known limit of that closure (56.1 review 2, L2): the ledger's `done` proves the ledger half of the finalize, not the spec-promotion half — `dispatch_land_finalize` promotes specs first, then the ledger, and exits 1 on any ERROR, so a spec copy/commit failure (`MRS-DEPLOY-003`) with a successful ledger promotion still reads "not waiting on you". Rare (dispatch specs are usually already tracked, and teardown refuses to lose an unpromoted spec); the distinct code below closes both halves.
+  evidence: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` — the `if not heal.healed:` branch (merge failure) and the `except ProcessError` branch after `data["merged"] = True` (finalize failure) both append `code="MRS-DISP-020"`; `dispatch_supervisor/__main__.py`'s KIND_DISPATCH_LAND outcome payload has `pr_number`, `merge_sha`, `land_findings`, no `merged`.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
+  severity: low
+  fix: register a new code (e.g. `MRS-DISP-0xx` "dispatch land finalize failed after merge") in `core/findings.py` + `core/verdict.py`, emit it from the finalize branch, and journal `merged` on the land outcome; `fleet-picture` can then name "finish the promote + ledger" from the code rather than from the ledger fallback. Needs its own Story (the 56.1 Boundaries forbid touching `dispatch_land.py`).
+  status: open
+
+## DW-marshal-slow-lane-red-2026-09-27 — `pyforge-marshal-test-slow` is red on two integration tests no CI lane runs
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (FR-52 harness range; Genesis seed adopt)
+  summary: two `@pytest.mark.slow` integration tests fail; the default `pyforge-marshal-test` lane excludes them (`-m "not slow"`) and no `.github/workflows/*.yml` runs the slow lane, so nothing caught them. (1) `tests/integration/test_init_worktree.py::test_preflight_end_to_end_converges_seeds_and_acknowledges` asserts the literal `harness_version: 0.11.0`, stale since PR #1607 moved the environments to bmad-loop 0.12.0 — the same "grep the tests for the literal" lesson the 2026-09-26 retro recorded for the fixture ranges. (2) `tests/integration/test_local_recipes_empty_plan.py::test_local_recipes_adopt_dry_run_yields_empty_plan_excluding_deferred` finds a 21-action `marshal seed adopt` dry-run plan against the live tree, probably since scribe 21.1 rewrote `AGENTS.md` (2026-09-26).
+  evidence: `pixi run -e pyforge-marshal pyforge-marshal-test-slow` on 2026-09-27 (branch `landing-refusal-landed-since`, Story 56.1, which touches neither test nor the code they exercise) — exit 1, 2 failed, 9 passed, 2 skipped; the 56.1 reviewer reproduced both twice.
+  location: src/shared/packages/pyforge-marshal/tests/integration/test_init_worktree.py
+  severity: medium
+  fix: (1) assert the harness version against the installed release (or `HARNESS_VERSION_RANGE_TEXT`), never a literal; (2) read the 21 planned actions — either the seed's AGENTS.md expectations moved with scribe 21.1 (update the seed) or the plan is right and the file drifted; then decide whether a CI lane should run `-m slow` on a schedule so the next one is caught.
+  status: open
+
+## DW-marshal-47-1-intent-gap-2026-09-20 — Story 47.1 is blocked on an intent gap in `spec-marshal-recall-in-the-loop` CAP-1; the whole of Epic 47 waits on an operator decision
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-recall-in-the-loop/SPEC.md` (CAP-1; Stories 47.2–47.4 declare `Deps: S-47.1`)
+  summary: the 2026-09-20 dispatch of 47.1 implemented recall injection, then its review found two independent intent gaps and reverted the code: (1) grounding is structurally impossible as specified — the mandated `--scope <station-slug>` path hardcodes `--mode planning` (kinds `{doc, memlog}`, excluding `kind="memory"`), and scribe's `_citation_in_scope()` never admits a `.claude/memory/**` citation under a per-station scope, so real team-memory feedback can never surface; (2) "folds into the dev-pass session's starting context" names an outcome, not a surface — nothing reads the written `recall-feedback.md`. The verdict (15 findings, 7 high) sat on the unmerged `dispatch/pyforge-marshal/47.1` branch for a week while the tracked ledger still read `backlog`, so a drain restart would have re-dispatched 47.1 into the same gap.
+  evidence: the story spec's Review Triage Log (landed 2026-09-27 from `dispatch/pyforge-marshal/47.1` @ `b62bf9f79e`); `spec-marshal-recall-in-the-loop/.memlog.md` (two recovered entries); the attempted implementation is the git ref `attempt-preserve/47.1-dispatch-20260920-80e85c57` on origin (commit `80e85c5798`, the last checkpoint before the revert). The triage log names a Tier-3 `story-47-1-attempted-implementation-2026-09-20.patch`; its only copy sat in the dispatch worktree, it equals that commit's changed lines exactly (725 of 725), and a loose `.patch` in Tier-3 is a `bmad-drift` stray-file, so the ref is its durable home.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-recall-in-the-loop/SPEC.md
+  severity: medium
+  fix: operator decides, then `bmad-spec` re-derives CAP-1 (memlog first): (a) grounding — add a `mode`/`kind` override to marshal's `ScribeCli.recall()` (marshal surface), drop the mandatory per-station scope for this query, or extend scribe's `_citation_in_scope()` to admit team-memory citations (scribe-owned); (b) whether CAP-1 ends at the `recall-feedback.md` artifact or also wires a reader into bmad-loop's session-context assembly, and at which step; (c) whether `run_resume` also injects. Then flip 47-1 back from `blocked` (operator-confirmed, AGENTS.md § Policy) and re-dispatch.
+  status: open
+
+## DW-marshal-local-branch-short-names-2026-09-27 — marshal reads its local landing branch as the short name `main`, which a tag named `main` shadows
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-270 — Story 60.1 closed the same trap for remote-tracking refs)
+  summary: git resolves a short name through `refs/<n>`, `refs/tags/<n>`, `refs/heads/<n>` in that order, so a tag named `main` wins over the branch `main`. Marshal still hands git the local branch by short name — `commit_subjects(root, "main")`, `add_worktree(base="main")`, the dispatch gate's `"main"`, `merge_branch(into=base)` — and `core/policy._valid_landing_base_branch` accepts a value like `origin/main`, which would then reach `merge_base` / `commit_subjects` / `changed_files` by short name. No repo config sets either today.
+  evidence: Story 60.1 review 2 (2026-09-27) — a scratch probe with a tag named `main` had `git log main` return the tag's commit ("refname 'main' is ambiguous"); reasoning for the policy value (no config sets it).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/ (cli/deploy.py, cli/dispatch.py, dispatch_land.py, core/policy.py)
+  severity: low
+  fix: extend `core/refs.py` with `local_branch_ref(branch) -> "refs/heads/<branch>"` and read every git-facing local branch through it (keeping `branch -D`/`checkout` arguments that must stay bare); make `_valid_landing_base_branch` refuse a value containing `/` that is not a plain branch name; extend the Story 60.1 meta test's matcher to local branches. Its own Dream append + CAP + Story on marshal.
+  status: closed
+  resolved: 2026-09-27 (Story 61.1, spec-pyforge-marshal CAP-271) — `core/refs.local_branch_ref` names every git read of a local branch `refs/heads/<branch>`: the landing subjects, merge bases, wave ranges, diff bases, the loop-home mint's start point, the supervisor's station-branch check, the heal's reads and merge; `GitVcs.push` names both sides and takes its target from the branch config, `GitVcs.fetch` names the remote's branch (a tag `main` on the remote left `refs/remotes/origin/main` stale), and the five repo-root scripts marshal owns or runs follow suit (fleet_scan, bmad-loop-worktree, fleet_picture, unpushed_work_check, worktree_sweep). `_valid_landing_base_branch` refuses a full refname, a ref namespace or `origin/…` (not every `/`: `release/2026` stays valid), and `land` / `batch-pr` refuse to run on a refused value rather than fall back to `main`. A new meta test (not the 60.1 one extended — local branches carry no text of their own) pins the rule. Three independent reviews. The dispatch gate's `"main"` named here was `cli/gate.py`'s scope-check base; `cli/dispatch.py` already read `refs/remotes/origin/main`.
+
+## DW-marshal-doctor-route3-short-main-2026-09-27 — doctor's marshal source reads the landing history as the short name `main`, which a tag named `main` shadows
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-271 — Story 61.1 reviews 2 and 3)
+  summary: `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py` route 3 reads marshal's landing history as `log … main`. A tag `main` on an OLDER commit hides landings (more findings, nothing lost); a stray tag `main` on a FEATURE commit (review 3's case) reads that feature's subjects as landed — an advisory false "landed" (doctor findings never gate; route 2 already reads `--all`, so the added exposure is small). Doctor's source is another station's code (61.1's spec: Ask First). `scripts/worktree_sweep.py`, first listed here, was fixed inside 61.1 after review 3 showed the same stray tag made it delete a feature's worktree and branch.
+  evidence: Story 61.1 reviews 2 and 3 (2026-09-27); review 3's probe (`scratchpad/review3/test_probe_tag_ahead.py`): with a tag `main` on a feature commit, `merge-base --is-ancestor feature main` exits 0 and `refs/heads/main` answers 1.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py
+  severity: low
+  fix: name `refs/heads/main` in route 3, through doctor's own chain (a doctor Dream append).
+  status: closed
+  resolved: 2026-09-27 (doctor Story 31.1, spec-pyforge-doctor CAP-85) — route 3 reads `refs/heads/main` through Doctor's own `pyforge.doctor.refs`; the sweep that scoped it found four more Doctor sources of the same class and fixed them in the same story (`ledger-direction`'s base `main`, `ledger-regression`'s, `frozen-path-changed`'s and `live-proof-surface`'s base `origin/main` — all run in `detectors-ci`, `ledger-regression` as a blocking gate). A route-3 test with a tag `main` left behind a renamed branch; a meta test pins the rule package-wide.
+
+## DW-marshal-testing-kit-short-origin-main-2026-09-27 — `pyforge-testing-kit`'s branch-diff guards default to the short name `origin/main`, which a local branch or tag of that name shadows
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md` (the kit's charter; found by doctor Story 31.1 review 1, CAP-85)
+  summary: `src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py` defaults `base` / `ref` to `"origin/main"` (lines 64, 79, 106, 142, 173); every station's "this branch does not add X" meta tests call it on that default (doctor's `test_station_persona.py`, `test_portal_fleet_pulse.py`, `test_skf_domain_skill.py` among them). A local branch or tag `origin/main` at HEAD empties the diff and the guard passes having judged nothing. Steward's `tea-test-review` pixi task passes `--base origin/main` the same way. Out of CAP-85's scope (Doctor's package); the kit is a cross-station seam with its own charter.
+  evidence: doctor Story 31.1 review 1 (2026-09-27), by reading the defaults and the callers; the git resolution order marshal Stories 60.1 / 61.1 recorded by probe.
+  location: src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py; pixi.toml `tea-test-review`
+  severity: low
+  fix: default to `refs/remotes/origin/main` in the kit (callers passing nothing follow), through the testing charter's chain; the steward task's `--base` likewise.
+  status: closed
+  resolved: 2026-09-27 (marshal Story 62.1, spec-pyforge-marshal CAP-272) — `branch_diff_guard` defaults to `refs/remotes/origin/main` (the kit's `ORIGIN_MAIN`) in all five guards and reads an explicit `origin/<branch>` by its full refname; no caller changed; one shadow test asserts all five guards, each of which fails on the old kit. The TEA half of this row (warden's `tea_advisory` and steward's `tea-test-review` task pass `--base origin/main` to the external TEA binary) is another owner's: `DW-warden-tea-advisory-short-base-2026-09-27`.
+
+## DW-marshal-station-tests-short-base-ref-2026-09-27 — the station-tests lane picks the suites to run from `origin/${GITHUB_BASE_REF}`, a short name a local ref or tag of that name shadows
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md` CAP-8 (Story 52.2 made `.github/workflows/pyforge-station-tests.yml` the conformance PR gate); found by doctor Story 32.1's review
+  summary: the lane's `changes` job diffs `"$BASE"...HEAD` with `BASE="origin/${GITHUB_BASE_REF}"` to choose which station suites run. `actions/checkout` with `fetch-depth: 0` fetches tags, so a pushed tag named `origin/main` wins over `refs/remotes/origin/main`, the selection comes out empty, and the PR runs no station suite. `coverage-gates.yml` ("same rule as pyforge-station-tests.yml, deliberately") now names the full ref (doctor Story 32.1), so the two lanes differ until this closes.
+  evidence: `grep -n 'BASE=' .github/workflows/pyforge-station-tests.yml` (line 99); `coverage-gates.yml` lines 73 and 193; the git resolution order marshal Stories 60.1 / 61.1 recorded by probe.
+  location: .github/workflows/pyforge-station-tests.yml
+  severity: medium
+  fix: `BASE="refs/remotes/origin/${GITHUB_BASE_REF}"`, through spec-pyforge-core's chain.
+  status: closed
+  resolved: 2026-09-27 (marshal Story 63.1, spec-pyforge-core CAP-10) — the lane's pull_request `BASE` names `refs/remotes/origin/${GITHUB_BASE_REF}`, matching `coverage-gates.yml` again; `tests/scripts/test_workflow_diff_bases_name_full_refs.py` reds any workflow that builds a diff base from a short `origin/...` (quoted or not, `format('origin/{0}')`, a literal range) and finds exactly the five pre-fix lines on the old tree.
+
+## DW-marshal-git-timeout-orphans-hook-children-2026-09-28 — a git command killed on its timeout leaves its hook's children running
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md` (the process primitive every station's git calls go through); found minting `spec-pyforge-marshal` CAP-277
+  summary: `pyforge.core.process.PosixProcess.run` passes `timeout_s` to `subprocess.run`, which on expiry kills only the direct child. For a `git push`, that child is git, and the `pre-push` hook it started (`scripts/pre_push_preflight.sh` → `pixi run --frozen -e pyforge-guild pr-preflight`) keeps running with no parent, for up to the preflight's full length. CAP-277 (Story 68.1) removes the trigger on the landing's publish path, because the journaled opt-out returns the hook at once. Any other timed git call that starts a hook can still leave one behind.
+  evidence: `src/shared/packages/pyforge-core/src/pyforge/core/process.py:157-178` (no new session or process group; `subprocess.run` kills the child only); marshal's `adapters/vcs_git.py:132-151` maps the expiry to `VcsCommandError`. The operator's 64.1 promotion replay on 2026-09-28 found the preflight still running after git was killed at 120 s.
+  location: src/shared/packages/pyforge-core/src/pyforge/core/process.py
+  severity: low
+  fix: launch a timed command in its own process group (`start_new_session=True`) and kill the group on expiry, through `spec-pyforge-core`'s own chain (it co-governs every station's `src/`).
+  status: open
+
+### DW-marshal-68-1: The landing heal's local-main-advance push runs the full pre-push preflight under the same 120 s git timeout.
+
+- source_spec: `planning-artifacts/specs/spec-68-1-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent.md`
+  summary: The landing heal's local-main-advance push runs the full pre-push preflight under the same 120 s git timeout.
+  evidence: Unverified (needs a landing that reaches the local-main-advance fallback). dispatch_land_heal.py pushes the base branch with `vcs.push(git_repo_root, base)`, which carries no preflight opt-out; a push killed at 120 s returns False and the landing refuses with MRS-DISP-020. Not caused by Story 68.1, and its Never list forbids the opt-out for any push but the ledger, intake and blocked-twin publishes.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py:209
+  origin: spec-deferred ad7b9b71455e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-68-1-2: A ledger publish rejected because origin/main moved between its fetch and its push is not retried.
+
+- source_spec: `planning-artifacts/specs/spec-68-1-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent.md`
+  summary: A ledger publish rejected because origin/main moved between its fetch and its push is not retried.
+  evidence: Verified in the code: commit_paths_onto_remote_tip fetches once, commits, pushes once, and raises VcsCommandError on a non-fast-forward rejection. Story 68.1 makes that failure loud (MRS-LAND-011, then MRS-DISP-051 and a REFUSED landing), so two stations finalizing within seconds of each other can refuse a landing whose only owed step is a re-run. The single-shot publish predates this story and the intent names no retry, so a bounded re-fetch and rebuild needs an operator decision.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py:1340
+  origin: spec-deferred 177985a6b07e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

@@ -458,3 +458,16 @@ open design questions.
 **Re-verification (2026-08-07, after all four patches):** `pixi run --frozen -e pyforge-marshal python3 -m pytest src/shared/packages/pyforge-marshal/tests -q` (the FULL suite, including `@pytest.mark.slow` integration tests, not just the fast default loop) -- **2910 passed**; `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- 3 failed, all pre-existing accepted baseline (2 `pyforge-steward`, 1 `pyforge-doctor` `mcp` gap), unrelated; `lint-imports` -- AD-3/AD-4/AD-9 all KEPT (87 files, 484 dependencies).
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `d7f2f8edc1` (2026-08-07, "Merge pull request #295 from rxm7706/marshal/6-4-adapter-probe"). Ledger row `6-4-adapter-probe-with-a-machine-scoped-record: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/adapters.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/conformance.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/harness.py`, `src/shared/packages/pyforge-marshal/tests/integration/test_init_worktree.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_probe_json_contract.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_adapters_cli.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_conformance.py` (+3 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

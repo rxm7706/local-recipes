@@ -78,8 +78,15 @@ import pytest
 PKG_ROOT = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "mason"
 
 _BANNED_MODULES = (
-    "configparser", "tomllib", "tomli", "toml", "tomlkit",
-    "yaml", "ruamel.yaml", "configobj", "dotenv",
+    "configparser",
+    "tomllib",
+    "tomli",
+    "toml",
+    "tomlkit",
+    "yaml",
+    "ruamel.yaml",
+    "configobj",
+    "dotenv",
 )
 
 _SANCTIONED_YAML_EXCEPTIONS = {
@@ -122,21 +129,18 @@ def _find_config_file_parser_imports(root: Path) -> list[tuple[Path, str]]:
             # rather than silently skip, mirroring
             # test_dependency_direction.py's own rationale verbatim.
             raise AssertionError(
-                f"{path}: unreadable ({exc}); the AD-13 config-file-parser "
-                "guard cannot AST-scan this file"
+                f"{path}: unreadable ({exc}); the AD-13 config-file-parser guard cannot AST-scan this file"
             ) from exc
         except UnicodeDecodeError as exc:
             raise AssertionError(
-                f"{path}: not valid UTF-8; the AD-13 config-file-parser "
-                "guard cannot AST-scan this file"
+                f"{path}: not valid UTF-8; the AD-13 config-file-parser guard cannot AST-scan this file"
             ) from exc
 
         try:
             tree = ast.parse(source, filename=str(path))
         except SyntaxError as exc:
             raise AssertionError(
-                f"{path}: invalid Python syntax; the AD-13 config-file-parser "
-                "guard cannot AST-scan this file"
+                f"{path}: invalid Python syntax; the AD-13 config-file-parser guard cannot AST-scan this file"
             ) from exc
 
         for node in ast.walk(tree):
@@ -172,9 +176,7 @@ def _find_config_file_parser_imports(root: Path) -> list[tuple[Path, str]]:
 def test_no_module_imports_a_config_file_parser():
     # Guard the guard: if the package layout ever moves, rglob over a stale
     # path would yield zero files and this test would pass vacuously forever.
-    assert PKG_ROOT.is_dir(), (
-        f"AD-13 guard is scanning nothing — package root moved? {PKG_ROOT}"
-    )
+    assert PKG_ROOT.is_dir(), f"AD-13 guard is scanning nothing — package root moved? {PKG_ROOT}"
     violators = _find_config_file_parser_imports(PKG_ROOT)
     # Story 4.4's one deliberate, narrow carve-out (module docstring,
     # `_SANCTIONED_YAML_EXCEPTIONS`) -- filtered here, not inside the
@@ -233,6 +235,7 @@ def test_every_sanctioned_yaml_exception_is_live_and_import_form_scoped():
 # package, so these assert the scanner's behavior independent of what
 # src/pyforge/mason/ currently contains. --------------------------------------
 
+
 @pytest.mark.parametrize(
     "import_stmt,expected_banned",
     [
@@ -261,7 +264,9 @@ def test_every_sanctioned_yaml_exception_is_live_and_import_form_scoped():
     ],
 )
 def test_detector_fires_on_every_banned_config_file_parser_import(
-    tmp_path, import_stmt, expected_banned,
+    tmp_path,
+    import_stmt,
+    expected_banned,
 ):
     root = tmp_path / "mason"
     root.mkdir()
@@ -294,7 +299,8 @@ def test_detector_permits_an_innocent_from_import_of_a_non_banned_name(tmp_path)
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "from json import loads\nfrom os import environ\n", encoding="utf-8",
+        "from json import loads\nfrom os import environ\n",
+        encoding="utf-8",
     )
 
     violators = _find_config_file_parser_imports(root)

@@ -90,6 +90,14 @@ INSPECT_TIMEOUT_SECONDS = 2.0
 HANDLE_TTL = timedelta(hours=24)
 ATLAS_STATION = "atlas"
 RUN_PIPELINE_TOOL = "run_pipeline"
+MARSHAL_STATION = "marshal"
+LOOP_PUBLISH_TOOL = "publish_loop_run"
+LOOP_HEARTBEAT_TOOL = "heartbeat_loop_run"
+LOOP_COMPLETE_TOOL = "complete_loop_run"
+HEARTBEAT_LOST_REASON = "heartbeat_lost"
+HELD_CELERY_TASK_ID = ""
+SETTING_MAX_RUNNING_PER_SUB_LOOP = "MAX_RUNNING_PER_SUB_LOOP"
+DEFAULT_MAX_RUNNING_PER_SUB_LOOP = 100
 QUERY_BUDGET_SECONDS = 0.5
 LAST_OK_CACHE_KEY = "django_pyforge:supervisor:last_ok"
 
@@ -327,7 +335,12 @@ def station_queue_depth(station: str) -> int:
     ).count()
 
 
-def enforce_run_bounds(*, station: str, subject: str) -> None:
+def enforce_run_bounds(
+    *,
+    station: str,
+    subject: str,
+    tool: str | None = None,
+) -> None:
     """Raise the matching ``RunBoundExceeded`` when a bound is reached.
 
     Called before the transaction opens, so every refusal leaves the ledger
@@ -355,8 +368,12 @@ def enforce_run_bounds(*, station: str, subject: str) -> None:
             details={"station": station, "queue_depth": depth, "limit": ceiling},
         )
     max_running = int_setting(
-        SETTING_MAX_RUNNING_PER_SUB,
-        DEFAULT_MAX_RUNNING_PER_SUB,
+        SETTING_MAX_RUNNING_PER_SUB_LOOP
+        if tool == LOOP_PUBLISH_TOOL
+        else SETTING_MAX_RUNNING_PER_SUB,
+        DEFAULT_MAX_RUNNING_PER_SUB_LOOP
+        if tool == LOOP_PUBLISH_TOOL
+        else DEFAULT_MAX_RUNNING_PER_SUB,
     )
     live = live_runs_for_subject(subject)
     if len(live) >= max_running:
@@ -514,6 +531,248 @@ def publish_start(
         tenant=tenant,
     )
     return token
+
+
+def _tasks_from_publish_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Shape a publish payload into a story-keyed tasks map for readers."""
+    story_key = payload.get("story_key")
+    if not isinstance(story_key, str) or not story_key.strip():
+        return {}
+    task: dict[str, Any] = {}
+    phase = payload.get("phase")
+    if isinstance(phase, str) and phase:
+        task["phase"] = phase
+    commit_sha = payload.get("commit_sha")
+    if isinstance(commit_sha, str) and commit_sha:
+        task["commit_sha"] = commit_sha
+    attempt = payload.get("attempt")
+    if isinstance(attempt, int) and not isinstance(attempt, bool):
+        task["attempt"] = attempt
+    return {story_key: task}
+
+
+def _merge_task_maps(
+    existing: dict[str, Any] | None,
+    incoming: dict[str, Any],
+) -> dict[str, Any]:
+    merged = dict(existing or {})
+    for key, task in incoming.items():
+        if not isinstance(task, dict):
+            continue
+        prev = merged.get(key)
+        if not isinstance(prev, dict):
+            merged[key] = dict(task)
+            continue
+        if task.get("commit_sha") and not prev.get("commit_sha"):
+            merged[key] = dict(task)
+        elif task.get("phase") and not prev.get("commit_sha"):
+            merged[key] = {**prev, **task}
+    return merged
+
+
+def _held_result_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
+    publish = dict(payload or {})
+    return {
+        "publish": publish,
+        "tasks": _tasks_from_publish_payload(publish),
+        "harness_run_id": publish.get("harness_run_id"),
+    }
+
+
+def _create_held_run_row(
+    *,
+    station: str,
+    subject: str,
+    tenant: str,
+    payload: dict[str, Any] | None,
+) -> tuple[str, str]:
+    token = mint_handle()
+    if len(token) < HANDLE_ENTROPY_BYTES:
+        msg = "handle entropy below contract"
+        raise RuntimeError(msg)
+    started = timezone.now()
+    with transaction.atomic():
+        run = RunState.objects.create(
+            status=RunState.Status.RUNNING,
+            station=station,
+            subject=subject,
+            tenant=tenant,
+            celery_task_id=HELD_CELERY_TASK_ID,
+            result=_held_result_payload(payload),
+            started_at=started,
+            heartbeat_at=started,
+        )
+        McpHandle.objects.create(
+            handle=token,
+            run=run,
+            expires_at=started + HANDLE_TTL,
+            subject=subject,
+        )
+        run_id = str(run.id)
+    _publish_run_started_event(
+        run_id=run_id,
+        station=station,
+        subject=subject,
+        tenant=tenant,
+    )
+    return token, run_id
+
+
+def publish_held_run(
+    *,
+    station: str,
+    assertion: str,
+    payload: dict[str, Any] | None = None,
+    tool: str = LOOP_PUBLISH_TOOL,
+) -> str:
+    """Publish an externally owned run without enqueueing Celery."""
+    if not assertion:
+        raise HandleRefusedError
+    claims = verify_assertion(assertion, audience=audience_for(station))
+    subject = claims.get(CLAIM_SUB)
+    if not isinstance(subject, str) or not subject:
+        raise HandleRefusedError
+    tenant = _tenant_from_assertion_claims(claims)
+    enforce_run_bounds(station=station, subject=subject, tool=tool)
+    token, _run_id = _create_held_run_row(
+        station=station,
+        subject=subject,
+        tenant=tenant,
+        payload=payload,
+    )
+    return token
+
+
+def publish_held_loop_bounded(
+    *,
+    station: str,
+    assertion: str,
+    payload: dict[str, Any] | None = None,
+) -> str:
+    """``publish_held_run`` for MCP: a bound becomes a legible refusal."""
+    try:
+        return publish_held_run(
+            station=station,
+            assertion=assertion,
+            payload=payload,
+            tool=LOOP_PUBLISH_TOOL,
+        )
+    except RunBoundExceeded as exc:
+        raise _tool_refusal(bound_refusal_payload(exc)) from exc
+
+
+def _lookup_live_handle(handle: str) -> McpHandle:
+    try:
+        row = McpHandle.objects.select_related("run").get(handle=handle)
+    except McpHandle.DoesNotExist as exc:
+        raise HandleNotFoundError from exc
+    if timezone.now() >= row.expires_at:
+        raise HandleExpiredError
+    return row
+
+
+def _slide_handle_expiry(handle_row: McpHandle) -> None:
+    now = timezone.now()
+    limit = station_time_limit(handle_row.run.station)
+    handle_row.expires_at = now + timedelta(seconds=limit)
+    handle_row.save(update_fields=["expires_at"])
+    RunState.objects.filter(pk=handle_row.run_id).exclude(
+        status__in=RunState.TERMINAL_STATUSES,
+    ).update(heartbeat_at=now)
+
+
+def heartbeat_held_run(handle: str, *, payload: dict[str, Any] | None = None) -> None:
+    """Keep a held run alive, or open a new attempt when the row is terminal."""
+    handle_row = _lookup_live_handle(handle)
+    run = handle_row.run
+    if run.status in RunState.TERMINAL_STATUSES:
+        prior = run.result if isinstance(run.result, dict) else {}
+        publish = prior.get("publish")
+        republish = dict(publish) if isinstance(publish, dict) else {}
+        harness_run_id = prior.get("harness_run_id")
+        if isinstance(harness_run_id, str) and harness_run_id:
+            republish.setdefault("harness_run_id", harness_run_id)
+        if payload:
+            republish.update(payload)
+        token, new_run_id = _create_held_run_row(
+            station=run.station,
+            subject=handle_row.subject,
+            tenant=run.tenant,
+            payload=republish,
+        )
+        McpHandle.objects.filter(pk=handle_row.pk).update(
+            run_id=new_run_id,
+            expires_at=timezone.now() + HANDLE_TTL,
+        )
+        del token
+        return
+    now = timezone.now()
+    live = RunState.objects.filter(pk=run.pk).exclude(
+        status__in=RunState.TERMINAL_STATUSES,
+    )
+    update_fields: dict[str, Any] = {"heartbeat_at": now}
+    if payload:
+        existing = run.result if isinstance(run.result, dict) else {}
+        publish = dict(existing.get("publish") or {})
+        publish.update(payload)
+        merged_tasks = _merge_task_maps(
+            existing.get("tasks") if isinstance(existing.get("tasks"), dict) else None,
+            _tasks_from_publish_payload(publish),
+        )
+        update_fields["result"] = {
+            **existing,
+            "publish": publish,
+            "tasks": merged_tasks,
+            "harness_run_id": publish.get("harness_run_id")
+            or existing.get("harness_run_id"),
+        }
+    live.update(**update_fields)
+    _slide_handle_expiry(handle_row)
+
+
+def complete_held_run(
+    handle: str,
+    *,
+    status: str,
+    result: Any,
+) -> None:
+    """Terminalize a held run referenced by ``handle``."""
+    handle_row = _lookup_live_handle(handle)
+    run = handle_row.run
+    existing = run.result if isinstance(run.result, dict) else {}
+    terminal = result if isinstance(result, dict) else {}
+    merged = {**existing, **terminal}
+    for key in ("publish", "tasks", "harness_run_id"):
+        if key in existing and key not in terminal:
+            merged[key] = existing[key]
+    complete_run(str(handle_row.run_id), status=status, result=merged)
+
+
+def list_published_story_tasks(*, station: str, project_slug: str) -> dict[str, Any]:
+    """Most-advanced published task record per story key for one loop home."""
+    home_slug = project_slug
+    if not home_slug.startswith("pyforge-"):
+        home_slug = f"pyforge-{project_slug}"
+    out: dict[str, Any] = {}
+    rows = RunState.objects.filter(station=station).order_by("started_at")
+    for row in rows:
+        data = row.result if isinstance(row.result, dict) else {}
+        publish = data.get("publish")
+        if not isinstance(publish, dict):
+            continue
+        row_slug = publish.get("station")
+        if row_slug != home_slug:
+            continue
+        tasks = data.get("tasks")
+        if not isinstance(tasks, dict):
+            tasks = _tasks_from_publish_payload(publish)
+        for key, task in tasks.items():
+            if not isinstance(task, dict):
+                continue
+            prev = out.get(key)
+            if prev is None or (task.get("commit_sha") and not prev.get("commit_sha")):
+                out[key] = dict(task)
+    return out
 
 
 def complete_run(run_id: str, *, status: str, result: Any) -> None:
@@ -723,23 +982,52 @@ def sweep_lost_runs(
     }
     if not stale:
         return report
-    try:
-        held = live_task_ids(inspector)
-    except InspectUnavailableError as exc:
-        logger.exception(
-            "supervisor.sweep_inspect_unavailable",
+    held_only = [item for item in stale if not item[0]["celery_task_id"]]
+    celery_stale = [item for item in stale if item[0]["celery_task_id"]]
+    held: frozenset[str] = frozenset()
+    if celery_stale:
+        try:
+            held = live_task_ids(inspector)
+        except InspectUnavailableError as exc:
+            logger.exception(
+                "supervisor.sweep_inspect_unavailable",
+                extra={
+                    "event": "supervisor.sweep_inspect_unavailable",
+                    "stale": len(stale),
+                    "error": str(exc),
+                },
+            )
+            report["error"] = str(exc)
+            return report
+        report["inspected"] = True
+    for row, limit, last_seen in held_only:
+        run_id = str(row["id"])
+        idle = int((moment - last_seen).total_seconds())
+        logger.error(
+            "supervisor.heartbeat_lost",
             extra={
-                "event": "supervisor.sweep_inspect_unavailable",
-                "stale": len(stale),
-                "error": str(exc),
+                "event": "supervisor.heartbeat_lost",
+                "run_id": run_id,
+                "station": row["station"],
+                "idle_seconds": idle,
+                "limit_seconds": limit,
             },
         )
-        report["error"] = str(exc)
-        return report
-    report["inspected"] = True
-    for row, limit, last_seen in stale:
+        complete_run(
+            run_id,
+            status=RunState.Status.FAILED,
+            result={
+                "error": f"heartbeat lost: no sign of life for {idle}s (limit {limit}s)",
+                "reason": HEARTBEAT_LOST_REASON,
+                "last_seen_at": _iso(last_seen),
+                "limit_seconds": limit,
+            },
+        )
+        report["swept"] += 1
+        report["run_ids"].append(run_id)
+    for row, limit, last_seen in celery_stale:
         task_id = row["celery_task_id"]
-        if task_id and task_id in held:
+        if task_id in held:
             report["still_held"] += 1
             continue
         run_id = str(row["id"])

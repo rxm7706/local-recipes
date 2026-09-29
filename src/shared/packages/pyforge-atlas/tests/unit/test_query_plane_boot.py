@@ -43,9 +43,7 @@ class _FakeProcess:
 # --- I/O row 1: STACK_DOWN -------------------------------------------------
 
 
-def test_stack_down_raises_library_face_only(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_stack_down_raises_library_face_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(STACK_UP_ENV, raising=False)
     boot = boot_query_plane(_plane(tmp_path))
     try:
@@ -84,8 +82,7 @@ def test_stack_up_launches_via_injected_launcher(tmp_path: Path) -> None:
             [
                 sys.executable,
                 "-c",
-                "import sys, duckdb; con = duckdb.connect(sys.argv[1]); "
-                "con.execute('SELECT 1'); con.close()",
+                "import sys, duckdb; con = duckdb.connect(sys.argv[1]); con.execute('SELECT 1'); con.close()",
                 str(path),
             ],
             capture_output=True,
@@ -155,19 +152,13 @@ def test_stack_up_with_custom_host_and_real_launcher_fails_loud(
 # --- I/O row 3: MISSING_PROVISIONING ---------------------------------------
 
 
-def test_missing_provisioning_raises_typed_and_releases_lock(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_missing_provisioning_raises_typed_and_releases_lock(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     path = _plane(tmp_path)
     monkeypatch.setattr(query_plane_boot.shutil, "which", lambda _: None)
-    with pytest.raises(
-        DuckDBServerNotProvisionedError, match="pixi install -e pyforge-atlas"
-    ) as excinfo:
+    with pytest.raises(DuckDBServerNotProvisionedError, match="pixi install -e pyforge-atlas") as excinfo:
         boot_query_plane(path, stack_up=True)
     # The typed error names the provisioning step; the boot never installs.
-    assert "INSTALL" not in str(excinfo.value).replace(
-        "pixi install -e pyforge-atlas", ""
-    )
+    assert "INSTALL" not in str(excinfo.value).replace("pixi install -e pyforge-atlas", "")
     # The writer lock was released: a follow-up writer succeeds.
     writer = connect_writer(path)
     writer.close()
@@ -205,9 +196,7 @@ def test_second_boot_invocation_is_refused(tmp_path: Path) -> None:
         ("on", True),
     ],
 )
-def test_env_signal_parsing(
-    monkeypatch: pytest.MonkeyPatch, raw: str | None, expected: bool
-) -> None:
+def test_env_signal_parsing(monkeypatch: pytest.MonkeyPatch, raw: str | None, expected: bool) -> None:
     if raw is None:
         monkeypatch.delenv(STACK_UP_ENV, raising=False)
     else:
@@ -299,10 +288,7 @@ def test_cli_unexpected_crash_exits_two(
 
 requires_duckdb_server = pytest.mark.skipif(
     shutil.which("duckdb-server") is None,
-    reason=(
-        "duckdb-server is not provisioned (the linux-64 pyforge-atlas pixi "
-        "env carries it)"
-    ),
+    reason=("duckdb-server is not provisioned (the linux-64 pyforge-atlas pixi env carries it)"),
 )
 
 
@@ -346,13 +332,11 @@ def test_real_duckdb_server_launches_from_the_one_site(tmp_path: Path) -> None:
         body: bytes | None = None
         for _ in range(150):
             if process.poll() is not None:
-                pytest.fail(
-                    f"duckdb-server exited at startup (rc={process.returncode})"
-                )
+                pytest.fail(f"duckdb-server exited at startup (rc={process.returncode})")
             try:
                 body = _post_query(boot.http.endpoint, "SELECT 42 AS answer")
                 break
-            except (urllib.error.URLError, ConnectionError, OSError):
+            except urllib.error.URLError, ConnectionError, OSError:
                 time.sleep(0.2)
         assert body is not None, "endpoint never became reachable"
         assert json.loads(body) == [{"answer": 42}]

@@ -71,6 +71,95 @@ def is_harness_done_advance_reason(reason: str) -> bool:
     return reason.startswith(HARNESS_DONE_ADVANCE_CODE)
 
 
+#: Story 50.1 (CAP-244) Part B: a most-recent run that refused ITSELF because
+#: the work was already merged. A plain sentinel, never an ``MRS-`` finding
+#: code: nothing is refused here and no new code is registered -- the skip
+#: still surfaces as ``MRS-DRAIN-004`` exactly the way harness-done does.
+ALREADY_LANDED_ADVANCE_PREFIX = "already-landed"
+
+#: Advance, never block: both families mean "this head cannot be worked, and
+#: the station's remaining backlog must still dispatch".
+ADVANCE_REASON_PREFIXES: tuple[str, ...] = (
+    HARNESS_DONE_ADVANCE_CODE,
+    ALREADY_LANDED_ADVANCE_PREFIX,
+)
+
+
+def is_advance_reason(reason: str) -> bool:
+    """True when a campaign-block reason is an ADVANCE reason (Story 50.1).
+
+    One test for both families so ``plan_station_queue`` keeps exactly one
+    skip-under-every-mode branch rather than growing one per family.
+    """
+    return any(reason.startswith(prefix) for prefix in ADVANCE_REASON_PREFIXES)
+
+
+def is_finalize_pending(
+    *,
+    supervisor_alive: bool,
+    completion_journaled: bool,
+    landing_complete: bool,
+    story_on_backlog: bool,
+) -> bool:
+    """Is this station's most recent run still finalizing? (Story 50.1 Part A).
+
+    The ~45 s window between a dispatch session exiting and
+    ``dispatch_land_finalize`` promoting the tracked ledger is neither
+    "live" (``resolve_dispatch_session_verdict`` reads ``session_pid``
+    only) nor "done" (the ledger still says ``backlog``). Read as either,
+    the campaign re-dispatches the story it just landed or blocks the
+    station on a ``failed`` verdict. Read as IN FLIGHT, it simply chains the
+    next ready story on the following cycle.
+
+    Both clauses require ``story_on_backlog``, and clause (a) requires a
+    LIVE supervisor, so this is self-limiting by construction: a supervisor
+    that dies without journaling completion is not pending, and ledger
+    promotion ends the condition on the very next cycle.
+    """
+    if not story_on_backlog:
+        return False
+    if landing_complete:
+        # (b) dispatch-land journaled a successful CAP-4 outcome, but the
+        # tracked ledger has not moved yet -- finalize is mid-flight.
+        return True
+    # (a) the supervisor is alive and has not journaled dispatch-completion.
+    return supervisor_alive and not completion_journaled
+
+
+#: Merged-evidence phrases a self-refusing session leaves in its own log.
+_MERGED_EVIDENCE_PHRASES: tuple[str, ...] = (
+    "already merged",
+    "already landed",
+    "already_landed",
+    # bmad-build-auto's HALT wording when it finds the spec already done.
+    "follow-up not recommended",
+)
+
+#: ``/pull/<n>`` or ``#<n>`` -- only counted on a line that also says "merged".
+_PR_REFERENCE_RE = re.compile(r"/pull/\d+|#\d+")
+
+
+def is_already_landed_self_refusal(*, changed_path_count: int, session_log: str | None) -> bool:
+    """Did this failed dispatch refuse itself over already-merged work? (50.1).
+
+    Two independent facts must agree: the campaign's OWN git observation
+    that the session changed nothing (``changed_path_count == 0``), and
+    merged evidence in the session log. The session is never believed about
+    whether it *succeeded* -- git remains the sole authority for merged
+    facts (Epic 50 HARD boundary). This only decides whether the CAMPAIGN
+    halts a station or steps past a head it has independent reason to think
+    is already landed.
+    """
+    if changed_path_count != 0:
+        return False
+    if not session_log:
+        return False
+    lowered = session_log.lower()
+    if any(phrase in lowered for phrase in _MERGED_EVIDENCE_PHRASES):
+        return True
+    return any("merged" in line and _PR_REFERENCE_RE.search(line) for line in lowered.splitlines())
+
+
 class FleetCampaignMode(StrEnum):
     """The three named campaign modes (CAP-7 / fleet-drain-playbook.md)."""
 
@@ -96,15 +185,12 @@ def parse_campaign_mode(raw: str | None) -> FleetCampaignMode:
     named = ", ".join(CAMPAIGN_MODES)
     if raw is None or not str(raw).strip():
         raise InvalidCampaignModeError(
-            f"campaign mode is required: pass --mode with one of {named} "
-            "-- a fleet drain never defaults to a mode"
+            f"campaign mode is required: pass --mode with one of {named} -- a fleet drain never defaults to a mode"
         )
     try:
         return FleetCampaignMode(str(raw).strip())
     except ValueError as exc:
-        raise InvalidCampaignModeError(
-            f"unknown campaign mode {raw!r}: expected one of {named}"
-        ) from exc
+        raise InvalidCampaignModeError(f"unknown campaign mode {raw!r}: expected one of {named}") from exc
 
 
 class FleetBlockClass(StrEnum):
@@ -264,9 +350,7 @@ def latest_fleet_campaign_run_id(repo_root: Path) -> str | None:
     runs = fleet_runs_dir(repo_root)
     if not runs.is_dir():
         return None
-    candidates = sorted(
-        entry.name for entry in runs.iterdir() if entry.is_dir() and entry.name != "campaign"
-    )
+    candidates = sorted(entry.name for entry in runs.iterdir() if entry.is_dir() and entry.name != "campaign")
     return candidates[-1] if candidates else None
 
 
@@ -325,13 +409,7 @@ class ParsedStoryDeps:
 
 def station_epics_paths(repo_root: Path, slug: str) -> tuple[Path, ...]:
     """Every epics-family doc for ``slug`` that can carry a ``**Deps:**`` field."""
-    planning = (
-        canonical_repo_root(repo_root)
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-    )
+    planning = canonical_repo_root(repo_root) / "_bmad-output" / "projects" / slug / "planning-artifacts"
     if not planning.is_dir():
         return ()
     # The glob stays: it also matches chain-scoped epics (this station's own
@@ -356,9 +434,7 @@ def parse_epics_dependencies(epics_text: str) -> dict[StoryKey, ParsedStoryDeps]
     headings = list(_STORY_HEADING_RE.finditer(epics_text))
     out: dict[StoryKey, ParsedStoryDeps] = {}
     for index, match in enumerate(headings):
-        block_end = (
-            headings[index + 1].start() if index + 1 < len(headings) else len(epics_text)
-        )
+        block_end = headings[index + 1].start() if index + 1 < len(headings) else len(epics_text)
         block = epics_text[match.end() : block_end]
         declaring = _story_key_from_dep_num(int(match.group("pe")), match.group("pn"))
         if declaring is None:
@@ -501,9 +577,7 @@ def station_backlog(
     return apply_order_override(raw_backlog, None)
 
 
-def apply_order_override(
-    backlog: Sequence[str], override: Sequence[str] | None
-) -> tuple[str, ...]:
+def apply_order_override(backlog: Sequence[str], override: Sequence[str] | None) -> tuple[str, ...]:
     """Override entries first (in override order), then the rest by story key.
 
     The override file is hand-maintained, so a repeated key is a plausible
@@ -536,9 +610,7 @@ def parse_story_sequence(raw: str) -> tuple[str, ...]:
     return tuple(part.strip() for part in str(raw).split(",") if part.strip())
 
 
-def unresolved_story_sequence_keys(
-    stories: Sequence[str], backlog: Sequence[str]
-) -> tuple[str, ...]:
+def unresolved_story_sequence_keys(stories: Sequence[str], backlog: Sequence[str]) -> tuple[str, ...]:
     """Which caller-supplied ``--stories`` entries are NOT eligible to
     dispatch (Story 22.11, FR-193 CAP-10).
 
@@ -570,9 +642,7 @@ def unresolved_story_sequence_keys(
     return tuple(unresolved)
 
 
-def explicit_story_backlog(
-    statuses: Iterable[tuple[str, str]], stories: Sequence[str]
-) -> tuple[str, ...]:
+def explicit_story_backlog(statuses: Iterable[tuple[str, str]], stories: Sequence[str]) -> tuple[str, ...]:
     """The caller's own ``--stories`` sequence, filtered to not-yet-``done``
     (Story 22.11, FR-193 CAP-10) -- the effective backlog for a
     ``dispatch --stories`` campaign.
@@ -672,6 +742,12 @@ def plan_station_queue(
       skipped under every mode the way a declared skip is: remaining
       implementable backlog must still dispatch. A real derived block
       (missing spec, CAP-2 failed) still stops ``drain_to_zero``.
+    * ``ALREADY_LANDED_ADVANCE_PREFIX`` (Story 50.1 Part B) is the same
+      shape one layer down: the head's most recent dispatch refused ITSELF
+      over already-merged work (zero changed paths + merged evidence in its
+      session log). Neither transient (re-dispatching it is the loop this
+      story closes) nor terminal (the work is done) -- so it advances,
+      through the same ``is_advance_reason`` test as ``MRS-DISP-040``.
 
     Neither kind is ever removed from the backlog or auto-retried -- both
     stay queued, reported by name, for a human.
@@ -683,9 +759,7 @@ def plan_station_queue(
     if not ordered:
         return StationQueuePlan(slug=slug, backlog=ordered, outcome=StationQueueOutcome.DRAINED)
     if mode is FleetCampaignMode.LEAVE_ONE and len(ordered) <= max(0, leave_remaining):
-        return StationQueuePlan(
-            slug=slug, backlog=ordered, outcome=StationQueueOutcome.LEFT_REMAINING
-        )
+        return StationQueuePlan(slug=slug, backlog=ordered, outcome=StationQueueOutcome.LEFT_REMAINING)
     skipped: list[tuple[str, str]] = []
     for story in ordered:
         declared_reason = declared.get(story)
@@ -701,7 +775,7 @@ def plan_station_queue(
                 next_story=story,
                 skipped=tuple(skipped),
             )
-        if is_harness_done_advance_reason(reason):
+        if is_advance_reason(reason):
             skipped.append((story, reason))
             continue
         block_class = classes.get(story, FleetBlockClass.STORY)
@@ -757,8 +831,7 @@ def unresolved_stations(
     return tuple(
         result
         for result in results
-        if result.status in TERMINAL_STATION_STATUSES
-        and result.status is not StationCycleStatus.DRAINED
+        if result.status in TERMINAL_STATION_STATUSES and result.status is not StationCycleStatus.DRAINED
     )
 
 
@@ -787,9 +860,7 @@ def _surface_known(surface: tuple[str, ...] | None) -> bool:
     return surface is not None
 
 
-def _pairwise_disjoint(
-    left: tuple[str, ...] | None, right: tuple[str, ...] | None
-) -> bool:
+def _pairwise_disjoint(left: tuple[str, ...] | None, right: tuple[str, ...] | None) -> bool:
     if left is None or right is None:
         return False
     return not find_declared_surface_overlaps(left, right)
@@ -814,9 +885,7 @@ def build_wave_batch(
     if cap <= 1:
         if not ready:
             return WaveBatch(wave_id=wave_id, members=(), max_parallel=cap)
-        return WaveBatch(
-            wave_id=wave_id, members=(ready[0],), max_parallel=cap
-        )
+        return WaveBatch(wave_id=wave_id, members=(ready[0],), max_parallel=cap)
     members: list[str] = []
     refused: list[WaveRefused] = []
     for story in ready:
@@ -830,17 +899,13 @@ def build_wave_batch(
         blocked = False
         for member in members:
             member_surface = surfaces.get(member)
-            if deps_graph is not None and story_transitively_depends_on(
-                story, member, deps_graph
-            ):
+            if deps_graph is not None and story_transitively_depends_on(story, member, deps_graph):
                 refused.append(WaveRefused(story=story, reason="dep-unmet"))
                 blocked = True
                 break
             if not _pairwise_disjoint(surface, member_surface):
                 overlap = find_declared_surface_overlaps(surface, member_surface)
-                paths = tuple(
-                    f"{left} ∩ {right}" for left, right in overlap
-                )
+                paths = tuple(f"{left} ∩ {right}" for left, right in overlap)
                 refused.append(
                     WaveRefused(
                         story=story,
@@ -877,8 +942,5 @@ def render_cycle_summary(results: Sequence[StationCycleResult]) -> str:
     lines: list[str] = []
     for result in results:
         story = result.story or "—"
-        lines.append(
-            f"  {result.slug:<18} {result.status.value:<18} "
-            f"remaining={result.remaining:<4} story={story}"
-        )
+        lines.append(f"  {result.slug:<18} {result.status.value:<18} remaining={result.remaining:<4} story={story}")
     return "\n".join(lines)

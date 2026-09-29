@@ -1,0 +1,349 @@
+diff -Naur mybmad-patch-a/web/src/actions/repo-actions.ts mybmad-patch-b/web/src/actions/repo-actions.ts
+--- a/web/src/actions/repo-actions.ts	2026-09-13 17:59:15.845451053 -0500
++++ b/web/src/actions/repo-actions.ts	2026-09-13 17:59:15.852051025 -0500
+@@ -27,6 +27,7 @@
+ import type { FileTreeNode, ParsedBmadFile } from "@/lib/bmad/types";
+ import type { ActionResult } from "@/lib/types";
+ import { sanitizeError } from "@/lib/errors";
++import { rateLimitMessage } from "@/lib/ui-locale";
+ import { checkRateLimit } from "@/lib/rate-limit";
+ 
+ // GraphQL can handle ~30 repos per query safely (GitHub complexity limits)
+@@ -100,7 +101,7 @@
+   const { octokit, userId } = authResult.data;
+ 
+   if (!checkRateLimit(`list:${userId}`, 30, 60000)) {
+-    return { success: false, error: "Trop de requêtes", code: "RATE_LIMIT" };
++    return { success: false, error: rateLimitMessage(), code: "RATE_LIMIT" };
+   }
+ 
+   try {
+@@ -252,7 +253,7 @@
+   const { userId } = authResult.data;
+ 
+   if (!checkRateLimit(`import:${userId}`, 10, 60000)) {
+-    return { success: false, error: "Trop de requêtes", code: "RATE_LIMIT" };
++    return { success: false, error: rateLimitMessage(), code: "RATE_LIMIT" };
+   }
+ 
+   try {
+@@ -861,7 +862,7 @@
+ 
+   // F3: Rate limit
+   if (!checkRateLimit(`import-local:${userId}`, 10, 60000)) {
+-    return { success: false, error: "Trop de requêtes", code: "RATE_LIMIT" };
++    return { success: false, error: rateLimitMessage(), code: "RATE_LIMIT" };
+   }
+ 
+   try {
+diff -Naur mybmad-patch-a/web/src/app/login/login-form.tsx mybmad-patch-b/web/src/app/login/login-form.tsx
+--- a/web/src/app/login/login-form.tsx	2026-09-13 17:59:15.841622866 -0500
++++ b/web/src/app/login/login-form.tsx	2026-09-13 17:59:15.846881018 -0500
+@@ -14,13 +14,20 @@
+ } from "@/components/ui/card";
+ import { Github, Loader2, Mail } from "lucide-react";
+ import Image from "next/image";
++import { loginCopy, type UiLocale } from "@/lib/ui-locale";
+ 
+ interface LoginFormProps {
+   githubEnabled: boolean;
+   registrationEnabled: boolean;
++  locale: UiLocale;
+ }
+ 
+-export function LoginForm({ githubEnabled, registrationEnabled }: LoginFormProps) {
++export function LoginForm({
++  githubEnabled,
++  registrationEnabled,
++  locale,
++}: LoginFormProps) {
++  const t = loginCopy(locale);
+   const [loading, setLoading] = useState(false);
+   const [isSignUp, setIsSignUp] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+@@ -36,15 +43,15 @@
+     setError(null);
+ 
+     if (!email || !password) {
+-      setError("Email et mot de passe requis.");
++      setError(t.emailPasswordRequired);
+       return;
+     }
+     if (password.length < 8) {
+-      setError("Le mot de passe doit contenir au moins 8 caractères.");
++      setError(t.passwordTooShort);
+       return;
+     }
+     if (isSignUp && !name.trim()) {
+-      setError("Le nom est requis pour l'inscription.");
++      setError(t.nameRequired);
+       return;
+     }
+ 
+@@ -62,9 +69,7 @@
+           // any other error — preventing account enumeration.
+           const code = result.error.status;
+           setError(
+-            code === 403
+-              ? "L'inscription est désactivée sur ce serveur."
+-              : "Erreur lors de l'inscription."
++            code === 403 ? t.registrationDisabled : t.registrationFailed
+           );
+           setLoading(false);
+           return;
+@@ -75,19 +80,19 @@
+           password,
+         });
+         if (result.error) {
+-          setError("Email ou mot de passe incorrect.");
++          setError(t.badCredentials);
+           setLoading(false);
+           return;
+         }
+       }
+       router.push("/");
+     } catch {
+-      setError("Une erreur inattendue s'est produite.");
++      setError(t.unexpected);
+       setLoading(false);
+     }
+   }
+ 
+-  const displayError = error ?? (urlError ? "Échec de la connexion. Veuillez réessayer." : null);
++  const displayError = error ?? (urlError ? t.loginFailed : null);
+ 
+   return (
+     <Card className="glass-card w-full max-w-sm">
+@@ -101,7 +106,7 @@
+         />
+         <CardTitle className="text-2xl font-bold">MyBMAD</CardTitle>
+         <CardDescription>
+-          {isSignUp ? "Créer un compte" : "Connectez-vous à votre dashboard"}
++          {isSignUp ? t.createAccount : t.signInPrompt}
+         </CardDescription>
+       </CardHeader>
+       <CardContent className="space-y-4">
+@@ -114,7 +119,7 @@
+         <form onSubmit={handleEmailSubmit} className="space-y-3">
+           {isSignUp && (
+             <Input
+-              placeholder="Nom"
++              placeholder={t.namePlaceholder}
+               value={name}
+               onChange={(e) => setName(e.target.value)}
+               disabled={loading}
+@@ -131,7 +136,7 @@
+           />
+           <Input
+             type="password"
+-            placeholder="Mot de passe"
++            placeholder={t.passwordPlaceholder}
+             value={password}
+             onChange={(e) => setPassword(e.target.value)}
+             disabled={loading}
+@@ -143,7 +148,7 @@
+             ) : (
+               <Mail className="mr-2 h-5 w-5" />
+             )}
+-            {isSignUp ? "S'inscrire" : "Se connecter"}
++            {isSignUp ? t.signUp : t.signIn}
+           </Button>
+         </form>
+ 
+@@ -157,9 +162,7 @@
+             }}
+             disabled={loading}
+           >
+-            {isSignUp
+-              ? "Déjà un compte ? Se connecter"
+-              : "Pas de compte ? S'inscrire"}
++            {isSignUp ? t.alreadyHaveAccount : t.noAccount}
+           </button>
+         )}
+ 
+@@ -167,7 +170,7 @@
+           <>
+             <div className="relative flex items-center py-1">
+               <div className="flex-1 border-t border-border" />
+-              <span className="mx-3 text-xs text-muted-foreground">ou</span>
++              <span className="mx-3 text-xs text-muted-foreground">{t.or}</span>
+               <div className="flex-1 border-t border-border" />
+             </div>
+             <Button
+@@ -188,7 +191,7 @@
+               ) : (
+                 <Github className="mr-2 h-5 w-5" />
+               )}
+-              Continuer avec GitHub
++              {t.continueGithub}
+             </Button>
+           </>
+         )}
+diff -Naur mybmad-patch-a/web/src/app/login/page.tsx mybmad-patch-b/web/src/app/login/page.tsx
+--- a/web/src/app/login/page.tsx	2026-09-13 17:59:15.842741453 -0500
++++ b/web/src/app/login/page.tsx	2026-09-13 17:59:15.848096885 -0500
+@@ -1,4 +1,5 @@
+ import { Suspense } from "react";
++import { resolveUiLocale } from "@/lib/ui-locale";
+ import { LoginForm } from "./login-form";
+ 
+ export const dynamic = "force-dynamic";
+@@ -7,6 +8,7 @@
+   const githubEnabled =
+     !!process.env.GITHUB_CLIENT_ID && !!process.env.GITHUB_CLIENT_SECRET;
+   const registrationEnabled = process.env.ALLOW_REGISTRATION === "true";
++  const locale = resolveUiLocale();
+ 
+   return (
+     <div className="flex min-h-screen flex-col items-center justify-center">
+@@ -14,6 +16,7 @@
+         <LoginForm
+           githubEnabled={githubEnabled}
+           registrationEnabled={registrationEnabled}
++          locale={locale}
+         />
+       </Suspense>
+       <p className="fixed bottom-4 text-xs text-muted-foreground">
+diff -Naur mybmad-patch-a/web/src/lib/errors.ts mybmad-patch-b/web/src/lib/errors.ts
+--- a/web/src/lib/errors.ts	2026-09-13 17:59:15.843926563 -0500
++++ b/web/src/lib/errors.ts	2026-09-13 17:59:15.849303675 -0500
+@@ -1,15 +1,6 @@
+-const ERROR_MESSAGES: Record<string, string> = {
+-  DB_ERROR: "Une erreur s'est produite. Veuillez réessayer.",
+-  GITHUB_ERROR: "Erreur lors de la communication avec GitHub.",
+-  FS_ERROR: "Erreur lors de la lecture du système de fichiers.",
+-  LOCAL_DISABLED: "Le mode local n'est pas activé sur ce serveur.",
+-  PATH_NOT_FOUND:
+-    "Ce chemin n'existe pas sur le serveur. La fonctionnalité dossiers locaux nécessite un déploiement self-hosted.",
+-  PATH_STALE: "Ce dossier local n'existe plus ou a été déplacé.",
+-  REGISTRATION_DISABLED: "L'inscription est désactivée sur ce serveur.",
+-};
++import { errorMessage } from "@/lib/ui-locale";
+ 
+ export function sanitizeError(error: unknown, code: string): string {
+   console.error(`[${code}]`, error);
+-  return ERROR_MESSAGES[code] ?? "Une erreur inattendue s'est produite.";
++  return errorMessage(code);
+ }
+diff -Naur mybmad-patch-a/web/src/lib/ui-locale.ts mybmad-patch-b/web/src/lib/ui-locale.ts
+--- a/web/src/lib/ui-locale.ts	1969-12-31 18:00:00.000000000 -0600
++++ b/web/src/lib/ui-locale.ts	2026-09-13 17:59:15.850414427 -0500
+@@ -0,0 +1,118 @@
++/**
++ * Runtime UI locale for the conda-packaged MyBMAD Dashboard.
++ *
++ * Upstream hard-codes French copy. The launcher sets MYBMAD_LOCALE (default
++ * "en"). Unknown values fall back to English. "fr" keeps the upstream strings.
++ */
++
++export type UiLocale = "en" | "fr";
++
++export function resolveUiLocale(raw?: string | null): UiLocale {
++  const source = (raw ?? process.env.MYBMAD_LOCALE ?? "en").trim().toLowerCase();
++  const token = source.split(/[-_]/)[0] ?? "en";
++  return token === "fr" ? "fr" : "en";
++}
++
++export type LoginCopy = {
++  emailPasswordRequired: string;
++  passwordTooShort: string;
++  nameRequired: string;
++  registrationDisabled: string;
++  registrationFailed: string;
++  badCredentials: string;
++  unexpected: string;
++  loginFailed: string;
++  createAccount: string;
++  signInPrompt: string;
++  namePlaceholder: string;
++  passwordPlaceholder: string;
++  signUp: string;
++  signIn: string;
++  alreadyHaveAccount: string;
++  noAccount: string;
++  or: string;
++  continueGithub: string;
++};
++
++const LOGIN: Record<UiLocale, LoginCopy> = {
++  en: {
++    emailPasswordRequired: "Email and password are required.",
++    passwordTooShort: "Password must be at least 8 characters.",
++    nameRequired: "Name is required to register.",
++    registrationDisabled: "Registration is disabled on this server.",
++    registrationFailed: "Registration failed.",
++    badCredentials: "Incorrect email or password.",
++    unexpected: "An unexpected error occurred.",
++    loginFailed: "Sign-in failed. Please try again.",
++    createAccount: "Create an account",
++    signInPrompt: "Sign in to your dashboard",
++    namePlaceholder: "Name",
++    passwordPlaceholder: "Password",
++    signUp: "Sign up",
++    signIn: "Sign in",
++    alreadyHaveAccount: "Already have an account? Sign in",
++    noAccount: "No account? Sign up",
++    or: "or",
++    continueGithub: "Continue with GitHub",
++  },
++  fr: {
++    emailPasswordRequired: "Email et mot de passe requis.",
++    passwordTooShort: "Le mot de passe doit contenir au moins 8 caractères.",
++    nameRequired: "Le nom est requis pour l'inscription.",
++    registrationDisabled: "L'inscription est désactivée sur ce serveur.",
++    registrationFailed: "Erreur lors de l'inscription.",
++    badCredentials: "Email ou mot de passe incorrect.",
++    unexpected: "Une erreur inattendue s'est produite.",
++    loginFailed: "Échec de la connexion. Veuillez réessayer.",
++    createAccount: "Créer un compte",
++    signInPrompt: "Connectez-vous à votre dashboard",
++    namePlaceholder: "Nom",
++    passwordPlaceholder: "Mot de passe",
++    signUp: "S'inscrire",
++    signIn: "Se connecter",
++    alreadyHaveAccount: "Déjà un compte ? Se connecter",
++    noAccount: "Pas de compte ? S'inscrire",
++    or: "ou",
++    continueGithub: "Continuer avec GitHub",
++  },
++};
++
++export function loginCopy(locale: UiLocale): LoginCopy {
++  return LOGIN[locale];
++}
++
++const ERRORS: Record<UiLocale, Record<string, string>> = {
++  en: {
++    DB_ERROR: "Something went wrong. Please try again.",
++    GITHUB_ERROR: "Error communicating with GitHub.",
++    FS_ERROR: "Error reading the file system.",
++    LOCAL_DISABLED: "Local mode is not enabled on this server.",
++    PATH_NOT_FOUND:
++      "This path does not exist on the server. Local-folder support requires a self-hosted deployment.",
++    PATH_STALE: "This local folder no longer exists or has been moved.",
++    REGISTRATION_DISABLED: "Registration is disabled on this server.",
++    UNEXPECTED: "An unexpected error occurred.",
++    RATE_LIMIT: "Too many requests",
++  },
++  fr: {
++    DB_ERROR: "Une erreur s'est produite. Veuillez réessayer.",
++    GITHUB_ERROR: "Erreur lors de la communication avec GitHub.",
++    FS_ERROR: "Erreur lors de la lecture du système de fichiers.",
++    LOCAL_DISABLED: "Le mode local n'est pas activé sur ce serveur.",
++    PATH_NOT_FOUND:
++      "Ce chemin n'existe pas sur le serveur. La fonctionnalité dossiers locaux nécessite un déploiement self-hosted.",
++    PATH_STALE: "Ce dossier local n'existe plus ou a été déplacé.",
++    REGISTRATION_DISABLED: "L'inscription est désactivée sur ce serveur.",
++    UNEXPECTED: "Une erreur inattendue s'est produite.",
++    RATE_LIMIT: "Trop de requêtes",
++  },
++};
++
++export function errorMessage(code: string, locale?: UiLocale): string {
++  const bag = ERRORS[locale ?? resolveUiLocale()];
++  return bag[code] ?? bag.UNEXPECTED;
++}
++
++export function rateLimitMessage(locale?: UiLocale): string {
++  return errorMessage("RATE_LIMIT", locale);
++}

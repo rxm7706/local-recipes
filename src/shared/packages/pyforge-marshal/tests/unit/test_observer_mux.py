@@ -14,8 +14,9 @@ from __future__ import annotations
 
 import subprocess
 
-import pyforge.marshal.adapters.observer_mux as module
 import pytest
+
+import pyforge.marshal.adapters.observer_mux as module
 from pyforge.marshal.adapters.observer_mux import MultiplexerObserver
 
 
@@ -196,9 +197,7 @@ def test_pane_content_redacts_a_token_shaped_secret(observer, monkeypatch):
     def _fake_run(argv, **kwargs):
         if argv[1] == "list-windows":
             return _list_windows_result(argv, [("%3", "1")])
-        return subprocess.CompletedProcess(
-            args=argv, returncode=0, stdout=f"error: token {leaked} rejected\n"
-        )
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout=f"error: token {leaked} rejected\n")
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
     result = observer.pane_content("acme-session")
@@ -311,9 +310,7 @@ def test_send_text_returns_false_when_the_enter_call_fails(observer, monkeypatch
         call_count["n"] += 1
         # First non-list-windows call is the paste (succeeds); the second
         # is Enter (fails).
-        return subprocess.CompletedProcess(
-            args=argv, returncode=0 if call_count["n"] == 1 else 1, stdout=""
-        )
+        return subprocess.CompletedProcess(args=argv, returncode=0 if call_count["n"] == 1 else 1, stdout="")
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
     monkeypatch.setattr(module.time, "sleep", lambda seconds: None)

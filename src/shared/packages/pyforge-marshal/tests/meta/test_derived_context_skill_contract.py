@@ -48,9 +48,7 @@ class TestEpicContextContractUntouched:
         assert "{{.implementation_artifacts}}/epic-<N>-context.md" in text
         # ...and marshal's own declaration names the identical location, so
         # the freshness answer and the file the skill loads cannot diverge.
-        assert derived.epic_context_output_relpath("s", "7").endswith(
-            "/implementation-artifacts/epic-7-context.md"
-        )
+        assert derived.epic_context_output_relpath("s", "7").endswith("/implementation-artifacts/epic-7-context.md")
 
     def test_the_required_header_is_unchanged(self):
         assert "# Epic <N> Context:" in _read(STEP_01)
@@ -111,7 +109,28 @@ class TestFreshnessMechanismIsWiredToWhatMarshalShips:
 
         assert "MRS-CTX-*" in _read(STEP_01)
         ctx_codes = {code for code in REGISTERED_CODES if code.startswith("MRS-CTX-")}
-        assert ctx_codes == {"MRS-CTX-001", "MRS-CTX-002"}
+        # Story 46.1 (spec-pyforge-marshal CAP-192) grew the area with the
+        # substrate verbs' codes -- emitted only by `context bootstrap` /
+        # `context pack`, which step-01 never calls. The set stays pinned
+        # exactly, so a NEW code still forces a look at the skill.
+        refresh_codes = {"MRS-CTX-001", "MRS-CTX-002"}
+        substrate_codes = {f"MRS-CTX-00{n}" for n in range(3, 8)}
+        # Story 46.2 (spec-pyforge-marshal CAP-192): `bundle`'s own new
+        # code, reachable from neither `refresh` nor the substrate verbs
+        # step-01 never calls either.
+        bundle_codes = {"MRS-CTX-008"}
+        # Story 46.6 (spec-pyforge-marshal CAP-193, fold-remint of
+        # spec-marshal-token-economy CAP-20): `advisory`'s own new code,
+        # reachable from none of refresh, the substrate verbs or bundle --
+        # step-01 never calls `context advisory` either.
+        advisory_codes = {"MRS-CTX-009"}
+        assert ctx_codes == refresh_codes | substrate_codes | bundle_codes | advisory_codes
+        # ...and the verb step-01 does call cannot reach the substrate codes.
+        import inspect
+
+        from pyforge.marshal.cli.context import run_context_refresh
+
+        assert "substrate" not in inspect.getsource(run_context_refresh)
         # Advisory in the skill must mean advisory in the lattice: neither
         # code may ever classify a rung that refuses a run.
         assert classify("MRS-CTX-002") is Verdict.WARN
@@ -121,9 +140,7 @@ class TestLayerOffKeepsTheOldRule:
     def test_the_previous_mtime_rule_survives_verbatim_as_the_fallback(self):
         """AC 3's "today's compile-on-hunch behavior is unchanged" is only
         true if the old rule is still literally written down."""
-        assert (
-            "no file in `{{.planning_artifacts}}` is newer" in _read(STEP_01)
-        )
+        assert "no file in `{{.planning_artifacts}}` is newer" in _read(STEP_01)
 
     def test_the_continuity_cache_write_is_explicitly_layer_gated(self):
         text = _read(STEP_01)

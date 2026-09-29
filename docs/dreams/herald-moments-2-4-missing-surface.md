@@ -5,7 +5,7 @@ owner: herald
 status: archived
 archived-reason: absorbed
 ---
-
+> **Consolidated into [[pyforge-herald]]** on 2026-09-17 (one-chain-per-station herald fold; folded from `herald-moments-2-4-missing-surface`).
 > **Superseded — the vision moved, the work did not stop.** This Dream's narrative
 > (Moments 2–4 are specced but unbuilt; Herald owes Progress, Success and Operations
 > surfaces the same way it owes Pitch) is now told inside

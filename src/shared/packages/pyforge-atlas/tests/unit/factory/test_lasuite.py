@@ -143,9 +143,7 @@ def test_round_trip_push_update_idempotent(tmp_path: Path):
     assert mock.creates == 2 and mock.updates == 0  # unchanged
 
     # 3) change one page -> exactly one UPDATE, no duplicate create.
-    layout.stage_path("outputs", "a.md").write_text(
-        "---\ntitle: A\n---\nalpha revised\n", encoding="utf-8"
-    )
+    layout.stage_path("outputs", "a.md").write_text("---\ntitle: A\n---\nalpha revised\n", encoding="utf-8")
     r3 = syncer.sync_all()
     assert r3.updated == ["a.md"] and r3.skipped == ["b.md"] and r3.created == []
     assert mock.creates == 2 and mock.updates == 1
@@ -208,9 +206,7 @@ def test_syncs_outputs_stage_not_compiled_by_default(tmp_path: Path):
     r = WikiSyncer(LaSuiteClient(_cfg(), opener=mock), layout).sync_all()
     assert r.created == ["report.md"]  # only outputs/, not compiled/internal.md
     # ...and an explicit source_stage override still works.
-    r2 = WikiSyncer(
-        LaSuiteClient(_cfg(), opener=MockWagtail()), layout, source_stage="compiled"
-    ).sync_all()
+    r2 = WikiSyncer(LaSuiteClient(_cfg(), opener=MockWagtail()), layout, source_stage="compiled").sync_all()
     assert r2.created == ["internal.md"]
 
 
@@ -236,9 +232,7 @@ def test_corrupt_mapping_fails_loudly_not_silently_empty(tmp_path: Path):
 def test_mapping_entry_without_id_raises_on_update(tmp_path: Path):
     # Review #4: a mapping entry missing 'id' reaching the update branch is a clear error.
     layout = _wiki_with_outputs(tmp_path, {"a.md": "---\ntitle: A\n---\nalpha v2\n"})
-    (layout.root / ".lasuite_sync.json").write_text(
-        '{"a.md": {"sha": "stale-different"}}', encoding="utf-8"
-    )
+    (layout.root / ".lasuite_sync.json").write_text('{"a.md": {"sha": "stale-different"}}', encoding="utf-8")
     syncer = WikiSyncer(LaSuiteClient(_cfg(), opener=MockWagtail()), layout)
     with pytest.raises(LaSuiteError) as exc:
         syncer.sync_all()

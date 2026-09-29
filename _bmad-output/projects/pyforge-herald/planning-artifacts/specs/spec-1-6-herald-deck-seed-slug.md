@@ -289,3 +289,16 @@ is structurally least likely to catch on its own.
 **Re-verification (2026-08-07, after both patches):** `pixi run --frozen -e pyforge-herald
 pyforge-herald-test` -- **349 passed, 2 skipped** (whole-package total, incl. Story 1.3's own
 close-out patch landed in the same pass); `ruff format --check`/`ruff check` clean.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `db5fa2a637` (2026-08-07, "herald: sync tracked sprint ledger — Epic 1 done (Stories 1.3, 1.6)"); also `3f79dc2a60` (2026-08-07, "herald: Story 1.6 — herald deck seed <slug> (CAP-1), Epic 1 done"); also `277f4e4e52` (2026-08-07, "steward: Story 1.6 — ask "is anything host-unscoped right now?" and get a real answer"). Ledger row `1-6-herald-deck-seed-slug: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

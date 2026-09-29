@@ -95,12 +95,12 @@ def parse_retry_after(value: str | int | float | None, *, now: float | None = No
     try:
         secs = float(value)
         return max(0.0, min(secs, RETRY_AFTER_CAP_SECONDS))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         pass
     # HTTP-date form
     try:
         target = parsedate_to_datetime(str(value))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return 0.0
     if target is None:
         return 0.0
@@ -172,9 +172,7 @@ class RateLimitedScheduler:
         if n > self.capacity:
             # The bucket refills only up to `capacity`, so a request larger than the
             # bucket could never be satisfied — guard against the infinite wait.
-            raise ValueError(
-                f"cannot acquire {n} tokens from a bucket of capacity {self.capacity}"
-            )
+            raise ValueError(f"cannot acquire {n} tokens from a bucket of capacity {self.capacity}")
         slept = 0.0
         stalls = 0
         while True:

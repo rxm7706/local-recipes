@@ -87,3 +87,16 @@ The `Block If` did not trigger: `lfx.processing.process.run_graph` (imported by 
 - Real `.delay()` dispatch of `text_to_sql` against the live stack returns a real result via the Celery result backend
 - A concurrent `/ht/` request during that in-flight task returns 200 promptly (host stays responsive)
 - Pointing `DBGPT_SIDECAR_BASE_URL` at a wrong host/port and dispatching `text_to_sql` raises `DbgptSidecarUnreachableError`, observable in the worker's own logs -- not a hang, not a raw exception
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `8bea0ed706` (2026-08-21, "Merge pull request #599 from rxm7706/steward/11-3-async-worker-wiring-land"). Ledger row `11-3-async-work-never-blocks-django: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-11-3-async-work-never-blocks-django.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `src/platform/compose/compose.yml`, `src/platform/dbgpt_integration/tasks.py`, `src/platform/dbgpt_integration/tests.py`, `src/platform/langflow_integration/tasks.py`, `src/platform/langflow_integration/tests.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

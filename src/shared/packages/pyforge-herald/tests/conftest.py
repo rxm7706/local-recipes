@@ -72,9 +72,7 @@ def _denied_connect_ex(self: socket.socket, address: object, *args: object) -> N
     raise NetworkDeniedError("socket.socket.connect_ex", address)
 
 
-def _denied_sendto(
-    self: socket.socket, data: object, *args: object, **kwargs: object
-) -> None:
+def _denied_sendto(self: socket.socket, data: object, *args: object, **kwargs: object) -> None:
     raise NetworkDeniedError("socket.socket.sendto", args[-1] if args else None)
 
 
@@ -82,9 +80,7 @@ def _denied_create_connection(address: object, *args: object, **kwargs: object) 
     raise NetworkDeniedError("socket.create_connection", address)
 
 
-def _denied_getaddrinfo(
-    host: object, port: object, *args: object, **kwargs: object
-) -> None:
+def _denied_getaddrinfo(host: object, port: object, *args: object, **kwargs: object) -> None:
     raise NetworkDeniedError("socket.getaddrinfo", (host, port))
 
 
@@ -152,10 +148,7 @@ class FakeCaller:
         self.calls.append((tool, dict(arguments)))
         canned = self.responses.get(tool)
         if isinstance(canned, list):
-            assert canned, (
-                f"FakeCaller ran out of canned {tool!r} responses on call "
-                f"{len(self.calls)}"
-            )
+            assert canned, f"FakeCaller ran out of canned {tool!r} responses on call {len(self.calls)}"
             canned = canned.pop(0)
         if canned is None:
             return ToolResult(text="{}")

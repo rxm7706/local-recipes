@@ -15,13 +15,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-MCP_DIR = (
-    Path(__file__).resolve().parents[3]
-    / "src"
-    / "pyforge"
-    / "atlas"
-    / "mcp"
-)
+MCP_DIR = Path(__file__).resolve().parents[3] / "src" / "pyforge" / "atlas" / "mcp"
 
 BUSINESS_LOGIC_LIBS = {
     "pandas",
@@ -43,17 +37,17 @@ BUSINESS_LOGIC_NAMES = BUSINESS_LOGIC_LIBS | {"pd", "np"}
 ALLOWED_CALL_ROOTS = {
     "_session",
     "_nl",  # D3: the NL-interface seam (pyforge.atlas.nl) — like _session, a delegated
-            # seam; the query_vizro_ai tool body only calls _nl.query_vizro_ai (AD-7), the
-            # backend-resolution + BSL-grounded (deferred) Vizro-AI logic lives in nl/.
+    # seam; the query_vizro_ai tool body only calls _nl.query_vizro_ai (AD-7), the
+    # backend-resolution + BSL-grounded (deferred) Vizro-AI logic lives in nl/.
     "_provenance",  # I4: the build-provenance seam (pyforge.atlas.provenance) — like
-                     # _session/_nl, a delegated seam; read_dataset only calls
-                     # _provenance.load_with_provenance (AD-7/AD-17), the kind-dispatch +
-                     # pandas/kedro_datasets introspection lives in provenance.py.
+    # _session/_nl, a delegated seam; read_dataset only calls
+    # _provenance.load_with_provenance (AD-7/AD-17), the kind-dispatch +
+    # pandas/kedro_datasets introspection lives in provenance.py.
     "_trending",  # Story 13.3 (CAP-3, FR-66): the trending_candidates query seam
-                  # (pyforge.atlas.trending_candidates.query) — like _session/_nl/
-                  # _provenance, a delegated seam; query_trending_candidates only calls
-                  # _trending.query_trending_candidates (AD-7), the filter/sort/cap/
-                  # validation pandas logic lives in trending_candidates/query.py.
+    # (pyforge.atlas.trending_candidates.query) — like _session/_nl/
+    # _provenance, a delegated seam; query_trending_candidates only calls
+    # _trending.query_trending_candidates (AD-7), the filter/sort/cap/
+    # validation pandas logic lives in trending_candidates/query.py.
     "s",
     "result",
     "sorted",
@@ -124,7 +118,4 @@ def test_tool_bodies_only_call_the_session_seam_and_trivial_stdlib():
             root = _call_root(node.func)
             if root not in ALLOWED_CALL_ROOTS:
                 offending.append(f"{fn.name}: call root {root!r}")
-    assert not offending, (
-        "tool bodies must only call the session/catalog seam + trivial "
-        f"stdlib (AD-7): {offending}"
-    )
+    assert not offending, f"tool bodies must only call the session/catalog seam + trivial stdlib (AD-7): {offending}"

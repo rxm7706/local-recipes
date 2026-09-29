@@ -12,9 +12,7 @@ import json
 import sys
 from pathlib import Path
 
-_SCRIPT_PATH = (
-    Path(__file__).resolve().parents[2] / "scripts" / "export_web_snapshot.py"
-)
+_SCRIPT_PATH = Path(__file__).resolve().parents[2] / "scripts" / "export_web_snapshot.py"
 
 
 def _load_module():
@@ -39,14 +37,10 @@ def test_export_success_snapshot_writes_only_published_claims(tmp_path):
     claims_path = repo_root / claims.DEFAULT_CLAIMS_PATH
     claims.create(claims_path, project_name="draft-one")
     published = claims.create(claims_path, project_name="published-one")
-    claims.publish(
-        claims_path, published.id, thesis="Shipped", validate=_fake_validator
-    )
+    claims.publish(claims_path, published.id, thesis="Shipped", validate=_fake_validator)
 
     out_dir = tmp_path / "out"
-    out_path = export_web_snapshot.export_success_snapshot(
-        repo_root=repo_root, out_dir=out_dir
-    )
+    out_path = export_web_snapshot.export_success_snapshot(repo_root=repo_root, out_dir=out_dir)
 
     assert out_path == out_dir / "success.json"
     payload = json.loads(out_path.read_text(encoding="utf-8"))
@@ -58,9 +52,7 @@ def test_export_success_snapshot_writes_only_published_claims(tmp_path):
 def test_export_success_snapshot_creates_out_dir(tmp_path):
     repo_root = tmp_path / "repo"
     out_dir = tmp_path / "does" / "not" / "exist" / "yet"
-    out_path = export_web_snapshot.export_success_snapshot(
-        repo_root=repo_root, out_dir=out_dir
-    )
+    out_path = export_web_snapshot.export_success_snapshot(repo_root=repo_root, out_dir=out_dir)
     assert out_path.exists()
     assert json.loads(out_path.read_text(encoding="utf-8")) == []
 
@@ -72,9 +64,7 @@ def test_main_writes_and_prints(tmp_path, capsys):
     claims.publish(claims_path, claim.id, thesis="Shipped", validate=_fake_validator)
     out_dir = tmp_path / "out"
 
-    rc = export_web_snapshot.main(
-        ["--repo-root", str(repo_root), "--out-dir", str(out_dir)]
-    )
+    rc = export_web_snapshot.main(["--repo-root", str(repo_root), "--out-dir", str(out_dir)])
     assert rc == 0
     out = capsys.readouterr().out
     assert str(out_dir / "success.json") in out

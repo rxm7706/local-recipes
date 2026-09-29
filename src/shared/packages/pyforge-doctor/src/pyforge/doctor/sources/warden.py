@@ -50,9 +50,7 @@ _INSTALL_HINT = (
 # A ModuleNotFoundError naming one of THESE modules means warden itself is
 # absent (the install hint applies); naming anything else means warden is
 # installed but one of its own imports is broken (the hint would misdirect).
-_WARDEN_MODULES = frozenset(
-    {"pyforge", "pyforge.warden", "pyforge.warden.engines"}
-)
+_WARDEN_MODULES = frozenset({"pyforge", "pyforge.warden", "pyforge.warden.engines"})
 
 
 def _one_fail_finding(message: str) -> tuple[Finding, ...]:
@@ -82,13 +80,9 @@ def gather(target: Path) -> tuple[Finding, ...]:
     except ModuleNotFoundError as exc:
         if exc.name in _WARDEN_MODULES:
             return _one_fail_finding(_INSTALL_HINT)
-        return _one_fail_finding(
-            f"pyforge-warden is installed but failed to import: {exc!r}"
-        )
+        return _one_fail_finding(f"pyforge-warden is installed but failed to import: {exc!r}")
     except Exception as exc:  # noqa: BLE001 -- degrade, never crash the verb
-        return _one_fail_finding(
-            f"pyforge-warden is installed but failed to import: {exc!r}"
-        )
+        return _one_fail_finding(f"pyforge-warden is installed but failed to import: {exc!r}")
     try:
         return tuple(
             Finding(
@@ -98,15 +92,11 @@ def gather(target: Path) -> tuple[Finding, ...]:
                 # non-bool (e.g. the string "false") must fail safe as
                 # FAIL, never false-green as OK (review finding,
                 # 2026-07-30).
-                status=DoctorStatus.OK
-                if check.ok is True
-                else DoctorStatus.FAIL,
+                status=DoctorStatus.OK if check.ok is True else DoctorStatus.FAIL,
                 message=check.message,
                 evidence={},
             )
             for check in run_doctor_checks(target)
         )
     except Exception as exc:  # noqa: BLE001 -- degrade, never crash the verb
-        return _one_fail_finding(
-            f"warden's self-check raised an unexpected error: {exc!r}"
-        )
+        return _one_fail_finding(f"warden's self-check raised an unexpected error: {exc!r}")

@@ -2,8 +2,10 @@
 title: Scribe — the inward voice
 type: dream
 owner: scribe
-status: realized
+status: specified
 ---
+
+> **One chain** (2026-09-17). This is the station Dream. 16 satellite Dreams archived in place; CAPs live on `spec-pyforge-scribe`.
 
 # Scribe — capture the decision, keep the graph, answer from memory
 
@@ -57,8 +59,8 @@ graph is there; nobody writes it down.*
 ## What is real
 
 *Corrected 2026-09-09 (fleet readiness pass). The superseded 2026-07-25 reading
-was: "Epic 1 … is 3 of 5 stories done … Epic 2 (Knowledge Graph — Compile &
-Recall) … is untouched: all 4 stories backlog. **3 of 9 stories complete
+was: "Epic 1 … is three of five stories done … Epic 2 (Knowledge Graph — Compile &
+Recall) … is untouched: all four stories backlog. **Three of nine stories complete
 overall.**" Every clause of it is false — the station shipped 19/19 stories
 across seven epics while that paragraph stood.*
 
@@ -98,6 +100,38 @@ is not installed — `.claude/data/pyforge-scribe/graph.json` was last written
 default, and ranks over a 7-entry synonym map; that is carried as steward
 Story 49.7 (Unifying CAP-14), not re-minted here.
 
+## 2026-09-25 — The local Postgres cluster starts from any worktree
+
+Found while landing PR #1605 from `local-recipes-wt-unifying-strategy-dream-seeds-2026-09-25`:
+`pixi run -e pyforge-scribe-pg scribe-pg-up` initialised the cluster, then PostgreSQL refused to
+start — "could not create any Unix-domain sockets" — because `scripts/scribe_pg.py` passes
+`-k <checkout>/var/scribe-pg` and that socket path exceeds the ~107-byte limit. Every long-named
+worktree hits it; the 18 durable-GraphStore tests then fail loudly, by design, and `pr-preflight`
+is red for a reason that has nothing to do with the change. The workaround was to start the
+primary checkout's cluster and let the tests reach it over TCP.
+
+The Dream: the socket directory is short and per-user (`SCRIBE_PG_SOCKET_DIR`, else
+`$XDG_RUNTIME_DIR/scribe-pg`, else `/tmp/scribe-pg-<uid>`), the data directory stays under the
+checkout's gitignored `var/scribe-pg/`, and `scribe-pg-up` succeeds from any checkout the estate
+creates. Port 5433, the DSN the tests hard-code, and the no-container rule do not change.
+`bmad-spec` mints **CAP-31**; Epic 22 / Story 22.1.
+
+## 2026-09-26 — The instruction surface loads once, and says what runs it
+
+Found landing Story 21.1 (PR #1621). Claude Code runs with
+`instructionFiles=claude-md-and-agents-md`, so `AGENTS.md` and `CLAUDE.md` both load every
+session, and `skf-export-skill` writes its 54-line managed block into both: `_bmad/skf/config.yaml`
+lists `ides: [claude-code, other]`, and `claude-code` maps to `CLAUDE.md`. Every session pays for
+the block twice. The same pass wrote a false line into `AGENTS.md`: that neither `detectors-ci`
+nor `pr-preflight` runs `governance-currency`. Both run it, because `scripts/detectors.py`
+discovers `scripts/governance_currency_check.py` by its `*_check.py` glob as `scope=repo`.
+
+The Dream: the SKF block lives in `AGENTS.md` only (`ides: [other]`; snippet paths stay
+`.claude/skills/` through `snippet_skill_root_override`), and `CLAUDE.md` carries no SKF markers,
+so the next export finds no orphan to ask about. `AGENTS.md` says where `governance-currency`
+runs. Both sit under **CAP-27** (one file carries the contract); no new CAP. Story 21.2 corrects
+the line; Epic 23 / Story 23.1 moves the block.
+
 ## Realization log
 
 - **2026-07-23** — Seeded when the crew grew 6 → 8 (Scribe + Steward adopted; `3a50eebfc9`).
@@ -108,7 +142,7 @@ Story 49.7 (Unifying CAP-14), not re-minted here.
   station's planning chain is complete — read `sprint-status-ledger.yaml` under pyforge-scribe or
   `fleet-picture` for what, if anything, is left.
 - **2026-09-09 (fleet readiness pass — body re-grounded, status held)** — § *What is real* was
-  frozen at the 2026-07-25 chain derivation ("3 of 9 stories complete overall", "Epic 2 …
+  frozen at the 2026-07-25 chain derivation ("three of nine stories complete overall", "Epic 2 …
   untouched") while the station shipped 19/19 stories across seven epics; rewritten above with
   the superseded wording quoted. **Status held at `realized`** — capture, compile, recall and
   the transcript scan all execute, and `.claude/data/pyforge-scribe/` holds a real 1.67 MB
@@ -123,3 +157,89 @@ Story 49.7 (Unifying CAP-14), not re-minted here.
   scribe capability. Also closed this date on `spec-pyforge-scribe`'s memlog: the ADR-numbering
   question (kept Scribe's own vocabulary; the read-a-target-repo's-`docs/adr/` half split off as
   deferred work), and the two remaining body questions, both answered in code.
+- **2026-09-20 (evening) — The managed instruction block carries no aspiration.** Found at the
+  bmad-project-context refresh closing the fleet consistency pass: two `TODO:` lines had stood in
+  `AGENTS.md`'s `bmad:context` block since 2026-09-04 (a commit-msg hook; repo-level ruff/mypy tasks),
+  never minted as a Story, so nothing ever scheduled them — exactly the "aspirational state" the
+  skill's own best-practices exclude ("describe what is; intent belongs in specs"). Steward now owns
+  the two capabilities (CAP-153 / CAP-154, Epic 66); scribe owns the guard: the instruction-surface
+  parity meta-test (CAP-27) reds a `TODO:` / `FIXME:` / "not yet landed" inside the managed block, so a
+  decision that has no Story cannot hide as a line agents pay for every session. Kinships:
+  `spec-pyforge-scribe` CAP-30 → Epic 20; steward CAP-154 retires the two lines it guards.
+- **2026-09-20 — Claude Code reads `AGENTS.md` natively now; the surface must be version-aware,
+  not version-dependent.** Operator ask 09:35Z after Claude Code 2.1.277 (2026-09-18) shipped
+  a built-in `agents-md` mod (research: the mod's README and source in `anthropics/claude-code
+  mods/agents-md`, and the strings in our own installed 2.1.278 binary). Facts that matter: four
+  modes via the `instructionFiles` option (`/config` → "Project instructions"); the default
+  `claude-md-or-agents-md` *stays out of any project that has a `CLAUDE.md`* — so in this repo the
+  mod does nothing today and `AGENTS.md` still arrives only through `CLAUDE.md`'s bare
+  `@AGENTS.md` import; `claude-md-and-agents-md` loads every `AGENTS.md` beside `CLAUDE.md`,
+  deduped by path then content (an `@`-imported file is never loaded twice) and attaches *nested*
+  `AGENTS.md` files on `Read` — which is the only way the atlas child
+  `src/shared/packages/pyforge-atlas/AGENTS.md` ever reaches Claude Code; the option lives in
+  user settings / `--settings` / managed settings, never the project's `.claude/settings.json`;
+  unavailable on Bedrock / Vertex / Foundry. So: keep the import as the floor (older versions
+  and the enterprise runtimes), pin the mode for the Claude runtimes we drive (operators' user
+  settings; marshal's dispatch launch — that half is marshal's, Story 46.11), state the
+  version/mode in the harness table, collapse the one duplication the parity test missed
+  (`CLAUDE.md` "Behavioral Guidelines" vs `AGENTS.md` "Behavioural guidelines" — same five
+  principles, different spelling), and give the operator a currency signal when the runtime is
+  below 2.1.277 or the mode is not the pinned one. → CAP-29 / Story 19.3 (Epic 19 stays `done`;
+  the story sits beneath it — a done key never moves).
+- **2026-09-19 — Scribe serves every harness (seeded at the review of PR #1513, a parallel
+  session's AGENTS.md / GEMINI.md governance PR).** "What the team knows, every agent and every
+  session knows" was true for one harness: Claude Code imports `.claude/memory/MEMORY.md`, and
+  nothing else did. The research that decided the shape —
+  `planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md` (every harness's
+  live docs checked that day: Claude Code, Cursor, Gemini CLI / Antigravity, Copilot cloud agent +
+  CLI, Devin, Codex, BMAD-METHOD) — found: (1) **Claude Code never loads `AGENTS.md` here** — a
+  `CLAUDE.md` exists and does not import it, so the verified `bmad:context` block bound every
+  harness except the one doing most of the work (four PRs that day carry the attribution trailers
+  it forbids); BMAD's own `bmad-project-context` prescribes the one-line `@AGENTS.md` import.
+  (2) Copilot's coding agent and Devin's Knowledge ingest `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`
+  and every `.mdc` at once, so **copying a manual into each tool file multiplies and contradicts**;
+  Cursor / Codex / Jules / Devin / Copilot read `AGENTS.md` natively, Gemini needs
+  `.gemini/settings.json` `context.fileName`, VS Code chat needs `chat.useAgentsMdFile`. (3) The
+  PR pointed every harness at five memory files that exist only in one operator's Claude auto-memory
+  (`~/.claude/projects/…`), not in `.claude/memory/` — the promotion path is `scribe capture`.
+  Decomposed the same day as **`spec-pyforge-scribe` CAP-27 / Epic 19 / Story 19.1** (operator
+  rulings: point, don't copy; import + no trailers; direct-capture the team-relevant notes; full
+  chain). Seeded, not decomposed — each a later `bmad-spec` pass: (4) the root `AGENTS.md` (402
+  lines) and `CLAUDE.md` (357) shrink to the < 200-line / "expensive to rediscover" bar with a
+  nested `AGENTS.md` per station package (atlas is the exemplar) and path-scoped rules; (5) the
+  skill tree (`.claude/skills/`, 76 BMAD + 7 SKF) is exposed on the Agent Skills neutral path so
+  Cursor, Codex, Gemini, Copilot and Antigravity discover the same skills; (6) the transcript scanner
+  (CAP-17/18) ingests Cursor / Gemini / Copilot / Devin session logs, not only
+  `~/.claude/projects/**`; (7) `scribe recall` is reachable from the Guild env or the station MCP
+  so a 59-minute Copilot session or a Cursor Cloud agent can ask it (PRD FR-13 "any session, any
+  operator" → "any harness") — *the Guild-env half decomposed the same day as CAP-28 / Story 19.2 on
+  the operator's ruling ("shouldn't we fix this"); the MCP half stays seeded*; (8) the pointer files join `governance-currency`'s governed documents
+  (marshal-owned script); (9) a per-spec surface-baseline file so parallel lanes stop colliding on
+  `scripts/.spec-surface-baseline.json` (doctor/marshal-owned). (10) Devin Playbooks / MultiDevin and
+  Copilot custom agents (`.github/agents/*.agent.md`) are first-class analogues of marshal dispatch
+  and the SKF personas the estate does not use yet — an opportunity for Herald/Marshal, recorded here
+  because Scribe owns the instruction surface they would read. Devin's own docs (checked 2026-09-19):
+  it reads `AGENTS.md` before coding and its Knowledge ingests `AGENTS.md`, `CLAUDE.md`, `.mdc` rules
+  and `.claude/skills/**/SKILL.md`; Playbooks and Repo Setup (the `pixi install -e pyforge-guild`
+  snapshot) are **app-side, not repo files** — an operator with a Devin seat must create them; no
+  Devin session was available to verify any of this live. Microsoft Copilot (M365 / Copilot Studio)
+  reads no repo files at all — BMAD reaches it only through a declarative agent with a knowledge
+  source (the *Run-BMad-in-Microsoft-Copilot* intake gist); out of scope for file discovery.
+  **Live-verified today: Claude Code only** (a fresh `claude -p` in the PR worktree quoted the
+  verified block through `@AGENTS.md`; the same prompt on `main` answered NOT LOADED).
+  (11) **The operator inbox is a machine-tracked surface, not a chat message.** The same day's
+  closeout found six asks that existed only in one agent's auto-memory and the conversation
+  (stale loop runs to retire, a stash/worktree purge, a live sync proof, cross-harness
+  verification, a quota cap, a token) plus four older leftovers nobody had written down (a
+  poisoned story key, a dead MCP path, an unanchored `.gitignore` rule, seventeen merged
+  worktrees). Today `deferred_work_intake.py` ingests only a story spec's `deferred:` list, and
+  `fleet-picture` surfaces only what a detector can compute. Target: (a) story specs and
+  session hand-offs carry a `needs_operator:` list that the same intake turns into DW rows
+  with `status: awaiting-operator` (owner: marshal — the intake script); (b) a doctor source
+  `operator-inbox` lists every `awaiting-operator` row and every team-memory
+  `operator-inbox-*` entry with its age in `fleet-picture` ATTENTION, never silently ageing out
+  (owner: doctor); (c) the session contract in `AGENTS.md` says a session that leaves an
+  operator-only ask writes it with `scribe capture --type project` before it ends, and the
+  `.claude/memory/project/operator-inbox-*` entry is the human-readable twin of the DW rows
+  (owner: scribe — this item). Seeded here; `bmad-spec` mints the CAPs on the next pass.
+- **2026-09-25** — Dated section *The local Postgres cluster starts from any worktree* seeded (socket-path limit found landing PR #1605); `spec-pyforge-scribe` CAP-31 minted; Epic 22 / Story 22.1 `backlog` with a tracked spec.

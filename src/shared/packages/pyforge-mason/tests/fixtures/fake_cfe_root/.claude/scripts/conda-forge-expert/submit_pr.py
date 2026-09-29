@@ -10,6 +10,7 @@ The canned body's keys (`success`/`recipe`/`branch`/`github_user`/`pr_url`/
 not the real wrapper's subprocess-delegation one). Invocable as
 `[interpreter, script, *extra_argv]`; extra argv is ignored, never rejected.
 """
+
 import sys
 from pathlib import Path
 
@@ -17,9 +18,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 import _stub_support  # noqa: E402
 
 if __name__ == "__main__":
-    sys.exit(_stub_support.emit(
-        '{"success": true, "recipe": "example-recipe", '
-        '"branch": "add-example-recipe", "github_user": "example-user", '
-        '"pr_url": "https://github.com/example/example/pull/1", '
-        '"message": "PR created: https://github.com/example/example/pull/1"}'
-    ))
+    sys.exit(
+        _stub_support.emit(
+            '{"success": true, "recipe": "example-recipe", '
+            '"branch": "add-example-recipe", "github_user": "example-user", '
+            '"pr_url": "https://github.com/example/example/pull/1", '
+            '"message": "PR created: https://github.com/example/example/pull/1"}'
+        )
+    )

@@ -372,9 +372,7 @@ def manifest_payload(
     }
 
 
-def render_scribe_refresh_argv(
-    binary_path: str, manifest_path: str
-) -> tuple[str, ...]:
+def render_scribe_refresh_argv(binary_path: str, manifest_path: str) -> tuple[str, ...]:
     """The one place the scribe grammar's argv is spelled."""
     return (binary_path, *SCRIBE_REFRESH_ARGV, SCRIBE_DECLARE_OPTION, manifest_path)
 

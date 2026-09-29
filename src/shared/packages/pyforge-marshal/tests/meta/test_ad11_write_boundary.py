@@ -58,6 +58,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+import pyforge.marshal.cli.spin as spin_module
 from pyforge.marshal.cli.init import run_homes, run_init, run_preflight, run_teardown
 from pyforge.marshal.cli.spin import run_spin
 from pyforge.marshal.core.verdict import EXIT_OK
@@ -245,9 +246,7 @@ class _RecordingFs:
         self.write_paths.append(path)
 
 
-def test_every_observed_write_resolves_under_the_home_or_canonical_tier3_store(
-    tmp_path, monkeypatch
-):
+def test_every_observed_write_resolves_under_the_home_or_canonical_tier3_store(tmp_path, monkeypatch):
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     slug = "acme"
     repo_root = tmp_path / "repo"
@@ -279,16 +278,11 @@ def test_every_observed_write_resolves_under_the_home_or_canonical_tier3_store(
     home_resolved = home.resolve()
     # AD-11's second allowed target for this story's surface: the main
     # checkout's canonical Tier-3 store (Story 1.5's backlink destination).
-    canonical_tier3_resolved = (
-        repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
-    ).resolve()
+    canonical_tier3_resolved = (repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts").resolve()
     for path in all_writes:
         resolved = Path(path).resolve()
         under_home = resolved == home_resolved or home_resolved in resolved.parents
-        under_canonical_tier3 = (
-            resolved == canonical_tier3_resolved
-            or canonical_tier3_resolved in resolved.parents
-        )
+        under_canonical_tier3 = resolved == canonical_tier3_resolved or canonical_tier3_resolved in resolved.parents
         assert under_home or under_canonical_tier3, (
             f"write to {path} does not resolve under the provisioned home "
             f"{home} or the canonical Tier-3 store {canonical_tier3_resolved}"
@@ -414,9 +408,7 @@ class _RecordingProcess:
         return 5150
 
 
-def test_preflight_writes_resolve_under_the_home_or_the_ack_state_path(
-    tmp_path, monkeypatch
-):
+def test_preflight_writes_resolve_under_the_home_or_the_ack_state_path(tmp_path, monkeypatch):
     """Story 1.7: ``marshal preflight`` is NOT read-only like ``marshal
     homes`` -- it copies seed files into the home and records first-run
     acknowledgement in a machine-scoped state file OUTSIDE both of
@@ -448,9 +440,7 @@ def test_preflight_writes_resolve_under_the_home_or_the_ack_state_path(
     # Non-vacuous: the seed-file copy (fs) and the ack-state write (fs) --
     # two writes total. If this drops the guard would trivially pass without
     # checking anything.
-    assert len(all_writes) == 2, (
-        "expected exactly the seed-file copy and the ack-state write"
-    )
+    assert len(all_writes) == 2, "expected exactly the seed-file copy and the ack-state write"
 
     home_resolved = home.resolve()
     ack_path_resolved = (state_home / "adapter-acknowledgements.json").resolve()
@@ -464,9 +454,7 @@ def test_preflight_writes_resolve_under_the_home_or_the_ack_state_path(
         )
 
 
-def test_teardown_produces_zero_fs_writes_and_its_one_vcs_write_resolves_under_the_home(
-    tmp_path, monkeypatch
-):
+def test_teardown_produces_zero_fs_writes_and_its_one_vcs_write_resolves_under_the_home(tmp_path, monkeypatch):
     """Story 1.8: ``marshal teardown`` is NOT read-only like ``marshal
     homes``, but it makes exactly ONE mutation this guard can observe --
     ``remove_worktree``'s ``home`` target (``delete_branch``'s ref deletion
@@ -505,9 +493,7 @@ def test_teardown_produces_zero_fs_writes_and_its_one_vcs_write_resolves_under_t
         )
 
 
-def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backlink(
-    tmp_path, monkeypatch
-):
+def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backlink(tmp_path, monkeypatch):
     """Story 3.3: ``marshal factory spin`` is the FIRST command in this
     package that writes a journal, and the first scenario this guard drives
     that reaches ``create_dir_exclusive``/``append_line`` at all (both were
@@ -536,22 +522,28 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
     ``PosixProcess.spawn_detached``. The identical omission repeated one
     story later -- this scenario passed no ``process=``, so the real adapter
     ran and the new write went entirely unguarded while the count assertion
-    above kept passing. See ``_RecordingProcess``'s own docstring."""
+    above kept passing. See ``_RecordingProcess``'s own docstring.
+
+    Wire declared explicitly off (Story 46.4 made the undeclared default
+    ``"auto"``, which would otherwise attempt a real, non-deterministic PATH
+    lookup for ``headroom`` and -- when it resolves -- write a fifth,
+    unaccounted-for ``FsPort`` write, ``compression-ladder.json``, breaking
+    this guard's own fixed count) -- incidental to this test's own intent,
+    which is purely about write containment, not wire disposition."""
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     tier3_local = home / "_bmad-output" / "projects" / slug / "implementation-artifacts"
-    tier3_canonical = (
-        tmp_path / "repo" / "_bmad-output" / "projects" / slug / "implementation-artifacts"
-    )
+    tier3_canonical = tmp_path / "repo" / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[context.wire]\nenabled = false\naggressiveness = "high"\n', encoding="utf-8")
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda _slug: policy_path)
 
     fs = _RecordingFs({home}, symlinks={tier3_local: tier3_canonical})
     harness = _RecordingHarness()
     process = _RecordingProcess()
 
-    args = argparse.Namespace(
-        slug=slug, epic=None, story=None, max_count=None, foreground=False, format="text"
-    )
+    args = argparse.Namespace(slug=slug, epic=None, story=None, max_count=None, foreground=False, format="text")
     exit_code = run_spin(args, fs=fs, harness=harness, process=process)
 
     assert exit_code == EXIT_OK
@@ -573,19 +565,14 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
     guarded_paths = [*fs.write_paths, *harness.spin_log_paths, *process.spawn_log_paths]
     for path in guarded_paths:
         resolved = Path(path).resolve()
-        assert home_resolved in resolved.parents, (
-            f"write to {path} does not resolve under the provisioned home {home}"
-        )
+        assert home_resolved in resolved.parents, f"write to {path} does not resolve under the provisioned home {home}"
 
     # Every one of those paths sits under the local Tier-3 path...
     for path in guarded_paths:
-        assert tier3_local in Path(path).parents, (
-            f"write to {path} does not pass through the Tier-3 path {tier3_local}"
-        )
+        assert tier3_local in Path(path).parents, f"write to {path} does not pass through the Tier-3 path {tier3_local}"
     # ...and that path was VERIFIED to be a backlink before anything was
     # written, which is the part that makes the line above mean "reaches the
     # canonical store" rather than merely "is inside the home".
     assert fs.symlink_reads == [tier3_local], (
-        "run_spin wrote without first confirming the Tier-3 backlink -- "
-        f"symlink reads were {fs.symlink_reads}"
+        f"run_spin wrote without first confirming the Tier-3 backlink -- symlink reads were {fs.symlink_reads}"
     )

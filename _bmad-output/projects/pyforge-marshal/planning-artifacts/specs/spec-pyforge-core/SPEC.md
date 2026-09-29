@@ -1,7 +1,7 @@
 ---
 id: SPEC-pyforge-core
 spec: pyforge-core
-status: draft
+status: ready
 owner-dream: docs/dreams/pyforge-core.md
 surface:
   - src/shared/packages/pyforge-core/**            # net-new, not yet created
@@ -19,6 +19,24 @@ surface:
   - src/shared/packages/pyforge-steward/src/**      # the copies each extraction retires
   - src/shared/packages/pyforge-warden/src/**       # the copies each extraction retires
   - pixi.toml                                       # the new workspace member + its per-station dep edges
+surface-drift-exclude:
+  # 2026-09-12: also governed by the spec(s) named below, which already
+  # reconciles each of these files cleanly -- this kernel spec's own
+  # memlog does not move for routine story work anymore, so double-
+  # claiming them only produced permanent drift-presumed noise here.
+  # Coverage is unchanged (still listed under `surface:` above); only
+  # this spec's own drift tracking for these specific files is off.
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
+  - src/shared/packages/pyforge-core/src/pyforge/core/client.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
 sources:
   - ../../../../../../docs/dreams/pyforge-core.md
   - ../../research/technical-pyforge-unification-2026-08-08.md   # § 7 duplication census — figures superseded, see Assumptions
@@ -26,6 +44,7 @@ open_questions:
   - "Q1 — does the station roster belong in pyforge-core at all? It is the one census entry whose canonical home already exists (bmad_drift_check.STATIONS, imported rather than mirrored by generate.py). Moving it into a package that ships to conda would give a stdlib-only detector a package dependency it does not have today. Decide before CAP-4, not during."
   - "Q2 — is pyforge-testing-kit (the testing charter's unbuilt CAP-3) a second leaf package or a module of this one? Both are stdlib-only shared floors with the same leaf constraint; shipping two may be splitting one thing, shipping one may couple test-only fixtures into a runtime dependency."
   - "Q3 — the subprocess guard (CAP-6) is a design reconciliation, not an extraction: doctor's cli_bridge.run_cli_json and marshal's ProcessPort/process_posix are two genuinely different designs, and steward deliberately propagates raw CalledProcessError. Which design wins, and does steward's deliberate divergence become a sanctioned opt-out or get folded in?"
+fold-exemption: cross-station-seam
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for
@@ -108,8 +127,64 @@ costs two stories of rework; deciding it now costs an epic ordering.
   - **success:** One sole-ownership meta-test per extracted primitive, following the
     pattern marshal and warden already use; each fails the build when a second
     implementation of that primitive appears anywhere under `src/shared/packages/`.
+- **CAP-8 — the floor is enforced where the build happens.** *(minted 2026-09-19)*
+  - **intent:** The conformance suite — the whole `pyforge-core` `tests/` tree, the four
+    sole-ownership meta-tests included — runs on every PR that touches the shared surface or
+    any `pyforge-*` package (the set the sole-ownership scan covers; narrowed from
+    `src/shared/packages/**` 2026-09-19) and inside `pr-preflight`, so a CAP-5/CAP-7 violation
+    reds the PR that introduces it instead of accumulating on `main`.
+  - **success:** A `core-test` job beside the eight station jobs (same shared-surface
+    triggers) runs `pixi run --frozen -e pyforge-core pyforge-core-test`; `pr-preflight`
+    depends on it; a fixture PR introducing a second `subprocess.run` implementation under
+    `src/shared/packages/` reds the lane; the lane is green on `main` at the story's merge.
+    Evidence for the gap: #1086's retirement of `pyforge-core.yml` was coverage-neutral —
+    it and `pyforge-pip-install.yml` run the same enumerated subset, and
+    `tests/meta/*_sole_ownership.py` were never wired into any workflow; no workflow
+    invokes the `pyforge-core-test` task at all.
+- **CAP-9 — the six accumulated violations are cleared.** *(minted 2026-09-19)*
+  - **intent:** The six CAP-5/CAP-7 conformance failures on `main` are cleared the way
+    CAP-5 and CAP-6 prescribe, so the suite is green before CAP-8's lane is born.
+  - **success:** `pixi run --frozen -e pyforge-core pyforge-core-test` → 0 failed (2026-09-19:
+    6 failed / 1855 passed — exception root: marshal `adapters/oidc_pkce.py`, `cli/watch.py`,
+    warden `tea_advisory.py`; second subprocess implementation: marshal `cli/login.py`,
+    `cli/refresh.py`, testing-kit `branch_diff_guard.py`); each re-parent widens no `except`
+    clause (the CAP-5 test); marshal's two subprocess sites route through the core guard, and
+    the kit's file — outside this Spec's scope (Non-goals; Q2) and a stdlib leaf by Q-26 — is
+    cleared as CAP-6's recorded, tested opt-out: a file-level guard exemption pinned to the
+    kit's `dependencies == []` so it self-retires if Q2 changes the declaration (corrected
+    2026-09-19 at Story 52.1's review); the touched stations' own suites stay green.
+- **CAP-10 — the station-tests lane picks suites from the remote-tracking ref.** *(minted 2026-09-27)*
+  - **intent:** CAP-8's lane (`.github/workflows/pyforge-station-tests.yml`) chooses which suites run
+    from `git diff "$BASE"...HEAD`; for a pull request `BASE` names `refs/remotes/origin/${GITHUB_BASE_REF}`,
+    never the short `origin/<name>` — its checkout fetches tags, and a pushed tag named `origin/main`
+    wins over the remote-tracking ref, empties the selection and runs no suite.
+  - **success:** the lane's pull_request `BASE` is the full ref (as `coverage-gates.yml`'s is); a
+    scripts-suite test reds any workflow under `.github/workflows/` that builds a diff base from a
+    short `origin/${…}`, and fails on the pre-fix tree; the push path's sha is unchanged.
+- **CAP-11 — the front door names the environment a roster station runs in.** *(minted 2026-09-28)*
+  - **intent:** `pyforge.core.dispatch.dispatch_argv` resolves a token as today — an installed station,
+    the single-name distribution fallback, then `NOUN_ALIASES` — and only then, when the token is on
+    `pyforge.core.roster.STATIONS` but not installed in the running environment, refuses naming it:
+    `station 'warden' is not installed in this environment; it runs in -e pyforge-warden` with the
+    command `pixi run -e pyforge-warden pyforge warden <noun> <verb>`. The environment name is
+    `roster.long_form(station)`; nothing reads `pixi.toml`. A token on no roster keeps today's
+    `unknown station …; known: …` message byte-for-byte. The usage listing also names the roster
+    stations this environment lacks, each with its environment. Exit codes are unchanged (2).
+    (Found 2026-09-28: the Guild environment answers `pyforge warden|atlas|mason` with "unknown
+    station"; warden is left out on purpose, atlas is absent, mason arrives with
+    `spec-pyforge-steward:CAP-161`.)
+  - **success:** with an installed map of doctor, herald, marshal, scribe and steward, `pyforge warden
+    --help` refuses naming `-e pyforge-warden` and the `pixi` command and exits 2; atlas and mason name
+    their own environments; `pyforge nosuch` keeps the unknown-station message byte-for-byte;
+    `pyforge context …` still aliases to marshal; an installed station still dispatches; the usage
+    listing names the three missing roster stations; removing the roster check brings back "unknown
+    station 'warden'" (mutation); `pyforge-core-test` green.
 
 ## Constraints
+
+- **The CI lane runs the pixi task, never a hand-enumerated file list** *(2026-09-19, CAP-8)*:
+  enumeration is how the meta-tests were lost the first time. **CAP-9 lands before CAP-8** — a
+  gate born red is a gate nobody trusts.
 
 - **Leaf or nothing.** Pure stdlib; no module in `pyforge-core` may import from any
   `pyforge.<station>`. If a primitive needs a station's type, the extraction was wrong and

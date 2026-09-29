@@ -7,8 +7,8 @@ paradigm: 'ports-and-adapters (hexagonal) with a knowledge-free core'
 scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-50, NFR-1 – NFR-16, D-1 – D-9.'
 status: final
 created: '2026-07-25'
-updated: "2026-09-07"
-currency_review: "Reviewed 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29 (later): chain-currency cascade (spec -> PRD -> arch) for FR-56 / CAP-34 (Epic 24); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-29   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD -> arch) for FR-55 / CAP-33 (Epic 23); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD -> arch) for FR-54 / CAP-32 (Epic 22); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch) for FR-53 / CAP-31 (Epic 21); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> arch) for FR-52 / CAP-30 (Epic 20); lands on AD-12 as written, no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-51 / CAP-29 (Epic 19); lands on AD-1, AD-15 and canopy:AD-17, no AD amended. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (prd -> arch), no AD delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17   # RE-STAMPED 2026-09-17: chain-currency cascade (spec/PRD -> spine) after the one-chain fold. No AD added, changed or removed; § Currency reconciliation — 2026-09-17 already present.
+currency_review: "Reviewed 2026-09-17 — one-chain mason fold cascade (Spec and PRD re-dated 2026-09-17). No AD added, changed or removed. Prior review 2026-09-14 — chain-currency sweep cascade (the PRD re-dated 2026-09-14 after recording FR-14's as-built diff-before-apply divergence and folding the realization-gate closure). Appended § Currency reconciliation — 2026-09-14: AD-1's knowledge-free core and AD-14's credential blindness both re-confirmed against the Story 44.7 foundry-island wiring and PR #1354's AD-14 guard fix; the FR-14 divergence is a VERB-LEVEL default, not a structural one, and no port or adapter boundary moves with it. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
 binds:
   - 'FR-1..FR-50'
   - 'NFR-1..NFR-16'
@@ -696,3 +696,177 @@ Consequence for this spine: no deployment target, container image or CI lane may
 3.12/3.13 interpreter for `pyforge-mason`, and none does today — this records the constraint
 rather than changing it. The previous `>=3.12` declaration was never exercised by any
 environment in the workspace.
+
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14, firing the `prd→arch` edge.
+This section is the as-built check: does the spine above still describe the package.*
+
+**The PRD's new FR-14 divergence is deliberately NOT an architecture finding.** Whether
+`mason recipe update` writes by default or previews by default is a **verb-level
+argument default** inside `recipe.py`/`cli.py`. It crosses no port, moves no adapter
+boundary, and is invisible to AD-1 (knowledge-free core), AD-2 (the single CFE adapter
+seam) and the exit-code ownership rule. The spine is silent on it by design, and this
+note records that the silence is correct rather than an omission — a reader arriving
+from the PRD's divergence box should not go looking for a missing AD here.
+
+**AD-1 re-confirmed against steward Story 44.7's foundry-island wiring** (the story
+lives on steward's epics, not mason's; it touches mason's package). It added an
+`env` parameter to `build_native`/`build_docker` and factory-island root resolution
+across `cfe.py`, `errors.py`, `recipe.py` and `resolve.py`. All four are the adapter
+layer AD-2 already draws; the core gained no recipe knowledge, and the Spec's own
+2026-09-11 CAP-1 verification re-ran `tests/meta/test_adapter_sole_caller.py` green
+(425 passed) — every recipe verb still reaches the machinery through exactly one
+adapter function.
+
+**AD-14 (credential blindness) held, and was then tightened.** PR #1354 closed a gap
+Story 44.7 left open: `build_native`/`build_docker` were forwarding their own `env`
+into `run_streamed`'s `env=` keyword, a shape `test_credential_isolation.py`'s Guard 3a
+only allowlisted at `run_streamed`'s and `_invoke_captured`'s own internal call sites.
+The fix kept the guard and changed the callers — the invariant moved the code, not the
+other way round. This is the second time in three weeks that pattern has held here
+(the first being the IO-denylist shaping Story 25.4's placement over in atlas), and it
+is worth naming as the working property of this spine's meta-tests.
+
+**One recorded cross-spec override, restated so it is not re-discovered a third time.**
+`pyforge-core` is a hard run-dependency of this package, not the optional extra CAP-6's
+original text describes. The authority is `pyforge-marshal/spec-pyforge-core`'s "one
+lattice, one envelope, one exception root" (2026-08-13), which re-parents `MasonError`
+to a shared `PyforgeError`. It is now reflected in the Spec's Divergences list (item 6)
+and in the PRD's 2026-09-14 reconciliation; recorded here because the dependency edge
+is an architectural fact, even though the decision was not this spine's to make.
+
+**No AD added, changed or removed.** `updated:` bumped to record that the cascade ran.
+
+## Currency reconciliation — 2026-09-17
+
+one-chain mason fold 2026-09-17: Spec reminted CAP-1..29; ADs unchanged. No new architecture decision.
+
+## Currency reconciliation — 2026-09-20
+
+*Chain-currency sweep: `spec-pyforge-mason`'s `.memlog.md` moved 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve) while this document sat at 2026-09-17. `prd→arch` cascade — no AD added, changed or removed. `updated:` bumped to record that the check ran.*
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-27
+
+*Trigger: the PRD's re-stamp for CAP-28 (`prd→arch`).* The change is one diff base in each of the four recipe build
+workflows, outside the CFE surface (`.claude/skills/conda-forge-expert/**`, `.claude/scripts/conda-forge-expert/**`,
+`conda_forge_server.py`). No AD is added, changed or removed; the recipe-factory decisions hold as written.
+
+## Currency reconciliation — 2026-09-28
+
+*Trigger: the PRD's re-stamp for FR-51 / CAP-29 (`prd→arch`) — Mason has its own skills, and `conda-forge-expert` is one of
+them (Epic 19).* Checked against every AD; FR-51 lands on three as written:
+
+- **AD-1 (knowledge-free core).** The rule that keeps recipe knowledge out of `pyforge/mason/` carries to Mason's skills:
+  none restates a CFE gotcha or recipe workflow, and a meta-test with a planted gotcha heading proves the guard is not
+  vacuous (Stories 19.2–19.4). The station skill documents grammar and routes every recipe question to CFE.
+- **AD-15 (the CFE surface is read-only for implementation).** No Epic 19 implementation commit writes
+  `.claude/skills/conda-forge-expert/**`; the one CFE edit is Story 19.5's `retro(cfe):` commit, the sanctioned
+  retrospective this AD and FR-47 already name.
+- **canopy:AD-17 (station skills are SKF content skills; CFE is the hand-authored exception).** `pyforge-mason` follows the
+  rule (SKF-compiled from the station package, provenance-backed, exported only by `skf-export-skill`); the four other
+  Mason skills are operating-procedure skills of the kind the AD's exception names, hand-authored like CFE.
+
+No port, adapter or package boundary moves: the skills live under `.claude/skills/` (the SKF output folder and the skill
+root every harness reads), outside `src/shared/packages/pyforge-mason/`, under `AGENTS.md` § Policy's dated `A-only`
+exception until the cutover flip.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28 (later)
+
+*Trigger: the PRD's re-stamp for FR-52 / CAP-30 (`prd→arch`) — no station or environment caps pixi (Epic 20).* Checked
+against every AD; FR-52 lands on one as written:
+
+- **AD-12 (engines are adapters behind one protocol).** Declared version ranges still live in the member `pixi.toml`
+  and are mirrored by in-code constants kept in sync by a meta-test. Only the shape of pixi's range changes: it becomes a
+  floor (`>=0.80.0`) like the other four engines' since 2026-09-20, and the member pin is a registered floor site of
+  `scripts/pixi_version_registry.py`, so it tracks the root `requires-pixi` instead of lagging it. The "pixi 0.77.x"
+  stack line in § Currency reconciliation — 2026-08-26 (as-built truth-up) is dated history and stays as written.
+
+The guard that keeps every pixi spec uncapped lives in the repo-root `pixi-version-check` detector, outside
+`src/shared/packages/pyforge-mason/`; no port, adapter or package boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+*Trigger: the PRD's re-stamp for FR-53 / CAP-31 (`prd→arch`): Mason packages the intake toolchain (Epic 21).*
+Checked against every AD. FR-53 lands on two, as written:
+
+- **AD-1 (knowledge-free core).** The five recipes live under `recipes/`, outside `src/shared/packages/pyforge-mason/`.
+  No Epic 21 story touches Mason's code, so no recipe knowledge enters the CLI. Recipe knowledge that the work
+  surfaces goes to CFE through each story's retro, never into `pyforge/mason/`.
+- **AD-15 (the CFE surface is read-only for implementation).** No Epic 21 implementation commit writes
+  `.claude/skills/conda-forge-expert/**`. Each story's one CFE edit is its `retro(cfe):` commit, carrying the
+  `CHANGELOG.md` entry (FR-47). These are recipe stories, not the mason-CLI effort, so the "exactly one" count in
+  AD-15's sanctioned exception does not apply to them. The same held for Epics 13 and 14.
+
+No port, adapter or package boundary moves. The recipes are CFE's to build (`recipe-build`), and `spec-fleet-stewardship`
+governs `recipes/**` coverage-only.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28 (night, later)
+
+*Trigger: the PRD's re-stamp for FR-54 / CAP-32 (`prd→arch`): twelve recipes lose conda-recipe-manager's leaked
+sentinel key, and CFE's validation refuses the next one (Epic 22).* Checked against every AD. FR-54 lands on two, as
+written:
+
+- **AD-1 (knowledge-free core).** The twelve recipes live under `recipes/`, and the new check lives in CFE's
+  `validate_recipe.py`, outside `src/shared/packages/pyforge-mason/`. No Epic 22 story touches Mason's code. `mason
+  recipe validate` wraps CFE's validation by subprocess, so it gains the check with no Mason change.
+- **AD-15 (the CFE surface is read-only for implementation).** Story 22.1's recipe commits do not write the CFE
+  surface; its one CFE edit is its `retro(cfe):` commit, which carries the gotcha and the corpus meta-test. Story 22.2
+  is a CFE behaviour change. Its code, test and `CHANGELOG.md` entry land together in its own `retro(cfe):` commit,
+  which is the path Story 16.3 took (`c1cb0db042`). These are not the mason-CLI effort, so the "exactly one" count in
+  AD-15's sanctioned exception does not apply to them, as it did not for Epics 13, 16 and 21.
+
+No port, adapter or package boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-29
+
+*Trigger: the PRD's re-stamp for FR-55 / CAP-33 (`prd→arch`): CFE's generator asks instead of guessing, a mismatched
+copyleft licence is refused, and a negative corpus keeps each check honest (Epic 23).* Checked against every AD. FR-55
+lands on two, as written:
+
+- **AD-1 (knowledge-free core).** All three changes live in CFE: `recipe-generator.py`, `license-checker.py` and the CFE
+  tests. `mason recipe new` and `mason recipe validate` call CFE by subprocess, so Mason gains the behaviour with no
+  change. The generator's default run keeps exit 0, so `cfe.generate_recipe`'s return-code handling does not move;
+  `--strict` is an opt-in flag Mason does not pass.
+- **AD-15 (the CFE surface is read-only for implementation).** Each Epic 23 story is a CFE behaviour change, so its code,
+  tests and `CHANGELOG.md` entry land together in its own `retro(cfe):` commit, the path Stories 16.3 and 22.2 set. These
+  are not the mason-CLI effort, so the "exactly one" count in AD-15's sanctioned exception does not apply to them.
+
+No port, adapter or package boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-29 (later)
+
+*Trigger: the PRD's re-stamp for FR-56 / CAP-34 (`prd→arch`): the CFE host-gate tests give the same verdict in any
+developer shell (Epic 24).* Checked against every AD. FR-56 lands on two, as written:
+
+- **AD-1 (knowledge-free core).** The change is in CFE's tests: a shared fixture in `tests/conftest.py` and the six test
+  modules that opt into it. Mason reaches CFE by subprocess and runs none of these tests, so nothing in Mason changes.
+- **AD-15 (the CFE surface is read-only for implementation).** The fixture, the tests, the `CHANGELOG.md` entry and the
+  version carriers land together in one `retro(cfe):` commit, the path Stories 16.3 and 22.2 set. It is not the
+  mason-CLI effort, so the "exactly one" count in AD-15's sanctioned exception does not apply.
+
+No port, adapter or package boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

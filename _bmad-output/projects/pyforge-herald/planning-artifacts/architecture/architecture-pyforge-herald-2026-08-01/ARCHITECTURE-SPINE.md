@@ -3,7 +3,10 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-07"
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
+# 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28). AD-4 amended (one dated version per export kind); AD-21 untouched. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
+# 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
 altitude: feature
 ---
 
@@ -93,6 +96,13 @@ altitude: feature
 
 **[ADOPTED]** — Workflow stages defined in spec companions; proven on deckcraft (PPTX) and existing deck engines (HTML).
 
+**Amended 2026-09-28 (night) (CAP-57; FR-10.6):** the PPTX format has three producers, each an
+export plugin on `DECK_EXPORT_HOOK_SPEC`, and none retires: `marp --pptx` (image slides), the
+python-pptx fill (Story 15.1, from a content plan) and `pptxgenjs-plus` (native text boxes, tables
+and notes, from the deck's current Marp source). The `pptxgenjs-plus` output is its own dated kind,
+`<slug>-deck-native-<date>.pptx`, so it never supersedes the Marp export under AD-4's one-version
+rule. See § Currency reconciliation — 2026-09-28 (night).
+
 ---
 
 ### AD-4 — Aggressive Artifact Tracking Strategy (62% Footprint Reduction)
@@ -110,6 +120,13 @@ altitude: feature
 - **Verification**: `retired-console-check` validates all tracked artifacts render correctly. Build pipeline proves all gitignored artifacts regenerate deterministically.
 
 **[ADOPTED]** — Optimization strategy verified in spec appendix; no new infrastructure required.
+
+**Amended 2026-09-28 (CAP-53; FR-9.1, FR-9.2):** a tracked dated export keeps **one version
+per kind**. A kind is a directory, the stem before `-YYYY-MM-DD`, and the extension, and the
+newest date is the current version. A superseded version is deleted, never moved to an archive
+folder, and git history keeps it. A new export retires the version it supersedes. One rule,
+`pyforge.herald.deck_versions`, is checked in the herald suite. See § Currency reconciliation —
+2026-09-28.
 
 ---
 
@@ -380,6 +397,11 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 
 **[ADOPTED]** — Herald v0.1.0 web surface integrates existing Pitch tab; extend with Progress, Success, Operations tabs.
 
+**Amended 2026-09-28 (night) (CAP-55; FR-10.4):** on the Canopy portal, the Pitch tab lists the
+decks and shows one from its HTML twin inside the portal, instead of only linking out. The twin is
+served from object storage under the portal's own origin (AD-22) to a caller with the herald
+station role. See § Currency reconciliation — 2026-09-28 (night).
+
 ### AD-13 — Data Model — Moment-Owned Records with Evidence Links (was AD-3)
 
 **Rule**: Each Moment owns its record type — Progress (Moment 2), Claim (Moment 3), Notice (Moment 4) — with fields per its PRD. Cross-linking via evidence protocol (URL + type pairs). No shared database schema across Moments; each owns its schema.
@@ -611,3 +633,242 @@ Consequence for this spine: no deployment target, container image or CI lane may
 3.12/3.13 interpreter for `pyforge-herald`, and none does today — this records the constraint
 rather than changing it. The previous `>=3.12` declaration was never exercised by any
 environment in the workspace.
+
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14 after reconciling against
+`spec-pyforge-herald`'s 2026-09-13 SPEC.md/memlog, which fires the `prd→arch` edge.
+This section is the as-built check: does the spine above still describe the station.*
+
+**No structural divergence, and two AD boundaries confirmed by the effect-gap
+closures rather than contradicted by them.**
+
+1. **The deck-QA gate landed as a pixi task, not as a new runtime surface.** Story
+   19.3's gate is `[feature.pyforge-herald.tasks.deck-qa]` in `pixi.toml`, declared
+   **advisory only — never a PR gate** (verified live this pass, in the task's own
+   description). That is exactly the boundary this spine and Herald's Spec both hold:
+   Herald proclaims, it does not gate. Nothing here needed to move for it.
+2. **The `.pptx` pipeline's first real render exercised the existing AD boundary, not
+   a new one.** Story 19.4 filled `presentations/pyforge-warden/src/content_plan.json`
+   through `pptx_pipeline.py` against the committed template — the Deckcraft path this
+   spine already draws. The artifact is data, not a new component.
+3. **Story 20.2's per-deck fact ledgers are a new artifact *class*, and they belong to
+   a different Spec.** Ten `presentations/<slug>/facts.yaml` files now exist (verified
+   live: 10). They are owned and reconciled by `spec-deck-family-currency`, not by this
+   station spine, which is why the kernel Spec excludes them from its own drift
+   tracking rather than absorbing them. No AD here describes them and none should — a
+   satellite Spec owning its own artifact family is the intended shape.
+
+**The one thing this spine must not quietly resolve.** The live-backend triggers have
+still never run green: Story 19.2 is `blocked` on `DW-13-6-1` — `steward deploy
+perimeter` renders only a hardcoded `myproject.asgi:application` with no
+`--asgi-application` flag. This is a **cross-station dependency on Steward's
+deployment surface**, not a Herald architecture decision, and it is recorded here (and
+in the PRD) rather than converted into a Herald AD. `spec-herald-moments-2-4-live-backend`
+(LB-2/LB-3) remains the contract that will close it.
+
+**Deferred decisions unchanged.** Satellite items 3, 4 and 6 and Moment-1 items 1–3
+all remain open and non-blocking; the video pipeline (AD-8/AD-9/AD-10 boundary with
+Manticore) is still unexercised downstream, unchanged by this window.
+
+**No content change required beyond this note.** `updated:` bumped to record that the
+cascade ran.
+
+## Currency reconciliation — 2026-09-17
+
+Reviewed after the one-chain herald fold remint. No AD added, changed, or removed. Steps 3–4 of CHAIN-STANDARD §3 recorded as no-op in the station Spec memlog.
+
+## Currency reconciliation — 2026-09-20
+
+*Chain-currency sweep: `research/docs-site-bmad-method-pattern-2026-09-20.md` (an operator-asked
+seed, 09:55Z: the docs site matches BMAD-METHOD's Astro + Starlight + Pages pattern so upstream's
+skills and workflows apply unchanged) post-dated the PRD (`prd→arch` cascade); no AD added, changed or removed. It is input for `bmad-spec`, not yet
+a capability: no requirement, decision or story changes here until that pass mints the CAP.
+`updated:` bumped to record that the check ran; the six decisions the research asks for are listed
+in its § 3 and on the Dream's 2026-09-20 entry.*
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-25
+
+`prd→arch` edge after the PRD re-stamp of 2026-09-25 (steward 59.6's roster re-export in
+`progress.py`). The roster is read from `pyforge-core`, the shared leaf every station already
+depends on — no new import boundary, no AD added, changed or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-27
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27,
+the docs site matches BMAD-METHOD's pattern). Until now no AD covered GitHub Pages. The dossier
+site's rules (one deploy caller, `build.py` deleting only the outputs it owns, Kedro-Viz at
+`/kedro-viz/`) lived only in the folded `spec-pyforge-pages` CAPs (CAP-43..47) and in
+`dashboard.yml`'s header comment. CAP-52 puts three producers into one artifact, which is an
+architectural decision, so it is recorded here as AD-21.*
+
+### AD-21 — One Pages artifact: one owner per path prefix, one deploy caller, content read in place
+
+**Binds**: The repository publishes exactly one GitHub Pages artifact, `docs-site/build/site/`,
+assembled from three producers, each owning one path prefix. The Astro + Starlight docs site owns
+the root and renders the Diátaxis shelf by reading `docs/` in place through a symlink. The
+`docsite/build.py` dossier site owns `/herald/` (the dossier page is `/herald/dossier/`), and each
+HTML path it served at the root before holds a redirect page to its `/herald/` home. The tracked
+`docs/dashboard/` tree owns `/dashboard/` (Kedro-Viz at `/dashboard/kedro-viz/`, with a redirect
+from `/kedro-viz/`). One workflow,
+`.github/workflows/dashboard.yml`, builds the artifact in the pixi `site` env and deploys it
+through `upload-pages-artifact` → `deploy-pages`, in upstream `docs.yaml`'s build and deploy
+jobs. The site's sidebar derives from doctor's `docs/map.yaml` at build time.
+
+**Prevents**:
+- A second `deploy-pages` caller racing the first and wiping another producer's tree (the reason
+  `dashboard.yml`'s header gives, carried forward from CAP-44/CAP-49)
+- Two producers writing one path, and the later one silently winning
+- Copying or rewriting pages for the site, which would let a second copy of the shelf drift from
+  the one doctor's detectors read
+- A second registry for page order beside `docs/map.yaml`
+
+**Rule**:
+1. **Prefix ownership** — the assembler refuses, and `pages-check` exits 1, when a producer writes
+   outside its prefix or a mount is missing.
+   **Redirects** (operator ruling 2026-09-27, D7): a moved HTML URL keeps its meaning through a
+   redirect page at its old path. The set is derived from what the producer built, never
+   hand-kept. A redirect that would land on a path another producer owns is refused like any other
+   collision; the one named exception is `/`, which Starlight owns and which links to `/herald/`.
+   A non-HTML file cannot carry a redirect on static Pages, so its old path returns 404 and never
+   serves different content.
+2. **One deploy caller** — exactly one workflow uses `actions/deploy-pages`. It keeps the path
+   `dashboard.yml`, because other stations' tests read that path.
+3. **Content in place** — no page under `docs/` is moved, copied or rewritten for the site.
+   Titles and quadrant indexes are resolved at build time; the only new pages are `docs/index.md`
+   and `docs/404.md`.
+4. **Built outputs are regenerated, never tracked** — this lands beside AD-4: `docs-site/build/`,
+   `docs-site/node_modules/`, `docs-site/.astro/` and the generated sidebar are gitignored.
+5. **Re-vendor, never fork** — files vendored from BMAD-METHOD's `docs-site/` are byte-identical
+   to one recorded upstream commit, and local behaviour lives in separate local files.
+
+**[PROPOSED 2026-09-27]** — realized by Stories 27.1–27.4. Story 27.5 (the `pr-preflight` lane,
+selected from the workflow's own paths by steward Story 71.2) lands on this AD without changing
+it. AD-12 (Herald's four-tab web surface) is untouched: that is the station portal on the Canopy
+host, not Pages.
+
+**Amended 2026-09-28 (night) (CAP-56; FR-10.5): one artifact, N hosts.** The same artifact may
+deploy to more than one Pages host, such as the public github.io site and an internal GitHub
+Enterprise Pages site. It stays one artifact:
+- One build definition, parameterized only by the site URL and base path of the host that runs
+  it, taken from `actions/configure-pages`. There is no second assembler, workflow or artifact.
+- One deploy caller per repository (rule 2): the enterprise copy of the repository runs the same
+  `dashboard.yml`.
+- No runtime cross-origin call: no script, stylesheet, font, image, fetch or XHR in the artifact
+  names an origin other than its own, so no host needs CORS and no page calls the platform. Plain
+  navigation links are allowed. `pages-check` exits 1 on a violation.
+
+*Why amend, not add a second artifact:* the intake asked for a second Pages page. The operator
+rejected a second artifact on 2026-09-28, and the need is only a second place to read the same
+content. A second artifact would bring back everything this AD prevents: a second deploy caller, a
+second copy of the shelf, and a second path owner. Parameterizing the host keeps one owner per
+prefix on every host.
+
+**Content changed:** this section only. `updated:` bumped. AD-21 is added; no existing AD is
+amended or removed. The one prior rule this supersedes is CAP-44's (the Pages root is the dossier
+landing page), a Spec-level clause that no AD carried.
+
+## Currency reconciliation — 2026-09-28
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28:
+each deck keeps one current version of each export). The ruling lands on **AD-4** (artifact
+tracking), not on AD-21 (Pages). AD-4 already decides which deck artifacts are tracked. CAP-53
+adds how many dated versions of each stay in the tree, and that is a tracking rule.*
+
+**Why AD-4 and not AD-21.** AD-21 governs what the Pages artifact holds and who owns each path.
+The prune changes no published byte, for two reasons.
+- `docsite/build.py` `_listed_files` already publishes only the newest file per kind. The 69
+  downloads under `decks/<slug>/downloads/`, which move to `/herald/decks/<slug>/downloads/` after
+  Story 27.2, are the same files before and after.
+- `herald deck push` (`deck_pipeline._newest_dated_match`) already sends only the newest file per
+  kind.
+
+So AD-21 is untouched. AD-3's pipeline order is untouched too: the formats and their owners do not
+change. Only the number of dated versions each format keeps in the tree changes.
+
+**AD-4 amendment (in place above).** A tracked dated export keeps one version per kind, the newest
+date; a superseded version is deleted, never moved to an archive folder, and git history keeps it.
+- **Binds:** every writer of a dated export under `presentations/<topic>/src/{pptx,marp}/`. That is
+  `deck_pipeline.pull_marp_source`, `pull_standalone_bundle` and `PptxTemplateExporter.export`,
+  and `scripts/deck_export.py`. Each one retires the older versions of the kind it just wrote.
+- **Prevents:**
+  - The 54.14 MB of superseded exports measured on 2026-09-28 regrowing after a one-time prune.
+  - Moving the files into an archive folder, which shrinks neither the checkout nor `.git`.
+  - A second definition of "current" that could disagree with the pickers that publish and push.
+- **Rule:** `pyforge.herald.deck_versions` is the one stdlib-only definition, and the herald
+  suite checks it on the live tree. The newest-date pickers stay and are trivially correct with
+  one file per kind.
+
+**Content changed:** this section and AD-4's amendment line only. `updated:` bumped. No AD is added
+or removed.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57
+(Epics 29–32: decks inside the airgap). Three of the four CAPs change a decision, so they land as
+one new AD and three amendments. AD-4 is untouched: the operator ruled on 2026-09-28 that decks
+stay tracked, and CAP-53's one-version rule still holds.*
+
+### AD-22 — A current export has a second home in object storage; the station is its only writer
+
+**Binds**: `herald deck publish` (CAP-54, FR-10.1), django-herald's `DeckExport` projection and
+herald's v1 station routes (FR-10.2), and the portal viewer (CAP-55, FR-10.3, FR-10.4).
+
+**Rule**:
+1. **Git is the archive of record; the store is a second home.** Only the *current* export of each
+   kind (AD-4, the newest date) is published, under its sha256 key. An unchanged export is never
+   uploaded twice. The family downloads (CAP-35) still build from tracked files.
+2. **One writer** (canopy:AD-18). The station package writes the objects and the deck's manifest,
+   the metadata of record. django-herald's `DeckExport` row is a projection refreshed from
+   `herald deck exports --json`; no portal request writes it, and the portal never writes the
+   store. Production DDL is a Liquibase changeset with a namespaced id (canopy:AD-9), and no row
+   holds bytes.
+3. **Configuration, never an import.** One herald module, `pyforge.herald.deck_store`, touches the
+   store. It is a port with an S3 adapter configured from the environment: the settings the
+   platform seam reads, plus the bucket and prefix, arriving in a pod as secret references
+   (canopy:AD-19). The base package imports neither Django nor the host. `src/platform/` imports no
+   `pyforge.*` (pap:AD-2); the host keeps loading `pyforge.herald.station_api` by name. The
+   configuration names and the Helm values are steward Story 74.1's contract, and herald adopts it
+   rather than minting a second one.
+4. **Reads stream, same-origin, behind the herald role.** The list and stream routes live under
+   `/stations/herald/api/v1/` (canopy:AD-2). They stream in bounded chunks, require an identity
+   carrying the herald station role, and send no CORS header. AD-16's public-read clause does not
+   extend to them. A twin the viewer shows is self-contained, with no reference to another origin,
+   and is served under the portal's own origin with a Content-Security-Policy that allows no other.
+
+**Prevents**:
+- Bytes in PostgreSQL (the operator's rejection; the database belongs to the enterprise DB team).
+- A second writer or a second client for the store, and a portal table that becomes a write path.
+- A browser that fetches a deck cross-origin, and so a CORS allow-list to keep.
+- A viewer that parses `.pptx` in the browser (PPTXjs was rejected).
+
+**[PROPOSED 2026-09-28]** — realized by Stories 29.1–29.2 (both `blocked` until steward Story 74.1
+lands) and 30.1–30.2.
+
+**AD-21 amendment (in place above): one artifact, N hosts** (CAP-56, FR-10.5). The docs site
+deploys to an internal GitHub Enterprise Pages site as well as the public one. The build takes the
+host's own site URL and base path from `actions/configure-pages`. The enterprise copy of the
+repository runs the same `dashboard.yml`, so there is one deploy caller per repository, and nothing
+in the artifact calls another origin at runtime. Stories 31.1–31.2.
+
+**AD-3 amendment (in place above)** (CAP-57, FR-10.6). PPTX gains a third producer,
+`pptxgenjs-plus`: native and editable, from the deck's current Marp source, as its own dated kind.
+`marp --pptx` and the python-pptx fill do not retire. Story 32.1.
+
+**AD-12 amendment (in place above)** (CAP-55, FR-10.4). On the Canopy portal, the Pitch tab shows
+the deck list and the viewer instead of only linking out. Story 30.2.
+
+**Content changed:** this section, AD-22, and the amendment lines on AD-3, AD-12 and AD-21 only.
+`updated:` bumped. AD-4 is untouched. No AD is removed.

@@ -1,9 +1,13 @@
 ---
+fr-derivation-from: "2026-09-17"
 title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-07"
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+# 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
+# 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
 project: pyforge-herald
 spec_source: spec-pyforge-herald/SPEC.md (formerly spec-herald-pitch/SPEC.md, folded in 2026-08-02)
 dream_source: docs/dreams/pyforge-herald.md
@@ -570,20 +574,20 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 1: Herald CLI Architecture
 
-**FR-1.1: Unified Command Dispatcher**
+**FR-1.1: Unified Command Dispatcher** ← CAP-1
 - Single entry point: `herald <subcommand> [--help | --json | --date-range <start>..<end>]`
 - Subcommands: `progress`, `success`, `notice`
 - Help text comprehensive and discoverable (`herald --help`, `herald <subcommand> --help`)
 - Argument parsing handles: JSON output mode, date filtering, station/project filtering
 - Extensible for future Moments (not hardcoded to 3)
 
-**FR-1.2: Shared Argument Conventions**
+**FR-1.2: Shared Argument Conventions** ← CAP-1
 - All subcommands support `--json` (machine-readable output)
 - All subcommands support `--date-range YYYY-MM-DD..YYYY-MM-DD` or `--week recent|last-N` patterns
 - All subcommands support station/project filtering where applicable
 - Error messages consistent and actionable
 
-**FR-1.3: CLI Authentication & Authorization**
+**FR-1.3: CLI Authentication & Authorization** ← CAP-1
 - [ASSUMPTION: Herald CLI reads from Herald web service with implicit auth (same session)] Confirm with ops team
 - Write operations (publish, author) require operator role confirmation
 - Read operations (progress, list, archive) are public
@@ -592,17 +596,17 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 2: Herald Web Surface
 
-**FR-2.1: Unified Navigation & Layout**
+**FR-2.1: Unified Navigation & Layout** ← CAP-3
 - Header nav with 4 tabs: **Pitch** (link to Moment 1 deck family), **Progress**, **Success**, **Operations**
 - Unified color scheme and typography (Modernist design system from Moment 1)
 - Sidebar: station filter (Warden, Atlas, Marshal, etc.), date range selector, search box
 - Responsive (desktop, tablet, mobile)
 
-**FR-2.2: Header & Footer**
+**FR-2.2: Header & Footer** ← CAP-3
 - Header: Herald branding, Moment tab nav, user profile (if applicable)
 - Footer: snapshot timestamp, last-updated indicators per section
 
-**FR-2.3: Surface Integration**
+**FR-2.3: Surface Integration** ← CAP-3
 - All three Moments visible in unified web surface (no separate apps or domains)
 - Consistent pagination, sorting, and filtering across all tabs
 - Cross-moment linking: Moment 3 success claim can link to Moment 4 notice (bidirectional)
@@ -611,12 +615,12 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 3: Moment 2 — Progress Visibility
 
-**FR-3.1: Progress Data Model**
+**FR-3.1: Progress Data Model** ← CAP-11
 - **Record structure**: station name, date, shipped capabilities (list), cost (compute hours, token spend, wall-clock), unblock narrative (text)
 - **Cost metrics**: derived from sprint-status ledger + bmad-loop journal timestamps
 - **Unblock narrative**: operator-authored (auto-suggested from downstream PRs if available)
 
-**FR-3.2: Progress Automation**
+**FR-3.2: Progress Automation** ← CAP-11
 - **Trigger 1**: On-ship event (webhook from CI when PR merges to main)
   - Auto-creates progress record with cost + shipped capabilities extracted from journal
   - Operator authors unblock narrative (prompted)
@@ -624,12 +628,12 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
   - Collects all shipping events from past week, aggregates into one record
   - Falls back to this when no on-ship events in the week
 
-**FR-3.3: Progress CLI**
+**FR-3.3: Progress CLI** ← CAP-11
 - `herald progress <station>` — show latest progress record for station (JSON or formatted)
 - `herald progress <station> --update` — manually trigger progress update (operator only)
 - `herald progress --list [--station <name> --week recent|<N>]` — list progress records by filter
 
-**FR-3.4: Progress Web Tab**
+**FR-3.4: Progress Web Tab** ← CAP-11
 - Latest progress per station (card view or table)
 - Sidebar filters: station, date range
 - Expandable detail: full cost breakdown, unblock narrative, shipped capabilities list
@@ -639,7 +643,7 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 4: Moment 3 — Success Proclamation
 
-**FR-4.1: Success Claim Data Model**
+**FR-4.1: Success Claim Data Model** ← CAP-12
 - **Record structure**: project name, shipped date, thesis (one-liner, what we proved), evidence list (URL + type pairs: test_results | metrics | adoption | other)
 - **Evidence types**: 
   - `test_results`: CI job URL (links to passing tests)
@@ -647,7 +651,7 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
   - `adoption`: downstream PR URL (proves dependent projects use it)
   - `other`: freeform URL (any supporting proof)
 
-**FR-4.2: Success Auto-Extract**
+**FR-4.2: Success Auto-Extract** ← CAP-12
 - **Trigger**: On PR close to main + passing gate-suite
   - Herald webhook receives: PR URL, commit SHA, test job URL, merged-at timestamp
   - Herald auto-extracts: project name (from PR title/labels), test results (CI job)
@@ -658,20 +662,20 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
   - Web: review form with editable thesis + evidence list
   - Operator clicks publish → claim becomes public + indexed
 
-**FR-4.3: Success CLI**
+**FR-4.3: Success CLI** ← CAP-12
 - `herald success review <claim-id>` — show claim under review (JSON or formatted)
 - `herald success publish <claim-id> --thesis "<one-liner>"` — publish with operator-authored thesis
 - `herald success list [--status draft|published --date-range <start>..<end>]` — list claims by filter
 - `herald success get <claim-id>` — retrieve published claim
 
-**FR-4.4: Success Web Archive**
+**FR-4.4: Success Web Archive** ← CAP-12
 - Published claims listed chronologically (newest first)
 - Claim card: project, thesis, shipped date, evidence badges (green=linked, yellow=pending)
 - Click to expand: full evidence list with live links
 - Sidebar filters: date range, evidence status
 - Search box: project name, thesis keyword
 
-**FR-4.5: Evidence Integrity**
+**FR-4.5: Evidence Integrity** ← CAP-12
 - All evidence links validated at publish time (404 detection, redirect resolution)
 - Dead links surface error before publish (operator fixes or removes)
 - Evidence links re-validated weekly (stale links flagged in operator dashboard)
@@ -680,18 +684,18 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 5: Moment 4 — Operations Notices
 
-**FR-5.1: Notice Data Model**
+**FR-5.1: Notice Data Model** ← CAP-13
 - **Record structure**: notice type (deprecation | fix | eol), component/feature name, what changed, why, migration path (if applicable), deadline (if applicable), reason link (URL to decision / ticket), notice URL (permanent archive path)
 - **Versions**: notices support edit history (who, what, when); old versions remain in archive for audit
 
-**FR-5.2: Notice Authoring**
+**FR-5.2: Notice Authoring** ← CAP-13
 - **CLI**: `herald notice author --type <deprecation|fix|eol> --component <name> --reason "<why>" --deadline <YYYY-MM-DD> [--migrate-to <new-component>]`
   - Interactive prompt for missing fields (what changed, why, migration path)
   - Outputs: draft notice (markdown format) + preview URL
   - Operator confirms + publishes (or exits to edit)
 - **Web form** (optional, if UI bandwidth): author form with fields matching CLI interface
 
-**FR-5.3: Notice Archive**
+**FR-5.3: Notice Archive** ← CAP-13
 - **Storage**: notices organized by YYYY-MM folders + category tags (directory tree)
 - **Indexing**: 
   - `/operations/notices/` lists categories (deprecation, fix, eol)
@@ -701,18 +705,18 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
   - URL never changes; if component name changes, redirect rule created
 - **Search**: Cmd+F in browser (manual search)
 
-**FR-5.4: Notice Lifecycle**
+**FR-5.4: Notice Lifecycle** ← CAP-13
 - **Draft** → **Published** → **Closed** (after deadline or superseded)
 - Draft: visible to authors only; editable
 - Published: visible to all; read-only (new version can be created if needed)
 - Closed: visible to all; archived; no further edits
 
-**FR-5.5: Redirect Rules**
+**FR-5.5: Redirect Rules** ← CAP-13
 - When component name or URL structure changes, redirect rule auto-generated
 - Operator confirms redirect → persisted
 - Old URLs → new archive location (no 404s for historical notices)
 
-**FR-5.6: Notice CLI**
+**FR-5.6: Notice CLI** ← CAP-13
 - `herald notice author [...]` — create and publish notice
 - `herald notice list [--type deprecation|fix|eol --month YYYY-MM]` — list by filter
 - `herald notice archive` — show archive structure + counts
@@ -722,17 +726,17 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 6: Evidence-Linking Framework
 
-**FR-6.1: Shared Evidence Link Protocol**
+**FR-6.1: Shared Evidence Link Protocol** ← CAP-11
 - All evidence links follow schema: `{ type: "test_results|metrics|adoption|other", url: "https://...", label: "CI job #123" }`
 - Protocol supports: HTTP/HTTPS, link validation (404 detection), redirect resolution
 - Links can be bidirectional: success claim links to notice, notice links back to success claim
 
-**FR-6.2: Evidence Validation**
+**FR-6.2: Evidence Validation** ← CAP-11
 - Sync validation: test at publish time (404 → error)
 - Async validation: weekly check of all links (stale links → operator alert)
 - Redirect handling: follow redirects up to 3 hops; warn on redirect chains
 
-**FR-6.3: Evidence Retrieval**
+**FR-6.3: Evidence Retrieval** ← CAP-11
 - Evidence links always retrievable by claim ID + link ID
 - Evidence can be unlinked (operator removes broken link)
 - Evidence link audit trail: who added, when, any edits
@@ -741,23 +745,23 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 7: Automation Orchestration
 
-**FR-7.1: Webhook Integration**
+**FR-7.1: Webhook Integration** ← CAP-37
 - **Moment 2**: on-ship webhook (CI notifies Herald when PR merges to main)
   - Payload: PR URL, commit SHA, test job URL, merged-at timestamp, station tag (if available)
 - **Moment 3**: on-PR-close webhook (CI notifies Herald when PR closes + gates pass)
   - Payload: PR URL, commit SHA, test job URL, close-at timestamp
 
-**FR-7.2: Scheduler (Cron)**
+**FR-7.2: Scheduler (Cron)** ← CAP-38
 - **Moment 2**: Thursday 2300 UTC weekly (fallback if no on-ship events)
   - Collects all shipping events from past week, generates aggregated record
 - **Extensible**: Automation rules stored in Herald config (can be modified per Moment without code changes)
 
-**FR-7.3: Gate-Based Triggers**
+**FR-7.3: Gate-Based Triggers** ← CAP-39
 - **Moment 3**: auto-extract only if PR-close event INCLUDES "all gates passed" signal
   - No orphaned claims from incomplete shipping
 - **Moment 4**: manual author only (no auto-trigger)
 
-**FR-7.4: Operator Confirmation Gates**
+**FR-7.4: Operator Confirmation Gates** ← CAP-37
 - Moment 2 progress: operator authors unblock narrative (prompted after auto-extract)
 - Moment 3 success: operator approves + authors thesis (required before publish)
 - Moment 4 notice: operator authors full notice (required; no auto-generation)
@@ -968,3 +972,301 @@ failure mode as a fabricated test-architecture document: it reads as verified to
 agent. There is no `recipes/pyforge-herald/`, so the package is built by `pixi-build-python`
 for this estate and is not published to conda-forge; no external consumer depended on the
 wider floor.
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep: `spec-pyforge-herald`'s SPEC.md moved to 2026-09-13 and its
+`.memlog` to 2026-09-13T03:35 while this PRD sat at 2026-09-07 — six days, past the
+runbook's 2-day grace window.*
+
+**What moved in the Spec.**
+
+1. **The § Success signal was re-grounded twice (2026-09-09, then again 2026-09-12) —
+   and the second re-grounding is the substantive one.** The 2026-09-09 text named
+   three "effect gaps" between what Herald has built and what the running estate
+   actually exercises. Epic 19 closed two of them the next day, and the Spec was
+   re-grounded to say so:
+   - **The deck-QA gate has a caller** (Story 19.3, PR #1150). Verified live this
+     pass: `pixi.toml` declares `[feature.pyforge-herald.tasks.deck-qa]`, and
+     `docs/specs/presentation-deck.md`'s verify checklist names it as a step.
+   - **The `.pptx` pipeline has rendered a real station deck** (Story 19.4, PR #1155).
+     Verified live: `presentations/pyforge-warden/src/content_plan.json` exists — the
+     first real `content_plan.json` in the tree.
+   - **Still genuinely open:** the live-backend triggers have never run green. Story
+     19.1 moved the webhook routes onto the station-API seam, but Story 19.2 ("one
+     real ship records itself against a persistent store") is `blocked` on
+     **`DW-13-6-1`** — `steward deploy perimeter` renders only a hardcoded
+     `myproject.asgi:application` with no `--asgi-application` flag, so Herald has no
+     perimeter to host a persistent listener on.
+2. **A new § Residual dependencies (2026-09-09).** The Non-goal "the Guildhall is
+   Marshal's (`[[factory-console]]`)" is now marked **known-stale pending a Charter
+   amendment**, not a Herald decision: `factory-console`'s Spec is `superseded`, the
+   Pages GuildHall console is retired-and-guarded (`retired-console-check`), and the
+   three live console surfaces are Atlas's Vizro/BSL board, the Wagtail Lane-1 CMS and
+   the eight `django-*` station portals — none of them Marshal's. Guildhall is Charter
+   Lexicon §7, so the question is constitutional and is raised there, once.
+3. **Story 20.1/20.2 deck-family work (memlog, 2026-09-13).** `presentations/README.md`
+   gained a pointer to `spec-deck-family-currency/infographic-standard.md`, and ten
+   per-deck fact ledgers (`presentations/<slug>/facts.yaml`) were minted — verified
+   live this pass at **10 files**.
+4. **A `surface-drift-exclude:` block of 32 literal paths.** Detector bookkeeping only:
+   `station_api.py` (also governed by `spec-pyforge-core`) plus the 31 deck-family
+   files `spec-deck-family-currency` owns and reconciles per poster story. Recorded
+   because the *reason* is instructive and already cost one wasted pass: the checker
+   matches this list **literally** (`sources/chain.py:1613`), so the four glob entries
+   added earlier the same day never matched anything.
+
+**Why none of this changes a requirement here.**
+
+- **(1) and (3) are this PRD's requirements being *exercised*, not amended.** The
+  deck-QA gate, the `.pptx` export and the per-deck fact ledgers are all inside the
+  deck-family feature set § Requirements by Feature already specifies. A capability
+  acquiring its first caller is a realization event; the requirement text was already
+  correct and stays as written.
+- **(2) is a citation, not a requirement.** The Non-goal's *substance* — the hall is
+  not Herald's — is unchanged and remains true. Only the wikilink referent is stale,
+  and it is owned by the Charter, not by this PRD. The one-owner-one-question rule
+  applies: Herald does not carry a second copy of the question, and this PRD does not
+  either. When the amendment lands, the referent is replaced in the Spec and the
+  change cascades here in the normal way.
+- **(4) is detector bookkeeping.** No requirement describes drift-tracking membership.
+
+**One thing recorded rather than absorbed.** § Success Metrics still reads
+"unmeasured — near-zero production usage time." That remains accurate and this pass
+does **not** quietly upgrade it: two of three effect gaps closing means two
+capabilities now have a caller, which is a strictly weaker claim than the adoption and
+engagement metrics § Success Metrics actually asks for. The honest state is that
+Herald's deck family is exercised by CI and by the estate's own tooling, and is still
+not exercised by an external audience.
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a
+regex): 94 story keys — 82 `done`, 11 `backlog`, 1 `blocked` — across 22 epics (19
+`done`, 2 `in-progress`, 1 `backlog`). The single `blocked` story is 19.2 above.
+
+**No requirement added, changed or removed.** `updated:` bumped to record that the
+check ran.
+
+## Currency reconciliation — 2026-09-17
+
+One-chain fold reminted spec-pyforge-herald CAP-1..47. Kernel FR ids unchanged; each opening FR line cites a reminted CAP. FR delta: none.
+
+## Currency reconciliation — 2026-09-20
+
+*Chain-currency sweep: `research/docs-site-bmad-method-pattern-2026-09-20.md` (an operator-asked
+seed, 09:55Z: the docs site matches BMAD-METHOD's Astro + Starlight + Pages pattern so upstream's
+skills and workflows apply unchanged) post-dated the brief and, through it, this PRD (`brief→prd` cascade). It is input for `bmad-spec`, not yet
+a capability: no requirement, decision or story changes here until that pass mints the CAP.
+`updated:` bumped to record that the check ran; the six decisions the research asks for are listed
+in its § 3 and on the Dream's 2026-09-20 entry.*
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this PRD. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-25
+
+`spec→prd` edge: `spec-pyforge-herald`'s `.memlog.md` moved to 2026-09-25T04:02 while this PRD
+sat at 2026-09-20.
+
+**What moved, and why the FR delta is none.** One entry: steward Story 59.6
+(`spec-pyforge-steward:CAP-137`, the Guild roster collapse) changed
+`src/shared/packages/pyforge-herald/src/pyforge/herald/progress.py` so `STATIONS` re-exports
+`pyforge.core.roster.STATIONS` instead of declaring its own tuple. Same eight stations, one
+declared source; no herald behaviour or requirement changes. `updated:` bumped to record that the
+check ran.
+
+## Currency reconciliation — 2026-09-27
+
+*Chain-currency sweep: `spec-pyforge-herald` gained CAP-52 on 2026-09-27 while this PRD sat at
+2026-09-25. Reconciled the same day. The FRs derive from the CAP, following
+`one-chain-per-station`'s rule that the PRD is the Spec's decomposition, never an independent
+namespace.*
+
+**What moved in the Spec.** The 2026-09-20 seed (§ Currency reconciliation — 2026-09-20 above:
+"input for `bmad-spec`, not yet a capability") became CAP-52 — *the docs site matches
+BMAD-METHOD's pattern*. The operator asked on 2026-09-20 (09:55Z) to *"design our docs and docs
+deployment to GitHub Pages to match what BMAD-METHOD itself does, so that we can reuse their
+patterns, skills and workflows."* The research's six decisions are D1–D6 on the Spec memlog. Four
+were refined after checking them against this repo: the sidebar is generated from `docs/map.yaml`
+at build time instead of being written into pages; the deploy workflow keeps its `dashboard.yml`
+path; `nodejs` joins the existing `site` feature; titles and quadrant indexes are resolved at build
+time.
+
+### Feature Group 8: The documentation site (registered 2026-09-27)
+
+This group is new, not an amendment. The CLI and web surfaces in Groups 1–2 are Herald's own
+station portal. The docs site is the public Pages publication of the repo's Diátaxis shelf, and the
+dossier and the Kedro-Viz dashboard ride in the same artifact.
+
+**FR-8.1: The shelf builds in place** ← CAP-52
+- `docs-site/` is Astro + Starlight in BMAD-METHOD's layout, vendored byte-identical at one recorded upstream commit
+- It reads `docs/` through a symlink. No page moves; `docs/index.md` and `docs/404.md` are the only new pages
+- Titles come from frontmatter or the page's first heading, and a quadrant's `README.md` is its index — both resolved at build time
+- Node comes from pixi's `site` feature; `environment.yaml` stays byte-identical. Story 27.1.
+
+**FR-8.2: One Pages artifact, one deploy caller** ← CAP-52
+- The artifact has the Starlight site at the root, docsite's whole output (the dossier, infographics and deck families) under `/herald/`, and the `docs/dashboard/` tree under `/dashboard/`, with `/kedro-viz/` kept as a redirect
+- Every HTML path the dossier site served at the root before gets a redirect page to its `/herald/` home. The set is derived from the build, never hand-kept (44 on 2026-09-27). `/` is the one named exception, because Starlight's landing owns it and links to `/herald/`. Non-HTML files (the stylesheet, the deck downloads) cannot redirect on static Pages, so their old paths return 404 and never serve different content (operator ruling 2026-09-27, D7)
+- One owner per path prefix; a collision, a missing mount or a missing redirect fails `pages-check`
+- `dashboard.yml` stays the only `deploy-pages` caller, reshaped into upstream `docs.yaml`'s build and deploy jobs. `docsite-check.yml` predicts it, path-filtered on the docs. `pr-preflight` is not changed here (FR-8.5). Supersedes CAP-44's root and path clauses. Story 27.2.
+
+**FR-8.3: The sidebar is the map's order** ← CAP-52
+- The sidebar is generated from `docs/map.yaml` at build time: every mapped page once, grouped by quadrant, in map order
+- A reorder in `map.yaml` alone reorders the site, and no page carries a second copy of the order. Story 27.3.
+
+**FR-8.4: The validators gate the docs** ← CAP-52
+- Upstream's `validate-doc-links.js` and `validate-sidebar-order.js` run unchanged as pixi tasks, in `docsite-check.yml` on PRs touching `docs/**` or `docs-site/**`, and in `pr-preflight`
+- The 16 findings they raised over `docs/` on 2026-09-27 are fixed in the pages, never in the validators. Story 27.4.
+
+**FR-8.5: The local preflight builds the site only when the docs move** ← CAP-52
+- `pr-preflight` runs `pages-check` (in place of `site-check`, which it subsumes) only when a diff touches `docsite-check.yml`'s own `paths`
+- The selection is read from the workflow file by steward Story 71.2 (`spec-pyforge-steward:CAP-159`); no second path list exists. A diff touching only `src/shared/packages/pyforge-marshal/` leaves it unselected, and one touching `docs/how-to/x.md` selects it (operator ruling 2026-09-27, D8). Story 27.5, whose ledger key is `blocked` until 71.2 lands; the operator flips it.
+
+**ONE FR space now Feature Groups 1–8** (FR-9.1 is the next free id).
+
+**Content changed:** this section only; no FR renumbered or removed. The architecture gains AD-21
+(one Pages artifact, one owner per path prefix, one deploy caller, content read in place); see the
+spine's § Currency reconciliation — 2026-09-27. § Success Metrics is unchanged, because a docs site
+that builds is not yet a measured audience.
+
+## Currency reconciliation — 2026-09-28
+
+*Chain-currency sweep: `spec-pyforge-herald` gained CAP-53 on 2026-09-28 while this PRD sat at
+2026-09-27. Reconciled the same day. The FRs derive from the CAP, following
+`one-chain-per-station`'s rule that the PRD is the Spec's decomposition, never an independent
+namespace.*
+
+**What moved in the Spec.** The steward Dream's 2026-09-25 repo-size seed measured
+`presentations/` at 47% of the working tree. It proposed keeping only the latest deck per topic
+and parked the idea in the cutover's Story 44.5. The operator ruled on 2026-09-28 to spec it now,
+independent of the cutover. It became CAP-53, *each deck keeps one current version of each
+export*. The five decisions are D1–D5 on the Spec memlog:
+- D1: prune, not move.
+- D2: "latest" is the newest date per kind, the rule the four existing pickers already use.
+- D3: a stdlib-only check in the herald package, a CI trigger on `presentations/**`, and writers
+  that retire their predecessor.
+- D4: no exceptions. Story 19.4's tests regenerate their deck.
+- D5: current pointers are corrected; history keeps its filenames.
+
+### Feature Group 9: The deck working set (registered 2026-09-28)
+
+This group is new, not an amendment. This PRD's own *Multi-Format Export Pipeline* section above
+(the Spec's CAP-9) says which formats are tracked. It never said how many dated versions of each
+format stay in the tree, so the superseded exports accumulated to 74 files and 54.14 MB, measured
+on 2026-09-28.
+
+**FR-9.1: One current version per export kind** ← CAP-53
+- Under `presentations/<topic>/src/{pptx,marp}/`, each kind carries exactly one dated file, the
+  newest. A kind is a directory, the stem before `-YYYY-MM-DD`, and the extension. A stamp sidecar
+  goes with its file.
+- The superseded versions are deleted, and git history keeps them. Nothing is moved into an
+  archive folder, because a move shrinks neither the checkout nor `.git`.
+- `pyforge.herald.deck_versions` holds the one rule. `tests/meta/test_deck_working_set.py` reds
+  a superseded export. Herald's CI job runs on `presentations/**` changes.
+- The family pages publish the same 69 downloads before and after the prune. Story 28.1.
+
+**FR-9.2: A new export replaces the one it supersedes** ← CAP-53
+- Every writer of a dated export retires the older versions of that kind after a successful write:
+  the Design pulls of the Marp sources and the standalone, the pptx-fill exporter, and
+  `deck-export`.
+- A write never deletes another kind, an undated file, or a newer version.
+- A second `sync-all` run still writes nothing (CAP-36/CAP-50). Story 28.2.
+
+**ONE FR space now Feature Groups 1–9** (FR-10.1 is the next free id).
+
+**Content changed:** this section only; no FR renumbered or removed. The architecture's AD-4
+(artifact tracking) gains a retention rule; see the spine's § Currency reconciliation — 2026-09-28.
+§ Success Metrics is unchanged, because the working set is a size constraint, not an audience
+measure.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+*Chain-currency sweep: `spec-pyforge-herald` gained CAP-54..CAP-57 on 2026-09-28 (night), after
+this PRD's same-day re-stamp for CAP-53. Reconciled the same day. The FRs derive from the CAPs,
+following `one-chain-per-station`'s rule that the PRD is the Spec's decomposition, never an
+independent namespace.*
+
+**What moved in the Spec.** The Dream's 2026-09-28 (night) entry triaged an intake
+(`archive/docs/intake/airgapped_pptx_architecture_specification.md`) that proposed python-pptx
+bytes in a PostgreSQL `BYTEA` column, a CORS-open Django stream and a PPTXjs viewer. The need
+behind it is smaller: people inside the enterprise airgap read a deck in the browser without
+PowerPoint, from the django-herald portal and from an internal GitHub Enterprise Pages site, and
+git stops being the only place the exports live. The operator ruled three things on 2026-09-28:
+- Decks stay tracked, and each current export is *also* published to the object store with a
+  metadata row. AD-4 does not change.
+- The viewer shows the HTML twins (the Marp HTML and the React bundle), never a browser-side
+  `.pptx` parser.
+- `pptxgenjs-plus` is an *additional* export kind, native and editable, beside `marp --pptx` and
+  the python-pptx fill.
+
+The rejections (bytes in PostgreSQL, PPTXjs, `pptxgenjs-plus` as a viewer, an unauthenticated
+CORS stream, a second Pages artifact) and decisions D1–D7 are on the Spec memlog.
+
+### Feature Group 10: Decks inside the airgap (registered 2026-09-28)
+
+This group is new, not an amendment. Group 2 (Herald Web Surface) is the station portal's shell,
+and Group 8 is the public docs site. Neither said where a deck's bytes live outside git or how
+someone without PowerPoint reads one.
+
+**FR-10.1: Each current export is also kept in object storage** ← CAP-54
+- `herald deck publish <slug>` streams each current tracked export (the newest per kind, by
+  FR-9.1's rule) to the store under its sha256 key and never uploads an unchanged export twice.
+- The deck's manifest in the store records topic, kind, date, size, content type, sha256 and
+  source commit per export; `herald deck exports <slug> --json` reads it back.
+- The station package is the only writer. It reaches the store through configuration only, under
+  steward Story 74.1's seam contract, and imports neither Django nor the host. Story 29.1, whose
+  ledger key is `blocked` until 74.1 lands; the operator flips it.
+
+**FR-10.2: Published exports are listed and streamed behind the herald role** ← CAP-54
+- django-herald's `DeckExport` model is a projection of the publish records, refreshed from
+  `herald deck exports --json` and never written by a portal request. It has no binary field, and
+  its production DDL is a namespaced Liquibase changeset that the sqlmigrate extraction map
+  covers.
+- `GET /stations/herald/api/v1/deck-exports` lists the records; `GET …/deck-exports/{sha256}`
+  streams the bytes in bounded chunks.
+- Both routes require an identity carrying the herald station role (401 anonymous, 403 without
+  the role), and no response carries a CORS header. Story 29.2, `blocked` on steward 74.1 like
+  29.1.
+
+**FR-10.3: A deck's HTML twins are self-contained and published** ← CAP-55
+- A twin is the current standalone Marp HTML or the React/JSX deck's built `dist/` bundle.
+  Neither loads anything from another origin: fonts, scripts and images are vendored.
+- On 2026-09-28, 2 of the 15 current standalone twins and all 14 React decks load from another
+  origin (Google Fonts; twemoji SVGs from jsDelivr), so this is real work, not a check.
+- `herald deck publish` also publishes each twin, and refuses one that still names another origin,
+  naming the file and the origin. Story 30.1.
+
+**FR-10.4: The portal shows a deck in the browser** ← CAP-55
+- The django-herald portal lists decks from the projection and shows a twin in a sandboxed frame
+  served under the portal's own origin, with a Content-Security-Policy that allows no other one.
+- It is reachable only with the herald station role. No `.pptx` is parsed in the browser; the
+  `.pptx` stays a download. Story 30.2.
+
+**FR-10.5: The docs site deploys to a second host from the same artifact** ← CAP-56
+- The one Pages build takes the site URL and base path of the host that runs it
+  (`actions/configure-pages`), so the enterprise copy of the repository deploys the same artifact
+  to its own GitHub Enterprise Pages site through the same `dashboard.yml`.
+- Nothing in the artifact calls another origin at runtime, so no host needs CORS; `pages-check`
+  exits 1 on a violation. Story 31.1.
+- The enterprise-side steps are a how-to. Story 31.2.
+
+**FR-10.6: A deck exports as a native, editable `.pptx`** ← CAP-57
+- `herald deck pptx-native <slug>` renders the deck's current Marp source with `pptxgenjs-plus`
+  into native text boxes, tables and notes, with no slide images, as its own dated kind
+  (`<slug>-deck-native-<date>.pptx`).
+- `marp --pptx` and the python-pptx fill are unchanged.
+- It runs from the Guild env, where `pptxgenjs-plus >=4.2.1` joins the dependencies. Story 32.1.
+
+**ONE FR space now Feature Groups 1–10** (FR-11.1 is the next free id).
+
+**Content changed:** this section only; no FR renumbered or removed. The architecture gains AD-22
+(a current export's second home in object storage), and AD-3, AD-12 and AD-21 are amended; see the
+spine's § Currency reconciliation — 2026-09-28 (night). § Success Metrics is unchanged, because
+reading a deck inside the airgap is not yet a measured audience.

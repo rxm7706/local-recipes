@@ -38,23 +38,58 @@ The manifest lands under ``.claude/data/pyforge-marshal/derived-context/``
 -- blanket-gitignored (``.gitignore``'s ``.claude/data/``), derived, and
 disposable, the same home Scribe gives its own fingerprint index. It is a
 restatement of the declaration, never a store of record.
+
+Story 28.9 added ``retrieve`` (the planning-graph layer). Story 46.1
+(spec-pyforge-marshal CAP-192) adds ``bootstrap`` and ``pack`` -- a bare
+clone fetches or rebuilds the shared substrate, and a producer writes the
+deterministic pair it fetches. Both live in ``cli/context_bootstrap.py``;
+this module only registers them. Story 46.2 (spec-pyforge-marshal CAP-192)
+adds ``bundle`` -- the canonical, digest-pinned context bundle extending
+Story 28.8's declaration half (``core/context_bundle.py``): no scribe
+subprocess, so two harnesses on the same commit produce byte-identical
+bundles deterministically.
+
+Story 46.6 (spec-pyforge-marshal CAP-193, fold-remint of spec-marshal-
+token-economy CAP-20) adds ``advisory`` -- a persistence advisory naming
+which declared-active ``[context]`` layers have lapsed (a kit item gone
+``MISSING``/``STALE`` -- ``UNAVAILABLE`` is deliberately excluded, see
+``_lapsed_layer_findings`` -- or an enabled derived-context/planning-graph
+layer whose ``scribe`` binary no longer resolves on PATH), so an
+interactive session's silent savings do not silently stop. Never
+blocks: an unresolvable session, or a session where every declared-active
+layer still resolves, both emit no findings and write no journal entry.
+When something has lapsed, exactly one ``Phase.OBSERVATION`` journal entry
+is appended naming every lapsed layer, under a fresh ``session-advisories/
+<run_id>/`` run directory -- a sibling of, never inside, ``dispatch-runs/``,
+so every existing dispatch-run reader (``core/layer_savings_sources.py``,
+``cli/status.py``) stays unaffected.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import secrets
+from datetime import datetime, timezone
 from pathlib import Path
 
 from pyforge.core.atomic_write import atomic_write_text
+from pyforge.core.process import PosixProcess
 
+from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.scribe_cli import ScribeCli
+from ..core import context_bundle
 from ..core import derived_context as derived
 from ..core import planning_graph as planning
+from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
 from ..core.model import Finding, Severity, build_envelope
 from ..core.policy import _is_valid_project_slug
 from ..core.verdict import compute_verdict, exit_code_for
+from ..ports.fs import FsPort
+from ..seed.detect.kit import KitStatus, kit_checks
 from .config import _suppress_downstream_pipe_close, repo_root
+from .context_bootstrap import add_substrate_parsers
 from .seed import _resolve_project_slug, resolve_context_layers
 
 #: The declaration could not be resolved at all (malformed slug or epic, or
@@ -64,14 +99,37 @@ _MRS_CTX_UNEVALUABLE = "MRS-CTX-001"
 _MRS_CTX_DEGRADED = "MRS-CTX-002"
 #: Planning-graph retrieval degraded (Story 28.9). WARN, never blocking.
 _MRS_PLAN_DEGRADED = "MRS-PLAN-001"
+#: A declared-active [context] layer's instrument/binary no longer resolves
+#: (Story 46.6, spec-pyforge-marshal CAP-193). WARN, never blocking.
+_MRS_CTX_LAPSED = "MRS-CTX-009"
 
 #: Derived, gitignored home for the declaration manifest -- alongside the
 #: rest of this repo's per-station derived data, never a tracked artifact.
 _MANIFEST_DIR_RELPATH = ".claude/data/pyforge-marshal/derived-context"
 
+#: Story 46.6's Tier-3 run directory -- a SIBLING of `core/dispatch.py`'s
+#: `_DISPATCH_RUNS_DIRNAME` ("dispatch-runs"), never that same dirname.
+#: Deliberately not reused from `core/dispatch.py` (Design Notes): a
+#: provably-disjoint glob target keeps a synthetic advisory run invisible to
+#: every reader that globs `dispatch-runs/*/journal.jsonl` specifically
+#: (`core/layer_savings_sources.py`, `cli/status.py`) by construction,
+#: rather than by auditing every present and future reader for tolerance of
+#: a run with no `dispatch-launch` entry.
+_SESSION_ADVISORIES_DIRNAME = "session-advisories"
+_ADVISORY_JOURNAL_FILENAME = "journal.jsonl"
+
+#: Story 46.6 review triage fix 2 -- the distinguishing marker `data`
+#: carries when findings exist but there is no usable project slug to mint
+#: a run under (no `--project`, no `BMAD_ACTIVE_PROJECT`, no active-project
+#: marker file): a common state, and repo-default `[context]` layers can
+#: still produce real findings in it, so a silent `journal: null` would be
+#: indistinguishable from "nothing lapsed".
+_NO_ACTIVE_PROJECT_REASON = "no active project; findings not journaled"
+
 
 def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
-    """Register ``context`` with its nested ``refresh`` action."""
+    """Register ``context`` with its nested ``refresh``, ``retrieve``,
+    ``bundle``, ``advisory``, ``bootstrap`` and ``pack`` actions."""
     parser = subparsers.add_parser(
         "context",
         help=(
@@ -86,7 +144,9 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
             "the `scribe index refresh` CLI grammar -- marshal declares the "
             "sources and renders the layer flag, never a second engine. With "
             "the layer declared off (the default), today's compile-on-hunch "
-            "behavior is unchanged."
+            "behavior is unchanged. `bootstrap` / `pack` (Story 46.1) fetch-or-"
+            "rebuild the shared substrate into a bare clone and write the pair "
+            "it fetches."
         ),
     )
     context_sub = parser.add_subparsers(dest="context_command", required=True)
@@ -120,10 +180,7 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
         "--root",
         default=None,
         metavar="PATH",
-        help=(
-            "Repo root to operate on (default: this checkout). Fixtures pass "
-            "an isolated tree; live runs omit this."
-        ),
+        help=("Repo root to operate on (default: this checkout). Fixtures pass an isolated tree; live runs omit this."),
     )
     refresh.add_argument(
         "--format",
@@ -169,10 +226,7 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
         "--root",
         default=None,
         metavar="PATH",
-        help=(
-            "Repo root to operate on (default: this checkout). Fixtures pass "
-            "an isolated tree; live runs omit this."
-        ),
+        help=("Repo root to operate on (default: this checkout). Fixtures pass an isolated tree; live runs omit this."),
     )
     retrieve.add_argument(
         "--format",
@@ -181,6 +235,99 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     retrieve.set_defaults(handler=run_context_retrieve)
+
+    bundle = context_sub.add_parser(
+        "bundle",
+        help="Assemble the canonical, digest-pinned context bundle for one epic (Story 46.2).",
+        description=(
+            "Assembles the declared derived-context artifacts plus the "
+            "resolved derived-context/planning-graph layer config into one "
+            "canonical, JSON-safe bundle, sha256-hashed over its sorted-key "
+            "serialization. No scribe subprocess: two harnesses on the same "
+            "commit produce byte-identical bundles deterministically. "
+            "`--expect-digest` compares against a prior harness's recorded "
+            "digest; a mismatch is a named MRS-CTX-008 WARN finding, never "
+            "silent."
+        ),
+    )
+    bundle.add_argument(
+        "--project",
+        default=None,
+        metavar="SLUG",
+        help=(
+            "Project slug (default: BMAD_ACTIVE_PROJECT, then the repo's "
+            "active-project marker). Never scripts/bmad-switch."
+        ),
+    )
+    bundle.add_argument(
+        "--epic",
+        required=True,
+        metavar="N",
+        help="Epic number whose context bundle is being assembled.",
+    )
+    bundle.add_argument(
+        "--root",
+        default=None,
+        metavar="PATH",
+        help=("Repo root to operate on (default: this checkout). Fixtures pass an isolated tree; live runs omit this."),
+    )
+    bundle.add_argument(
+        "--expect-digest",
+        default=None,
+        metavar="SHA256",
+        help="A prior harness's recorded bundle digest to compare against (optional).",
+    )
+    bundle.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    bundle.set_defaults(handler=run_context_bundle)
+
+    advisory = context_sub.add_parser(
+        "advisory",
+        help="Persistence advisory: which declared-active [context] layers have lapsed (Story 46.6).",
+        description=(
+            "Scans every declared-active [context] layer for whether it is "
+            "still resolvable -- a kit item (output/wire/structure-graph) "
+            "gone MISSING/STALE (UNAVAILABLE is deliberately excluded), or "
+            "an enabled derived-context/planning-graph layer whose scribe "
+            "binary no longer resolves on "
+            "PATH. Emits one MRS-CTX-009 WARN finding per lapsed layer and "
+            "appends exactly one Phase.OBSERVATION journal entry naming "
+            "every lapsed layer, so a session's silent savings do not "
+            "silently stop. Never blocks: an unresolvable session, or a "
+            "session where every declared-active layer still resolves, both "
+            "emit no findings and write no journal entry."
+        ),
+    )
+    advisory.add_argument(
+        "--project",
+        default=None,
+        metavar="SLUG",
+        help=(
+            "Project slug (default: BMAD_ACTIVE_PROJECT, then the repo's "
+            "active-project marker). Never scripts/bmad-switch."
+        ),
+    )
+    advisory.add_argument(
+        "--root",
+        default=None,
+        metavar="PATH",
+        help=("Repo root to operate on (default: this checkout). Fixtures pass an isolated tree; live runs omit this."),
+    )
+    advisory.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    advisory.set_defaults(handler=run_context_advisory)
+
+    # Story 46.1 (spec-pyforge-marshal CAP-192): the substrate bootstrap and
+    # its producer, owned by cli/context_bootstrap.py.
+    add_substrate_parsers(context_sub)
 
 
 def _listing(directory: Path) -> tuple[str, ...]:
@@ -194,9 +341,7 @@ def _listing(directory: Path) -> tuple[str, ...]:
         return ()
 
 
-def run_context_refresh(
-    args: argparse.Namespace, *, scribe: ScribeCli | None = None
-) -> int:
+def run_context_refresh(args: argparse.Namespace, *, scribe: ScribeCli | None = None) -> int:
     """CLI entry for ``marshal context refresh``. ``scribe`` is an
     injection seam so tests drive the grammar without a real install."""
     findings: list[Finding] = []
@@ -261,12 +406,8 @@ def run_context_refresh(
         project_slug=slug,
         epic=epic,
         planning_filenames=_listing(planning_dir),
-        planning_spec_filenames=_listing(
-            root / derived.planning_specs_relpath(slug)
-        ),
-        implementation_filenames=_listing(
-            root / derived.implementation_artifacts_relpath(slug)
-        ),
+        planning_spec_filenames=_listing(root / derived.planning_specs_relpath(slug)),
+        implementation_filenames=_listing(root / derived.implementation_artifacts_relpath(slug)),
     )
     data["declarations"] = [
         {
@@ -280,9 +421,7 @@ def run_context_refresh(
     manifest_path = root / _MANIFEST_DIR_RELPATH / f"{slug}-epic-{epic}.json"
     payload = derived.manifest_payload(declarations)
     try:
-        atomic_write_text(
-            manifest_path, json.dumps(payload, indent=2, sort_keys=True) + "\n"
-        )
+        atomic_write_text(manifest_path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
     except OSError as exc:
         findings.append(
             Finding(
@@ -300,9 +439,7 @@ def run_context_refresh(
         return _emit(args, findings, data)
     data["manifest"] = str(manifest_path)
 
-    outcome = (scribe if scribe is not None else ScribeCli()).refresh(
-        repo_root=root, manifest_path=manifest_path
-    )
+    outcome = (scribe if scribe is not None else ScribeCli()).refresh(repo_root=root, manifest_path=manifest_path)
     if not outcome.ok:
         findings.append(
             Finding(
@@ -315,9 +452,7 @@ def run_context_refresh(
         return _emit(args, findings, data)
 
     data["mode"] = derived.MODE_INCREMENTAL
-    freshness = derived.resolve_freshness(
-        declarations, refreshed=outcome.refreshed, skipped=outcome.skipped
-    )
+    freshness = derived.resolve_freshness(declarations, refreshed=outcome.refreshed, skipped=outcome.skipped)
     data["artifacts"] = [
         {
             "name": item.name,
@@ -347,9 +482,7 @@ def run_context_refresh(
     return _emit(args, findings, data)
 
 
-def run_context_retrieve(
-    args: argparse.Namespace, *, scribe: ScribeCli | None = None
-) -> int:
+def run_context_retrieve(args: argparse.Namespace, *, scribe: ScribeCli | None = None) -> int:
     """CLI entry for ``marshal context retrieve``. ``scribe`` is an
     injection seam so tests drive the grammar without a real install."""
     findings: list[Finding] = []
@@ -361,11 +494,7 @@ def run_context_retrieve(
     layer = layers.get(planning.PLANNING_GRAPH_LAYER)
     enabled = planning.layer_enabled(layer)
     slug = _resolve_project_slug(root, args.project)
-    fallback_path = (
-        derived.epic_context_output_relpath(slug, epic)
-        if slug and derived.valid_epic(epic)
-        else None
-    )
+    fallback_path = derived.epic_context_output_relpath(slug, epic) if slug and derived.valid_epic(epic) else None
     data: dict[str, object] = {
         "epic": epic,
         "story": story,
@@ -406,14 +535,10 @@ def run_context_retrieve(
         return _emit_retrieve(args, findings, data)
 
     data["project"] = slug
-    query = planning.build_routing_query(
-        project_slug=slug, epic=epic, story=story
-    )
+    query = planning.build_routing_query(project_slug=slug, epic=epic, story=story)
     data["query"] = query
 
-    outcome = (scribe if scribe is not None else ScribeCli()).recall(
-        repo_root=root, query=query, scope=slug
-    )
+    outcome = (scribe if scribe is not None else ScribeCli()).recall(repo_root=root, query=query, scope=slug)
     if not outcome.ok:
         findings.append(
             Finding(
@@ -425,9 +550,7 @@ def run_context_retrieve(
         )
         return _emit_retrieve(args, findings, data)
 
-    mode = planning.resolve_retrieval_mode(
-        layer_enabled=True, recall_ok=True, grounded=outcome.grounded
-    )
+    mode = planning.resolve_retrieval_mode(layer_enabled=True, recall_ok=True, grounded=outcome.grounded)
     data["mode"] = mode
     data["grounded"] = outcome.grounded
     if outcome.grounded:
@@ -450,9 +573,7 @@ def run_context_retrieve(
     return _emit_retrieve(args, findings, data)
 
 
-def _emit_retrieve(
-    args: argparse.Namespace, findings: list[Finding], data: dict[str, object]
-) -> int:
+def _emit_retrieve(args: argparse.Namespace, findings: list[Finding], data: dict[str, object]) -> int:
     verdict = compute_verdict(findings)
     envelope = build_envelope(
         command="context retrieve",
@@ -473,9 +594,7 @@ def _emit_retrieve(
     return exit_code_for(envelope.verdict)
 
 
-def _print_retrieve_text(
-    data: dict[str, object], findings: list[Finding], verdict: object
-) -> None:
+def _print_retrieve_text(data: dict[str, object], findings: list[Finding], verdict: object) -> None:
     layer = data.get("layer") or {}
     print(
         f"context retrieve epic={data.get('epic')} story={data.get('story')} "
@@ -505,9 +624,7 @@ def _resolvable(slug: str, epic: str) -> bool:
     return bool(slug) and _is_valid_project_slug(slug) and derived.valid_epic(epic)
 
 
-def _emit(
-    args: argparse.Namespace, findings: list[Finding], data: dict[str, object]
-) -> int:
+def _emit(args: argparse.Namespace, findings: list[Finding], data: dict[str, object]) -> int:
     verdict = compute_verdict(findings)
     envelope = build_envelope(
         command="context refresh",
@@ -528,9 +645,7 @@ def _emit(
     return exit_code_for(envelope.verdict)
 
 
-def _print_text(
-    data: dict[str, object], findings: list[Finding], verdict: object
-) -> None:
+def _print_text(data: dict[str, object], findings: list[Finding], verdict: object) -> None:
     layer = data.get("layer") or {}
     print(
         f"context refresh epic={data.get('epic')} "
@@ -548,5 +663,356 @@ def _print_text(
                 f"  - {artifact.get('state')}: {artifact.get('name')} "
                 f"({len(artifact.get('sources') or [])} declared source(s))"
             )
+    for finding in findings:
+        print(f"{finding.code} {finding.severity.value}: {finding.message}")
+
+
+def run_context_bundle(args: argparse.Namespace) -> int:
+    """CLI entry for ``marshal context bundle`` (Story 46.2, spec-pyforge-
+    marshal CAP-192). Assembles the canonical, digest-pinned context bundle
+    for one epic from already-declared, already-resolved data only -- no
+    scribe subprocess, so two harnesses on the same commit produce
+    byte-identical bundles deterministically."""
+    findings: list[Finding] = []
+    root = Path(args.root).resolve() if args.root else repo_root()
+    epic = str(args.epic).strip()
+    expect_digest = (args.expect_digest or "").strip() or None
+
+    layers = resolve_context_layers(root, args.project)
+    derived_layer = layers.get(derived.DERIVED_CONTEXT_LAYER)
+    planning_layer = layers.get(planning.PLANNING_GRAPH_LAYER)
+    data: dict[str, object] = {
+        "epic": epic,
+        "digest": None,
+        "expect_digest": expect_digest,
+        "match": None,
+        "bundle": None,
+    }
+
+    slug = _resolve_project_slug(root, args.project)
+    data["project"] = slug
+    if not _resolvable(slug, epic):
+        findings.append(
+            Finding(
+                code=_MRS_CTX_UNEVALUABLE,
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot assemble a context bundle for project {slug!r} "
+                    f"epic {epic!r} -- a usable project slug and a plain "
+                    "epic number are both required; no bundle/digest computed"
+                ),
+                path=str(root),
+            )
+        )
+        return _emit_bundle(args, findings, data)
+
+    planning_dir = root / derived.planning_artifacts_relpath(slug)
+    if not planning_dir.is_dir():
+        findings.append(
+            Finding(
+                code=_MRS_CTX_UNEVALUABLE,
+                severity=Severity.ERROR,
+                message=(
+                    f"no planning-artifacts directory at {planning_dir!s} -- "
+                    "there is nothing to declare as a source; no bundle/"
+                    "digest computed"
+                ),
+                path=str(planning_dir),
+            )
+        )
+        return _emit_bundle(args, findings, data)
+
+    declarations = derived.declare_derived_context(
+        project_slug=slug,
+        epic=epic,
+        planning_filenames=_listing(planning_dir),
+        planning_spec_filenames=_listing(root / derived.planning_specs_relpath(slug)),
+        implementation_filenames=_listing(root / derived.implementation_artifacts_relpath(slug)),
+    )
+    bundle = context_bundle.assemble_bundle(
+        epic=epic,
+        derived_context_layer=derived_layer,
+        planning_graph_layer=planning_layer,
+        declarations=declarations,
+    )
+    digest = context_bundle.bundle_digest(bundle)
+    data["bundle"] = bundle
+    data["digest"] = digest
+
+    if expect_digest:
+        match = expect_digest.lower() == digest.lower()
+        data["match"] = match
+        if not match:
+            findings.append(context_bundle.digest_mismatch_finding(epic=epic, expected=expect_digest, computed=digest))
+    return _emit_bundle(args, findings, data)
+
+
+def _emit_bundle(args: argparse.Namespace, findings: list[Finding], data: dict[str, object]) -> int:
+    verdict = compute_verdict(findings)
+    envelope = build_envelope(
+        command="context bundle",
+        verdict=verdict,
+        data=data,
+        findings=tuple(findings),
+    )
+    try:
+        if args.format == "json":
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
+        else:
+            _print_bundle_text(data, findings, envelope.verdict)
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
+
+
+def _print_bundle_text(data: dict[str, object], findings: list[Finding], verdict: object) -> None:
+    print(
+        f"context bundle epic={data.get('epic')} digest={data.get('digest')} "
+        f"expect_digest={data.get('expect_digest')} match={data.get('match')} "
+        f"verdict={verdict}"
+    )
+    bundle = data.get("bundle")
+    if isinstance(bundle, dict):
+        derived_ctx = bundle.get("derived_context") or {}
+        planning_ctx = bundle.get("planning_graph") or {}
+        if isinstance(derived_ctx, dict):
+            print(
+                f"derived_context: enabled={derived_ctx.get('enabled')} "
+                f"aggressiveness={derived_ctx.get('aggressiveness')}"
+            )
+            declarations = derived_ctx.get("declarations")
+            if isinstance(declarations, list) and declarations:
+                print("declarations:")
+                for declaration in declarations:
+                    if not isinstance(declaration, dict):
+                        continue
+                    print(f"  - {declaration.get('name')} ({len(declaration.get('sources') or [])} declared source(s))")
+        if isinstance(planning_ctx, dict):
+            print(
+                f"planning_graph: enabled={planning_ctx.get('enabled')} "
+                f"aggressiveness={planning_ctx.get('aggressiveness')}"
+            )
+    for finding in findings:
+        print(f"{finding.code} {finding.severity.value}: {finding.message}")
+
+
+def run_context_advisory(
+    args: argparse.Namespace,
+    *,
+    scribe: ScribeCli | None = None,
+    process: PosixProcess | None = None,
+    fs: FsPort | None = None,
+) -> int:
+    """CLI entry for ``marshal context advisory`` (Story 46.6, spec-pyforge-
+    marshal CAP-193, fold-remint of spec-marshal-token-economy CAP-20).
+    ``scribe``/``process``/``fs`` are injection seams so tests drive kit
+    probing, process execution and the journal write without touching a
+    real install."""
+    root = Path(args.root).resolve() if args.root else repo_root()
+    scribe_client = scribe if scribe is not None else ScribeCli()
+    layers = resolve_context_layers(root, args.project)
+    slug = _resolve_project_slug(root, args.project)
+
+    findings = _lapsed_layer_findings(root, layers, scribe=scribe_client, process=process)
+    journal_path, journal_skipped_reason = _write_advisory_journal_entry(root, slug, findings, fs=fs)
+
+    data: dict[str, object] = {
+        "project": slug,
+        "lapsed": [finding.to_json_dict() for finding in findings],
+        "journal": journal_path,
+        "journal_skipped_reason": journal_skipped_reason,
+    }
+    return _emit_advisory(args, findings, data)
+
+
+def _lapsed_layer_findings(
+    root: Path,
+    layers: dict[str, dict[str, object]],
+    *,
+    scribe: ScribeCli,
+    process: PosixProcess | None,
+) -> list[Finding]:
+    """One ``MRS-CTX-009`` WARN per declared-active ``[context]`` layer that
+    no longer resolves. The 3 kit-provisioned layers (``output``, ``wire``,
+    ``structure-graph``) are answered by ``seed/detect/kit.py``'s own
+    ``KitCheck.status`` -- read as plain data here, never through
+    ``kit_findings()`` (a structurally separate, unregistered Finding
+    vocabulary -- see Design Notes). The remaining two (``derived-context``,
+    ``planning-graph``) are answered the way ``run_context_refresh``'s own
+    degrade path already does: an enabled layer whose scribe binary no
+    longer resolves on PATH is lapsed.
+
+    ``KitStatus.UNAVAILABLE`` is deliberately excluded (Story 46.6 review
+    triage): it means the instrument itself cannot exist on this platform
+    (e.g. a linux-64-only tool probed on macOS) -- ``kit.py``'s own
+    ``_FINDING_FOR_STATUS`` already classifies it ``Severity.INFO``, not
+    ``DRIFT``, for exactly that reason. Only ``MISSING``/``STALE`` are a
+    real, fixable lapse of a layer the operator asked for; treating
+    ``UNAVAILABLE`` the same way would emit a persistent, unfixable WARN
+    every single run on a platform that will never have the instrument."""
+    findings: list[Finding] = []
+    for check in kit_checks(root, layers, process=process):
+        if check.status in (KitStatus.MISSING, KitStatus.STALE):
+            findings.append(
+                Finding(
+                    code=_MRS_CTX_LAPSED,
+                    severity=Severity.WARN,
+                    message=(
+                        f"{check.layer!r} context layer's {check.instrument} "
+                        f"no longer resolves ({check.status.value}): {check.detail}"
+                    ),
+                    path=check.path,
+                )
+            )
+
+    for layer_name, enabled_probe in (
+        (derived.DERIVED_CONTEXT_LAYER, derived.layer_enabled),
+        (planning.PLANNING_GRAPH_LAYER, planning.layer_enabled),
+    ):
+        layer = layers.get(layer_name)
+        if not enabled_probe(layer):
+            continue
+        if scribe.resolve_binary(root) is None:
+            findings.append(
+                Finding(
+                    code=_MRS_CTX_LAPSED,
+                    severity=Severity.WARN,
+                    message=(
+                        f"{layer_name!r} context layer is declared active "
+                        "but its scribe binary no longer resolves on PATH"
+                    ),
+                    path=str(root),
+                )
+            )
+    return findings
+
+
+def _session_advisory_runs_dir(root: Path, slug: str) -> Path:
+    """Sibling of ``core/dispatch.py::dispatch_runs_dir`` -- same shape,
+    ``session-advisories`` instead of ``dispatch-runs`` -- mirrored rather
+    than imported so no existing dispatch-run reader ever globs this
+    directory (Design Notes)."""
+    return (
+        root.resolve() / "_bmad-output" / "projects" / slug / "implementation-artifacts" / _SESSION_ADVISORIES_DIRNAME
+    )
+
+
+def _session_advisory_run_dir(root: Path, slug: str, run_id: str) -> Path:
+    return _session_advisory_runs_dir(root, slug) / run_id
+
+
+def _writer_id() -> str:
+    return f"context-advisory-{os.getpid()}"
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _format_utc_compact(moment: datetime) -> str:
+    return moment.strftime("%Y%m%dT%H%M%S") + f"{moment.microsecond // 1000:03d}Z"
+
+
+def _format_entry_ts(moment: datetime) -> str:
+    return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{moment.microsecond // 1000:03d}Z"
+
+
+def _random_token() -> str:
+    return secrets.token_hex(4)
+
+
+def _write_advisory_journal_entry(
+    root: Path,
+    slug: str,
+    findings: list[Finding],
+    *,
+    fs: FsPort | None,
+) -> tuple[str | None, str | None]:
+    """Appends one ``Phase.OBSERVATION`` journal entry naming every lapsed
+    layer, under a fresh, isolated ``session-advisories/<run_id>/`` run
+    directory. Returns ``(journal_path, journal_skipped_reason)``.
+
+    ``findings`` empty: nothing to report, both ``None`` -- this module's
+    existing off/healthy -> no artifact convention (mirrors
+    ``run_context_refresh``'s manifest-write branch).
+
+    ``findings`` non-empty but ``slug`` is not a usable single-path-segment
+    project (no ``--project``, no ``BMAD_ACTIVE_PROJECT``, no active-project
+    marker file -- the same guard ``mint_run_id`` itself applies): a common
+    state, and repo-default ``[context]`` layers can still produce real
+    findings in it (Story 46.6 review triage fix 2), so this is NOT treated
+    the same as "nothing to report" -- journal path is ``None`` but
+    ``journal_skipped_reason`` names why, so the findings are never silently
+    unaccounted for.
+
+    Any ``FsError`` raised anywhere in the write -- directory creation,
+    ``build_entry``/``prepare_for_write``, the sidecar write, or the journal
+    append itself (Story 46.6 review triage fix 3) -- is caught and
+    degrades to ``(None, None)`` rather than propagating: this module's
+    findings are WARN, never-blocking, and a filesystem hiccup while
+    journaling an advisory must not crash the command that is reporting
+    one."""
+    if not findings:
+        return None, None
+    if not _is_valid_project_slug(slug):
+        return None, _NO_ACTIVE_PROJECT_REASON
+
+    writer = fs if fs is not None else LocalFs()
+    writer_id = _writer_id()
+    mint_moment = _now_utc()
+    run_id = mint_run_id(slug, _format_utc_compact(mint_moment), _random_token())
+    run_dir = _session_advisory_run_dir(root, slug, run_id)
+
+    try:
+        writer.ensure_dir(run_dir.parent)
+        writer.create_dir_exclusive(run_dir)
+        entry = build_entry(
+            id=JournalEntryId(writer_id, 0),
+            ts=_format_entry_ts(mint_moment),
+            run_id=run_id,
+            kind="context-advisory",
+            phase=Phase.OBSERVATION,
+            payload={"lapsed": [finding.to_json_dict() for finding in findings]},
+        )
+        prepared = prepare_for_write(entry)
+        journal_path = run_dir / _ADVISORY_JOURNAL_FILENAME
+        if prepared.sidecar_relative_path is not None and prepared.sidecar_content is not None:
+            writer.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
+        writer.append_line(journal_path, prepared.line, fsync=True)
+    except FsError:
+        return None, None
+    return str(journal_path), None
+
+
+def _emit_advisory(args: argparse.Namespace, findings: list[Finding], data: dict[str, object]) -> int:
+    verdict = compute_verdict(findings)
+    envelope = build_envelope(
+        command="context advisory",
+        verdict=verdict,
+        data=data,
+        findings=tuple(findings),
+    )
+    try:
+        if args.format == "json":
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
+        else:
+            _print_advisory_text(data, findings, envelope.verdict)
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
+
+
+def _print_advisory_text(data: dict[str, object], findings: list[Finding], verdict: object) -> None:
+    line = f"context advisory project={data.get('project')} journal={data.get('journal')} verdict={verdict}"
+    reason = data.get("journal_skipped_reason")
+    if reason is not None:
+        line += f" journal_skipped_reason={reason}"
+    print(line)
     for finding in findings:
         print(f"{finding.code} {finding.severity.value}: {finding.message}")

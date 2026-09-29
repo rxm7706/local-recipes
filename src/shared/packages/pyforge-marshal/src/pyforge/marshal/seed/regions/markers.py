@@ -179,13 +179,9 @@ class BeginMarker:
     def __post_init__(self) -> None:
         object.__setattr__(self, "region", _require_region_name(self.region))
         if not isinstance(self.model_version, ModelVersion):
-            raise MarkerError(
-                f"model_version must be a ModelVersion, got {self.model_version!r}"
-            )
+            raise MarkerError(f"model_version must be a ModelVersion, got {self.model_version!r}")
         if not isinstance(self.sha, str) or _SHA_PATTERN.fullmatch(self.sha) is None:
-            raise MarkerError(
-                f"sha must be exactly 8 lowercase hex characters, got {self.sha!r}"
-            )
+            raise MarkerError(f"sha must be exactly 8 lowercase hex characters, got {self.sha!r}")
 
 
 def region_sha(body: str) -> str:
@@ -205,9 +201,7 @@ def _render(fmt: RegionFormat, body: str) -> str:
     return f"{open_token} {body} {close_token}"
 
 
-def render_begin(
-    fmt: RegionFormat, region: str, model_version: ModelVersion, sha: str
-) -> str:
+def render_begin(fmt: RegionFormat, region: str, model_version: ModelVersion, sha: str) -> str:
     """Render a ``marshal-seed:begin`` marker line in ``fmt``'s comment
     style. Raises ``NotImplementedError`` for ``RegionFormat.SLASHSTAR``
     (reserved, unimplemented in V1) and ``MarkerError`` for a
@@ -216,10 +210,7 @@ def render_begin(
     if fmt is RegionFormat.SLASHSTAR:
         raise NotImplementedError("RegionFormat.SLASHSTAR is reserved, unimplemented in V1")
     marker = BeginMarker(region=region, model_version=model_version, sha=sha)
-    body = (
-        f"{_MARKER_TAG}:begin region={marker.region}"
-        f" model-version={marker.model_version} sha={marker.sha}"
-    )
+    body = f"{_MARKER_TAG}:begin region={marker.region} model-version={marker.model_version} sha={marker.sha}"
     return _render(fmt, body)
 
 

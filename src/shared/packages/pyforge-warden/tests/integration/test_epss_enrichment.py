@@ -38,8 +38,8 @@ from pyforge.warden import feeds
 from pyforge.warden.cli import main
 from pyforge.warden.engines import OsvEngine
 from pyforge.warden.inventory import PypiIdentity, ResolvedInventory
-from pyforge.warden.models import AXIS_VULNERABILITY, ScannedManifest
-from pyforge.warden.vuln import OSV_DB_CACHE_ENV_VAR, db_zip_path
+from pyforge.warden.models import ScannedManifest
+from pyforge.warden.vuln import OSV_DB_CACHE_ENV_VAR
 
 TESTS_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = TESTS_ROOT / "fixtures"
@@ -121,13 +121,9 @@ def _epss_cache_without_match(tmp_path: Path) -> Path:
 # --- OsvEngine.run() level: epss stamping + epss_data provenance ------------
 
 
-def test_epss_match_stamps_score_and_percentile(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_epss_match_stamps_score_and_percentile(monkeypatch, tmp_path, offline_cache, component_factory):
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path)))
     inventory = _inventory(component_factory)
 
     result = OsvEngine(fail_on_kev=False, min_epss=0.9).run(tmp_path, inventory)
@@ -143,13 +139,9 @@ def test_epss_match_stamps_score_and_percentile(
     assert result.epss_data.max_age_ok is True
 
 
-def test_no_epss_match_leaves_epss_none(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_no_epss_match_leaves_epss_none(monkeypatch, tmp_path, offline_cache, component_factory):
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_without_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_without_match(tmp_path)))
     inventory = _inventory(component_factory)
 
     result = OsvEngine(fail_on_kev=False, min_epss=0.5).run(tmp_path, inventory)
@@ -171,9 +163,7 @@ def test_out_of_range_cached_score_degrades_instead_of_crashing(
     even reaches ``_stamp_epss`` -- whose own ``try/except ValueError``
     remains as a last-resort crash-guard behind it."""
     cache_dir = tmp_path / "epss-cache-out-of-range"
-    feeds.write_epss_cache(
-        cache_dir, {"scores": [{"cve": FIXTURE_CVE, "epss": 2.0, "percentile": 0.9}]}
-    )
+    feeds.write_epss_cache(cache_dir, {"scores": [{"cve": FIXTURE_CVE, "epss": 2.0, "percentile": 0.9}]})
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
     inventory = _inventory(component_factory)
@@ -185,16 +175,12 @@ def test_out_of_range_cached_score_degrades_instead_of_crashing(
     assert finding.epss is None
 
 
-def test_min_epss_none_never_consults_the_epss_cache(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_min_epss_none_never_consults_the_epss_cache(monkeypatch, tmp_path, offline_cache, component_factory):
     """Gate off (default): the EPSS cache is never even opened -- every
     finding's epss stays None, and epss_data stays None, even though a real
     match is sitting right there waiting to be found."""
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path)))
     inventory = _inventory(component_factory)
 
     result = OsvEngine(fail_on_kev=False, min_epss=None).run(tmp_path, inventory)
@@ -206,9 +192,7 @@ def test_min_epss_none_never_consults_the_epss_cache(
     assert not any(f.id.startswith("indeterminate:epss-") for f in result.findings)
 
 
-def test_epss_feed_absent_forces_whole_axis_indeterminate(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_epss_feed_absent_forces_whole_axis_indeterminate(monkeypatch, tmp_path, offline_cache, component_factory):
     """No usable EPSS cache while --min-epss is active -- the whole
     vulnerability axis lands indeterminate via one epss-data-unavailable
     finding; epss_data is None; the underlying vuln: finding's own epss
@@ -236,16 +220,12 @@ def test_epss_cache_vanishing_between_load_and_provenance_is_unavailable_not_a_c
     must degrade to the same "no usable feed" outcome as an absent cache --
     never let the race propagate as an uncaught ``OSError``."""
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path)))
 
     def _raise_missing(**_kwargs):
         raise FileNotFoundError("cache file vanished between read and stat")
 
-    monkeypatch.setattr(
-        "pyforge.warden.engines.feeds.feed_provenance", _raise_missing
-    )
+    monkeypatch.setattr("pyforge.warden.engines.feeds.feed_provenance", _raise_missing)
     inventory = _inventory(component_factory)
 
     result = OsvEngine(fail_on_kev=False, min_epss=0.5).run(tmp_path, inventory)
@@ -299,9 +279,7 @@ def test_zero_vuln_matchable_candidates_never_consults_epss(monkeypatch, tmp_pat
     def _fail_if_consulted(*_args, **_kwargs):
         pytest.fail("EPSS cache was consulted despite zero matchable candidates")
 
-    monkeypatch.setattr(
-        "pyforge.warden.engines.feeds.load_epss_scores", _fail_if_consulted
-    )
+    monkeypatch.setattr("pyforge.warden.engines.feeds.load_epss_scores", _fail_if_consulted)
     inventory = ResolvedInventory(components=(), resolved_scan_set=(MANIFEST,))
     result = OsvEngine(fail_on_kev=False, min_epss=0.5).run(tmp_path, inventory)
     assert result.findings == ()
@@ -338,12 +316,8 @@ def test_min_epss_forces_exit_1_regardless_of_cvss_tier(monkeypatch, tmp_path, c
     the exit code is 1 -- independent of the CVSS tier that would otherwise
     only warn. Uses vuln_kev_fail_on_kev_false's fixture (fail-on-kev off)
     so EPSS's own effect is isolated from KEV's default-on gate."""
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path))
-    )
-    rc, out, err = run_scan(
-        capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "0.5"
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path)))
+    rc, out, err = run_scan(capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "0.5")
     document = parse_report(out)
 
     assert rc == 1
@@ -368,9 +342,7 @@ def test_min_epss_unset_leaves_cvss_only_gating_unaffected(monkeypatch, tmp_path
     comparison this test never actually performed -- it pins the specific
     fields that matter (status/exit/epss/epss_data), not the whole
     document."""
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path)))
     rc, out, err = run_scan(capsys, VULN_KEV_FAIL_ON_KEV_FALSE)
     document = parse_report(out)
 
@@ -385,16 +357,12 @@ def test_min_epss_unset_leaves_cvss_only_gating_unaffected(monkeypatch, tmp_path
     assert err == ""
 
 
-def test_epss_feed_absent_end_to_end_composes_indeterminate(
-    monkeypatch, tmp_path, capsys
-):
+def test_epss_feed_absent_end_to_end_composes_indeterminate(monkeypatch, tmp_path, capsys):
     """No usable EPSS cache while --min-epss is active composes
     indeterminate/exit 1 -- never a silent pass, even though the underlying
     CVSS match would otherwise only warn."""
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path / "no-such-cache"))
-    rc, out, err = run_scan(
-        capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "0.5"
-    )
+    rc, out, err = run_scan(capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "0.5")
     document = parse_report(out)
 
     assert rc == 1
@@ -406,9 +374,7 @@ def test_epss_feed_absent_end_to_end_composes_indeterminate(
     assert err == ""
 
 
-def test_epss_feed_stale_end_to_end_never_composes_a_pass(
-    monkeypatch, tmp_path, capsys
-):
+def test_epss_feed_stale_end_to_end_never_composes_a_pass(monkeypatch, tmp_path, capsys):
     """Review finding (follow-up pass): the stale-feed path had only
     engine-level coverage -- this pins the full composition. A loadable but
     AGED cache while --min-epss is active raises the whole-axis
@@ -451,9 +417,7 @@ def test_toml_only_min_epss_drives_the_gate_end_to_end(monkeypatch, tmp_path, ca
     ``[tool.pyforge-warden]`` (no --min-epss argument anywhere), proving
     the TOML value alone drives consultation, stamping, and escalation to
     policy-violation/exit 1 through the very same engine wiring."""
-    monkeypatch.setenv(
-        feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path))
-    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path)))
     rc, out, err = run_scan(capsys, VULN_MIN_EPSS_TOML)
     document = parse_report(out)
 
@@ -468,9 +432,7 @@ def test_toml_only_min_epss_drives_the_gate_end_to_end(monkeypatch, tmp_path, ca
     assert err == ""
 
 
-def test_default_fail_on_kev_and_min_epss_both_active_on_the_same_finding(
-    monkeypatch, tmp_path, capsys
-):
+def test_default_fail_on_kev_and_min_epss_both_active_on_the_same_finding(monkeypatch, tmp_path, capsys):
     """Review finding: ``fail_on_kev`` defaults ``True``, so the realistic
     out-of-the-box combination once a user adds ``--min-epss`` is BOTH gates
     active simultaneously -- every other test in this suite deliberately
@@ -484,9 +446,7 @@ def test_default_fail_on_kev_and_min_epss_both_active_on_the_same_finding(
         cache_dir,
         {"vulnerabilities": [{"cveID": FIXTURE_CVE, "dateAdded": "2026-01-01"}]},
     )
-    feeds.write_epss_cache(
-        cache_dir, {"scores": [{"cve": FIXTURE_CVE, "epss": 0.8, "percentile": 0.95}]}
-    )
+    feeds.write_epss_cache(cache_dir, {"scores": [{"cve": FIXTURE_CVE, "epss": 0.8, "percentile": 0.95}]})
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
 
     rc, out, err = run_scan(capsys, VULN_KEV, "--min-epss", "0.5")
@@ -530,9 +490,7 @@ def test_min_epss_rejects_an_out_of_range_value_as_a_usage_error(capsys):
 
 
 def test_min_epss_rejects_a_non_numeric_value_as_a_usage_error(capsys):
-    rc, out, err = run_scan(
-        capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "not-a-number"
-    )
+    rc, out, err = run_scan(capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "not-a-number")
     assert rc == 2
     assert out == ""
     assert "--min-epss" in err

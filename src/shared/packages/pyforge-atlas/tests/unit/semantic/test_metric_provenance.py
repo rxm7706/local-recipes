@@ -30,8 +30,7 @@ _CORE_METRICS = {
 
 def test_every_core_metric_has_a_provenance_record():
     assert _CORE_METRICS <= set(metrics.METRIC_PROVENANCE), (
-        "core metrics missing a provenance record: "
-        f"{_CORE_METRICS - set(metrics.METRIC_PROVENANCE)}"
+        f"core metrics missing a provenance record: {_CORE_METRICS - set(metrics.METRIC_PROVENANCE)}"
     )
 
 
@@ -49,9 +48,7 @@ def test_migrated_derived_metrics_are_flagged_for_recapture():
     # legacy Phase M/N signal is unverified — they must be explicitly flagged (mirrors
     # the B2 shape-only-seed flag).
     flagged = {
-        n
-        for n, r in metrics.METRIC_PROVENANCE.items()
-        if r["provenance"] == "migrated-node-derived-flag-recapture"
+        n for n, r in metrics.METRIC_PROVENANCE.items() if r["provenance"] == "migrated-node-derived-flag-recapture"
     }
     assert {"ci_red", "has_open_prs", "has_open_issues"} <= flagged
 

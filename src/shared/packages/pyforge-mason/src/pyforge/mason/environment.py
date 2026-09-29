@@ -46,7 +46,10 @@ from .errors import EnvironmentManifestsNotFoundError
 from .models import CheckResult, LockResult
 
 _MANIFEST_FILENAMES: tuple[str, ...] = (
-    "pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml",
+    "pyproject.toml",
+    "environment.yml",
+    "requirements*.txt",
+    "pixi.toml",
 )
 """The four literal patterns `discover_manifests` searches for, in the
 fixed order it checks them -- also the exact `filenames` named by
@@ -87,9 +90,7 @@ def discover_manifests(directory: Path) -> tuple[str, ...]:
         found.append(str(directory / pyproject))
     if (directory / environment_yml).is_file():
         found.append(str(directory / environment_yml))
-    found.extend(
-        str(path) for path in sorted(directory.glob(requirements_glob)) if path.is_file()
-    )
+    found.extend(str(path) for path in sorted(directory.glob(requirements_glob)) if path.is_file())
     if (directory / pixi).is_file():
         found.append(str(directory / pixi))
 
@@ -99,9 +100,7 @@ def discover_manifests(directory: Path) -> tuple[str, ...]:
     return tuple(found)
 
 
-def lock(
-    manifest_paths: Sequence[str], output_path: str, *, platforms: str | None = None
-) -> LockResult:
+def lock(manifest_paths: Sequence[str], output_path: str, *, platforms: str | None = None) -> LockResult:
     """Resolve `manifest_paths` into a lockfile at `output_path` via
     `engines.condalock.lock()` (FR-25, FR-27, FR-29).
 
@@ -128,9 +127,7 @@ def lock(
     lock()`.
     """
     if platforms:
-        parsed_platforms = tuple(
-            stripped for token in platforms.split(",") if (stripped := token.strip())
-        )
+        parsed_platforms = tuple(stripped for token in platforms.split(",") if (stripped := token.strip()))
     else:
         parsed_platforms = ()
 
@@ -147,9 +144,7 @@ def lock(
     )
 
 
-def check(
-    lockfile_path: str, manifest_paths: Sequence[str], *, platforms: str | None = None
-) -> CheckResult:
+def check(lockfile_path: str, manifest_paths: Sequence[str], *, platforms: str | None = None) -> CheckResult:
     """Report whether `lockfile_path` is stale relative to `manifest_paths`
     via `engines.condalock.check()` (FR-25, FR-27, FR-29).
 
@@ -181,9 +176,7 @@ def check(
     `CheckResult`.
     """
     if platforms:
-        parsed_platforms = tuple(
-            stripped for token in platforms.split(",") if (stripped := token.strip())
-        )
+        parsed_platforms = tuple(stripped for token in platforms.split(",") if (stripped := token.strip()))
     else:
         parsed_platforms = ()
 

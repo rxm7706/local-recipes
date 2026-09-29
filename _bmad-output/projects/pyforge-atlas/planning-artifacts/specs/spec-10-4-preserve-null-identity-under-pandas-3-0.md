@@ -2,7 +2,7 @@
 title: 'Preserve NULL identity under pandas 3.0'
 type: 'bugfix'
 created: '2026-07-28'
-status: shipped
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false  # pass 2 (fresh reviewers): 7 patches, but 5 are comment/doc/registry wording and the 2 medium are a warning on a today-unreachable fallback + a new canary test — no reachable production behavior changed; gates green (788/19, 47/47)
 context: []
@@ -292,3 +292,7 @@ pass 1); the pandera empty-frame `Column(str)` landmine stays dormant until a re
 contract lands in `DEFAULT_CONTRACTS` (ledger entry from pass 1); the semantic-layer half
 of the fix still rides Ibis's current DuckDB→pandas conversion internals — covered by the
 six regression tests plus the new canary, which localize any future breakage.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `10-4-preserve-null-identity-under-pandas-3-0: done`).

@@ -1,9 +1,12 @@
----
-title: OpenShift runs as a CI portability profile — the OCP overlay proven on a real cluster
+---title: OpenShift runs as a CI portability profile — the OCP overlay proven on a real cluster
 type: dream
 owner: steward
-status: specified   # 2026-08-24 — spec-ocp-as-a-portability-profile (CAP-1..3); decomposed as steward Story 12.9 (backlog — no ocp-portability-smoke job yet)
+status: archived   # 2026-08-24 — spec-ocp-as-a-portability-profile (CAP-1..3); decomposed as steward Story 12.9 (backlog — no ocp-portability-smoke job yet)
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `ocp-as-a-portability-profile`).
+
 
 # OpenShift runs as a CI portability profile — the OCP overlay proven on a real cluster
 

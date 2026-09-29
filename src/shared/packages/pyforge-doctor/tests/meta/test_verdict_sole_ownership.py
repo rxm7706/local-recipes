@@ -115,11 +115,7 @@ def _module_int_constants(tree: ast.Module) -> dict[str, int]:
             value, targets = stmt.value, [stmt.target]
         else:
             continue
-        if (
-            isinstance(value, ast.Constant)
-            and isinstance(value.value, int)
-            and not isinstance(value.value, bool)
-        ):
+        if isinstance(value, ast.Constant) and isinstance(value.value, int) and not isinstance(value.value, bool):
             for target in targets:
                 if isinstance(target, ast.Name):
                     constants[target.id] = value.value
@@ -148,9 +144,7 @@ def _exit_literal_violations(tree: ast.Module) -> list[int]:
     constants = _module_int_constants(tree)
     violations: list[int] = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or not _is_exit_callable(
-            node.func, exit_aliases, sys_names, os_names
-        ):
+        if not isinstance(node, ast.Call) or not _is_exit_callable(node.func, exit_aliases, sys_names, os_names):
             continue
         arguments = [*node.args, *(keyword.value for keyword in node.keywords)]
         for arg in arguments:
@@ -161,10 +155,7 @@ def _exit_literal_violations(tree: ast.Module) -> list[int]:
                 and arg.value in GUARDED_EXIT_LITERALS
             ):
                 violations.append(node.lineno)
-            elif (
-                isinstance(arg, ast.Name)
-                and constants.get(arg.id) in GUARDED_EXIT_LITERALS
-            ):
+            elif isinstance(arg, ast.Name) and constants.get(arg.id) in GUARDED_EXIT_LITERALS:
                 violations.append(node.lineno)
     return violations
 
@@ -194,18 +185,13 @@ def _private_verdict_references(tree: ast.Module) -> list[str]:
         if isinstance(node, ast.ImportFrom):
             module_tail = (node.module or "").split(".")[-1]
             if module_tail == "verdict":
-                references.extend(
-                    alias.name for alias in node.names if alias.name.startswith("_")
-                )
+                references.extend(alias.name for alias in node.names if alias.name.startswith("_"))
         elif isinstance(node, ast.Attribute) and node.attr.startswith("_"):
             # x._priv where x is any name bound to the verdict module ...
             if isinstance(node.value, ast.Name) and node.value.id in verdict_names:
                 references.append(node.attr)
             # ... or pkg.verdict._priv via a plain `import pkg.verdict`.
-            elif (
-                isinstance(node.value, ast.Attribute)
-                and node.value.attr == "verdict"
-            ):
+            elif isinstance(node.value, ast.Attribute) and node.value.attr == "verdict":
                 references.append(node.attr)
     return references
 
@@ -217,9 +203,7 @@ def test_package_scan_surface_is_not_empty():
     assert "verdict.py" in names, "verdict.py missing from the installed package"
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=lambda p: p.name
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=lambda p: p.name)
 def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     violations = _exit_literal_violations(_parse(module_path))
     assert not violations, (
@@ -229,14 +213,10 @@ def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     )
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=lambda p: p.name
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=lambda p: p.name)
 def test_no_private_verdict_import_outside_verdict(module_path: Path):
     references = _private_verdict_references(_parse(module_path))
-    assert not references, (
-        f"{module_path.name} references private verdict name(s) {references}"
-    )
+    assert not references, f"{module_path.name} references private verdict name(s) {references}"
 
 
 def test_exit_detector_sees_aliases_keywords_and_constants():
@@ -263,14 +243,9 @@ def test_exit_detector_sees_aliases_keywords_and_constants():
 def test_private_detector_sees_verdict_module_aliases():
     aliased = "from pyforge.doctor import verdict as v\nx = v._SOME_PRIVATE\n"
     assert _private_verdict_references(ast.parse(aliased)) == ["_SOME_PRIVATE"]
-    plain_import = (
-        "import pyforge.doctor.verdict\n"
-        "x = pyforge.doctor.verdict._SOME_PRIVATE\n"
-    )
+    plain_import = "import pyforge.doctor.verdict\nx = pyforge.doctor.verdict._SOME_PRIVATE\n"
     assert _private_verdict_references(ast.parse(plain_import)) == ["_SOME_PRIVATE"]
-    public_only = (
-        "from pyforge.doctor import verdict\ncode = verdict.exit_code_for\n"
-    )
+    public_only = "from pyforge.doctor import verdict\ncode = verdict.exit_code_for\n"
     assert _private_verdict_references(ast.parse(public_only)) == []
 
 
@@ -291,9 +266,7 @@ def test_guard_is_alive_synthetic_violation_fires_and_verdict_defines_projection
     functions: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
-            assigned.update(
-                target.id for target in node.targets if isinstance(target, ast.Name)
-            )
+            assigned.update(target.id for target in node.targets if isinstance(target, ast.Name))
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             assigned.add(node.target.id)
         elif isinstance(node, ast.FunctionDef):

@@ -29,11 +29,14 @@ would be Marshal's self-report wearing Doctor's badge.
 the three gathers below documents its own specific "cannot evaluate" paths; see
 each function's own docstring.
 
-**Two independent ``data.js`` readers, deliberately not unified.** ``_board_lines``
-(used by ``gather_chain_completeness``) and ``_load_data_js`` (used by
-``gather_dashboard_drift``) parse the SAME committed file with two DIFFERENT
-methods, because that is what their two respective source scripts already do --
-a fixed-prefix strip in one, a regex search in the other. Consolidating them would
+**One ``data.js`` reader remains.** ``_board_lines`` (used by
+``gather_chain_completeness``) parses the committed file with a fixed-prefix strip.
+It once had a sibling, ``_load_data_js``, which read the same file by regex for
+``gather_dashboard_drift``; the two were deliberately NOT unified because that is
+what their respective source scripts each did. *(2026-09-14: the sibling and the
+whole retired-Guildhall helper island it belonged to were deleted -- provably
+unreachable once the console retired. This note is kept because the reasoning still
+governs ``_board_lines``: consolidating readers would
 be a redesign this story's Boundaries explicitly rule out ("preserve, don't
 redesign"); each stays exactly as strict or as lenient as its own original.
 """
@@ -41,14 +44,11 @@ redesign"); each stays exactly as strict or as lenient as its own original.
 from __future__ import annotations
 
 import bisect
-import functools
 import http.server
 import importlib.util
 import json
 import re
-import socketserver
 import sys
-import threading
 from pathlib import Path
 
 from ..models import DoctorStatus, Finding, Source
@@ -73,8 +73,94 @@ __all__ = (
 # dead code there (defined, never called by ``check()`` or ``main()``) --
 # porting an unused helper would be speculative, not a verbatim behavior port.
 
-#: Spec statuses that represent work still owed -- identical to the original.
+#: FALLBACK when `guild-roster.json`'s `spec_statuses`/`spec_statuses_terminal`
+#: is unavailable -- today's value, not a parallel source of truth (Story
+#: 59.2; mirrors `chain.py`'s own `_CONSTITUTIVE_FALLBACK`). Live INV-A calls
+#: derive the same value fresh from `guild-roster.json` via
+#: `_spec_status_groups` -- spec statuses that represent work still owed.
 OPEN_SPEC_STATUSES = frozenset({"draft", "ready", "in-progress"})
+
+#: FALLBACK (Story 59.2 -- see `OPEN_SPEC_STATUSES`'s own note) for the
+#: terminal statuses that STILL owe a decomposition, and why `shipped` is the
+#: only one (2026-09-14). INV-A originally skipped every non-OPEN status on the
+#: reasoning that terminal work owes nothing -- true of the work, false of the
+#: story trail. A `shipped` Spec whose CAPs were delivered with no epic and no
+#: ledger row leaves the station under-reporting what it shipped, and the
+#: dev/review loop, the retro triggers and the realization gate all key off
+#: that trail. Found live by a fleet-wide audit: ten `shipped` Specs across
+#: atlas/marshal/steward had zero epic anywhere (e.g.
+#: spec-platform-image-one-pixi-env, whose three CAPs shipped 2026-08-25 and
+#: were re-verified live 2026-09-11 -- retroactive Epic 57 documents them now).
+#: The other four terminal statuses stay exempt for real reasons: `absorbed`
+#: CAPs live in the absorbing chain's epic, `archived`/`superseded` were
+#: abandoned rather than delivered, and `extension-point` is a standing seam,
+#: not a deliverable. Precedent for the remedy: retroactive Epics 38/39/57.
+DELIVERED_SPEC_STATUSES = frozenset({"shipped"})
+
+#: FALLBACK (Story 59.2): every status INV-A inspects when degraded -- still-
+#: owed work plus delivered-but-untracked.
+DECOMPOSITION_OWED_STATUSES = OPEN_SPEC_STATUSES | DELIVERED_SPEC_STATUSES
+
+#: `guild-roster.json`'s repo-relative path -- the CAP-1 declaration Story
+#: 59.1 landed (mirrors `chain.py::_GUILD_ROSTER_REL`).
+_GUILD_ROSTER_REL = Path("docs") / "governance" / "guild-roster.json"
+
+
+def _spec_status_groups(target: Path) -> tuple[frozenset[str], frozenset[str], dict | None]:
+    """INV-A's live open/delivered Spec-status sets, read fresh from
+    ``guild-roster.json`` at ``target`` -- never cached at import time
+    (``target`` is a runtime parameter; mirrors ``factory.py::_roster`` /
+    ``chain.py::_load_dream_roster``, the house pattern for this package).
+
+    ``open = spec_statuses - spec_statuses_terminal - {"extension-point"}``;
+    ``delivered = spec_statuses_terminal - spec_statuses_ended_acts`` (yields
+    exactly ``{"shipped"}`` for the declared values -- see
+    ``DELIVERED_SPEC_STATUSES``'s own docstring for why only ``shipped``
+    counts).
+
+    On any read/parse/shape failure, degrades to ``OPEN_SPEC_STATUSES`` /
+    ``DELIVERED_SPEC_STATUSES`` (never a crash) and returns a WARN
+    finding-precursor dict -- the same shape ``_check_chain_completeness``'s
+    own per-project degrade already uses -- for the caller to append to its
+    own ``findings`` rather than degrading silently (Story 59.2, mirrors
+    ``chain.py::_load_constitutive``).
+    """
+    rel = _GUILD_ROSTER_REL.as_posix()
+    try:
+        data = json.loads((target / _GUILD_ROSTER_REL).read_text(encoding="utf-8"))
+        raw_spec_statuses = data["spec_statuses"]
+        raw_terminal = data["spec_statuses_terminal"]
+        raw_ended_acts = data["spec_statuses_ended_acts"]
+        if not all(isinstance(v, list) for v in (raw_spec_statuses, raw_terminal, raw_ended_acts)):
+            raise TypeError("spec_statuses/spec_statuses_terminal/spec_statuses_ended_acts must be lists")
+        spec_statuses = frozenset(str(s) for s in raw_spec_statuses)
+        terminal = frozenset(str(s) for s in raw_terminal)
+        ended_acts = frozenset(str(s) for s in raw_ended_acts)
+    except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
+        return (
+            OPEN_SPEC_STATUSES,
+            DELIVERED_SPEC_STATUSES,
+            {
+                "inv": "",
+                "kind": "spec-status-roster-degraded",
+                "project": "",
+                "subject": rel,
+                "status": "",
+                "detail": (
+                    f"{rel} could not be read for INV-A's Spec-status vocabulary "
+                    f"({exc.__class__.__name__}: {exc}) — falling back to "
+                    f"OPEN_SPEC_STATUSES/DELIVERED_SPEC_STATUSES"
+                ),
+                "remedy": f"restore {rel} so INV-A reads the live declaration",
+                "warn": True,
+            },
+        )
+    return (
+        spec_statuses - terminal - {"extension-point"},
+        terminal - ended_acts,
+        None,
+    )
+
 
 #: Specs deliberately NOT decomposed, each with the reason it is exempt --
 #: copied verbatim from scripts/chain_completeness_check.py so a station's
@@ -89,31 +175,43 @@ OPEN_SPEC_STATUSES = frozenset({"draft", "ready", "in-progress"})
 # station's epics AND the operator confirms dispatch (precedent: spec-deferred-work-visibility,
 # de-registered 2026-08-10 on explicit operator confirmation of doctor Epic 7).
 DEFERRED_SPECS: dict[str, str] = {
-    "spec-agentic-sdlc-autonomy":
-        "a standing position, explicitly 'not a deliverable' by its own text — "
-        "there is nothing to decompose and an FR would manufacture one",
-    "spec-build-league-scorecard":
-        "explicitly self-parked by its own SPEC.md: 'Parked contract... Do not implement a "
-        "board until the operator drafts the measure set.' Unifying Strategy Q5 named the "
-        "faces and defined no numbers; this Spec exists only so the chain has a link, not to "
-        "describe undone work an epic could pick up today. De-register once the operator "
-        "publishes the human/agent/team measure set CAP-1 needs",
-    "spec-golden-path-conda-blind-spot":
-        "a `ready` Spec seeded 2026-09-05 (PR #1063) so the Dream's chain link is durable; "
-        "its five CAPs were gated by five open questions (selector grammar, provisioning, "
-        "coverage floor, warn-promotability, unscoped-union default) answered 2026-09-09; "
-        "warden Epic 12 now carries CAP-1..5. "
-        "De-register once the open_questions are cleared and warden's epics carry CAP-1..5",
-    "spec-bmad-cursor-interactive-routing":
-        "a `ready` Spec seeded 2026-09-07 so the Dream's chain link is durable (dream-chain "
-        "INV-1); CAP-1 (a live probe of whether Cursor's interactive IDE chat can invoke a "
-        "context-free subagent) gates every other CAP and has not run yet, so decomposing this "
-        "into marshal epics now would manufacture stories ahead of an unanswered empirical "
-        "question. De-register once CAP-1's probe result is recorded and the operator's CAP-2/ "
-        "CAP-3 shape choice is settled",
-    "spec-pyforge-charter":
-        "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties "
-        "no story can pick up",
+    # `spec-agentic-sdlc-autonomy` was registered here as a standing non-deliverable.
+    # De-registered 2026-09-18: Spec status is now `absorbed` (folded); an inert
+    # DEFERRED_SPECS entry fails Story 21.1's live-status reconciliation.
+    # `spec-build-league-scorecard` was registered here while Q5 had no numbers.
+    # De-registered 2026-09-15: operator published eight already-counted
+    # signals with on/off/archived config; Spec `ready`; steward Epic 62
+    # (62.1–62.3) is the dispatch home. Do not invent weights.
+    # `spec-work-passports-dated-extracts` was registered here 2026-09-14 as a
+    # `draft` seed whose six open questions blocked decompose. De-registered
+    # 2026-09-15: operator approved Q1–6; Spec `ready`; steward Epic 61
+    # (61.1–61.5) is the dispatch home. Do not treat Epic 8 as this product.
+    # `spec-coverage-gate-independence` was registered here 2026-09-14 (morning) as a `draft`
+    # seed whose five open questions were unanswerable design decisions. De-registered the
+    # same day: the operator ruled its home the Guild (Charter §5 amendment), so the Spec moved
+    # to docs/governance/spec-coverage-gate-independence/ -- outside `pa.glob("specs/spec-*")`
+    # above, exactly like spec-pyforge-charter -- and the mechanism stories live in doctor's
+    # epics.md (Epic 24), where INV-A can see them.
+    # `spec-golden-path-conda-blind-spot` was registered here 2026-09-05 while five
+    # open questions gated CAP-1..5. De-registered 2026-09-16 (fleet-inbox-disposition):
+    # those questions were answered 2026-09-09; warden Epic 12 cites CAP-1..5 and is
+    # done. Do not mint Epic 13. Record:
+    # `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-inbox-disposition-2026-09-16.md`.
+    # `spec-bmad-cursor-interactive-routing` was registered here 2026-09-07 while
+    # CAP-1 (live Cursor-chat subagent probe) had not run. De-registered
+    # 2026-09-15: probe PASS on Cursor Agent + Task; CAP-2 committed; CAP-3
+    # residual for no-Task surfaces; CAP-4 verified; marshal Epic 45 (45.1–45.3)
+    # is the dispatch home. Do not treat this as full Ask-panel / all-skills
+    # parity, and do not ship CAP-3a without its own evidence.
+    "spec-pyforge-charter": "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties "
+    "no story can pick up; CAP-3 mechanism shipped as doctor 21.4; CAP-7/AUT-3 "
+    "wait on the Guildhall referent — do not mint a Charter epic",
+    # `spec-token-economy-claude-session-path` was registered here 2026-09-16
+    # (morning) as a `draft` seed whose three open questions were answered in its
+    # memlog. De-registered the same day: the operator ruled no satellite Specs,
+    # so the Spec folded into `spec-marshal-token-economy` as CAP-19..CAP-24
+    # (status `superseded` — terminal, not owed) and marshal Epic 46 (46.1–46.10)
+    # is the dispatch home. The folder stays as the decision record.
 }
 
 _CHAIN_DATA_JS_PREFIX = "window.DASHBOARD_DATA = "
@@ -166,7 +264,7 @@ def _parse_declared_cap_ids(spec_md_text: str) -> set[int]:
     if not m:
         return set()
     nxt = _HEADING_RE.search(spec_md_text, m.end())
-    body = spec_md_text[m.end():nxt.start() if nxt else len(spec_md_text)]
+    body = spec_md_text[m.end() : nxt.start() if nxt else len(spec_md_text)]
     ids: set[int] = set()
     for line in body.splitlines():
         dm = _CAP_DECL_LINE_RE.match(line)
@@ -358,7 +456,7 @@ def _continuation_scalar(lines: list[str], idx: int) -> str | None:
     ``:``), or nothing at all -- exactly the shapes ``_frontmatter``'s two
     consumed keys never take, and which it has always skipped.
     """
-    for nxt in lines[idx + 1:]:
+    for nxt in lines[idx + 1 :]:
         if not nxt.strip():
             continue
         if not nxt[0].isspace():
@@ -426,6 +524,42 @@ def _story_ids_from_epics(path: Path) -> list[set[str]]:
     return out
 
 
+def _epic_numbers_from_epics(path: Path) -> set[int]:
+    """Every ``N`` declared by a ``## Epic N`` heading.
+
+    INV-B's story arm drops every ``epic-*`` key before comparing
+    (``story_rows`` below), so until 2026-09-14 nothing checked that an
+    ``epic-N`` ledger row had a heading, or the reverse. That is not
+    bookkeeping: ``scripts/fleet_picture.py`` derives the fleet's headline
+    epic counts from those same ledger keys, so a drifted key silently
+    misreports fleet progress. Two live orphans when this landed —
+    ``pyforge-steward`` ``epic-18`` and ``pyforge-marshal`` ``epic-29``,
+    both with their stories present and correctly keyed but no ``## Epic N``
+    heading, so the stories rendered under the preceding epic.
+
+    Same read-failure contract as ``_story_ids_from_epics``: a broad
+    ``except`` returning empty, so a non-UTF-8 byte cannot discard this
+    project's own already-computed INV-A findings.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception:  # noqa: BLE001 -- see _story_ids_from_epics
+        return set()
+    return {int(m.group(1)) for m in re.finditer(r"^##\s+Epic\s+(\d+)", text, re.MULTILINE)}
+
+
+def _ledger_epic_numbers(rows: dict[str, str]) -> set[int]:
+    """Every ``N`` from an ``epic-N`` key. ``epic-N-retrospective`` is
+    deliberately NOT counted separately -- it is paired to its own
+    ``epic-N`` and would double-report the same drift."""
+    out: set[int] = set()
+    for key in rows:
+        m = re.fullmatch(r"epic-(\d+)", key)
+        if m:
+            out.add(int(m.group(1)))
+    return out
+
+
 def _ledger_rows(path: Path) -> dict[str, str]:
     """Every ``key: value`` under ``development_status:``, epic rollups
     included -- verbatim from the original (deliberately shape-agnostic; see
@@ -484,7 +618,7 @@ def _board_lines(data_js: Path) -> dict[str, tuple[int, int]] | None:
         text = data_js.read_text(encoding="utf-8")
         if not text.startswith(_CHAIN_DATA_JS_PREFIX):
             return None
-        data = json.loads(text[len(_CHAIN_DATA_JS_PREFIX):].rstrip().rstrip(";"))
+        data = json.loads(text[len(_CHAIN_DATA_JS_PREFIX) :].rstrip().rstrip(";"))
     except Exception:  # noqa: BLE001 -- "cannot read the generated board" is
         # the one thing this function promises to degrade on, mirroring the
         # original script's own broad except.
@@ -572,9 +706,7 @@ def _station_board_line(proj: object) -> tuple[int, int] | None:
     return done, len(stories)
 
 
-def _check_chain_completeness(
-    target: Path, board: dict[str, tuple[int, int]] | None
-) -> list[dict]:
+def _check_chain_completeness(target: Path, board: dict[str, tuple[int, int]] | None) -> list[dict]:
     """Port of the original script's own ``check()`` -- see this module's own
     header and the original's for the full INV-A/B/C/D rationale. Findings
     are structured dicts here rather than printed lines; ``kind``/``detail``/
@@ -615,18 +747,22 @@ def _check_chain_completeness(
             _check_project_chain_completeness(project_dir, board, findings)
         except Exception as exc:  # noqa: BLE001 -- one project's failure must
             # not discard every other project's already-computed findings.
-            findings.append({
-                # NOT "INV-A": this catch wraps the whole INV-A/B/C/D
-                # evaluation, so stamping one invariant would point an
-                # operator (or an --inv filter) at Spec decomposition when the
-                # broken input was, say, the ledger INV-B reads.
-                "inv": "", "kind": "chain-completeness-unevaluable",
-                "project": project, "subject": project, "status": "",
-                "detail": (f"could not be evaluated here — "
-                           f"{exc.__class__.__name__}: {exc}"),
-                "remedy": "fix the malformed/unreadable input, then re-check",
-                "warn": True,
-            })
+            findings.append(
+                {
+                    # NOT "INV-A": this catch wraps the whole INV-A/B/C/D
+                    # evaluation, so stamping one invariant would point an
+                    # operator (or an --inv filter) at Spec decomposition when the
+                    # broken input was, say, the ledger INV-B reads.
+                    "inv": "",
+                    "kind": "chain-completeness-unevaluable",
+                    "project": project,
+                    "subject": project,
+                    "status": "",
+                    "detail": (f"could not be evaluated here — {exc.__class__.__name__}: {exc}"),
+                    "remedy": "fix the malformed/unreadable input, then re-check",
+                    "warn": True,
+                }
+            )
     return findings
 
 
@@ -679,12 +815,28 @@ def _check_project_chain_completeness(
         except Exception:  # noqa: BLE001, S112 -- see raw_prose's own loop.
             continue
         heading = _HEADING_RE.search(text)
-        stripped_parts.append(text[heading.start():] if heading else text)
+        stripped_parts.append(text[heading.start() :] if heading else text)
     prose = "\n\n".join(stripped_parts)
 
     spec_paths = sorted(pa.glob("specs/spec-*/SPEC.md"))
     all_slugs = [p.parent.name for p in spec_paths]
     cited_by_spec = _cited_cap_ids_by_spec(prose, all_slugs)
+
+    # Story 59.2: the live Spec-status vocabulary, read fresh from
+    # `guild-roster.json` -- only when there is at least one Spec to classify
+    # against it (`project_dir.parents[2]` is `target`: project_dir is
+    # `target/_bmad-output/projects/<name>`). Gated on `spec_paths` rather
+    # than called unconditionally so a project with zero Specs (pure
+    # INV-B/C/D input) never pays for -- or risks degrading on -- a roster
+    # read it has no use for.
+    if spec_paths:
+        open_statuses, delivered_statuses, roster_warning = _spec_status_groups(project_dir.parents[2])
+        if roster_warning is not None:
+            findings.append({**roster_warning, "project": project})
+        decomposition_owed_statuses = open_statuses | delivered_statuses
+    else:
+        delivered_statuses = DELIVERED_SPEC_STATUSES
+        decomposition_owed_statuses = DECOMPOSITION_OWED_STATUSES
 
     for spec_md in spec_paths:
         slug = spec_md.parent.name
@@ -698,50 +850,118 @@ def _check_project_chain_completeness(
         if slug in DEFERRED_SPECS:
             continue
         if "status" not in fm:
-            findings.append({
-                "inv": "INV-A", "kind": "spec-status-missing",
-                "project": project, "subject": slug, "status": "",
-                "detail": f"Spec {slug!r} has no status: in frontmatter",
-                "remedy": (f"add a status: line to {slug}, or add the slug to "
-                           f"DEFERRED_SPECS with the reason"),
-            })
+            findings.append(
+                {
+                    "inv": "INV-A",
+                    "kind": "spec-status-missing",
+                    "project": project,
+                    "subject": slug,
+                    "status": "",
+                    "detail": f"Spec {slug!r} has no status: in frontmatter",
+                    "remedy": (f"add a status: line to {slug}, or add the slug to DEFERRED_SPECS with the reason"),
+                }
+            )
             continue
         status = str(fm.get("status", "")).strip()
-        if status not in OPEN_SPEC_STATUSES:
+        if status not in decomposition_owed_statuses:
             continue
+        delivered = status in delivered_statuses
 
         declared = _parse_declared_cap_ids(spec_text)
+        if delivered:
+            # A delivered Spec is held to the WHOLE-SPEC standard only: does any
+            # epic or FR reference it at all? Not the per-CAP citation standard
+            # the OPEN branch below applies. Running per-CAP here flagged 34
+            # Specs on first run against 12 real ones (2026-09-14) -- epics
+            # written before the cite-every-CAP-id convention name the Spec or
+            # its Dream without enumerating `CAP-n`, so per-CAP would report a
+            # documentation-style gap as a missing story trail. Zero reference
+            # is the unambiguous signal: the CAPs shipped and nothing records
+            # who delivered them.
+            bare = slug.removeprefix("spec-")
+            owner_dream = str(fm.get("owner-dream", "")).strip()
+            dream_stem = Path(owner_dream).stem if owner_dream else ""
+            referenced = (
+                slug in raw_prose
+                or bare in raw_prose
+                # an epic may claim a Spec by its Dream path instead of its slug
+                # (Epic 51 <- platform-datastores-consumed-not-self-hosted), so
+                # matching only `spec-<slug>` reports a false positive.
+                or (bool(owner_dream) and owner_dream in raw_prose)
+                or (bool(dream_stem) and f"{dream_stem}.md" in raw_prose)
+            )
+            if not referenced:
+                findings.append(
+                    {
+                        "inv": "INV-A",
+                        "kind": "delivered-spec-not-decomposed",
+                        "project": project,
+                        "subject": slug,
+                        "status": status,
+                        "detail": (
+                            f"{station} shipped {slug} ({status}) and no FR or epic "
+                            f"references it — its CAPs were delivered with no story "
+                            f"trail, so the ledger under-reports what shipped"
+                        ),
+                        "remedy": (
+                            f"mint a RETROACTIVE epic for {slug} in {project}'s "
+                            f"epics.md documenting what already exists (stories at "
+                            f"done, precedent: Epics 38/39/57) plus its ledger keys "
+                            f"— never DEFERRED_SPECS, which is for undone work"
+                        ),
+                    }
+                )
+            continue
+
         if not declared:
             # Zero-CAP fallback: BYTE-IDENTICAL to the pre-this-story check,
             # against the FULL, unstripped `raw_prose` (Round 1's own
             # requirement -- see the block comment above).
             bare = slug.removeprefix("spec-")
             if bare not in raw_prose and slug not in raw_prose:
-                findings.append({
-                    "inv": "INV-A", "kind": "spec-not-decomposed",
-                    "project": project, "subject": slug, "status": status,
-                    "detail": (f"{station} owns an open Spec ({status}) that no FR or "
-                               f"epic references — the station can render 100% while "
-                               f"owing it"),
-                    "remedy": (f"decompose {slug} into {project}'s PRD + epics, or add "
-                               f"it to DEFERRED_SPECS with the reason"),
-                })
+                findings.append(
+                    {
+                        "inv": "INV-A",
+                        "kind": "spec-not-decomposed",
+                        "project": project,
+                        "subject": slug,
+                        "status": status,
+                        "detail": (
+                            f"{station} owns an open Spec ({status}) that no FR or "
+                            f"epic references — the station can render 100% while "
+                            f"owing it"
+                        ),
+                        "remedy": (
+                            f"decompose {slug} into {project}'s PRD + epics, or add "
+                            f"it to DEFERRED_SPECS with the reason"
+                        ),
+                    }
+                )
             continue
 
         uncovered = sorted(declared - cited_by_spec.get(slug, set()))
         if uncovered:
             missing = _format_cap_ids(uncovered)
-            findings.append({
-                "inv": "INV-A", "kind": "spec-not-decomposed",
-                "project": project, "subject": slug, "status": status,
-                "detail": (f"{station} owns an open Spec ({status}) with {missing} "
-                           f"uncovered by any epic or FR — the station can render "
-                           f"100% while owing them"),
-                "remedy": (f"decompose {missing} of {slug} into {project}'s PRD + "
-                           f"epics, or add {slug} to DEFERRED_SPECS with the reason "
-                           f"(DEFERRED_SPECS remains available as a whole-Spec escape "
-                           f"hatch)"),
-            })
+            findings.append(
+                {
+                    "inv": "INV-A",
+                    "kind": "spec-not-decomposed",
+                    "project": project,
+                    "subject": slug,
+                    "status": status,
+                    "detail": (
+                        f"{station} owns an open Spec ({status}) with {missing} "
+                        f"uncovered by any epic or FR — the station can render "
+                        f"100% while owing them"
+                    ),
+                    "remedy": (
+                        f"decompose {missing} of {slug} into {project}'s PRD + "
+                        f"epics, or add {slug} to DEFERRED_SPECS with the reason "
+                        f"(DEFERRED_SPECS remains available as a whole-Spec escape "
+                        f"hatch)"
+                    ),
+                }
+            )
 
     # ---- INV-B: epics.md set == ledger set ------------------------------------
     epics_md = _canonical_epics(project_dir)
@@ -751,26 +971,37 @@ def _check_project_chain_completeness(
     led, unparsed = _ledger_story_ids(story_rows)
 
     if epics_md and unparsed:
-        findings.append({
-            "inv": "INV-B", "kind": "unparseable-ledger-key",
-            "project": project, "subject": f"{len(unparsed)} key(s)",
-            "status": ", ".join(sorted(unparsed)[:6]),
-            "detail": ("no recognisable story id — reported rather than dropped, "
-                       "because silently skipping a key is how a detector claims a "
-                       "clean set it never compared"),
-            "remedy": "rename to <epic>-<seq>-… or <wave><n>-…, or retire the key",
-        })
+        findings.append(
+            {
+                "inv": "INV-B",
+                "kind": "unparseable-ledger-key",
+                "project": project,
+                "subject": f"{len(unparsed)} key(s)",
+                "status": ", ".join(sorted(unparsed)[:6]),
+                "detail": (
+                    "no recognisable story id — reported rather than dropped, "
+                    "because silently skipping a key is how a detector claims a "
+                    "clean set it never compared"
+                ),
+                "remedy": "rename to <epic>-<seq>-… or <wave><n>-…, or retire the key",
+            }
+        )
     if epics_md and story_rows and not _story_ids_from_epics(epics_md):
-        findings.append({
-            "inv": "INV-D", "kind": "canonical-epics-declares-no-stories",
-            "project": project, "subject": epics_md.name,
-            "status": f"0 `### Story` headings vs {len(story_rows)} ledger key(s)",
-            "detail": ("the canonical epics doc declares NO stories in the shape every "
-                       "other station uses, so INV-B has nothing to compare and would "
-                       "silently pass — an empty set trivially matches nothing"),
-            "remedy": ("rewrite as `## Epic N: Title` + `### Story <id>: Title`, "
-                       "covering every ledger story"),
-        })
+        findings.append(
+            {
+                "inv": "INV-D",
+                "kind": "canonical-epics-declares-no-stories",
+                "project": project,
+                "subject": epics_md.name,
+                "status": f"0 `### Story` headings vs {len(story_rows)} ledger key(s)",
+                "detail": (
+                    "the canonical epics doc declares NO stories in the shape every "
+                    "other station uses, so INV-B has nothing to compare and would "
+                    "silently pass — an empty set trivially matches nothing"
+                ),
+                "remedy": ("rewrite as `## Epic N: Title` + `### Story <id>: Title`, covering every ledger story"),
+            }
+        )
     if epics_md and story_rows:
         ep_sets = _story_ids_from_epics(epics_md)
         ep_all = {i for s in ep_sets for i in s}
@@ -778,37 +1009,101 @@ def _check_project_chain_completeness(
             only_epics = sorted(next(iter(sorted(s))) for s in ep_sets if not (s & led))
             only_ledger = sorted(led - ep_all)
             if only_epics:
-                findings.append({
-                    "inv": "INV-B", "kind": "story-without-ledger-key",
-                    "project": project, "subject": f"{len(only_epics)} story(ies)",
-                    "status": ", ".join(only_epics[:10]),
-                    "detail": ("in epics.md with no ledger key — the board's percentage "
-                               "is computed over a set that excludes them"),
-                    "remedy": f"add them to {project}'s Tier-3 feed, then sprint-ledger-sync",
-                })
+                findings.append(
+                    {
+                        "inv": "INV-B",
+                        "kind": "story-without-ledger-key",
+                        "project": project,
+                        "subject": f"{len(only_epics)} story(ies)",
+                        "status": ", ".join(only_epics[:10]),
+                        "detail": (
+                            "in epics.md with no ledger key — the board's percentage "
+                            "is computed over a set that excludes them"
+                        ),
+                        "remedy": f"add them to {project}'s Tier-3 feed, then sprint-ledger-sync",
+                    }
+                )
             if only_ledger:
-                findings.append({
-                    "inv": "INV-B", "kind": "ledger-key-without-story",
-                    "project": project, "subject": f"{len(only_ledger)} key(s)",
-                    "status": ", ".join(only_ledger[:10]),
-                    "detail": "in the ledger with no epics.md story — an untraceable row",
-                    "remedy": f"add the story to {epics_md.name}, or retire the key",
-                })
+                findings.append(
+                    {
+                        "inv": "INV-B",
+                        "kind": "ledger-key-without-story",
+                        "project": project,
+                        "subject": f"{len(only_ledger)} key(s)",
+                        "status": ", ".join(only_ledger[:10]),
+                        "detail": "in the ledger with no epics.md story — an untraceable row",
+                        "remedy": f"add the story to {epics_md.name}, or retire the key",
+                    }
+                )
+
+    # ---- INV-B (epic arm): `## Epic N` headings == `epic-N` ledger keys ------
+    # Added 2026-09-14. The story arm above compares `### Story` ids only; every
+    # `epic-*` key is dropped before it runs, so an epic row with no heading (or
+    # a heading with no row) was unreachable by any detector while
+    # `fleet_picture.py` counted the fleet's epics from those very keys.
+    if epics_md and rows:
+        ep_headings = _epic_numbers_from_epics(epics_md)
+        ep_keys = _ledger_epic_numbers(rows)
+        if ep_headings or ep_keys:
+            heading_no_key = sorted(ep_headings - ep_keys)
+            key_no_heading = sorted(ep_keys - ep_headings)
+            if heading_no_key:
+                findings.append(
+                    {
+                        "inv": "INV-B",
+                        "kind": "epic-heading-without-ledger-key",
+                        "project": project,
+                        "subject": f"{len(heading_no_key)} epic(s)",
+                        "status": ", ".join(f"Epic {n}" for n in heading_no_key[:10]),
+                        "detail": (
+                            f"{', '.join(f'Epic {n}' for n in heading_no_key[:10])} "
+                            f"declared in {epics_md.name} with no `epic-N` ledger key — "
+                            f"fleet-picture counts epics from the ledger, so this epic "
+                            f"is invisible to the board"
+                        ),
+                        "remedy": "add the epic-N key to the ledger, or retire the heading",
+                    }
+                )
+            if key_no_heading:
+                findings.append(
+                    {
+                        "inv": "INV-B",
+                        "kind": "ledger-epic-key-without-heading",
+                        "project": project,
+                        "subject": f"{len(key_no_heading)} key(s)",
+                        "status": ", ".join(f"epic-{n}" for n in key_no_heading[:10]),
+                        "detail": (
+                            f"{', '.join(f'epic-{n}' for n in key_no_heading[:10])} "
+                            f"in the ledger with no `## Epic N` heading in "
+                            f"{epics_md.name} — its stories render under the preceding "
+                            f"epic, and the board over-counts"
+                        ),
+                        "remedy": (
+                            "write the missing `## Epic N:` heading above that epic's own stories, or retire the key"
+                        ),
+                    }
+                )
 
     # ---- INV-C: board line == ledger ------------------------------------------
     if board is not None and station in board and story_rows:
         b_done, b_total = board[station]
         l_done = sum(1 for v in story_rows.values() if v == "done")
         if (b_total, b_done) != (len(story_rows), l_done):
-            findings.append({
-                "inv": "INV-C", "kind": "board-diverges-from-ledger",
-                "project": project, "subject": station,
-                "status": f"board {b_done}/{b_total} vs ledger {l_done}/{len(story_rows)}",
-                "detail": ("the Guildhall renders a different story set than the "
-                           "durable record; scan_projects only UPGRADES a curated "
-                           "line, so this cannot self-heal"),
-                "remedy": "rebuild the station's data.js epics array from its ledger",
-            })
+            findings.append(
+                {
+                    "inv": "INV-C",
+                    "kind": "board-diverges-from-ledger",
+                    "project": project,
+                    "subject": station,
+                    "status": f"board {b_done}/{b_total} vs ledger {l_done}/{len(story_rows)}",
+                    "detail": (
+                        "the Guildhall renders a different story set than the "
+                        "durable record; scan_projects only UPGRADES a curated "
+                        "line, so this cannot self-heal"
+                    ),
+                    "remedy": "rebuild the station's data.js epics array from its ledger",
+                }
+            )
 
 
 def gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
@@ -857,9 +1152,7 @@ def _checkpoint_finding(
         check=check,
         status=DoctorStatus.OK if passed else DoctorStatus.FAIL,
         message=(
-            f"project {project}: {name} checkpoint pass"
-            if passed
-            else f"project {project}: {name} checkpoint fail"
+            f"project {project}: {name} checkpoint pass" if passed else f"project {project}: {name} checkpoint fail"
         ),
         evidence={
             "kind": check,
@@ -871,9 +1164,7 @@ def _checkpoint_finding(
     )
 
 
-def gather_chain_layers_audit(
-    target: Path, project: str
-) -> tuple[Finding, ...]:
+def gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...]:
     """CAP-3 chain audit for ``project`` (Stories 17.3 + 21.1).
 
     Read-only; pass/fail per checkpoint (layers, coherence, staleness,
@@ -887,9 +1178,7 @@ def gather_chain_layers_audit(
     )
 
 
-def _gather_chain_layers_audit(
-    target: Path, project: str
-) -> tuple[Finding, ...]:
+def _gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...]:
     try:
         gen = _load_dashboard_generate(target)
     except Exception as exc:  # noqa: BLE001 -- unevaluable, never crash
@@ -898,10 +1187,7 @@ def _gather_chain_layers_audit(
                 source=Source.CHAIN_LAYERS_AUDIT,
                 check="chain-layers-audit-unevaluable",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"fleet_scan failed to load — "
-                    f"chain layer audit cannot be evaluated ({exc})"
-                ),
+                message=(f"fleet_scan failed to load — chain layer audit cannot be evaluated ({exc})"),
                 evidence={
                     "kind": "chain-layers-audit-unevaluable",
                     "project": project,
@@ -970,20 +1256,12 @@ def _gather_chain_layers_audit(
                 source=Source.CHAIN_LAYERS_AUDIT,
                 check="chain-layers-audit-unevaluable",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"project {project!r} has no planning-artifacts tree — "
-                    "chain layer audit cannot be evaluated"
-                ),
+                message=(f"project {project!r} has no planning-artifacts tree — chain layer audit cannot be evaluated"),
                 evidence={
                     "kind": "chain-layers-audit-unevaluable",
                     "project": project,
                     "detail": "planning-artifacts missing",
-                    "subject": str(
-                        Path("_bmad-output")
-                        / "projects"
-                        / project
-                        / "planning-artifacts"
-                    ),
+                    "subject": str(Path("_bmad-output") / "projects" / project / "planning-artifacts"),
                 },
             ),
         )
@@ -995,11 +1273,7 @@ def _gather_chain_layers_audit(
     # CAP-3 coherence/staleness: reuse scan_fleet's live row for this project.
     fleet = gen.scan_fleet({}, None)
     fleet_row = next(
-        (
-            r
-            for r in fleet.get("rows", [])
-            if r.get("project") == project and r.get("slug") == project
-        ),
+        (r for r in fleet.get("rows", []) if r.get("project") == project and r.get("slug") == project),
         None,
     )
     if fleet_row is None:
@@ -1013,10 +1287,7 @@ def _gather_chain_layers_audit(
                 source=Source.CHAIN_LAYERS_AUDIT,
                 check="chain-layers-audit-unevaluable",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"project {project!r} has no fleet chain row — "
-                    "CAP-3 audit cannot be evaluated"
-                ),
+                message=(f"project {project!r} has no fleet chain row — CAP-3 audit cannot be evaluated"),
                 evidence={
                     "kind": "chain-layers-audit-unevaluable",
                     "project": project,
@@ -1077,8 +1348,7 @@ def _gather_chain_layers_audit(
             status=DoctorStatus.OK if not missing else DoctorStatus.WARN,
             message=(
                 f"project {project}: {len(present)}/{len(applicable)} chain layers "
-                f"present"
-                + (f"; missing: {', '.join(missing)}" if missing else "")
+                f"present" + (f"; missing: {', '.join(missing)}" if missing else "")
             ),
             evidence={
                 "kind": "chain-layers-audit",
@@ -1116,9 +1386,10 @@ def _gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
         # is the spec's own "INV-C silently skipped; INV-A/B/D unaffected" row
         # -- but the message still claimed "...and board agree" over a board
         # this gather had never read, and nothing in `evidence` let a consumer
-        # tell the two apart. The sibling `_board_projects` refuses exactly
-        # this coercion for `gather_dashboard_drift`, so the same bytes
-        # produced a confident OK here and an honest WARN there.
+        # tell the two apart. A since-deleted sibling, `_board_projects`,
+        # refused exactly this coercion for `gather_dashboard_drift`, so the
+        # same bytes produced a confident OK here and an honest WARN there --
+        # which is why this guard exists and must stay.
         return (
             Finding(
                 source=Source.CHAIN_COMPLETENESS,
@@ -1128,8 +1399,8 @@ def _gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
                     "every open Spec is decomposed, and epics, ledger and board agree"
                     if board is not None
                     else "every open Spec is decomposed and epics and ledger agree; "
-                         "INV-C (Guildhall data.js) is retired, so INV-C was NOT "
-                         "evaluated"
+                    "INV-C (Guildhall data.js) is retired, so INV-C was NOT "
+                    "evaluated"
                 ),
                 evidence={"projects": n, "board_read": board is not None},
             ),
@@ -1172,10 +1443,10 @@ def _load_foreign_module(path: Path, mod_name: str):
 
     Sole caller since Story 6.9: ``gather_check_layout`` used to share this
     helper via its own ``_load_check_layout`` (dynamically loading
-    ``check_layout.py`` to reuse its assertions), but that origin file is
-    now deleted and its logic ported into this module as permanent code
-    (``_check_layout_geometry``/``_layout_chip_rows``/the ``_LAYOUT_*``
-    constants) -- there is nothing left for it to dynamically load. This
+    ``check_layout.py`` to reuse its assertions), but that origin file was
+    deleted and its logic ported into this module as permanent code -- and
+    that ported code was itself deleted on 2026-09-14, once the retired
+    console made it unreachable. There is nothing left for it to load. This
     helper's own hardening was originally consolidated from two near-copies
     that had already drifted (only one had the ``sys.path``/``sys.modules``
     guards below); kept as ONE helper rather than trimmed back to inline
@@ -1198,7 +1469,7 @@ def _load_foreign_module(path: Path, mod_name: str):
       ``BaseException``, so ``degrade_on_exception`` -- which documents that
       it deliberately never catches one -- would let it escape the gather and
       break ``gather_dashboard_drift``'s own "never a raised exception"
-      contract. This is the same conversion ``_load_data_js`` already makes
+      contract. The since-deleted ``_load_data_js`` made the same conversion
       for the same reason; the loader had been left out. ``KeyboardInterrupt``
       is NOT converted.
     """
@@ -1223,7 +1494,34 @@ def _load_foreign_module(path: Path, mod_name: str):
     return mod
 
 
-def _load_dashboard_generate(target: Path):
+# --- the one surviving retired-Guildhall reader -------------------------------
+#
+# ``_load_dashboard_generate`` imports ``docs/dashboard/generate.py``, which is
+# gone -- and ``retired-console-check`` FAILS CI if it returns. So this body can
+# only execute in a state the estate forbids, and its sole caller
+# (``_gather_chain_layers_audit``) catches the failure and degrades to an
+# honest unevaluable Finding, which IS covered.
+#
+# It keeps ``# pragma: no cover`` for that reason, not for convenience: it is
+# reachable code whose reachable path is closed by policy rather than by
+# structure, so a test could only assert the failure branch its caller already
+# covers. Everything ELSE that carried this pragma on 2026-09-14 -- the layout
+# orchestration island and the dashboard-drift helper island, 494 lines across
+# ten functions and ten constants -- had no live caller at all and was deleted
+# outright the same day (DW-DASHBOARD-DEAD-CODE-1). That deletion moved this
+# module from 72% to 95% on real code, with findings byte-identical before and
+# after.
+#
+# Worth recording, because the ledger entry had it wrong: deleting that code
+# was NOT "a behaviour change to two registered detector sources plus their
+# taxonomy and schema entries". An AST call-graph pass showed the islands were
+# private orphans -- both gathers, their DISPATCH entries, their ``Source``
+# members and ``report-schema.json`` were untouched. The scope was over-stated
+# when the entry was written, which is why it had been deferred as needing its
+# own Dream when it was in fact hygiene.
+
+
+def _load_dashboard_generate(target: Path):  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Import ``target/scripts/fleet_scan.py`` (parsers extracted from the
     retired Guildhall generator) and point it at ``target``.
     """
@@ -1238,224 +1536,6 @@ def _load_dashboard_generate(target: Path):
     if hasattr(gen, "_PIXI_TASKS"):
         gen._PIXI_TASKS = None
     return gen
-
-
-def _load_data_js(target: Path) -> dict:
-    """Port of ``dashboard_drift_check.py``'s own ``_load_data_js`` -- with
-    one deliberate change. The original ``raise SystemExit(...)`` on an
-    unparseable ``data.js`` is replaced with a plain ``ValueError``:
-    ``SystemExit`` is a ``BaseException``, not an ``Exception``, so
-    ``sources.degrade_on_exception`` (which ``gather_dashboard_drift`` wraps
-    itself in) would never catch it, and it would escape this library call
-    exactly like the CLI script's own ``exit`` was never meant to (Boundaries:
-    "the gather itself must not raise it").
-    """
-    data_js = target / "docs" / "dashboard" / "data.js"
-    text = data_js.read_text(encoding="utf-8")
-    m = re.search(r"window\.DASHBOARD_DATA\s*=\s*(\{.*?\});?\s*$", text, re.DOTALL)
-    if not m:
-        raise ValueError(f"cannot parse {data_js}")
-    return json.loads(m.group(1))
-
-
-def _drift_epics_md_ids(path: Path) -> list[tuple[str, str | None]]:
-    """Every story heading in an epics.md as ``(id, None)`` -- verbatim from
-    the original (the second tuple slot is a retired dual-id accommodation;
-    see the original's own docstring)."""
-    out: list[tuple[str, str | None]] = []
-    try:
-        text = path.read_text(encoding="utf-8")
-    except Exception:  # noqa: BLE001 -- an unreadable/non-UTF-8 epics.md is
-        # "nothing to compare", not a reason to discard the twin findings this
-        # station's caller has ALREADY computed (reproduced live: one 0xe9 byte
-        # turned a real `twin-missing` FAIL into a WARN, exit 2 -> exit 0).
-        return out
-    for line in text.splitlines():
-        m = _DRIFT_STORY_HEADING.match(line)
-        if m:
-            out.append((m.group(1), None))
-    return out
-
-
-def _board_projects(data: dict, target: Path) -> dict:
-    """``data.js``'s ``projects`` mapping, or a raised ``ValueError`` when the
-    file does not actually carry one.
-
-    An ABSENT ``projects`` key is an empty board -- the original script's
-    ``data.get("projects", {})`` reads it exactly that way, and an empty board
-    legitimately produces no findings. A key that is PRESENT but not a mapping
-    (``null``, a list, a string) is something else entirely: the original
-    crashed on it, and coercing it to ``{}`` instead made
-    ``gather_dashboard_drift`` return a confident OK -- *"the committed data.js
-    matches the feeds"* -- over a board it had never read. Trading a loud crash
-    for a false green is the single worst outcome available to a detector whose
-    whole purpose is catching a board that lies, so this raises instead:
-    ``gather_dashboard_drift``'s own ``degrade_on_exception`` turns it into the
-    honest WARN, exactly as it already does for an unparseable ``data.js``.
-    """
-    if "projects" not in data:
-        return {}
-    projects = data["projects"]
-    if not isinstance(projects, dict):
-        raise ValueError(
-            f"cannot read the board in {target / 'docs' / 'dashboard' / 'data.js'}: "
-            f"'projects' is {type(projects).__name__}, not a mapping"
-        )
-    return projects
-
-
-def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:
-    """Port of ``dashboard_drift_check.py``'s own ``main()`` body -- the three
-    checks (tracked twin vs. Tier-3 feed, committed baseline vs. feed,
-    epics.md vs. board), producing structured dicts instead of printed lines.
-    ``kind``/message text is unchanged from the original.
-
-    ``findings`` is the CALLER's list, appended to in place by the per-station
-    helper -- see ``_check_chain_completeness``'s own docstring for why: a
-    helper that accumulates locally and returns at the end throws away its own
-    station's already-computed FAILs the moment anything downstream raises."""
-    findings: list[dict] = []
-
-    for key, proj in sorted(projects.items()):
-        try:
-            _check_project_dashboard_drift(target, gen, key, proj, findings)
-        except (Exception, SystemExit) as exc:  # noqa: BLE001 -- one station's
-            # malformed data.js entry or feed must not discard every other
-            # station's already-computed drift findings (mirrors
-            # _check_chain_completeness's own per-project isolation).
-            # SystemExit is in the tuple because this body CALLS functions off
-            # a dynamically exec'd, Marshal-owned file, which is free to
-            # sys.exit() at call time as well as at import; KeyboardInterrupt
-            # is deliberately left out.
-            findings.append({
-                "kind": "dashboard-drift-unevaluable", "project": key,
-                "detail": (f"{key}: could not be evaluated here — "
-                           f"{exc.__class__.__name__}: {exc}"),
-                "warn": True,
-            })
-    return findings
-
-
-def _check_project_dashboard_drift(
-    target: Path, gen, key: str, proj: object, findings: list[dict]
-) -> None:
-    """Append one station's drift findings to the CALLER's ``findings`` list --
-    split out of ``_check_dashboard_drift`` so its caller can isolate one
-    station's failure from the rest (and so a late raise cannot discard the
-    findings this station has already produced)."""
-    if not isinstance(proj, dict):
-        return  # a malformed data.js entry has no epics to compare
-    all_stories = [
-        s for e in proj.get("epics", []) or []
-        if isinstance(e, dict)
-        for s in e.get("stories", []) or []
-        if isinstance(s, (list, tuple)) and s
-    ]
-    # `stories` is the (id, status) unpacking set -- it needs >= 2 elements.
-    # `board_ids` is a pure MEMBERSHIP set and needs only s[0], so it must be
-    # built from the unfiltered list: filtering a 1-element `["1.1"]` out of
-    # board_ids made a story that IS on the board look absent, emitting a
-    # false `missing-story` FAIL.
-    stories = [s for s in all_stories if len(s) >= 2]
-    board_ids = {s[0] for s in all_stories}
-
-    # --- twin vs the Tier-3 feed --------------------------------------
-    rel_feed = gen.PROJECT_SOURCES.get(key)
-    slug_ = gen._KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
-    twin = (target / "_bmad-output" / "projects" / slug_
-            / "planning-artifacts" / "sprint-status-ledger.yaml")
-    feed_p = target / rel_feed if rel_feed else None
-    if feed_p and feed_p.is_file() and twin.is_file():
-        feed_map = gen.parse_sprint_status(feed_p)
-        twin_map = gen.parse_sprint_status(twin)
-        drifted = sorted(
-            k for k in set(feed_map) | set(twin_map)
-            if feed_map.get(k) != twin_map.get(k)
-        )
-        if drifted:
-            shown = ", ".join(drifted[:4]) + ("…" if len(drifted) > 4 else "")
-            regressing = sorted(
-                k for k in drifted
-                if twin_map.get(k) == "done" and feed_map.get(k) != "done"
-            )
-            if regressing:
-                rshown = ", ".join(regressing[:4]) + ("…" if len(regressing) > 4 else "")
-                findings.append({
-                    "kind": "twin-ahead", "project": key,
-                    "detail": (
-                        f"{key}: the Tier-3 feed is BEHIND the tracked "
-                        f"ledger — it would un-finish {len(regressing)} story(ies) "
-                        f"({rshown}). **Do NOT run sprint-ledger-sync**: the twin is "
-                        f"the durable record and the feed is the lossy one. Repair the "
-                        f"feed from the twin (`sprint-ledger-sync --repair-feed "
-                        f"--project {key}`), then re-check."
-                    ),
-                })
-            else:
-                findings.append({
-                    "kind": "twin-stale", "project": key,
-                    "detail": (
-                        f"{key}: the tracked sprint-status ledger disagrees "
-                        f"with the Tier-3 feed on {len(drifted)} story(ies) ({shown}), "
-                        f"none of them un-finishing a story. CI reads the TWIN, so the "
-                        f"deploy would render the stale set: run `pixi run -e "
-                        f"local-recipes sprint-ledger-sync --project {key}` and commit."
-                    ),
-                })
-    elif feed_p and feed_p.is_file() and not twin.is_file():
-        findings.append({
-            "kind": "twin-missing", "project": key,
-            "detail": (
-                f"{key}: has a Tier-3 sprint feed but no tracked "
-                f"ledger at {twin.relative_to(target)} — CI cannot see this "
-                f"project's completions and will fall back to commit archaeology. "
-                f"Run `pixi run -e local-recipes sprint-ledger-sync`."
-            ),
-        })
-
-    # --- committed baseline vs the local feed ---------------------------
-    rel = gen.PROJECT_SOURCES.get(key)
-    feed_path = target / rel if rel else None
-    if feed_path and feed_path.is_file():
-        sprint = gen.parse_sprint_status(feed_path)
-        for sid, status, *_rest in stories:
-            feed = gen.dashboard_id_to_status(sid, sprint)
-            if feed is None:
-                continue
-            if feed in _DRIFT_DONE and status not in _DRIFT_DONE:
-                findings.append({
-                    "kind": "stale-done", "project": key,
-                    "detail": (
-                        f"{key}:{sid} is '{feed}' in the sprint feed but "
-                        f"'{status}' on the board — the committed baseline is behind. "
-                        f"`--source git` never downgrades, so this will NOT self-heal "
-                        f"at deploy: story status lives on Lane 1 /console/ "
-                        f"(Guildhall data.js retired)."
-                    ),
-                })
-
-    # --- no epics.md story is missing from the board --------------------
-    slug = gen._KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
-    epics_md = (target / "_bmad-output" / "projects" / slug
-                / "planning-artifacts" / "epics.md")
-    if not epics_md.is_file() or key in getattr(gen, "_DERIVE_EXCLUDE", set()):
-        return
-    heading_ids = _drift_epics_md_ids(epics_md)
-    if not heading_ids:
-        return
-    for lead, alt in heading_ids:
-        if lead in board_ids or (alt and alt in board_ids):
-            continue
-        shown = f"{lead}" + (f" ({alt})" if alt else "")
-        findings.append({
-            "kind": "missing-story", "project": key,
-            "detail": (
-                f"{key}: epics.md has Story {shown} but no story with "
-                f"that id is on the board. If this line's story list is hand-authored "
-                f"(scan_projects warns when it cannot parse the headings), add it to "
-                f"data.js by hand."
-            ),
-        })
 
 
 def _no_system_exit(fn):
@@ -1475,9 +1555,7 @@ def _no_system_exit(fn):
     try:
         return fn()
     except SystemExit as exc:
-        raise RuntimeError(
-            f"a dynamically loaded file called sys.exit({exc.code!r}) at call time"
-        ) from exc
+        raise RuntimeError(f"a dynamically loaded file called sys.exit({exc.code!r}) at call time") from exc
 
 
 _RETIRED_CONSOLE_FILES = (
@@ -1541,10 +1619,7 @@ def _gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
             source=Source.DASHBOARD_DRIFT,
             check="dashboard-drift",
             status=DoctorStatus.OK,
-            message=(
-                "Guildhall generator, data.js, and the four dashboard pixi "
-                "tasks stay gone"
-            ),
+            message=("Guildhall generator, data.js, and the four dashboard pixi tasks stay gone"),
             evidence={"retired": True},
         ),
     )
@@ -1552,27 +1627,35 @@ def _gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
 
 # === gather_check_layout =====================================================
 #
-# Ported from docs/dashboard/check_layout.py -- see that script's own module
-# docstring for the full "why measure geometry, not just execution" rationale
-# and the two live incidents (a broken status chip surviving three green
-# gates; the running chip's own fix trading one visual bug for another).
+# This section once held a full browser-driven layout gate, ported from
+# docs/dashboard/check_layout.py: it launched chromium over a served
+# docs/dashboard/, measured the Guildhall console bar at five widths x five
+# font-pressures, and kept "could not measure" and "measured, and it is broken"
+# on deliberately separate verdicts. See that origin script's own module
+# docstring, and this file's git history, for the rationale and the two live
+# incidents behind it (a broken status chip surviving three green gates; the
+# fix for it trading one visual bug for another).
 #
-# Story 6.9 FIX (2026-08-09): this section used to REUSE the origin script's
-# ``check()``/``_rows()``/probe constants via a dynamic ``exec_module`` of
-# ``target/docs/dashboard/check_layout.py`` (``_load_check_layout``, ported
-# from the same ``_load_foreign_module`` ``_load_dashboard_generate`` still
-# uses below). That was fine while the origin file existed alongside its
-# port; Story 6.9 deletes it -- and a dynamic load of a file that is gone
-# does not degrade occasionally, it fails EVERY time, in EVERY environment,
-# permanently: the port would move home only to stop functioning the moment
-# its own story landed. The assertions therefore move in as real, permanent
-# code below (``_check_layout_geometry``/``_layout_chip_rows``, verbatim in
-# behavior from the origin's own ``check()``/``_rows()``, prefixed to fit
-# this module's existing ``_check_<subject>`` naming convention rather than
-# colliding with it) -- no exec, no dependency on a file that may not exist.
-# The browser/HTTP orchestration below (``_run_check_layout``) is unchanged
-# in shape; only the names it reaches for moved from a loaded module's
-# attributes to this module's own.
+# DELETED 2026-09-14 (DW-DASHBOARD-DEAD-CODE-1). The Guildhall console retired;
+# docs/dashboard/{generate.py,data.js,index.html} are gone and
+# `retired-console-check` FAILS CI if any returns. `gather_check_layout` below
+# had already been reduced to a pure retirement assertion -- FAIL if a retired
+# path reappears, OK otherwise -- and an AST call-graph pass proved the whole
+# orchestration island beneath it (`_run_check_layout`, `_serve_layout_dir`,
+# `_check_layout_geometry`, `_layout_chip_rows`, `_suppress_close` and the ten
+# `_LAYOUT_*` probe constants) had NO live caller at all: `_run_check_layout`
+# was called by nothing, and everything else only by it. The same pass found a
+# second orphan island on the dashboard-drift side (`_check_dashboard_drift` ->
+# `_check_project_dashboard_drift` -> `_drift_epics_md_ids`, plus `_load_data_js`
+# and `_board_projects`), deleted with it -- 494 lines, zero behaviour change,
+# verified by byte-comparing this module's `--json` findings before and after.
+#
+# Nothing registered was touched: both gathers, their DISPATCH entries, their
+# `Source` members and `report-schema.json` are unchanged. Only `_LAYOUT_CHECK`
+# survives here, because the live gather still emits it as the check name.
+#
+# If the console is ever revived, this is a rewrite against whatever replaces
+# it, not a revert -- the deleted code measured a bar that no longer exists.
 
 _LAYOUT_CHECK = "console-bar-layout"
 
@@ -1584,10 +1667,6 @@ _LAYOUT_CHECK = "console-bar-layout"
 # Widths above the 720px collapse breakpoint, where the three-column grid is
 # live and all four assertions apply; plus one below it, where stacking is the
 # designed behaviour and only no-overlap/in-bounds are meaningful.
-_LAYOUT_WIDE = (1600, 1400, 1200, 1000, 820)
-_LAYOUT_NARROW = (700,)
-_LAYOUT_BREAKPOINT = 720
-_LAYOUT_CENTRE_TOL = 2.0   # px; sub-pixel layout means exact 0 is not a fair
 # demand -- carried verbatim; unused in the origin too (dead there already,
 # not a porting artifact).
 
@@ -1595,8 +1674,6 @@ _LAYOUT_CENTRE_TOL = 2.0   # px; sub-pixel layout means exact 0 is not a fair
 # `.cbrow` now, and treating it as a row member made the gate report a phantom
 # "bar wrapped to 2 rows" (the two elements are in different containers, at the
 # same one-line bar height of 34px).
-_LAYOUT_CHIPS = ("#chip-ship", "#chip-run")
-_LAYOUT_EDGE_TOL = 14.0   # px; the bar's own 12px padding plus a sub-pixel allowance
 
 # Font sizes in px applied to `.cchip`. 11 is the design size; the rest simulate
 # a wider font face or a zoomed browser, which is how the operator hits at 11px
@@ -1604,31 +1681,6 @@ _LAYOUT_EDGE_TOL = 14.0   # px; the bar's own 12px padding plus a sub-pixel allo
 # outer chips wrap -- that is the correct degradation -- so the one-row assertion
 # is scoped to the design size only. Centring and non-overlap must hold at ALL
 # sizes; they are the invariants.
-_LAYOUT_PRESSURES = (11, 14, 17, 20, 24)
-_LAYOUT_DESIGN_SIZE = 11
-
-_LAYOUT_APPLY = """(fs) => {
-  document.querySelectorAll('.cchip').forEach(e => { e.style.fontSize = fs + 'px'; });
-}"""
-
-_LAYOUT_PROBE = """() => {
-  const bar = document.querySelector('.cbstatus');
-  if (!bar) return null;
-  const bb = bar.getBoundingClientRect();
-  const box = el => { const b = el.getBoundingClientRect();
-    return {l:b.left, r:b.right, t:b.top, b:b.bottom, cx:(b.left+b.right)/2}; };
-  const out = {bar:{l:bb.left, r:bb.right, cx:(bb.left+bb.right)/2, h:bb.height}, chips:{}};
-  for (const s of %s) {
-    const el = document.querySelector(s);
-    if (!el) continue;
-    const c = box(el);
-    const txt = el.querySelector('.ctext');
-    c.need = txt ? txt.getBoundingClientRect().width : 0;   // intrinsic label width
-    c.have = el.clientWidth;                                 // room the chip actually has
-    out.chips[s] = c;
-  }
-  return out;
-}""" % list(_LAYOUT_CHIPS)
 
 
 class _LayoutQuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -1640,106 +1692,6 @@ class _LayoutQuietHandler(http.server.SimpleHTTPRequestHandler):
     it lives beside ``board.py``'s other sources."""
 
     def log_message(self, *_args):  # noqa: D102
-        pass
-
-
-def _serve_layout_dir(directory: Path):
-    """Serve ``directory`` over an ephemeral loopback port -- ported verbatim
-    from the origin's own ``_serve()`` (renamed only for this module's
-    prefix convention), so the run is hermetic rather than depending on
-    whichever server the operator happens to have open."""
-    handler = functools.partial(_LayoutQuietHandler, directory=str(directory))
-    httpd = socketserver.TCPServer(("127.0.0.1", 0), handler)
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
-    return httpd, httpd.server_address[1]
-
-
-def _layout_chip_rows(chips: dict) -> list[list[str]]:
-    """Group chips into visual rows by vertical overlap -- ported verbatim
-    from the origin's own ``_rows()`` (renamed only for this module's
-    prefix convention; body unchanged)."""
-    rows: list[list[str]] = []
-    for name in sorted(chips, key=lambda n: chips[n]["t"]):
-        c = chips[name]
-        for row in rows:
-            o = chips[row[0]]
-            if c["t"] < o["b"] and o["t"] < c["b"]:
-                row.append(name)
-                break
-        else:
-            rows.append([name])
-    return rows
-
-
-def _check_layout_geometry(width: int, m: dict, scenario: str = "live") -> list[str]:
-    """The five geometry assertions (edges/no-overlap/one-row/in-bounds/
-    not-clipped) -- ported verbatim from the origin's own ``check()``
-    (renamed to ``_check_layout_geometry`` to match this module's existing
-    ``_check_chain_completeness``/``_check_dashboard_drift`` naming
-    convention for "the pure assertion logic behind a gather"; body and
-    every message string unchanged)."""
-    bar, chips = m["bar"], m["chips"]
-    found: list[str] = []
-    at = f"w={width} [{scenario}]"
-    missing = [c for c in _LAYOUT_CHIPS if c not in chips]
-    if missing:
-        found.append(f"{at}: chip(s) absent from the DOM: {', '.join(missing)}")
-        return found
-
-    rows = _layout_chip_rows(chips)
-
-    # (2) no two chips sharing a row may overlap horizontally
-    for row in rows:
-        ordered = sorted(row, key=lambda n: chips[n]["l"])
-        for a, b in zip(ordered, ordered[1:]):
-            gap = chips[b]["l"] - chips[a]["r"]
-            if gap < 0:
-                found.append(f"{at}: {a} and {b} share a row and OVERLAP by {-gap:.1f}px")
-
-    # (5) no chip is clipping its own label
-    for name, c in chips.items():
-        if c.get("need", 0) > c.get("have", 0) + 1.0:
-            found.append(
-                f"{at}: {name} is CLIPPED — label needs {c['need']:.0f}px, chip has "
-                f"{c['have']:.0f}px; the text is rendering outside its own box")
-
-    # (4) nothing escapes the bar
-    for name, c in chips.items():
-        if c["l"] < bar["l"] - 0.5 or c["r"] > bar["r"] + 0.5:
-            found.append(
-                f"{at}: {name} escapes the bar "
-                f"(chip {c['l']:.0f}–{c['r']:.0f} vs bar {bar['l']:.0f}–{bar['r']:.0f})")
-
-    if width > _LAYOUT_BREAKPOINT:
-        # (3) one row above the breakpoint -- only at the design font size, since
-        # wrapping under font pressure is the intended degradation, not a fault.
-        if scenario == f"{_LAYOUT_DESIGN_SIZE}px" and len(rows) != 1:
-            found.append(
-                f"{at}: bar wrapped to {len(rows)} rows above the {_LAYOUT_BREAKPOINT}px "
-                f"breakpoint (height {bar['h']:.0f}px) — a chip is folding when it should not")
-        # (1) ship flush left, running flush right
-        dl = chips["#chip-ship"]["l"] - bar["l"]
-        dr = bar["r"] - chips["#chip-run"]["r"]
-        if dl > _LAYOUT_EDGE_TOL:
-            found.append(f"{at}: last-shipped chip is {dl:.1f}px from the bar's left edge "
-                         f"(tolerance {_LAYOUT_EDGE_TOL}px) — it is not left-flush")
-        if dr > _LAYOUT_EDGE_TOL:
-            found.append(f"{at}: running chip is {dr:.1f}px from the bar's right edge "
-                         f"(tolerance {_LAYOUT_EDGE_TOL}px) — it is not right-flush")
-    return found
-
-
-def _suppress_close(close) -> None:
-    """Run a cleanup callable, swallowing anything it raises.
-
-    Used only in ``_run_check_layout``'s ``finally`` blocks: a browser or
-    socket that fails to shut down is not a layout verdict, and letting it
-    propagate replaced every already-collected finding with one vacuous WARN.
-    """
-    try:
-        close()
-    except Exception:  # noqa: BLE001, S110 -- see the docstring; a failed
-        # teardown must never be able to change what this gather reports.
         pass
 
 
@@ -1801,171 +1753,3 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
             evidence={"retired": True},
         ),
     )
-
-
-def _run_check_layout(target: Path, sync_playwright) -> tuple[Finding, ...]:
-    """The NEW orchestration: launch a browser, serve ``target/docs/dashboard/``
-    over ``_serve_layout_dir``, measure the console bar at every width x
-    font-pressure combination the origin script defined, and hand each
-    width's probe result to ``_check_layout_geometry``. Every explicit
-    ``exit 2`` branch the original had (no usable chromium, the bar never
-    rendering) becomes a WARN ``Finding`` here instead of a process exit.
-
-    "COULD NOT MEASURE" AND "MEASURED, AND IT IS BROKEN" ARE DIFFERENT
-    VERDICTS, and this function keeps them apart in two separate lists. A
-    ``networkidle`` goto with a 20s timeout makes a single width's flake the
-    EXPECTED failure mode, and ``exit_code_for`` maps FAIL to exit 2 while WARN
-    leaves it at 0 -- so folding an unmeasurable width in with the real layout
-    findings reported a transient browser hiccup as a broken console bar and
-    turned the gate red on a clean board (reproduced live). That also
-    contradicts this module's own two siblings, which both spell
-    cannot-evaluate ``warn`` (``chain-completeness-unevaluable``,
-    ``dashboard-drift-unevaluable``). The ``.cbstatus not found`` line stays a
-    FAIL, because that one IS the original's own finding text for a bar that
-    loaded and did not render.
-    """
-    # `target/docs/dashboard`, NOT the origin script's own `HERE`
-    # (`Path(__file__).resolve().parent`) -- that resolved to wherever
-    # check_layout.py physically lived, which was only the same directory as
-    # the board this gather was ASKED about when the file happened to sit
-    # beside it (a symlinked/shared `check_layout.py` measured a DIFFERENT
-    # repo's dashboard, reproduced live before this was ported). The origin
-    # script had no `target` parameter and so could not hit this; serving
-    # `target`'s own directory is the fix, and it is unconditional now that
-    # there is no loaded module's `HERE` to prefer by mistake.
-    httpd, port = _serve_layout_dir(target / "docs" / "dashboard")
-    url = f"http://127.0.0.1:{port}/index.html"
-    raw_findings: list[str] = []
-    unmeasured: list[str] = []
-    measured = 0
-    try:
-        with sync_playwright() as p:
-            try:
-                browser = p.chromium.launch(channel="chrome")
-            except Exception:  # noqa: BLE001 -- fall back to the bundled chromium
-                try:
-                    browser = p.chromium.launch()
-                except Exception as exc:  # noqa: BLE001 -- no usable browser at all
-                    return _layout_warn(
-                        f"no usable chromium ({type(exc).__name__}) — cannot measure layout",
-                        target,
-                    )
-            try:
-                for width in (*_LAYOUT_WIDE, *_LAYOUT_NARROW):
-                    # Per-width isolation: without this guard one late failure
-                    # unwound the whole loop and discarded every
-                    # already-measured FAIL, reporting a genuinely broken bar
-                    # as "could not evaluate" -- the same finding-masking class
-                    # fixed per-project in _check_chain_completeness.
-                    try:
-                        page = browser.new_page(viewport={"width": width, "height": 900})
-                        try:
-                            page.goto(url, wait_until="networkidle", timeout=20000)
-                            page.wait_for_timeout(250)
-                            for fs in _LAYOUT_PRESSURES:
-                                name = f"{fs}px"
-                                page.evaluate(_LAYOUT_APPLY, fs)
-                                page.wait_for_timeout(60)
-                                m = page.evaluate(_LAYOUT_PROBE)
-                                if not m:
-                                    raw_findings.append(
-                                        f"w={width} [{name}]: .cbstatus not found — "
-                                        f"the bar did not render"
-                                    )
-                                    continue
-                                # AFTER _check_layout_geometry(), not before.
-                                # `measured` gates the OK message's "console
-                                # bar edges held, no overlap" -- so counting a
-                                # probe whose assertions never actually RAN
-                                # asserted a clean grid over an evaluation
-                                # that failed. An assertion pass raising at
-                                # every width produced a confident OK
-                                # alongside the per-width WARNs.
-                                raw_findings += _check_layout_geometry(width, m, name)
-                                measured += 1
-                        finally:
-                            # A page that fails to CLOSE is not a failed
-                            # measurement. Left bare, a raising `page.close()`
-                            # put a fully-measured width into `unmeasured` --
-                            # so the gather emitted a spurious cannot-measure
-                            # WARN alongside an OK reading "6 measurement(s):
-                            # 3 width(s) x 2 steps; 3 width(s) could not be
-                            # measured", counting every width in both lists.
-                            # Its two sibling teardowns below were already
-                            # suppressed for exactly this reason.
-                            _suppress_close(page.close)
-                    except (Exception, SystemExit) as exc:  # noqa: BLE001 --
-                        # SystemExit: kept as defense-in-depth against
-                        # playwright's own internals (a third-party library
-                        # this function calls into, not code this module
-                        # owns) rather than -- as before Story 6.9's fix --
-                        # against a dynamically exec'd `check_layout.py`
-                        # that no longer exists; KeyboardInterrupt stays out.
-                        unmeasured.append(
-                            f"w={width}: could not be measured — "
-                            f"{exc.__class__.__name__}: {exc}"
-                        )
-                        continue
-            finally:
-                # Cleanup must not be able to DESTROY the verdict. Raising out
-                # of these two `finally` blocks put every already-collected
-                # FAIL back behind one whole-gather WARN -- the masking hole
-                # the per-width guard above closes, reopened one frame up, and
-                # reproduced live with a browser that dies on close.
-                _suppress_close(browser.close)
-    finally:
-        # shutdown() only stops serve_forever's loop; without server_close()
-        # the listening socket stays open, leaking one fd (and one held
-        # ephemeral port) per call. Harmless in the one-shot CLI this was
-        # ported from, unbounded in a long-lived library caller.
-        _suppress_close(httpd.shutdown)
-        _suppress_close(httpd.server_close)
-
-    warns = tuple(_layout_warn(text, target)[0] for text in unmeasured)
-
-    if not measured:
-        # Nothing measured anywhere is the original's own UNKNOWN (its
-        # `exit 2`), so WARN is right -- but the collected reasons ARE the
-        # diagnosis. Returning only "the bar never rendered at any width"
-        # discarded every one of them AND asserted a cause never observed:
-        # when the page failed to LOAD, whether the bar would have rendered is
-        # exactly what is unknown.
-        detail = "; ".join([*unmeasured, *raw_findings]) or (
-            "the bar never rendered at any width"
-        )
-        return _layout_warn(detail, target)
-
-    if not raw_findings:
-        message = (
-            f"console bar edges held, no overlap — {measured} measurement(s): "
-            f"{len(_LAYOUT_WIDE) + len(_LAYOUT_NARROW)} width(s) x "
-            f"{len(_LAYOUT_PRESSURES)} font-pressure step(s)"
-        )
-        if unmeasured:
-            # Never claim a clean grid that was not measured (this gather's
-            # own headline contract).
-            message += f"; {len(unmeasured)} width(s) could not be measured"
-        return (
-            *warns,
-            Finding(
-                source=Source.CHECK_LAYOUT,
-                check=_LAYOUT_CHECK,
-                status=DoctorStatus.OK,
-                message=message,
-                evidence={"measured": measured},
-            ),
-        )
-    return (
-        *warns,
-        *(
-            Finding(
-                source=Source.CHECK_LAYOUT,
-                check=_LAYOUT_CHECK,
-                status=DoctorStatus.FAIL,
-                message=finding_text,
-                evidence={"measured": measured},
-            )
-            for finding_text in raw_findings
-        ),
-    )
-

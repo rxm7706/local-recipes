@@ -39,9 +39,7 @@ def _core_shaped_frames() -> dict[str, pd.DataFrame]:
         "core_feedstock_attribution": pd.DataFrame(
             {"conda_name": ["a", "b", "c"], "feedstock_name": ["alpha", "beta", "beta"]}
         ),
-        "vcs_archived_feedstocks": pd.DataFrame(
-            {"feedstock_name": ["beta"], "archived": pd.array([1], dtype="Int64")}
-        ),
+        "vcs_archived_feedstocks": pd.DataFrame({"feedstock_name": ["beta"], "archived": pd.array([1], dtype="Int64")}),
         "core_downloads": pd.DataFrame(
             {
                 "conda_name": ["a", "b", "c"],
@@ -68,9 +66,7 @@ def test_catalog_declares_the_composed_dataset() -> None:
 def test_kedro_run_composes_and_writes_the_parquet(tmp_path: Path) -> None:
     out_path = tmp_path / "semantic_packages.parquet"
     frames = _core_shaped_frames()
-    catalog_entries: dict[str, object] = {
-        name: MemoryDataset(df) for name, df in frames.items()
-    }
+    catalog_entries: dict[str, object] = {name: MemoryDataset(df) for name, df in frames.items()}
     catalog_entries["semantic_packages"] = ParquetDataset(filepath=str(out_path))
     catalog = DataCatalog(catalog_entries)
 
@@ -88,9 +84,7 @@ def test_missing_required_upstream_fails_loud_naming_the_dataset(tmp_path: Path)
     frames = _core_shaped_frames()
     del frames["core_packages_enumerated"]  # the population input, deliberately absent
     catalog_entries: dict[str, object] = {name: MemoryDataset(df) for name, df in frames.items()}
-    catalog_entries["semantic_packages"] = ParquetDataset(
-        filepath=str(tmp_path / "semantic_packages.parquet")
-    )
+    catalog_entries["semantic_packages"] = ParquetDataset(filepath=str(tmp_path / "semantic_packages.parquet"))
     catalog = DataCatalog(catalog_entries)
 
     with pytest.raises(ValueError, match="core_packages_enumerated"):

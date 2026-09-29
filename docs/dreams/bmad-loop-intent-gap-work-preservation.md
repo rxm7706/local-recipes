@@ -2,8 +2,11 @@
 title: An intent-gap revert can never discard real work without a recoverable trace
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `bmad-loop-intent-gap-work-preservation`).
 
 # An intent-gap revert can never discard real work without a recoverable trace
 

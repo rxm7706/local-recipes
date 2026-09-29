@@ -8,6 +8,7 @@ Permanent Wave-A tests (AD-11): fixture-based, non-credentialed, offline.
 - (d) the Kedro bootstrap/session seam on the dotted `package_name` (Task 2.2).
 - (e) the AUD-ATLAS-011 pandas NULL-identity pin canary (story 10-4).
 """
+
 from pathlib import Path
 
 MEMBER_DIR = Path(__file__).resolve().parents[2]
@@ -18,8 +19,9 @@ def test_import_pyforge_atlas():
 
 
 def test_import_pyforge_warden_beside_atlas():
-    import pyforge.atlas  # noqa: F401
     import pyforge.warden  # noqa: F401
+
+    import pyforge.atlas  # noqa: F401
 
 
 def test_import_kedro_dagster_glue():

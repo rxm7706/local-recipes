@@ -129,3 +129,27 @@ export CONDA_OFFLINE=1
 export CONDA_PKGS_DIRS=/opt/mirror/pkgs
 ./scripts/offline-build.sh recipes/my-package
 ```
+
+## JFrog-proxied deployment checklist
+
+The steps above cover raw filesystem mirroring. If you're behind JFrog Artifactory instead (see
+[`docs/explanation/enterprise-deployment.md`](../explanation/enterprise-deployment.md) § 2 for the
+proxy architecture), use this checklist instead of Steps 1-6.
+
+### Setup (one-time)
+
+- [ ] Confirm JFrog has remote repositories for: conda-forge, pypi.org, files.pythonhosted.org (recommended), api.anaconda.org (optional)
+- [ ] Set up corporate CA in OS trust store, or set `REQUESTS_CA_BUNDLE` env var, or pixi's `tls-root-certs = "native"`
+- [ ] Author `.pixi/config.toml` from the template at `docs/reference/pixi-config-jfrog.example.toml`
+- [ ] Set up `*_BASE_URL` env vars in `~/.bashrc` / `.envrc` / pixi env activation (see [`docs/explanation/enterprise-deployment.md`](../explanation/enterprise-deployment.md) § 6 for the full table)
+- [ ] Bootstrap the CVE database from the internal mirror: `pixi run -e vuln-db update-cve-db`
+- [ ] Bootstrap the atlas: `pixi run bootstrap-data -- --fresh` (30-45 min cold; uses your `*_BASE_URL` overrides)
+- [ ] Validate: `pixi run health-check` (expects no public-host errors)
+- [ ] Confirm the `build` env resolves — the CI linter exports `environment.yaml` from it
+- [ ] Decide which product envs you need; they are `no-default-feature` and cheap, but each still pulls its own run-deps
+- [ ] **Do NOT** budget for `pixi run bmad-preflight` — that task is broken (see [`docs/how-to/pixi-tasks.md`](pixi-tasks.md))
+
+### Per-session
+
+- [ ] Confirm `JFROG_API_KEY` is set ONLY in JFrog-only shells (or use subshell scoping — see § *Cross-host credential leak* in the explanation doc)
+- [ ] If running cron jobs, wrap each cron command in a subshell that unsets `JFROG_API_KEY` if it hits external hosts

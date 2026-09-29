@@ -60,6 +60,7 @@ __all__ = (
     "SCRIBE_BINARY",
     "SCRIBE_FALLBACK_BIN_DIRS",
     "ScribeCli",
+    "ScribeRebuildOutcome",
     "ScribeRecallOutcome",
     "ScribeRefreshOutcome",
 )
@@ -72,10 +73,12 @@ SCRIBE_BINARY = "scribe"
 #: are invisible to a bare operator ``PATH`` -- the same honest-probing
 #: reason ``adapters/harness_bmadbuild.py::_resolve_binary`` gives, and the
 #: same shape the packaged harness profiles' own ``fallback_bin_dirs``
-#: use. ``pyforge-scribe`` first (its own env), then the day-to-day env.
+#: use. ``pyforge-scribe`` first (its own env), then the Guild default --
+#: the only env that exists at runtime (Story 46.12, spec-pyforge-marshal
+#: CAP-263; `local-recipes` is the recipe factory, never a runtime).
 SCRIBE_FALLBACK_BIN_DIRS: tuple[str, ...] = (
     ".pixi/envs/pyforge-scribe/bin",
-    ".pixi/envs/local-recipes/bin",
+    ".pixi/envs/pyforge-guild/bin",
 )
 
 #: Ceiling for one refresh. The declared work is stat-only fingerprinting
@@ -83,6 +86,10 @@ SCRIBE_FALLBACK_BIN_DIRS: tuple[str, ...] = (
 #: bound a wedged or prompting CLI, never to cut short real work.
 _REFRESH_TIMEOUT_S = 120.0
 _RECALL_TIMEOUT_S = 60.0
+
+#: Ceiling for one substrate rebuild (Story 46.1): a full planning-graph
+#: compile or index refresh over the whole repo on a cold runner.
+_REBUILD_TIMEOUT_S = 1800.0
 
 
 @dataclass(frozen=True)
@@ -99,6 +106,20 @@ class ScribeRecallOutcome:
     grounded: bool = False
     text: str = ""
     citation: str | None = None
+    reason: str | None = None
+    argv: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class ScribeRebuildOutcome:
+    """What one substrate-rebuild invocation (Story 46.1) produced.
+
+    ``ok`` means the grammar ran and exited 0 -- NOT that the member's
+    sentinel now exists; the caller checks the sentinel itself, since
+    ``scribe graph compile --nightly`` exits 0 when another compile already
+    holds the lock."""
+
+    ok: bool
     reason: str | None = None
     argv: tuple[str, ...] = field(default_factory=tuple)
 
@@ -163,9 +184,7 @@ class ScribeCli:
         is "run from the repository root (never a hardcoded absolute
         path)", and its fingerprint index and derived artifacts are all
         resolved relative to that root."""
-        resolved = (
-            binary_path if binary_path is not None else self.resolve_binary(repo_root)
-        )
+        resolved = binary_path if binary_path is not None else self.resolve_binary(repo_root)
         if resolved is None:
             return ScribeRefreshOutcome(
                 ok=False,
@@ -178,9 +197,7 @@ class ScribeCli:
             )
         argv = render_scribe_refresh_argv(resolved, str(manifest_path))
         try:
-            result = self._process.run(
-                argv, cwd=Path(repo_root), timeout_s=_REFRESH_TIMEOUT_S
-            )
+            result = self._process.run(argv, cwd=Path(repo_root), timeout_s=_REFRESH_TIMEOUT_S)
         except ProcessError as exc:
             return ScribeRefreshOutcome(
                 ok=False,
@@ -218,9 +235,7 @@ class ScribeCli:
                 ),
             )
         refreshed, skipped = parsed
-        return ScribeRefreshOutcome(
-            ok=True, refreshed=refreshed, skipped=skipped, argv=argv
-        )
+        return ScribeRefreshOutcome(ok=True, refreshed=refreshed, skipped=skipped, argv=argv)
 
     def recall(
         self,
@@ -232,9 +247,7 @@ class ScribeCli:
     ) -> ScribeRecallOutcome:
         """Run the declared ``scribe recall`` grammar and return what it
         reported. Never raises."""
-        resolved = (
-            binary_path if binary_path is not None else self.resolve_binary(repo_root)
-        )
+        resolved = binary_path if binary_path is not None else self.resolve_binary(repo_root)
         if resolved is None:
             return ScribeRecallOutcome(
                 ok=False,
@@ -247,9 +260,7 @@ class ScribeCli:
             )
         argv = render_scribe_recall_argv(resolved, query, scope=scope)
         try:
-            result = self._process.run(
-                argv, cwd=Path(repo_root), timeout_s=_RECALL_TIMEOUT_S
-            )
+            result = self._process.run(argv, cwd=Path(repo_root), timeout_s=_RECALL_TIMEOUT_S)
         except ProcessError as exc:
             return ScribeRecallOutcome(
                 ok=False,
@@ -282,3 +293,38 @@ class ScribeCli:
             citation=parsed.citation,
             argv=argv,
         )
+
+    def rebuild(
+        self,
+        *,
+        repo_root: Path,
+        argv_tail: Sequence[str],
+        timeout_s: float = _REBUILD_TIMEOUT_S,
+        binary_path: str | None = None,
+    ) -> ScribeRebuildOutcome:
+        """Run ``scribe <argv_tail>`` from ``repo_root`` to rebuild one
+        substrate member (Story 46.1, spec-pyforge-marshal CAP-192). The
+        tails are ``core/substrate.py``'s; this method only executes them.
+        Never raises -- every failure is a reason the caller names in
+        MRS-CTX-004."""
+        resolved = binary_path if binary_path is not None else self.resolve_binary(repo_root)
+        if resolved is None:
+            return ScribeRebuildOutcome(
+                ok=False,
+                reason=(f"the {SCRIBE_BINARY!r} CLI did not resolve on PATH or in {list(SCRIBE_FALLBACK_BIN_DIRS)!r}"),
+            )
+        argv = (resolved, *argv_tail)
+        try:
+            result = self._process.run(argv, cwd=Path(repo_root), timeout_s=timeout_s)
+        except ProcessError as exc:
+            return ScribeRebuildOutcome(ok=False, argv=argv, reason=f"{list(argv)!r} could not run ({exc})")
+        if result.returncode != 0:
+            # stdout, then stderr, newline-separated: the tail is the last stderr line.
+            output = "\n".join(part for part in ((result.stdout or "").strip(), (result.stderr or "").strip()) if part)
+            tail = output.splitlines()[-1] if output else "<no output>"
+            return ScribeRebuildOutcome(
+                ok=False,
+                argv=argv,
+                reason=f"{list(argv)!r} exited {result.returncode} ({tail})",
+            )
+        return ScribeRebuildOutcome(ok=True, argv=argv)

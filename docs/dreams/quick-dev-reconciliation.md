@@ -2,8 +2,11 @@
 title: Two ways to finish a story, and Marshal has only ever heard of one
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `quick-dev-reconciliation`).
 
 # Two ways to finish a story, and Marshal has only ever heard of one
 

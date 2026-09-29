@@ -46,9 +46,7 @@ import pytest
 # follows the same importorskip guard the django-requiring sibling files use
 # (test_dashboard_cache.py, test_dashboard_views.py), so the package suite
 # still collects (not errors) when the `[dashboard]` extra is absent.
-pytest.importorskip(
-    "django", reason="this file exercises views.py/cache.py, which require pyforge-steward[dashboard]"
-)
+pytest.importorskip("django", reason="this file exercises views.py/cache.py, which require pyforge-steward[dashboard]")
 
 from django.conf import settings  # noqa: E402
 
@@ -272,8 +270,7 @@ def _assert_export_isolation(export_fn, policy, authorized_role, unauthorized_ro
         pass
     else:
         raise AssertionError(
-            f"expected ExportUnauthorizedError for role {unauthorized_role!r}, "
-            f"but export_fn returned instead"
+            f"expected ExportUnauthorizedError for role {unauthorized_role!r}, but export_fn returned instead"
         )
 
 

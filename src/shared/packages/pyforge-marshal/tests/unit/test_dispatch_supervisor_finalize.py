@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
+from pyforge.marshal.cli.dispatch import (
+    _redispatch_blocked_pending_supervisor_finalize,
+    gather_fleet_finalize_escalations,
+)
 from pyforge.marshal.core import dispatch as dispatch_core
+from pyforge.marshal.core import status
 from pyforge.marshal.core.dispatch_completion import DispatchGitFacts
 from pyforge.marshal.core.dispatch_supervisor_finalize import (
     FinalizeTrigger,
@@ -18,11 +21,6 @@ from pyforge.marshal.core.dispatch_supervisor_finalize import (
 )
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, fold, prepare_for_write
-from pyforge.marshal.core import status
-from pyforge.marshal.cli.dispatch import (
-    _redispatch_blocked_pending_supervisor_finalize,
-    gather_fleet_finalize_escalations,
-)
 
 
 def _git_facts(**kwargs: object) -> DispatchGitFacts:
@@ -139,10 +137,7 @@ def test_redispatch_blocked_until_finalize_attempted(tmp_path: Path) -> None:
     slug = "pyforge-marshal"
     wt = tmp_path / "wt"
     wt.mkdir()
-    run_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-28-24"
-    )
+    run_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-28-24"
     _write_launch_journal(run_dir, worktree=wt)
     fs = FakeFs(
         {
@@ -164,10 +159,7 @@ def test_redispatch_allowed_after_finalize_journaled(tmp_path: Path) -> None:
     slug = "pyforge-marshal"
     wt = tmp_path / "wt"
     wt.mkdir()
-    run_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-done"
-    )
+    run_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-done"
     intent = prepare_for_write(
         build_entry(
             id=JournalEntryId("w", 0),
@@ -208,13 +200,9 @@ def test_redispatch_allowed_after_finalize_journaled(tmp_path: Path) -> None:
 
 
 def test_gather_fleet_finalize_escalations(tmp_path: Path) -> None:
-    slug = "pyforge-marshal"
     wt = tmp_path / "wt"
     wt.mkdir()
-    run_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-fail"
-    )
+    run_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-fail"
     intent = prepare_for_write(
         build_entry(
             id=JournalEntryId("w", 0),
@@ -254,10 +242,7 @@ def test_gather_fleet_finalize_escalations(tmp_path: Path) -> None:
 def test_gather_fleet_finalize_escalations_superseded_by_success(tmp_path: Path) -> None:
     """Story 28.25: a newer, successfully-finalized run clears an older failure."""
     slug = "pyforge-marshal"
-    runs_parent = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_parent = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     wt_old = tmp_path / "wt-old"
     wt_old.mkdir()
     old_run = runs_parent / "run-1-fail"
@@ -337,10 +322,7 @@ def test_gather_fleet_finalize_escalations_worktree_already_gone(tmp_path: Path)
     """Story 28.25: a failed finalize whose worktree no longer exists is resolved."""
     slug = "pyforge-marshal"
     wt = tmp_path / "wt-removed"
-    run_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-fail"
-    )
+    run_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-fail"
     intent = prepare_for_write(
         build_entry(
             id=JournalEntryId("w", 0),

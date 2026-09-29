@@ -1,5 +1,5 @@
 ---
-status: shipped
+status: done
 frontmatter_added: 2026-07-28
 frontmatter_note: |
   This YAML block was ADDED post-recovery (operator decision 2026-07-27, AUD-ATLAS-045) so all
@@ -222,3 +222,7 @@ Status: review (left at `review` per the orchestrator-owns-git mandate — NOT a
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `3-7-extend-the-universal-sbom-intake-resolver-formats-universe-bom-buckets: done`).

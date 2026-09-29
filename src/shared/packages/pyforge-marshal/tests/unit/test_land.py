@@ -14,8 +14,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-
 from pyforge.core.process import ProcessResult
+
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import deploy as deploy_module
@@ -81,6 +81,8 @@ class _FakeVcs:
         self.commit_paths_raises = commit_paths_raises
         self.commit_paths_calls: list[tuple[object, tuple[Path, ...], str]] = []
         self.isolated_promote_calls: list[tuple[object, str, str, tuple[tuple[str, str], ...], str]] = []
+        # Story 68.1: the `preflight_skip_reason` each publish carried, parallel to the calls above.
+        self.isolated_promote_reasons: list[str | None] = []
 
     def repo_common_root(self, start):
         return Path("/fake-repo-root")
@@ -96,7 +98,7 @@ class _FakeVcs:
         return self.merge_base_sha
 
     def commit_subjects(self, repo_root, ref):
-        if ref == "main":
+        if ref == "refs/heads/main":
             if self.base_subjects_raises:
                 raise VcsCommandError("corrupted repo, no main")
             return self.base_subjects
@@ -130,9 +132,7 @@ class _FakeVcs:
     def fast_forward(self, worktree_path, ref):
         self.fast_forward_calls.append((worktree_path, ref))
         if self.fast_forward_raises:
-            raise VcsCommandError(
-                "git merge --ff-only failed: not possible to fast-forward, aborting"
-            )
+            raise VcsCommandError("git merge --ff-only failed: not possible to fast-forward, aborting")
         return self.fast_forward_sha
 
     def commit_paths(self, repo_root, paths, message):
@@ -147,21 +147,16 @@ class _FakeVcs:
             return candidate.read_text(encoding="utf-8")
         return None
 
-    def commit_paths_onto_remote_tip(
-        self, repo_root, *, remote, ref, writes, message
-    ):
-        self.isolated_promote_calls.append(
-            (repo_root, remote, ref, tuple(writes), message)
-        )
+    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
+        self.isolated_promote_calls.append((repo_root, remote, ref, tuple(writes), message))
+        self.isolated_promote_reasons.append(preflight_skip_reason)
         if self.commit_paths_raises:
             raise VcsCommandError("git push failed: non-fast-forward (test double)")
         for rel, content in writes:
             dest = Path(repo_root) / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(content, encoding="utf-8")
-        self.commit_paths_calls.append(
-            (repo_root, tuple(Path(rel) for rel, _ in writes), message)
-        )
+        self.commit_paths_calls.append((repo_root, tuple(Path(rel) for rel, _ in writes), message))
         return "isolated-promote-sha"
 
 
@@ -185,12 +180,8 @@ class _FakeForge:
         merge_raises: bool = False,
     ) -> None:
         self.existing = existing
-        self.create_result = create_result or PrInfo(
-            number=1, url="https://example/pr/1", state="open", base="main"
-        )
-        self.update_result = update_result or PrInfo(
-            number=2, url="https://example/pr/2", state="open", base="main"
-        )
+        self.create_result = create_result or PrInfo(number=1, url="https://example/pr/1", state="open", base="main")
+        self.update_result = update_result or PrInfo(number=2, url="https://example/pr/2", state="open", base="main")
         self.find_raises = find_raises
         self.create_raises = create_raises
         self.update_raises = update_raises
@@ -249,9 +240,7 @@ class _FakeForge:
             raise ForgeCommandError("gh pr merge failed")
 
 
-def _args(
-    *, slug: str = "acme", format: str = "json", retire_live_branch: bool = False
-) -> argparse.Namespace:
+def _args(*, slug: str = "acme", format: str = "json", retire_live_branch: bool = False) -> argparse.Namespace:
     return argparse.Namespace(slug=slug, format=format, retire_live_branch=retire_live_branch)
 
 
@@ -269,9 +258,7 @@ def _write_project_policy(tmp_path: Path, text: str) -> Path:
 def _patch_repo(monkeypatch, tmp_path, *, policy_path: Path | None = None) -> None:
     monkeypatch.setattr(land_module, "repo_root", lambda: tmp_path)
     if policy_path is not None:
-        monkeypatch.setattr(
-            land_module, "conventional_project_policy_path", lambda slug: policy_path
-        )
+        monkeypatch.setattr(land_module, "conventional_project_policy_path", lambda slug: policy_path)
 
 
 def _payload(capsys):
@@ -316,7 +303,7 @@ def test_station_branch_missing_refuses(tmp_path, capsys, monkeypatch):
 
 
 def test_malformed_landing_rules_hard_refuses(tmp_path, capsys, monkeypatch):
-    policy_path = _write_project_policy(tmp_path, "landing_rules = \"not-a-list\"\n")
+    policy_path = _write_project_policy(tmp_path, 'landing_rules = "not-a-list"\n')
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
     forge = _FakeForge()
@@ -328,6 +315,22 @@ def test_malformed_landing_rules_hard_refuses(tmp_path, capsys, monkeypatch):
     assert "MRS-LAND-002" in codes
     assert exit_code != 0
     assert forge.find_calls == []
+
+
+def test_a_malformed_landing_base_branch_hard_refuses(tmp_path, capsys, monkeypatch):
+    """Story 61.1 review 1: `land` would otherwise fall back to `main` and merge there."""
+    policy_path = _write_project_policy(tmp_path, 'landing_base_branch = "origin/release"\n')
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+    forge = _FakeForge()
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert [f["code"] for f in payload["findings"]] == ["MRS-POLICY-002", "MRS-LAND-002"]
+    assert "'landing_base_branch'" in payload["findings"][1]["message"]
+    assert exit_code != 0
+    assert forge.find_calls == [] and forge.merge_calls == []
 
 
 # --- empty / already-landed wave -----------------------------------------
@@ -450,7 +453,7 @@ def test_happy_path_opens_pr_polls_checks_and_merges(tmp_path, capsys, monkeypat
     assert delete_branch is True
     # Story 5.10: the single-key wave's rendered merge subject (AD-24),
     # threaded to `forge.merge_pr` and surfaced in `data["subject"]`.
-    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE)
+    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
     assert subject == expected_subject
     assert payload["data"]["subject"] == expected_subject
 
@@ -473,7 +476,7 @@ def test_render_text_land_reports_subject_line_on_a_full_merge(tmp_path, capsys,
 
     rendered = capsys.readouterr().out
     assert exit_code == 0
-    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE)
+    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
     assert f"subject: {expected_subject!r}" in rendered
 
 
@@ -496,9 +499,7 @@ def test_zero_applicable_required_check_rules_makes_no_check_calls(tmp_path, cap
     assert payload["data"]["required_checks"] == []
 
 
-def test_rule_with_both_label_and_required_check_applies_label_once_satisfied(
-    tmp_path, capsys, monkeypatch
-):
+def test_rule_with_both_label_and_required_check_applies_label_once_satisfied(tmp_path, capsys, monkeypatch):
     """Code review (2026-08-06, both reviewers independently): a landing
     rule declaring BOTH ``label`` and ``required_check`` (``core.landing.
     LandingRule`` explicitly permits this combination) previously never got
@@ -564,9 +565,7 @@ def test_required_check_failure_blocks_merge(tmp_path, capsys, monkeypatch):
     assert payload["data"]["opened"] is True
 
 
-def test_required_check_error_does_not_drop_an_unrelated_rules_pending_warn(
-    tmp_path, capsys, monkeypatch
-):
+def test_required_check_error_does_not_drop_an_unrelated_rules_pending_warn(tmp_path, capsys, monkeypatch):
     """Code review (2026-08-06, Edge Case Hunter): a WARN finding for one
     still-pending rule was previously dropped entirely whenever a
     DIFFERENT rule's check had already failed outright -- both must always
@@ -592,9 +591,7 @@ def test_required_check_error_does_not_drop_an_unrelated_rules_pending_warn(
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
         changed_paths=("pixi.toml",),
     )
-    forge = _FakeForge(
-        existing=None, check_status_map={"check-a": "failure", "check-b": None}
-    )
+    forge = _FakeForge(existing=None, check_status_map={"check-a": "failure", "check-b": None})
 
     exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
 
@@ -628,9 +625,7 @@ def test_required_check_pending_blocks_this_run_but_is_warn_tier(tmp_path, capsy
     assert forge.merge_calls == []
 
 
-def test_required_check_pending_and_acknowledged_proceeds_to_merge(
-    tmp_path, capsys, monkeypatch
-):
+def test_required_check_pending_and_acknowledged_proceeds_to_merge(tmp_path, capsys, monkeypatch):
     policy_path = _write_project_policy(tmp_path, _rule_policy())
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     ack_path = tmp_path / "ack" / "adapter-acknowledgements.json"
@@ -638,9 +633,7 @@ def test_required_check_pending_and_acknowledged_proceeds_to_merge(
     # Scoped ack key (code review, 2026-08-06): acknowledging the bare
     # `MRS-LAND-005` code would bypass EVERY project/rule/check's pending
     # gate forever -- only THIS rule/check/project's own key is written.
-    scoped_key = land_module._required_check_ack_key(
-        "environment-yaml-sync", "environment-yaml-sync", "acme"
-    )
+    scoped_key = land_module._required_check_ack_key("environment-yaml-sync", "environment-yaml-sync", "acme")
     ack_path.write_text(json.dumps([scoped_key]), encoding="utf-8")
     # `run_land` imports `_ack_state_path` LOCALLY from `cli/init.py` on
     # every call, so patching `init_module`'s own attribute (not
@@ -714,9 +707,7 @@ def test_branch_retirement_false_merges_without_deleting_branch(tmp_path, capsys
 
 
 def test_landing_resync_false_skips_resync(tmp_path, capsys, monkeypatch):
-    policy_path = _write_project_policy(
-        tmp_path, "landing_resync = false\n" + _rule_policy(required_check=None)
-    )
+    policy_path = _write_project_policy(tmp_path, "landing_resync = false\n" + _rule_policy(required_check=None))
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
@@ -790,14 +781,12 @@ def test_resync_home_branch_no_op_wave_still_fast_forwards_home(tmp_path, capsys
     assert exit_code == 0
     assert vcs.fetch_calls == [(Path("/fake-repo-root"), "origin", "main")]
     assert len(vcs.fast_forward_calls) == 1
-    assert vcs.fast_forward_calls[0][1] == "origin/main"
+    assert vcs.fast_forward_calls[0][1] == "refs/remotes/origin/main"
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-LAND-009" not in codes
 
 
-def test_resync_home_branch_already_landed_wave_still_fast_forwards_home(
-    tmp_path, capsys, monkeypatch
-):
+def test_resync_home_branch_already_landed_wave_still_fast_forwards_home(tmp_path, capsys, monkeypatch):
     _patch_repo(monkeypatch, tmp_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
@@ -832,12 +821,10 @@ def test_resync_home_branch_full_merge_path_sets_home_current_true(tmp_path, cap
     assert payload["data"]["home_current"] is True
     assert exit_code == 0
     assert len(vcs.fast_forward_calls) == 1
-    assert vcs.fast_forward_calls[0][1] == "origin/main"
+    assert vcs.fast_forward_calls[0][1] == "refs/remotes/origin/main"
 
 
-def test_resync_home_branch_diverged_reports_warn_and_home_current_false(
-    tmp_path, capsys, monkeypatch
-):
+def test_resync_home_branch_diverged_reports_warn_and_home_current_false(tmp_path, capsys, monkeypatch):
     """`fast_forward` refuses whenever `loop/<slug>` is not an ancestor of
     the fetched `origin/<base>` -- the exact shape a LIVE bmad-loop run that
     kept committing to the branch past the landed wave produces (this
@@ -894,9 +881,7 @@ def test_resync_home_branch_fetch_failure_reports_warn(tmp_path, capsys, monkeyp
     assert vcs.fast_forward_calls == []
 
 
-def test_resync_home_branch_skips_fast_forward_when_home_has_drifted_off_head_branch(
-    tmp_path, capsys, monkeypatch
-):
+def test_resync_home_branch_skips_fast_forward_when_home_has_drifted_off_head_branch(tmp_path, capsys, monkeypatch):
     """Code review (2026-08-10): `fast_forward` itself only asks "is this a
     fast-forward from whatever HEAD currently is" -- without a prior
     identity check, a `home` that drifted onto a different ref (or a
@@ -936,9 +921,7 @@ def test_resync_home_branch_skips_fast_forward_when_home_has_drifted_off_head_br
 
 
 def test_resync_home_branch_skipped_when_resync_disabled(tmp_path, capsys, monkeypatch):
-    policy_path = _write_project_policy(
-        tmp_path, "landing_resync = false\n" + _rule_policy(required_check=None)
-    )
+    policy_path = _write_project_policy(tmp_path, "landing_resync = false\n" + _rule_policy(required_check=None))
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
@@ -958,9 +941,7 @@ def test_resync_home_branch_skipped_when_resync_disabled(tmp_path, capsys, monke
     assert vcs.fast_forward_calls == []
 
 
-def test_resync_home_branch_skipped_when_merge_strategy_is_not_merge(
-    tmp_path, capsys, monkeypatch
-):
+def test_resync_home_branch_skipped_when_merge_strategy_is_not_merge(tmp_path, capsys, monkeypatch):
     """Boundaries & Constraints (corrected 2026-08-09): this resync
     capability applies ONLY when `landing_merge_strategy == "merge"` --
     under `"squash"`/`"rebase"` the landed commits are never ancestors of
@@ -991,9 +972,7 @@ def test_resync_home_branch_skipped_when_merge_strategy_is_not_merge(
     assert vcs.fast_forward_calls == []
 
 
-def test_resync_home_branch_already_landed_reports_warn_when_home_has_drifted(
-    tmp_path, capsys, monkeypatch
-):
+def test_resync_home_branch_already_landed_reports_warn_when_home_has_drifted(tmp_path, capsys, monkeypatch):
     """Code review (this pass): the already-landed shortcut has no
     `MRS-DEPLOY-017`-style pre-check of its own before reaching
     `_resync_home_branch` -- unlike the full-merge path, ITS identity-drift
@@ -1022,9 +1001,7 @@ def test_resync_home_branch_already_landed_reports_warn_when_home_has_drifted(
     assert vcs.fast_forward_calls == []
 
 
-def test_resync_home_branch_reports_warn_when_head_branch_cannot_be_resolved(
-    tmp_path, capsys, monkeypatch
-):
+def test_resync_home_branch_reports_warn_when_head_branch_cannot_be_resolved(tmp_path, capsys, monkeypatch):
     """The identity guard's two lookups now run in separate `try` blocks
     (code review, this pass) so the WARN names which one actually failed --
     this covers `resolve_ref` raising; `worktree_head_sha` raising is
@@ -1050,9 +1027,7 @@ def test_resync_home_branch_reports_warn_when_head_branch_cannot_be_resolved(
     assert vcs.fast_forward_calls == []
 
 
-def test_resync_home_branch_reports_warn_when_home_head_sha_cannot_be_read(
-    tmp_path, capsys, monkeypatch
-):
+def test_resync_home_branch_reports_warn_when_home_head_sha_cannot_be_read(tmp_path, capsys, monkeypatch):
     """`worktree_head_sha` raising -- the sibling half of the identity
     guard's now-separate `try` blocks (see the `resolve_ref` case above)."""
     _patch_repo(monkeypatch, tmp_path)
@@ -1156,25 +1131,21 @@ class _ExplosiveHarness:
 
     def run_status_snapshot(self, project, run_id):
         raise AssertionError(
-            "the liveness gate must never be consulted when policy already "
-            "has landing_branch_retirement=False"
+            "the liveness gate must never be consulted when policy already has landing_branch_retirement=False"
         )
 
 
 class _ExplosiveProcess:
     def is_alive(self, pid: int) -> bool:
         raise AssertionError(
-            "the liveness gate must never be consulted when policy already "
-            "has landing_branch_retirement=False"
+            "the liveness gate must never be consulted when policy already has landing_branch_retirement=False"
         )
 
     def run(self, argv, *, cwd, timeout_s=None):
         raise AssertionError("must never be called")
 
 
-def _land_outcome_line(
-    run_id: str, *, pid: int, harness_run_id: str, ts: str = "2026-08-09T00:00:00.000Z"
-) -> str:
+def _land_outcome_line(run_id: str, *, pid: int, harness_run_id: str, ts: str = "2026-08-09T00:00:00.000Z") -> str:
     """A minimal, valid ``phase: outcome`` ``run-launch`` journal line --
     the SAME shape ``cli/spin.py`` itself journals, mirroring
     ``test_status.py::_outcome_line``'s identical shape."""
@@ -1190,9 +1161,7 @@ def _land_outcome_line(
     return prepare_for_write(entry).line
 
 
-def _land_supervisor_attach_line(
-    run_id: str, *, pid: int, ts: str = "2026-08-09T00:00:30.000Z"
-) -> str:
+def _land_supervisor_attach_line(run_id: str, *, pid: int, ts: str = "2026-08-09T00:00:30.000Z") -> str:
     """A minimal, valid ``"supervisor-attach"`` journal line -- mirrors
     ``test_status.py::_supervisor_attach_line``'s identical shape. A
     DIFFERENT pid than ``_land_outcome_line``'s own -- the supervisor
@@ -1228,9 +1197,7 @@ def _stub_land_latest_run_dir(monkeypatch, run_dir_map: dict[str, Path | None]) 
     monkeypatch.setattr(spin_module, "_latest_run_dir", _latest_run_dir)
 
 
-def _live_snapshot(
-    *, finished: bool = False, tasks: tuple[TaskPhaseSnapshot, ...] = ()
-) -> RunStatusSnapshot:
+def _live_snapshot(*, finished: bool = False, tasks: tuple[TaskPhaseSnapshot, ...] = ()) -> RunStatusSnapshot:
     return RunStatusSnapshot(
         paused_stage=None,
         paused_story_key=None,
@@ -1243,9 +1210,7 @@ def _live_snapshot(
     )
 
 
-def test_live_run_refuses_branch_retirement_but_merge_still_proceeds(
-    tmp_path, capsys, monkeypatch
-):
+def test_live_run_refuses_branch_retirement_but_merge_still_proceeds(tmp_path, capsys, monkeypatch):
     policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     home_root = tmp_path / "loops"
@@ -1389,9 +1354,7 @@ def test_journal_unreadable_is_conservatively_treated_as_live(tmp_path, capsys, 
         pytest.param({"finished": False}, frozenset(), id="dead-supervisor"),
     ],
 )
-def test_no_live_run_retires_normally_no_finding(
-    tmp_path, capsys, monkeypatch, snapshot_kwargs, alive_pids
-):
+def test_no_live_run_retires_normally_no_finding(tmp_path, capsys, monkeypatch, snapshot_kwargs, alive_pids):
     policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     home_root = tmp_path / "loops"
@@ -1463,9 +1426,7 @@ def test_never_run_home_retires_normally_no_finding(tmp_path, capsys, monkeypatc
     assert exit_code == 0
 
 
-def test_override_flag_short_circuits_the_liveness_gather_even_when_not_live(
-    tmp_path, capsys, monkeypatch
-):
+def test_override_flag_short_circuits_the_liveness_gather_even_when_not_live(tmp_path, capsys, monkeypatch):
     """`--retire-live-branch` passed defensively (an operator unsure
     whether a run is live) short-circuits `if delete_branch and not args.
     retire_live_branch` before `_gather_home_facts`/`is_run_live` ever run
@@ -1480,9 +1441,7 @@ def test_override_flag_short_circuits_the_liveness_gather_even_when_not_live(
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
 
     def _explosive_latest_run_dir(home, slug):
-        raise AssertionError(
-            "the liveness gate must never be consulted when --retire-live-branch is passed"
-        )
+        raise AssertionError("the liveness gate must never be consulted when --retire-live-branch is passed")
 
     monkeypatch.setattr(spin_module, "_latest_run_dir", _explosive_latest_run_dir)
 
@@ -1645,9 +1604,7 @@ class _NoWriteFs:
         return None
 
     def _refuse(self, name):
-        raise AssertionError(
-            f"reconcile_feed's resync path must never call FsPort.{name}"
-        )
+        raise AssertionError(f"reconcile_feed's resync path must never call FsPort.{name}")
 
     def write_text_atomic(self, path, content):
         self._refuse("write_text_atomic")
@@ -1690,9 +1647,7 @@ class _UnusedHarness:
         raise AssertionError("should never be called: the loop home is absent")
 
 
-def test_reconcile_feed_resync_runs_at_root_and_never_writes_under_a_loop_home(
-    tmp_path, monkeypatch
-):
+def test_reconcile_feed_resync_runs_at_root_and_never_writes_under_a_loop_home(tmp_path, monkeypatch):
     """Story 4.9 proof test (AD-42 half one): ``land``'s resync step calls
     ``cli/deploy.py::reconcile_feed`` in-process (``_run_resync_if_enabled``)
     -- this is the SAME function, called the same way, so exercising it
@@ -1711,21 +1666,15 @@ def test_reconcile_feed_resync_runs_at_root_and_never_writes_under_a_loop_home(
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
 
     policy_path = root / "marshal-policy.toml"
-    policy_path.write_text(
-        'landing_resync = true\nlanding_resync_commands = ["true"]\n', encoding="utf-8"
-    )
-    monkeypatch.setattr(
-        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    policy_path.write_text('landing_resync = true\nlanding_resync_commands = ["true"]\n', encoding="utf-8")
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: policy_path)
 
     process = _RecordingProcess()
     fs = _NoWriteFs()
     vcs = _FakeVcs(base_subjects=("Merge 1.2 into main",))
     args = argparse.Namespace(project="acme", format="json")
 
-    data, findings = deploy_module.reconcile_feed(
-        args, vcs=vcs, fs=fs, process=process, harness=_UnusedHarness()
-    )
+    data, findings = deploy_module.reconcile_feed(args, vcs=vcs, fs=fs, process=process, harness=_UnusedHarness())
 
     assert root != home_root
     assert not str(root).startswith(str(home_root))
@@ -1811,22 +1760,8 @@ _TRACKED_LEDGER_HEADER = (
 def _write_deferred_work_fixtures(
     tmp_path: Path, slug: str, *, tier3_text: str | None, tracked_text: str | None
 ) -> tuple[Path, Path]:
-    tier3_path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "deferred-work.md"
-    )
-    tracked_path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-        / "deferred-work-ledger.md"
-    )
+    tier3_path = tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "deferred-work.md"
+    tracked_path = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "deferred-work-ledger.md"
     if tier3_text is not None:
         tier3_path.parent.mkdir(parents=True, exist_ok=True)
         tier3_path.write_text(tier3_text, encoding="utf-8")
@@ -1892,9 +1827,7 @@ def test_promote_on_already_landed_shortcut(tmp_path, capsys, monkeypatch):
     assert len(vcs.commit_paths_calls) == 1
 
 
-def test_promote_deferred_work_idempotent_rerun_no_duplicate_no_commit(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_deferred_work_idempotent_rerun_no_duplicate_no_commit(tmp_path, capsys, monkeypatch):
     """The already-promoted case (Boundaries: "an id already present
     anywhere in the tracked ledger's text is never re-appended;
     idempotent -- a fully-idempotent run acquires no lock and writes
@@ -1958,9 +1891,7 @@ def test_promote_deferred_work_lock_contention_reports_warn(tmp_path, capsys, mo
     )
     forge = _FakeForge(existing=None)
 
-    exit_code = land_module.run_land(
-        _args(), vcs=vcs, fs=_AlwaysLockContendedFs(), forge=forge
-    )
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=_AlwaysLockContendedFs(), forge=forge)
 
     payload = _payload(capsys)
     assert payload["data"]["merged"] is True
@@ -2040,9 +1971,7 @@ def test_render_text_land_reports_deferred_work_promoted_line(tmp_path, capsys, 
     assert "deferred work promoted: DW-FU-4-4" in out
 
 
-def test_promote_deferred_work_bootstraps_a_missing_tracked_ledger(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_deferred_work_bootstraps_a_missing_tracked_ledger(tmp_path, capsys, monkeypatch):
     """Review finding (2026-08-10): a project with NO tracked ledger file
     at all must still get its first promotion -- not a silent, permanent
     no-op -- and the bootstrapped file must not carry leading blank lines."""
@@ -2071,9 +2000,7 @@ def test_promote_deferred_work_bootstraps_a_missing_tracked_ledger(
     assert len(vcs.commit_paths_calls) == 1
 
 
-def test_promote_deferred_work_dedupes_two_tier3_entries_for_the_same_story(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_deferred_work_dedupes_two_tier3_entries_for_the_same_story(tmp_path, capsys, monkeypatch):
     """Review finding (2026-08-10): two Tier-3 review-budget-followup
     blocks resolving to the SAME story key in one wave must never produce
     two identical ``### DW-FU-<story>:`` headings in a single write."""
@@ -2108,9 +2035,7 @@ def test_promote_deferred_work_dedupes_two_tier3_entries_for_the_same_story(
     assert len(vcs.commit_paths_calls) == 1
 
 
-def test_promote_deferred_work_ledger_deleted_between_reads_reports_warn(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_deferred_work_ledger_deleted_between_reads_reports_warn(tmp_path, capsys, monkeypatch):
     """Review finding (2026-08-10): a tracked ledger that existed at the
     first, unlocked read but is gone by the time the lock is held is a
     genuine anomaly (concurrent deletion) -- it must be reported, never
@@ -2140,9 +2065,7 @@ def test_promote_deferred_work_ledger_deleted_between_reads_reports_warn(
     )
     forge = _FakeForge(existing=None)
 
-    exit_code = land_module.run_land(
-        _args(), vcs=vcs, fs=_DeletesLedgerAfterFirstReadFs(tracked_path), forge=forge
-    )
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=_DeletesLedgerAfterFirstReadFs(tracked_path), forge=forge)
 
     payload = _payload(capsys)
     assert exit_code == 0  # MRS-LAND-010 is WARN-tier -- reported, never blocking
@@ -2152,9 +2075,7 @@ def test_promote_deferred_work_ledger_deleted_between_reads_reports_warn(
     assert vcs.commit_paths_calls == []
 
 
-def test_promote_on_already_landed_shortcut_idempotent_rerun_no_duplicate(
-    tmp_path, capsys, monkeypatch
-):
+def test_promote_on_already_landed_shortcut_idempotent_rerun_no_duplicate(tmp_path, capsys, monkeypatch):
     """The already-landed-shortcut call site's own idempotency (Blind
     Hunter review finding, 2026-08-10: only the full-merge path had a
     dedicated idempotent-rerun regression test before this one)."""
@@ -2241,7 +2162,7 @@ def test_promote_deferred_work_multiple_stories_in_one_wave(tmp_path, capsys, mo
     # subject from `wave_keys[0]` ONLY -- the wave's primary (lowest-sorted)
     # key -- never all wave keys.
     assert len(forge.merge_calls) == 1
-    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE)
+    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
     assert forge.merge_calls[0][-1] == expected_subject
     assert payload["data"]["subject"] == expected_subject
 
@@ -2250,14 +2171,7 @@ def test_promote_deferred_work_multiple_stories_in_one_wave(tmp_path, capsys, mo
 
 
 def _write_sprint_ledger(tmp_path: Path, slug: str, statuses: dict[str, str]) -> Path:
-    path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
+    path = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "sprint-status-ledger.yaml"
     path.parent.mkdir(parents=True, exist_ok=True)
     body = "".join(f"  {k}: {v}\n" for k, v in statuses.items())
     path.write_text(f"development_status:\n{body}", encoding="utf-8")
@@ -2267,9 +2181,7 @@ def _write_sprint_ledger(tmp_path: Path, slug: str, statuses: dict[str, str]) ->
 def test_sprint_ledger_promoted_on_merge(tmp_path, capsys, monkeypatch):
     policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
-    ledger_path = _write_sprint_ledger(
-        tmp_path, "acme", {"4-4-batch": "in-progress"}
-    )
+    ledger_path = _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "in-progress"})
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
@@ -2285,16 +2197,12 @@ def test_sprint_ledger_promoted_on_merge(tmp_path, capsys, monkeypatch):
     assert "4-4-batch" in payload["data"]["sprint_ledger_promoted"]
     assert "MRS-LAND-011" not in [f["code"] for f in payload["findings"]]
     assert "4-4-batch: done" in ledger_path.read_text(encoding="utf-8")
-    assert any(
-        "sprint-status ledger" in msg for _r, _p, msg in vcs.commit_paths_calls
-    )
+    assert any("sprint-status ledger" in msg for _r, _p, msg in vcs.commit_paths_calls)
 
 
 def test_sprint_ledger_promoted_on_already_landed(tmp_path, capsys, monkeypatch):
     _patch_repo(monkeypatch, tmp_path)
-    ledger_path = _write_sprint_ledger(
-        tmp_path, "acme", {"4-4-batch": "review"}
-    )
+    ledger_path = _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "review"})
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
@@ -2328,9 +2236,7 @@ def test_sprint_ledger_idempotent_when_already_done(tmp_path, capsys, monkeypatc
     assert exit_code == 0
     assert "sprint_ledger_promoted" not in payload["data"]
     # No sprint-ledger commit (deferred-work may still commit if fixtures present).
-    sprint_commits = [
-        msg for _r, _p, msg in vcs.commit_paths_calls if "sprint-status ledger" in msg
-    ]
+    sprint_commits = [msg for _r, _p, msg in vcs.commit_paths_calls if "sprint-status ledger" in msg]
     assert sprint_commits == []
 
 
@@ -2352,9 +2258,7 @@ def test_sprint_ledger_lock_contention_reports_warn(tmp_path, capsys, monkeypatc
     )
     forge = _FakeForge(existing=None)
 
-    exit_code = land_module.run_land(
-        _args(), vcs=vcs, fs=_LockRaisingFs(), forge=forge
-    )
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=_LockRaisingFs(), forge=forge)
 
     payload = _payload(capsys)
     assert exit_code == 0
@@ -2390,6 +2294,138 @@ def test_sprint_ledger_promote_uses_isolated_remote_tip(tmp_path, capsys, monkey
     assert "sprint-status ledger" in message
 
 
+def test_sprint_ledger_publish_names_its_story_in_the_preflight_reason(tmp_path, capsys, monkeypatch):
+    """Story 68.1 (CAP-277): the promotion publish asks for the adapter's checked pre-push opt-out and
+    names the promoted story in its reason (the hook journals it)."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "in-progress"})
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=_FakeForge(existing=None))
+
+    assert exit_code == 0
+    [reason] = [
+        r
+        for (_root, _rm, _ref, writes, _msg), r in zip(vcs.isolated_promote_calls, vcs.isolated_promote_reasons)
+        if writes[0][0].endswith("sprint-status-ledger.yaml")
+    ]
+    assert reason is not None
+    assert "acme" in reason
+    assert "story 4-4-batch" in reason
+
+
+def _journal_entries(deploy_run) -> list[dict]:
+    text = (deploy_run.run_dir / "journal.jsonl").read_text(encoding="utf-8")
+    return [json.loads(line) for line in text.splitlines() if line]
+
+
+class _TimingOutPublishVcs(_FakeVcs):
+    """64.1's failure shape: the promotion publish is killed at the git timeout."""
+
+    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
+        self.isolated_promote_calls.append((repo_root, remote, ref, tuple(writes), message))
+        self.isolated_promote_reasons.append(preflight_skip_reason)
+        raise VcsCommandError(
+            f"git command timed out after 120.0s: git -C {repo_root} push origin abc123:refs/heads/main"
+        )
+
+
+def test_a_failed_ledger_publish_pairs_its_intent_with_an_outcome_ok_false(tmp_path):
+    """Story 68.1 AC 4 (AD-6): INTENT, then OUTCOME `ok: false` naming the error, then MRS-LAND-011 and
+    `()` -- never an INTENT left open while the run reports success."""
+    _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "in-progress"})
+    fs = LocalFs()
+    vcs = _TimingOutPublishVcs()
+    deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-1")
+    findings: list = []
+
+    promoted = land_module._promote_sprint_ledger(
+        fs, vcs, tmp_path, "acme", [StoryKey(4, 4)], deploy_run, findings, base="main"
+    )
+
+    assert promoted == ()
+    ledger_entries = [e for e in _journal_entries(deploy_run) if e["kind"] == "land-sprint-ledger-promotion"]
+    assert [e["phase"] for e in ledger_entries] == ["intent", "outcome"]
+    intent, outcome = ledger_entries
+    assert outcome["intent_id"] == intent["id"]
+    assert outcome["payload"]["ok"] is False
+    assert "timed out after 120.0s" in outcome["payload"]["error"]
+    assert outcome["payload"]["promoted"] == ["4-4-batch"]
+    [finding] = [f for f in findings if f.code == "MRS-LAND-011"]
+    assert finding.severity.name == "WARN"
+    assert "timed out after 120.0s" in finding.message
+
+
+def test_a_landed_ledger_publish_journals_an_outcome_ok_true(tmp_path):
+    _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "in-progress"})
+    fs = LocalFs()
+    vcs = _FakeVcs()
+    deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-1")
+    findings: list = []
+
+    promoted = land_module._promote_sprint_ledger(
+        fs, vcs, tmp_path, "acme", [StoryKey(4, 4)], deploy_run, findings, base="main"
+    )
+
+    assert promoted == ("4-4-batch",)
+    outcomes = [
+        e
+        for e in _journal_entries(deploy_run)
+        if e["kind"] == "land-sprint-ledger-promotion" and e["phase"] == "outcome"
+    ]
+    assert [e["payload"]["ok"] for e in outcomes] == [True]
+    assert not [f for f in findings if f.code == "MRS-LAND-011"]
+
+
+def test_a_feed_only_ledger_sync_names_the_wave_keys_in_its_preflight_reason(tmp_path):
+    """Story 68.1: when the Tier-3 feed advances rows but every wave key is already `done`, nothing was
+    `promoted` -- the reason falls back to the wave's own story keys, so the hook's journal still names one."""
+    ledger_path = _write_sprint_ledger(tmp_path, "acme", {"epic-4": "in-progress", "4-4-batch": "done"})
+    feed_path = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "sprint-status.yaml"
+    feed_path.parent.mkdir(parents=True)
+    feed_path.write_text(
+        "development_status:\n  epic-4: in-progress\n  4-4-batch: done\n  4-5-follow-up: backlog\n",
+        encoding="utf-8",
+    )
+    fs = LocalFs()
+    vcs = _FakeVcs()
+    deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-1")
+
+    promoted = land_module._promote_sprint_ledger(
+        fs, vcs, tmp_path, "acme", [StoryKey(4, 4)], deploy_run, [], base="main"
+    )
+
+    assert promoted == ("acme",)
+    assert "4-5-follow-up" in ledger_path.read_text(encoding="utf-8")
+    [reason] = vcs.isolated_promote_reasons
+    assert reason is not None
+    assert "story 4.4" in reason
+
+
+def test_land_stays_exit_zero_with_a_warn_when_the_ledger_publish_times_out(tmp_path, capsys, monkeypatch):
+    """`marshal land`'s own exit is unchanged (the wave already landed): the failure is a WARN finding."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "in-progress"})
+    vcs = _TimingOutPublishVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=_FakeForge(existing=None))
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert "MRS-LAND-011" in [f["code"] for f in payload["findings"]]
+    assert "sprint_ledger_promoted" not in payload["data"]
+
+
 class _FakePromoteModForRefusal:
     @staticmethod
     def regressions(existing: dict, incoming: dict):
@@ -2411,17 +2447,13 @@ class _FakePromoteModForRefusal:
 def test_land_feed_sync_refusal_none_when_incoming_is_a_superset() -> None:
     existing = {"1-1-a": "done", "1-2-b": "backlog"}
     incoming = {"1-1-a": "done", "1-2-b": "backlog", "1-3-c": "backlog"}
-    assert land_module._land_feed_sync_refusal(
-        _FakePromoteModForRefusal, existing, incoming
-    ) is None
+    assert land_module._land_feed_sync_refusal(_FakePromoteModForRefusal, existing, incoming) is None
 
 
 def test_land_feed_sync_refusal_catches_dropped_done_key() -> None:
     existing = {"1-1-a": "done"}
     incoming = {}
-    refusal = land_module._land_feed_sync_refusal(
-        _FakePromoteModForRefusal, existing, incoming
-    )
+    refusal = land_module._land_feed_sync_refusal(_FakePromoteModForRefusal, existing, incoming)
     assert refusal is not None
     label, detail = refusal
     assert label == "un-finish"
@@ -2434,9 +2466,7 @@ def test_land_feed_sync_refusal_catches_dropped_backlog_key() -> None:
     # entirely since "backlog" was never a protected state.
     existing = {"12-1-a": "done", "12-2-b": "backlog", "12-3-c": "backlog"}
     incoming = {"12-1-a": "done"}
-    refusal = land_module._land_feed_sync_refusal(
-        _FakePromoteModForRefusal, existing, incoming
-    )
+    refusal = land_module._land_feed_sync_refusal(_FakePromoteModForRefusal, existing, incoming)
     assert refusal is not None
     label, detail = refusal
     assert label == "drop"

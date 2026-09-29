@@ -17,8 +17,8 @@ from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
 import pytest
-
 from pyforge.core.hooks import PluginError, PluginRegistry
+
 from pyforge.scribe.graph_store import (
     GRAPHSTORE_HOOK_SPEC,
     PG_GRAPHSTORE_OWNER,
@@ -80,9 +80,7 @@ def test_driver_emits_no_ddl() -> None:
     """Story 41.3: the DML-only role cannot run DDL, so the driver has none."""
     src = _ADAPTER.read_text(encoding="utf-8")
     statements = [
-        line.strip()
-        for line in src.splitlines()
-        if _DDL_STATEMENT.search(line) and not line.lstrip().startswith("#")
+        line.strip() for line in src.splitlines() if _DDL_STATEMENT.search(line) and not line.lstrip().startswith("#")
     ]
     assert statements == [], f"runtime DDL in the scribe driver: {statements}"
     assert "CREATE EXTENSION" not in src
@@ -99,9 +97,7 @@ def test_nodes_live_only_in_scribe_schema(tmp_path: Path, pg_dsn: str) -> None:
     store.upsert_node(_node("memory:feedback/iso"))
     store.commit()
     with psycopg.connect(pg_dsn) as conn:
-        ext = conn.execute(
-            "SELECT extname FROM pg_extension WHERE extname = 'vector'"
-        ).fetchone()
+        ext = conn.execute("SELECT extname FROM pg_extension WHERE extname = 'vector'").fetchone()
         assert ext == ("vector",)
         schemas = conn.execute(
             """
@@ -143,15 +139,11 @@ def test_legacy_table_without_stale_is_back_filled_by_the_changeset(
     import psycopg
     from psycopg import sql
 
-    table = sql.SQL("{}.{}").format(
-        sql.Identifier(SCRIBE_SCHEMA), sql.Identifier("graph_nodes")
-    )
+    table = sql.SQL("{}.{}").format(sql.Identifier(SCRIBE_SCHEMA), sql.Identifier("graph_nodes"))
     admin = psycopg.connect(pg_dsn)
     admin.autocommit = True
     try:
-        admin.execute(
-            sql.SQL("ALTER TABLE {} DROP COLUMN IF EXISTS stale").format(table)
-        )
+        admin.execute(sql.SQL("ALTER TABLE {} DROP COLUMN IF EXISTS stale").format(table))
         # Not vacuous: without :4 the driver cannot recover -- it holds DML
         # only, and `CREATE TABLE IF NOT EXISTS` does not add a column.
         with pytest.raises(psycopg.errors.UndefinedColumn):
@@ -176,17 +168,12 @@ def test_legacy_table_without_stale_is_back_filled_by_the_changeset(
         assert [n.stale for n in reopened.iter_nodes()] == [False]
     finally:
         admin.execute(
-            sql.SQL(
-                "ALTER TABLE {} ADD COLUMN IF NOT EXISTS stale "
-                "BOOLEAN NOT NULL DEFAULT FALSE"
-            ).format(table)
+            sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS stale BOOLEAN NOT NULL DEFAULT FALSE").format(table)
         )
         admin.close()
 
 
-def test_unreadable_schema_names_the_grants_changeset(
-    tmp_path: Path, pg_dsn: str
-) -> None:
+def test_unreadable_schema_names_the_grants_changeset(tmp_path: Path, pg_dsn: str) -> None:
     """Finding 2: `to_regclass` RAISES on a privilege gap; `:3` is onFail:CONTINUE."""
     import psycopg
     from psycopg import sql
@@ -197,20 +184,12 @@ def test_unreadable_schema_names_the_grants_changeset(
     admin = psycopg.connect(pg_dsn)
     admin.autocommit = True
     try:
-        admin.execute(
-            sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
-                role_ident, sql.Literal(password)
-            )
-        )
+        admin.execute(sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(role_ident, sql.Literal(password)))
         try:
             # No USAGE on scribe_schema: exactly the state a database is left in
             # when platform_app is created after the first `liquibase update`.
             parsed = urlparse(pg_dsn)
-            role_dsn = urlunparse(
-                parsed._replace(
-                    netloc=f"{role}:{password}@{parsed.hostname}:{parsed.port or 5432}"
-                )
-            )
+            role_dsn = urlunparse(parsed._replace(netloc=f"{role}:{password}@{parsed.hostname}:{parsed.port or 5432}"))
             with pytest.raises(GraphSchemaMissing) as error:
                 PostgresGraphStore(role_dsn, tmp_path / "ignored")
             message = str(error.value)
@@ -235,49 +214,26 @@ def test_store_works_as_a_ddl_revoked_role(tmp_path: Path, pg_dsn: str) -> None:
     admin = psycopg.connect(pg_dsn)
     admin.autocommit = True
     try:
-        admin.execute(
-            sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
-                role_ident, sql.Literal(password)
-            )
-        )
+        admin.execute(sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(role_ident, sql.Literal(password)))
         schema_ident = sql.Identifier(SCRIBE_SCHEMA)
         try:
+            admin.execute(sql.SQL("REVOKE CREATE ON SCHEMA public FROM {}").format(role_ident))
+            admin.execute(sql.SQL("REVOKE CREATE ON SCHEMA {} FROM {}").format(schema_ident, role_ident))
+            admin.execute(sql.SQL("GRANT USAGE ON SCHEMA {} TO {}").format(schema_ident, role_ident))
             admin.execute(
-                sql.SQL("REVOKE CREATE ON SCHEMA public FROM {}").format(role_ident)
-            )
-            admin.execute(
-                sql.SQL("REVOKE CREATE ON SCHEMA {} FROM {}").format(
+                sql.SQL("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {} TO {}").format(
                     schema_ident, role_ident
                 )
-            )
-            admin.execute(
-                sql.SQL("GRANT USAGE ON SCHEMA {} TO {}").format(
-                    schema_ident, role_ident
-                )
-            )
-            admin.execute(
-                sql.SQL(
-                    "GRANT SELECT, INSERT, UPDATE, DELETE "
-                    "ON ALL TABLES IN SCHEMA {} TO {}"
-                ).format(schema_ident, role_ident)
             )
 
             parsed = urlparse(pg_dsn)
-            role_dsn = urlunparse(
-                parsed._replace(
-                    netloc=f"{role}:{password}@{parsed.hostname}:{parsed.port or 5432}"
-                )
-            )
+            role_dsn = urlunparse(parsed._replace(netloc=f"{role}:{password}@{parsed.hostname}:{parsed.port or 5432}"))
 
             # Not vacuous: this role really is refused DDL by PostgreSQL.
             probe = psycopg.connect(role_dsn)
             try:
                 with pytest.raises(InsufficientPrivilege):
-                    probe.execute(
-                        sql.SQL("CREATE TABLE {}.ddl_probe (id integer)").format(
-                            schema_ident
-                        )
-                    )
+                    probe.execute(sql.SQL("CREATE TABLE {}.ddl_probe (id integer)").format(schema_ident))
             finally:
                 probe.rollback()
                 probe.close()
@@ -328,9 +284,7 @@ def test_concurrent_commits_do_not_corrupt_durable_store(tmp_path: Path, pg_dsn:
     assert all(node.text == node.id for node in final)
 
 
-def test_steward_plugin_returns_postgres_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pg_dsn: str
-) -> None:
+def test_steward_plugin_returns_postgres_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pg_dsn: str) -> None:
     monkeypatch.setenv("SCRIBE_GRAPH_DSN", pg_dsn)
     registry = PluginRegistry()
     registry.register(FlatFileGraphStorePlugin())

@@ -29,9 +29,7 @@ from pyforge.warden.models import (
 from pyforge.warden.sbom import SBOM_SCHEMA_VERSION, render_cyclonedx
 
 _ADVERSARIAL_NAMES = json.loads(
-    (
-        Path(__file__).resolve().parent.parent / "fixtures" / "adversarial_names.json"
-    ).read_text(encoding="utf-8")
+    (Path(__file__).resolve().parent.parent / "fixtures" / "adversarial_names.json").read_text(encoding="utf-8")
 ) + [
     # Generated, not fixture-stored (review finding, 2026-07-18): a 10 KB
     # literal would bloat the fixture/diff into an unreviewable blob for
@@ -104,12 +102,8 @@ def test_happy_path_mixed_ecosystems_full_coverage(component_factory):
         identity_source=IdentitySource.MAP,
         mapping_confidence="verified",
     )
-    inventory = ResolvedInventory(
-        components=(pypi_component, conda_component), resolved_scan_set=()
-    )
-    report = make_report(
-        coverage=_coverage(deps_total=2, deps_assessed=2), inventory_count=2
-    )
+    inventory = ResolvedInventory(components=(pypi_component, conda_component), resolved_scan_set=())
+    report = make_report(coverage=_coverage(deps_total=2, deps_assessed=2), inventory_count=2)
     document = json.loads(render_cyclonedx(inventory, report))
     assert len(document["components"]) == inventory.count == 2
     properties = _properties_by_name(document["metadata"])
@@ -142,9 +136,7 @@ def test_pypi_purl_is_g98_normalized(component_factory):
     (which collapses dots)."""
     component = component_factory(name="Django_Foo.Bar", version="1.0")
     inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1
-    )
+    report = make_report(coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1)
     document = json.loads(render_cyclonedx(inventory, report))
     assert document["components"][0]["purl"] == "pkg:pypi/django-foo.bar@1.0"
 
@@ -152,21 +144,14 @@ def test_pypi_purl_is_g98_normalized(component_factory):
 def test_conda_purl_carries_conda_forge_channel_qualifier_verbatim_name(
     component_factory,
 ):
-    component = component_factory(
-        name="Typing_Extensions", version="1.0", ecosystem=Ecosystem.CONDA
-    )
+    component = component_factory(name="Typing_Extensions", version="1.0", ecosystem=Ecosystem.CONDA)
     inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1
-    )
+    report = make_report(coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1)
     document = json.loads(render_cyclonedx(inventory, report))
     # conda purl names stay verbatim (never lowercased/underscore-collapsed
     # -- typing_extensions and typing-extensions are distinct conda-forge
     # packages).
-    assert (
-        document["components"][0]["purl"]
-        == "pkg:conda/Typing_Extensions@1.0?channel=conda-forge"
-    )
+    assert document["components"][0]["purl"] == "pkg:conda/Typing_Extensions@1.0?channel=conda-forge"
 
 
 def test_version_none_component_purl_omits_version_suffix(component_factory):
@@ -177,13 +162,9 @@ def test_version_none_component_purl_omits_version_suffix(component_factory):
     previously unverified by any test)."""
     from pyforge.warden.models import WithholdReason
 
-    component = component_factory(
-        name="requests", version=None, indeterminate_reason=WithholdReason.NO_VERSION
-    )
+    component = component_factory(name="requests", version=None, indeterminate_reason=WithholdReason.NO_VERSION)
     inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=1, deps_assessed=0), inventory_count=1
-    )
+    report = make_report(coverage=_coverage(deps_total=1, deps_assessed=0), inventory_count=1)
     document = json.loads(render_cyclonedx(inventory, report))
     assert len(document["components"]) == 1
     assert document["components"][0]["purl"] == "pkg:pypi/requests"
@@ -223,9 +204,7 @@ def test_partial_coverage_sets_cfe_partial_inventory_true(component_factory):
 # --- conda component, map-resolved identity --------------------------------
 
 
-def test_map_resolved_conda_component_gets_all_three_cfe_properties(
-    component_factory, monkeypatch
-):
+def test_map_resolved_conda_component_gets_all_three_cfe_properties(component_factory, monkeypatch):
     monkeypatch.setattr(
         sbom,
         "load_conda_pypi_map",
@@ -248,9 +227,7 @@ def test_map_resolved_conda_component_gets_all_three_cfe_properties(
         pypi_identity=PypiIdentity(name="numpy", version="1.26.0"),
     )
     inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1
-    )
+    report = make_report(coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1)
     document = json.loads(render_cyclonedx(inventory, report))
     properties = _properties_by_name(document["components"][0])
     assert properties["cfe:pypi_purl"] == "pkg:pypi/numpy@1.26.0"
@@ -258,9 +235,7 @@ def test_map_resolved_conda_component_gets_all_three_cfe_properties(
     assert properties["cfe:match_source"] == "parselmouth"
 
 
-def test_match_source_lookup_is_fresh_not_carried_on_component(
-    component_factory, monkeypatch
-):
+def test_match_source_lookup_is_fresh_not_carried_on_component(component_factory, monkeypatch):
     """cfe:match_source comes from a FRESH map lookup keyed on the
     component's conda name, never a Component field (Component carries no
     match_source field at all)."""
@@ -277,9 +252,7 @@ def test_match_source_lookup_is_fresh_not_carried_on_component(
         mapping_confidence="verified",
     )
     inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1
-    )
+    report = make_report(coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1)
     document = json.loads(render_cyclonedx(inventory, report))
     properties = _properties_by_name(document["components"][0])
     assert properties["cfe:match_source"] == "atlas-export"
@@ -305,9 +278,7 @@ def test_lock_resolved_conda_component_gets_pypi_purl_but_not_match_fields(
         mapping_confidence=None,
     )
     inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1
-    )
+    report = make_report(coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1)
     document = json.loads(render_cyclonedx(inventory, report))
     properties = _properties_by_name(document["components"][0])
     assert "cfe:pypi_purl" in properties
@@ -330,14 +301,10 @@ def test_unmapped_conda_component_gets_conda_purl_only_no_cfe_properties(
         mapping_confidence=None,
     )
     inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1
-    )
+    report = make_report(coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1)
     document = json.loads(render_cyclonedx(inventory, report))
     component_doc = document["components"][0]
-    assert (
-        component_doc["purl"] == "pkg:conda/some-unmapped-pkg@1.0.0?channel=conda-forge"
-    )
+    assert component_doc["purl"] == "pkg:conda/some-unmapped-pkg@1.0.0?channel=conda-forge"
     assert component_doc.get("properties", []) == []
 
 
@@ -347,9 +314,7 @@ def test_pypi_component_never_gets_cfe_properties(component_factory):
     cross-reference property there would just restate its own purl."""
     component = component_factory(name="requests", version="2.31.0")
     inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1
-    )
+    report = make_report(coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1)
     document = json.loads(render_cyclonedx(inventory, report))
     assert document["components"][0].get("properties", []) == []
 
@@ -361,9 +326,7 @@ def test_adversarial_names_never_crash_and_produce_schema_valid_json(component_f
     for name in _ADVERSARIAL_NAMES:
         component = component_factory(name=name, version="1.0")
         inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-        report = make_report(
-            coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1
-        )
+        report = make_report(coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1)
         rendered = render_cyclonedx(inventory, report)
         document = json.loads(rendered)
         # Round-trips through json.loads (already implied above) with the

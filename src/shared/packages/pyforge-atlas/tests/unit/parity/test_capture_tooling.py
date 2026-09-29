@@ -45,9 +45,7 @@ class _SyntheticCaptureSource:
 
 
 def test_capture_writes_harness_compatible_fixture(tmp_path):
-    written = capture_legacy_fixtures(
-        _SyntheticCaptureSource(), tmp_path, captured_at="2026-07-17"
-    )
+    written = capture_legacy_fixtures(_SyntheticCaptureSource(), tmp_path, captured_at="2026-07-17")
     assert len(written) == 1
     data = json.loads(written[0].read_text())
     # harness fixture shape
@@ -68,9 +66,9 @@ def test_capture_defaults_to_source_node_list(tmp_path):
 def test_b2_b3_seeds_still_flagged_shape_only():
     """Until the attended recapture runs, the pypi/vulnerability seeds MUST stay
     flagged shape-only (a green parity-diff is not legacy parity)."""
-    pypi_and_vuln = sorted(
-        (_FIXTURES_DIR / "pypi_intelligence").glob("*.json")
-    ) + sorted((_FIXTURES_DIR / "vulnerability").glob("*.json"))
+    pypi_and_vuln = sorted((_FIXTURES_DIR / "pypi_intelligence").glob("*.json")) + sorted(
+        (_FIXTURES_DIR / "vulnerability").glob("*.json")
+    )
     assert pypi_and_vuln, "expected shape-only seed fixtures to exist"
     for f in pypi_and_vuln:
         assert is_shape_only_seed(f), f"{f.name} lost its shape-only-seed flag"

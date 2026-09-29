@@ -6,6 +6,7 @@ import argparse
 import json
 
 import pytest
+
 from pyforge.marshal.cli import seed as seed_cli
 from pyforge.marshal.seed.errors import UsageError
 from pyforge.marshal.seed.model.manifest import (

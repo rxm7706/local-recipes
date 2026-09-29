@@ -92,9 +92,7 @@ def test_budget_show_via_cli_reports_clearly_when_never_declared(tmp_path, monke
     assert out.strip() != "0"
 
 
-def test_budget_show_json_via_cli_reports_an_empty_array_when_never_declared(
-    tmp_path, monkeypatch, capsys
-):
+def test_budget_show_json_via_cli_reports_an_empty_array_when_never_declared(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("pyforge.steward.budget.repo_root", lambda: tmp_path)
 
     rc = main(["budget", "show", "--json"])
@@ -103,9 +101,7 @@ def test_budget_show_json_via_cli_reports_an_empty_array_when_never_declared(
     assert json.loads(capsys.readouterr().out) == []
 
 
-def test_budget_show_json_via_cli_renders_a_load_error_as_json_not_plain_text(
-    tmp_path, monkeypatch, capsys
-):
+def test_budget_show_json_via_cli_renders_a_load_error_as_json_not_plain_text(tmp_path, monkeypatch, capsys):
     """Regression test for the `--json`-on-an-error-path bug class Epic 3's
     own closing review found and fixed in `ProvisionDuty` — a corrupt
     `.steward/budget.yaml` must still yield valid JSON on stderr when
@@ -126,9 +122,7 @@ def test_budget_show_json_via_cli_renders_a_load_error_as_json_not_plain_text(
     assert "error" in payload
 
 
-def test_budget_show_json_via_cli_renders_a_non_list_ceilings_error_as_json(
-    tmp_path, monkeypatch, capsys
-):
+def test_budget_show_json_via_cli_renders_a_non_list_ceilings_error_as_json(tmp_path, monkeypatch, capsys):
     """Review finding: `for raw in document.get("ceilings") or []:` raised a
     bare, uncaught `TypeError` (not `BudgetError`) when "ceilings" was a
     truthy non-list scalar (e.g. `ceilings: 5`) -- that propagated past
@@ -150,9 +144,7 @@ def test_budget_show_json_via_cli_renders_a_non_list_ceilings_error_as_json(
     assert "error" in payload
 
 
-def test_budget_show_reports_a_load_error_when_declared_at_is_missing(
-    tmp_path, monkeypatch, capsys
-):
+def test_budget_show_reports_a_load_error_when_declared_at_is_missing(tmp_path, monkeypatch, capsys):
     """Review finding: `Ceiling.declared_at` is typed `str` (non-optional),
     and this module's own docstring promises a document missing a required
     field raises `BudgetError` -- but the load path used `.get()` for
@@ -160,9 +152,7 @@ def test_budget_show_reports_a_load_error_when_declared_at_is_missing(
     monkeypatch.setattr("pyforge.steward.budget.repo_root", lambda: tmp_path)
     budget_path = tmp_path / ".steward" / "budget.yaml"
     budget_path.parent.mkdir(parents=True)
-    budget_path.write_text(
-        "ceilings:\n  - amount: 1500\n    currency: usd\n    period: month\n"
-    )  # missing declared_at
+    budget_path.write_text("ceilings:\n  - amount: 1500\n    currency: usd\n    period: month\n")  # missing declared_at
 
     from pyforge.steward.cli import EXIT_FAILED
 

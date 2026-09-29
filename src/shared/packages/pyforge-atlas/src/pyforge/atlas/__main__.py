@@ -1,6 +1,7 @@
 """pyforge-atlas file for ensuring the package is executable
 as `pyforge-atlas` and `python -m pyforge.atlas`
 """
+
 import sys
 from typing import Any
 
@@ -72,7 +73,7 @@ def main(*args, **kwargs) -> Any:
     package_name = __package__ or "pyforge.atlas"
     configure_project(package_name)
 
-    interactive = hasattr(sys, 'ps1')
+    interactive = hasattr(sys, "ps1")
     kwargs["standalone_mode"] = not interactive
 
     run = find_run_command(package_name)

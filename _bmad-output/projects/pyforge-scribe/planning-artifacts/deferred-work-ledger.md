@@ -168,7 +168,7 @@ sibling ledgers and the detector both use.
 
 - source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`
   summary: Canopy CAP-14 (FR-35/FR-36) graph durability and semantic recall are steward Epic 28's vehicle — not a new scribe Epic 4. The unifying-strategy Dream's BS-1 "dual-driver Scribe engine" (SQLite local vs PostgreSQL production) was written as if already shipped; ground truth is a **single** v1 adapter — `FlatFileGraphStore` (JSON at `.claude/data/pyforge-scribe/graph.json`) behind the `GraphStore` port (Story 2.1 / AD-5). SQLite-over-RWX is explicitly rejected; multi-pod durability is PostgreSQL/pgvector under `scribe_schema` (parent AD-1 / parent AD-5).
-  evidence: Phase 5 correct-course 2026-08-24; steward `epics.md` Epic 28 Stories 28.1–28.2; scribe `spec-2-1-graphstore-port-flat-file-adapter.md` (shipped); `technical-scribe-capture-promotion-graph-2026-08-08.md`. Scribe five-tier gaps (portal, MCP, skill, persona) delegate to steward Epics 19/21/29 — not scribe-local epics.
+  evidence: Phase 5 correct-course 2026-08-24; steward `epics.md` Epic 28 Stories 28.1–28.2; scribe `spec-2-1-graphstore-port-flat-file-v1-adapter.md` (shipped); `technical-scribe-capture-promotion-graph-2026-08-08.md`. Scribe five-tier gaps (portal, MCP, skill, persona) delegate to steward Epics 19/21/29 — not scribe-local epics.
   status: open
   vehicle: `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md` Epic 28
 
@@ -203,3 +203,70 @@ sibling ledgers and the detector both use.
   close_when: a second consumer repo exists AND it keeps `docs/adr/`-style records — otherwise this stays a hypothetical and closes as a Non-goal
 
   verified: 2026-09-11 — still-open — mechanical re-verification at HEAD 3ff14108f1 (operator-directed fleet coverage sweep 2026-09-11): source_spec present; location path present; docs/adr/ still absent at HEAD (evidence claim holds); compile.py still enumerates six named surfaces (see file header); ledger status mapped to still-open; agent judgment not applied — the close_when trigger (a second consumer repo keeping docs/adr/-style records) has not occurred
+
+### DW-8-1-1: scribe_graph_freshness_check.py's SCHEDULE_PERIOD_HOURS (24) is a hand-maintained duplicate of the .timer unit's OnCalendar=*-*-* 02:30:00 cadence, with no test asserting the two stay in sync.
+
+- source_spec: `planning-artifacts/specs/spec-8-1-the-nightly-compile-gets-a-trigger-the-estate-owns-and-a-freshness-signal-that-proves-it-fired.md`
+  summary: scribe_graph_freshness_check.py's SCHEDULE_PERIOD_HOURS (24) is a hand-maintained duplicate of the .timer unit's OnCalendar=*-*-* 02:30:00 cadence, with no test asserting the two stay in sync.
+  evidence: If a future change edits the timer's schedule without also updating the hardcoded 24 in scripts/scribe_graph_freshness_check.py, the detector silently reports the wrong freshness window. The module's own comment already documents this as a deliberate trade-off ("no cheap runtime value for one nightly cadence"), and the detector is advisory-only (never a PR gate), so the blast radius is a briefly wrong label rather than a red gate.
+  location: scripts/scribe_graph_freshness_check.py:176
+  origin: spec-deferred 99da4d682388 — promoted from Tier-3 (`implementation-artifacts/deferred-work.md` DW-5), renamed from bmad-loop's own generic damped id to this ledger's DW-<story>-<n> convention on promotion so a future damped story minting its own "DW-5" cannot collide with it
+  severity: low
+  reason: Settling this properly would need a test parsing the .timer's OnCalendar= value and asserting it equals SCHEDULE_PERIOD_HOURS.
+  promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
+  status: open
+
+### DW-8-1-2: The "four consecutive scheduled runs are recorded" half of the Trigger-fires-on-schedule matrix row cannot be closed by this diff — it requires real elapsed time on an operator's own machine.
+
+- source_spec: `planning-artifacts/specs/spec-8-1-the-nightly-compile-gets-a-trigger-the-estate-owns-and-a-freshness-signal-that-proves-it-fired.md`
+  summary: The "four consecutive scheduled runs are recorded" half of the Trigger-fires-on-schedule matrix row cannot be closed by this diff — it requires real elapsed time on an operator's own machine.
+  evidence: No repo-local test or diff can assert that scheduled firings actually occurred over multiple nights; this is only observable on the operator machine that installs the trigger and lets it run.
+  location: spec-8-1 I/O & Edge-Case Matrix, row "Trigger fires on schedule"
+  origin: spec-deferred fcd967ca9b2b — promoted from Tier-3 (`implementation-artifacts/deferred-work.md` DW-6), renamed from bmad-loop's own generic damped id to this ledger's DW-<story>-<n> convention on promotion so a future damped story minting its own "DW-6" cannot collide with it
+  severity: low (unverified — no severity recorded in the original Tier-3 entry)
+  reason: Per this dispatch's own instructions, this becomes an operator_actions item at HALT (status: awaiting-operator) rather than a code defect. Only real elapsed time on an operator's own machine, running the installed trigger across four consecutive scheduled firings, can close it.
+  promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
+  status: open
+
+### DW-FU-19-1: The per-tool pointer files (`GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/*.mdc`) are not in `governance-currency`'s `DOCUMENTS`, so a skill, script or path named there can rot unnoticed; only `AGENTS.md` and `CLAUDE.md` are checked. Extending `DOCUMENTS` is a marshal change (`spec-fleet-consistency-standard` CAP-6 owns the script) — Dream item (8).
+
+- source_spec: `planning-artifacts/specs/spec-19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness.md`
+  summary: The per-tool pointer files (`GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/*.mdc`) are not in `governance-currency`'s `DOCUMENTS`, so a skill, script or path named there can rot unnoticed; only `AGENTS.md` and `CLAUDE.md` are checked. Extending `DOCUMENTS` is a marshal change (`spec-fleet-consistency-standard` CAP-6 owns the script) — Dream item (8).
+  evidence: `scripts/governance_currency_check.py` `DOCUMENTS = (_bmad-output/EXEMPLAR-STANDARD.md, AGENTS.md, CLAUDE.md, docs/reference/test-charter.md)`; PR #1513's GEMINI.md carried a wrong coverage-gate command that no detector saw.
+  location: scripts/governance_currency_check.py
+  origin: spec-deferred 34593f74f8b6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-1-2: `AGENTS.md` is 476 lines and `CLAUDE.md` 357 after this story; Claude Code's guidance is under 200 lines per instruction file and BMAD's is 'only what is expensive to rediscover'. A Copilot or Devin session loads both. The shrink (nested `AGENTS.md` per station, path-scoped `.claude/rules/` and `.github/instructions/*.instructions.md`, CLAUDE.md deduplicated against the import) is Dream item (4), a later `bmad-spec` pass.
+
+- source_spec: `planning-artifacts/specs/spec-19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness.md`
+  summary: `AGENTS.md` is 476 lines and `CLAUDE.md` 357 after this story; Claude Code's guidance is under 200 lines per instruction file and BMAD's is 'only what is expensive to rediscover'. A Copilot or Devin session loads both. The shrink (nested `AGENTS.md` per station, path-scoped `.claude/rules/` and `.github/instructions/*.instructions.md`, CLAUDE.md deduplicated against the import) is Dream item (4), a later `bmad-spec` pass.
+  evidence: `wc -l AGENTS.md CLAUDE.md` on the branch; code.claude.com/docs/en/memory 'Size: target under 200 lines per CLAUDE.md file'.
+  location: AGENTS.md
+  origin: spec-deferred 2595e7686b45 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-2: Recall over the station MCP (`/stations/scribe/mcp`) so a harness that cannot run pixi at all (a hosted agent with only HTTP tool access) can still ask team memory — Dream item (7), the second half. The Guild-env half landed here.
+
+- source_spec: `planning-artifacts/specs/spec-19-2-scribe-capture-and-recall-run-from-the-session-default-environment.md`
+  summary: Recall over the station MCP (`/stations/scribe/mcp`) so a harness that cannot run pixi at all (a hosted agent with only HTTP tool access) can still ask team memory — Dream item (7), the second half. The Guild-env half landed here.
+  evidence: Copilot cloud agent sessions have a 59-minute cap and only what `copilot-setup-steps.yml` installs; Devin sessions boot from a machine snapshot. Both can run pixi; a pure-MCP consumer (Claude Design, a hosted reviewer) cannot.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
+  origin: spec-deferred be4d79b9014a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-1-3: the instruction-surface parity (CAP-27) is live-verified on Claude Code only; Gemini, Cursor, Copilot (cloud agent / CLI / VS Code chat) and Devin are docs-only until an operator runs one session each
+
+- source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness.md`
+  summary: Story 19.1's evidence for "every harness loads `AGENTS.md`" is documentary for every harness but Claude Code (research doc § 5). Needed, one session each, by someone with the seat: Gemini CLI at the repo root → `/memory show` lists `AGENTS.md` then `GEMINI.md`; a Cursor Agent chat that quotes the verified block's attribution bullet; VS Code Copilot chat → the reply's **References** lists `AGENTS.md` (and `/instructions` in the Copilot CLI); a Devin session → "Accessed Knowledge" shows `AGENTS.md`-derived entries, plus the app-side Repo Setup (`pixi install -e pyforge-guild`) and a "land one story" Playbook. Record each result in the research doc's § 5 table and, on any miss, open a story under Epic 19.
+  evidence: `planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md` § 5 (honesty table); Cursor's account was out of usage on 2026-09-19; no Devin seat in the session.
+  location: planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md
+  severity: medium
+  status: open
+  raised: 2026-09-19 — Owner: scribe. Asked of the operator in the 2026-09-19 session; recorded here so the ask survives the session.

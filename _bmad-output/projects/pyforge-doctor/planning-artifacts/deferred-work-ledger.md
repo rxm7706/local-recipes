@@ -116,10 +116,10 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-FU-6-8: Follow-up review still recommended for 6-8-bmad-drift-comes-home-without-breaking-the-board after the damping cap was spent
+### DW-FU-6-8: Follow-up review still recommended for 6-8-bmad_drift-comes-home-without-breaking-the-board after the damping cap was spent
 
 - source_spec: `spec-6-8-bmad-drift-comes-home-without-breaking-the-board.md`
-  summary: Follow-up review still recommended for 6-8-bmad-drift-comes-home-without-breaking-the-board after the damping cap was spent
+  summary: Follow-up review still recommended for 6-8-bmad_drift-comes-home-without-breaking-the-board after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the
     story finalized (status: done, verify green) while the review pass still recommended an
     independent follow-up. The work was committed by bmad-loop run 20260809-195207-7471; this
@@ -1646,3 +1646,299 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   status: open
 
   verified: 2026-09-08 — still-open — CONFIRMED, and the entry's cross-station scope claim independently re-measured and upheld. `bmad-agent-doctor/SKILL.md:14` routes `bmad-os-root-cause-analysis` as advisory-only, but the `## Allowed actions (CAP-16)` section at `:67` names no mechanism for consulting it. Re-checked all six wielding personas mechanically (warden, marshal, herald, steward, scribe, doctor): every one mentions a routed `bmad-os-*` skill outside CAP-16, and **0 of 6** name one inside their CAP-16 section — so this is steward 46.2's fleet-wide pattern exactly as the entry claims, neither narrower nor wider. A `location:` was added to this entry in the same sweep: it had none, which is why the churn filter could never reach it.
+
+### DW-FU-21-6: Refresh docs/dreams/README.md Phase-2b prose to describe file-driven reconciliation and the three new finding classes.
+
+- source_spec: `planning-artifacts/specs/spec-21-6-dreams-hygiene-reconciles-every-dream-file-and-readme-71-is-enforced.md`
+  summary: Refresh docs/dreams/README.md Phase-2b prose to describe file-driven reconciliation and the three new finding classes.
+  evidence: README still describes hygiene as README-row-only reconciliation; behavior changed in chain.py but tier doc not updated in this story.
+  location: docs/dreams/README.md
+  origin: spec-deferred 36dd62536e4a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-22-6: README Quick start, Common Commands, and Pixi tasks sections still carry full operational text until Story 22.5 populates docs/tutorials/ and docs/how-to/.
+
+- source_spec: `planning-artifacts/specs/spec-22-6-readme-md-claude-md-and-agents-md-point-cleanly-into-the-reorganized-structure.md`
+  summary: README Quick start, Common Commands, and Pixi tasks sections still carry full operational text until Story 22.5 populates docs/tutorials/ and docs/how-to/.
+  evidence: docs/MAP.md lists those README sections as Story 22.5 relocation targets; the quadrant scaffolds are empty README stubs only. Replacing with pointers now would send newcomers to unpopulated homes.
+  location: README.md
+  origin: spec-deferred 9eea4f81fe33 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-6-2: Wire the three new dreams-hygiene classes into detectors-ci after steward confirms live-tier volume is acceptable.
+
+- source_spec: `planning-artifacts/specs/spec-21-6-dreams-hygiene-reconciles-every-dream-file-and-readme-71-is-enforced.md`
+  summary: Wire the three new dreams-hygiene classes into detectors-ci after steward confirms live-tier volume is acceptable.
+  evidence: Spec scopes measurement before joining detectors; checks run only via dream-chain --dreams and pyforge-doctor-test live-count tests today. The three classes live in `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`; the CI gate list is `scripts/detectors.py`.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
+  origin: spec-deferred ac5c2efd1d11 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-CHAIN-COMPLETENESS-6: INV-A skipped every non-open Spec status, so a `shipped` Spec delivered with no epic and no ledger row was structurally invisible
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `board.py::_check_project_chain_completeness` gated INV-A on `if status not in OPEN_SPEC_STATUSES: continue` (`OPEN_SPEC_STATUSES = {"draft","ready","in-progress"}`). Every other status — `shipped`, `absorbed`, `archived`, `superseded`, `extension-point` — skipped the decomposition check entirely. That is correct for four of them and wrong for `shipped`: work really delivered, with no epic and no ledger row, leaves the station under-reporting what it shipped, and the dev/review loop, the retro triggers and the realization gate all key off that trail. The module's own comment (`board.py:84-88`) documented the exemption as deliberate — "When a Spec reaches a terminal status, `:716`'s first clause exempts it anyway" — so this was a design decision, not an oversight, which is why it survived five prior entries in this series.
+  evidence: Found 2026-09-14 by a fleet-wide audit prompted by `spec-platform-image-one-pixi-env` — `status: shipped`, three CAPs each carrying a dated `verified: 2026-09-11` note, `59083b8391` (2026-08-25) in git, its three tests passing live — and **zero** Epic/Story anywhere in the fleet. `chain-completeness` reported clean. A first cut that added `shipped` to the existing per-CAP citation test flagged **34 Specs against 12 real ones**, because epics written before the cite-every-CAP-id convention (Story 12.3, DW-CHAIN-COMPLETENESS-1) name a Spec or its Dream without enumerating `CAP-n`; the delivered branch is therefore held to the WHOLE-SPEC standard only. Matching also had to accept an `owner-dream:` path, since steward Epic 51 claims `spec-platform-datastores-consumed-not-self-hosted` that way and a `spec-<slug>`-only test reported it as a false positive.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py
+  severity: high
+  status: closed
+  raised: 2026-09-14 — raised and closed in the same change (operator-directed vocabulary/gap audit). Owner: doctor (owns `board.py`).
+  closed: 2026-09-14 — new constants `DELIVERED_SPEC_STATUSES = {"shipped"}` and `DECOMPOSITION_OWED_STATUSES = OPEN_SPEC_STATUSES | DELIVERED_SPEC_STATUSES`; a `delivered` branch that runs the whole-spec reference test (slug, bare slug, `owner-dream:` path, or dream stem) and emits `delivered-spec-not-decomposed` with a remedy naming a RETROACTIVE epic (precedent Epics 38/39/57) and explicitly NOT `DEFERRED_SPECS`, which is for undone work. Open-Spec behaviour is byte-unchanged. Four tests replace the one that encoded the old exemption (`test_shipped_spec_is_not_open_and_reports_no_finding`): the new behaviour, two false-positive guards (epic-reference and dream-path), and a guard-removed companion asserting `absorbed`/`archived`/`superseded`/`extension-point` stay exempt. Full doctor suite 1646 passed. **Residue: the 7 real findings this now surfaces are NOT fixed** — tracked as DW-CHAIN-COMPLETENESS-8.
+
+### DW-CHAIN-COMPLETENESS-7: INV-B discards every `epic-*` ledger key before comparing, so an epic row with no `## Epic N` heading is unreachable — and `fleet-picture` counts epics from exactly those keys
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: INV-B compares `epics.md` `### Story` ids against `sprint-status-ledger.yaml` keys in both directions, but its first act is `story_rows = {k: v for k, v in rows.items() if not k.startswith("epic-")}` — every `epic-N` and `epic-N-retrospective` key is dropped before the comparison. Nothing anywhere checks that an `epic-N` key has a matching `## Epic N:` heading, or the reverse. This matters beyond bookkeeping: `scripts/fleet_picture.py` derives the fleet's headline epic counts from those same ledger keys, so a drifted key silently misreports fleet progress.
+  evidence: Found 2026-09-14 by a purpose-written cross-check (not by any existing detector). Two live orphans: `pyforge-steward` has `epic-18: done` with **no `## Epic 18` heading** (stories 18.1–18.3 exist and are correctly keyed, so they render under Epic 17), and `pyforge-marshal` has `epic-29: done` with no `## Epic 29` heading (stories 29.1–29.2 likewise orphaned under Epic 28). Marshal's own `epics.md` frontmatter admits the second: *"183 (181 + Epic 29's two, never counted)"*. Net effect measured live: `fleet-picture` reports 57 epics for steward and 36 for marshal while their `epics.md` declare 56 and 35. Confirmed by parsing both files — headings `{16,17,19,...}` vs keys `{...,18,...}`.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py
+  severity: medium
+  status: closed
+  raised: 2026-09-14 — Owner: doctor (owns `board.py`). A fix adds an epic-level arm to INV-B comparing `## Epic N` headings against `epic-N` keys both directions, with `epic-N-retrospective` treated as paired to its own `epic-N`. The two live orphans are data fixes in steward/marshal and are tracked separately so the detector work is not blocked on them.
+  closed: 2026-09-14 — Fixed as described. `_epic_numbers_from_epics()` (regex `^##\s+Epic\s+(\d+)`) and `_ledger_epic_numbers()` (`re.fullmatch(r"epic-(\d+)")`, so `epic-N-retrospective` is deliberately not a second epic) feed a new INV-B arm emitting `epic-heading-without-ledger-key` and `ledger-epic-key-without-heading`, each naming the epic numbers in its detail string. Four tests cover both directions, agreement, and the guard-removed retrospective companion; `chain-completeness` reports INV-B clean on both arms fleet-wide.
+    Both live orphans resolved, and each was a different defect than the entry above assumed — the entry predicted two missing headings:
+    - **steward Epic 18 was mis-levelled, not missing.** `### Epic 18: Chrome and the trusted client` sat at H3 (line 1563) as the body heading while an identically-titled summary-list entry sat at line 1503. Promoted the body heading to `##`; the summary entry is untouched. Verified `count == 1` for the body form and `== 2` overall before editing, so the promotion could not hit the wrong one.
+    - **marshal Epic 29 was genuinely absent at every heading level.** Inserted `## Epic 29: A harness halt of \`done\` ends the session, not the review` above its existing `**Goal:** FR-193 CAP-11` block, citing marshal's own frontmatter admission — *"183 (181 + Epic 29's two, never counted)"* — as the retroactive warrant.
+    Fixture lesson worth keeping: the new arm initially reddened six existing tests, because `_write_epics_md` always emits `## Epic 1` while their ledgers carried no `epic-1` key. The fixtures were the unfaithful artifact — every one of the fleet's eight real ledgers pairs them — so `_write_ledger` now defaults `epic-1: done` when the caller supplies no `epic-*` key, rather than the detector being weakened to tolerate a shape that does not occur.
+
+### DW-CHAIN-COMPLETENESS-8: seven `shipped` Specs are delivered with no epic anywhere — the backlog DW-CHAIN-COMPLETENESS-6 made visible
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: With INV-A's delivered branch live, `chain-completeness` reports seven Specs whose `status: shipped` work has no FR or epic reference anywhere in the fleet. Each needs a RETROACTIVE epic documenting what already exists (stories at `done`) plus its ledger keys — the Epic 38/39/57 pattern — never a `DEFERRED_SPECS` entry, which is reserved for work deliberately not done.
+  evidence: `pixi run -e local-recipes python -m pyforge.doctor.sources chain-completeness` at 2026-09-14 reports 7 `delivered-spec-not-decomposed` findings, including `pyforge-steward/spec-mcp-host-real-station-tools` (real surface: `mcp_host/app.py`, `settings.py`, its Containerfile, three helm templates, `django-marshal`'s `mcp_asgi.py`) and `pyforge-mason/spec-fleet-stewardship`. One instance of this class was already closed by hand the same day: `spec-platform-image-one-pixi-env` → retroactive steward **Epic 57** (3 stories at `done`, ledger keys added, `epics.md` currency_review stamped).
+  severity: medium
+  status: closed
+  raised: 2026-09-14 — Owner: each Spec's own station. Sequenced deliberately after the detector change so the list is machine-derived rather than hand-assembled; the operator directed station-by-station clearing.
+  closed: 2026-09-14 — All seven cleared station-by-station with retroactive epics, per the Epic 38/39/57 pattern and never a `DEFERRED_SPECS` entry. Eight epics minted across three stations, 30 stories, every one at `done` because the work was already delivered: steward **57** (3) and **58** (3); mason **17** (3); marshal **37** (6), **38** (4), **39** (2), **40** (5), **41** (4). Each verified to carry all three of a `## Epic N:` heading, an `epic-N` ledger key, and its `### Story N.M` stories — the same triple the INV-B epic arm added in DW-CHAIN-COMPLETENESS-7 now enforces, so this class cannot silently reopen. Marshal's `epics.md` frontmatter was re-stamped to `epicCount: 41` / `storyCount: 271` with a currency_review prepend. `chain-completeness` now reports zero `delivered-spec-not-decomposed` findings fleet-wide; the sole surviving finding is an open `draft` Spec in marshal, which is INV-A's original open-Spec arm and out of this entry's scope.
+
+### DW-DASHBOARD-DEAD-CODE-1: board.py carries ~180 statements of retired-Guildhall machinery that cannot run in any supported state
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`
+  summary: `sources/board.py` still holds the whole Guildhall console subsystem — `_load_dashboard_generate`, `_load_data_js`, `_drift_epics_md_ids`, `_board_projects`, `_check_dashboard_drift`, `_check_project_dashboard_drift`, and the entire layout-check block (`_serve_layout_dir`, `_layout_chip_rows`, `_check_layout_geometry`, `_suppress_close`, `_run_check_layout`, and the `_LAYOUT_*` constants). None of it can execute: `docs/dashboard/generate.py`, `data.js` and `index.html` are all gone, and `retired-console-check` FAILS CI if any is reintroduced. The reachable entry points (`gather_dashboard_drift`, `gather_check_layout`, `_gather_chain_layers_audit`) now do nothing but assert the retirement holds.
+  evidence: Found 2026-09-14 when `named-module-gates (doctor)` failed on PR #1355: `pyforge.doctor.sources.board` measured **70.1% against an 80% floor**, and the gate only measures modules a PR touches — so the shortfall had been latent since the console was retired and surfaced the moment board.py was edited for an unrelated reason (the INV-B epic arm). All 191 missing statements were in this subsystem. Marking it `# pragma: no cover` took the module to **94%** with zero test changes and zero behaviour change, which is itself the proof that the code is dead: excluding it cost no coverage of anything live.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py
+  severity: low
+  status: closed
+  raised: 2026-09-14 — Owner: doctor. The pragma is the honest interim: it narrows measurement to live code, lowers no threshold and suppresses no finding, and the block carries a comment saying exactly why. Deletion is the real fix and was deliberately NOT done in the same pass — it removes two registered detector sources' internals plus their `Source` taxonomy members, `report-schema.json` entries and registrations, which is a behaviour change needing its own Dream/Spec under the repo's always-on Dream-first rule. Also worth settling in that effort: whether `gather_dashboard_drift` and `gather_check_layout` should survive at all as pure retirement assertions, given `retired-console-check` already enforces the same thing.
+
+  closed: 2026-09-14 — **Deleted: 494 lines, ten functions and ten constants, zero behaviour change.** And the entry above was WRONG about the scope, which is why it had been deferred as needing its own Dream: it claimed deletion was *"a behaviour change to two registered detector sources plus their taxonomy and schema entries."* An AST call-graph pass over `board.py` showed otherwise — the dead code formed two closed **private orphan islands**: the layout chain (`_run_check_layout`, called by nothing, calling `_serve_layout_dir` / `_check_layout_geometry` / `_suppress_close`, with `_check_layout_geometry` calling `_layout_chip_rows`) and the drift chain (`_check_dashboard_drift`, called by nothing, calling `_check_project_dashboard_drift` → `_drift_epics_md_ids`), plus the standalone orphans `_load_data_js` and `_board_projects`. Ten of the eleven suspects had **no live caller at all**. Both gathers, their DISPATCH entries, their `Source` taxonomy members and `report-schema.json` were untouched, so this was hygiene rather than an effort and needed no Dream. Only `_load_dashboard_generate` survives — genuinely reachable from `_gather_chain_layers_audit`, and keeping its pragma because its reachable path is closed by policy (`retired-console-check` fails CI on reintroduction) rather than by structure.
+    **Verified, not asserted:** `--json` findings for `dashboard-drift`, `check-layout`, `chain-completeness` and the `--layers` audit were captured before the deletion and byte-compared after — all four IDENTICAL. Full doctor suite green (1378 passed). Coverage went 72% (pre-pragma) → 94% (pragma) → **95% with the code actually gone**, which is the better outcome: the pragma had been narrowing measurement around a subsystem that should not have existed. The stale prose left behind — four docstring/comment references to deleted helpers, and a section header narrating a port whose ported code no longer exists — was rewritten rather than left pointing at nothing.
+    **Lesson worth keeping:** the over-stated scope in this entry's own `raised:` line cost a deferral cycle. "Removes two registered sources' internals" was inferred from the code's *location* rather than measured from its *call graph*; one AST pass would have settled it when the entry was written.
+
+### DW-FU-18-2-2: Existing doctor check 5s budget test flakes on cold worktree starts and is not caused by this portal slice.
+
+- source_spec: `planning-artifacts/specs/spec-18-2-first-portal-slice-last-fleet-pulse.md`
+  summary: Existing doctor check 5s budget test flakes on cold worktree starts and is not caused by this portal slice.
+  evidence: Full suite 1287 passed + 1 skipped + 1 failed on test_doctor_check_completes_within_the_five_second_budget (7.8s / 15.9s). Story 18.1 recorded the same flake. New 18.2 tests 7/7 passed.
+  location: src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py
+  origin: spec-deferred 2bb5888a6493 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-LEDGER-DIRECTION-REKEY-1: `ledger-direction`'s `gather_direction()` does not apply a fold PR's re-key map, so a rekeyed-but-still-done story reads as `landed-but-unpromoted` forever
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`
+  summary: The `ledger-direction` detector (`sources/ledger.py::gather_direction`, Story 15.2 / marshal FR-137/FR-138) fired three FAILs for pyforge-atlas — `13-5`, `14-4`, `15-3` "landed-but-unpromoted." Investigation found all three false positives, caused by the same fold PR (`86d1cdf3ee`, `rekey-2026-09-17.md`) that its sibling detector `ledger-regression` (`gather()`, same module) already handles: `gather()` calls `_new_rekey_maps()` and remaps the base-side keys before comparing (lines ~285-306, "Story 25.3: a fold PR renumbers every key and ships the map"). `gather_direction()` has no equivalent — it derives a bare `_story_id()` from the ledger's CURRENT keys and from merge-subject slugs, with no rekey substitution, so a merge subject citing the OLD id (`bmad-loop/…/13-5-downstream-handoff-to-mason`) never matches the ledger's post-rekey key (`12-5-downstream-handoff-to-mason-fr-68`), even though both the ledger (`done`) and that story's spec frontmatter (`status: shipped`) already agree the story shipped.
+  evidence: |
+    Verified 2026-09-18, all three genuinely merged and already correctly tracked under their post-rekey keys:
+    - `13-5` → `12-5-downstream-handoff-to-mason-fr-68`: ledger says `done`; spec `spec-12-5-downstream-handoff-to-mason-fr-68.md` frontmatter `status: shipped`; merge commit `7156c2b66fd` (`bmad-loop/…/13-5-downstream-handoff-to-mason into loop/pyforge-atlas`) confirmed an ancestor of `origin/main` via `git merge-base --is-ancestor`.
+    - `14-4` → `13-4-air-gap-asset-rewriting-cap-4`: ledger says `done`; spec `spec-13-4-air-gap-asset-rewriting-cap-4.md` frontmatter `status: 'done'`; merge commit `eee8e8b78d` confirmed an ancestor of `origin/main`.
+    - `15-3` → `14-3-kedro-pipeline-surfacing-cap-4`: ledger says `done`; spec `spec-14-3-kedro-pipeline-surfacing-cap-4.md` frontmatter `status: 'done'`; merge commit `b3532d2536` confirmed an ancestor of `origin/main`.
+    No ledger or spec edit was made for any of the three — both artifacts already state the true, current status. Re-adding the old keys to the GENERATED ledger (`sprint-status-ledger.yaml` header: "do not hand-edit") to silence the detector would introduce dead keys that `sprint-ledger-sync` does not itself write and would misreport the story's identity going forward.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py (`gather_direction`, around line 589)
+  severity: medium
+  status: open
+  raised: 2026-09-18 — Owner: doctor. The fix is mechanical (thread `_new_rekey_maps`/`RekeyMap` through `gather_direction` the same way `gather()` already does, remapping `merged_ids`/`done_ids` through the project's rekey map before diffing) but is a behaviour change to a Doctor detector source, which this repo's always-on Dream-first rule does not exempt even for a small, well-understood fix — needs a Dream seed + `bmad-spec` before implementation, not a same-pass hand-edit.
+
+### DW-FU-28-1: status_body_consistency._parse_frontmatter is a verbatim copy of the pre-CAP-81 first-dashes-anywhere reader, so CAP-3 and CAP-81 now render contradictory verdicts on the same document
+
+- source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
+  summary: status_body_consistency._parse_frontmatter is a verbatim copy of the pre-CAP-81 first-dashes-anywhere reader, so CAP-3 and CAP-81 now render contradictory verdicts on the same document
+  evidence: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py:219-236 still tests for the three-dash substring anywhere in the text and splits on its first occurrence; its `_body_after_frontmatter` (:239-246) finds the first newline-fence-newline marker (the three dashes are not spelled out here so no first-dashes reader truncates this very entry). After CAP-81 lands, a Dream with prose, a three-dash thematic break and no frontmatter is `({}, False)` -> `dream-without-spec` in chain.py but `({}, True)` -> an `unparseable` WARN in status_body_consistency.py, and the 34 glued-opener (three dashes fused to `title:`) archived Dreams are refused by chain.py but silently parsed by this copy. Review pass 1 (2026-09-19) verified the divergence by reading both readers; PR #1494's memlog entry already notes this copy "for CAP-81's story". Named blocker: CAP-81's intent names `chain.py::_frontmatter_parse` only, and a detector's own reader is chain work (Dream-first) — this needs its own CAP/story under spec-pyforge-doctor, not a hand-patch under Story 28.1.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py::_parse_frontmatter
+  origin: spec-deferred be6c272db6d7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-1-2: factory.py's pin-scope extractor still takes the frontmatter as the text before the first three-dash substring, so a pin declared after an embedded three-dash run in a frontmatter scalar is missed
+
+- source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
+  summary: factory.py's pin-scope extractor still takes the frontmatter as the text before the first three-dash substring, so a pin declared after an embedded three-dash run in a frontmatter scalar is missed
+  evidence: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:631 splits the text on its first three-dash substring; `scope = parts[1]` when the text starts with three dashes. A frontmatter value quoting three dashes before the pin key truncates `scope` and `_PIN_KEY_RE.search` misses the pin -> `pin-missing` on a doc that declares one. No live doc has the shape today (review pass 1 scan, 2026-09-19); same named blocker as the status_body_consistency entry — a separate capability's reader.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py::_doc_pin
+  origin: spec-deferred 7dd30eafde52 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-1-3: 34 archived docs/dreams/*.md files carry a glued opener (three dashes fused to `title:` on line 1) and are now refused as unparseable-frontmatter, hiding 20 readme-table-drift and 2 kinship-wikilink-dead findings until the openers are repaired
+
+- source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
+  summary: 34 archived docs/dreams/*.md files carry a glued opener (three dashes fused to `title:` on line 1) and are now refused as unparseable-frontmatter, hiding 20 readme-table-drift and 2 kinship-wikilink-dead findings until the openers are repaired
+  evidence: The 2026-09-17 one-chain-per-station fold wrote the opener as three dashes fused to `title:`; `0b74756679` ("keep satellite Dream hashes") deliberately restored that shape on all 34 to hold spec-pyforge-steward's surface stable. Story 28.1's opener rule (an attempted-but-unbounded opener is refused, never parsed leniently or read as absent) turns them into 34 live `unparseable-frontmatter` WARNs (`gather_dreams_hygiene` 173 -> 185, `gather_dream_chain` 1 OK -> 34 WARN) and skips them before the readme-drift and Kinship scans (`readme-table-drift` 73 -> 53; `kinship-wikilink-dead` 33 -> 31, both from `enterprise-airgap.md`). Repair: insert a line break after the three dashes on line 1 of each file. Two of them -- `docs/dreams/mcp-era-isolation.md` and `docs/dreams/mcp-host-real-station-tools.md` -- are governed by `pyforge-steward/spec-mcp-era-isolation` / `spec-mcp-host-real-station-tools` (steward memlog event + scoped `--write-baseline` for each), and the same PR must re-measure `test_live_tree_kinship_wikilink_dead_count` 31 -> 33 and run `pyforge-doctor-test` locally, because a docs-only diff cannot fire the doctor station lane (the MRS-GATE-001 class). Named blocker: cross-station (steward- governed files) and outside Story 28.1's Surface; verified live 2026-09-19.
+  location: docs/dreams/ (34 files whose first line begins with the three dashes fused to `title:`; the two steward-governed ones are named in the evidence)
+  origin: spec-deferred a1a347e035e7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-1-4: `unparseable-frontmatter` findings name no refusal cause, and `_unparseable_frontmatter_item`'s remedy text ("could not be parsed as a mapping ... fix the fenced YAML frontmatter block") is wrong for the attempted-but- unbounded opener that produces all 34 live hits
+
+- source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
+  summary: `unparseable-frontmatter` findings name no refusal cause, and `_unparseable_frontmatter_item`'s remedy text ("could not be parsed as a mapping ... fix the fenced YAML frontmatter block") is wrong for the attempted-but- unbounded opener that produces all 34 live hits
+  evidence: `chain.py::_frontmatter_parse` returns `(dict, bool)`; after Story 28.1 four distinct refusal causes (unclosed fence; attempted-but-unbounded opener; YAML error; non-mapping block) collapse into one bool, so `gather_dreams_hygiene` (the `unparseable-frontmatter` WARN, evidence `{"subject": slug}`) and `_unparseable_frontmatter_item` (the remedy line) cannot say WHICH line to fix -- for the 34 glued-opener Dreams the block IS a valid mapping and the only defect is line 1. Story 28.1's Never clause ("do not touch callers") excludes threading a reason through those call sites. Named blocker: needs a CAP that widens the reader's return contract (a reason enum) or adds a reason field to the finding, under spec-pyforge-doctor; review pass 2, 2026-09-19.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py::_unparseable_frontmatter_item
+  origin: spec-deferred a8c284f7e5ef — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-1-5: Five other doctor readers close the frontmatter block on a stripped three-dash line, so an indented three-dash line inside a block scalar ends their block early with no error -- the class Story 28.1 fixed only in chain.py::_frontmatter_parse
+
+- source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
+  summary: Five other doctor readers close the frontmatter block on a stripped three-dash line, so an indented three-dash line inside a block scalar ends their block early with no error -- the class Story 28.1 fixed only in chain.py::_frontmatter_parse
+  evidence: `line.strip()` fence tests at `hygiene.py::_dream_frontmatter_status` (:269/:272), `sibling_dreams.py` (:82/:85), `status_body_consistency.py` (:518/:520 and :699/:702), `board.py` (:433) and `chain.py::_parse_surface` (:1615, the marshal-bound spec-surface contract). An `evidence: |` block scalar whose content has an indented three-dash line closes each of these early and drops every later key with no error (`_frontmatter_parse` now uses `rstrip`, column 0). 0 live Dreams/specs carry the shape (scan 2026-09-19). Named blocker: other capabilities' readers and a marshal-bound contract -- their own CAP/story, not Story 28.1.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py::_dream_frontmatter_status
+  origin: spec-deferred a4e74eb1dcfa — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-OPS-2026-09-19-6: six folded-and-archived Dreams still live unfolded in the sibling repo — `sibling-dreams-drift` (CAP-71) reports status / content_hash / title divergence once a token reaches it
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`
+  summary: With `GH_TOKEN` exported (2026-09-19; `~/.bashrc` now sets it from `gh auth token`) the check reaches `OpenTeams-WFT-CDO/mgmt-wf-python-modernization` and finds `django-accelerator-framework`, `enterprise-data-models-and-apis`, `miniforge-installer`, `package-inventory-eligibility`, `pixi-container-image`, `reusable-cicd-workflows` diverging on status, content_hash and title. All six are `archived` here — folded into their station Dreams on 2026-09-17 (one-chain-per-station, e.g. `miniforge-installer` → `[[pyforge-mason]]`) — while the sibling still carries the pre-fold copies. Expected fallout of the fold, not a mistake here; needs a cross-repo decision: push the fold to the sibling (archive or repoint the six there), or declare the sibling a frozen snapshot and exempt them from CAP-71. Until decided the six warn on every run.
+  evidence: `GH_TOKEN="$(gh auth token)" .pixi/envs/pyforge-guild/bin/python -m pyforge.doctor.sources sibling-dreams-drift` → six `sibling-dreams-drift: warn` rows, exit 0 (2026-09-19). Without the token the same run reports `sibling-dreams-unreachable` — the check fails open by design.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
+  severity: low
+  status: closed — Story 29.1 landed 2026-09-20: `sibling_dreams.py` honours a per-Dream `sibling-acknowledged: <hash>` frontmatter line (silent while it equals the sibling's current `content_hash`, re-fires naming both hashes the moment it does not) and `_SIBLING_OWNER` now points at `openteams-ai`. All six Dreams carry `sibling-acknowledged:` at their 2026-09-20 sibling hashes. Live re-verification: `GH_TOKEN="$(gh auth token)" pixi run --frozen -e pyforge-guild python -m pyforge.doctor.sources sibling-dreams-drift` → zero findings, exit 0.
+  raised: 2026-09-19 — Owner: doctor (CAP-71); the fold decision belongs to the six Dreams' owners — mason (4: django-accelerator-framework, miniforge-installer, pixi-container-image, reusable-cicd-workflows), atlas (enterprise-data-models-and-apis) and warden (package-inventory-eligibility); corrected 2026-09-20 per DW-FU-29-1 (the clause used to read "mason's/steward's"; steward owns none). Operator-only for the sibling-side edit.
+  update: 2026-09-19 (evening) — decision: ACKNOWLEDGE, not push. Live read: the sibling repo has moved (`OpenTeams-WFT-CDO/…` 301 → `openteams-ai/mgmt-wf-python-modernization`, private), last pushed 2026-08-24; all six Dreams there are `status: dreamt`, untouched since 2026-08-13 — a pre-fold snapshot nobody evolved. CAP-71's constraints (read-only, never a sync engine, unlicensed prose, per-Dream human reconciliation) rule out a sibling-side edit. Mechanism to record the acknowledgement + the corrected owner: Story 29.1 (CAP-82). This row closes when 29.1 lands with a live zero.
+
+### DW-FU-23-5: No automated, repeatable check encodes "no live doc cites the old _bmad-output/ root path for the five archived files" as a re-checkable command anywhere in the repo.
+
+- source_spec: `planning-artifacts/specs/spec-23-5-archive-citations-for-the-five-already-moved-_bmad-output-files.md`
+  summary: No automated, repeatable check encodes "no live doc cites the old _bmad-output/ root path for the five archived files" as a re-checkable command anywhere in the repo.
+  evidence: Confirmed independently by two review layers: grepped pyforge-doctor's hygiene definitions and tests for DREAM-TRIAGE, archive/_bmad-output, stale/dead/broken-link/resolve-citation patterns and found no matching detector or meta-test. This story's own bound Verification command (pyforge-doctor-test) is the station's generic suite and does not exercise this invariant, so a future re-introduction of a stale old-root citation would ship green. Already tracked separately as Story 23.7 ("A new Doctor source flags leftover shelf occupancy"), currently backlog — not this story's problem to build.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/
+  origin: spec-deferred b39d4a218335 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-6: This story's own tracking artifacts (sprint-status-ledger.yaml key 23-6-…, epics.md's Story 23.6 section) still read backlog even as the spec advances through in-review to done.
+
+- source_spec: `planning-artifacts/specs/spec-23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree.md`
+  summary: This story's own tracking artifacts (sprint-status-ledger.yaml key 23-6-…, epics.md's Story 23.6 section) still read backlog even as the spec advances through in-review to done.
+  evidence: Real desync, but ledger/epics promotion is a distinct post-merge step (sprint-ledger-sync) that this build-auto workflow does not perform — it happens at landing time per this repo's own established convention (see git log: "marshal: promote sprint-status ledger ... -> done" commits following each merge).
+  location: planning-artifacts/sprint-status-ledger.yaml, planning-artifacts/epics.md (Story 23.6)
+  origin: spec-deferred 75105d6f468d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-6-2: spec-pyforge-doctor/SPEC.md's CAP-53 annotation still reads "(ready 2026-09-17)" even as the underlying story spec advances.
+
+- source_spec: `planning-artifacts/specs/spec-23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree.md`
+  summary: spec-pyforge-doctor/SPEC.md's CAP-53 annotation still reads "(ready 2026-09-17)" even as the underlying story spec advances.
+  evidence: Confirmed pre-existing and systemic, not caused by this diff: every sibling CAP-48..54 annotation in the same block carries the identical stale "(ready 2026-09-17)" marker, including CAP-50 whose story (23.3) is already done. This diff doesn't touch SPEC.md; fixing the pattern is a separate, repo-wide reconciliation across all seven CAPs.
+  location: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md:222
+  origin: spec-deferred 9cc841072d32 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-6-3: Sibling story 23.5's three status trackers disagree with each other (spec still 'ready', epics.md still backlog, ledger already done).
+
+- source_spec: `planning-artifacts/specs/spec-23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree.md`
+  summary: Sibling story 23.5's three status trackers disagree with each other (spec still 'ready', epics.md still backlog, ledger already done).
+  evidence: Real, but about a different story entirely and outside this spec's declared Surface (docs/MAP.md, docs/dashboard/README.md). This diff's herald memlog entry only reconciles spec-surface hashes for 23.5's already-landed citation fix; it does not and should not touch 23.5's own status fields.
+  location: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-23-5-archive-citations-for-the-five-already-moved-_bmad-output-files.md
+  origin: spec-deferred 781afe7e4bdd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-30-1: `docs/how-to/github-actions-recipe-ci.md` (pre-existing, not one of the 14) claims '19 workflow files' — never re-counted; the count belongs to a generated page (Story 30.3's detector/workflow table) rather than prose.
+
+- source_spec: `planning-artifacts/specs/spec-30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true.md`
+  summary: `docs/how-to/github-actions-recipe-ci.md` (pre-existing, not one of the 14) claims '19 workflow files' — never re-counted; the count belongs to a generated page (Story 30.3's detector/workflow table) rather than prose.
+  evidence: Implementer sweep 2026-09-19 over every backticked path and pixi task in the 15 corrected pages found no other unverified claim; this count sits outside the story's pages.
+  location: docs/how-to/github-actions-recipe-ci.md
+  origin: spec-deferred 922f3cdd50a8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-30-1-2: `docs/explanation/pyforge-estate-overview.md` uses Docusaurus-style `:::note` admonitions that GitHub does not render; left as authored (style, not fact) — a `docs-currency` style rule or the `bmad-os-diataxis` style guide should decide one admonition syntax for `docs/`.
+
+- source_spec: `planning-artifacts/specs/spec-30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true.md`
+  summary: `docs/explanation/pyforge-estate-overview.md` uses Docusaurus-style `:::note` admonitions that GitHub does not render; left as authored (style, not fact) — a `docs-currency` style rule or the `bmad-os-diataxis` style guide should decide one admonition syntax for `docs/`.
+  evidence: GitHub renders `> [!NOTE]`; `:::note` shows as literal text.
+  location: docs/explanation/pyforge-estate-overview.md
+  origin: spec-deferred 3bd6506da5c6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-30-1-3: The unmapped-page class is `warn` (CAP-62 posture); nothing blocks a PR that adds a quadrant page without a MAP row until Story 30.2 promotes the class to `fail` once the registry exists.
+
+- source_spec: `planning-artifacts/specs/spec-30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true.md`
+  summary: The unmapped-page class is `warn` (CAP-62 posture); nothing blocks a PR that adds a quadrant page without a MAP row until Story 30.2 promotes the class to `fail` once the registry exists.
+  evidence: docs_map_hygiene.py `unmapped` → DoctorStatus.WARN by design of CAP-83.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_map_hygiene.py
+  origin: spec-deferred 20381fa0b4a5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-29-1: `DW-OPS-2026-09-19-6`'s pre-existing `raised:` clause says "the fold decision is mason's/steward's" but the six Dreams' actual owners are mason (4), atlas (1), and warden (1) -- steward owns none of them.
+
+- source_spec: `planning-artifacts/specs/spec-29-1-a-per-dream-acknowledgement-silences-exactly-one-sibling-hash-and-the-sibling-coordinates-are-current.md`
+  summary: `DW-OPS-2026-09-19-6`'s pre-existing `raised:` clause says "the fold decision is mason's/steward's" but the six Dreams' actual owners are mason (4), atlas (1), and warden (1) -- steward owns none of them.
+  evidence: Review pass 2026-09-20 (Blind Hunter): verified against the six Dreams' own `owner:` frontmatter. The inaccurate clause predates this story (authored 2026-09-19 when the DW entry was first raised) and this diff never touches that line, so it is a pre-existing inaccuracy, not one this change introduced.
+  location: _bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md (DW-OPS-2026-09-19-6, `raised:` line)
+  origin: spec-deferred 4030d94e19ad — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done
+  verified: 2026-09-20 — resolved: the `raised:` clause of DW-OPS-2026-09-19-6 now names the real owners (mason ×4, atlas ×1, warden ×1, from each Dream's `owner:` frontmatter); one-line factual fix in the same PR that ingested this entry.
+
+### DW-FU-30-3: spec-pyforge-doctor/SPEC.md's `surface:` list does not yet list the five new docs-* generator scripts + shared helper (Story 30.2 precedent: scripts/docs_map_render.py was added there directly). SPEC.md is hook-blocked from a hand-edit in this session (AGENTS.md: re-derive via `bmad-spec`, never hand-edit) and a station-Spec `bmad-spec` re-derivation is out of scope for this one story's dispatch.
+
+- source_spec: `planning-artifacts/specs/spec-30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped.md`
+  summary: spec-pyforge-doctor/SPEC.md's `surface:` list does not yet list the five new docs-* generator scripts + shared helper (Story 30.2 precedent: scripts/docs_map_render.py was added there directly). SPEC.md is hook-blocked from a hand-edit in this session (AGENTS.md: re-derive via `bmad-spec`, never hand-edit) and a station-Spec `bmad-spec` re-derivation is out of scope for this one story's dispatch.
+  evidence: spec-pyforge-doctor/.memlog.md's 2026-09-24 entry already names the six new script paths under "Surface gains (surface: list): ...". Interim fix: allowlisted in scripts/spec_surface_allowlist.txt with a reason citing this story and the pending SPEC.md re-derivation. `python scripts/spec_surface_reconcile.py` reports OK with the allowlist entries in place.
+  location: scripts/spec_surface_allowlist.txt
+  origin: spec-deferred b232e01e8a92 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+## DW-LEDGER-2026-09-25-1 — `capability-ledger` warns "post-PIN Spec without a ledger row" for Specs that are `absorbed` or `draft`
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/SPEC.md` (fcl:CAP-2, the detector lives in `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py`)
+  summary: `pixi run -e pyforge-guild capability-ledger-check` emits eight `post-PIN Spec without a ledger row --append` warnings (docs-shelf-alignment, design-sync-loop, marshal-recall-in-the-loop, marshal-run-watch, token-economy-claude-session-path, self-hosted-bmad-marketplace, vocabulary-one-name-one-job, work-passports-dated-extracts). Seven are `status: absorbed` (folded into their station Specs on 2026-09-17; their CAPs already carry rows under the station Spec) and one is `draft` — none is in `_LIVE_STATUSES` (`ready` | `in-progress`), so none can take a ledger row. The post-PIN path checks the file's date against the PIN SHA but not its status; the extract path does. The warnings read as eight operator decisions owed; there are none.
+  evidence: verified 2026-09-25 (PR #1605 review pass) — `grep -m1 '^status:'` on each of the eight SPEC.md files; the station Specs' CAP rows pass the extract comparison (`capability-ledger-check` exit 0 apart from these warns).
+  severity: low
+  fix: filter the post-PIN warn path by `_LIVE_STATUSES` (or by the same status read the extract uses); add a fixture with an `absorbed` post-PIN Spec that must not warn.
+
+  status: open
+
+## DW-doctor-coverage-gates-ci-short-base-2026-09-27 — `scripts/coverage_gates_ci.py` defaults its diff base to the short name `origin/main`, which a local branch or tag of that name shadows
+
+- source_spec: `docs/governance/spec-coverage-gate-independence/` (the coverage gate's guild-owned Spec; Doctor Story 24.1 moved the script out of every station) — found by doctor Story 31.1 (spec-pyforge-doctor CAP-85)
+  summary: `--base` defaults to `$GITHUB_BASE_REF` or `origin/main`, and the pixi `*-coverage-gate` tasks pass `--base origin/main` by name. Git resolves the short name to a local branch or tag `origin/main` first, so the touched-module list — which modules the 80% floor judges — can come from the wrong diff: a stray shadow at HEAD makes it empty and the gate passes having judged nothing. CAP-85 covers Doctor's package only; this script is guild governance, not Doctor's.
+  evidence: `grep -n origin/main scripts/coverage_gates_ci.py` (line 260); the git resolution order marshal Stories 60.1 / 61.1 recorded by probe.
+  location: scripts/coverage_gates_ci.py; pixi.toml `pyforge-*-coverage-gate` tasks
+  severity: low
+  fix: default to `refs/remotes/origin/main` (and qualify a bare `$GITHUB_BASE_REF` as `refs/remotes/origin/<name>`), through the governance Spec's own chain.
+  status: closed
+  resolved: 2026-09-27 (doctor Story 32.1, spec-coverage-gate-independence CAP-4) — `_normalize_base` names `refs/remotes/origin/<name>` for a bare branch name and for `origin/<name>` (an `origin/<name>` expression too; shas, full refs and other revision expressions pass through), so the default and the pixi tasks read the remote-tracking ref with no argument changed; `coverage-gates.yml`'s pull_request `BASE` now names `refs/remotes/origin/${GITHUB_BASE_REF}` (its station selection diffs outside the driver). A real-git shadow test fails on the old normalizer. The station-tests lane's station selection and the recipe CI workflows' changed-recipe selection have the same shape and other owners: `DW-marshal-station-tests-short-base-ref-2026-09-27` (spec-pyforge-core CAP-8) and `DW-mason-recipe-ci-short-base-ref-2026-09-27`.

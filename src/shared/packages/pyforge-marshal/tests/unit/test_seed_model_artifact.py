@@ -11,6 +11,7 @@ import dataclasses
 import importlib
 
 import pytest
+
 from pyforge.marshal.seed.model.artifact import CLASS_BEHAVIOR, Artifact, describe
 from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
@@ -141,7 +142,7 @@ def test_class_behavior_and_artifact_are_frozen_and_hashable():
 # have caught it.
 _PRD_TABLE = {
     ArtifactClass.REFERENCED: (
-        ("Not materialized. The repo depends on it by version range; it " "lives upstream."),
+        ("Not materialized. The repo depends on it by version range; it lives upstream."),
         "nothing in the repo changes",
         "n/a",
     ),
@@ -197,9 +198,7 @@ def test_artifact_rejects_a_behavior_that_does_not_match_the_entrys_own_class():
     review (validate in `__post_init__`, not only in the factory)."""
     entry = _ENTRY_BY_CLASS[ArtifactClass.REFERENCED]
     wrong_behavior = CLASS_BEHAVIOR[ArtifactClass.HYBRID_MANAGED_REGION]
-    with pytest.raises(
-        ValueError, match=r"bmad-loop: behavior is hybrid-managed-region's, not referenced's"
-    ):
+    with pytest.raises(ValueError, match=r"bmad-loop: behavior is hybrid-managed-region's, not referenced's"):
         Artifact(entry=entry, behavior=wrong_behavior)
 
 
@@ -270,9 +269,7 @@ def test_no_mutable_module_level_alias_backs_the_read_only_table():
     inline; nothing else in the module may bind it."""
     module = importlib.import_module("pyforge.marshal.seed.model.artifact")
     mutable_aliases = [
-        name
-        for name, value in vars(module).items()
-        if isinstance(value, dict) and set(value) <= set(ArtifactClass)
+        name for name, value in vars(module).items() if isinstance(value, dict) and set(value) <= set(ArtifactClass)
     ]
     assert mutable_aliases == [], (
         f"the class-behavior table must not be reachable under a mutable name: {mutable_aliases}"

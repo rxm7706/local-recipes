@@ -1,9 +1,12 @@
----
-title: bmad-eval-quality — prove the reviewer catches the planted bug
+---title: bmad-eval-quality — prove the reviewer catches the planted bug
 type: dream
 owner: steward
-status: realized   # 2026-09-09 (fleet readiness, Class B) — Epic 45 2/2 done; CAP-1 on the channel + pixi pin, CAP-2's twin-run exercised live (3 trials/arm)
+status: archived   # 2026-09-09 (fleet readiness, Class B) — Epic 45 2/2 done; CAP-1 on the channel + pixi pin, CAP-2's twin-run exercised live (3 trials/arm)
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `bmad-eval-quality`).
+
 
 # bmad-eval-quality — prove the reviewer catches the planted bug
 

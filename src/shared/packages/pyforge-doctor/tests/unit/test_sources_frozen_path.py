@@ -2,9 +2,9 @@
 20) -- covers every row of the spec's I/O & Edge-Case Matrix. Every
 ``gather()``-level test drives a REAL tmp git repository (mirrors
 ``test_sources_ledger.py``'s own convention: never a mocked subprocess
-call), including the same ``origin/main`` local-branch trick (``git branch
-origin/main <sha>`` resolves via ``git rev-parse``/``git diff`` with no real
-remote needed).
+call); ``origin/main`` is a real remote-tracking ref (``git update-ref
+refs/remotes/origin/main <sha>``), no remote needed -- never a local branch named
+``origin/main``, the shadow Story 31.1 made the source read past.
 """
 
 from __future__ import annotations
@@ -64,8 +64,10 @@ def _commit_all(repo: Path, message: str) -> str:
     return _git(repo, "rev-parse", "HEAD").strip()
 
 
-def _branch_at(repo: Path, name: str, sha: str) -> None:
-    _git(repo, "branch", name, sha)
+def _origin_main_at(repo: Path, sha: str) -> None:
+    """The remote-tracking ref `refs/remotes/origin/main` at `sha` (Story 31.1: never a local
+    branch named `origin/main`, the very shadow the sources now read past)."""
+    _git(repo, "update-ref", "refs/remotes/origin/main", sha)
 
 
 def _write_manifest(repo: Path, text: str, *, name: str = "manifest.yaml") -> Path:
@@ -137,13 +139,10 @@ def test_load_capabilities_valid_yaml(tmp_path: Path) -> None:
 def test_load_capabilities_valid_json(tmp_path: Path) -> None:
     path = _write_manifest(
         tmp_path,
-        '{"capabilities": [{"capability": "x", "state": "planned", '
-        '"frozen_paths": []}]}\n',
+        '{"capabilities": [{"capability": "x", "state": "planned", "frozen_paths": []}]}\n',
         name="manifest.json",
     )
-    assert frozen_path._load_capabilities(path) == [
-        {"capability": "x", "state": "planned", "frozen_paths": []}
-    ]
+    assert frozen_path._load_capabilities(path) == [{"capability": "x", "state": "planned", "frozen_paths": []}]
 
 
 def test_load_capabilities_malformed_yaml_raises(tmp_path: Path) -> None:
@@ -236,7 +235,7 @@ def test_ledger_present_nothing_frozen_reports_ok(tmp_path: Path) -> None:
         "    frozen_paths: []\n",
     )
     base_sha = _commit_all(repo, "seed ledger, nothing frozen")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
     _commit_all(repo, "unrelated change")
@@ -259,7 +258,7 @@ def test_frozen_path_violation_reports_fail_naming_capability_and_path(
     _init_repo(repo)
     _write_manifest(repo, _ONE_REBUILDING_CAPABILITY)
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     changed = repo / _FROZEN_PATH_TOUCHED
     changed.parent.mkdir(parents=True, exist_ok=True)
@@ -284,7 +283,7 @@ def test_frozen_capability_no_matching_change_reports_ok(tmp_path: Path) -> None
     _init_repo(repo)
     _write_manifest(repo, _ONE_REBUILDING_CAPABILITY)
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
     _commit_all(repo, "unrelated change")
@@ -318,7 +317,7 @@ def test_multiple_simultaneous_violations_report_one_fail_per_pair(
         "      - src/shared/packages/pyforge-warden\n",
     )
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     mason_path = repo / _FROZEN_PATH_TOUCHED
     mason_path.parent.mkdir(parents=True, exist_ok=True)
@@ -356,7 +355,7 @@ def test_gather_skips_a_stray_non_dict_capability_entry(tmp_path: Path) -> None:
         "      - src/shared/packages/pyforge-mason\n",
     )
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     changed = repo / _FROZEN_PATH_TOUCHED
     changed.parent.mkdir(parents=True, exist_ok=True)
@@ -386,7 +385,7 @@ def test_gather_skips_a_non_string_frozen_paths_entry(tmp_path: Path) -> None:
         "      - src/shared/packages/pyforge-mason\n",
     )
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     changed = repo / _FROZEN_PATH_TOUCHED
     changed.parent.mkdir(parents=True, exist_ok=True)
@@ -412,7 +411,7 @@ def test_moving_state_also_freezes(tmp_path: Path) -> None:
         "      - src/shared/packages/pyforge-mason\n",
     )
     base_sha = _commit_all(repo, "seed ledger")
-    _branch_at(repo, "origin/main", base_sha)
+    _origin_main_at(repo, base_sha)
 
     changed = repo / _FROZEN_PATH_TOUCHED
     changed.parent.mkdir(parents=True, exist_ok=True)

@@ -165,8 +165,7 @@ def test_wasm_smoke_client_side_query(playwright_sync, static_server):
         # Wait for the query to resolve to EITHER ready or error, then require ready.
         # (Waiting for "ready" only would let an error state hang until timeout; this
         # fails fast and surfaces the real error text.)
-        page.wait_for_selector('#status[data-state="ready"], #status[data-state="error"]',
-                               timeout=60_000)
+        page.wait_for_selector('#status[data-state="ready"], #status[data-state="error"]', timeout=60_000)
         state = page.get_attribute("#status", "data-state")
         status_text = page.inner_text("#status")
         assert state == "ready", (
@@ -184,8 +183,7 @@ def test_wasm_smoke_client_side_query(playwright_sync, static_server):
         # Assert the CLIENT-SIDE query RESULT.
         red_count = page.inner_text("#red-count").strip()
         assert red_count == str(EXPECTED_RED_COUNT), (
-            f"ci_red count from the in-browser query = {red_count!r}, "
-            f"expected {EXPECTED_RED_COUNT}"
+            f"ci_red count from the in-browser query = {red_count!r}, expected {EXPECTED_RED_COUNT}"
         )
 
         rows = page.query_selector_all("#result-body tr")
@@ -193,10 +191,7 @@ def test_wasm_smoke_client_side_query(playwright_sync, static_server):
             f"expected {len(EXPECTED_ROWS)} result rows, got {len(rows)} "
             "(empty/partial result => FAIL, never a silent pass)"
         )
-        got = {
-            r.get_attribute("data-feedstock"): r.get_attribute("data-ci-red") == "1"
-            for r in rows
-        }
+        got = {r.get_attribute("data-feedstock"): r.get_attribute("data-ci-red") == "1" for r in rows}
         assert got == EXPECTED_ROWS, f"per-feedstock ci_red mismatch: {got}"
     finally:
         browser.close()

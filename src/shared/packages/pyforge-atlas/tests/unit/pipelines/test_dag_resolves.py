@@ -92,6 +92,7 @@ def test_cross_pipeline_cf_graph_edge_resolves_by_name():
 
 # -- B2: pypi_intelligence (9 nodes) + vulnerability (5 nodes) ----------------
 
+
 def test_pypi_intelligence_pipeline_has_seventeen_nodes():
     # B5 added export_pypi_conda_map (the § 3.4 update-mapping-cache Q6 export shim).
     # Story 21.2 review fix #6 added refresh_pypi_json_store (the pypi_json_raw
@@ -195,13 +196,7 @@ def test_derived_artifacts_pipeline_has_seven_nodes():
 
 def test_combined_seven_pipeline_dag_resolves_topologically():
     combined = (
-        core_create()
-        + vcs_create()
-        + pypi_create()
-        + vuln_create()
-        + seed_create()
-        + sbom_create()
-        + derived_create()
+        core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create() + sbom_create() + derived_create()
     )
     # 8 core + 10 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
     # + 7 derived_artifacts = 59 nodes (Story 23.5: derived_artifacts 6 -> 7).
@@ -249,6 +244,7 @@ def test_v_current_version_vulns_is_backed_by_per_version_vulns():
 
 # -- Story 21.4/21.5: upstream_discovery (9 nodes) + Tier-1/Tier-2 single-writer wiring -----
 
+
 def test_upstream_discovery_pipeline_has_fourteen_nodes():
     # Stories 13.1/13.2/13.4 landed the original four; Story 21.4 added the three Tier-1
     # external-refresh triggers (single writers of the discovery_*_raw stores); Story
@@ -280,8 +276,14 @@ def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
     # written by EXACTLY ONE trigger node across the full DAG; the tracked-seed entry
     # (discovery_aoss_free_python_raw) is deliberately written by none.
     combined = (
-        core_create() + vcs_create() + pypi_create() + vuln_create()
-        + seed_create() + sbom_create() + derived_create() + discovery_create()
+        core_create()
+        + vcs_create()
+        + pypi_create()
+        + vuln_create()
+        + seed_create()
+        + sbom_create()
+        + derived_create()
+        + discovery_create()
     )
     writers = {
         "discovery_anaconda_dist_2026x_raw": "refresh_anaconda_dist_2026x",
@@ -360,8 +362,14 @@ def test_upstream_discovery_free_inputs_are_all_produced_by_the_bootstrap_pipeli
     also read by ``flag_cross_channel``), so it never appears there. The
     "was this produced by ANY node at all" question is ``all_outputs()``."""
     combined = (
-        core_create() + vcs_create() + pypi_create() + vuln_create()
-        + seed_create() + sbom_create() + derived_create() + discovery_create()
+        core_create()
+        + vcs_create()
+        + pypi_create()
+        + vuln_create()
+        + seed_create()
+        + sbom_create()
+        + derived_create()
+        + discovery_create()
         + artifactory_create()
     )
     combined_all_outputs = combined.all_outputs()
@@ -374,10 +382,8 @@ def test_upstream_discovery_free_inputs_are_all_produced_by_the_bootstrap_pipeli
         if not name.startswith("params:") and name not in _NO_PRODUCER_NEEDED
     }
     assert not unresolved, (
-        f"upstream_discovery free input(s) with no producer in the bootstrap "
-        f"pipeline set: {unresolved}"
+        f"upstream_discovery free input(s) with no producer in the bootstrap pipeline set: {unresolved}"
     )
     # Named assertion for the specific Story 21.6 dependency the finding called
     # out — a clearer failure message than the set-diff above if this regresses.
     assert "enterprise_jfrog_names" in (discovery_create() + artifactory_create()).all_outputs()
-

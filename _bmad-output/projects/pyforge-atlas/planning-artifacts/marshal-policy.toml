@@ -161,41 +161,49 @@ harness_preference = ["cursor"]
   "AGENTS.md",
 ]
 
+"25" = [  # Atlas keeps each scanned repo's dependency history (spec-pyforge-atlas CAP-61), added 2026-09-28
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+  # 25.1: the git-pkgs run-dependency range (member manifests are under the package glob above)
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  # the flag keys in the one tree (spec-feature-flag-governance:CAP-1)
+  "src/platform/config/flags.json",
+  # pyforge.core.flags.read_boolean, if steward Story 75.1 has not landed -- in exactly 75.1's shape (spec-pyforge-core co-governs)
+  "src/shared/packages/pyforge-core/src/pyforge/core/**",
+  "src/shared/packages/pyforge-core/tests/**",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # (`harness_preference` used to sit here, inside [epic_surfaces] — moved above
 #  the first table header on 2026-09-02; see its comment there for why.)
 
-# context.planning-graph (Story 28.27, token-economy CAP-6/CAP-13): verified
-# live 2026-09-10 against pyforge-marshal (the canary) -- grounded retrieval,
-# real measured savings, zero further engineering needed. scribe recall's
-# own project-scoping gap was found and fixed in the same pass -- see
-# scribe recall.py's own scope= parameter. wire/structure-graph stay
-# declared-off (undeclared = default off) pending Story 28.31 (dispatch
-# cost spike) / 28.33 (spin reference wiring).
-[context."planning-graph"]
-enabled = true
-
-# context.derived-context (Story 28.28/28.32, token-economy CAP-5): scribe's
-# `index refresh --declare` shipped and the lean pyforge-scribe env's
-# missing cocoindex dependency was fixed -- verified live 2026-09-10
-# against pyforge-marshal, mode: incremental with zero findings.
-[context."derived-context"]
-enabled = true
-
-# context.output (Story 28.30/28.32, token-economy CAP-3): caveman skill
-# deployment now reaches dispatch worktrees too (not just loop homes), and
-# bmad-build-auto's own step-01-clarify-and-route.md tells the agent to
-# invoke it.
-[context.output]
-enabled = true
+# context (Story 28.34, token-economy CAP-3): this station declares NO
+# [context] block -- 28.31 (dispatch-cost spike) and 28.33 (spin reference
+# wiring) both landed 2026-09-10/20, so the two layers this file used to
+# hold declared-off (wire, structure-graph) are no longer blocked. Per
+# policy-defaults.toml's own composition rule (declaring ANY part of
+# [context] here wholesale-replaces the 5-layer default for this station),
+# the fix is to declare nothing and inherit the clean repo-wide default:
+# all 4 harness-agnostic layers on, wire auto-resolved per harness.
 
 # model_tier_map must be last in this file (TOML table scoping).
+# 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): Cursor Ultra
+# ladder as explicit {harness, model} tables so a Cursor id cannot land
+# on claude --model (fails-safe CAP-1). Unattended drain stays off until
+# 28.29 is separately proven. This IDE drives the wave.
 [model_tier_map.heavy]
-dev = "composer-2.5-fast"
-review = "composer-2.5"
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.medium]
-dev = "composer-2.5-fast"
-review = "composer-2.5"
+dev = { harness = "cursor", model = "grok-4.6" }
+review = { harness = "cursor", model = "grok-4.6" }
 
 [model_tier_map.easy]
-dev = "composer-2.5-fast"
+dev = { harness = "cursor", model = "composer-2.5" }

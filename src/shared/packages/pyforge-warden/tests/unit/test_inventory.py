@@ -217,9 +217,7 @@ def test_component_construction_invariants(component_factory):
     with pytest.raises(ValueError, match="Gap-C"):
         component_factory(pypi_identity=None, vuln_matchable=True)
     with pytest.raises(ValueError, match="contradicts"):
-        component_factory(
-            indeterminate_reason=WithholdReason.RANGE_ONLY, vuln_matchable=True
-        )
+        component_factory(indeterminate_reason=WithholdReason.RANGE_ONLY, vuln_matchable=True)
     with pytest.raises(ValueError, match="exact"):
         component_factory(version=None, cve_match_level=CveMatchLevel.EXACT)
     with pytest.raises(ValueError, match="non-empty"):
@@ -230,9 +228,7 @@ def test_component_construction_invariants(component_factory):
 
 
 def test_bare_alone_stays_distinct_indeterminate(component_factory):
-    bare = component_factory(
-        version=None, indeterminate_reason=WithholdReason.NO_VERSION
-    )
+    bare = component_factory(version=None, indeterminate_reason=WithholdReason.NO_VERSION)
     merged = merge_components([bare])
     assert len(merged) == 1
     assert merged[0].version is None
@@ -240,9 +236,7 @@ def test_bare_alone_stays_distinct_indeterminate(component_factory):
 
 
 def test_bare_with_two_concrete_versions_never_guess_attributes(component_factory):
-    bare = component_factory(
-        version=None, indeterminate_reason=WithholdReason.NO_VERSION
-    )
+    bare = component_factory(version=None, indeterminate_reason=WithholdReason.NO_VERSION)
     one = component_factory(version="1.0")
     two = component_factory(version="2.0")
     merged = merge_components([bare, one, two])
@@ -254,9 +248,7 @@ def test_bare_with_two_concrete_versions_never_guess_attributes(component_factor
 
 
 def test_two_versions_stay_distinct(component_factory):
-    merged = merge_components(
-        [component_factory(version="1.0"), component_factory(version="2.0")]
-    )
+    merged = merge_components([component_factory(version="1.0"), component_factory(version="2.0")])
     assert len(merged) == 2
     assert {c.version for c in merged} == {"1.0", "2.0"}
 
@@ -289,10 +281,7 @@ def test_derive_purl_forms():
 
 def test_derive_purl_uses_canonical_purl_names():
     assert derive_purl(Ecosystem.PYPI, "Django", "5.0") == "pkg:pypi/django@5.0"
-    assert (
-        derive_purl(Ecosystem.PYPI, "typing_extensions", "4.12")
-        == "pkg:pypi/typing-extensions@4.12"
-    )
+    assert derive_purl(Ecosystem.PYPI, "typing_extensions", "4.12") == "pkg:pypi/typing-extensions@4.12"
     # conda: VERBATIM — channel-index names are already canonical, and
     # typing_extensions vs typing-extensions are DISTINCT real conda packages
     # (folding them would name a different package; follow-up review fix).
@@ -312,9 +301,7 @@ def test_derive_purl_agrees_with_identity_for_conda():
 def test_derive_purl_percent_encodes_reserved_characters():
     """A RAW_MALFORMED name/version can never smuggle purl syntax."""
     purl = derive_purl(Ecosystem.PYPI, "foo @ git+https://evil", "1.0?x=1#y")
-    assert purl == (
-        "pkg:pypi/foo%20%40%20git%2Bhttps%3A%2F%2Fevil@1.0%3Fx%3D1%23y"
-    )
+    assert purl == ("pkg:pypi/foo%20%40%20git%2Bhttps%3A%2F%2Fevil@1.0%3Fx%3D1%23y")
     assert strip_purl_qualifiers(purl) == purl  # no raw ? or # survives
 
 
@@ -325,8 +312,7 @@ def test_derive_purl_empty_version_omits_at():
 
 def test_strip_purl_qualifiers():
     assert (
-        strip_purl_qualifiers("pkg:conda/numpy@1.26.4?build=py312h2b&channel=conda-forge")
-        == "pkg:conda/numpy@1.26.4"
+        strip_purl_qualifiers("pkg:conda/numpy@1.26.4?build=py312h2b&channel=conda-forge") == "pkg:conda/numpy@1.26.4"
     )
     assert strip_purl_qualifiers("pkg:pypi/foo@1.0#sub/path") == "pkg:pypi/foo@1.0"
     assert strip_purl_qualifiers("pkg:pypi/foo@1.0") == "pkg:pypi/foo@1.0"
@@ -399,9 +385,7 @@ def test_merge_ands_coverage_booleans(component_factory):
 
 def test_merge_keeps_least_confident_match_level(component_factory):
     exact = component_factory(cve_match_level=CveMatchLevel.EXACT)
-    none = component_factory(
-        cve_match_level=CveMatchLevel.NONE, provenance=(("pixi.toml", "run"),)
-    )
+    none = component_factory(cve_match_level=CveMatchLevel.NONE, provenance=(("pixi.toml", "run"),))
     for feed in ([exact, none], [none, exact]):
         merged = merge_components(feed)
         assert merged[0].cve_match_level is CveMatchLevel.NONE
@@ -534,9 +518,7 @@ def test_resolved_inventory_count_is_post_merge(component_factory):
         [
             component_factory(provenance=(("meta.yaml", "host"),)),
             component_factory(provenance=(("meta.yaml", "run"),)),
-            component_factory(
-                name="numpy", version="1.26.4", ecosystem=Ecosystem.CONDA
-            ),
+            component_factory(name="numpy", version="1.26.4", ecosystem=Ecosystem.CONDA),
         ]
     )
     inventory = ResolvedInventory(

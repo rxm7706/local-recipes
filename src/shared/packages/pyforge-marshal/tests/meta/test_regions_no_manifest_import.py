@@ -17,10 +17,10 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
-import tomllib
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 _PYPROJECT = _PACKAGE_ROOT / "pyproject.toml"
@@ -70,9 +70,6 @@ def test_lint_imports_passes_against_the_installed_package():
     )
     stdout = _strip_ansi(result.stdout)
     assert result.returncode == 0, (
-        f"lint-imports failed (exit {result.returncode}):\n"
-        f"stdout:\n{stdout}\nstderr:\n{_strip_ansi(result.stderr)}"
+        f"lint-imports failed (exit {result.returncode}):\nstdout:\n{stdout}\nstderr:\n{_strip_ansi(result.stderr)}"
     )
-    assert re.search(r"\b0\s+broken\b", stdout), (
-        f"expected a '0 broken' summary in lint-imports output:\n{stdout}"
-    )
+    assert re.search(r"\b0\s+broken\b", stdout), f"expected a '0 broken' summary in lint-imports output:\n{stdout}"

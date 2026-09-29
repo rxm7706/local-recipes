@@ -33,9 +33,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 from datetime import datetime
 from pathlib import Path
+
+from pyforge.core.process import PosixProcess, ProcessError
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
 from ..adapters.vcs_git import GitVcs, VcsCommandError
@@ -53,6 +54,7 @@ from ..core.refresh import (
     is_incomplete_refresh,
     ordered_steps,
 )
+from ..core.refs import display_ref, remote_tracking_ref
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.vcs import VcsPort
 from .config import (
@@ -123,15 +125,11 @@ def _compose_effective(slug: str) -> policy_core.EffectivePolicy:
                 project_data = dict(_read_project_policy(candidate))
             except PolicyIOError:
                 project_data = {}
-    effective, _findings = policy_core.compose(
-        project_slug=slug, project=project_data, flags={}
-    )
+    effective, _findings = policy_core.compose(project_slug=slug, project=project_data, flags={})
     return effective
 
 
-def _render_policy_step(
-    slug: str, home: Path, findings: list[Finding]
-) -> RefreshStep:
+def _render_policy_step(slug: str, home: Path, findings: list[Finding]) -> RefreshStep:
     try:
         effective = _compose_effective(slug)
         written = write_policy_toml(effective, home)
@@ -148,9 +146,7 @@ def _render_policy_step(
         return RefreshStep(STEP_RENDER_POLICY, "failed", str(exc))
 
 
-def _sync_status_step(
-    slug: str, git_repo_root: Path, findings: list[Finding]
-) -> RefreshStep:
+def _sync_status_step(slug: str, git_repo_root: Path, findings: list[Finding]) -> RefreshStep:
     """Regenerate ``slug``'s Tier-3 ``sprint-status.yaml`` from its tracked
     ``epics.md``, via the same script ``bmad-sprint-planning`` uses. Writes
     to the SHARED physical ``_bmad-output/projects/<slug>/`` location every
@@ -160,14 +156,7 @@ def _sync_status_step(
     epic_file = project_dir / "planning-artifacts" / "epics.md"
     if not epic_file.is_file():
         return RefreshStep(STEP_SYNC_STATUS, "skipped", "no epics.md")
-    script = (
-        git_repo_root
-        / ".claude"
-        / "skills"
-        / "bmad-sprint-planning"
-        / "scripts"
-        / "sprint_plan.py"
-    )
+    script = git_repo_root / ".claude" / "skills" / "bmad-sprint-planning" / "scripts" / "sprint_plan.py"
     if not script.is_file():
         return RefreshStep(STEP_SYNC_STATUS, "skipped", "sprint_plan.py not found")
     impl_dir = project_dir / "implementation-artifacts"
@@ -187,15 +176,17 @@ def _sync_status_step(
         "--date",
         datetime.now().strftime("%m-%d-%Y %H:%M"),
     ]
+    # Story 52.1 (SPEC-pyforge-core CAP-6): routed through the ONE sanctioned
+    # subprocess seam. `PosixProcess.run` never raises for a non-zero exit
+    # (that case is classified below) and raises `ProcessError` for the
+    # launch/timeout failures the raw `(OSError, subprocess.TimeoutExpired)`
+    # clause used to catch. Two seam deltas are intentional: `stdin=DEVNULL`
+    # (a child that prompts reads EOF instead of hanging) and
+    # `encoding="utf-8", errors="replace"` (undecodable output is replaced,
+    # never raised as a decode error).
     try:
-        result = subprocess.run(
-            argv,
-            cwd=git_repo_root,
-            capture_output=True,
-            text=True,
-            timeout=_SYNC_STATUS_TIMEOUT_S,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+        result = PosixProcess().run(argv, cwd=git_repo_root, timeout_s=_SYNC_STATUS_TIMEOUT_S)
+    except ProcessError as exc:
         findings.append(
             Finding(
                 code=_MRS_REFRESH_008,
@@ -232,6 +223,8 @@ def _refresh_one_home(
     slug: str,
     home: Path,
     tip_ref: str,
+    tip_full_ref: str,
+    proves_main: bool,
     findings: list[Finding],
 ) -> HomeRefreshResult:
     branch = f"loop/{slug}"
@@ -241,7 +234,7 @@ def _refresh_one_home(
     current_ref: str | None = None
     try:
         current_ref = vcs.worktree_head_sha(home)
-        behind_count = vcs.commits_behind(home, tip_ref)
+        behind_count = vcs.commits_behind(home, tip_full_ref)
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -281,13 +274,9 @@ def _refresh_one_home(
             )
         )
         steps = ordered_steps(
-            fast_forward=RefreshStep(
-                STEP_FAST_FORWARD, "failed", f"dirt probe failed: {exc}"
-            ),
+            fast_forward=RefreshStep(STEP_FAST_FORWARD, "failed", f"dirt probe failed: {exc}"),
             push=RefreshStep(STEP_PUSH, "skipped", "fast-forward did not succeed"),
-            render_policy=RefreshStep(
-                STEP_RENDER_POLICY, "skipped", "dirt probe failed"
-            ),
+            render_policy=RefreshStep(STEP_RENDER_POLICY, "skipped", "dirt probe failed"),
             sync_status=_sync_status_step(slug, git_repo_root, findings),
         )
         return HomeRefreshResult(
@@ -316,9 +305,7 @@ def _refresh_one_home(
         )
         render_step = _render_policy_step(slug, home, findings)
         steps = ordered_steps(
-            fast_forward=RefreshStep(
-                STEP_FAST_FORWARD, "failed", "dirty working tree"
-            ),
+            fast_forward=RefreshStep(STEP_FAST_FORWARD, "failed", "dirty working tree"),
             push=RefreshStep(STEP_PUSH, "skipped", "fast-forward refused"),
             render_policy=render_step,
             sync_status=_sync_status_step(slug, git_repo_root, findings),
@@ -336,12 +323,10 @@ def _refresh_one_home(
         )
 
     if behind_count == 0:
-        ff_step = RefreshStep(
-            STEP_FAST_FORWARD, "skipped", f"already current with {tip_ref}"
-        )
+        ff_step = RefreshStep(STEP_FAST_FORWARD, "skipped", f"already current with {tip_ref}")
     else:
         try:
-            new_sha = vcs.fast_forward(home, tip_ref)
+            new_sha = vcs.fast_forward(home, tip_full_ref)
             current_ref = new_sha
             ff_step = RefreshStep(
                 STEP_FAST_FORWARD,
@@ -353,9 +338,7 @@ def _refresh_one_home(
                 Finding(
                     code=_MRS_REFRESH_003,
                     severity=Severity.WARN,
-                    message=(
-                        f"home {slug!r}: fast-forward to {tip_ref} failed: {exc}"
-                    ),
+                    message=(f"home {slug!r}: fast-forward to {tip_ref} failed: {exc}"),
                     path=path_str,
                 )
             )
@@ -379,9 +362,16 @@ def _refresh_one_home(
             )
 
     if ff_step.status == "done":
+        # Story 57.1 (CAP-267): this function just fast-forwarded `branch` to
+        # `origin/main` itself, so the commit it now holds is the proof. Only
+        # `origin/main` has passed CI, so only then does the push go past the
+        # pre-push preflight -- the adapter re-checks the sha against the full
+        # refname and pushes exactly it (review 2). Any other `--base` pushes
+        # normally and the preflight runs.
+        proven = current_ref if proves_main else None
         try:
             # Push via the shared repo root; branch name is loop/<slug> only.
-            vcs.push(git_repo_root, branch)
+            vcs.push(git_repo_root, branch, proven_on_main_sha=proven)
             push_step = RefreshStep(STEP_PUSH, "done", f"pushed {branch} to origin")
         except VcsCommandError as exc:
             findings.append(
@@ -464,17 +454,18 @@ def run_refresh(
     if vcs is None:
         vcs = GitVcs()
 
-    tip_ref = f"origin/{base}"
+    tip_ref = display_ref(base)  # messages only; git reads tip_full_ref (Story 60.1)
+    # Full refname for every git operation: a local branch or tag named `origin/<base>`
+    # must never stand in for the remote-tracking ref (Story 57.1 review 2).
+    tip_full_ref = remote_tracking_ref(base)
+    proves_main = base == _DEFAULT_BASE
 
     if args.project is not None and not policy_core._is_valid_project_slug(args.project):
         findings.append(
             Finding(
                 code=_MRS_REFRESH_001,
                 severity=Severity.ERROR,
-                message=(
-                    f"malformed --project {args.project!r} -- expected a "
-                    "plain project slug (no path separators)"
-                ),
+                message=(f"malformed --project {args.project!r} -- expected a plain project slug (no path separators)"),
             )
         )
         return _emit(args, data, findings)
@@ -535,6 +526,8 @@ def run_refresh(
             slug=slug,
             home=home,
             tip_ref=tip_ref,
+            tip_full_ref=tip_full_ref,
+            proves_main=proves_main,
             findings=findings,
         )
         homes_out.append(home_result_to_dict(result))

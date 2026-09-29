@@ -34,9 +34,7 @@ def test_deck_seed_missing_slug_is_a_usage_error():
     assert cli.main(["deck", "seed"]) == 2
 
 
-def test_deck_seed_success_prints_the_project_url_and_returns_0(
-    monkeypatch, capsys, tmp_path: Path
-):
+def test_deck_seed_success_prints_the_project_url_and_returns_0(monkeypatch, capsys, tmp_path: Path):
     seen = {}
 
     def _fake_seed(transport, *, slug, repo_root, support_source_project_id):
@@ -48,17 +46,12 @@ def test_deck_seed_success_prints_the_project_url_and_returns_0(
 
     monkeypatch.setattr(deck_pipeline, "seed", _fake_seed)
 
-    exit_code = cli.main(
-        ["deck", "seed", "pyforge-warden", "--repo-root", str(tmp_path)]
-    )
+    exit_code = cli.main(["deck", "seed", "pyforge-warden", "--repo-root", str(tmp_path)])
 
     assert exit_code == 0
     assert seen["slug"] == "pyforge-warden"
     assert seen["repo_root"] == tmp_path
-    assert (
-        seen["support_source_project_id"]
-        == deck_pipeline.PILOT_SUPPORT_SOURCE_PROJECT_ID
-    )
+    assert seen["support_source_project_id"] == deck_pipeline.PILOT_SUPPORT_SOURCE_PROJECT_ID
     out = capsys.readouterr().out
     assert "pyforge-warden" in out
     assert "https://claude.ai/design/p/p-new" in out
@@ -101,9 +94,7 @@ def test_deck_seed_forwards_an_explicit_support_source_project(monkeypatch):
     assert seen["support_source_project_id"] == "custom-id"
 
 
-def test_deck_seed_herald_error_reaches_dispatch_and_maps_to_its_exit_code(
-    monkeypatch, capsys
-):
+def test_deck_seed_herald_error_reaches_dispatch_and_maps_to_its_exit_code(monkeypatch, capsys):
     def _fake_seed(transport, *, slug, repo_root, support_source_project_id):
         raise SeedConflictError(f"{slug!r} is already seeded")
 

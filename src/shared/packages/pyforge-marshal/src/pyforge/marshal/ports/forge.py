@@ -88,11 +88,7 @@ class PrInfo:
     base: str
 
     def __post_init__(self) -> None:
-        if (
-            not isinstance(self.number, int)
-            or isinstance(self.number, bool)
-            or self.number <= 0
-        ):
+        if not isinstance(self.number, int) or isinstance(self.number, bool) or self.number <= 0:
             raise ValueError(f"number must be a positive int, got {self.number!r}")
         if not isinstance(self.url, str) or not self.url:
             raise ValueError(f"url must be a non-empty str, got {self.url!r}")
@@ -123,18 +119,14 @@ class ForgePort(Protocol):
         ``gh`` failure."""
         ...
 
-    def create_pr(
-        self, repo: ForgeRef, base: ForgeRef, head: ForgeRef, title: Redacted, body: Redacted
-    ) -> PrInfo:
+    def create_pr(self, repo: ForgeRef, base: ForgeRef, head: ForgeRef, title: Redacted, body: Redacted) -> PrInfo:
         """Opens a new PR on ``repo`` from ``head`` into ``base``.
         ``title``/``body`` accept ONLY ``Redacted`` -- never a bare ``str``
         -- assembled and redacted before this port's boundary (AD-34).
         Raises ``ForgeCommandError`` on any ``gh`` failure."""
         ...
 
-    def update_pr(
-        self, repo: ForgeRef, number: int, title: Redacted, body: Redacted
-    ) -> PrInfo:
+    def update_pr(self, repo: ForgeRef, number: int, title: Redacted, body: Redacted) -> PrInfo:
         """Updates an existing PR's title/body. Same ``Redacted``-only
         contract as ``create_pr``. Raises ``ForgeCommandError`` on any
         ``gh`` failure."""
@@ -147,9 +139,7 @@ class ForgePort(Protocol):
         block). Raises ``ForgeCommandError`` on any ``gh`` failure."""
         ...
 
-    def check_run_status(
-        self, repo: ForgeRef, ref: ForgeRef, check_name: ForgeRef
-    ) -> str | None:
+    def check_run_status(self, repo: ForgeRef, ref: ForgeRef, check_name: ForgeRef) -> str | None:
         """The named check run's own conclusion for ``ref`` (a commit sha
         or branch) on ``repo`` -- e.g. ``"success"``/``"failure"`` -- or
         ``None`` if no such check has run at all against ``ref``. Raises

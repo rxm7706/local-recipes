@@ -4,6 +4,10 @@ extra (Story 6.1, unifying-strategy Grounding 2026-08-30: "cocoindex is a
 engine"; stack.md "Estate leverage": "`cocoindex` + `graphifyy` | scribe |
 `scribe index`: AST graph + incremental index ... | bind").
 
+This extra is not the symbol-navigation API. Marshal codegraph
+(``.codegraph/codegraph.db``) owns "where is this symbol?"; ``code:``
+nodes stay an AST / ``index report`` / ``--mode code`` surface.
+
 Binds graphifyy (>=0.9.51, Apache-2.0) as an OPTIONAL ingest source: when
 `SCRIBE_GRAPHIFY_EXTRA` is truthy, `compile.py`'s fan-in (and the explicit
 `scribe index build` verb) call `ingest_repo()` here to turn a folder of
@@ -36,6 +40,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
+
 from pyforge.scribe.models import GraphNode
 
 #: Off by default (air-gap, AD-6) -- only a truthy value turns the extra on.
@@ -45,7 +50,16 @@ _TRUTHY = frozenset({"1", "true", "yes", "on"})
 #: Bounded default ingest target: the pyforge station package tree, not the
 #: whole repo -- `recipes/` alone has thousands of first-level directories,
 #: the same cost concern Story 3.3 bounded for the compile's other surfaces.
+#: Single-path APIs (`index report`, `--target` help) still name this path.
 DEFAULT_GRAPHIFY_TARGET = Path("src") / "shared" / "packages"
+
+#: Extra-on compile / `index build` with no `--target` (Story 15.1).
+#: Named list only — never `recipes/` and never the repo root.
+DEFAULT_GRAPHIFY_TARGETS = (
+    DEFAULT_GRAPHIFY_TARGET,
+    Path("src") / "platform",
+    Path("scripts"),
+)
 
 #: graphify's own AST-extraction disk cache, redirected under Scribe's
 #: already-gitignored `.claude/data/` home (AC4) instead of a foundry-root
@@ -78,18 +92,41 @@ def _import_graphify():
     return graphify
 
 
+def _graphify_api(graphify, name: str):
+    """Return a callable public name from graphifyy.
+
+    graphifyy's package uses lazy ``__getattr__`` exports AND same-named
+    submodules (``graphify/extract.py``). After ``collect_files`` imports
+    that submodule, ``graphify.extract`` is the module, not the function
+    ``__getattr__`` would have returned — calling it raises TypeError.
+    Unwrap ``module.<name>`` when the attribute itself is not callable.
+    """
+    attr = getattr(graphify, name)
+    if callable(attr):
+        return attr
+    nested = getattr(attr, name, None)
+    if callable(nested):
+        return nested
+    raise TypeError(f"graphify.{name} is not callable")
+
+
 def ingest_repo(
     repo_root: Path,
     *,
     target: Path | None = None,
     warnings: list[str] | None = None,
 ) -> list[GraphNode]:
-    """Ingest ``target`` (repo-relative; default `src/shared/packages/`)
-    with graphifyy and return `GraphNode`s ready for
-    `GraphStore.upsert_node()` -- never a parallel store (AC2).
+    """Ingest ``target`` (repo-relative) with graphifyy and return
+    `GraphNode`s ready for `GraphStore.upsert_node()` -- never a
+    parallel store (AC2).
+
+    When ``target`` is omitted, walk `DEFAULT_GRAPHIFY_TARGETS` (Story
+    15.1): `src/shared/packages/`, `src/platform/`, `scripts/`. Missing
+    optional list entries are silent. A warning fires only when no
+    default target exists, or when an explicit ``target`` is missing.
 
     The target-existence check runs BEFORE the lazy `graphify` import: a
-    repo with no `src/shared/packages/` (or an explicit target that does
+    repo with none of the named trees (or an explicit target that does
     not exist) degrades to a warning and zero nodes without ever requiring
     graphifyy to be installed. Only once there is something to ingest does
     this raise `GraphifyUnavailableError` when the package is missing --
@@ -98,20 +135,27 @@ def ingest_repo(
     own degrade-not-abort contract.
     """
     collected_warnings = warnings if warnings is not None else []
-    resolved_target = (repo_root / (target if target is not None else DEFAULT_GRAPHIFY_TARGET)).resolve()
-    if not resolved_target.is_dir():
-        collected_warnings.append(
-            f"graphify ingest target {resolved_target} does not exist -- skipped"
-        )
-        return []
+    if target is not None:
+        resolved_targets = [(repo_root / target).resolve()]
+        if not resolved_targets[0].is_dir():
+            collected_warnings.append(f"graphify ingest target {resolved_targets[0]} does not exist -- skipped")
+            return []
+    else:
+        resolved_targets = [
+            (repo_root / rel).resolve() for rel in DEFAULT_GRAPHIFY_TARGETS if (repo_root / rel).is_dir()
+        ]
+        if not resolved_targets:
+            collected_warnings.append("graphify ingest targets do not exist -- skipped")
+            return []
 
     graphify = _import_graphify()
-    graph = _build_graph(graphify, repo_root, resolved_target)
     nodes: list[GraphNode] = []
-    for node_id, attrs in graph.nodes(data=True):
-        node = _graph_node_from_graphify(node_id, attrs, repo_root)
-        if node is not None:
-            nodes.append(node)
+    for resolved_target in resolved_targets:
+        graph = _build_graph(graphify, repo_root, resolved_target)
+        for node_id, attrs in graph.nodes(data=True):
+            node = _graph_node_from_graphify(node_id, attrs, repo_root)
+            if node is not None:
+                nodes.append(node)
     return nodes
 
 
@@ -122,14 +166,15 @@ def _build_graph(graphify, repo_root: Path, target: Path):
     the AST cache away from the foundry root (AC4)."""
     cache_root = repo_root / _CACHE_SUBDIR
     cache_root.mkdir(parents=True, exist_ok=True)
-    files = graphify.collect_files(target, root=repo_root)
+    collect_files = _graphify_api(graphify, "collect_files")
+    extract = _graphify_api(graphify, "extract")
+    build_from_json = _graphify_api(graphify, "build_from_json")
+    files = collect_files(target, root=repo_root)
     if not files:
         extraction = {"nodes": [], "edges": [], "hyperedges": []}
     else:
-        extraction = graphify.extract(
-            files, cache_root=cache_root, root=repo_root, parallel=False
-        )
-    return graphify.build_from_json(extraction, root=repo_root)
+        extraction = extract(files, cache_root=cache_root, root=repo_root, parallel=False)
+    return build_from_json(extraction, root=repo_root)
 
 
 def _graph_node_from_graphify(node_id: object, attrs: dict, repo_root: Path) -> GraphNode | None:
@@ -182,7 +227,7 @@ def build_graph_report(
 
     graphify = _import_graphify()
     graph = _build_graph(graphify, repo_root, resolved_target)
-    god = graphify.god_nodes(graph, top_n=top_n)
+    god = _graphify_api(graphify, "god_nodes")(graph, top_n=top_n)
 
     try:
         rel_target = resolved_target.relative_to(repo_root)
@@ -199,10 +244,7 @@ def build_graph_report(
         "",
     ]
     if god:
-        lines.extend(
-            f"- {entry.get('label', entry.get('id'))} (degree={entry.get('degree')})"
-            for entry in god
-        )
+        lines.extend(f"- {entry.get('label', entry.get('id'))} (degree={entry.get('degree')})" for entry in god)
     else:
         lines.append("(none)")
     return "\n".join(lines) + "\n"

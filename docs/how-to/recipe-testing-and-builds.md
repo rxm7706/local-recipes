@@ -154,7 +154,7 @@ wsl bash -c "cd /mnt/c/path/to/local-recipes && ~/.pixi/bin/pixi run -e local-re
 
 ## Platform CI locally (zero Actions minutes)
 
-`pixi run -e local-recipes platform-ci-local` replays `.github/workflows/platform-ci.yml`
+`pixi run -e pyforge-guild platform-ci-local` replays `.github/workflows/platform-ci.yml`
 on your machine: the `test` job step for step (`manage.py check`, Ruff, mypy, the policy
 suite, sqlmigrate extraction, the full pytest suite), the three image builds, the
 `container` job's runtime smokes against the built image, and `golden-path-promotion`
@@ -162,9 +162,9 @@ plus the deploy-side verifier. It starts its own PostgreSQL 17 (+pgvector) and R
 from the `platform-dev` env on 15432/16379 and tears them down on exit.
 
 ```bash
-pixi run -e local-recipes platform-ci-local                         # all four stages, docker
-pixi run -e local-recipes platform-ci-local -- --test               # only the test job
-pixi run -e local-recipes platform-ci-local -- --images --container --engine podman
+pixi run -e pyforge-guild platform-ci-local                         # all four stages, docker
+pixi run -e pyforge-guild platform-ci-local -- --test               # only the test job
+pixi run -e pyforge-guild platform-ci-local -- --images --container --engine podman
 ```
 
 Run it before pushing any `src/platform`, Containerfile or `pixi.toml` change: every push

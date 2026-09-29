@@ -150,6 +150,51 @@ def test_multiline_block_difficulty_with_trailing_comment_raises():
         parse_declared_difficulty(text)
 
 
+# --- leading banner (mirrors test_spec_low_risk.py's identical suite) --------
+
+
+def test_blank_line_before_banner_reads_the_value():
+    """Story 51.8 (CAP-256, review pass 1): a promoted, banner-topped
+    tracked spec's ``difficulty: heavy`` must not be misread as absent --
+    a leading blank line before the banner's opening marker must not fall
+    through to "no frontmatter" either."""
+    text = "\n<!-- Promoted ... -->\n" + _frontmatter(_HEADER + "difficulty: heavy\n")
+    assert parse_declared_difficulty(text) == "heavy"
+
+
+def test_spaces_before_banner_reads_the_value():
+    text = "  <!-- Promoted ... -->\n" + _frontmatter(_HEADER + "difficulty: heavy\n")
+    assert parse_declared_difficulty(text) == "heavy"
+
+
+def test_bom_before_banner_reads_the_value():
+    text = "\ufeff<!-- Promoted ... -->\n" + _frontmatter(_HEADER + "difficulty: heavy\n")
+    assert parse_declared_difficulty(text) == "heavy"
+
+
+def test_banner_below_frontmatter_unaffected():
+    """The banner-BELOW-frontmatter shape never starts with ``<!--``, so it
+    is untouched by the banner-skip and must keep parsing exactly as
+    before."""
+    text = _frontmatter(_HEADER + "difficulty: heavy\n") + "<!-- Promoted ... -->\n"
+    assert parse_declared_difficulty(text) == "heavy"
+
+
+def test_unclosed_banner_above_frontmatter_returns_none():
+    """An unclosed ``<!--`` is not a banner this parser recognizes -- the
+    text still doesn't start with ``---``, so it stays absent."""
+    text = "<!-- never closed\n" + _frontmatter(_HEADER + "difficulty: heavy\n")
+    assert parse_declared_difficulty(text) is None
+
+
+def test_blank_line_with_no_banner_still_returns_none():
+    """A leading blank line/BOM tolerance must not widen into reading
+    frontmatter that isn't at the start once the (non-existent) banner is
+    skipped."""
+    text = "\n" + _frontmatter(_HEADER + "difficulty: heavy\n")
+    assert parse_declared_difficulty(text) is None
+
+
 # --- type contract -------------------------------------------------------------
 
 

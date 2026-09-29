@@ -15,7 +15,8 @@ from pathlib import Path
 
 import jsonschema
 import pytest
-from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose as compose_envelope_schema
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA
+from pyforge.core.report import compose as compose_envelope_schema
 
 from pyforge.warden.models import (
     AXIS_CURRENCY,
@@ -64,9 +65,7 @@ COHERENT_EXIT = {
 
 
 def load_schema() -> dict:
-    schema_file = (
-        resources.files("pyforge.warden") / "data" / "report-schema.json"
-    )
+    schema_file = resources.files("pyforge.warden") / "data" / "report-schema.json"
     return json.loads(schema_file.read_text(encoding="utf-8"))
 
 
@@ -152,9 +151,7 @@ def test_sample_report_fixture_validates_against_composed_schema():
     alone."""
     fixture_path = Path(__file__).resolve().parent.parent / "fixtures" / "sample_report_with_findings.json"
     document = json.loads(fixture_path.read_text(encoding="utf-8"))
-    jsonschema.Draft202012Validator(
-        compose_envelope_schema(BASE_ENVELOPE_SCHEMA, load_schema())
-    ).validate(document)
+    jsonschema.Draft202012Validator(compose_envelope_schema(BASE_ENVELOPE_SCHEMA, load_schema())).validate(document)
 
 
 def test_rich_report_validates_across_all_three_finding_families():
@@ -189,9 +186,7 @@ def test_report_with_typed_error_validates():
     document = report.to_json_dict()
     document["errors"] = [
         {
-            "kind": ErrorRecord(
-                kind=ErrorKind.ENGINE_TIMEOUT, owner="engines", message="timed out"
-            ).kind.value,
+            "kind": ErrorRecord(kind=ErrorKind.ENGINE_TIMEOUT, owner="engines", message="timed out").kind.value,
             "owner": "engines",
             "message": "timed out",
         }
@@ -217,14 +212,8 @@ def test_exit_code_enum_is_closed():
     ids=["clean-0", "policy-violation-1", "error-2", "sigint-130"],
 )
 def test_frozen_exit_codes_accepted_in_coherent_pairings(status, with_driver, exit_code):
-    driver = (
-        StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod")
-        if with_driver
-        else None
-    )
-    document = make_report(
-        status=status, status_driver=driver, exit_code=exit_code
-    ).to_json_dict()
+    driver = StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod") if with_driver else None
+    document = make_report(status=status, status_driver=driver, exit_code=exit_code).to_json_dict()
     validate(document)
 
 
@@ -250,9 +239,7 @@ def test_null_driver_permitted_for_clean_family(status):
 def test_non_clean_status_with_driver_validates(status):
     report = make_report(
         status=status,
-        status_driver=StatusDriver(
-            axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod"
-        ),
+        status_driver=StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod"),
         exit_code=COHERENT_EXIT[status],
     )
     validate(report.to_json_dict())
@@ -268,9 +255,7 @@ def test_additive_extra_fields_still_validate():
 
 def test_malformed_finding_id_rejected():
     document = make_report().to_json_dict()
-    document["findings"] = [
-        {"id": "not-a-family-id", "axis": AXIS_HYGIENE, "message": "x"}
-    ]
+    document["findings"] = [{"id": "not-a-family-id", "axis": AXIS_HYGIENE, "message": "x"}]
     with pytest.raises(jsonschema.ValidationError):
         validate(document)
 
@@ -296,9 +281,7 @@ def test_unknown_status_value_rejected():
 
 def test_unknown_error_kind_rejected():
     document = make_report().to_json_dict()
-    document["errors"] = [
-        {"kind": "engine-exploded", "owner": "engines", "message": "boom"}
-    ]
+    document["errors"] = [{"kind": "engine-exploded", "owner": "engines", "message": "boom"}]
     with pytest.raises(jsonschema.ValidationError):
         validate(document)
 
@@ -341,9 +324,7 @@ def test_indeterminate_status_with_exit_zero_accepted():
     test_indeterminate_status_with_exit_zero_rejected_for_unrelated_driver."""
     document = make_report(
         status=Status.INDETERMINATE,
-        status_driver=StatusDriver(
-            axis=AXIS_INGESTION, finding_id="indeterminate:empty-extraction:scan"
-        ),
+        status_driver=StatusDriver(axis=AXIS_INGESTION, finding_id="indeterminate:empty-extraction:scan"),
         exit_code=0,
     ).to_json_dict()
     validate(document)
@@ -362,9 +343,7 @@ def test_indeterminate_status_with_exit_zero_rejected_for_unrelated_driver():
     established pattern)."""
     document = make_report(
         status=Status.INDETERMINATE,
-        status_driver=StatusDriver(
-            axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod"
-        ),
+        status_driver=StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod"),
         exit_code=1,
     ).to_json_dict()
     document["exit_code"] = 0
@@ -528,9 +507,7 @@ def test_license_finding_round_trips():
         message="denied license",
         subject="numpy",
         severity=None,
-        license=LicenseInfo(
-            expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED
-        ),
+        license=LicenseInfo(expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED),
     )
     report = make_report(
         status=Status.POLICY_VIOLATION,
@@ -604,9 +581,7 @@ def test_license_id_without_license_subobject_rejected():
     """Coherence clause (b): a license: finding MUST carry the license
     sub-object (properties is vacuous on an absent key, so `then` requires it)."""
     document = make_report().to_json_dict()
-    document["findings"] = [
-        {"id": "license:MIT:x@1.0", "axis": "license", "message": "m"}
-    ]
+    document["findings"] = [{"id": "license:MIT:x@1.0", "axis": "license", "message": "m"}]
     with pytest.raises(jsonschema.ValidationError):
         validate(document)
 
@@ -717,9 +692,7 @@ def test_dangling_suppression_rejected_at_construction():
 
 def test_unknown_suppression_origin_rejected():
     document = make_report().to_json_dict()
-    document["suppressions"] = [
-        {"finding_id": "hygiene:DEP002:x", "origin": "bypass", "reason": "r"}
-    ]
+    document["suppressions"] = [{"finding_id": "hygiene:DEP002:x", "origin": "bypass", "reason": "r"}]
     with pytest.raises(jsonschema.ValidationError):
         validate(document)
 
@@ -730,9 +703,7 @@ def test_currency_eol_finding_without_currency_key_rejected():
     (required:['currency'] added to its `then`, so it is no longer vacuously
     satisfied by an absent key)."""
     document = make_report().to_json_dict()
-    document["findings"] = [
-        {"id": "currency:eol:django@1.11", "axis": "currency", "message": "m"}
-    ]
+    document["findings"] = [{"id": "currency:eol:django@1.11", "axis": "currency", "message": "m"}]
     with pytest.raises(jsonschema.ValidationError):
         validate(document)
 

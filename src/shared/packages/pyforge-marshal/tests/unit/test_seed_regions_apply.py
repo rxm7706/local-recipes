@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import pytest
 from pyforge.core.errors import PyforgeError
+
 from pyforge.marshal.seed.fs import NeverWrite, NeverWriteViolation
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.regions import apply as apply_module
@@ -180,9 +181,7 @@ def test_sha_mismatch_raises_before_any_write_and_leaves_the_file_untouched(tmp_
     (region,) = parse_regions(text, RegionFormat.HTML)
 
     calls: list[object] = []
-    monkeypatch.setattr(
-        apply_module.fs, "replace_span", lambda *a, **k: calls.append((a, k))
-    )
+    monkeypatch.setattr(apply_module.fs, "replace_span", lambda *a, **k: calls.append((a, k)))
 
     with pytest.raises(RegionShaMismatchError):
         substitute_region(
@@ -338,9 +337,7 @@ def test_conflict_marker_shaped_new_body_is_written_verbatim(tmp_path):
 def test_crlf_terminator_is_preserved_verbatim(tmp_path):
     old_body = "old body\r\n"
     old_sha = region_sha(old_body)
-    text = _doc(
-        "intro", _begin("tiers", old_sha), "old body", _end("tiers"), "outro", newline="\r\n"
-    )
+    text = _doc("intro", _begin("tiers", old_sha), "old body", _end("tiers"), "outro", newline="\r\n")
     path = tmp_path / "doc.md"
     path.write_bytes(text.encode("utf-8"))
 
@@ -366,9 +363,7 @@ def test_crlf_terminator_is_preserved_verbatim(tmp_path):
 
     result_text = path.read_text(encoding="utf-8", newline="")
     (result_region,) = parse_regions(result_text, RegionFormat.HTML)
-    terminator = result_text.encode("utf-8")[
-        result_region.begin_span[1] : result_region.body_span[0]
-    ]
+    terminator = result_text.encode("utf-8")[result_region.begin_span[1] : result_region.body_span[0]]
     assert terminator == b"\r\n"
     assert _slice(result_text, result_region.body_span) == new_body
     # Every other CRLF elsewhere in the file (outside the combined span) is
@@ -659,9 +654,7 @@ def test_insert_region_inserts_immediately_after_the_matching_anchor_line(tmp_pa
 
     assert outcome == InsertionResult(outcome=InsertionOutcome.INSERTED, matched="## The tiers")
     result = path.read_text(encoding="utf-8", newline="")
-    assert result == (
-        "intro\n## The tiers\n" + _rendered_region("tiers", body) + "rest of section\n"
-    )
+    assert result == ("intro\n## The tiers\n" + _rendered_region("tiers", body) + "rest of section\n")
     (span,) = parse_regions(result, RegionFormat.HTML)
     assert span.name == "tiers"
 
@@ -691,9 +684,7 @@ def test_insert_region_ignores_an_earlier_absent_anchor_and_uses_a_later_match(t
 
     assert outcome.matched == "# CLAUDE.md"
     result = path.read_text(encoding="utf-8", newline="")
-    assert result == (
-        "intro\n# CLAUDE.md\n" + _rendered_region("tiers", body) + "more content\n"
-    )
+    assert result == ("intro\n# CLAUDE.md\n" + _rendered_region("tiers", body) + "more content\n")
 
 
 # --- no anchor matches, no <top>, I/O Matrix row 3 --------------------------
@@ -745,9 +736,7 @@ def test_insert_region_with_top_inserts_after_the_frontmatter_block(tmp_path):
 
     assert outcome.matched == "<top>"
     result = path.read_text(encoding="utf-8", newline="")
-    assert result == (
-        "---\ntitle: x\n---\n" + _rendered_region("tiers", body) + "# Heading\nbody\n"
-    )
+    assert result == ("---\ntitle: x\n---\n" + _rendered_region("tiers", body) + "# Heading\nbody\n")
 
 
 # --- <top> without frontmatter, I/O Matrix row 5 ----------------------------
@@ -814,9 +803,7 @@ def test_insert_region_is_a_noop_when_the_region_already_exists(tmp_path, monkey
 
     replace_calls: list[object] = []
     write_calls: list[object] = []
-    monkeypatch.setattr(
-        apply_module.fs, "replace_span", lambda *a, **k: replace_calls.append((a, k))
-    )
+    monkeypatch.setattr(apply_module.fs, "replace_span", lambda *a, **k: replace_calls.append((a, k)))
     monkeypatch.setattr(apply_module.fs, "write", lambda *a, **k: write_calls.append((a, k)))
 
     outcome = insert_region(
@@ -876,9 +863,7 @@ def test_insert_region_calls_fs_replace_span_exactly_once_never_fs_write(tmp_pat
 
     replace_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
     write_calls: list[object] = []
-    monkeypatch.setattr(
-        apply_module.fs, "replace_span", lambda *a, **k: replace_calls.append((a, k))
-    )
+    monkeypatch.setattr(apply_module.fs, "replace_span", lambda *a, **k: replace_calls.append((a, k)))
     monkeypatch.setattr(apply_module.fs, "write", lambda *a, **k: write_calls.append((a, k)))
 
     insert_region(
@@ -907,17 +892,13 @@ def test_insert_region_calls_fs_replace_span_exactly_once_never_fs_write(tmp_pat
 # --- fs.write called exactly once, never fs.replace_span, absent file ------
 
 
-def test_insert_region_calls_fs_write_exactly_once_never_fs_replace_span_for_an_absent_file(
-    tmp_path, monkeypatch
-):
+def test_insert_region_calls_fs_write_exactly_once_never_fs_replace_span_for_an_absent_file(tmp_path, monkeypatch):
     path = tmp_path / "new.md"
     body = "new body\n"
 
     replace_calls: list[object] = []
     write_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
-    monkeypatch.setattr(
-        apply_module.fs, "replace_span", lambda *a, **k: replace_calls.append((a, k))
-    )
+    monkeypatch.setattr(apply_module.fs, "replace_span", lambda *a, **k: replace_calls.append((a, k)))
     monkeypatch.setattr(apply_module.fs, "write", lambda *a, **k: write_calls.append((a, k)))
 
     insert_region(
@@ -954,9 +935,7 @@ def test_insert_region_raises_when_the_anchor_falls_inside_an_existing_region(tm
     # colliding line must itself START WITH the anchor text -- e.g. a
     # documentation example inside the existing region's own body.
     other_body = "## The tiers\nmore explanation\n"
-    text = _doc(
-        _begin("other", region_sha(other_body)), "## The tiers", "more explanation", _end("other")
-    )
+    text = _doc(_begin("other", region_sha(other_body)), "## The tiers", "more explanation", _end("other"))
     path = tmp_path / "doc.md"
     path.write_text(text, encoding="utf-8", newline="")
 

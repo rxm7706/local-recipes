@@ -26,10 +26,7 @@ _INCR = "pyforge.atlas.datasets.IncrementalParquetDataset"
 def _conf(tmp_path, names):
     """Raw catalog config: an IncrementalParquetDataset per name plus one
     non-matching (plain pandas.ParquetDataset) entry."""
-    cfg = {
-        name: {"type": _INCR, "filepath": str(tmp_path / name / f"{name}.parquet")}
-        for name in names
-    }
+    cfg = {name: {"type": _INCR, "filepath": str(tmp_path / name / f"{name}.parquet")} for name in names}
     cfg["plain_output"] = {
         "type": "pandas.ParquetDataset",
         "filepath": str(tmp_path / "plain_output" / "plain_output.parquet"),
@@ -45,9 +42,7 @@ def test_after_catalog_created_injects_matching_and_leaves_others_none(tmp_path)
     catalog = DataCatalog.from_config(conf)
     ttls = {"ds_a": 604800, "ds_b": 2592000}
 
-    ProjectHooks().after_catalog_created(
-        catalog=catalog, conf_catalog=conf, parameters={"ttls": ttls}
-    )
+    ProjectHooks().after_catalog_created(catalog=catalog, conf_catalog=conf, parameters={"ttls": ttls})
 
     # matching IncrementalParquetDataset instances received their ttl...
     assert catalog["ds_a"].ttl_seconds == 604800
@@ -62,9 +57,7 @@ def test_after_catalog_created_coerces_string_ttl(tmp_path):
     exercised through the real hook path."""
     conf = _conf(tmp_path, ["ds_a"])
     catalog = DataCatalog.from_config(conf)
-    ProjectHooks().after_catalog_created(
-        catalog=catalog, conf_catalog=conf, parameters={"ttls": {"ds_a": "3600"}}
-    )
+    ProjectHooks().after_catalog_created(catalog=catalog, conf_catalog=conf, parameters={"ttls": {"ds_a": "3600"}})
     assert catalog["ds_a"].ttl_seconds == 3600
 
 
@@ -78,9 +71,7 @@ def test_no_ttls_namespace_injects_nothing_when_no_flipped_entries(tmp_path):
     }
     catalog = DataCatalog.from_config(conf)
     # parameters with no 'ttls' key at all -> no injection, no raise
-    ProjectHooks().after_catalog_created(
-        catalog=catalog, conf_catalog=conf, parameters={}
-    )
+    ProjectHooks().after_catalog_created(catalog=catalog, conf_catalog=conf, parameters={})
 
 
 # -- P6: a flipped-but-un-TTL'd entry FAILS LOUDLY -------------------------
@@ -94,9 +85,7 @@ def test_flipped_entry_without_ttl_raises(tmp_path):
     catalog = DataCatalog.from_config(conf)
     # ttls covers ds_a only -> ds_b is a flipped-but-un-TTL'd entry
     with pytest.raises(ValueError, match=r"never re-fetch.*ds_b"):
-        ProjectHooks().after_catalog_created(
-            catalog=catalog, conf_catalog=conf, parameters={"ttls": {"ds_a": 7}}
-        )
+        ProjectHooks().after_catalog_created(catalog=catalog, conf_catalog=conf, parameters={"ttls": {"ds_a": 7}})
 
 
 def test_all_flipped_entries_covered_does_not_raise(tmp_path):
@@ -162,6 +151,4 @@ def test_catalog_without_keys_interface_raises():
             return ["ds_a"]
 
     with pytest.raises(TypeError, match="keys.*__getitem__"):
-        ProjectHooks().after_catalog_created(
-            catalog=_LegacyCatalogStub(), conf_catalog={}, parameters={"ttls": {}}
-        )
+        ProjectHooks().after_catalog_created(catalog=_LegacyCatalogStub(), conf_catalog={}, parameters={"ttls": {}})

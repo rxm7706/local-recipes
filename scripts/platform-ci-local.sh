@@ -15,9 +15,9 @@
 #               the deploy-side verifier (informational — it refuses anything
 #               but a `clean` verdict, which is the deploy gate's job)
 #
-#   pixi run -e local-recipes platform-ci-local                  # all four, docker
-#   pixi run -e local-recipes platform-ci-local -- --test        # one stage
-#   pixi run -e local-recipes platform-ci-local -- --images --container --engine podman
+#   pixi run -e pyforge-guild platform-ci-local                  # all four, docker
+#   pixi run -e pyforge-guild platform-ci-local -- --test        # one stage
+#   pixi run -e pyforge-guild platform-ci-local -- --images --container --engine podman
 #
 # Services: an ephemeral PostgreSQL 17 (+pgvector) and Redis 7 from the
 # platform-dev env, TCP only, on PLATFORM_CI_LOCAL_PG_PORT (15432) and

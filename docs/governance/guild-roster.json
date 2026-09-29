@@ -43,16 +43,45 @@
   ],
 
   "guild_dreams": [
-    "pyforge-charter"
+    "pyforge-charter",
+    "coverage-gate-independence",
+    "one-chain-per-station",
+    "feature-flag-governance"
   ],
   "$comment_guild_dreams": [
-    "The one Dream that may name no station because it CONSTITUTES them: the",
-    "Charter. `guild` is NOT a ninth station.",
+    "The Dreams that may name no station. `guild` is NOT a ninth station.",
+    "",
+    "`pyforge-charter`: the one Dream that CONSTITUTES the stations.",
     "",
     "2026-08-08: closed at one. `pyforge-genesis` was absorbed into the",
     "Charter (Dream § Satellite: The Seed; Spec CAP-5..CAP-8) once its",
     "project had dissolved and its installer half had moved to the Marshal --",
-    "two names for one record."
+    "two names for one record.",
+    "",
+    "2026-09-14: re-opened by Charter amendment for exactly one further",
+    "shape -- a gate that judges all eight Smiths, which no Smith can own",
+    "without grading itself on one row (Charter Section 5, the doctrine",
+    "applied to itself). `coverage-gate-independence` is that gate. The test",
+    "is structural: cross-cutting, shared or unowned does NOT qualify; the",
+    "artifact must judge every Smith. Its mechanism stories stay a Smith's",
+    "(Doctor's) under the outcome/mechanism rule.",
+    "",
+    "2026-09-16: the same shape a second time. `one-chain-per-station` amends",
+    "the Lexicon's reading of Dream-first (Dream-append-first) and mints",
+    "`chain-sprawl-check`, a gate over every Smith's planning tree -- no Smith",
+    "can own a rule that grades its own Dream and Spec count (steward alone",
+    "carries 22 open Dreams). Operator-ruled 2026-09-16 (six rulings in the",
+    "Spec memlog). Mechanism stories stay Doctor's; the per-station fold",
+    "stories stay each Smith's. Whether the Lexicon amendment also needs the",
+    "Section 5 ritual is the Spec's third open question.",
+    "",
+    "2026-09-28: the same shape a third time. `feature-flag-governance` is a",
+    "blocking gate over every Smith's story specs: every capability ships",
+    "behind a flag, and a check outside every station package refuses a",
+    "story that names neither a flag nor an exemption from a closed list.",
+    "Operator-ruled 2026-09-28 at the intake triage (four rulings in the Spec",
+    "memlog). Mechanism stories stay Doctor's; the retrofit stories stay",
+    "each Smith's."
   ],
 
   "dream_statuses": [
@@ -62,6 +91,44 @@
     "realized",
     "archived"
   ],
+  "$comment_fold_exemptions": [
+    "The CLOSED list of reasons a NEW docs/dreams/*.md file or specs/spec-*/ folder may exist",
+    "outside a station's one chain (spec-one-chain-per-station CAP-1, operator 2026-09-16).",
+    "Dream-APPEND-first: new work is a dated section of the station Dream + a CAP on the station",
+    "Spec + a Story -- never a new file. chain-sprawl-check (doctor 25.1) reads THIS list and",
+    "nothing else (vocabulary-one-name-one-job CAP-2: one declared source). Adding a value here",
+    "is a governance act; the four are: different-owner (the work has a different accountable",
+    "Smith), different-lifecycle (it ends when the station does not), cross-station-seam (a",
+    "shared package every station imports -- pyforge-core, the testing kit), governance (a",
+    "Lexicon amendment cannot be a section of a station Dream)."
+  ],
+  "fold_exemptions": [
+    "different-owner",
+    "different-lifecycle",
+    "cross-station-seam",
+    "governance"
+  ],
+  "$comment_flag_exemptions": [
+    "The CLOSED list of reasons a story spec of `type: feature` may carry a `flag-exempt:`",
+    "value instead of a `flag:` block (spec-feature-flag-governance CAP-1, operator ruling Q2",
+    "2026-09-28). scripts/flag_rule.py reads THIS list and nothing else -- the code holds no",
+    "copy (one declared source), and a unit test fails a hard-coded value there. Adding,",
+    "renaming or removing a value here is a governance act, never a code change; the five",
+    "are: flag-infrastructure (the flag rule's own machinery: the tree, its fixture, its",
+    "gate), docs-only (the story changes prose and no behaviour), recipe-build (a",
+    "conda-forge recipe build, which is not a runtime capability), planning-ledger-only (the",
+    "story moves planning artifacts or ledgers and nothing else), detector-or-gate (a check",
+    "that judges; a gated gate would report a silent green under fidelity-enforcement). The",
+    "block's shape and both spellings are written once in",
+    "docs/reference/story-spec-flag-block.md."
+  ],
+  "flag_exemptions": [
+    "flag-infrastructure",
+    "docs-only",
+    "recipe-build",
+    "planning-ledger-only",
+    "detector-or-gate"
+  ],
   "$comment_dream_statuses": [
     "The Dream lifecycle -- each state names the ACT THAT COMPLETED. There is",
     "deliberately no `building` state: status declares what EXISTS (stable,",
@@ -69,7 +136,20 @@
     "live build lines. A `building` status was considered and rejected -- it",
     "would go stale the moment a line pauses or finishes, which is exactly how",
     "pyforge-warden came to read `in-spec` while shipped 31/31, and deckcraft",
-    "`dreamt` while holding a deck AND a Spec (both found + fixed 2026-07-25)."
+    "`dreamt` while holding a deck AND a Spec (both found + fixed 2026-07-25).",
+    "",
+    "`pitched` (Ruling 6, docs/dreams/vocabulary-one-name-one-job.md, operator",
+    "accepted 2026-09-15) is DECLARED, OPTIONAL, NOT REQUIRED. Never required",
+    "to advance `dreamt` to `specified`; never backfilled onto an existing",
+    "Dream. Use it only once Herald has actually made the case (a deck",
+    "exists) and the Spec is still `draft` -- forcing the rung on every Dream",
+    "would invent ceremony the factory does not run (steward Story 59.3).",
+    "",
+    "This is a separate, unrelated fact from BMAD's own `optional`",
+    "retrospective-lattice value (the story-ledger's correctly-reused term,",
+    "Ruling 5) -- the two share no spelling and nothing else beyond sitting",
+    "side by side as Guild vocabulary. The full cross-walk lives in the",
+    "Charter's `### BMAD vocabulary` subsection, docs/dreams/pyforge-charter.md."
   ],
 
   "dream_types": [
@@ -80,5 +160,196 @@
     "`practice` marks a perpetual concern -- tended, never finished. They sit",
     "OUTSIDE the lifecycle: excluded from backlog (nobody can close them) and",
     "from realized (never done)."
+  ],
+
+  "spec_statuses": [
+    "draft",
+    "ready",
+    "in-progress",
+    "shipped",
+    "archived",
+    "absorbed",
+    "superseded",
+    "extension-point"
+  ],
+  "$comment_spec_statuses": [
+    "The Spec lifecycle -- all eight live values, one definition each. Before",
+    "this declaration (steward Story 59.1), only `extension-point` carried a",
+    "prose definition (docs/dreams/README.md); the other seven existed only",
+    "as hardcoded sets split across pyforge.doctor.sources.board",
+    "(OPEN_SPEC_STATUSES / DELIVERED_SPEC_STATUSES, covering draft / ready /",
+    "in-progress / shipped) and pyforge.doctor.sources.one_chain",
+    "(_CLOSED_SPEC_STATUSES, covering archived / absorbed / superseded).",
+    "docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md §4 already",
+    "listed all eight values in a summary table (added 2026-09-17), but with",
+    "no per-value definition and not machine-readable -- that gap, not the",
+    "bare enumeration, is this declaration's actual delta.",
+    "",
+    "`draft`: the contract's open questions are unanswered; nothing downstream",
+    "can bind to it yet.",
+    "`ready`: the contract binds, forever -- CAPs carry `(Met <date>)` as they",
+    "land.",
+    "`in-progress`: GRANDFATHERED -- see spec_statuses_grandfathered below.",
+    "Never written to a new Spec; existing files stay open until next edited.",
+    "`shipped`: every CAP delivered. Spec-terminal -- see spec_statuses_terminal",
+    "below -- and a Spec-only fact, distinct from story `done` and Dream",
+    "`realized` (the full cross-walk lives in the Charter's Lexicon, not here).",
+    "`archived`: abandoned outright, not delivered.",
+    "`absorbed`: folded into another chain; its CAPs live in the absorbing",
+    "chain's own epic.",
+    "`superseded`: replaced by a later Spec; abandoned, not delivered.",
+    "`extension-point`: a recognised parked-Spec state -- the chain exists and",
+    "the contract is deliberately left open, a seam a later effort extends. It",
+    "does NOT satisfy a Dream's `specified` (docs/dreams/README.md) -- the",
+    "Spec-side sibling of a Dream's `dreamt`.",
+    "",
+    "THE THREE ENDED ACTS. `archived`, `absorbed`, and `superseded` all mean",
+    "the Spec stopped without shipping, but they answer different questions --",
+    "abandoned outright, folded into a sibling chain, or replaced by a",
+    "successor -- so they stay three distinct values and are never collapsed",
+    "into one (spec_statuses_ended_acts).",
+    "",
+    "SHIPPED IS TERMINAL, NOT AN ENDED ACT. `shipped` is grouped as",
+    "Spec-terminal (spec_statuses_terminal = the three ended acts plus",
+    "`shipped`) precisely because it is NOT one of the three ended acts -- it",
+    "is the one terminal value that delivered rather than ended.",
+    "",
+    "GRANDFATHERED. `in-progress` is the sole grandfathered value",
+    "(spec_statuses_grandfathered): no new Spec may be minted at it, and",
+    "existing Specs stay open until next edited. See",
+    "docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md §4 for what",
+    "finally retires it.",
+    "",
+    "RECOMMENDED, NOT REQUIRED. This enum is recommended, not required. A",
+    "Spec carrying an unregistered status value must be preserved exactly as",
+    "written and must produce a warning -- it must never be silently reset to",
+    "a value in this list."
+  ],
+  "spec_statuses_ended_acts": [
+    "archived",
+    "absorbed",
+    "superseded"
+  ],
+  "spec_statuses_terminal": [
+    "shipped",
+    "archived",
+    "absorbed",
+    "superseded"
+  ],
+  "spec_statuses_grandfathered": [
+    "in-progress"
+  ],
+  "spec_statuses_ready_or_beyond": [
+    "ready",
+    "in-progress",
+    "shipped",
+    "absorbed"
+  ],
+  "$comment_spec_statuses_ready_or_beyond": [
+    "Backs docs/dreams/README.md:71's rule: a Dream at `specified` needs a covering",
+    "Spec at `ready` or beyond (pyforge.doctor.sources.chain::_SPEC_READY_FOR_SPECIFIED's",
+    "own CAP-1-vocabulary subset -- five Story/ledger/Dream words outside CAP-1's enum",
+    "stay literal in that module and are never sourced from here).",
+    "",
+    "`archived`/`superseded` are deliberately excluded -- an ended-without-delivering",
+    "Spec does not satisfy the Dream's contract. `absorbed` IS included -- its CAPs",
+    "live on in the absorbing chain, so the contract is still covered, just elsewhere.",
+    "This is a derived grouping of already-declared spec_statuses values (steward",
+    "Story 59.2), the same kind of addition as spec_statuses_terminal/_ended_acts/",
+    "_grandfathered above -- not a Charter Section 5 act (that clause guards",
+    "`stations`/`guild_dreams` specifically, per this file's own top comment)."
+  ],
+
+  "$comment_session_denials": [
+    "The CLOSED list of what `.claude/hooks/pre-shell.py` denies -- the Guild",
+    "session guardrails, enforced rather than merely asserted in AGENTS.md/",
+    "CLAUDE.md prose (steward Story 63.3, spec-pyforge-steward CAP-5). ONE",
+    "script serves both harnesses (Claude Code's `PreToolUse` on `Bash` and on",
+    "`Edit`/`Write`; Cursor's `beforeShellExecution` deny and `afterFileEdit`",
+    "warn -- Cursor has no before-edit deny). Gemini CLI, GitHub Copilot CLI",
+    "and Devin have no verified deny surface for this hook; the ten rules stay",
+    "instruction-only there, as written in AGENTS.md.",
+    "",
+    "Each entry's `id` MUST have exactly one matching callable in the script's",
+    "own `MATCHERS` dict, in both directions -- `load_denial_rules()` raises",
+    "(fail loud, never a silent skip) on any drift between the two, at every",
+    "invocation. `reason` is the one-line message shown to the agent, naming",
+    "the sanctioned form; for the two rules with more than one trigger shape",
+    "(`git-commit-guardrail`, `direct-write-governed-path`) it is an object",
+    "keyed by sub-case rather than a single string.",
+    "",
+    "CHANGING THIS LIST IS A GOVERNANCE ACT, same as `stations`/`guild_dreams`",
+    "above: adding, removing or reshaping a denial is a deliberate decision,",
+    "never a drive-by code edit to pre-shell.py alone. The hook never denies",
+    "anything not named here."
+  ],
+  "session_denials": [
+    {
+      "id": "guild-task-via-local-recipes",
+      "applies_to": "bash",
+      "trigger": "pixi run -e local-recipes <task>, where <task> is in the guild-tasks set read live from pixi.toml's [feature.guild-tasks.tasks] -- never a copy",
+      "reason": "'{task}' is a Guild task -- rerun as `pixi run -e pyforge-guild {task}`; -e local-recipes only carries it for back-compat."
+    },
+    {
+      "id": "adhoc-package-install",
+      "applies_to": "bash",
+      "trigger": "pip install / uv pip install / conda install / npx <x> other than npx skills add",
+      "reason": "Dependencies are pinned in pixi.toml + pixi.lock, not installed ad hoc -- add it to pixi.toml in a PR, or use `npx skills add` for a skill install."
+    },
+    {
+      "id": "pixi-add-or-update",
+      "applies_to": "bash",
+      "trigger": "pixi add / pixi update",
+      "reason": "a dependency is a pixi.toml change in a PR, not a live `pixi add`/`pixi update` -- edit pixi.toml, run `pixi lock`, and open a PR (regenerate environment.yaml too)."
+    },
+    {
+      "id": "bmad-switch-unsafe",
+      "applies_to": "bash",
+      "trigger": "scripts/bmad-switch run from a worktree, or with BMAD_ACTIVE_PROJECT already set",
+      "reason": "Never run scripts/bmad-switch from a worktree or parallel agent -- it mutates shared per-working-tree state; set BMAD_ACTIVE_PROJECT=<slug> and address _bmad-output/projects/<slug>/ by its physical path instead."
+    },
+    {
+      "id": "git-commit-guardrail",
+      "applies_to": "bash",
+      "trigger": "git commit on main, in the primary checkout, or with a Co-Authored-By / AI-attribution line",
+      "reason": {
+        "checkout": "Never commit on main or in the primary checkout -- branch from origin/main into a worktree (`pyforge steward workspace start <slug>`) and commit there.",
+        "attribution": "Commit messages carry no Co-Authored-By line and no AI attribution -- the commit-msg hook already refuses these (AGENTS.md Policy); drop the line."
+      }
+    },
+    {
+      "id": "gh-pr-merge-squash",
+      "applies_to": "bash",
+      "trigger": "gh pr merge --squash",
+      "reason": "Merge with `gh pr merge --merge`, never `--squash` -- squash is disabled in repository settings and a squash subject orphans landing-evidence detection."
+    },
+    {
+      "id": "gh-pr-create-missing-repo",
+      "applies_to": "bash",
+      "trigger": "gh pr create without --repo rxm7706/local-recipes",
+      "reason": "Create with `gh pr create --repo rxm7706/local-recipes` -- omitting --repo can target the wrong repository."
+    },
+    {
+      "id": "uv-run-outside-repo-root",
+      "applies_to": "bash",
+      "trigger": "uv run with cwd != the repo (or worktree) root",
+      "reason": "Run `uv run` from the repo root -- from a subdirectory it creates a stray .venv there; cd to the repo/worktree root first."
+    },
+    {
+      "id": "spec-surface-bare-write-baseline",
+      "applies_to": "bash",
+      "trigger": "spec_surface_check.py --write-baseline without --spec",
+      "reason": "Stamp scoped: `python scripts/spec_surface_check.py --write-baseline --spec <project>/<spec>` -- a bare --write-baseline accepts every other Spec's pending drift as correct."
+    },
+    {
+      "id": "direct-write-governed-path",
+      "applies_to": "edit_write",
+      "trigger": "a direct write to SPEC.md, sprint-status-ledger.yaml, or a tracked path under implementation-artifacts/",
+      "reason": {
+        "spec_md": "Never hand-edit a SPEC.md -- append to its .memlog.md with `uv run _bmad/scripts/memlog.py` and re-derive with bmad-spec.",
+        "ledger": "Never hand-edit sprint-status-ledger.yaml (generated) -- write the Tier-3 feed, then `pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>`.",
+        "implementation_artifacts": "Never track anything under implementation-artifacts/ -- it is Tier 3 and gitignored; this path is already tracked, which is the bug to fix, not to perpetuate by editing it further."
+      }
+    }
   ]
 }

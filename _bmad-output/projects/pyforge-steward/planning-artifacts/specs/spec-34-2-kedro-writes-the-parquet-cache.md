@@ -54,3 +54,16 @@ deferred: []
 ## Verification
 
 `pixi run -e pyforge-atlas -- pytest src/shared/packages/pyforge-atlas/tests/test_query_plane_parquet_cache.py src/shared/packages/pyforge-atlas/tests/catalog -q`
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `337b4af89f` (2026-08-26, "Merge pull request #868 from rxm7706/steward/34-2-kedro-parquet-cache"). Ledger row `34-2-kedro-writes-the-parquet-cache: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-34-2-kedro-writes-the-parquet-cache.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-atlas/conf/base/catalog.yml`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/query_plane_cache/__init__.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/query_plane_cache/nodes.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/query_plane_cache/pipeline.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/query_plane_cache.py`, `src/shared/packages/pyforge-atlas/tests/catalog/conftest.py`, `src/shared/packages/pyforge-atlas/tests/test_query_plane_parquet_cache.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

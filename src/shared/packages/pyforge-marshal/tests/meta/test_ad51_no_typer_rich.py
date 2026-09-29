@@ -51,16 +51,13 @@ def _forbidden_import_violations(tree: ast.Module) -> list[str]:
 def test_no_typer_or_rich_imports(path: Path):
     source = path.read_text(encoding="utf-8")
     violations = _forbidden_import_violations(ast.parse(source, filename=str(path)))
-    assert not violations, (
-        f"{_module_id(path)} imports forbidden CLI stack module(s): "
-        + ", ".join(sorted(set(violations)))
+    assert not violations, f"{_module_id(path)} imports forbidden CLI stack module(s): " + ", ".join(
+        sorted(set(violations))
     )
 
 
 def test_guard_is_alive_synthetic_typer_import_fires(tmp_path: Path):
     offender = tmp_path / "offender.py"
     offender.write_text("import typer\n", encoding="utf-8")
-    violations = _forbidden_import_violations(
-        ast.parse(offender.read_text(encoding="utf-8"), filename=str(offender))
-    )
+    violations = _forbidden_import_violations(ast.parse(offender.read_text(encoding="utf-8"), filename=str(offender)))
     assert "typer" in violations

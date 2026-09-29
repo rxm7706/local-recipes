@@ -6,6 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.sync import SyncConfig, SyncConfigError, load_config
 
 _VALID_DOCUMENT = """\
@@ -215,7 +216,7 @@ def test_user_mapping_rejects_a_non_string_value(tmp_path):
 def test_user_mapping_rejects_a_non_string_key(tmp_path):
     # YAML's `on`/`off`/`yes`/`no` parse to booleans -- a common authoring
     # gotcha for a GitHub login key too.
-    path = _write(tmp_path, _VALID_DOCUMENT + "user_mapping:\n  yes: \"5b10a2844c20165700ede21g\"\n")
+    path = _write(tmp_path, _VALID_DOCUMENT + 'user_mapping:\n  yes: "5b10a2844c20165700ede21g"\n')
 
     with pytest.raises(SyncConfigError, match="user_mapping"):
         load_config(path)

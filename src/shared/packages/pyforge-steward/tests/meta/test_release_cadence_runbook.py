@@ -16,9 +16,7 @@ import pytest
 
 def _load_next_rehearsal_argv() -> list[str]:
     unit_path = Path(__file__).resolve().parents[1] / "unit" / "test_upgrade_next_rehearsal.py"
-    spec = importlib.util.spec_from_file_location(
-        "_test_upgrade_next_rehearsal_for_meta", unit_path
-    )
+    spec = importlib.util.spec_from_file_location("_test_upgrade_next_rehearsal_for_meta", unit_path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -26,9 +24,9 @@ def _load_next_rehearsal_argv() -> list[str]:
     assert isinstance(argv, list)
     return argv
 
+
 RUNBOOK_RELATIVE = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-lifecycle/release-cadence.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/release-cadence.md"
 )
 
 
@@ -95,9 +93,7 @@ def test_each_numbered_step_has_verified_pass(runbook_text: str) -> None:
     steps_body = _numbered_steps_section(runbook_text)
     for step_num in range(1, 10):
         pattern = rf"(?ms)^{step_num}\.\s+\*\*.*?Verified pass"
-        assert re.search(pattern, steps_body), (
-            f"step {step_num} missing a Verified pass block in release-cadence.md"
-        )
+        assert re.search(pattern, steps_body), f"step {step_num} missing a Verified pass block in release-cadence.md"
 
 
 def test_verified_pass_blocks_name_owner_command_exit(runbook_text: str) -> None:
@@ -106,18 +102,14 @@ def test_verified_pass_blocks_name_owner_command_exit(runbook_text: str) -> None
         runbook_text,
         re.DOTALL,
     )
-    assert len(blocks) >= 9, (
-        f"expected at least 9 Verified pass blocks with owner/exit, found {len(blocks)}"
-    )
+    assert len(blocks) >= 9, f"expected at least 9 Verified pass blocks with owner/exit, found {len(blocks)}"
 
 
 def test_next_rehearsal_argv_matches_next_rehearsal_argv_constant(runbook_text: str) -> None:
     section = _next_rehearsal_section(runbook_text)
     fence_tokens = [_normalize_argv_token(t) for t in _argv_fence_tokens(section)]
     expected = [_normalize_argv_token(t) for t in _load_next_rehearsal_argv()]
-    assert fence_tokens == expected, (
-        f"runbook argv {fence_tokens!r} != NEXT_REHEARSAL_ARGV {expected!r}"
-    )
+    assert fence_tokens == expected, f"runbook argv {fence_tokens!r} != NEXT_REHEARSAL_ARGV {expected!r}"
 
 
 def test_next_rehearsal_disclaims_live_proof(runbook_text: str) -> None:

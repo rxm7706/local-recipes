@@ -309,6 +309,57 @@ class Source(StrEnum):
     # vs station Dream) for quotable identity contradictions. WARN-only,
     # fail-open — never a second PR gate.
     GENERAL_DOCS_CONSISTENCY = "general-docs-consistency"
+    # Story 23.7 (Epic 23 / spec-pyforge-doctor CAP-54): compares live
+    # directory occupancy at two leftover-shelf-prone locations (the
+    # `_bmad-output/` root, the air-gap documentation cluster) against the
+    # allow-list that docs/MAP.md's own "Outside this map" table and Story
+    # 23.2's fold established. Distinct from GENERAL_DOCS_CONSISTENCY above
+    # (identity contradictions, not occupancy). WARN-only, fail-open — never
+    # a second PR gate. See sources/docs_shelf.py.
+    DOCS_SHELF_OCCUPANCY = "docs-shelf-occupancy"
+    # Story 55.2 (steward Epic 55 / spec-foundry-capability-ledger fcl:CAP-2):
+    # CAP heading + intent/success extract vs docs/foundry/capability-ledger.yaml.
+    # HARD on unclassified live CAP-N and A-only without expiry; post-PIN
+    # unclassified paths are --append. Extract-only inventory.
+    CAPABILITY_LEDGER = "capability-ledger"
+    # Doctor Epic 25 (spec-one-chain-per-station, guild outcome / doctor
+    # mechanism): Story 25.1 -- a Dream file or Spec folder minted after the
+    # ruling SHA without a declared `fold-exemption:` is a FAIL; Story 25.2 --
+    # a PRD FR minted after the rule date must cite a resolving `CAP-m`.
+    CHAIN_SPRAWL = "chain-sprawl"
+    FR_WITHOUT_CAP = "fr-without-cap"
+    # Story 30.1 (spec-pyforge-doctor CAP-83): the closed taxonomy EXTENDED
+    # once more -- docs/MAP.md vs the four Diátaxis quadrant directories
+    # (docs/tutorials, docs/how-to, docs/reference, docs/explanation) it
+    # governs. A MAP link to a missing page under docs/ is FAIL; a quadrant
+    # page absent from MAP.md is WARN (warn-first, CAP-62 posture). Quadrant
+    # README.md index pages are exempt; MAP.md § "Outside this map" layers
+    # are never scanned.
+    DOCS_MAP_HYGIENE = "docs-map-hygiene"
+    # Story 26.1 (spec-pyforge-doctor CAP-77): the closed taxonomy EXTENDED
+    # once more -- a touched surface catalogued in live-proof-surfaces.md
+    # (a fleet-wide inventory of surfaces a dev/review pass structurally
+    # cannot verify from inside the repo alone) gets an advisory finding
+    # naming it, quoting the catalog's own "how to prove it live" cell
+    # verbatim. Matches ONLY the catalog's hand-authored `Surface globs`
+    # column (added 2026-09-20 after the first attempt's keyword fallback
+    # produced false positives against real tracked files) -- never a
+    # keyword pulled from prose. Always WARN, never FAIL (AD-2). See
+    # sources/live_proof_surfaces.py for the independence rationale.
+    LIVE_PROOF_SURFACE = "live-proof-surface"
+    # Story 30.2 (spec-pyforge-doctor CAP-84): the closed taxonomy EXTENDED
+    # once more -- three read-only checks over docs/map.yaml (the new
+    # machine registry) and docs/MAP.md (its render): (a) map-render --
+    # MAP.md's generated "## Page registry" section byte-matches a fresh
+    # render of map.yaml; (b) authored-page-stale -- a kind: authored page's
+    # own sources:/verified: frontmatter has fallen behind a named source's
+    # git last-touch, or the page body cites a backticked skill/script/path
+    # token that no longer resolves; (c) skill-dir-hygiene -- a stray
+    # non-layout file inside a bmad-*/pyforge-*/skf-* skill directory. All
+    # three WARN-only, fail-open (never FAIL; a missing/invalid docs/map.yaml
+    # degrades to one WARN via degrade_on_exception). See
+    # sources/docs_currency.py for the independence rationale.
+    DOCS_CURRENCY = "docs-currency"
 
 
 class Partition(StrEnum):
@@ -346,9 +397,7 @@ class Finding:
         # the original dict must not be able to mutate this Finding after
         # construction.
         if not isinstance(self.evidence, dict):
-            raise ValueError(
-                f"evidence must be a dict, got {self.evidence!r}"
-            )
+            raise ValueError(f"evidence must be a dict, got {self.evidence!r}")
         object.__setattr__(self, "evidence", dict(self.evidence))
 
     def to_json_dict(self) -> dict[str, object]:
@@ -443,20 +492,13 @@ class DoctorReport:
         # report-schema.json declares schema_version's minimum as 1 -- fail
         # loud at construction rather than only at schema-validation time.
         if isinstance(self.schema_version, bool) or self.schema_version < 1:
-            raise ValueError(
-                f"schema_version must be an int >= 1, got {self.schema_version!r}"
-            )
+            raise ValueError(f"schema_version must be an int >= 1, got {self.schema_version!r}")
         if self.verb not in _VALID_VERBS:
-            raise ValueError(
-                f"verb must be one of {sorted(_VALID_VERBS)}, got {self.verb!r}"
-            )
+            raise ValueError(f"verb must be one of {sorted(_VALID_VERBS)}, got {self.verb!r}")
         object.__setattr__(self, "findings", tuple(self.findings))
         if self.verb == "diagnose":
             if self.prescriptions is None:
-                raise ValueError(
-                    "verb 'diagnose' requires prescriptions (a list, "
-                    "possibly empty) — got None"
-                )
+                raise ValueError("verb 'diagnose' requires prescriptions (a list, possibly empty) — got None")
             object.__setattr__(self, "prescriptions", tuple(self.prescriptions))
         elif self.prescriptions is not None:
             raise ValueError(
@@ -464,9 +506,7 @@ class DoctorReport:
                 "'diagnose' reports do) — the key must be omitted, never null"
             )
         if self.axis_scores is not None:
-            object.__setattr__(
-                self, "axis_scores", tuple(dict(axis) for axis in self.axis_scores)
-            )
+            object.__setattr__(self, "axis_scores", tuple(dict(axis) for axis in self.axis_scores))
 
     def to_json_dict(self) -> dict[str, object]:
         document: dict[str, object] = {
@@ -476,9 +516,7 @@ class DoctorReport:
             "findings": [finding.to_json_dict() for finding in self.findings],
         }
         if self.prescriptions is not None:
-            document["prescriptions"] = [
-                prescription.to_json_dict() for prescription in self.prescriptions
-            ]
+            document["prescriptions"] = [prescription.to_json_dict() for prescription in self.prescriptions]
         if self.grade is not None:
             document["grade"] = self.grade
         if self.axis_scores is not None:

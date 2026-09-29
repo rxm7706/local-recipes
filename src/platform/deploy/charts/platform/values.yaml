@@ -63,6 +63,22 @@ resources:
 #   REDIS_PASSWORD    -- Redis AUTH password (Story 12.6); consumed by the
 #                        redis container and wired into platform pods'
 #                        REDIS_URL via secretKeyRef + env expansion
+# Two more keys are wired OPTIONALLY (secretKeyRef optional: true -- their
+# absence never blocks a pod from starting): PYFORGE_ASSERTION_PRIVATE_KEY /
+# PYFORGE_ASSERTION_PUBLIC_KEY, the host's RS256 keypair for signing/verifying
+# CAP-18 service assertions (django_pyforge.assertion.crypto). Without them,
+# `mint_assertion()` raises `AssertionRefusedError`, which the mint view's
+# except clause maps to the SAME `{"error": "refused"}` 401 as a genuinely bad
+# IdP bearer -- there is no separate signal (found running the CAP-3 attended
+# CRC exercise: every mint attempt failed this way because this cluster's
+# existingSecret never had these two keys, 2026-09-12).
+# Three more are wired OPTIONALLY the same way: OBJECT_STORAGE_ENDPOINT_URL /
+# OBJECT_STORAGE_ACCESS_KEY / OBJECT_STORAGE_SECRET_KEY, the S3-compatible
+# object-storage consumption seam (Story 50.3, pap:AD-1's 2026-09-10 dated
+# exception -- consumed only, production target NetApp StorageGRID,
+# ops-provided). Without them, config.object_storage.object_storage_client()
+# raises ImproperlyConfigured -- harmless today, since no feature calls it
+# yet (that module's own docstring: "future, story-by-story work").
 existingSecret: platform-secrets
 
 # Non-secret Django settings surface (mirrors compose.yml's env wiring).
@@ -315,6 +331,15 @@ media:
 # (compose.yml + dbgpt Containerfile contract — PostgreSQL wiring is
 # structurally impossible upstream; see dbgpt_integration/apps.py).
 sidecar:
+  # Stays its own sidecar Deployment (forced by the disjoint fastapi version
+  # ranges vs. the shared python-agent-platform env, Story 10.5's Pattern B
+  # deviation -- it cannot be folded into the platform pod) but is NOT
+  # mandatory: false skips the Deployment/Service/PVC/dbgpt-scoped
+  # NetworkPolicy documents entirely and drops DBGPT_SIDECAR_BASE_URL from
+  # every platform-image pod's env, so a namespace that never wants the
+  # DB-GPT text-to-SQL capability doesn't pay for its image pull, PVC, or
+  # attack surface.
+  enabled: true
   image:
     registry: ""
     repository: platform-dbgpt-sidecar
@@ -405,6 +430,9 @@ observability:
 # Story 48.9 / CAP-1: OIDC identity. Default profile deploys Keycloak
 # in-cluster (state in existing PostgreSQL); `byo` skips Keycloak and reads
 # issuer/JWKS/client from `oidc.byo.*` — the COMPONENT_OIDC_* BYO escape hatch.
+# Story 52.1: the mybmad sidecar consumes this same plane (and estate
+# DATABASE_URL with Prisma ?schema=mybmad). Liquibase creates schema mybmad
+# only. Do not add a second login under src/platform/ or mount /console/.
 oidc:
   # `bundled` (default): chart renders Keycloak and wires COMPONENT_OIDC_*.
   # `byo`: no Keycloak workloads; set oidc.byo.* explicitly.
@@ -451,8 +479,31 @@ networkPolicy:
   enabled: true
   dns:
     namespace: kube-system
-    podLabels:
-      k8s-app: kube-dns
+    # A single scalar key/value pair, not a map -- Helm deep-merges nested
+    # maps across `-f` files/chart defaults (union of keys, not a replace),
+    # so an overlay setting `podLabels: {other-key: val}` would leave this
+    # default's `k8s-app: kube-dns` key alive alongside it, producing an
+    # AND-matched podSelector neither system's DNS pods actually satisfy
+    # (confirmed live: OCP's real CoreDNS carries only
+    # `dns.operator.openshift.io/daemonset-dns: default`, never `k8s-app:
+    # kube-dns`, so the merged selector matched nothing and silently
+    # blocked DNS egress on a real OpenShift cluster with `networkPolicy.
+    # enabled: true` -- found running the CAP-3 attended CRC exercise,
+    # 2026-09-12). Scalars fully replace on override; a map's sibling keys
+    # do not.
+    podLabelKey: k8s-app
+    podLabelValue: kube-dns
+    # Vanilla Kubernetes CoreDNS pods listen on port 53 directly. OpenShift's
+    # own dns-default pods do NOT: their own built-in `dns-default`
+    # NetworkPolicy (openshift-dns namespace) only has an ingress rule for
+    # port 5353 with no source restriction (Service port 53 DNATs to pod
+    # targetPort 5353) -- there is no ingress allow for port 53 from other
+    # namespaces at all. An egress rule naming port 53 is therefore silently
+    # dropped on arrival at a real OpenShift cluster regardless of how
+    # correct its podSelector/namespaceSelector are (confirmed live, CAP-3
+    # attended CRC exercise, 2026-09-12 -- this was wrong before Story
+    # 33.13 touched this block at all, not something that story introduced).
+    port: 53
   # Namespaces whose pods may reach web:8000 (Route/Ingress). Defaults cover
   # CRC/OCP (`openshift-ingress`) and vanilla nginx Ingress.
   webIngressFrom:

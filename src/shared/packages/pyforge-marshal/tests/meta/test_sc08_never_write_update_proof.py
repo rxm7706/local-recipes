@@ -26,6 +26,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.errors import NeverWriteViolation, PreconditionFailure
@@ -182,9 +183,7 @@ def test_malicious_migration_to_symlinked_planning_artifacts_raises_never_write_
     migration = Migration(
         from_version=_V1,
         to_version=_V2,
-        fn=lambda _view, _state: _migration_plan(
-            _absent_action("prd", "_bmad-output/pa-link/evil.md")
-        ),
+        fn=lambda _view, _state: _migration_plan(_absent_action("prd", "_bmad-output/pa-link/evil.md")),
     )
     monkeypatch.setattr(migrate_registry, "MIGRATIONS", (migration,))
 

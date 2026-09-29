@@ -21,6 +21,7 @@ import re
 import time
 
 import pandas as pd
+
 from pyforge.atlas.datasets.refresh import WEEKLY_SECONDS, RefreshRequest
 
 # The mapping provenance tiers that must NEVER be clobbered by a later, weaker match
@@ -54,13 +55,14 @@ def _is_missing(v) -> bool:
         return False
     try:
         return bool(pd.isna(v))
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return False
 
 
 # ---------------------------------------------------------------------------
 # Phase C — parselmouth conda<->PyPI mapping join
 # ---------------------------------------------------------------------------
+
 
 def map_pypi_conda(
     pypi_parselmouth_mapping_raw: pd.DataFrame,
@@ -101,6 +103,7 @@ def map_pypi_conda(
 # Phase C.5 — source-URL-derived matches (extends the Phase C mapping)
 # ---------------------------------------------------------------------------
 
+
 def match_source_urls(
     pypi_conda_mapping_base: pd.DataFrame,
     pypi_json_raw: pd.DataFrame,
@@ -123,9 +126,11 @@ def match_source_urls(
     base = base[[c for c in cols if c in base.columns]].copy()
 
     # already-mapped pypi_names under a protected tier — never clobber these.
-    protected = set(
-        base.loc[base["match_source"].isin(_PROTECTED_MATCH_SOURCES), "pypi_name"]
-    ) if "match_source" in base.columns else set(base.get("pypi_name", pd.Series(dtype=object)))
+    protected = (
+        set(base.loc[base["match_source"].isin(_PROTECTED_MATCH_SOURCES), "pypi_name"])
+        if "match_source" in base.columns
+        else set(base.get("pypi_name", pd.Series(dtype=object)))
+    )
 
     cand = pypi_json_raw
     new_rows = []
@@ -147,6 +152,7 @@ def match_source_urls(
 # ---------------------------------------------------------------------------
 # Phase D — PyPI universe enumeration
 # ---------------------------------------------------------------------------
+
 
 def enumerate_pypi_universe(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase D  (phase_d_pypi_enumeration CFA:1947)
@@ -173,6 +179,7 @@ def enumerate_pypi_universe(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame
 
 # The 3 serial-gate conditions as SHARED predicates (review-hardening: the node AND the
 # stats split now derive from ONE source of truth — no silent drift, CFA:4177-4189).
+
 
 def _never_fetched(serial_at_fetch) -> bool:
     return _is_missing(serial_at_fetch)
@@ -306,10 +313,7 @@ def fetch_pypi_current_versions(
     uni = pypi_universe
     if uni is not None and not uni.empty and {"pypi_name", "last_serial"} <= set(uni.columns):
         serial_map = dict(zip(uni["pypi_name"], uni["last_serial"]))
-        work["pypi_last_serial"] = [
-            serial_map.get(n, s)
-            for n, s in zip(work["pypi_name"], work["pypi_last_serial"])
-        ]
+        work["pypi_last_serial"] = [serial_map.get(n, s) for n, s in zip(work["pypi_name"], work["pypi_last_serial"])]
 
     eligible_rows = []
     for _, r in work.iterrows():
@@ -337,6 +341,7 @@ def fetch_pypi_current_versions(
 # ---------------------------------------------------------------------------
 # Phase O — serial snapshots (90-day rolling; activity band from deltas)
 # ---------------------------------------------------------------------------
+
 
 def snapshot_pypi_serials(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase O  (phase_o_serial_snapshots CFA:7051)
@@ -376,7 +381,7 @@ def snapshot_pypi_serials(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:
             return "low"
         return "dormant"
 
-    out["serial_delta"] = [_delta(l, p) for l, p in zip(out["last_serial"], out["prev_serial"])]
+    out["serial_delta"] = [_delta(last, prev) for last, prev in zip(out["last_serial"], out["prev_serial"])]
     out["activity_band"] = [_band(d) for d in out["serial_delta"]]
     out = out.drop_duplicates(subset=["pypi_name"])
     return out[cols].reset_index(drop=True)
@@ -386,6 +391,7 @@ def snapshot_pypi_serials(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:
 # Phase P — monthly download counts (BigQuery; the two-layer cost gate is
 #           DATASET-owned, this node stays PURE)  [AC-4]
 # ---------------------------------------------------------------------------
+
 
 def fetch_pypi_downloads(pypi_bigquery_downloads_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase P  (phase_p_pypi_downloads CFA:7352)
@@ -415,6 +421,7 @@ def fetch_pypi_downloads(pypi_bigquery_downloads_raw: pd.DataFrame) -> pd.DataFr
 # ---------------------------------------------------------------------------
 # Phase Q — cross-channel flags
 # ---------------------------------------------------------------------------
+
 
 def flag_cross_channel(pypi_cross_channel_repodata_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase Q  (phase_q_cross_channel CFA:7847)
@@ -448,6 +455,7 @@ def flag_cross_channel(pypi_cross_channel_repodata_raw: pd.DataFrame) -> pd.Data
 # ---------------------------------------------------------------------------
 # Tier 3 — OS-distro bulk-index channel flags (Story 23.1)
 # ---------------------------------------------------------------------------
+
 
 def _normalize_pypi_name(name: str) -> str:
     """PEP 503 name normalization — mirrors artifactory/identity_join.py."""
@@ -492,6 +500,7 @@ def flag_tier3_channels(
 # ---------------------------------------------------------------------------
 # Phase R — enrichment (single-write-path helpers shared with add-handoff)
 # ---------------------------------------------------------------------------
+
 
 def _classify_packaging_shape(row) -> str:
     """Deterministic packaging-shape classification (pure; CFA:8330 Phase R). Reads
@@ -592,14 +601,16 @@ def _readiness_score(shape: str, license_spdx) -> int:
         score += 40
     elif shape in ("c-extension", "cython", "rust-pyo3"):
         score += 20
-    if license_spdx is not None and not (isinstance(license_spdx, float) and pd.isna(license_spdx)) and str(license_spdx).strip():
+    if (
+        license_spdx is not None
+        and not (isinstance(license_spdx, float) and pd.isna(license_spdx))
+        and str(license_spdx).strip()
+    ):
         score += 20
     return max(0, min(100, score))
 
 
-def apply_readiness_scores(
-    enriched: pd.DataFrame, prior_scored: pd.DataFrame | None = None
-) -> pd.DataFrame:
+def apply_readiness_scores(enriched: pd.DataFrame, prior_scored: pd.DataFrame | None = None) -> pd.DataFrame:
     """**Single-write-path** (AC-2): the shared scorer Phase S AND the S6 ``add-handoff``
     CLI re-score through (legacy ``apply_readiness_scores`` CFA:8484/8489). Computes
     ``conda_forge_readiness`` (0-100) + ``recommended_template`` per row.
@@ -652,6 +663,7 @@ def score_pypi_readiness(pypi_intelligence_enriched: pd.DataFrame) -> pd.DataFra
 # ---------------------------------------------------------------------------
 # View contracts (query-time-correct read surfaces — documented view-equivalents)
 # ---------------------------------------------------------------------------
+
 
 def v_pypi_intelligence_valid(pypi_intelligence_scored: pd.DataFrame) -> pd.DataFrame:
     """``v_pypi_intelligence_valid`` (CFA:615) — the query-time-correct read surface
@@ -741,6 +753,7 @@ def export_pypi_conda_map(pypi_conda_mapping: pd.DataFrame) -> dict:
 # ``params:refresh_cadences``.
 # ---------------------------------------------------------------------------
 
+
 def _ttl_cadence(ttls: dict, key: str) -> int:
     """Read a cadence (seconds) from ``params:ttls``; a missing / null / non-numeric
     value falls back to the WEEKLY default rather than crashing the node. (A local
@@ -750,7 +763,7 @@ def _ttl_cadence(ttls: dict, key: str) -> int:
     raw = (ttls or {}).get(key)
     try:
         return int(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return WEEKLY_SECONDS
 
 

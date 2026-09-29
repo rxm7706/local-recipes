@@ -1,0 +1,115 @@
+name: Substrate nightly
+
+# Story 46.1 (spec-pyforge-marshal CAP-192): publish the shared substrate so
+# a bare clone -- a cloud runner (Devin, Copilot cloud, Cursor background) --
+# opens on it with `pyforge context bootstrap` instead of re-deriving it
+# privately at ACU/quota cost.
+#
+# The substrate is three members, each with one sentinel, but this job only
+# ever BUILDS two of them:
+#   structure-graph  .codegraph/codegraph.db                     (codegraph)
+#   planning-graph   .claude/data/pyforge-scribe/graph.json      (scribe's own nightly compiler)
+#   derived-context  .claude/data/pyforge-scribe/move-list.json  (scribe index refresh;
+#                    + cocoindex-index.json when present)
+#
+# planning-graph is deliberately NEVER built here. Compiling it reads
+# operator-local surfaces a GitHub-hosted runner does not have --
+# checked-in `.claude/memory/`, that operator's own session transcripts
+# under `~/.claude/projects/`, and the gitignored graph store -- so running
+# it in Actions would silently publish an empty planning-graph, not a real
+# one. This is Epic 8's own HARD boundary (`pyforge-scribe/docs/cli-
+# runbooks.md` § "why not a GitHub Actions workflow"), and
+# `tests/scripts/test_scribe_nightly_trigger_docs.py` enforces it fleet-wide
+# by rejecting any workflow that invokes the compile. The published pair
+# always omits planning-graph; `marshal context bootstrap`'s own MRS-CTX-003
+# fallback rebuilds it locally on every consumer, which is the only place it
+# can be built correctly.
+#
+# This job builds the other two from the tip of main, then `marshal context
+# pack` writes the deterministic pair -- `substrate.tar.gz` and
+# `substrate-manifest.json` (per-file sha256 + size, source commit, archive
+# sha256) -- and uploads it to the `substrate-nightly` prerelease with
+# `--clobber`. The consumer (`marshal context bootstrap`) verifies every
+# digest before writing a byte, so a download racing this upload (a new
+# manifest beside an old archive) is refused and rebuilt locally, never
+# installed.
+#
+# codegraph is not in any locked environment this job installs (its only
+# lock entry is the 10 GB local-recipes env, linux-64 via the SelfExplainML
+# channel), so it is resolved ad hoc with `pixi exec` -- a named limit: that
+# one tool's version floats within the spec below between nights.
+#
+# Digests prove integrity against the manifest, not authenticity: manifest
+# and archive come from the same release (the story's named trust limit).
+#
+# Inert while `.github/actions-policy.toml` keeps Actions disabled -- turning
+# it on is the operator's billing decision, not this workflow's.
+
+on:
+  schedule:
+    - cron: '30 3 * * *'   # nightly, ~03:30 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write   # create the prerelease + upload its assets
+
+concurrency:
+  group: substrate-nightly
+  cancel-in-progress: false
+
+env:
+  SUBSTRATE_TAG: substrate-nightly
+  PACK_DIR: substrate-pack
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history: codegraph and scribe's derived-context indexer both
+          # read git history; the default depth of 1 would starve them.
+          fetch-depth: 0
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.80.0
+          environments: >-
+            pyforge-guild
+            pyforge-scribe
+          locked: true
+          cache: true
+
+      - name: Build the structure graph (codegraph)
+        run: |
+          pixi exec --channel conda-forge --channel SelfExplainML \
+            --spec "codegraph>=1.6.0" -- codegraph init -y .
+
+      - name: Build the derived-context distills (scribe index refresh)
+        run: pixi run -e pyforge-scribe scribe index refresh
+
+      # A failing build step above fails the job: nothing is uploaded and the
+      # previous pair stays on the release. MRS-CTX-006 (a gap, WARN, exit 0,
+      # the pair written without that member) appears only when a build step
+      # exits 0 without writing its sentinel; the consumer then rebuilds the
+      # gap with a named finding. Exit 1 (MRS-CTX-007, nothing packable or the
+      # pair not written) fails the job. No pipe after this command: the
+      # step's verdict is marshal's own exit code.
+      - name: Pack the deterministic pair
+        run: |
+          pixi run -e pyforge-guild marshal context pack \
+            --out "$PACK_DIR" --source-commit "$GITHUB_SHA" --format json
+
+      - name: Publish to the substrate-nightly prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "$SUBSTRATE_TAG" >/dev/null 2>&1; then
+            gh release create "$SUBSTRATE_TAG" --prerelease --target "$GITHUB_SHA" \
+              --title "Substrate (nightly)" \
+              --notes "Shared substrate pair for \`pyforge context bootstrap\` (Story 46.1). Rebuilt nightly; the manifest's source_commit names the commit each pair was built from."
+          fi
+          gh release upload "$SUBSTRATE_TAG" \
+            "$PACK_DIR/substrate.tar.gz" "$PACK_DIR/substrate-manifest.json" --clobber
+          echo "::notice::published the substrate pair for $GITHUB_SHA to $SUBSTRATE_TAG"

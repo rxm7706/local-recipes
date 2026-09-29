@@ -311,6 +311,7 @@ from .engines import (
     OsvEngine,
     run_doctor_checks,
 )
+from .extract import UnparsableManifestError, extractor_for
 from .hooks import (
     PR_GATE_AGGREGATE,
     PR_GATE_SCAN,
@@ -319,7 +320,6 @@ from .hooks import (
     invoke_pr_gate,
     publish_pr_gate_verdict,
 )
-from .extract import UnparsableManifestError, extractor_for
 from .hygiene import has_adjacent_python_source
 from .interfaces import DefaultPolicy, Engine, EngineResult, _sanitize_id_segment
 from .inventory import Component, ResolvedInventory, merge_components
@@ -372,10 +372,7 @@ from .waiver import (
 # D2(c) empty-extraction (Story 1.9): one shared message stem for both the
 # stderr notice and the paired Finding below — kept as ONE literal so a
 # future wording edit can't silently drift the two apart.
-_EMPTY_EXTRACTION_MESSAGE = (
-    "manifest(s) parsed but zero dependencies/components extracted under "
-    "{path!r}"
-)
+_EMPTY_EXTRACTION_MESSAGE = "manifest(s) parsed but zero dependencies/components extracted under {path!r}"
 
 # Story 3.2: the one waiver-file name this tool ever reads, relative to the
 # scan target -- never written by the tool itself (--bypass prints its
@@ -393,13 +390,9 @@ def _coverage_floor(value: str) -> float:
     try:
         numeric = float(value)
     except ValueError:
-        raise argparse.ArgumentTypeError(
-            f"--fail-under-coverage must be a number in [0, 100], got {value!r}"
-        ) from None
+        raise argparse.ArgumentTypeError(f"--fail-under-coverage must be a number in [0, 100], got {value!r}") from None
     if not (0.0 <= numeric <= 100.0):
-        raise argparse.ArgumentTypeError(
-            f"--fail-under-coverage must be in [0, 100], got {value!r}"
-        )
+        raise argparse.ArgumentTypeError(f"--fail-under-coverage must be in [0, 100], got {value!r}")
     return numeric
 
 
@@ -411,13 +404,9 @@ def _max_lag_type(value: str) -> int:
     try:
         numeric = int(value)
     except ValueError:
-        raise argparse.ArgumentTypeError(
-            f"--max-lag must be a non-negative integer, got {value!r}"
-        ) from None
+        raise argparse.ArgumentTypeError(f"--max-lag must be a non-negative integer, got {value!r}") from None
     if numeric < 0:
-        raise argparse.ArgumentTypeError(
-            f"--max-lag must be a non-negative integer, got {value!r}"
-        )
+        raise argparse.ArgumentTypeError(f"--max-lag must be a non-negative integer, got {value!r}")
     return numeric
 
 
@@ -429,13 +418,9 @@ def _min_epss_type(value: str) -> float:
     try:
         numeric = float(value)
     except ValueError:
-        raise argparse.ArgumentTypeError(
-            f"--min-epss must be a number in [0, 1], got {value!r}"
-        ) from None
+        raise argparse.ArgumentTypeError(f"--min-epss must be a number in [0, 1], got {value!r}") from None
     if not (0.0 <= numeric <= 1.0):
-        raise argparse.ArgumentTypeError(
-            f"--min-epss must be a number in [0, 1], got {value!r}"
-        )
+        raise argparse.ArgumentTypeError(f"--min-epss must be a number in [0, 1], got {value!r}")
     return numeric
 
 
@@ -447,13 +432,9 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "schema-validated ComplianceReport and a strict exit-code gate."
         ),
     )
-    parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}"
-    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
-    scan = subparsers.add_parser(
-        "scan", help="scan a project directory and emit the compliance report"
-    )
+    scan = subparsers.add_parser("scan", help="scan a project directory and emit the compliance report")
     scan.add_argument(
         "path",
         nargs="?",
@@ -639,10 +620,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     scan.add_argument(
         "--reason",
         default=None,
-        help=(
-            "the waiver reason recorded in the --bypass stanza (required "
-            "alongside --bypass; no prompts, ever)"
-        ),
+        help=("the waiver reason recorded in the --bypass stanza (required alongside --bypass; no prompts, ever)"),
     )
     scan.add_argument(
         "--warn-only",
@@ -786,10 +764,7 @@ def main(argv: list[str] | None = None) -> int:
         # interrupt window escapes as a traceback. Emission may already have
         # partially happened, so the honest claim is consumption guidance,
         # never "no report emitted".
-        _stderr(
-            f"{TOOL_NAME}: interrupted (SIGINT); any partial stdout must "
-            "not be consumed"
-        )
+        _stderr(f"{TOOL_NAME}: interrupted (SIGINT); any partial stdout must not be consumed")
         return EXIT_SIGINT
     except SystemExit:
         # Exit-code sole ownership: argparse's own exits were already
@@ -810,10 +785,7 @@ def main(argv: list[str] | None = None) -> int:
         # stdout may hold a partial document, so the same consumption
         # guidance as SIGINT applies.
         _stderr("".join(traceback.format_exception(exc)).rstrip("\n"))
-        _stderr(
-            f"{TOOL_NAME}: internal error: {exc!r}; any partial stdout "
-            "must not be consumed"
-        )
+        _stderr(f"{TOOL_NAME}: internal error: {exc!r}; any partial stdout must not be consumed")
         return exit_code_for(Status.ERROR)
 
 
@@ -829,38 +801,27 @@ def _resolve_scan_target(args: argparse.Namespace) -> Path | int:
     if not args.path.strip():
         # "" Path-normalizes to "." — an empty/whitespace target must be
         # early-fatal, never a silent scan of the CWD.
-        _stderr(
-            f"{TOOL_NAME}: scan target {args.path!r} is empty — not an "
-            "existing directory"
-        )
+        _stderr(f"{TOOL_NAME}: scan target {args.path!r} is empty — not an existing directory")
         return exit_code_for(Status.ERROR)
     target = Path(args.path)
     # Explicit stat (is_dir() swallows every OSError): "could not look" is
     # diagnosed as could-not-stat, never as "not there".
     try:
         target_stat = target.stat()
-    except (FileNotFoundError, NotADirectoryError):
-        _stderr(
-            f"{TOOL_NAME}: scan target {args.path!r} is not an existing "
-            "directory"
-        )
+    except FileNotFoundError, NotADirectoryError:
+        _stderr(f"{TOOL_NAME}: scan target {args.path!r} is not an existing directory")
         return exit_code_for(Status.ERROR)
     except ValueError as exc:
         # A path with an embedded NUL (or otherwise unrepresentable to the OS)
         # raises ValueError, not OSError — a user-input error, not an internal
         # defect. Diagnose it here, not via main's last-resort traceback net.
-        _stderr(
-            f"{TOOL_NAME}: scan target {args.path!r} is not a valid path: {exc}"
-        )
+        _stderr(f"{TOOL_NAME}: scan target {args.path!r} is not a valid path: {exc}")
         return exit_code_for(Status.ERROR)
     except OSError as exc:
         _stderr(f"{TOOL_NAME}: cannot stat scan target {args.path!r}: {exc}")
         return exit_code_for(Status.ERROR)
     if not stat_module.S_ISDIR(target_stat.st_mode):
-        _stderr(
-            f"{TOOL_NAME}: scan target {args.path!r} exists but is not a "
-            "directory"
-        )
+        _stderr(f"{TOOL_NAME}: scan target {args.path!r} exists but is not a directory")
         return exit_code_for(Status.ERROR)
     return target
 
@@ -899,13 +860,8 @@ def _run_doctor(args: argparse.Namespace) -> int:
             if dest not in honored and getattr(args, dest, default) != default
         )
         if ignored:
-            flags = ", ".join(
-                "--" + dest.replace("_", "-") for dest in ignored
-            )
-            _stderr(
-                f"{TOOL_NAME}: --doctor runs an environment self-check "
-                f"only -- ignoring scan/policy flags: {flags}"
-            )
+            flags = ", ".join("--" + dest.replace("_", "-") for dest in ignored)
+            _stderr(f"{TOOL_NAME}: --doctor runs an environment self-check only -- ignoring scan/policy flags: {flags}")
 
     target = _resolve_scan_target(args)
     if isinstance(target, int):
@@ -925,25 +881,19 @@ def _run_doctor(args: argparse.Namespace) -> int:
             "doctor": True,
             "status": status_word,
             "checks": [
-                {"name": c.name, "ok": c.ok, "message": c.message}
-                for c in sorted(checks, key=lambda c: c.name)
+                {"name": c.name, "ok": c.ok, "message": c.message} for c in sorted(checks, key=lambda c: c.name)
             ],
         }
         rendered = json.dumps(document, sort_keys=True, indent=2) + "\n"
     else:
-        lines = [
-            f"{TOOL_NAME}: doctor status={status_word} checks={len(checks)}"
-        ]
+        lines = [f"{TOOL_NAME}: doctor status={status_word} checks={len(checks)}"]
         for check in checks:
             outcome = "ok" if check.ok else "problem"
             # _single_line (review finding 2026-07-24): a future check
             # message embedding subprocess stderr or a raw path must never
             # forge extra [doctor] lines under the checks=N header -- the
             # same invariant render_text enforces on every free-text field.
-            lines.append(
-                f"  [doctor] {check.name} {outcome} -- "
-                f"{_single_line(check.message)}"
-            )
+            lines.append(f"  [doctor] {check.name} {outcome} -- {_single_line(check.message)}")
         rendered = "\n".join(lines) + "\n"
     try:
         # Mirrors _run_scan's own stdout-emission guard (BrokenPipeError
@@ -955,9 +905,7 @@ def _run_doctor(args: argparse.Namespace) -> int:
         _absorb_broken_pipe()
     except (OSError, ValueError) as exc:
         _stderr(
-            f"{TOOL_NAME}: stdout emission failed "
-            f"({exc.__class__.__name__}); any partial stdout must not be "
-            "consumed"
+            f"{TOOL_NAME}: stdout emission failed ({exc.__class__.__name__}); any partial stdout must not be consumed"
         )
     return 0 if healthy else exit_code_for(Status.ERROR)
 
@@ -1028,10 +976,7 @@ def _instantiate_and_run_engine(
             "kind": ErrorKind.ENGINE_UNAVAILABLE,
             "owner": "engines",
             "subject": factory_name,
-            "message": (
-                f"engine factory {factory_name!r} crashed at "
-                f"instantiation: {exc!r}"
-            ),
+            "message": (f"engine factory {factory_name!r} crashed at instantiation: {exc!r}"),
             "axis": factory_axis,
         }
     engine_name = getattr(engine, "name", engine.__class__.__name__)
@@ -1143,11 +1088,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         # malformed-but-non-fatal pixi.toml) must still reach stderr.
         for warning in exc.warnings:
             _stderr(f"{TOOL_NAME}: {warning}")
-        kind = (
-            ErrorKind.CONFIG_PARSE
-            if isinstance(exc, ConfigParseError)
-            else ErrorKind.CONFIG_VALIDATION
-        )
+        kind = ErrorKind.CONFIG_PARSE if isinstance(exc, ConfigParseError) else ErrorKind.CONFIG_VALIDATION
         _record_error(
             errors,
             rungs,
@@ -1172,8 +1113,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         # own fail-closed OSErrors carry no errno and their crafted message
         # is already deterministic.
         detail = (
-            f"[errno {errno_module.errorcode.get(exc.errno, str(exc.errno))}] "
-            f"{exc.__class__.__name__}"
+            f"[errno {errno_module.errorcode.get(exc.errno, str(exc.errno))}] {exc.__class__.__name__}"
             if exc.errno is not None
             else str(exc)
         )
@@ -1209,10 +1149,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             else:
                 # The not-applicable path says so on stderr; stdout stays
                 # pure.
-                _stderr(
-                    f"{TOOL_NAME}: no manifest found under {args.path!r}; "
-                    "nothing to scan"
-                )
+                _stderr(f"{TOOL_NAME}: no manifest found under {args.path!r}; nothing to scan")
     router = DefaultRouter()
     for manifest in manifests:
         try:
@@ -1255,10 +1192,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                 kind=ErrorKind.UNPARSABLE_MANIFEST,
                 owner="extract",
                 subject=manifest.path,
-                message=(
-                    f"unreadable manifest {manifest.path}: [errno {code}] "
-                    f"{exc.__class__.__name__}"
-                ),
+                message=(f"unreadable manifest {manifest.path}: [errno {code}] {exc.__class__.__name__}"),
                 axis=AXIS_INGESTION,
             )
         except (SystemExit, Exception) as exc:  # noqa: BLE001 — the seam
@@ -1312,9 +1246,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     # though the location data is present.
     manifest_locations: dict[str, tuple[str, ...]] = {}
     for component in inventory.components:
-        locations = tuple(
-            f"{p.manifest} [{p.section}]" for p in component.provenance
-        )
+        locations = tuple(f"{p.manifest} [{p.section}]" for p in component.provenance)
         # Keys canonicalized (review finding 2026-07-24) so a manifest's
         # non-normalized spelling (Foo_Bar) still matches osv-scanner's
         # normalized echo -- _manifest_clause canonicalizes its lookup with
@@ -1323,9 +1255,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         if component.pypi_identity is not None:
             keys.append(_canonical_subject_key(component.pypi_identity.name))
         for key in keys:
-            manifest_locations[key] = tuple(
-                sorted(set(manifest_locations.get(key, ())) | set(locations))
-            )
+            manifest_locations[key] = tuple(sorted(set(manifest_locations.get(key, ())) | set(locations)))
     if manifests and manifests_parsed > 0 and not inventory.components:
         # A parsed manifest with nothing extractable must be distinguishable
         # on stderr from the empty-dir case (the coverage block already
@@ -1334,11 +1264,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         # (indeterminate/exit 1 by default) for ANY of the discovered
         # manifest kinds, not just pyproject.toml — naming a specific
         # section/format here would misdescribe 7 of 8 kinds.
-        _stderr(
-            f"{TOOL_NAME}: "
-            f"{_EMPTY_EXTRACTION_MESSAGE.format(path=args.path)}; "
-            "nothing to scan"
-        )
+        _stderr(f"{TOOL_NAME}: {_EMPTY_EXTRACTION_MESSAGE.format(path=args.path)}; nothing to scan")
     engine_results: list[EngineResult] = []
     # AC3: a source-less scan target makes deptry flag every conda-sourced
     # dependency reaching the front-door as "unused" (DEP002) -- a noise
@@ -1349,9 +1275,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     # itself below (review finding, 2026-07-17): with nothing extractable,
     # engines_to_run is already () and inventory.count is already 0, so the
     # walk's result can never affect the output -- skip the wasted I/O.
-    hygiene_applicable = (
-        has_adjacent_python_source(target) if manifests_parsed > 0 else True
-    )
+    hygiene_applicable = has_adjacent_python_source(target) if manifests_parsed > 0 else True
     # Story 9.2: default factories come from in-tree scanner plugins (same
     # objects ``register_engine`` listed). Do not load the shared
     # ``pyforge.core.hooks`` entry-point group here — other stations'
@@ -1422,9 +1346,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         # NFR-R3b both depend on this).
         with ThreadPoolExecutor(max_workers=len(engines_to_run)) as pool:
             futures = [
-                pool.submit(
-                    _instantiate_and_run_engine, factory, config, target, inventory
-                )
+                pool.submit(_instantiate_and_run_engine, factory, config, target, inventory)
                 for factory in engines_to_run
             ]
             for future in futures:
@@ -1436,9 +1358,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                     # slots is populated
                     _record_error(errors, rungs, **error_args)
     try:
-        invoke_pr_gate(
-            PR_GATE_SCAN, "around", plugin_context, registry=plugin_registry
-        )
+        invoke_pr_gate(PR_GATE_SCAN, "around", plugin_context, registry=plugin_registry)
     except TeaRosterMissingError as exc:
         # AD-10 / DW-FU-11-2: the operator explicitly enabled
         # tea-test-review (WARDEN_OPTIONAL_SCANNERS) but the AD-9 module
@@ -1465,9 +1385,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     # optional advisory scanner ran", exactly like actuation_payload below.
     advisory_notes = plugin_context.get("advisory_notes")
     advisory_payload: list[dict[str, object]] | None = (
-        list(advisory_notes)
-        if isinstance(advisory_notes, list) and advisory_notes
-        else None
+        list(advisory_notes) if isinstance(advisory_notes, list) and advisory_notes else None
     )
     for result in engine_results:
         errors.extend(result.errors)
@@ -1489,9 +1407,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         # removes the sole driver of a non-clean verdict.
         findings = tuple(f for f in findings if f.axis != AXIS_HYGIENE)
         policy_rungs = tuple(
-            (status, driver)
-            for status, driver in policy_rungs
-            if driver is None or driver.axis != AXIS_HYGIENE
+            (status, driver) for status, driver in policy_rungs if driver is None or driver.axis != AXIS_HYGIENE
         )
     rungs.extend(policy_rungs)
 
@@ -1521,15 +1437,11 @@ def _run_scan(args: argparse.Namespace) -> int:
         rungs.append(
             (
                 Status.INDETERMINATE,
-                StatusDriver(
-                    axis=AXIS_INGESTION, finding_id=EMPTY_EXTRACTION_DRIVER_ID
-                ),
+                StatusDriver(axis=AXIS_INGESTION, finding_id=EMPTY_EXTRACTION_DRIVER_ID),
             )
         )
 
-    invoke_pr_gate(
-        PR_GATE_AGGREGATE, "around", plugin_context, registry=plugin_registry
-    )
+    invoke_pr_gate(PR_GATE_AGGREGATE, "around", plugin_context, registry=plugin_registry)
 
     # Story 3.2 (FR24-FR26): a missing waiver file is normal (empty tuple,
     # no error) -- mirrors config.py's own missing-file handling. A
@@ -1543,11 +1455,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         _record_error(
             errors,
             rungs,
-            kind=(
-                ErrorKind.CONFIG_PARSE
-                if isinstance(exc, WaiverParseError)
-                else ErrorKind.CONFIG_VALIDATION
-            ),
+            kind=(ErrorKind.CONFIG_PARSE if isinstance(exc, WaiverParseError) else ErrorKind.CONFIG_VALIDATION),
             owner="waiver",
             subject=str(target),
             message=str(exc),
@@ -1571,11 +1479,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             _record_error(
                 errors,
                 rungs,
-                kind=(
-                    ErrorKind.CONFIG_PARSE
-                    if isinstance(exc, BaselineParseError)
-                    else ErrorKind.CONFIG_VALIDATION
-                ),
+                kind=(ErrorKind.CONFIG_PARSE if isinstance(exc, BaselineParseError) else ErrorKind.CONFIG_VALIDATION),
                 owner="baseline",
                 subject=args.baseline,
                 message=str(exc),
@@ -1628,9 +1532,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     # genuine candidate from it.
     baseline_stanza: str | None = None
     if args.baseline_emit:
-        baseline_stanza = emit_baseline_stanza(
-            rungs, now=now, expiry_days=config.waiver_default_expiry_days
-        )
+        baseline_stanza = emit_baseline_stanza(rungs, now=now, expiry_days=config.waiver_default_expiry_days)
 
     bypass_stanza: str | None = None
     if args.bypass:
@@ -1675,9 +1577,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         # of grandfathering) and waiver suppressions are excluded, keyed on the
         # same echoed suppressions[] set the report surfaces.
         suppressed_ids = {suppression.finding_id for suppression in suppressions}
-        actuatable = tuple(
-            finding for finding in findings if finding.id not in suppressed_ids
-        )
+        actuatable = tuple(finding for finding in findings if finding.id not in suppressed_ids)
         # Defense in depth for this story's central promise -- the actuator must
         # NEVER change the status/exit code. run_actuator already captures a
         # failed PR-open internally; any *unexpected* error outside that guard
@@ -1690,15 +1590,10 @@ def _run_scan(args: argparse.Namespace) -> int:
                 env=os.environ,
             )
             actuation_payload = actuation.to_json_dict()
-            failed = [
-                outcome
-                for outcome in actuation.outcomes
-                if outcome.status == "failed"
-            ]
+            failed = [outcome for outcome in actuation.outcomes if outcome.status == "failed"]
             if failed:
                 _stderr(
-                    f"{TOOL_NAME}: fix-pr actuator: {len(failed)} outcome(s) "
-                    "failed; see the report's actuation section"
+                    f"{TOOL_NAME}: fix-pr actuator: {len(failed)} outcome(s) failed; see the report's actuation section"
                 )
         except Exception as exc:  # noqa: BLE001 -- never change the exit code
             actuation_payload = None
@@ -1747,11 +1642,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     # registry file has a problem" -- every other engine/path also leaves
     # it None, so this slot alone can't tell the two apart.
     currency_data = next(
-        (
-            result.currency_data
-            for result in engine_results
-            if result.currency_data is not None
-        ),
+        (result.currency_data for result in engine_results if result.currency_data is not None),
         None,
     )
     # Story 5.1 (AC1): fixed_versions merges PER-FINDING across
@@ -1766,9 +1657,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     for result in engine_results:
         for finding_id, fixed_version in result.fixed_versions.items():
             fixed_versions.setdefault(finding_id, fixed_version)
-    findings = merge_plugin_findings(
-        findings, findings_from_plugin_context(plugin_context)
-    )
+    findings = merge_plugin_findings(findings, findings_from_plugin_context(plugin_context))
     report = assemble_report(
         inventory=inventory,
         findings=findings,
@@ -1806,18 +1695,13 @@ def _run_scan(args: argparse.Namespace) -> int:
         try:
             rendered_sbom = render_cyclonedx(inventory, report)
         except Exception as exc:
-            _stderr(
-                f"{TOOL_NAME}: --sbom-output rendering failed "
-                f"({exc.__class__.__name__}): {exc}"
-            )
+            _stderr(f"{TOOL_NAME}: --sbom-output rendering failed ({exc.__class__.__name__}): {exc}")
         else:
             try:
                 Path(args.sbom_output).write_text(rendered_sbom, encoding="utf-8")
             except OSError as exc:
                 _stderr(
-                    f"{TOOL_NAME}: --sbom-output write to "
-                    f"{args.sbom_output!r} failed "
-                    f"({exc.__class__.__name__}): {exc}"
+                    f"{TOOL_NAME}: --sbom-output write to {args.sbom_output!r} failed ({exc.__class__.__name__}): {exc}"
                 )
     try:
         if args.format == "json":
@@ -1898,9 +1782,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         #     violation). Stdout may hold a partial document — same
         #     consumption guidance as SIGINT.
         _stderr(
-            f"{TOOL_NAME}: stdout emission failed "
-            f"({exc.__class__.__name__}); any partial stdout must not be "
-            "consumed"
+            f"{TOOL_NAME}: stdout emission failed ({exc.__class__.__name__}); any partial stdout must not be consumed"
         )
     return report.exit_code
 
@@ -1985,7 +1867,7 @@ def _absorb_broken_pipe() -> None:
                 os.dup2(devnull, stream.fileno())
             finally:
                 os.close(devnull)
-        except (OSError, ValueError, AttributeError):
+        except OSError, ValueError, AttributeError:
             # No usable descriptor behind the stream (AttributeError = a
             # fileno-less stream object aliased onto sys.__stdout__): nothing
             # will flush at interpreter exit, nothing to do.

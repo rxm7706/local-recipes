@@ -197,13 +197,9 @@ class _StaleAwareBasiliskSource(AbstractDataset):
 
     def _mark_stale(self, reason: str) -> StalenessMarker:
         """Keep last-good; stamp a staleness marker. Never raises (AD-13 never-fail)."""
-        marker = StalenessMarker(
-            stale=True, reason=reason, last_good_exists=self._last_good_path.is_file()
-        )
+        marker = StalenessMarker(stale=True, reason=reason, last_good_exists=self._last_good_path.is_file())
         try:
-            self._atomic_write(
-                self._staleness_path, json.dumps(marker.to_dict(), indent=2)
-            )
+            self._atomic_write(self._staleness_path, json.dumps(marker.to_dict(), indent=2))
         except OSError as exc:  # a marker write must never take the run down
             logger.warning("could not write staleness marker for %s: %s", self._filepath, exc)
         return marker
@@ -223,7 +219,7 @@ class _StaleAwareBasiliskSource(AbstractDataset):
             return None
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        except OSError, ValueError:
             return None
         if not isinstance(raw, dict):
             return None
@@ -247,7 +243,7 @@ class _StaleAwareBasiliskSource(AbstractDataset):
             return []
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        except OSError, ValueError:
             return []
         return raw if isinstance(raw, list) else []
 
@@ -303,9 +299,7 @@ class BasiliskBatchDataset(_StaleAwareBasiliskSource):
     stale + returns the last-good (or ``[]``) — never crashes/hangs.
     """
 
-    def query_population(
-        self, purls: Any, *, fetcher: Callable[[list[Any]], Any] | None = None
-    ) -> list[Any]:
+    def query_population(self, purls: Any, *, fetcher: Callable[[list[Any]], Any] | None = None) -> list[Any]:
         """Fan out the population over ``POST /v1/querybatch`` in ≤1,000-query chunks (AC-1).
 
         Chunks via :func:`chunk_queries`, acquires ONE rate-limit token per chunk-request, and
@@ -432,7 +426,7 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
                             raise
                         wait = parse_retry_after(getattr(exc, "retry_after", None))
                         if wait <= 0:
-                            wait = min(float(2 ** attempt), RETRY_AFTER_CAP_SECONDS)
+                            wait = min(float(2**attempt), RETRY_AFTER_CAP_SECONDS)
                         # Hard-cap the FINAL wait (post-jitter) at the cap — jitter must never
                         # push a Retry-After / backoff past the ceiling ("never hang").
                         self._sleep(min(_apply_jitter(wait, self._rng), RETRY_AFTER_CAP_SECONDS))
@@ -498,12 +492,12 @@ def _coerce_payload(payload: Any) -> Any:
     if isinstance(payload, (bytes, str)):
         try:
             return json.loads(payload)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
     if hasattr(payload, "json") and callable(payload.json):
         try:
             return payload.json()
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             return None
     return payload
 
@@ -551,7 +545,7 @@ def _envelope_int(payload: Any, key: str) -> int | None:
     value = data.get(key)
     try:
         return int(value) if value is not None else None
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
 
 
@@ -768,4 +762,3 @@ class BasiliskPackagesDataset(ExternalRefreshDataset):
             }
         )
         return base
-

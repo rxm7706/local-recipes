@@ -60,6 +60,7 @@ def _detail_stub(details: dict):
 #               classification; a new migration flows through with no code edit)
 # ============================================================================
 
+
 def _run_chain(tmp_path, category_payload: dict, details: dict, pkgs, downloads):
     """Exercise the FULL chain: category list -> active names -> detail partitions ->
     classification. NO migration name is referenced literally anywhere."""
@@ -105,6 +106,7 @@ def test_zero_code_change_partitioning_new_migration_flows_through(tmp_path):
 # MANDATORY 2 — the not-in-tracker bucket is INFERRED, never confirmed
 # ============================================================================
 
+
 def test_not_in_tracker_is_labeled_inferred_never_confirmed():
     pkgs = _pkgs(
         [
@@ -145,13 +147,14 @@ def test_not_in_tracker_is_labeled_inferred_never_confirmed():
 # four-way split correctness
 # ============================================================================
 
+
 def test_four_way_split_all_classes_present():
     pkgs = _pkgs(
         [
-            {"conda_name": "purepy", "latest_version": "1.0", "subdirs": ["noarch"]},   # noarch
-            {"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]},   # done
-            {"conda_name": "scipy", "latest_version": "1.0", "subdirs": ["linux-64"]},   # pending
-            {"conda_name": "ghost", "latest_version": "1.0", "subdirs": ["linux-64"]},   # absent
+            {"conda_name": "purepy", "latest_version": "1.0", "subdirs": ["noarch"]},  # noarch
+            {"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]},  # done
+            {"conda_name": "scipy", "latest_version": "1.0", "subdirs": ["linux-64"]},  # pending
+            {"conda_name": "ghost", "latest_version": "1.0", "subdirs": ["linux-64"]},  # absent
         ]
     )
     detail = {"python314": {"done": ["numpy"], "not-solvable": ["scipy"]}}
@@ -184,12 +187,12 @@ def test_conda_noarch_derived_from_subdirs_shapes():
 
     pkgs = _pkgs(
         [
-            {"conda_name": "a", "latest_version": "1", "subdirs": ["noarch"]},          # list -> noarch
-            {"conda_name": "b", "latest_version": "1", "subdirs": "linux-64,noarch"},    # comma-str -> noarch
-            {"conda_name": "c", "latest_version": "1", "subdirs": "linux-64,osx-64"},    # comma-str -> not noarch
-            {"conda_name": "d", "latest_version": "1", "subdirs": None},                 # None -> not noarch
-            {"conda_name": "e", "latest_version": "1", "subdirs": np.array(["noarch"])}, # np array -> noarch
-            {"conda_name": "f", "latest_version": "1", "subdirs": ["noarch-extra"]},     # substring -> NOT noarch
+            {"conda_name": "a", "latest_version": "1", "subdirs": ["noarch"]},  # list -> noarch
+            {"conda_name": "b", "latest_version": "1", "subdirs": "linux-64,noarch"},  # comma-str -> noarch
+            {"conda_name": "c", "latest_version": "1", "subdirs": "linux-64,osx-64"},  # comma-str -> not noarch
+            {"conda_name": "d", "latest_version": "1", "subdirs": None},  # None -> not noarch
+            {"conda_name": "e", "latest_version": "1", "subdirs": np.array(["noarch"])},  # np array -> noarch
+            {"conda_name": "f", "latest_version": "1", "subdirs": ["noarch-extra"]},  # substring -> NOT noarch
         ]
     )
     detail = {"python314": {"done": []}}  # nobody done -> non-noarch fall to not-in-tracker
@@ -206,10 +209,11 @@ def test_conda_noarch_derived_from_subdirs_shapes():
 # downloads join -> top-unmigrated-by-volume ranking
 # ============================================================================
 
+
 def test_downloads_join_ranks_unmigrated_by_volume():
     pkgs = _pkgs(
         [
-            {"conda_name": "big", "latest_version": "1", "subdirs": ["linux-64"]},    # pending, high vol
+            {"conda_name": "big", "latest_version": "1", "subdirs": ["linux-64"]},  # pending, high vol
             {"conda_name": "small", "latest_version": "1", "subdirs": ["linux-64"]},  # not-in-tracker, low vol
             {"conda_name": "done1", "latest_version": "1", "subdirs": ["linux-64"]},  # done -> no rank
         ]
@@ -249,9 +253,7 @@ def test_downloads_join_missing_row_ranks_as_zero_not_dropped():
 
 def test_duplicate_download_rows_take_max():
     pkgs = _pkgs([{"conda_name": "p", "latest_version": "1", "subdirs": ["linux-64"]}])
-    downloads = _downloads(
-        [{"conda_name": "p", "downloads_total": 10.0}, {"conda_name": "p", "downloads_total": 99.0}]
-    )
+    downloads = _downloads([{"conda_name": "p", "downloads_total": 10.0}, {"conda_name": "p", "downloads_total": 99.0}])
     detail = {"python314": {"in-pr": ["p"]}}
     out = classify_migration_readiness(detail, pkgs, downloads)
     assert out.iloc[0]["downloads_total"] == 99.0
@@ -260,6 +262,7 @@ def test_duplicate_download_rows_take_max():
 # ============================================================================
 # edge cases / AD-13 safety
 # ============================================================================
+
 
 def test_feedstock_in_detail_but_not_in_atlas_is_out_of_scope():
     # the atlas feedstock set is the authoritative row universe; a bucket member NOT in the
@@ -332,6 +335,7 @@ def test_non_dict_detail_input_is_safe():
 # ============================================================================
 # AD-14 parity boundary (new-signal, never parity-gated)
 # ============================================================================
+
 
 def test_output_dataset_is_in_the_frozen_new_signal_exclusion_set():
     from pyforge.atlas.parity import EXCLUDED_NEW_SIGNAL_DATASETS

@@ -1,46 +1,16 @@
 ---
 id: SPEC-copilot-cli-packaging
 spec: copilot-cli-packaging
-status: archived
-archived-reason: blocked
+status: absorbed
+absorbed-into: spec-pyforge-mason
+updated: "2026-09-17"
 owner-dream: docs/dreams/copilot-cli-packaging.md
 surface: []          # archived — no live surface; see § What carries forward
-sources:
-  - ../../../../../../docs/dreams/copilot-cli-packaging.md
-open_questions: []
+companions: []
 ---
 
-> **Retirement record.** This Dream is `status: archived` (`blocked`). Charter §5 requires
-> every Dream to carry a Spec, archived included: a retirement record is how the next reader
-> learns from the decision instead of rediscovering the idea. It states what was contracted,
-> why it ended, and what survives — not a plan for work that will not happen.
+# Absorbed into spec-pyforge-mason
 
-# copilot-cli-packaging — retirement record
+This Spec folder was folded on 2026-09-17 (one-chain-per-station CAP-3 / mason fold). The decision record is `.memlog.md` in this folder. Companion documents stay as record (CHAIN-STANDARD §7 item 3, marshal pilot lesson 15). Derived SPEC body disposed; git remains the historical record.
+ Companion/record files kept in this folder: .memlog.md.
 
-## Why it was contracted
-
-Package GitHub's **Copilot CLI** for conda-forge, so the agent tooling the factory itself
-leans on installs the same way everything else does.
-
-## Why it ended
-
-**Blocked, not abandoned.** staged-recipes #32522 was rejected on the **LICENSE.md §2
-redistribution clause** — a legal constraint, not a technical one. No amount of recipe work
-resolves it; the upstream terms forbid the redistribution conda-forge requires.
-
-## What carries forward
-
-Reopen only if upstream relicenses. The recipe work itself was sound and is recoverable
-from the PR. Recorded so the next person does not re-derive the same rejection.
-
-## Non-goals
-
-- **Reviving this Dream as written.** Its intent was absorbed, delivered or blocked; the
-  successor named above is where the work lives now.
-- **Treating this record as a backlog item.** Archived Dreams are excluded from the Backlog
-  board by design.
-
-## Success signal
-
-A reader arriving at this Dream learns in one page why it stopped and where its intent went,
-without re-deriving the decision or re-opening a closed question.

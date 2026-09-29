@@ -20,22 +20,17 @@ import jsonschema
 from pyforge.doctor.__main__ import main
 from pyforge.doctor.checks import env_hygiene
 from pyforge.doctor.models import DoctorStatus, Finding, Source
-from pyforge.doctor.sources import atlas, warden as warden_source
+from pyforge.doctor.sources import atlas
+from pyforge.doctor.sources import warden as warden_source
 
 
 def _schema() -> dict:
-    schema_text = (
-        resources.files("pyforge.doctor")
-        .joinpath("data", "report-schema.json")
-        .read_text(encoding="utf-8")
-    )
+    schema_text = resources.files("pyforge.doctor").joinpath("data", "report-schema.json").read_text(encoding="utf-8")
     return json.loads(schema_text)
 
 
 def _finding(source, check, status=DoctorStatus.WARN, evidence=None):
-    return Finding(
-        source=source, check=check, status=status, message="stub", evidence=evidence or {}
-    )
+    return Finding(source=source, check=check, status=status, message="stub", evidence=evidence or {})
 
 
 def _stub_atlas(monkeypatch, by_axis: dict[str, tuple[Finding, ...]]):
@@ -138,9 +133,7 @@ def test_diagnose_prescribe_json_schema_valid_with_rank_and_root_cause(monkeypat
     assert prescription["finding_ref"] == "cve-watcher:pkg-a"
 
 
-def test_diagnose_prescribe_blocked_and_accepted_risk_only_still_lists_them(
-    monkeypatch, capsys
-):
+def test_diagnose_prescribe_blocked_and_accepted_risk_only_still_lists_them(monkeypatch, capsys):
     # Story 3.4 AC3: a target with only blocked/accepted-risk Findings
     # (nothing actionable today) must still list them, never an
     # empty/misleadingly-clean result.
@@ -167,9 +160,7 @@ def test_diagnose_prescribe_blocked_and_accepted_risk_only_still_lists_them(
     assert all(p["rank"] is None for p in document["prescriptions"])
 
 
-def test_diagnose_prescribe_clean_finding_action_is_not_a_remediation_instruction(
-    monkeypatch, capsys
-):
+def test_diagnose_prescribe_clean_finding_action_is_not_a_remediation_instruction(monkeypatch, capsys):
     """Review finding: a clean (`DoctorStatus.OK`) Finding is classified
     `ACTIONABLE` ("nothing to do" is trivially actionable), but the
     prescription's `action` text used to render `"address X (source)"`
@@ -204,9 +195,7 @@ def test_diagnose_prescribe_human_output_shows_prescription_section(monkeypatch,
 # --- "target implies an environment check" ----------------------------------
 
 
-def test_diagnose_target_that_is_a_real_directory_also_runs_engine_env_checks(
-    monkeypatch, tmp_path, capsys
-):
+def test_diagnose_target_that_is_a_real_directory_also_runs_engine_env_checks(monkeypatch, tmp_path, capsys):
     _stub_atlas(monkeypatch, {})
     engine_finding = (_finding(Source.WARDEN_DOCTOR, "deptry", status=DoctorStatus.OK),)
     env_finding = (_finding(Source.ENV_HYGIENE, "credential-scan", status=DoctorStatus.OK),)
@@ -220,9 +209,7 @@ def test_diagnose_target_that_is_a_real_directory_also_runs_engine_env_checks(
     assert Source.ENV_HYGIENE.value in sources
 
 
-def test_diagnose_target_that_is_not_a_directory_skips_engine_env_checks(
-    monkeypatch, capsys
-):
+def test_diagnose_target_that_is_not_a_directory_skips_engine_env_checks(monkeypatch, capsys):
     _stub_atlas(monkeypatch, {})
     _stub_no_directory_checks(monkeypatch)  # would raise if called
     main(["diagnose", "--target", "rxm7706", "--json"])
@@ -257,9 +244,7 @@ def test_diagnose_exit_code_reflects_fail_findings(monkeypatch):
 # --- Story 4.4: safe-upgrade-target wiring ----------------------------
 
 
-def test_diagnose_prescribe_includes_safe_upgrade_target_when_confidently_known(
-    monkeypatch, capsys
-):
+def test_diagnose_prescribe_includes_safe_upgrade_target_when_confidently_known(monkeypatch, capsys):
     finding = _finding(
         Source.STALENESS_REPORT,
         "pkg-a",
@@ -275,9 +260,7 @@ def test_diagnose_prescribe_includes_safe_upgrade_target_when_confidently_known(
     assert prescription["safe_upgrade_reason"]
 
 
-def test_diagnose_prescribe_safe_upgrade_target_is_null_with_a_reason_when_unknown(
-    monkeypatch, capsys
-):
+def test_diagnose_prescribe_safe_upgrade_target_is_null_with_a_reason_when_unknown(monkeypatch, capsys):
     finding = _finding(Source.STALENESS_REPORT, "pkg-a")  # no version evidence at all
     _stub_atlas(monkeypatch, {"staleness": (finding,)})
     _stub_no_directory_checks(monkeypatch)
@@ -301,9 +284,7 @@ def test_diagnose_json_includes_grade_and_axis_scores(monkeypatch, capsys):
     document = json.loads(capsys.readouterr().out)
     jsonschema.validate(document, _schema())
     assert document["grade"] == "A"
-    assert document["axis_scores"] == [
-        {"axis": "staleness-report", "ok": 1, "warn": 0, "fail": 0, "grade": "A"}
-    ]
+    assert document["axis_scores"] == [{"axis": "staleness-report", "ok": 1, "warn": 0, "fail": 0, "grade": "A"}]
 
 
 def test_diagnose_text_includes_grade_line(monkeypatch, capsys):

@@ -5,8 +5,10 @@ For each touched ``pyforge-<station>`` package:
 
 1. Run the station's unit (and, when present, integration) tests under
    ``pytest --cov`` producing a coverage.py JSON report.
-2. Evaluate the report with ``pyforge.marshal.coverage_gate``, gating only
-   the *touched source modules* so the failure names those modules.
+2. Evaluate the report with ``coverage_gate`` (a scripts/ sibling, outside
+   every pyforge.<station> package -- spec-coverage-gate-independence CAP-1),
+   gating only the *touched source modules* so the failure names those
+   modules.
 3. Exit non-zero when any suite fails.
 
 Full package-wide evaluate (every module) remains available via the pixi
@@ -26,13 +28,18 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 
-# Ensure the worktree package is importable even when the env's installed
-# wheel lags the branch tip.
-_PKG = REPO / "src" / "shared" / "packages" / "pyforge-marshal" / "src"
-if str(_PKG) not in sys.path:
-    sys.path.insert(0, str(_PKG))
+# coverage_gate.py is a scripts/ sibling (spec-coverage-gate-independence
+# CAP-1, doctor Story 24.1: the evaluator moved out of pyforge.marshal so no
+# station governs its own CI gate). Insert this file's own directory
+# explicitly so the import resolves whether this driver is executed directly
+# (`python scripts/coverage_gates_ci.py`, which Python already prepends) or
+# loaded via importlib (test harnesses, which do not).
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from pyforge.marshal.coverage_gate import (
+from coverage_gate import (
+    format_only_paths,
     STATIONS,
     evaluate_coverage_payload,
     package_root,
@@ -44,17 +51,31 @@ from pyforge.marshal.coverage_gate import (
 
 
 def _normalize_base(base: str) -> str:
-    """``origin/<name>`` for a bare branch name (GITHUB_BASE_REF is the name
-    only); anything already a revision is returned as-is -- ``origin/...``,
-    a ``<remote>/<branch>`` path, or a bare commit sha. The push-event
+    """``refs/remotes/origin/<name>`` for a bare branch name (GITHUB_BASE_REF is
+    the name only) and for ``origin/<name>`` (what the pixi tasks pass); a sha,
+    a full ref and any revision expression are returned as-is. The push-event
     workflow passes ``git rev-parse HEAD~1``; prefixing that made every
     push-to-main run die with "unknown revision 'origin/<sha>'"
-    (2026-08-24 -> 2026-09-04)."""
-    if not base or base.startswith("origin/") or "/" in base:
+    (2026-08-24 -> 2026-09-04).
+
+    Full refname, never the short ``origin/<name>`` (spec-coverage-gate-
+    independence CAP-4, doctor Story 32.1): git resolves a short name to a
+    local branch or tag of that name before ``refs/remotes/<name>``, so a
+    stray local ``origin/main`` at HEAD made the diff empty and the gate pass
+    having judged nothing. An ``origin/<name>`` revision expression
+    (``origin/main~1``) is qualified the same way: its prefix is the part a
+    shadow wears."""
+    if not base or base.startswith("refs/"):
+        return base
+    if base.startswith("origin/"):
+        return f"refs/remotes/{base}"
+    if base.startswith("@") or "@{" in base or any(ch in base for ch in "~^:"):
         return base
     if re.fullmatch(r"[0-9a-f]{7,40}", base):
         return base
-    return f"origin/{base}"
+    if "/" in base:
+        return base  # another remote's branch or a local branch with a slash: not ours to guess
+    return f"refs/remotes/origin/{base}"
 
 
 def _git_diff_names(base: str, head: str) -> list[str]:
@@ -78,6 +99,28 @@ def _git_diff_names(base: str, head: str) -> list[str]:
             print(proc.stderr or proc.stdout or "git diff failed", flush=True)
             raise SystemExit(1)
     return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+
+
+def _git_show(rev: str, path: str) -> str | None:
+    proc = subprocess.run(["git", "show", f"{rev}:{path}"], cwd=REPO, check=False, capture_output=True, text=True)
+    return proc.stdout if proc.returncode == 0 else None
+
+
+def _drop_format_only(paths: list[str], base: str, head: str) -> list[str]:
+    """Remove station source files whose AST did not change between ``base``
+    and ``head`` (steward Story 66.1, 2026-09-20): a formatting-only edit is
+    not a touched module, so the floor measures code changes, not the
+    formatter. Diffs against the merge-base, the same three-dot semantics as
+    ``_git_diff_names``. Added / deleted / unparseable files stay touched.
+    """
+    proc = subprocess.run(["git", "merge-base", base, head], cwd=REPO, check=False, capture_output=True, text=True)
+    merge_base = proc.stdout.strip() if proc.returncode == 0 and proc.stdout.strip() else base
+    candidates = [p for p in paths if p.endswith(".py") and "/src/shared/packages/" in f"/{p}"]
+    pairs = {p: (_git_show(merge_base, p), _git_show(head, p)) for p in candidates}
+    skipped = format_only_paths(pairs)
+    if skipped:
+        print(f"format-only (AST unchanged), not counted as touched: {len(skipped)} file(s)", flush=True)
+    return [p for p in paths if p not in skipped]
 
 
 def _suite_test_paths(root: Path, suite: str) -> list[Path]:
@@ -140,7 +183,7 @@ def _run_pytest_cov(
     env = os.environ.copy()
     station_src = root / "src"
     env["PYTHONPATH"] = os.pathsep.join(
-        [str(station_src), str(_PKG), env.get("PYTHONPATH", "")]
+        [str(station_src), str(_SCRIPTS_DIR), env.get("PYTHONPATH", "")]
     )
     return "ran", subprocess.run(cmd, cwd=REPO, env=env, check=False).returncode
 
@@ -229,7 +272,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--base",
         default=os.environ.get("GITHUB_BASE_REF", "origin/main"),
-        help="git diff base (default: origin/main or GITHUB_BASE_REF)",
+        help=(
+            "git diff base (default: GITHUB_BASE_REF, else origin/main); a branch name "
+            "or origin/<name> is read as refs/remotes/origin/<name>"
+        ),
     )
     parser.add_argument(
         "--head",
@@ -256,6 +302,7 @@ def main(argv: list[str] | None = None) -> int:
         ]
     else:
         paths = _git_diff_names(_normalize_base(args.base), args.head)
+        paths = _drop_format_only(paths, _normalize_base(args.base), args.head)
 
     stations = sorted(touched_stations(paths))
     modules = sorted(touched_source_modules(paths))

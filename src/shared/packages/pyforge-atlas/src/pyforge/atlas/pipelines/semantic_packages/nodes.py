@@ -89,10 +89,7 @@ def compose_semantic_packages(
         )[list(_OUTPUT_COLUMNS)]
 
     out = (
-        core_packages_enumerated[["conda_name"]]
-        .dropna(subset=["conda_name"])
-        .drop_duplicates()
-        .reset_index(drop=True)
+        core_packages_enumerated[["conda_name"]].dropna(subset=["conda_name"]).drop_duplicates().reset_index(drop=True)
     )
 
     # latest_status (migrated-column).
@@ -122,9 +119,7 @@ def compose_semantic_packages(
         and not core_feedstock_attribution.empty
         and {"conda_name", "feedstock_name"} <= set(core_feedstock_attribution.columns)
     ):
-        attribution = core_feedstock_attribution[["conda_name", "feedstock_name"]].drop_duplicates(
-            "conda_name"
-        )
+        attribution = core_feedstock_attribution[["conda_name", "feedstock_name"]].drop_duplicates("conda_name")
         out = out.merge(attribution, on="conda_name", how="left")
         out["feedstock_archived"] = out["feedstock_name"].isin(archived_feedstocks).astype("Int64")
         out = out.drop(columns=["feedstock_name"])
@@ -132,11 +127,7 @@ def compose_semantic_packages(
         out["feedstock_archived"] = pd.array([0] * len(out), dtype="Int64")
 
     # downloads_total / downloads_30d (migrated-column).
-    if (
-        core_downloads is not None
-        and not core_downloads.empty
-        and "conda_name" in core_downloads.columns
-    ):
+    if core_downloads is not None and not core_downloads.empty and "conda_name" in core_downloads.columns:
         keep = [c for c in ("conda_name", "downloads_total", "downloads_30d") if c in core_downloads.columns]
         out = out.merge(core_downloads[keep].drop_duplicates("conda_name"), on="conda_name", how="left")
     for col in ("downloads_total", "downloads_30d"):

@@ -1,9 +1,12 @@
----
-title: One Django service hosts the agentic engines as pluggable applications, anywhere — including air-gapped
+---title: One Django service hosts the agentic engines as pluggable applications, anywhere — including air-gapped
 type: dream
 owner: steward
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `python-agent-platform`).
+
 
 # One Django service hosts the agentic engines as pluggable applications, anywhere — including air-gapped
 

@@ -163,12 +163,12 @@ import http.client
 import json
 import re
 import time
+import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
-import tomllib
 import yaml
 
 from ..models import DoctorStatus, Finding, Source
@@ -240,15 +240,11 @@ def _declared_floors(data: dict) -> list[tuple[int, int, int]]:
             continue
         match = _FLOOR_RE.match(str(constraint).strip())
         if not match:
-            raise ValueError(
-                f"unrecognized {DEPENDENCY_NAME!r} constraint form: {constraint!r}"
-            )
+            raise ValueError(f"unrecognized {DEPENDENCY_NAME!r} constraint form: {constraint!r}")
         floors.append(_parse_version(match.group(1)))
 
     if not floors:
-        raise ValueError(
-            f"{DEPENDENCY_NAME!r} is not declared in any dependencies table"
-        )
+        raise ValueError(f"{DEPENDENCY_NAME!r} is not declared in any dependencies table")
     return floors
 
 
@@ -417,7 +413,7 @@ def _manifest_suite_members(target: Path) -> tuple[str, ...]:
     path = target / _SUITE_MANIFEST_REL
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError):
+    except OSError, yaml.YAMLError:
         return ()
     members = data.get("members") if isinstance(data, dict) else None
     if not isinstance(members, list):
@@ -476,7 +472,7 @@ def _upstream_registry(target: Path, package: str) -> str | None:
         reg = extra.get("cfe-upstream-registry")
         if isinstance(reg, str) and reg.strip():
             return reg.strip().lower()
-    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+    except OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError:
         pass
     return None
 
@@ -495,7 +491,7 @@ def _source_kind(target: Path, package: str) -> str | None:
         kind = extra.get("cfe-source-kind")
         if isinstance(kind, str) and kind.strip():
             return kind.strip().lower()
-    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+    except OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError:
         pass
     return None
 
@@ -551,7 +547,7 @@ def _recipe_pinned_commit(target: Path, package: str) -> tuple[str, str] | None:
         if not (isinstance(commit_value, str) and commit_value.strip()):
             return None
         return version_value, commit_value
-    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+    except OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError:
         return None
 
 
@@ -565,14 +561,12 @@ def _upstream_package_name(target: Path, package: str) -> str:
         name = extra.get("cfe-upstream-name")
         if isinstance(name, str) and name.strip():
             return name.strip()
-    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+    except OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError:
         pass
     return package
 
 
-def _fetch_pypi_latest_version(
-    *, package: str, timeout: float | None = None
-) -> tuple[int, int, int] | None:
+def _fetch_pypi_latest_version(*, package: str, timeout: float | None = None) -> tuple[int, int, int] | None:
     """Query PyPI's public JSON API for ``package``'s latest release (Story
     19.1). Lenient-parsed with ``_parse_release_triple``; never raises."""
     resolved_timeout = timeout if timeout is not None else _UPSTREAM_FETCH_TIMEOUT_SECONDS
@@ -613,44 +607,30 @@ def _resolve_upstream_latest(
         owner_repo = _github_owner_repo(target, package)
         if owner_repo is None:
             return None
-        return _fetch_latest_github_release(
-            owner_repo=owner_repo, timeout=resolved_timeout
-        )
+        return _fetch_latest_github_release(owner_repo=owner_repo, timeout=resolved_timeout)
 
     if registry == "npm":
-        return _fetch_latest_upstream_version(
-            package=upstream_name, timeout=resolved_timeout
-        )
+        return _fetch_latest_upstream_version(package=upstream_name, timeout=resolved_timeout)
 
     if registry == "pypi":
-        return _fetch_pypi_latest_version(
-            package=upstream_name, timeout=resolved_timeout
-        )
+        return _fetch_pypi_latest_version(package=upstream_name, timeout=resolved_timeout)
 
     candidates: list[tuple[int, int, int]] = []
-    npm_latest = _fetch_latest_upstream_version(
-        package=package, timeout=resolved_timeout
-    )
+    npm_latest = _fetch_latest_upstream_version(package=package, timeout=resolved_timeout)
     if npm_latest is not None:
         candidates.append(npm_latest)
     owner_repo = _github_owner_repo(target, package)
     if owner_repo is not None:
-        github_latest = _fetch_latest_github_release(
-            owner_repo=owner_repo, timeout=resolved_timeout
-        )
+        github_latest = _fetch_latest_github_release(owner_repo=owner_repo, timeout=resolved_timeout)
         if github_latest is not None:
             candidates.append(github_latest)
-    pypi_latest = _fetch_pypi_latest_version(
-        package=upstream_name, timeout=resolved_timeout
-    )
+    pypi_latest = _fetch_pypi_latest_version(package=upstream_name, timeout=resolved_timeout)
     if pypi_latest is not None:
         candidates.append(pypi_latest)
     return max(candidates) if candidates else None
 
 
-def _installed_suite_versions(
-    target: Path, packages: tuple[str, ...]
-) -> dict[str, tuple[tuple[int, int, int], str]]:
+def _installed_suite_versions(target: Path, packages: tuple[str, ...]) -> dict[str, tuple[tuple[int, int, int], str]]:
     """Each watched package's installed version -- ``{name: (release_triple,
     raw_version_text)}`` -- read from ``.pixi/envs/*/conda-meta/
     {name}-<version>-<build>.json`` FILENAMES, zero file reads: conda
@@ -760,7 +740,7 @@ def _github_owner_repo(target: Path, package: str) -> str | None:
         if not isinstance(owner_repo, str) or not owner_repo:
             return None
         return owner_repo
-    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+    except OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError:
         return None
 
 
@@ -781,9 +761,7 @@ _GITHUB_FETCH_FAIL_TYPES = (
 )
 
 
-def _fetch_latest_github_release(
-    *, owner_repo: str, timeout: float | None = None
-) -> tuple[int, int, int] | None:
+def _fetch_latest_github_release(*, owner_repo: str, timeout: float | None = None) -> tuple[int, int, int] | None:
     """Query GitHub's public REST API for ``owner_repo``'s latest release
     (Story 15.1, DW-14-1-1) -- the CAP-4 suite pass's fallback for a
     package whose npm fetch already returned ``None``. Mirrors
@@ -836,7 +814,7 @@ def _fetch_latest_github_release(
         for entry in entries:
             try:
                 triple = _parse_release_triple(_strip_leading_v(str(entry["name"])))
-            except (KeyError, TypeError):
+            except KeyError, TypeError:
                 # One malformed entry (missing "name", or not a mapping)
                 # skips only itself -- review finding: this used to abort
                 # the ENTIRE scan, discarding every otherwise-valid parsed
@@ -849,9 +827,7 @@ def _fetch_latest_github_release(
         return None
 
 
-def _fetch_default_branch_head_sha(
-    *, owner_repo: str, timeout: float | None = None
-) -> str | None:
+def _fetch_default_branch_head_sha(*, owner_repo: str, timeout: float | None = None) -> str | None:
     """One GET to ``_GITHUB_COMMITS_URL`` for ``owner_repo``'s default-branch
     HEAD commit sha (Story 20.1) -- the commit-pinned suite probe's
     counterpart to ``_fetch_latest_github_release``'s tag-based probe.
@@ -921,13 +897,11 @@ def _recipe_version(target: Path, package: str) -> tuple[int, int, int] | None:
         data = yaml.safe_load(recipe_path.read_text(encoding="utf-8"))
         version_text = str(data["context"]["version"])
         return _parse_release_triple(version_text)
-    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+    except OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError:
         return None
 
 
-def _fetch_channel_version(
-    *, package: str, timeout: float | None = None
-) -> tuple[int, int, int] | None:
+def _fetch_channel_version(*, package: str, timeout: float | None = None) -> tuple[int, int, int] | None:
     """Query anaconda.org's own public registry for ``package``'s
     ``latest_version`` as served by the ``_ANACONDA_CHANNEL`` channel (Story
     15.2) -- mirrors ``_fetch_latest_upstream_version``'s fail-open GET
@@ -1025,8 +999,7 @@ def _channel_and_recipe_drift_findings(
                     # (bmad-method-test-architecture-enterprise, 125
                     # chars) -- this shorter wording stays under 110
                     # chars even for that name.
-                    f"{_ANACONDA_CHANNEL} serves {package} {channel_text}, "
-                    f"recipe declares {recipe_text}"
+                    f"{_ANACONDA_CHANNEL} serves {package} {channel_text}, recipe declares {recipe_text}"
                 ),
                 evidence={
                     "package": package,
@@ -1043,10 +1016,7 @@ def _channel_and_recipe_drift_findings(
                 source=Source.BMAD_METHOD_VERSION_DRIFT,
                 check="bmad-recipe-upstream-drift",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"recipe {package} {recipe_text} is behind the latest "
-                    f"upstream release {upstream_text}"
-                ),
+                message=(f"recipe {package} {recipe_text} is behind the latest upstream release {upstream_text}"),
                 evidence={
                     "package": package,
                     "recipe_version": recipe_text,
@@ -1149,9 +1119,7 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
                 owner_repo = _github_owner_repo(target, name)
                 if owner_repo is None:
                     continue
-                head_sha = _fetch_default_branch_head_sha(
-                    owner_repo=owner_repo, timeout=per_fetch_timeout
-                )
+                head_sha = _fetch_default_branch_head_sha(owner_repo=owner_repo, timeout=per_fetch_timeout)
                 if head_sha is None:
                     continue
                 checked += 1
@@ -1178,10 +1146,7 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
                             evidence={
                                 "package": name,
                                 "probe_class": probe_class,
-                                "installed": (
-                                    f"{pinned_version_text} @ "
-                                    f"{normalized_pinned[:12]}"
-                                ),
+                                "installed": (f"{pinned_version_text} @ {normalized_pinned[:12]}"),
                                 "latest_upstream": normalized_head[:12],
                             },
                         )
@@ -1208,7 +1173,9 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
             if remaining > 0:
                 extra_findings.extend(
                     _channel_and_recipe_drift_findings(
-                        target, name, latest,
+                        target,
+                        name,
+                        latest,
                         timeout=min(remaining, _UPSTREAM_FETCH_TIMEOUT_SECONDS),
                     )
                 )
@@ -1222,8 +1189,7 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
                         check="bmad-suite-upstream-drift",
                         status=DoctorStatus.WARN,
                         message=(
-                            f"installed {name} {installed_text} is behind "
-                            f"the latest upstream release {latest_text}"
+                            f"installed {name} {installed_text} is behind the latest upstream release {latest_text}"
                         ),
                         evidence={
                             "package": name,
@@ -1242,10 +1208,7 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
                     source=Source.BMAD_METHOD_VERSION_DRIFT,
                     check="bmad-suite-upstream-drift",
                     status=DoctorStatus.OK,
-                    message=(
-                        "installed bmad-suite packages meet the latest "
-                        f"upstream releases ({checked} checked)"
-                    ),
+                    message=(f"installed bmad-suite packages meet the latest upstream releases ({checked} checked)"),
                     # packages_watched (the full derived watched-set size)
                     # alongside packages_checked, so the evidence does not
                     # hide how much of the set was actually reachable
@@ -1293,7 +1256,8 @@ def gather(target: Path) -> tuple[Finding, ...]:
     ``_bmad/**`` (Boundaries).
     """
     return degrade_on_exception(
-        Source.BMAD_METHOD_VERSION_DRIFT, "bmad-method-version-drift",
+        Source.BMAD_METHOD_VERSION_DRIFT,
+        "bmad-method-version-drift",
         lambda: _gather(target),
     )
 
@@ -1318,10 +1282,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             source=Source.BMAD_METHOD_VERSION_DRIFT,
             check="bmad-method-version-drift",
             status=DoctorStatus.WARN,
-            message=(
-                f"installed bmad-method {installed_text} is behind "
-                f"pixi.toml's declared floor >={declared_text}"
-            ),
+            message=(f"installed bmad-method {installed_text} is behind pixi.toml's declared floor >={declared_text}"),
             evidence=evidence,
         )
     else:
@@ -1329,10 +1290,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             source=Source.BMAD_METHOD_VERSION_DRIFT,
             check="bmad-method-version-drift",
             status=DoctorStatus.OK,
-            message=(
-                f"installed bmad-method {installed_text} meets pixi.toml's "
-                f"declared floor >={declared_text}"
-            ),
+            message=(f"installed bmad-method {installed_text} meets pixi.toml's declared floor >={declared_text}"),
             evidence=evidence,
         )
 
@@ -1349,7 +1307,9 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         channel_recipe_findings = ()
         if registry_upstream is not None:
             channel_recipe_findings = _channel_and_recipe_drift_findings(
-                target, DEPENDENCY_NAME, registry_upstream,
+                target,
+                DEPENDENCY_NAME,
+                registry_upstream,
             )
         return (drift_finding, *suite_findings, *channel_recipe_findings)
 
@@ -1359,7 +1319,9 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     channel_recipe_findings = ()
     if registry_upstream is not None:
         channel_recipe_findings = _channel_and_recipe_drift_findings(
-            target, DEPENDENCY_NAME, registry_upstream,
+            target,
+            DEPENDENCY_NAME,
+            registry_upstream,
         )
 
     latest_text = ".".join(str(part) for part in latest_upstream)
@@ -1370,10 +1332,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             source=Source.BMAD_METHOD_VERSION_DRIFT,
             check="bmad-method-upstream-drift",
             status=DoctorStatus.WARN,
-            message=(
-                f"installed bmad-method {installed_text} is behind the "
-                f"latest upstream release {latest_text}"
-            ),
+            message=(f"installed bmad-method {installed_text} is behind the latest upstream release {latest_text}"),
             evidence=upstream_evidence,
         )
     else:
@@ -1381,10 +1340,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             source=Source.BMAD_METHOD_VERSION_DRIFT,
             check="bmad-method-upstream-drift",
             status=DoctorStatus.OK,
-            message=(
-                f"installed bmad-method {installed_text} meets the "
-                f"latest upstream release {latest_text}"
-            ),
+            message=(f"installed bmad-method {installed_text} meets the latest upstream release {latest_text}"),
             evidence=upstream_evidence,
         )
 

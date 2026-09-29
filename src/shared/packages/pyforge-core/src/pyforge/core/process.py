@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import os
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -63,9 +63,7 @@ class ProcessResult:
 
 
 class ProcessPort(Protocol):
-    def run(
-        self, argv: Sequence[str], *, cwd: Path, timeout_s: float | None = None
-    ) -> ProcessResult:
+    def run(self, argv: Sequence[str], *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
         """Run ``argv`` (already-tokenized, e.g. via ``shlex.split`` --
         this Protocol takes no raw command string, so it can never
         re-interpret shell metacharacters a caller already parsed) with
@@ -76,7 +74,12 @@ class ProcessPort(Protocol):
         exceptional one. Raises ``ProcessError`` only when ``argv`` could
         not be launched or run to completion at all (the executable does
         not resolve, a permission/launch ``OSError``, or the process
-        exceeded ``timeout_s`` when one is given)."""
+        exceeded ``timeout_s`` when one is given).
+
+        The child inherits this process's own environment exactly: this
+        Protocol carries no environment parameter, so the shared fakes in
+        other stations keep conforming. A caller that must hand the child a
+        curated environment uses ``PosixProcess.run``'s optional ``env=``."""
         ...
 
     def is_alive(self, pid: int) -> bool:
@@ -97,9 +100,7 @@ class ProcessPort(Protocol):
         reported as ``False``, never as an exception."""
         ...
 
-    def spawn_detached(
-        self, argv: Sequence[str], *, cwd: Path, log_path: Path
-    ) -> int:
+    def spawn_detached(self, argv: Sequence[str], *, cwd: Path, log_path: Path) -> int:
         """Launch ``argv`` as a detached child -- a new session (POSIX
         ``setsid``, never inheriting this process's own controlling
         terminal or process group), stdin closed (``DEVNULL``), stdout AND
@@ -136,11 +137,17 @@ class ProcessError(PyforgeError, Exception):
 class PosixProcess:
     """``ProcessPort``'s sole implementation.
 
-    No ``env=`` override to ``subprocess.run``: the child inherits this
-    process's own environment exactly -- a caller's own tooling (pixi, an
-    activated venv, PATH-resolved binaries) needs the invoking shell's
-    environment to resolve at all, and this leaf holds no policy field
-    standing in for a curated child environment.
+    ``run`` inherits this process's own environment by default -- a caller's
+    own tooling (pixi, an activated venv, PATH-resolved binaries) needs the
+    invoking shell's environment to resolve at all, and this leaf holds no
+    policy field standing in for a curated child environment. A caller that
+    must hand the child a *different* environment (steward's ``keys exec``
+    scrubs the ambient GitHub tokens and adds one scoped token) passes it as
+    the optional keyword-only ``env=``: it REPLACES the inherited environment
+    wholesale, so the caller builds it from ``os.environ`` itself. Leaving it
+    ``None`` keeps the inheriting behavior for every other caller. Only this
+    concrete class takes ``env=`` -- ``ProcessPort`` is unchanged, since other
+    stations' fakes implement it.
 
     No default ``timeout_s``: a caller's own command duration is entirely
     caller-defined, so ``run`` defaults to ``None`` (no timeout) rather than
@@ -148,7 +155,12 @@ class PosixProcess:
     """
 
     def run(
-        self, argv: Sequence[str], *, cwd: Path, timeout_s: float | None = None
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: Path,
+        timeout_s: float | None = None,
+        env: Mapping[str, str] | None = None,
     ) -> ProcessResult:
         if not argv:
             # A whitespace-only command shlex.split()s to an empty list --
@@ -168,6 +180,9 @@ class PosixProcess:
                 encoding="utf-8",
                 errors="replace",
                 timeout=timeout_s,
+                # env=None inherits this process's environment (the default
+                # every caller but `keys exec` relies on); a mapping replaces it.
+                env=env,
                 # stdin=DEVNULL: a caller invoking this in an unattended
                 # context (an operator or CI with no terminal to answer a
                 # prompt) must not have a command that unexpectedly reads
@@ -185,9 +200,7 @@ class PosixProcess:
         except FileNotFoundError as exc:
             raise ProcessError(f"executable not found: {argv[0]!r} ({exc})") from exc
         except subprocess.TimeoutExpired as exc:
-            raise ProcessError(
-                f"command timed out after {timeout_s}s: {' '.join(argv)}"
-            ) from exc
+            raise ProcessError(f"command timed out after {timeout_s}s: {' '.join(argv)}") from exc
         except ValueError as exc:
             # subprocess.run raises a plain ValueError -- not an OSError --
             # for an embedded NUL byte in argv, which would otherwise escape
@@ -198,9 +211,7 @@ class PosixProcess:
             # a non-executable file, ENOEXEC on a corrupt binary -- all must
             # land in ProcessError, never escape raw.
             raise ProcessError(f"cannot launch {list(argv)!r}: {exc}") from exc
-        return ProcessResult(
-            returncode=result.returncode, stdout=result.stdout, stderr=result.stderr
-        )
+        return ProcessResult(returncode=result.returncode, stdout=result.stdout, stderr=result.stderr)
 
     def is_alive(self, pid: int) -> bool:
         try:
@@ -220,7 +231,7 @@ class PosixProcess:
             # existence, not ownership, is the question, so this is a live
             # process, not an absent one.
             return True
-        except (OverflowError, ValueError):
+        except OverflowError, ValueError:
             # NOT an OSError: `os.kill` raises a bare `OverflowError` for a
             # pid outside C `int` range (and a `ValueError` for other
             # unconvertible integer inputs), so neither is caught by the
@@ -236,9 +247,7 @@ class PosixProcess:
             return False
         return True
 
-    def spawn_detached(
-        self, argv: Sequence[str], *, cwd: Path, log_path: Path
-    ) -> int:
+    def spawn_detached(self, argv: Sequence[str], *, cwd: Path, log_path: Path) -> int:
         if not argv:
             # Same guard as run() above, and for the identical reason: there
             # is no argv[0] to exec, and this Protocol's "raises ProcessError

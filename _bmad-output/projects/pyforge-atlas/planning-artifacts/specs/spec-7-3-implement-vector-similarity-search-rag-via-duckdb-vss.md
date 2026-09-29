@@ -1,7 +1,7 @@
 ---
 title: 'Story F3 (7.3): Implement Vector Similarity Search (RAG) via DuckDB `vss`'
 type: 'feature'
-status: shipped
+status: done
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'NEVER AUTHORED as a file — wave B9-H4 ran through the in-session agent loop, not bmad-create-story (which wrote files only for waves 0/A/B1-B8), confirmed by the migration session itself. Nothing was lost; there is no original to recover. Intent+ACs below are the real epics.md contract.'
@@ -219,3 +219,17 @@ Independent/Gemini review produced follow-up fix commit(s) on PR `#94`:
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** no commit subject on `main` names this story (hand-implemented, or landed under another story's subject); the ledger row `7-3-implement-vector-similarity-search-rag-via-duckdb-vss: done` is the record and `story-status` accepts it.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** not attributable to one commit — see the summary.
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `7-3-implement-vector-similarity-search-rag-via-duckdb-vss: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -56,6 +56,13 @@ SITES: tuple[Site, ...] = (
     _site("pixi.toml feature pixi floors (python/local-recipes/build)", "pixi.toml",
           r'^pixi = ">=' + _PIXI_VERSION + r'"\s+# Pixi package & environment manager$',
           hits=3, kind="floor"),
+    # mason Story 20.1 (spec-pyforge-mason CAP-30, operator ruling 2026-09-28: no station or
+    # environment caps pixi): registered the day its <0.81 ceiling came off. Unregistered, the
+    # ceiling lagged requires-pixi twice (2026-08-21, 2026-09-11); as a floor site it tracks the
+    # master version and bump-pixi-version moves it, and a re-added ceiling stops matching (hit-count-drift).
+    _site("pyforge-mason [package.run-dependencies] pixi floor",
+          "src/shared/packages/pyforge-mason/pixi.toml",
+          r'^pixi = ">=' + _PIXI_VERSION + r'"', kind="floor"),
     _site("environment.yaml", "environment.yaml",
           r"^- pixi >=" + _PIXI_VERSION + r"$", kind="floor", derived=True),
     _site("dashboard.yml setup-pixi", ".github/workflows/dashboard.yml",
@@ -64,12 +71,18 @@ SITES: tuple[Site, ...] = (
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("detectors.yml setup-pixi", ".github/workflows/detectors.yml",  # PR #1043: pixi-first detectors env
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
+    _site("docsite-check.yml setup-pixi", ".github/workflows/docsite-check.yml",  # herald 24.2's PR lane (2026-09-18) sat unregistered at v0.80.0 through the 0.81.0 bump (2026-09-20) -- found by a grep sweep, the registry's own recurring failure mode
+          r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
+    _site("lint-types.yml setup-pixi", ".github/workflows/lint-types.yml",  # steward 66.1 (2026-09-20): registered on the day it was added, not found by a sweep later
+          r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("platform-ci.yml setup-pixi (4 jobs)", ".github/workflows/platform-ci.yml",  # PR #1043: four jobs sat on 0.77.0 unregistered while requires-pixi said >=0.78.0
           r"pixi-version: v" + _PIXI_VERSION, hits=4, kind="exact"),
     _site("platform-deploy.yml setup-pixi", ".github/workflows/platform-deploy.yml",
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("herald-live-demo.yml setup-pixi (3 jobs)", ".github/workflows/herald-live-demo.yml",
           r"pixi-version: v" + _PIXI_VERSION, hits=3, kind="exact"),
+    _site("substrate-nightly.yml setup-pixi", ".github/workflows/substrate-nightly.yml",  # marshal 46.1 (2026-09-24): registered on the day it was added
+          r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("sync-pypi-mappings/action.yml setup-pixi", ".github/actions/sync-pypi-mappings/action.yml",
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("platform-test-setup/action.yml setup-pixi", ".github/actions/platform-test-setup/action.yml",

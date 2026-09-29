@@ -35,9 +35,9 @@ import pytest
 
 from pyforge.herald import auth, cli
 
-_CLI_SOURCE = (
-    Path(__file__).resolve().parents[2] / "src" / "pyforge" / "herald" / "cli.py"
-).read_text(encoding="utf-8")
+_CLI_SOURCE = (Path(__file__).resolve().parents[2] / "src" / "pyforge" / "herald" / "cli.py").read_text(
+    encoding="utf-8"
+)
 
 
 def test_exactly_six_write_gate_call_sites_exist_in_cli():
@@ -75,28 +75,20 @@ _WRITE_COMMANDS = {
 
 
 @pytest.mark.parametrize("command_name", list(_WRITE_COMMANDS))
-def test_write_command_refuses_without_operator_role(
-    command_name, monkeypatch, tmp_path, capsys
-):
+def test_write_command_refuses_without_operator_role(command_name, monkeypatch, tmp_path, capsys):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "viewer:tok")
-    argv = [
-        a.replace("{repo_root}", str(tmp_path)) for a in _WRITE_COMMANDS[command_name]
-    ]
+    argv = [a.replace("{repo_root}", str(tmp_path)) for a in _WRITE_COMMANDS[command_name]]
     rc = cli.main(argv)
     assert rc == 1, f"{command_name} did not refuse a non-operator role"
     assert "unauthorized" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("command_name", list(_WRITE_COMMANDS))
-def test_write_command_refuses_with_no_auth_context_at_all(
-    command_name, monkeypatch, tmp_path, capsys
-):
+def test_write_command_refuses_with_no_auth_context_at_all(command_name, monkeypatch, tmp_path, capsys):
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv(auth.TOKEN_ENV_VAR, raising=False)
-    argv = [
-        a.replace("{repo_root}", str(tmp_path)) for a in _WRITE_COMMANDS[command_name]
-    ]
+    argv = [a.replace("{repo_root}", str(tmp_path)) for a in _WRITE_COMMANDS[command_name]]
     rc = cli.main(argv)
     assert rc == 1, f"{command_name} did not refuse a missing auth context"
     assert "auth context missing" in capsys.readouterr().err

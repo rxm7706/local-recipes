@@ -16,7 +16,6 @@ from pyforge.warden.models import Ecosystem
 from pyforge.warden.sources import (
     CycloneDXSourceAdapter,
     ManifestSourceAdapter,
-    PackageIdentity,
     SourceEvidence,
     resolve_identity,
 )
@@ -71,12 +70,8 @@ def test_eligibility_cyclonedx_is_deterministic():
             ),
         ),
     )
-    a = render_eligibility_cyclonedx(
-        results, serial_number=FIXED_SERIAL, timestamp=FIXED_TS
-    )
-    b = render_eligibility_cyclonedx(
-        results, serial_number=FIXED_SERIAL, timestamp=FIXED_TS
-    )
+    a = render_eligibility_cyclonedx(results, serial_number=FIXED_SERIAL, timestamp=FIXED_TS)
+    b = render_eligibility_cyclonedx(results, serial_number=FIXED_SERIAL, timestamp=FIXED_TS)
     assert a == b
     assert "eligible-union" in a
     assert "pkg:pypi/requests@2.32.3" in a
@@ -100,8 +95,6 @@ def test_union_then_render_round_trip():
         ),
     )
     results = compute_eligibility_union(evidence, now=now)
-    doc = render_eligibility_cyclonedx(
-        results, serial_number=FIXED_SERIAL, timestamp=now
-    )
+    doc = render_eligibility_cyclonedx(results, serial_number=FIXED_SERIAL, timestamp=now)
     assert results[0].status is EligibilityStatus.ELIGIBLE_UNION
     assert "cfe:eligibility_status" in doc or "eligible-union" in doc

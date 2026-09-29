@@ -55,13 +55,13 @@ from urllib.parse import quote, urlparse
 
 import yaml
 
-from .interfaces import DutyResult
-from .keys import HostScopedCredential, repo_root, resolve_headers
-
 # `keys.py`'s own import (above) already resolved and inserted `_http.py`'s
 # directory onto `sys.path` (its `locate_http_module`/bridge walk-up) --
 # reused here rather than repeating that walk-up search a second time.
 from _http import open_url  # noqa: E402  — see the comment immediately above
+
+from .interfaces import DutyResult
+from .keys import HostScopedCredential, repo_root, resolve_headers
 
 _GITHUB_API_HOST = "api.github.com"
 _GITHUB_GRAPHQL_URL = f"https://{_GITHUB_API_HOST}/graphql"
@@ -72,10 +72,16 @@ _GITHUB_GRAPHQL_URL = f"https://{_GITHUB_API_HOST}/graphql"
 _SYNC_CONFIG_RELATIVE_PATH = Path(".steward/sync-config.yaml")
 
 _REQUIRED_GITHUB_FIELDS: tuple[str, ...] = (
-    "project_id", "status_field_id", "link_field_id", "baseline_field_id",
+    "project_id",
+    "status_field_id",
+    "link_field_id",
+    "baseline_field_id",
 )
 _REQUIRED_JIRA_FIELDS: tuple[str, ...] = (
-    "base_url", "project_key", "link_field_id", "baseline_field_id",
+    "base_url",
+    "project_key",
+    "link_field_id",
+    "baseline_field_id",
 )
 
 # The only field_overrides value this story recognizes -- overriding AD-4's
@@ -125,21 +131,14 @@ def default_config_path() -> Path:
     return repo_root() / _SYNC_CONFIG_RELATIVE_PATH
 
 
-def _require_section(
-    document_path: Path, section: object, section_name: str, keys_: tuple[str, ...]
-) -> dict[str, str]:
+def _require_section(document_path: Path, section: object, section_name: str, keys_: tuple[str, ...]) -> dict[str, str]:
     if not isinstance(section, dict):
-        raise SyncConfigError(
-            f"{document_path}: {section_name!r} section missing or not a mapping"
-        )
+        raise SyncConfigError(f"{document_path}: {section_name!r} section missing or not a mapping")
     values: dict[str, str] = {}
     for key in keys_:
         value = section.get(key)
         if not isinstance(value, str) or not value.strip():
-            raise SyncConfigError(
-                f"{document_path}: '{section_name}.{key}' is required and must be a "
-                "non-empty string"
-            )
+            raise SyncConfigError(f"{document_path}: '{section_name}.{key}' is required and must be a non-empty string")
         values[key] = value
     return values
 
@@ -167,10 +166,7 @@ def load_config(path: str | Path) -> SyncConfig:
         raise SyncConfigError(f"{document_path}: unreadable: {exc}") from exc
 
     if not isinstance(document, dict):
-        raise SyncConfigError(
-            f"{document_path}: top-level document must be a mapping, got "
-            f"{type(document).__name__}"
-        )
+        raise SyncConfigError(f"{document_path}: top-level document must be a mapping, got {type(document).__name__}")
 
     github_values = _require_section(document_path, document.get("github"), "github", _REQUIRED_GITHUB_FIELDS)
     jira_values = _require_section(document_path, document.get("jira"), "jira", _REQUIRED_JIRA_FIELDS)
@@ -350,9 +346,7 @@ def _default_transport(request: urllib.request.Request) -> TransportResponse:
     except urllib.error.HTTPError as exc:
         return TransportResponse(status=exc.code, body=exc.read())
     except urllib.error.URLError as exc:
-        raise SyncAPIError(
-            f"{request.get_method()} {request.full_url}: {exc.reason}"
-        ) from exc
+        raise SyncAPIError(f"{request.get_method()} {request.full_url}: {exc.reason}") from exc
 
 
 # ── Baseline handling (AD-5 amended / AD-10's loop guard compares these) ───
@@ -505,9 +499,7 @@ def github_graphql_request(
 
     response = transport(request)
     if response.status >= 400:
-        raise SyncAPIError(
-            f"GitHub GraphQL request failed: HTTP {response.status}: {response.body[:500]!r}"
-        )
+        raise SyncAPIError(f"GitHub GraphQL request failed: HTTP {response.status}: {response.body[:500]!r}")
     try:
         payload = json.loads(response.body)
     except json.JSONDecodeError as exc:
@@ -567,7 +559,7 @@ def _parse_field_values(node: dict[str, object]) -> dict[str, str]:
     `updatedAt` per node.
     """
     field_values: dict[str, str] = {}
-    for entry in ((node.get("fieldValues") or {}).get("nodes") or []):
+    for entry in (node.get("fieldValues") or {}).get("nodes") or []:
         field_id = ((entry or {}).get("field") or {}).get("id")
         text = (entry or {}).get("text")
         if field_id is not None and text is not None:
@@ -633,12 +625,7 @@ def _parse_content(
     owner = owner_node.get("login") if isinstance(owner_node, dict) else None
     repo = repository.get("name")
     content_ref: tuple[str, str, int] | None = None
-    if (
-        isinstance(owner, str)
-        and isinstance(repo, str)
-        and isinstance(number, int)
-        and not isinstance(number, bool)
-    ):
+    if isinstance(owner, str) and isinstance(repo, str) and isinstance(number, int) and not isinstance(number, bool):
         content_ref = (owner, repo, number)
     assignees = content.get("assignees")
     if assignees is None:
@@ -652,8 +639,7 @@ def _parse_content(
         return None, content_ref, False
     if len(assignee_nodes) > 1:
         raise SyncMultipleAssigneesError(
-            f"GitHub item has {len(assignee_nodes)} assignees, this module tracks exactly one: "
-            f"{assignee_nodes!r}"
+            f"GitHub item has {len(assignee_nodes)} assignees, this module tracks exactly one: {assignee_nodes!r}"
         )
     first = assignee_nodes[0]
     login = first.get("login") if isinstance(first, dict) else None
@@ -677,9 +663,7 @@ def get_project_item(
     try:
         node = payload["data"]["node"]
     except (KeyError, TypeError) as exc:
-        raise SyncAPIError(
-            f"GitHub project item {item_id}: malformed response (missing data.node)"
-        ) from exc
+        raise SyncAPIError(f"GitHub project item {item_id}: malformed response (missing data.node)") from exc
     if node is None:
         raise SyncAPIError(f"GitHub project item {item_id}: not found")
 
@@ -757,8 +741,7 @@ def list_linked_github_items(
                 raise TypeError
         except (KeyError, TypeError) as exc:
             raise SyncAPIError(
-                f"GitHub project {config.github_project_id}: malformed response "
-                "(missing data.node.items)"
+                f"GitHub project {config.github_project_id}: malformed response (missing data.node.items)"
             ) from exc
 
         for node in nodes:
@@ -810,19 +793,14 @@ def update_project_item_field(
     try:
         payload["data"]["updateProjectV2ItemFieldValue"]["projectV2Item"]["id"]
     except (KeyError, TypeError) as exc:
-        raise SyncAPIError(
-            f"GitHub update field {field_id} on item {item_id}: malformed response"
-        ) from exc
+        raise SyncAPIError(f"GitHub update field {field_id} on item {item_id}: malformed response") from exc
 
 
 def _github_issue_assignees_url(owner: str, repo: str, number: int) -> str:
     """`https://api.github.com/repos/{owner}/{repo}/issues/{number}/assignees`
     -- `owner`/`repo` are escaped, matching `_jira_issue_url`'s own
     "never trust an externally-sourced path segment" precedent."""
-    return (
-        f"https://{_GITHUB_API_HOST}/repos/{quote(owner, safe='')}/"
-        f"{quote(repo, safe='')}/issues/{number}/assignees"
-    )
+    return f"https://{_GITHUB_API_HOST}/repos/{quote(owner, safe='')}/{quote(repo, safe='')}/issues/{number}/assignees"
 
 
 def update_github_assignees(
@@ -949,9 +927,7 @@ def get_jira_issue(
         issue_key=issue_key,
         link=fields.get(config.jira_link_field_id),
         status=status,
-        baseline=_parse_baseline(
-            fields.get(config.jira_baseline_field_id), side="jira issue", identifier=issue_key
-        ),
+        baseline=_parse_baseline(fields.get(config.jira_baseline_field_id), side="jira issue", identifier=issue_key),
         assignee=assignee,
     )
 
@@ -977,9 +953,7 @@ def update_jira_issue_fields(
 
     response = transport(request)
     if response.status >= 300:
-        raise SyncAPIError(
-            f"Jira update fields on {issue_key}: HTTP {response.status}: {response.body[:500]!r}"
-        )
+        raise SyncAPIError(f"Jira update fields on {issue_key}: HTTP {response.status}: {response.body[:500]!r}")
 
 
 def transition_jira_issue(
@@ -1007,8 +981,7 @@ def transition_jira_issue(
     get_response = transport(get_request)
     if get_response.status >= 400:
         raise SyncAPIError(
-            f"Jira list transitions for {issue_key}: HTTP {get_response.status}: "
-            f"{get_response.body[:500]!r}"
+            f"Jira list transitions for {issue_key}: HTTP {get_response.status}: {get_response.body[:500]!r}"
         )
     try:
         transitions = json.loads(get_response.body)["transitions"]
@@ -1159,9 +1132,7 @@ def reconcile(
     transport = transport or _default_transport
 
     if not github_item_id and not jira_issue_key:
-        return DutyResult(
-            ok=False, summary="sync reconcile: one of --github-item/--jira-issue is required"
-        )
+        return DutyResult(ok=False, summary="sync reconcile: one of --github-item/--jira-issue is required")
 
     github_credential = HostScopedCredential(hosts=(_GITHUB_API_HOST,))
     jira_host = urlparse(config.jira_base_url).hostname
@@ -1465,8 +1436,7 @@ def reconcile(
                 mapped = config.status_mapping.get(target_value)
                 if mapped is None:
                     raise SyncUnmappedStatusError(
-                        f"unmapped: jira status {target_value!r} has no status_mapping "
-                        "entry for github"
+                        f"unmapped: jira status {target_value!r} has no status_mapping entry for github"
                     )
                 github_write_value = mapped
             update_project_item_field(
@@ -1490,17 +1460,14 @@ def reconcile(
                 mapped_account_id = config.user_mapping.get(assignee_target_value)
                 if mapped_account_id is None:
                     raise SyncUnmappedUserError(
-                        f"unmapped: github login {assignee_target_value!r} has no "
-                        "user_mapping entry for jira"
+                        f"unmapped: github login {assignee_target_value!r} has no user_mapping entry for jira"
                     )
                 jira_assignee_write_value = mapped_account_id
             update_jira_issue_fields(
                 jira.issue_key,
                 {
                     "assignee": (
-                        {"accountId": jira_assignee_write_value}
-                        if jira_assignee_write_value is not None
-                        else None
+                        {"accountId": jira_assignee_write_value} if jira_assignee_write_value is not None else None
                     )
                 },
                 config=config,
@@ -1519,8 +1486,7 @@ def reconcile(
                 mapped_login = inverse_user_mapping.get(assignee_target_value)
                 if mapped_login is None:
                     raise SyncUnmappedUserError(
-                        f"unmapped: jira accountId {assignee_target_value!r} has no "
-                        "user_mapping entry for github"
+                        f"unmapped: jira accountId {assignee_target_value!r} has no user_mapping entry for github"
                     )
                 github_assignee_write_value = mapped_login
             if gh.content_ref is None:
@@ -1617,9 +1583,7 @@ def reconcile(
     # (unchanged free-backfill behavior) a missing key rides along for
     # free because status ALSO writes this round.
     should_persist_assignee = assignee_persist_ok and (
-        assignee_decision != "no_op"
-        or assignee_baseline_stale
-        or (assignee_key_missing and should_persist_status)
+        assignee_decision != "no_op" or assignee_baseline_stale or (assignee_key_missing and should_persist_status)
     )
 
     def _persist_merged_baseline() -> None:
@@ -1765,9 +1729,7 @@ def reconcile_schedule_batch(
     github_credential = HostScopedCredential(hosts=(_GITHUB_API_HOST,))
 
     try:
-        candidates = list_linked_github_items(
-            config=config, credential=github_credential, transport=transport
-        )
+        candidates = list_linked_github_items(config=config, credential=github_credential, transport=transport)
     except (SyncError, OSError, urllib.error.URLError) as exc:
         return DutyResult(
             ok=False,
@@ -1778,9 +1740,7 @@ def reconcile_schedule_batch(
     for candidate in candidates:
         github_item_id = candidate["github_item_id"]
         try:
-            result = reconcile(
-                github_item_id=github_item_id, config=config, dry_run=dry_run, transport=transport
-            )
+            result = reconcile(github_item_id=github_item_id, config=config, dry_run=dry_run, transport=transport)
         except (OSError, urllib.error.URLError) as exc:
             result = DutyResult(ok=False, summary=f"sync reconcile: network error: {exc}")
         entries.append(
@@ -1797,10 +1757,7 @@ def reconcile_schedule_batch(
     candidate_word = "candidate" if len(entries) == 1 else "candidates"
     return DutyResult(
         ok=not failed,
-        summary=(
-            f"sync reconcile --schedule: {len(entries)} {candidate_word}, "
-            f"{ok_count} ok, {len(failed)} failed"
-        ),
+        summary=(f"sync reconcile --schedule: {len(entries)} {candidate_word}, {ok_count} ok, {len(failed)} failed"),
         details={"candidates": entries},
     )
 

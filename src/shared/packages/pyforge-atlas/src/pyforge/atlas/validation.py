@@ -62,11 +62,10 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol, runtime_checkable
 
 import pandera.pandas as pa
-
 from kedro.framework.hooks import hook_impl
+from pyforge.core.errors import PyforgeError
 
 from pyforge.atlas.a2a import AtlasAlert, Severity, build_alert_payload
-from pyforge.core.errors import PyforgeError
 
 logger = logging.getLogger(__name__)
 
@@ -110,17 +109,12 @@ class DataContractViolation(PyforgeError, RuntimeError):
     unaffected).
     """
 
-    def __init__(
-        self, dataset: str, violations: list[ContractViolation], alert: AtlasAlert
-    ) -> None:
+    def __init__(self, dataset: str, violations: list[ContractViolation], alert: AtlasAlert) -> None:
         self.dataset = dataset
         self.violations = tuple(violations)
         self.alert = alert
         rules = ", ".join(sorted({v.rule for v in violations})) or "unknown"
-        super().__init__(
-            f"data contract violation on dataset {dataset!r}: {rules} "
-            f"— halted before persist (FR-10)"
-        )
+        super().__init__(f"data contract violation on dataset {dataset!r}: {rules} — halted before persist (FR-10)")
 
 
 @runtime_checkable
@@ -282,9 +276,7 @@ class DataValidationHooks:
         build_stamp: str | Callable[[], str] | None = None,
         severity: Severity | str = Severity.critical,
     ) -> None:
-        self._validators: list[Validator] = (
-            list(validators) if validators is not None else [PanderaValidator()]
-        )
+        self._validators: list[Validator] = list(validators) if validators is not None else [PanderaValidator()]
         self._sink = alert_sink
         self._stamp = build_stamp if build_stamp is not None else _default_build_stamp
         self._severity = Severity(severity)
@@ -327,9 +319,7 @@ class DataValidationHooks:
             {
                 "dataset": dataset,
                 "validators": sorted({v.validator for v in violations}),
-                "violations": [
-                    {"validator": v.validator, "rule": v.rule, **v.evidence} for v in violations
-                ],
+                "violations": [{"validator": v.validator, "rule": v.rule, **v.evidence} for v in violations],
             }
         )
         return build_alert_payload(
@@ -358,8 +348,7 @@ class DataValidationHooks:
                 self._sink(alert)
         except Exception:  # noqa: BLE001 - a sink error must not mask the FR-10 halt
             logger.exception(
-                "A2A alert sink raised while reporting a data-contract violation on %r; "
-                "halting anyway",
+                "A2A alert sink raised while reporting a data-contract violation on %r; halting anyway",
                 dataset,
             )
         raise DataContractViolation(dataset, violations, alert)

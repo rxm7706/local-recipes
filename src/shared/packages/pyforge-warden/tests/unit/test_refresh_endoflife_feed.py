@@ -19,9 +19,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
 
 def _load_refresh_endoflife_feed():
     module_path = _SCRIPTS_DIR / "refresh_endoflife_feed.py"
-    spec = importlib.util.spec_from_file_location(
-        "refresh_endoflife_feed", module_path
-    )
+    spec = importlib.util.spec_from_file_location("refresh_endoflife_feed", module_path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -77,21 +75,15 @@ def test_default_product_slugs_is_sorted_and_deduplicated(refresh_endoflife_feed
     assert slugs == sorted(set(slugs))
 
 
-def test_default_product_slugs_empty_on_unreadable_registry(
-    monkeypatch, refresh_endoflife_feed
-):
-    monkeypatch.setattr(
-        refresh_endoflife_feed, "_REGISTRY_PATH", Path("/does/not/exist.yaml")
-    )
+def test_default_product_slugs_empty_on_unreadable_registry(monkeypatch, refresh_endoflife_feed):
+    monkeypatch.setattr(refresh_endoflife_feed, "_REGISTRY_PATH", Path("/does/not/exist.yaml"))
     assert refresh_endoflife_feed.default_product_slugs() == []
 
 
 # --- fetch_product_cycles -------------------------------------------------------
 
 
-def test_fetch_product_cycles_returns_the_parsed_array(
-    monkeypatch, refresh_endoflife_feed
-):
+def test_fetch_product_cycles_returns_the_parsed_array(monkeypatch, refresh_endoflife_feed):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),
@@ -99,9 +91,7 @@ def test_fetch_product_cycles_returns_the_parsed_array(
     assert refresh_endoflife_feed.fetch_product_cycles("python") == _VALID_CYCLES
 
 
-def test_fetch_product_cycles_rejects_a_non_array_top_level(
-    monkeypatch, refresh_endoflife_feed
-):
+def test_fetch_product_cycles_rejects_a_non_array_top_level(monkeypatch, refresh_endoflife_feed):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps({"unexpected": "shape"}).encode("utf-8")),
@@ -110,9 +100,7 @@ def test_fetch_product_cycles_rejects_a_non_array_top_level(
         refresh_endoflife_feed.fetch_product_cycles("python")
 
 
-def test_fetch_product_cycles_propagates_a_network_failure(
-    monkeypatch, refresh_endoflife_feed
-):
+def test_fetch_product_cycles_propagates_a_network_failure(monkeypatch, refresh_endoflife_feed):
     def _raise(*_a, **_k):
         raise urllib.error.URLError("network unreachable")
 
@@ -136,9 +124,7 @@ def test_fetch_product_cycles_url_escapes_the_slug(monkeypatch, refresh_endoflif
     assert captured["url"] == "https://endoflife.date/api/weird%2Fslug%20value.json"
 
 
-def test_fetch_product_cycles_rejects_an_empty_slug_without_a_request(
-    monkeypatch, refresh_endoflife_feed
-):
+def test_fetch_product_cycles_rejects_an_empty_slug_without_a_request(monkeypatch, refresh_endoflife_feed):
     """An empty slug (e.g. an operator's ``--product ''``) is a usage
     error, not a request worth making -- it would otherwise fetch the API
     root's ``.json`` and surface as a baffling HTTP error (review finding,
@@ -152,18 +138,14 @@ def test_fetch_product_cycles_rejects_an_empty_slug_without_a_request(
         refresh_endoflife_feed.fetch_product_cycles("")
 
 
-def test_fetch_product_cycles_preserves_the_lexical_form_of_numeric_cycles(
-    monkeypatch, refresh_endoflife_feed
-):
+def test_fetch_product_cycles_preserves_the_lexical_form_of_numeric_cycles(monkeypatch, refresh_endoflife_feed):
     """A bare-number ``cycle`` in the real API response keeps its LEXICAL
     form through parsing (``3.10`` stays ``"3.10"``, never float-truncated
     to ``"3.1"``) -- the writer-side fix for the ``str(3.10) == "3.1"``
     misroute (review finding, 2026-07-23). Raw JSON is used deliberately:
     ``json.dumps`` of a Python float would itself round-trip the value."""
     raw = b'[{"cycle": 3.10, "releaseDate": "2021-10-04", "eol": "2026-10-31", "latest": 3.10}]'
-    monkeypatch.setattr(
-        "urllib.request.urlopen", lambda *a, **k: _FakeResponse(raw)
-    )
+    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: _FakeResponse(raw))
     (cycle_record,) = refresh_endoflife_feed.fetch_product_cycles("python")
     assert cycle_record["cycle"] == "3.10"
     assert cycle_record["latest"] == "3.10"
@@ -172,18 +154,14 @@ def test_fetch_product_cycles_preserves_the_lexical_form_of_numeric_cycles(
 # --- refresh -----------------------------------------------------------------
 
 
-def test_refresh_writes_the_cache_and_reports_stats(
-    monkeypatch, tmp_path, refresh_endoflife_feed
-):
+def test_refresh_writes_the_cache_and_reports_stats(monkeypatch, tmp_path, refresh_endoflife_feed):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),
     )
     cache_dir = tmp_path / "endoflife-cache"
 
-    result = refresh_endoflife_feed.refresh(
-        str(cache_dir), product_slugs=["python", "django"]
-    )
+    result = refresh_endoflife_feed.refresh(str(cache_dir), product_slugs=["python", "django"])
 
     assert result["product_count"] == 2
     assert result["products"] == ["django", "python"]
@@ -191,9 +169,7 @@ def test_refresh_writes_the_cache_and_reports_stats(
     assert written == {"python": _VALID_CYCLES, "django": _VALID_CYCLES}
 
 
-def test_refresh_aborts_the_whole_run_on_one_products_failure(
-    monkeypatch, tmp_path, refresh_endoflife_feed
-):
+def test_refresh_aborts_the_whole_run_on_one_products_failure(monkeypatch, tmp_path, refresh_endoflife_feed):
     """A single product's fetch failure aborts the WHOLE refresh -- never a
     partially-written snapshot that looks complete."""
 
@@ -214,9 +190,7 @@ def test_refresh_aborts_the_whole_run_on_one_products_failure(
 # --- main ----------------------------------------------------------------------
 
 
-def test_refresh_reports_products_dropped_by_a_narrower_fetch_set(
-    monkeypatch, tmp_path, refresh_endoflife_feed
-):
+def test_refresh_reports_products_dropped_by_a_narrower_fetch_set(monkeypatch, tmp_path, refresh_endoflife_feed):
     """A narrower ``--product`` run REPLACES the whole cache document
     (merge would re-stamp unfetched, possibly-stale products as fresh -- a
     false-green vector), so previously provisioned products it drops are
@@ -225,9 +199,7 @@ def test_refresh_reports_products_dropped_by_a_narrower_fetch_set(
     from pyforge.warden.feeds import write_endoflife_cache
 
     cache_dir = tmp_path / "cache"
-    write_endoflife_cache(
-        cache_dir, {"python": _VALID_CYCLES, "django": _VALID_CYCLES}
-    )
+    write_endoflife_cache(cache_dir, {"python": _VALID_CYCLES, "django": _VALID_CYCLES})
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),
@@ -240,9 +212,7 @@ def test_refresh_reports_products_dropped_by_a_narrower_fetch_set(
     assert written == {"python": _VALID_CYCLES}
 
 
-def test_refresh_reports_no_drops_on_a_fresh_or_superset_run(
-    monkeypatch, tmp_path, refresh_endoflife_feed
-):
+def test_refresh_reports_no_drops_on_a_fresh_or_superset_run(monkeypatch, tmp_path, refresh_endoflife_feed):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),
@@ -251,15 +221,11 @@ def test_refresh_reports_no_drops_on_a_fresh_or_superset_run(
 
     first = refresh_endoflife_feed.refresh(str(cache_dir), product_slugs=["python"])
     assert first["dropped_products"] == []
-    second = refresh_endoflife_feed.refresh(
-        str(cache_dir), product_slugs=["python", "django"]
-    )
+    second = refresh_endoflife_feed.refresh(str(cache_dir), product_slugs=["python", "django"])
     assert second["dropped_products"] == []
 
 
-def test_refresh_rejects_slugs_that_normalize_to_the_same_cache_key(
-    monkeypatch, tmp_path, refresh_endoflife_feed
-):
+def test_refresh_rejects_slugs_that_normalize_to_the_same_cache_key(monkeypatch, tmp_path, refresh_endoflife_feed):
     """Two case/separator variants of one slug (``Django``/``django``)
     would write a snapshot whose keys the scan-time reader normalizes into
     a collision and drops BOTH of -- a "successful" refresh no scan can
@@ -274,15 +240,11 @@ def test_refresh_rejects_slugs_that_normalize_to_the_same_cache_key(
     cache_dir = tmp_path / "cache"
 
     with pytest.raises(ValueError, match="normalize to the same cache key"):
-        refresh_endoflife_feed.refresh(
-            str(cache_dir), product_slugs=["Django", "django"]
-        )
+        refresh_endoflife_feed.refresh(str(cache_dir), product_slugs=["Django", "django"])
     assert not endoflife_cache_path(cache_dir).exists()
 
 
-def test_refresh_dedupes_exact_duplicate_slugs(
-    monkeypatch, tmp_path, refresh_endoflife_feed
-):
+def test_refresh_dedupes_exact_duplicate_slugs(monkeypatch, tmp_path, refresh_endoflife_feed):
     calls: list[str] = []
 
     def _counting(request, *a, **k):
@@ -291,17 +253,13 @@ def test_refresh_dedupes_exact_duplicate_slugs(
 
     monkeypatch.setattr("urllib.request.urlopen", _counting)
 
-    result = refresh_endoflife_feed.refresh(
-        str(tmp_path / "cache"), product_slugs=["python", "python"]
-    )
+    result = refresh_endoflife_feed.refresh(str(tmp_path / "cache"), product_slugs=["python", "python"])
 
     assert result["product_count"] == 1
     assert len(calls) == 1
 
 
-def test_default_product_slugs_empty_on_an_undecodable_registry(
-    monkeypatch, tmp_path, refresh_endoflife_feed
-):
+def test_default_product_slugs_empty_on_an_undecodable_registry(monkeypatch, tmp_path, refresh_endoflife_feed):
     """Invalid UTF-8 in the registry (UnicodeDecodeError is a ValueError,
     not an OSError) must hit the documented degrade-to-[] path -- and
     thence the zero-slug refusal -- never escape as a decode traceback
@@ -337,15 +295,11 @@ def test_timeout_flag_rejects_non_positive_values_as_usage_errors(
         assert "--timeout must be a positive integer" in capsys.readouterr().err
 
 
-def test_main_warns_on_stderr_when_a_narrower_run_drops_products(
-    monkeypatch, tmp_path, refresh_endoflife_feed, capsys
-):
+def test_main_warns_on_stderr_when_a_narrower_run_drops_products(monkeypatch, tmp_path, refresh_endoflife_feed, capsys):
     from pyforge.warden.feeds import write_endoflife_cache
 
     cache_dir = tmp_path / "cache"
-    write_endoflife_cache(
-        cache_dir, {"python": _VALID_CYCLES, "django": _VALID_CYCLES}
-    )
+    write_endoflife_cache(cache_dir, {"python": _VALID_CYCLES, "django": _VALID_CYCLES})
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),
@@ -369,9 +323,7 @@ def test_main_warns_on_stderr_when_a_narrower_run_drops_products(
     assert "fetched 1 product(s): python" in captured.out
 
 
-def test_main_exits_2_when_no_cache_dir_is_available(
-    monkeypatch, refresh_endoflife_feed, capsys
-):
+def test_main_exits_2_when_no_cache_dir_is_available(monkeypatch, refresh_endoflife_feed, capsys):
     monkeypatch.delenv(refresh_endoflife_feed.FEED_CACHE_DIR_ENV_VAR, raising=False)
     monkeypatch.setattr("sys.argv", ["refresh_endoflife_feed.py"])
 
@@ -382,9 +334,7 @@ def test_main_exits_2_when_no_cache_dir_is_available(
     assert "no cache dir given" in capsys.readouterr().err
 
 
-def test_main_exits_1_when_refresh_fails(
-    monkeypatch, tmp_path, refresh_endoflife_feed, capsys
-):
+def test_main_exits_1_when_refresh_fails(monkeypatch, tmp_path, refresh_endoflife_feed, capsys):
     def _raise(*_a, **_k):
         raise urllib.error.URLError("network unreachable")
 
@@ -407,9 +357,7 @@ def test_main_exits_1_when_refresh_fails(
     assert "refresh-endoflife-feed FAILED" in capsys.readouterr().err
 
 
-def test_main_prints_stats_and_returns_on_success(
-    monkeypatch, tmp_path, refresh_endoflife_feed, capsys
-):
+def test_main_prints_stats_and_returns_on_success(monkeypatch, tmp_path, refresh_endoflife_feed, capsys):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),
@@ -431,9 +379,7 @@ def test_main_prints_stats_and_returns_on_success(
     assert "fetched 1 product(s): python" in out
 
 
-def test_main_defaults_products_to_the_bundled_registry(
-    monkeypatch, tmp_path, refresh_endoflife_feed, capsys
-):
+def test_main_defaults_products_to_the_bundled_registry(monkeypatch, tmp_path, refresh_endoflife_feed, capsys):
     """No ``--product`` flags at all -- every registry ``source: endoflife``/
     ``source: heuristic-seed`` slug is fetched."""
     monkeypatch.setattr(
@@ -469,9 +415,7 @@ def test_main_fails_loud_and_preserves_the_cache_when_zero_default_products_reso
     write_endoflife_cache(cache_dir, {"python": _VALID_CYCLES})
     provisioned = endoflife_cache_path(cache_dir).read_bytes()
 
-    monkeypatch.setattr(
-        refresh_endoflife_feed, "_REGISTRY_PATH", Path("/does/not/exist.yaml")
-    )
+    monkeypatch.setattr(refresh_endoflife_feed, "_REGISTRY_PATH", Path("/does/not/exist.yaml"))
     monkeypatch.setattr(
         "sys.argv",
         ["refresh_endoflife_feed.py", "--cache-dir", str(cache_dir)],
@@ -488,9 +432,7 @@ def test_main_fails_loud_and_preserves_the_cache_when_zero_default_products_reso
     assert endoflife_cache_path(cache_dir).read_bytes() == provisioned
 
 
-def test_refresh_refuses_an_explicitly_empty_product_list(
-    tmp_path, refresh_endoflife_feed
-):
+def test_refresh_refuses_an_explicitly_empty_product_list(tmp_path, refresh_endoflife_feed):
     """``refresh(product_slugs=[])`` from a direct caller hits the same
     zero-slug refusal BEFORE any write -- no cache file appears at all."""
     from pyforge.warden.feeds import endoflife_cache_path
@@ -501,16 +443,12 @@ def test_refresh_refuses_an_explicitly_empty_product_list(
     assert not endoflife_cache_path(cache_dir).exists()
 
 
-def test_main_does_not_warn_when_product_is_explicitly_narrow(
-    monkeypatch, tmp_path, refresh_endoflife_feed, capsys
-):
+def test_main_does_not_warn_when_product_is_explicitly_narrow(monkeypatch, tmp_path, refresh_endoflife_feed, capsys):
     """A deliberately narrow ``--product`` selection never hits the
     zero-slug refusal, even though the registry is unreadable here too --
     the refusal is specifically about the DEFAULT (no ``--product``) path;
     stderr stays clean on a successful explicit run."""
-    monkeypatch.setattr(
-        refresh_endoflife_feed, "_REGISTRY_PATH", Path("/does/not/exist.yaml")
-    )
+    monkeypatch.setattr(refresh_endoflife_feed, "_REGISTRY_PATH", Path("/does/not/exist.yaml"))
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),

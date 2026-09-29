@@ -83,5 +83,5 @@ def version_exists(name: str, version: str, *, timeout: float | None = None) -> 
             return True
     except urllib.error.HTTPError as exc:
         return False if exc.code == 404 else None
-    except (urllib.error.URLError, OSError, TimeoutError):
+    except urllib.error.URLError, OSError, TimeoutError:
         return None

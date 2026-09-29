@@ -14,6 +14,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.keys import decrypt_file, encrypt_file
 
@@ -30,9 +31,9 @@ def _generate_identity(tmp_path: Path, name: str) -> tuple[Path, str]:
     )
     # Parse the "Public key: " line specifically — age-keygen may emit extra
     # stderr lines (e.g. a file-permissions warning) around it.
-    pubkey = next(
-        line for line in result.stderr.splitlines() if line.startswith("Public key: ")
-    ).removeprefix("Public key: ")
+    pubkey = next(line for line in result.stderr.splitlines() if line.startswith("Public key: ")).removeprefix(
+        "Public key: "
+    )
     return key_path, pubkey
 
 
@@ -91,22 +92,16 @@ def test_keysduty_encrypt_then_decrypt_round_trips_via_the_cli(tmp_path, identit
     encrypted = tmp_path / "out.age"
     decrypted = tmp_path / "back.txt"
 
-    rc = main(
-        ["keys", "encrypt", str(plaintext), "--recipient", pubkey, "--output", str(encrypted)]
-    )
+    rc = main(["keys", "encrypt", str(plaintext), "--recipient", pubkey, "--output", str(encrypted)])
     assert rc == EXIT_OK
     assert encrypted.read_bytes().startswith(AGE_MAGIC)
 
-    rc = main(
-        ["keys", "decrypt", str(encrypted), "--identity", str(key_path), "--output", str(decrypted)]
-    )
+    rc = main(["keys", "decrypt", str(encrypted), "--identity", str(key_path), "--output", str(decrypted)])
     assert rc == EXIT_OK
     assert decrypted.read_bytes() == plaintext.read_bytes()
 
 
-def test_keysduty_decrypt_with_wrong_identity_projects_to_exit_failed(
-    tmp_path, identity, other_identity
-):
+def test_keysduty_decrypt_with_wrong_identity_projects_to_exit_failed(tmp_path, identity, other_identity):
     _key_path, pubkey = identity
     other_key_path, _ = other_identity
     plaintext = tmp_path / "plaintext.txt"
@@ -116,9 +111,13 @@ def test_keysduty_decrypt_with_wrong_identity_projects_to_exit_failed(
 
     rc = main(
         [
-            "keys", "decrypt", str(encrypted),
-            "--identity", str(other_key_path),
-            "--output", str(tmp_path / "back.txt"),
+            "keys",
+            "decrypt",
+            str(encrypted),
+            "--identity",
+            str(other_key_path),
+            "--output",
+            str(tmp_path / "back.txt"),
         ]
     )
 
@@ -171,8 +170,5 @@ def test_cli_module_import_does_not_trigger_the_keys_bridge():
     """
     import sys as _sys
 
-    code = (
-        "import sys; import pyforge.steward.cli; "
-        "assert 'pyforge.steward.keys' not in sys.modules"
-    )
+    code = "import sys; import pyforge.steward.cli; assert 'pyforge.steward.keys' not in sys.modules"
     subprocess.run([_sys.executable, "-c", code], check=True, capture_output=True, text=True)

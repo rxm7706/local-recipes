@@ -1,9 +1,13 @@
 ---
 title: Deferred-work resolution sweep
-status: dreamt
+status: archived
 owner: doctor
 date: 2026-08-15
+archived-reason: folded-into-station-dream
+type: dream
 ---
+
+> **Consolidated into [[pyforge-doctor]]** on 2026-09-17 (one-chain-per-station doctor fold).
 
 # Deferred-work resolution sweep
 

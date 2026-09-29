@@ -116,9 +116,7 @@ def test_regressions_detects_done_to_blocked(promote):
         {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "done"},
         {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "blocked"},
     )
-    assert lost == [
-        ("20-4-bmad-os-root-cause-analysis-is-doctor-wielded", "done", "blocked")
-    ]
+    assert lost == [("20-4-bmad-os-root-cause-analysis-is-doctor-wielded", "done", "blocked")]
 
 
 def test_regressions_detects_done_to_any_other_status(promote):
@@ -200,23 +198,16 @@ def test_repair_feed_restores_done_lost_to_blocked(tmp_path, promote):
     regressions() now does -- it calls regressions() internally, so this pins
     that the fix reaches the repair path too, not just the refusal path."""
     feed_path = tmp_path / "feed.yaml"
-    _write_status_file(
-        feed_path, {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "blocked"}
-    )
+    _write_status_file(feed_path, {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "blocked"})
     incoming = {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "blocked"}
     twin_values = {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "done"}
 
     merged, lost, missing = promote.repair_feed(feed_path, incoming, twin_values)
 
     assert merged == {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "done"}
-    assert lost == [
-        ("20-4-bmad-os-root-cause-analysis-is-doctor-wielded", "done", "blocked")
-    ]
+    assert lost == [("20-4-bmad-os-root-cause-analysis-is-doctor-wielded", "done", "blocked")]
     assert missing == []
-    assert (
-        "20-4-bmad-os-root-cause-analysis-is-doctor-wielded: done"
-        in feed_path.read_text(encoding="utf-8")
-    )
+    assert "20-4-bmad-os-root-cause-analysis-is-doctor-wielded: done" in feed_path.read_text(encoding="utf-8")
 
 
 def test_main_repair_feed_restores_missing_key(tmp_path, promote, monkeypatch):
@@ -236,3 +227,46 @@ def test_main_repair_feed_restores_missing_key(tmp_path, promote, monkeypatch):
     rc = promote.main(["--project", "acme", "--repair-feed"])
     assert rc == 0
     assert "1-2-missing" in feed.read_text(encoding="utf-8")
+
+
+# --- doctor Story 25.3: --rekey (spec-one-chain-per-station CAP-3(g)) --------
+
+
+def _feed(tmp_path: Path, statuses: dict[str, str]) -> Path:
+    p = tmp_path / "sprint-status.yaml"
+    body = "".join(f"  {k}: {v}\n" for k, v in statuses.items())
+    p.write_text("# header kept\ndevelopment_status:\n" + body, encoding="utf-8")
+    return p
+
+
+def test_apply_rekey_moves_keys_carries_statuses_and_rewrites_feed(tmp_path: Path) -> None:
+    mod = _load_promote()
+    feed = _feed(tmp_path, {"46-1-old": "done", "46-2-b": "backlog", "epic-46": "done"})
+    translated, reasons = mod.apply_rekey(
+        feed,
+        _parse_status_file(feed),
+        {"46-1-old": "1-1-new", "46-2-b": "1-2-b", "epic-46": "epic-1"},
+    )
+    assert reasons == []
+    assert translated == {"1-1-new": "done", "1-2-b": "backlog", "epic-1": "done"}
+    on_disk = feed.read_text(encoding="utf-8")
+    assert on_disk.startswith("# header kept\n")
+    assert _parse_status_file(feed) == translated
+    # byte-stable on a second run over the already-translated feed
+    again, reasons2 = mod.apply_rekey(feed, translated, {})
+    assert reasons2 == [] and again == translated
+
+
+def test_apply_rekey_refuses_dangling_and_collision(tmp_path: Path) -> None:
+    mod = _load_promote()
+    feed = _feed(tmp_path, {"46-1-a": "done", "46-2-b": "done"})
+    before = feed.read_text(encoding="utf-8")
+    translated, reasons = mod.apply_rekey(
+        feed,
+        _parse_status_file(feed),
+        {"46-1-a": "1-1-x", "46-2-b": "1-1-x", "99-9-ghost": "1-9-z"},
+    )
+    assert translated is None
+    assert any(r.startswith("dangling: 99-9-ghost") for r in reasons)
+    assert any(r.startswith("collision:") for r in reasons)
+    assert feed.read_text(encoding="utf-8") == before  # refused == untouched

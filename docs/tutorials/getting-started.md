@@ -103,6 +103,21 @@ pixi run -e build python test-recipes.py --recipe <package-name> --dry-run
 pixi run -e build python test-recipes.py --recipe <package-name> --all
 ```
 
+## Guild station development (optional)
+
+Contributing to a PyForge Guild station (atlas, doctor, herald, marshal, mason, scribe, steward,
+warden) instead of authoring recipes? Run this first-time bootstrap sequence once:
+
+```bash
+pixi run -e local-recipes health-check       # validates pixi envs, MCP server, atlas freshness
+pixi run -e local-recipes bootstrap-data      # one-time atlas refresh; 30-45 min cold, 5-10 min warm
+pixi run -e local-recipes verify-env          # confirms default-env directive + pixi.toml integrity
+pixi run bmad-groundtruth                     # live factory facts as JSON (in the default pyforge-guild env)
+```
+
+See [Pixi tasks](../how-to/pixi-tasks.md) for the full task surface, including `bmad-drift-check`
+and the maintenance/infrastructure task set.
+
 ## Next steps
 
 - [Recipe testing and builds](../how-to/recipe-testing-and-builds.md) — targeted builds, `test-recipes.py`, platform matrix

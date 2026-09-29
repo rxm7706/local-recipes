@@ -1,5 +1,7 @@
 # pyforge-steward
 
+General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
+
 Steward — the Provisioner's station. `steward keys / deploy / provision / budget / sync / workspace`.
 
 - **Dream:** `docs/dreams/pyforge-steward.md`

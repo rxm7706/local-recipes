@@ -83,3 +83,16 @@ warnings: []
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `3773229684` (2026-08-23, "Merge pull request #638 from rxm7706/steward/12-4-cluster-bringup"). Ledger row `12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.steward/keys-inventory.yaml`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined.md`, `src/platform/deploy/README.md`, `src/platform/deploy/overlays/ocp/README.md`, `src/platform/deploy/overlays/ocp/cluster-bringup.md`, `src/shared/packages/pyforge-steward/tests/conformance/test_keys_list.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

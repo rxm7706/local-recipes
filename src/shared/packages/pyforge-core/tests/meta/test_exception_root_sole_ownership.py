@@ -141,10 +141,7 @@ def test_guard_fires_on_a_synthetic_violation():
 
 
 def test_guard_fires_on_every_allowlisted_stdlib_base():
-    synthetic = "\n".join(
-        f"class E{i}({base}):\n    pass"
-        for i, base in enumerate(sorted(_STDLIB_ALLOWLIST))
-    )
+    synthetic = "\n".join(f"class E{i}({base}):\n    pass" for i, base in enumerate(sorted(_STDLIB_ALLOWLIST)))
     violations = _root_violations(ast.parse(synthetic))
     assert len(violations) == len(_STDLIB_ALLOWLIST)
 
@@ -168,10 +165,7 @@ def test_guard_treats_same_file_transitive_child_as_satisfied():
     transitively through its parent's MRO, mirroring
     ``DirectoryAlreadyExistsError(FsError)``."""
     synthetic = (
-        "class FsError(PyforgeError, Exception):\n"
-        "    pass\n"
-        "class DirectoryAlreadyExistsError(FsError):\n"
-        "    pass\n"
+        "class FsError(PyforgeError, Exception):\n    pass\nclass DirectoryAlreadyExistsError(FsError):\n    pass\n"
     )
     assert _root_violations(ast.parse(synthetic)) == []
 

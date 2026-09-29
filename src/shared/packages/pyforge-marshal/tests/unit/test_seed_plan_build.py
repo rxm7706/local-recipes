@@ -32,6 +32,7 @@ from importlib import resources
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState, classify
 from pyforge.marshal.seed.model.manifest import (
@@ -105,9 +106,7 @@ def _hybrid(
         applies_to=AppliesTo.BOTH,
         rationale="test",
         format=fmt,
-        regions=tuple(
-            Region(name=name, anchor=anchors.get(name, ("# anchor",))) for name in region_names
-        ),
+        regions=tuple(Region(name=name, anchor=anchors.get(name, ("# anchor",))) for name in region_names),
     )
 
 
@@ -118,9 +117,7 @@ def _doc(*lines: str) -> str:
 def _hybrid_text(name: str, fmt: RegionFormat = RegionFormat.HTML) -> str:
     body = "line1\n"
     sha = region_sha(body)
-    return _doc(
-        "intro", render_begin(fmt, name, _VERSION, sha), "line1", render_end(fmt, name), "outro"
-    )
+    return _doc("intro", render_begin(fmt, name, _VERSION, sha), "line1", render_end(fmt, name), "outro")
 
 
 def _sample_plan(tmp_path) -> Plan:
@@ -132,9 +129,7 @@ def _sample_plan(tmp_path) -> Plan:
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
     """Mirrors ``test_vcs_git.py``'s own real-git-repo test convention:
     real ``git`` I/O against a ``tmp_path``, never mocked."""
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -191,9 +186,7 @@ def test_present_divergent_hybrid_with_one_of_two_regions_missing_gets_exactly_o
     tmp_path,
 ):
     (tmp_path / "CLAUDE.md").write_text(_hybrid_text("tiers"))
-    manifest = _manifest(
-        _hybrid("h", "CLAUDE.md", "tiers", "model-badge", anchors={"model-badge": ("<top>",)})
-    )
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers", "model-badge", anchors={"model-badge": ("<top>",)}))
     inventory = classify(manifest, tmp_path)
     plan = build_plan(manifest, inventory)
 
@@ -212,9 +205,7 @@ def test_present_conformant_entry_produces_no_action(tmp_path):
 
 def test_present_legacy_entry_produces_no_action_regardless_of_manifest_state(tmp_path):
     (tmp_path / "old.txt").write_text("hand-authored\n")
-    manifest = _manifest(
-        _whole_file("a", "old.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ")
-    )
+    manifest = _manifest(_whole_file("a", "old.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ"))
     inventory = classify(manifest, tmp_path)
     plan = build_plan(manifest, inventory)
     assert plan.actions == ()
@@ -228,9 +219,7 @@ def test_referenced_entry_never_gets_an_action_even_when_its_path_is_absent(tmp_
 
 
 def test_unparseable_hybrid_file_gets_an_action_with_chosen_anchor_best_effort_skipped(tmp_path):
-    (tmp_path / "CLAUDE.md").write_text(
-        _doc("intro", render_end(RegionFormat.HTML, "tiers"), "outro")
-    )
+    (tmp_path / "CLAUDE.md").write_text(_doc("intro", render_end(RegionFormat.HTML, "tiers"), "outro"))
     manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
     inventory = classify(manifest, tmp_path)
     plan = build_plan(manifest, inventory)
@@ -502,9 +491,7 @@ def test_real_manifest_over_a_repo_missing_every_artifact_gives_one_absent_actio
     plan = build_plan(real_manifest, inventory)
 
     expected_ids = sorted(
-        entry.id
-        for entry in real_manifest.entries
-        if entry.artifact_class is not ArtifactClass.REFERENCED
+        entry.id for entry in real_manifest.entries if entry.artifact_class is not ArtifactClass.REFERENCED
     )
     assert len(expected_ids) == EXPECTED_NON_REFERENCED_ENTRY_COUNT
     assert [action.artifact_id for action in plan.actions] == expected_ids
@@ -520,9 +507,7 @@ def test_real_manifest_over_a_repo_missing_every_artifact_gives_one_absent_actio
             assert action.chosen_anchor == ()
 
 
-def test_real_manifest_plan_over_an_empty_repo_round_trips_through_write_and_load(
-    real_manifest, tmp_path
-):
+def test_real_manifest_plan_over_an_empty_repo_round_trips_through_write_and_load(real_manifest, tmp_path):
     inventory = classify(real_manifest, tmp_path)
     plan = build_plan(real_manifest, inventory)
 
@@ -650,9 +635,7 @@ def test_fingerprint_drift_names_a_hashed_id_that_no_action_carries(tmp_path):
     [b"\xff\xfe hand-written latin-1 \xe9\n", b""],
     ids=["undecodable-bytes", "empty-file"],
 )
-def test_fingerprint_drift_names_an_absent_artifact_that_reappeared_unreadable(
-    tmp_path, reappeared
-):
+def test_fingerprint_drift_names_an_absent_artifact_that_reappeared_unreadable(tmp_path, reappeared):
     """Review finding, reproduced by executing the real code: an `ABSENT`
     artifact is recorded as `hash_content("")`, and the verification read
     degrades an undecodable or empty target back to `''` -- so a pure
@@ -660,11 +643,7 @@ def test_fingerprint_drift_names_an_absent_artifact_that_reappeared_unreadable(
     a human put there. Existence, not the hash, is what separates "still
     absent" from "something appeared here"."""
     plan = _sample_plan(tmp_path)
-    absent = next(
-        action
-        for action in plan.actions
-        if action.current_state is ArtifactState.ABSENT
-    )
+    absent = next(action for action in plan.actions if action.current_state is ArtifactState.ABSENT)
     target = tmp_path / absent.target_path
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(reappeared)
@@ -778,9 +757,7 @@ def test_fingerprint_drift_agrees_with_classify_about_a_dangling_symlink(tmp_pat
     plan = build_plan(manifest, inventory)
 
     assert plan.actions[0].current_state == ArtifactState.ABSENT
-    assert fingerprint_drift(plan, tmp_path) == (), (
-        "a plan build_plan just produced must never be refused as stale"
-    )
+    assert fingerprint_drift(plan, tmp_path) == (), "a plan build_plan just produced must never be refused as stale"
 
 
 def test_fingerprint_drift_reports_an_id_hashed_twice_in_the_fingerprint(tmp_path):
@@ -803,9 +780,7 @@ def test_fingerprint_drift_reports_an_id_hashed_twice_in_the_fingerprint(tmp_pat
     )
 
     drift = fingerprint_drift(tampered, tmp_path)
-    assert any(
-        d.startswith(f"{first[0]}:") and "hashed more than once" in d for d in drift
-    ), drift
+    assert any(d.startswith(f"{first[0]}:") and "hashed more than once" in d for d in drift), drift
 
 
 # --- opted_out (Story 8.5) ---------------------------------------------------
@@ -849,9 +824,7 @@ def test_a_present_divergent_hybrid_whose_missing_region_is_opted_out_produces_n
 def test_a_partially_opted_out_hybrid_keeps_one_action_naming_only_the_pending_region(
     tmp_path,
 ):
-    manifest = _manifest(
-        _hybrid("h", "CLAUDE.md", "tiers", "model-badge", anchors={"model-badge": ("<top>",)})
-    )
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers", "model-badge", anchors={"model-badge": ("<top>",)}))
     inventory = classify(manifest, tmp_path)
 
     plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
@@ -866,9 +839,7 @@ def test_an_opt_out_naming_another_artifacts_region_suppresses_nothing(tmp_path)
     manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
     inventory = classify(manifest, tmp_path)
 
-    plan = build_plan(
-        manifest, inventory, opted_out=frozenset({opt_out_key("other", "tiers")})
-    )
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("other", "tiers")}))
 
     (action,) = plan.actions
     assert action.chosen_anchor == (("tiers", None),)
@@ -1091,9 +1062,7 @@ def test_a_key_string_the_grammar_does_not_admit_is_refused(tmp_path, key):
         ),
     ],
 )
-def test_a_fully_keyed_hybrid_whose_region_the_parser_cannot_see_keeps_its_fingerprint(
-    tmp_path, render
-):
+def test_a_fully_keyed_hybrid_whose_region_the_parser_cannot_see_keeps_its_fingerprint(tmp_path, render):
     """Review finding, confirmed by execution: `retained` -- the consent
     gate `_is_fully_opted_out` requires empty -- was derived from
     `parse_regions` alone.
@@ -1117,9 +1086,7 @@ def test_a_fully_keyed_hybrid_whose_region_the_parser_cannot_see_keeps_its_finge
         "line1",
         render_end(RegionFormat.HTML, "tiers"),
     )
-    (tmp_path / "CLAUDE.md").write_text(
-        _doc("intro", *render(region_lines), "outro"), encoding="utf-8", newline=""
-    )
+    (tmp_path / "CLAUDE.md").write_text(_doc("intro", *render(region_lines), "outro"), encoding="utf-8", newline="")
     manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
     inventory = classify(manifest, tmp_path)
 
@@ -1161,9 +1128,7 @@ def test_a_partially_opted_out_hybrid_keeps_its_action_and_its_fingerprint(tmp_p
     blind to every later change to it. The consent argument
     `_is_fully_opted_out`'s docstring makes ("no managed content left in it
     to drift") was simply untrue on that path."""
-    (tmp_path / "CLAUDE.md").write_text(
-        _hybrid_text("tiers"), encoding="utf-8", newline=""
-    )
+    (tmp_path / "CLAUDE.md").write_text(_hybrid_text("tiers"), encoding="utf-8", newline="")
     manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers", "model-badge"))
     inventory = classify(manifest, tmp_path)
 
@@ -1273,9 +1238,7 @@ def test_an_entry_whose_every_declared_region_is_opted_out_is_still_suppressed(t
     [
         pytest.param(lambda root: None, id="absent-hybrid"),
         pytest.param(
-            lambda root: (root / "CLAUDE.md").write_text(
-                _hybrid_text("tiers"), encoding="utf-8", newline=""
-            ),
+            lambda root: (root / "CLAUDE.md").write_text(_hybrid_text("tiers"), encoding="utf-8", newline=""),
             id="present-divergent-hybrid",
         ),
         pytest.param(

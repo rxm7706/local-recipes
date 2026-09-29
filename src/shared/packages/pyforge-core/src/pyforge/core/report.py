@@ -28,7 +28,9 @@ branch only adds already-satisfied presence checks).
 
 from __future__ import annotations
 
-BASE_ENVELOPE_SCHEMA: dict = {
+from typing import Any
+
+BASE_ENVELOPE_SCHEMA: dict[str, Any] = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "urn:local-recipes:pyforge-core:base-envelope-schema",
     "type": "object",
@@ -39,7 +41,7 @@ BASE_ENVELOPE_SCHEMA: dict = {
 }
 
 
-def compose(base: dict, station_schema: dict) -> dict:
+def compose(base: dict[str, Any], station_schema: dict[str, Any]) -> dict[str, Any]:
     """Pure dict merge: a document must satisfy both ``base`` and
     ``station_schema``. Neither argument is mutated or copied deep -- the
     returned dict references both inputs directly."""

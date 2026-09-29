@@ -61,6 +61,7 @@ from pathlib import Path
 
 import dagster as dg
 from kedro_dagster import KedroProjectTranslator
+
 from pyforge.atlas.factory.crews import CompileCrew, LintCrew
 from pyforge.atlas.factory.wiki import WikiLayout, scaffold_wiki
 from pyforge.atlas.orchestration.event_source import (
@@ -381,6 +382,7 @@ def _wiki_layout() -> WikiLayout:
     # exists so a crew never fails on a missing dir (AD-22: only ever creates under the root).
     return scaffold_wiki(resolve_wiki_root())
 
+
 # --------------------------------------------------------------------------- #
 # Bootstrap profiles (AC-2) — named run configs with the guide's override
 # precedence. The profiles set per-phase scoping; the BINDING contract the gate
@@ -675,9 +677,7 @@ def build_definitions(
     a sensor name to an injected :data:`EventSource` (defaults to the offline
     no-op — the live feed poller is the deferred daemon bring-up, DW-G3).
     """
-    translator = KedroProjectTranslator(
-        env=env, project_path=project_path or PROJECT_PATH
-    )
+    translator = KedroProjectTranslator(env=env, project_path=project_path or PROJECT_PATH)
     translator.initialize_kedro()
     code_location = translator.to_dagster()
 
@@ -685,13 +685,10 @@ def build_definitions(
     # kedro-dagster prefixes it with the env (e.g. ``local____default__``). Select
     # it explicitly rather than by insertion order so an added dagster.yml job can
     # never silently swap the base out from under the cadence derivation.
-    base_candidates = [
-        job for name, job in code_location.named_jobs.items() if name.endswith("__default__")
-    ]
+    base_candidates = [job for name, job in code_location.named_jobs.items() if name.endswith("__default__")]
     if len(base_candidates) != 1:
         raise RuntimeError(
-            "expected exactly one translated '__default__' base job, got "
-            f"{sorted(code_location.named_jobs)}"
+            f"expected exactly one translated '__default__' base job, got {sorted(code_location.named_jobs)}"
         )
     base_job = base_candidates[0]
     resource_defs = dict(base_job.resource_defs)
@@ -755,8 +752,7 @@ def build_definitions(
     for sensor_name, target_job, run_key_prefix, description in UPSTREAM_SENSORS:
         if target_job not in jobs_by_name:
             raise RuntimeError(
-                f"sensor {sensor_name!r} targets unknown job {target_job!r}; "
-                f"known jobs: {sorted(jobs_by_name)}"
+                f"sensor {sensor_name!r} targets unknown job {target_job!r}; known jobs: {sorted(jobs_by_name)}"
             )
         sensors.append(
             build_upstream_sensor(
@@ -770,9 +766,7 @@ def build_definitions(
 
     # Wave-H factory layer (Story H4): the crew ASSETS + their asset-jobs, a weekly LINT schedule,
     # and the new-raw-file compile SENSOR — all on this same Dagster plane (AD-6/AD-23).
-    wiki_compile_job = dg.define_asset_job(
-        WIKI_COMPILE_JOB_NAME, selection=[compiled_wiki_asset]
-    )
+    wiki_compile_job = dg.define_asset_job(WIKI_COMPILE_JOB_NAME, selection=[compiled_wiki_asset])
     wiki_lint_job = dg.define_asset_job(WIKI_LINT_JOB_NAME, selection=[wiki_lint_report_asset])
     schedules.append(
         dg.ScheduleDefinition(

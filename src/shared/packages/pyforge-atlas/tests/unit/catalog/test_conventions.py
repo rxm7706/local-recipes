@@ -84,8 +84,7 @@ def test_flip_story_markers_match_declared_map(catalog_raw_text):
     markers = parse_markers(catalog_raw_text)
     flip_marked = {name: m for name, m in markers.items() if m != "A3"}
     assert flip_marked == EXPECTED_FLIP_MARKERS, (
-        f"FLIP marker drift — in-yaml: {flip_marked}, "
-        f"declared: {EXPECTED_FLIP_MARKERS}"
+        f"FLIP marker drift — in-yaml: {flip_marked}, declared: {EXPECTED_FLIP_MARKERS}"
     )
 
 
@@ -98,11 +97,7 @@ def test_every_ttl_gated_entry_has_a_ttl_parameter(parameters, catalog_config):
     assert not orphans, f"ttls keys with no catalog entry: {orphans}"
     # positive integer seconds only — bools are ints in Python (P8), so
     # `some_ttl: true` must be rejected explicitly, not coerced to 1s
-    bad = {
-        k: v
-        for k, v in ttls.items()
-        if isinstance(v, bool) or not isinstance(v, int) or v <= 0
-    }
+    bad = {k: v for k, v in ttls.items() if isinstance(v, bool) or not isinstance(v, int) or v <= 0}
     assert not bad, f"non-positive/non-integer/boolean TTLs: {bad}"
 
 
@@ -110,16 +105,10 @@ _NO_TTL_RE = re.compile(r"^#\s*NO-TTL\(([a-z][a-z0-9_]*)\):")
 
 
 def _no_ttl_markers(parameters_raw_text) -> set[str]:
-    return {
-        m.group(1)
-        for line in parameters_raw_text.splitlines()
-        if (m := _NO_TTL_RE.match(line.strip()))
-    }
+    return {m.group(1) for line in parameters_raw_text.splitlines() if (m := _NO_TTL_RE.match(line.strip()))}
 
 
-def test_no_ttl_markers_are_valid_and_kev_is_covered(
-    parameters, catalog_config, parameters_raw_text
-):
+def test_no_ttl_markers_are_valid_and_kev_is_covered(parameters, catalog_config, parameters_raw_text):
     """Review-pass P8: a deliberately TTL-less fetch feed must say so with
     an explicit `# NO-TTL(<entry>): <reason>` marker (the story's
     do-not-guess rule made KEV's omission deliberate — this makes it
@@ -139,8 +128,7 @@ def test_no_ttl_markers_are_valid_and_kev_is_covered(
         "vulnerability_cwe_catalog_raw",
     ):
         assert feed in ttls or feed in markers, (
-            f"{feed}: neither a ttls key nor a NO-TTL marker — a TTL-less "
-            "fetch feed must be deliberate and documented"
+            f"{feed}: neither a ttls key nor a NO-TTL marker — a TTL-less fetch feed must be deliberate and documented"
         )
     # G-4(B2): the A2 NO-TTL placeholder for KEV was explicitly deferred to the
     # vulnerability-pipeline port; B2 made the cadence decision (daily re-fetch),
@@ -159,17 +147,17 @@ def test_orphan_ttls_name_their_future_consumer(parameters, parameters_raw_text)
     annotated = {
         m.group(1): m.group(2)
         for line in parameters_raw_text.splitlines()
-        if (m := re.match(
-            # `(?!\.\d)` after the dotted-numeric alternative stops a 3-segment ID like
-            # "13.1.2" from partial-matching as "13.1" (review finding, Story 13.1).
-            r"^([a-z][a-z0-9_]*):.*\[future_consumer:\s*(B\d+|\d+\.\d+(?!\.\d))\b", line.strip()
-        ))
+        if (
+            m := re.match(
+                # `(?!\.\d)` after the dotted-numeric alternative stops a 3-segment ID like
+                # "13.1.2" from partial-matching as "13.1" (review finding, Story 13.1).
+                r"^([a-z][a-z0-9_]*):.*\[future_consumer:\s*(B\d+|\d+\.\d+(?!\.\d))\b",
+                line.strip(),
+            )
+        )
     }
     missing = sorted(k for k in ttls if k not in FLIP_LIST and k not in annotated)
-    assert not missing, (
-        f"orphan ttls keys (not in FLIP_LIST) without a [future_consumer: B*] "
-        f"annotation: {missing}"
-    )
+    assert not missing, f"orphan ttls keys (not in FLIP_LIST) without a [future_consumer: B*] annotation: {missing}"
     stray = sorted(k for k in annotated if k in FLIP_LIST)
     assert not stray, f"FLIP_LIST entries carrying a future_consumer annotation: {stray}"
 

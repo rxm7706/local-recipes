@@ -237,3 +237,16 @@ picks the effective floor when more than one table declares it.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `0fc0ec9f71` (2026-08-15, "doctor: promote story 10.1 to done in the tracked ledger"); also `9db4490d66` (2026-08-15, "reconcile spec-surface baseline for doctor 10.1's bmad_method.py + steward's pixi.toml ove"); also `5d9e598c2c` (2026-08-15, "Story 10.1: bmad-method-version-drift Source (CAP-1)"). Ledger row `10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

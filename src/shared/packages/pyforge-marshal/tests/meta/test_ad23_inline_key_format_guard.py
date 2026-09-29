@@ -235,9 +235,7 @@ def test_guard_is_alive_synthetic_violation_fires_and_identity_defines_surface()
     assert _inline_key_format_violations(ast.parse(synthetic_violation)) == [3]
 
     tree = _parse(_IDENTITY_MODULE)
-    functions = {
-        node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
-    }
+    functions = {node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
     assert {
         "normalize",
         "render_feed_key",

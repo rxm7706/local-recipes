@@ -16,6 +16,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.keys import (
     InventoryError,
@@ -215,9 +216,7 @@ def test_observed_provenance_is_refused(tmp_path):
     )
 
     with pytest.raises(InventoryError):
-        rotate_identity(
-            inventory_path, scope="github-token", new_identity_path=tmp_path / "new.txt"
-        )
+        rotate_identity(inventory_path, scope="github-token", new_identity_path=tmp_path / "new.txt")
 
 
 def test_already_retired_entry_is_refused(tmp_path):
@@ -270,10 +269,14 @@ def test_keys_rotate_via_the_cli_round_trips(tmp_path):
 
     rc = main(
         [
-            "keys", "rotate",
-            "--scope", "jfrog",
-            "--new-identity", str(new_identity_path),
-            "--inventory", str(inventory_path),
+            "keys",
+            "rotate",
+            "--scope",
+            "jfrog",
+            "--new-identity",
+            str(new_identity_path),
+            "--inventory",
+            str(inventory_path),
         ]
     )
 
@@ -287,10 +290,14 @@ def test_keys_rotate_via_the_cli_projects_unknown_scope_to_exit_failed(tmp_path)
 
     rc = main(
         [
-            "keys", "rotate",
-            "--scope", "no-such-scope",
-            "--new-identity", str(tmp_path / "new.txt"),
-            "--inventory", str(inventory_path),
+            "keys",
+            "rotate",
+            "--scope",
+            "no-such-scope",
+            "--new-identity",
+            str(tmp_path / "new.txt"),
+            "--inventory",
+            str(inventory_path),
         ]
     )
 
@@ -303,20 +310,21 @@ def test_rotate_summary_never_contains_the_public_key(tmp_path, capsys):
 
     rc = main(
         [
-            "keys", "rotate",
-            "--scope", "jfrog",
-            "--new-identity", str(new_identity_path),
-            "--inventory", str(inventory_path),
+            "keys",
+            "rotate",
+            "--scope",
+            "jfrog",
+            "--new-identity",
+            str(new_identity_path),
+            "--inventory",
+            str(inventory_path),
         ]
     )
     assert rc == EXIT_OK
 
     # The new identity's own public key, parsed straight from the file
     # age-keygen wrote, must never appear anywhere in stdout/stderr.
-    pubkey_line = next(
-        line for line in new_identity_path.read_text().splitlines()
-        if line.startswith("# public key: ")
-    )
+    pubkey_line = next(line for line in new_identity_path.read_text().splitlines() if line.startswith("# public key: "))
     pubkey = pubkey_line.removeprefix("# public key: ")
     out = capsys.readouterr().out
     assert pubkey not in out

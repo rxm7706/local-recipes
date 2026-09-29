@@ -51,6 +51,4 @@ def test_reference_doc_remedies_match_remedies_mapping():
     by_type = {finding_type: (severity, remedy) for finding_type, severity, remedy in rows}
     for finding_type in FindingType:
         _severity, doc_remedy = by_type[finding_type.value]
-        assert doc_remedy == REMEDIES[finding_type], (
-            f"{finding_type.value}: reference doc remedy drifted from REMEDIES"
-        )
+        assert doc_remedy == REMEDIES[finding_type], f"{finding_type.value}: reference doc remedy drifted from REMEDIES"

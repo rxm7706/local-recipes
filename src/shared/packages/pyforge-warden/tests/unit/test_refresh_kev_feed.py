@@ -74,9 +74,7 @@ def test_fetch_kev_document_rejects_a_non_object_top_level(monkeypatch, refresh_
         refresh_kev_feed.fetch_kev_document()
 
 
-def test_fetch_kev_document_rejects_a_missing_vulnerabilities_list(
-    monkeypatch, refresh_kev_feed
-):
+def test_fetch_kev_document_rejects_a_missing_vulnerabilities_list(monkeypatch, refresh_kev_feed):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps({"unexpected": "shape"}).encode("utf-8")),
@@ -116,9 +114,7 @@ def test_refresh_writes_the_cache_and_reports_stats(monkeypatch, tmp_path, refre
 # --- main ----------------------------------------------------------------------
 
 
-def test_main_exits_2_when_no_cache_dir_is_available(
-    monkeypatch, refresh_kev_feed, capsys
-):
+def test_main_exits_2_when_no_cache_dir_is_available(monkeypatch, refresh_kev_feed, capsys):
     monkeypatch.delenv(refresh_kev_feed.FEED_CACHE_DIR_ENV_VAR, raising=False)
     monkeypatch.setattr("sys.argv", ["refresh_kev_feed.py"])
 
@@ -134,9 +130,7 @@ def test_main_exits_1_when_refresh_fails(monkeypatch, tmp_path, refresh_kev_feed
         raise urllib.error.URLError("network unreachable")
 
     monkeypatch.setattr("urllib.request.urlopen", _raise)
-    monkeypatch.setattr(
-        "sys.argv", ["refresh_kev_feed.py", "--cache-dir", str(tmp_path / "cache")]
-    )
+    monkeypatch.setattr("sys.argv", ["refresh_kev_feed.py", "--cache-dir", str(tmp_path / "cache")])
 
     with pytest.raises(SystemExit) as exc_info:
         refresh_kev_feed.main()
@@ -145,16 +139,12 @@ def test_main_exits_1_when_refresh_fails(monkeypatch, tmp_path, refresh_kev_feed
     assert "refresh-kev-feed FAILED" in capsys.readouterr().err
 
 
-def test_main_prints_stats_and_returns_on_success(
-    monkeypatch, tmp_path, refresh_kev_feed, capsys
-):
+def test_main_prints_stats_and_returns_on_success(monkeypatch, tmp_path, refresh_kev_feed, capsys):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_DOCUMENT).encode("utf-8")),
     )
-    monkeypatch.setattr(
-        "sys.argv", ["refresh_kev_feed.py", "--cache-dir", str(tmp_path / "cache")]
-    )
+    monkeypatch.setattr("sys.argv", ["refresh_kev_feed.py", "--cache-dir", str(tmp_path / "cache")])
 
     refresh_kev_feed.main()  # must not raise
 

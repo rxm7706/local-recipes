@@ -134,9 +134,7 @@ def stub_finding_dict(scanner_id: str) -> dict[str, Any]:
     return {
         "id": f"indeterminate:{scanner_id}:plugin",
         "axis": AXIS_INGESTION,
-        "message": (
-            f"optional scanner {scanner_id} contributed a stub finding"
-        ),
+        "message": (f"optional scanner {scanner_id} contributed a stub finding"),
         "subject": scanner_id,
         "severity": None,
     }
@@ -250,18 +248,12 @@ def select_scanner_plugins(
         enabled_optional = ()
     elif isinstance(enabled_optional, str):
         enabled_optional = (enabled_optional,)
-    unknown = [
-        scanner_id
-        for scanner_id in enabled_optional
-        if scanner_id not in OPTIONAL_SCANNER_ID_SET
-    ]
+    unknown = [scanner_id for scanner_id in enabled_optional if scanner_id not in OPTIONAL_SCANNER_ID_SET]
     if unknown:
         raise PluginError(f"unknown optional scanner id: {unknown[0]!r}")
     enabled = frozenset(enabled_optional)
     source = scanner_plugin_registry() if registry is None else registry
-    present_ids = {
-        getattr(plugin, "scanner_id", plugin.owner) for plugin in source.plugins
-    }
+    present_ids = {getattr(plugin, "scanner_id", plugin.owner) for plugin in source.plugins}
     if not OPTIONAL_ABSENT_IS_NOT_FAILURE:
         missing = sorted(enabled - present_ids)
         if missing:
@@ -279,11 +271,7 @@ def select_scanner_plugins(
 
 def default_engine_factories(plugins: Sequence[Any]) -> tuple[Callable[[], Engine], ...]:
     """Factory objects from default plugins, in selection order."""
-    return tuple(
-        plugin.factory
-        for plugin in plugins
-        if getattr(plugin, "is_default", False)
-    )
+    return tuple(plugin.factory for plugin in plugins if getattr(plugin, "is_default", False))
 
 
 def coerce_plugin_finding(raw: object) -> Finding:

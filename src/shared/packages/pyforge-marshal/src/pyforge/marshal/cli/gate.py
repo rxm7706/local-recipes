@@ -168,6 +168,7 @@ from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import gate, identity, journal, policy, spec_binding
 from ..core.identity import StoryKey, render_filename_slug
 from ..core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
+from ..core.refs import local_branch_ref
 from ..core.spec_low_risk import LowRiskParseError, parse_declared_low_risk
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.verdict import compute_verdict, exit_code_for
@@ -352,9 +353,7 @@ def _bare_shell_metacharacters(command: str) -> list[str]:
     return found
 
 
-def _resolve_policy_source(
-    candidate: Path, project_slug: str
-) -> tuple[Path | None, Finding | None]:
+def _resolve_policy_source(candidate: Path, project_slug: str) -> tuple[Path | None, Finding | None]:
     """Prove that the conventional policy path really LANDS inside
     ``<repo>/_bmad-output/projects/<slug>/`` before this command reads -- and
     then EXECUTES -- what it holds.
@@ -410,9 +409,7 @@ def _resolve_policy_source(
         real_root = root.resolve()
     except OSError as exc:
         # Includes ELOOP for a symlink cycle at the conventional path.
-        return None, PolicyIOError(
-            f"cannot resolve project policy {str(candidate)!r}: {exc}"
-        ).finding
+        return None, PolicyIOError(f"cannot resolve project policy {str(candidate)!r}: {exc}").finding
     if not real_project_dir.is_relative_to(real_root):
         return None, PolicyIOError(
             f"refusing to read project policy {str(candidate)!r}: its project "
@@ -447,7 +444,7 @@ def _sidecar_refs_for_fold(lines: list[str]) -> tuple[str, ...]:
             continue
         try:
             document = json.loads(line)
-        except (ValueError, TypeError, RecursionError):
+        except ValueError, TypeError, RecursionError:
             continue
         if not isinstance(document, Mapping):
             continue
@@ -477,7 +474,7 @@ def _load_run_fold(fs: FsPort, run_dir: Path) -> journal.FoldResult | None:
     __main__.py``'s own read-once-fold-once shape."""
     try:
         text = fs.read_text(run_dir / _JOURNAL_FILENAME)
-    except (FsError, ValueError):
+    except FsError, ValueError:
         return None
     if text is None:
         return None
@@ -486,7 +483,7 @@ def _load_run_fold(fs: FsPort, run_dir: Path) -> journal.FoldResult | None:
     for ref in _sidecar_refs_for_fold(lines):
         try:
             sidecars[ref] = fs.read_text(run_dir / ref)
-        except (FsError, ValueError):
+        except FsError, ValueError:
             sidecars[ref] = None
     return journal.fold(lines, sidecars=sidecars)
 
@@ -506,9 +503,7 @@ def _find_spec_text(root: Path, project_slug: str, story_key: StoryKey) -> str |
     suffix), the lexicographically first is used -- deterministic, though
     an operator relying on a specific one among several should not rely on
     this tie-break."""
-    specs_dir = (
-        root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
-    )
+    specs_dir = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
     stem = f"spec-{render_filename_slug(story_key)}"
     try:
         titled = sorted(specs_dir.glob(f"{stem}-*.md"))
@@ -517,7 +512,7 @@ def _find_spec_text(root: Path, project_slug: str, story_key: StoryKey) -> str |
     for candidate in (specs_dir / f"{stem}.md", *titled):
         try:
             return candidate.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             # UnicodeDecodeError (review finding): a non-UTF-8 spec file
             # must degrade the same "nothing to narrow against" way every
             # other best-effort read in this module does, not crash
@@ -573,10 +568,7 @@ def _run_scope_check(
                 Finding(
                     code="MRS-GATE-009",
                     severity=Severity.ERROR,
-                    message=(
-                        "--scope-check requires --story naming the story "
-                        "whose epic surface to check"
-                    ),
+                    message=("--scope-check requires --story naming the story whose epic surface to check"),
                 ),
             ),
         )
@@ -589,7 +581,7 @@ def _run_scope_check(
     home = _home_path(project_slug)
     try:
         git_repo_root = vcs.repo_common_root(home)
-        changed = vcs.changed_files(git_repo_root, home, base=_SCOPE_CHECK_BASE_BRANCH)
+        changed = vcs.changed_files(git_repo_root, home, base=local_branch_ref(_SCOPE_CHECK_BASE_BRANCH))
     except VcsCommandError as exc:
         return (
             {"checked": False, "reason": f"cannot resolve changed files: {exc}"},
@@ -597,17 +589,12 @@ def _run_scope_check(
                 Finding(
                     code="MRS-GATE-009",
                     severity=Severity.ERROR,
-                    message=(
-                        f"--scope-check could not resolve changed files for "
-                        f"{story_key}: {exc}"
-                    ),
+                    message=(f"--scope-check could not resolve changed files for {story_key}: {exc}"),
                 ),
             ),
         )
 
-    policy_surface = gate.resolve_policy_surface(
-        effective.epic_surfaces.value, story_key.epic, project_slug
-    )
+    policy_surface = gate.resolve_policy_surface(effective.epic_surfaces.value, story_key.epic, project_slug)
     try:
         spec_surface = parse_declared_surface(spec_text) if spec_text is not None else None
     except SurfaceParseError as exc:
@@ -645,9 +632,7 @@ def _run_scope_check(
     # the ONE place this branching lives, shared verbatim with `dispatch_
     # verify.py::evaluate_dispatch_verification`.
     scope_violation_mode = effective.scope_violation_mode.value
-    scope_findings = gate.check_scope_with_mode(
-        effective_surface, frozen_paths, changed, mode=scope_violation_mode
-    )
+    scope_findings = gate.check_scope_with_mode(effective_surface, frozen_paths, changed, mode=scope_violation_mode)
     data: dict[str, object] = {
         "checked": True,
         "story": str(story_key),
@@ -677,9 +662,7 @@ def _gather_review_depth(
         return {"checked": False, "reason": "no resolvable active project"}
 
     try:
-        declared_low_risk = (
-            parse_declared_low_risk(spec_text) if spec_text is not None else False
-        )
+        declared_low_risk = parse_declared_low_risk(spec_text) if spec_text is not None else False
     except LowRiskParseError as exc:
         return {
             "checked": False,
@@ -690,7 +673,7 @@ def _gather_review_depth(
     home = _home_path(project_slug)
     try:
         git_repo_root = vcs.repo_common_root(home)
-        changed = vcs.changed_files(git_repo_root, home, base=_SCOPE_CHECK_BASE_BRANCH)
+        changed = vcs.changed_files(git_repo_root, home, base=local_branch_ref(_SCOPE_CHECK_BASE_BRANCH))
     except VcsCommandError as exc:
         return {
             "checked": False,
@@ -698,9 +681,7 @@ def _gather_review_depth(
             "reason": f"cannot resolve changed files: {exc}",
         }
 
-    tier_report = gate.classify_review_tier(
-        declared_low_risk=declared_low_risk, changed_files=changed
-    )
+    tier_report = gate.classify_review_tier(declared_low_risk=declared_low_risk, changed_files=changed)
     default_max_review_cycles = effective.seed_view()["max_review_cycles"].value
     resolved_cycles = gate.resolve_review_cycles(
         str(tier_report["tier"]),
@@ -741,9 +722,7 @@ def evaluate_gate(
     # explicit `--project ""` must win over BMAD_ACTIVE_PROJECT (Python
     # truthiness would otherwise treat an empty flag value as "omitted" and
     # silently fall through to the env var).
-    project_slug = (
-        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
-    )
+    project_slug = args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
 
     # The CONVENTIONAL path is the only policy source this command will
     # read -- `run_config`'s `--project-policy` override is deliberately not
@@ -807,9 +786,7 @@ def evaluate_gate(
         except OSError:
             present = True
         if present:
-            policy_source, containment_finding = _resolve_policy_source(
-                candidate, project_slug
-            )
+            policy_source, containment_finding = _resolve_policy_source(candidate, project_slug)
             if containment_finding is not None:
                 io_findings.append(containment_finding)
     if policy_source is not None:
@@ -818,9 +795,7 @@ def evaluate_gate(
         except PolicyIOError as exc:
             io_findings.append(exc.finding)
 
-    effective, policy_findings = policy.compose(
-        project_slug=project_slug, project=project_data, flags={}
-    )
+    effective, policy_findings = policy.compose(project_slug=project_slug, project=project_data, flags={})
     # io_findings FIRST: mirrors cli/config.py::run_config's own ordering --
     # an unreadable conventional policy file is the root CAUSE of every
     # "layer=default" symptom compose() then reports, so the operator
@@ -857,8 +832,7 @@ def evaluate_gate(
         if fold_result is None:
             data["scope"] = "run-scope-unavailable"
             data["scope_note"] = (
-                f"--run {args.run_id!r} was requested, but its journal could "
-                "not be located/read for the active project"
+                f"--run {args.run_id!r} was requested, but its journal could not be located/read for the active project"
             )
             command_findings.append(
                 Finding(
@@ -873,9 +847,7 @@ def evaluate_gate(
         else:
             data["scope"] = "run"
             data["scope_note"] = f"folded run {args.run_id!r}'s journal"
-            command_findings.extend(
-                record.finding for record in fold_result.quarantined
-            )
+            command_findings.extend(record.finding for record in fold_result.quarantined)
         data["commands"] = []
     else:
         # AD-26/F-3: the story's own preamble flags this note as the clause
@@ -895,9 +867,7 @@ def evaluate_gate(
         # folding its result into `data` here -- before `build_envelope` --
         # is what makes it appear in every envelope this branch produces,
         # `--format json` and the text projection alike (AD-14).
-        gate_mode_report = gate.describe_gate_mode(
-            effective.seed_view()["gate_mode"].value
-        )
+        gate_mode_report = gate.describe_gate_mode(effective.seed_view()["gate_mode"].value)
         data["gate_mode"] = gate_mode_report["gate_mode"]
         data["autonomy_label"] = gate_mode_report["autonomy_label"]
 
@@ -935,9 +905,7 @@ def evaluate_gate(
                         command,
                         None,
                         failure_code="MRS-GATE-003",
-                        failure_reason=(
-                            f"cannot parse verify command {command!r}: {exc}"
-                        ),
+                        failure_reason=(f"cannot parse verify command {command!r}: {exc}"),
                     )
                 else:
                     shell_chars = _bare_shell_metacharacters(command)
@@ -971,9 +939,7 @@ def evaluate_gate(
                             command,
                             None,
                             failure_code="MRS-GATE-002",
-                            failure_reason=(
-                                f"verify command {command!r} could not be run: {exc}"
-                            ),
+                            failure_reason=(f"verify command {command!r} could not be run: {exc}"),
                         )
                     else:
                         report, finding = gate.classify_outcome(command, result)
@@ -1046,19 +1012,11 @@ def evaluate_gate(
                 )
             )
         else:
-            declared_commands = (
-                spec_binding.parse_success_signal(spec_text)
-                if spec_text is not None
-                else None
-            )
-            binding_findings = gate.check_spec_binding(
-                declared_commands, effective.verify_commands.value
-            )
+            declared_commands = spec_binding.parse_success_signal(spec_text) if spec_text is not None else None
+            binding_findings = gate.check_spec_binding(declared_commands, effective.verify_commands.value)
             data["spec_binding"] = {
                 "story": str(story_key),
-                "declared_commands": (
-                    list(declared_commands) if declared_commands is not None else None
-                ),
+                "declared_commands": (list(declared_commands) if declared_commands is not None else None),
                 "has_binding": declared_commands is not None,
                 "violations": len(binding_findings),
             }
@@ -1085,9 +1043,7 @@ def evaluate_gate(
     findings = [*findings, *command_findings]
 
     verdict_value = compute_verdict(findings)
-    return build_envelope(
-        command="gate evaluate", verdict=verdict_value, data=data, findings=tuple(findings)
-    )
+    return build_envelope(command="gate evaluate", verdict=verdict_value, data=data, findings=tuple(findings))
 
 
 def run_evaluate(
@@ -1177,9 +1133,7 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
     lines = [
         f"gate evaluate: {slug!r}",
         f"root: {str(data['root'])!r}",
-        f"policy source: {str(data['policy_source'])!r}"
-        if data["policy_source"]
-        else "policy source: (none read)",
+        f"policy source: {str(data['policy_source'])!r}" if data["policy_source"] else "policy source: (none read)",
         f"scope: {data['scope']} ({data['scope_note']})",
     ]
     if "gate_mode" in data:
@@ -1188,10 +1142,7 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         # other policy-seed-only field -- AD-14 requires this projection,
         # not just the `--format json` path, to carry it.
         autonomy = data["autonomy_label"]
-        lines.append(
-            f"gate mode: {data['gate_mode']} "
-            f"({autonomy['level']} -- {autonomy['name']})"
-        )
+        lines.append(f"gate mode: {data['gate_mode']} ({autonomy['level']} -- {autonomy['name']})")
     commands = data.get("commands") or []
     if commands:
         lines.append("commands:")
@@ -1218,10 +1169,7 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         # Story 2.7 (AD-14: this text projection carries the same data as
         # --format json).
         spec_binding_data = data["spec_binding"]
-        lines.append(
-            f"spec binding: {spec_binding_data['story']} -- "
-            f"{spec_binding_data['violations']} violation(s)"
-        )
+        lines.append(f"spec binding: {spec_binding_data['story']} -- {spec_binding_data['violations']} violation(s)")
     if "review_depth" in data:
         review_depth = data["review_depth"]
         if review_depth.get("checked"):
@@ -1232,9 +1180,7 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
                 f"(default {review_depth['default_max_review_cycles']})"
             )
         else:
-            lines.append(
-                f"review depth: not evaluated ({review_depth.get('reason', 'unknown')})"
-            )
+            lines.append(f"review depth: not evaluated ({review_depth.get('reason', 'unknown')})")
     if findings:
         lines.append("findings:")
         for finding in findings:

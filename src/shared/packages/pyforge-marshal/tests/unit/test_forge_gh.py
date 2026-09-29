@@ -56,9 +56,7 @@ def test_find_open_pr_returns_none_when_no_open_pr(forge, monkeypatch):
 
 
 def test_find_open_pr_returns_pr_info(forge, monkeypatch):
-    payload = json.dumps(
-        [{"number": 42, "url": "https://example/pr/42", "state": "OPEN", "baseRefName": "main"}]
-    )
+    payload = json.dumps([{"number": 42, "url": "https://example/pr/42", "state": "OPEN", "baseRefName": "main"}])
     run = _ScriptedRun([_completed([], stdout=payload)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     result = forge.find_open_pr(_REPO, ForgeRef("loop/acme"))
@@ -109,19 +107,13 @@ def test_find_open_pr_passes_repo_and_head_branch_argv(forge, monkeypatch):
 
 def test_create_pr_requires_redacted_title_and_body(forge):
     with pytest.raises(TypeError):
-        forge.create_pr(
-            _REPO, ForgeRef("main"), ForgeRef("loop/acme"), "bare-str-title", Redacted(text="body")
-        )
+        forge.create_pr(_REPO, ForgeRef("main"), ForgeRef("loop/acme"), "bare-str-title", Redacted(text="body"))
     with pytest.raises(TypeError):
-        forge.create_pr(
-            _REPO, ForgeRef("main"), ForgeRef("loop/acme"), Redacted(text="title"), "bare-str-body"
-        )
+        forge.create_pr(_REPO, ForgeRef("main"), ForgeRef("loop/acme"), Redacted(text="title"), "bare-str-body")
 
 
 def test_create_pr_creates_then_looks_up_the_new_pr(forge, monkeypatch):
-    created = json.dumps(
-        [{"number": 7, "url": "https://example/pr/7", "state": "open", "baseRefName": "main"}]
-    )
+    created = json.dumps([{"number": 7, "url": "https://example/pr/7", "state": "open", "baseRefName": "main"}])
     run = _ScriptedRun([_completed([], returncode=0, stdout=""), _completed([], stdout=created)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     result = forge.create_pr(
@@ -139,18 +131,14 @@ def test_create_pr_raises_when_gh_pr_create_fails(forge, monkeypatch):
     run = _ScriptedRun([_completed([], returncode=1, stderr="validation failed")])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     with pytest.raises(ForgeCommandError, match="validation failed"):
-        forge.create_pr(
-            _REPO, ForgeRef("main"), ForgeRef("loop/acme"), Redacted(text="t"), Redacted(text="b")
-        )
+        forge.create_pr(_REPO, ForgeRef("main"), ForgeRef("loop/acme"), Redacted(text="t"), Redacted(text="b"))
 
 
 def test_create_pr_raises_when_followup_lookup_finds_nothing(forge, monkeypatch):
     run = _ScriptedRun([_completed([], returncode=0), _completed([], stdout="[]")])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     with pytest.raises(ForgeCommandError, match="no open PR"):
-        forge.create_pr(
-            _REPO, ForgeRef("main"), ForgeRef("loop/acme"), Redacted(text="t"), Redacted(text="b")
-        )
+        forge.create_pr(_REPO, ForgeRef("main"), ForgeRef("loop/acme"), Redacted(text="t"), Redacted(text="b"))
 
 
 # --- update_pr --------------------------------------------------------------
@@ -162,9 +150,7 @@ def test_update_pr_requires_redacted_title_and_body(forge):
 
 
 def test_update_pr_edits_then_views(forge, monkeypatch):
-    viewed = json.dumps(
-        {"number": 9, "url": "https://example/pr/9", "state": "OPEN", "baseRefName": "main"}
-    )
+    viewed = json.dumps({"number": 9, "url": "https://example/pr/9", "state": "OPEN", "baseRefName": "main"})
     run = _ScriptedRun([_completed([], returncode=0), _completed([], stdout=viewed)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     result = forge.update_pr(_REPO, 9, Redacted(text="new title"), Redacted(text="new body"))
@@ -315,9 +301,7 @@ def test_check_run_status_treats_a_missing_started_at_as_oldest(forge, monkeypat
 def test_merge_pr_merge_strategy_argv(forge, monkeypatch):
     run = _ScriptedRun([_completed([], returncode=0)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
-    forge.merge_pr(
-        _REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False
-    )
+    forge.merge_pr(_REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False)
     (argv,) = run.calls
     assert argv[:4] == ["gh", "pr", "merge", "42"]
     assert "--repo" in argv and argv[argv.index("--repo") + 1] == "acme/widgets"
@@ -330,9 +314,7 @@ def test_merge_pr_merge_strategy_argv(forge, monkeypatch):
 def test_merge_pr_squash_strategy_argv(forge, monkeypatch):
     run = _ScriptedRun([_completed([], returncode=0)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
-    forge.merge_pr(
-        _REPO, 42, ForgeRef("squash"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False
-    )
+    forge.merge_pr(_REPO, 42, ForgeRef("squash"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False)
     (argv,) = run.calls
     assert "--squash" in argv
 
@@ -340,9 +322,7 @@ def test_merge_pr_squash_strategy_argv(forge, monkeypatch):
 def test_merge_pr_rebase_strategy_argv(forge, monkeypatch):
     run = _ScriptedRun([_completed([], returncode=0)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
-    forge.merge_pr(
-        _REPO, 42, ForgeRef("rebase"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False
-    )
+    forge.merge_pr(_REPO, 42, ForgeRef("rebase"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False)
     (argv,) = run.calls
     assert "--rebase" in argv
 
@@ -350,9 +330,7 @@ def test_merge_pr_rebase_strategy_argv(forge, monkeypatch):
 def test_merge_pr_delete_branch_true_adds_flag(forge, monkeypatch):
     run = _ScriptedRun([_completed([], returncode=0)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
-    forge.merge_pr(
-        _REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=True
-    )
+    forge.merge_pr(_REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=True)
     (argv,) = run.calls
     assert "--delete-branch" in argv
 
@@ -360,9 +338,7 @@ def test_merge_pr_delete_branch_true_adds_flag(forge, monkeypatch):
 def test_merge_pr_omitted_subject_adds_no_subject_flag(forge, monkeypatch):
     run = _ScriptedRun([_completed([], returncode=0)])
     monkeypatch.setattr(forge_gh_module, "_run", run)
-    forge.merge_pr(
-        _REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False
-    )
+    forge.merge_pr(_REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False)
     (argv,) = run.calls
     assert "--subject" not in argv
 
@@ -407,9 +383,7 @@ def test_merge_pr_raises_on_gh_failure(forge, monkeypatch):
     run = _ScriptedRun([_completed([], returncode=1, stderr="pull request is not mergeable")])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     with pytest.raises(ForgeCommandError, match="not mergeable"):
-        forge.merge_pr(
-            _REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=True
-        )
+        forge.merge_pr(_REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=True)
 
 
 def test_merge_pr_failure_message_names_the_subject_when_provided(forge, monkeypatch):

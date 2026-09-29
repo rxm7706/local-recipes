@@ -35,7 +35,9 @@ _LANDED_ENTRY = {
 
 
 class FakeFs:
-    def __init__(self, *, texts: dict[Path, str] | None = None, fail_read_text: dict[Path, Exception] | None = None) -> None:
+    def __init__(
+        self, *, texts: dict[Path, str] | None = None, fail_read_text: dict[Path, Exception] | None = None
+    ) -> None:
         self.texts: dict[Path, str] = dict(texts or {})
         self.fail_read_text: dict[Path, Exception] = dict(fail_read_text or {})
         self.write_calls: list[Path] = []

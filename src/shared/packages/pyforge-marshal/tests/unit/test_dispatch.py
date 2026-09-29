@@ -3,17 +3,26 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 from pathlib import Path
 
 import pytest
-
-from pyforge.marshal.cli.dispatch import dispatch_once, resolve_max_parallel, run_dispatch
-from pyforge.marshal.core import policy
+from pyforge.core.process import ProcessError, ProcessResult
 from scope_triangle import point_scope_triangle
-from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
+
+from pyforge.marshal.adapters.fs_local import FsError
+from pyforge.marshal.cli.dispatch import (
+    _surface_session_precondition_findings,
+    dispatch_once,
+    resolve_max_parallel,
+    run_dispatch,
+)
 from pyforge.marshal.core import dispatch as dispatch_core
+from pyforge.marshal.core import policy
+from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
+from pyforge.marshal.core.model import Severity
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.build_harness import (
@@ -22,6 +31,7 @@ from pyforge.marshal.ports.build_harness import (
     HarnessResolution,
 )
 from pyforge.marshal.ports.fs import AdvisoryLock
+from pyforge.marshal.scope import verify_scope
 
 
 def _init_git_repo(path: Path, *, scope_slug: str | None = None) -> None:
@@ -48,6 +58,7 @@ class FakeFs:
         self.dirs: set[Path] = set()
         self.files: dict[Path, str] = {}
         self.appended: list[tuple[Path, str, bool]] = []
+        self.repointed: list[tuple[Path, Path]] = []
 
     def is_dir(self, path: Path) -> bool:
         return path in self.dirs
@@ -63,9 +74,33 @@ class FakeFs:
 
     def write_text_atomic(self, path: Path, content: str) -> None:
         self.files[path] = content
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
 
     def read_text(self, path: Path) -> str | None:
-        return self.files.get(path)
+        if path in self.files:
+            return self.files[path]
+        try:
+            return path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+
+    def read_symlink_target(self, path: Path) -> Path | None:
+        if not path.is_symlink():
+            return None
+        return path.readlink()
+
+    def repoint_symlink_atomic(self, path: Path, target: Path) -> None:
+        if not path.is_symlink() and path.exists():
+            raise FsError(f"{path} is a real file/directory, not a symlink -- refusing to replace it")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.is_symlink() or path.exists():
+            path.unlink()
+        path.symlink_to(target)
+        self.repointed.append((path, target))
+
+    def exists(self, path: Path) -> bool:
+        return path.exists()
 
     def acquire_advisory_lock(self, path: Path, *, timeout_s: float) -> AdvisoryLock:
         # Story 22.11: `dispatch --stories` delegates to `run_fleet_drain`,
@@ -95,9 +130,7 @@ class FakeVcs:
     def worktree_path_for_branch(self, _repo_root: Path, branch: str) -> Path | None:
         return self.worktrees.get(branch)
 
-    def add_worktree(
-        self, repo_root: Path, home: Path, branch: str, *, base: str
-    ) -> None:
+    def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
         self.added.append((repo_root, home, branch, base))
         self.worktrees[branch] = home
         home.mkdir(parents=True, exist_ok=True)
@@ -105,13 +138,20 @@ class FakeVcs:
     def worktree_head_sha(self, _worktree: Path) -> str:
         return "baseline0001"
 
-    def changed_files(
-        self, _repo_root: Path, _worktree_path: Path, *, base: str
-    ) -> tuple[str, ...]:
+    def changed_files(self, _repo_root: Path, _worktree_path: Path, *, base: str) -> tuple[str, ...]:
         return ()
 
     def worktree_unified_patch(self, _worktree_path: Path, *, baseline_sha: str) -> str:
         return ""
+
+    # Story 51.9: simulate a clean, unmoved local `main` by default, so the
+    # campaign's ledger reads keep going through the local `HarnessPort`
+    # read unchanged for every pre-existing test in this file.
+    def has_uncommitted_changes(self, _worktree_path: Path) -> bool:
+        return False
+
+    def resolve_ref(self, _repo_root: Path, _ref: str) -> str:
+        return self.worktree_head_sha(_repo_root)
 
 
 class FakeBuildHarness:
@@ -127,9 +167,7 @@ class FakeBuildHarness:
             return HarnessResolution(
                 profile=None,
                 skipped=tuple(
-                    HarnessCandidateSkip(
-                        profile=name, reason=f"binary {name!r} not found on PATH"
-                    )
+                    HarnessCandidateSkip(profile=name, reason=f"binary {name!r} not found on PATH")
                     for name in preference
                 ),
             )
@@ -149,14 +187,111 @@ class FakeBuildHarness:
 
 
 class FakeProcess:
-    def __init__(self, *, alive: bool = True) -> None:
+    def __init__(self, *, alive: bool = True, session_check_returncode: int = 0) -> None:
         self.alive = alive
+        # Story 63.4: dispatch_once shells `steward session check --json`
+        # right after repo_root resolves. Default 0 ("ok") keeps every
+        # pre-existing fixture behaviour byte-identical -- no unexpected
+        # MRS-DISP-049 finding unless a test opts in.
+        self.session_check_returncode = session_check_returncode
+        self.run_calls: list[list[str]] = []
 
     def is_alive(self, _pid: int) -> bool:
         return self.alive
 
     def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
         return 4243
+
+    def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+        self.run_calls.append(list(argv))
+        return ProcessResult(returncode=self.session_check_returncode, stdout="", stderr="")
+
+
+def test_surface_session_precondition_findings_ok_returns_none(tmp_path: Path) -> None:
+    process = FakeProcess(session_check_returncode=0)
+    finding = _surface_session_precondition_findings(process=process, repo_root=tmp_path)
+    assert finding is None
+    assert process.run_calls == [
+        ["pixi", "run", "--frozen", "-e", "pyforge-guild", "steward", "session", "check", "--json"]
+    ]
+
+
+def test_surface_session_precondition_findings_names_non_ok_findings(tmp_path: Path) -> None:
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            payload = json.dumps(
+                {
+                    "ok": False,
+                    "findings": [
+                        {"name": "gh-auth", "ok": False},
+                        {"name": "pixi-guild", "ok": True},
+                    ],
+                }
+            )
+            return ProcessResult(returncode=1, stdout=payload, stderr="")
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
+    assert finding.severity is Severity.WARN
+    assert "gh-auth" in finding.message
+    assert "pixi-guild" not in finding.message
+
+
+def test_surface_session_precondition_findings_unparseable_output_uses_tail(tmp_path: Path) -> None:
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            return ProcessResult(returncode=1, stdout="not json", stderr="traceback\nlast line")
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
+    assert "last line" in finding.message
+
+
+def test_surface_session_precondition_findings_process_error_warns(tmp_path: Path) -> None:
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            raise ProcessError("steward is not on PATH")
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
+    assert finding.severity is Severity.WARN
+    assert "could not run" in finding.message
+
+
+def test_dispatch_once_surfaces_mrs_disp_049_when_session_check_non_ok(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 63.4 review finding (Verification Gap #1): the ``_surface_session_precondition_findings``
+    unit is covered directly above, but its wiring into ``dispatch_once`` --
+    the call site an operator actually drives -- was never exercised
+    end-to-end. This proves a non-ok ``steward session check`` verdict
+    reaches ``attempt.findings`` through the real ``dispatch_once`` call,
+    not only through the isolated helper."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
+
+    class NonOkSessionProcess(FakeProcess):
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            self.run_calls.append(list(argv))
+            payload = json.dumps({"ok": False, "findings": [{"name": "gh-auth", "ok": False}]})
+            return ProcessResult(returncode=1, stdout=payload, stderr="")
+
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=NonOkSessionProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-049"]
+    assert finding.severity is Severity.WARN
+    assert "gh-auth" in finding.message
 
 
 def test_resolve_story_spec_path_finds_tracked_spec(tmp_path: Path) -> None:
@@ -168,6 +303,54 @@ def test_resolve_story_spec_path_finds_tracked_spec(tmp_path: Path) -> None:
     spec.write_text("---\ndifficulty: medium\n---\n", encoding="utf-8")
     resolved = dispatch_core.resolve_story_spec_path(tmp_path, slug, story)
     assert resolved == spec
+
+
+class _FakeVcsForSpecTextAtRef:
+    """A minimal ``VcsPort`` double: ``file_text_at_ref`` looks up canned
+    content keyed by the exact ``(ref, path)`` pair it was called with --
+    review finding for Story 51.7/CAP-255: ``spec_text_at_ref`` itself
+    (the impure half every ``corroborated_merged_story_keys`` caller
+    shares) had no direct test at all before this."""
+
+    def __init__(self, content_by_ref_path: dict[tuple[str, str], str]) -> None:
+        self._content = content_by_ref_path
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
+        return self._content.get((ref, path))
+
+
+def test_spec_text_at_ref_reads_the_resolved_path_at_the_given_ref(tmp_path: Path) -> None:
+    """The local working tree only resolves the spec's stable PATH; the
+    CONTENT returned is whatever the ref holds there -- proving the two
+    halves (local path resolution, ref-scoped content read) are wired
+    together correctly, not just each independently correct."""
+    slug = "pyforge-doctor"
+    story = "27-4"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    spec = specs / f"spec-{story}-mint.md"
+    spec.write_text("---\nstatus: ready\n---\n", encoding="utf-8")
+    rel_path = spec.relative_to(dispatch_core.canonical_repo_root(tmp_path)).as_posix()
+    vcs = _FakeVcsForSpecTextAtRef({("refs/remotes/origin/main", rel_path): "---\nstatus: done\n---\n"})
+    assert dispatch_core.spec_text_at_ref(vcs, tmp_path, slug, story) == "---\nstatus: done\n---\n"
+
+
+def test_spec_text_at_ref_none_when_no_local_candidate_resolves(tmp_path: Path) -> None:
+    vcs = _FakeVcsForSpecTextAtRef({})
+    assert dispatch_core.spec_text_at_ref(vcs, tmp_path, "pyforge-doctor", "27-4") is None
+
+
+def test_spec_text_at_ref_none_when_ref_has_no_such_path(tmp_path: Path) -> None:
+    """A spec minted after ``ref`` was fetched (or never fetched at all):
+    the local candidate resolves but the ref has nothing there -- fails
+    closed, never falling back to the local working tree's own copy."""
+    slug = "pyforge-doctor"
+    story = "27-4"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}-mint.md").write_text("---\nstatus: ready\n---\n", encoding="utf-8")
+    vcs = _FakeVcsForSpecTextAtRef({})
+    assert dispatch_core.spec_text_at_ref(vcs, tmp_path, slug, story) is None
 
 
 def test_build_fleet_row_surfaces_live_dispatch(tmp_path: Path) -> None:
@@ -267,15 +450,19 @@ def test_run_dispatch_surfaces_the_context_payload(
 
 def test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch() -> None:
     """Story 33.2 (CAP-1): factory dispatch reads the tracked marshal-policy.toml
-    and resolves all five context layers enabled via the single composition site."""
+    and resolves all five context layers enabled via the single composition site.
+
+    Story 46.4: pyforge-marshal's own marshal-policy.toml no longer declares a
+    `[context]` block at all -- the 4 harness-agnostic layers now come from
+    the repo-default `_bmad-output/policy-defaults.toml`, and `wire`'s value
+    passes through `resolve_context_layers` as the raw `"auto"` tri-state
+    (unresolved at this composition-time call site -- no harness profile is
+    in scope here yet)."""
     from pyforge.marshal.cli.dispatch import _compose_policy
     from pyforge.marshal.core import policy
 
     repo_root = Path(__file__).resolve().parents[6]
-    policy_path = (
-        repo_root
-        / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
-    )
+    policy_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
     if not policy_path.is_file():
         pytest.skip("marshal-policy.toml not present in this checkout")
 
@@ -283,6 +470,9 @@ def test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch() -
     resolved = policy.resolve_context_layers(effective)
     assert set(resolved) == set(policy.CONTEXT_LAYER_NAMES)
     for layer in policy.CONTEXT_LAYER_NAMES:
+        if layer == "wire":
+            assert resolved[layer] == {"enabled": "auto", "aggressiveness": "medium"}
+            continue
         assert resolved[layer] == {"enabled": True, "aggressiveness": "medium"}
 
 
@@ -362,7 +552,7 @@ def test_dispatch_hands_the_launch_seam_only_the_wire_layer(
 def test_dispatch_journals_and_echoes_what_the_wire_layer_did(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
-    """"Was this session wrapped?" is a RECORDED fact of every dispatch --
+    """ "Was this session wrapped?" is a RECORDED fact of every dispatch --
     echoed in `data` and journaled in the launch outcome entry -- rather
     than an inference from an argv nobody kept. An APPLIED layer raises no
     finding: nothing degraded."""
@@ -625,9 +815,7 @@ def test_run_dispatch_carries_profile_and_reports_skips(
             return Resolution(
                 profile="claude",
                 binary_path="/usr/bin/claude",
-                skipped=(
-                    Skip(profile="cursor", reason="authcheck exited 1 (auth required)"),
-                ),
+                skipped=(Skip(profile="cursor", reason="authcheck exited 1 (auth required)"),),
             )
 
     harness = SkippingHarness()
@@ -735,10 +923,7 @@ def _dispatch(
 
 
 def test_dispatch_branch_carries_its_station() -> None:
-    assert (
-        dispatch_core.dispatch_worktree_branch(_ATLAS, "20.2")
-        == "dispatch/pyforge-atlas/20.2"
-    )
+    assert dispatch_core.dispatch_worktree_branch(_ATLAS, "20.2") == "dispatch/pyforge-atlas/20.2"
     assert dispatch_core.legacy_dispatch_worktree_branch("20.2") == "marshal/20.2"
 
 
@@ -902,9 +1087,7 @@ def test_every_branch_consumer_agrees_on_the_one_derivation(tmp_path: Path) -> N
 
     # 1. worktree provisioning
     provision_vcs = RecordingVcs(tmp_path)
-    provisioned = _ensure_dispatch_worktree(
-        provision_vcs, tmp_path, _ATLAS, _SHARED_FEED_KEY
-    )
+    provisioned = _ensure_dispatch_worktree(provision_vcs, tmp_path, _ATLAS, _SHARED_FEED_KEY)
     assert provisioned.branch == expected
     assert [b for _r, _h, b, _base in provision_vcs.added] == [expected]
 
@@ -918,9 +1101,7 @@ def test_every_branch_consumer_agrees_on_the_one_derivation(tmp_path: Path) -> N
         facts_vcs,
         fs=FakeFs(),
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(
-            tmp_path, _ATLAS, _SHARED_FEED_KEY
-        ),
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, _SHARED_FEED_KEY),
         story_key=_SHARED_FEED_KEY,
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
@@ -957,18 +1138,14 @@ def test_git_facts_never_ask_about_a_branch_the_resolver_did_not_resolve(
     vcs.worktrees[dispatch_core.legacy_dispatch_worktree_branch(_SHARED_FEED_KEY)] = (
         dispatch_core.dispatch_worktree_path(tmp_path, _DOCTOR, _SHARED_FEED_KEY)
     )
-    resolution = dispatch_core.resolve_dispatch_branch(
-        vcs, tmp_path, slug=_ATLAS, story_key=_SHARED_FEED_KEY
-    )
+    resolution = dispatch_core.resolve_dispatch_branch(vcs, tmp_path, slug=_ATLAS, story_key=_SHARED_FEED_KEY)
     assert resolution.refusal is not None and resolution.resolved is None
 
     facts = gather_dispatch_git_facts(
         vcs,
         fs=FakeFs(),
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(
-            tmp_path, _ATLAS, _SHARED_FEED_KEY
-        ),
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, _SHARED_FEED_KEY),
         story_key=_SHARED_FEED_KEY,
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
@@ -983,9 +1160,7 @@ def test_git_facts_never_ask_about_a_branch_the_resolver_did_not_resolve(
         fresh,
         fs=FakeFs(),
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(
-            tmp_path, _ATLAS, _SHARED_FEED_KEY
-        ),
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, _SHARED_FEED_KEY),
         story_key=_SHARED_FEED_KEY,
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
@@ -1038,9 +1213,7 @@ def test_branch_merged_ignores_ancestry_when_the_branch_has_not_diverged(
         vcs,
         fs=FakeFs(),
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(
-            tmp_path, _ATLAS, _SHARED_FEED_KEY
-        ),
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, _SHARED_FEED_KEY),
         story_key=_SHARED_FEED_KEY,
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
@@ -1071,9 +1244,7 @@ def test_branch_merged_trusts_ancestry_once_the_branch_has_diverged(
         vcs,
         fs=FakeFs(),
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(
-            tmp_path, _ATLAS, _SHARED_FEED_KEY
-        ),
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, _SHARED_FEED_KEY),
         story_key=_SHARED_FEED_KEY,
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
@@ -1112,20 +1283,9 @@ def test_gather_dispatch_git_facts_does_not_leak_another_stations_templated_key(
     subjects = ("Merge 22.11 into main",)
     vcs = _SubjectsVcs(tmp_path, subjects)
 
-    ledger_path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / _ATLAS
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
+    ledger_path = tmp_path / "_bmad-output" / "projects" / _ATLAS / "planning-artifacts" / "sprint-status-ledger.yaml"
     fs = FakeFs()
-    fs.files[ledger_path] = (
-        "development_status:\n"
-        "  1-1-atlas-owns-story: done\n"
-        "  epic-1: done\n"
-    )
+    fs.files[ledger_path] = "development_status:\n  1-1-atlas-owns-story: done\n  epic-1: done\n"
 
     facts = gather_dispatch_git_facts(
         vcs,
@@ -1152,14 +1312,7 @@ def test_gather_dispatch_git_facts_still_recognizes_the_project_own_templated_ke
     subjects = ("Merge 22.11 into main",)
     vcs = _SubjectsVcs(tmp_path, subjects)
 
-    ledger_path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / _ATLAS
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
+    ledger_path = tmp_path / "_bmad-output" / "projects" / _ATLAS / "planning-artifacts" / "sprint-status-ledger.yaml"
     fs = FakeFs()
     fs.files[ledger_path] = "development_status:\n  22-11-atlas-owns-this-one: done\n"
 
@@ -1211,12 +1364,8 @@ def test_branch_and_worktree_path_sanitize_the_key_identically(
     location, so the two must sanitize the story key the same way. Real keys
     render untouched; a key needing sanitization still agrees."""
     for key in ("22.9", "20.2", "12.1"):
-        assert dispatch_core.dispatch_worktree_branch(_ATLAS, key) == (
-            f"dispatch/{_ATLAS}/{key}"
-        )
-        assert dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, key).name == (
-            f"dispatch-{_ATLAS}-{key}"
-        )
+        assert dispatch_core.dispatch_worktree_branch(_ATLAS, key) == (f"dispatch/{_ATLAS}/{key}")
+        assert dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, key).name == (f"dispatch-{_ATLAS}-{key}")
 
     dirty = "20.1 rc/1"
     branch = dispatch_core.dispatch_worktree_branch(_ATLAS, dirty)
@@ -1230,9 +1379,7 @@ def test_branch_and_worktree_path_sanitize_the_key_identically(
     vcs = RecordingVcs(tmp_path)
     legacy = dispatch_core.legacy_dispatch_worktree_branch(dirty)
     vcs.worktrees[legacy] = worktree
-    resolution = dispatch_core.resolve_dispatch_branch(
-        vcs, tmp_path, slug=_ATLAS, story_key=dirty
-    )
+    resolution = dispatch_core.resolve_dispatch_branch(vcs, tmp_path, slug=_ATLAS, story_key=dirty)
     assert resolution.refusal is None
     assert resolution.resolved == legacy
     assert resolution.legacy is True
@@ -1344,9 +1491,7 @@ def test_dispatch_refuses_when_both_story_and_stories_given(
 
     _init_git_repo(tmp_path)
     monkeypatch.chdir(tmp_path)
-    args = argparse.Namespace(
-        slug="pyforge-marshal", story="22-11-fleet", stories="22-11-fleet", format="json"
-    )
+    args = argparse.Namespace(slug="pyforge-marshal", story="22-11-fleet", stories="22-11-fleet", format="json")
     code = run_dispatch(
         args, fs=FakeFs(), vcs=FakeVcs(tmp_path), build_harness=FakeBuildHarness(), process=FakeProcess()
     )
@@ -1365,9 +1510,7 @@ def test_dispatch_stories_dispatches_the_first_key_in_the_given_order(
     _seed_spec(tmp_path, slug, "22-11-fleet")
     _seed_spec(tmp_path, slug, "22-12-next")
     monkeypatch.chdir(tmp_path)
-    harness = _FakeLedgerHarness(
-        {slug: (("22-11-fleet", "backlog"), ("22-12-next", "backlog"))}
-    )
+    harness = _FakeLedgerHarness({slug: (("22-11-fleet", "backlog"), ("22-12-next", "backlog"))})
     build_harness = FakeBuildHarness()
     args = argparse.Namespace(
         slug=slug,
@@ -1401,12 +1544,8 @@ def test_dispatch_stories_refuses_an_unknown_key_before_any_worktree(
     harness = _FakeLedgerHarness({slug: (("22-11-fleet", "backlog"),)})
     vcs = FakeVcs(tmp_path)
     build_harness = FakeBuildHarness()
-    args = argparse.Namespace(
-        slug=slug, story=None, stories="22-11-fleet,99-9-ghost", format="json"
-    )
-    code = run_dispatch(
-        args, fs=FakeFs(), vcs=vcs, build_harness=build_harness, process=FakeProcess(), harness=harness
-    )
+    args = argparse.Namespace(slug=slug, story=None, stories="22-11-fleet,99-9-ghost", format="json")
+    code = run_dispatch(args, fs=FakeFs(), vcs=vcs, build_harness=build_harness, process=FakeProcess(), harness=harness)
     assert code != EXIT_OK
     payload = json.loads(capsys.readouterr().out)
     assert any(f["code"] == "MRS-DISP-032" for f in payload["findings"])
@@ -1415,10 +1554,7 @@ def test_dispatch_stories_refuses_an_unknown_key_before_any_worktree(
     assert build_harness.calls == []
 
 
-_DONE_SPEC = (
-    "---\nstatus: done\nfollowup_review_recommended: false\n"
-    "difficulty: medium\n---\n# spec\n"
-)
+_DONE_SPEC = "---\nstatus: done\nfollowup_review_recommended: false\ndifficulty: medium\n---\n# spec\n"
 _READY_SPEC = "---\nstatus: ready-for-dev\ndifficulty: medium\n---\n# spec\n"
 
 
@@ -1437,9 +1573,7 @@ def _write_worktree_spec(repo: Path, slug: str, story: str, text: str) -> Path:
     return worktree
 
 
-def test_done_spec_does_not_launch_harness(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_done_spec_does_not_launch_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 29.2: worktree spec done + follow-up false → 0 harness launches."""
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
@@ -1463,9 +1597,38 @@ def test_done_spec_does_not_launch_harness(
     assert any(str(worktree) in f.message for f in attempt.findings)
 
 
-def test_dirty_pr_land_fail_names_pr_and_does_not_relaunch(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+_BLOCKED_SPEC = (
+    '---\nstatus: blocked\nblocking_condition: "awaiting operator review"\ndifficulty: medium\n---\n# spec\n'
+)
+
+
+def test_blocked_spec_does_not_relaunch_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 51.4: worktree spec status: blocked -> MRS-DISP-045, 0 launches, no CAP-4 land attempt."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "13-2-recipe-refresh"
+    _write_worktree_spec(tmp_path, slug, story, _BLOCKED_SPEC)
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    assert attempt.data.get("harness_blocked_no_relaunch") is True
+    assert attempt.data.get("land_verdict") is None
+    codes = [f.code for f in attempt.findings]
+    assert "MRS-DISP-045" in codes
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-045"]
+    assert "status: blocked" in finding.message
+    assert "awaiting operator review" in finding.message
+
+
+def test_dirty_pr_land_fail_names_pr_and_does_not_relaunch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """41.2-shaped: DIRTY PR → MRS-DISP-040 names the PR, launch count 0."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
@@ -1495,9 +1658,7 @@ def test_dirty_pr_land_fail_names_pr_and_does_not_relaunch(
     assert "CHAIN" in finding.message
 
 
-def test_harness_done_lands_via_cap4_without_second_session(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_harness_done_lands_via_cap4_without_second_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """When CAP-4 can land, no second session and no MRS-DISP-040."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
@@ -1525,16 +1686,11 @@ def test_harness_done_lands_via_cap4_without_second_session(
     assert all(f.code != "MRS-DISP-040" for f in attempt.findings)
 
 
-def test_followup_true_still_launches(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_followup_true_still_launches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     story = "29-1-followup"
-    followup = (
-        "---\nstatus: done\nfollowup_review_recommended: true\n"
-        "difficulty: medium\n---\n# spec\n"
-    )
+    followup = "---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\n---\n# spec\n"
     _write_worktree_spec(tmp_path, slug, story, followup)
     monkeypatch.chdir(tmp_path)
     harness = FakeBuildHarness()
@@ -1552,9 +1708,7 @@ def test_followup_true_still_launches(
 def test_relocated_spec_path_maps_primary_tree_onto_worktree(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     wt = tmp_path / "wt"
-    rel = Path(
-        "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-42-5.md"
-    )
+    rel = Path("_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-42-5.md")
     (repo / rel).parent.mkdir(parents=True)
     (wt / rel).parent.mkdir(parents=True)
     (repo / rel).write_text("primary\n", encoding="utf-8")
@@ -1586,18 +1740,16 @@ def test_relocated_spec_path_rejects_unrelated_path(tmp_path: Path) -> None:
 # --- Story 33.6: dispatch retry floor-raise (spec-adaptive-model-tiering CAP-2) ---
 
 
-def test_dispatch_escalates_model_after_prior_failed_attempts(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dispatch_escalates_model_after_prior_failed_attempts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Prior failed runs >= max_dev_attempts floor-raise dev -> review on launch."""
     import json
 
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.cli.dispatch import _count_prior_failed_dispatch_attempts
     from pyforge.marshal.core import policy
+    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
     from pyforge.marshal.core.identity import normalize, render_feed_key
     from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
-    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
 
     def _seed_failed_run(run_id: str) -> None:
         run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
@@ -1650,7 +1802,12 @@ def test_dispatch_escalates_model_after_prior_failed_attempts(
         project_slug=slug,
         project={
             "model_tier_map": {
-                "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
+                # Story 51.5 (CAP-253): claude's own default/alias ids --
+                # any OTHER string here now trips the widened MRS-DISP-043
+                # uncatalogued-model guard, which this fixture (adaptive
+                # tiering escalation, unrelated to model-provider matching)
+                # has no catalog declared to satisfy.
+                "medium": {"dev": "sonnet", "review": "opus"},
             }
         },
         flags={"max_dev_attempts": 2},
@@ -1683,20 +1840,19 @@ def test_dispatch_escalates_model_after_prior_failed_attempts(
     )
     assert _count_prior_failed_dispatch_attempts(fs, tmp_path, slug, feed) == 2
     assert attempt.data.get("escalated") is True
-    assert attempt.data.get("from_model") == "composer-2.5-fast"
-    assert attempt.data.get("to_model") == "composer-2.5"
-    assert attempt.data.get("model") == "composer-2.5"
+    assert attempt.data.get("from_model") == "sonnet"
+    assert attempt.data.get("to_model") == "opus"
+    assert attempt.data.get("model") == "opus"
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
     launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
     intent = json.loads(launch_lines[0])
     assert intent["payload"]["escalated"] is True
-    assert intent["payload"]["from_model"] == "composer-2.5-fast"
-    assert intent["payload"]["to_model"] == "composer-2.5"
+    assert intent["payload"]["from_model"] == "sonnet"
+    assert intent["payload"]["to_model"] == "opus"
     assert attempt.data.get("session_pid") == 4242
 
 
-def test_dispatch_does_not_escalate_on_first_attempt(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dispatch_does_not_escalate_on_first_attempt(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 33.6: zero prior failures keeps the base dev model."""
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.core import policy
@@ -1712,7 +1868,10 @@ def test_dispatch_does_not_escalate_on_first_attempt(
         project_slug=slug,
         project={
             "model_tier_map": {
-                "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
+                # Story 51.5 (CAP-253): see the sibling escalation test --
+                # claude's own default/alias ids avoid tripping the widened
+                # MRS-DISP-043 uncatalogued-model guard.
+                "medium": {"dev": "sonnet", "review": "opus"},
             }
         },
         flags={"max_dev_attempts": 2},
@@ -1731,20 +1890,450 @@ def test_dispatch_does_not_escalate_on_first_attempt(
         build_harness=FakeBuildHarness(),
         process=FakeProcess(),
     )
-    assert attempt.data.get("model") == "composer-2.5-fast"
+    assert attempt.data.get("model") == "sonnet"
     assert "escalated" not in attempt.data
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
 
 
-def test_dispatch_failure_count_resets_after_completed_run(
+def test_dispatch_drops_a_tier_mapped_model_catalogued_under_a_different_provider(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """2026-09-12 (dispatch-tier-routing-fails-safe): the dispatch engine's
+    own counterpart to render_policy_toml's provider-mismatch guard on the
+    spin engine. `dev = "composer-2.5-fast"` carries no explicit harness,
+    so it was resolved BEFORE the live binary+authcheck walk below ran --
+    when the declared cost catalog says that model belongs to `cursor` but
+    the walk (here `FakeBuildHarness`, which always lands on the first
+    `harness_preference` entry, `claude`) resolves a DIFFERENT provider,
+    the model override must be dropped rather than launch `claude` with a
+    model it was never meant to receive. MRS-DISP-043 records why."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "33-6-cross-provider-mismatch"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": "composer-2.5-fast"},
+            },
+            "model_cost_catalog": {
+                "providers": {
+                    "cursor": {
+                        "models": {
+                            "composer-2.5-fast": {
+                                "input_per_million": 3.0,
+                                "output_per_million": 15.0,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        flags={},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "claude"
+    assert attempt.data.get("model") is None
+    assert "escalated" not in attempt.data
+    assert "resolved_models" not in attempt.data or "dev" not in attempt.data["resolved_models"]
+    mismatch_findings = [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+    assert len(mismatch_findings) == 1
+    assert mismatch_findings[0].severity is Severity.WARN
+
+
+def test_dispatch_drops_a_tier_mapped_model_catalogued_under_no_provider(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.5 (CAP-253): `provider_declaring_model` returns `None` both
+    for a genuinely uncatalogued/foreign model id AND, by documented design,
+    for a harness's own default/alias id (`sonnet`/`opus`/`haiku`) -- the
+    catalog is a declared PRICE snapshot, not a model registry. The ORIGINAL
+    guard only fired on a cross-provider mismatch, so a plainly foreign or
+    mistyped model id (here `gpt-9-turbo-nonexistent`, declared by no
+    provider and not one of marshal's own tier ids) silently reached launch
+    unchanged. A `model_cost_catalog` IS declared here (for an unrelated
+    model) so this exercises "catalogued under no provider despite a
+    declared catalog" specifically -- not the no-catalog-at-all case, which
+    must stay silent (see the sibling test below). It must now raise
+    MRS-DISP-043 and have its override dropped, exactly like the
+    cross-provider case above -- before any live launch."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "51-5-uncatalogued-model"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": "gpt-9-turbo-nonexistent"},
+            },
+            "model_cost_catalog": {
+                "providers": {
+                    "anthropic": {
+                        "models": {
+                            "claude-opus-4": {
+                                "input_per_million": 15.0,
+                                "output_per_million": 75.0,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        flags={},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "claude"
+    assert attempt.data.get("model") is None
+    assert "escalated" not in attempt.data
+    assert "resolved_models" not in attempt.data or "dev" not in attempt.data["resolved_models"]
+    uncatalogued_findings = [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+    assert len(uncatalogued_findings) == 1
+    assert uncatalogued_findings[0].severity is Severity.WARN
+    assert "gpt-9-turbo-nonexistent" in uncatalogued_findings[0].message
+    assert "no known provider" in uncatalogued_findings[0].message
+    assert "declared cost catalog" in uncatalogued_findings[0].message
+
+
+def test_dispatch_tier_mapped_model_with_no_declared_catalog_at_all_is_preserved(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.5 (CAP-253) regression: most real stations (cursor-only
+    `harness_preference`, no `model_cost_catalog` block at all -- the shape
+    every one of pyforge-atlas/-mason/-scribe/-warden's real
+    `marshal-policy.toml` uses) never declare a catalog. `catalog_declared`
+    is `False` there, so `provider_declaring_model` returns `None` for
+    EVERY model, correctly-matched ones included. A correctly tier-mapped,
+    correctly resolved cursor model must NOT be flagged uncatalogued or
+    have its override dropped in that shape -- there is nothing to compare
+    against when no catalog was ever declared."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-atlas"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "51-5-no-catalog-preserved"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "harness_preference": ["cursor"],
+            "model_tier_map": {
+                "medium": {"dev": {"harness": "cursor", "model": "composer-2.5-fast"}},
+            },
+        },
+        flags={},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "cursor"
+    assert attempt.data.get("model") == "composer-2.5-fast"
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+
+
+def test_dispatch_tier_mapped_sonnet_on_claude_is_byte_identical(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.5 (CAP-253): the widened MRS-DISP-043 guard must not flag a
+    harness's own default/alias model id. `sonnet` on `claude` (the
+    `FakeBuildHarness` default) is never catalogued by design -- it must
+    stay byte-identical to pre-fix behavior: no MRS-DISP-043 finding at
+    all, and the model override survives unchanged."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "51-5-sonnet-byte-identical"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": "sonnet"},
+            },
+        },
+        flags={},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "claude"
+    assert attempt.data.get("model") == "sonnet"
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+
+
+def test_dispatch_tier_mapped_haiku_on_claude_is_byte_identical(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.5 (CAP-253): `haiku` is the third member of
+    `HARNESS_DEFAULT_MODEL_IDS` alongside `sonnet`/`opus` -- exercised here
+    the same way the sonnet case above is, so the widened guard's silence
+    on all three harness-default ids is actually verified, not just
+    asserted in a docstring."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "51-5-haiku-byte-identical"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": "haiku"},
+            },
+        },
+        flags={},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "claude"
+    assert attempt.data.get("model") == "haiku"
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+
+
+def test_dispatch_explicit_harness_flag_outranks_tier_map_harness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 50.3 (CAP-246): the 2026-09-18 incident. herald's tier map names
+    an inline `{harness = "cursor", model = "grok-4.6"}` dev entry; an
+    EXPLICIT `--harness claude` must still win the walk -- Story 28.11's
+    tier-map-leads rule may not override a flag the operator actually typed.
+    The tier map names no model for `claude`, so the pre-existing
+    MRS-DISP-043 fails-safe (2026-09-12) fires and drops the override
+    (never a foreign `grok-4.6` handed to the `claude` CLI) -- but it must
+    ALSO clear the LOCAL `model` used by the intent journal entry and the
+    live `build_harness.dispatch(model=..., ...)` call, not just the
+    envelope's `data["model"]`, or the drop is cosmetic and the launch still
+    ships the foreign model id."""
+    import json
+
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "50-3-explicit-harness-flag"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": {"harness": "cursor", "model": "grok-4.6"}},
+            },
+            "model_cost_catalog": {
+                "providers": {
+                    "cursor": {
+                        "models": {
+                            "grok-4.6": {
+                                "input_per_million": 3.0,
+                                "output_per_million": 15.0,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        flags={"harness_preference": ("claude",)},
+    )
+    assert effective.harness_preference.layer is policy.PolicyLayer.FLAG
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    build_harness = FakeBuildHarness()
+    fs = FakeFs()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=build_harness,
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "claude"
+    # The walk itself never let cursor lead: `--harness claude` alone was
+    # handed to `binary_present`, unchanged by the tier map's cursor entry.
+    assert build_harness.preference_seen == ("claude",)
+    assert attempt.data.get("model") is None
+    mismatch_findings = [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+    assert len(mismatch_findings) == 1
+    assert mismatch_findings[0].severity is Severity.WARN
+    # The live launch call -- not just the envelope -- must never receive
+    # the foreign `grok-4.6` model id.
+    assert build_harness.calls[-1]["model"] is None
+    # The entry actually PERSISTED to the journal must be equally clean --
+    # not just the in-memory `attempt.data` envelope -- or the drop is
+    # cosmetic in exactly the disk-durable record an operator would read.
+    launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
+    assert launch_lines
+    journaled_payload = json.loads(launch_lines[0])["payload"]
+    assert journaled_payload.get("model") is None
+    assert "escalated" not in journaled_payload
+    assert "from_model" not in journaled_payload
+    assert "to_model" not in journaled_payload
+
+
+def test_dispatch_tier_map_leads_without_an_explicit_harness_flag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 50.3 (CAP-246): the flip side -- with no `--harness` flag at
+    all, resolution stays byte-identical to Story 28.11's existing
+    behavior: the tier map's declared harness still leads the walk, and its
+    matching model still applies cleanly."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "50-3-tier-map-still-leads"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": {"harness": "cursor", "model": "grok-4.6"}},
+            },
+            "model_cost_catalog": {
+                "providers": {
+                    "cursor": {
+                        "models": {
+                            "grok-4.6": {
+                                "input_per_million": 3.0,
+                                "output_per_million": 15.0,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        flags={},
+    )
+    assert effective.harness_preference.layer is not policy.PolicyLayer.FLAG
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    build_harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=build_harness,
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "cursor"
+    assert build_harness.preference_seen is not None
+    assert build_harness.preference_seen[0] == "cursor"
+    assert attempt.data.get("model") == "grok-4.6"
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+    assert build_harness.calls[-1]["model"] == "grok-4.6"
+
+
+def test_dispatch_failure_count_resets_after_completed_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 33.6: a COMPLETED dispatch breaks the prior-failure streak."""
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.cli.dispatch import _count_prior_failed_dispatch_attempts
     from pyforge.marshal.core import policy
+    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
     from pyforge.marshal.core.identity import normalize, render_feed_key
     from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
-    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
 
     def _seed_run(run_id: str, verdict: DispatchSessionVerdict) -> None:
         run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
@@ -1801,7 +2390,10 @@ def test_dispatch_failure_count_resets_after_completed_run(
         project_slug=slug,
         project={
             "model_tier_map": {
-                "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
+                # Story 51.5 (CAP-253): see the sibling escalation tests --
+                # claude's own default/alias ids avoid tripping the widened
+                # MRS-DISP-043 uncatalogued-model guard.
+                "medium": {"dev": "sonnet", "review": "opus"},
             }
         },
         flags={"max_dev_attempts": 2},
@@ -1831,8 +2423,9 @@ def test_dispatch_failure_count_resets_after_completed_run(
         build_harness=FakeBuildHarness(),
         process=FakeProcess(),
     )
-    assert attempt.data.get("model") == "composer-2.5-fast"
+    assert attempt.data.get("model") == "sonnet"
     assert "escalated" not in attempt.data
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
 
 
 def test_resolve_max_parallel_ignores_seed_max_parallel() -> None:
@@ -1860,32 +2453,59 @@ def test_resolve_max_parallel_cli_override_wins() -> None:
 # --------------------------------------------------------------------------
 
 
-def test_dispatch_refuses_triangle_drift_before_launch(
+def test_dispatch_launches_despite_primary_triangle_naming_another_station(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Story 64.1 (CAP-273, FR-219): the PRIMARY checkout's shared marker
+    naming another station's slug must never block a dispatch launch --
+    only the dispatch WORKTREE's own triangle (seeded fresh by
+    ``_seed_dispatch_worktree_scope``) is checked now. Supersedes the old
+    ``test_dispatch_refuses_triangle_drift_before_launch``, which asserted
+    the opposite (pre-64.1) behaviour on this exact setup."""
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     point_scope_triangle(tmp_path, "pyforge-steward")
     os.environ["BMAD_ACTIVE_PROJECT"] = slug
-    story = "33-9-scope-guard"
+    story = "64-1-worktree-scope"
     _seed_spec(tmp_path, slug, story)
     monkeypatch.chdir(tmp_path)
+    primary_marker = tmp_path / "_bmad" / "custom" / ".active-project"
+    primary_planning_link = tmp_path / "_bmad-output" / "planning-artifacts"
+    primary_implementation_link = tmp_path / "_bmad-output" / "implementation-artifacts"
+    marker_before = primary_marker.read_text(encoding="utf-8")
+    planning_target_before = primary_planning_link.readlink()
+    implementation_target_before = primary_implementation_link.readlink()
+    fake_fs = FakeFs()
+    harness = FakeBuildHarness()
     attempt = dispatch_once(
         slug=slug,
         story=story,
-        fs=FakeFs(),
+        fs=fake_fs,
         vcs=FakeVcs(tmp_path),
-        build_harness=FakeBuildHarness(),
+        build_harness=harness,
         process=FakeProcess(),
     )
-    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
-    assert "expected 'pyforge-marshal'" in finding.message
-    assert "marker='pyforge-steward'" in finding.message
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
+    assert attempt.launched
+    worktree = Path(str(attempt.data["worktree_path"]))
+    assert verify_scope(worktree, slug) is None
+    # AC #1: the fake harness records exactly one launch, for this slug.
+    assert [c["project_slug"] for c in harness.calls] == [slug]
+    # AC #1: the primary checkout's marker bytes and both readlink targets
+    # are identical before and after -- dispatch never touches them.
+    assert primary_marker.read_text(encoding="utf-8") == marker_before
+    assert primary_planning_link.readlink() == planning_target_before
+    assert primary_implementation_link.readlink() == implementation_target_before
+    # AC #2: every write this run made is under the dispatch worktree or
+    # `_bmad-output/projects/<slug>/` -- never the primary's own corners.
+    allowed_roots = (worktree, tmp_path / "_bmad-output" / "projects" / slug)
+    for written in (*fake_fs.files, *(path for path, _target in fake_fs.repointed)):
+        assert any(written == root or root in written.parents for root in allowed_roots), (
+            f"write outside allowed scope: {written}"
+        )
 
 
-def test_dispatch_refuses_bmad_active_project_env_disagreement(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dispatch_refuses_bmad_active_project_env_disagreement(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     os.environ["BMAD_ACTIVE_PROJECT"] = "pyforge-atlas"
@@ -1919,3 +2539,179 @@ def test_format_scope_drift_matches_bmad_switch_shape() -> None:
     assert "expected 'project-a'" in text
     assert "marker='project-b'" in text
 
+
+# --------------------------------------------------------------------------
+# Story 64.1 (CAP-273, FR-219): the dispatch WORKTREE carries its own scope
+# triangle, never the shared primary-checkout marker.
+# --------------------------------------------------------------------------
+
+
+def test_dispatch_refuses_worktree_side_foreign_marker(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A REUSED dispatch worktree (``worktree.exists()`` already, so
+    ``_ensure_dispatch_worktree`` attaches without provisioning) whose own
+    triangle already names a DIFFERENT station is drift -- refused, and
+    never repointed: an existing corner, however it is shaped, is left
+    alone per the seeding step's Never rule."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-foreign-worktree-marker"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    point_scope_triangle(worktree, "pyforge-steward")
+    worktree_marker = worktree / "_bmad" / "custom" / ".active-project"
+    marker_before = worktree_marker.read_text(encoding="utf-8")
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
+    assert "expected 'pyforge-marshal'" in finding.message
+    assert "marker='pyforge-steward'" in finding.message
+    assert str(worktree) in finding.message
+    assert not attempt.launched
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-006"] == []
+    # AC #5: the worktree's own foreign marker is left byte-identical, and
+    # no run directory is created for the refused attempt.
+    assert worktree_marker.read_text(encoding="utf-8") == marker_before
+    runs_dir = dispatch_core.dispatch_runs_dir(tmp_path, slug)
+    assert not runs_dir.exists() or not any(runs_dir.iterdir())
+
+
+def test_dispatch_refuses_worktree_side_unrecognized_link(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A worktree whose ``implementation-artifacts`` link exists but is
+    shaped in a way ``verify_scope`` cannot parse is drift too -- the
+    ``UNRECOGNIZED`` fail-closed token never counts as agreement, and the
+    seeding step leaves an already-existing (however malformed) link
+    untouched rather than repointing it."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-unrecognized-worktree-link"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    marker = worktree / "_bmad" / "custom" / ".active-project"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(f"{slug}\n", encoding="utf-8")
+    out = worktree / "_bmad-output"
+    planning_target = out / "projects" / slug / "planning-artifacts"
+    planning_target.mkdir(parents=True, exist_ok=True)
+    (out / "planning-artifacts").symlink_to(Path("projects") / slug / "planning-artifacts")
+    (out / "implementation-artifacts").symlink_to(Path("elsewhere") / "implementation-artifacts")
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
+    assert "implementation-artifacts='unrecognized'" in finding.message
+    assert not attempt.launched
+    assert (out / "implementation-artifacts").readlink() == Path("elsewhere") / "implementation-artifacts"
+
+
+def test_dispatch_reused_worktree_with_agreeing_triangle_launches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A REUSED worktree (pre-existing on disk, so provisioning attaches
+    rather than creates) whose triangle already agrees with the slug
+    launches cleanly -- the seeding step writes nothing and
+    ``verify_scope`` sees agreement immediately."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-reused-worktree-agrees"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    point_scope_triangle(worktree, slug)
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
+    assert attempt.launched
+
+
+def test_dispatch_worktree_with_marker_but_missing_link_seeds_only_that_corner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A REUSED worktree whose marker and one link already agree with the
+    slug, but whose other link is entirely absent (e.g. a prior run's
+    corner write failed partway, MRS-DISP-006, before a retry), seeds only
+    the missing corner -- the existing marker and link are left untouched
+    -- and then launches cleanly."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-mixed-worktree-triangle"
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, slug, "64.1")
+    worktree.mkdir(parents=True)
+    marker = worktree / "_bmad" / "custom" / ".active-project"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(f"{slug}\n", encoding="utf-8")
+    out = worktree / "_bmad-output"
+    planning_target = out / "projects" / slug / "planning-artifacts"
+    planning_target.mkdir(parents=True, exist_ok=True)
+    planning_link = out / "planning-artifacts"
+    planning_link.symlink_to(Path("projects") / slug / "planning-artifacts")
+    marker_before = marker.read_text(encoding="utf-8")
+    planning_target_before = planning_link.readlink()
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert [f for f in attempt.findings if f.code == "MRS-DISP-041"] == []
+    assert attempt.launched
+    assert verify_scope(worktree, slug) is None
+    # The pre-existing corners are untouched -- only the missing one was seeded.
+    assert marker.read_text(encoding="utf-8") == marker_before
+    assert planning_link.readlink() == planning_target_before
+    assert (out / "implementation-artifacts").readlink() == Path("projects") / slug / "implementation-artifacts"
+
+
+def test_dispatch_worktree_scope_write_failure_is_mrs_disp_006(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A freshly-provisioned worktree (missing triangle) whose corner write
+    fails degrades to ``MRS-DISP-006`` -- the same code this module already
+    uses for every other worktree-provisioning failure -- rather than
+    raising past ``dispatch_once``."""
+
+    class _RefusingFs(FakeFs):
+        def write_text_atomic(self, path: Path, content: str) -> None:
+            if path.name == ".active-project":
+                raise FsError(f"cannot write {path}")
+            super().write_text_atomic(path, content)
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "64-1-worktree-scope-write-fails"
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=_RefusingFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-006"]
+    assert "cannot provision dispatch worktree scope triangle" in finding.message
+    assert not attempt.launched

@@ -76,8 +76,11 @@ finding keeps that meaning and is not a length cap. `bmad-correct-course` amends
   `sprint-change-proposal-2026-08-26-canopy-closeout.md`.
 - RFC-5 — contrib + `liquibase` schema + `:17`/`:18`/`:19` are in the changelog and
   **EXECUTED** on CRC. Isolated **`mfa` sqlmigrate** is the only remaining fake.
-- **Q5 measure set** — **parked**, not a Foundry SPEC OQ. Unpublished; do not invent metrics.
-  Sibling: `docs/dreams/build-league-scorecard.md` + `spec-build-league-scorecard` (draft).
+- **Q5 measure set** — **published 2026-09-15** on sibling
+  `docs/dreams/build-league-scorecard.md` + `spec-build-league-scorecard`
+  (`ready`, steward Epic 62). Catalog:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md`.
+  Do not invent metrics; cite `on` rows only. Not a Foundry SPEC OQ.
 - **Single-Spec merge** — **parked** (Grounding table above). Keep `extends:` until a
   steward story copies `pap:CAP-*` into Unifying SPEC, retargets Epic 10–12, and
   supersedes `spec-python-agent-platform`. Do not rename `[feature.python-agent-platform]`.
@@ -342,6 +345,32 @@ built anywhere:** `taplo` + `sqlfluff` (zero hits in any `.py`; doctor's 2026-08
 "no story exists"), `markitdown`, `vizro-mcp` / `vizro-e2e-flow`, and `kedro-mcp` (architecturally
 banned as load-bearing). Two BSL metric names formerly listed under item 3 exist nowhere in the repo.
 
+**Measured 2026-09-12 (manifest-sync gap — a `library-llms-full.md` audit, but the inverse
+finding: not "should bind," but "already bound, invisible to the chain").** Every `pyforge-*`
+station has a **second, un-mirrored dependency manifest**: its own
+`src/shared/packages/pyforge-<station>/pixi.toml` `[package.run-dependencies]` table (the one
+`pixi-build-python` actually reads to build that station's conda package — kept in sync with the
+station's own `pyproject.toml` by `tests/meta/test_manifest_sync.py`). Root `pixi.toml` — and
+therefore `docs/reference/library-llms-full.md` and its `llms-full-check` detector, both of which
+only ever read root `pixi.toml` — has no visibility into that second manifest at all. Cross-checking
+all ten stations' own run-deps against root `pixi.toml` surfaced seven libraries that are real,
+directly-imported, already-shipped station code (confirmed importable live in each station's own
+env today, resolving only because the built package carries its own run-deps) yet never appear
+anywhere in root `pixi.toml`: `packaging` (marshal, mason, warden), `jsonschema` (doctor, marshal,
+warden), `psutil` (marshal), `attrs` (atlas), `packageurl-python` — imports as `packageurl`
+(warden), `license-expression` — imports as `license_expression` (warden). (`filelock`, atlas's
+existing use, is already tracked above as the "extend to marshal/scribe" adoption decision — a
+different, forward-looking question from this one, which is about deps *already* adopted and
+merely invisible.) This is a `regenerable-factory`-shaped blind spot: the two-layer detector/
+reconciler loop that keeps `library-llms-full.md` honest was never told this second manifest
+exists, so it cannot flag drift there — the exact "shipped but not in effect" pattern this Dream's
+§ *Where next* / Epic 49 already names, applied to the dependency-truth surface itself. Fix is
+two-part: (1) mirror the seven into root `pixi.toml` (`local-recipes` plus each owning station's
+own `[feature.pyforge-<station>.dependencies]` block) and their `library-llms-full.md` entries;
+(2) extend `scripts/llms_full_check.py`'s `manifest_deps()` to also walk every
+`src/shared/packages/pyforge-*/pixi.toml`'s `[package.run-dependencies]` table, so this class of
+gap is caught automatically going forward instead of requiring another manual audit.
+
 ### Capability checklist from the BaaS comparison (2026-09-05)
 
 InsForge's feature list was used as a **checklist, not a shopping list** — every row was
@@ -436,43 +465,48 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=224e8484adcb9ac9 -->
+<!-- pixi-env-matrix:begin lock-sha256=5064aa7248fe159e -->
 
-Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
+Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
 | Environment | Python | Conda records | Platforms |
 |---|---|---:|---|
-| ``bmad-suite-full`` | ``3.14.*`` | 80 | ``linux-64`` |
-| ``bmad-ui`` | ``3.14.*`` | 51 | ``linux-64`` |
-| ``build`` | ``3.14.*`` | 241 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``conda-smithy`` | ``3.14.*`` | 232 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``bmad-suite-full`` | ``3.14.*`` | 95 | ``linux-64`` |
+| ``bmad-ui`` | ``3.14.*`` | 50 | ``linux-64`` |
+| ``build`` | ``3.14.*`` | 242 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``conda-smithy`` | ``3.14.*`` | 233 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``dbgpt-sidecar`` | ``3.14.*`` | 405 | ``linux-64`` |
-| ``default`` | ``3.14.*`` | 119 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``detectors`` | ``3.14.*`` | 83 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``gcloud`` | ``3.14.*`` | 146 | ``linux-64``, ``osx-arm64-min`` |
-| ``grayskull`` | ``3.14.*`` | 246 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``linux`` | ``3.14.*`` | 145 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``local-recipes`` | ``3.14.*`` | 1,172 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``mcp-host`` | ``3.14.*`` | 66 | ``linux-64`` |
-| ``osx`` | ``3.14.*`` | 240 | ``osx-arm64-min`` |
-| ``platform-ci-test`` | ``3.14.*`` | 318 | ``linux-64`` |
-| ``platform-dev`` | ``3.14.*`` | 504 | ``linux-64``, ``osx-arm64-min`` |
-| ``pyforge-atlas`` | ``3.14.*`` | 462 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-ci`` | ``3.14.*`` | 121 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-container`` | ``3.14.*`` | 590 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``default`` | ``3.14.*`` | 236 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``detectors`` | ``3.14.*`` | 86 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``gcloud`` | ``3.14.*`` | 147 | ``linux-64``, ``osx-arm64-min`` |
+| ``grayskull`` | ``3.14.*`` | 248 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``linux`` | ``3.14.*`` | 146 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``local-recipes`` | ``3.14.*`` | 1,155 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``mcp-host`` | ``3.14.*`` | 83 | ``linux-64`` |
+| ``osx`` | ``3.14.*`` | 242 | ``osx-arm64-min`` |
+| ``platform-ci-test`` | ``3.14.*`` | 357 | ``linux-64`` |
+| ``platform-dev`` | ``3.14.*`` | 606 | ``linux-64``, ``osx-arm64-min`` |
+| ``platform-object-storage`` | ``3.14.*`` | 27 | ``linux-64`` |
+| ``pyforge-atlas`` | ``3.14.*`` | 466 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-ci`` | ``3.14.*`` | 122 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-container`` | ``3.14.*`` | 632 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-core`` | ``3.14.*`` | 42 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-doctor`` | ``3.14.*`` | 94 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-herald`` | ``3.14.*`` | 138 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-marshal`` | ``3.14.*`` | 119 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-mason`` | ``3.14.*`` | 125 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-scribe`` | ``3.14.*`` | 65 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-scribe-pg`` | ``3.14.*`` | 74 | ``linux-64``, ``osx-arm64-min`` |
-| ``pyforge-steward`` | ``3.14.*`` | 80 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-testing-kit`` | ``3.14.*`` | 49 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-doctor`` | ``3.14.*`` | 98 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-foundry-full`` | ``3.14.*`` | 709 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-foundry-full-stack`` | ``3.14.*`` | 720 | ``linux-64`` |
+| ``pyforge-guild`` | ``3.14.*`` | 236 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-herald`` | ``3.14.*`` | 141 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-marshal`` | ``3.14.*`` | 125 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-mason`` | ``3.14.*`` | 139 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-scribe`` | ``3.14.*`` | 117 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-scribe-pg`` | ``3.14.*`` | 125 | ``linux-64``, ``osx-arm64-min`` |
+| ``pyforge-steward`` | ``3.14.*`` | 94 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-testing-kit`` | ``3.14.*`` | 52 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-warden`` | ``3.14.*`` | 162 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``python-agent-platform`` | ``3.14.*`` | 499 | ``linux-64``, ``osx-arm64-min`` |
-| ``vuln-db`` | ``3.14.*`` | 244 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``win`` | ``3.14.*`` | 305 | ``win-64`` |
+| ``python-agent-platform`` | ``3.14.*`` | 580 | ``linux-64``, ``osx-arm64-min`` |
+| ``site`` | ``3.14.*`` | 121 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``vuln-db`` | ``3.14.*`` | 245 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``win`` | ``3.14.*`` | 299 | ``win-64`` |
 
 <!-- pixi-env-matrix:end -->
 ## Fleet conventions (one vocabulary)
@@ -487,6 +521,12 @@ Formula: `python-<role>-<class>`. Full map:
 Destination: **`python-foundry`**; mount **`src/platform/`**; eight stations.
 
 ## Cutover to `python-foundry` (build target, 2026-09-04)
+
+> **Read the current state first.** This section is the 2026-09-04 plan, kept as history. The
+> contract moved on 2026-09-13 (regenerate, not fold — Epic 54; 44.4 / 44.5 / 44.6 parked) and
+> again on 2026-09-25 (no archive of A — `fnd:CAP-7` / 44.10 retired). The state at 2026-09-25 and
+> the execution plan that follows from it are in § *Where next* → *Consolidation — 2026-09-25*;
+> the live contract is `spec-python-foundry-cutover`.
 
 **Ruling.** The gate on this cutover (Epics 40 → 41 → 42 → 43, Mason 13.1 / 13.2) closed
 2026-09-03 — "Then cutover Phase 1 may start." Until this section nothing sat downstream of
@@ -565,7 +605,7 @@ solver farm. Graphify move-list and package fold never in one story. No `CAP-20`
 evergreen Spec. The archive's phase table is the record of where this came from, not a
 second copy to maintain.
 
-## Where next — the unification strategy at 2026-09-09
+## Where next — the unification strategy at 2026-09-09 (consolidated 2026-09-25)
 
 Written from the currency review (`research/currency-review-pyforge-unifying-strategy-2026-09-09.md`)
 after 384 commits and 13 PRs. The review's deepest finding is not any stale line. It is a pattern.
@@ -639,8 +679,9 @@ The eight-station hub-and-spoke Foundry, unchanged in shape, now described in th
 because the vocabulary is deliberate rather than accidental:
 
 - **Frames** are the context tier: the `AGENTS.md` verified block → station personas → story
-  specs, inheriting downward; git is the store; the Frame Spec v0.2 four-field format is the
-  interchange.
+  specs, inheriting downward; git is the store; **Frame Spec v0.3** is the interchange
+  (working draft, openteams-ai/frame-spec#28; adopted by steward Stories 53.5/53.6 — identity
+  is the qualified-ref `identifier`, not a four-field v0.2 shape).
 - **Cogs** are the eight stations as skills plus personas, harness-agnostic by the Portability
   contract. The model and the harness are rented; the context, workflows, checks and evidence are
   owned. That split is stated, not assumed.
@@ -691,9 +732,198 @@ is reading 2 with reading 1 folded in (shape 6/7 `foundry-side`); the realizatio
 and re-homes to `hub:CAP-*` once `spec-intelligence-hub` — flipped `draft` → `ready` in this pass —
 is re-derived; and the Single-Spec merge is minted now, as Story 48.8, before any 44.x flip.
 
+### Consolidation — 2026-09-25: one laptop SBOM, one control plane, one instruction surface
+
+**Direction (operator, 2026-09-25).** Three open PRs and one pasted whitepaper arrived beside the
+chain instead of through it: #1563 (rewrite `AGENTS.md` for PyForge + the BMAD Agentic-SDLC),
+#1564 (`pyforge-foundry-full` as the laptop SBOM, with its own Dream file), #1576 (the estate
+dossier as the A→B cutover control plane, with its own Dream file), and *Architectural
+Specification and Execution Paradigms of the BMad Method*. They are folded here in **one PR**,
+which supersedes all three; the PRs close when it lands. This section is that PR's Dream step.
+The same PR carries the chain to *ready for execution* — `spec-python-foundry-cutover` gains
+`fnd:CAP-12..15` and retires `fnd:CAP-7` through `bmad-spec`; steward Epic 67 decomposes them;
+herald and scribe each take the story on the surface they own — and stops there. Nothing is
+implemented. A full second review on a different model precedes any merge or dispatch.
+
+**Why here and not in two new Dream files.** #1564 and #1576 each carried a complete steward-owned
+Dream (`pyforge-foundry-full-sbom.md`, `pyforge-estate-whitepaper.md`). Under the one-chain lock
+(`chain-sprawl-check`; `CHAIN-STANDARD.md` § 9) an unexempted satellite on a PR is rewritten as a
+dated section on the owning Dream and the extra file is dropped. Their substance is below; the
+files do not land. The whitepaper is kept whole, every claim checked against the installed
+skills, in `research/technical-pyforge-unifying-strategy-bmad-method-whitepaper-2026-09-25.md`
+(steward). The four operator rulings are in § *Operator rulings* below; the dispatch order is in
+§ *The execution plan*.
+
+#### Where the estate is (measured 2026-09-25, `main` `5ab472318b`)
+
+§ *Cutover* above is the 2026-09-04 plan. The contract moved on 2026-09-13 and the Spec was
+re-derived; this Dream was not, until now.
+
+- **Epic 44:** 44.3 (foundry opened 2026-09-13, epoch `6e0607b530`), 44.7 (factory island),
+  44.12 (cutover flag and replay harness), 44.13 (memlog fidelity) `done`; 44.4 / 44.5 / 44.6
+  `backlog` and **parked** — never dispatched; 44.1, 44.2, 44.8, 44.9, 44.10, 44.11, 44.14, 44.15
+  `blocked`. `pyforge.cutover_root` = `local-recipes`.
+- **Regenerate, not fold** ([[foundry-regenerate-not-fold]], `fnr:CAP-*`): Epic 54 is `done` —
+  `pyforge-core`, steward and marshal rebuilt under B's `src/packages/` against the 54.1 thin
+  oracle; 54.5 put the A/B protocol on B (B writes foundry-product Dreams, Frames and Specs; A
+  pins — B's `PIN.md` cites contract `local-recipes@9e9f685`). CFE is rebuilt from Specs, not
+  moved. The table's "Fold the packages" and "Move the estate" are superseded wording.
+- **Capability ledger** ([[foundry-capability-ledger]], Epic 55): `docs/foundry/capability-ledger.yaml`
+  holds 907 rows at `5ab472318b` (911 once this PR adds `fnd:CAP-12..15` as `A-only`) — 815
+  `rebuild`, 87 → 91 `A-only`, 5 `retire` (one of them `fnd:CAP-7`, a withdrawn contract id, not
+  B-side retirement work); `never_move: true`; no row yet claims `verified-in-foundry`. Frames: company + eight stations at Frame Spec v0.3 (Epics 53, 64).
+- **B (`python-foundry`):** private; `main` last merged 2026-09-14; three packages; `docs/foundry/`
+  carries `PIN`, `SPEC`, `ab-sync`, `case-list`, `modes`, `renovate` and the Frames. Its open
+  PR #19 is #1563's companion (the same behavioural block on B).
+- **`pyforge-foundry-full`** (Story 63.5, `spec-pyforge-steward` CAP-151): the union of every
+  station feature for dependency closure, `no-default-feature`, never installed by default
+  (`AGENTS.md`); locked on linux-64 (680 packages), osx-arm64 (646), win-64 (629).
+- **Fleet:** both drains stopped by operator decision 2026-09-25, not exhaustion. Cross-station
+  parallel dispatch is still bounded by one BMAD marker per working tree (`MRS-DISP-041`, seeded
+  on [[pyforge-marshal]] 2026-09-25).
+- **Repo size:** 285 MB tree / 299 MB packed, decks 47% (Realization log, 2026-09-25 seed). With
+  44.5 parked, whether decks cross to B at all is a ledger-mode question (`deck-carriage`,
+  below), no longer a 44.5 filter.
+
+#### Input 1 — the laptop installs one environment (PR #1564, seeded 2026-09-21)
+
+A developer laptop runs `pixi install -e pyforge-foundry-full` and from that environment alone
+launches the stations, generates and builds recipes locally, runs tests, lint and the local CI
+mirrors, and brings up the platform's local stack (PostgreSQL + pgvector, Redis, object storage)
+through features that already exist. The fat `local-recipes` feature is a historical pin dump,
+not the SBOM. **If the laptop still needs it, the SBOM is incomplete — that is a ticket, not a
+compose line.**
+
+- **Inclusion rule:** in if PyForge code uses it or a PyForge developer or operator workflow
+  needs it; out otherwise, even when `local-recipes` pins it today. Never compose `local-recipes`;
+  no `desktop-lab` kitchen sink.
+- **Constraints (operator, 2026-09-21):** PostgreSQL major **17** (`>=17.11,<18`); keep
+  `platform-dev`; hold libpq 17 by capping psycopg and pgvector below the first builds that need
+  libpq 18 (#1564 wrote `psycopg <3.2.10` / `pgvector <0.8.2`; the lock shows psycopg 3.2.10
+  already on libpq 17.11, so 67.1 measures the boundary — psycopg-c 3.3 today — before pinning),
+  never by bumping Postgres; never push a stub or placeholder `pixi.toml` to test write access —
+  it happened twice on 2026-09-21 and reddened CI.
+- **Campaign map:** (1) the BoM core — `build`, `grayskull`, `crm`, `platform-dev`,
+  `platform-object-storage`; residuals `conda-smithy` (py-rattler / conda co-solve) and
+  `python-agent-platform` (langflow vs pandas / onnxruntime) stay in their own environments
+  meanwhile; (2) a checkable SBOM and a laptop gate; (3) a disposition for every gap and fat-only
+  pin; (4) point CFE, `AGENTS.md` and Mason at the SBOM; (5) close the conda-forge gaps.
+
+Found while folding — none of it is in the PR:
+- **The compose shrinks the SBOM to one platform.** An environment's platforms are the
+  intersection of its features': `platform-object-storage` is linux-64 only and `platform-dev`
+  linux-64 + osx-arm64, so #1564's lock resolves `pyforge-foundry-full` for **linux-64 alone**
+  (734 packages) where `main` resolves three. A Mac or Windows laptop could no longer install it.
+- **PG17 is not true on `main`.** `scribe-pg` pins `postgresql >=18.3,<19` and `pgvector >=0.8.6`
+  on purpose: scribe's `psycopg >=3.3.4` pulls psycopg-c, which needs libpq ≥18.3 (the
+  `pixi.toml` comment says so). `mcp-host`, `platform-ci-test` and `pyforge-scribe`
+  (`psycopg >=3.3.4`) also resolve libpq 18.6. `python-agent-platform` and `platform-dev`, though,
+  already solve psycopg 3.2.10 on libpq 17.11 (measured in the lock, review pass 2026-09-25) — so
+  the libpq-18 boundary is psycopg-c 3.3, not the 3.2.10 #1564's text claimed. Only the PR branch
+  carries caps, and its `doctor-test` was red at fold time.
+- **It changes an existing contract.** CAP-151 / Story 63.5 define `pyforge-foundry-full` as
+  closure-only and never installed by default; #1564 makes it the default laptop install.
+
+#### Input 2 — the dossier is the cutover's control plane (PR #1576, seeded 2026-09-21)
+
+The PyForge dossier (`docsite/content/dossier.yml`, on [[pyforge-herald]]'s Spec surface — the
+`pyforge-pages` Dream was absorbed into it 2026-09-17) states the A→B
+cutover as control-plane fact for operators and Smiths — not a forensic inventory of A, and not a
+vision deck. A (`local-recipes`) is control plane and oracle, root of record until
+`pyforge.cutover_root` flips; B (`python-foundry`) is the lasting root, its engines rebuilt from
+Frame + Spec. Modes `rebuild` / `retire` / `A-only` / `B-only`, never `move`; a long-lived
+mirror of A on B is out of contract. Each campaign verb gets a done / not-done line: *Launch* =
+the regenerated kernel runs, not "A's tree arrived"; *Adopt Frames* = company + eight station
+Frames pass preflight, not a copy list of A paths; *Build the Intelligence Hub* = its objects
+invented on A first; *Wire the BMAD-suite* = re-provisioned from the adoption register. SBOM
+claims are labelled **A-side**. A *Verified* section shows only what the case list, the
+capability ledger and CI actually prove.
+
+Most of this restates [[foundry-regenerate-not-fold]], already `specified`. What the seed adds is
+the claim surface: the dossier becomes the one place the cutover's state is read, and each claim
+in it cites a ledger, case-list or CI source.
+
+#### Input 3 — the instruction surface names the estate first (PR #1563)
+
+`AGENTS.md` opens with what this repository is — A, the PyForge control plane and BMAD
+Agentic-SDLC host, with the recipe factory as one cell rather than the product — then the A/B
+roles, modes and writer lock, then a short behavioural core; the ~500 lines of accumulated
+incident notes become pointers. `CLAUDE.md` shrinks to `@AGENTS.md` plus Claude-only notes. The
+behavioural additions beyond today's five principles: *heal the tissue you touch* (no broken
+window left as "pre-existing" — already team memory
+`pre-existing-findings-fix-now-is-the-default`); *state over action* when a harness drives;
+harness-owned ledgers are read-only; implementation and adversarial review never run as one
+persona in one session.
+
+Why the draft does not merge as written:
+- The managed `bmad:context` block is refreshed only through `bmad-project-context`, and scribe's
+  parity meta-test (`spec-pyforge-scribe` CAP-27) reds a duplicated section or a missing
+  pointer. A hand rewrite bypasses both.
+- Its status vocabulary (`todo → review → done`) is not the worker's (`draft → ready-for-dev →
+  in-progress → in-review → done`; research file § 1, claim 3).
+- A deleted pitfall is lost knowledge unless it has a pointer target first (team memory,
+  `docs/reference/`).
+
+Its "no archive of A" line is now the operator's ruling (below). B's PR #19 is B's to decide under
+the writer lock; nothing here edits B.
+
+#### Input 4 — the BMAD-method whitepaper (pasted 2026-09-25)
+
+Kept whole and checked in the research file: 8 of 18 claims hold as stated; it is wrong on
+review-lens naming, persona codes and customization layers. What bears on the strategy: its three
+execution modes are already the estate's (`bmad-build` = the session path, `bmad-build-auto` =
+`marshal factory dispatch`, `bmad-loop` = spin and the drains); "deterministic infrastructure over
+model persuasion" is this estate's direction, and the 2026-09-25 drain stop showed where it is
+still missing — `MRS-DISP-041`, and `MRS-GATE-001` reporting two good stories as failed; its
+Frames / Cogs / Ops close corroborates § *What the Foundry becomes* above. It adds no capability,
+and its suite table is this repo's own register echoed back.
+
+#### Operator rulings (2026-09-25)
+
+1. **`pyforge-foundry-full` is the default laptop install** — #1564's thesis; a new capability
+   over CAP-151, and `AGENTS.md`'s "never installed by default" line changes with it.
+2. **All three laptop platforms, layered.** The SBOM keeps linux-64, osx-arm64 and win-64;
+   platform-limited stack pieces (`platform-object-storage`, `platform-dev`'s pgvector) compose
+   in a layer environment on top, the pattern `scribe-pg` already uses.
+3. **PostgreSQL 17 everywhere, proven.** Scribe's psycopg caps below the first psycopg-c that
+   needs libpq 18 (3.3 as measured; 67.1 re-measures) and `scribe-pg` moves to PG17 — only if
+   scribe's Postgres suite passes; if it cannot, the story halts `blocked` and Postgres is never
+   bumped.
+4. **No archive of A.** `fnd:CAP-7` / Story 44.10 retire. Two git roots stay live after the
+   `cutover_root` flip; what A hosts afterwards is decided per capability by the ledger's modes.
+   44.10's ledger key stays `blocked` (a retired story is never dispatched; no key is flipped).
+5. **Ledger modes** (confirmed in the review pass): `fnd:CAP-12..15` are `A-only`, expiry
+   2026-12-31.
+
+6. **Deck carriage** (answered in the review pass): the deck binaries under `presentations/`
+   stay `A-only`; B regenerates any deck on demand from its `.dc.html` prototype through herald's
+   deck pipeline, which the ledger already routes as `rebuild`. Nothing moves; no story.
+
+No Spec question stays open.
+
+#### The execution plan
+
+| Step | What | Input | Vessel | Gate |
+|---|---|---|---|---|
+| 0 | This PR: Dream → `fnd:CAP-12..15`, `fnd:CAP-7` retired → Epic 67 + herald / scribe stories, ledger rows, story specs | all | this PR | full review on a second model; operator merges; #1563 / #1564 / #1576 close |
+| 1 | The SBOM composes the laptop BoM on three platforms, platform-limited pieces in a layer; PG17 held estate-wide; the `AGENTS.md` line follows | 1 | steward 67.1 | `pr-preflight`; `pyforge-station-tests`; scribe's Postgres suite on PG17 |
+| 2 | The laptop gate: one task proves the laptop needs nothing beyond the SBOM | 1 | steward 67.2 | `pixi run -e pyforge-foundry-full sbom-laptop-gate` exit 0 on `main` |
+| 3 | Gap dispositions: every feature outside the SBOM and its layer, and every fat-only pin, gets promote / won't-do / upstream + owner, derived from `pixi.toml` | 1 | steward 67.3 | `pixi run -e pyforge-guild sbom-gaps-check` exit 0 |
+| 4 | Upstream tickets for the gaps that need one | 1 | steward 67.4 | **outward** — `blocked` until the operator flips |
+| 5 | Point the estate at the SBOM (every page that teaches an install, `AGENTS.md`, Mason and CFE docs) | 1 | steward 67.5 | after 67.2 is green; `detectors-ci` exit 0 |
+| 6 | The dossier states the control plane | 2 | herald 26.1 (steward index 67.6) | `pixi run -e site site-check` exit 0; the structural test 26.1 adds asserts every *Verified* item cites a source |
+| 7 | The instruction surface names the estate first | 3 | scribe 21.1 (steward index 67.7) | `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` (parity meta-test); `detectors-ci` (`governance-currency`); the removed → target map in the run result |
+| — | The cutover spine drops the archive (`fnd:AD-1`, `fnd:AD-21`, the roles table) | ruling 4 | steward 67.8 | `bmad-architecture` re-render from a memlog entry; scoped stamps; `spec-surface-check` exit 0 |
+| — | Close the conda-forge gaps (campaign phase 5) | 1 | Mason stories minted from 67.3's list | Rule 1 / Rule 2 (policy — undecomposed until 67.3 names the gaps) |
+
+**Order.** 67.1 → (67.2 ∥ 67.3) → 67.5; 26.1 ∥ 21.1 ∥ 67.8 at any time; 67.4 when the operator flips it. Phase 5
+is not decomposed here on purpose: its stories cannot exist before 67.3 names the gaps, and 67.3's
+list is their decomposition input. None of this waits on B, and none of it flips an Epic 44
+`blocked` key or `pyforge.cutover_root`.
+
 ## Kinships
 
-[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward; binds Mode A isolation) · [[atlas-query-dashboards]] (Panel/Bokeh over `cf_atlas.db` at `pyforge/atlas/views/` — **retired 2026-09-09 (fleet readiness C1)**: no caller outside its own tests, and it read a private SQLite store through a dynamic-import bridge against CAP-19's "no private DuckDB" ruling; superseded by the Vizro/BSL board, which is the live Lane-3 runtime) · [[htap-query-plane]] (absorbed here — the query-plane section; not a sibling chain) · [[kedro-org-tooling-adoption]] (kedro-skills / kedro-mcp — authoring, not a second home) · [[pyforge-atlas]] (Kedro home, BSL, vss, plane writer) · [[marshal-token-economy]] (own Spec, CAP-1..CAP-17; five-layer compression + retrieval — built 24/24 and **every layer off** as of 2026-09-09; three of five layers apply only on `factory dispatch`) · [[pyforge-scribe]] (three CAP-18 ports; ingest writes through GraphStore; 34.5 plane driver) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine; vizro-mcp authoring is shared) · [[pyforge-steward]] (deploy & secure hosting; go-sops/age; Vault profile) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine — Dream archived into [[pyforge-marshal]] 2026-08-08; Spec stays live) · [`docs/specs/presentation-deck.md`](../specs/presentation-deck.md) (deck standards — a legacy Tier-1 spec, not a Dream) · [[django-accelerator-framework]] (Lane 2 portal scaffolding — **absorbed 2026-09-09 (C3)** into this Spec as `daf:CAP-1`, Dream now `archived`/`absorbed`: CAP-2's counting trigger was falsified by `PortalConfig` — the estate reached nine Django faces by factoring a declarative registration in `django-pyforge`, not by repeating a hand-copy, so no templating engine is wanted) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer — not the query plane) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine — no private Chroma for estate RAG) · [[db-gpt-django-plugin]] (DB knowledge base — SQL on the plane, not OLTP DSN) · *pyforge-operation* (estate-wide operating model — promotion 01/02/03 + Golden Path; a sibling-repo file never minted here, see the archive § Living names; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[build-league-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · [[python-agent-platform]] (**the parent** — `pap:CAP-1..6` / `pap:AD-1..17`; this Spec `extends` it) · [[intelligence-hub]] (the OpenTeams whitepaper seed; proposes a `hub:` prefix extending this Spec, a `nebariapp.yaml` chart template and a NIC profile — candidates, none chosen) · [[bmad-suite-lifecycle]] (Epics 46–47; **Epic 47's P1–P18 readiness gate precedes 44.3**) · [[bmad-eval-quality]] (Epic 45 — the slot the R-18..R-22 band once expected) · [[chain-currency-sweep]] (CAP-4 names this pack as a mandatory grounding source) · [[ocp-as-a-portability-profile]] (the OCP overlay a NIC profile would sit beside) · [[mcp-era-isolation]] (slice 1 sidecar shipped; slice 3 parked) · [[platform-image-one-pixi-env]] (pip-layer fold, shipped) · [[pixi-candidate-currency]] (binds the OpenFeature packaging ruling to Grounding 2026-08-24) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (hook specs + plugins; not eight Kedro projects)
+[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward; binds Mode A isolation) · [[atlas-query-dashboards]] (Panel/Bokeh over `cf_atlas.db` at `pyforge/atlas/views/` — **retired 2026-09-09 (fleet readiness C1)**: no caller outside its own tests, and it read a private SQLite store through a dynamic-import bridge against CAP-19's "no private DuckDB" ruling; superseded by the Vizro/BSL board, which is the live Lane-3 runtime) · [[htap-query-plane]] (absorbed here — the query-plane section; not a sibling chain) · [[kedro-org-tooling-adoption]] (kedro-skills / kedro-mcp — authoring, not a second home) · [[pyforge-atlas]] (Kedro home, BSL, vss, plane writer) · [[marshal-token-economy]] (own Spec, CAP-1..CAP-17; five-layer compression + retrieval — built 24/24 and **every layer off** as of 2026-09-09; three of five layers apply only on `factory dispatch`) · [[pyforge-scribe]] (three CAP-18 ports; ingest writes through GraphStore; 34.5 plane driver) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine; vizro-mcp authoring is shared) · [[pyforge-steward]] (deploy & secure hosting; go-sops/age; Vault profile) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine — Dream archived into [[pyforge-marshal]] 2026-08-08; Spec stays live) · [`docs/specs/presentation-deck.md`](../specs/presentation-deck.md) (deck standards — a legacy Tier-1 spec, not a Dream) · [[django-accelerator-framework]] (Lane 2 portal scaffolding — **absorbed 2026-09-09 (C3)** into this Spec as `daf:CAP-1`, Dream now `archived`/`absorbed`: CAP-2's counting trigger was falsified by `PortalConfig` — the estate reached nine Django faces by factoring a declarative registration in `django-pyforge`, not by repeating a hand-copy, so no templating engine is wanted) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer — not the query plane) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine — no private Chroma for estate RAG) · [[db-gpt-django-plugin]] (DB knowledge base — SQL on the plane, not OLTP DSN) · *pyforge-operation* (estate-wide operating model — promotion 01/02/03 + Golden Path; a sibling-repo file never minted here, see the archive § Living names; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[build-league-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · [[python-agent-platform]] (**the parent** — `pap:CAP-1..6` / `pap:AD-1..17`; this Spec `extends` it) · [[intelligence-hub]] (the OpenTeams whitepaper seed; proposes a `hub:` prefix extending this Spec, a `nebariapp.yaml` chart template and a NIC profile — candidates, none chosen) · [[bmad-suite-lifecycle]] (Epics 46–47; **Epic 47's P1–P18 readiness gate precedes 44.3**) · [[bmad-eval-quality]] (Epic 45 — the slot the R-18..R-22 band once expected) · [[chain-currency-sweep]] (CAP-4 names this pack as a mandatory grounding source) · [[ocp-as-a-portability-profile]] (the OCP overlay a NIC profile would sit beside) · [[mcp-era-isolation]] (slice 1 sidecar shipped; slice 3 parked) · [[platform-image-one-pixi-env]] (pip-layer fold, shipped) · [[pixi-candidate-currency]] (binds the OpenFeature packaging ruling to Grounding 2026-08-24) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (hook specs + plugins; not eight Kedro projects) · [[foundry-regenerate-not-fold]] (the 2026-09-13 contract that superseded this Dream's fold / move wording; Epic 54) · [[foundry-capability-ledger]] (the strangler routing table; Epic 55) · [[pyforge-herald]]'s docsite (`spec-pyforge-herald` owns `docsite/**`; the `pyforge-pages` Dream was absorbed into it 2026-09-17 — the dossier `fnd:CAP-14` makes the cutover's control plane; herald Story 26.1)
 
 ---
 
@@ -825,3 +1055,64 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   refresh on promotion; `AGENTS.md` no longer mandates `--repair-feed` before every ledger write.
 - **2026-09-09** — **Fleet readiness pass** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`, operator-approved in full). Three changes here: the Kinships line's `[[atlas-query-dashboards]]` clause is corrected — it asserted "a second, shipped Lane-3 runtime", which is false under this Dream's own gate; atlas Epic 14's `pyforge/atlas/views/` package is **retired** (no caller outside its own tests; a private SQLite read through a dynamic-import bridge whose docstring declares the evasion of CAP-19). § *Where next* gains a dated subsection recording the pass: 18 built-not-in-effect capabilities fleet-wide, Epic 49 widened to the station satellites via owning-station effect stories plus steward index rows, and the batch file as the record. And the Spec side gains the batch as a companion, five previously-unvesselled currency-review findings in § Residual, and the note that `realization-gate-home`'s precondition (the Intelligence Hub Spec at `ready`) is met this pass with the re-home pending that Spec's re-derive.
 - **2026-09-09** — **C3 absorb (fleet readiness).** `spec-django-accelerator-framework` (mason, `draft`) is absorbed into `spec-pyforge-unifying-strategy` and its Dream archived (`archived-reason: absorbed`). The Unifying Spec now carries a `## Absorbed (daf:CAP-*)` section: `daf:CAP-1` — the accelerator contract (cookiecutter-django + FastAPI ASGI seam, `env()`-split settings, `/ht/` health checks, render-time mirror endpoints, vendored zero-CDN assets, internal OIDC) — arrives in full with its air-gap and living-exemplar constraints, and its stale citation corrected on arrival (`config/urls.py:26 include("health_check.urls")` → `src/platform/config/urls.py:98` via `HealthCheckView`, import at `:11`; `:50-55` records the `include(...)` form as deprecated and 4.x as having no `health_check.urls` module at all). `daf:CAP-2` — the templating engine — is **not** absorbed: its "a third/fourth Django surface repeats the copy by hand" trigger was falsified, and its open question (repo-wide vs estate-wide counting) dies with it. Ids are qualified `daf:` on arrival so no bare `CAP-n` collides with CAP-1..19, the rule Story 48.7 enforces.
+- **2026-09-12** — **Manifest-sync gap found** (operator-directed audit of
+  `library-llms-full.md` scope): each `pyforge-*` station's own nested
+  `pixi.toml [package.run-dependencies]` is invisible to root `pixi.toml` and
+  therefore to `library-llms-full.md` / `llms_full_check.py`. Seven already-shipped,
+  directly-imported station deps (`packaging`, `jsonschema`, `psutil`, `attrs`,
+  `packageurl-python`, `license-expression`) surfaced as a result — recorded above
+  under § *High-Leverage Library Integration* as "Measured 2026-09-12." Another
+  instance of this Dream's own "shipped but not in effect" pattern (§ *Where next* /
+  Epic 49), this time on the dependency-truth surface itself. Per Story 12.1's own
+  precedent and `deferred:` note (`spec-12-1-full-pixi-wiring-distribution-and-repo-gate-compliance`,
+  pyforge-marshal — hand-wired one station's pixi dep and flagged pre-existing catalog
+  drift as a follow-up), the fix is generalized into a standing detector fix rather than
+  another one-off hand-wiring pass, and is carried as its own satellite Dream —
+  [[library-catalog-manifest-sync]] (owner marshal) — so the mega-spec doesn't absorb an
+  unrelated tooling CAP. Closed same day: `spec-library-catalog-manifest-sync` CAP-1/CAP-2
+  shipped as `pyforge-marshal` Epic 36 (Stories 36.1, 36.2) — see that Dream's own
+  Realization log for the full narrative, including a mid-turn process correction (a Story
+  must exist before hand-implementation, no exemption for a small fix) now codified in
+  `AGENTS.md` / `CLAUDE.md`.
+- **2026-09-25 (seed)** — **`local-recipes` repo-size measurement, folded into the cutover's
+  "only move what it needs" principle.** Trigger: `local-recipes` measured at 285 MB current
+  working tree (299 MB GitHub-reported git-compressed size) while attempting a Gemini
+  chat-session URL import (100 MB ceiling). Live breakdown (measured 2026-09-25):
+  `presentations/` 134.7 MB / 944 files (**47% of the tree — the single largest category by
+  far**), `_bmad-output/` 34.6 MB, `src/` 34.3 MB, `recipes/` 30.4 MB / 14,414 files, `.claude/`
+  22.3 MB, `docs/dashboard/` 9.7 MB. Git history separately carries `pixi.lock` at 239
+  revisions / 539 MB and `docs/dashboard/` generated build output at 816 revisions / 162 MB
+  (both pure churn from files that fully rewrite on nearly every touching commit and never
+  delta-compress), plus a since-deleted 50 MB `recipes/openmc-plotter/tests/setup_test/plot_settings.pkl`
+  still costing every clone. **Already solved by the existing plan:** the "Foundry is a fresh
+  empty repo" decision above (operator, 2026-09-04) already drops ALL git-history churn by
+  construction — the `pixi.lock`/dashboard-build revision bloat never crosses into foundry
+  regardless of this entry. Story 44.8's in-flight-only recipe filter already bounds `recipes/`'s
+  contribution too. **The one real gap:** Story 44.5 ("Move the estate") currently names
+  "decks" as an unconditional move alongside skills/BMAD/dreams, with no filter analogous to
+  44.8's — and decks are the single largest current-tree category (134.7 MB), including
+  several topics with 2–4 superseded dated `.pptx` versions kept side by side (e.g.
+  `pyforge-unifying-strategy` itself has 4, `pyforge-atlas` has 3). **Seeded, not yet specced:**
+  when 44.5 is next amended, give decks the same working-set discipline 44.8 gives recipes —
+  latest deck per topic only (or decks excluded from the estate move entirely, regenerated
+  on demand from their source `.dc.html` prototypes per `docs/how-to/presentation-deck.md`,
+  or relocated to Git LFS / a satellite decks repo) — so foundry starts minimal by construction
+  rather than inheriting the accumulated deck-duplication local-recipes was never pruned of.
+  No CAP minted, no story touched; a future `bmad-correct-course` pass on
+  `spec-python-foundry-cutover` resolves this into a concrete 44.5 sub-decision or a new story.
+  **Specced on herald, 2026-09-28** (operator ruling, independent of the cutover): the "latest
+  deck per topic" half is now `spec-pyforge-herald:CAP-53`, herald Epic 28 / Stories 28.1–28.2.
+  Superseded dated exports are pruned, since git keeps them, and a check stops them regrowing.
+  See [[pyforge-herald]] § Realization log, 2026-09-28. Story 44.5's own estate-move filter is
+  untouched.
+- **2026-09-25 (consolidation)** — **Four outside inputs folded; the chain carried to ready.** PRs
+  #1563 (instruction surface), #1564 (laptop SBOM), #1576 (estate dossier) and the BMAD-method
+  whitepaper are folded into § *Where next* → *Consolidation — 2026-09-25*, which supersedes the
+  three PRs and records the estate's measured state, four operator rulings (SBOM is the default
+  laptop install; three platforms, layered; PG17 everywhere, proven; **no archive of A**) and the
+  execution plan. Two satellite Dream files from #1564 / #1576 were rewritten into that section
+  under the one-chain lock rather than landed. Same PR: `spec-python-foundry-cutover` gains
+  `fnd:CAP-12..15` and retires `fnd:CAP-7`; steward Epic 67, herald Epic 26 and scribe Epic 21
+  decompose them with ledger rows and tracked story specs. Nothing implemented; a second-model
+  review precedes merge. Also found: #1564's compose would have shrunk `pyforge-foundry-full` to
+  linux-64 only.

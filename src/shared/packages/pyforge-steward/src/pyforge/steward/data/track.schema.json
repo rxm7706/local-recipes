@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-steward:track-schema",
+  "title": "Track",
+  "description": "One structured Track per bmad-loop / marshal factory run (Story 53.3, hub:CAP-3). additionalProperties stays open: additive field growth is never a schema break. Frozen required keys are the marshal-relayed TRACK_FIELDS list.",
+  "type": "object",
+  "required": [
+    "run_id",
+    "timestamps",
+    "tree_revision",
+    "guards",
+    "gates",
+    "model_adapter",
+    "human_approvals_overrides",
+    "retention"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamps": {
+      "type": "object",
+      "required": ["started_at", "ended_at"],
+      "properties": {
+        "started_at": { "type": ["string", "null"] },
+        "ended_at": { "type": ["string", "null"] }
+      }
+    },
+    "tree_revision": {
+      "type": ["string", "null"]
+    },
+    "guards": {
+      "type": "array",
+      "description": "Guards by stage with results, copied from the run record (gate-record commands / journal), never inferred from policy TOML.",
+      "items": {
+        "type": "object",
+        "required": ["stage", "name", "result"],
+        "properties": {
+          "stage": { "type": "string" },
+          "name": { "type": "string" },
+          "result": { "type": "object" }
+        }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "description": "Gates as threshold rules plus verdicts readable on the record.",
+      "items": {
+        "type": "object",
+        "required": ["name", "rule", "verdict"],
+        "properties": {
+          "name": { "type": "string" },
+          "rule": { "type": ["string", "null"] },
+          "verdict": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "model_adapter": {
+      "description": "Model/adapter version and config. Null when the run sources omit them — never invented.",
+      "type": ["object", "null"],
+      "properties": {
+        "version": { "type": ["string", "null"] },
+        "config": {}
+      }
+    },
+    "human_approvals_overrides": {
+      "type": "array",
+      "description": "Empty when the run sources omit approvals/overrides."
+    },
+    "retention": {
+      "type": "object",
+      "required": ["track", "raw_payload_days"],
+      "properties": {
+        "track": { "const": "indefinite" },
+        "raw_payload_days": { "const": 90 }
+      }
+    }
+  }
+}

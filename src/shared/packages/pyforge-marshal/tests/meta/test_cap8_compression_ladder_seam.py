@@ -41,11 +41,7 @@ _COMPRESSION_OWNERS = (
 
 def _compression_function_defs(tree: ast.Module) -> list[ast.FunctionDef]:
     names = {"evaluate_compression_ladder", "_maybe_escalate_compression"}
-    return [
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.FunctionDef) and node.name in names
-    ]
+    return [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name in names]
 
 
 def _function_forbidden_hits(function: ast.FunctionDef) -> list[tuple[int, str]]:
@@ -70,8 +66,7 @@ def test_compression_ladder_functions_never_reference_model_or_gate_seams(
         for lineno, name in _function_forbidden_hits(function):
             violations.append(f"{function.name} line {lineno}: {name}")
     assert not violations, (
-        "CAP-8 compression ladder must not reference model selection or "
-        f"gate/review skip seams: {violations}"
+        f"CAP-8 compression ladder must not reference model selection or gate/review skip seams: {violations}"
     )
 
 

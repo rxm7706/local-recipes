@@ -247,3 +247,16 @@ _Corrected 2026-08-22 (review pass 3):_ this note previously claimed the scheme 
 
 **Commands:**
 - `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `edf4470ad2` (2026-08-22, "herald 15.2 / scribe 3.2 finalize: promote specs, flip ledgers"); also `71d524a90e` (2026-08-07, "herald: Story 3.2 — stale hand-mirror detection"); also `6c63b86534` (2026-08-07, "steward: Story 3.2 — a bmad-loop runner and its environment materialize together"). Ledger row `3-2-transcripts-join-the-compile-sources: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-15-2-dense-content-renders-as-shapes-that-fit.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-3-2-transcripts-join-the-compile-sources.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -22,7 +22,7 @@ import pandas as _pd
 # crashing this package's import.
 try:
     _pd.set_option("future.infer_string", False)
-except (_pd.errors.OptionError, ValueError):  # pragma: no cover - only if a future pandas removes/locks it
+except _pd.errors.OptionError, ValueError:  # pragma: no cover - only if a future pandas removes/locks it
     warnings.warn(
         "pyforge.atlas could not pin pandas' future.infer_string option off; "
         "string-like columns will use NaN (not None) as their missing-value sentinel, "

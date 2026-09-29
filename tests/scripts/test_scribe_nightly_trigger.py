@@ -53,6 +53,36 @@ class _FakeRun:
         return self._default
 
 
+def test_nightly_sets_graphify_extra_when_unset(monkeypatch):
+    """Story 8.2: the trigger opts the seventh surface on for this process."""
+    import os
+
+    mod = _load_module()
+    monkeypatch.delenv("PYFORGE_GRAPHSTORE_OWNER", raising=False)
+    monkeypatch.delenv("SCRIBE_GRAPHIFY_EXTRA", raising=False)
+    fake_run = _FakeRun()
+
+    rc = mod.main(run=fake_run, which=lambda _: "/usr/bin/pixi")
+
+    assert rc == 0
+    assert os.environ["SCRIBE_GRAPHIFY_EXTRA"] == "1"
+    assert fake_run.calls == [mod._COMPILE_CMD]
+
+
+def test_nightly_preserves_explicit_graphify_extra_off(monkeypatch):
+    import os
+
+    mod = _load_module()
+    monkeypatch.delenv("PYFORGE_GRAPHSTORE_OWNER", raising=False)
+    monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "0")
+    fake_run = _FakeRun()
+
+    rc = mod.main(run=fake_run, which=lambda _: "/usr/bin/pixi")
+
+    assert rc == 0
+    assert os.environ["SCRIBE_GRAPHIFY_EXTRA"] == "0"
+
+
 def test_default_owner_skips_postgres_and_compiles(monkeypatch):
     mod = _load_module()
     monkeypatch.delenv("PYFORGE_GRAPHSTORE_OWNER", raising=False)

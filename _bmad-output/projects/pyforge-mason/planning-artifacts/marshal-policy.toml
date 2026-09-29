@@ -212,42 +212,123 @@ verify_commands = [
   "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
 ]
 
+"19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  # 19.1: the SKF station skill, its export records, the persona, the AGENTS.md SKF block (skf-export-skill only)
+  ".claude/skills/pyforge-mason/**",
+  ".claude/skills/.export-manifest.json",
+  ".claude/skills/export-skill-result-*.json",
+  ".claude/skills/bmad-agent-mason/**",
+  "AGENTS.md",
+  # 19.2-19.4: the hand-authored Mason skills
+  ".claude/skills/mason-package/**",
+  ".claude/skills/mason-environment/**",
+  ".claude/skills/mason-feedstock-platform-expansion/**",
+  ".claude/skills/mason-feedstock-failure-remediation/**",
+  # 19.4: the two campaigns move out of docs/how-to/; stubs and the legacy index repoint
+  "docs/how-to/feedstock-platform-expansion.md",
+  "docs/how-to/feedstock-failure-remediation.md",
+  "docs/specs/feedstock-platform-expansion.md",
+  "docs/specs/feedstock-failure-remediation.md",
+  "CLAUDE.md",
+  "docs/reference/agent-instruction-notes.md",
+  "docs/reference/skills-catalog.md",
+  # 19.5: the closing Rule-2 retro (retro(cfe): commit, CFE surface only)
+  ".claude/skills/conda-forge-expert/**",
+  # co-governor reconciles (scribe governs AGENTS.md / CLAUDE.md, doctor docs/how-to, core every station's src)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
+"20" = [  # No station or environment caps pixi (spec-pyforge-mason CAP-30), added 2026-09-28
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "pixi.lock",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  # 20.1: the pixi-pin detector, its registry and its test
+  "scripts/pixi_version_registry.py",
+  "scripts/pixi_version_check.py",
+  "tests/scripts/test_pixi_version_check.py",
+  # co-governor reconciles (core governs every station's src, doctor's spec-pixi-candidate-currency pixi.lock)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
+"21" = [  # Mason packages the intake toolchain (spec-pyforge-mason CAP-31), added 2026-09-28
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  # 21.1-21.5: one new recipe each; 21.5 also moves its sibling pptxgenjs-plus to the version the JSX package pins
+  "recipes/git-pkgs/**",
+  "recipes/forge/**",
+  "recipes/gitgres/**",
+  "recipes/opengrep/**",
+  "recipes/pptxgenjs-plus-jsx/**",
+  "recipes/pptxgenjs-plus/**",
+  # each story's closing Rule-2 retro (its own retro(cfe): commit, CFE surface only)
+  ".claude/skills/conda-forge-expert/**",
+  # co-governor reconciles (spec-fleet-stewardship governs recipes/**, spec-packaging-factory the CFE surface)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
+"22" = [  # Twelve recipes lose conda-recipe-manager's leaked sentinel key; CFE's validation refuses the next one (spec-pyforge-mason CAP-32), added 2026-09-28 (night)
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  # 22.1: the twelve recipe.yaml files (meta.yaml stays untouched beside each)
+  "recipes/semgrep/recipe.yaml",
+  "recipes/boost/recipe.yaml",
+  "recipes/pyautogui/recipe.yaml",
+  "recipes/pyobjc-framework-systemconfiguration/recipe.yaml",
+  "recipes/psycopg2-yugabytedb/recipe.yaml",
+  "recipes/vc/recipe.yaml",
+  "recipes/django-pygwalker/recipe.yaml",
+  "recipes/ctng-compilers/recipe.yaml",
+  "recipes/StringZilla/recipe.yaml",
+  "recipes/lerc/recipe.yaml",
+  "recipes/amundsen-databuilder/recipe.yaml",
+  "recipes/shodan/recipe.yaml",
+  # 22.1's retro (gotcha + corpus meta-test) and 22.2's check, each in its own retro(cfe): commit
+  ".claude/skills/conda-forge-expert/**",
+  # co-governor reconciles (spec-fleet-stewardship governs recipes/**, spec-packaging-factory the CFE surface)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
-# context.planning-graph (Story 28.27, token-economy CAP-6/CAP-13): verified
-# live 2026-09-10 against pyforge-marshal (the canary) -- grounded retrieval,
-# real measured savings, zero further engineering needed. scribe recall's
-# own project-scoping gap (a lexical query naming a project slug could still
-# be outscored by another project's denser-vocabulary node) was found and
-# fixed in the same pass -- see scribe Story marshal-28.27 / recall.py's own
-# scope= parameter. wire/output/structure-graph/derived-context stay
-# declared-off (undeclared = default off) pending Story 28.31 (dispatch
-# cost spike) / 28.33 (spin reference wiring).
-[context."planning-graph"]
-enabled = true
+# context (Story 28.34, token-economy CAP-3): this station declares NO
+# [context] block -- 28.31 (dispatch-cost spike) and 28.33 (spin reference
+# wiring) both landed 2026-09-10/20, so the two layers this file used to
+# hold declared-off (wire, structure-graph) are no longer blocked. Per
+# policy-defaults.toml's own composition rule (declaring ANY part of
+# [context] here wholesale-replaces the 5-layer default for this station),
+# the fix is to declare nothing and inherit the clean repo-wide default:
+# all 4 harness-agnostic layers on, wire auto-resolved per harness.
 
-# context.derived-context (Story 28.28/28.32, token-economy CAP-5): scribe's
-# `index refresh --declare` shipped and the lean pyforge-scribe env's
-# missing cocoindex dependency was fixed -- verified live 2026-09-10
-# against pyforge-marshal, mode: incremental with zero findings.
-[context."derived-context"]
-enabled = true
-
-# context.output (Story 28.30/28.32, token-economy CAP-3): caveman skill
-# deployment now reaches dispatch worktrees too (not just loop homes), and
-# bmad-build-auto's own step-01-clarify-and-route.md tells the agent to
-# invoke it.
-[context.output]
-enabled = true
-
+# 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): Cursor Ultra
+# ladder as explicit {harness, model} tables so a Cursor id cannot land
+# on claude --model (fails-safe CAP-1). Unattended drain stays off until
+# 28.29 is separately proven. This IDE drives the wave.
 [model_tier_map.heavy]
-dev = "composer-2.5-fast"
-review = "composer-2.5"
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.medium]
-dev = "composer-2.5-fast"
-review = "composer-2.5"
+dev = { harness = "cursor", model = "grok-4.6" }
+review = { harness = "cursor", model = "grok-4.6" }
 
 [model_tier_map.easy]
-dev = "composer-2.5-fast"
+dev = { harness = "cursor", model = "composer-2.5" }
 

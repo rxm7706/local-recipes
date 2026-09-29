@@ -67,15 +67,11 @@ def test_validate_link_404_is_invalid():
 
 def test_validate_link_403_is_invalid():
     client = FakeHttpClient({"https://forbidden.example": FakeResponse(403)})
-    assert not evidence.validate_link(
-        "https://forbidden.example", client=client
-    ).is_valid
+    assert not evidence.validate_link("https://forbidden.example", client=client).is_valid
 
 
 def test_validate_link_unreachable_is_invalid_with_no_status():
-    client = FakeHttpClient(
-        {"https://unreachable.example": httpx2.ConnectError("refused")}
-    )
+    client = FakeHttpClient({"https://unreachable.example": httpx2.ConnectError("refused")})
     result = evidence.validate_link("https://unreachable.example", client=client)
     assert result.is_valid is False
     assert result.status is None
@@ -87,9 +83,7 @@ def test_validate_link_up_to_three_redirects_still_valid_on_a_final_200(
 ):
     """AD-15: 'follows up to 3 hops' -- not an off-by-one. Exactly 3 hops
     must still resolve, not be treated as one too many."""
-    client = FakeHttpClient(
-        {"https://redirected.example": FakeResponse(200, redirects=redirect_count)}
-    )
+    client = FakeHttpClient({"https://redirected.example": FakeResponse(200, redirects=redirect_count)})
     result = evidence.validate_link("https://redirected.example", client=client)
     assert result.is_valid is True
     assert result.redirects == redirect_count
@@ -99,18 +93,14 @@ def test_validate_link_too_many_redirects_raised_by_the_client_is_invalid():
     """A 4th hop is what the real ``httpx2.Client(max_redirects=3)`` itself
     refuses (raises ``TooManyRedirects``) -- this module must not crash on
     that, only report the link as invalid."""
-    client = FakeHttpClient(
-        {"https://loopy.example": httpx2.TooManyRedirects("too many redirects")}
-    )
+    client = FakeHttpClient({"https://loopy.example": httpx2.TooManyRedirects("too many redirects")})
     result = evidence.validate_link("https://loopy.example", client=client)
     assert result.is_valid is False
 
 
 @pytest.mark.parametrize("redirect_count", [0, 1, 2])
 def test_no_warning_for_a_chain_of_two_or_fewer(redirect_count, caplog):
-    client = FakeHttpClient(
-        {"https://short.example": FakeResponse(200, redirects=redirect_count)}
-    )
+    client = FakeHttpClient({"https://short.example": FakeResponse(200, redirects=redirect_count)})
     with caplog.at_level("WARNING", logger="pyforge.herald.evidence"):
         evidence.validate_link("https://short.example", client=client)
     assert caplog.records == []
@@ -165,9 +155,7 @@ def test_schedule_async_validation_does_not_mark_a_recent_entry_stale():
         last_validated_at=now - timedelta(days=1),
     )
     client = FakeHttpClient({"https://ok.example": FakeResponse(200)})
-    [result] = evidence.schedule_async_validation(
-        [recent], client=client, now=lambda: now
-    )
+    [result] = evidence.schedule_async_validation([recent], client=client, now=lambda: now)
     assert result.is_stale is False
 
 
@@ -183,12 +171,8 @@ def test_schedule_async_validation_re_checks_every_url():
         )
         for url in ("https://a.example", "https://b.example")
     ]
-    client = FakeHttpClient(
-        {"https://a.example": FakeResponse(200), "https://b.example": FakeResponse(404)}
-    )
-    results = evidence.schedule_async_validation(
-        entries, client=client, now=lambda: now
-    )
+    client = FakeHttpClient({"https://a.example": FakeResponse(200), "https://b.example": FakeResponse(404)})
+    results = evidence.schedule_async_validation(entries, client=client, now=lambda: now)
     assert [r.is_valid for r in results] == [True, False]
     assert sorted(client.requested_urls) == ["https://a.example", "https://b.example"]
 

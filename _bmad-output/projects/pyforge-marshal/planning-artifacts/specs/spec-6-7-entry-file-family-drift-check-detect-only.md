@@ -186,3 +186,16 @@ Self-review pass against the diff (no separate adversarial dispatch this session
 **Follow-up review recommendation: false** -- the one finding is fixed and covered by a dedicated regression test; the "substring hub-mention, not a semantic diff" scope boundary is a recorded design decision (see Design Notes above), not an open defect.
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `451ba02272` (2026-08-07, "marshal: Story 6.7 — Entry-file family drift check, detect-only"). Ledger row `6-7-entry-file-family-drift-check-detect-only: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/adapters.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/conformance.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_adapters_cli.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_conformance.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

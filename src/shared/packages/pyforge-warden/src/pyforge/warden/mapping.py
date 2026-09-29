@@ -44,8 +44,5 @@ def load_conda_pypi_map() -> Mapping[str, object]:
     poison identity resolution for every later lookup in the process."""
     mapping = _packaged_json(_CONDA_PYPI_MAP_ASSET)
     if not isinstance(mapping, dict):
-        raise ValueError(
-            f"packaged {_CONDA_PYPI_MAP_ASSET} must be a JSON object, "
-            f"got {type(mapping).__name__}"
-        )
+        raise ValueError(f"packaged {_CONDA_PYPI_MAP_ASSET} must be a JSON object, got {type(mapping).__name__}")
     return MappingProxyType(mapping)

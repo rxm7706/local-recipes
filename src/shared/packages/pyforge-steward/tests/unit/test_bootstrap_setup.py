@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.bootstrap import (
     SetupStep,
     ValidateFastStep,
@@ -29,9 +30,7 @@ def repo_root() -> Path:
     pytest.fail("could not locate local-recipes repo root from test file location")
 
 
-def test_setup_idempotent_on_existing_checkout(
-    repo_root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_setup_idempotent_on_existing_checkout(repo_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
 
     def fake_run(cmd: list[str], **kwargs: object) -> object:  # noqa: ANN401
@@ -83,9 +82,7 @@ def test_scaffold_pyforge_toml_writes_once(tmp_path: Path) -> None:
     assert scaffold_pyforge_toml(root=tmp_path) is False
 
 
-def test_validate_fast_json_shape(
-    repo_root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_validate_fast_json_shape(repo_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "pyforge.steward.bootstrap.shutil.which",
         lambda name: f"/usr/bin/{name}",
@@ -140,9 +137,7 @@ def test_initrepo_happy_path_mocks(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert "steward initrepo: PASS" in report
 
 
-def test_cli_setup_initrepo_validate_fast_exit_codes(
-    repo_root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_cli_setup_initrepo_validate_fast_exit_codes(repo_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(repo_root)
     monkeypatch.setattr(
         "pyforge.steward.bootstrap.setup_steps",
@@ -161,9 +156,7 @@ def test_cli_setup_initrepo_validate_fast_exit_codes(
     assert main(["validate-fast"]) == EXIT_OK
 
 
-def test_cli_setup_failure_projects_exit_1(
-    repo_root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_cli_setup_failure_projects_exit_1(repo_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(repo_root)
     monkeypatch.setattr(
         "pyforge.steward.bootstrap.setup_steps",

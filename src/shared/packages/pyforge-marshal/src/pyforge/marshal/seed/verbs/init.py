@@ -421,8 +421,7 @@ def _build_state_after_init(
         )
     )
     legacy = tuple(
-        LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of)
-        for record in inventory.legacy
+        LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of) for record in inventory.legacy
     )
     now = utc_timestamp()
     return SeedState(
@@ -527,9 +526,7 @@ def run_init(
         repo_fingerprint=dataclasses.replace(plan.repo_fingerprint, dirty=_repo_is_dirty_now(path)),
     )
 
-    result: ApplyResult = run_apply(
-        apply_plan, repo_root=path, never_write=never_write, commit=effective_commit
-    )
+    result: ApplyResult = run_apply(apply_plan, repo_root=path, never_write=never_write, commit=effective_commit)
 
     if plan.actions:
         new_state = _build_state_after_init(

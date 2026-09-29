@@ -12,18 +12,1019 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
 <style>
-:root{--color-bg:#f3f2f2;--color-text:#201e1d;--color-accent:#ec3013;--color-accent-700:#c22a10;--color-divider:#d3d0cf;--font-body:'Archivo',Arial,sans-serif;--font-heading:'Archivo Expanded','Archivo',Arial,sans-serif}
-body{margin:0;background:#cfcccb}
-.code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:.85em;letter-spacing:-0.01em}
-.tag{display:inline-block;padding:6px 12px;font-size:13px;font-weight:700;letter-spacing:.02em}
-.tag-accent{background:var(--color-accent);color:var(--color-bg)}
-.tag-neutral{background:#e4e2e1;color:var(--color-text)}
-.tag-outline{border:1.5px solid var(--color-text);color:var(--color-text)}
-a,a:hover{color:var(--color-accent-700)}
+/* Modernist — design-system tokens (family palette shared with the pyforge persona decks). */
+:root {
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201e1d;
+  --color-accent: #ec3013;
+  --color-accent-2: #e15b47;
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  --color-neutral-100: #f8f4f4; --color-neutral-200: #eae7e7; --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6; --color-neutral-500: #9b9797; --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d; --color-neutral-800: #444141; --color-neutral-900: #2d2b2b;
+
+  --color-accent-100: #fff2ef; --color-accent-200: #ffe0d9; --color-accent-300: #ffc4b8;
+  --color-accent-400: #ff9783; --color-accent-500: #ff563c; --color-accent-600: #dd2b0f;
+  --color-accent-700: #ae1800; --color-accent-800: #7c1405; --color-accent-900: #4d170e;
+
+  --font-heading: "Archivo", system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-body: "Archivo", system-ui, sans-serif;
+  --radius-md: 0px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin:0; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); font-size:15px; line-height:1.55; }
+h1,h2,h3,h4 { font-family:var(--font-heading); font-weight:var(--font-heading-weight); line-height:1.12; letter-spacing:-0.015em; margin:0 0 8px; }
+p { margin:0 0 12px; }
+.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.tag { display:inline-flex; align-items:center; font-size:11px; letter-spacing:0.02em; padding:3px 10px; border-radius:0; }
+.tag-accent { background:var(--color-accent-100); color:var(--color-accent-800); }
+.tag-neutral { background:var(--color-neutral-200); color:var(--color-neutral-800); }
+.tag-outline { border:1px solid var(--color-accent); color:var(--color-accent); }
+.tag-ink { background:var(--color-text); color:var(--color-bg); }
+svg text { font-family:'Archivo', system-ui, sans-serif; }
+
+/* Poster helpers — the Unifying Strategy section / act-band shapes, named once. */
+.xp { font-family:'Archivo Expanded','Archivo',sans-serif; }
+.sec { padding:36px 0 8px; }
+.sechead { display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px; }
+.sechead .num { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent); }
+.sechead h2 { font-size:26px; margin:0; letter-spacing:-0.01em; }
+.lede { font-size:14px; margin:0 0 20px; color:color-mix(in srgb, var(--color-text) 60%, transparent); }
+.act { margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline; }
+.act .lbl { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400); }
+.act .ttl { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em; }
+.act .cap { font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7; }
+.box { border:2px solid var(--color-text); padding:16px 22px; font-size:14px; line-height:1.5; }
+.tint { border:2px solid var(--color-accent); background:#fbe4de; padding:16px 22px; font-size:14.5px; line-height:1.5; }
+.muted { color:color-mix(in srgb, var(--color-text) 62%, transparent); }
+.kicker { font-size:11px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.bignum { font-size:48px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent); }
+table.tbl { border-collapse:collapse; width:100%; margin-top:18px; }
+table.tbl th { background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:13.5px; }
+table.tbl td { border:1px solid var(--color-divider); padding:9px 14px; font-size:14px; line-height:1.4; vertical-align:top; }
+table.tbl tr.hi td { background:#fbe4de; }
+.station { border:2px solid var(--color-text); padding:18px; }
+.station h3 { font-family:'Archivo Expanded','Archivo',sans-serif; font-size:19px; font-weight:800; margin:6px 0 4px; line-height:1.1; }
+.station .role { font-size:13px; font-weight:600; color:color-mix(in srgb, var(--color-text) 65%, transparent); line-height:1.35; }
+.station .motto { font-size:13.5px; font-weight:600; font-style:italic; margin-top:8px; line-height:1.35; color:var(--color-accent-700); }
+.station .verbs { font-size:12.5px; margin-top:10px; color:var(--color-accent-700); font-weight:700; }
+.station.me { background:#fbe4de; border-color:var(--color-accent); }
+.card { border:2px solid var(--color-text); padding:20px 22px; }
+.card .k { font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.card p { font-size:14.5px; line-height:1.5; margin:10px 0 0; font-weight:500; }
+.relaystep { display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--color-divider); }
+.relaynum { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:22px; color:var(--color-accent); min-width:34px; }
+.chip { font-size:9.5px; font-weight:700; padding:1px 6px; background:var(--color-text); color:var(--color-bg); letter-spacing:.04em; text-transform:uppercase; }
+.chip.ok { background:var(--color-accent); }
+.rung { border-left:3px solid var(--color-accent); padding:4px 0 4px 16px; }
+.rung b { font-size:15px; }
+.rung div { font-size:13.5px; line-height:1.45; margin-top:4px; color:color-mix(in srgb, var(--color-text) 72%, transparent); }
 </style>
 </helmet>
-<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;"><header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;"><div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;"><span style="color:var(--color-accent-700);">PYFORGE CREW · CHAPTER DECK · THE PHYSICIAN</span><span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Charter scoped 2026-07-23 · instruments live</span></div><h1 style="font-family:var(--font-heading); font-weight:900; font-size:86px; line-height:.94; letter-spacing:-0.02em; margin:0;">Doctor</h1><div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 55%, transparent);">pyforge-doctor</div><p style="max-width:1000px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">The practice: <b>pre-flight before the run, pulse after the ship</b>. Doctor watches the whole patient — machinery, freshness, health, threat, lifecycle — and writes <span style="color:var(--color-accent-700); font-weight:700;">prescriptions, never bare findings</span>: root cause named, order of work ranked.</p><div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;"><span class="tag tag-accent">Prescriptions, not findings</span><span class="tag tag-neutral">KEV/EPSS-ranked triage</span><span class="tag tag-neutral">Pre-flight + pulse</span><span class="tag tag-outline">cve-watcher · staleness-report</span></div></header><div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);"><div style="padding:20px 20px 20px 0px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Owner</div><div style="font-size:18px; font-weight:700; margin-top:6px;">RXM</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Module</div><div style="font-size:18px; font-weight:700; margin-top:6px;">pyforge.doctor</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Status</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Consolidating live instruments</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Scope</div><div style="font-size:18px; font-weight:700; margin-top:6px;">observability + diagnosis</div></div><div style="padding:20px 20px 20px 20px; "><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Motto</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Keep it alive</div></div></div><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">01</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The problem</h2></div><div style="display:grid; grid-template-columns:1.5fr 1fr 1fr ; gap:0; margin-top:22px; align-items:center;"><p style="font-size:19px; line-height:1.5; margin:0; padding-right:36px; font-weight:500;">The factory had instruments everywhere and a physician nowhere: atlas health surfaces, advisory watchers, self-checks — each answering its own question, none composing a diagnosis. A fault caught in triage costs seconds; <b>the same fault in production costs an outage</b> (or a shipped vulnerability).</p><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">5</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">vitals on one chart — machinery, freshness, health, threat, lifecycle</div></div><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">1</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">bedside manner over all existing instruments — none re-invented</div></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">02</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The patient chart</h2></div><table style="border-collapse:collapse; width:100%; margin-top:22px;"><thead><tr><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Vital</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Instrument</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Signal</th></tr></thead><tbody><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Machinery</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">engine self-check</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">envs, engines, configs sound before the loop runs</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Freshness</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><span class="code">staleness-report</span> · <span class="code">behind-upstream</span></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">who lags upstream, by how much</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Health</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><span class="code">feedstock-health</span></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">stuck bots, red CI, open issues</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Threat</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><span class="code">cve-watcher</span> + KEV/EPSS/CWE</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">new advisories, exploited-in-wild first</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Lifecycle</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><span class="code">release-cadence</span> · <span class="code">adoption-stage</span></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">acceleration, silence, abandonment</td></tr></tbody></table></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">03</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Triage order — prescriptions ranked</h2></div><div style="display:flex; align-items:stretch; margin-top:22px;"><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 1</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Exploited-in-wild</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">KEV-listed — patch now, everything else waits</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 2</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">High-EPSS criticals</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">This week, in dependency order</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 3</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">EOL / abandoned</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Plan replacement — find-alternative names the successor</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 4</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Stale-but-healthy</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Routine refresh waves, batched</div></div></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:14px 20px; margin-top:16px; font-size:16px; line-height:1.45;">Every prescription names the <b>root cause</b> and the <b>order of work</b> — a worklist, not a report.</div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">04</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Consolidation, not invention</h2></div><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">What exists</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">Atlas health surfaces, advisory watch, Warden's self-check pattern — live, proven, scattered.</p></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">What Doctor adds</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">One chart, one triage, one voice — to Marshal's line before runs, to Herald's briefs after ships, to Steward when the fault is the estate's.</p></div></div></section><section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;"><div style="font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; opacity:.85;">The creed</div><div style="font-family:var(--font-heading); font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">Check the vitals. Diagnose the fault. Keep the ecosystem alive.</div><div style="font-size:18px; line-height:1.5; margin-top:18px; max-width:900px; opacity:.94;">Pre-flight before the run. Pulse after the ship. Prescriptions with root causes — and a triage order the whole crew can execute.</div><div class="code" style="font-size:13px; margin-top:26px; opacity:.85;">pyforge-doctor &nbsp;·&nbsp; pyforge crew &nbsp;·&nbsp; Dream to Code</div></section></div>
+<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;">
+
+  <!-- MASTHEAD -->
+  <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
+      <span style="color:var(--color-accent-700);">PYFORGE GUILD · THE PHYSICIAN · DOCTOR CHAIN · SPEC-PYFORGE-DOCTOR</span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream <span data-fact="dream_status">realized</span> · Spec <span data-fact="spec_status">shipped</span> · tree <span data-fact="tree_commit_date">2026-09-15</span></span>
+    </div>
+    <h1 class="xp" style="font-weight:900; font-size:78px; line-height:0.94; letter-spacing:-0.02em; margin:0;">PyForge Doctor</h1>
+    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-doctor · module pyforge.doctor · console script <span data-fact="console_entry">doctor</span> · spec-pyforge-doctor <span data-fact="spec_capabilities">CAP-1..9</span></div>
+    <p style="max-width:1030px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">A factory is only as autonomous as its health checks. The instruments already beat inside the estate — Warden's engine self-check, Atlas's staleness, CVE, upstream-lag, feedstock-health and cadence surfaces, the tracked sprint ledgers and git itself — but each answered its own question in its own vocabulary, and nothing composed a diagnosis. <b>Doctor is one bedside manner over all of them:</b> a pre-flight <span class="code">check</span> before the line spins, a continuous <span class="code">monitor</span> after anything ships, and a <span class="code">diagnose --prescribe</span> that names a root cause and ranks the order of work. <span style="color:var(--color-accent-700); font-weight:700;">Operability, not policy. Advisory, never a second PR gate. Never a false green.</span></p>
+    <div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;">
+      <span class="tag tag-outline code">pyforge doctor &lt;verb&gt;</span>
+      <span class="tag tag-accent">Facade over existing instruments</span>
+      <span class="tag tag-neutral">Tri-state ok · warn · fail</span>
+      <span class="tag tag-neutral">KEV · EPSS · lag-ranked prescriptions</span>
+      <span class="tag tag-neutral">MCP-first · CLI-fallback</span>
+      <span class="tag tag-ink">The verdict on the Marshal's own row</span>
+    </div>
+  </header>
+
+  <!-- META STRIP -->
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
+    <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Stories shipped</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="stories_done_total">95/105</span> done</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Epics closed</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="epics_done_total">22/24</span> done</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Capabilities</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">9</span> · all <span data-fact="spec_status">shipped</span></div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Package</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">pyforge-doctor <span data-fact="package_version">0.1.0</span></div>
+    </div>
+    <div style="padding:20px 0 20px 20px;">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">CLI surface</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="cli_verbs">6</span> subparsers · one envelope</div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div style="margin:0 -56px; padding:46px 56px 0; border-bottom:3px solid var(--color-text);">
+    <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--color-accent-700);">Why a physician</div>
+    <h2 class="xp" style="font-weight:900; font-size:56px; line-height:1.0; letter-spacing:-0.02em; margin:14px 0 0; max-width:1080px;">Check the vitals. Diagnose the fault. <span style="color:var(--color-accent);">Keep the ecosystem alive.</span></h2>
+    <div style="display:flex; margin-top:32px; border-top:2px solid var(--color-divider);">
+      <div style="flex:1; padding:16px 12px 18px 0; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">check</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Pre-flight</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">engines · env hygiene · durability · bmad-core · sibling dreams — before Marshal spins the line</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">monitor</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The continuous pulse</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);"><span class="code">--fleet --watch staleness,cve</span> by default; adoption and abandonment on request</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">diagnose</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Ranked prescriptions</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">partitioned, ranked by severity × exploitability × blast radius, each naming a root cause</div></div>
+      <div style="flex:1; padding:16px 0 18px 12px;"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">sources</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The detector registry</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);"><span class="code">python -m pyforge.doctor.sources</span> — the verdicts the repo's gates run, one source at a time</div></div>
+    </div>
+  </div>
+
+  <!-- ACT I -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT I</span>
+      <span class="ttl">Instruments everywhere, physician nowhere</span>
+    </div>
+    <span class="cap">The problem and the model</span>
+  </div>
+
+  <!-- 01 · THE PROBLEM -->
+  <section class="sec">
+    <div class="sechead" style="margin-bottom:26px;">
+      <span class="num">01</span>
+      <h2>The problem</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:1.25fr 1fr 1fr 1fr; gap:0;">
+      <p style="font-size:17px; line-height:1.5; margin:0; padding-right:32px;">The factory's health signal already existed — scattered. Warden knew whether its engines were present; Atlas knew who lagged upstream, who had a new advisory, whose feedstock was stuck; the sprint ledgers knew what was done. <b>No shared vocabulary for severity, no pre-flight gate, no pulse, no prescription.</b> A missing engine or an unconditionally injected credential surfaced mid-build instead of in the first five seconds; an operator reconciled five CLIs by hand to answer "what got worse this week"; findings piled up with nothing ranking them into "do this first".</p>
+      <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
+        <div class="bignum"><span data-fact="groundtruth_mcp_tools">46</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">MCP tools on the conda-forge server Doctor fronts — recipe-authoring, atlas intelligence and project-scanning surfaces, each with its own output shape</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
+        <div class="bignum"><span data-fact="groundtruth_atlas_phases">22</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">atlas pipeline phases feeding the health, staleness, advisory and cadence signals Doctor normalizes into one <span class="code">Finding</span> shape</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 0 0 24px;">
+        <div class="bignum"><span data-fact="recipes_count">7864</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">recipes in the local mirror — the shipped estate whose freshness, threat and lifecycle the pulse keeps a finger on</div>
+      </div>
+    </div>
+    <div class="box" style="margin-top:26px;"><b>A fault caught in triage costs seconds; the same fault in production costs an outage — or a shipped vulnerability.</b> The Physician's mindset is preventive vigilance plus a continuous pulse: run the self-check before the factory spins so a broken config fails fast, never mid-build; and once packages ship, never be one-and-done. <span class="muted">Charter § Doctor — the station is the post, not the person; the verdict outlives the being that rendered it.</span></div>
+  </section>
+
+  <!-- 02 · THE PATIENT CHART -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">02</span>
+      <h2>The patient chart — five vitals, one shape</h2>
+    </div>
+    <p class="lede">Every vital already had an instrument. Doctor's job is the chart: one closed <span class="code">Source</span> tag per wrapped instrument, one tri-state <span class="code">DoctorStatus</span>, one <span class="code">Finding</span> dataclass — structurally mirroring Warden's <span class="code">models.py</span> pattern without importing its <span class="code">ErrorKind</span> (AD-3).</p>
+    <table class="tbl">
+      <thead><tr><th>Vital</th><th>Instrument</th><th>Source tag</th><th>Signal</th><th>Verb</th></tr></thead>
+      <tbody>
+        <tr><td><b>Machinery</b></td><td>Warden's engine-availability self-check, called as a library (<span class="code">run_doctor_checks</span>)</td><td><span class="code">warden-doctor</span></td><td>every required engine present and configured before the loop runs</td><td><span class="code">check --engines</span></td></tr>
+        <tr class="hi"><td><b>Hygiene</b></td><td>Doctor's one genuinely new detector — an <span class="code">ast.parse</span> scan for unconditional credential injection</td><td><span class="code">env-hygiene</span></td><td>an env-var read feeding an auth header with no host-scope conditional (the <span class="code">JFROG_API_KEY</span> worked example)</td><td><span class="code">check --env</span></td></tr>
+        <tr><td><b>Freshness</b></td><td><span class="code">staleness-report</span> · <span class="code">behind-upstream</span></td><td><span class="code">staleness-report</span> · <span class="code">behind-upstream</span></td><td>who lags upstream, by how much — the upgrade-lag classification the ranker uses as tiebreaker</td><td><span class="code">monitor --watch staleness</span></td></tr>
+        <tr><td><b>Health</b></td><td><span class="code">feedstock-health</span></td><td><span class="code">feedstock-health</span></td><td>stuck bots, red CI, open issues on the shipped feedstocks</td><td><span class="code">monitor --fleet</span></td></tr>
+        <tr><td><b>Threat</b></td><td><span class="code">cve-watcher</span> with KEV · EPSS · CWE enrichment</td><td><span class="code">cve-watcher</span></td><td>new advisories, exploited-in-the-wild first</td><td><span class="code">monitor --watch cve</span></td></tr>
+        <tr><td><b>Lifecycle</b></td><td><span class="code">release-cadence</span> · <span class="code">adoption-stage</span> · <span class="code">version-downloads</span></td><td><span class="code">release-cadence</span> · <span class="code">adoption</span></td><td>acceleration, silence, abandonment — the axis that catches the abandoned-but-not-yet-CVE'd package</td><td><span class="code">monitor --watch adoption</span></td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>Consolidation, not invention.</b> Doctor adds exactly one detection capability — the credential/environment-hygiene check — and says so in its own non-goals. Every other vital is an instrument that already existed, wrapped behind a verb. Its value is integration completeness and ranking quality, not new instrumentation.</div>
+      <div class="tint"><b>The default watch set is deliberate.</b> Omitting <span class="code">--watch</span> runs <span class="code">staleness</span> and <span class="code">cve</span> — the two highest-signal axes — never every axis unconditionally. Adding <span class="code">adoption</span> extended the closed taxonomy; it did not change the default.</div>
+    </div>
+  </section>
+
+  <!-- 03 · THE FACADE TOPOLOGY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">03</span>
+      <h2>The facade — instruments in, one report out</h2>
+    </div>
+    <p class="lede">A facade over existing instruments, internally pipes-and-filters: <b>gather → normalize → verdict or prescribe</b>. Doctor's own code is coordination and ranking, never detection — it spawns no scan engine and runs no database query that Warden or cf_atlas does not already own. Exactly one narrow subprocess site exists (<span class="code">cli_bridge</span>), and only for the CLI-fallback branch.</p>
+    <svg viewBox="0 0 1128 720" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker>
+        <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker>
+      </defs>
+      <!-- instrument rail (left) -->
+      <text x="60" y="44" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">INSTRUMENTS · ALREADY BEATING</text>
+      <g>
+        <rect x="60" y="64" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="90" fill="#201e1d" font-size="15" font-weight="800">Warden engines</text>
+        <text x="76" y="110" fill="#605d5d" font-size="11" font-family="ui-monospace, Menlo, monospace">warden.engines.run_doctor_checks</text>
+        <text x="76" y="125" fill="#605d5d" font-size="10.5">library import — never a subprocess (AD-1)</text>
+
+        <rect x="60" y="154" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="180" fill="#201e1d" font-size="15" font-weight="800">cf_atlas MCP tools</text>
+        <text x="76" y="200" fill="#605d5d" font-size="10.5">staleness · cve · behind-upstream · health</text>
+        <text x="76" y="215" fill="#605d5d" font-size="10.5">release-cadence · adoption — MCP-first (AD-6)</text>
+
+        <rect x="60" y="244" width="250" height="70" fill="#eae7e7" stroke="#9b9797" stroke-width="2" stroke-dasharray="6 4"/>
+        <text x="76" y="270" fill="#201e1d" font-size="15" font-weight="800">cf_atlas CLI</text>
+        <text x="76" y="290" fill="#605d5d" font-size="10.5">the fallback when no MCP client is in-process</text>
+        <text x="76" y="305" fill="#605d5d" font-size="10.5">reached only through cli_bridge (AD-5)</text>
+
+        <rect x="60" y="334" width="250" height="70" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+        <text x="76" y="360" fill="#201e1d" font-size="15" font-weight="800">env-hygiene AST scan</text>
+        <text x="76" y="380" fill="#605d5d" font-size="10.5">Doctor's one new detector — ast.parse only,</text>
+        <text x="76" y="395" fill="#605d5d" font-size="10.5">never exec / eval / dynamic import</text>
+
+        <rect x="60" y="424" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="450" fill="#201e1d" font-size="15" font-weight="800">Tracked ledgers + git</text>
+        <text x="76" y="470" fill="#605d5d" font-size="10.5">sprint-status-ledger.yaml · epics.md · Specs · Dreams</text>
+        <text x="76" y="485" fill="#605d5d" font-size="10.5">durable artifacts; imports no station (CAP-9)</text>
+
+        <rect x="60" y="514" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="540" fill="#201e1d" font-size="15" font-weight="800">BMAD install + suite</text>
+        <text x="76" y="560" fill="#605d5d" font-size="10.5">_bmad/_config/manifest.yaml · pixi.lock · the</text>
+        <text x="76" y="575" fill="#605d5d" font-size="10.5">suite roster · render_skill config layers</text>
+      </g>
+      <!-- spokes into the hub -->
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr)">
+        <path d="M310 99 C 380 99, 380 300, 430 300"/>
+        <path d="M310 189 C 380 189, 380 310, 430 310"/>
+        <path d="M310 279 C 380 279, 380 320, 430 320" stroke-dasharray="6 4"/>
+        <path d="M310 369 C 380 369, 380 335, 430 335"/>
+        <path d="M310 459 C 380 459, 380 350, 430 350"/>
+        <path d="M310 549 C 380 549, 380 365, 430 365"/>
+      </g>
+      <!-- hub -->
+      <rect x="430" y="200" width="268" height="280" fill="#ec3013"/>
+      <text x="564" y="238" text-anchor="middle" fill="#f3f2f2" font-size="20" font-weight="900" letter-spacing="1">PYFORGE DOCTOR</text>
+      <text x="564" y="260" text-anchor="middle" fill="#f3f2f2" font-size="12" font-family="ui-monospace, Menlo, monospace">pyforge.doctor · console script doctor</text>
+      <line x1="452" y1="276" x2="676" y2="276" stroke="#ffe0d9" stroke-width="1"/>
+      <text x="564" y="300" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">gather filters — one per Source</text>
+      <text x="564" y="322" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">normalize → closed Finding shape</text>
+      <text x="564" y="344" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">verdict → exit code (sole owner)</text>
+      <text x="564" y="366" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">prescribe → partition · rank · root cause</text>
+      <text x="564" y="388" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">score → composite A–F grade</text>
+      <line x1="452" y1="408" x2="676" y2="408" stroke="#ffe0d9" stroke-width="1"/>
+      <text x="564" y="428" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">READ-ONLY · NO NEW ENGINE</text>
+      <text x="564" y="446" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">ONE SUBPROCESS SITE</text>
+      <text x="564" y="464" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">OPERABILITY, NOT POLICY</text>
+      <!-- spokes out to consumers -->
+      <g stroke="#ec3013" stroke-width="2" fill="none" marker-end="url(#arrA)">
+        <path d="M698 300 C 760 300, 760 99, 818 99"/>
+        <path d="M698 320 C 760 320, 760 189, 818 189"/>
+        <path d="M698 340 C 760 340, 760 279, 818 279"/>
+        <path d="M698 360 C 760 360, 760 369, 818 369"/>
+        <path d="M698 380 C 760 380, 760 459, 818 459"/>
+        <path d="M698 400 C 760 400, 760 549, 818 549"/>
+      </g>
+      <!-- consumer rail (right) -->
+      <text x="818" y="44" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">CONSUMERS · READ THE REPORT</text>
+      <g>
+        <rect x="818" y="64" width="250" height="70" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+        <text x="834" y="90" fill="#201e1d" font-size="15" font-weight="800">Marshal — pre-flight</text>
+        <text x="834" y="110" fill="#605d5d" font-size="10.5">the primary machine consumer; sequences on a</text>
+        <text x="834" y="125" fill="#605d5d" font-size="10.5">durable verdict it never authors</text>
+
+        <rect x="818" y="154" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="180" fill="#201e1d" font-size="15" font-weight="800">Operator / maintainer</text>
+        <text x="834" y="200" fill="#605d5d" font-size="10.5">the primary human consumer — the weekly</text>
+        <text x="834" y="215" fill="#605d5d" font-size="10.5">multi-CLI habit replaced by one pulse</text>
+
+        <rect x="818" y="244" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="270" fill="#201e1d" font-size="15" font-weight="800">detectors · detectors-ci</text>
+        <text x="834" y="290" fill="#605d5d" font-size="10.5">scripts/detectors.py threads the ported sources</text>
+        <text x="834" y="305" fill="#605d5d" font-size="10.5">in-process — unknown, never green</text>
+
+        <rect x="818" y="334" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="360" fill="#201e1d" font-size="15" font-weight="800">Warden — as input</text>
+        <text x="834" y="380" fill="#605d5d" font-size="10.5">findings may feed the one PR gate;</text>
+        <text x="834" y="395" fill="#605d5d" font-size="10.5">they never become a second one</text>
+
+        <rect x="818" y="424" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="450" fill="#201e1d" font-size="15" font-weight="800">Steward — remediates</text>
+        <text x="834" y="470" fill="#605d5d" font-size="10.5">the JFROG_API_KEY leak: a Steward fix</text>
+        <text x="834" y="485" fill="#605d5d" font-size="10.5">on a Doctor finding — the precedent</text>
+
+        <rect x="818" y="514" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="540" fill="#201e1d" font-size="15" font-weight="800">Herald · fleet-picture</text>
+        <text x="834" y="560" fill="#605d5d" font-size="10.5">the fleet-health surface, the board's status</text>
+        <text x="834" y="575" fill="#605d5d" font-size="10.5">strip, the briefs after a ship</text>
+      </g>
+      <!-- envelope rail -->
+      <rect x="230" y="626" width="668" height="60" fill="#eae7e7" stroke="#9b9797" stroke-width="2"/>
+      <text x="564" y="652" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">DoctorReport — schema-validated, schema-versioned envelope</text>
+      <text x="564" y="672" text-anchor="middle" fill="#605d5d" font-size="11" font-family="ui-monospace, Menlo, monospace">{ schema_version, verb, generated_at, findings, prescriptions? } · --json on every verb</text>
+      <line x1="564" y1="480" x2="564" y2="624" stroke="#201e1d" stroke-width="2" marker-end="url(#arr)"/>
+    </svg>
+    <div style="font-size:13px; margin-top:12px;" class="muted">Filters are added by naming a new <span class="code">Source</span>, never by widening an existing one's scope. The closed taxonomy has been <b>extended</b> repeatedly — adoption, marshal-durability, the ledger and board and chain verdicts, deferred-work, suite drift — and never opened to a stringly-typed source.</div>
+  </section>
+
+  <!-- 04 · THE CONTRACT AT A GLANCE -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">04</span>
+      <h2>Nine capabilities — the whole contract at a glance</h2>
+    </div>
+    <p class="lede">Every capability carries a success criterion written to fail when the capability is absent, and every one now carries a <span class="code">verified:</span> line from a mechanical re-verification at a named HEAD — the CAP-effect discipline Doctor itself enforces on other Specs (Epic 21). The Spec reads <span data-fact="spec_status">shipped</span>; the Dream reads <span data-fact="dream_status">realized</span>.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider);">
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-1</span><span class="chip">pre-flight</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Tri-state pre-flight</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);"><span class="code">check --env --engines</span> wraps Warden's self-check, adds the credential-hygiene detector; <span class="code">--list</span> enumerates every named check without running it; a host-scoped attach is not a false positive.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-2</span><span class="chip">pulse</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">One fleet-pulse view</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);"><span class="code">monitor --fleet --watch</span> — findings equivalent to the underlying atlas call, source-tagged and filterable; the documented default axis set is staleness plus cve.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-3</span><span class="chip">prescribe</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Partition, rank, name the cause</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">actionable · blocked · accepted-risk, none dropped; KEV outranks non-KEV, higher EPSS outranks lower, smaller upgrade lag breaks ties; <span class="code">rank_factors</span> shown, never a bare priority number.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-4</span><span class="chip">envelope</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">One schema-validated report</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);"><span class="code">--json</span> on every verb validates against a committed JSON Schema; nothing in the human render is absent from the JSON — parity is the requirement.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-5</span><span class="chip">frontier</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Composite health grade</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">an A–F grade as a pure function over already-gathered findings; deterministic; an incomplete axis gather degrades to <span class="code">incomplete</span>, never a false A.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-6</span><span class="chip">frontier</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Persistent fleet-health surface</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">derived strictly from a <span class="code">monitor --fleet</span> run, idempotent (no wall-clock field), schema-versioned like the report — never a second gather path.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-7</span><span class="chip">frontier</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">The adoption axis</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);"><span class="code">adoption-stage</span> and <span class="code">version-downloads</span> normalized into the same Finding shape; MCP-first, CLI-fallback; a new closed <span class="code">Source</span> member, not in the default watch set.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-8</span><span class="chip">frontier</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Next-safe-version, single hop</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">a Prescription names this package's own next safe version from atlas's upstream data; a major-classified delta is not "confidently safe"; no target → says so plainly, never guesses.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; background:var(--color-accent-100);">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-9</span><span class="chip ok">charter §6</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">The verdict on the Marshal's own row</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);"><span class="code">marshal-durability</span> reports FAIL naming every story key when a tracked ledger holds fewer completions than its committed state, OK when none does, WARN — never a crash, never silent OK — when git or the ledgers are unavailable; imports no station package.</div>
+      </div>
+    </div>
+    <div class="tint" style="margin-top:18px;"><b>Why CAP-9 is the one that changed the station.</b> The Charter has said since late July that the Doctor holds the verdict on Marshal's conformance — <i>"the one station that would otherwise grade itself"</i> — but nothing implemented it until a single <span class="code">sprint-ledger-sync</span> run destroyed <span class="code">done</span> markers across four stations and printed success, and all three guards written in response lived in Marshal's own surface. The design point worth remembering: unlike the Warden source, this one <b>imports no station package</b> — a durability verdict assembled from the judged station's own code would fail exactly when that station's machinery is what broke.</div>
+  </section>
+
+  <!-- ACT II -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT II</span>
+      <span class="ttl">The cast</span>
+    </div>
+    <span class="cap">Eight stations outside · the instruments on the floor</span>
+  </div>
+
+  <!-- 05 · THE GUILD -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">05</span>
+      <h2>The Guild — eight stations, one physician</h2>
+    </div>
+    <p class="lede">The station is the post, not the person: each is a lifecycle stage plus its independent verdict, under the doctrine's sharpest line — <b>the hand that builds is never the gate that judges.</b> Doctor holds the health verdict for the whole line and, by Charter §6, the conformance verdict on Marshal's own row. Chips show each station's tracked sprint ledger, stories done over stories total.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;">
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">82/100</span></span></div>
+        <h3>Herald</h3>
+        <div class="role">Visual Media Engine &amp; System Messenger</div>
+        <div class="motto">"Capture the dream. Illustrate the telemetry. Proclaim the release."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">First to touch the Dream and last to ship it: the Claude Design bridge and the deck family, telemetry infographics, weekly updates, omnichannel broadcasts. Owns this poster and the standard it is built to. Invisible engineering is failed engineering — so Doctor's pulse becomes a brief, not a log.</p>
+        <div class="verbs code">herald deck seed · deck pull · deck status · progress · success · notice · scheduler</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">270/274</span></span></div>
+        <h3>Marshal</h3>
+        <div class="role">Autonomous Build Factory Supervisor &amp; BMAD Orchestrator</div>
+        <div class="motto">"Enforce the spec. Guard the boundaries. Run the line."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The one owner of execution: turns the Spec into validated code through gated story loops, sequencing on verdicts it never authors. Doctor's primary <b>machine</b> consumer — <span class="code">doctor check</span> is the unattended pre-flight before the line spins — and the one station Doctor judges directly (<span class="code">marshal-durability</span>, the ledger, board and chain verdicts).</p>
+        <div class="verbs code">marshal factory spin · gate evaluate · run · land · deploy</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">03 · The Navigator</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="atlas_stories_done_total">94/95</span></span></div>
+        <h3>Atlas</h3>
+        <div class="role">Dependency Mapper &amp; Data Pipeline Architect</div>
+        <div class="motto">"Chart the dependencies. Map the world. Define the floor."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Maps the Python ecosystem — PyPI and conda-forge — into the cf_atlas graph, Kedro pipelines and the MCP intelligence surface. Doctor's largest instrument rack: staleness, cve, behind-upstream, feedstock-health, release-cadence and adoption are all Atlas signals, wrapped MCP-first and normalized into one Finding shape.</p>
+        <div class="verbs code">pyforge atlas run · read · list · staleness-report · cve-watcher · feedstock-health</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">04 · The Guardian</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="warden_stories_done_total">49/49</span></span></div>
+        <h3>Warden</h3>
+        <div class="role">Multi-Axis Dependency Compliance Gate</div>
+        <div class="motto">"Halt the threat. Clear the axes. Protect the perimeter."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The sole PR-gate verdict — hygiene, security, license, currency over Python, Conda and Pixi manifests. Doctor calls Warden's engine self-check as a <b>library</b> (AD-1), consumes its exit code only as data, and deliberately omits Warden's policy-gate rung from its own exit domain. Doctor findings may be Warden inputs; they are never a second gate.</p>
+        <div class="verbs code">warden scan · warden --doctor · pyforge warden scan</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">05 · The Artisan Builder</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="mason_stories_done_total">70/70</span></span></div>
+        <h3>Mason</h3>
+        <div class="role">Package &amp; Release Craftsman</div>
+        <div class="motto">"We forge the blocks. We bind the environment. We ship the structure."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Authors v1 <span class="code">recipe.yaml</span> recipes with rattler-build, resolves lockfiles, ships to conda-forge — wielding <span class="code">conda-forge-expert</span> rather than a skill of its own. The estate Mason ships is the estate Doctor's pulse watches: every stale feedstock, every new advisory on a shipped recipe lands on Mason's bench as a ranked prescription.</p>
+        <div class="verbs code">pyforge mason · recipe-build · generate-recipe · lint</div>
+      </div>
+      <div class="station me">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">95/105</span> · <span data-fact="doctor_epics_done_total">22/24</span></span></div>
+        <h3>Doctor</h3>
+        <div class="role">Ecosystem Health &amp; Diagnostics Officer</div>
+        <div class="motto">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Before the factory runs, verifies the machinery is sound; after the crew ships, keeps a finger on the pulse of every dependency and feedstock; never stops at a finding — every diagnosis names its root cause and ships an ordered prescription. Holds the verdict on Marshal's own conformance. Reports operability, never policy.</p>
+        <div class="verbs code">doctor check · monitor · diagnose · backlog-intake · flags kill-switch</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">35/35</span></span></div>
+        <h3>Scribe</h3>
+        <div class="role">Knowledge Curator &amp; Team Memory Keeper</div>
+        <div class="motto">"Capture the decision. Keep the graph. Answer from memory."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The inward voice — where Herald tells the world, Scribe tells the team: memlogs, ADRs, retros and Dream realization logs captured as they happen, compiled into a graph any session can answer from. Doctor's incidents (the durability loss, the credential leak) are Scribe's decisions of record; a grounded miss is explicit, never invented.</p>
+        <div class="verbs code">scribe capture · graph compile · recall</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">231/244</span></span></div>
+        <h3>Steward</h3>
+        <div class="role">Platform, Deployment &amp; Operations Officer</div>
+        <div class="motto">"Provision the line. Hold the keys. Keep the lights on."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Runs the estate the factory stands on — runners, environments, the Canopy host, credentials and their rotation, budgets, the pager. Engines are present before Doctor's pre-flight ever runs; and when Doctor finds the fault is the estate's, Steward remediates — the <span class="code">JFROG_API_KEY</span> unconditional-injection leak was a Steward fix on a Doctor finding.</p>
+        <div class="verbs code">steward provision · deploy · keys audit · keys rotate · budget enforce</div>
+      </div>
+    </div>
+    <div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>Fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">926/972</span> stories and <span data-fact="fleet_epics_done_total">207/219</span> epics done across the eight guild-roster stations — read with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">epics: herald <span data-fact="herald_epics_done_total">19/23</span> · marshal <span data-fact="marshal_epics_done_total">40/43</span> · atlas <span data-fact="atlas_epics_done_total">23/24</span> · warden <span data-fact="warden_epics_done_total">12/12</span> · mason <span data-fact="mason_epics_done_total">17/17</span> · scribe <span data-fact="scribe_epics_done_total">18/18</span> · steward <span data-fact="steward_epics_done_total">56/58</span></span></div>
+  </section>
+
+  <!-- 06 · THE INSTRUMENTS ON THE FLOOR -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">06</span>
+      <h2>The instruments on the floor — Doctor's source registry</h2>
+    </div>
+    <p class="lede">Where Marshal has six sub-agents on the floor, Doctor has its <span class="code">sources.REGISTRY</span>: one validated registration per closed <span class="code">Source</span> member, each declaring its scope, the station whose artifact it judges and the station that implements the judgement — always Doctor. The count is deliberately not written down anywhere in prose: the registry <i>is</i> the count, pinned to the enum in both directions by a unit test.</p>
+    <table class="tbl">
+      <thead><tr><th>Source</th><th>Judges</th><th>What it says</th><th>Ported from / added by</th></tr></thead>
+      <tbody>
+        <tr><td><span class="code">warden-doctor</span></td><td>warden</td><td>every required scan engine present and configured</td><td>AD-1 library edge into <span class="code">pyforge.warden.engines</span></td></tr>
+        <tr><td><span class="code">staleness-report</span> · <span class="code">behind-upstream</span> · <span class="code">cve-watcher</span> · <span class="code">feedstock-health</span> · <span class="code">release-cadence</span> · <span class="code">adoption</span></td><td>atlas</td><td>the Watch axes — freshness, threat, health, lifecycle — MCP-first with CLI fallback</td><td>AD-6 · the adoption member extended the taxonomy (CAP-7)</td></tr>
+        <tr class="hi"><td><span class="code">env-hygiene</span></td><td>doctor</td><td>an env-var read feeding an auth header with no host-scope conditional</td><td>Doctor's one new detector (FR-3)</td></tr>
+        <tr class="hi"><td><span class="code">marshal-durability</span></td><td>marshal</td><td>a tracked sprint ledger holds fewer completions than its committed state</td><td>CAP-9 · Charter §6 — imports no station package</td></tr>
+        <tr><td><span class="code">ledger-regression</span> · <span class="code">story-status</span> · <span class="code">ledger-direction</span></td><td>marshal</td><td>ledger regression-freedom; false-green stories in the Tier-3 feed; landed-but-unpromoted drift with direction</td><td><span class="code">ledger_regression_check</span> · <span class="code">story_status_check</span> · Story 15.2</td></tr>
+        <tr><td><span class="code">chain-completeness</span> · <span class="code">dashboard-drift</span> · <span class="code">check-layout</span></td><td>marshal</td><td>every open Spec decomposed and agreeing with epics, ledger and board; committed data not drifted from its feeds; the console's chips actually render</td><td><span class="code">chain_completeness_check</span> · <span class="code">dashboard_drift_check</span> · <span class="code">check_layout</span></td></tr>
+        <tr><td><span class="code">dream-chain</span> · <span class="code">spec-surface</span> · <span class="code">deferred-work</span></td><td>marshal</td><td>every Spec links a Dream and every Dream has a Spec; every tracked file is governed and undrifted; no deferred entry lives only in gitignored scratch</td><td><span class="code">dream_chain_check</span> · <span class="code">spec_surface_check</span> · <span class="code">deferred_work_check</span></td></tr>
+        <tr><td><span class="code">forward-dependency</span></td><td>marshal</td><td>a story whose <span class="code">Deps:</span> names a later epic — the defect bmad-loop's picker is structurally blind to</td><td>Story 6.7</td></tr>
+        <tr><td><span class="code">bmad-drift</span></td><td>marshal</td><td>the marshal project docs' own currency — pin drift, stale counts, archive hygiene, coverage, surface change</td><td><span class="code">bmad_drift_check</span> · the verdict behind <span class="code">bmad-drift-check</span></td></tr>
+        <tr><td><span class="code">bmad-output-hygiene</span></td><td>fleet</td><td>the planning trees' filing and stray-file hygiene, generalized from a one-off sweep</td><td>Epic 9</td></tr>
+        <tr><td><span class="code">due-for-verification</span></td><td>marshal</td><td>tracked deferred-work entries whose re-verification against live code is overdue</td><td>Epic 11</td></tr>
+        <tr><td><span class="code">bmad-method-version-drift</span> · suite drift · render-config ambiguity · <span class="code">frozen-path-changed</span></td><td>marshal</td><td>the installed BMAD core and suite behind upstream; a bare config key at two dotted paths (the render-HALT class); a frozen cutover path touched anyway</td><td>Epics 10 · 14 · 15 · 19 · 20</td></tr>
+        <tr><td>sibling-dreams · capability-effect · status-body consistency · pixi currency · general-docs consistency · platform policy</td><td>fleet</td><td>sibling dream directories drifting; a CAP with no caller outside its tests or no <span class="code">verified:</span> line; a shipped Spec whose body still reads incomplete; the manifest-only policy-suite parity</td><td>Epics 16 · 21 · 22 and the steward retro relay</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>Every registration is <span class="code">scope="repo"</span> or <span class="code">scope="runtime"</span>.</b> Repo sources read tracked files and git history and run anywhere, including CI; runtime sources read host state — Tier-3 feeds, tmux, <span class="code">~/.bmad-loops</span> — and cannot run on a runner. The split is the factory's missing observation plane showing up as a deployment constraint, not a convenience.</div>
+      <div class="tint"><b>Why the verdicts came home.</b> An ownership audit found most repo-level detectors judging an artifact another station produces, and none belonged to Doctor. Epic 6 re-homed them as Doctor sources, each structurally barred from importing the station it judges — asserted by <span class="code">test_source_independence.py</span>, so a Marshal change cannot weaken, re-threshold or disable a check that judges the Marshal.</div>
+    </div>
+  </section>
+
+  <!-- 07 · PERSONA AND SKILLS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">07</span>
+      <h2>Persona, grammar and the skills wielded</h2>
+    </div>
+    <p class="lede">Skills are wielded, never worn: the Smith authors and upgrades them, and the harness that governs the agent is deliberately not a skill. Doctor's identity is a persona plus one content skill plus one utility skill it reaches for when a finding needs a cause.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+      <div class="card"><div class="k">Persona</div><h3 style="font-size:17px; margin:8px 0 4px;">bmad-agent-doctor</h3><p>The addressable station persona. Acts only through <span class="code">pyforge doctor …</span> grammar and <span class="code">POST /stations/doctor/mcp</span>; never freelances against the filesystem, never makes an ad-hoc HTTP call. Greets, then dispatches — findings stay advisory in every sentence it speaks.</p></div>
+      <div class="card"><div class="k">Content skill</div><h3 style="font-size:17px; margin:8px 0 4px;">pyforge-doctor (SKF)</h3><p>Compiled from <span class="code">src/shared/packages/pyforge-doctor/</span> as an agentskills.io content skill — quick start, CLI grammar, key types, the exit-code projection — so an agent reads documented behaviour instead of training data. Consulted, never imported.</p></div>
+      <div class="card"><div class="k">Utility skill wielded</div><h3 style="font-size:17px; margin:8px 0 4px;">bmad-os-root-cause-analysis</h3><p>When a detector finding needs a cause, Doctor wields the RCA skill — advisory only, never to change a verdict. Routed by Epic 20 as the suite-lifecycle Spec's own relay, so root cause is a named step, not an improvisation.</p></div>
+      <div class="card"><div class="k">Craft it never replaces</div><h3 style="font-size:17px; margin:8px 0 4px;">conda-forge-expert</h3><p>Recipe work belongs to the CFE craft, at skill version <span data-fact="cfe_skill_version">8.90.5</span> with gotchas numbered to <span data-fact="groundtruth_gotcha_max">117</span>. Doctor pre-flights the factory that wields it; it authors no recipe and edits no <span class="code">CLAUDE.md</span> or <span class="code">AGENTS.md</span>.</p></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px; margin-top:16px;">
+      <div class="box"><b>The two doors, and only two.</b> Path B is the unified grammar — <span class="code">pyforge doctor check</span>, <span class="code">pyforge doctor monitor --fleet</span>, <span class="code">pyforge doctor diagnose --target …</span> — dispatched from the repo root, never a hardcoded absolute path, never the bare <span class="code">doctor</span> binary as a second public contract for personas. The service face is <span class="code">POST /stations/doctor/mcp</span> on the Canopy host, identity tool <span class="code">station_face</span>. A transcript of a completed station task shows only those two, plus the one permitted skill consult.</div>
+      <div class="tint"><b>What the persona may never do.</b> No direct filesystem against reports, recipes or source; no <span class="code">curl</span>, <span class="code">requests</span>, <span class="code">httpx</span> or <span class="code">WebFetch</span>; no second PR gate; no replacing <span class="code">conda-forge-expert</span>. The forbidden list is the doctrine, written as a contract an agent can fail.</div>
+    </div>
+  </section>
+
+  <!-- ACT III -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT III</span>
+      <span class="ttl">Running the line</span>
+    </div>
+    <span class="cap">One finding's journey · the relay · the gradient</span>
+  </div>
+
+  <!-- 08 · ONE FINDING'S JOURNEY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">08</span>
+      <h2>One finding's journey down the line</h2>
+    </div>
+    <p class="lede">Follow a single stale-and-vulnerable feedstock from instrument to worklist. Every stage is a module with one job and one invariant; no stage may reach around another.</p>
+    <table class="tbl">
+      <thead><tr><th>Stage</th><th>What happens</th><th>Module</th><th>Invariant it must hold</th></tr></thead>
+      <tbody>
+        <tr><td><b>Gather</b></td><td>the atlas Watch axis is asked — MCP tool first if a client is in-process, else the equivalent CLI through <span class="code">cli_bridge</span></td><td><span class="code">sources.atlas</span></td><td>both paths produce the identical Finding shape; the caller cannot tell which ran except by the Source tag (AD-6)</td></tr>
+        <tr><td><b>Normalize</b></td><td>the instrument's native output becomes a <span class="code">Finding</span>: source · check · status · message · structured evidence</td><td><span class="code">models</span></td><td>closed <span class="code">DoctorStatus</span> ok · warn · fail, closed <span class="code">Source</span>, validated in <span class="code">__post_init__</span> (AD-3)</td></tr>
+        <tr><td><b>Verdict</b></td><td>the finding list is projected to a process exit code</td><td><span class="code">verdict</span></td><td>the sole owner of exit-code projection; a warn never changes it; Warden's exit is consumed as data, never re-exposed (AD-2)</td></tr>
+        <tr class="hi"><td><b>Partition</b></td><td>every finding lands in exactly one of actionable · blocked · accepted-risk</td><td><span class="code">prescribe</span></td><td>the total across partitions equals the count gathered — none silently dropped (FR-6)</td></tr>
+        <tr class="hi"><td><b>Rank</b></td><td>the actionable set is ordered by severity × exploitability × blast radius; KEV first, then EPSS, then smaller upgrade lag as tiebreaker</td><td><span class="code">prescribe.rank</span></td><td><span class="code">rank_factors</span> are shown on every Prescription — never an opaque priority number; a clean ok finding is excluded from ranking by design (FR-7)</td></tr>
+        <tr class="hi"><td><b>Name the cause</b></td><td>a <span class="code">root_cause</span> is templated from the finding's own structured evidence; a single-hop next-safe-version is named when confidently known, or the reason it is not</td><td><span class="code">prescribe</span> · <span class="code">recommend_safe_upgrade</span></td><td>a pure function over already-gathered findings — zero subprocess or MCP calls of its own (AD-4, CAP-8)</td></tr>
+        <tr><td><b>Grade</b></td><td>findings are grouped by their own Source tag and synthesized into a composite A–F</td><td><span class="code">score</span></td><td>deterministic; an incomplete axis gather degrades to <span class="code">incomplete</span>, never a false A (CAP-5)</td></tr>
+        <tr><td><b>Report</b></td><td>the human render and <span class="code">--json</span> carry the same information inside one <span class="code">DoctorReport</span> envelope</td><td><span class="code">__main__</span> · <span class="code">data/report-schema.json</span></td><td>schema-validated; <span class="code">prescriptions</span> present only for <span class="code">diagnose</span> (NFR-5)</td></tr>
+        <tr><td><b>Persist</b></td><td>a <span class="code">monitor --fleet</span> run may write the fleet-health surface</td><td><span class="code">fleet_surface</span></td><td>strictly derived from the run's own findings; no wall-clock field, so regenerating is byte-identical (CAP-6)</td></tr>
+      </tbody>
+    </table>
+    <div class="box" style="margin-top:18px;"><b>The read-only guard rides every row.</b> No module under <span class="code">pyforge.doctor</span> writes outside a <span class="code">tempfile</span>-scoped path or mutates a scanned tree; there is no <span class="code">--fix</span>. The one non-pure step the whole package adds is the surface's plain file write — and it is derived output, not a mutation of scanned state (NFR-1).</div>
+  </section>
+
+  <!-- 09 · THE PIPELINE -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">09</span>
+      <h2>Pipes and filters — the way work flows</h2>
+    </div>
+    <p class="lede">Three verbs compose the same filters differently: <span class="code">check</span> gathers Doctor's own check catalog and projects a verdict; <span class="code">monitor</span> gathers the atlas axes fleet-wide and may persist the surface; <span class="code">diagnose</span> gathers one target and hands the findings to <span class="code">prescribe</span>. Nothing downstream re-gathers.</p>
+    <svg viewBox="0 0 1128 470" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker></defs>
+      <!-- verbs column -->
+      <text x="20" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">VERB</text>
+      <rect x="20" y="52" width="150" height="64" fill="#ec3013"/><text x="95" y="80" text-anchor="middle" fill="#f3f2f2" font-size="16" font-weight="900" font-family="ui-monospace, Menlo, monospace">check</text><text x="95" y="100" text-anchor="middle" fill="#ffe0d9" font-size="10.5">--engines --env --list</text>
+      <rect x="20" y="192" width="150" height="64" fill="#ec3013"/><text x="95" y="220" text-anchor="middle" fill="#f3f2f2" font-size="16" font-weight="900" font-family="ui-monospace, Menlo, monospace">monitor</text><text x="95" y="240" text-anchor="middle" fill="#ffe0d9" font-size="10.5">--fleet --watch --surface</text>
+      <rect x="20" y="332" width="150" height="64" fill="#ec3013"/><text x="95" y="360" text-anchor="middle" fill="#f3f2f2" font-size="16" font-weight="900" font-family="ui-monospace, Menlo, monospace">diagnose</text><text x="95" y="380" text-anchor="middle" fill="#ffe0d9" font-size="10.5">--target --prescribe</text>
+      <!-- gather column -->
+      <text x="230" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">GATHER</text>
+      <rect x="230" y="52" width="200" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="330" y="78" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">checks catalog</text><text x="330" y="97" text-anchor="middle" fill="#605d5d" font-size="10.5">the named check catalog (--list)</text>
+      <rect x="230" y="192" width="200" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="330" y="218" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">sources.atlas</text><text x="330" y="237" text-anchor="middle" fill="#605d5d" font-size="10.5">MCP tool → cli_bridge fallback</text>
+      <rect x="230" y="332" width="200" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="330" y="358" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">one target's gathers</text><text x="330" y="377" text-anchor="middle" fill="#605d5d" font-size="10.5">the same filters, one --target</text>
+      <!-- normalize -->
+      <text x="490" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">NORMALIZE</text>
+      <rect x="490" y="52" width="160" height="344" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+      <text x="570" y="200" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Finding</text>
+      <text x="570" y="222" text-anchor="middle" fill="#605d5d" font-size="10.5">source · check · status</text>
+      <text x="570" y="238" text-anchor="middle" fill="#605d5d" font-size="10.5">message · evidence</text>
+      <text x="570" y="262" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="700">closed taxonomy (AD-3)</text>
+      <!-- project column -->
+      <text x="710" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">PROJECT</text>
+      <rect x="710" y="52" width="190" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="805" y="78" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">verdict</text><text x="805" y="97" text-anchor="middle" fill="#605d5d" font-size="10.5">any fail → exit two · warn never</text>
+      <rect x="710" y="192" width="190" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="805" y="218" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">fleet_surface · score</text><text x="805" y="237" text-anchor="middle" fill="#605d5d" font-size="10.5">derived, idempotent · A–F grade</text>
+      <rect x="710" y="332" width="190" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="805" y="358" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">prescribe</text><text x="805" y="377" text-anchor="middle" fill="#605d5d" font-size="10.5">partition · rank · root cause</text>
+      <!-- report -->
+      <text x="960" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">REPORT</text>
+      <rect x="960" y="52" width="148" height="344" fill="#201e1d"/>
+      <text x="1034" y="200" text-anchor="middle" fill="#f3f2f2" font-size="14" font-weight="900">DoctorReport</text>
+      <text x="1034" y="222" text-anchor="middle" fill="#bab6b6" font-size="10.5">--json ≡ human render</text>
+      <text x="1034" y="240" text-anchor="middle" fill="#bab6b6" font-size="10.5">schema-versioned</text>
+      <text x="1034" y="262" text-anchor="middle" fill="#ff9783" font-size="10.5" font-weight="700">prescriptions</text>
+      <text x="1034" y="278" text-anchor="middle" fill="#ff9783" font-size="10.5" font-weight="700">on diagnose only</text>
+      <!-- arrows -->
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr2)">
+        <line x1="170" y1="84" x2="228" y2="84"/><line x1="170" y1="224" x2="228" y2="224"/><line x1="170" y1="364" x2="228" y2="364"/>
+        <line x1="430" y1="84" x2="488" y2="84"/><line x1="430" y1="224" x2="488" y2="224"/><line x1="430" y1="364" x2="488" y2="364"/>
+        <line x1="650" y1="84" x2="708" y2="84"/><line x1="650" y1="224" x2="708" y2="224"/><line x1="650" y1="364" x2="708" y2="364"/>
+        <line x1="900" y1="84" x2="958" y2="84"/><line x1="900" y1="224" x2="958" y2="224"/><line x1="900" y1="364" x2="958" y2="364"/>
+      </g>
+      <!-- footnote rail -->
+      <text x="20" y="440" fill="#605d5d" font-size="11.5">Only <tspan font-family="ui-monospace, Menlo, monospace">cli_bridge</tspan> may spawn a process: argv as a list, never a shell string · NO_COLOR · stdin=DEVNULL · bounded timeout · a typed fail Finding on error, never a raw traceback (AD-5).</text>
+      <text x="20" y="460" fill="#605d5d" font-size="11.5">Meta-tests pin the shape: no subprocess in the warden source · no subprocess or MCP import in prescribe or score · cli_bridge the sole subprocess site · verdict the sole exit-code owner.</text>
+    </svg>
+  </section>
+
+  <!-- 10 · THE AUTONOMY GRADIENT -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">10</span>
+      <h2>The autonomy gradient — how far a finding may travel</h2>
+    </div>
+    <p class="lede">Doctor's autonomy is graduated in the opposite direction from Marshal's: the further a finding travels, the <b>less</b> Doctor is allowed to decide. It observes freely, warns freely, fails an operability run — and stops. Beyond that line every rung belongs to another station or to the human.</p>
+    <svg viewBox="0 0 1128 300" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker></defs>
+      <!-- gradient rail -->
+      <rect x="40" y="130" width="1048" height="8" fill="#eae7e7"/>
+      <rect x="40" y="130" width="628" height="8" fill="#ec3013"/>
+      <line x1="668" y1="60" x2="668" y2="250" stroke="#201e1d" stroke-width="3" stroke-dasharray="8 6"/>
+      <text x="668" y="48" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="900" letter-spacing="1">THE LINE DOCTOR NEVER CROSSES</text>
+      <text x="360" y="48" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">DOCTOR DECIDES</text>
+      <text x="940" y="48" text-anchor="middle" fill="#605d5d" font-size="11" font-weight="800" letter-spacing="1.5">OTHERS DECIDE · DOCTOR INFORMS</text>
+      <!-- rungs -->
+      <g>
+        <circle cx="90" cy="134" r="16" fill="#f3f2f2" stroke="#ec3013" stroke-width="3"/><text x="90" y="139" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="900">ok</text>
+        <text x="90" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Observe</text><text x="90" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">read-only gather</text><text x="90" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">no mutation, ever</text>
+
+        <circle cx="290" cy="134" r="16" fill="#f3f2f2" stroke="#ec3013" stroke-width="3"/><text x="290" y="139" text-anchor="middle" fill="#201e1d" font-size="11" font-weight="900">warn</text>
+        <text x="290" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Advise</text><text x="290" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">a warn never changes the</text><text x="290" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">exit code — advisory by construction</text>
+
+        <circle cx="490" cy="134" r="16" fill="#ec3013" stroke="#ec3013" stroke-width="3"/><text x="490" y="139" text-anchor="middle" fill="#f3f2f2" font-size="11" font-weight="900">fail</text>
+        <text x="490" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Fail the pre-flight</text><text x="490" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">"the machine is not sound" —</text><text x="490" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">operability, never policy</text>
+
+        <circle cx="740" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="740" y="139" text-anchor="middle" fill="#201e1d" font-size="10" font-weight="900">gate</text>
+        <text x="740" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">The PR verdict</text><text x="740" y="194" text-anchor="middle" fill="#605d5d" font-size="10">Warden's alone; findings</text><text x="740" y="208" text-anchor="middle" fill="#605d5d" font-size="10">are inputs, never a peer</text>
+
+        <circle cx="900" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="900" y="139" text-anchor="middle" fill="#201e1d" font-size="10" font-weight="900">seq</text>
+        <text x="900" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Sequencing</text><text x="900" y="194" text-anchor="middle" fill="#605d5d" font-size="10">Marshal reads the verdict</text><text x="900" y="208" text-anchor="middle" fill="#605d5d" font-size="10">and gates; never re-derives</text>
+
+        <circle cx="1060" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="1060" y="139" text-anchor="middle" fill="#201e1d" font-size="10" font-weight="900">fix</text>
+        <text x="1060" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Remediate</text><text x="1060" y="194" text-anchor="middle" fill="#605d5d" font-size="10">Steward, Mason or the human</text><text x="1060" y="208" text-anchor="middle" fill="#605d5d" font-size="10">from the ranked worklist</text>
+      </g>
+      <line x1="60" y1="270" x2="640" y2="270" stroke="#ec3013" stroke-width="2" marker-end="url(#arr3)"/>
+      <text x="350" y="290" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="700">more evidence, more severity — the same three words, one closed domain</text>
+    </svg>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:18px;">
+      <div class="rung"><b>Read-only, all verbs</b><div>no <span class="code">--fix</span>, no PR-opening, no file mutation — the persistent surface is derived output, not a change to scanned state</div></div>
+      <div class="rung"><b>Warn is free</b><div>a warn-status finding is information; it never flips the exit code, so a noisy detector can never fail a run by accident</div></div>
+      <div class="rung"><b>Fail is operability</b><div>"a required engine is missing", "the ledger regressed" — a statement about whether the machine can run, never about whether the code may merge</div></div>
+      <div class="rung"><b>The one governed actuator</b><div><span class="code">flags kill-switch</span> disables one feature flag and records the metric — an off-switch relayed from the platform's flag policy, not a remediation and not a gate</div></div>
+    </div>
+  </section>
+
+  <!-- 11 · PHASE × PERSONA × SKILLS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">11</span>
+      <h2>Phase × persona × skills — where the physician stands in the pipeline</h2>
+    </div>
+    <p class="lede">The Charter's master pipeline flow, read as a rota: which station holds each phase, what Doctor does there, and which skill is wielded. Doctor appears at the start and near the end — and holds a standing verdict across the middle.</p>
+    <table class="tbl">
+      <thead><tr><th>Phase</th><th>Station on the floor</th><th>Doctor's part</th><th>Verb / source</th><th>Skill wielded</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><b>Pre-flight</b></td><td>Doctor</td><td>verify engines, environment hygiene, the installed BMAD core and the sibling dream trees before anything spins</td><td><span class="code">doctor check --env --engines</span></td><td><span class="code">pyforge-doctor</span> (SKF)</td></tr>
+        <tr><td><b>Capture</b></td><td>Herald</td><td>none in the loop; the pulse later becomes the brief</td><td>—</td><td><span class="code">bmad-agent-herald</span> · deck bridge</td></tr>
+        <tr><td><b>Spec → stories</b></td><td>Marshal · BMAD team</td><td>a deferred-work entry naming the epic or story is surfaced as a candidate acceptance criterion while the story is drafted</td><td><span class="code">doctor backlog-intake &lt;id&gt;</span></td><td><span class="code">bmad-spec</span> · <span class="code">bmad-create-epics-and-stories</span></td></tr>
+        <tr><td><b>Build</b></td><td>Marshal (bmad-loop, bmad-build-auto)</td><td>the standing verdicts: ledger regression-freedom, false-green stories, forward dependencies, chain completeness, spec-surface drift</td><td><span class="code">python -m pyforge.doctor.sources …</span></td><td><span class="code">bmad-build-auto</span> · <span class="code">bmad-review</span></td></tr>
+        <tr><td><b>Map</b></td><td>Atlas</td><td>consumes the intelligence surface Atlas publishes — Doctor never re-derives a graph</td><td>MCP-first Watch axes</td><td><span class="code">pyforge-atlas</span> (SKF)</td></tr>
+        <tr><td><b>Audit</b></td><td>Warden</td><td>Doctor's findings may enter as Warden inputs; the one PR verdict stays Warden's</td><td><span class="code">warden-doctor</span> source</td><td><span class="code">pyforge-warden</span> (SKF)</td></tr>
+        <tr><td><b>Ship</b></td><td>Mason</td><td>none in the loop; every shipped recipe joins the estate the pulse watches</td><td>—</td><td><span class="code">conda-forge-expert</span></td></tr>
+        <tr class="hi"><td><b>Post-ship pulse</b></td><td>Doctor</td><td>staleness, cve, health, cadence and adoption over the shipped estate; the fleet-health surface persisted</td><td><span class="code">doctor monitor --fleet --watch …</span></td><td><span class="code">pyforge-doctor</span> (SKF)</td></tr>
+        <tr class="hi"><td><b>Triage</b></td><td>Doctor → Steward / Mason</td><td>one target's findings partitioned and ranked, root cause named, next safe hop suggested; the remediation is someone else's</td><td><span class="code">doctor diagnose --target … --prescribe</span></td><td><span class="code">bmad-os-root-cause-analysis</span></td></tr>
+        <tr><td><b>Broadcast</b></td><td>Herald</td><td>the report and the surface are the telemetry Herald illustrates</td><td><span class="code">--json</span> · the surface file</td><td><span class="code">bmad-agent-herald</span></td></tr>
+        <tr><td><b>Operate</b></td><td>Steward</td><td>engines present before pre-flight; credentials rotated on a Doctor finding</td><td><span class="code">env-hygiene</span> source</td><td><span class="code">pyforge-steward</span> (SKF)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 12 · THE RELAY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">12</span>
+      <h2>The relay — opened by Doctor, closed by Doctor</h2>
+    </div>
+    <p class="lede">The crew hands configurations and assets to one another in sequence, supervised start to finish by Marshal and framed by Herald. Doctor holds the baton twice: the pre-flight before step one, and the pulse after the ship.</p>
+    <svg viewBox="0 0 1128 200" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker></defs>
+      <g>
+        <rect x="8" y="40" width="122" height="70" fill="#ec3013"/><text x="69" y="66" text-anchor="middle" fill="#f3f2f2" font-size="11" font-weight="800" letter-spacing="1">PRE-FLIGHT</text><text x="69" y="86" text-anchor="middle" fill="#f3f2f2" font-size="15" font-weight="900">Doctor</text><text x="69" y="102" text-anchor="middle" fill="#ffe0d9" font-size="9.5" font-family="ui-monospace, Menlo, monospace">check</text>
+        <rect x="149" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="210" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP ONE</text><text x="210" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Herald</text><text x="210" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">deck generate</text>
+        <rect x="290" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="351" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP TWO</text><text x="351" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Marshal</text><text x="351" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">factory spin</text>
+        <rect x="431" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="492" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP THREE</text><text x="492" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Atlas</text><text x="492" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">map</text>
+        <rect x="572" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="633" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP FOUR</text><text x="633" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Warden</text><text x="633" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">audit</text>
+        <rect x="713" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="774" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP FIVE</text><text x="774" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Mason</text><text x="774" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">package</text>
+        <rect x="854" y="40" width="122" height="70" fill="#ec3013"/><text x="915" y="66" text-anchor="middle" fill="#f3f2f2" font-size="11" font-weight="800" letter-spacing="1">STEP SIX</text><text x="915" y="86" text-anchor="middle" fill="#f3f2f2" font-size="15" font-weight="900">Doctor</text><text x="915" y="102" text-anchor="middle" fill="#ffe0d9" font-size="9.5" font-family="ui-monospace, Menlo, monospace">monitor --fleet</text>
+        <rect x="995" y="40" width="125" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="1057" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP SEVEN</text><text x="1057" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Herald</text><text x="1057" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">broadcast</text>
+      </g>
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr4)">
+        <line x1="130" y1="75" x2="147" y2="75"/><line x1="271" y1="75" x2="288" y2="75"/><line x1="412" y1="75" x2="429" y2="75"/><line x1="553" y1="75" x2="570" y2="75"/><line x1="694" y1="75" x2="711" y2="75"/><line x1="835" y1="75" x2="852" y2="75"/><line x1="976" y1="75" x2="993" y2="75"/>
+      </g>
+      <path d="M69 110 C 69 160, 915 160, 915 110" stroke="#ec3013" stroke-width="2" fill="none" stroke-dasharray="6 5"/>
+      <text x="492" y="170" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="700">the same physician, the same Finding shape, the same closed exit domain — before the run and after the ship</text>
+      <text x="564" y="192" text-anchor="middle" fill="#605d5d" font-size="11">supervised start to finish by Marshal — sequencing on verdicts it never authors; each hand-off a durable, revision-pinned verdict artifact</text>
+    </svg>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 40px; margin-top:8px;">
+      <div>
+        <div class="relaystep"><span class="relaynum">✓</span><div><b>Pre-flight · Doctor</b> — toolchain and environment verified healthy before the run; a missing engine or an injected credential fails in the first seconds, never mid-build. <span class="code">doctor check --env --engines</span></div></div>
+        <div class="relaystep"><span class="relaynum">1</span><div><b>Capture · Herald</b> — the raw Dream becomes the strategic vision deck. <span class="code">herald deck generate</span></div></div>
+        <div class="relaystep"><span class="relaynum">2</span><div><b>Build · Marshal</b> — the factory floor spins code from the Spec contract, gated by Doctor's standing verdicts on the ledger, the board and the chain. <span class="code">marshal factory spin --method bmad</span></div></div>
+        <div class="relaystep" style="border-bottom:none;"><span class="relaynum">3</span><div><b>Map · Atlas</b> — the multi-registry dependency map of the generated code. <span class="code">atlas map --ecosystem dual</span></div></div>
+      </div>
+      <div>
+        <div class="relaystep"><span class="relaynum">4</span><div><b>Audit · Warden</b> — the strict multi-axis audit on code and mapped packages; the one PR gate. <span class="code">warden audit --axes …</span></div></div>
+        <div class="relaystep"><span class="relaynum">5</span><div><b>Ship · Mason</b> — safe assets bound into platform structures and shipped to conda-forge. <span class="code">mason package --ship conda-forge</span></div></div>
+        <div class="relaystep"><span class="relaynum">6</span><div><b>Pulse · Doctor</b> — fleet and feedstock health monitored post-ship; the surface written; a prescription ranked when something moves. <span class="code">doctor monitor --fleet --watch staleness,cve,abandonment</span></div></div>
+        <div class="relaystep" style="border-bottom:none;"><span class="relaynum">7</span><div><b>Proclaim · Herald</b> — release telemetry harvested into notables and infographics. <span class="code">herald updates compile · herald broadcast</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT IV -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT IV</span>
+      <span class="ttl">The product</span>
+    </div>
+    <span class="cap">The CLI · the doctrine · the stack · which tool when · escalation</span>
+  </div>
+
+  <!-- 13 · THE SHIPPED CLI -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">13</span>
+      <h2>The shipped CLI — <span data-fact="cli_verbs">6</span> subparsers, one envelope</h2>
+    </div>
+    <p class="lede">Console script <span class="code"><span data-fact="console_entry">doctor</span></span>, package <span class="code">pyforge-doctor</span> <span data-fact="package_version">0.1.0</span>, run through the unified grammar <span class="code">pyforge doctor …</span>. Three clinical verbs carry the Spec; a backlog-intake scan and a governed flag actuator were relayed in by later chains. <span class="code">--version</span> is top-level only, mirroring Warden.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">verb · pre-flight</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">doctor check</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">[path] [--engines [NAME]] [--env [NAME]]<br>[--durability] [--bmad-core] [--sibling-dreams]<br>[--scope repo|runtime|all] [--list] [--json]</div><p>Tri-state, individually nameable checks. <span class="code">--list</span> enumerates the catalog without running it; a named check in isolation matches its result inside the full suite; <span class="code">--scope</span> reads each category's scope through the one canonical registry lookup. Stays within the five-second pre-flight budget — a benchmark guards it.</p></div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">verb · pulse</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">doctor monitor</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">--fleet [--watch AXIS[,AXIS…]]<br>[--target MAINTAINER] [--source SOURCE]<br>[--json] [--surface PATH]</div><p><span class="code">--fleet</span> is required. Findings are equivalent to the underlying atlas call, source-tagged and filterable by <span class="code">--source</span>. Default axes staleness and cve; adoption and abandonment widen on request. <span class="code">--surface</span> writes the idempotent fleet-health file.</p></div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">verb · triage</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">doctor diagnose</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">--target TARGET [--prescribe] [--json]</div><p>Gathers one target. Without <span class="code">--prescribe</span> the findings are reported but not partitioned; with it, every finding lands in actionable, blocked or accepted-risk, the actionable set is ranked with its factors shown, and each Prescription names a root cause and — when confidently known — the single-hop next safe version.</p></div>
+      <div class="card"><div class="k">verb · intake</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">doctor backlog-intake</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">&lt;identifier&gt; [path] [--json]</div><p>Scans every station's tracked <span class="code">deferred-work-ledger.md</span> for entries naming an epic or story, fleet-wide, so a deferred item is surfaced as a candidate acceptance criterion the moment that story is drafted — instead of inert prose only a human happens to re-read.</p></div>
+      <div class="card"><div class="k">verb · actuator (governed)</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">doctor flags kill-switch</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">--flag KEY --reason TEXT [--flags-path …]</div><p>Disables one file-resolved OpenFeature flag and records the kill-switch metric with the operator's reason. Relayed from the platform's flag policy; the one thing Doctor may switch off, and it is a feature flag, not a finding.</p></div>
+      <div class="card"><div class="k">dispatcher · the registry</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">python -m pyforge.doctor.sources</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">&lt;name&gt; [--json] [--groundtruth]</div><p>Target-less by design — it judges the repo it is invoked from, by working directory rather than <span class="code">__file__</span>, because the package ships installed. The pixi tasks that used to call <span class="code">scripts/*_check.py</span> call this instead, one source at a time; <span class="code">bmad-drift-check</span> is <span class="code">bmad-drift</span> here.</p></div>
+    </div>
+    <div class="box" style="margin-top:16px;"><b>One envelope, every verb.</b> <span class="code">--json</span> emits a <span class="code">DoctorReport</span> — <span class="code">schema_version</span>, <span class="code">verb</span>, <span class="code">generated_at</span>, <span class="code">findings</span>, and <span class="code">prescriptions</span> only when the verb is <span class="code">diagnose</span> — validated against the committed <span class="code">data/report-schema.json</span> and composed on <span class="code">pyforge-core</span>'s base envelope schema. Nothing in the human render is absent from the JSON. <span class="code">main</span> always returns an integer; it never calls an exit primitive itself, and a component calling <span class="code">sys.exit</span> inside a gather can never dictate the process exit.</div>
+  </section>
+
+  <!-- 14 · THE DOCTRINE -->
+  <section style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:44px 56px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid color-mix(in srgb, var(--color-bg) 30%, transparent); padding-bottom:10px; margin-bottom:26px;">
+      <span class="xp" style="font-weight:800; font-size:22px; color:var(--color-accent-400);">14</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em; color:var(--color-bg);">The doctrine — six lines the code is tested against</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:22px 28px;">
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">Operability, not policy.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">Doctor's exit code answers "can the machine run", never "may the code merge". The domain is closed and deliberately omits Warden's policy-gate rung; Warden's exit is consumed as data and never re-exposed.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">Advisory, never a second PR gate.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">Findings stay advisory or become Warden inputs. No finding, no detector and no dispatcher output is a competing PR verdict — the skill, the persona and the Spec each say it in their own words.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">Never a false green.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">A detector that cannot run reports unknown; a missing package degrades to unknown rows; an incomplete gather grades <span class="code">incomplete</span>. The strip never claims green it did not measure.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">Facade over instruments.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">No new scanning engine, no new data source beyond the one hygiene check. Coordination and ranking are Doctor's craft; detection belongs to the instruments it wraps.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">The hand that builds is never the gate that judges.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">Every source judging a station's artifact is barred from importing that station. A durability verdict assembled from the judged station's own code would fail exactly when that station broke.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">Derive, never declare.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">The registry is the count; the roster is read from <span class="code">guild-roster.json</span>; the detector list is discovered from disk and fails on its own gaps. A number written in prose is a second source of truth that goes stale.</div></div>
+    </div>
+  </section>
+
+  <!-- 15 · THE STACK -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">15</span>
+      <h2>The stack — lean by doctrine</h2>
+    </div>
+    <p class="lede">A dedicated lean package in the parent pixi workspace, mirroring Warden's own shape: <span class="code">no-default-feature</span>, so the <span class="code">pyforge-doctor</span> environment carries only the built package, its conda run-dependencies and a test runner. The factory it pre-flights is pinned here too, from the tracked manifests.</p>
+    <table class="tbl">
+      <thead><tr><th>Layer</th><th>Component</th><th>Why it is there</th><th>Pinned where</th></tr></thead>
+      <tbody>
+        <tr><td><b>Language</b></td><td>Python ≥ 3.14</td><td>the interpreter the workspace actually installs; the fleet floor raised by the consistency standard</td><td><span class="code">pyproject.toml</span> <span class="code">requires-python</span></td></tr>
+        <tr><td><b>Envelope</b></td><td><span class="code">jsonschema</span> · <span class="code">pyforge-core</span></td><td>validates the packaged <span class="code">DoctorReport</span>; <span class="code">pyforge-core</span> supplies the verdict <span class="code">Lattice</span> and the base envelope schema the report composes on</td><td>package run-deps</td></tr>
+        <tr><td><b>Transport</b></td><td><span class="code">mcp</span></td><td>the primary atlas Watch-axis transport — <span class="code">sources/atlas.py</span> is the sole sanctioned import site</td><td>package run-dep; the in-repo conda floor is tighter</td></tr>
+        <tr><td><b>Parsing</b></td><td><span class="code">PyYAML</span> · <span class="code">ast</span></td><td>frontmatter and ledger parsing for the chain verdicts; the env-hygiene scan parses, never executes</td><td>package run-dep · stdlib</td></tr>
+        <tr class="hi"><td><b>The one cross-package edge</b></td><td><span class="code">pyforge-warden</span> as the optional <span class="code">gate</span> extra</td><td>the library call into <span class="code">run_doctor_checks</span>; default-installed in-repo, omittable externally with an install-hint failure on the engines check only. No reverse warden → doctor import may ever exist.</td><td><span class="code">[project.optional-dependencies]</span> · <span class="code">[feature.pyforge-doctor.dependencies]</span></td></tr>
+        <tr><td><b>Telemetry</b></td><td><span class="code">prometheus_client</span></td><td>the kill-switch metric the flag actuator records</td><td>feature-level dependency</td></tr>
+        <tr><td><b>Build</b></td><td>hatchling · pixi-build-python</td><td>wheel, sdist and <span class="code">.conda</span> from one <span class="code">pyforge-doctor-build</span> task</td><td><span class="code">pixi.toml</span> tasks</td></tr>
+        <tr><td><b>Tests</b></td><td>pytest · unit, meta, fixtures</td><td>meta-tests pin the doctrine: source independence, sole subprocess site, sole exit-code owner, pure prescribe and score, registry ↔ enum set-equality; a coverage gate whose floors ratchet upward only</td><td><span class="code">pyforge-doctor-test</span> · <span class="code">pyforge-doctor-test-coverage</span></td></tr>
+        <tr><td><b>The factory it pre-flights</b></td><td>BMAD core <span data-fact="bmad_core_version">6.12.0</span> · bmad-loop <span data-fact="bmad_loop_version">0.11.1</span> · conda-forge-expert <span data-fact="cfe_skill_version">8.90.5</span></td><td><span class="code">check --bmad-core</span> notices when the installed core falls behind upstream; the suite-drift sources read the same manifests</td><td><span class="code">_bmad/_config/manifest.yaml</span> · <span class="code">pixi.lock</span> · skill frontmatter</td></tr>
+        <tr><td><b>The estate it watches</b></td><td><span data-fact="groundtruth_pixi_envs">31</span> pixi environments · cf_atlas schema <span data-fact="groundtruth_schema_version">29</span> · <span data-fact="recipes_count">7864</span> recipes</td><td>the ground truth <span class="code">bmad-groundtruth</span> reports and <span class="code">bmad-drift</span> checks the marshal docs against</td><td><span class="code">pixi run -e local-recipes bmad-groundtruth</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 16 · WHICH TOOL, WHEN -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">16</span>
+      <h2>Which tool, when</h2>
+    </div>
+    <p class="lede">The estate has several health-shaped entry points. They are not rivals; each answers a different question, and Doctor's own verbs sit at three of them.</p>
+    <table class="tbl">
+      <thead><tr><th>You want to know…</th><th>Run</th><th>What comes back</th><th>Gate?</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>Is this machine sound enough to spin the line right now?</td><td><span class="code">pyforge doctor check --env --engines</span></td><td>tri-state per named check; exit two on any fail; under the pre-flight budget</td><td>operability only — Marshal's unattended pre-flight</td></tr>
+        <tr><td>Are Warden's scan engines present, in Warden's own words?</td><td><span class="code">warden --doctor</span></td><td>the same engine findings Doctor wraps — identical for the same environment (CAP-1)</td><td>no — Warden's self-check, not its gate</td></tr>
+        <tr class="hi"><td>What got worse across the fleet this week?</td><td><span class="code">pyforge doctor monitor --fleet --watch staleness,cve</span></td><td>one source-tagged pulse over the atlas axes; optionally the persisted surface</td><td>no — advisory</td></tr>
+        <tr><td>Who lags upstream, who has a new advisory — per instrument, in depth?</td><td><span class="code">staleness-report</span> · <span class="code">cve-watcher</span> · <span class="code">behind-upstream</span> · <span class="code">feedstock-health</span></td><td>the atlas read-side CLIs, offline-safe, at full detail</td><td>no</td></tr>
+        <tr class="hi"><td>What do I fix first on this target, and why?</td><td><span class="code">pyforge doctor diagnose --target … --prescribe</span></td><td>partitioned, ranked prescriptions with factors, root cause and next safe hop</td><td>no — the human or Steward decides</td></tr>
+        <tr><td>Are the planning artifacts, ledgers and board telling the truth?</td><td><span class="code">pixi run -e local-recipes detectors</span> (CI subset <span class="code">detectors-ci</span>)</td><td>every detector discovered from disk plus Doctor's ported sources, merged into one aggregation</td><td>advisory; the registry fails on its own gaps</td></tr>
+        <tr><td>Have the marshal project docs drifted behind the live skill and factory?</td><td><span class="code">pixi run -e local-recipes bmad-drift-check</span></td><td>the <span class="code">bmad-drift</span> source's verdict — pin drift, stale counts, archive hygiene, surface change</td><td>advisory; the reconciler is the runbook</td></tr>
+        <tr><td>Where does the whole fleet stand?</td><td><span class="code">pixi run -e local-recipes fleet-picture</span></td><td>the read-only progress table — pasted verbatim, never reformatted, never gating</td><td>no</td></tr>
+        <tr><td>Is the code this PR touches compliant?</td><td><span class="code">warden scan</span></td><td>the one PR-gate verdict — hygiene, security, license, currency</td><td><b>yes — the only one</b></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 17 · ESCALATION AND THE LEDGER -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">17</span>
+      <h2>Escalation and the ledger — how a finding becomes work</h2>
+    </div>
+    <p class="lede">A finding that nobody can act on is noise. Doctor's findings travel a fixed route into the estate's durable records, and each hop is owned by someone other than Doctor — which is the point.</p>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="kicker">1 · report</div><div style="font-size:15px; font-weight:800; margin:6px 0;">DoctorReport</div><div style="font-size:12.5px; line-height:1.45;">the schema-validated envelope, pinned to the tree it judged. Marshal reads it as a durable verdict artifact and sequences on it; it never re-derives it.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">2 · defer</div><div style="font-size:15px; font-weight:800; margin:6px 0;">deferred-work ledger</div><div style="font-size:12.5px; line-height:1.45;">work not taken now lands in the station's tracked <span class="code">deferred-work-ledger.md</span> — never only in gitignored scratch; the <span class="code">deferred-work</span> source fails it if it does.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">3 · intake</div><div style="font-size:15px; font-weight:800; margin:6px 0;">backlog-intake</div><div style="font-size:12.5px; line-height:1.45;">when the named epic or story is drafted, the entry surfaces as a candidate acceptance criterion; <span class="code">due-for-verification</span> re-opens entries whose live re-check is overdue.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">4 · cause</div><div style="font-size:15px; font-weight:800; margin:6px 0;">root-cause analysis</div><div style="font-size:12.5px; line-height:1.45;">for a finding that needs a cause, the persona wields <span class="code">bmad-os-root-cause-analysis</span> — advisory, never to change a verdict.</div></div>
+      <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);"><div class="kicker">5 · remediate</div><div style="font-size:15px; font-weight:800; margin:6px 0;">someone else's hands</div><div style="font-size:12.5px; line-height:1.45;">Steward for the estate, Mason for a recipe, Marshal for its own row — each station remediates its own row; the Doctor holds the verdict, never the fix.</div></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:16px; margin-top:22px;">
+      <div>
+        <div class="kicker" style="margin-bottom:8px;">Two exit-code domains, kept apart on purpose</div>
+        <table class="tbl" style="margin-top:0;">
+          <thead><tr><th>Surface</th><th>Code</th><th>Means</th></tr></thead>
+          <tbody>
+            <tr><td rowspan="3"><span class="code">doctor</span> CLI<br><span class="muted" style="font-size:12px;">AD-2 — the sole owner is <span class="code">verdict.exit_code_for</span></span></td><td><span class="code">0</span></td><td>every finding ok or warn — including the empty case</td></tr>
+            <tr><td><span class="code">2</span></td><td>a fail-status finding is present — the machine is not sound</td></tr>
+            <tr><td><span class="code">130</span></td><td>SIGINT at the CLI boundary — never derived from a finding</td></tr>
+            <tr class="hi"><td rowspan="3"><span class="code">detectors</span> task<br><span class="muted" style="font-size:12px;">scripts/detectors.py — the registry aggregation</span></td><td><span class="code">0</span></td><td>every selected detector ran and passed</td></tr>
+            <tr class="hi"><td><span class="code">1</span></td><td>at least one reported findings</td></tr>
+            <tr class="hi"><td><span class="code">2</span></td><td>at least one could not run and none reported findings — <b>unknown, never green</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tint" style="display:flex; flex-direction:column; justify-content:center;"><b>Why the doctor domain has no rung for "findings".</b> Warden's frozen domain carries a policy-gate rung between pass and fail; Doctor's is a strict subset that omits it permanently, because a caller — Marshal above all — must never misread a Doctor exit as "policy violation" when Doctor has no policy concept. A warn never changes the exit code. The two spaces are read-only inputs to each other, never merged.<br><br><b>And why the registry's is different again.</b> The detectors aggregation answers a different question — did every patrol run, and did any of them find something — so it distinguishes findings from could-not-run. Two is not a softer zero: a detector that cannot run reports unknown, and unknown is never green.</div>
+    </div>
+  </section>
+
+  <!-- ACT V -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT V</span>
+      <span class="ttl">Who it serves, where it runs</span>
+    </div>
+    <span class="cap">Value by leader · air-gap · the seams</span>
+  </div>
+
+  <!-- 18 · WHAT EACH LEADER GETS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">18</span>
+      <h2>What each leader gets</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;">
+      <div class="card"><div class="k">The operator at the keyboard</div><p>One pulse instead of a weekly habit of five CLIs. <span class="code">monitor --fleet</span> answers "what got worse" in one source-tagged view; <span class="code">diagnose --prescribe</span> hands back a worklist with the reasoning visible, so the judgement call is still yours — but it starts from a ranked list, not a pile.</p></div>
+      <div class="card"><div class="k">Marshal — the machine consumer</div><p>An unattended pre-flight that fails in the first seconds rather than mid-build, on a closed exit domain that can never be mistaken for a policy verdict. And a set of standing verdicts on its own ledger, board and chain that it cannot weaken, re-threshold or disable — the guard it was never allowed to hold for itself.</p></div>
+      <div class="card"><div class="k">The security lead</div><p>Exploited-in-the-wild first: KEV outranks everything at equal severity, EPSS breaks the next tie, upgrade lag the last. Every prescription shows its factors and names a root cause from its own evidence, and the one new detector — unconditional credential injection — catches the class of leak that already happened once.</p></div>
+      <div class="card"><div class="k">Steward — platform and keys</div><p>A finding you can act on: which credential is attached without a host scope, which engine is missing before anyone's run needs it, which BMAD core or suite member has fallen behind. Remediation is Steward's; the verdict arrives already partitioned.</p></div>
+      <div class="card"><div class="k">Mason and the release engineer</div><p>The shipped estate under continuous watch — staleness, red CI, stuck bots, silence, abandonment — and, when something moves, a single-hop next-safe-version suggestion sourced from upstream data, or a plain statement that none is confidently known.</p></div>
+      <div class="card"><div class="k">The executive reader</div><p>A composite A–F grade per dependency and a persisted fleet-health surface that diffs only when something actually changed — derived output, never a fresh gather, never a timestamp churning the file. The board's status strip never claims green it did not measure.</p></div>
+    </div>
+  </section>
+
+  <!-- 19 · ENTERPRISE AND AIR-GAP -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">19</span>
+      <h2>Enterprise and air-gap — a physician that carries nothing in</h2>
+    </div>
+    <p class="lede">Doctor adds no network path of its own. Every remote signal arrives through an instrument the estate already routes — the atlas MCP server, the atlas CLIs behind <span class="code">_http.py</span>'s truststore and JFrog/GitHub/.netrc chain — so an air-gapped deployment configures its mirrors once and Doctor inherits them.</p>
+    <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+      <div class="box"><b>Read-only in every verb.</b> No module writes outside a <span class="code">tempfile</span>-scoped path or mutates a scanned tree. The credential-hygiene scan is <span class="code">ast.parse</span> only — never <span class="code">exec</span>, <span class="code">eval</span> or a dynamic import of the code it inspects — so pointing it at an untrusted tree is safe by construction.</div>
+      <div class="box"><b>One bounded subprocess site.</b> When no MCP client is in-process, <span class="code">cli_bridge</span> runs the equivalent atlas CLI: argv as a list, <span class="code">NO_COLOR</span>, <span class="code">stdin=DEVNULL</span>, a bounded timeout, and a typed fail Finding on error — never a shell string, never a raw traceback. Both paths normalize identically.</div>
+      <div class="box"><b>Runs where the runner can see.</b> Repo-scope sources read tracked files and git history and run in CI (<span class="code">detectors-ci</span>); runtime-scope sources read tmux, Tier-3 feeds and <span class="code">~/.bmad-loops</span>, which do not exist on a runner, and are excluded there rather than faked. The exclusion is the missing observation plane made visible, not a convenience.</div>
+      <div class="box"><b>Lean by environment.</b> The <span class="code">pyforge-doctor</span> pixi environment is <span class="code">no-default-feature</span>: the built package, its conda run-dependencies and a test runner. The <span class="code">detectors</span> workflow's locked environment carries the same package; when it is unimportable, the ported sources degrade to unknown rows — counted, never green.</div>
+    </div>
+    <div class="tint" style="margin-top:16px;"><b>The credential finding that named the station's one new instrument.</b> An env-var read feeding an HTTP auth header with no host-scope conditional sends the key to every host — the <span class="code">JFROG_API_KEY</span> pattern. A host-scoped attach must not fire. That boundary is written into the Spec so the detector can neither over-reach into a linter nor under-reach into silence; the remediation was Steward's, on a Doctor finding, and became the precedent for how the two stations divide health from operations.</div>
+  </section>
+
+  <!-- 20 · INTEGRATION SEAMS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">20</span>
+      <h2>Integration seams — every edge, and its direction</h2>
+    </div>
+    <p class="lede">Doctor's boundaries are enforced by meta-tests, not by convention. Each seam below has a stated direction and a test that fails when the direction is violated.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+      <div class="card"><div class="k">doctor → warden (library)</div><p><span class="code">sources.warden</span> imports <span class="code">pyforge.warden.engines.run_doctor_checks</span> directly — the only cross-package code edge, declared as the optional <span class="code">gate</span> extra. No reverse import may ever exist; a meta-test asserts the source contains no subprocess call.</p></div>
+      <div class="card"><div class="k">doctor → cf_atlas (MCP, then CLI)</div><p><span class="code">sources.atlas</span> is the sole sanctioned <span class="code">mcp</span> import site. The MCP tool is asked first; the CLI fallback runs only through <span class="code">cli_bridge</span>. The caller cannot tell which path produced a Finding except by its Source tag.</p></div>
+      <div class="card"><div class="k">doctor ← pyforge-core</div><p>The verdict <span class="code">Lattice</span> and the base envelope schema come from <span class="code">pyforge-core</span>; the shared <span class="code">pyforge.core.hooks</span> contract carries Doctor's <span class="code">doctor-gather</span> and <span class="code">doctor-prescribe</span> plugin entry points — one loader, not a second.</p></div>
+      <div class="card"><div class="k">doctor → tracked artifacts only</div><p>The Marshal-judging sources read <span class="code">sprint-status-ledger.yaml</span>, <span class="code">epics.md</span>, Specs, Dreams and git — and import no station package. <span class="code">guild-roster.json</span> is the constitutive read for the eight stations, the Dream statuses and types.</p></div>
+      <div class="card"><div class="k">detectors.py → doctor.sources</div><p>The filesystem-derived registry threads Doctor's ported sources in-process, into the same results list and the same exit aggregation as a scanned detector; <span class="code">sources.REGISTRY</span> is what <span class="code">--list</span> catalogs.</p></div>
+      <div class="card"><div class="k">The Canopy → doctor</div><p><span class="code">pyforge doctor …</span> is the unified grammar; <span class="code">POST /stations/doctor/mcp</span> the service face, identity tool <span class="code">station_face</span>. The <span class="code">/stations/doctor/</span> portal's first job is the last fleet-pulse summary, rendered through the host's PortalClient — no <span class="code">pyforge.*</span> under <span class="code">src/platform/</span>.</p></div>
+    </div>
+  </section>
+
+  <!-- ACT VI -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT VI</span>
+      <span class="ttl">Proof and road</span>
+    </div>
+    <span class="cap">Receipts · the seed · now, next, later</span>
+  </div>
+
+  <!-- 21 · PROOF -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">21</span>
+      <h2>Proof — the receipts, from the ledgers</h2>
+    </div>
+    <p class="lede">Every number here is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec and the manifests at tree <span data-fact="tree_commit_date">2026-09-15</span> — never from a prior poster, never from memory. The stub this poster replaces was last touched <span data-fact="poster_last_commit_date">2026-09-14</span>.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid var(--color-text); margin-bottom:22px;">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="bignum"><span data-fact="stories_done_total">95/105</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">stories done — the whole tracked ledger, retros excluded, read with the real parser</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="epics_done_total">22/24</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">epics done — from the walking skeleton to general-docs consistency</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="spec_capabilities">9</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">capabilities, each with a mechanical <span class="code">verified:</span> PASS at a named HEAD; Spec <span data-fact="spec_status">shipped</span></div></div>
+      <div style="padding:18px 0 6px 14px;"><div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="dream_status">realized</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">the Dream's own status — the act that completed, not a promise</div></div>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Capability</th><th>What was proven, mechanically</th><th>Pinned by</th></tr></thead>
+      <tbody>
+        <tr><td><b>CAP-1</b> pre-flight</td><td><span class="code">check --list</span> enumerates the named engine checks and the env detector without running them; the warden source calls <span class="code">run_doctor_checks</span> as a library import</td><td><span class="code">test_source_independence.py</span> · <span class="code">test_sources_warden.py</span></td></tr>
+        <tr><td><b>CAP-2</b> pulse</td><td><span class="code">monitor --fleet --watch staleness,cve,adoption --json</span> returns source-tagged findings; the default axis constant is the value returned when <span class="code">--watch</span> is omitted</td><td><span class="code">test_sources_atlas.py</span> · <span class="code">test_sources_atlas_watch_axes.py</span></td></tr>
+        <tr><td><b>CAP-3</b> prescribe</td><td>live <span class="code">--prescribe --json</span> carries a <span class="code">prescriptions</span> key; the only entries without <span class="code">rank_factors</span> are clean ok findings, excluded from ranking by documented design</td><td><span class="code">test_prescribe_rank.py</span> · <span class="code">test_prescribe_partition.py</span> · <span class="code">test_prescribe_root_cause.py</span></td></tr>
+        <tr><td><b>CAP-4</b> envelope</td><td><span class="code">check --json</span> returns the versioned envelope with a findings array; the schema is committed; prescriptions appear on diagnose only</td><td><span class="code">data/report-schema.json</span></td></tr>
+        <tr><td><b>CAP-5</b> grade</td><td><span class="code">score.grade</span> imports and is callable; no subprocess or MCP import in the module</td><td><span class="code">test_score.py</span> · <span class="code">test_score_pure_function.py</span></td></tr>
+        <tr><td><b>CAP-6</b> surface</td><td><span class="code">fleet_surface</span> exports a schema-version constant, <span class="code">build_surface</span> and <span class="code">write_surface</span>, taking Finding sequences — no independent gather</td><td><span class="code">test_fleet_surface.py</span></td></tr>
+        <tr><td><b>CAP-7</b> adoption</td><td>a live <span class="code">--watch adoption</span> run returns adoption-sourced findings; a run with no <span class="code">--watch</span> returns none; the Source enum is closed</td><td><span class="code">test_sources_atlas_watch_axes.py</span></td></tr>
+        <tr><td><b>CAP-8</b> safe hop</td><td><span class="code">recommend_safe_upgrade</span> reads only the finding's evidence, rejects a major-classified delta, and always populates a reason when it names no target</td><td><span class="code">test_prescribe_safe_upgrade.py</span></td></tr>
+        <tr class="hi"><td><b>CAP-9</b> the Marshal's row</td><td><span class="code">sources/marshal.py::gather</span> is live-callable and imports no station package, asserted across every source module</td><td><span class="code">test_source_independence.py</span> · <span class="code">test_sources_marshal_story_status.py</span></td></tr>
+      </tbody>
+    </table>
+    <div class="kicker" style="margin:26px 0 8px;">The fleet the physician watches — stories and epics done, per tracked ledger</div>
+    <table class="tbl" style="margin-top:0;">
+      <thead><tr><th>Station</th><th>Herald</th><th>Marshal</th><th>Atlas</th><th>Warden</th><th>Mason</th><th>Doctor</th><th>Scribe</th><th>Steward</th><th>Fleet</th></tr></thead>
+      <tbody>
+        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">82/100</span></td><td><span data-fact="marshal_stories_done_total">270/274</span></td><td><span data-fact="atlas_stories_done_total">94/95</span></td><td><span data-fact="warden_stories_done_total">49/49</span></td><td><span data-fact="mason_stories_done_total">70/70</span></td><td><b><span data-fact="doctor_stories_done_total">95/105</span></b></td><td><span data-fact="scribe_stories_done_total">35/35</span></td><td><span data-fact="steward_stories_done_total">231/244</span></td><td><b><span data-fact="fleet_stories_done_total">926/972</span></b></td></tr>
+        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">19/23</span></td><td><span data-fact="marshal_epics_done_total">40/43</span></td><td><span data-fact="atlas_epics_done_total">23/24</span></td><td><span data-fact="warden_epics_done_total">12/12</span></td><td><span data-fact="mason_epics_done_total">17/17</span></td><td><b><span data-fact="doctor_epics_done_total">22/24</span></b></td><td><span data-fact="scribe_epics_done_total">18/18</span></td><td><span data-fact="steward_epics_done_total">56/58</span></td><td><b><span data-fact="fleet_epics_done_total">207/219</span></b></td></tr>
+      </tbody>
+    </table>
+    <div class="box" style="margin-top:18px;"><b>The incident that proved the verdict was needed.</b> A single ledger sync destroyed <span class="code">done</span> markers across four stations and printed success; every guard written in response lived in Marshal's own surface. The <span class="code">marshal-durability</span> source now reads the tracked ledgers and git, reports FAIL naming every regressed story key, and WARN — never a crash, never silent OK — when git or the ledgers are unavailable. Doctor's own ledger shows the same discipline turned inward: <span data-fact="stories_done_total">95/105</span> is a count of tracked <span class="code">done</span> keys, not a claim.</div>
+  </section>
+
+  <!-- 22 · THE SEED -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">22</span>
+      <h2>The seed — Dream to shipped station, dated</h2>
+    </div>
+    <p class="lede">Every claim below has a dated entry in the Dream's realization log. The dates are the log's own; nothing here is projected.</p>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-07-23">2026-07-23</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">Dreamt</div>
+        <div style="font-size:12px; line-height:1.45;">The Physician defined in the Charter — pre-flight, pulse, prescription; the chapter deck seeded in <span class="code">presentations/pyforge-doctor/</span>.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-07-25">2026-07-25</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">Specified</div>
+        <div style="font-size:12px; line-height:1.45;">The full planning chain landed in one pass: the Spec's first four capabilities, the PRD's functional requirements, the architecture spine's six decisions, three epics as vertical slices — one per verb.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-08-02">2026-08-02</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">Walking skeleton</div>
+        <div style="font-size:12px; line-height:1.45;">Epic 1 shipped — scaffold, the warden wrap, tri-state checks, the hygiene detector, CLI wiring. The same day a fabricated sibling dream was retired and its four real frontier items became a genuine Epic 4 (CAP-5..8).</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px; background:var(--color-accent-100);">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-08-08">2026-08-08</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">The verdict comes home</div>
+        <div style="font-size:12px; line-height:1.45;">After the ledger-sync loss, Doctor gained the <span class="code">marshal-durability</span> source, CAP-9 and Epic 5 — then Epic 6 re-homed the rest of the repo's station-judging detectors as Doctor sources.</div>
+      </div>
+      <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="tree_commit_date">2026-09-15</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0; color:var(--color-accent);">Realized · re-derived</div>
+        <div style="font-size:12px; line-height:1.45;">Dream <span data-fact="dream_status">realized</span>, Spec <span data-fact="spec_status">shipped</span>, <span data-fact="epics_done_total">22/24</span> epics — and this poster rebuilt from the fact ledger at this tree, to the family standard.</div>
+      </div>
+    </div>
+    <div class="box" style="margin-top:22px;"><b>Why this is a consolidation, not an invention — and why that mattered for the record.</b> An earlier, separate dream proposed much of the same frontier inside a commit later found to carry fabricated content elsewhere. Its four genuinely new items survived verification against Doctor's real PRD and were re-grounded in Doctor's own constraints — never a new scanning engine, never a real graph resolver. Its invented precision — catch rates, acceptance percentages, validation against thousands of packages — did not carry forward. The Dream you can read today is the real record, and this poster cites nothing the ledgers cannot re-derive.</div>
+  </section>
+
+  <!-- 23 · NOW · NEXT · LATER -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">23</span>
+      <h2>Now · next · later</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div class="k">Now — shipped and verified</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>Three clinical verbs plus backlog intake and the governed flag switch — <span data-fact="cli_verbs">6</span> subparsers behind one grammar</li>
+          <li><span data-fact="spec_capabilities">CAP-1..9</span> each carrying a mechanical <span class="code">verified:</span> PASS</li>
+          <li>The source registry dispatching the repo's station-judging verdicts, merged into <span class="code">detectors</span> and <span class="code">detectors-ci</span></li>
+          <li>SKF content skill, station persona, RCA routing, the first <span class="code">/stations/doctor/</span> portal slice</li>
+          <li>Tracked ledger <span data-fact="stories_done_total">95/105</span> · <span data-fact="epics_done_total">22/24</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="k">Next — the Spec's own open questions</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>The credential-hygiene default severity — <span class="code">warn</span> or <span class="code">fail</span> when the unconditional-injection pattern fires — deferred through the whole chain as a placeholder</li>
+          <li>A schema-versioning <i>policy</i> for the <span class="code">DoctorReport</span> envelope: what triggers a bump, how a consumer reacts</li>
+          <li>The persistent surface's medium — a tracked file today; a dashboard page or an issue à la Renovate remain named alternatives</li>
+          <li>Suite-drift residuals relayed from the lifecycle chain, each landing as a story, never a Spec edit</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="k">Later — named, deliberately not built</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>The Wave B portal pulse on the Canopy — steward's shell, not this skill's</li>
+          <li>A real dependency-graph resolver for <span class="code">--prescribe</span> — explicitly out of scope; ranking plus a lag tiebreaker stays the contract</li>
+          <li>Waiver authoring for the accepted-risk partition — the partition exists for forward-compatibility only</li>
+          <li>A general-purpose OSS health tool — Doctor stays scoped to this factory's instruments and this repo's fleet</li>
+          <li>Any actuator beyond the flag switch — the read-only boundary is the doctrine, not a gap</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSING POSTER -->
+  <section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;">
+    <div style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.85;">The creed</div>
+    <div class="xp" style="font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">Check the vitals. Diagnose the fault. Keep the ecosystem alive.</div>
+    <p style="font-size:18px; line-height:1.5; margin:18px 0 0; max-width:960px; opacity:0.94;">Pre-flight before the run. Pulse after the ship. Prescriptions with root causes and a ranked order of work — over instruments that already existed, in one vocabulary, on a closed exit domain that reports operability and never policy. The physician holds the verdict; the hands that build hold the fix.</p>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:36px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13px; font-weight:600;">
+      <span><b>PyForge Doctor</b> · doctor chain · <span class="code">spec-pyforge-doctor</span> · <span data-fact="spec_capabilities">CAP-1..9</span> · <span class="code">pyforge-doctor</span> <span data-fact="package_version">0.1.0</span></span>
+      <span>docs/dreams/pyforge-doctor.md · <span class="code">src/shared/packages/pyforge-doctor/</span> · PyForge Guild · Dream to Code</span>
+    </div>
+  </section>
+
+</div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:2200}}"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:20007}}"></script>
 </body>
 </html>

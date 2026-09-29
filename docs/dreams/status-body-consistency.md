@@ -2,9 +2,11 @@
 title: A document's prose agrees with its own status
 type: dream
 owner: doctor
-status: dreamt   # 2026-09-09 — raised by the fleet-readiness pass (§ 2.4 D1) after six
-                 # documents in one sweep were found contradicting their own frontmatter
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-doctor]]** on 2026-09-17 (one-chain-per-station doctor fold).
 
 # A document's prose agrees with its own status
 

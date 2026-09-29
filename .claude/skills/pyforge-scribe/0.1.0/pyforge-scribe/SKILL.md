@@ -50,8 +50,10 @@ prints `captured: <path>`.
 
 **Compile** (`scribe graph compile [--nightly]`) [SRC:src/pyforge/scribe/cli.py:L251-L269]:
 full rebuild of the graph; never prompts. When `SCRIBE_GRAPHIFY_EXTRA` is truthy,
-also ingests `src/shared/packages/` through the graphify extra (Story 6.1) as a
-seventh, optional compile source -- off by default (air-gap). Every current node
+also ingests the named graphify target list (`src/shared/packages/`,
+`src/platform/`, `scripts/` — Story 15.1) through the graphify extra
+(Story 6.1) as an optional compile source -- off by default (air-gap). Never
+`recipes/` or the repo root. Every current node
 also gets a `stale` flag (Story 6.3, CAP-13): `true` when its citation's source
 file has a git commit postdating the node's own `valid_from` with no `supersedes:`
 edge naming it -- a git-timestamp comparison only, no LLM call. `scribe recall`
@@ -59,8 +61,13 @@ never serves a stale node; external consumers (e.g. marshal's planning-graph
 retrieval) reading `GraphNode.stale` from the compiled graph must fall back to
 their own non-graph path instead of serving it.
 
-**Recall** (`scribe recall <query>`) [SRC:src/pyforge/scribe/cli.py:L272-L285]:
+**Recall** (`scribe recall <query>`) [SRC:src/pyforge/scribe/cli.py]:
 prints the answer plus `[source: …]` when grounded, else `no grounded answer found`.
+Default omits `kind=code`; `--kind` selects kinds (Story 8.5). `--mode`
+planning|memory|code is the named bag (Story 16.1), exclusive with `--kind`.
+`--scope`
+admits that project's planning tree plus `presentations/<scope>/facts.yaml`
+(Story 9.1).
 
 **Index** (`scribe index build|report|move-list`, Story 6.1) -- the graphify
 `compile_surface` extra's explicit verbs:
@@ -98,7 +105,8 @@ retrieval, and, later, marshal Story 28.8's freshness check) bind to this
 grammar only -- never to `pyforge.scribe.extras` internals.
 
 <!-- [MANUAL:additional-notes] -->
-<!-- Add custom notes here. This section is preserved during skill updates. -->
+Frame store (steward Story 53.2 pointer only): Company + eight station Frames live in `docs/foundry/frames/` in git — do not graph-ingest them unless a later Spec says so.
+Session-close ritual, every harness: `scribe capture` (AGENTS.md § Team memory), not restated here.
 <!-- [/MANUAL:additional-notes] -->
 
 ## Common Workflows

@@ -15,6 +15,11 @@ deferred:
     evidence: |-
       Spec scopes measurement before joining detectors; checks run only via
       dream-chain --dreams and pyforge-doctor-test live-count tests today.
+      The three classes live in
+      `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`;
+      the CI gate list is `scripts/detectors.py`.
+    location: >-
+      src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
     severity: low
   - summary: >-
       Refresh docs/dreams/README.md Phase-2b prose to describe file-driven

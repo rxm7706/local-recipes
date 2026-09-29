@@ -136,9 +136,7 @@ def _station_import_violations(tree: ast.Module, own_package_parts: tuple[str, .
                 # or a relative import resolving to the same shape).
                 for alias in node.names:
                     if alias.name != "core":
-                        violations.append(
-                            f"{node.lineno}: from {resolved or '<relative>'} import {alias.name}"
-                        )
+                        violations.append(f"{node.lineno}: from {resolved or '<relative>'} import {alias.name}")
     return violations
 
 
@@ -175,12 +173,9 @@ def test_package_scan_surface_is_not_empty():
 
 @pytest.mark.parametrize("module_path", _package_modules(), ids=lambda p: p.name)
 def test_no_module_imports_another_station(module_path: Path):
-    violations = _station_import_violations(
-        _parse(module_path), _own_package_parts(module_path)
-    )
+    violations = _station_import_violations(_parse(module_path), _own_package_parts(module_path))
     assert not violations, (
-        f"{module_path.name} imports from another pyforge station at "
-        f"{violations} — pyforge-core must be a leaf"
+        f"{module_path.name} imports from another pyforge station at {violations} — pyforge-core must be a leaf"
     )
 
 
@@ -197,9 +192,7 @@ def test_station_import_detector_fires_on_a_synthetic_station_import():
     """Non-vacuous proof: every import shape the docstring claims to cover
     IS flagged -- unaliased `import`, aliased `import ... as`, `from ...
     import`, and the bare `from pyforge import <X>` form."""
-    assert _station_import_violations(
-        ast.parse("from pyforge.warden import something\n")
-    )
+    assert _station_import_violations(ast.parse("from pyforge.warden import something\n"))
     assert _station_import_violations(ast.parse("import pyforge.warden\n"))
     assert _station_import_violations(ast.parse("import pyforge.warden as w\n"))
     assert _station_import_violations(ast.parse("from pyforge import warden\n"))
@@ -211,12 +204,8 @@ def test_station_import_detector_fires_on_a_relative_import_reaching_a_station()
     `pyforge/core/__init__.py` resolves to `pyforge.warden` and must be
     flagged, not waved through as "relative, therefore safe"."""
     own_package_parts = ("pyforge", "core")
-    assert _station_import_violations(
-        ast.parse("from .. import warden\n"), own_package_parts
-    )
-    assert _station_import_violations(
-        ast.parse("from ..warden import something\n"), own_package_parts
-    )
+    assert _station_import_violations(ast.parse("from .. import warden\n"), own_package_parts)
+    assert _station_import_violations(ast.parse("from ..warden import something\n"), own_package_parts)
 
 
 def test_station_import_detector_flags_an_unresolvable_relative_import():
@@ -225,9 +214,7 @@ def test_station_import_detector_flags_an_unresolvable_relative_import():
     dangerous but that a guard must never resolve an import it cannot
     account for into something that looks innocent -- mirrors
     pyforge-steward's identical rule for the same failure mode."""
-    violations = _station_import_violations(
-        ast.parse("from ... import warden\n"), ("pyforge", "core")
-    )
+    violations = _station_import_violations(ast.parse("from ... import warden\n"), ("pyforge", "core"))
     assert violations
     assert "unresolvable" in violations[0]
 
@@ -237,37 +224,23 @@ def test_station_import_detector_does_not_fire_on_a_self_import():
     must never be flagged — a false positive here would block every future
     extraction story (14.2-14.4)."""
     own_package_parts = ("pyforge", "core")
-    assert not _station_import_violations(
-        ast.parse("from pyforge.core import something\n"), own_package_parts
-    )
-    assert not _station_import_violations(
-        ast.parse("import pyforge.core\n"), own_package_parts
-    )
-    assert not _station_import_violations(
-        ast.parse("from pyforge import core\n"), own_package_parts
-    )
+    assert not _station_import_violations(ast.parse("from pyforge.core import something\n"), own_package_parts)
+    assert not _station_import_violations(ast.parse("import pyforge.core\n"), own_package_parts)
+    assert not _station_import_violations(ast.parse("from pyforge import core\n"), own_package_parts)
     assert not _station_import_violations(ast.parse("import pyforge\n"), own_package_parts)
-    assert not _station_import_violations(
-        ast.parse("from . import something\n"), own_package_parts
-    )
-    assert not _station_import_violations(
-        ast.parse("from .sibling import something\n"), own_package_parts
-    )
+    assert not _station_import_violations(ast.parse("from . import something\n"), own_package_parts)
+    assert not _station_import_violations(ast.parse("from .sibling import something\n"), own_package_parts)
 
 
 def test_stdlib_detector_fires_on_a_synthetic_third_party_import():
     """Non-vacuous proof: a real third-party import IS flagged."""
     assert _non_stdlib_import_violations(ast.parse("import requests\n"))
-    assert _non_stdlib_import_violations(
-        ast.parse("from requests import Session\n")
-    )
+    assert _non_stdlib_import_violations(ast.parse("from requests import Session\n"))
 
 
 def test_stdlib_detector_does_not_fire_on_stdlib_or_self_imports():
     assert not _non_stdlib_import_violations(ast.parse("import ast\nimport sys\n"))
-    assert not _non_stdlib_import_violations(
-        ast.parse("from pathlib import Path\n")
-    )
+    assert not _non_stdlib_import_violations(ast.parse("from pathlib import Path\n"))
     assert not _non_stdlib_import_violations(ast.parse("import pyforge.core\n"))
 
 

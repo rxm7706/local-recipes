@@ -1,5 +1,7 @@
 # pyforge-marshal
 
+General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
+
 Deterministic BMAD-loop supervisor CLI (`marshal`) wrapping
 [`bmad-loop`](https://github.com/bmad-code-org/bmad-loop) with gates-as-objects,
 run supervision, landing, fleet status, and adapter portability — built on a

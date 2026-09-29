@@ -5,6 +5,7 @@ docs/dreams/**           # Tier-0 prose (Dream convention governs), not code
 docs/reference/**        # reference prose; catalog drift has its own detector (llms-full-check)
 docs/intake/**           # intake inbox (triage rules in its README), not code
 docs/specs/**            # LEGACY Tier-1 specs (frozen; drift-check --specs governs)
+docs/foundry/**          # the foundry tracking/contract tree (EPOCH.md, capability-ledger.yaml, frames/*.frame.md, guards/README.md, tracks/*) -- both natural owners (spec-foundry-capability-ledger, spec-foundry-regenerate-not-fold) deliberately declare `surface: []`; same class as docs/dreams/**/docs/governance/** below, not code (found live 2026-09-14, 15 files ungoverned)
 docs/governance/**           # the CONSTITUTIVE governance kernel (Charter §5, precedes stations). Cannot declare a `surface:` — spec_surface_check's SPEC_GLOB only discovers _bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md, so this kernel is not a spec to this detector at all. Same class as docs/dreams/**: a contract, not code. Governing it would mean moving it under a station, which is a governance decision, not a detector fix.
 archive/**               # discarded material, retained for history
 _bmad/**                 # BMAD installer tree (vendor-managed, regenerated)
@@ -34,6 +35,13 @@ scripts/deferred_work_baseline.py     # mutation-only stamper (Story 7.2) — ne
 scripts/worktree_sweep.py            # operator hygiene sweep (dry-run default, --execute): classifies registered worktrees by ledger status + origin presence + dirt class; interim home until the rule set folds into `marshal retire` (DW-HYGIENE-2026-09-05-1)
 scripts/.deferred-work-baseline.json  # data stamped by the script above (Story 7.2) — per-project count of anonymous Tier-3 deferred-work entries grandfathered at this commit. Not yet read by any detector (Story 7.3's job); same allowlisted-data treatment as its stamper.
 scripts/deferred_work_promote.py      # mutation-only promoter (Story 8.3) — never a detector, no pixi task, no DETECTOR marker; same allowlisted shape as scripts/deferred_work_baseline.py above (Boundaries: keeps this producer out of spec-pyforge-doctor-governed sources/chain.py, which stays read-only). Imports chain.py's read-only classify_tier3_entries/mint_id_for_entry (Stories 8.1/8.2) and owns the only write site for promoting a legacy Tier-3 orphan into the tracked deferred-work ledger.
+scripts/chain_sprawl_baseline.py      # mutation-only stamper (doctor Story 25.1, spec-one-chain-per-station CAP-2) — never a detector, no pixi task, no DETECTOR marker; --snapshot once at the ruling SHA, --prune only ever removes. Same allowlisted shape as deferred_work_baseline.py above. Its detector is `python -m pyforge.doctor.sources chain-sprawl` (sources/one_chain.py, spec-pyforge-doctor's surface); its data is docs/governance/chain-sprawl-baseline.json (docs/governance/** above). The owning Spec is guild-owned under docs/governance/ and so cannot declare a surface here.
+scripts/fr_baseline.py                # mutation-only stamper (doctor Story 25.2, spec-one-chain-per-station CAP-5) — same class and same reasons as chain_sprawl_baseline.py; --snapshot once, --project pyforge-<s> re-baselines one station at its fold PR. Data: docs/governance/fr-baseline.json.
+scripts/flag_rule.py                  # pure classifier for the flag rule (doctor Story 34.1, spec-feature-flag-governance CAP-1) -- never a detector, no pixi task, no DETECTOR marker; judges nothing (no finding, no exit code: Story 34.2's gate reads it). Reads the exemption list from docs/governance/guild-roster.json and the pre-rule population from docs/governance/flag-rule-baseline.json (docs/governance/** above). The owning Spec is guild-owned under docs/governance/ and so cannot declare a surface here, same shape as scripts/coverage_gate.py below.
+scripts/flag_rule_baseline.py         # mutation-only stamper (doctor Story 34.1, spec-feature-flag-governance CAP-1) -- same class and same reasons as chain_sprawl_baseline.py above; --snapshot once at the PR #1654 merge SHA, --prune only ever removes. Data: docs/governance/flag-rule-baseline.json.
+scripts/coverage_gate.py              # fleet-wide coverage-gate evaluator (doctor Story 24.1, spec-coverage-gate-independence CAP-1) — moved out of pyforge.marshal 2026-09-20 so no station governs its own CI gate. Its thresholds file is docs/governance/coverage-thresholds.toml (docs/governance/** above; CAP-2). The owning Spec is guild-owned under docs/governance/ and so cannot declare a surface here, same shape as chain_sprawl_baseline.py above.
+scripts/coverage_gates_ci.py          # fleet-wide coverage-gate CI driver (doctor Story 24.3, spec-coverage-gate-independence CAP-1) — governance handed over 2026-09-24 from spec-pyforge-testing-charter, which dropped it from its own surface in the same change; same allowlisted shape as scripts/coverage_gate.py above, and for the same reason — the owning Spec is guild-owned under docs/governance/ and so cannot declare a surface here.
+scripts/run_station_coverage_gate.py  # fleet-wide per-station coverage-gate driver (doctor Story 24.3, spec-coverage-gate-independence CAP-1) — same hand-over, same reason, as scripts/coverage_gates_ci.py directly above.
 scripts/loop_stall_check.py           # detector — stays Marshal's: an operational watchdog over live runs, not a conformance verdict on an artifact
 scripts/fleet_picture.py              # progress REPORT, not a detector — never gates, always exits 0; read-only over the tracked sprint ledgers + `marshal status`. Allowlisted for the same reason unpushed_work_check.py is: operator tooling, not a governed surface.
 scripts/fleet-poll-hourly.sh          # hourly :30 git-sync + AGENT_LOOP_TICK sentinel for fleet-picture polls; operator tooling, not a governed surface.
@@ -63,20 +71,19 @@ helm/lasuite-docs/values.yaml  # stray inherited file — archive candidate, fla
 .cursor/**               # thin per-tool pointer files (AGENTS.md family)
 .windsurfrules           # thin per-tool pointer (AGENTS.md family)
 .scripts/**              # inherited staged-recipes helper scripts (upstream-owned)
-AGENTS.md                # cross-tool entry point (governance doc, not code)
-CLAUDE.md                # per-tool pointer (governance doc)
-GEMINI.md                # per-tool pointer (governance doc)
+# AGENTS.md removed 2026-09-13 — spec-scribe-knowledge-layers CAP-5
+# (surface) now governs it. GEMINI.md removed 2026-09-19 — spec-pyforge-scribe
+# CAP-27 governs the per-tool pointer family (GEMINI.md, .gemini/settings.json,
+# .github/copilot-instructions.md). CLAUDE.md stays allowlisted.
 README.md                # repo front page
 CHANGELOG.md             # historical record
 LICENSE*                 # license
-.gitignore               # repo plumbing
 .gitattributes           # repo plumbing
 .azure-pipelines/**      # inherited staged-recipes CI legs (upstream-owned)
 .ci_support/**           # inherited staged-recipes CI support (upstream-owned)
 .appveyor.yml.notused    # inherited staged-recipes remnant (upstream-owned)
 .vscode/**               # IDE metadata (settings.json is tracked); .idea/** removed 2026-09-05, untracked entirely (gitignored) rather than allowlisted
 .junie/**                # per-tool pointer (AGENTS.md family)
-.cursorrules             # per-tool pointer (AGENTS.md family)
 .prettierignore          # repo plumbing
 .pixi/**                 # tracked pixi shim files (env itself is gitignored)
 src/sentinel/**          # sentinel-lineage prototype (the knowledge-graph core [[pyforge-scribe]] inherited); not the scribe package spec-pyforge-scribe describes — govern it when Scribe absorbs it
@@ -100,3 +107,10 @@ pyforge.toml                          # repo-root bootstrap manifest scaffolded 
 scripts/memlog_fidelity_check.py     # steward Story 44.13 detector (pixi task memlog-fidelity-check; own contract at _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-44-13-memlog-fidelity.md, a story-level file, not a folder-spec SPEC_GLOB discovers); spec-pyforge-unifying-strategy's surface (its nearest folder-spec) does not include scripts/** — allowlisted pending steward claiming it properly
 scripts/.cap-citation-baseline.json  # marshal Story 28.24 supervisor-finalize artifact; own contract at _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-48-7-the-cap-axis-namespace-pass.md, a story-level file, not a folder-spec SPEC_GLOB discovers — allowlisted pending steward claiming it properly (fleet hygiene sweep 2026-09-12, discovered via mason 15.1's failed verify)
 scripts/platform-provision-osv-offline-db.sh  # pyforge-warden Story 12.4 CI step (offline OSV DB provisioning for golden-path promotion); no folder-spec's surface includes scripts/** for this path yet — allowlisted pending warden claiming it properly
+scripts/docs_pixi_tasks.py           # pyforge-doctor Story 30.3 (spec-pyforge-doctor CAP-84) generator: docs/how-to/pixi-tasks.md from pixi.toml's task tables. Named in spec-pyforge-doctor/.memlog.md's 2026-09-24 entry as a surface gain (same precedent as scripts/docs_map_render.py, already claimed there for Story 30.2), but SPEC.md itself is hook-blocked from a direct hand-edit (AGENTS.md: re-derive via bmad-spec) — allowlisted pending that re-derivation claiming it properly.
+scripts/docs_environments.py         # pyforge-doctor Story 30.3, same class and same memlog entry as scripts/docs_pixi_tasks.py above — generator for the new docs/reference/environments.md page. Allowlisted pending SPEC.md re-derivation claiming it properly.
+scripts/docs_detectors.py            # pyforge-doctor Story 30.3, same class as scripts/docs_pixi_tasks.py above — generator for the new docs/reference/detectors.md page. Allowlisted pending SPEC.md re-derivation claiming it properly.
+scripts/docs_skills_catalog.py       # pyforge-doctor Story 30.3, same class as scripts/docs_pixi_tasks.py above — generator for the new docs/reference/skills-catalog.md page. Allowlisted pending SPEC.md re-derivation claiming it properly.
+scripts/docs_station_cli.py          # pyforge-doctor Story 30.3, same class as scripts/docs_pixi_tasks.py above — generator for docs/reference/station-cheat-sheet.md. Allowlisted pending SPEC.md re-derivation claiming it properly.
+scripts/_docs_gen_common.py          # pyforge-doctor Story 30.3, same class as scripts/docs_pixi_tasks.py above — shared derived_at/tree stamp plumbing for all five docs-* generators, no pixi task of its own. Allowlisted pending SPEC.md re-derivation claiming it properly.
+"_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-22-4-a-di\303\241taxis-adapted-information-architecture-is-designed-for-the-general-facing-docs-layer.md"  # pyforge-doctor Story 22.4's own spec file (minted commit 832857e5db6, "Mint missing pyforge-doctor story specs"); the accented slug (á in Diátaxis) makes git's default core.quotePath=true render this path backslash-octal-quoted in `git ls-files`, so it never matches `_bmad-output/**` (or any surface glob) even though every other _bmad-output story spec does -- a real bug in pyforge.doctor.sources.chain._tracked_files (no -c core.quotePath=false / -z), not a governance gap. Allowlisted pending pyforge-doctor fixing the quoting properly (its own Dream/Spec, not herald's); delete this line then.

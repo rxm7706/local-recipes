@@ -200,7 +200,7 @@ def iter_capability_verified_rows(target: Path) -> tuple[CapabilityVerifiedRow, 
                 continue
             try:
                 text = spec_md.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
+            except OSError, UnicodeDecodeError:
                 continue
             rows.extend(
                 parse_spec_capability_verified_rows(
@@ -231,8 +231,7 @@ def missing_verified_findings(
                 check=_CHECK_VERIFIED,
                 status=DoctorStatus.WARN,
                 message=(
-                    f"{spec_ref} CAP-{row.cap_n} is in a "
-                    f"{row.spec_status!r} Spec but carries no `verified:` line"
+                    f"{spec_ref} CAP-{row.cap_n} is in a {row.spec_status!r} Spec but carries no `verified:` line"
                 ),
                 evidence={
                     "project": row.project,
@@ -337,16 +336,7 @@ def _resolve_surface_paths(target: Path, fragment: str, *, project: str) -> list
     candidates = [target / token]
     if project.startswith("pyforge-"):
         station = project.removeprefix("pyforge-")
-        pkg_root = (
-            target
-            / "src"
-            / "shared"
-            / "packages"
-            / project
-            / "src"
-            / "pyforge"
-            / station
-        )
+        pkg_root = target / "src" / "shared" / "packages" / project / "src" / "pyforge" / station
         candidates.append(pkg_root / token)
         # Package root (not the nested src/pyforge/<station> tree) — covers a
         # Surface fragment written relative to the package itself, most often
@@ -356,9 +346,7 @@ def _resolve_surface_paths(target: Path, fragment: str, *, project: str) -> list
         # The project's own BMAD planning-artifacts root — covers a Surface
         # fragment naming one of the project's own specs/epics by its
         # planning-artifacts-relative path.
-        planning_root = (
-            target / "_bmad-output" / "projects" / project / "planning-artifacts"
-        )
+        planning_root = target / "_bmad-output" / "projects" / project / "planning-artifacts"
         candidates.append(planning_root / token)
         # Same, but for a fragment naming a sibling spec by its
         # `<spec-slug>/SPEC.md` shorthand (omitting the `specs/` directory).
@@ -388,7 +376,7 @@ def _build_python_corpus(target: Path) -> dict[str, list[str]]:
             rel = path.relative_to(target).as_posix()
             try:
                 corpus[rel] = path.read_text(encoding="utf-8").splitlines()
-            except (OSError, UnicodeDecodeError):
+            except OSError, UnicodeDecodeError:
                 continue
     return corpus
 
@@ -430,9 +418,7 @@ def _git_grep_symbol_lines(
     """``[(repo-relative path, line content), ...]`` via ``run_git`` (AD-5)."""
     if symbol in grep_cache:
         return grep_cache[symbol]
-    prune_pathspecs = [
-        f":(exclude,glob)**/{name}/**" for name in sorted(_PRUNED_DIR_NAMES)
-    ]
+    prune_pathspecs = [f":(exclude,glob)**/{name}/**" for name in sorted(_PRUNED_DIR_NAMES)]
     try:
         out = run_git(
             target,
@@ -450,7 +436,7 @@ def _git_grep_symbol_lines(
             ],
             ok_exit_codes=frozenset({0, 1}),
         )
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         grep_cache[symbol] = None
         return None
     hits: list[tuple[str, str]] = []
@@ -519,9 +505,7 @@ def _story_surface_by_cap(
         return {}
     out: dict[tuple[str, int], str | None] = {}
     for idx, match in enumerate(headings):
-        block_end = (
-            headings[idx + 1].start() if idx + 1 < len(headings) else len(epics_text)
-        )
+        block_end = headings[idx + 1].start() if idx + 1 < len(headings) else len(epics_text)
         block = epics_text[match.start() : block_end]
         surface_match = _SURFACE_LINE_RE.search(block)
         surface = surface_match.group(1).strip() if surface_match else None
@@ -564,8 +548,7 @@ def _caller_reach_findings_for_project(
                     check=_CHECK_UNREADABLE_EPICS,
                     status=DoctorStatus.WARN,
                     message=(
-                        f"{project} epics.md is unreadable — capability caller reach "
-                        f"cannot evaluate (not a file)"
+                        f"{project} epics.md is unreadable — capability caller reach cannot evaluate (not a file)"
                     ),
                     evidence={
                         "project": project,
@@ -583,10 +566,7 @@ def _caller_reach_findings_for_project(
                 source=source,
                 check=_CHECK_UNREADABLE_EPICS,
                 status=DoctorStatus.WARN,
-                message=(
-                    f"{project} epics.md is unreadable — capability caller reach "
-                    f"cannot evaluate ({exc})"
-                ),
+                message=(f"{project} epics.md is unreadable — capability caller reach cannot evaluate ({exc})"),
                 evidence={
                     "project": project,
                     "path": str(epics_path),
@@ -606,7 +586,7 @@ def _caller_reach_findings_for_project(
         slug = spec_md.parent.name
         try:
             spec_text = spec_md.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             continue
         declared = _parse_declared_cap_ids(spec_text)
         cited = cited_by_spec.get(slug, set())
@@ -620,8 +600,7 @@ def _caller_reach_findings_for_project(
                         check=_CHECK_NO_SURFACE,
                         status=DoctorStatus.WARN,
                         message=(
-                            f"{spec_ref} CAP-{cap_n} is cited in epics but its citing "
-                            f"story carries no Surface: line"
+                            f"{spec_ref} CAP-{cap_n} is cited in epics but its citing story carries no Surface: line"
                         ),
                         evidence={
                             "project": project,
@@ -639,9 +618,7 @@ def _caller_reach_findings_for_project(
                         source=source,
                         check=_CHECK_NO_SURFACE,
                         status=DoctorStatus.WARN,
-                        message=(
-                            f"{spec_ref} CAP-{cap_n} has an empty Surface: line in epics"
-                        ),
+                        message=(f"{spec_ref} CAP-{cap_n} has an empty Surface: line in epics"),
                         evidence={
                             "project": project,
                             "spec_slug": slug,
@@ -709,10 +686,7 @@ def _caller_reach_findings_for_project(
                         source=source,
                         check=_CHECK_ABSENT_SURFACE,
                         status=DoctorStatus.WARN,
-                        message=(
-                            f"{spec_ref} CAP-{cap_n} Surface: names absent path "
-                            f"{missing!r}"
-                        ),
+                        message=(f"{spec_ref} CAP-{cap_n} Surface: names absent path {missing!r}"),
                         evidence={
                             "project": project,
                             "spec_slug": slug,

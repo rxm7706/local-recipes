@@ -115,6 +115,9 @@ _SECRET_ENV_NAMES = frozenset(
         "DBGPT_LLM_API_KEY",
         "COMPONENT_OIDC_CLIENT_SECRET",
         "KEYCLOAK_ADMIN_PASSWORD",
+        "PYFORGE_ASSERTION_PRIVATE_KEY",
+        "OBJECT_STORAGE_ACCESS_KEY",
+        "OBJECT_STORAGE_SECRET_KEY",
     },
 )
 _SECRETISH_ENV_NAME = re.compile(
@@ -138,6 +141,12 @@ _SECRETS_HTTP_API_IMPORT = re.compile(
 _CHART_VALUE_SECRET_KEYS = frozenset(
     {"password", "secret", "secretkey", "apikey", "token", "clientsecret"},
 )
+_DNS_EGRESS_PORT = 53
+# OpenShift's dns-default pods only accept ingress on 5353 from other
+# namespaces (Service port 53 DNATs to pod targetPort 5353) -- see
+# test_ocp_overrides_dns_egress_matches_only_the_real_openshift_dns_pod's
+# own docstring for the full story.
+_OCP_DNS_EGRESS_PORT = 5353
 
 # Story 43.4: deterministic digest for helm-gated core renders -- real
 # deploys pin the CI-recorded digest; tests inject this placeholder.
@@ -420,6 +429,57 @@ def _assert_no_fixed_uid_keys(docs: list[dict[str, Any]]) -> None:
             f"{key} survives the OCP overrides at {fixed_paths} -- "
             f"restricted-v2 forbids fixing a UID/group"
         )
+
+
+def _assert_no_hostpath_volumes(docs: list[dict[str, Any]]) -> None:
+    """Story 33.13 / CAP-3: no rendered workload may declare a hostPath volume."""
+    assert docs, "empty render -- hostPath check would pass vacuously"
+    violations: list[str] = []
+    for doc in docs:
+        kind = doc.get("kind")
+        name = doc.get("metadata", {}).get("name", "?")
+        volume_lists: list[tuple[str, list[dict[str, Any]]]] = []
+        if kind in _WORKLOAD_KINDS:
+            pod_spec = doc.get("spec", {}).get("template", {}).get("spec", {})
+            volume_lists.append(
+                (f"{kind}/{name} template", pod_spec.get("volumes") or []),
+            )
+        if kind == "Pod":
+            pod_spec = doc.get("spec", {})
+            volume_lists.append((f"Pod/{name}", pod_spec.get("volumes") or []))
+        violations.extend(
+            f"{where}: {volume!r}"
+            for where, volumes in volume_lists
+            for volume in volumes
+            if "hostPath" in volume
+        )
+    if violations:
+        raise AssertionError(
+            "hostPath volumes are forbidden in the platform chart:\n"
+            + "\n".join(violations),
+        )
+
+
+def _dns_egress_namespaces(
+    docs: list[dict[str, Any]],
+    *,
+    port: int = _DNS_EGRESS_PORT,
+) -> set[str]:
+    """Namespace metadata names targeted by DNS egress rules on ``port``."""
+    namespaces: set[str] = set()
+    for doc in docs:
+        if doc.get("kind") != "NetworkPolicy":
+            continue
+        for rule in doc.get("spec", {}).get("egress") or []:
+            ports = rule.get("ports") or []
+            if not any(p.get("port") == port for p in ports):
+                continue
+            for peer in rule.get("to") or []:
+                selector = peer.get("namespaceSelector", {}).get("matchLabels") or {}
+                name = selector.get("kubernetes.io/metadata.name")
+                if name is not None:
+                    namespaces.add(name)
+    return namespaces
 
 
 def _assert_route_targets_service(
@@ -721,18 +781,14 @@ def _assert_self_hosted_redis_resources_present(docs: list[dict[str, Any]]) -> N
     services = _redis_services(docs)
     pvcs = _redis_broker_pvcs(docs)
     components = {
-        (doc.get("metadata") or {})
-        .get("labels", {})
-        .get("app.kubernetes.io/component")
+        (doc.get("metadata") or {}).get("labels", {}).get("app.kubernetes.io/component")
         for doc in deployments
     }
     assert components == _REDIS_COMPONENTS, (
         f"expected redis-cache and redis-broker Deployments, got {components!r}"
     )
     service_components = {
-        (doc.get("metadata") or {})
-        .get("labels", {})
-        .get("app.kubernetes.io/component")
+        (doc.get("metadata") or {}).get("labels", {}).get("app.kubernetes.io/component")
         for doc in services
     }
     assert service_components == _REDIS_COMPONENTS, (
@@ -1522,6 +1578,36 @@ def test_mcp_host_deployment_and_service_restricted_v2():
 
 
 @requires_helm
+def test_mcp_host_wires_django_orm_env_for_real_station_tools():
+    """AC (spec-mcp-host-real-station-tools CAP-1): mcp-host carries the
+    minimal Django/ORM env its real per-station apps (marshal's held-loop
+    tools) need -- DJANGO_SECRET_KEY and DATABASE_URL required, the host
+    assertion public key optional (matches the web pod's own posture).
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    secret_name = values["existingSecret"]
+    by_component = _pod_specs_by_component(docs)
+    env = _collect_env_by_name(by_component[_MCP_HOST_COMPONENT])
+
+    for key_name in ("DJANGO_SECRET_KEY", "DATABASE_URL"):
+        entry = env.get(key_name)
+        assert entry is not None, f"mcp-host missing {key_name}"
+        secret_ref = entry.get("valueFrom", {}).get("secretKeyRef", {})
+        assert secret_ref.get("name") == secret_name
+        assert secret_ref.get("key") == key_name
+        assert not secret_ref.get("optional"), f"{key_name} must be required"
+
+    public_key_entry = env.get("PYFORGE_ASSERTION_PUBLIC_KEY")
+    assert public_key_entry is not None, "mcp-host missing PYFORGE_ASSERTION_PUBLIC_KEY"
+    public_key_ref = public_key_entry.get("valueFrom", {}).get("secretKeyRef", {})
+    assert public_key_ref.get("name") == secret_name
+    assert public_key_ref.get("key") == "PYFORGE_ASSERTION_PUBLIC_KEY"
+    assert public_key_ref.get("optional") is True
+
+
+@requires_helm
 def test_platform_pods_wire_mcp_host_sidecar_base_url_to_internal_service():
     """AC: web/worker resolve MCP_HOST_SIDECAR_BASE_URL to the mcp-host Service."""
     docs = _render(_CORE_CHART, release="platform")
@@ -1666,6 +1752,79 @@ def test_redis_uses_existing_secret_password_and_wires_redis_url():
         broker_host=broker_host,
         cache_host=cache_host,
     )
+
+
+@requires_helm
+def test_platform_pods_wire_optional_assertion_signing_keypair():
+    """CAP-3 attended CRC exercise, 2026-09-12: `mint_assertion()` raised
+    `AssertionRefusedError` (mapped to the SAME `{"error": "refused"}` 401 as
+    a bad IdP bearer) because PYFORGE_ASSERTION_PRIVATE_KEY/_PUBLIC_KEY were
+    never wired from existingSecret into any platform pod's env at all --
+    the values.yaml comment documented them as consumed, but no template
+    actually referenced them. Both must be present, secretKeyRef'd against
+    the same existingSecret, and `optional: true` (a pod must still boot
+    when the keys are absent -- CAP-18 assertions are opt-in).
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    secret_name = values["existingSecret"]
+    by_component = _pod_specs_by_component(docs)
+    for key_name in ("PYFORGE_ASSERTION_PRIVATE_KEY", "PYFORGE_ASSERTION_PUBLIC_KEY"):
+        for component in sorted(_PLATFORM_COMPONENTS):
+            env = _collect_env_by_name(by_component[component])
+            entry = env.get(key_name)
+            assert entry is not None, f"{component} missing {key_name}"
+            secret_ref = entry.get("valueFrom", {}).get("secretKeyRef", {})
+            assert secret_ref.get("name") == secret_name, (
+                f"{component} {key_name} secretKeyRef name mismatch: {secret_ref!r}"
+            )
+            assert secret_ref.get("key") == key_name, (
+                f"{component} {key_name} secretKeyRef key mismatch: {secret_ref!r}"
+            )
+            assert secret_ref.get("optional") is True, (
+                f"{component} {key_name} must be optional: true, got {secret_ref!r}"
+            )
+
+
+@requires_helm
+def test_platform_pods_wire_optional_object_storage_consumption_seam():
+    """Story 50.3 / pap:AD-1's 2026-09-10 dated exception: object storage is
+    CONSUMED only (production target NetApp StorageGRID, ops-provided) --
+    config.object_storage.object_storage_client() resolves its endpoint and
+    credentials from Django settings, which settings/base.py reads from
+    these three env vars. Mirrors
+    test_platform_pods_wire_optional_assertion_signing_keypair's own proof
+    (and its motivating incident: "documented as consumed" is not the same
+    fact as "actually wired into a template") for this seam -- all three
+    must be present on every platform-image pod, secretKeyRef'd against the
+    same existingSecret, and optional: true (a pod must still boot when
+    they're absent; no feature calls object_storage_client() yet).
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    secret_name = values["existingSecret"]
+    by_component = _pod_specs_by_component(docs)
+    for key_name in (
+        "OBJECT_STORAGE_ENDPOINT_URL",
+        "OBJECT_STORAGE_ACCESS_KEY",
+        "OBJECT_STORAGE_SECRET_KEY",
+    ):
+        for component in sorted(_PLATFORM_COMPONENTS):
+            env = _collect_env_by_name(by_component[component])
+            entry = env.get(key_name)
+            assert entry is not None, f"{component} missing {key_name}"
+            secret_ref = entry.get("valueFrom", {}).get("secretKeyRef", {})
+            assert secret_ref.get("name") == secret_name, (
+                f"{component} {key_name} secretKeyRef name mismatch: {secret_ref!r}"
+            )
+            assert secret_ref.get("key") == key_name, (
+                f"{component} {key_name} secretKeyRef key mismatch: {secret_ref!r}"
+            )
+            assert secret_ref.get("optional") is True, (
+                f"{component} {key_name} must be optional: true, got {secret_ref!r}"
+            )
 
 
 @requires_helm
@@ -2287,7 +2446,9 @@ def test_story_48_3_web_worker_mcp_host_dbgpt_egress_peers():
         for p in _network_policies_for_component(docs, "mcp-host")
         if "Egress" in (p["spec"].get("policyTypes") or [])
     )
-    assert _egress_peer_components(mcp_egress) == set()
+    # spec-mcp-host-real-station-tools CAP-1: marshal's held-loop tools reach
+    # django_pyforge's ORM directly, so mcp-host is no longer DNS-only.
+    assert _egress_peer_components(mcp_egress) == {"postgres"}
 
     dbgpt_egress = next(
         p
@@ -2657,6 +2818,55 @@ def test_namespace_inventory_includes_postgres_redis_platform_and_sidecar():
 
 
 @requires_helm
+def test_sidecar_enabled_false_drops_dbgpt_entirely():
+    """AC: `sidecar.enabled: false` is NOT the same shape as
+    `mcpHost` (which has no enabled knob at all, by design -- its own
+    values.yaml comment says why: an empty repository fails helm template).
+    dbgpt stays its own sidecar Deployment (Story 10.5's Pattern B
+    deviation -- the disjoint fastapi ranges make folding it into the
+    platform pod impossible), but it must not be FORCED: with the toggle
+    off, the Deployment/Service/PVC and both dbgpt-scoped NetworkPolicy
+    documents (ingress + egress) disappear, the image inventory drops to
+    the five OTHER images, and DBGPT_SIDECAR_BASE_URL -- the env var that
+    would otherwise point every platform-image pod at a Service that no
+    longer exists -- is absent from all of them.
+    """
+    docs = _render(_CORE_CHART, "--set", "sidecar.enabled=false")
+
+    assert not [
+        doc
+        for doc in docs
+        if doc.get("metadata", {})
+        .get("labels", {})
+        .get(
+            "app.kubernetes.io/component",
+        )
+        == _SIDECAR_COMPONENT
+    ], "a dbgpt-labeled document still rendered with sidecar.enabled=false"
+
+    images = _collect_workload_images(docs)
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    sidecar_image = values["sidecar"]["image"]
+    sidecar_repository = (
+        f"{sidecar_image['registry']}/{sidecar_image['repository']}"
+        if sidecar_image.get("registry")
+        else sidecar_image["repository"]
+    )
+    _assert_image_inventory_is_exactly(
+        images,
+        _default_image_references() - {sidecar_repository},
+    )
+
+    by_component = _pod_specs_by_component(docs)
+    for component in sorted(_PLATFORM_COMPONENTS):
+        env = _collect_env_by_name(by_component[component])
+        assert "DBGPT_SIDECAR_BASE_URL" not in env, (
+            f"{component} still wired to the disabled dbgpt sidecar"
+        )
+
+
+@requires_helm
 def test_ocp_overrides_drop_the_ingress_and_the_data_service_uids():
     """AC: rendered with the overlay's core-overrides.yaml, the core chart
     emits no Ingress and no runAsUser/fsGroup anywhere (the SCC assigns
@@ -2676,6 +2886,105 @@ def test_ocp_overrides_drop_the_ingress_and_the_data_service_uids():
     _assert_no_fixed_uid_keys(docs)
     for component in sorted(_PLATFORM_IMAGE_COMPONENTS):
         _assert_restricted_v2_pod_spec(by_component[component], where=component)
+
+
+def test_ocp_core_overrides_set_openshift_dns_egress_values():
+    """Story 33.13: OCP overlay must target OpenShift CoreDNS, not kube-dns."""
+    yaml = _import_yaml()
+    overrides = yaml.safe_load(_CORE_OVERRIDES.read_text(encoding="utf-8"))
+    dns = overrides["networkPolicy"]["dns"]
+    assert dns["namespace"] == "openshift-dns"
+    assert dns["podLabelKey"] == "dns.operator.openshift.io/daemonset-dns"
+    assert dns["podLabelValue"] == "default"
+    assert dns["port"] == 5353  # noqa: PLR2004 -- OpenShift's dns-default ingress port
+
+
+@requires_helm
+def test_ocp_overrides_dns_egress_matches_only_the_real_openshift_dns_pod():
+    """Recovery regression (2026-09-12, attended CRC exercise): the OCP
+    overlay's `networkPolicy.dns.podLabels` used to be a MAP, which Helm
+    deep-merges with the chart default's own `{k8s-app: kube-dns}` instead
+    of replacing it -- the rendered egress rule's `podSelector.matchLabels`
+    silently required BOTH labels (Kubernetes AND semantics), a selector no
+    real DNS pod on either system satisfies, so DNS egress was blocked the
+    moment `networkPolicy.enabled: true` was exercised on a live OpenShift
+    cluster. This test renders the ACTUAL merged NetworkPolicy (never just
+    parses the override file in isolation, which passed even with the bug
+    live) and asserts the DNS egress selector matches ONLY the OpenShift
+    label, with the vanilla `k8s-app: kube-dns` key genuinely absent, and
+    that the port is 5353 -- OpenShift's own built-in `dns-default`
+    NetworkPolicy in the openshift-dns namespace has no ingress allow for
+    port 53 from other namespaces at all, only port 5353 (the Service's
+    port 53 DNATs to pod targetPort 5353), so an egress rule naming port 53
+    is silently dropped on arrival regardless of how correct its selectors
+    are -- this was wrong before Story 33.13 touched this block at all.
+    """
+    docs = _render(_CORE_CHART, "-f", str(_CORE_OVERRIDES), release="platform")
+    egress_policies = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and "Egress" in doc.get("spec", {}).get("policyTypes", [])
+    ]
+    assert egress_policies, "OCP-overridden render produced no egress NetworkPolicy"
+    dns_rules = [
+        rule
+        for policy in egress_policies
+        for rule in policy["spec"].get("egress", [])
+        for target in rule.get("to", [])
+        if target.get("namespaceSelector", {})
+        .get("matchLabels", {})
+        .get("kubernetes.io/metadata.name")
+        == "openshift-dns"
+    ]
+    assert dns_rules, "no DNS egress rule targets the openshift-dns namespace"
+    for rule in dns_rules:
+        selector = rule["to"][0]["podSelector"]["matchLabels"]
+        assert selector == {"dns.operator.openshift.io/daemonset-dns": "default"}, (
+            f"DNS egress podSelector must match ONLY the real OpenShift CoreDNS "
+            f"label, got {selector!r} -- a stray 'k8s-app: kube-dns' key means "
+            f"the values merge bug is back"
+        )
+        ports = {(p["protocol"], p["port"]) for p in rule.get("ports", [])}
+        assert ports == {("UDP", 5353), ("TCP", 5353)}, (
+            f"DNS egress must target port 5353 on OpenShift (OpenShift's own "
+            f"dns-default NetworkPolicy has no ingress allow for port 53 from "
+            f"other namespaces), got {ports!r}"
+        )
+
+
+@requires_helm
+def test_core_chart_renders_no_hostpath_volumes():
+    """Story 33.13 / CAP-3: the core chart must never emit hostPath volumes."""
+    docs = _render(_CORE_CHART, release="platform")
+    _assert_no_hostpath_volumes(docs)
+
+
+def test_no_hostpath_volumes_check_fails_on_synthetic_hostpath():
+    """Guard removed: a synthetic hostPath volume must fail the helper."""
+    contaminated = [
+        {
+            "kind": "Deployment",
+            "metadata": {"name": "bad"},
+            "spec": {
+                "template": {
+                    "spec": {
+                        "volumes": [{"name": "host", "hostPath": {"path": "/"}}],
+                    },
+                },
+            },
+        },
+    ]
+    with pytest.raises(AssertionError, match="hostPath"):
+        _assert_no_hostpath_volumes(contaminated)
+
+
+@requires_helm
+def test_ocp_overrides_render_openshift_dns_egress():
+    """Story 33.13: OCP-overridden render must egress to openshift-dns for DNS."""
+    docs = _render(_CORE_CHART, "-f", str(_CORE_OVERRIDES), release="platform")
+    assert "openshift-dns" in _dns_egress_namespaces(docs, port=_OCP_DNS_EGRESS_PORT)
+    assert "kube-system" not in _dns_egress_namespaces(docs, port=_OCP_DNS_EGRESS_PORT)
 
 
 @requires_helm

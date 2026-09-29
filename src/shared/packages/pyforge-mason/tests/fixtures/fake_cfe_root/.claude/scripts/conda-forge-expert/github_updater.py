@@ -12,6 +12,7 @@ not the real wrapper's subprocess-delegation one). Invocable as
 `[interpreter, script, *extra_argv]`; extra argv (`--dry-run`, `--repo`,
 `--pre`, etc.) is ignored, never rejected.
 """
+
 import sys
 from pathlib import Path
 
@@ -19,9 +20,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 import _stub_support  # noqa: E402
 
 if __name__ == "__main__":
-    sys.exit(_stub_support.emit(
-        '{"success": true, "updated": true, "current_version": "1.0.0", '
-        '"new_version": "9.9.9", "latest_tag": "v9.9.9", '
-        '"github_url": "https://github.com/example/example/releases/tag/v9.9.9", '
-        '"message": "Updated example 1.0.0 \\u2192 9.9.9."}'
-    ))
+    sys.exit(
+        _stub_support.emit(
+            '{"success": true, "updated": true, "current_version": "1.0.0", '
+            '"new_version": "9.9.9", "latest_tag": "v9.9.9", '
+            '"github_url": "https://github.com/example/example/releases/tag/v9.9.9", '
+            '"message": "Updated example 1.0.0 \\u2192 9.9.9."}'
+        )
+    )

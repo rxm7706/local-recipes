@@ -128,19 +128,13 @@ def _finding(reason, verdict, *, lag=0):
 
 
 def test_currency_rung_eol_escalates_to_policy_violation_under_a_gating_policy():
-    status, driver = currency_rung(
-        _finding("eol", CurrencyVerdict.EOL), policy=_GATING_CURRENCY_POLICY
-    )
+    status, driver = currency_rung(_finding("eol", CurrencyVerdict.EOL), policy=_GATING_CURRENCY_POLICY)
     assert status is Status.POLICY_VIOLATION
-    assert driver == StatusDriver(
-        axis=AXIS_CURRENCY, finding_id="currency:eol:pkg@1.0.0"
-    )
+    assert driver == StatusDriver(axis=AXIS_CURRENCY, finding_id="currency:eol:pkg@1.0.0")
 
 
 def test_currency_rung_unknown_escalates_to_indeterminate_under_a_gating_policy():
-    status, _driver = currency_rung(
-        _finding("unknown", CurrencyVerdict.UNKNOWN), policy=_GATING_CURRENCY_POLICY
-    )
+    status, _driver = currency_rung(_finding("unknown", CurrencyVerdict.UNKNOWN), policy=_GATING_CURRENCY_POLICY)
     assert status is Status.INDETERMINATE
 
 
@@ -148,24 +142,18 @@ def test_currency_rung_over_lag_above_threshold_is_policy_violation():
     """An over-lag (SUPPORTED verdict, positive lag) whose lag EXCEEDS
     --max-lag composes policy-violation (a numeric check, not a table key)."""
     finding = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=5)
-    status, _driver = currency_rung(
-        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
-    )
+    status, _driver = currency_rung(finding, policy=_GATING_CURRENCY_POLICY, max_lag=3)
     assert status is Status.POLICY_VIOLATION
 
 
 def test_currency_rung_over_lag_at_or_below_threshold_stays_warn():
     """An over-lag within --max-lag is visible (warn) but never blocking."""
     finding = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=2)
-    status, _driver = currency_rung(
-        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
-    )
+    status, _driver = currency_rung(finding, policy=_GATING_CURRENCY_POLICY, max_lag=3)
     assert status is Status.WARN
     # lag == max_lag is the boundary: NOT over the threshold -> warn.
     boundary = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=3)
-    status_boundary, _ = currency_rung(
-        boundary, policy=_GATING_CURRENCY_POLICY, max_lag=3
-    )
+    status_boundary, _ = currency_rung(boundary, policy=_GATING_CURRENCY_POLICY, max_lag=3)
     assert status_boundary is Status.WARN
 
 
@@ -174,9 +162,7 @@ def test_currency_rung_over_lag_with_no_threshold_stays_warn():
     over-lag has no threshold to breach, so it stays warn (eol/unknown still
     escalate via the table)."""
     finding = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=99)
-    status, _driver = currency_rung(
-        finding, policy=_GATING_CURRENCY_POLICY, max_lag=None
-    )
+    status, _driver = currency_rung(finding, policy=_GATING_CURRENCY_POLICY, max_lag=None)
     assert status is Status.WARN
 
 
@@ -196,13 +182,9 @@ def test_currency_rung_supported_with_no_lag_under_a_threshold_fails_closed():
         severity=None,
         currency=CurrencyInfo(verdict=CurrencyVerdict.SUPPORTED, lag=None),
     )
-    status, _driver = currency_rung(
-        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
-    )
+    status, _driver = currency_rung(finding, policy=_GATING_CURRENCY_POLICY, max_lag=3)
     assert status is Status.INDETERMINATE
-    status_no_gate, _ = currency_rung(
-        finding, policy=_GATING_CURRENCY_POLICY, max_lag=None
-    )
+    status_no_gate, _ = currency_rung(finding, policy=_GATING_CURRENCY_POLICY, max_lag=None)
     assert status_no_gate is Status.WARN
 
 
@@ -211,9 +193,7 @@ def test_currency_rung_freshness_finding_currency_none_is_indeterminate():
     never toward clean -- regardless of policy/max_lag."""
     finding = currency_stale_finding(unavailable=False)
     assert finding.currency is None
-    status, driver = currency_rung(
-        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
-    )
+    status, driver = currency_rung(finding, policy=_GATING_CURRENCY_POLICY, max_lag=3)
     assert status is Status.INDETERMINATE
     assert driver == StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id)
 
@@ -222,13 +202,8 @@ def test_currency_rung_still_warns_with_defaults():
     """The ceiling holds for the no-policy call: policy=None falls back to
     all-WARN DEFAULT_CURRENCY_POLICY, and an over-lag with no max_lag warns."""
     assert currency_rung(_finding("eol", CurrencyVerdict.EOL))[0] is Status.WARN
-    assert (
-        currency_rung(_finding("unknown", CurrencyVerdict.UNKNOWN))[0] is Status.WARN
-    )
-    assert (
-        currency_rung(_finding("over-lag", CurrencyVerdict.SUPPORTED, lag=9))[0]
-        is Status.WARN
-    )
+    assert currency_rung(_finding("unknown", CurrencyVerdict.UNKNOWN))[0] is Status.WARN
+    assert currency_rung(_finding("over-lag", CurrencyVerdict.SUPPORTED, lag=9))[0] is Status.WARN
 
 
 def test_currency_rung_verdict_absent_from_policy_degrades_to_indeterminate():
@@ -563,9 +538,7 @@ def test_load_registry_degrades_on_undecodable_bytes(monkeypatch):
         def read_text(self, encoding="utf-8"):
             raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
 
-    monkeypatch.setattr(
-        "pyforge.warden.currency.resources.files", lambda _pkg: _Undecodable()
-    )
+    monkeypatch.setattr("pyforge.warden.currency.resources.files", lambda _pkg: _Undecodable())
     assert _load_registry.__wrapped__() == {}
 
 
@@ -695,14 +668,10 @@ def test_resolve_nothing_matches_anywhere_is_none():
 
 
 def make_inventory(*components) -> ResolvedInventory:
-    return ResolvedInventory(
-        components=merge_components(components), resolved_scan_set=(MANIFEST,)
-    )
+    return ResolvedInventory(components=merge_components(components), resolved_scan_set=(MANIFEST,))
 
 
-def test_currency_findings_mixed_fixture_covers_all_three_reasons(
-    component_factory, monkeypatch, tmp_path
-):
+def test_currency_findings_mixed_fixture_covers_all_three_reasons(component_factory, monkeypatch, tmp_path):
     """The story's own AC: a mixed fixture (an LTS-registry hit, an
     endoflife-only hit, an unresolvable component) -- every finding composes
     at warn and currency.gating stays false (gating is config.py's job, not
@@ -775,11 +744,7 @@ def test_currency_findings_is_ecosystem_agnostic(component_factory):
     """FR34: "for every resolved component" -- a conda component gets the
     SAME tier-ladder treatment as a pypi one (unlike license.py, currency
     resolution never dispatches on ``component.ecosystem``)."""
-    components = [
-        component_factory(
-            name="spring-framework", version="5.3.0", ecosystem=Ecosystem.CONDA
-        )
-    ]
+    components = [component_factory(name="spring-framework", version="5.3.0", ecosystem=Ecosystem.CONDA)]
     findings, _data = currency_findings(components, now=_NOW)
     non_runtime = [f for f in findings if f.subject != "!python-runtime"]
     assert len(non_runtime) == 1
@@ -815,12 +780,8 @@ def test_currency_findings_dedupes_ecosystem_variant_duplicate_ids(
     uniqueness invariant and kill the WHOLE report as an internal error
     (review finding, 2026-07-23). One finding honestly covers both."""
     components = [
-        component_factory(
-            name="mystery-pkg", version="1.0.0", ecosystem=Ecosystem.PYPI
-        ),
-        component_factory(
-            name="mystery-pkg", version="1.0.0", ecosystem=Ecosystem.CONDA
-        ),
+        component_factory(name="mystery-pkg", version="1.0.0", ecosystem=Ecosystem.PYPI),
+        component_factory(name="mystery-pkg", version="1.0.0", ecosystem=Ecosystem.CONDA),
     ]
     findings, _data = currency_findings(components, now=_NOW)
     ids = [f.id for f in findings]
@@ -858,16 +819,12 @@ def test_bundled_registry_facts_the_suite_relies_on():
         "the tier-1 fixtures pin spring-framework 5.3.0 as EOL at _NOW"
     )
     resolved_ok = _resolve_from_lines(spring["lts_lines"], "6.1.5", now=_NOW)
-    assert (
-        resolved_ok is not None
-        and resolved_ok.verdict is CurrencyVerdict.SUPPORTED
-        and resolved_ok.lag == 0
-    ), "the tier-1 fixtures pin spring-framework 6.1.5 as fully current at _NOW"
+    assert resolved_ok is not None and resolved_ok.verdict is CurrencyVerdict.SUPPORTED and resolved_ok.lag == 0, (
+        "the tier-1 fixtures pin spring-framework 6.1.5 as fully current at _NOW"
+    )
     python_entry = products.get("python")
     assert (
-        isinstance(python_entry, dict)
-        and python_entry.get("slug") == "python"
-        and not python_entry.get("lts_lines")
+        isinstance(python_entry, dict) and python_entry.get("slug") == "python" and not python_entry.get("lts_lines")
     ), "the slug-routing tests pin python as a source:endoflife slug-map entry"
 
 
@@ -879,9 +836,14 @@ def test_bundled_registry_matches_the_cfe_canonical_source_when_present():
     the installed package."""
     import yaml
 
-    canonical = Path(__file__).resolve().parents[6] / ".claude" / "skills" / (
-        "conda-forge-expert"
-    ) / "data" / "lts-registry.yaml"
+    canonical = (
+        Path(__file__).resolve().parents[6]
+        / ".claude"
+        / "skills"
+        / ("conda-forge-expert")
+        / "data"
+        / "lts-registry.yaml"
+    )
     if not canonical.is_file():
         pytest.skip("CFE canonical registry not present (non-monorepo context)")
     canonical_doc = yaml.safe_load(canonical.read_text(encoding="utf-8"))
@@ -892,9 +854,7 @@ def test_bundled_registry_matches_the_cfe_canonical_source_when_present():
     )
 
 
-def test_currency_findings_drops_colliding_snapshot_keys_entirely(
-    component_factory, monkeypatch, tmp_path
-):
+def test_currency_findings_drops_colliding_snapshot_keys_entirely(component_factory, monkeypatch, tmp_path):
     """Two DIFFERENT snapshot keys normalizing to the same product key
     (``Django``/``django``) are ambiguous -- BOTH are dropped (the lookup
     degrades to unknown) rather than letting dict iteration order silently
@@ -904,12 +864,8 @@ def test_currency_findings_drops_colliding_snapshot_keys_entirely(
     feeds.write_endoflife_cache(
         tmp_path,
         {
-            "Django": [
-                {"cycle": "4.2", "releaseDate": "2023-04-03", "eol": "2026-04-07"}
-            ],
-            "django": [
-                {"cycle": "5.2", "releaseDate": "2025-04-02", "eol": "2028-04-30"}
-            ],
+            "Django": [{"cycle": "4.2", "releaseDate": "2023-04-03", "eol": "2026-04-07"}],
+            "django": [{"cycle": "5.2", "releaseDate": "2025-04-02", "eol": "2028-04-30"}],
         },
     )
     _pin_cache_mtime_to_now(tmp_path)
@@ -920,9 +876,7 @@ def test_currency_findings_drops_colliding_snapshot_keys_entirely(
     assert non_runtime[0].id == "currency:unknown:django@4.2.1"
 
 
-def test_currency_findings_boolean_eol_false_current_emits_no_finding(
-    component_factory, monkeypatch, tmp_path
-):
+def test_currency_findings_boolean_eol_false_current_emits_no_finding(component_factory, monkeypatch, tmp_path):
     """End-to-end proof for the expressible half of the boolean-``eol``
     fix (review finding, 2026-07-23): a fully-current component whose
     matched cycle carries ``eol: false`` emits NO finding at all --
@@ -976,7 +930,7 @@ def test_ambient_snapshot_keeps_every_pinned_fixture_dep_it_covers_fully_current
             continue
         try:
             text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             continue
         for name, version in requirement_pin.findall(text) + toml_pin.findall(text):
             cycles = normalized_snapshot.get(_normalize_name(name))
@@ -984,9 +938,7 @@ def test_ambient_snapshot_keeps_every_pinned_fixture_dep_it_covers_fully_current
                 continue  # not an ambient-covered dep; cleanliness not claimed
             resolution = _resolve_from_cycles(cycles, version, now=_NOW)
             fully_current = (
-                resolution is not None
-                and resolution.verdict is CurrencyVerdict.SUPPORTED
-                and resolution.lag == 0
+                resolution is not None and resolution.verdict is CurrencyVerdict.SUPPORTED and resolution.lag == 0
             )
             if not fully_current:
                 stale.append(f"{path.relative_to(fixtures_root)}: {name}=={version}")
@@ -1002,9 +954,7 @@ def test_ambient_snapshot_keeps_every_pinned_fixture_dep_it_covers_fully_current
 
 def test_currency_engine_reports_full_coverage(tmp_path, component_factory):
     engine = CurrencyEngine()
-    inventory = make_inventory(
-        component_factory(name="spring-framework", version="6.1.5")
-    )
+    inventory = make_inventory(component_factory(name="spring-framework", version="6.1.5"))
     result = engine.run(tmp_path, inventory)
     assert result.axis == AXIS_CURRENCY
     (coverage,) = result.coverage
@@ -1019,9 +969,7 @@ def test_currency_engine_name_and_axis():
     assert engine.axis == AXIS_CURRENCY
 
 
-def test_currency_engine_defaults_to_gating_off(
-    tmp_path, component_factory, monkeypatch
-):
+def test_currency_engine_defaults_to_gating_off(tmp_path, component_factory, monkeypatch):
     """The default constructor is non-gating -- pre-6.5 behavior (no
     freshness finding even off a stale registry) unless cli.py wires
     gating=config.currency_gating. Behavioral proof (a default-constructed
@@ -1032,14 +980,10 @@ def test_currency_engine_defaults_to_gating_off(
     )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     result = CurrencyEngine().run(tmp_path, inventory)
-    assert not any(
-        f.id.startswith("indeterminate:currency-registry-") for f in result.findings
-    )
+    assert not any(f.id.startswith("indeterminate:currency-registry-") for f in result.findings)
 
 
-def test_currency_engine_gated_stale_registry_emits_stale_finding(
-    tmp_path, component_factory, monkeypatch
-):
+def test_currency_engine_gated_stale_registry_emits_stale_finding(tmp_path, component_factory, monkeypatch):
     """NFR-S9: under an active gate, a stale bundled registry (max_age_ok
     False) forces one whole-axis currency-registry-stale finding -- mirrors
     OsvEngine's KEV-provenance stale finding."""
@@ -1053,9 +997,7 @@ def test_currency_engine_gated_stale_registry_emits_stale_finding(
     assert "indeterminate:currency-registry-stale:lts-registry" in ids
 
 
-def test_currency_engine_gated_absent_registry_emits_unavailable_finding(
-    tmp_path, component_factory, monkeypatch
-):
+def test_currency_engine_gated_absent_registry_emits_unavailable_finding(tmp_path, component_factory, monkeypatch):
     """currency_data is None (registry absent/unparsable, no usable
     provenance) under an active gate -> currency-registry-unavailable."""
     monkeypatch.setattr("pyforge.warden.currency._load_registry", lambda: {})
@@ -1065,9 +1007,7 @@ def test_currency_engine_gated_absent_registry_emits_unavailable_finding(
     assert "indeterminate:currency-registry-unavailable:lts-registry" in ids
 
 
-def test_currency_engine_ungated_stale_registry_emits_no_stale_finding(
-    tmp_path, component_factory, monkeypatch
-):
+def test_currency_engine_ungated_stale_registry_emits_no_stale_finding(tmp_path, component_factory, monkeypatch):
     """The freshness precondition is gated: with gating off, even a stale
     registry adds nothing (pre-6.5 byte-identical)."""
     monkeypatch.setattr(
@@ -1076,14 +1016,10 @@ def test_currency_engine_ungated_stale_registry_emits_no_stale_finding(
     )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     result = CurrencyEngine(gating=False).run(tmp_path, inventory)
-    assert not any(
-        f.id.startswith("indeterminate:currency-registry-") for f in result.findings
-    )
+    assert not any(f.id.startswith("indeterminate:currency-registry-") for f in result.findings)
 
 
-def test_currency_engine_gated_fresh_registry_emits_no_stale_finding(
-    tmp_path, component_factory, monkeypatch
-):
+def test_currency_engine_gated_fresh_registry_emits_no_stale_finding(tmp_path, component_factory, monkeypatch):
     """A fresh bundled registry under an active gate adds no provenance
     finding -- the freshness precondition only fires on absent/stale.
     Freshness is FORCED by handing the engine a yesterday-dated registry
@@ -1098,6 +1034,4 @@ def test_currency_engine_gated_fresh_registry_emits_no_stale_finding(
     )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     result = CurrencyEngine(gating=True).run(tmp_path, inventory)
-    assert not any(
-        f.id.startswith("indeterminate:currency-registry-") for f in result.findings
-    )
+    assert not any(f.id.startswith("indeterminate:currency-registry-") for f in result.findings)

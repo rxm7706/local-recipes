@@ -1,6 +1,3 @@
-<!-- RECOVERED 2026-08-08 Tier 3 (epics.md-derived Intent + ACs). No session transcript or
-     bmad-loop worktree snapshot survived for this story — regenerated from epics.md per
-     CLAUDE.md's recovery priority order. -->
 ---
 title: "Story 1-4: Pointer-stub write-back + idempotent re-invocation"
 type: "feature"
@@ -10,6 +7,10 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-08-08"
 ---
+
+<!-- RECOVERED 2026-08-08 Tier 3 (epics.md-derived Intent + ACs). No session transcript or
+     bmad-loop worktree snapshot survived for this story — regenerated from epics.md per
+     CLAUDE.md's recovery priority order. -->
 
 ## Intent
 A promoted user-local memory entry is replaced with a pointer stub, and re-running the promotion
@@ -38,3 +39,16 @@ https://github.com/rxm7706/local-recipes/pull/296
 
 **Commands:**
 - `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `75696cc29b` (2026-08-07, "Merge pull request #296 from rxm7706/scribe/1-4-and-1-5-epic-1-close-out"). Ledger row `1-4-pointer-stub-write-back-idempotent-re-invocation: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/memory/MEMORY.md`, `.claude/memory/README.md`, `.claude/memory/feedback/bmad-runs-cfe-retro.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/promote.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_cli.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_promote.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

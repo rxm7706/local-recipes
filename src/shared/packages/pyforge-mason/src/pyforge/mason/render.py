@@ -113,7 +113,6 @@ def write(
     invalid-value-falls-back-to-default philosophy -- there is no
     ``MasonError`` taxonomy yet (Story 1.3) to raise a typed error instead.
     """
-    text = render_json(command, status, data, errors) if fmt == "json" \
-        else render_text(command, status, data, errors)
+    text = render_json(command, status, data, errors) if fmt == "json" else render_text(command, status, data, errors)
     stream.write(text + "\n")
     stream.flush()

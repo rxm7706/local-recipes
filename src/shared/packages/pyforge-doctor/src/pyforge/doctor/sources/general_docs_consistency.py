@@ -79,10 +79,7 @@ def _read_text(path: Path, *, target: Path) -> tuple[str | None, Finding | None]
             source=Source.GENERAL_DOCS_CONSISTENCY,
             check=_CHECK_UNREADABLE,
             status=DoctorStatus.WARN,
-            message=(
-                f"{rel} could not be read — "
-                f"{exc.__class__.__name__}: {exc}"
-            ),
+            message=(f"{rel} could not be read — {exc.__class__.__name__}: {exc}"),
             evidence={"path": rel, "reason": str(exc)},
         )
 
@@ -138,12 +135,8 @@ def check_station_readme_vs_skill_brief(
     source: Source,
 ) -> Finding | None:
     """Return a WARN when README claims a self-gate while the brief is advisory."""
-    readme_hit = _quote_for_pattern(
-        readme_text, _README_SELF_GATE_RE, rel_path=readme_rel
-    )
-    brief_hit = _quote_for_pattern(
-        skill_brief_text, _SKILL_BRIEF_ADVISORY_RE, rel_path=brief_rel
-    )
+    readme_hit = _quote_for_pattern(readme_text, _README_SELF_GATE_RE, rel_path=readme_rel)
+    brief_hit = _quote_for_pattern(skill_brief_text, _SKILL_BRIEF_ADVISORY_RE, rel_path=brief_rel)
     if readme_hit is None or brief_hit is None:
         return None
     readme_quote = readme_hit
@@ -209,12 +202,8 @@ def check_agents_herald_handoff(
     source: Source,
 ) -> Finding | None:
     """Return a WARN when AGENTS assigns Herald a claim Herald's Dream gives Marshal."""
-    agents_hit = _quote_for_pattern(
-        agents_text, _AGENTS_HERALD_HANDOFF_RE, rel_path=agents_rel
-    )
-    dream_hit = _quote_for_pattern(
-        herald_dream_text, _HERALD_DREAM_MARSHAL_RE, rel_path=dream_rel
-    )
+    agents_hit = _quote_for_pattern(agents_text, _AGENTS_HERALD_HANDOFF_RE, rel_path=agents_rel)
+    dream_hit = _quote_for_pattern(herald_dream_text, _HERALD_DREAM_MARSHAL_RE, rel_path=dream_rel)
     if agents_hit is None or dream_hit is None:
         return None
     agents_quote = agents_hit

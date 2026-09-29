@@ -80,9 +80,7 @@ def _partition_one(finding: Finding) -> PartitionedFinding:
         reason = str(evidence.get("block_reason") or "no fix version published")
         return PartitionedFinding(finding, Partition.BLOCKED, reason)
 
-    return PartitionedFinding(
-        finding, Partition.ACTIONABLE, "actionable -- a remediation path exists"
-    )
+    return PartitionedFinding(finding, Partition.ACTIONABLE, "actionable -- a remediation path exists")
 
 
 def partition(findings: Iterable[Finding]) -> tuple[PartitionedFinding, ...]:
@@ -274,9 +272,7 @@ def rank(partitioned: Iterable[PartitionedFinding]) -> tuple[RankedPrescription,
     # caught before this ever reached a test: an earlier draft embedded
     # `finding` inside the sorted tuples themselves, which raises on any
     # tie).
-    scored = [
-        (finding, *_rank_factors_and_sort_key(finding)) for finding in actionable
-    ]
+    scored = [(finding, *_rank_factors_and_sort_key(finding)) for finding in actionable]
     scored.sort(key=lambda item: item[1])
     return tuple(
         RankedPrescription(finding=finding, rank=index + 1, rank_factors=factors)
@@ -287,35 +283,27 @@ def rank(partitioned: Iterable[PartitionedFinding]) -> tuple[RankedPrescription,
 # --- Story 3.3: root-cause naming ------------------------------------------
 
 
-#: Mirrors ``sources/atlas.py::_row_check_name``'s own placeholder verbatim
-#: -- a row missing every name field normalizes to this literal, which is
-#: NOT a real feedstock identity and must never be treated as a match key
-#: (review finding: two unrelated rows both missing a name field used to
-#: correlate as if they were the same package). ``prescribe.py``'s AD-4
-#: import-surface guard forbids importing ``sources.atlas`` directly, so
-#: this is a deliberate duplicated literal, not a shared import.
-_UNKNOWN_FEEDSTOCK_CHECK = "<unknown feedstock>"
-
-
-def _find_correlated_staleness(
-    finding: Finding, all_findings: Sequence[Finding]
-) -> Finding | None:
-    """A same-``check`` ``Source.STALENESS_REPORT`` Finding in the same
-    gather batch, if one exists -- the correlation Story 3.3 AC1 asks for
-    ("a Prescription for a CVE Finding that traces to a staleness lag").
-    Never the SAME Finding object (a Finding is never "correlated" with
-    itself); ``status`` is not filtered here -- any staleness signal for
-    the same package is evidence of a lag, regardless of its own
-    WARN/FAIL tier. A ``check`` of ``_UNKNOWN_FEEDSTOCK_CHECK`` never
-    matches, even against another Finding sharing that same placeholder --
-    "both unidentified" is not evidence of correlation."""
-    if finding.check == _UNKNOWN_FEEDSTOCK_CHECK:
+def _find_correlated_staleness(finding: Finding, all_findings: Sequence[Finding]) -> Finding | None:
+    """A same-``evidence["conda_name"]`` ``Source.STALENESS_REPORT`` Finding
+    in the same gather batch, if one exists -- the correlation Story 3.3 AC1
+    asks for ("a Prescription for a CVE Finding that traces to a staleness
+    lag"). Never the SAME Finding object (a Finding is never "correlated"
+    with itself); ``status`` is not filtered here -- any staleness signal
+    for the same package is evidence of a lag, regardless of its own
+    WARN/FAIL tier. ``Finding.check`` is a fixed kebab finding-code, not a
+    package identity (Story 59.7, ``spec-vocabulary-one-name-one-job``
+    CAP-8) -- ``evidence["conda_name"]`` is the join key every atlas
+    producer carries instead. A Finding missing ``conda_name`` never
+    matches, even against another Finding also missing it -- "both
+    unidentified" is not evidence of correlation."""
+    name = finding.evidence.get("conda_name")
+    if not name:
         return None
     for other in all_findings:
         if (
             other is not finding
             and other.source is Source.STALENESS_REPORT
-            and other.check == finding.check
+            and other.evidence.get("conda_name") == name
         ):
             return other
     return None
@@ -324,6 +312,7 @@ def _find_correlated_staleness(
 def _cve_root_cause(finding: Finding, all_findings: Sequence[Finding]) -> str:
     staleness = _find_correlated_staleness(finding, all_findings)
     evidence = finding.evidence
+    name = evidence.get("conda_name") or "this package"
     severity = evidence.get("severity")
     delta = evidence.get("delta")
     now_v = evidence.get("now_v")
@@ -331,14 +320,14 @@ def _cve_root_cause(finding: Finding, all_findings: Sequence[Finding]) -> str:
         age_days = staleness.evidence.get("age_days")
         version = staleness.evidence.get("latest_conda_version")
         return (
-            f"{finding.check}'s {severity or ''}-severity vulnerability count is "
+            f"{name}'s {severity or ''}-severity vulnerability count is "
             f"{now_v!s} (delta {delta!s}) -- correlated with a staleness signal "
             f"for the same package (pinned at {version!s}, {age_days!s} days "
             "stale): the fix most likely already shipped upstream and simply "
             "hasn't been adopted yet, rather than being genuinely unfixed."
         )
     return (
-        f"{finding.check}'s {severity or ''}-severity vulnerability count is "
+        f"{name}'s {severity or ''}-severity vulnerability count is "
         f"{now_v!s} (delta {delta!s}) -- no correlated staleness signal for "
         "this package in the same run, so this may be a newly-disclosed CVE "
         "with no upstream fix yet rather than an adoption lag."
@@ -360,9 +349,7 @@ def _templated_root_cause(finding: Finding) -> str:
     placeholder, so this is a genuine fallback, not a degraded one."""
     if not finding.evidence:
         return finding.message
-    evidence_clause = "; ".join(
-        f"{key}={value!s}" for key, value in sorted(finding.evidence.items())
-    )
+    evidence_clause = "; ".join(f"{key}={value!s}" for key, value in sorted(finding.evidence.items()))
     return f"{finding.message} (evidence: {evidence_clause})"
 
 
@@ -425,10 +412,7 @@ def recommend_safe_upgrade(finding: Finding) -> tuple[str | None, str]:
 
     conda_v = evidence.get("latest_conda_version") or evidence.get("conda_version")
     if evidence.get("breaking_change"):
-        return None, (
-            f"a breaking-change signal is present for {target_v!s} -- not "
-            "confidently safe"
-        )
+        return None, (f"a breaking-change signal is present for {target_v!s} -- not confidently safe")
 
     blast_label, _ = _classify_blast_radius(evidence)
     if blast_label == "major":
@@ -439,8 +423,5 @@ def recommend_safe_upgrade(finding: Finding) -> tuple[str | None, str]:
             "'next safe' target"
         )
     if blast_label in ("unknown", "current"):
-        return None, (
-            "no single confidently-known next-safe version in this "
-            "Finding's evidence"
-        )
+        return None, ("no single confidently-known next-safe version in this Finding's evidence")
     return str(target_v), f"{blast_label} version bump, no known breaking-change signal"

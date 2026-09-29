@@ -63,8 +63,7 @@ def _find_subprocess_importers(root: Path, allowed: set[Path]) -> list[Path]:
             # file it cannot prove clean, and a raw traceback is not an
             # actionable test failure.
             raise AssertionError(
-                f"{path}: unreadable ({exc}); the AD-2 subprocess-import "
-                "guard cannot AST-scan this file"
+                f"{path}: unreadable ({exc}); the AD-2 subprocess-import guard cannot AST-scan this file"
             ) from exc
         except UnicodeDecodeError as exc:
             # Fail loudly rather than silently skip (review finding #5): a
@@ -74,8 +73,7 @@ def _find_subprocess_importers(root: Path, allowed: set[Path]) -> list[Path]:
             # genuinely non-UTF-8 `.py` file under this tree is itself a
             # bug worth surfacing, not a case to special-case around.
             raise AssertionError(
-                f"{path}: not valid UTF-8; the AD-2 subprocess-import guard "
-                "cannot AST-scan this file"
+                f"{path}: not valid UTF-8; the AD-2 subprocess-import guard cannot AST-scan this file"
             ) from exc
 
         try:
@@ -85,14 +83,11 @@ def _find_subprocess_importers(root: Path, allowed: set[Path]) -> list[Path]:
             # the scanner cannot parse is a file it cannot prove clean, and a
             # raw SyntaxError traceback is not an actionable test failure.
             raise AssertionError(
-                f"{path}: invalid Python syntax; the AD-2 subprocess-import "
-                "guard cannot AST-scan this file"
+                f"{path}: invalid Python syntax; the AD-2 subprocess-import guard cannot AST-scan this file"
             ) from exc
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.Import) and any(
-                alias.name == "subprocess" for alias in node.names
-            ):
+            if isinstance(node, ast.Import) and any(alias.name == "subprocess" for alias in node.names):
                 violators.append(path)
                 break
             if isinstance(node, ast.ImportFrom) and node.module == "subprocess":
@@ -104,19 +99,17 @@ def _find_subprocess_importers(root: Path, allowed: set[Path]) -> list[Path]:
 def test_no_subprocess_import_outside_the_allowlist():
     # Guard the guard: if the package layout ever moves, rglob over a stale
     # path would yield zero files and this test would pass vacuously forever.
-    assert PKG_ROOT.is_dir(), (
-        f"AD-2 guard is scanning nothing — package root moved? {PKG_ROOT}"
-    )
+    assert PKG_ROOT.is_dir(), f"AD-2 guard is scanning nothing — package root moved? {PKG_ROOT}"
     violators = _find_subprocess_importers(PKG_ROOT, _allowed_paths(PKG_ROOT))
     assert not violators, (
-        "AD-2: only cli.py, cfe.py, and engines/*.py may `import subprocess`; "
-        f"found it in: {violators}"
+        f"AD-2: only cli.py, cfe.py, and engines/*.py may `import subprocess`; found it in: {violators}"
     )
 
 
 # --- Regression fixtures proving the detection logic itself (review finding
 # #4): synthetic trees, not the real package, so these assert the scanner's
 # behavior independent of what src/pyforge/mason/ currently contains. ------
+
 
 def test_detection_fires_on_a_violation_and_permits_allowed_files(tmp_path):
     root = tmp_path / "mason"
@@ -172,6 +165,7 @@ def test_unreadable_file_fails_cleanly_not_with_a_raw_traceback(tmp_path):
 # --- AD-4 — no importlib.import_module(...) or exec(...) call, anywhere,
 # --- no allowlist (Story 2.1) ------------------------------------------------
 
+
 def _collect_import_module_aliases(tree: ast.Module) -> tuple[set[str], set[str]]:
     """Collect every local name bound to the `importlib` module itself, and
     every local name bound to `importlib.import_module` directly (via `from
@@ -202,9 +196,7 @@ def _collect_import_module_aliases(tree: ast.Module) -> tuple[set[str], set[str]
     return importlib_names, import_module_names
 
 
-def _is_import_module_call(
-    func: ast.expr, importlib_names: set[str], import_module_names: set[str]
-) -> bool:
+def _is_import_module_call(func: ast.expr, importlib_names: set[str], import_module_names: set[str]) -> bool:
     """True for `func` shaped as `<importlib alias>.import_module` (an
     attribute access whose base name resolves to the `importlib` module, by
     however it was locally aliased) or a bare name resolving to
@@ -259,21 +251,18 @@ def _find_importlib_or_exec_callers(root: Path) -> list[Path]:
             source = path.read_text(encoding="utf-8")
         except OSError as exc:
             raise AssertionError(
-                f"{path}: unreadable ({exc}); the AD-4 import_module/exec "
-                "guard cannot AST-scan this file"
+                f"{path}: unreadable ({exc}); the AD-4 import_module/exec guard cannot AST-scan this file"
             ) from exc
         except UnicodeDecodeError as exc:
             raise AssertionError(
-                f"{path}: not valid UTF-8; the AD-4 import_module/exec guard "
-                "cannot AST-scan this file"
+                f"{path}: not valid UTF-8; the AD-4 import_module/exec guard cannot AST-scan this file"
             ) from exc
 
         try:
             tree = ast.parse(source, filename=str(path))
         except SyntaxError as exc:
             raise AssertionError(
-                f"{path}: invalid Python syntax; the AD-4 import_module/exec "
-                "guard cannot AST-scan this file"
+                f"{path}: invalid Python syntax; the AD-4 import_module/exec guard cannot AST-scan this file"
             ) from exc
 
         importlib_names, import_module_names = _collect_import_module_aliases(tree)
@@ -291,9 +280,7 @@ def _find_importlib_or_exec_callers(root: Path) -> list[Path]:
 def test_no_importlib_import_module_or_exec_call_anywhere():
     # Guard the guard: same rationale as test_no_subprocess_import_outside_
     # the_allowlist above — a stale PKG_ROOT would make this pass vacuously.
-    assert PKG_ROOT.is_dir(), (
-        f"AD-4 guard is scanning nothing — package root moved? {PKG_ROOT}"
-    )
+    assert PKG_ROOT.is_dir(), f"AD-4 guard is scanning nothing — package root moved? {PKG_ROOT}"
     violators = _find_importlib_or_exec_callers(PKG_ROOT)
     assert not violators, (
         "AD-4: no importlib.import_module(...), exec(...), or __import__(...) "
@@ -345,9 +332,7 @@ def test_importlib_or_exec_detection_fires_even_nested_inside_a_function(tmp_pat
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "def helper():\n"
-        "    import importlib\n"
-        "    return importlib.import_module('conda_forge_expert')\n",
+        "def helper():\n    import importlib\n    return importlib.import_module('conda_forge_expert')\n",
         encoding="utf-8",
     )
 
@@ -364,11 +349,7 @@ def test_importlib_or_exec_detection_permits_unrelated_calls_and_imports(tmp_pat
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "import importlib\n"
-        "importlib.metadata.version('pyforge-mason')\n"
-        "def execute():\n"
-        "    return 1\n"
-        "execute()\n",
+        "import importlib\nimportlib.metadata.version('pyforge-mason')\ndef execute():\n    return 1\nexecute()\n",
         encoding="utf-8",
     )
 
@@ -384,7 +365,8 @@ def test_dunder_import_detection_fires_on_a_bare_call(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        '__import__("pyforge.mason.cfe", fromlist=["cfe"])\n', encoding="utf-8",
+        '__import__("pyforge.mason.cfe", fromlist=["cfe"])\n',
+        encoding="utf-8",
     )
 
     violators = {p.resolve() for p in _find_importlib_or_exec_callers(root)}
@@ -467,9 +449,7 @@ def _find_models_leaf_violations(path: Path) -> list[str]:
 def test_models_module_imports_only_the_sanctioned_engines_sibling():
     # Guard the guard: same rationale as PKG_ROOT.is_dir() above — a stale
     # path would make this pass vacuously.
-    assert _MODELS_PATH.is_file(), (
-        f"models.py leaf guard is scanning nothing — has it moved? {_MODELS_PATH}"
-    )
+    assert _MODELS_PATH.is_file(), f"models.py leaf guard is scanning nothing — has it moved? {_MODELS_PATH}"
     violations = _find_models_leaf_violations(_MODELS_PATH)
     assert not violations, (
         "models.py must stay a dependency-direction leaf — its only "

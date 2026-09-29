@@ -98,3 +98,16 @@ station. Remint unifying-strategy architecture.
 
 - Overlay inherits mcp-host; bring-up names the Deployment
   [`core-overrides.yaml:12`](../../../../../../src/platform/deploy/overlays/ocp/core-overrides.yaml#L12)
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `9d3ad9105b` (2026-08-26, "Merge pull request #867 from rxm7706/steward/35-1-cluster-requires-mcp-host"). Ledger row `35-1-cluster-requires-mcp-host: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-35-1-cluster-requires-mcp-host.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `src/platform/config/startup/stage_one.py`, `src/platform/deploy/charts/platform/templates/mcp-host-deployment.yaml`, `src/platform/deploy/charts/platform/values.yaml`, `src/platform/deploy/overlays/ocp/cluster-bringup.md`, `src/platform/deploy/overlays/ocp/core-overrides.yaml`, `src/platform/tests/test_chart_invariants.py`, `src/platform/tests/test_startup_required_settings.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

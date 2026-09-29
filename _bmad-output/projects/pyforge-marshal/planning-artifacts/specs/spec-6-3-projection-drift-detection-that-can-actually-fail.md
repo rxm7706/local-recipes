@@ -399,3 +399,16 @@ from Story 2.1 -- confirmed identical on `main` via `git stash`, not introduced 
 `lint-imports` -- AD-3/AD-4/AD-9 all KEPT (87 files, 481 dependencies analyzed).
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `49a07c1cba` (2026-08-07, "Merge pull request #294 from rxm7706/marshal/6-3-projection-drift-detection"). Ledger row `6-3-projection-drift-detection-that-can-actually-fail: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/adapters.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/conformance.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_ad11_write_boundary.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_ad31_conformance_check_can_genuinely_fail.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_adapters_cli.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_conformance.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_init.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

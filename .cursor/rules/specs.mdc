@@ -5,11 +5,12 @@ alwaysApply: true
 
 Read `AGENTS.md` at the repo root first.
 
-- **Everything starts with a Dream in `docs/dreams/*.md`** — the raw aspiration; BMAD-method
-  turns it into the spec (`bmad-spec`, or the planning chain for product scope).
+- **Everything starts with a Dream in `docs/dreams/*.md`** — the raw aspiration; `bmad-spec`
+  turns it into the Spec, and for product scope the planning chain then decomposes that Spec.
 - **The active spec is a BMAD artifact** in `_bmad-output/projects/<slug>/planning-artifacts/`.
 - Tiers, do not cross them: Tier-0 Dream = `docs/dreams/`; Tier-1 = `docs/specs/`
   (**LEGACY** — kept for in-flight efforts, author no new specs there); Tier-2 spec & planning =
   `_bmad-output/projects/<slug>/planning-artifacts/`; Tier-3 execution output =
   `_bmad-output/projects/<slug>/implementation-artifacts/` (gitignored/local-only).
 - Never put a spec into a Tier-3 output dir. Write your own working output under `.cursor/`.
+- Implement in a steward worktree and land through a PR (`.cursor/rules/trunk-worktree-pr.mdc`). Do not commit on the shared checkout.

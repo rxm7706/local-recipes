@@ -123,9 +123,7 @@ def parse_identifier(raw: str) -> ParsedIdentifier | None:
         return None
     story_match = _STORY_RE.match(text)
     if story_match:
-        return ParsedIdentifier(
-            epic=int(story_match.group(1)), story=int(story_match.group(2))
-        )
+        return ParsedIdentifier(epic=int(story_match.group(1)), story=int(story_match.group(2)))
     epic_match = _EPIC_RE.match(text)
     if epic_match:
         return ParsedIdentifier(epic=int(epic_match.group(1)), story=None)
@@ -256,9 +254,7 @@ def gather(target: Path, *, identifier: str) -> tuple[Finding, ...]:
                 source=Source.BACKLOG_INTAKE,
                 check="backlog-intake",
                 status=DoctorStatus.OK,
-                message=(
-                    f"no tracked deferred-work-ledger entry names {identifier}"
-                ),
+                message=(f"no tracked deferred-work-ledger entry names {identifier}"),
                 evidence={"identifier": identifier, "matches": 0},
             ),
         )

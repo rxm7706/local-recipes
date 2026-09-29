@@ -79,6 +79,4 @@ def test_all_registered_pipelines_are_accepted(monkeypatch):
         assert receipt["pipeline"] == name
         assert receipt["outputs"] == []  # non-dict/empty run result -> []
 
-    assert fake.run_calls == [
-        {"pipeline_name": name} for name in tools.PIPELINE_NAMES
-    ]
+    assert fake.run_calls == [{"pipeline_name": name} for name in tools.PIPELINE_NAMES]

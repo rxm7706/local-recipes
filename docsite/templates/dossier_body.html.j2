@@ -1,0 +1,48 @@
+{%- import "blocks.html.j2" as B with context -%}
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-eyebrow"><span class="dot"></span>{{ doc.eyebrow | md }}</div>
+    <h1>{{ doc.heading | md }}</h1>
+    <p class="hero-sub">{{ doc.summary | md }}</p>
+    <div class="hero-stats">
+      {%- for s in doc.stats %}
+      <div class="hero-stat"><span class="n">{{ s.value | md }}</span><span class="l">{{ s.label | md }}</span></div>
+      {%- endfor %}
+    </div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Table of contents">
+      <span class="toc-label">Contents</span>
+      <ol>
+        {%- for t in doc.toc %}
+        <li{% if t.group_start %} class="toc-group"{% endif %}><a href="#{{ t.id }}"><span class="stdot" style="background:{{ B.v(t.accent) }}"></span>{{ t.label | md }}</a></li>
+        {%- endfor %}
+      </ol>
+    </nav>
+
+    <main class="content">
+      {%- for s in doc.sections %}
+
+      <section id="{{ s.id }}">
+        {%- if s.kind == 'station' %}
+        <div class="station-head">
+          <div class="station-mark" style="background:{{ B.v(s.accent) }}">{{ s.mark | md }}</div>
+          <div class="station-title"><h2>{{ s.title | md }}</h2><span class="role">{{ s.role | md }}</span></div>
+        </div>
+        {%- else %}
+        <div class="section-head"><span class="section-num">{{ s.num | md }}</span><h2>{{ s.title | md }}</h2></div>
+        {%- endif %}
+        {%- for b in s.blocks %}{{ B.render(b) }}{% endfor %}
+      </section>
+      {%- endfor %}
+    </main>
+  </div>
+
+  <footer>
+    <span>{{ doc.footer.note | md }}</span>
+    <span>{{ doc.footer.date | md }}</span>
+  </footer>
+
+</div>

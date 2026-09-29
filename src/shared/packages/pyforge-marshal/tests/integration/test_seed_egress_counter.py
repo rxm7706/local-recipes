@@ -85,9 +85,8 @@ def _assert_zero_inet_egress(completed: subprocess.CompletedProcess[str], *, lab
         f"strace rc={completed.returncode}; stderr head={completed.stderr[:500]!r}"
     )
     network_lines = _internet_network_lines(completed.stderr)
-    assert not network_lines, (
-        f"{label}: unexpected internet-family network syscall(s):\n"
-        + "\n".join(network_lines[:20])
+    assert not network_lines, f"{label}: unexpected internet-family network syscall(s):\n" + "\n".join(
+        network_lines[:20]
     )
 
 

@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+from pyforge.marshal.core.identity import normalize, render_feed_key
 from pyforge.marshal.core.spec_deps import (
     parse_deps_text,
     ready_backlog,
     story_deps_from_epics,
     story_transitively_depends_on,
 )
-from pyforge.marshal.core.identity import normalize, render_feed_key
 
 
 def test_parse_deps_text_reads_bare_story_keys() -> None:
@@ -45,16 +45,12 @@ def test_ready_backlog_filters_unmet_dependencies() -> None:
         ("28-12-ordering", "backlog"),
         ("28-16-fanout", "backlog"),
     )
-    assert ready_backlog(("28-16-fanout", "28-12-ordering"), statuses, graph) == (
-        "28-12-ordering",
-    )
+    assert ready_backlog(("28-16-fanout", "28-12-ordering"), statuses, graph) == ("28-12-ordering",)
     done_statuses = (
         ("28-12-ordering", "done"),
         ("28-16-fanout", "backlog"),
     )
-    assert ready_backlog(
-        ("28-16-fanout", "28-12-ordering"), done_statuses, graph
-    ) == ("28-16-fanout", "28-12-ordering")
+    assert ready_backlog(("28-16-fanout", "28-12-ordering"), done_statuses, graph) == ("28-16-fanout", "28-12-ordering")
 
 
 def test_story_transitively_depends_on() -> None:

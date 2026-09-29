@@ -1,4 +1,5 @@
 ---
+fr-derivation-from: "2026-09-17"
 stepsCompleted:
   - step-01-init
   - step-02-discovery
@@ -14,8 +15,8 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
-updated: "2026-09-07"
-currency_review: Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it).
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-24..26 (Epics 14-16); FR-41..FR-43 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
+currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-warden moved to 2026-09-12 (a 2-path surface-drift-exclude block; twelve dated verified: CAP lines from the 2026-09-11 sweep; three open_questions hoisted into frontmatter 2026-09-11; the story-set Assumption re-grounded from 31/6 to 43 keys/11 epics) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL GAP RECORDED, independently re-verified: `review_required` — named in FR9, in the acceptance matrix and in the bypass success criteria — occurs ZERO times in shipped src/ or tests/. Recorded, NOT repaired: adding the field is a behaviour + schema change needing its own Dream/Spec. The Spec's three open questions remain OPERATOR-OWNED and unanswered; the station's coherence checkpoint stays red by design until they are answered. Prior — Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it)."
 classification:
   projectType: cli_tool
   projectTypeNote: "Non-interactive CI/CD policy/quality-gate CLI; primary consumer is a pipeline, not a human terminal. report-schema.json is the data contract (an output_formats concern). developer_tool label dropped (no public SDK/IDE surface). Interactive/shell-completion UX deprioritized."
@@ -144,7 +145,7 @@ Two coverage paths, by where the dependencies are sourced:
 - **PyPI path:** correct **delegation** — deptry consumes `pyproject.toml`/`requirements.txt`, osv-scanner consumes the native lockfile (`poetry.lock`/`uv.lock`/`pdm.lock`/`Pipfile.lock`/`pylock.toml`/`requirements.txt`); no bespoke parsing; results unified.
 - **Conda/pixi path (E1 bridge):** corpus-conformance — **0 uncaught exceptions** across all `recipes/*/{recipe.yaml,meta.yaml}` (~1,950 real files as of 2026-07-11; globbed at runtime) + sampled `environment.yml`/`pixi.toml`; unparseable rate **< 2%**, surfaced per-manifest.
 - **Honest contract + severity gate:** schema-validated; `status ∈ {error, policy-violation, indeterminate, warn, bypassed, clean, not-applicable}` (the frozen 7-rung lattice; canonical token `warn`); **severity-tiered exit 0/1/2** (default block on **critical CVE or CISA-KEV-listed** — FR18/FR36; `--min-epss` v1 per D12); typed `error_kind` (unparsable-manifest → developer, engine-unavailable → platform, internal-error → CLI maintainers); the gate decides on report **content + severity**, never a subprocess returncode.
-- **Auditable bypass:** `--bypass` emits a committed, **expiring** waiver (default 14d; config + per-repo override); exits 0 with `status: bypassed` + `review_required: true`; the tool never writes the repo (NFR3). An **expired** waiver re-blocks.
+- **Auditable bypass:** `--bypass` emits a committed, **expiring** waiver (default 14d; config + per-repo override); exits 0 with `status: bypassed` — the frozen lattice's dedicated rung for exactly this, sitting between `warn` and `clean` — plus the stanza's `authorized_by`/`reason`/timestamps as the audit trail *(amended 2026-09-14; was `+ review_required: true`, a field that was never built and which `spec-3-3` explicitly says not to build)*; the tool never writes the repo (NFR3). An **expired** waiver re-blocks.
 - **SBOM:** a **CycloneDX BOM** is emitted and validates against the committed CycloneDX schema; components carry correct purls (`pkg:pypi/…` vs `pkg:conda/…?channel=`); a **partial** BOM when coverage < 100%.
 - **Determinism + no mutation (NFR-R3):** **decision-deterministic** by default (same inputs + DB snapshot → same exit code + findings set); **byte-identical** output in `--deterministic` mode; no host/source mutation; cleanup on success + failure.
 - **Lightweight (NFR-P):** stdlib-lean bridge (NFR-S1: no execution of untrusted input); cheap concurrent 20k-repo runs (per-invocation cost independent of fleet size). Conda + wheel + sdist build green.
@@ -241,7 +242,7 @@ Every one of these is **exit 2, explicitly not clean** — the absence of an exp
 
 **Climax — the other side.** Two weeks later Alex (P4) sees the waiver surface via `review_required`; meanwhile Priya's next CI run finds it **expired** → the finding **re-blocks** (exit 1). The bypass was a time-boxed loan, not a permanent mute. *(Waiver-at-scale / expiry-storm renewal is deferred post-v1.)*
 
-*Reveals:* FR9 waivers-as-code (expiring, `authorized_by`); `review_required` routing; expiry re-block; **waiver-as-untrusted-input trust boundary**; NFR3. *Implies FR-NEW-D (waiver integrity + authorizer identity, extending FR9 beyond expiry).*
+*Reveals:* FR9 waivers-as-code (expiring, `authorized_by`); `status=bypassed` routing; expiry re-block; **waiver-as-untrusted-input trust boundary**; NFR3. *Implies FR-NEW-D (waiver integrity + authorizer identity, extending FR9 beyond expiry).*
 
 ### Journey 5 — M1, the machine consumer: the data contract + false-green guards
 
@@ -313,7 +314,7 @@ The journeys resolve into these capability clusters, mapped to epics + the requi
 - **Manifest resolution front-door (E1)** — 6 formats, two-pass eval, stdlib-lean (NFR-S1 no-execution), split coverage, name-only+marked degrade, supported-construct matrix *(J1, J8)*
 - **Dual extraction + delegation (E2/E3)** — PyPI native delegation; conda/pixi bridge to deptry + osv *(J1, J2)*
 - **Honest report + severity gate (E4)** — schema'd `ComplianceReport`, split coverage, verdict-composition, typed error taxonomy + ownership routing, CycloneDX SBOM *(J2, J3, J5, J9)*
-- **Auditable expiring bypass (FR9)** — waivers-as-code, `authorized_by`, `review_required`, expiry re-block, untrusted-input trust boundary *(J4)*
+- **Auditable expiring bypass (FR9)** — waivers-as-code, `authorized_by`, `status=bypassed` as the routable signal, expiry re-block, untrusted-input trust boundary *(J4)*
 - **Adoption + fleet + machine contract** — warn-only on-ramp, deterministic exit matrix, `--allow-empty`, `schema_version` forward-compat, corpus regression gate, atlas seam, workstation on-ramp (install story, cold-start UX) *(J3, J6, J8, J10, M1)*
 
 **Requirements these journeys surface for Step 9 (Functional Requirements):**
@@ -513,68 +514,68 @@ The tool is a stable fleet gate as a **behavioral** commitment, not a governance
 > **NFR IDs:** the intake-spec `NFR3` = **NFR-R3a** (no-mutation) + **NFR-R3b** (determinism); `NFR5` = **NFR-R2**; `NFR1/NFR2` = **NFR-P\***; `NFR4` = **C0 / NFR-R1**. **`cf_atlas FR-16/FR-18`** (post-v1 atlas promotion) refer to the **atlas's own** requirements — **not** this PRD's FR16 (qualified verdict) / FR18 (severity gate).
 
 ### A. Manifest Discovery, Ingestion & Extraction
-- **FR1:** Given a target path, the tool can **discover and classify** candidate manifests (`recipe.yaml` / `meta.yaml` / `environment.yml` / `pixi.toml` / `pyproject.toml`), apply a **deterministic selection/precedence policy** across coexisting manifests, and report the **resolved scan set** (the coverage denominator).
-- **FR2:** The tool can classify each **dependency source section** (e.g. `pixi.toml` `[dependencies]` vs `[pypi-dependencies]`; `environment.yml` conda deps vs a `- pip:` block) as conda-ecosystem or PyPI-ecosystem and dispatch it to the correct extraction path.
-- **FR3:** The tool can extract the declared dependency set from conda/pixi **source** manifests **without a resolved/installed environment**.
-- **FR4:** The tool can delegate to each engine's native parser for PyPI-world inputs (`pyproject.toml` PEP621/Poetry/PDM/uv/setuptools, `requirements.txt`, osv-supported lockfiles) rather than re-implementing that parsing.
-- **FR5:** The tool can evaluate recipe templating/selector constructs on a **best-effort** basis, producing a partial/degraded extraction (name-only-and-marked) rather than failing.
-- **FR6:** The tool can, per manifest, distinguish "**no dependencies present**" from "**dependencies present but not fully resolved**."
-- **FR7:** The tool can keep **per-ecosystem attribution** for a dependency appearing in multiple ecosystems and **does not silently merge or dedup** cross-ecosystem names *(full reconciliation deferred post-v1)*.
+- **FR-1** ← CAP-2: Given a target path, the tool can **discover and classify** candidate manifests (`recipe.yaml` / `meta.yaml` / `environment.yml` / `pixi.toml` / `pyproject.toml`), apply a **deterministic selection/precedence policy** across coexisting manifests, and report the **resolved scan set** (the coverage denominator).
+- **FR-2** ← CAP-2: The tool can classify each **dependency source section** (e.g. `pixi.toml` `[dependencies]` vs `[pypi-dependencies]`; `environment.yml` conda deps vs a `- pip:` block) as conda-ecosystem or PyPI-ecosystem and dispatch it to the correct extraction path.
+- **FR-3** ← CAP-2: The tool can extract the declared dependency set from conda/pixi **source** manifests **without a resolved/installed environment**.
+- **FR-4** ← CAP-2: The tool can delegate to each engine's native parser for PyPI-world inputs (`pyproject.toml` PEP621/Poetry/PDM/uv/setuptools, `requirements.txt`, osv-supported lockfiles) rather than re-implementing that parsing.
+- **FR-5** ← CAP-2: The tool can evaluate recipe templating/selector constructs on a **best-effort** basis, producing a partial/degraded extraction (name-only-and-marked) rather than failing.
+- **FR-6** ← CAP-3: The tool can, per manifest, distinguish "**no dependencies present**" from "**dependencies present but not fully resolved**."
+- **FR-7** ← CAP-3: The tool can keep **per-ecosystem attribution** for a dependency appearing in multiple ecosystems and **does not silently merge or dedup** cross-ecosystem names *(full reconciliation deferred post-v1)*.
 
 ### B. Dependency-Hygiene Analysis (Axis 1)
-- **FR8:** A user can obtain dependency-hygiene findings (unused / missing / transitive / misplaced) for a project sourced from PyPI **or** conda-forge.
-- **FR9:** The tool can honor a project's existing hygiene-ignore configuration (`[tool.deptry]`).
+- **FR-8** ← CAP-4: A user can obtain dependency-hygiene findings (unused / missing / transitive / misplaced) for a project sourced from PyPI **or** conda-forge.
+- **FR-9** ← CAP-4: The tool can honor a project's existing hygiene-ignore configuration (`[tool.deptry]`).
 
 ### C. Vulnerability Analysis (Axis 2 — Security)
-- **FR10:** A user can obtain known-vulnerability findings — advisory ID, affected/fixed version, severity — that are individually actionable.
-- **FR11:** The tool can operate against an **offline/air-gapped** vulnerability database, **offline-by-default with no silent network egress**, and record the vuln-data **source + snapshot timestamp**.
-- **FR12:** The tool can detect a **stale** vulnerability database (past a threshold) and route the run to **`indeterminate` (exit 1) with a typed staleness driver** — never a confident "clean", never a silent 0 (aligned 2026-07-16 with NFR-S8 + C0; the same rule as KEV/EPSS feed absence under an active policy, FR36).
-- **FR13:** The tool can classify a dependency whose version cannot be resolved as **vulnerability-indeterminate** — distinguishing a **queryable range** from a **genuinely unresolved** spec — never as scanned-clean; and for a **mapped-but-unversioned** dep it can **flag whether the package carries any known critical CVE across any version** (a risk surface + lock-nudge, not a dead coverage number). **Guardrail: coverage improves only by resolving or name-level flagging — never by assuming a version.** *(The `pypi_identity` predicate + bundled conda→pypi map that gate `vuln_matchable` prevent the silent `pytorch`→`torch` false-green — architecture Gap C.)*
+- **FR-10** ← CAP-4: A user can obtain known-vulnerability findings — advisory ID, affected/fixed version, severity — that are individually actionable.
+- **FR-11** ← CAP-4: The tool can operate against an **offline/air-gapped** vulnerability database, **offline-by-default with no silent network egress**, and record the vuln-data **source + snapshot timestamp**.
+- **FR-12** ← CAP-4: The tool can detect a **stale** vulnerability database (past a threshold) and route the run to **`indeterminate` (exit 1) with a typed staleness driver** — never a confident "clean", never a silent 0 (aligned 2026-07-16 with NFR-S8 + C0; the same rule as KEV/EPSS feed absence under an active policy, FR36).
+- **FR-13** ← CAP-4: The tool can classify a dependency whose version cannot be resolved as **vulnerability-indeterminate** — distinguishing a **queryable range** from a **genuinely unresolved** spec — never as scanned-clean; and for a **mapped-but-unversioned** dep it can **flag whether the package carries any known critical CVE across any version** (a risk surface + lock-nudge, not a dead coverage number). **Guardrail: coverage improves only by resolving or name-level flagging — never by assuming a version.** *(The `pypi_identity` predicate + bundled conda→pypi map that gate `vuln_matchable` prevent the silent `pytorch`→`torch` false-green — architecture Gap C.)*
 
 ### D. Honest Coverage & Reporting
-- **FR14:** The tool can produce a **schema-validated** compliance report carrying explicit status, severity, **schema version**, per-manifest coverage, and typed error kind.
-- **FR15:** The tool can report coverage **per axis** — one distinct dimension per registered axis (v1: hygiene, vulnerability, license, currency), each with its own denominators and `resolution_depth`. *(Was "two distinct dimensions"; widened by the 2026-07-15 replan — the report's `axis` mechanism is an open string.)*
-- **FR16:** The tool can render a partial-coverage result as a **qualified verdict** — the coverage qualifier is always stated, and the governing status follows the FR20 lattice (partial vuln coverage ⇒ ≥1 `indeterminate` component ⇒ status `indeterminate`, non-zero) — never an unqualified "clean." *(The earlier "clean at N%" phrasing predated `indeterminate` — corrected 2026-07-12.)*
-- **FR17:** A user can obtain a human-readable summary and, on request, a machine-readable report, in which **every blocking finding is individually actionable** (package + manifest location + severity-that-tripped + remediation pointer).
+- **FR-14** ← CAP-7: The tool can produce a **schema-validated** compliance report carrying explicit status, severity, **schema version**, per-manifest coverage, and typed error kind.
+- **FR-15** ← CAP-3: The tool can report coverage **per axis** — one distinct dimension per registered axis (v1: hygiene, vulnerability, license, currency), each with its own denominators and `resolution_depth`. *(Was "two distinct dimensions"; widened by the 2026-07-15 replan — the report's `axis` mechanism is an open string.)*
+- **FR-16** ← CAP-3: The tool can render a partial-coverage result as a **qualified verdict** — the coverage qualifier is always stated, and the governing status follows the FR20 lattice (partial vuln coverage ⇒ ≥1 `indeterminate` component ⇒ status `indeterminate`, non-zero) — never an unqualified "clean." *(The earlier "clean at N%" phrasing predated `indeterminate` — corrected 2026-07-12.)*
+- **FR-17** ← CAP-7: A user can obtain a human-readable summary and, on request, a machine-readable report, in which **every blocking finding is individually actionable** (package + manifest location + severity-that-tripped + remediation pointer).
 
 ### E. Policy Gate & Verdict
-- **FR18:** A user can gate a build on report **content + severity**, choosing the failing threshold. The **vuln axis** defaults to block on **critical** CVEs **and any CISA-KEV-listed advisory on a pinned version (FR36; 2026-07-15)**; the **hygiene axis is separate** — **DEP001 (missing dependency) blocks by default** (gated on conda↔pypi name-mapping confidence: high-confidence → block, ambiguous → `warn`), DEP002–005 → `warn`. Both policy tables (hygiene→status + CVSS thresholds) live in the FR30 `ConfigLoader`.
-- **FR19:** A user can gate on a **minimum coverage floor** (**default OFF**). *(Repurposed 2026-07-12: post-triad, any coverage gap already exits non-zero via `indeterminate`, so the floor's remaining roles are (a) a guardrail **under `--warn-only`** — report-only, but never let coverage regress below N% — and (b) a ceiling on waived-away `indeterminate` surface once waivers apply.)*
-- **FR20:** The tool can compose many per-finding outcomes into **one status + one exit code** by a defined precedence in which an **error dominates**, a **waiver suppresses a finding unless expired or error-dominated**, and an **`indeterminate` outcome (withheld/skipped/unresolved) can never be masked by a clean sibling axis**, ingesting coverage-floor, engine-unavailable, and discovery-found-nothing as inputs. *(Precedence lattice `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable` + the separately-derived exit — any error→2, else un-waived policy-violation→1, **else `indeterminate`→exit 1 (pinned 2026-07-12; never a silent 0 — exit 2 stays reserved for operational error)**, else 0 — defined in Journey 9 / architecture.)*
-- **FR21:** The tool can **detect required-engine presence + version-compatibility** and distinguish, via **typed error kinds routed to an owner**, the failure classes (unparsable-manifest, engine-unavailable/incompatible, engine-output-unrecognized/-unparseable, engine-execution-failed, engine-timeout, config-parse, config-validation, internal-error) — a missing/incompatible engine **never yields a silent PASS**.
-- **FR22:** The tool can treat any run that did **not meaningfully scan** (empty extraction, expected-but-missing manifest, crashed engine, or skipped coverage) as **never `clean` in the status channel**, with a **non-zero default exit**; only the sanctioned downgrades (`--allow-empty` for the empty-extraction monorepo sweep, `--warn-only` for adoption) may downgrade the **exit code** — the status stays honest.
-- **FR23:** A user can adopt the gate in a **non-blocking warn-only** mode.
+- **FR-18** ← CAP-5: A user can gate a build on report **content + severity**, choosing the failing threshold. The **vuln axis** defaults to block on **critical** CVEs **and any CISA-KEV-listed advisory on a pinned version (FR36; 2026-07-15)**; the **hygiene axis is separate** — **DEP001 (missing dependency) blocks by default** (gated on conda↔pypi name-mapping confidence: high-confidence → block, ambiguous → `warn`), DEP002–005 → `warn`. Both policy tables (hygiene→status + CVSS thresholds) live in the FR30 `ConfigLoader`.
+- **FR-19** ← CAP-5: A user can gate on a **minimum coverage floor** (**default OFF**). *(Repurposed 2026-07-12: post-triad, any coverage gap already exits non-zero via `indeterminate`, so the floor's remaining roles are (a) a guardrail **under `--warn-only`** — report-only, but never let coverage regress below N% — and (b) a ceiling on waived-away `indeterminate` surface once waivers apply.)*
+- **FR-20** ← CAP-1: The tool can compose many per-finding outcomes into **one status + one exit code** by a defined precedence in which an **error dominates**, a **waiver suppresses a finding unless expired or error-dominated**, and an **`indeterminate` outcome (withheld/skipped/unresolved) can never be masked by a clean sibling axis**, ingesting coverage-floor, engine-unavailable, and discovery-found-nothing as inputs. *(Precedence lattice `error > policy-violation > indeterminate > warn > bypassed > clean > not-applicable` + the separately-derived exit — any error→2, else un-waived policy-violation→1, **else `indeterminate`→exit 1 (pinned 2026-07-12; never a silent 0 — exit 2 stays reserved for operational error)**, else 0 — defined in Journey 9 / architecture.)*
+- **FR-21** ← CAP-8: The tool can **detect required-engine presence + version-compatibility** and distinguish, via **typed error kinds routed to an owner**, the failure classes (unparsable-manifest, engine-unavailable/incompatible, engine-output-unrecognized/-unparseable, engine-execution-failed, engine-timeout, config-parse, config-validation, internal-error) — a missing/incompatible engine **never yields a silent PASS**.
+- **FR-22** ← CAP-8: The tool can treat any run that did **not meaningfully scan** (empty extraction, expected-but-missing manifest, crashed engine, or skipped coverage) as **never `clean` in the status channel**, with a **non-zero default exit**; only the sanctioned downgrades (`--allow-empty` for the empty-extraction monorepo sweep, `--warn-only` for adoption) may downgrade the **exit code** — the status stays honest.
+- **FR-23** ← CAP-9: A user can adopt the gate in a **non-blocking warn-only** mode.
 
 ### F. Waivers & Bypass
-- **FR24:** A user can record an **auditable, expiring** waiver for a finding (reason, authorizer, expiry) which the tool **reads but never writes into the repository**.
-- **FR25:** The tool can **re-block** a finding whose waiver has expired, and flag applied/expired waivers for downstream review.
-- **FR26:** The tool can **validate the waiver file against its schema and reject a malformed/malicious one**.
+- **FR-24** ← CAP-6: A user can record an **auditable, expiring** waiver for a finding (reason, authorizer, expiry) which the tool **reads but never writes into the repository**.
+- **FR-25** ← CAP-6: The tool can **re-block** a finding whose waiver has expired, and flag applied/expired waivers for downstream review.
+- **FR-26** ← CAP-6: The tool can **validate the waiver file against its schema and reject a malformed/malicious one**.
 
 ### G. SBOM & Machine Contract
-- **FR27:** The tool can emit a **CycloneDX SBOM** with source-registry-correct package URLs and explicit **self-declared partiality** when coverage is incomplete.
-- **FR28:** The tool can provide a **stable exit-code contract** (the single, consolidated exit-code semantics for the whole tool).
+- **FR-27** ← CAP-7: The tool can emit a **CycloneDX SBOM** with source-registry-correct package URLs and explicit **self-declared partiality** when coverage is incomplete.
+- **FR-28** ← CAP-1: The tool can provide a **stable exit-code contract** (the single, consolidated exit-code semantics for the whole tool).
 
 ### H. CLI Operation & Configuration
-- **FR29:** A user can run the entire multi-axis check as **one non-interactive command** producing one exit code. **`scan --doctor` (D8, v1)** is a flag-mode environment self-check on the same verb — re-exposes FR21's engine/DB/feed detection; exit 0 = healthy, exit 2 + typed `error_kind` = problem found, never exit 1 (doctor reports operability, not policy); no prompts.
-- **FR30:** A user can configure per-repo defaults via a `[tool.pyforge-warden]` table in `pyproject.toml` **and/or** `pixi.toml`, with CLI flags overriding and **deterministic per-key precedence** (conflicts surfaced, never failing the build).
-- **FR31:** A user can discover the tool's version and usage as part of a stable contract.
+- **FR-29** ← CAP-1: A user can run the entire multi-axis check as **one non-interactive command** producing one exit code. **`scan --doctor` (D8, v1)** is a flag-mode environment self-check on the same verb — re-exposes FR21's engine/DB/feed detection; exit 0 = healthy, exit 2 + typed `error_kind` = problem found, never exit 1 (doctor reports operability, not policy); no prompts.
+- **FR-30** ← CAP-5: A user can configure per-repo defaults via a `[tool.pyforge-warden]` table in `pyproject.toml` **and/or** `pixi.toml`, with CLI flags overriding and **deterministic per-key precedence** (conflicts surfaced, never failing the build).
+- **FR-31** ← CAP-1: A user can discover the tool's version and usage as part of a stable contract.
 
 ### I. License Axis (Axis 3 — added 2026-07-15, story-0.1 replan)
-- **FR32:** For every resolved component the tool can determine a license, normalized to an **SPDX expression** via `license-expression`, from (a) the conda recipe `about: license:` (+ `license_family`) — resolving **pre-build** — and (b) installed-distribution metadata via stdlib `importlib.metadata` (PEP 639 `License-Expression`, legacy `License`, trove classifiers). **No source scanning.** Verdict `allowed | denied | unknown`; **unconfigured, the axis reports `gating: false`** — verdicts surface via the `warn` rung (FR37), never a silent clean — and any FR33 flag activates the v1 gate (D12); a bare uninstalled PyPI manifest yields `unknown` (honest coverage gap + lock-nudge).
+- **FR-32** ← CAP-4: For every resolved component the tool can determine a license, normalized to an **SPDX expression** via `license-expression`, from (a) the conda recipe `about: license:` (+ `license_family`) — resolving **pre-build** — and (b) installed-distribution metadata via stdlib `importlib.metadata` (PEP 639 `License-Expression`, legacy `License`, trove classifiers). **No source scanning.** Verdict `allowed | denied | unknown`; **unconfigured, the axis reports `gating: false`** — verdicts surface via the `warn` rung (FR37), never a silent clean — and any FR33 flag activates the v1 gate (D12); a bare uninstalled PyPI manifest yields `unknown` (honest coverage gap + lock-nudge).
 - **FR33 *(v1, flag-activated — D12 2026-07-16)*:** `--allow-licenses <SPDX,…>` / `--deny-licenses <SPDX,…>`; setting either flag activates the license gate: **denied** → `policy-violation` and **unknown** → `indeterminate` (unconfigured, verdicts surface via `warn` — FR37).
 
 ### J. Currency Axis (Axis 4 — added 2026-07-15, story-0.1 replan)
-- **FR34:** For every resolved component **and the Python runtime**, the tool can compute currency/supportability, tiered: **bundled LTS registry** (`importlib.resources`) → **endoflife.date** (cached feed) → **N/N-1 from conda channel data** → `unknown`; emitting `latest`, `lag`, `eol_date` + verdict `supported | eol | unknown`. **Per-mode tier matrix:** edge mode (no atlas) = bundled registry + local caches, with N/N-1 degrading to a **visible** `unknown` when channel data is absent; the **availability-at-N/N-1 ADD/UPDATE finding is fleet-mode only** (edge omits it with a coverage note). **Data-age provenance:** verdicts from bundled data carry build-time `snapshot_at` + `max_age_ok` (NFR-S9). Unconfigured, the axis is `gating: false` via `warn` (FR37); any FR35 flag activates the v1 gate (D12).
+- **FR-34** ← CAP-4: For every resolved component **and the Python runtime**, the tool can compute currency/supportability, tiered: **bundled LTS registry** (`importlib.resources`) → **endoflife.date** (cached feed) → **N/N-1 from conda channel data** → `unknown`; emitting `latest`, `lag`, `eol_date` + verdict `supported | eol | unknown`. **Per-mode tier matrix:** edge mode (no atlas) = bundled registry + local caches, with N/N-1 degrading to a **visible** `unknown` when channel data is absent; the **availability-at-N/N-1 ADD/UPDATE finding is fleet-mode only** (edge omits it with a coverage note). **Data-age provenance:** verdicts from bundled data carry build-time `snapshot_at` + `max_age_ok` (NFR-S9). Unconfigured, the axis is `gating: false` via `warn` (FR37); any FR35 flag activates the v1 gate (D12).
 - **FR35 *(v1, flag-activated — D12 2026-07-16)*:** `--max-lag <n>` / `--require-lts` / `--fail-on-eol`; setting any flag activates the currency gate, **freshness-preconditioned** (stale bundled registry → `indeterminate`, never a pass); active gate: **unknown** → `indeterminate` (unconfigured → `warn`, FR37).
 
 ### K. Security Enrichment & Axis Mechanics (added 2026-07-15, story-0.1 replan)
-- **FR36:** The tool can enrich each security finding with **CISA KEV** (`kev`, `kev_date`) from a cached feed (offline default; opt-in online, never silent) and gate on it: **`--fail-on-kev` ships v1** and KEV-block is part of the FR18 default. **Feed-absence semantics:** with no KEV policy in effect, null slots gate on CVSS as before; **under a KEV-blocking policy an absent or stale KEV snapshot → `indeterminate`** — the gate never silently no-ops. The report carries **per-feed KEV provenance** (`{source, snapshot_at, max_age_ok}`), so `kev: null` (feed absent) is distinguishable from "assessed, not KEV-listed." **EPSS ships v1 (D12):** `epss {score, percentile}` from the FIRST.org cached feed (same posture + per-feed provenance) and the `--min-epss <0..1>` gate, with the mirrored absence rule — an active `--min-epss` policy + an absent/stale EPSS feed → `indeterminate`, never a silent no-op.
-- **FR37:** **Unconfigured-axis visibility rule (re-framed 2026-07-16, D12).** On any axis whose policy flags are unconfigured (`gating: false`), an `unknown` / `denied` / `eol` verdict **feeds a `warn` rung** — status `warn` (not `clean`), exit 0, driver naming the axis — never a silent clean; `--warn-as-error` escalates for strict shops; configuring the axis's policy flags activates its gate **in v1**, and the same outcomes escalate per FR33/FR35.
-- **FR38:** **The versioned schema amendment (story 6.1).** One additive `schema_version` bump adding: per-axis `gating` bool · `license`/`currency` report sections (+ per-section coverage/provenance incl. `snapshot_at`/`max_age_ok`) · `kev_date` + `epss {score, percentile}` + KEV feed provenance. Coordinated updates: `report.py` runtime self-validation + `_REPORT_AXES` · `report-schema.json` · the exact-13 `Component` test · fixtures. The producer stays closed — this is the **one** deliberate amendment; no other story may widen the schema.
+- **FR-36** ← CAP-4: The tool can enrich each security finding with **CISA KEV** (`kev`, `kev_date`) from a cached feed (offline default; opt-in online, never silent) and gate on it: **`--fail-on-kev` ships v1** and KEV-block is part of the FR18 default. **Feed-absence semantics:** with no KEV policy in effect, null slots gate on CVSS as before; **under a KEV-blocking policy an absent or stale KEV snapshot → `indeterminate`** — the gate never silently no-ops. The report carries **per-feed KEV provenance** (`{source, snapshot_at, max_age_ok}`), so `kev: null` (feed absent) is distinguishable from "assessed, not KEV-listed." **EPSS ships v1 (D12):** `epss {score, percentile}` from the FIRST.org cached feed (same posture + per-feed provenance) and the `--min-epss <0..1>` gate, with the mirrored absence rule — an active `--min-epss` policy + an absent/stale EPSS feed → `indeterminate`, never a silent no-op.
+- **FR-37** ← CAP-5: **Unconfigured-axis visibility rule (re-framed 2026-07-16, D12).** On any axis whose policy flags are unconfigured (`gating: false`), an `unknown` / `denied` / `eol` verdict **feeds a `warn` rung** — status `warn` (not `clean`), exit 0, driver naming the axis — never a silent clean; `--warn-as-error` escalates for strict shops; configuring the axis's policy flags activates its gate **in v1**, and the same outcomes escalate per FR33/FR35.
+- **FR-38** ← CAP-7: **The versioned schema amendment (story 6.1).** One additive `schema_version` bump adding: per-axis `gating` bool · `license`/`currency` report sections (+ per-section coverage/provenance incl. `snapshot_at`/`max_age_ok`) · `kev_date` + `epss {score, percentile}` + KEV feed provenance. Coordinated updates: `report.py` runtime self-validation + `_REPORT_AXES` · `report-schema.json` · the exact-13 `Component` test · fixtures. The producer stays closed — this is the **one** deliberate amendment; no other story may widen the schema.
 
 ### L. Adoption & Remediation (added 2026-07-16, D12)
-- **FR39:** **Baseline & grandfathering (the fleet-scale adoption on-ramp).** `--baseline <file>` reads a **committed, schema-validated** `.warden-baseline.yaml` recording existing (grandfathered) findings by their **stable finding IDs** (the same ID grammar waiver matching uses). A baselined finding does not block — the gate blocks **NEW findings only**. Entries carry `accepted_at` / `expires_at` (waiver-identical expiry: on expiry the finding re-blocks) and every applied entry is **echoed in the report** (loud, never a silent suppression). The tool **reads** the baseline and never writes the repository; a `--baseline-emit` helper prints a candidate stanza to stdout for the human to commit (NFR-R3a/NFR-S4 intact).
-- **FR40:** **Automated fix-PR actuator (opt-in).** `--open-fix-prs` runs a **post-scan actuator**: given forge credentials (environment-provided, never flags), it opens remediation pull requests from the run's findings via the **forge API** — security findings → upgrade-to-fixed-version PRs; hygiene unused-dependency findings → removal PRs — **never writing the scanned working tree**. The actuator is the only component permitted forge egress, runs strictly post-verdict, and is inert without the flag; `--fix-prs-dry-run` prints the would-be PRs. A failed PR-open never alters the verdict or exit code: it is recorded in the **`actuation` report section** (a story-6.1 schema slot, outside status/exit composition) and echoed to stderr — never an FR20 rung. Construction order: `cli.py` composes the verdict (exit code fixed), runs the actuator, then assembles + emits the final report including `actuation`; `actuation` content is in the NFR-R3b volatile-field set. `--fix-prs-dry-run` writes its intent into the same section and opens no sockets.
+- **FR-39** ← CAP-9: **Baseline & grandfathering (the fleet-scale adoption on-ramp).** `--baseline <file>` reads a **committed, schema-validated** `.warden-baseline.yaml` recording existing (grandfathered) findings by their **stable finding IDs** (the same ID grammar waiver matching uses). A baselined finding does not block — the gate blocks **NEW findings only**. Entries carry `accepted_at` / `expires_at` (waiver-identical expiry: on expiry the finding re-blocks) and every applied entry is **echoed in the report** (loud, never a silent suppression). The tool **reads** the baseline and never writes the repository; a `--baseline-emit` helper prints a candidate stanza to stdout for the human to commit (NFR-R3a/NFR-S4 intact).
+- **FR-40** ← CAP-12: **Automated fix-PR actuator (opt-in).** `--open-fix-prs` runs a **post-scan actuator**: given forge credentials (environment-provided, never flags), it opens remediation pull requests from the run's findings via the **forge API** — security findings → upgrade-to-fixed-version PRs; hygiene unused-dependency findings → removal PRs — **never writing the scanned working tree**. The actuator is the only component permitted forge egress, runs strictly post-verdict, and is inert without the flag; `--fix-prs-dry-run` prints the would-be PRs. A failed PR-open never alters the verdict or exit code: it is recorded in the **`actuation` report section** (a story-6.1 schema slot, outside status/exit composition) and echoed to stderr — never an FR20 rung. Construction order: `cli.py` composes the verdict (exit code fixed), runs the actuator, then assembles + emits the final report including `actuation`; `actuation` content is in the NFR-R3b volatile-field set. `--fix-prs-dry-run` writes its intent into the same section and opens no sockets.
 
 ### Traceability & boundary notes
 - **J3 (fleet ops) is satisfied by composition** — N invocations of FR29, with cross-repo aggregation delegated to the CI system — a by-design non-capability, **not** a fleet-aggregation FR.
@@ -716,7 +717,7 @@ retrofitted into the FR text above:**
    `/stations/warden/` with a permanent `/compliance/` redirect (steward S-19.1) —
    and a host MCP face (`POST /stations/warden/mcp`). Engines are called, never
    reimplemented; the portal is a projection with no second write path.
-3. **Epic 9 — PR-gate hook specs; scanners are plugins** (FR-44, CAP-18 retrofit;
+3. **Epic 9 — PR-gate hook specs; scanners are plugins** (canopy:FR-44, CAP-18 retrofit;
    landed 2026-08-24): `hooks.py` publishes the PR-gate hook book on
    `pyforge.core.hooks`; `scanner_plugins.py` wraps today's engines as the default
    plugin bundle; commercial scanners (Checkmarx, Sonar, Black Duck, GHAS) are
@@ -771,3 +772,211 @@ recorded here for the PRD's own audit trail, not as new product surface.
 
 No epic or story restructuring was needed; this note and the frontmatter bump are the only
 changes in this pass.
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep: `spec-pyforge-warden`'s SPEC.md moved to 2026-09-12 while this PRD
+sat at 2026-09-07 — five days, past the runbook's 2-day grace window. The station also
+carries an unresolved **coherence** finding; see the last section below.*
+
+### One real gap, verified independently — RESOLVED 2026-09-14
+
+> **Operator ruled: amend FR9 to name `Status.BYPASSED`; do not build the field.** The
+> capability shipped — only the literal field name did not. Two story specs had already said so
+> and neither was consulted when FR9 was written: `spec-3-2`'s Design Notes state
+> *"`review_required` has no new schema field. `Status.BYPASSED` already exists as a distinct
+> rung (Story 1.1) sitting between `warn` and `clean` **specifically for this purpose**"*, and
+> `spec-3-3` lists under **Never**: *"Do not implement the `review_required: true` machine field
+> mentioned in planning docs."* Building it would have widened a report schema this Spec closes
+> at `1.1.0` **and** contradicted an explicit do-not-implement instruction. FR9, the bypass
+> feature description, the capability list and the journey's Reveals line are amended to name
+> `status=bypassed`; `report-schema.json` is untouched. The `defer_post_v1` entry — *"org-wide
+> bypass-review routing/queue"* — is unaffected and stays deferred: that is the org-layer
+> routing, which was always a different thing from the per-run signal.
+>
+> The finding below is kept verbatim as the record of what was wrong and how it was found. Note
+> what it got right and what it missed: the grep was correct and the gap was real, but it framed
+> the choice as "widen the schema or amend FR9" without surfacing that two shipped story specs
+> had already decided it. A third option — *it was decided, in a place the PRD never cited* — is
+> the one that turned out to be true.
+
+`review_required` is named three times in this document — **FR9** ("status: bypassed +
+review_required routed to the security queue"), the **bypass** feature description
+("exits 0 with `status: bypassed` + `review_required: true`"), and the **exit-code
+matrix** acceptance criterion ("a non-expired waiver → exit 0 (`bypassed`,
+`review_required`)"). A repo-wide grep over `src/shared/packages/pyforge-warden/src` and
+`.../tests` on 2026-09-14 returns **zero occurrences**. The string exists only in this
+PRD and in the Spec plus its `verdict-contract.md` companion.
+
+**What actually ships in its place** is real and tested: `status=bypassed` with exit 0,
+plus the emitted waiver stanza's `authorized_by`/`reason`/timestamps
+(`test_bypass_with_blocking_findings_prints_stanza_and_exits_bypassed`). So a bypassed
+run *is* auditable. What does not exist is the **named, machine-readable field** that
+FR9 promises downstream consumers — and FR9's own text says the field is what "routes to
+the security queue at the fleet/atlas layer." A consumer written against this PRD would
+look for a key that is not in the report.
+
+**Recorded, not repaired.** Adding `review_required` touches `models.py`, `report.py` and
+the report schema — a **behaviour and schema change** to a producer this Spec explicitly
+closes at `1.1.0` ("exactly ONE sanctioned amendment was paid... no other story may widen
+the schema"). Under this repo's Dream-first rule that enters through
+`docs/dreams/<slug>.md` → `bmad-spec` → a Story, not through a currency sweep. The
+decision it needs is genuinely open: **widen the schema** (pay a second amendment against
+a closed producer), or **amend FR9** to describe the audit trail that actually ships
+(`status=bypassed` + the stanza) and drop the field. This note is the record; the choice
+is the operator's.
+
+### What else moved in the Spec, and why no FR changes for it
+
+1. **Twelve dated `verified:` lines (2026-09-11 sweep), all holding.** Several are worth
+   keeping visible because they are stronger evidence than a test count: CAP-11's
+   zero-egress claim was proved by `strace -f -e trace=network` wrapping the **whole**
+   `warden scan` process tree — CLI plus every forked engine — over the real corpus, an
+   outside-the-process observation rather than an in-process guard; and CAP-8's
+   `--doctor` was live-invoked and exited **2**, never 1, matching "reports operability,
+   not policy."
+2. **A 2-path `surface-drift-exclude:` block** (`extract/__init__.py`,
+   `extract/lockfiles.py`, both also governed by `pyforge-marshal/spec-pyforge-core`).
+   Detector bookkeeping; coverage unchanged.
+3. **The story-set Assumption was re-grounded** from "31 stories across 6 epics" to "43
+   story keys across eleven epics, plus a twelfth minted 2026-09-09." **That figure is
+   itself now behind.** Measured this pass with the real parser
+   (`fleet_scan.parse_sprint_status`, not a regex): **49/49 stories `done` across 12/12
+   epics.** Recorded here rather than silently corrected in the Spec, because the Spec's
+   own number is a dated snapshot and the ledger is the enumerator — the lesson the
+   fleet already learned about dated count snapshots applies to this one too.
+
+### The coherence finding — an honest residual, not a cleared one
+
+The station's `chain-audit-checkpoint-coherence` is **`overtaken`**: the Spec's
+`open_questions:` list is non-empty while its PRD and architecture both exist. Three
+questions were hoisted into frontmatter on 2026-09-11, and **all three are operator
+decisions this sweep has no standing to make**:
+
+1. **Is v1 *released* or *story-complete*?** All stories merged, but the legacy spec's v1
+   Definition of Done still carries unchecked release-level items — the CFE Rule-2
+   closeout retro (the engine mirror recipes lack CHANGELOG entries) and the internal
+   JFrog PyPI+conda publish behind the engine version-range gate.
+2. **What becomes of the legacy Tier-1 spec?** `docs/specs/pyforge-warden.md` still reads
+   `status: in-progress` and its Goals block still describes the pre-D12 tiering.
+   Re-stamp it shipped-and-superseded, or freeze it as a historical record?
+3. **What promotes provenance and maintenance out of vision** — and until something does,
+   does the product describe itself as **four-axis or six-axis**?
+
+Per the runbook's finding→remedy map, the remedy for `overtaken` is to *resolve the
+questions with the operator*, record dated answers in § Open Questions, and empty the
+frontmatter list. A sweep that answered them unilaterally would be doing exactly what the
+runbook forbids — stamping without a genuine reconcile. **The checkpoint therefore stays
+red, deliberately, and this paragraph is the reason.** The staleness checkpoint for this
+station is cleared by this cascade; the coherence one is not, and it is not this pass's
+to clear.
+
+**No FR text altered.**
+
+
+## Fold provenance (2026-09-17)
+
+PRD re-derived FR ← CAP for the one-chain warden fold. FR-1..FR-40 cite reminted `spec-pyforge-warden` CAP-n. No new FR minted; kernel FR set unchanged.
+
+## Currency reconciliation — 2026-09-20
+
+*Chain-currency sweep: `spec-pyforge-warden`'s `.memlog.md` moved 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile) while this document sat at 2026-09-17. Bookkeeping on an already-decomposed surface — no FR added or changed. `updated:` bumped to record that the check ran.*
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this PRD. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-27
+
+*Trigger: the chain-currency sweep's `spec→prd` edge — `spec-pyforge-warden`'s `.memlog.md` moved 2026-09-27 for
+CAP-23 (Story 13.1) while this PRD sat at 2026-09-20. Reconciled against the as-built `pyforge.warden.tea_advisory`
+and the installed TEA 1.27.2 CLI.*
+
+CAP-23 refines the TEA advisory lens recorded in § Currency reconciliation — 2026-09-07 (Epic 11 / Story 11.2): the
+advisory now asks TEA for `--base refs/remotes/origin/main`, not the short `origin/main`. TEA diffs `<base>...HEAD`,
+and git resolves a short name to a local branch or tag of that name first, so a stray `origin/main` at HEAD emptied
+the review. The lens stays inside the FR20/J9 verdict contract as written — a note, never a finding, a rung or the
+exit code — and the DW-FU-11-2 fail-closed posture is untouched. No FR text requires correction and none is minted:
+the lens is post-v1 advisory surface, recorded in these sections rather than FR1–FR40; Epic 13 / Story 13.1 carries it.
+
+## Currency reconciliation — 2026-09-28
+
+*Trigger: the chain-currency `spec→prd` edge — `spec-pyforge-warden` gained CAP-24, CAP-25 and CAP-26 on 2026-09-28
+(the station Dream's entry *the fix-PR actuator finishes the fix, SAST joins as a plugin, and Warden scans the
+enterprise fleet*, triaged from `archive/docs/intake/system_architecture_specification.md` under operator rulings of
+that date) while this PRD sat at 2026-09-27. Each FR is derived from its CAP (`one-chain-per-station`).*
+
+### The FR space: FR-41..FR-43 registered
+
+The v1 space is FR1–FR40 (written `FR-1`..`FR-40` since the 2026-09-17 fold). FR-41, FR-42 and FR-43 are the next free
+ids. Two older citations in this PRD's and `epics.md`'s Epic 9 history read `FR-43` / `FR-44` unqualified; they are
+**canopy's** (`canopy:FR-43` shared hook-spec registration, `canopy:FR-44` Warden owns the PR-gate hooks, steward's PRD),
+never this PRD's. The one in § Currency reconciliation — 2026-08-26 item 3 is qualified in place today, and `epics.md`
+Epic 9 and the spine's matching line are qualified in the same change, so no reader can take them for the ids below.
+The tracked story specs 9.1 and 9.2 (done) still say `FR-43` unqualified in their prose; their Binding sections cite the
+canopy chain.
+
+#### FR-41: The fix-PR actuator finishes the fix on the estate's repos ← CAP-24
+
+FR-40's upgrade PR stops being a pointer. For a `vuln:` finding the actuator resolves the target version — the lowest
+release the finding's OSV advisory names as fixed that the estate's own solver accepts — edits the declaring manifest,
+re-solves the lock, and opens a **draft** PR carrying that diff, on the estate's own repos (`rxm7706/local-recipes`,
+`rxm7706/python-foundry`). FR-40's promises hold unchanged: forge egress only in the actuator, strictly post-verdict,
+inert without the flag, never writing the scanned working tree, a failed step recorded in `actuation` and never a
+rung or an exit code.
+
+**Consequences (testable):**
+- Candidates are every `ECOSYSTEM`/`SEMVER` `fixed` event of the matching `affected[]` entry at or above the current
+  version, ascending; the first the solver accepts is the target (a fixture solver that refuses 1.2.3 yields 1.3.0).
+- `--fix-prs-dry-run` still opens no socket: it names the lowest candidate with the solver marked not-run.
+- The edit and the re-solve happen in a `mkdtemp` (`0700`) copy that is gone after success and failure; the scanned
+  tree is byte-identical after the run.
+- The diff arrives as one commit on a `warden/fix/` branch behind a draft PR, through the forge API's Git Data
+  endpoints; a repo outside the estate allowlist gets no manifest-edit PR.
+- pixi runs only on the real `--open-fix-prs` path, as a named engine subprocess under a tested version range.
+- Decomposes into **Epic 14** (Stories 14.1–14.3).
+
+#### FR-42: SAST joins as an optional plugin, and informs without publishing ← CAP-25
+
+Opengrep takes the SAST slot on the PR-gate hook book (canopy:FR-44's optional-plugin shape) with rules the estate owns,
+run offline. Its results are advisory notes, the TEA lens's shape: they inform the report's reader and never publish a
+verdict. CodeQL is rejected on its licence.
+
+**Consequences (testable):**
+- With `opengrep` enabled and an estate rule tripped, the report's `advisory` names the rule, path and line, and the
+  status and exit code equal the same run with the scanner disabled.
+- No rule is fetched over the network; an absent binary is omit-not-error (Story 9.3's test stays green).
+- The `ComplianceReport` stays at 1.1.0 (the `advisory` slot is already an open array).
+- Decomposes into **Epic 15** (Story 15.1, ledger `blocked` until mason Story 21.4 ships the opengrep package).
+
+#### FR-43: Warden scans the enterprise fleet, one verdict per repo ← CAP-26
+
+A fleet run inventories a GitHub Enterprise organisation and scans each repo with `warden scan`. This lifts two
+Non-goals by operator ruling (2026-09-28): *Fleet aggregation* (a fleet run is now Warden's, still one verdict per repo
+and never a fleet-level pass/fail) and *Non-Python osv-scanner ecosystems* (the security axis over osv-scanner's native
+lockfile parsers; container and artifact scanning stay out). Fixes on fleet repos wait in a proposal queue and open only
+on the operator's approval.
+
+**Consequences (testable):**
+- The run persists on `django-warden`'s `ComplianceJob` pattern (keys-not-blobs; a job status that is never a verdict —
+  no CLEAN or VULNERABLE second verdict); each per-repo row carries that repo's own `warden scan` report and exit code.
+- The inventory is published as a JSON export other stations read as data (Atlas, `spec-pyforge-atlas:CAP-61`).
+- Throwaway clones are removed on success and on failure.
+- A planned fleet fix is a queued proposal; no forge call is made until an approve action, after which that one proposal
+  opens as a draft PR through FR-41's path.
+- A fixture npm `package-lock.json` pinning a known-vulnerable version yields a `vuln:` finding, `hygiene`
+  `not-applicable`.
+- GHE credentials come from Steward (steward Story 75.1). Decomposes into **Epic 16** (Stories 16.1–16.4; 16.1 ledger
+  `blocked` on steward Story 75.1).
+
+**ONE FR space now FR-1..FR-43** (FR-44 = next free id; `canopy:FR-44` is a different space).
+
+**Content changed:** this section added (FR-41..FR-43 registered); the canopy citation in § Currency reconciliation —
+2026-08-26 item 3 qualified. No FR renumbered or removed. `updated:` bumped.

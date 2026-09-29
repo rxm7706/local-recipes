@@ -2,7 +2,7 @@
 title: 'Promotion workflow — proposal-then-confirm, team-voice rewrite (Story 1.3)'
 type: 'feature'
 created: '2026-07-30'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -95,3 +95,17 @@ baseline_revision: '491f3ec45b6a9db0a4d1b8311efde1c97ea3a96e'
 
 **Manual checks (if no CLI):**
 - From the repo root: `pixi run -e pyforge-scribe scribe capture --promote --source <tmp-dir-with-sample-entries>`, answer the confirm prompt, and inspect that only the proposed file + `MEMORY.md` changed.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `713091c4a5` (2026-08-07, "herald: Story 1.3 — fallback transport adapter (AgentSdkTransport)"); also `6a8c6c0a52` (2026-07-31, "sync: scribe 1.3 recovery + herald 1.3 amendment"); also `d68187f4b3` (2026-07-31, "scribe: recover Story 1.3 from a DANGLING commit — 1,102 lines that were one gc from gone "). Ledger row `1-3-promotion-workflow-proposal-then-confirm-team-voice-rewrite: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-1-3-fallback-transport-adapter.md`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/__init__.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/agent_sdk_transport.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/base.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py`, `src/shared/packages/pyforge-herald/tests/test_agent_sdk_transport.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `1-3-promotion-workflow-proposal-then-confirm-team-voice-rewrite: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

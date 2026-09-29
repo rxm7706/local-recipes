@@ -218,14 +218,10 @@ def _conda_component(
     range-declared dep dishonestly reported "no version declared")."""
     mapped = _resolve_conda_pypi_identity(name)
     if mapped is None:
-        return _unmapped_conda_component(
-            name, version, provenance, None, extraction_mode=extraction_mode
-        )
+        return _unmapped_conda_component(name, version, provenance, None, extraction_mode=extraction_mode)
     identity, confidence = mapped
     if confidence != TRUSTED_MATCH_CONFIDENCE:
-        return _unmapped_conda_component(
-            name, version, provenance, confidence, extraction_mode=extraction_mode
-        )
+        return _unmapped_conda_component(name, version, provenance, confidence, extraction_mode=extraction_mode)
     identity = PypiIdentity(name=identity.name, version=version)
     return Component(
         name=name,
@@ -246,9 +242,7 @@ def _conda_component(
     )
 
 
-def _pypi_component(
-    name: str, version: str | None, provenance: tuple[Provenance, ...]
-) -> Component:
+def _pypi_component(name: str, version: str | None, provenance: tuple[Provenance, ...]) -> Component:
     """Build a PyPI-ecosystem ``Component`` from a lockfile's own
     ``name``/``version`` (``identity_source=LOCK`` -- already
     PEP-503-canonical in practice)."""
@@ -290,9 +284,7 @@ def _pypi_component(
     )
 
 
-def _raw_malformed(
-    ecosystem: Ecosystem, raw_name: str, provenance: tuple[Provenance, ...]
-) -> Component:
+def _raw_malformed(ecosystem: Ecosystem, raw_name: str, provenance: tuple[Provenance, ...]) -> Component:
     """A row that could not be identified at all -- kept, marked, withheld;
     never dropped silently (mirrors ``extract/pyproject.py``'s invalid-
     requirement handling)."""
@@ -333,9 +325,7 @@ def _raw_malformed(
 # fell through to the bare-version path and a RANGE was silently classified
 # as a confident EXACT version, fixed 2026-07-16); `version` is everything
 # after, trimmed. No nested unbounded quantifiers (NFR-S5).
-_CONDA_SPEC_RE = re.compile(
-    r"^(?P<name>[^\s=<>!~\[]+)\s*(?P<op>~=|>=|<=|!=|==|=|>|<)?\s*(?P<version>.*)$"
-)
+_CONDA_SPEC_RE = re.compile(r"^(?P<name>[^\s=<>!~\[]+)\s*(?P<op>~=|>=|<=|!=|==|=|>|<)?\s*(?P<version>.*)$")
 
 # The strict shape an EXACT conda version value must have -- conda's own
 # version grammar (alphanumerics, `.`, `_`, epoch `!`, local `+`). Any
@@ -435,11 +425,7 @@ def classify_conda_specifier(
     # (fixed 2026-07-16). Anything else (a post-substitution garbage token,
     # a 3+-part spec) is conservatively withheld.
     parts = text.split()
-    if (
-        len(parts) == 2
-        and _EXACT_VERSION_RE.match(parts[0])
-        and _BUILD_STRING_RE.match(parts[1])
-    ):
+    if len(parts) == 2 and _EXACT_VERSION_RE.match(parts[0]) and _BUILD_STRING_RE.match(parts[1]):
         return (parts[0], None)
     if _EXACT_VERSION_RE.match(text):
         return (text, None)
@@ -466,9 +452,7 @@ def _exact_pep508_pin(requirement: Requirement) -> str | None:
     return None
 
 
-def pep508_pypi_component(
-    raw: str, provenance: tuple[Provenance, ...]
-) -> Component:
+def pep508_pypi_component(raw: str, provenance: tuple[Provenance, ...]) -> Component:
     """Build a PyPI-ecosystem ``Component`` from a PEP 508 requirement
     STRING -- ``identity_source=NATIVE``, mirroring
     ``pyproject.py::PyprojectExtractor._component``'s shape exactly (a
@@ -481,11 +465,7 @@ def pep508_pypi_component(
     except InvalidRequirement:
         return _raw_malformed(Ecosystem.PYPI, raw, provenance)
     identity_name = canonical_name(Ecosystem.PYPI, requirement.name)
-    extraction_mode = (
-        ExtractionMode.UNION_MARKED
-        if requirement.marker is not None
-        else ExtractionMode.PARSED
-    )
+    extraction_mode = ExtractionMode.UNION_MARKED if requirement.marker is not None else ExtractionMode.PARSED
     version = _exact_pep508_pin(requirement)
     if version is not None:
         return Component(
@@ -505,11 +485,7 @@ def pep508_pypi_component(
             currency_covered=True,
             indeterminate_reason=None,
         )
-    reason = (
-        WithholdReason.RANGE_ONLY
-        if len(requirement.specifier) > 0
-        else WithholdReason.NO_VERSION
-    )
+    reason = WithholdReason.RANGE_ONLY if len(requirement.specifier) > 0 else WithholdReason.NO_VERSION
     return Component(
         name=requirement.name,
         version=None,
@@ -547,21 +523,17 @@ def read_bounded_text(
     raw = manifest_path.read_bytes()
     if len(raw) > max_bytes:
         raise UnparsableManifestError(
-            f"unparsable manifest {manifest.path}: exceeds the "
-            f"{max_bytes}-byte size cap (NFR-S5)"
+            f"unparsable manifest {manifest.path}: exceeds the {max_bytes}-byte size cap (NFR-S5)"
         )
     for line in raw.split(b"\n"):
         if len(line) > max_line_bytes:
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: a line exceeds the "
-                f"{max_line_bytes}-byte length cap (NFR-S5)"
+                f"unparsable manifest {manifest.path}: a line exceeds the {max_line_bytes}-byte length cap (NFR-S5)"
             )
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError as exc:
-        raise UnparsableManifestError(
-            f"unparsable manifest {manifest.path}: {exc}"
-        ) from exc
+        raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {exc}") from exc
     # Normalize CRLF -> LF (review finding, 2026-07-17): recipe_v1.py's and
     # meta_v0.py's brace-neutralization regexes are `$`-anchored per split
     # line -- a CRLF-authored manifest would otherwise leave a literal `\r`
@@ -594,19 +566,14 @@ class _StrictSafeLoader(yaml.SafeLoader):
     owns any richer branch-union semantics). An anchor DEFINITION with no
     alias use is harmless and stays legal."""
 
-    def compose_node(
-        self, parent: yaml.nodes.Node | None, index: int
-    ) -> yaml.nodes.Node | None:
+    def compose_node(self, parent: yaml.nodes.Node | None, index: int) -> yaml.nodes.Node | None:
         if self.check_event(yaml.events.AliasEvent):
             raise yaml.YAMLError(
-                "YAML alias expansion is not allowed in a scanned manifest "
-                "(NFR-S5 amplification guard)"
+                "YAML alias expansion is not allowed in a scanned manifest (NFR-S5 amplification guard)"
             )
         return super().compose_node(parent, index)
 
-    def construct_mapping(
-        self, node: yaml.nodes.MappingNode, deep: bool = False
-    ) -> dict[Hashable, object]:
+    def construct_mapping(self, node: yaml.nodes.MappingNode, deep: bool = False) -> dict[Hashable, object]:
         seen: set[object] = set()
         for key_node, _value_node in node.value:
             key = self.construct_object(key_node, deep=True)
@@ -616,8 +583,7 @@ class _StrictSafeLoader(yaml.SafeLoader):
                 continue  # unhashable key: the base constructor raises its own
             if duplicate:
                 raise yaml.YAMLError(
-                    f"duplicate mapping key {key!r} — YAML last-wins semantics "
-                    "would silently drop the earlier subtree"
+                    f"duplicate mapping key {key!r} — YAML last-wins semantics would silently drop the earlier subtree"
                 )
             seen.add(key)
         return super().construct_mapping(node, deep)
@@ -664,15 +630,12 @@ def apply_union_tag(component: Component, section_suffix: str) -> Component:
     way (a degraded leaf inside a conditional branch is still THAT
     branch's leaf, never silently unattributed)."""
     tagged_provenance = tuple(
-        Provenance(manifest=p.manifest, section=p.section + section_suffix)
-        for p in component.provenance
+        Provenance(manifest=p.manifest, section=p.section + section_suffix) for p in component.provenance
     )
     extraction_mode = component.extraction_mode
     if extraction_mode is ExtractionMode.PARSED:
         extraction_mode = ExtractionMode.UNION_MARKED
-    return replace(
-        component, provenance=tagged_provenance, extraction_mode=extraction_mode
-    )
+    return replace(component, provenance=tagged_provenance, extraction_mode=extraction_mode)
 
 
 def truncate_for_name(text: str, *, limit: int = 200) -> str:

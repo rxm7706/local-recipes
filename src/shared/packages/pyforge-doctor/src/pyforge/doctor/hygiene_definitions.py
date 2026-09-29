@@ -61,10 +61,7 @@ def is_dead_test_scaffolding(test_relpaths: Iterable[str]) -> bool:
     is NOT an instance of this class, regardless of how much other scaffold
     surrounds it.
     """
-    return not any(
-        fnmatch.fnmatch(PurePosixPath(relpath).name, "test_*.py")
-        for relpath in test_relpaths
-    )
+    return not any(fnmatch.fnmatch(PurePosixPath(relpath).name, "test_*.py") for relpath in test_relpaths)
 
 
 def is_hollow_sprint_status(parsed_yaml: dict | None) -> bool:
@@ -131,23 +128,25 @@ def is_stale_dream_status(dream_status: str, all_station_stories_done: bool) -> 
 #: fixed home, findable regardless of inbound reference -- see
 #: `is_orphan_file`. Grounded in `ls _bmad-output/projects/pyforge-doctor/
 #: planning-artifacts/` (2026-08-15) plus the fleet-wide `PROJECTS.md`.
-_CONVENTIONAL_FILENAMES = frozenset({
-    "README.md",
-    "PROJECTS.md",
-    "epics.md",
-    # "epics-with-stories.md" removed 2026-09-07 with the artifact itself (marshal
-    # Story 32.4, spec-fleet-consistency-standard CAP-3): BMAD 6.12 produces it
-    # nowhere, and a line-diff audit of all eight stations confirmed nothing
-    # normative lived only there. A file by that name reappearing is now correctly
-    # an orphan, not a conventional planning artifact.
-    "test-architecture.md",
-    "test-design-architecture.md",
-    "test-design-qa.md",
-    "test-design-progress-system.md",
-    "sprint-status-ledger.yaml",
-    "deferred-work-ledger.md",
-    "marshal-policy.toml",
-})
+_CONVENTIONAL_FILENAMES = frozenset(
+    {
+        "README.md",
+        "PROJECTS.md",
+        "epics.md",
+        # "epics-with-stories.md" removed 2026-09-07 with the artifact itself (marshal
+        # Story 32.4, spec-fleet-consistency-standard CAP-3): BMAD 6.12 produces it
+        # nowhere, and a line-diff audit of all eight stations confirmed nothing
+        # normative lived only there. A file by that name reappearing is now correctly
+        # an orphan, not a conventional planning artifact.
+        "test-architecture.md",
+        "test-design-architecture.md",
+        "test-design-qa.md",
+        "test-design-progress-system.md",
+        "sprint-status-ledger.yaml",
+        "deferred-work-ledger.md",
+        "marshal-policy.toml",
+    }
+)
 
 #: Glob-shaped conventional filenames -- a dated/keyed family, not one fixed
 #: name -- see `is_orphan_file`.
@@ -158,10 +157,18 @@ _CONVENTIONAL_FILENAME_GLOBS = (
 
 #: Directory names whose CONTENTS are conventional regardless of filename --
 #: see `is_orphan_file`.
-_CONVENTIONAL_DIRECTORIES = frozenset({
-    "prds", "architecture", "briefs", "research", "retros", "specs",
-    "test-design", "reviews",
-})
+_CONVENTIONAL_DIRECTORIES = frozenset(
+    {
+        "prds",
+        "architecture",
+        "briefs",
+        "research",
+        "retros",
+        "specs",
+        "test-design",
+        "reviews",
+    }
+)
 
 
 def is_orphan_file(relpath: str, has_inbound_references: bool) -> bool:
@@ -201,9 +208,6 @@ def is_orphan_file(relpath: str, has_inbound_references: bool) -> bool:
     path = PurePosixPath(relpath)
     if path.name in _CONVENTIONAL_FILENAMES:
         return False
-    if any(
-        fnmatch.fnmatch(path.name, pattern)
-        for pattern in _CONVENTIONAL_FILENAME_GLOBS
-    ):
+    if any(fnmatch.fnmatch(path.name, pattern) for pattern in _CONVENTIONAL_FILENAME_GLOBS):
         return False
     return not any(part in _CONVENTIONAL_DIRECTORIES for part in path.parts[:-1])

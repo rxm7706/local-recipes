@@ -48,6 +48,8 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
+from collections.abc import Callable
 from pathlib import Path
 
 from pyforge.core.landing_evidence import (
@@ -60,8 +62,11 @@ from pyforge.core.landing_evidence import (
     parse_templated_merge_subject,
 )
 
+from ..bare_merge import DiffCache, attribute_bare_merge, known_story_keys
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
+from ..refs import MAIN
+from ..rekey import load_rekey_maps, reverse_map
 
 __all__ = ("gather", "gather_story_status")
 
@@ -82,9 +87,38 @@ TERMINAL = frozenset({"done"})
 SPRINT_STATUS_GLOB = "_bmad-output/projects/pyforge-*/implementation-artifacts/sprint-status.yaml"
 DONE_RE = re.compile(r"^  ([a-z0-9][a-z0-9-]*): done$", re.MULTILINE)
 NOT_LANDED = frozenset({"deferred", "escalated", "abandoned"})
-# AD-24 default template; shared with ``pyforge.core.landing_evidence`` conformance.
-_MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"
+# Repo-default template (Story 50.4), shared with
+# ``pyforge.core.landing_evidence`` conformance. Carries a ``{slug}`` token,
+# so ``parse_templated_merge_subject`` self-scopes a subject rendered from it
+# to the project that rendered it -- ``_project_merge_subject_template``
+# below is the per-project override this module reads FIRST (Story 27.1);
+# this constant is only the fallback for a project whose policy declares
+# none.
+_MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
+_MARSHAL_POLICY_SUFFIX = "planning-artifacts/marshal-policy.toml"
 _FEED_KEY_RE = re.compile(r"^(\d+)-(\d+)([a-z])?-")
+
+
+def _project_merge_subject_template(target: Path, project_slug: str) -> str:
+    """``project_slug``'s own ``merge_subject_template``, read directly from
+    its tracked ``marshal-policy.toml`` as TOML -- never through
+    ``pyforge.marshal`` (this module's independence rule, see the module
+    docstring). Degrades to the repo default when the policy file is
+    absent, unreadable, not valid TOML, or does not declare the key --
+    "degrades, never crashes," and Story 27.1's own "policy declares no
+    template -> default honoured" row. Duplicated in
+    ``sources/ledger.py`` rather than shared via a cross-import, mirroring
+    this module's own ``_git``/``_parse_statuses`` precedent of small,
+    per-file self-contained helpers over sibling-module coupling.
+    """
+    path = target / PROJECTS_REL / project_slug / _MARSHAL_POLICY_SUFFIX
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except OSError, UnicodeDecodeError, tomllib.TOMLDecodeError:
+        return _MERGE_SUBJECT_TEMPLATE
+    value = data.get("merge_subject_template")
+    return value if isinstance(value, str) and value else _MERGE_SUBJECT_TEMPLATE
+
 
 # GitHub PR-merge subject shape retained only to extract the ``branch`` token
 # for ``land/<station>-<epic>-<seq>`` / ``bmad-loop/<run>/<key>`` recovery
@@ -114,7 +148,7 @@ def _feed_key_to_ref(key: str) -> StoryKeyRef | None:
 
 
 def _loose_subject_key_match(
-    subjects: tuple[str, ...] | list[tuple[str, str]],
+    subjects: tuple[tuple[str, str], ...] | list[tuple[str, str]],
     *,
     station: str,
     key_ref: StoryKeyRef,
@@ -145,9 +179,7 @@ def _loose_subject_key_match(
     # SUFFIXED sibling key "11-1a" (split-story convention, StoryKeyRef.
     # suffix), and a search for plain "11-1" would equally accept a subject
     # that actually names "11.1a" -- two genuinely different stories.
-    key_re = re.compile(
-        rf"(?<!\d){epic}[.\-]{seq}{re.escape(suffix)}(?![\da-zA-Z])"
-    )
+    key_re = re.compile(rf"(?<!\d){epic}[.\-]{seq}{re.escape(suffix)}(?![\da-zA-Z])")
     for item in subjects:
         subject = item[1] if isinstance(item, tuple) else item
         if station_re.search(subject) and key_re.search(subject):
@@ -169,46 +201,124 @@ def _branch_name_fallback_key(subject: str, project_slug: str) -> StoryKeyRef | 
 
 
 def _keys_from_merge_subjects(
-    subjects: tuple[str, ...],
+    target: Path,
+    commits: tuple[tuple[str, str], ...],
     *,
     project_slug: str,
+    diff_cache: DiffCache,
+    unreadable_diff_shas: list[tuple[str, str]] | None = None,
 ) -> frozenset[StoryKeyRef]:
-    """Merge-shaped subjects on any ref (route 2) -- excludes story-direct."""
+    """Merge-shaped subjects on any ref (route 2) -- excludes story-direct.
+
+    The templated shape (tried first) uses ``project_slug``'s own override
+    when its policy declares one (Story 27.1), else the ``{slug}``-scoped
+    repo default (Story 50.4) -- either way ``parse_templated_merge_subject``
+    self-scopes the read to ``project_slug``, so a sibling station's landing
+    rendered from the textually identical default template still refuses.
+
+    Story 27.5 (CAP-80 amended): once every scoped shape above misses, the
+    AD-24 bare legacy form (``Merge {key} into main``) is tried once more --
+    attributed to ``project_slug`` only when ``sha``'s first-parent diff
+    touches this station's own paths AND this station's own tracked ledger
+    already knows the extracted key (``bare_merge.attribute_bare_merge``,
+    shared verbatim with ``sources/ledger.py::_merged_ids_for_project``).
+    Replaces Story 27.3's reverted ledger-membership-alone gate, which
+    reopened the cross-station collision whenever two stations share a
+    numeric key -- the common case under one shared grammar.
+
+    Before Story 50.4 the repo default was the bare, station-blind
+    ``Merge {key} into main``, so a project with NO override of its own had
+    the templated parser skipped entirely (trying it against that default
+    matched every OTHER station's bare-form merge too -- this module's own
+    pre-27.5 defect: unconditional and unscoped). The ``{slug}`` default
+    removes that ambiguity at the source, so the parser now runs for every
+    project; a bare legacy subject can never match a ``{slug}`` template and
+    so always reaches the corroborated fallback below. ``commits`` therefore
+    carries the sha alongside each subject (routed from ``git log
+    --format=%H%x00%s``), unlike this function's pre-27.5 subject-only
+    shape.
+    """
+    template = _project_merge_subject_template(target, project_slug)
+    known_keys = known_story_keys(target, project_slug)
     keys: set[StoryKeyRef] = set()
-    for subject in subjects:
-        for parser in (
-            lambda s: parse_templated_merge_subject(s, _MERGE_SUBJECT_TEMPLATE),
-            lambda s: parse_github_pr_merge_subject(s, project_slug),
-            lambda s: parse_bmadloop_merge_subject(s, project_slug),
-            lambda s: parse_recovery_commit_subject(s, project_slug),
-            lambda s: _branch_name_fallback_key(s, project_slug),
-        ):
+    for sha, subject in commits:
+        parsers: list[Callable[[str], StoryKeyRef | None]] = []
+        parsers.append(lambda s: parse_templated_merge_subject(s, template, project_slug))
+        parsers.extend(
+            (
+                lambda s: parse_github_pr_merge_subject(s, project_slug),
+                lambda s: parse_bmadloop_merge_subject(s, project_slug),
+                lambda s: parse_recovery_commit_subject(s, project_slug),
+                lambda s: _branch_name_fallback_key(s, project_slug),
+            )
+        )
+        for parser in parsers:
             key = parser(subject)
             if key is not None:
                 keys.add(key)
                 break
+        else:
+            attribution = attribute_bare_merge(
+                subject,
+                sha,
+                target=target,
+                project_slug=project_slug,
+                known_keys=known_keys,
+                cache=diff_cache,
+            )
+            if attribution.key is not None:
+                keys.add(attribution.key)
+            elif attribution.diff_unreadable_sha is not None and unreadable_diff_shas is not None:
+                unreadable_diff_shas.append((project_slug, attribution.diff_unreadable_sha))
     return frozenset(keys)
 
 
 def _keys_from_main_commits(
+    target: Path,
     commits: list[tuple[str, str]],
     *,
     project_slug: str,
+    diff_cache: DiffCache,
+    unreadable_diff_shas: list[tuple[str, str]] | None = None,
 ) -> frozenset[StoryKeyRef]:
+    template = _project_merge_subject_template(target, project_slug)
+    known_keys = known_story_keys(target, project_slug)
     keys: set[StoryKeyRef] = set()
     for sha, subject in commits:
         match = classify_commit(
             sha,
             subject,
-            template=_MERGE_SUBJECT_TEMPLATE,
+            template=template,
             project_slug=project_slug,
         )
+        # Every shape `classify_commit` recognizes is trusted unconditionally:
+        # the templated shape is self-scoped by `{slug}` (Story 50.4), so a
+        # project with no override of its own can no longer match a sibling's
+        # subject through the repo default it was handed (the pre-50.4 guard
+        # that lived here -- see `_keys_from_merge_subjects`'s own docstring).
         if match is not None:
             keys.add(match.key)
             continue
         fallback = _branch_name_fallback_key(subject, project_slug)
         if fallback is not None:
             keys.add(fallback)
+            continue
+        # Story 27.5 (CAP-80 amended): same corroborated bare-form fallback
+        # as `_keys_from_merge_subjects` above, tried once the strict
+        # grammar and the branch-name fallback both miss -- see that
+        # function's own docstring for the full rationale.
+        attribution = attribute_bare_merge(
+            subject,
+            sha,
+            target=target,
+            project_slug=project_slug,
+            known_keys=known_keys,
+            cache=diff_cache,
+        )
+        if attribution.key is not None:
+            keys.add(attribution.key)
+        elif attribution.diff_unreadable_sha is not None and unreadable_diff_shas is not None:
+            unreadable_diff_shas.append((project_slug, attribution.diff_unreadable_sha))
     return frozenset(keys)
 
 
@@ -239,8 +349,24 @@ def _git(target: Path, *args: str, timeout: float | None = None) -> str | None:
     kwargs = {} if timeout is None else {"timeout": timeout}
     try:
         return run_git(target, list(args), **kwargs)
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
+
+
+def _parse_sha_subject_lines(raw: str) -> list[tuple[str, str]]:
+    """``git log --format=%H%x00%s`` stdout -> ``(sha, subject)`` pairs.
+
+    Shared by both Route 2's (``--all``) and Route 3's (``main``) fetches --
+    identical NUL-delimited shape, so the split logic lives once.
+    """
+    out: list[tuple[str, str]] = []
+    for line in raw.splitlines():
+        if not line:
+            continue
+        sha, _, subject = line.partition("\0")
+        if sha and subject:
+            out.append((sha, subject))
+    return out
 
 
 def _parse_statuses(text: str) -> dict[str, str]:
@@ -274,8 +400,7 @@ def _ledgers(target: Path) -> list[Path]:
     if not projects.is_dir():
         return []
     try:
-        return sorted(p / LEDGER_REL for p in projects.iterdir()
-                      if (p / LEDGER_REL).is_file())
+        return sorted(p / LEDGER_REL for p in projects.iterdir() if (p / LEDGER_REL).is_file())
     except OSError:
         return []
 
@@ -297,28 +422,32 @@ def gather(target: Path) -> tuple[Finding, ...]:
     ledgers = _ledgers(target)
 
     if not ledgers:
-        return (Finding(
-            source=Source.MARSHAL_DURABILITY,
-            check="ledger-inventory",
-            status=DoctorStatus.WARN,
-            message=(
-                f"no tracked sprint ledger found under {PROJECTS_REL}/*/{LEDGER_REL} "
-                f"— Marshal's durability guarantee cannot be evaluated here"
+        return (
+            Finding(
+                source=Source.MARSHAL_DURABILITY,
+                check="ledger-inventory",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"no tracked sprint ledger found under {PROJECTS_REL}/*/{LEDGER_REL} "
+                    f"— Marshal's durability guarantee cannot be evaluated here"
+                ),
+                evidence={"target": str(target), "ledgers": 0},
             ),
-            evidence={"target": str(target), "ledgers": 0},
-        ),)
+        )
 
     if _git(target, "rev-parse", "--git-dir") is None:
-        return (Finding(
-            source=Source.MARSHAL_DURABILITY,
-            check="ledger-regression",
-            status=DoctorStatus.WARN,
-            message=(
-                f"{len(ledgers)} tracked ledger(s) present but git is unavailable or "
-                f"{target} is not a repository — regression cannot be evaluated"
+        return (
+            Finding(
+                source=Source.MARSHAL_DURABILITY,
+                check="ledger-regression",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{len(ledgers)} tracked ledger(s) present but git is unavailable or "
+                    f"{target} is not a repository — regression cannot be evaluated"
+                ),
+                evidence={"target": str(target), "ledgers": len(ledgers)},
             ),
-            evidence={"target": str(target), "ledgers": len(ledgers)},
-        ),)
+        )
 
     total_lost = 0
     for ledger in ledgers:
@@ -336,86 +465,108 @@ def gather(target: Path) -> tuple[Finding, ...]:
             # nothing.
             listed = _git(target, "ls-tree", "--name-only", "HEAD", "--", rel)
             if listed and listed.strip():
-                findings.append(Finding(
+                findings.append(
+                    Finding(
+                        source=Source.MARSHAL_DURABILITY,
+                        check="ledger-unreadable",
+                        status=DoctorStatus.WARN,
+                        message=(
+                            f"{project}: sprint ledger is committed but its blob at HEAD "
+                            f"could not be read — regression cannot be evaluated"
+                        ),
+                        evidence={"project": project, "path": rel},
+                    )
+                )
+                continue
+            findings.append(
+                Finding(
                     source=Source.MARSHAL_DURABILITY,
-                    check="ledger-unreadable",
+                    check="ledger-untracked",
                     status=DoctorStatus.WARN,
                     message=(
-                        f"{project}: sprint ledger is committed but its blob at HEAD "
-                        f"could not be read — regression cannot be evaluated"
+                        f"{project}: sprint ledger exists on disk but is not committed — "
+                        f"CI and every fresh clone are blind to its completions"
                     ),
                     evidence={"project": project, "path": rel},
-                ))
-                continue
-            findings.append(Finding(
-                source=Source.MARSHAL_DURABILITY,
-                check="ledger-untracked",
-                status=DoctorStatus.WARN,
-                message=(
-                    f"{project}: sprint ledger exists on disk but is not committed — "
-                    f"CI and every fresh clone are blind to its completions"
-                ),
-                evidence={"project": project, "path": rel},
-            ))
+                )
+            )
             continue
 
         try:
             working = ledger.read_text(encoding="utf-8")
         except OSError as exc:
-            findings.append(Finding(
-                source=Source.MARSHAL_DURABILITY,
-                check="ledger-unreadable",
-                status=DoctorStatus.WARN,
-                message=f"{project}: sprint ledger could not be read ({exc})",
-                evidence={"project": project, "path": rel},
-            ))
+            findings.append(
+                Finding(
+                    source=Source.MARSHAL_DURABILITY,
+                    check="ledger-unreadable",
+                    status=DoctorStatus.WARN,
+                    message=f"{project}: sprint ledger could not be read ({exc})",
+                    evidence={"project": project, "path": rel},
+                )
+            )
             continue
 
         before, after = _parse_statuses(committed), _parse_statuses(working)
-        lost = [
-            (k, v) for k, v in sorted(before.items())
-            if v in TERMINAL and after.get(k) not in TERMINAL
-        ]
+        lost = [(k, v) for k, v in sorted(before.items()) if v in TERMINAL and after.get(k) not in TERMINAL]
         if lost:
             total_lost += len(lost)
-            findings.append(Finding(
-                source=Source.MARSHAL_DURABILITY,
-                check="ledger-regression",
-                status=DoctorStatus.FAIL,
-                message=(
-                    f"{project}: {len(lost)} story(ies) un-finished relative to the "
-                    f"committed ledger — a completion that was durable is not any more"
-                ),
-                evidence={
-                    "project": project, "path": rel, "count": len(lost),
-                    "keys": [k for k, _ in lost[:20]],
-                    "remedy": f"git checkout HEAD -- {rel}",
-                },
-            ))
+            findings.append(
+                Finding(
+                    source=Source.MARSHAL_DURABILITY,
+                    check="ledger-regression",
+                    status=DoctorStatus.FAIL,
+                    message=(
+                        f"{project}: {len(lost)} story(ies) un-finished relative to the "
+                        f"committed ledger — a completion that was durable is not any more"
+                    ),
+                    evidence={
+                        "project": project,
+                        "path": rel,
+                        "count": len(lost),
+                        "keys": [k for k, _ in lost[:20]],
+                        "remedy": f"git checkout HEAD -- {rel}",
+                    },
+                )
+            )
 
     if not findings:
-        findings.append(Finding(
-            source=Source.MARSHAL_DURABILITY,
-            check="ledger-regression",
-            status=DoctorStatus.OK,
-            message=(
-                f"{len(ledgers)} tracked ledger(s) hold every completion they held at "
-                f"HEAD — no story un-finished"
-            ),
-            evidence={"ledgers": len(ledgers), "regressed": 0},
-        ))
+        findings.append(
+            Finding(
+                source=Source.MARSHAL_DURABILITY,
+                check="ledger-regression",
+                status=DoctorStatus.OK,
+                message=(
+                    f"{len(ledgers)} tracked ledger(s) hold every completion they held at HEAD — no story un-finished"
+                ),
+                evidence={"ledgers": len(ledgers), "regressed": 0},
+            )
+        )
     elif total_lost:
-        findings.append(Finding(
-            source=Source.MARSHAL_DURABILITY,
-            check="ledger-regression-total",
-            status=DoctorStatus.FAIL,
-            message=(
-                f"{total_lost} completion(s) lost across "
-                f"{sum(1 for f in findings if f.check == 'ledger-regression')} ledger(s)"
-            ),
-            evidence={"lost": total_lost, "ledgers": len(ledgers)},
-        ))
+        findings.append(
+            Finding(
+                source=Source.MARSHAL_DURABILITY,
+                check="ledger-regression-total",
+                status=DoctorStatus.FAIL,
+                message=(
+                    f"{total_lost} completion(s) lost across "
+                    f"{sum(1 for f in findings if f.check == 'ledger-regression')} ledger(s)"
+                ),
+                evidence={"lost": total_lost, "ledgers": len(ledgers)},
+            )
+        )
     return tuple(findings)
+
+
+def _published_story_tasks(slug: str) -> dict[str, dict] | None:
+    """Published-plane task records when reachable; None triggers filesystem fallback."""
+    try:
+        from pyforge.core.published_loop import fetch_story_tasks
+    except ImportError:
+        return None
+    try:
+        return fetch_story_tasks(slug)
+    except Exception:  # noqa: BLE001 -- degrade to loop-home fallback
+        return None
 
 
 def _harness_tasks(
@@ -454,10 +605,14 @@ def _harness_tasks(
     a missing or corrupt ``state.json`` is silently skipped rather than
     raising, mirroring the script's own broad try/except-and-continue.
     """
+    published = _published_story_tasks(slug)
+    if published is not None:
+        return published
     out: dict[str, dict] = {}
     if loop_root is None:
         return out
     home = loop_root / f"pyforge-{slug}"
+    # CAP-4: loop-home FILE read -- story-status fallback when published plane is unreachable
     for state in sorted(home.glob(".bmad-loop/runs/*/state.json")):
         # Only the READ+PARSE is guarded by try/except: an unreadable file or
         # invalid JSON makes the whole record unusable, so that file is skipped
@@ -498,9 +653,7 @@ def _harness_tasks(
     return out
 
 
-def gather_story_status(
-    target: Path, *, loop_root: Path | None = None
-) -> tuple[Finding, ...]:
+def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple[Finding, ...]:
     """Judge whether every ``done`` story in every station's Tier-3 sprint
     feed is backed by real landing evidence -- the library form of
     ``scripts/story_status_check.py``'s own ``main()``, minus the print/exit
@@ -541,11 +694,19 @@ def gather_story_status(
     """
     if loop_root is None:
         try:
+            # CAP-4: loop-home FILE read -- default harness root when published plane unavailable
             loop_root = Path.home() / ".bmad-loops"
         except RuntimeError:
             loop_root = None  # no resolvable home -- no harness records to read
 
     feeds = sorted(target.glob(SPRINT_STATUS_GLOB))
+    # Story 25.3 (spec-one-chain-per-station CAP-3(g)): a station fold
+    # renumbers every story key and ships planning-artifacts/rekey-<date>.md.
+    # Landing evidence (harness record, merge subject, main commit) was
+    # written under the OLD spelling, so a renumbered `done` story is
+    # confirmed by evidence under any earlier spelling the maps record.
+    # Tracked maps are durable provenance: read every one, always.
+    rekey_maps = load_rekey_maps(target)
 
     # Two of the three landing-evidence routes are git queries. With git absent
     # or `target` not a repository, both fail closed -- and a story would fall
@@ -574,10 +735,19 @@ def gather_story_status(
     # key in every feed. Computed once, lazily -- a full history walk per
     # candidate key would be O(keys x history) shell-outs against Doctor's
     # NFR-4 wall-clock budget.
-    all_ref_subjects: tuple[str, ...] | None = None
+    all_ref_commits: tuple[tuple[str, str], ...] | None = None
     all_ref_subjects_unavailable = False
     main_commits: list[tuple[str, str]] | None = None
     main_commits_unavailable = False
+    # Story 27.5: the bare-form fallback's `git diff` per merge sha, shared
+    # across EVERY key/route this run audits (a given sha's touched station
+    # paths do not depend on which key or project is asking) -- see
+    # ``bare_merge.DiffCache``'s own docstring.
+    diff_cache: DiffCache = {}
+    # (project_slug, sha) pairs -- carries the project so the standalone WARN
+    # Finding below can name it, mirroring ``sources/ledger.py``'s own
+    # per-sha WARN Finding shape.
+    unreadable_diff_shas: list[tuple[str, str]] = []
 
     false_greens: list[dict] = []
     audited = 0
@@ -593,12 +763,11 @@ def gather_story_status(
         # WITHIN a station, so a global set would let one station's malformed
         # `1-1-foo` be charged to another station's healthy `1-1-foo`.
         station_skipped: set[str] = set()
-        tasks = _harness_tasks(
-            loop_root, slug, skipped=station_skipped, unreadable=unreadable_run_files
-        )
+        tasks = _harness_tasks(loop_root, slug, skipped=station_skipped, unreadable=unreadable_run_files)
+        earlier_spellings = reverse_map(rekey_maps.get(f"pyforge-{slug}", []))
         try:
             text = feed.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             # This drops a whole station from the audit. The OK Finding must
             # not then read as a confident green over a station it never
             # opened, so the caveat below names it. (Escalating to WARN and
@@ -610,7 +779,8 @@ def gather_story_status(
 
         for key in DONE_RE.findall(text):
             audited += 1
-            task = tasks.get(key)
+            aliases = (key, *earlier_spellings.get(key, ()))
+            task = next((tasks[a] for a in aliases if a in tasks), None)
             if task is None:
                 # Two different absences, and the caveat must not merge them: a
                 # story whose record was DROPPED as malformed was not "never
@@ -624,69 +794,93 @@ def gather_story_status(
                 continue  # harness recorded a commit
 
             key_ref = _feed_key_to_ref(key)
+            key_refs = tuple(r for r in (_feed_key_to_ref(a) for a in aliases) if r is not None)
             project_slug = f"pyforge-{slug}"
 
             # Route 2: commit subjects on any ref, via shared landing-evidence
             # grammar (replaces the private ``/{key} into`` grep dialect).
-            if all_ref_subjects is None and not all_ref_subjects_unavailable:
+            # Story 27.5: carries the sha alongside each subject (was
+            # subject-only pre-27.5) -- the bare-form fallback needs it.
+            if all_ref_commits is None and not all_ref_subjects_unavailable:
                 raw = _git(
-                    target, "log", "--format=%s", "--all", timeout=60.0,
+                    target,
+                    "log",
+                    "--format=%H%x00%s",
+                    "--all",
+                    timeout=60.0,
                 )
                 if raw is None:
                     all_ref_subjects_unavailable = True
                 else:
-                    all_ref_subjects = tuple(raw.splitlines())
+                    all_ref_commits = tuple(_parse_sha_subject_lines(raw))
             if all_ref_subjects_unavailable:
                 inconclusive += 1
                 continue
-            if (
-                key_ref is not None
-                and all_ref_subjects is not None
-                and key_ref
-                in _keys_from_merge_subjects(
-                    all_ref_subjects, project_slug=project_slug
+            if key_refs and all_ref_commits is not None:
+                merged_keys = _keys_from_merge_subjects(
+                    target,
+                    all_ref_commits,
+                    project_slug=project_slug,
+                    diff_cache=diff_cache,
+                    unreadable_diff_shas=unreadable_diff_shas,
                 )
-            ):
-                continue  # merge evidence found
+                if any(r in merged_keys for r in key_refs):
+                    continue  # merge evidence found (under any spelling)
 
             # Route 3: commits reachable from ``main``, via the same grammar
             # (replaces the private ``<slug>`` + ``story <e>.<s>`` subject
-            # needle dialect).
+            # needle dialect). ``main`` by its full refname (Story 31.1): a
+            # tag named ``main`` would otherwise stand in for the branch.
             if key_ref is not None:
                 if main_commits is None and not main_commits_unavailable:
                     raw = _git(
-                        target, "log", "--format=%H%x00%s", "main", timeout=60.0,
+                        target,
+                        "log",
+                        "--format=%H%x00%s",
+                        MAIN,
+                        timeout=60.0,
                     )
                     if raw is None:
                         main_commits_unavailable = True
                     else:
-                        main_commits = []
-                        for line in raw.splitlines():
-                            if not line:
-                                continue
-                            sha, _, subject = line.partition("\0")
-                            if sha and subject:
-                                main_commits.append((sha, subject))
+                        main_commits = _parse_sha_subject_lines(raw)
                 if main_commits_unavailable:
                     inconclusive += 1
                     continue
-                if main_commits is not None and key_ref in _keys_from_main_commits(
-                    main_commits, project_slug=project_slug
-                ):
-                    continue  # hand-landed or recovery; grammar recognized
+                if main_commits is not None:
+                    main_keys = _keys_from_main_commits(
+                        target,
+                        main_commits,
+                        project_slug=project_slug,
+                        diff_cache=diff_cache,
+                        unreadable_diff_shas=unreadable_diff_shas,
+                    )
+                    if any(r in main_keys for r in key_refs):
+                        continue  # hand-landed or recovery; grammar recognized
 
                 # Route 4: loose station+key co-occurrence, last resort (see
                 # `_loose_subject_key_match`'s own docstring for why the
                 # strict grammar above still misses real hand-authored
                 # landings). Checked against both subject pools already
                 # fetched above -- no new git call.
-                if (
-                    (all_ref_subjects is not None and _loose_subject_key_match(
-                        all_ref_subjects, station=slug, key_ref=key_ref,
-                    ))
-                    or (main_commits is not None and _loose_subject_key_match(
-                        main_commits, station=slug, key_ref=key_ref,
-                    ))
+                if any(
+                    (
+                        all_ref_commits is not None
+                        and _loose_subject_key_match(
+                            all_ref_commits,
+                            station=slug,
+                            key_ref=r,
+                        )
+                    )
+                    or (
+                        main_commits is not None
+                        and _loose_subject_key_match(
+                            main_commits,
+                            station=slug,
+                            key_ref=r,
+                        )
+                    )
+                    for r in key_refs
                 ):
                     continue  # station+key co-occurrence found
 
@@ -696,10 +890,14 @@ def gather_story_status(
             # the container guard in `_harness_tasks` validates the task dict,
             # never the values inside it.
             if isinstance(phase, str) and phase in NOT_LANDED:
-                false_greens.append({
-                    "slug": slug, "key": key, "phase": phase,
-                    "defer_reason": task.get("defer_reason") or "",
-                })
+                false_greens.append(
+                    {
+                        "slug": slug,
+                        "key": key,
+                        "phase": phase,
+                        "defer_reason": task.get("defer_reason") or "",
+                    }
+                )
             else:
                 # A record exists, no landing evidence was found, and the
                 # harness does not say the story failed either. Not an
@@ -717,8 +915,30 @@ def gather_story_status(
     # FAIL is a specific accusation about one named story, not a claim about
     # the audit's completeness, so it needs no qualifier -- and widening the
     # FAIL evidence to carry them would put the same counts in two shapes.
+    #
+    # Story 27.5: a bare-form merge subject's `git diff` query failing is its
+    # OWN standalone WARN Finding (mirrors `sources/ledger.py::gather_
+    # direction`'s per-sha `bare-merge-diff-unreadable` WARN) -- built here,
+    # BEFORE the `false_greens` branch, so it surfaces unconditionally. A
+    # version of this that only rode on the OK-message caveat dropped it
+    # silently whenever the same run also had an unrelated false-green FAIL.
+    diff_warn_findings = tuple(
+        Finding(
+            source=Source.STORY_STATUS,
+            check="bare-merge-diff-unreadable",
+            status=DoctorStatus.WARN,
+            message=(
+                f"{project}: first-parent diff for {sha} could not be read "
+                "— a bare legacy-form merge subject naming a key this "
+                "project's ledger knows could not be attributed"
+            ),
+            evidence={"project": project, "sha": sha},
+        )
+        for project, sha in sorted(set(unreadable_diff_shas))
+    )
+
     if false_greens:
-        return tuple(
+        return diff_warn_findings + tuple(
             Finding(
                 source=Source.STORY_STATUS,
                 check="story-status",
@@ -726,8 +946,7 @@ def gather_story_status(
                 message=(
                     f"{fg['slug']}/{fg['key']}: reads `done` in the sprint feed, "
                     f"but the harness says {fg['phase']!r} with no commit and no "
-                    f"merge commit anywhere"
-                    + (f" — {fg['defer_reason']}" if fg["defer_reason"] else "")
+                    f"merge commit anywhere" + (f" — {fg['defer_reason']}" if fg["defer_reason"] else "")
                 ),
                 evidence={**fg, "audited": audited},
             )
@@ -768,7 +987,10 @@ def gather_story_status(
         detail += f", {len(unreadable_run_files)} run record file(s) unreadable"
     if unreadable_feeds:
         detail += f", {unreadable_feeds} sprint feed(s) unreadable"
-    return (
+    # Story 27.5: `unreadable_diff_shas` is surfaced above as its own
+    # standalone WARN Finding per sha (`diff_warn_findings`), not folded
+    # into this OK message's detail string -- one shape, not two.
+    return diff_warn_findings + (
         Finding(
             source=Source.STORY_STATUS,
             check="story-status",

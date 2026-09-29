@@ -43,9 +43,7 @@ def _fake_license_metadata(*, license_expression: str) -> Message:
 
 _PINNED_PYPI_LICENSE_METADATA: dict[str, Message] = {
     "requests": _fake_license_metadata(license_expression="Apache-2.0"),
-    "packaging": _fake_license_metadata(
-        license_expression="Apache-2.0 OR BSD-2-Clause"
-    ),
+    "packaging": _fake_license_metadata(license_expression="Apache-2.0 OR BSD-2-Clause"),
 }
 
 
@@ -63,12 +61,7 @@ def _pin_pypi_license_metadata(monkeypatch):
 
 
 def write_pyproject(directory: Path, deps: list[str]) -> None:
-    body = (
-        "[project]\n"
-        'name = "demo"\n'
-        'version = "0.0.1"\n'
-        f"dependencies = {json.dumps(deps)}\n"
-    )
+    body = f'[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = {json.dumps(deps)}\n'
     (directory / "pyproject.toml").write_text(body, encoding="utf-8")
 
 
@@ -77,9 +70,7 @@ def load_report_schema() -> dict:
     return json.loads(schema_file.read_text(encoding="utf-8"))
 
 
-def scan_json(
-    capsys, target, extra_args: list[str] | None = None
-) -> tuple[int, dict, str]:
+def scan_json(capsys, target, extra_args: list[str] | None = None) -> tuple[int, dict, str]:
     capsys.readouterr()
     rc = main(["scan", str(target), "--format", "json", *(extra_args or [])])
     captured = capsys.readouterr()
@@ -138,15 +129,11 @@ def test_sbom_output_not_requested_writes_nothing(capsys, tmp_path):
 # --- write failure (OSError), non-fatal -----------------------------------
 
 
-def test_sbom_output_write_failure_is_non_fatal_and_leaves_exit_code_unchanged(
-    capsys, tmp_path
-):
+def test_sbom_output_write_failure_is_non_fatal_and_leaves_exit_code_unchanged(capsys, tmp_path):
     _fixture(tmp_path)
     rc_baseline, document_baseline, _ = scan_json(capsys, tmp_path)
     unwritable_target = tmp_path / "does" / "not" / "exist" / "sbom.json"
-    rc, document, err = scan_json(
-        capsys, tmp_path, ["--sbom-output", str(unwritable_target)]
-    )
+    rc, document, err = scan_json(capsys, tmp_path, ["--sbom-output", str(unwritable_target)])
     assert rc == rc_baseline
     assert document == document_baseline
     assert not unwritable_target.exists()

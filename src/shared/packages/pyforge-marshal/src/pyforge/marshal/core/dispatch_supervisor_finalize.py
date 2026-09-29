@@ -49,9 +49,7 @@ def session_harness_reported_done_or_shell_unavailable(
 
 def classify_finalize_trigger(session_log: str | None) -> FinalizeTrigger:
     if session_harness_reported_done_or_shell_unavailable(session_log):
-        if session_log and any(
-            marker in session_log.lower() for marker in _SHELL_UNAVAILABLE_MARKERS
-        ):
+        if session_log and any(marker in session_log.lower() for marker in _SHELL_UNAVAILABLE_MARKERS):
             return FinalizeTrigger.SHELL_UNAVAILABLE
         return FinalizeTrigger.HARNESS_DONE
     return FinalizeTrigger.COMMITABLE_DIRTY

@@ -7,7 +7,12 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-08"
+updated: "2026-09-28"   # RE-STAMPED (night): chain-currency cascade (prd -> arch) for Epic 74 (spec-feature-flag-governance CAP-3, CAP-4, CAP-6; no FR). No AD amended; lands on AD-4/AD-5/AD-8/AD-15. See section Currency reconciliation -- 2026-09-28 (night). Earlier: AMENDED (evening, cont. 6): operator rulings on FR-225 / CAP-279 (AD-55 amended in place: the manifest entry's optional required_in, loop-home), FR-227 / CAP-280 widened (lands on AD-29/AD-33) and FR-228 / CAP-281's per-campaign cap (lands on AD-4/AD-5/AD-29/AD-33). See § Currency reconciliation -- 2026-09-28 (operator rulings). Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281 (Epic 73). No AD amended; lands on AD-4/AD-5/AD-9/AD-29/AD-42/AD-75. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280 (Epic 72). No AD amended; lands on AD-9/AD-29/AD-33. Earlier: RE-STAMPED (evening, cont. 3): FR-211 / CAP-265 re-scoped to the hand ledger sync (Story 54.1). No AD amended; lands on AD-33/AD-42. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended; lands on AD-66/AD-68. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279 (Epic 70). No AD amended; lands on AD-54/AD-55/AD-60. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278 (Epic 69). No AD amended; lands on AD-8. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274 (Epic 65). No AD amended; lands on AD-4/AD-8/AD-15/AD-49. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273 (Epic 64). No AD amended; lands on AD-11/AD-75. Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272 (Epic 62). No AD amended. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271 (Epic 61). No AD amended. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270 (Epic 60). No AD amended. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269 (Epic 59). No AD amended. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268 (Epic 58). No AD amended. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57); FR-212 / CAP-266 (Epic 56), lands on AD-4/AD-5/AD-33. Prior 2026-09-26
+# 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (prd -> spine, behind-code) after the 2026-09-26 PRD re-stamp; Stack table row bmad-loop >=0.11.0,<0.13 corrected in place; no AD change. Prior 2026-09-24
+# 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
+# 2026-09-18  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-196..FR-200 / CAP-244..248 (Epic 50). AD-24 amended in place: default merge-subject form gains {slug}. Four FRs land on AD-5/26/28, the harness seam, AD-16 and AD-13 -- no AD added or removed. See § Currency reconciliation — 2026-09-18.
+# 2026-09-14  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine). The PRD gained C-11/C-12 (the declared advisory-in-v1 trust model; no unattended mid-run freeze writer) from the Spec's 2026-09-09 operator answering pass. As-built check appended as § Currency reconciliation — 2026-09-14: both land ON the existing AD-5/AD-26/AD-28/AD-30 journal spine; no AD added, changed or removed.
 # 2026-08-10  # Part II binding names re-issued (marshal-seed form; AD-64 rewritten, marker wire format marshal-seed:*, seed_model_version, .marshal/seed-state.yml) — correct-course. Prior: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
 # 2026-08-02  # genesis-installer architecture (AD-01..15 -> AD-51..65) consolidated in as a Satellite section (explicit user override); AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
 mode: headless
@@ -236,7 +241,7 @@ graph TD
 
 - **Binds:** FR-27, FR-32, FR-33
 - **Prevents:** an exact string that a downstream dashboard's status detection depends on being duplicated across the code that writes it and the code that verifies it.
-- **Rule:** the merge-subject template lives in policy; one module renders it and the same module parses it. Deploy verifies conformance using the parser, not a second regex.
+- **Rule:** the merge-subject template lives in policy; one module renders it and the same module parses it. Deploy verifies conformance using the parser, not a second regex. *(Amended 2026-09-18, FR-199 / CAP-247:)* the **default** form is `Merge {slug}/{key} into main` — a subject names its station, because eight ledgers share one integer story grammar and a station-less subject classifies for every station whose ledger knows the key; live history stays attributed through the SHA/recovery allowlist, never re-parsed.
 
 ### AD-25 — Marshal owns run identity
 
@@ -529,7 +534,7 @@ Seed — verified against this repository's own environment and package metadata
 | --- | --- | --- |
 | Python | `>=3.12` | matches the sibling `pyforge-warden` floor. Note the other sibling `pyforge-atlas` requires `>=3.14`, and the `local-recipes` / `pyforge-*` pixi envs run `python 3.14.*` |
 | hatchling | `>=1.30` | build backend, matching the harness's own build-system floor. The sibling packages declare `hatchling` unversioned; the repo's pixi envs use `>=1.31.0` (current release) |
-| bmad-loop | `>=0.11.0,<0.12` | **run dependency, never vendored** (AD-2, AD-3). Verified: MIT, `noarch: python`, entry point `bmad-loop`, packaged in this repo at `recipes/bmad-loop/`. *(Row re-verified 2026-08-26 — the seed read `>=0.9.0,<0.10` against 0.9.0 (2026-07-21) and predicted the one-minor window would need bumping; it did, twice. The shipped `pyproject.toml` pins `>=0.11.0,<0.12` and `marshal --version` resolves 0.11.1. Epic 25 / `spec-bmad-611-era-alignment` carried the 0.10/0.11 era into policy render, status parsing, and installed-package vocabulary pin tests — see AD-78.)* |
+| bmad-loop | `>=0.11.0,<0.13` | **run dependency, never vendored** (AD-2, AD-3). *(Range widened 2026-09-26 — see § Currency reconciliation — 2026-09-26.)* Verified: MIT, `noarch: python`, entry point `bmad-loop`, packaged in this repo at `recipes/bmad-loop/`. *(Row re-verified 2026-08-26 — the seed read `>=0.9.0,<0.10` against 0.9.0 (2026-07-21) and predicted the one-minor window would need bumping; it did, twice. The shipped `pyproject.toml` pins `>=0.11.0,<0.12` and `marshal --version` resolves 0.11.1. Epic 25 / `spec-bmad-611-era-alignment` carried the 0.10/0.11 era into policy render, status parsing, and installed-package vocabulary pin tests — see AD-78.)* |
 | PyYAML | `>=6.0` | sprint feeds and BMAD artifacts. The **only** unconditional upstream harness dependency |
 | tomlkit | `>=0.13,<0.13.3` | comment-preserving policy writes. Upstream carries it in the optional `[tui]` extra, not core; it is present in-environment only because this repo's recipe flattens extras for `noarch`. The `local-recipes` env caps it at `<0.13.3` — do not assume ≥0.13.3 features |
 | psutil | `>=7.2.2` | supervisor process liveness. **Not** an upstream harness core dep on linux/osx (upstream marks it `sys_platform == 'win32'` plus a `non-linux` extra); unconditional here only via the same recipe flattening. Treat as new resolution surface on the stated install targets |
@@ -1024,7 +1029,10 @@ assumption 3 from the critical path.
 **Rule:** `templates/manifest.yaml`, one document, entries keyed by stable **artifact id**
 (P-11). Each entry: `id`, `class`, `path` (jinja-templated on slug), `format` (for hybrid),
 `regions[]` with `anchor`, `since` / `until` model-version bounds, `applies_to` (`init` /
-`adopt` / both), and `rationale` (surfaced by `marshal seed explain`, FR-127). One file keeps
+`adopt` / both), an optional `required_in` (`loop-home`: the artifact is owed only in a provisioned
+loop home, never on a primary checkout; absent: every checked repository — *amended in place
+2026-09-28, operator ruling, FR-225 / CAP-279; `bmad-loop-policy` carries it*), and `rationale`
+(surfaced by `marshal seed explain`, FR-127). One file keeps
 coverage (FR-69) a single-pass check and makes the manifest reviewable as a diff — which
 matters, because **the manifest is the product's actual contract**.
 
@@ -1595,3 +1603,413 @@ the generator's Story Coverage Matrix now reads 394 "none observed" of 404 rows 
 
 `spec-deferred-work-resolution-sweep`'s CAP-2/CAP-3/CAP-6 were measured during the sweep and
 found inert against these ledgers — see that Spec's `sweep-tooling-effectiveness-2026-09-08.md`.
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14 after folding
+`spec-pyforge-marshal`'s 2026-09-09 operator answering pass, which fires the `prd→arch`
+edge. This section is the as-built check: does the spine above still describe the
+package after that PRD change.*
+
+**The PRD's two new constraints land ON this spine, not beside it — that is why no AD
+moves.**
+
+- **C-11 (the declared, advisory-in-v1 trust model).** The escape hatch is an
+  operator-attributed journal entry admitted at the **call surface only**
+  (`core/journal.py:159`). Architecturally this is a statement *about* AD-5 ("the
+  journal is the single source of run truth") and AD-28 ("every journal entry is
+  addressable"), not a new decision: the journal already records who claimed what, and
+  this spine has never claimed it verifies the claim. The reason it cannot is already
+  an AD-adjacent constraint here — a worktree isolates filesystem and branch, not
+  process or network, and process isolation is Steward's provisioning territory. The
+  honest architectural statement is therefore: **attribution is an audit record, and
+  its unforgeability is deferred behind isolation this spine deliberately does not
+  own.** Recording that in the PRD rather than minting an AD is the right home — it is
+  a product-visible property, not a structural choice.
+- **C-12 (no unattended mid-run freeze writer).** `KIND_FREEZE_DECLARED` /
+  `KIND_FREEZE_REMOVED` are existing journal kinds (`core/journal.py:152-163`) under
+  AD-26's single-producer fold. The constraint says no *unattended* writer exists for
+  them, which is a policy statement over an already-architected entry kind. AD-26 is
+  untouched.
+
+**The composite-id protocol is re-confirmed, not re-opened.** The Spec's own
+2026-09-09 disposition pass recorded F-6 as RESOLVED exactly as this spine already
+specifies it — `(writer_id, counter)` per AD-28, total order `(ts, writer_id,
+counter)`, physical append protocol AD-30. The resolution cites `core/journal.py:13`
+and `:201`; the spine's text and the code agree. No correction needed.
+
+**F-1, F-2 and F-3 likewise closed against decisions already drawn here**: the harness
+policy render (`marshal config --write-harness-policy`), quarantine scoped to the
+offending `(story, kind)` domain rather than the run — which is precisely the
+"resilient but never silently green" clause AD-30 already carries — and `cli/gate.py`'s
+explicit `scope: policy-seed-only` for a standalone evaluation. Three findings, three
+existing ADs; none reopened.
+
+**No content change required beyond this note.** `updated:` bumped to record that the
+cascade ran.
+
+## Currency reconciliation — 2026-09-18
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-18 after registering FR-196..FR-200
+from `spec-pyforge-marshal` CAP-244..248 (Epic 50 — the landing self-drives), which fires the
+`prd→arch` edge. This section is the as-built check against the five FRs.*
+
+**One AD is amended in place; four FRs land on existing decisions.**
+
+- **AD-24 amended (FR-199 / CAP-247).** The rule stands — the merge-subject form is
+  configuration with one owner, rendered and parsed by the same module — but its *default
+  form* changes: `Merge {slug}/{key} into main`, with `{slug}` a second validated
+  placeholder beside `{key}`. Measured reason: the bare `Merge {key} into main` carries no
+  station token, so on 2026-09-18 atlas's seven `Merge 23-N into main` merges classified as
+  herald's 23.1/23.2/23.5/23.6 already merged (three doctor dispatches completed in one
+  second that morning), and Story 35.1's `known_keys` corroboration cannot help when the
+  key exists in both ledgers — eight stations share one integer story grammar by
+  construction. The un-scoped `Story N.M:` direct-commit shape in `pyforge.core.
+  landing_evidence` is likewise demoted to *needs branch or station corroboration*
+  (steward's `Story 48.2:` poisons marshal 48.2 today; Epic 50 skipped 48 and 49 for it).
+  AD-33 (truth partitioned by domain) is untouched: git stays the sole authority for
+  merged facts; the parser stops inventing a station for a subject that names none, and
+  live history is grandfathered through the SHA/recovery allowlist, never re-attributed.
+  Herald's PR #1458 station override (`Merge pyforge-herald/{key} into main`) is the new
+  default's first live instance.
+- **FR-196 (CAP-244) lands on AD-5/AD-26/AD-28 (the journal is run truth; single producer;
+  addressable entries).** The campaign supervisor's "in flight" question is answered from
+  the dispatch supervisor's own journal — `dispatch-completion` not yet written — never
+  from a wall-clock grace; the external witness the Invariants already require. A
+  self-refusal of the already-merged kind is an *advance* reason in the campaign's own
+  classification table, beside the harness-done reason that already exists.
+- **FR-197 (CAP-245) lands on the harness seam (AD-9 family).** `_QUOTA_MARKERS` becomes a
+  per-harness table in `core/harness_session.py` — still the one module that interprets a
+  harness's own text; no second reader.
+- **FR-198 (CAP-246) lands on AD-16 (fixed precedence: defaults → project policy →
+  invocation flags, last wins).** Story 28.11's "tier-map harness leads the walk" was a
+  policy-layer rule silently outranking a flag-layer one — an inversion of AD-16, not a
+  decision of its own. The flag leads; the tier map contributes the model only for the
+  harness actually chosen; without a flag the walk is byte-identical.
+- **FR-200 (CAP-248) lands on AD-13 (promote before teardown) as a parser tolerance.**
+  `is_valid_spec_text` / `parse_declared_surface` skip a leading `<!-- … -->` block; the
+  durability predicate is unchanged.
+
+**Content changed:** AD-24's default form (amended in place above, dated). `updated:`
+bumped. No AD added or removed.
+
+## Currency reconciliation — 2026-09-19
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-19 after registering FR-201..FR-210
+from `spec-pyforge-marshal` CAP-249..256 (Epic 51 — the landing self-drives, second round) and
+`spec-pyforge-core` CAP-8..9 (Epic 52 — the shared floor is a PR gate), which fires the
+`prd→arch` edge. This section is the as-built check against the ten FRs.*
+
+**No AD is amended; every FR lands on an existing decision.**
+
+- **FR-201 (CAP-249) lands on AD-8 (unevaluable is failure) and AD-33 (truth partitioned by
+  domain).** The branch tip was never the thing being merged; verifying it and calling the
+  merge green was a false-green by construction (50.4 vs doctor 27.5, `1a5895317f`). Marshal
+  *materialises* the tree git would produce (`merge-tree --write-tree`) and re-runs the station's
+  own `verify_commands` against it — git stays the sole authority for the merge result, marshal
+  never performs the merge, and no second verdict owner appears (AD-7). A branch already at
+  `origin/main` verifies once: the re-run is conditional on baseline lag, not a second gate.
+- **FR-202 (CAP-250) lands on AD-11 (the loop home is the write boundary) and AD-13/AD-29
+  (promote before teardown, durable off the disposable ref).** The dispatch worktree *is* the
+  session's write boundary, so the promotion scan's discovery must include it — finalize reading
+  only the primary's `implementation-artifacts/` was reading the wrong home. The durability
+  predicate is unchanged; the source set grows by one. The REFUSED landing result carrying
+  `pr_number` / `marshal_native` is AD-5/AD-6 (write-before-act: the PR was opened, so the
+  journal must say so even when land is then refused).
+- **FR-203 (CAP-251) lands on AD-21 (mutating commands reconcile, then act) and AD-42 (derived
+  surfaces regenerate on `main`, never merge from homes).** The promoted ledger lives on
+  `origin/main` by AD-42; the campaign reading a stale primary copy was reading a derived surface
+  from the wrong place. Fast-forwarding the primary only when it is a clean `main` is AD-11's
+  write boundary applied to a checkout marshal does not own (the 2026-09-13 shared-checkout
+  ruling); the fallback read from `origin/main` needs no write at all.
+- **FR-204 (CAP-252) lands on AD-9 (the supervisor observes from outside) and AD-32
+  (session-authored data is evidence, never a control input).** `status: blocked` in the
+  worktree spec is session-authored — it cannot *decide* anything, but it is evidence the
+  supervisor must read before it lands an empty branch; the externally observable fact (zero diff
+  against baseline) corroborates it. `has_git_progress` stops treating a revert-plus-status-flip as
+  progress — the same "not its own witness" rule as AD-9.
+- **FR-205 (CAP-253) lands on AD-8 and AD-15 (findings are coded).** "Catalogued under no
+  provider" is an unevaluable model identity and must be a finding, not silence; the predicate
+  excludes the harness's own default/alias ids so the finding stays meaningful (AD-15's
+  documented-remedy rule, no noise).
+- **FR-206 (CAP-254) lands on AD-5 (the journal is the single source of run truth).** Which
+  engine drives a station is a journal fact — the most recent journal write wins — not a
+  property of which process list reports a live row. One pure function over two timestamps (AD-4).
+- **FR-207 (CAP-255) lands on AD-73 (landing evidence is one grammar with two consumers) and
+  AD-23 (story identity is one format).** The grammar was station-scoped by FR-199 / AD-24's
+  amendment; it now becomes intent-scoped too: a key mentioned inside a branch name is not the
+  landing shape marshal mints (`dispatch/<slug>/<key>`, the slug-templated subject). Both
+  consumers (marshal's `promotion.py`, doctor's `sources/marshal.py`) read the one grammar in
+  `pyforge.core.landing_evidence`, which is why the story hand-verifies doctor's and core's suites
+  beside marshal's. Live history is never re-attributed (AD-33).
+- **FR-208 (CAP-256) lands on AD-13 as the same parser tolerance FR-200 introduced**, extended
+  to the whitespace/BOM prefix and to the one remaining banner-blind sibling on the promoted-spec
+  path (`spec_low_risk.py`, reached through `cli/gate.py`). No second parser.
+- **FR-209 / FR-210 (spec-pyforge-core CAP-9 / CAP-8) land on AD-3's family rule for the shared
+  floor — one primitive, one home — as it was decomposed in Epic 14.** CAP-7's sole-ownership
+  meta-tests were the enforcement; they enforced nothing because no lane ran them. The lane runs
+  the pixi task, never an enumerated file list (the enumeration is how they were lost), and the
+  six violations are cleared before the lane exists so the gate is born green.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-24
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-211 / CAP-265 (Epic 54, the
+landing's ledger promotion repairs its own feed drift). The fix is an internal refinement of
+`dispatch_land_finalize`'s existing promotion step — a retry that auto-repairs unrelated Tier-3
+feed drift from the tracked twin before giving up — with no new port, adapter, or decision
+boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-26
+
+`prd→arch` edge after the PRD re-stamp of 2026-09-26, plus `behind-code` (the harness range
+widening landed in marshal's tree the same day).
+
+**Content changed:** the Stack table's `bmad-loop` row now reads `>=0.11.0,<0.13` — a pin value
+corrected in place, exactly as the 2026-08-26 reconcile moved it from `<0.10` to `<0.12`. AD-2 /
+AD-3 (bmad-loop is a run dependency, never vendored; the range is declared, pre-1.0, minor-capped)
+are unchanged in substance: the cap is still one minor above the verified release, and the
+verification that justifies moving it (the lazily-imported module set still resolves; suite green
+on the new release) is the procedure AD-19 already implies. No AD added, amended or removed.
+`updated:` bumped.
+
+## Currency reconciliation — 2026-09-27
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-212 / CAP-266 (Epic 56, a landing
+refusal whose story has since landed is reported as superseded). The fix lands on AD-5 and AD-33 as
+written: the journal's refusal stays the process fact, `main`'s corroborated merge history stays
+the repository fact, and `marshal status` reports both side by side instead of reconciling one into
+the other. The decision is a pure function in `core/dispatch_landing.py` (AD-4); the one `main` read
+reuses the status sweep's existing cached read, so no new port, adapter or decision boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-27 (later)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-213 / CAP-267 (Epic 57, a loop-home
+refresh sends its proven fast-forward past the pre-push preflight). `VcsPort.push` gains a
+keyword-only `proven_on_main_sha` — additive, defaulting to today's behaviour. The decision (a
+fast-forward to `refs/remotes/origin/main` that `refresh` performed itself) stays in
+`cli/refresh.py`; the `GitVcs` adapter re-checks the sha against that full refname, pushes exactly
+it, and carries the journaled opt-out to the one `git push` process (Story 57.1 review 2: a short
+name can be shadowed by a local ref, and a branch re-read at push time can have moved). No new
+port, adapter or decision boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-27 (evening)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-214 / CAP-268 (Epic 58, the landing
+heal sees every merge conflict). The fix is inside the `GitVcs` adapter's
+`merge_tree_conflict_paths` — the modern `--write-tree --name-only -z` form in place of the legacy
+three-arg one; the heal's orchestration in `dispatch_land_heal.py` (outside `core/`, AD-4) and its
+pure classification in `core/dispatch_landing.py` are unchanged. No new port, adapter or decision
+boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-27 (evening, cont.)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-215 / CAP-269 (Epic 59, the ledger
+union heal merges the base). `VcsPort` gains one additive method, `merge_ref_resolving` (a real
+merge of a ref into a worktree's branch, resolving only named paths with given text and aborting on
+any other conflict), implemented by `GitVcs`. The heal's orchestration stays in
+`dispatch_land_heal.py` (outside `core/`, AD-4); the union's text is a pure
+`core/chain_regen.render_ledger_statuses`; the mechanical-path rule in `core/dispatch_landing.py`
+takes the landing project's ledger path. No new adapter or decision boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-27 (night)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-216 / CAP-270 (Epic 60, every
+remote-tracking read names the full ref). A pure `core/refs.py` (`remote_tracking_ref`,
+`ORIGIN_MAIN`) is the one source; `adapters/vcs_git.py` reads it as an adapter may read `core/`
+(AD-4 holds: `core/` still imports no adapter). No new port, adapter or decision boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-27 (late)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-217 / CAP-271 (Epic 61, every
+local-branch read names the full ref). `core/refs.py` gains `local_branch_ref` beside
+`remote_tracking_ref`; `core/policy.py`'s `landing_base_branch` validator stays pure (no git
+call). AD-4 holds. No new port, adapter or decision boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-27 (late, cont.)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-218 / CAP-272 (Epic 62, the
+shared test kit's branch guards diff against the remote). `pyforge-testing-kit` gains a module
+constant and changes default arguments; the kit stays a leaf with no station import. No new port,
+adapter or decision boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-27 (late night)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-219 / CAP-273 (Epic 64, a dispatch
+carries its own scope, never the shared marker). The fix lands on AD-11 as written — "active-project
+marker and planning symlinks are per-home and must always agree; disagreement is a blocking finding",
+and Marshal never edits a shared repo-level file — with the dispatch worktree as the dispatch engine's
+home (AD-75): the worktree gets its own marker and links, `verify_scope` (FR-190's one primitive)
+checks them there, and the primary checkout's shared marker is neither read nor written. The seeding
+writes go through `FsPort` (AD-11's observable write boundary). No new port, adapter or decision
+boundary.*
+
+*Extended the same night for FR-220 / CAP-274 (Epic 65, a drain can be asked what it would dispatch
+before it launches anything). The plan is one more reader over the existing edge: the per-station
+queue computation is extracted from `execute_fleet_cycle` into one read-only planner both call, and
+the statically decidable predicates (spec binding, prose parks, inert overrides) are pure functions
+in a new `core/dispatch_prelaunch.py` (AD-4). A station whose inputs cannot be read is UNEVALUABLE,
+never a clean plan (AD-8); the plan's findings are coded in a new `MRS-DRAINPLAN` namespace (AD-15).
+`dispatch_once`'s pre-launch `MRS-DISP-050` evaluates, before a session, the same
+`gate.check_spec_binding` AD-49 already requires of the post-session gate, against the same spec
+and the same guard-appended commands. No new port, adapter or decision boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-221 / CAP-275 (Epic 66, a follow-up
+review a landed story recommends is carried into the deferred-work ledger) and FR-222 / CAP-276
+(Epic 67, a landed dispatch reads completed even when the primary checkout cannot be
+fast-forwarded).*
+
+*FR-221 lands on AD-4, AD-5, AD-29 and AD-42 as written. Selecting and rendering the
+`DW-FRR-<story>` row is a pure function in `core/deferred_work.py`, beside Story 4.13's loop twin
+(AD-4). Finalize names the promoted id in its own journaled observation (AD-5). The row is published
+onto `origin/main` through `commit_paths_onto_remote_tip` and never left only in the primary
+checkout's working tree (AD-29), under the advisory lock the intake step already takes on the shared
+tracked ledger (AD-42).*
+
+*FR-222 lands on AD-5, AD-9 and AD-33 as written. The supervisor resolves its post-land verdict from
+the landing outcome it journaled itself (AD-5): a fact of its own action, never anything the session
+reports (AD-9). The repository facts it records beside it (`story_merged_on_main`, `branch_merged`)
+keep git as their authority and are recorded as read (AD-33); only the process verdict changes
+source. No new port, adapter or decision boundary.*
+
+*Extended later the same day for FR-223 / CAP-277 (Epic 68, a landing's ledger promotion reaches
+origin/main, and a failed one is never silent). It lands on AD-5, AD-6, AD-15, AD-29 and AD-33 as
+written. The promotion's INTENT gets its OUTCOME, `ok: false` on a failed publish, so no lone intent
+is left for a replay to guess at (AD-6). Finalize journals every finding it collected (AD-5).
+`MRS-DISP-051` is a new coded finding in the existing DISP namespace (AD-15). Whether the landed key
+reached `done` is read from `origin/main`, the ref that outlives the landing (AD-29), as a repository
+fact (AD-33). `VcsPort.commit_paths_onto_remote_tip` gains one keyword-only argument, the caller's
+reason for the pre-push opt-out. The adapter sets the opt-out only after checking the commit it
+built, as Story 57.1's refresh push does, so the port's contract widens without a new port, adapter
+or decision boundary.*
+
+*Extended in the evening for FR-224 / CAP-278 (Epic 69, the switch script runs where it is documented
+to run). `scripts/bmad-switch` is a repo-root script whose source Marshal owns, outside the
+hexagon, so no port or adapter moves. It lands on AD-8 as written: a primitive that cannot load is a
+non-zero exit naming why, never a traceback and never a pass. The re-execution runs the same
+`verify_scope` (CAP-75..77), so the one primitive stays one.*
+
+*Extended for FR-225 / CAP-279 (Epic 70, seed check judges the paths the manifest means). It lands
+on AD-54, AD-55 and AD-60 as written. AD-55 already declares a manifest path templated on the slug;
+`check` now renders it, through the one renderer `seed init` uses, moved into `model/manifest.py`
+beside the manifest it renders. `check` stays the model's own detector (AD-54), and SC-02's oracle
+keeps this repository under it (AD-60). The slug comes from the command's existing project
+resolution, never from state (AD-52's schema is unchanged).*
+
+*Extended for FR-226 / `spec-pyforge-core` CAP-11 (Epic 71, the front door names the environment a
+roster station runs in). It lands on AD-66 and AD-68 as written. The front door reads the roster from
+`pyforge.core.roster`, another module of the same leaf, and derives the environment from the
+roster's long form, so `pyforge-core` still reads no file and imports no station (AD-66). Exit codes
+and the off-roster message are unchanged (AD-68); only the not-installed case gains its own
+wording.*
+
+*FR-211 / CAP-265 re-scoped (operator ruling, Story 54.1, key kept). The change moves from
+`dispatch_land_finalize` to `scripts/promote_sprint_status.py`, the human fallback, a repo-root
+script outside the hexagon, so no port or adapter moves. It lands on AD-33 and AD-42 as written: the
+tracked twin stays the record of fact and the Tier-3 feed the statement of intent, so the repair only
+moves the feed toward the twin (AD-33); the write still takes the ledger lock every writer of the
+tracked twin shares (AD-42).*
+
+*Extended for FR-227 / CAP-280 (Epic 72, the dispatch supervisor judges merge facts from
+origin/main). It lands on AD-9, AD-29 and AD-33 as written. The supervisor still observes from
+outside (AD-9); the repository facts it observes are read from the ref a landing makes durable,
+`origin/main` (AD-29), and keep the repository as their authority (AD-33), no longer a local branch
+that only moves when the primary checkout can be fast-forwarded. `VcsPort.is_branch_merged` gains
+one keyword-only argument, a full-ref target; its branch-name form keeps its callers, so the port's
+contract widens without a new port, adapter or decision boundary.*
+
+*Extended for FR-228 / CAP-281 (Epic 73, a drain runs the follow-up review a landed story
+recommended). It lands on AD-4, AD-5, AD-9, AD-29, AD-42 and AD-75 as written. Selecting open
+`DW-FRR` rows and rendering a closed one are pure functions in `core/` (AD-4). A follow-up run is
+marked on its launch INTENT, derived from the tracked spec's own frontmatter, never declared by a
+caller (AD-5, AD-75). The supervisor still judges from outside (AD-9), now scoped to the run's own
+baseline so an older landing of the same story is not read as this run's. The row is closed through
+the publish onto `origin/main` and the lock CAP-275's carry already uses (AD-29, AD-42). No new port,
+adapter or decision boundary.*
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28 (operator rulings)
+
+`spec→prd→arch` edge: three operator rulings the same evening amend not-yet-implemented CAPs in place
+(PRD § 31.10). No AD is added or removed; one is amended in place.
+
+*FR-225 / CAP-279 (Story 70.1): `.bmad-loop/policy.toml` is owed only in a loop home.* **AD-55 is
+amended in place, additively:** a manifest entry may carry an optional `required_in` (`loop-home`),
+and `bmad-loop-policy` does, because every writer renders the harness policy into a loop home and a
+primary checkout never holds one. The scope is the entry's — the manifest stays the contract and one
+file (AD-55's point), no repository is special-cased (SC-02 / AD-60 keep this repository under the
+check), and `check` stays the model's read-only detector (AD-54). The target's loop-home status is read
+at the CLI boundary from its own branch (`core/context.slug_from_loop_branch`, through the existing
+`VcsPort.list_worktrees`), so no port or adapter is added.
+
+*FR-227 / CAP-280 widened (Story 72.1): `dispatch land`'s ALREADY_LANDED read moves to
+`origin/main`.* It lands on AD-29 and AD-33 as written: the merge fact is read from the ref a landing
+makes durable and keeps the repository as its authority. The read's existing port call changes its ref
+only; no new port, adapter or decision boundary.
+
+*FR-228 / CAP-281 (Story 73.2): a drain campaign queues at most
+`dispatch.max_followup_reviews_per_campaign` follow-ups (default 2), newest landings first.* It lands
+on AD-4 (the selection, the cap and the order are pure in `core/`) and on the policy composition as
+written: the key is one more field of the composed `dispatch` block (Story 33.8), resolved from the
+repository's layers because it bounds a campaign, not a station. The landing order is read from
+`origin/main`'s history (AD-29, AD-33); the campaign's own count comes from its journal (AD-5).
+
+**Content changed:** this section, and AD-55's entry list (one optional key, dated in place).
+`updated:` bumped. No AD added or removed.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+`prd→arch` edge: the PRD's § 31.11 records Epic 74, three CAPs of the Guild's `spec-feature-flag-governance` (every
+capability ships behind a flag). No FR is registered and no AD is added, amended or removed; each story lands on ADs as
+written.
+
+*CAP-3 (Story 74.2): dispatch refuses a story the flag gate would red, before any session.* It lands on AD-4, AD-5, AD-8
+and AD-15. The gate is a repo-root script outside the hexagon, owned by no station (Charter §6; doctor Story 34.2):
+`dispatch_once`'s preflight runs it as a process through `pyforge.core.process.ProcessPort`, the edge `dispatch_verify`
+already uses for verify commands, and a pure `core/` function turns its JSON verdict into the decision (AD-4). A warning
+for a pre-rule spec is journaled on the run (AD-5); a gate that cannot judge refuses, never passes (AD-8); the refusal is
+`MRS-DISP-052`, a new code in the existing DISP namespace (AD-15). Marshal never restates the gate's rules, so Marshal is
+not the judge of its own stories. No port or adapter is added.
+
+*CAP-4 (Story 74.1): the testing kit runs a story in both flag states.* `pyforge-testing-kit` is a separate leaf package
+(Part III, the shared floor), governed by `spec-pyforge-testing-charter`; a fifth mock family adds nothing inside the
+hexagon.
+
+*CAP-6 (Story 74.3): bmad-spec, bmad-build and bmad-tea carry the flag mandate in their overrides.* `_bmad/custom/*.toml`
+is BMAD's override layer, outside the hexagon, as Story 46.7's bmad-build-auto fact already is; no port, adapter or
+decision boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

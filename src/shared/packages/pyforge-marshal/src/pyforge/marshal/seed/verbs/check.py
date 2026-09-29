@@ -185,13 +185,14 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
+from pyforge.core.process import PosixProcess
+
 from ..detect.findings import Finding, FindingType, Severity
 from ..detect.hashes import check_managed_file, check_managed_region
 from ..detect.inventory import ArtifactState, classify, legacy_findings
 from ..detect.kit import KitCheck, kit_checks, kit_findings
-from ..detect.referenced_deps import referenced_dep_findings
 from ..detect.optout import classify_regions, region_findings
-from pyforge.core.process import PosixProcess
+from ..detect.referenced_deps import referenced_dep_findings
 from ..errors import StateInvalid
 from ..model.manifest import AppliesTo, ArtifactClass, Manifest
 from ..plan.build import build_plan
@@ -300,13 +301,11 @@ def _read_text_or_blank(target: Path) -> str:
         return ""
     try:
         return target.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return ""
 
 
-def _model_version_status(
-    manifest: Manifest, state: SeedState | None
-) -> tuple[ModelVersionStatus, str | None]:
+def _model_version_status(manifest: Manifest, state: SeedState | None) -> tuple[ModelVersionStatus, str | None]:
     """`(status, state_model_version_str)` for the report -- `state is None`
     is unconditionally `BEHIND` with no recorded version to report (the
     module docstring's own "nothing installed yet" framing); otherwise the
@@ -373,9 +372,7 @@ def run_check(
         state = read_state(repo_root)
     except StateInvalid as exc:
         relative_state_path = state_path(repo_root).relative_to(repo_root).as_posix()
-        findings.append(
-            Finding.new(Severity.HARD, FindingType.STATE_INVALID, relative_state_path, exc.message)
-        )
+        findings.append(Finding.new(Severity.HARD, FindingType.STATE_INVALID, relative_state_path, exc.message))
         state = None
 
     inventory = classify(manifest, repo_root)
@@ -398,9 +395,7 @@ def run_check(
             # an entry that does not apply to THIS repo's mode is never
             # "missing", it was simply never owed here in the first place.
             applies_to_other_mode = (
-                state is not None
-                and entry.applies_to is not AppliesTo.BOTH
-                and entry.applies_to.value != state.mode
+                state is not None and entry.applies_to is not AppliesTo.BOTH and entry.applies_to.value != state.mode
             )
             if classification.entry_id in actioned_ids and not applies_to_other_mode:
                 findings.append(
@@ -408,8 +403,7 @@ def run_check(
                         Severity.HARD,
                         FindingType.ARTIFACT_MISSING,
                         entry.path,
-                        f"{entry.path}: {entry.id!r} is declared by the manifest but"
-                        " absent from the repo",
+                        f"{entry.path}: {entry.id!r} is declared by the manifest but absent from the repo",
                     )
                 )
             continue
@@ -463,14 +457,10 @@ def run_check(
             else:
                 try:
                     spans = parse_regions(text, entry.format)
-                except (RegionParseError, MarkerError, NotImplementedError):
+                except RegionParseError, MarkerError, NotImplementedError:
                     spans = ()
                 span = next(
-                    (
-                        candidate
-                        for candidate in spans
-                        if candidate.name == record.inserted_region_span.name
-                    ),
+                    (candidate for candidate in spans if candidate.name == record.inserted_region_span.name),
                     None,
                 )
                 # `span is None` means the recorded region is not (or no
@@ -495,17 +485,13 @@ def run_check(
     # Story 28.3's three token-economy-kit checks. Computed even when every
     # layer is off (so the report can SHOW three checks), but contributing
     # findings only for a layer the operator actually declared on.
-    kit = (
-        kit_checks(repo_root, context_layers, process=process)
-        if context_layers is not None
-        else ()
-    )
+    kit = kit_checks(repo_root, context_layers, process=process) if context_layers is not None else ()
     findings.extend(kit_findings(kit))
 
     model_version_status, state_model_version = _model_version_status(manifest, state)
     if model_version_status is ModelVersionStatus.BEHIND:
-        state_version_text = "no recorded model_version (never adopted)" if state is None else (
-            f"model_version {state_model_version}"
+        state_version_text = (
+            "no recorded model_version (never adopted)" if state is None else (f"model_version {state_model_version}")
         )
         findings.append(
             Finding.new(

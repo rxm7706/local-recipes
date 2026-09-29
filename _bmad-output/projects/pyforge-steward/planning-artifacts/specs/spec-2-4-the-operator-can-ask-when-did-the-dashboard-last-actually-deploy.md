@@ -133,3 +133,16 @@ warnings: []
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `fc52917899` (2026-08-07, "herald: Story 2.4 — authored-source pull (standalone bundle)"); also `5bae304e38` (2026-08-07, "scribe: Story 2.4 — scribe recall, grounded cited answers"); also `f948837d0c` (2026-08-07, "steward: Story 2.4 — The operator can ask "when did the dashboard last actually deploy?""). Ledger row `2-4-the-operator-can-ask-when-did-the-dashboard-last-actually-deploy: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/tests/test_cli_pull.py`, `src/shared/packages/pyforge-herald/tests/test_deck_pipeline.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

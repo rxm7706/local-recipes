@@ -92,6 +92,57 @@ def resolve_model_price(
     return None
 
 
+def provider_declaring_model(catalog: object, model: str) -> str | None:
+    """Which declared catalog provider (if any) names this exact model --
+    the reverse of ``resolve_model_price`` (that looks up a KNOWN provider's
+    price; this finds which provider, if any, claims a given model at all).
+
+    Used to catch a ``model_tier_map`` stage entry whose model plainly
+    belongs to a DIFFERENT provider than the adapter that will actually
+    launch it -- e.g. a Cursor model (``composer-2.5-fast``) landing on the
+    ``claude`` adapter because its tier-map entry carried no explicit
+    ``harness`` key and the operator's own ``harness_preference`` (`cursor`)
+    has no bmad-loop counterpart, so the render silently falls back to the
+    template's baseline adapter while the model override still applies
+    unchanged (2026-09-12, dispatch-tier-routing-fails-safe). Absence from
+    the catalog is not itself suspicious: most legitimate default-adapter
+    models (``sonnet``, ``opus``, ``haiku`` -- see
+    ``HARNESS_DEFAULT_MODEL_IDS``) are never catalogued at all, since the
+    catalog is a declared PRICE snapshot, not a model registry."""
+    if not catalog_declared(catalog) or not isinstance(catalog, Mapping):
+        return None
+    providers = catalog.get("providers")
+    if not isinstance(providers, Mapping):
+        return None
+    for provider_name, provider_block in providers.items():
+        if not isinstance(provider_block, Mapping):
+            continue
+        models = provider_block.get("models")
+        if isinstance(models, Mapping) and model in models:
+            return provider_name
+    return None
+
+
+#: Marshal's own model-tier vocabulary (Story 22.8's harness-profile TOMLs
+#: under ``data/harness_profiles/``: every profile either maps these three
+#: names to its own CLI spelling (``[model_map]``, e.g. ``gemini.toml``) or
+#: passes them through verbatim as its default ids (``model_passthrough``,
+#: e.g. ``claude.toml``'s own comment: "Marshal's model tiers
+#: (opus/sonnet/haiku)"). These are exactly the "default-adapter models"
+#: ``provider_declaring_model``'s docstring says are legitimately never
+#: catalogued (Story 51.5, CAP-253).
+HARNESS_DEFAULT_MODEL_IDS: frozenset[str] = frozenset({"sonnet", "opus", "haiku"})
+
+
+def is_harness_default_model(model: str) -> bool:
+    """True when ``model`` is one of marshal's own tier-vocabulary ids --
+    a harness's own default/alias id, not a genuinely foreign or mistyped
+    model. Used alongside ``provider_declaring_model`` to tell "uncatalogued
+    because it's the harness's own default" apart from "uncatalogued
+    because no provider claims it at all" (Story 51.5, CAP-253)."""
+    return model in HARNESS_DEFAULT_MODEL_IDS
+
+
 def resolve_cache_read_ratio(
     catalog: Mapping[str, object] | None,
     *,
@@ -117,11 +168,7 @@ def weighted_total(tokens: TokenCounts, cache_read_weight: float) -> int:
     """bmad-loop-compatible weighted token tally."""
     if not math.isfinite(cache_read_weight):
         return tokens.input_tokens + tokens.output_tokens
-    return (
-        tokens.input_tokens
-        + tokens.output_tokens
-        + round(tokens.cache_read_tokens * cache_read_weight)
-    )
+    return tokens.input_tokens + tokens.output_tokens + round(tokens.cache_read_tokens * cache_read_weight)
 
 
 def estimate_spend_usd(
@@ -131,18 +178,11 @@ def estimate_spend_usd(
     """Estimated USD spend from declared per-1M prices × token counts."""
     if price.input_per_million < 0 or price.output_per_million < 0:
         return None
-    total = (
-        tokens.input_tokens * price.input_per_million
-        + tokens.output_tokens * price.output_per_million
-    ) / _MILLION
+    total = (tokens.input_tokens * price.input_per_million + tokens.output_tokens * price.output_per_million) / _MILLION
     if price.cache_read_per_million is not None and tokens.cache_read_tokens:
-        total += (
-            tokens.cache_read_tokens * price.cache_read_per_million
-        ) / _MILLION
+        total += (tokens.cache_read_tokens * price.cache_read_per_million) / _MILLION
     if price.cache_write_per_million is not None and tokens.cache_creation_tokens:
-        total += (
-            tokens.cache_creation_tokens * price.cache_write_per_million
-        ) / _MILLION
+        total += (tokens.cache_creation_tokens * price.cache_write_per_million) / _MILLION
     if not math.isfinite(total):
         return None
     return round(total, 6)

@@ -1,0 +1,70 @@
+# Estate BMAD catalog — the declaration (Story 60.1, spec-self-hosted-bmad-marketplace CAP-1).
+#
+# Git is the edit store: this directory, tracked in rxm7706/local-recipes, is
+# where listings are edited. Backends and sources are DECLARED here and BOUND
+# to plugins registered on `pyforge.steward.catalog` (`SourceRegistry` /
+# `BackendRegistry`). A new backend or source is a new row here plus a plugin
+# that implements `CatalogSourcePlugin` / `ShipBackendPlugin` — never an engine
+# rewrite. Every row of `backends-and-sources.md` appears below by name with
+# its v1 default; `state` is one of `on | off | available` (quoted, because
+# bare `on`/`off` are YAML 1.1 booleans).
+#
+# Read by `steward catalog check|list|render|pointers`.
+catalog:
+  name: pyforge-estate-catalog
+  display_name: PyForge estate catalog
+  owner: rxm7706
+  description: >-
+    Estate-reviewed BMAD modules and Frames the PyForge Guild wields or
+    publishes. Git is the edit store; backends and sources are declared in
+    catalog.yaml.
+  edit_store:
+    kind: git
+    repo: rxm7706/local-recipes
+    path: src/shared/packages/pyforge-steward/catalog
+    # No dedicated GitHub catalog repo is minted: the `github` pointer forms
+    # (Claude `extraKnownMarketplaces` github / `codex plugin marketplace add
+    # <owner/repo>`) wait on operator confirm. `steward catalog pointers`
+    # prints the `directory` / `--custom-source` forms that work today.
+    dedicated_repo: null
+
+# Ship backends (execution layer). Git is never a ship backend.
+# 60.1 declares them with the shared snapshot interface (`snapshot_target`);
+# the conda publish itself is Story 60.3.
+backends:
+  conda-channel:
+    plugin: conda-channel
+    state: "on"
+    channel: SelfExplainML
+    package: pyforge-estate-catalog
+  object-storage:
+    plugin: object-storage
+    state: "off"
+  git-bundle:
+    plugin: git-bundle
+    state: available
+
+# Sources (what may appear on the list). A listing names exactly one source.
+# `plugin: null` is an empty slot — declared, unbound, and only legal while
+# the row is off/available; switching it on requires naming the plugin.
+sources:
+  estate-listings:
+    plugin: estate-listings
+    state: "on"
+    path: registry/estate.yaml   # CATALOG-DIR-relative: a file inside this edit store
+  wielded-suite:
+    plugin: wielded-suite
+    state: "on"
+  public-bmad-catalog:
+    plugin: public-bmad-catalog
+    state: "off"
+    cite: https://github.com/bmad-code-org/bmad-plugins-marketplace
+  estate-frames:
+    plugin: estate-frames
+    state: "on"
+    path: docs/foundry/frames    # REPO-ROOT-relative: the Frames live outside this edit store
+  claude-skill-registry:
+    # The companion table's v1 default is "empty slot": `skillsctl` (SKU B,
+    # spec CAP-5 / CAP-121) is the later binding; nothing operates it in v1.
+    plugin: null
+    state: "off"

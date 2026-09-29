@@ -17,11 +17,18 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-_PKG = REPO / "src" / "shared" / "packages" / "pyforge-marshal" / "src"
-if str(_PKG) not in sys.path:
-    sys.path.insert(0, str(_PKG))
 
-from pyforge.marshal.coverage_gate import (  # noqa: E402
+# coverage_gate.py is a scripts/ sibling (spec-coverage-gate-independence
+# CAP-1, doctor Story 24.1: the evaluator moved out of pyforge.marshal so no
+# station governs its own CI gate). Insert this file's own directory
+# explicitly so the import resolves whether this driver is executed directly
+# (`python scripts/run_station_coverage_gate.py`, which Python already
+# prepends) or loaded via importlib (test harnesses, which do not).
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+from coverage_gate import (  # noqa: E402
     evaluate_coverage_payload,
     package_root,
     package_src,
@@ -72,7 +79,7 @@ def _run_suite(station: str, suite: str, report: Path) -> tuple[str, int]:
     print("+", " ".join(cmd), flush=True)
     env = os.environ.copy()
     env["PYTHONPATH"] = os.pathsep.join(
-        [str(root / "src"), str(_PKG), env.get("PYTHONPATH", "")]
+        [str(root / "src"), str(_SCRIPTS_DIR), env.get("PYTHONPATH", "")]
     )
     return "ran", subprocess.run(cmd, cwd=REPO, env=env, check=False).returncode
 

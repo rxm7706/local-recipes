@@ -175,7 +175,7 @@ from typing import TextIO
 
 from .errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
 from .models import BuildResult, CfeResult
-from .resolve import ResolvedCfeRoot, STEP_NOT_FOUND, detect_native_build_config
+from .resolve import STEP_NOT_FOUND, ResolvedCfeRoot, detect_native_build_config
 
 CFE_IMPORT_FLOOR: dict[str, str] = {
     "pyyaml": "yaml",
@@ -263,7 +263,7 @@ def probe_import_floor(interpreter: str) -> ImportFloorResult:
             timeout=_PROBE_TIMEOUT_SECONDS,
             check=False,
         )
-    except (OSError, UnicodeDecodeError, subprocess.TimeoutExpired):
+    except OSError, UnicodeDecodeError, subprocess.TimeoutExpired:
         return ImportFloorResult(interpreter=interpreter, missing=tuple(CFE_IMPORT_FLOOR))
 
     stdout_lines = set(completed.stdout.splitlines())
@@ -468,8 +468,7 @@ def run_streamed(
         raise TypeError("run_streamed(argv=...) must be a sequence of arguments, not None")
     if isinstance(argv, (str, bytes)):
         raise TypeError(
-            f"run_streamed(argv=...) must be a sequence of arguments, not a bare "
-            f"{type(argv).__name__} -- got {argv!r}"
+            f"run_streamed(argv=...) must be a sequence of arguments, not a bare {type(argv).__name__} -- got {argv!r}"
         )
     # Materialized once, before the emptiness check and before `Popen`
     # (review pass, 2026-08-10, second): `not argv` is always False for a
@@ -488,13 +487,10 @@ def run_streamed(
         # likely mistake: it means "wait forever" to subprocess's own API,
         # and this function deliberately has no such mode.
         raise TypeError(
-            f"run_streamed(timeout=...) must be a number of seconds, not "
-            f"{type(timeout).__name__} -- got {timeout!r}"
+            f"run_streamed(timeout=...) must be a number of seconds, not {type(timeout).__name__} -- got {timeout!r}"
         )
     if not math.isfinite(timeout) or timeout <= 0:
-        raise ValueError(
-            f"run_streamed(timeout=...) must be a finite, positive number -- got {timeout!r}"
-        )
+        raise ValueError(f"run_streamed(timeout=...) must be a finite, positive number -- got {timeout!r}")
 
     sink = stderr_sink if stderr_sink is not None else sys.stderr
     if not callable(getattr(sink, "write", None)):
@@ -507,8 +503,7 @@ def run_streamed(
         # caller from a child that simply said nothing.
         raise TypeError(
             "run_streamed(stderr_sink=...) must have a callable write(); got "
-            f"{type(sink).__name__}"
-            + (" (sys.stderr is None -- pass an explicit sink)" if sink is None else "")
+            f"{type(sink).__name__}" + (" (sys.stderr is None -- pass an explicit sink)" if sink is None else "")
         )
 
     proc = subprocess.Popen(
@@ -832,9 +827,7 @@ def _invoke_captured(
             f"{type(timeout).__name__} -- got {timeout!r}"
         )
     if not math.isfinite(timeout) or timeout <= 0:
-        raise ValueError(
-            f"_invoke_captured(timeout=...) must be a finite, positive number -- got {timeout!r}"
-        )
+        raise ValueError(f"_invoke_captured(timeout=...) must be a finite, positive number -- got {timeout!r}")
 
     script_path = root / ".claude" / "scripts" / "conda-forge-expert" / _CFE_SCRIPTS[script_key]
 
@@ -1174,6 +1167,7 @@ def build_native(
     root: Path,
     timeout: float | None = None,
     stderr_sink: TextIO | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> BuildResult:
     """Invoke CFE's native build script (AD-3's `build_native` adapter,
     FR-9, AD-25) and return a `BuildResult`.
@@ -1210,9 +1204,7 @@ def build_native(
     `--docker`/`--config` only, and no story task calls for exposing it.
     """
     resolved_timeout = timeout if timeout is not None else _BUILD_NATIVE_TIMEOUT_SECONDS
-    script_path = (
-        root / ".claude" / "scripts" / "conda-forge-expert" / _CFE_SCRIPTS["build_native"]
-    )
+    script_path = root / ".claude" / "scripts" / "conda-forge-expert" / _CFE_SCRIPTS["build_native"]
     config = detect_native_build_config()
 
     try:
@@ -1220,16 +1212,23 @@ def build_native(
             ["bash", str(script_path), recipe_path],
             timeout=resolved_timeout,
             stderr_sink=stderr_sink,
+            env=dict(env) if env is not None else None,
         )
     except subprocess.TimeoutExpired:
         raise CfeTimeoutError(script="build_native", timeout=resolved_timeout) from None
+
+    artifact_root = env.get("MASON_FACTORY_ROOT") if env is not None else None
+    if artifact_root:
+        artifact_dir = f"{artifact_root}/build_artifacts/{config}" if config is not None else None
+    else:
+        artifact_dir = f"build_artifacts/{config}" if config is not None else None
 
     return BuildResult(
         mode="native",
         config=config,
         returncode=returncode,
         stdout=stdout,
-        artifact_dir=f"build_artifacts/{config}" if config is not None else None,
+        artifact_dir=artifact_dir,
     )
 
 
@@ -1240,6 +1239,7 @@ def build_docker(
     interpreter: str,
     timeout: float | None = None,
     stderr_sink: TextIO | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> BuildResult:
     """Invoke CFE's Docker/CI-parity build script (AD-3's `build_docker`
     adapter, FR-9, AD-25) and return a `BuildResult`.
@@ -1295,16 +1295,23 @@ def build_docker(
             [interpreter, str(script_path), config],
             timeout=resolved_timeout,
             stderr_sink=stderr_sink,
+            env=dict(env) if env is not None else None,
         )
     except subprocess.TimeoutExpired:
         raise CfeTimeoutError(script="build_docker", timeout=resolved_timeout) from None
+
+    artifact_root = env.get("MASON_FACTORY_ROOT") if env is not None else None
+    if artifact_root:
+        artifact_dir = f"{artifact_root}/build_artifacts/{config}"
+    else:
+        artifact_dir = f"build_artifacts/{config}"
 
     return BuildResult(
         mode="docker",
         config=config,
         returncode=returncode,
         stdout=stdout,
-        artifact_dir=f"build_artifacts/{config}",
+        artifact_dir=artifact_dir,
     )
 
 

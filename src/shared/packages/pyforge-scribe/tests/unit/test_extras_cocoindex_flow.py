@@ -88,9 +88,7 @@ def test_cocoindex_extra_enabled_defaults_to_false(monkeypatch: pytest.MonkeyPat
         ("nope", False),
     ],
 )
-def test_cocoindex_extra_enabled_parses_env_var(
-    monkeypatch: pytest.MonkeyPatch, value: str, expected: bool
-) -> None:
+def test_cocoindex_extra_enabled_parses_env_var(monkeypatch: pytest.MonkeyPatch, value: str, expected: bool) -> None:
     monkeypatch.setenv(COCOINDEX_EXTRA_ENV, value)
     assert cocoindex_extra_enabled() is expected
 
@@ -144,12 +142,8 @@ def test_refresh_incremental_second_run_unchanged_sources_skips_all(
 
     def make_artifacts() -> list[DerivedArtifact]:
         return [
-            DerivedArtifact(
-                name="a", sources=(source_a,), derive=lambda: calls.__setitem__("a", calls["a"] + 1)
-            ),
-            DerivedArtifact(
-                name="b", sources=(source_b,), derive=lambda: calls.__setitem__("b", calls["b"] + 1)
-            ),
+            DerivedArtifact(name="a", sources=(source_a,), derive=lambda: calls.__setitem__("a", calls["a"] + 1)),
+            DerivedArtifact(name="b", sources=(source_b,), derive=lambda: calls.__setitem__("b", calls["b"] + 1)),
         ]
 
     first = refresh_incremental(tmp_path, make_artifacts())
@@ -174,12 +168,8 @@ def test_refresh_incremental_one_changed_source_refreshes_only_that_artifact(
 
     def make_artifacts() -> list[DerivedArtifact]:
         return [
-            DerivedArtifact(
-                name="a", sources=(source_a,), derive=lambda: calls.__setitem__("a", calls["a"] + 1)
-            ),
-            DerivedArtifact(
-                name="b", sources=(source_b,), derive=lambda: calls.__setitem__("b", calls["b"] + 1)
-            ),
+            DerivedArtifact(name="a", sources=(source_a,), derive=lambda: calls.__setitem__("a", calls["a"] + 1)),
+            DerivedArtifact(name="b", sources=(source_b,), derive=lambda: calls.__setitem__("b", calls["b"] + 1)),
         ]
 
     refresh_incremental(tmp_path, make_artifacts())
@@ -202,9 +192,7 @@ def test_refresh_incremental_directory_source_picks_up_new_file(
     calls = {"a": 0}
 
     def make_artifact() -> DerivedArtifact:
-        return DerivedArtifact(
-            name="a", sources=(target,), derive=lambda: calls.__setitem__("a", calls["a"] + 1)
-        )
+        return DerivedArtifact(name="a", sources=(target,), derive=lambda: calls.__setitem__("a", calls["a"] + 1))
 
     refresh_incremental(tmp_path, [make_artifact()])
     assert calls == {"a": 1}
@@ -232,9 +220,7 @@ def test_refresh_incremental_directory_source_excludes_pycache_noise(
     calls = {"a": 0}
 
     def make_artifact() -> DerivedArtifact:
-        return DerivedArtifact(
-            name="a", sources=(target,), derive=lambda: calls.__setitem__("a", calls["a"] + 1)
-        )
+        return DerivedArtifact(name="a", sources=(target,), derive=lambda: calls.__setitem__("a", calls["a"] + 1))
 
     refresh_incremental(tmp_path, [make_artifact()])
     assert calls == {"a": 1}
@@ -290,9 +276,7 @@ def test_refresh_incremental_missing_source_is_deterministic_and_warns(
     warnings: list[str] = []
 
     def make_artifact() -> DerivedArtifact:
-        return DerivedArtifact(
-            name="a", sources=(missing,), derive=lambda: calls.__setitem__("a", calls["a"] + 1)
-        )
+        return DerivedArtifact(name="a", sources=(missing,), derive=lambda: calls.__setitem__("a", calls["a"] + 1))
 
     refresh_incremental(tmp_path, [make_artifact()], warnings=warnings)
     result = refresh_incremental(tmp_path, [make_artifact()], warnings=warnings)
@@ -311,9 +295,7 @@ def test_index_lives_under_the_gitignored_data_home(tmp_path: Path) -> None:
     )
 
 
-def test_index_file_holds_only_fingerprints_never_facts(
-    tmp_path: Path, fake_cocoindex: _FakeCocoindexModule
-) -> None:
+def test_index_file_holds_only_fingerprints_never_facts(tmp_path: Path, fake_cocoindex: _FakeCocoindexModule) -> None:
     artifact = DerivedArtifact(name="graphify-ingest", sources=(), derive=lambda: None)
 
     result = refresh_incremental(tmp_path, [artifact])
@@ -338,9 +320,7 @@ def test_refresh_incremental_survives_a_non_dict_top_level_index_document(
     index_path.parent.mkdir(parents=True)
     index_path.write_text(json.dumps(["not", "a", "dict"]), encoding="utf-8")
     calls = {"a": 0}
-    artifact = DerivedArtifact(
-        name="a", sources=(), derive=lambda: calls.__setitem__("a", calls["a"] + 1)
-    )
+    artifact = DerivedArtifact(name="a", sources=(), derive=lambda: calls.__setitem__("a", calls["a"] + 1))
 
     result = refresh_incremental(tmp_path, [artifact], index_path=index_path)
 

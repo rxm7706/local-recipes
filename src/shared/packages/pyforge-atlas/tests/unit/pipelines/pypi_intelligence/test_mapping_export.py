@@ -82,7 +82,9 @@ def test_empty_and_malformed_inputs_yield_empty_map():
     assert export_pypi_conda_map(pd.DataFrame()) == {}
     assert export_pypi_conda_map(None) == {}
     # a non-string / missing conda_name is skipped (malformed cell — never exported).
-    df = pd.DataFrame({"pypi_name": ["z", "w"], "conda_name": [None, ["list"]], "match_source": ["parselmouth", "parselmouth"]})
+    df = pd.DataFrame(
+        {"pypi_name": ["z", "w"], "conda_name": [None, ["list"]], "match_source": ["parselmouth", "parselmouth"]}
+    )
     assert export_pypi_conda_map(df) == {}
 
 
@@ -93,9 +95,7 @@ def test_missing_match_source_column_defaults_rank():
 
 def test_flat_format_is_pypi_name_to_conda_name():
     # legacy-compatible {pypi_name: conda_name} shape (the retained authoring-read shim).
-    df = pd.DataFrame(
-        {"pypi_name": ["numpy"], "conda_name": ["numpy"], "match_source": ["parselmouth"]}
-    )
+    df = pd.DataFrame({"pypi_name": ["numpy"], "conda_name": ["numpy"], "match_source": ["parselmouth"]})
     out = export_pypi_conda_map(df)
     assert out == {"numpy": "numpy"}
     assert all(isinstance(k, str) and isinstance(v, str) for k, v in out.items())

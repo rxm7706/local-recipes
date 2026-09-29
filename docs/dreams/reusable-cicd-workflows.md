@@ -2,9 +2,12 @@
 title: A centrally-maintained CI/CD workflow family, if this repo ever needs more than plain Actions
 type: dream
 owner: mason
-status: specified   # 2026-08-22 — reframed as an EXTENSION-POINT (operator): the fleet ships the socket/contract; the capability develops separately (incl. air-gapped) — see the spec's Extension contract section
+status: archived
+archived-reason: folded-into-station-dream
+sibling-acknowledged: 0b0b4f409e774d767bc5db9c14f8dd01f54f3f3ba082a542147e77f603d5e1e1
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `reusable-cicd-workflows`).
 # A centrally-maintained CI/CD workflow family, if this repo ever needs more than plain Actions
 
 ## The Dream

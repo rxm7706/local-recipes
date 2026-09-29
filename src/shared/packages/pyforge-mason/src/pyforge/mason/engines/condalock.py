@@ -113,11 +113,13 @@ from dataclasses import dataclass
 
 import yaml
 
-from . import probe_engine, require_engine
 from ..errors import (
-    EnvironmentCheckTimeoutError, EnvironmentLockfileMalformedError,
-    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError,
+    EnvironmentCheckTimeoutError,
+    EnvironmentLockfileMalformedError,
+    EnvironmentLockfileMissingError,
+    EnvironmentLockTimeoutError,
 )
+from . import probe_engine, require_engine
 
 name = "conda-lock"
 """`EngineAdapter.name` -- an `engines/__init__.py::_KNOWN_ENGINES` key."""
@@ -205,9 +207,7 @@ def lock(
     fd, metadata_path = tempfile.mkstemp(suffix=".json", prefix="mason-condalock-")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            json.dump(
-                {"mason_engine_name": name, "mason_engine_version": engine_version}, handle
-            )
+            json.dump({"mason_engine_name": name, "mason_engine_version": engine_version}, handle)
         argv.extend(("--mdy", metadata_path))
 
         completed = subprocess.run(

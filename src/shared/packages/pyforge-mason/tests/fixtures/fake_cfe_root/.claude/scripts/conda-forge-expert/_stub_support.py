@@ -13,6 +13,7 @@ rewritten.
 Stdlib only, no third-party imports -- this tree must run under any
 interpreter with no dependency on the pyforge-mason environment.
 """
+
 from __future__ import annotations
 
 import os

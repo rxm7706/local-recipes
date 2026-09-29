@@ -169,15 +169,16 @@ Two to three years out, Marshal is the reference answer to a question the indust
 
 ---
 
-## Satellite: Genesis Installer
+## The seed installer (marshal seed)
 
 **Consolidated 2026-08-02 — see
 `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/research/product-brief-pyforge-genesis.md`
-for the original standalone document.** The section below is the genesis-installer product
-brief, folded into this single Marshal-station brief verbatim (own status/frontmatter
-preserved below for traceability), per explicit user override of the "kept separate on
-purpose" decision recorded in `docs/dreams/pyforge-marshal.md` / `docs/dreams/genesis-installer.md`. Nothing in Marshal's
-own brief above this line was changed.
+for the original standalone document.** The section below is the seed installer's own
+original product brief, folded into this single Marshal-station brief verbatim (own
+status/frontmatter preserved below for traceability), per explicit user override of the
+"kept separate on purpose" decision recorded in `docs/dreams/pyforge-marshal.md` /
+`docs/dreams/genesis-installer.md`. Nothing in Marshal's own brief above this line was
+changed.
 
 **Original frontmatter** (`research/product-brief-pyforge-genesis.md`):
 
@@ -556,8 +557,9 @@ Unifying Strategy pack. Concrete deltas:
 2. **Shipped state.** The Executive Summary's "Epic 1 has now shipped … what remains
    ahead" era is closed: the tracked `sprint-status-ledger.yaml` reads **165/165 story
    keys done across Epics 1–27** (plus 31 done epic retros). Beyond Epics 1–6 that
-   includes: the seed installer shipped as `marshal seed` (Epics 7–12, the Satellite
-   below — no longer prospective); surface-drift reconciliation (13); the `pyforge-core`
+   includes: the seed installer shipped as `marshal seed` (Epics 7–12, § "The seed
+   installer (marshal seed)" below — no longer prospective); surface-drift
+   reconciliation (13); the `pyforge-core`
    shared floor (14); fleet refresh (15); board truth (16); instrument verification +
    chain audit (17, 21); the governed MCP tool surface (18, incl. the `marshal-mcp`
    entry point); the testing charter (19); loop work-preservation + the landing-evidence
@@ -577,7 +579,7 @@ Unifying Strategy pack. Concrete deltas:
    not adoptions** — zero-infrastructure is the moat. And Marshal walked into a **second
    market** — scaffolding/templating (Copier/cruft/Backstage Templates) — where the
    unclaimed capability it now ships is managed regions in brownfield files plus a
-   never-write guard (`marshal seed`, Satellite below).
+   never-write guard (`marshal seed`, § "The seed installer (marshal seed)" below).
 
 4. **Harness era corrected.** The Problem section's `bmad-loop 0.9.0` facts (six adapter
    profiles; `.agents/skills/` gap; 92 skills) are intake-era history — accurate then,

@@ -126,9 +126,7 @@ def _find_violators(root: Path, filenames: tuple[str, ...]) -> list[Path]:
 def test_package_and_environment_carry_no_module_level_cfe_import():
     # Guard the guard: if the package layout ever moves, scanning a stale
     # path would yield zero files and this test would pass vacuously forever.
-    assert PKG_ROOT.is_dir(), (
-        f"AD-6 guard is scanning nothing -- package root moved? {PKG_ROOT}"
-    )
+    assert PKG_ROOT.is_dir(), f"AD-6 guard is scanning nothing -- package root moved? {PKG_ROOT}"
     # Second vacuity mode (Phase 1 audit, 2026-08-10): `_find_violators`
     # SKIPS a guarded filename that no longer exists, so renaming or
     # splitting package.py/environment.py/doctor.py (e.g. into a package/
@@ -151,6 +149,7 @@ def test_package_and_environment_carry_no_module_level_cfe_import():
 # test_dependency_direction.py's rigor): synthetic files, not the real
 # package, so these assert the detector's behavior independent of what
 # src/pyforge/mason/ currently contains. ------------------------------------
+
 
 def test_detector_fires_on_a_module_level_import_cfe(tmp_path):
     root = tmp_path / "mason"
@@ -176,7 +175,8 @@ def test_detector_fires_on_a_module_level_from_dot_cfe_import(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "package.py").write_text(
-        "from .cfe import ensure_cfe_root\n", encoding="utf-8",
+        "from .cfe import ensure_cfe_root\n",
+        encoding="utf-8",
     )
 
     violators = {p.resolve() for p in _find_violators(root, _GUARDED_FILENAMES)}
@@ -191,9 +191,7 @@ def test_detector_permits_a_lazy_function_body_cfe_import(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "package.py").write_text(
-        "def ship_conda_forge():\n"
-        "    from . import cfe\n"
-        "    return cfe\n",
+        "def ship_conda_forge():\n    from . import cfe\n    return cfe\n",
         encoding="utf-8",
     )
 
@@ -222,7 +220,8 @@ def test_detector_fires_on_a_module_level_dotted_absolute_from_import_cfe(tmp_pa
     root = tmp_path / "mason"
     root.mkdir()
     (root / "environment.py").write_text(
-        "from pyforge.mason import cfe\n", encoding="utf-8",
+        "from pyforge.mason import cfe\n",
+        encoding="utf-8",
     )
 
     violators = {p.resolve() for p in _find_violators(root, _GUARDED_FILENAMES)}
@@ -239,10 +238,7 @@ def test_detector_fires_on_a_module_level_cfe_import_nested_in_a_try_block(tmp_p
     root = tmp_path / "mason"
     root.mkdir()
     (root / "package.py").write_text(
-        "try:\n"
-        "    from . import cfe\n"
-        "except ImportError:\n"
-        "    cfe = None\n",
+        "try:\n    from . import cfe\nexcept ImportError:\n    cfe = None\n",
         encoding="utf-8",
     )
 
@@ -274,6 +270,7 @@ def test_detector_permits_a_module_with_no_cfe_import_at_all(tmp_path):
 
 # --- Story 1.8: doctor.py joins the guard --------------------------------
 
+
 def test_detector_fires_on_a_module_level_cfe_import_in_doctor(tmp_path):
     """Story 1.8 adds `doctor.py` to `_GUARDED_FILENAMES` -- a module-level
     `cfe` import there must be flagged exactly like `package.py`/
@@ -294,9 +291,7 @@ def test_detector_permits_a_lazy_function_body_cfe_import_in_doctor(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "doctor.py").write_text(
-        "def build_report():\n"
-        "    from . import cfe\n"
-        "    return cfe\n",
+        "def build_report():\n    from . import cfe\n    return cfe\n",
         encoding="utf-8",
     )
 

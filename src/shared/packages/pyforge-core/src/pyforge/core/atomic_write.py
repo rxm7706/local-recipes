@@ -85,9 +85,7 @@ def _umask_respecting_default_mode() -> int:
     return 0o666 & ~current_umask
 
 
-def atomic_write(
-    path: Path, write_fn: Callable[[Path], None], *, mode: int | None = None
-) -> None:
+def atomic_write(path: Path, write_fn: Callable[[Path], None], *, mode: int | None = None) -> None:
     """Atomically write ``path`` by calling ``write_fn`` on an unopened temp
     path in the same directory, then ``os.replace``-ing it into place.
 
@@ -125,11 +123,17 @@ def atomic_write(
 
 def atomic_write_bytes(path: Path, data: bytes, *, mode: int | None = None) -> None:
     """``atomic_write`` for a pre-built ``bytes`` payload."""
-    atomic_write(path, lambda tmp: tmp.write_bytes(data), mode=mode)
+
+    def _write(tmp: Path) -> None:
+        tmp.write_bytes(data)
+
+    atomic_write(path, _write, mode=mode)
 
 
-def atomic_write_text(
-    path: Path, text: str, *, encoding: str = "utf-8", mode: int | None = None
-) -> None:
+def atomic_write_text(path: Path, text: str, *, encoding: str = "utf-8", mode: int | None = None) -> None:
     """``atomic_write`` for a pre-built ``str`` payload."""
-    atomic_write(path, lambda tmp: tmp.write_text(text, encoding=encoding), mode=mode)
+
+    def _write(tmp: Path) -> None:
+        tmp.write_text(text, encoding=encoding)
+
+    atomic_write(path, _write, mode=mode)

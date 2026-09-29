@@ -58,10 +58,7 @@ def _dispatcher_template_path_kwarg_violations(tree: ast.Module) -> list[str]:
             if not isinstance(child, ast.Call):
                 continue
             callee = child.func
-            if not (
-                isinstance(callee, ast.Name)
-                and callee.id in _VERB_CALLEES
-            ):
+            if not (isinstance(callee, ast.Name) and callee.id in _VERB_CALLEES):
                 continue
             for keyword in child.keywords:
                 if keyword.arg == "template_path":

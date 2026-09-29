@@ -45,10 +45,7 @@ def add_chain_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register ``chain`` with nested ``regenerate`` (FR-148)."""
     parser = subparsers.add_parser(
         "chain",
-        help=(
-            "Orchestrate planning-chain regeneration for one project "
-            "(FR-148/149/151; AD-72)."
-        ),
+        help=("Orchestrate planning-chain regeneration for one project (FR-148/149/151; AD-72)."),
         description=(
             "Run a named project's Spec→PRD→Architecture→Epics regeneration "
             "in dependency order, preserve done story keys via the existing "
@@ -61,9 +58,7 @@ def add_chain_subparser(subparsers: argparse._SubParsersAction) -> None:
         "regenerate",
         help="Regenerate one project's planning chain in dependency order.",
         description=(
-            "Phases: "
-            + " → ".join(CHAIN_PHASES)
-            + ". Default dry-run; pass --apply to write the ledger when the "
+            "Phases: " + " → ".join(CHAIN_PHASES) + ". Default dry-run; pass --apply to write the ledger when the "
             "done-key guard passes."
         ),
     )
@@ -85,10 +80,7 @@ def add_chain_subparser(subparsers: argparse._SubParsersAction) -> None:
         "--root",
         default=None,
         metavar="PATH",
-        help=(
-            "Repo root to operate on (default: this checkout). Fixtures pass "
-            "an isolated tree; live runs omit this."
-        ),
+        help=("Repo root to operate on (default: this checkout). Fixtures pass an isolated tree; live runs omit this."),
     )
     regen.add_argument(
         "--format",
@@ -131,10 +123,7 @@ def run_chain_regenerate(args: argparse.Namespace) -> int:
             Finding(
                 code=_MRS_CHAIN_001,
                 severity=Severity.WARN,
-                message=(
-                    f"project {slug!r}: planning-artifacts missing under "
-                    f"{planning} — unevaluable"
-                ),
+                message=(f"project {slug!r}: planning-artifacts missing under {planning} — unevaluable"),
                 path=str(planning),
             )
         )
@@ -154,11 +143,7 @@ def run_chain_regenerate(args: argparse.Namespace) -> int:
         regressions_fn=promote.regressions,
         apply=apply,
         statuses_before=before,
-        write_ledger=(
-            (lambda path, statuses: _write_ledger(path, statuses, project=slug))
-            if apply
-            else None
-        ),
+        write_ledger=((lambda path, statuses: _write_ledger(path, statuses, project=slug)) if apply else None),
     )
 
     for outcome in report.phases:
@@ -167,26 +152,18 @@ def run_chain_regenerate(args: argparse.Namespace) -> int:
                 Finding(
                     code=_MRS_CHAIN_002,
                     severity=Severity.ERROR,
-                    message=(
-                        f"project {slug!r}: phase {outcome.name!r} failed: "
-                        f"{outcome.detail}"
-                    ),
+                    message=(f"project {slug!r}: phase {outcome.name!r} failed: {outcome.detail}"),
                     path=str(planning),
                 )
             )
 
     if report.regressions_blocked:
-        detail = ", ".join(
-            f"{k} ({old}→{new})" for k, old, new in report.regressions_blocked
-        )
+        detail = ", ".join(f"{k} ({old}→{new})" for k, old, new in report.regressions_blocked)
         findings.append(
             Finding(
                 code=_MRS_CHAIN_003,
                 severity=Severity.ERROR,
-                message=(
-                    f"project {slug!r}: refused ledger write — done-key "
-                    f"regressions blocked: {detail}"
-                ),
+                message=(f"project {slug!r}: refused ledger write — done-key regressions blocked: {detail}"),
                 path=str(lp),
             )
         )
@@ -221,14 +198,10 @@ def _report_to_dict(report: RegenerationReport) -> dict[str, object]:
             for p in report.phases
         ],
         "preserved_done_keys": list(report.preserved_done_keys),
-        "regressions_blocked": [
-            {"key": k, "old": o, "new": n} for k, o, n in report.regressions_blocked
-        ],
+        "regressions_blocked": [{"key": k, "old": o, "new": n} for k, o, n in report.regressions_blocked],
         "statuses_before": dict(report.statuses_before),
         "statuses_after": dict(report.statuses_after),
-        "orphans": [
-            {"kind": o.kind, "path": o.path, "reason": o.reason} for o in report.orphans
-        ],
+        "orphans": [{"kind": o.kind, "path": o.path, "reason": o.reason} for o in report.orphans],
     }
 
 
@@ -271,8 +244,7 @@ def _print_text(
     else:
         mode = "apply" if report.apply else "dry-run"
         print(
-            f"chain regenerate [{mode}] project={report.project} "
-            f"wrote_ledger={report.wrote_ledger} verdict={verdict}"
+            f"chain regenerate [{mode}] project={report.project} wrote_ledger={report.wrote_ledger} verdict={verdict}"
         )
         print("phases:")
         for p in report.phases:

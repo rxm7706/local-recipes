@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "python3 .claude/hooks/pre-shell.py",
+        "type": "command"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "python3 .claude/hooks/pre-shell.py",
+        "type": "command"
+      }
+    ]
+  },
+  "$comment": [
+    "Cursor half of the Guild session guardrails (steward Story 63.3,",
+    "spec-pyforge-steward CAP-5) -- the SAME script as Claude Code's",
+    "`.claude/hooks/pre-shell.py` (registered there via .claude/settings.json's",
+    "PreToolUse hooks), not a copy. The closed deny list + one-line reasons",
+    "live in docs/governance/guild-roster.json's `session_denials`.",
+    "",
+    "`beforeShellExecution` can truly deny (permission: deny). `afterFileEdit`",
+    "has no permission/message-injection output in Cursor's hooks schema",
+    "(checked live 2026-09-20 against https://cursor.com/docs/agent/hooks) and",
+    "Cursor has no before-edit event at all -- so the file-write rule",
+    "(direct-write-governed-path) is necessarily a post-hoc WARN there: the",
+    "script prints to stderr and exits non-zero, visible in Cursor's own hook",
+    "log, after the edit has already landed. Force-tracked: `.cursor/` is",
+    "otherwise gitignored (see .gitignore's own comment on that pattern)."
+  ]
+}

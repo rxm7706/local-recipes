@@ -129,17 +129,13 @@ def test_exit_128_no_packages_mirrors_preflight_failure_withholding(
 
     assert result.errors == ()
     (finding,) = result.findings
-    assert finding.id == (
-        f"indeterminate:offline-db-unavailable:{FIXTURE_PACKAGE}@{FIXTURE_VERSION}"
-    )
+    assert finding.id == (f"indeterminate:offline-db-unavailable:{FIXTURE_PACKAGE}@{FIXTURE_VERSION}")
     assert finding.axis == AXIS_VULNERABILITY
     assert result.coverage == ()
     assert result.vuln_data is None
 
 
-def test_unexpected_exit_code_is_typed_engine_execution_failed(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_unexpected_exit_code_is_typed_engine_execution_failed(monkeypatch, tmp_path, offline_cache, component_factory):
     """Any exit code outside {0, 1, 127, 128} is a typed operational
     failure -- never a content-read that could bottom out at clean."""
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
@@ -175,17 +171,13 @@ def test_conda_ecosystem_candidate_with_resolved_identity_is_scanned(
         pypi_identity=PypiIdentity(name=FIXTURE_PACKAGE, version=FIXTURE_VERSION),
         vuln_matchable=True,  # the critical precondition this test exercises
     )
-    inventory = ResolvedInventory(
-        components=(conda_component,), resolved_scan_set=(MANIFEST,)
-    )
+    inventory = ResolvedInventory(components=(conda_component,), resolved_scan_set=(MANIFEST,))
 
     result = OsvEngine().run(tmp_path, inventory)
 
     assert result.errors == ()
     (finding,) = result.findings
-    assert finding.id == (
-        f"indeterminate:offline-db-unavailable:numpy-conda-name@{FIXTURE_VERSION}"
-    )
+    assert finding.id == (f"indeterminate:offline-db-unavailable:numpy-conda-name@{FIXTURE_VERSION}")
     assert finding.axis == AXIS_VULNERABILITY
 
 
@@ -210,9 +202,7 @@ def test_purity_guard_findings_survive_every_operational_failure_path(
         version="1.0",
         pypi_identity=PypiIdentity(name="-rf", version="1.0"),
     )
-    inventory = ResolvedInventory(
-        components=(safe, unsafe), resolved_scan_set=(MANIFEST,)
-    )
+    inventory = ResolvedInventory(components=(safe, unsafe), resolved_scan_set=(MANIFEST,))
 
     result = OsvEngine().run(tmp_path, inventory)
 

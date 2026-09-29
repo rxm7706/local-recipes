@@ -145,11 +145,15 @@ call_command("migrate", run_syncdb=True, verbosity=0)
 from django.utils import timezone  # noqa: E402
 
 from pyforge.steward.dashboard.audit import (  # noqa: E402
-    _FUTURE_NOW_TOLERANCE, _max_row_count, purge_expired_entries,
-    query_audit_entries, record_audit_entry,
+    _FUTURE_NOW_TOLERANCE,
+    _max_row_count,
+    purge_expired_entries,
+    query_audit_entries,
+    record_audit_entry,
 )
 from pyforge.steward.dashboard.declarations import (  # noqa: E402
-    _MAX_RETENTION_DAYS, AuditRetention,
+    _MAX_RETENTION_DAYS,
+    AuditRetention,
 )
 from pyforge.steward.dashboard.models import AuditAction, AuditEntry  # noqa: E402
 
@@ -249,9 +253,7 @@ def test_record_audit_entry_stores_actor_role_target_verbatim():
     normalized reinterpretation -- no trim, case-fold, or Unicode
     normalization of actor/role/target.
     """
-    entry = record_audit_entry(
-        "  Alice.Admin  ", " East ", AuditAction.FILTER, 5, target=" Sales "
-    )
+    entry = record_audit_entry("  Alice.Admin  ", " East ", AuditAction.FILTER, 5, target=" Sales ")
     row = AuditEntry.objects.get(pk=entry.pk)
     assert row.actor == "  Alice.Admin  "
     assert row.role == " East "
@@ -326,12 +328,8 @@ def test_query_audit_entries_on_an_empty_trail_still_records_a_zero_row_read():
 
 def test_purge_expired_entries_deletes_only_rows_older_than_the_cutoff():
     now = timezone.now()
-    old = record_audit_entry(
-        "alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=40)
-    )
-    recent = record_audit_entry(
-        "alice", "east", AuditAction.LOAD, 2, occurred_at=now - dt.timedelta(days=10)
-    )
+    old = record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=40))
+    recent = record_audit_entry("alice", "east", AuditAction.LOAD, 2, occurred_at=now - dt.timedelta(days=10))
 
     deleted = purge_expired_entries(AuditRetention(days=30), now=now)
 
@@ -385,7 +383,10 @@ def test_purge_expired_entries_leaves_a_row_exactly_at_the_cutoff():
     now = timezone.now()
     cutoff_days = 30
     at_cutoff = record_audit_entry(
-        "alice", "east", AuditAction.LOAD, 1,
+        "alice",
+        "east",
+        AuditAction.LOAD,
+        1,
         occurred_at=now - dt.timedelta(days=cutoff_days),
     )
 
@@ -514,12 +515,8 @@ def test_purge_expired_entries_rejects_a_naive_now_under_use_tz_true():
 
 def test_query_audit_entries_returns_rows_most_recent_first():
     now = timezone.now()
-    oldest = record_audit_entry(
-        "alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=2)
-    )
-    middle = record_audit_entry(
-        "alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=1)
-    )
+    oldest = record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=2))
+    middle = record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=1))
     newest = record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now)
 
     rows = query_audit_entries(reader_actor="bob", reader_role="auditor")
@@ -538,10 +535,7 @@ def test_rows_sharing_an_occurred_at_still_come_back_in_one_stable_order():
     orders. Pinned here on the two paths that actually disagreed.
     """
     stamp = timezone.now()
-    created = [
-        record_audit_entry("alice", "east", AuditAction.LOAD, i, occurred_at=stamp).pk
-        for i in range(6)
-    ]
+    created = [record_audit_entry("alice", "east", AuditAction.LOAD, i, occurred_at=stamp).pk for i in range(6)]
     newest_first = list(reversed(created))
 
     assert [row.pk for row in AuditEntry.objects.all()] == newest_first
@@ -573,9 +567,7 @@ def test_query_audit_entries_rejects_a_blank_reader_before_reading_anything():
         with pytest.raises(ValueError, match="actor"):
             query_audit_entries(reader_actor="   ", reader_role=None)
 
-    assert captured.captured_queries == [], (
-        "a read that cannot be recorded must not touch the database at all"
-    )
+    assert captured.captured_queries == [], "a read that cannot be recorded must not touch the database at all"
     assert not AuditEntry.objects.filter(action=AuditAction.AUDIT_READ).exists()
     assert AuditEntry.objects.count() == 1, "the pre-existing row must be untouched"
 
@@ -625,9 +617,7 @@ def test_record_audit_entry_rejects_a_nul_byte_in_any_string_field(field):
     kwargs = {"actor": "alice", "role": "east", "target": "sales"}
     kwargs[field] = kwargs[field] + "\x00x"
     with pytest.raises(ValueError, match="NUL"):
-        record_audit_entry(
-            kwargs["actor"], kwargs["role"], AuditAction.LOAD, 1, target=kwargs["target"]
-        )
+        record_audit_entry(kwargs["actor"], kwargs["role"], AuditAction.LOAD, 1, target=kwargs["target"])
     assert AuditEntry.objects.count() == 0
 
 
@@ -650,9 +640,7 @@ def test_record_audit_entry_rejects_a_value_over_the_field_cap(field):
     calls = {
         "actor": lambda: record_audit_entry(overlong, None, AuditAction.LOAD, 1),
         "role": lambda: record_audit_entry("alice", overlong, AuditAction.LOAD, 1),
-        "target": lambda: record_audit_entry(
-            "alice", None, AuditAction.LOAD, 1, target=overlong
-        ),
+        "target": lambda: record_audit_entry("alice", None, AuditAction.LOAD, 1, target=overlong),
     }
 
     with pytest.raises(ValueError, match=rf"{field}.*{cap}-character"):
@@ -710,9 +698,7 @@ def test_purge_expired_entries_refuses_a_future_reference_time():
     record_audit_entry("alice", "east", AuditAction.LOAD, 1)
 
     with pytest.raises(ValueError, match="future"):
-        purge_expired_entries(
-            AuditRetention(days=36500), now=timezone.now() + dt.timedelta(days=100_000)
-        )
+        purge_expired_entries(AuditRetention(days=36500), now=timezone.now() + dt.timedelta(days=100_000))
 
     assert AuditEntry.objects.count() == 1, "nothing may be deleted by a refused purge"
 
@@ -746,9 +732,7 @@ def test_the_shipped_migration_matches_the_model():
     # "no" and emits a drop+add, which still exits non-zero, so drift is
     # still detected and now says so.
     try:
-        call_command(
-            "makemigrations", "--check", "--dry-run", interactive=False, verbosity=0
-        )
+        call_command("makemigrations", "--check", "--dry-run", interactive=False, verbosity=0)
     except SystemExit as exc:  # `--check` exits non-zero when changes exist
         pytest.fail(
             f"makemigrations --check exited {exc.code}: models.py has changes "
@@ -810,9 +794,7 @@ def test_purge_expired_entries_tolerates_ordinary_clock_skew_in_now():
     unbounded trail AD-7's declaration exists to prevent.
     """
     now = timezone.now()
-    record_audit_entry(
-        "alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=90)
-    )
+    record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=90))
 
     skewed = now + dt.timedelta(milliseconds=1)
     assert purge_expired_entries(AuditRetention(days=30), now=skewed) == 1
@@ -821,9 +803,7 @@ def test_purge_expired_entries_tolerates_ordinary_clock_skew_in_now():
     # express, so the tolerance did not turn the guard off.
     record_audit_entry("bob", "west", AuditAction.LOAD, 1)
     with pytest.raises(ValueError, match="future"):
-        purge_expired_entries(
-            AuditRetention(days=30), now=timezone.now() + _FUTURE_NOW_TOLERANCE * 2
-        )
+        purge_expired_entries(AuditRetention(days=30), now=timezone.now() + _FUTURE_NOW_TOLERANCE * 2)
     assert AuditEntry.objects.count() == 1
 
 
@@ -881,9 +861,7 @@ def test_an_uncapped_column_does_not_crash_every_audit_write():
     original = field.max_length
     field.max_length = None
     try:
-        entry = record_audit_entry(
-            "alice", None, AuditAction.LOAD, 1, target="x" * 5_000
-        )
+        entry = record_audit_entry("alice", None, AuditAction.LOAD, 1, target="x" * 5_000)
         assert AuditEntry.objects.get(pk=entry.pk).target == "x" * 5_000
         # The other guards on that field still apply.
         with pytest.raises(ValueError, match="target"):
@@ -919,9 +897,7 @@ def test_a_filter_the_write_path_refuses_is_refused_on_the_read_path_too(bad_val
     record_audit_entry("alice", "east", AuditAction.LOAD, 1)
 
     with pytest.raises((TypeError, ValueError), match="occurred_at__gte"):
-        query_audit_entries(
-            reader_actor="bob", reader_role="auditor", occurred_at__gte=bad_value
-        )
+        query_audit_entries(reader_actor="bob", reader_role="auditor", occurred_at__gte=bad_value)
     # Refused before anything ran: no AUDIT_READ row, original row intact.
     assert AuditEntry.objects.count() == 1
 
@@ -938,22 +914,8 @@ def test_a_date_part_lookup_still_accepts_a_date():
     record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=stamped)
 
     local_date = timezone.localtime(stamped).date()
-    assert (
-        len(
-            query_audit_entries(
-                reader_actor="bob", reader_role=None, occurred_at__date=local_date
-            )
-        )
-        == 1
-    )
-    assert (
-        len(
-            query_audit_entries(
-                reader_actor="bob", reader_role=None, occurred_at__year=local_date.year
-            )
-        )
-        >= 1
-    )
+    assert len(query_audit_entries(reader_actor="bob", reader_role=None, occurred_at__date=local_date)) == 1
+    assert len(query_audit_entries(reader_actor="bob", reader_role=None, occurred_at__year=local_date.year)) >= 1
 
 
 @pytest.mark.parametrize("container", [set, frozenset, iter, list, tuple])
@@ -983,9 +945,7 @@ def test_a_generator_filter_is_materialized_rather_than_consumed():
     stamped = timezone.now()
     record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=stamped)
 
-    rows = query_audit_entries(
-        reader_actor="bob", reader_role=None, occurred_at__in=(t for t in [stamped])
-    )
+    rows = query_audit_entries(reader_actor="bob", reader_role=None, occurred_at__in=(t for t in [stamped]))
     assert len(rows) == 1
 
 
@@ -1019,9 +979,7 @@ def test_an_over_long_filter_value_is_still_a_legitimate_query():
     AUDIT_READ row correctly records `row_count=0`).
     """
     cap = AuditEntry._meta.get_field("actor").max_length
-    rows = query_audit_entries(
-        reader_actor="bob", reader_role=None, actor="x" * (cap + 45)
-    )
+    rows = query_audit_entries(reader_actor="bob", reader_role=None, actor="x" * (cap + 45))
     assert rows == []
     assert AuditEntry.objects.filter(action=AuditAction.AUDIT_READ).count() == 1
 
@@ -1082,7 +1040,14 @@ def test_two_byte_identical_calls_write_two_separate_rows():
 
     assert first.pk != second.pk
     assert AuditEntry.objects.count() == 2
-    assert AuditEntry.objects.filter(
-        actor="alice", role="east", action=AuditAction.EXPORT,
-        target="q3", row_count=42, occurred_at=stamped,
-    ).count() == 2
+    assert (
+        AuditEntry.objects.filter(
+            actor="alice",
+            role="east",
+            action=AuditAction.EXPORT,
+            target="q3",
+            row_count=42,
+            occurred_at=stamped,
+        ).count()
+        == 2
+    )

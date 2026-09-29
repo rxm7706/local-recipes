@@ -235,18 +235,18 @@ class LayerSavings:
     """Per-layer token economy savings (Story 28.4, CAP-7) -- tracks what each
     optimization layer saved during execution. Fields are optional and None
     when the layer is disabled/degraded or has no stats available.
-    
+
     - ``output_compression_saved``: Layer 0 (caveman) - bytes saved by compressing
       agent output (~65% compression rate)
     - ``wire_compression_saved``: Layer 1 (headroom) - bytes saved by compressing
-      tool outputs, logs, file reads (40-95% compression rate)  
+      tool outputs, logs, file reads (40-95% compression rate)
     - ``graph_hits_vs_file_reads``: Layer 2 (codegraph) - tuple of (graph_hits, file_reads)
       showing structure queries answered from graph vs file re-reads
     - ``derived_context_cache_hits``: Layer 3 (cocoindex) - count of epic-context /
       continuity artifacts served from cache vs recomputed
     - ``planning_graph_tokens_saved``: Layer 4 (graphifyy) - tokens saved by selective
       retrieval vs full document loads from planning corpus"""
-    
+
     output_compression_saved: int | str | None = None
     wire_compression_saved: int | str | None = None
     graph_hits_vs_file_reads: tuple[int, int] | str | None = None  # (hits, reads)
@@ -285,7 +285,7 @@ class UsageSnapshot:
     ``tests/meta/test_supervisor_run_path_agreement.py`` (a divergence would
     otherwise make every sample look permanently stale, silently disabling
     both token ceilings for a run's whole life behind nothing but a WARN).
-    
+
     Story 28.4 extends this to include per-layer savings telemetry (CAP-7).
     Story 28.10 adds optional advisory dollar estimates (CAP-11) when a
     declared model-cost catalog is present — absent when no catalog is
@@ -797,9 +797,7 @@ class HarnessPort(Protocol):
         ``state.json`` that is not finished reports ``"non_terminal"``."""
         ...
 
-    def resolution_reference(
-        self, project: Path, run_id: str, story_key: str
-    ) -> str | None:
+    def resolution_reference(self, project: Path, run_id: str, story_key: str) -> str | None:
         """The path to an escalation's resolution marker (Story 3.7,
         AD-3/AD-45) -- ``<project>/.bmad-loop/runs/<run_id>/resolve/
         <story_key>/resolution.json``'s own posix path if that file exists

@@ -15,7 +15,6 @@ import os
 from pathlib import Path
 
 import pandas as pd
-import pytest
 import vizro.models as vm
 from vizro import Vizro
 from vizro.managers import data_manager

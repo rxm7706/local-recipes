@@ -22,13 +22,7 @@ from pyforge.warden.extract.pixi import (
 from pyforge.warden.models import Ecosystem, ScannedManifest
 from pyforge.warden.routing import DefaultRouter
 
-FIXTURE = (
-    Path(__file__).resolve().parent.parent
-    / "fixtures"
-    / "projects"
-    / "pixi_toml_common"
-    / "pixi.toml"
-)
+FIXTURE = Path(__file__).resolve().parent.parent / "fixtures" / "projects" / "pixi_toml_common" / "pixi.toml"
 MANIFEST = ScannedManifest(path="pixi.toml", kind=PIXI_TOML_KIND)
 
 
@@ -59,40 +53,28 @@ def test_common_case_fixture_covers_base_feature_and_target_tables():
     }
 
     assert by_name["python"].ecosystem is Ecosystem.CONDA
-    assert [p.section for p in by_name["python"].provenance] == [
-        BASE_DEPENDENCIES_SECTION
-    ]
+    assert [p.section for p in by_name["python"].provenance] == [BASE_DEPENDENCIES_SECTION]
 
     requests_component = by_name["requests"]
     assert requests_component.ecosystem is Ecosystem.PYPI
     assert requests_component.version == "2.31.0"
-    assert [p.section for p in requests_component.provenance] == [
-        BASE_PYPI_DEPENDENCIES_SECTION
-    ]
+    assert [p.section for p in requests_component.provenance] == [BASE_PYPI_DEPENDENCIES_SECTION]
 
     pytest_component = by_name["pytest"]
     assert pytest_component.ecosystem is Ecosystem.CONDA
-    assert [p.section for p in pytest_component.provenance] == [
-        "feature.test.dependencies"
-    ]
+    assert [p.section for p in pytest_component.provenance] == ["feature.test.dependencies"]
 
     coverage = by_name["coverage"]
     assert coverage.ecosystem is Ecosystem.PYPI
-    assert [p.section for p in coverage.provenance] == [
-        "feature.test.pypi-dependencies"
-    ]
+    assert [p.section for p in coverage.provenance] == ["feature.test.pypi-dependencies"]
 
     compilers = by_name["compilers"]
     assert compilers.ecosystem is Ecosystem.CONDA
-    assert [p.section for p in compilers.provenance] == [
-        "target.linux-64.dependencies"
-    ]
+    assert [p.section for p in compilers.provenance] == ["target.linux-64.dependencies"]
 
     psutil_component = by_name["psutil"]
     assert psutil_component.ecosystem is Ecosystem.PYPI
-    assert [p.section for p in psutil_component.provenance] == [
-        "target.linux-64.pypi-dependencies"
-    ]
+    assert [p.section for p in psutil_component.provenance] == ["target.linux-64.pypi-dependencies"]
 
 
 # --- conda-dependency TOML value shapes ---------------------------------------
@@ -122,9 +104,7 @@ def test_conda_dep_table_value_reads_version_subkey(tmp_path):
 
 
 def test_conda_dep_table_value_without_version_subkey_is_bare(tmp_path):
-    path = write_pixi_toml(
-        tmp_path, '[dependencies]\nmypkg = { channel = "conda-forge" }\n'
-    )
+    path = write_pixi_toml(tmp_path, '[dependencies]\nmypkg = { channel = "conda-forge" }\n')
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.version is None
 
@@ -140,9 +120,7 @@ def test_pypi_dep_bare_wildcard_is_no_version(tmp_path):
 
 
 def test_pypi_dep_exact_string_is_concrete(tmp_path):
-    path = write_pixi_toml(
-        tmp_path, '[pypi-dependencies]\nrequests = "==2.31.0"\n'
-    )
+    path = write_pixi_toml(tmp_path, '[pypi-dependencies]\nrequests = "==2.31.0"\n')
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.version == "2.31.0"
 
@@ -193,7 +171,7 @@ def test_pypi_dep_table_value_bare_version_subkey_is_also_an_exact_pin(tmp_path)
 
 
 def test_missing_dependencies_key_yields_no_components(tmp_path):
-    path = write_pixi_toml(tmp_path, "[workspace]\nname = \"x\"\n")
+    path = write_pixi_toml(tmp_path, '[workspace]\nname = "x"\n')
     assert _extractor().extract(path, MANIFEST) == ()
 
 
@@ -265,26 +243,11 @@ def test_oversized_line_raises_unparsable(tmp_path, monkeypatch):
 def test_router_routes_all_six_generic_tokens():
     router = DefaultRouter()
     assert router.route(PIXI_TOML_KIND, BASE_DEPENDENCIES_SECTION) is Ecosystem.CONDA
-    assert (
-        router.route(PIXI_TOML_KIND, BASE_PYPI_DEPENDENCIES_SECTION)
-        is Ecosystem.PYPI
-    )
-    assert (
-        router.route(PIXI_TOML_KIND, FEATURE_DEPENDENCIES_SECTION)
-        is Ecosystem.CONDA
-    )
-    assert (
-        router.route(PIXI_TOML_KIND, FEATURE_PYPI_DEPENDENCIES_SECTION)
-        is Ecosystem.PYPI
-    )
-    assert (
-        router.route(PIXI_TOML_KIND, TARGET_DEPENDENCIES_SECTION)
-        is Ecosystem.CONDA
-    )
-    assert (
-        router.route(PIXI_TOML_KIND, TARGET_PYPI_DEPENDENCIES_SECTION)
-        is Ecosystem.PYPI
-    )
+    assert router.route(PIXI_TOML_KIND, BASE_PYPI_DEPENDENCIES_SECTION) is Ecosystem.PYPI
+    assert router.route(PIXI_TOML_KIND, FEATURE_DEPENDENCIES_SECTION) is Ecosystem.CONDA
+    assert router.route(PIXI_TOML_KIND, FEATURE_PYPI_DEPENDENCIES_SECTION) is Ecosystem.PYPI
+    assert router.route(PIXI_TOML_KIND, TARGET_DEPENDENCIES_SECTION) is Ecosystem.CONDA
+    assert router.route(PIXI_TOML_KIND, TARGET_PYPI_DEPENDENCIES_SECTION) is Ecosystem.PYPI
 
 
 def test_feature_and_target_names_never_baked_into_the_routing_key(tmp_path):
@@ -293,8 +256,7 @@ def test_feature_and_target_names_never_baked_into_the_routing_key(tmp_path):
     Provenance.section differs."""
     path = write_pixi_toml(
         tmp_path,
-        '[feature.a.dependencies]\nfoo = "*"\n'
-        '[feature.b.dependencies]\nbar = "*"\n',
+        '[feature.a.dependencies]\nfoo = "*"\n[feature.b.dependencies]\nbar = "*"\n',
     )
     components = _extractor().extract(path, MANIFEST)
     sections = sorted(p.section for c in components for p in c.provenance)

@@ -103,6 +103,8 @@ from .currency import currency_findings, currency_stale_finding
 from .hygiene import (
     _synthesize_deptry_frontdoor,
     parse_deptry_output,
+)
+from .hygiene import (
     unsafe_identity_finding as hygiene_unsafe_identity_finding,
 )
 from .interfaces import Engine, EngineResult
@@ -175,9 +177,7 @@ OSV_SCANNER_VERSION_RANGE = SpecifierSet(">=2.4.0,<2.5")
 # verified live against the currently-provisioned pixi environment during
 # this story's implementation (2026-07-24).
 _DEPTRY_VERSION_PATTERN = re.compile(r"^deptry\s+(\S+)", re.MULTILINE)
-_OSV_SCANNER_VERSION_PATTERN = re.compile(
-    r"^osv-scanner version:\s*(\S+)", re.MULTILINE
-)
+_OSV_SCANNER_VERSION_PATTERN = re.compile(r"^osv-scanner version:\s*(\S+)", re.MULTILINE)
 
 _ENGINE_FACTORIES: list[Callable[[], Engine]] = []
 
@@ -427,10 +427,7 @@ def _check_engine_version(
         return ErrorRecord(
             kind=ErrorKind.ENGINE_TIMEOUT,
             owner=owner,
-            message=(
-                f"engine {owner!r} exceeded the "
-                f"{ENGINE_VERSION_CHECK_TIMEOUT_SECONDS}s version-check timeout"
-            ),
+            message=(f"engine {owner!r} exceeded the {ENGINE_VERSION_CHECK_TIMEOUT_SECONDS}s version-check timeout"),
         )
     except OSError as exc:
         return ErrorRecord(
@@ -446,10 +443,7 @@ def _check_engine_version(
         return ErrorRecord(
             kind=ErrorKind.ENGINE_UNAVAILABLE,
             owner=owner,
-            message=(
-                f"{owner!r} --version exited {completed.returncode} "
-                "-- compatibility could not be confirmed"
-            ),
+            message=(f"{owner!r} --version exited {completed.returncode} -- compatibility could not be confirmed"),
         )
     stdout_text = completed.stdout.decode("utf-8", errors="replace")
     match = version_pattern.search(stdout_text)
@@ -458,8 +452,7 @@ def _check_engine_version(
             kind=ErrorKind.ENGINE_UNAVAILABLE,
             owner=owner,
             message=(
-                f"could not parse version output from {owner!r} "
-                f"(--version produced no recognizable version string)"
+                f"could not parse version output from {owner!r} (--version produced no recognizable version string)"
             ),
         )
     try:
@@ -468,19 +461,13 @@ def _check_engine_version(
         return ErrorRecord(
             kind=ErrorKind.ENGINE_UNAVAILABLE,
             owner=owner,
-            message=(
-                f"could not parse version {match.group(1)!r} reported by "
-                f"{owner!r}"
-            ),
+            message=(f"could not parse version {match.group(1)!r} reported by {owner!r}"),
         )
     if version not in expected:
         return ErrorRecord(
             kind=ErrorKind.ENGINE_UNAVAILABLE,
             owner=owner,
-            message=(
-                f"{owner!r} version {str(version)!r} is outside tested "
-                f"range {expected!s}"
-            ),
+            message=(f"{owner!r} version {str(version)!r} is outside tested range {expected!s}"),
         )
     return None
 
@@ -539,9 +526,7 @@ def _doctor_check_engine(
         cwd=cwd,
     )
     if error is None:
-        return DoctorCheck(
-            name=name, ok=True, message=f"within tested range {expected!s}"
-        )
+        return DoctorCheck(name=name, ok=True, message=f"within tested range {expected!s}")
     return DoctorCheck(name=name, ok=False, message=error.message)
 
 
@@ -559,20 +544,14 @@ def _doctor_check_osv_db() -> DoctorCheck:
         return DoctorCheck(
             name="osv-db",
             ok=False,
-            message=(
-                f"{OSV_DB_CACHE_ENV_VAR} is unset or empty -- no offline "
-                "OSV database configured"
-            ),
+            message=(f"{OSV_DB_CACHE_ENV_VAR} is unset or empty -- no offline OSV database configured"),
         )
     zip_path = db_zip_path(cache_dir)
     if zip_path is None or not _db_has_valid_advisory(zip_path):
         return DoctorCheck(
             name="osv-db",
             ok=False,
-            message=(
-                f"no usable offline OSV database found under {cache_dir!r} "
-                "(absent, empty, or content-corrupt)"
-            ),
+            message=(f"no usable offline OSV database found under {cache_dir!r} (absent, empty, or content-corrupt)"),
         )
     try:
         snapshot_at = db_snapshot_at(zip_path)
@@ -586,23 +565,17 @@ def _doctor_check_osv_db() -> DoctorCheck:
         return DoctorCheck(
             name="osv-db",
             ok=False,
-            message=(
-                f"offline OSV database under {cache_dir!r} became unreadable "
-                "while checking its snapshot"
-            ),
+            message=(f"offline OSV database under {cache_dir!r} became unreadable while checking its snapshot"),
         )
     if is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC)):
         return DoctorCheck(
             name="osv-db",
             ok=False,
             message=(
-                f"offline OSV database is stale or future-dated (snapshot "
-                f"{snapshot_at}, max age {DB_MAX_AGE_DAYS}d)"
+                f"offline OSV database is stale or future-dated (snapshot {snapshot_at}, max age {DB_MAX_AGE_DAYS}d)"
             ),
         )
-    return DoctorCheck(
-        name="osv-db", ok=True, message=f"snapshot {snapshot_at} (fresh)"
-    )
+    return DoctorCheck(name="osv-db", ok=True, message=f"snapshot {snapshot_at} (fresh)")
 
 
 def _doctor_check_feed(
@@ -642,10 +615,7 @@ def _doctor_check_feed(
     air_gapped = DoctorCheck(
         name=check_name,
         ok=True,
-        message=(
-            f"operating air-gapped: {feed_name} feed not present -- "
-            f"{absent_hint}"
-        ),
+        message=(f"operating air-gapped: {feed_name} feed not present -- {absent_hint}"),
     )
     cache_dir = feeds.resolve_cache_dir()
     if cache_dir is None:
@@ -668,10 +638,7 @@ def _doctor_check_feed(
         return DoctorCheck(
             name=check_name,
             ok=False,
-            message=(
-                f"{feed_name} feed file present at {path} but unreadable "
-                "or invalid -- refresh or remove it"
-            ),
+            message=(f"{feed_name} feed file present at {path} but unreadable or invalid -- refresh or remove it"),
         )
     try:
         provenance = feeds.feed_provenance(
@@ -689,18 +656,12 @@ def _doctor_check_feed(
         return DoctorCheck(
             name=check_name,
             ok=not stale_is_problem,
-            message=(
-                f"{feed_name} feed present but stale (snapshot "
-                f"{provenance.snapshot_at}) -- {stale_hint}"
-            ),
+            message=(f"{feed_name} feed present but stale (snapshot {provenance.snapshot_at}) -- {stale_hint}"),
         )
     return DoctorCheck(
         name=check_name,
         ok=True,
-        message=(
-            f"{feed_name} feed present, snapshot {provenance.snapshot_at} "
-            "(fresh)"
-        ),
+        message=(f"{feed_name} feed present, snapshot {provenance.snapshot_at} (fresh)"),
     )
 
 
@@ -726,7 +687,7 @@ def _doctor_check_tea(target: Path) -> DoctorCheck:
         try:
             with config_path.open("rb") as handle:
                 document = tomllib.load(handle)
-        except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+        except OSError, tomllib.TOMLDecodeError, UnicodeDecodeError:
             document = {}
         modules = document.get("modules")
         if isinstance(modules, Mapping):
@@ -835,10 +796,7 @@ def run_doctor_checks(target: Path) -> tuple[DoctorCheck, ...]:
             # 2026-07-24: doctor checked KEV/EPSS but skipped the one feed
             # the currency axis actually reads). No default gate:
             # currency_gating activates only via the flags named below.
-            absent_hint=(
-                "no currency gate is active unless --max-lag/--require-lts/"
-                "--fail-on-eol is passed"
-            ),
+            absent_hint=("no currency gate is active unless --max-lag/--require-lts/--fail-on-eol is passed"),
             stale_hint=(
                 "an active currency gate (--max-lag/--require-lts/"
                 "--fail-on-eol) skips the stale snapshot and components "
@@ -894,7 +852,7 @@ def _deptry_requirements_sources(target: Path) -> list[str]:
     try:
         with (target / "pyproject.toml").open("rb") as stream:
             data = tomllib.load(stream)
-    except (OSError, tomllib.TOMLDecodeError):
+    except OSError, tomllib.TOMLDecodeError:
         data = None
     if isinstance(data, dict):
         tool = data.get("tool")
@@ -904,9 +862,7 @@ def _deptry_requirements_sources(target: Path) -> list[str]:
                 configured = deptry_config.get("requirements_files")
     if isinstance(configured, str):
         candidates = [configured]
-    elif isinstance(configured, list) and all(
-        isinstance(item, str) for item in configured
-    ):
+    elif isinstance(configured, list) and all(isinstance(item, str) for item in configured):
         candidates = list(configured)
     else:
         candidates = ["requirements.txt"]
@@ -916,7 +872,7 @@ def _deptry_requirements_sources(target: Path) -> list[str]:
             continue
         try:
             os.stat(target / candidate)
-        except (FileNotFoundError, NotADirectoryError):
+        except FileNotFoundError, NotADirectoryError:
             continue
         except OSError:
             pass  # ambiguous: keep — deptry fails loud, never silently
@@ -987,10 +943,7 @@ class DeptryEngine:
         synthesized = _synthesize_deptry_frontdoor(inventory.components)
         excluded_findings = tuple(
             sorted(
-                (
-                    hygiene_unsafe_identity_finding(c)
-                    for c in synthesized.excluded
-                ),
+                (hygiene_unsafe_identity_finding(c) for c in synthesized.excluded),
                 key=lambda f: f.id,
             )
         )
@@ -1013,9 +966,7 @@ class DeptryEngine:
                 axis=self.axis,
             )
         try:
-            handle, input_path = tempfile.mkstemp(
-                suffix=".txt", prefix="pdos-deptry-frontdoor-"
-            )
+            handle, input_path = tempfile.mkstemp(suffix=".txt", prefix="pdos-deptry-frontdoor-")
         except OSError as exc:
             return EngineResult(
                 findings=excluded_findings,
@@ -1023,10 +974,7 @@ class DeptryEngine:
                     ErrorRecord(
                         kind=ErrorKind.ENGINE_EXECUTION_FAILED,
                         owner=self.name,
-                        message=(
-                            "could not create a temp deptry front-door "
-                            f"input file: {exc.__class__.__name__}"
-                        ),
+                        message=(f"could not create a temp deptry front-door input file: {exc.__class__.__name__}"),
                     ),
                 ),
                 coverage=(),
@@ -1052,9 +1000,7 @@ class DeptryEngine:
             # `requirements.txt` was re-appended, which still clobbered a
             # config-declared file list). Still a genuine no-op for
             # pyproject-native scans: deptry ignores the flag entirely there.
-            requirements_files = ",".join(
-                [input_path, *_deptry_requirements_sources(target)]
-            )
+            requirements_files = ",".join([input_path, *_deptry_requirements_sources(target)])
             # exit_code is ignored: deptry's 0/1 stay content-only (Story 1.5
             # widened the seam for osv's own operational-exit-code needs).
             text, error, _exit_code = _engine_env(
@@ -1111,9 +1057,7 @@ class DeptryEngine:
                 resolution_depth=None,
             ),
         )
-        findings = tuple(
-            sorted((*excluded_findings, *parse.findings), key=lambda f: f.id)
-        )
+        findings = tuple(sorted((*excluded_findings, *parse.findings), key=lambda f: f.id))
         return EngineResult(
             findings=findings,
             errors=parse.errors,
@@ -1140,9 +1084,7 @@ def _withheld_findings(candidates: list[Component]) -> tuple[Finding, ...]:
     return tuple(offline_db_unavailable_finding(component) for component in candidates)
 
 
-def _name_level_findings(
-    zip_path: Path, name_level_candidates: list[Component]
-) -> tuple[Finding, ...]:
+def _name_level_findings(zip_path: Path, name_level_candidates: list[Component]) -> tuple[Finding, ...]:
     """One ``indeterminate:name-level-critical-cve:<pkg>@unspecified``
     finding per mapped-but-unversioned candidate whose resolved PyPI name
     carries >=1 CRITICAL advisory in the offline DB at ANY version (FR13) —
@@ -1153,9 +1095,7 @@ def _name_level_findings(
     for component in name_level_candidates:
         if component.pypi_identity is None:
             continue  # defensive: the caller's own filter already excludes this
-        advisory_ids = name_level_critical_advisory_ids(
-            zip_path, component.pypi_identity.name
-        )
+        advisory_ids = name_level_critical_advisory_ids(zip_path, component.pypi_identity.name)
         if advisory_ids:
             findings.append(name_level_critical_cve_finding(component, advisory_ids))
     return tuple(sorted(findings, key=lambda f: f.id))
@@ -1230,11 +1170,7 @@ def _stamp_kev(
             stamped.append(finding)
             continue
         date_added = kev_match(kev_candidates.get(finding.id, ()), catalog)
-        stamped.append(
-            dataclasses.replace(
-                finding, kev=date_added is not None, kev_date=date_added
-            )
-        )
+        stamped.append(dataclasses.replace(finding, kev=date_added is not None, kev_date=date_added))
     return tuple(stamped)
 
 
@@ -1281,9 +1217,7 @@ def _epss_enrichment(
         # rather than letting the race propagate as an engine crash (mirrors
         # _kev_enrichment's own TOCTOU handling).
         return None, None, (epss_stale_finding(unavailable=True),)
-    epss_findings = (
-        () if epss_data.max_age_ok else (epss_stale_finding(unavailable=False),)
-    )
+    epss_findings = () if epss_data.max_age_ok else (epss_stale_finding(unavailable=False),)
     return scores, epss_data, epss_findings
 
 
@@ -1474,9 +1408,7 @@ class OsvEngine:
                     key=lambda f: f.id,
                 )
             )
-            vuln_data = VulnData(
-                source=str(zip_path), snapshot_at=snapshot_at, max_age_ok=not stale
-            )
+            vuln_data = VulnData(source=str(zip_path), snapshot_at=snapshot_at, max_age_ok=not stale)
             return EngineResult(
                 findings=findings,
                 errors=(),
@@ -1516,9 +1448,7 @@ class OsvEngine:
                     key=lambda f: f.id,
                 )
             )
-            vuln_data = VulnData(
-                source=str(zip_path), snapshot_at=snapshot_at, max_age_ok=not stale
-            )
+            vuln_data = VulnData(source=str(zip_path), snapshot_at=snapshot_at, max_age_ok=not stale)
             return EngineResult(
                 findings=findings,
                 errors=(),
@@ -1567,9 +1497,7 @@ class OsvEngine:
             )
 
         try:
-            handle, input_path = tempfile.mkstemp(
-                suffix=".txt", prefix="pdos-osv-input-"
-            )
+            handle, input_path = tempfile.mkstemp(suffix=".txt", prefix="pdos-osv-input-")
         except OSError as exc:
             # A distinct local name from the `_engine_env` error below (not
             # just style: reusing `error` there would reassign an
@@ -1579,10 +1507,7 @@ class OsvEngine:
             mkstemp_error = ErrorRecord(
                 kind=ErrorKind.ENGINE_EXECUTION_FAILED,
                 owner=self.name,
-                message=(
-                    "could not create a temp osv input file: "
-                    f"{exc.__class__.__name__}"
-                ),
+                message=(f"could not create a temp osv input file: {exc.__class__.__name__}"),
             )
             # The purity guard already ran (candidates are known before the
             # temp file is even created): its findings must not be lost
@@ -1613,9 +1538,7 @@ class OsvEngine:
             )
         try:
             os.close(handle)
-            Path(input_path).write_text(
-                "\n".join(synthesized.lines) + "\n", encoding="utf-8"
-            )
+            Path(input_path).write_text("\n".join(synthesized.lines) + "\n", encoding="utf-8")
             text, error, exit_code = _engine_env(
                 lambda output_path: [
                     "osv-scanner",
@@ -1692,12 +1615,8 @@ class OsvEngine:
             # stamps read the SAME kev_candidates set (Story 6.7 reuses it
             # verbatim, no new candidate-collection mechanism) and compose
             # freely (either, both, or neither may fire per finding).
-            stamped_parse_findings = _stamp_kev(
-                parse.findings, catalog, parse.kev_candidates
-            )
-            stamped_parse_findings = _stamp_epss(
-                stamped_parse_findings, scores, parse.kev_candidates
-            )
+            stamped_parse_findings = _stamp_kev(parse.findings, catalog, parse.kev_candidates)
+            stamped_parse_findings = _stamp_epss(stamped_parse_findings, scores, parse.kev_candidates)
             findings = tuple(
                 sorted(
                     (
@@ -1861,9 +1780,7 @@ class LicenseEngine:
                 resolution_depth=None,
             ),
         )
-        return EngineResult(
-            findings=findings, errors=(), coverage=coverage, axis=self.axis
-        )
+        return EngineResult(findings=findings, errors=(), coverage=coverage, axis=self.axis)
 
 
 class CurrencyEngine:
@@ -1897,9 +1814,7 @@ class CurrencyEngine:
         self._gating = gating
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
-        findings, currency_data = currency_findings(
-            inventory.components, now=datetime.now(UTC)
-        )
+        findings, currency_data = currency_findings(inventory.components, now=datetime.now(UTC))
         if self._gating and (currency_data is None or not currency_data.max_age_ok):
             # NFR-S9: an absent/stale bundled registry under an active gate
             # forces the WHOLE axis indeterminate -- one provenance finding

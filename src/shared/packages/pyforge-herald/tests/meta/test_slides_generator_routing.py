@@ -100,9 +100,7 @@ def test_herald_persona_names_slides_generator_in_the_routing_section():
     root = _repo_root()
     text = _persona_skill_md(root).read_text(encoding="utf-8")
     section = _routing_section(text)
-    assert SKILL_NAME in section, (
-        f"{PERSONA_SKILL}/SKILL.md's AD-2 routing section does not name {SKILL_NAME!r}"
-    )
+    assert SKILL_NAME in section, f"{PERSONA_SKILL}/SKILL.md's AD-2 routing section does not name {SKILL_NAME!r}"
 
 
 def test_boundary_language_is_concrete_not_a_bare_wields_mention():
@@ -115,13 +113,9 @@ def test_boundary_language_is_concrete_not_a_bare_wields_mention():
 
     assert SKILL_NAME in section
     assert re.search(r"(?i)quick draft", section), "missing 'quick draft' framing"
-    assert re.search(r"(?i)never\b[^.]*\bdeck head", section), (
-        "missing the 'never a deck head' boundary"
-    )
+    assert re.search(r"(?i)never\b[^.]*\bdeck head", section), "missing the 'never a deck head' boundary"
     assert DECK_PIPELINE_SPEC in section, f"missing a pointer to {DECK_PIPELINE_SPEC}"
-    assert re.search(r"(?i)deck source of record", section), (
-        "missing the 'deck source of record' framing"
-    )
+    assert re.search(r"(?i)deck source of record", section), "missing the 'deck source of record' framing"
 
 
 def test_claude_md_never_mentions_slides_generator():

@@ -136,3 +136,16 @@ that did conda-forge (`recipes/`, `conda-forge-expert` skill) work -- this epic 
 that retro does not apply here. The three per-story specs in this directory (4.1, 4.2, 4.3) are this
 epic's durable record; no consolidated epic-level spec is authored separately (per this repo's "one
 canonical planning artifact" convention -- the per-story specs already are that record).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `c9537c2b06` (2026-08-07, "herald: Story 4.3 -- halt on auth error"); also `7c969d5bcb` (2026-08-07, "steward: Story 4.3 — Asking "am I under budget?" never lies"); also `115707d3db` (2026-08-07, "doctor: Story 4.3 — adoption-tracking watch axis"). Ledger row `4-3-halt-on-auth-error: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-4-3-halt-on-auth-error.md`, `src/shared/packages/pyforge-herald/tests/test_cli_watch.py`, `src/shared/packages/pyforge-herald/tests/test_watch.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

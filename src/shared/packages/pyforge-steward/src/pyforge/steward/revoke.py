@@ -122,10 +122,7 @@ class RevokeDuty:
         # `ok` is the command's own verdict. A report that lacks it is a broken
         # contract, and a broken contract must not project as a clean revoke.
         ok = report.get("ok") is True
-        summary = (
-            f"revoke {sub}: cancelled {cancelled} run(s), "
-            f"revoked {revoked} task(s)"
-        )
+        summary = f"revoke {sub}: cancelled {cancelled} run(s), revoked {revoked} task(s)"
         if not ok:
             summary = f"{summary} — {report.get('revoke_error')}"
         return DutyResult(ok=ok, summary=summary, details=report)

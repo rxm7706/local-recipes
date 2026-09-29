@@ -9,17 +9,20 @@ the sole site that renders a dispatch branch string, and
 ``resolve_dispatch_branch`` is the sole site that decides which branch a
 station's work actually lives on. Everything else in the package -- worktree
 provisioning, the in-flight conflict guard's git facts, and landing --
-imports one of the two. The one function that is NOT pure is
-``resolve_dispatch_branch``: it must ask git which branches exist, so it
-takes a ``VcsPort`` (the same read-only port the CLI already holds) and
-performs no writes.
+imports one of the two. Not every function here is pure: ``resolve_dispatch_
+branch`` must ask git which branches exist; ``story_spec_candidates``/
+``resolve_story_spec_path`` glob and stat the LOCAL working tree to find a
+spec's physical path; ``spec_text_at_ref`` (Story 51.7/CAP-255) composes the
+latter with a ``VcsPort.file_text_at_ref`` read to return a spec's content
+as it stood at an arbitrary ref. All three take their I/O port (or read the
+local filesystem directly) rather than reaching for one themselves, and
+none of them write.
 """
 
 from __future__ import annotations
 
 import fnmatch
 import re
-from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path, PurePath
@@ -29,6 +32,7 @@ from pyforge.core.landing_evidence import DISPATCH_BRANCH_PREFIX
 
 from .identity import StoryKey, normalize, render_filename_slug
 from .policy import EffectivePolicy
+from .refs import ORIGIN_MAIN
 from .tier_routing import TierLaunchResolution, resolve_tier_launch
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
@@ -52,6 +56,10 @@ KIND_DISPATCH_WAVE = "dispatch-wave"
 #: Story 28.24 (CAP-7): supervisor commit/push/verify when the harness
 #: cannot run shell.
 KIND_DISPATCH_FINALIZE = "dispatch-finalize"
+#: Story 51.4 (CAP-252): the supervisor stopped before verify/land because
+#: the worktree spec is `blocked` or the entire diff is narration (the
+#: tracked spec file itself) with no code progress behind it.
+KIND_DISPATCH_BLOCKED = "dispatch-blocked"
 
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _WORKTREES_DIRNAME = ".worktrees"
@@ -101,6 +109,10 @@ class DispatchJournalFacts:
     # no violation.
     verification_scope_advisories: tuple[dict[str, object], ...] = ()
     landing_verdict: str | None = None
+    # Story 53.2 review (I1): `execute_dispatch_land`'s envelope findings
+    # (MRS-DISP-047/048), a tuple of plain JSON-safe dicts -- same shape and
+    # same "never journal-only" rationale as `verification_scope_advisories`.
+    landing_findings: tuple[dict[str, object], ...] = ()
     harness_self_report_shipped: bool = False
     story_started_at: str | None = None
     story_ended_at: str | None = None
@@ -114,14 +126,7 @@ def canonical_repo_root(repo_root: Path) -> Path:
 
 
 def planning_specs_dir(repo_root: Path, slug: str) -> Path:
-    return (
-        canonical_repo_root(repo_root)
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-        / "specs"
-    )
+    return canonical_repo_root(repo_root) / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
 
 
 def dispatch_runs_dir(repo_root: Path, slug: str) -> Path:
@@ -160,6 +165,43 @@ def resolve_story_spec_path(repo_root: Path, slug: str, story: str) -> Path | No
     return None
 
 
+def spec_text_at_ref(
+    vcs: VcsPort,
+    repo_root: Path,
+    slug: str,
+    story: str,
+    *,
+    ref: str = ORIGIN_MAIN,
+) -> str | None:
+    """A story's tracked spec content as it stood at ``ref`` (Story 51.7/
+    CAP-255) -- the impure half of ``core.promotion.corroborated_merged_
+    story_keys``'s injected ``spec_status_for`` reader (the pure half,
+    ``core.promotion.read_spec_status``, parses the returned text).
+
+    Resolves the spec's repo-relative PATH against the LOCAL working tree
+    via ``resolve_story_spec_path`` -- the physical filename, once minted,
+    is stable across a story's status lifecycle; only the frontmatter
+    value inside it changes on promotion -- then reads that path's byte
+    content specifically at ``ref`` via ``VcsPort.file_text_at_ref``,
+    never the local working tree's own copy (which may be dirty, stale, or
+    simply sit on a different branch). Reads the local filesystem (path
+    resolution) and asks git for ref content; performs no writes.
+
+    Returns ``None`` (fails closed, never corroborating a landing) when
+    ``story`` does not parse as a story key, no local candidate resolves,
+    or ``ref`` has no such path (a spec minted after ``ref`` was fetched,
+    or not yet fetched at all)."""
+    path = resolve_story_spec_path(repo_root, slug, story)
+    if path is None:
+        return None
+    root = canonical_repo_root(repo_root)
+    try:
+        rel = path.relative_to(root)
+    except ValueError:
+        return None
+    return vcs.file_text_at_ref(repo_root, ref, rel.as_posix())
+
+
 def relocated_spec_path(spec_path: Path, repo_root: Path, worktree: Path) -> Path:
     """Map a primary-tree spec onto the dispatch worktree copy.
 
@@ -181,8 +223,7 @@ def relocated_spec_path(spec_path: Path, repo_root: Path, worktree: Path) -> Pat
         relative = spec.relative_to(root)
     except ValueError as exc:
         raise ValueError(
-            f"spec_path {str(spec)!r} is neither under worktree "
-            f"{str(wt)!r} nor repo root {str(root)!r}"
+            f"spec_path {str(spec)!r} is neither under worktree {str(wt)!r} nor repo root {str(root)!r}"
         ) from exc
     return wt / relative
 
@@ -207,9 +248,7 @@ def expected_story_spec_glob(repo_root: Path, slug: str, story: str) -> str | No
     return f"{rel_specs.as_posix()}/spec-{render_filename_slug(key)}-*.md"
 
 
-_DIFFICULTY_RE = re.compile(
-    r"^difficulty:\s*['\"]?([A-Za-z0-9_-]+)['\"]?\s*$", re.MULTILINE
-)
+_DIFFICULTY_RE = re.compile(r"^difficulty:\s*['\"]?([A-Za-z0-9_-]+)['\"]?\s*$", re.MULTILINE)
 
 
 def read_declared_difficulty(spec_text: str) -> str | None:
@@ -217,12 +256,8 @@ def read_declared_difficulty(spec_text: str) -> str | None:
     return match.group(1) if match else None
 
 
-def resolve_dispatch_model(
-    policy: EffectivePolicy, *, difficulty: str | None
-) -> str | None:
-    model, _, _, _ = resolve_dispatch_model_with_retry_escalation(
-        policy, difficulty=difficulty
-    )
+def resolve_dispatch_model(policy: EffectivePolicy, *, difficulty: str | None) -> str | None:
+    model, _, _, _ = resolve_dispatch_model_with_retry_escalation(policy, difficulty=difficulty)
     return model
 
 
@@ -244,9 +279,7 @@ def resolve_dispatch_model_with_retry_escalation(
         should_dispatch_retry_escalate,
     )
 
-    resolution = resolve_tier_launch(
-        policy, difficulty, allow_unmapped_fallback=True
-    )
+    resolution = resolve_tier_launch(policy, difficulty, allow_unmapped_fallback=True)
     dev_model = resolution.resolved_models.get("dev")
     base_model: str | None
     if isinstance(dev_model, str) and dev_model:
@@ -263,9 +296,7 @@ def resolve_dispatch_model_with_retry_escalation(
 
     seed = policy.seed_view()
     max_dev_field = seed.get("max_dev_attempts")
-    max_dev_attempts = (
-        max_dev_field.value if max_dev_field is not None else 2
-    )
+    max_dev_attempts = max_dev_field.value if max_dev_field is not None else 2
     if not isinstance(max_dev_attempts, int) or isinstance(max_dev_attempts, bool):
         max_dev_attempts = 2
 
@@ -342,11 +373,7 @@ def dispatch_worktree_branch(slug: str, story_key: str) -> str:
     components. Ordinary inputs (``pyforge-marshal``, ``22.9``) render
     unchanged.
     """
-    return (
-        f"{_DISPATCH_BRANCH_PREFIX}"
-        f"/{_safe_ref_segment(slug, 'project')}"
-        f"/{_safe_ref_segment(story_key, 'story')}"
-    )
+    return f"{_DISPATCH_BRANCH_PREFIX}/{_safe_ref_segment(slug, 'project')}/{_safe_ref_segment(story_key, 'story')}"
 
 
 def legacy_dispatch_worktree_branch(story_key: str) -> str:
@@ -421,11 +448,9 @@ def format_legacy_branch_refusal(
 ) -> str:
     """The land-first refusal for an unattributable legacy branch (22.9)."""
     where = (
-        f"is checked out at {str(checked_out_at)!r}, which is not this "
-        "station's dispatch worktree"
+        f"is checked out at {str(checked_out_at)!r}, which is not this station's dispatch worktree"
         if checked_out_at is not None
-        else "still exists with work that predates station-scoped branch "
-        "names and cannot be attributed to a station"
+        else "still exists with work that predates station-scoped branch names and cannot be attributed to a station"
     )
     return (
         f"legacy dispatch branch {legacy_branch!r} {where} — refusing to "
@@ -468,17 +493,11 @@ def resolve_dispatch_branch(
         return DispatchBranchResolution(branch=branch, resolved=branch)
 
     legacy_branch = legacy_dispatch_worktree_branch(story_key)
-    expected = (
-        worktree
-        if worktree is not None
-        else dispatch_worktree_path(repo_root, slug, story_key)
-    )
+    expected = worktree if worktree is not None else dispatch_worktree_path(repo_root, slug, story_key)
     legacy_worktree = vcs.worktree_path_for_branch(repo_root, legacy_branch)
     if legacy_worktree is not None:
         if _same_path(legacy_worktree, expected):
-            return DispatchBranchResolution(
-                branch=branch, resolved=legacy_branch, legacy=True
-            )
+            return DispatchBranchResolution(branch=branch, resolved=legacy_branch, legacy=True)
         return DispatchBranchResolution(
             branch=branch,
             refusal=format_legacy_branch_refusal(
@@ -506,11 +525,7 @@ def dispatch_worktree_path(repo_root: Path, slug: str, story_key: str) -> Path:
     # one against the other to attribute a legacy branch.
     safe_slug = _safe_ref_segment(slug, "project")
     safe_key = _safe_ref_segment(story_key, "story")
-    return (
-        canonical_repo_root(repo_root)
-        / _WORKTREES_DIRNAME
-        / f"{_DISPATCH_WORKTREE_PREFIX}{safe_slug}-{safe_key}"
-    )
+    return canonical_repo_root(repo_root) / _WORKTREES_DIRNAME / f"{_DISPATCH_WORKTREE_PREFIX}{safe_slug}-{safe_key}"
 
 
 def sanitize_worktree_name(repo_root: Path, slug: str, story_key: str) -> str:

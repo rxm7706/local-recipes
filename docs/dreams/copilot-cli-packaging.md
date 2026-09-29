@@ -3,9 +3,10 @@ title: copilot-cli on conda-forge — blocked at the license
 type: dream
 owner: mason
 status: archived
-archived-reason: blocked
+archived-reason: folded-into-station-dream
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `copilot-cli-packaging`).
 # copilot-cli on conda-forge
 
 ## The Dream

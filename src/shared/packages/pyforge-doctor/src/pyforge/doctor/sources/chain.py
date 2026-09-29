@@ -57,6 +57,7 @@ from enum import StrEnum
 from pathlib import Path, PurePosixPath
 
 import yaml
+from pyforge.core.roster import STATIONS as _ROSTER_STATIONS
 
 from ..checks.env_hygiene import _PRUNED_DIR_NAMES
 from ..cli_bridge import CliBridgeError, run_git
@@ -75,6 +76,10 @@ __all__ = (
     "SpecDeferredFinding",
     "classify_tier3_entries",
     "mint_id_for_entry",
+    "mint_sweep_id",
+    "StoryIdentity",
+    "slugify_title",
+    "mint_story_identity",
     "parse_spec_frontmatter_deferrals",
     "discover_spec_frontmatter_deferrals",
     "frontmatter_deferral_in_tracked",
@@ -108,11 +113,92 @@ GOVERNANCE_PROJECT = "docs/governance"
 _SATELLITE_RE = re.compile(r"^#{2,3}\s+Satellite:\s*(.+?)\s*$", re.MULTILINE)
 _NORMALIZE_RE = re.compile(r"[^a-z0-9 ]")
 
+
 def _normalize_title(title: str) -> str:
     """Lowercased, punctuation-stripped -- verbatim from the original, so a
     Dream's own ``title:`` can be matched against a consolidating Spec's
     ``## Satellite: <Title>`` heading regardless of exact wording drift."""
     return _NORMALIZE_RE.sub("", title.lower()).strip()
+
+
+#: Story 28.1 / CAP-81: a leading HTML-comment provenance banner a promoted
+#: tracked spec may carry ABOVE its frontmatter fence -- mirrors
+#: ``pyforge.marshal.core.promotion``/``core.spec_surface``'s own
+#: ``_BANNER_PREFIX``/``_BANNER_SUFFIX`` (Story 50.5, CAP-248; the leading
+#: BOM/whitespace tolerance is Story 51.8, CAP-256, closing DW-FU-50-6),
+#: duplicated here per that convention rather than shared across packages.
+_BANNER_PREFIX = "<!--"
+_BANNER_SUFFIX = "-->"
+
+#: The frontmatter fence: a whole line that is exactly ``---`` (Story 28.1).
+_FENCE = "---"
+
+
+def _skip_leading_banner(text: str) -> str:
+    """Skip a leading ``<!-- ... -->`` banner, possibly spanning multiple
+    lines -- verbatim port of ``pyforge.marshal.core.promotion``'s own
+    helper (Story 50.5, CAP-248). Tolerates a leading BOM, blank lines, or
+    spaces before the banner's opening marker (marshal Story 51.8, CAP-256,
+    closing DW-FU-50-6) -- the banner need not sit at literal text offset 0.
+    Returns ``text`` unchanged when no banner is found there, or when the
+    marker is never closed -- an unclosed banner is not a banner this
+    parser recognizes, so the frontmatter-fence check below still requires
+    the (absent) fence and correctly reports no parseable frontmatter.
+
+    One consequence of the port, kept deliberately for marshal parity: the
+    trailing ``.lstrip()`` strips indentation from whatever follows the
+    banner, so the column-0 fence rule (``_is_fence``) applies to the
+    POST-BANNER text -- a banner-topped file tolerates leading whitespace
+    on its opening fence (``<!-- b -->\\n   ---\\n...`` parses) while a bare
+    ``   ---`` opener with no banner is refused as attempted-but-unbounded.
+    """
+    stripped = text.lstrip("\ufeff \t\r\n")
+    if not stripped.startswith(_BANNER_PREFIX):
+        return text
+    end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    if end == -1:
+        return text
+    return stripped[end + len(_BANNER_SUFFIX) :].lstrip()
+
+
+def _is_fence(line: str) -> bool:
+    """A fence is a line that is exactly ``---`` at column 0 (trailing
+    whitespace tolerated). Deliberately ``rstrip``, never ``strip``: an
+    INDENTED ``  ---`` is content inside a YAML block scalar (``evidence: |``
+    quoting a fence, say), and treating it as the closing fence would
+    silently truncate the block -- Story 28.1's own defect class one shape
+    over from the fixture that motivated it."""
+    return line.rstrip() == _FENCE
+
+
+def _fenced_lines(text: str) -> list[str]:
+    """The document's lines as the fence scan sees them: the leading
+    provenance banner skipped, then ``splitlines()``."""
+    return _skip_leading_banner(text).splitlines()
+
+
+def _split_fenced_block(lines: list[str]) -> tuple[list[str], list[str], bool] | None:
+    """Split a document (``_fenced_lines``) at its LINE-ANCHORED frontmatter
+    fences -- the one scan ``_frontmatter_parse`` and
+    ``_dream_body_after_frontmatter`` both derive from, so the block one
+    accepts is exactly the block the other excludes from the body
+    (Story 28.1 / CAP-81).
+
+    Returns ``None`` when the first line is not a fence (no frontmatter
+    block opens the document -- the caller decides whether that is absent
+    metadata or an attempted-but-unbounded opener; see
+    ``_frontmatter_parse``). Otherwise returns ``(block, body, closed)``:
+    ``block`` is every line strictly between the opening fence and the first
+    later fence line, ``body`` every line after that closing fence, and
+    ``closed`` is ``False`` when no closing fence exists (``block`` is then
+    the rest of the file and ``body`` is empty).
+    """
+    if not lines or not _is_fence(lines[0]):
+        return None
+    for index in range(1, len(lines)):
+        if _is_fence(lines[index]):
+            return lines[1:index], lines[index + 1 :], True
+    return lines[1:], [], False
 
 
 def _frontmatter_parse(path: Path) -> tuple[dict, bool]:
@@ -124,22 +210,60 @@ def _frontmatter_parse(path: Path) -> tuple[dict, bool]:
     metadata, ``({}, False)``). Story 17-1 / FR-144 residual: the old
     ``except: return {}`` path silently converted unparseable Spec frontmatter
     into "no owner-dream", inflating INV-0.
+
+    Story 28.1 / CAP-81: the frontmatter block is bounded by LINE-ANCHORED
+    fences -- the opening fence is the first line (after an optional
+    ``<!-- ... -->`` provenance banner, ``_skip_leading_banner``, the shape
+    ``pyforge.marshal`` already reads through per Story 50.5 / CAP-248), the
+    closing fence the first later line that is exactly ``---``
+    (``_is_fence``; see ``_split_fenced_block``). The old
+    ``text.split("---", 2)`` cut at the FIRST literal ``---`` substring
+    anywhere in the document -- including one quoted mid-scalar inside the
+    block itself (marshal's Story 50.5 spec: a deferred-work ``evidence:``
+    block quoting ``lines[0] == "---"``) -- silently corrupting a
+    well-formed block into a truncated fragment: one deferral with no
+    ``location:`` where the file declares two. And its ``"---" in text``
+    pre-check made any prose file with a markdown thematic break read as
+    unparseable frontmatter.
+
+    Verdicts (Design Notes, Story 28.1):
+
+    - first line is a fence, a later line is a fence: the block between is
+      ``yaml.safe_load``-ed -- ``None`` (empty block) is ``({}, False)``, a
+      non-mapping or a YAML error is ``({}, True)``;
+    - first line is a fence, no later fence: ``({}, True)`` -- an unbounded
+      block is refused, never degraded (Story 17-1 / FR-144);
+    - first line is not a fence but starts with ``---`` after stripping
+      (``---title:`` glued on line 1, ``----``, `` ---``, ``--- # c``): the
+      document ATTEMPTED a block that cannot be bounded -- ``({}, True)``.
+      Reading these as absent instead silently dropped owner/status/title
+      on 34 archived Dreams (review pass 1); reading them leniently would
+      widen what counts as parseable (the Never clause);
+    - anything else on the first line (prose, a blank line, a BOM, an
+      unclosed ``<!--``, a ``---``/YAML/``---`` block displaced below prose,
+      a thematic break lower down): ``({}, False)`` -- absent metadata.
     """
     try:
         text = path.read_text(encoding="utf-8")
     except Exception:
         return {}, True
 
-    if not text.startswith("---"):
-        if "---" in text:
+    lines = _fenced_lines(text)
+    split = _split_fenced_block(lines)
+    if split is None:
+        if lines and lines[0].strip().startswith(_FENCE):
             return {}, True
         return {}, False
 
+    block, _body, closed = split
+    if not closed:
+        return {}, True
+
     try:
-        parts = text.split("---", 2)
-        if len(parts) < 3:
-            return {}, True
-        data = yaml.safe_load(parts[1])
+        # Trailing "\n": the old `parts[1]` slice ended at the newline before
+        # the closing fence, so a `|` block scalar that is the LAST key kept
+        # its final line break -- keep that value byte-identical.
+        data = yaml.safe_load("\n".join(block) + "\n")
     except Exception:
         return {}, True
 
@@ -193,11 +317,7 @@ def _satellite_titles(path: Path) -> set[str]:
         text = path.read_text(encoding="utf-8")
     except Exception:  # noqa: BLE001 -- see the docstring above.
         return set()
-    return {
-        norm
-        for m in _SATELLITE_RE.finditer(text)
-        if (norm := _normalize_title(m.group(1)))
-    }
+    return {norm for m in _SATELLITE_RE.finditer(text) if (norm := _normalize_title(m.group(1)))}
 
 
 def _expected_project(owner: str) -> str:
@@ -257,7 +377,7 @@ def _probe(p: Path) -> os.stat_result | None:
     the case that must not be answered ``False``."""
     try:
         return p.stat()
-    except (FileNotFoundError, NotADirectoryError):
+    except FileNotFoundError, NotADirectoryError:
         return None
 
 
@@ -312,21 +432,27 @@ def _collect_dreams(target: Path, findings: list[dict]) -> dict[str, dict]:
             return dreams
         entries = _listdir(dreams_dir)
     except OSError as exc:
-        findings.append(_unreadable_input(
-            "INV-1", "docs/dreams",
-            f"docs/dreams/ could not be read here — "
-            f"{exc.__class__.__name__}: {exc}; no Dream is evaluable",
-            "make docs/dreams/ readable, then re-check",
-        ))
+        findings.append(
+            _unreadable_input(
+                "INV-1",
+                "docs/dreams",
+                f"docs/dreams/ could not be read here — {exc.__class__.__name__}: {exc}; no Dream is evaluable",
+                "make docs/dreams/ readable, then re-check",
+            )
+        )
         return dreams
     for p in entries:
         if p.suffix != ".md" or p.name == "README.md":
             continue
         fm, unparseable = _frontmatter_parse(p)
         if unparseable:
-            findings.append(_unparseable_frontmatter_item(
-                inv="INV-1", subject=p.stem, path=p,
-            ))
+            findings.append(
+                _unparseable_frontmatter_item(
+                    inv="INV-1",
+                    subject=p.stem,
+                    path=p,
+                )
+            )
             continue
         dreams[p.stem] = {
             "owner": str(fm.get("owner") or ""),
@@ -348,10 +474,7 @@ def _spec_entry(sp: Path, project: str, target: Path) -> dict:
         # `covers-dreams:` -- a consolidating Spec's explicit declaration that
         # it also satisfies INV-1 for OTHER Dreams whose whole chain was
         # folded in here (2026-08-02 satellite-consolidation convention).
-        "covers": [
-            (c or "").split("/")[-1].removesuffix(".md")
-            for c in (fm.get("covers-dreams") or [])
-        ],
+        "covers": [(c or "").split("/")[-1].removesuffix(".md") for c in (fm.get("covers-dreams") or [])],
         "satellite_titles": _satellite_titles(sp),
         "status": str(fm.get("status") or "").strip(),
         "path": str(sp.relative_to(target)),
@@ -388,12 +511,15 @@ def _collect_specs(target: Path, findings: list[dict]) -> list[dict]:
     try:
         project_dirs = _listdir(projects_dir) if _is_dir(projects_dir) else []
     except OSError as exc:
-        findings.append(_unreadable_input(
-            "INV-0", "_bmad-output/projects",
-            f"_bmad-output/projects/ could not be read here — "
-            f"{exc.__class__.__name__}: {exc}; no Spec is evaluable",
-            "make _bmad-output/projects/ readable, then re-check",
-        ))
+        findings.append(
+            _unreadable_input(
+                "INV-0",
+                "_bmad-output/projects",
+                f"_bmad-output/projects/ could not be read here — "
+                f"{exc.__class__.__name__}: {exc}; no Spec is evaluable",
+                "make _bmad-output/projects/ readable, then re-check",
+            )
+        )
         project_dirs = []
     for pdir in project_dirs:
         specs_dir = pdir / "planning-artifacts" / "specs"
@@ -413,15 +539,17 @@ def _collect_specs(target: Path, findings: list[dict]) -> list[dict]:
     governance_dir = target / "docs" / "governance"
     try:
         gov_dirs = _listdir(governance_dir) if _is_dir(governance_dir) else []
-        gov_specs = [sd / "SPEC.md" for sd in gov_dirs
-                     if sd.name.startswith("spec-") and _is_file(sd / "SPEC.md")]
+        gov_specs = [sd / "SPEC.md" for sd in gov_dirs if sd.name.startswith("spec-") and _is_file(sd / "SPEC.md")]
     except OSError as exc:
-        findings.append(_unreadable_input(
-            "INV-0", GOVERNANCE_PROJECT,
-            f"docs/governance/ could not be read here — "
-            f"{exc.__class__.__name__}: {exc}; no guild Spec is evaluable",
-            "make docs/governance/ readable, then re-check",
-        ))
+        findings.append(
+            _unreadable_input(
+                "INV-0",
+                GOVERNANCE_PROJECT,
+                f"docs/governance/ could not be read here — "
+                f"{exc.__class__.__name__}: {exc}; no guild Spec is evaluable",
+                "make docs/governance/ readable, then re-check",
+            )
+        )
         gov_specs = []
     for sp in gov_specs:
         _append_spec_entry(sp, GOVERNANCE_PROJECT, target, specs, findings)
@@ -434,9 +562,14 @@ def _unreadable_input(inv: str, subject: str, detail: str, remedy: str) -> dict:
     own per-unit WARNs. Isolated rather than left to raise so an unreadable
     ``docs/dreams/`` cannot discard the INV-3 findings that never touch it."""
     return {
-        "inv": inv, "kind": "dream-chain-unevaluable", "subject": subject,
-        "owner": "", "status": "", "remedy": remedy,
-        "detail": detail, "warn": True,
+        "inv": inv,
+        "kind": "dream-chain-unevaluable",
+        "subject": subject,
+        "owner": "",
+        "status": "",
+        "remedy": remedy,
+        "detail": detail,
+        "warn": True,
     }
 
 
@@ -448,18 +581,18 @@ def _unreadable_specs_dir(project: str, exc: Exception) -> dict:
     on that made two projects' WARNs indistinguishable to a machine
     consumer."""
     return {
-        "inv": "INV-0", "kind": "dream-chain-unevaluable",
-        "subject": project, "owner": "", "status": f"in {project}",
+        "inv": "INV-0",
+        "kind": "dream-chain-unevaluable",
+        "subject": project,
+        "owner": "",
+        "status": f"in {project}",
         "remedy": "make the project's planning-artifacts/specs/ readable, then re-check",
-        "detail": (f"{project}: planning-artifacts/specs/ could not be read "
-                   f"here — {exc.__class__.__name__}: {exc}"),
+        "detail": (f"{project}: planning-artifacts/specs/ could not be read here — {exc.__class__.__name__}: {exc}"),
         "warn": True,
     }
 
 
-def _append_spec_entry(
-    sp: Path, project: str, target: Path, specs: list[dict], findings: list[dict]
-) -> None:
+def _append_spec_entry(sp: Path, project: str, target: Path, specs: list[dict], findings: list[dict]) -> None:
     """Append one Spec's collected fields to the CALLER's ``specs`` list, or
     -- on any failure building it -- a WARN finding to the CALLER's
     ``findings`` list instead, never both and never neither. Split out so
@@ -468,29 +601,34 @@ def _append_spec_entry(
     exists)."""
     fm, unparseable = _frontmatter_parse(sp)
     if unparseable:
-        findings.append(_unparseable_frontmatter_item(
-            inv="INV-0",
-            subject=sp.parent.name,
-            path=sp,
-            project=project,
-        ))
+        findings.append(
+            _unparseable_frontmatter_item(
+                inv="INV-0",
+                subject=sp.parent.name,
+                path=sp,
+                project=project,
+            )
+        )
         return
     try:
         specs.append(_spec_entry(sp, project, target))
     except Exception as exc:  # noqa: BLE001 -- one spec's malformed
         # owner-dream/covers-dreams value must not discard every other
         # already-collected Dream/Spec finding.
-        findings.append({
-            "inv": "INV-0", "kind": "dream-chain-unevaluable",
-            "subject": sp.parent.name, "owner": "", "status": f"in {project}",
-            "remedy": (
-                "fix the malformed owner-dream/covers-dreams frontmatter "
-                "value, then re-check"
-            ),
-            "detail": (f"{sp.parent.name} in {project}: could not be "
-                       f"evaluated here — {exc.__class__.__name__}: {exc}"),
-            "warn": True,
-        })
+        findings.append(
+            {
+                "inv": "INV-0",
+                "kind": "dream-chain-unevaluable",
+                "subject": sp.parent.name,
+                "owner": "",
+                "status": f"in {project}",
+                "remedy": ("fix the malformed owner-dream/covers-dreams frontmatter value, then re-check"),
+                "detail": (
+                    f"{sp.parent.name} in {project}: could not be evaluated here — {exc.__class__.__name__}: {exc}"
+                ),
+                "warn": True,
+            }
+        )
 
 
 def _check_project_sharded(pdir: Path, findings: list[dict]) -> None:
@@ -506,28 +644,45 @@ def _check_project_sharded(pdir: Path, findings: list[dict]) -> None:
         flat = "prd.md" in {n.lower() for n in names}
         status = "flat prd.md" if flat else "absent"
         remedy = "regenerate via bmad-prd into prds/prd-<slug>-<date>/"
-        findings.append({
-            "inv": "INV-3", "kind": "prd-not-sharded", "subject": project,
-            "owner": "", "status": status, "remedy": remedy,
-            "detail": f"{project}: PRD is {status}, not sharded — {remedy}",
-        })
+        findings.append(
+            {
+                "inv": "INV-3",
+                "kind": "prd-not-sharded",
+                "subject": project,
+                "owner": "",
+                "status": status,
+                "remedy": remedy,
+                "detail": f"{project}: PRD is {status}, not sharded — {remedy}",
+            }
+        )
     if not _is_dir(pdir / "architecture"):
         flat = any(n.startswith("architecture") for n in names)
         status = "flat architecture.md" if flat else "absent"
-        remedy = ("regenerate via bmad-architecture into "
-                  "architecture/architecture-<slug>-<date>/")
-        findings.append({
-            "inv": "INV-3", "kind": "architecture-not-sharded", "subject": project,
-            "owner": "", "status": status, "remedy": remedy,
-            "detail": f"{project}: architecture is {status}, not sharded — {remedy}",
-        })
+        remedy = "regenerate via bmad-architecture into architecture/architecture-<slug>-<date>/"
+        findings.append(
+            {
+                "inv": "INV-3",
+                "kind": "architecture-not-sharded",
+                "subject": project,
+                "owner": "",
+                "status": status,
+                "remedy": remedy,
+                "detail": f"{project}: architecture is {status}, not sharded — {remedy}",
+            }
+        )
     if "epics.md" not in names:
         remedy = "run bmad-create-epics-and-stories"
-        findings.append({
-            "inv": "INV-3", "kind": "epics-missing", "subject": project,
-            "owner": "", "status": "absent", "remedy": remedy,
-            "detail": f"{project}: epics.md is absent — {remedy}",
-        })
+        findings.append(
+            {
+                "inv": "INV-3",
+                "kind": "epics-missing",
+                "subject": project,
+                "owner": "",
+                "status": "absent",
+                "remedy": remedy,
+                "detail": f"{project}: epics.md is absent — {remedy}",
+            }
+        )
 
 
 def _sharded_findings(target: Path, findings: list[dict]) -> None:
@@ -550,13 +705,16 @@ def _sharded_findings(target: Path, findings: list[dict]) -> None:
     try:
         project_dirs = _listdir(projects_dir) if _is_dir(projects_dir) else []
     except OSError as exc:
-        findings.append(_unreadable_input(
-            "INV-3", "_bmad-output/projects",
-            f"_bmad-output/projects/ could not be read here — "
-            f"{exc.__class__.__name__}: {exc}; the sharded planning tree is "
-            f"not evaluable",
-            "make _bmad-output/projects/ readable, then re-check",
-        ))
+        findings.append(
+            _unreadable_input(
+                "INV-3",
+                "_bmad-output/projects",
+                f"_bmad-output/projects/ could not be read here — "
+                f"{exc.__class__.__name__}: {exc}; the sharded planning tree is "
+                f"not evaluable",
+                "make _bmad-output/projects/ readable, then re-check",
+            )
+        )
         return
     for proj in project_dirs:
         pdir = proj / "planning-artifacts"
@@ -567,19 +725,21 @@ def _sharded_findings(target: Path, findings: list[dict]) -> None:
         except Exception as exc:  # noqa: BLE001 -- one project's unreadable
             # directory must not discard findings already appended for a
             # different project.
-            findings.append({
-                "inv": "INV-3", "kind": "dream-chain-unevaluable",
-                "subject": pdir.parent.name, "owner": "", "status": "",
-                "remedy": "fix the malformed/unreadable planning-artifacts dir, then re-check",
-                "detail": (f"{pdir.parent.name}: could not be evaluated here — "
-                           f"{exc.__class__.__name__}: {exc}"),
-                "warn": True,
-            })
+            findings.append(
+                {
+                    "inv": "INV-3",
+                    "kind": "dream-chain-unevaluable",
+                    "subject": pdir.parent.name,
+                    "owner": "",
+                    "status": "",
+                    "remedy": "fix the malformed/unreadable planning-artifacts dir, then re-check",
+                    "detail": (f"{pdir.parent.name}: could not be evaluated here — {exc.__class__.__name__}: {exc}"),
+                    "warn": True,
+                }
+            )
 
 
-def _check_dream_chain(
-    target: Path, dreams: dict, specs: list[dict], findings: list[dict]
-) -> list[dict]:
+def _check_dream_chain(target: Path, dreams: dict, specs: list[dict], findings: list[dict]) -> list[dict]:
     """Port of the original script's own ``check()`` -- see this module's own
     header and the original's for the full INV-0/1/2/3 rationale. Findings
     are structured dicts here rather than printed lines; ``kind``/``remedy``
@@ -600,21 +760,25 @@ def _check_dream_chain(
         if not s["dream"]:
             slug = s["spec"].removeprefix("spec-")
             implied = slug if slug in dreams else ""
-            remedy = (f"add `owner-dream: docs/dreams/{implied}.md`" if implied
-                       else "add an owner-dream: key")
-            findings.append({
-                "inv": "INV-0", "kind": "spec-without-dream-link",
-                "subject": s["spec"],
-                "owner": dreams.get(implied, {}).get("owner", "") if implied else "",
-                "status": f"in {s['project']}", "remedy": remedy,
-                "detail": f"{s['spec']} in {s['project']} has no owner-dream link — {remedy}",
-            })
+            remedy = f"add `owner-dream: docs/dreams/{implied}.md`" if implied else "add an owner-dream: key"
+            findings.append(
+                {
+                    "inv": "INV-0",
+                    "kind": "spec-without-dream-link",
+                    "subject": s["spec"],
+                    "owner": dreams.get(implied, {}).get("owner", "") if implied else "",
+                    "status": f"in {s['project']}",
+                    "remedy": remedy,
+                    "detail": f"{s['spec']} in {s['project']} has no owner-dream link — {remedy}",
+                }
+            )
 
     # A Spec covers a Dream if it DECLARES the link, or (fallback) its slug
     # matches -- keeps INV-1 honest while INV-0 is being closed.
     covered = {s["dream"] for s in specs if s["dream"]}
-    covered |= {s["spec"].removeprefix("spec-") for s in specs
-                if not s["dream"] and s["spec"].removeprefix("spec-") in dreams}
+    covered |= {
+        s["spec"].removeprefix("spec-") for s in specs if not s["dream"] and s["spec"].removeprefix("spec-") in dreams
+    }
     # Satellite consolidation (2026-08-02): a Dream's whole chain folded into
     # ANOTHER Dream's Spec, verbatim -- either `covers-dreams:` (authoritative)
     # or a `## Satellite: <Title>` heading matching the Dream's own `title:`.
@@ -631,26 +795,36 @@ def _check_dream_chain(
             owner = d["owner"] or "(none)"
             status = d["status"] or "(none)"
             remedy = f"author a Spec under {_expected_spec_dir(d['owner'] or 'guild', slug)}"
-            findings.append({
-                "inv": "INV-1", "kind": "dream-without-spec", "subject": slug,
-                "owner": owner, "status": status, "remedy": remedy,
-                "detail": f"{slug} (owner={owner}) has no Spec — {remedy}",
-            })
+            findings.append(
+                {
+                    "inv": "INV-1",
+                    "kind": "dream-without-spec",
+                    "subject": slug,
+                    "owner": owner,
+                    "status": status,
+                    "remedy": remedy,
+                    "detail": f"{slug} (owner={owner}) has no Spec — {remedy}",
+                }
+            )
 
     guild_owned = any(d.get("owner") == "guild" for d in dreams.values())
-    constitutive = (
-        _load_constitutive(target, findings) if guild_owned else frozenset()
-    )
+    constitutive = _load_constitutive(target, findings) if guild_owned else frozenset()
 
     # INV-2a -- a buildable Dream owned by `guild` has no station yet.
     for slug, d in sorted(dreams.items()):
         if d.get("owner") == "guild" and slug not in constitutive:
             remedy = "assign a station (guild is intake, not a terminal owner)"
-            findings.append({
-                "inv": "INV-2", "kind": "owner-unassigned", "subject": slug,
-                "owner": "guild", "status": d.get("status", ""), "remedy": remedy,
-                "detail": f"{slug} is owned by 'guild' — {remedy}",
-            })
+            findings.append(
+                {
+                    "inv": "INV-2",
+                    "kind": "owner-unassigned",
+                    "subject": slug,
+                    "owner": "guild",
+                    "status": d.get("status", ""),
+                    "remedy": remedy,
+                    "detail": f"{slug} is owned by 'guild' — {remedy}",
+                }
+            )
 
     # INV-2 -- the chain lives where its owner lives
     for s in specs:
@@ -661,12 +835,17 @@ def _check_dream_chain(
         if s["project"] != want:
             slug = s["spec"].removeprefix("spec-")
             remedy = f"move to {_expected_spec_dir(owner, slug)}"
-            findings.append({
-                "inv": "INV-2", "kind": "spec-location-mismatch", "subject": s["spec"],
-                "owner": owner, "status": f"in {s['project']}", "remedy": remedy,
-                "detail": (f"{s['spec']} lives in {s['project']} but owner {owner} "
-                           f"expects {want} — {remedy}"),
-            })
+            findings.append(
+                {
+                    "inv": "INV-2",
+                    "kind": "spec-location-mismatch",
+                    "subject": s["spec"],
+                    "owner": owner,
+                    "status": f"in {s['project']}",
+                    "remedy": remedy,
+                    "detail": (f"{s['spec']} lives in {s['project']} but owner {owner} expects {want} — {remedy}"),
+                }
+            )
 
     # INV-3 -- sharded build tree (the one part of this check that still
     # touches the filesystem; isolated per-project on its own).
@@ -715,9 +894,7 @@ def gather_dream_chain(target: Path) -> tuple[Finding, ...]:
     CLI surface. Every INV-0/1/2/3 violation becomes one FAIL ``Finding``; a
     clean chain degrades to a vacuous OK rather than raising.
     """
-    return degrade_on_exception(
-        Source.DREAM_CHAIN, "dream-chain", lambda: _gather_dream_chain(target)
-    )
+    return degrade_on_exception(Source.DREAM_CHAIN, "dream-chain", lambda: _gather_dream_chain(target))
 
 
 def _gather_dream_chain(target: Path) -> tuple[Finding, ...]:
@@ -740,9 +917,7 @@ def _gather_dream_chain(target: Path) -> tuple[Finding, ...]:
         # both-must-be-missing test and still produced the confident OK --
         # asserting "every project uses the sharded planning tree" about zero
         # projects.
-        if not dreams and not specs and not _is_dir(
-            target / "_bmad-output" / "projects"
-        ):
+        if not dreams and not specs and not _is_dir(target / "_bmad-output" / "projects"):
             return (
                 Finding(
                     source=Source.DREAM_CHAIN,
@@ -804,9 +979,7 @@ _REALIZATION_LOG_RE = re.compile(
 )
 #: Statuses that have completed an act beyond capture — Phase-2b expected a
 #: Realization log recording the evidence (dream inventory 2026-08-10).
-_STATUSES_REQUIRING_REALIZATION_LOG = frozenset(
-    {"pitched", "specified", "realized", "archived"}
-)
+_STATUSES_REQUIRING_REALIZATION_LOG = frozenset({"pitched", "specified", "realized", "archived"})
 #: Story 43.1 — ``specified``/``realized`` Dreams must not carry long
 #: "historical" sections (red-team R-4 / B-10).
 _STATUSES_HISTORICAL_SECTION_CHECK = frozenset({"specified", "realized"})
@@ -814,6 +987,11 @@ _HISTORICAL_SECTION_MAX_LINES = 20
 _HEADING_LINE_RE = re.compile(r"^#{1,6}\s")
 #: Story 21.6 — ``docs/dreams/README.md:71``: a Dream at ``specified`` needs a
 #: covering Spec at ``ready`` or beyond (not ``draft`` / ``extension-point``).
+#: FALLBACK (Story 59.2) when ``guild-roster.json``'s ``spec_statuses_ready_or_
+#: beyond`` is unavailable -- today's value, not a parallel source of truth
+#: (mirrors ``_CONSTITUTIVE_FALLBACK`` just above). Live calls derive the
+#: CAP-1 subset (``ready``/``in-progress``/``shipped``/``absorbed``) from that
+#: declared key and union it with ``_SPEC_READY_NON_CAP1_LITERAL`` below.
 _SPEC_READY_FOR_SPECIFIED = frozenset(
     {
         "ready",
@@ -827,6 +1005,20 @@ _SPEC_READY_FOR_SPECIFIED = frozenset(
         "blocked",
     }
 )
+
+#: The CAP-1 ("ready or beyond") subset of ``_SPEC_READY_FOR_SPECIFIED`` --
+#: sourced live from ``guild-roster.json``'s ``spec_statuses_ready_or_beyond``
+#: (Story 59.2); this is its fallback value only.
+_SPEC_READY_OR_BEYOND_FALLBACK = _SPEC_READY_FOR_SPECIFIED & frozenset({"ready", "in-progress", "shipped", "absorbed"})
+
+#: Five words ``_SPEC_READY_FOR_SPECIFIED`` accepts that are NOT CAP-1 Spec
+#: vocabulary -- ``ready-for-dev``/``in-review``/``done``/``blocked`` are
+#: Story/ledger vocabulary and ``realized`` is Dream vocabulary. Deliberately
+#: outside ``guild-roster.json``'s ``spec_statuses`` enum, kept literal here,
+#: and never sourced from the roster --
+#: ``test_specified_spec_ready_suppresses_finding`` pins ``ready-for-dev``
+#: specifically as suppressing the ``specified-spec-not-ready`` finding.
+_SPEC_READY_NON_CAP1_LITERAL = _SPEC_READY_FOR_SPECIFIED - _SPEC_READY_OR_BEYOND_FALLBACK
 _KINSHIP_WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
 
 
@@ -882,40 +1074,101 @@ def _load_dream_roster(
     except Exception:  # noqa: BLE001 -- unreadable ancestor
         found = None
     if not found:
-        return frozenset(), frozenset(), frozenset(), frozenset(), {
-            "kind": "dreams-hygiene-unevaluable",
-            "detail": f"{rel} missing — Dream hygiene vocabulary cannot be evaluated",
-            "subject": rel,
-        }
+        return (
+            frozenset(),
+            frozenset(),
+            frozenset(),
+            frozenset(),
+            {
+                "kind": "dreams-hygiene-unevaluable",
+                "detail": f"{rel} missing — Dream hygiene vocabulary cannot be evaluated",
+                "subject": rel,
+            },
+        )
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
-        return frozenset(), frozenset(), frozenset(), frozenset(), {
-            "kind": "dreams-hygiene-unevaluable",
-            "detail": f"{rel} is unreadable — Dream hygiene vocabulary cannot be evaluated",
-            "subject": rel,
-        }
+        return (
+            frozenset(),
+            frozenset(),
+            frozenset(),
+            frozenset(),
+            {
+                "kind": "dreams-hygiene-unevaluable",
+                "detail": f"{rel} is unreadable — Dream hygiene vocabulary cannot be evaluated",
+                "subject": rel,
+            },
+        )
     if not isinstance(data, dict):
-        return frozenset(), frozenset(), frozenset(), frozenset(), {
-            "kind": "dreams-hygiene-unevaluable",
-            "detail": f"{rel} is not a mapping — Dream hygiene vocabulary cannot be evaluated",
-            "subject": rel,
-        }
+        return (
+            frozenset(),
+            frozenset(),
+            frozenset(),
+            frozenset(),
+            {
+                "kind": "dreams-hygiene-unevaluable",
+                "detail": f"{rel} is not a mapping — Dream hygiene vocabulary cannot be evaluated",
+                "subject": rel,
+            },
+        )
     try:
         statuses = frozenset(str(s) for s in data["dream_statuses"])
         types = frozenset(str(t) for t in data["dream_types"])
         stations = frozenset(str(s) for s in data["stations"])
         guild_dreams = frozenset(str(g) for g in data["guild_dreams"])
-    except (KeyError, TypeError):
-        return frozenset(), frozenset(), frozenset(), frozenset(), {
-            "kind": "dreams-hygiene-unevaluable",
-            "detail": (
-                f"{rel} missing dream_statuses/dream_types/stations/guild_dreams — "
-                "Dream hygiene vocabulary cannot be evaluated"
-            ),
-            "subject": rel,
-        }
+    except KeyError, TypeError:
+        return (
+            frozenset(),
+            frozenset(),
+            frozenset(),
+            frozenset(),
+            {
+                "kind": "dreams-hygiene-unevaluable",
+                "detail": (
+                    f"{rel} missing dream_statuses/dream_types/stations/guild_dreams — "
+                    "Dream hygiene vocabulary cannot be evaluated"
+                ),
+                "subject": rel,
+            },
+        )
     return statuses, types, stations, guild_dreams, None
+
+
+def _load_spec_ready_or_beyond(target: Path, findings: list[Finding]) -> frozenset[str]:
+    """The CAP-1 "ready or beyond" Spec-status subset, read fresh from
+    ``guild-roster.json``'s ``spec_statuses_ready_or_beyond`` (Story 59.2).
+
+    On roster read/parse/shape failure, appends one named WARN ``Finding`` to
+    the caller's own ``findings`` and falls back to
+    ``_SPEC_READY_OR_BEYOND_FALLBACK`` rather than an empty set --  mirrors
+    ``_load_constitutive``'s own degrade-and-warn shape, adapted to
+    ``gather_dreams_hygiene``'s ``Finding``-based (not dict-based) findings
+    list.
+    """
+    path = target / _GUILD_ROSTER_REL
+    rel = _GUILD_ROSTER_REL.as_posix()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        raw_value = data["spec_statuses_ready_or_beyond"]
+        if not isinstance(raw_value, list):
+            raise TypeError("spec_statuses_ready_or_beyond must be a list")
+        value = frozenset(str(s) for s in raw_value)
+    except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
+        findings.append(
+            Finding(
+                source=Source.DREAMS_HYGIENE,
+                check="spec-status-roster-degraded",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{rel} could not be read for the 'ready or beyond' "
+                    f"Spec-status vocabulary ({exc.__class__.__name__}: {exc}) "
+                    f"— falling back to {sorted(_SPEC_READY_OR_BEYOND_FALLBACK)}"
+                ),
+                evidence={"subject": rel},
+            )
+        )
+        return _SPEC_READY_OR_BEYOND_FALLBACK
+    return value
 
 
 def _load_constitutive(target: Path, findings: list[dict]) -> frozenset[str]:
@@ -927,44 +1180,95 @@ def _load_constitutive(target: Path, findings: list[dict]) -> frozenset[str]:
     _statuses, _types, _stations, guild_dreams, roster_err = _load_dream_roster(target)
     rel = _GUILD_ROSTER_REL.as_posix()
     if roster_err is not None:
-        findings.append({
-            "inv": "INV-2",
-            "kind": "constitutive-roster-degraded",
-            "subject": rel,
-            "owner": "",
-            "status": "",
-            "remedy": f"restore {rel} so guild_dreams is authoritative",
-            "detail": (
-                f"{roster_err['detail']} — constitutive gate falls back to "
-                f"{sorted(_CONSTITUTIVE_FALLBACK)}"
-            ),
-            "warn": True,
-        })
+        findings.append(
+            {
+                "inv": "INV-2",
+                "kind": "constitutive-roster-degraded",
+                "subject": rel,
+                "owner": "",
+                "status": "",
+                "remedy": f"restore {rel} so guild_dreams is authoritative",
+                "detail": (
+                    f"{roster_err['detail']} — constitutive gate falls back to {sorted(_CONSTITUTIVE_FALLBACK)}"
+                ),
+                "warn": True,
+            }
+        )
         return _CONSTITUTIVE_FALLBACK
     if not guild_dreams:
-        findings.append({
-            "inv": "INV-2",
-            "kind": "constitutive-roster-degraded",
-            "subject": rel,
-            "owner": "",
-            "status": "",
-            "remedy": f"add guild_dreams to {rel}",
-            "detail": (
-                f"{rel} guild_dreams is empty — constitutive gate falls back to "
-                f"{sorted(_CONSTITUTIVE_FALLBACK)}"
-            ),
-            "warn": True,
-        })
+        findings.append(
+            {
+                "inv": "INV-2",
+                "kind": "constitutive-roster-degraded",
+                "subject": rel,
+                "owner": "",
+                "status": "",
+                "remedy": f"add guild_dreams to {rel}",
+                "detail": (
+                    f"{rel} guild_dreams is empty — constitutive gate falls back to {sorted(_CONSTITUTIVE_FALLBACK)}"
+                ),
+                "warn": True,
+            }
+        )
         return _CONSTITUTIVE_FALLBACK
     return guild_dreams
 
 
 def _dream_body_after_frontmatter(text: str) -> str:
-    """Dream markdown body with the leading ``---`` fence stripped."""
-    if not text.startswith("---"):
+    """Dream markdown body with the leading frontmatter block stripped.
+
+    Story 28.1 / CAP-81: derives the body from the SAME line-anchored scan
+    ``_frontmatter_parse`` bounds the block with (``_split_fenced_block``),
+    so the block the parser accepts is exactly what the Kinship scan does
+    not read. The old ``text.split("---", 2)`` cut at the first ``---``
+    substring, so a Dream the parser now accepts -- a ``---`` quoted inside
+    a frontmatter scalar, or a banner-topped file -- had its frontmatter
+    tail scanned as body and emitted a false ``kinship-wikilink-dead``.
+
+    No leading fence: ``text`` unchanged (the caller only reaches here after
+    ``_frontmatter_parse`` accepted the file, so this is the no-frontmatter
+    case). No closing fence: ``""``. Otherwise the lines after the closing
+    fence, re-joined with ``\\n`` plus the original's trailing newline if it
+    had one -- the caller only regexes ``[[...]]`` out of the result, so the
+    exact leading/trailing whitespace is not load-bearing and line endings
+    are normalised (``splitlines()`` + ``"\\n".join``: CRLF input comes back
+    as ``\\n``).
+    """
+    split = _split_fenced_block(_fenced_lines(text))
+    if split is None:
         return text
-    parts = text.split("---", 2)
-    return parts[2] if len(parts) >= 3 else ""
+    _block, body, closed = split
+    if not closed:
+        return ""
+    joined = "\n".join(body)
+    return joined + "\n" if text.endswith("\n") else joined
+
+
+def _status_frontmatter_trailing_comment(text: str) -> str | None:
+    """The Dream frontmatter's ``status:`` line, stripped, when it carries a
+    trailing ``# ...`` comment on the same line -- ``None`` otherwise.
+
+    Story 59.6 / CAP-137, Ruling 19: 19 of 165 Dreams made a five-value
+    status ladder parse as 40+ this way. ``yaml.safe_load`` (inside
+    ``_frontmatter_parse``) strips the inline comment silently, so it
+    survives only in the raw line scanned here -- never in the parsed
+    ``status:`` value the rest of this function checks against the
+    vocabulary. Uses the same line-anchored frontmatter block
+    (``_split_fenced_block`` / ``_fenced_lines``) ``_frontmatter_parse``
+    bounds its YAML with, so this only looks inside the frontmatter, never
+    the body.
+    """
+    split = _split_fenced_block(_fenced_lines(text))
+    if split is None:
+        return None
+    block, _body, closed = split
+    if not closed:
+        return None
+    for line in block:
+        stripped = line.strip()
+        if stripped.startswith("status:") and "#" in stripped:
+            return stripped
+    return None
 
 
 def _specs_covering_dream(
@@ -1022,10 +1326,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                 source=Source.DREAMS_HYGIENE,
                 check="dreams-hygiene-unevaluable",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"no docs/dreams/ under {target} — Dream-tier hygiene "
-                    f"cannot be evaluated here"
-                ),
+                message=(f"no docs/dreams/ under {target} — Dream-tier hygiene cannot be evaluated here"),
                 evidence={"target": str(target)},
             ),
         )
@@ -1050,18 +1351,13 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                 source=Source.DREAMS_HYGIENE,
                 check="dreams-hygiene-unevaluable",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"docs/dreams/ could not be read here — "
-                    f"{type(exc).__name__}: {exc}"
-                ),
+                message=(f"docs/dreams/ could not be read here — {type(exc).__name__}: {exc}"),
                 evidence={"target": str(dreams_dir)},
             ),
         )
 
     readme_statuses = _parse_readme_dream_statuses(dreams_dir / "README.md")
-    dream_paths = [
-        p for p in entries if p.suffix == ".md" and p.name != "README.md"
-    ]
+    dream_paths = [p for p in entries if p.suffix == ".md" and p.name != "README.md"]
     dream_slugs = {p.stem for p in dream_paths}
     dream_count = len(dream_paths)
     dream_meta: dict[str, dict[str, str]] = {}
@@ -1101,10 +1397,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                     source=Source.DREAMS_HYGIENE,
                     check="dream-vocab",
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"Dream {slug!r} status {status_s!r} is not one of "
-                        f"{'/'.join(sorted(statuses))}"
-                    ),
+                    message=(f"Dream {slug!r} status {status_s!r} is not one of {'/'.join(sorted(statuses))}"),
                     evidence={"subject": slug, "status": status_s, "field": "status"},
                 )
             )
@@ -1116,10 +1409,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                     source=Source.DREAMS_HYGIENE,
                     check="dream-vocab",
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"Dream {slug!r} type {dtype.strip()!r} is not one of "
-                        f"{'/'.join(sorted(types))}"
-                    ),
+                    message=(f"Dream {slug!r} type {dtype.strip()!r} is not one of {'/'.join(sorted(types))}"),
                     evidence={"subject": slug, "type": dtype.strip(), "field": "type"},
                 )
             )
@@ -1145,10 +1435,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                     source=Source.DREAMS_HYGIENE,
                     check="dream-unowned",
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"Dream {slug!r} owner {owner_s!r} is not a known "
-                        f"station or guild"
-                    ),
+                    message=(f"Dream {slug!r} owner {owner_s!r} is not a known station or guild"),
                     evidence={"subject": slug, "owner": owner_s},
                 )
             )
@@ -1176,6 +1463,20 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
             raw_text = ""
         kinship_body = _dream_body_after_frontmatter(raw_text)
 
+        trailing_comment = _status_frontmatter_trailing_comment(raw_text)
+        if trailing_comment is not None:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="dream-status-trailing-comment",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"Dream {slug!r} status: line carries a trailing # comment — put the comment on the next line"
+                    ),
+                    evidence={"subject": slug, "line": trailing_comment},
+                )
+            )
+
         if status_s in _STATUSES_REQUIRING_REALIZATION_LOG:
             body = raw_text
             if not _REALIZATION_LOG_RE.search(body):
@@ -1184,10 +1485,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                         source=Source.DREAMS_HYGIENE,
                         check="realization-log-missing",
                         status=DoctorStatus.WARN,
-                        message=(
-                            f"Dream {slug!r} status {status_s!r} has no "
-                            f"## Realization log section"
-                        ),
+                        message=(f"Dream {slug!r} status {status_s!r} has no ## Realization log section"),
                         evidence={"subject": slug, "status": status_s},
                     )
                 )
@@ -1199,8 +1497,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                             check="historical-section-too-long",
                             status=DoctorStatus.WARN,
                             message=(
-                                f"Dream {slug!r} section {title!r} is "
-                                f"{nlines} lines (>{_HISTORICAL_SECTION_MAX_LINES})"
+                                f"Dream {slug!r} section {title!r} is {nlines} lines (>{_HISTORICAL_SECTION_MAX_LINES})"
                             ),
                             evidence={
                                 "subject": slug,
@@ -1220,9 +1517,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                         check="kinship-wikilink-dead",
                         status=DoctorStatus.WARN,
                         message=(
-                            f"Dream {slug!r} Kinship wikilink "
-                            f"[[{link_slug}]] does not resolve under "
-                            f"docs/dreams/"
+                            f"Dream {slug!r} Kinship wikilink [[{link_slug}]] does not resolve under docs/dreams/"
                         ),
                         evidence={
                             "subject": slug,
@@ -1238,9 +1533,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                     check="readme-table-drift",
                     status=DoctorStatus.WARN,
                     message=(
-                        f"Dream {slug!r} README table status "
-                        f"{readme_statuses[slug]!r} != frontmatter "
-                        f"{status_s!r}"
+                        f"Dream {slug!r} README table status {readme_statuses[slug]!r} != frontmatter {status_s!r}"
                     ),
                     evidence={
                         "subject": slug,
@@ -1258,9 +1551,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                     source=Source.DREAMS_HYGIENE,
                     check="dream-readme-missing",
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"Dream {slug!r} has no row in docs/dreams/README.md"
-                    ),
+                    message=(f"Dream {slug!r} has no row in docs/dreams/README.md"),
                     evidence={"subject": slug},
                 )
             )
@@ -1268,15 +1559,22 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
     # Story 21.6 — README:71: ``specified`` requires a Spec at ready or beyond.
     spec_collect_findings: list[dict] = []
     specs = _collect_specs(target, spec_collect_findings)
+    # Story 59.2: the live CAP-1 "ready or beyond" vocabulary, read only when
+    # there is at least one `specified` Dream to check it against -- mirrors
+    # `_load_constitutive`'s own call-site gating (`if guild_owned else
+    # frozenset()`), so a fixture with no `specified` Dream never pays for --
+    # or risks degrading on -- a roster read it has no use for.
+    if any(meta["status"] == "specified" for meta in dream_meta.values()):
+        spec_ready_for_specified = _load_spec_ready_or_beyond(target, findings) | _SPEC_READY_NON_CAP1_LITERAL
+    else:
+        spec_ready_for_specified = frozenset()
     for slug, meta in sorted(dream_meta.items()):
         if meta["status"] != "specified":
             continue
         covering = _specs_covering_dream(slug, meta, specs)
         if not covering:
             expected_spec = f"spec-{slug}"
-            if any(
-                f.get("subject") == expected_spec for f in spec_collect_findings
-            ):
+            if any(f.get("subject") == expected_spec for f in spec_collect_findings):
                 findings.append(
                     Finding(
                         source=Source.DREAMS_HYGIENE,
@@ -1295,14 +1593,9 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                     )
                 )
             continue
-        if any(
-            (s.get("status") or "").strip() in _SPEC_READY_FOR_SPECIFIED
-            for s in covering
-        ):
+        if any((s.get("status") or "").strip() in spec_ready_for_specified for s in covering):
             continue
-        spec_statuses = sorted(
-            {(s.get("status") or "").strip() or "(missing)" for s in covering}
-        )
+        spec_statuses = sorted({(s.get("status") or "").strip() or "(missing)" for s in covering})
         spec_names = sorted(s["spec"] for s in covering)
         findings.append(
             Finding(
@@ -1331,10 +1624,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                     source=Source.DREAMS_HYGIENE,
                     check="readme-table-orphan",
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"README table lists Dream {slug!r} but "
-                        f"docs/dreams/{slug}.md is missing"
-                    ),
+                    message=(f"README table lists Dream {slug!r} but docs/dreams/{slug}.md is missing"),
                     evidence={
                         "subject": slug,
                         "readme_status": table_status,
@@ -1377,7 +1667,7 @@ def _glob_to_re(pattern: str) -> re.Pattern:
     i = 0
     while i < len(pattern):
         c = pattern[i]
-        if pattern[i:i + 2] == "**":
+        if pattern[i : i + 2] == "**":
             out.append(".*")
             i += 2
         elif c == "*":
@@ -1428,8 +1718,7 @@ def _parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
         if not in_fm:
             continue
         if section and line.startswith("  - "):
-            (globs if section == "surface" else excludes).append(
-                line[4:].split("#", 1)[0].strip())
+            (globs if section == "surface" else excludes).append(line[4:].split("#", 1)[0].strip())
             continue
         if section and (not line.strip() or line.lstrip().startswith("#")):
             continue
@@ -1463,7 +1752,7 @@ def _load_allowlist(path: Path) -> list[tuple[str, str]] | None:
         text = path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return []
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return None
     entries: list[tuple[str, str]] = []
     for raw in text.splitlines():
@@ -1543,7 +1832,7 @@ def _tracked_files(target: Path) -> list[str] | None:
     guards against for the same underlying cause."""
     try:
         out = run_git(target, ["ls-files"])
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
     return [line for line in out.splitlines() if line]
 
@@ -1637,30 +1926,39 @@ def _spec_current_state(
                             _unhashable(target / f)
                     except OSError as exc:
                         skip.add(f)
-                        warns.append({
-                            "kind": "spec-surface-unevaluable", "path": f,
-                            "detail": (f"{name}: {f} could not be hashed here "
-                                       f"— {exc.__class__.__name__}: {exc}; "
-                                       f"its drift alone is not evaluable"),
-                            "warn": True,
-                        })
+                        warns.append(
+                            {
+                                "kind": "spec-surface-unevaluable",
+                                "path": f,
+                                "detail": (
+                                    f"{name}: {f} could not be hashed here "
+                                    f"— {exc.__class__.__name__}: {exc}; "
+                                    f"its drift alone is not evaluable"
+                                ),
+                                "warn": True,
+                            }
+                        )
             current[name] = {"memlog": _contract_hash(target, s), "files": files}
             if skip:
                 skipped[name] = skip
         except Exception as exc:  # noqa: BLE001 -- one spec's unreadable
             # contract (memlog/sentinel) must not discard another spec's
             # already-computed state.
-            warns.append({
-                "kind": "spec-surface-unevaluable", "path": name,
-                "detail": (f"{name}: could not be evaluated here — "
-                           f"{exc.__class__.__name__}: {exc}"),
-                "warn": True,
-            })
+            warns.append(
+                {
+                    "kind": "spec-surface-unevaluable",
+                    "path": name,
+                    "detail": (f"{name}: could not be evaluated here — {exc.__class__.__name__}: {exc}"),
+                    "warn": True,
+                }
+            )
     return current, warns, skipped
 
 
 def _drift_findings(
-    target: Path, specs: dict[str, dict], current: dict[str, dict],
+    target: Path,
+    specs: dict[str, dict],
+    current: dict[str, dict],
     skipped: dict[str, set[str]] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """(gating findings, presumed-but-non-gating findings) from comparing
@@ -1673,25 +1971,42 @@ def _drift_findings(
     are absent from ``cur["files"]`` but still present in the baseline, so
     without this they would each be reported ``drift ... removed`` -- a
     confidently wrong claim about a file that is still on disk, already
-    carrying its own honest WARN."""
+    carrying its own honest WARN.
+
+    Story 42.1 / spec-surface-overlap-tolerance: drift is judged per *path*
+    across every co-governing spec, not per spec in isolation. The clean-pass
+    bar is unchanged (``spec_moved AND f in named``). One clean co-governor
+    clears the path for every spec. If none is clean, the residual finding
+    keeps the strongest severity among co-governors (``drift`` beats
+    ``drift-presumed``) so a second governor cannot hide a FAIL."""
     findings: list[dict] = []
     presumed: list[dict] = []
     baseline_path = target / BASELINE_REL
     if not baseline_path.is_file():
-        findings.append({
-            "kind": "no-baseline", "path": "",
-            "detail": "baseline missing: run --write-baseline",
-        })
+        findings.append(
+            {
+                "kind": "no-baseline",
+                "path": "",
+                "detail": "baseline missing: run --write-baseline",
+            }
+        )
         return findings, presumed
     try:
         base = json.loads(baseline_path.read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001 -- an unreadable/malformed baseline is
         # "no baseline to compare against", not a crash (Boundaries).
-        findings.append({
-            "kind": "no-baseline", "path": "",
-            "detail": f"{baseline_path.relative_to(target)} is unreadable: run --write-baseline",
-        })
+        findings.append(
+            {
+                "kind": "no-baseline",
+                "path": "",
+                "detail": f"{baseline_path.relative_to(target)} is unreadable: run --write-baseline",
+            }
+        )
         return findings, presumed
+
+    # path -> list of (rank, spec-name, kind, payload). rank 0 = clean,
+    # 1 = drift (FAIL), 2 = drift-presumed (WARN).
+    per_path: dict[str, list[tuple[int, str, str, dict]]] = {}
 
     for name, cur in current.items():
         b = base.get(name) if isinstance(base, dict) else None
@@ -1711,10 +2026,13 @@ def _drift_findings(
         if not isinstance(b, dict) or not isinstance(b.get("memlog"), str):
             b = None
         if b is None:
-            findings.append({
-                "kind": "no-baseline", "path": name,
-                "detail": f"{name}: run --write-baseline --spec {name}",
-            })
+            findings.append(
+                {
+                    "kind": "no-baseline",
+                    "path": name,
+                    "detail": f"{name}: run --write-baseline --spec {name}",
+                }
+            )
             continue
         spec_moved = b.get("memlog") != cur["memlog"]
         named = _memlog_text(specs[name]["memlog"]) if spec_moved else ""
@@ -1725,20 +2043,53 @@ def _drift_findings(
             if old == new:
                 continue
             what = "changed" if old and new else ("added" if new else "removed")
-            if not spec_moved:
-                findings.append({
-                    "kind": "drift", "path": f,
-                    "detail": (f"{name}: {f} {what} but the spec's memlog did "
-                               f"not move — reconcile the spec, then "
-                               f"--write-baseline --spec {name}"),
-                })
-            elif f not in named:
-                presumed.append({
-                    "kind": "drift-presumed", "path": f,
-                    "detail": (f"{name}: {f} {what}; the memlog moved but does "
-                               f"not name this path — confirm it was "
-                               f"reconciled, then --write-baseline --spec {name}"),
-                })
+            if spec_moved and f in named:
+                per_path.setdefault(f, []).append((0, name, "clean", {}))
+            elif not spec_moved:
+                per_path.setdefault(f, []).append(
+                    (
+                        1,
+                        name,
+                        "drift",
+                        {
+                            "kind": "drift",
+                            "path": f,
+                            "detail": (
+                                f"{name}: {f} {what} but the spec's memlog did "
+                                f"not move — reconcile the spec, then "
+                                f"--write-baseline --spec {name}"
+                            ),
+                        },
+                    )
+                )
+            else:
+                per_path.setdefault(f, []).append(
+                    (
+                        2,
+                        name,
+                        "drift-presumed",
+                        {
+                            "kind": "drift-presumed",
+                            "path": f,
+                            "detail": (
+                                f"{name}: {f} {what}; the memlog moved but does "
+                                f"not name this path — confirm it was "
+                                f"reconciled, then --write-baseline --spec {name}"
+                            ),
+                        },
+                    )
+                )
+
+    for f in sorted(per_path):
+        rows = per_path[f]
+        if any(rank == 0 for rank, _, _, _ in rows):
+            continue
+        rows.sort(key=lambda row: (row[0], row[1]))
+        _rank, _spec, kind, payload = rows[0]
+        if kind == "drift":
+            findings.append(payload)
+        else:
+            presumed.append(payload)
     return findings, presumed
 
 
@@ -1768,33 +2119,39 @@ def _collect_surfaces(target: Path) -> tuple[dict[str, dict], list[dict]]:
     try:
         project_dirs = _listdir(projects_dir) if _is_dir(projects_dir) else []
     except OSError as exc:
-        unsound.append({
-            "kind": "spec-surface-unevaluable", "path": "_bmad-output/projects",
-            "detail": (f"_bmad-output/projects/ could not be read here — "
-                       f"{exc.__class__.__name__}: {exc}; every surface is "
-                       f"unknown, so coverage is not evaluable"),
-            "warn": True,
-        })
+        unsound.append(
+            {
+                "kind": "spec-surface-unevaluable",
+                "path": "_bmad-output/projects",
+                "detail": (
+                    f"_bmad-output/projects/ could not be read here — "
+                    f"{exc.__class__.__name__}: {exc}; every surface is "
+                    f"unknown, so coverage is not evaluable"
+                ),
+                "warn": True,
+            }
+        )
         return specs, unsound
     for proj in project_dirs:
         specs_dir = proj / "planning-artifacts" / "specs"
         try:
             if not _is_dir(specs_dir):
                 continue
-            spec_dirs = [
-                sd for sd in _listdir(specs_dir)
-                if sd.name.startswith("spec-") and _is_file(sd / "SPEC.md")
-            ]
+            spec_dirs = [sd for sd in _listdir(specs_dir) if sd.name.startswith("spec-") and _is_file(sd / "SPEC.md")]
         except OSError as exc:
-            unsound.append({
-                "kind": "spec-surface-unevaluable",
-                "path": f"{proj.name}/planning-artifacts/specs",
-                "detail": (f"{proj.name}: planning-artifacts/specs/ could not "
-                           f"be read here — {exc.__class__.__name__}: {exc}; "
-                           f"its surfaces are unknown, so coverage is not "
-                           f"evaluable"),
-                "warn": True,
-            })
+            unsound.append(
+                {
+                    "kind": "spec-surface-unevaluable",
+                    "path": f"{proj.name}/planning-artifacts/specs",
+                    "detail": (
+                        f"{proj.name}: planning-artifacts/specs/ could not "
+                        f"be read here — {exc.__class__.__name__}: {exc}; "
+                        f"its surfaces are unknown, so coverage is not "
+                        f"evaluable"
+                    ),
+                    "warn": True,
+                }
+            )
             continue
         for sd in spec_dirs:
             spec_md = sd / "SPEC.md"
@@ -1808,25 +2165,30 @@ def _collect_surfaces(target: Path) -> tuple[dict[str, dict], list[dict]]:
             except Exception as exc:  # noqa: BLE001 -- one spec's unreadable
                 # SPEC.md must degrade to a named WARN, never to a silently
                 # empty surface (see `_parse_surface`'s own docstring).
-                unsound.append({
-                    "kind": "spec-surface-unevaluable", "path": name,
-                    "detail": (f"{name}: SPEC.md could not be read here — "
-                               f"{exc.__class__.__name__}: {exc}; its surface "
-                               f"is unknown, so coverage is not evaluable"),
-                    "warn": True,
-                })
+                unsound.append(
+                    {
+                        "kind": "spec-surface-unevaluable",
+                        "path": name,
+                        "detail": (
+                            f"{name}: SPEC.md could not be read here — "
+                            f"{exc.__class__.__name__}: {exc}; its surface "
+                            f"is unknown, so coverage is not evaluable"
+                        ),
+                        "warn": True,
+                    }
+                )
                 continue
             specs[name] = {
-                "globs": globs, "drift": drift, "exclude": set(excludes),
+                "globs": globs,
+                "drift": drift,
+                "exclude": set(excludes),
                 "res": [_glob_to_re(g) for g in globs],
                 "memlog": spec_md.parent / ".memlog.md",
             }
     return specs, unsound
 
 
-def _check_spec_surface(
-    target: Path, files: list[str]
-) -> tuple[list[dict], list[dict]]:
+def _check_spec_surface(target: Path, files: list[str]) -> tuple[list[dict], list[dict]]:
     """(gating findings, presumed-but-non-gating findings) -- the full
     coverage + blindness + drift check, minus ``git ls-files`` (``files`` is
     the caller's ALREADY-RESOLVED listing, passed in rather than re-fetched:
@@ -1841,16 +2203,21 @@ def _check_spec_surface(
     allow = _load_allowlist(target / ALLOWLIST_REL)
     allowlist_unknown = allow is None
     if allow is None:
-        unsound.append({
-            # `.as_posix()`, not `str()`: every other `path` in this source is
-            # a forward-slash `git ls-files` path, and `str(Path(...))` would
-            # render this one with backslashes on Windows.
-            "kind": "spec-surface-unevaluable", "path": ALLOWLIST_REL.as_posix(),
-            "detail": (f"{ALLOWLIST_REL.as_posix()} exists but could not be read here — "
-                       f"the exemptions are unknown, so coverage is not "
-                       f"evaluable"),
-            "warn": True,
-        })
+        unsound.append(
+            {
+                # `.as_posix()`, not `str()`: every other `path` in this source is
+                # a forward-slash `git ls-files` path, and `str(Path(...))` would
+                # render this one with backslashes on Windows.
+                "kind": "spec-surface-unevaluable",
+                "path": ALLOWLIST_REL.as_posix(),
+                "detail": (
+                    f"{ALLOWLIST_REL.as_posix()} exists but could not be read here — "
+                    f"the exemptions are unknown, so coverage is not "
+                    f"evaluable"
+                ),
+                "warn": True,
+            }
+        )
         allow = []
     governed, ungoverned, allow_hits = _governed_and_ungoverned(files, specs, allow)
 
@@ -1871,45 +2238,58 @@ def _check_spec_surface(
     #   positive is possible, only a missed one. It stays live.
     if not (surface_unknown or allowlist_unknown):
         for f in ungoverned:
-            findings.append({
-                "kind": "ungoverned", "path": f,
-                "detail": f"{f}: no spec surface and no allowlist entry",
-            })
+            findings.append(
+                {
+                    "kind": "ungoverned",
+                    "path": f,
+                    "detail": f"{f}: no spec surface and no allowlist entry",
+                }
+            )
     elif ungoverned:
         # Never suppress silently: a WARN nobody can see is how "we could not
         # evaluate coverage" gets mistaken for "coverage is clean".
-        findings.append({
-            "kind": "spec-surface-unevaluable", "path": "",
-            "detail": (f"coverage suppressed: {len(ungoverned)} candidate "
-                       f"ungoverned file(s) not reported because a surface or "
-                       f"the exemption list could not be read (see the "
-                       f"spec-surface-unevaluable finding(s) naming it)"),
-            "warn": True,
-        })
+        findings.append(
+            {
+                "kind": "spec-surface-unevaluable",
+                "path": "",
+                "detail": (
+                    f"coverage suppressed: {len(ungoverned)} candidate "
+                    f"ungoverned file(s) not reported because a surface or "
+                    f"the exemption list could not be read (see the "
+                    f"spec-surface-unevaluable finding(s) naming it)"
+                ),
+                "warn": True,
+            }
+        )
     if not allowlist_unknown:
         for pat, n in allow_hits.items():
             if n == 0:
-                findings.append({
-                    "kind": "stale-allowlist", "path": pat,
-                    "detail": f"{pat!r} matches nothing — remove or fix",
-                })
+                findings.append(
+                    {
+                        "kind": "stale-allowlist",
+                        "path": pat,
+                        "detail": f"{pat!r} matches nothing — remove or fix",
+                    }
+                )
 
     # S-13.5 -- a governed surface with no contract behind it (see the
     # original's own module docstring for the full "structurally impossible
     # reconciliation" rationale).
     for name, s in sorted(specs.items()):
-        if (s["drift"] == "memlog" and governed.get(name)
-                and not s["memlog"].is_file()):
-            findings.append({
-                "kind": "drift-blind", "path": name,
-                "detail": (
-                    f"{name}: governs {len(governed[name])} file(s) with no "
-                    f"{s['memlog'].relative_to(target)} — the contract hash is "
-                    f"empty, so it can never move and no governed change is "
-                    f"reconcilable. Create the memlog, then --write-baseline "
-                    f"--spec {name} in the SAME change"
-                ),
-            })
+        if s["drift"] == "memlog" and governed.get(name) and not s["memlog"].is_file():
+            findings.append(
+                {
+                    "kind": "drift-blind",
+                    "path": name,
+                    "detail": (
+                        f"{name}: governs {len(governed[name])} file(s) with no "
+                        f"{s['memlog'].relative_to(target)} — the contract hash is "
+                        f"empty, so it can never move and no governed change is "
+                        f"reconcilable. Create the memlog, then --write-baseline "
+                        f"--spec {name} in the SAME change"
+                    ),
+                }
+            )
 
     current, current_warns, skipped = _spec_current_state(target, specs, governed)
     findings.extend(current_warns)
@@ -1933,9 +2313,7 @@ def gather_spec_surface(target: Path) -> tuple[Finding, ...]:
     coverage/drift OK verdict, exactly as the original prints "OK" while
     still surfacing its own DRIFT-PRESUMED section.
     """
-    return degrade_on_exception(
-        Source.SPEC_SURFACE, "spec-surface", lambda: _gather_spec_surface(target)
-    )
+    return degrade_on_exception(Source.SPEC_SURFACE, "spec-surface", lambda: _gather_spec_surface(target))
 
 
 def _gather_spec_surface(target: Path) -> tuple[Finding, ...]:
@@ -1956,10 +2334,7 @@ def _gather_spec_surface(target: Path) -> tuple[Finding, ...]:
                 source=Source.SPEC_SURFACE,
                 check="spec-surface-unevaluable",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"git is unavailable or {target} is not a repository — "
-                    f"spec surface cannot be evaluated"
-                ),
+                message=(f"git is unavailable or {target} is not a repository — spec surface cannot be evaluated"),
                 evidence={"target": str(target)},
             ),
         )
@@ -2050,7 +2425,7 @@ def _heading_title(line: str, dw_match: re.Match[str]) -> str:
     ledger under a different id -- see that function's own docstring for
     why the heading, not a ``summary:`` field, is sometimes the only
     signal available."""
-    return _TITLE_SEP_RE.sub("", line[dw_match.end():]).strip()
+    return _TITLE_SEP_RE.sub("", line[dw_match.end() :]).strip()
 
 
 def _ids(path: Path) -> set[str]:
@@ -2167,17 +2542,27 @@ _PLAIN_KEY_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$")
 #: below recurs dozens to hundreds of times as an actual field) -- so only a
 #: closed vocabulary disambiguates a continuation line from a fresh field.
 _KNOWN_FIELD_KEYS = (
-    "source_spec", "summary", "evidence", "origin", "location", "severity",
-    "reason", "status", "resolution", "decision", "seen-again", "promoted",
-    "found_by", "raised", "verified",
+    "source_spec",
+    "summary",
+    "evidence",
+    "origin",
+    "location",
+    "severity",
+    "reason",
+    "status",
+    "resolution",
+    "decision",
+    "seen-again",
+    "promoted",
+    "found_by",
+    "raised",
+    "verified",
     # "note" added 2026-09-08 (DW-FU-31-6, verified in the fleet sweep): a real
     # `note:` field was silently folded into the preceding `evidence:` block
     # because it was absent here, so the entry's own note was mis-attributed.
     "note",
 )
-_CONT_KEY_RE = re.compile(
-    r"^\s{2,}(" + "|".join(re.escape(k) for k in _KNOWN_FIELD_KEYS) + r"):\s*(.*)$"
-)
+_CONT_KEY_RE = re.compile(r"^\s{2,}(" + "|".join(re.escape(k) for k in _KNOWN_FIELD_KEYS) + r"):\s*(.*)$")
 
 
 class Tier3Shape(StrEnum):
@@ -2316,7 +2701,12 @@ def classify_tier3_entries(path: Path) -> tuple[LegacyEntry, ...]:
         if dw_match:
             title = _heading_title(line, dw_match)
             i = _consume_identified_entry(
-                lines, i + 1, dw_match.group(1), lineno, entries, title,
+                lines,
+                i + 1,
+                dw_match.group(1),
+                lineno,
+                entries,
+                title,
             )
             scope = None
             continue
@@ -2335,7 +2725,14 @@ def classify_tier3_entries(path: Path) -> tuple[LegacyEntry, ...]:
         if bullet_match:
             shape = Tier3Shape.LEGACY_HEADER if scope == "legacy" else Tier3Shape.LEGACY_FLAT
             i = _consume_bulleted_field_block(
-                lines, i, "source_spec", bullet_match.group(1), None, shape, lineno, entries,
+                lines,
+                i,
+                "source_spec",
+                bullet_match.group(1),
+                None,
+                shape,
+                lineno,
+                entries,
             )
             continue
 
@@ -2386,18 +2783,33 @@ def _consume_identified_entry(
         bullet_match = _BULLETED_FIELD_RE.match(line)
         if bullet_match:
             return _consume_bulleted_field_block(
-                lines, j, bullet_match.group(1), bullet_match.group(2),
-                entry_id, Tier3Shape.IDENTIFIED_BULLETED, header_lineno, entries,
+                lines,
+                j,
+                bullet_match.group(1),
+                bullet_match.group(2),
+                entry_id,
+                Tier3Shape.IDENTIFIED_BULLETED,
+                header_lineno,
+                entries,
                 title=title,
             )
         if _PLAIN_KEY_RE.match(line):
             return _consume_plain_field_block(
-                lines, j, entry_id, header_lineno, entries, title=title,
+                lines,
+                j,
+                entry_id,
+                header_lineno,
+                entries,
+                title=title,
             )
         j += 1
     entries.append(
         LegacyEntry(
-            Tier3Shape.IDENTIFIED_PLAIN, entry_id, header_lineno, header_lineno, {},
+            Tier3Shape.IDENTIFIED_PLAIN,
+            entry_id,
+            header_lineno,
+            header_lineno,
+            {},
             title=title,
         ),
     )
@@ -2532,7 +2944,11 @@ def _consume_plain_field_block(
         i += 1
     entries.append(
         LegacyEntry(
-            Tier3Shape.IDENTIFIED_PLAIN, entry_id, header_lineno, end_lineno, fields,
+            Tier3Shape.IDENTIFIED_PLAIN,
+            entry_id,
+            header_lineno,
+            end_lineno,
+            fields,
             title=title,
         ),
     )
@@ -2640,9 +3056,7 @@ def _derive_story_key(source_spec: str) -> str:
     """
     raw = source_spec.strip()
     if not raw:
-        raise ValueError(
-            f"empty source_spec after stripping markdown/whitespace: {source_spec!r}"
-        )
+        raise ValueError(f"empty source_spec after stripping markdown/whitespace: {source_spec!r}")
     span_match = _BACKTICK_SPAN_RE.search(raw)
     if span_match:
         raw = span_match.group(1).strip()
@@ -2652,9 +3066,7 @@ def _derive_story_key(source_spec: str) -> str:
         # filename/prefix logic below.
         raw = raw.strip("`").strip()
     if not raw:
-        raise ValueError(
-            f"empty source_spec after stripping markdown/whitespace: {source_spec!r}"
-        )
+        raise ValueError(f"empty source_spec after stripping markdown/whitespace: {source_spec!r}")
 
     path = PurePosixPath(raw.replace("\\", "/"))
     filename = path.name
@@ -2680,9 +3092,7 @@ def _derive_story_key(source_spec: str) -> str:
         # the parent directory name, sanitized the same way.
         story = _sanitize_story_key(_strip_spec_prefix(path.parent.name))
     if not story:
-        raise ValueError(
-            f"could not derive a non-empty story key from source_spec: {source_spec!r}"
-        )
+        raise ValueError(f"could not derive a non-empty story key from source_spec: {source_spec!r}")
     return story
 
 
@@ -2739,7 +3149,7 @@ def _next_free_suffix(base_id: str, collected: set[str]) -> int | None:
     for token in collected:
         if not token.startswith(prefix):
             continue
-        remainder = token[len(prefix):]
+        remainder = token[len(prefix) :]
         if _PLAIN_INT_RE.match(remainder):
             n = int(remainder)
             if highest is None or n > highest:
@@ -2748,13 +3158,10 @@ def _next_free_suffix(base_id: str, collected: set[str]) -> int | None:
 
 
 #: The fleet's 8 real stations (one per `_bmad-output/projects/pyforge-*/`
-#: directory) -- no existing canonical enum/list of station slugs was found
-#: anywhere in this package or `models.py` to reuse (checked per Review
-#: Triage Log 2026-08-15, item 3), so this is a minimal, deliberately local
-#: set rather than a hand-rolled shape-only check.
-_KNOWN_STATIONS = frozenset({
-    "atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden",
-})
+#: directory). Story 59.6 / CAP-137 replaced this package's own local copy
+#: with the one declared roster (``pyforge.core.roster``) -- order-agnostic
+#: here since this is a membership set, not a reported table.
+_KNOWN_STATIONS = frozenset(_ROSTER_STATIONS)
 
 
 def _normalize_station(station: str) -> str:
@@ -2773,10 +3180,7 @@ def _normalize_station(station: str) -> str:
     instead of a silently-wrong id shape."""
     normalized = station.strip().lower().removeprefix("pyforge-")
     if normalized not in _KNOWN_STATIONS:
-        raise ValueError(
-            f"unrecognized station {station!r}; expected one of "
-            f"{sorted(_KNOWN_STATIONS)}"
-        )
+        raise ValueError(f"unrecognized station {station!r}; expected one of {sorted(_KNOWN_STATIONS)}")
     return normalized
 
 
@@ -2804,14 +3208,20 @@ def mint_id_for_entry(
     with an empty story segment would be exactly the anonymous-entry
     failure this whole mechanism exists to eliminate.
 
-    ``station`` is normalized/validated via ``_normalize_station`` before
-    the mason/non-mason branch below (Review Triage Log 2026-08-15, item 3).
-    ``station == "mason"`` (after normalization) always mints a suffixed
-    ``DW-{story}-<n>`` (never bare, mason's own real convention -- see
-    ``DW-1-10-1``'s ``promoted:`` note in its tracked ledger). Every other
-    known station mints bare ``DW-FU-{story}`` unless that bare id or a
-    ``DW-FU-{story}-...`` id was already collected, in which case
-    ``DW-FU-{story}-<n>`` one past the highest counting suffix.
+    ``station`` is normalized/validated via ``_normalize_station`` (Review
+    Triage Log 2026-08-15, item 3) and always appears in the minted id
+    (vocabulary Dream, Ruling 14 -- every NEW ``DW-`` id includes the short
+    station token; bare ``DW-1``...``DW-10`` collide across ledgers by
+    construction, and this Dream's own ``DW-VOCAB`` sequence split silently
+    across steward and marshal for exactly that reason). This replaces the
+    former mason/non-mason branch, which minted mason bare (``DW-{story}-
+    <n>``, no token at all) and every other station under the generic ``FU``
+    placeholder (``DW-FU-{story}...``) instead of its own real station name
+    -- both are pre-ruling shapes and are never minted again; the 1338
+    existing ids already on disk are untouched (no retro-rename). Mints
+    bare ``DW-{station}-{story}`` unless that bare id or a
+    ``DW-{station}-{story}-...`` id was already collected, in which case
+    ``DW-{station}-{story}-<n>`` one past the highest counting suffix.
 
     ``already_minted`` is an optional accumulator of ids minted earlier in
     the SAME in-progress batch that have not yet been written to either
@@ -2842,14 +3252,133 @@ def mint_id_for_entry(
     if already_minted:
         collected = collected | already_minted
 
-    if station_norm == "mason":
-        base_id = f"DW-{story}"
-        n = _next_free_suffix(base_id, collected)
-        return f"{base_id}-{1 if n is None else n}"
-
-    base_id = f"DW-FU-{story}"
+    base_id = f"DW-{station_norm}-{story}"
     n = _next_free_suffix(base_id, collected)
     return base_id if n is None else f"{base_id}-{n}"
+
+
+#: A zero-padded ISO date (`AGENTS.md` "Dates, tags and versions": dates are
+#: zero-padded so they sort correctly as plain text) -- the date segment of
+#: a sweep-scoped id.
+_SWEEP_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def mint_sweep_id(
+    slug: str,
+    station: str,
+    date_str: str,
+    tier3_path: Path,
+    tracked_path: Path,
+    already_minted: set[str] | None = None,
+) -> str:
+    """Mint the next free sweep-scoped ``DW-`` id: ``DW-{station}-{SLUG}-
+    {date}[-<n>]`` -- the second of the vocabulary Dream's two blessed
+    families (Ruling 13; the fleet's own ``DW-VOCAB-2026-09-14-1..7`` is a
+    live example of the shape, minus the station token Ruling 14 now
+    requires on every new mint). Reuses ``_collect_dw_tokens`` and
+    ``_next_free_suffix`` exactly as ``mint_id_for_entry`` does -- same
+    counting rule, same pure-computation/no-write contract, same
+    ``already_minted`` batch-accumulator convention -- rather than a second
+    implementation of either.
+
+    ``station`` is normalized/validated via ``_normalize_station`` (raises
+    ``ValueError`` on an unrecognized station). ``slug`` is sanitized via
+    ``_sanitize_story_key`` (the same ``[A-Za-z0-9-]`` alphabet the story-
+    scoped mint uses); raises ``ValueError`` if sanitizing empties it.
+    ``date_str`` must already be a zero-padded ISO date (``YYYY-MM-DD``);
+    raises ``ValueError`` otherwise -- this function mints an id for a
+    caller-supplied sweep date, it does not stamp "today" itself, so a
+    stray non-ISO or unpadded value is rejected rather than silently
+    embedded in a `DW-` id.
+
+    This mints a NEW sweep id only. The ~30 existing sweep-scoped ids
+    (``DW-<SLUG>-<date>-<n>``, no station token) are untouched -- Ruling 14
+    bans the no-token shape for anything minted from here on, and is
+    silent on the 1338 ids already on disk."""
+    station_norm = _normalize_station(station)
+    sweep_slug = _sanitize_story_key(slug)
+    if not sweep_slug:
+        raise ValueError(f"could not derive a non-empty sweep slug from {slug!r}")
+    if not _SWEEP_DATE_RE.match(date_str):
+        raise ValueError(f"date_str must be a zero-padded ISO date (YYYY-MM-DD), got {date_str!r}")
+
+    collected = _collect_dw_tokens(tier3_path, tracked_path)
+    if already_minted:
+        collected = collected | already_minted
+
+    base_id = f"DW-{station_norm}-{sweep_slug}-{date_str}"
+    n = _next_free_suffix(base_id, collected)
+    return base_id if n is None else f"{base_id}-{n}"
+
+
+#: The fleet's own real story-number shape, 952/952 (Dream "The shapes"):
+#: dotted `<epic>.<story>`, an optional single trailing letter on the story
+#: half (e.g. `59.5`, `22.4a`).
+_STORY_NUMBER_RE = re.compile(r"^(\d+)\.(\d+[A-Za-z]?)$")
+
+
+@dataclass(frozen=True)
+class StoryIdentity:
+    """A new story's three derived spellings (vocabulary Dream, Ruling 12):
+    the heading is human-canonical, the ledger key and spec filename are
+    both mechanically derived from it -- never authored a second time."""
+
+    heading: str
+    ledger_key: str
+    spec_filename: str
+
+
+def slugify_title(title: str) -> str:
+    """The one slugify Ruling 12 calls for: lowercase, then every run of
+    characters outside ``[a-z0-9]`` collapses to a single ``-``, with
+    leading/trailing ``-`` trimmed. Closed over its own alphabet
+    (``^[a-z0-9]+(-[a-z0-9]+)*$``) by construction -- unlike the 14 of 952
+    existing ledger keys that let an underscore, non-ASCII characters, or a
+    collapsed typographic apostrophe through a looser regex (Dream "The
+    shapes", finding 3). Raises ``ValueError`` if the title slugifies to
+    nothing (e.g. an all-punctuation title).
+
+    Only ever called at mint time, for a NEW story (Ruling 12). The 53
+    existing number-pairs whose ledger key and spec filename already carry
+    different slugs for the same story are never re-derived through this
+    function -- no retro-rename."""
+    slug = re.sub(r"[^a-z0-9]+", "-", title.strip().lower()).strip("-")
+    if not slug:
+        raise ValueError(f"could not derive a non-empty slug from title: {title!r}")
+    return slug
+
+
+def mint_story_identity(number: str, title: str) -> StoryIdentity:
+    """Mint a new story's identity from ONE input pair, per Ruling 12: the
+    heading is human-canonical (``### Story {number}: {title}``); the
+    ledger key and spec filename both derive from it mechanically, via
+    ``slugify_title``, rather than being authored independently (the exact
+    failure the Dream measured: 53 of 842 existing number-pairs carry a
+    different slug in their ledger key than in their spec filename, because
+    nothing today derives one from the other).
+
+    ``number`` is the dotted ``<epic>.<story>`` form a heading already uses
+    (e.g. ``"59.5"``, ``"22.4a"``) -- raises ``ValueError`` if it does not
+    match the fleet's own ``\\d+\\.\\d+[A-Za-z]?`` shape (952/952), or if
+    ``title`` is blank or slugifies to nothing.
+
+    Mints a NEW story's identity only -- never applied retroactively. The
+    53 existing divergent number-pairs are untouched by construction: this
+    function is never called against them."""
+    match = _STORY_NUMBER_RE.match(number.strip())
+    if not match:
+        raise ValueError(f"story number must be dotted <epic>.<story> (e.g. '59.5'), got {number!r}")
+    epic, story = match.group(1), match.group(2)
+    clean_title = title.strip()
+    if not clean_title:
+        raise ValueError("story title must not be blank")
+    slug = slugify_title(clean_title)
+    ledger_key = f"{epic}-{story.lower()}-{slug}"
+    return StoryIdentity(
+        heading=f"### Story {epic}.{story}: {clean_title}",
+        ledger_key=ledger_key,
+        spec_filename=f"spec-{ledger_key}.md",
+    )
 
 
 # --- Story 25.6 / CAP-6: spec-frontmatter `deferred:` intake -----------------
@@ -2867,10 +3396,16 @@ _SUMMARY_LIMIT = 500
 _EVIDENCE_LIMIT = 4000
 _LOCATION_LIMIT = 200
 _SEVERITY_ALIASES = {
-    "critical": "critical", "blocker": "critical",
-    "high": "high", "major": "high",
-    "medium": "medium", "med": "medium", "moderate": "medium",
-    "low": "low", "minor": "low", "trivial": "low",
+    "critical": "critical",
+    "blocker": "critical",
+    "high": "high",
+    "major": "high",
+    "medium": "medium",
+    "med": "medium",
+    "moderate": "medium",
+    "low": "low",
+    "minor": "low",
+    "trivial": "low",
 }
 _ORIGIN_LINE_RE = re.compile(
     rf"^[ \t]*origin:[ \t]*{re.escape(HARVEST_ORIGIN)}[ \t]+([0-9a-f]{{12}})\b",
@@ -2915,15 +3450,11 @@ def _flatten_deferred_scalar(value: object, limit: int) -> str:
 
 
 def _is_deferred_yaml_scalar(value: object) -> bool:
-    return isinstance(value, (str, bytes)) or not isinstance(
-        value, (Mapping, Sequence, Set)
-    )
+    return isinstance(value, (str, bytes)) or not isinstance(value, (Mapping, Sequence, Set))
 
 
 def _deferred_contains_nul(value: object) -> bool:
-    return (isinstance(value, str) and "\0" in value) or (
-        isinstance(value, bytes) and b"\0" in value
-    )
+    return (isinstance(value, str) and "\0" in value) or (isinstance(value, bytes) and b"\0" in value)
 
 
 def harvest_fingerprint(*parts: str) -> str:
@@ -2957,10 +3488,7 @@ def parse_spec_frontmatter_deferrals(
     if raw is None:
         return (), ()
     if not isinstance(raw, list):
-        return (), (
-            f"{spec_path.name}: `{_DEFERRED_FIELD}:` is not a list "
-            f"(got {type(raw).__name__})",
-        )
+        return (), (f"{spec_path.name}: `{_DEFERRED_FIELD}:` is not a list (got {type(raw).__name__})",)
 
     if project_dir is not None:
         try:
@@ -2974,30 +3502,20 @@ def parse_spec_frontmatter_deferrals(
     malformed: list[str] = []
     for i, item in enumerate(raw, start=1):
         if not isinstance(item, dict):
-            malformed.append(
-                f"{spec_path.name} item {i}: not a mapping (got {type(item).__name__})"
-            )
+            malformed.append(f"{spec_path.name} item {i}: not a mapping (got {type(item).__name__})")
             continue
         summary_raw = item.get("summary")
         if not _is_deferred_yaml_scalar(summary_raw):
-            malformed.append(
-                f"{spec_path.name} item {i}: `summary` is not a scalar "
-                f"(got {type(summary_raw).__name__})"
-            )
+            malformed.append(f"{spec_path.name} item {i}: `summary` is not a scalar (got {type(summary_raw).__name__})")
             continue
         bad_optional = next(
-            (
-                field
-                for field in ("evidence", "location")
-                if not _is_deferred_yaml_scalar(item.get(field))
-            ),
+            (field for field in ("evidence", "location") if not _is_deferred_yaml_scalar(item.get(field))),
             None,
         )
         if bad_optional is not None:
             value = item[bad_optional]
             malformed.append(
-                f"{spec_path.name} item {i}: `{bad_optional}` is not a scalar "
-                f"(got {type(value).__name__})"
+                f"{spec_path.name} item {i}: `{bad_optional}` is not a scalar (got {type(value).__name__})"
             )
             continue
         raw_text_values = {
@@ -3050,9 +3568,7 @@ def discover_spec_frontmatter_deferrals(project_dir: Path) -> tuple[SpecDeferred
             continue
         if "deferred:" not in head:
             continue
-        findings, _malformed = parse_spec_frontmatter_deferrals(
-            spec_path, project_dir=project_dir
-        )
+        findings, _malformed = parse_spec_frontmatter_deferrals(spec_path, project_dir=project_dir)
         out.extend(findings)
     return tuple(out)
 
@@ -3101,9 +3617,7 @@ def _block_names_no_path(text: str) -> bool:
     hand-synced approximations.
     """
     body = _SOURCE_SPEC_LINE_RE.sub("", text)
-    return not any(
-        _is_path_token(m.group(1)) for m in _PATH_TOKEN_RE.finditer(body)
-    )
+    return not any(_is_path_token(m.group(1)) for m in _PATH_TOKEN_RE.finditer(body))
 
 
 def _text_has_resolvable_path(text: str) -> bool:
@@ -3204,8 +3718,7 @@ def _load_deferred_work_baseline(
     if not found:
         return None, {
             "kind": "no-deferred-work-baseline",
-            "detail": (f"{rel} missing: run "
-                       f"scripts/deferred_work_baseline.py --write-baseline"),
+            "detail": (f"{rel} missing: run scripts/deferred_work_baseline.py --write-baseline"),
         }
     try:
         data = json.loads(baseline_path.read_text(encoding="utf-8"))
@@ -3213,19 +3726,18 @@ def _load_deferred_work_baseline(
         # "no baseline to compare against", not a crash (Boundaries).
         return None, {
             "kind": "no-deferred-work-baseline",
-            "detail": (f"{rel} is unreadable: run "
-                       f"scripts/deferred_work_baseline.py --write-baseline"),
+            "detail": (f"{rel} is unreadable: run scripts/deferred_work_baseline.py --write-baseline"),
         }
     if not isinstance(data, dict) or not all(
-        isinstance(k, str) and isinstance(v, int) and not isinstance(v, bool)
-        and v >= 0
-        for k, v in data.items()
+        isinstance(k, str) and isinstance(v, int) and not isinstance(v, bool) and v >= 0 for k, v in data.items()
     ):
         return None, {
             "kind": "no-deferred-work-baseline",
-            "detail": (f"{rel} is not the expected {{project: count}} shape: "
-                       f"run scripts/deferred_work_baseline.py "
-                       f"--write-baseline"),
+            "detail": (
+                f"{rel} is not the expected {{project: count}} shape: "
+                f"run scripts/deferred_work_baseline.py "
+                f"--write-baseline"
+            ),
         }
     return data, None
 
@@ -3272,9 +3784,7 @@ def _tracked_summaries(tracked_path: Path) -> frozenset[str]:
 # own tooling, but not impossible on a hand-edited entry) prefix-match an
 # unrelated, longer token elsewhere in the tracked ledger's raw text
 # (review-pass finding, 2026-08-28).
-_TIER3_ORIGIN_FINGERPRINT_RE = re.compile(
-    rf"^{re.escape(HARVEST_ORIGIN)}\s+([0-9a-f]{{12}})\b"
-)
+_TIER3_ORIGIN_FINGERPRINT_RE = re.compile(rf"^{re.escape(HARVEST_ORIGIN)}\s+([0-9a-f]{{12}})\b")
 
 #: A truncated heading ``title`` (check 3 below) must be at least this long
 #: before it is trusted as a prefix match. Live measurement (2026-08-29,
@@ -3293,7 +3803,10 @@ _TRUNCATED_TITLE_MIN_LEN = 120
 
 
 def _tier3_entry_already_promoted(
-    entry: LegacyEntry, *, tracked_summaries: frozenset[str], tracked_text: str,
+    entry: LegacyEntry,
+    *,
+    tracked_summaries: frozenset[str],
+    tracked_text: str,
 ) -> bool:
     """True when ``entry`` (a Tier-3 entry the position/id-based checks
     below are about to flag) already reached the tracked ledger by some
@@ -3348,8 +3861,13 @@ def _tier3_entry_already_promoted(
     if match is not None and tracked_text:
         needle = f"{HARVEST_ORIGIN} {match.group(1)}"
         source_spec = entry.fields.get("source_spec", "").strip().strip("`")
-        if needle in tracked_text and source_spec and _source_spec_cited_in(
-            source_spec, tracked_text,
+        if (
+            needle in tracked_text
+            and source_spec
+            and _source_spec_cited_in(
+                source_spec,
+                tracked_text,
+            )
         ):
             return True
     if not summary and entry.title:
@@ -3364,7 +3882,10 @@ def _tier3_entry_already_promoted(
 
 
 def _check_project_deferred_work(
-    target: Path, proj: Path, findings: list[dict], baseline: dict[str, int] | None,
+    target: Path,
+    proj: Path,
+    findings: list[dict],
+    baseline: dict[str, int] | None,
 ) -> None:
     """Append one project's deferred-work findings to the CALLER's
     ``findings`` list -- verbatim logic from the original's own ``scan()``
@@ -3393,10 +3914,7 @@ def _check_project_deferred_work(
     # Hoisted here (was read a second time further down, for the
     # spec-frontmatter check) -- also feeds the content-comparison
     # exemption below.
-    tracked_text = (
-        tracked_path.read_text(encoding="utf-8", errors="replace")
-        if _is_file(tracked_path) else ""
-    )
+    tracked_text = tracked_path.read_text(encoding="utf-8", errors="replace") if _is_file(tracked_path) else ""
 
     if has_tier3:
         # FILE-level check: an ID-only comparison silently passes a project with
@@ -3404,12 +3922,17 @@ def _check_project_deferred_work(
         # ids (verbatim rationale from the original).
         size = t3_path.stat().st_size
         if not _is_file(tracked_path) and size >= _SUBSTANTIVE_BYTES:
-            findings.append({
-                "kind": "no-tracked-ledger", "project": proj.name, "id": "",
-                "tier3": str(t3_path.relative_to(target)),
-                "tracked": str(tracked_path.relative_to(target)),
-                "tier3_bytes": size, "generic_id": False,
-            })
+            findings.append(
+                {
+                    "kind": "no-tracked-ledger",
+                    "project": proj.name,
+                    "id": "",
+                    "tier3": str(t3_path.relative_to(target)),
+                    "tracked": str(tracked_path.relative_to(target)),
+                    "tier3_bytes": size,
+                    "generic_id": False,
+                }
+            )
 
         # Content-comparison exemption (2026-08-28): a Tier-3 entry whose
         # normalized summary already appears in the tracked ledger reached
@@ -3436,16 +3959,21 @@ def _check_project_deferred_work(
             for n in _anonymous(t3_path)[count:]:
                 entry = t3_entries_by_line.get(n)
                 if entry is not None and _tier3_entry_already_promoted(
-                    entry, tracked_summaries=tracked_summaries, tracked_text=tracked_text,
+                    entry,
+                    tracked_summaries=tracked_summaries,
+                    tracked_text=tracked_text,
                 ):
                     continue  # already reached the tracked ledger by another path
-                findings.append({
-                    "kind": "tier3-entry-unidentified", "project": proj.name,
-                    "id": f"line {n}",
-                    "tier3": str(t3_path.relative_to(target)),
-                    "tracked": str(tracked_path.relative_to(target)),
-                    "generic_id": False,
-                })
+                findings.append(
+                    {
+                        "kind": "tier3-entry-unidentified",
+                        "project": proj.name,
+                        "id": f"line {n}",
+                        "tier3": str(t3_path.relative_to(target)),
+                        "tracked": str(tracked_path.relative_to(target)),
+                        "generic_id": False,
+                    }
+                )
 
         t3 = _ids(t3_path)
         if t3:
@@ -3453,33 +3981,47 @@ def _check_project_deferred_work(
             for dw in sorted(t3 - tracked_ids):
                 entry = t3_entries_by_id.get(dw)
                 if entry is not None and _tier3_entry_already_promoted(
-                    entry, tracked_summaries=tracked_summaries, tracked_text=tracked_text,
+                    entry,
+                    tracked_summaries=tracked_summaries,
+                    tracked_text=tracked_text,
                 ):
                     continue  # already reached the tracked ledger by another path
-                findings.append({
-                    "kind": "tier3-only-deferral", "project": proj.name, "id": dw,
-                    "tier3": str(t3_path.relative_to(target)),
-                    "tracked": str(tracked_path.relative_to(target)),
-                    "generic_id": bool(_GENERIC_RE.match(dw)),
-                })
+                findings.append(
+                    {
+                        "kind": "tier3-only-deferral",
+                        "project": proj.name,
+                        "id": dw,
+                        "tier3": str(t3_path.relative_to(target)),
+                        "tracked": str(tracked_path.relative_to(target)),
+                        "generic_id": bool(_GENERIC_RE.match(dw)),
+                    }
+                )
 
     if _is_file(tracked_path):
         for entry_id, has_status in _entries(tracked_path):
             if has_status:
                 continue
-            findings.append({
-                "kind": "ledger-entry-unstatused", "project": proj.name, "id": entry_id,
-                "tier3": str(t3_path.relative_to(target)) if has_tier3 else "(none)",
-                "tracked": str(tracked_path.relative_to(target)),
-                "generic_id": False,
-            })
+            findings.append(
+                {
+                    "kind": "ledger-entry-unstatused",
+                    "project": proj.name,
+                    "id": entry_id,
+                    "tier3": str(t3_path.relative_to(target)) if has_tier3 else "(none)",
+                    "tracked": str(tracked_path.relative_to(target)),
+                    "generic_id": False,
+                }
+            )
         for n in _anonymous(tracked_path):
-            findings.append({
-                "kind": "ledger-entry-unidentified", "project": proj.name, "id": f"line {n}",
-                "tier3": str(t3_path.relative_to(target)) if has_tier3 else "(none)",
-                "tracked": str(tracked_path.relative_to(target)),
-                "generic_id": False,
-            })
+            findings.append(
+                {
+                    "kind": "ledger-entry-unidentified",
+                    "project": proj.name,
+                    "id": f"line {n}",
+                    "tier3": str(t3_path.relative_to(target)) if has_tier3 else "(none)",
+                    "tracked": str(tracked_path.relative_to(target)),
+                    "generic_id": False,
+                }
+            )
 
     # Story 25.6 / CAP-6: spec-frontmatter deferrals must reach the tracked
     # ledger without a human relay (loop runs stay on the bmad-loop bridge).
@@ -3488,15 +4030,17 @@ def _check_project_deferred_work(
     for finding in discover_spec_frontmatter_deferrals(proj):
         if frontmatter_deferral_in_tracked(finding, tracked_text):
             continue
-        findings.append({
-            "kind": "spec-frontmatter-only-deferral",
-            "project": proj.name,
-            "id": finding.fingerprint,
-            "tier3": finding.spec_rel,
-            "tracked": str(tracked_path.relative_to(target)),
-            "summary": finding.summary[:120],
-            "generic_id": False,
-        })
+        findings.append(
+            {
+                "kind": "spec-frontmatter-only-deferral",
+                "project": proj.name,
+                "id": finding.fingerprint,
+                "tier3": finding.spec_rel,
+                "tracked": str(tracked_path.relative_to(target)),
+                "summary": finding.summary[:120],
+                "generic_id": False,
+            }
+        )
 
 
 def _deferred_work_findings(target: Path) -> list[dict]:
@@ -3525,12 +4069,15 @@ def _deferred_work_findings(target: Path) -> list[dict]:
         except Exception as exc:  # noqa: BLE001 -- one project's unreadable
             # ledger must not discard findings already appended for a
             # different project.
-            findings.append({
-                "kind": "deferred-work-unevaluable", "project": proj.name, "id": "",
-                "detail": (f"{proj.name}: could not be evaluated here — "
-                           f"{exc.__class__.__name__}: {exc}"),
-                "warn": True,
-            })
+            findings.append(
+                {
+                    "kind": "deferred-work-unevaluable",
+                    "project": proj.name,
+                    "id": "",
+                    "detail": (f"{proj.name}: could not be evaluated here — {exc.__class__.__name__}: {exc}"),
+                    "warn": True,
+                }
+            )
     return findings
 
 
@@ -3541,29 +4088,38 @@ def _deferred_work_message(item: dict) -> str:
     which have no origin script to be verbatim from)."""
     kind = item["kind"]
     if kind == "no-tracked-ledger":
-        return (f"{item['project']}: {item['tier3']} holds "
-                f"{item['tier3_bytes'] / 1024:.0f} KB of deferred work and "
-                f"{item['tracked']} does not exist — the WHOLE record is gitignored.")
+        return (
+            f"{item['project']}: {item['tier3']} holds "
+            f"{item['tier3_bytes'] / 1024:.0f} KB of deferred work and "
+            f"{item['tracked']} does not exist — the WHOLE record is gitignored."
+        )
     if kind == "ledger-entry-unstatused":
-        return (f"{item['project']}/{item['id']}: no `status:` line in "
-                f"{item['tracked']} — it cannot be counted as open or closed.")
+        return (
+            f"{item['project']}/{item['id']}: no `status:` line in "
+            f"{item['tracked']} — it cannot be counted as open or closed."
+        )
     if kind == "ledger-entry-unidentified":
-        return (f"{item['project']} {item['id']} of {item['tracked']}: an entry "
-                f"with no `## DW-<scope>-<n>` heading — it cannot be cited, "
-                f"deduped, or individually closed.")
+        return (
+            f"{item['project']} {item['id']} of {item['tracked']}: an entry "
+            f"with no `## DW-<scope>-<n>` heading — it cannot be cited, "
+            f"deduped, or individually closed."
+        )
     if kind == "tier3-entry-unidentified":
-        return (f"{item['project']} {item['id']} of {item['tier3']}: an entry "
-                f"with no `## DW-<scope>-<n>` heading, beyond the grandfathered "
-                f"baseline count — it cannot be cited, deduped, or individually "
-                f"closed.")
+        return (
+            f"{item['project']} {item['id']} of {item['tier3']}: an entry "
+            f"with no `## DW-<scope>-<n>` heading, beyond the grandfathered "
+            f"baseline count — it cannot be cited, deduped, or individually "
+            f"closed."
+        )
     if kind == "tier3-only-deferral":
         hint = ""
         if item.get("generic_id"):
-            hint = ("  — a generic id: bmad-loop's own damping output. Rename it "
-                    "to the ledger's DW-<story>-<n> convention on promotion, or "
-                    "the next damped story collides with it.")
-        return (f"{item['project']}/{item['id']}: present in {item['tier3']} "
-                f"but NOT in {item['tracked']}{hint}")
+            hint = (
+                "  — a generic id: bmad-loop's own damping output. Rename it "
+                "to the ledger's DW-<story>-<n> convention on promotion, or "
+                "the next damped story collides with it."
+            )
+        return f"{item['project']}/{item['id']}: present in {item['tier3']} but NOT in {item['tracked']}{hint}"
     if kind == "spec-frontmatter-only-deferral":
         summary = item.get("summary", "")
         hint = f" — {summary!r}" if summary else ""
@@ -3586,9 +4142,7 @@ def gather_deferred_work(target: Path) -> tuple[Finding, ...]:
     Tier-3 ledgers at all (or all fully promoted) degrades to a vacuous OK
     rather than raising.
     """
-    return degrade_on_exception(
-        Source.DEFERRED_WORK, "deferred-work", lambda: _gather_deferred_work(target)
-    )
+    return degrade_on_exception(Source.DEFERRED_WORK, "deferred-work", lambda: _gather_deferred_work(target))
 
 
 def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
@@ -3614,10 +4168,7 @@ def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
                     evidence={"target": str(target)},
                 ),
             )
-        scanned = [
-            p.name for p in projects_dir.iterdir()
-            if p.is_dir() and (p / TIER3_REL).is_file()
-        ]
+        scanned = [p.name for p in projects_dir.iterdir() if p.is_dir() and (p / TIER3_REL).is_file()]
         return (
             Finding(
                 source=Source.DEFERRED_WORK,
@@ -3633,10 +4184,7 @@ def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
             check=item["kind"],
             status=DoctorStatus.WARN if item.get("warn") else DoctorStatus.FAIL,
             message=_deferred_work_message(item),
-            evidence={
-                k: v for k, v in item.items()
-                if k not in ("kind", "warn")
-            },
+            evidence={k: v for k, v in item.items() if k not in ("kind", "warn")},
         )
         for item in raw
     )
@@ -3727,9 +4275,7 @@ def resolve_source_spec(
         )
 
     if project:
-        project_candidate = (
-            repo_root / "_bmad-output" / "projects" / project / normalized
-        )
+        project_candidate = repo_root / "_bmad-output" / "projects" / project / normalized
         if _is_file(project_candidate):
             return SourceSpecResolution(
                 status=SourceSpecResolutionStatus.PRESENT,
@@ -3856,9 +4402,7 @@ def _parse_verified_date(raw: str) -> date | None:
 #: operates on files, never on lines within one. Matching only WITHIN
 #: backticks (never bare prose) mirrors how every ledger entry already
 #: cites code today. Candidates are then filtered by `_is_path_token`.
-_PATH_TOKEN_RE = re.compile(
-    r"`([\w][\w./-]*(?:\.[A-Za-z0-9]+|/[\w.-]+))(?::\d+)?`"
-)
+_PATH_TOKEN_RE = re.compile(r"`([\w][\w./-]*(?:\.[A-Za-z0-9]+|/[\w.-]+))(?::\d+)?`")
 
 #: Trailing segments that mark a dotless-but-dotted token as a real FILE
 #: rather than an attribute access. DERIVED, not invented: every one of
@@ -3925,6 +4469,7 @@ def _is_path_token(token: str) -> bool:
     if "/" in token:
         return True
     return token.rsplit(".", 1)[-1].lower() in _PATH_EXTENSIONS
+
 
 #: Any physical line carrying a `source_spec:` field, bulleted (`-
 #: source_spec: ...`) or plain (`source_spec: ...`) -- both shapes occur
@@ -4001,12 +4546,18 @@ def _authored_date(target: Path, tracked_path: Path, entry_id: str) -> date | No
         out = run_git(
             target,
             [
-                "log", "--reverse", "--follow", "--format=%ad", "--date=short",
-                "-G", f"{entry_id}[^A-Za-z0-9-]",
-                "--", rel,
+                "log",
+                "--reverse",
+                "--follow",
+                "--format=%ad",
+                "--date=short",
+                "-G",
+                f"{entry_id}[^A-Za-z0-9-]",
+                "--",
+                rel,
             ],
         )
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
     first = out.splitlines()[0].strip() if out.strip() else ""
     if not first:
@@ -4043,7 +4594,7 @@ def _churn_since(target: Path, rel_paths: list[str], since: date) -> bool:
     for rel in rel_paths:
         try:
             tracked = run_git(target, ["log", "--oneline", "-1", "--", rel])
-        except (CliBridgeError, UnicodeDecodeError):
+        except CliBridgeError, UnicodeDecodeError:
             return False
         if not tracked.strip():
             return False
@@ -4051,11 +4602,16 @@ def _churn_since(target: Path, rel_paths: list[str], since: date) -> bool:
             since_out = run_git(
                 target,
                 [
-                    "log", "--oneline", "-1", "--since", since.isoformat(),
-                    "--", rel,
+                    "log",
+                    "--oneline",
+                    "-1",
+                    "--since",
+                    since.isoformat(),
+                    "--",
+                    rel,
                 ],
             )
-        except (CliBridgeError, UnicodeDecodeError):
+        except CliBridgeError, UnicodeDecodeError:
             return False
         if since_out.strip():
             return False
@@ -4063,7 +4619,10 @@ def _churn_since(target: Path, rel_paths: list[str], since: date) -> bool:
 
 
 def _attach_churn_skip(
-    target: Path, item: dict, paths: list[str], since: date | None,
+    target: Path,
+    item: dict,
+    paths: list[str],
+    since: date | None,
 ) -> None:
     """Mutate ``item`` IN PLACE, adding ``skip_reason``/
     ``churn_checked_paths`` when every one of ``paths`` is confirmed
@@ -4215,20 +4774,25 @@ def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
     additional pathspecs, so the untracked-file recall `--no-exclude-standard`
     exists for is preserved everywhere EXCEPT these known-huge vendor/cache/
     worktree trees."""
-    prune_pathspecs = [
-        f":(exclude,glob)**/{name}/**" for name in sorted(_PRUNED_DIR_NAMES)
-    ]
+    prune_pathspecs = [f":(exclude,glob)**/{name}/**" for name in sorted(_PRUNED_DIR_NAMES)]
     try:
         out = run_git(
             target,
             [
-                "grep", "-n", "-w", "-I", "--untracked", "--no-exclude-standard",
-                "--", symbol, ":(exclude,glob)**/deferred-work-ledger.md",
+                "grep",
+                "-n",
+                "-w",
+                "-I",
+                "--untracked",
+                "--no-exclude-standard",
+                "--",
+                symbol,
+                ":(exclude,glob)**/deferred-work-ledger.md",
                 *prune_pathspecs,
             ],
             ok_exit_codes=frozenset({0, 1}),
         )
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
     decl_re = re.compile(_DECLARATION_RE_TEMPLATE.format(re.escape(symbol)))
     escaped = re.escape(symbol)
@@ -4247,7 +4811,9 @@ def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
 
 
 def _attach_mechanical_verdict(
-    target: Path, item: dict, symbol: str | None,
+    target: Path,
+    item: dict,
+    symbol: str | None,
 ) -> None:
     """Mutate ``item`` IN PLACE, adding ``mechanical_verdict``/
     ``mechanical_symbol``/``mechanical_call_sites`` when ``symbol`` names a
@@ -4347,7 +4913,7 @@ def _known_project_code_roots(target: Path) -> dict[str, str]:
         try:
             if _is_dir(code_root):
                 roots[proj.name] = str(code_root.relative_to(target))
-        except (OSError, ValueError):
+        except OSError, ValueError:
             # Per-sibling isolation is the point (docstring above); one
             # broken sibling must never poison every other project's own
             # turn.
@@ -4356,7 +4922,10 @@ def _known_project_code_roots(target: Path) -> dict[str, str]:
 
 
 def _check_project_due_for_verification(
-    target: Path, proj: Path, findings: list[dict], today: date,
+    target: Path,
+    proj: Path,
+    findings: list[dict],
+    today: date,
 ) -> None:
     """Append one project's due-for-verification findings to the CALLER's
     ``findings`` list -- mirrors ``_check_project_deferred_work``'s own
@@ -4408,21 +4977,22 @@ def _check_project_due_for_verification(
     (review finding, patch). Positional pairing is correct regardless of
     whether ids repeat."""
     tracked_path = proj / TRACKED_REL
-    other_roots = {
-        slug: root
-        for slug, root in _known_project_code_roots(target).items()
-        if slug != proj.name
-    }
+    other_roots = {slug: root for slug, root in _known_project_code_roots(target).items() if slug != proj.name}
     paths_by_entry = _entry_named_paths(tracked_path)
     claims_by_entry = _entry_unused_symbol_claims(tracked_path)
     for (entry_id, raw_verified), (_, paths), (_, symbol) in zip(
-        _verification(tracked_path), paths_by_entry, claims_by_entry, strict=True,
+        _verification(tracked_path),
+        paths_by_entry,
+        claims_by_entry,
+        strict=True,
     ):
         parsed = _parse_verified_date(raw_verified) if raw_verified else None
         if parsed is None:
             item = {
-                "kind": "due-for-verification", "reason": "never-verified",
-                "project": proj.name, "id": entry_id,
+                "kind": "due-for-verification",
+                "reason": "never-verified",
+                "project": proj.name,
+                "id": entry_id,
                 "tracked": str(tracked_path.relative_to(target)),
                 "other_project_roots": dict(other_roots),
             }
@@ -4435,8 +5005,10 @@ def _check_project_due_for_verification(
         days_stale = (today - parsed).days
         if days_stale > DUE_FOR_VERIFICATION_STALENESS_DAYS:
             item = {
-                "kind": "due-for-verification", "reason": "stale",
-                "project": proj.name, "id": entry_id,
+                "kind": "due-for-verification",
+                "reason": "stale",
+                "project": proj.name,
+                "id": entry_id,
                 "tracked": str(tracked_path.relative_to(target)),
                 "days_stale": days_stale,
                 "other_project_roots": other_roots,
@@ -4641,15 +5213,14 @@ def _correlate_due_for_verification(target: Path, items: list[dict]) -> list[dic
                     {(m["project"], m["id"]) for m in members},
                 )
                 display_value = key if matched_on == "path" else text_display[key]
-                clusters.append({
-                    "kind": "due-for-verification-cluster",
-                    "matched_on": matched_on,
-                    "matched_value": display_value,
-                    "members": [
-                        {"project": project, "id": entry_id}
-                        for project, entry_id in deduped
-                    ],
-                })
+                clusters.append(
+                    {
+                        "kind": "due-for-verification-cluster",
+                        "matched_on": matched_on,
+                        "matched_value": display_value,
+                        "members": [{"project": project, "id": entry_id} for project, entry_id in deduped],
+                    }
+                )
         return clusters
     except Exception:  # noqa: BLE001 -- see docstring: isolate the whole pass.
         return []
@@ -4721,19 +5292,18 @@ def _verification_coverage(target: Path, *, today: date | None = None) -> list[d
                 if not raw_verified:
                     continue
                 parsed = _parse_verified_date(raw_verified)
-                if (
-                    parsed is not None
-                    and (as_of - parsed).days <= DUE_FOR_VERIFICATION_STALENESS_DAYS
-                ):
+                if parsed is not None and (as_of - parsed).days <= DUE_FOR_VERIFICATION_STALENESS_DAYS:
                     verified_within_window += 1
-            items.append({
-                "kind": "verification-coverage",
-                "project": proj.name,
-                "total": total,
-                "verified_within_window": verified_within_window,
-                "window_days": DUE_FOR_VERIFICATION_STALENESS_DAYS,
-                "pct": round(100 * verified_within_window / total),
-            })
+            items.append(
+                {
+                    "kind": "verification-coverage",
+                    "project": proj.name,
+                    "total": total,
+                    "verified_within_window": verified_within_window,
+                    "window_days": DUE_FOR_VERIFICATION_STALENESS_DAYS,
+                    "pct": round(100 * verified_within_window / total),
+                }
+            )
         except Exception:  # noqa: BLE001, S110 -- one project's unreadable
             # ledger must not discard another, already-computed project's
             # coverage item (Tasks & Acceptance: "per-project try/except
@@ -4746,7 +5316,9 @@ def _verification_coverage(target: Path, *, today: date | None = None) -> list[d
 
 
 def _due_for_verification_findings(
-    target: Path, *, today: date | None = None,
+    target: Path,
+    *,
+    today: date | None = None,
 ) -> list[dict]:
     """Every project's due-for-verification findings. Each project is
     evaluated inside its own try/except: one project's unreadable tracked
@@ -4788,13 +5360,15 @@ def _due_for_verification_findings(
         except Exception as exc:  # noqa: BLE001 -- one project's unreadable
             # ledger must not discard findings already appended for a
             # different project.
-            findings.append({
-                "kind": "due-for-verification-unevaluable",
-                "project": proj.name, "id": "",
-                "detail": (f"{proj.name}: could not be evaluated here — "
-                           f"{exc.__class__.__name__}: {exc}"),
-                "warn": True,
-            })
+            findings.append(
+                {
+                    "kind": "due-for-verification-unevaluable",
+                    "project": proj.name,
+                    "id": "",
+                    "detail": (f"{proj.name}: could not be evaluated here — {exc.__class__.__name__}: {exc}"),
+                    "warn": True,
+                }
+            )
     findings.extend(_correlate_due_for_verification(target, findings))
     return findings
 
@@ -4826,18 +5400,21 @@ def _due_for_verification_message(item: dict) -> str:
     kind = item["kind"]
     if kind == "due-for-verification":
         if item["reason"] == "never-verified":
-            message = (f"{item['project']}/{item['id']}: no `verified:` line "
-                        f"in {item['tracked']} — never re-checked against live "
-                        f"code.")
+            message = (
+                f"{item['project']}/{item['id']}: no `verified:` line "
+                f"in {item['tracked']} — never re-checked against live "
+                f"code."
+            )
         else:
-            message = (f"{item['project']}/{item['id']}: last verified "
-                        f"{item['days_stale']} days ago in {item['tracked']} "
-                        f"(> {DUE_FOR_VERIFICATION_STALENESS_DAYS}-day threshold) — "
-                        f"due for re-check.")
+            message = (
+                f"{item['project']}/{item['id']}: last verified "
+                f"{item['days_stale']} days ago in {item['tracked']} "
+                f"(> {DUE_FOR_VERIFICATION_STALENESS_DAYS}-day threshold) — "
+                f"due for re-check."
+            )
         if item.get("skip_reason") == "no-churn":
             message += (
-                " Named code path(s) have no commits since then — "
-                "skip_reason: no-churn (deprioritized, not resolved)."
+                " Named code path(s) have no commits since then — skip_reason: no-churn (deprioritized, not resolved)."
             )
         verdict = item.get("mechanical_verdict")
         if verdict == "still-open":
@@ -4865,7 +5442,7 @@ def _due_for_verification_message(item: dict) -> str:
         signal = (
             f"code path/symbol `{excerpt}`"
             if item["matched_on"] == "path"
-            else f"near-identical claim text (\"{excerpt}\")"
+            else f'near-identical claim text ("{excerpt}")'
         )
         return (
             f"{len(members)} due entries across {len(projects)} project(s) "
@@ -4891,7 +5468,8 @@ def gather_due_for_verification(target: Path) -> tuple[Finding, ...]:
     ``gather_deferred_work``'s own vacuous-OK shape.
     """
     return degrade_on_exception(
-        Source.DUE_FOR_VERIFICATION, "due-for-verification",
+        Source.DUE_FOR_VERIFICATION,
+        "due-for-verification",
         lambda: _gather_due_for_verification(target),
     )
 
@@ -4936,10 +5514,7 @@ def _gather_due_for_verification(target: Path) -> tuple[Finding, ...]:
                     evidence={"target": str(target)},
                 ),
             )
-        scanned = [
-            p.name for p in projects_dir.iterdir()
-            if p.is_dir() and (p / TRACKED_REL).is_file()
-        ]
+        scanned = [p.name for p in projects_dir.iterdir() if p.is_dir() and (p / TRACKED_REL).is_file()]
         base: tuple[Finding, ...] = (
             Finding(
                 source=Source.DUE_FOR_VERIFICATION,

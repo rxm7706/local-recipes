@@ -41,9 +41,7 @@ import pytest
 
 pytestmark = pytest.mark.slow
 
-CORPUS_RECIPES_DIR = (
-    Path(__file__).resolve().parent.parent / "fixtures" / "corpus" / "recipes"
-)
+CORPUS_RECIPES_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "corpus" / "recipes"
 
 _STRACE_AVAILABLE = sys.platform.startswith("linux") and shutil.which("strace") is not None
 _WARDEN_AVAILABLE = shutil.which("warden") is not None
@@ -58,9 +56,7 @@ _WARDEN_AVAILABLE = shutil.which("warden") is not None
     reason="the 'warden' console script is not on PATH in this environment",
 )
 def test_corpus_scan_makes_zero_network_syscalls_under_strace():
-    assert CORPUS_RECIPES_DIR.is_dir(), (
-        f"{CORPUS_RECIPES_DIR} missing -- run scripts/harvest_corpus.py"
-    )
+    assert CORPUS_RECIPES_DIR.is_dir(), f"{CORPUS_RECIPES_DIR} missing -- run scripts/harvest_corpus.py"
     argv = [
         "strace",
         "-f",  # follow forks -- deptry/osv-scanner run as child subprocesses
@@ -135,6 +131,5 @@ def test_corpus_scan_makes_zero_network_syscalls_under_strace():
     ]
     assert not network_lines, (
         "unexpected internet-family network syscall(s) during the corpus "
-        "scan (engines run under their own --offline discipline):\n"
-        + "\n".join(network_lines[:20])
+        "scan (engines run under their own --offline discipline):\n" + "\n".join(network_lines[:20])
     )

@@ -83,9 +83,7 @@ def resolve_auth_context(*, config_path: Path | None = None) -> AuthContext | No
         role, sep, _opaque = raw_token.partition(":")
         if sep and role:
             return AuthContext(role=role, source=f"env:{TOKEN_ENV_VAR}")
-        logger.info(
-            "%s is set but not in '<role>:<token>' form; ignoring", TOKEN_ENV_VAR
-        )
+        logger.info("%s is set but not in '<role>:<token>' form; ignoring", TOKEN_ENV_VAR)
 
     path = config_path if config_path is not None else DEFAULT_CONFIG_PATH
     try:
@@ -115,8 +113,7 @@ def require_operator_role(context: AuthContext | None, *, action: str) -> AuthCo
     if context is None:
         logger.info("auth check for %s: no auth context found", action)
         raise OperatorAuthorizationError(
-            "auth context missing. Configure with `herald auth login` or "
-            "set HERALD_TOKEN env var"
+            "auth context missing. Configure with `herald auth login` or set HERALD_TOKEN env var"
         )
     if context.role != OPERATOR_ROLE:
         logger.info(
@@ -126,9 +123,7 @@ def require_operator_role(context: AuthContext | None, *, action: str) -> AuthCo
             context.source,
             OPERATOR_ROLE,
         )
-        raise OperatorAuthorizationError(
-            f"unauthorized: operator role required (found role {context.role!r})"
-        )
+        raise OperatorAuthorizationError(f"unauthorized: operator role required (found role {context.role!r})")
     logger.info("auth check for %s: authorized (source %s)", action, context.source)
     return context
 

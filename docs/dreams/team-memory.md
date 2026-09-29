@@ -6,6 +6,8 @@ status: archived
 archived-reason: absorbed
 ---
 
+> **Consolidated into [[pyforge-scribe]]** on 2026-09-17 (one-chain-per-station scribe fold).
+
 > **Superseded.** This Dream carried Scribe's shared, version-controlled
 > memory layer as a standalone contract — MEM-1 (memory is committed, not
 > personal), MEM-2 (recall is scoped, not a dump), MEM-3 (entries carry

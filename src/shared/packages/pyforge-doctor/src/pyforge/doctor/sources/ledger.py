@@ -52,15 +52,40 @@ this is a library function, not a CLI, so it never prints or exits.
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
 
+from pyforge.core.landing_evidence import parse_templated_merge_subject
+
+from ..bare_merge import DiffCache, attribute_bare_merge, known_story_keys
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
+from ..refs import MAIN, ORIGIN_MAIN, display_ref
+from ..rekey import RekeyMap, parse_rekey
 
 __all__ = ("gather", "gather_direction")
 
 PROJECTS_PREFIX = "_bmad-output/projects/"
 LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
+#: A station's own policy file, read as TOML for exactly one key
+#: (``merge_subject_template``) -- never through ``pyforge.marshal`` (this
+#: module's own independence rule, see the module docstring). Duplicated in
+#: ``sources/marshal.py`` rather than shared via a cross-import, mirroring
+#: this file's own ``_git``/``_parse_statuses`` precedent of small, per-file
+#: self-contained helpers over sibling-module coupling.
+_MARSHAL_POLICY_SUFFIX = "planning-artifacts/marshal-policy.toml"
+#: Repo-default template (Story 50.4) -- carries a ``{slug}`` token, so
+#: ``parse_templated_merge_subject`` self-scopes a subject rendered from it
+#: to the project that rendered it, even when that project declares no
+#: override (Story 27.1's own "policy declares no template -> default
+#: honoured" row). Kept identical to ``sources/marshal.py``'s own constant.
+_MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
+#: A fold PR's re-key map (doctor Story 25.3 / spec-one-chain-per-station
+#: CAP-3(g)). Considered ONLY when present at ``head`` and absent at ``base``
+#: -- i.e. shipped by the range under judgement. Once merged it is in both
+#: revisions and becomes inert provenance, so a dangling old key (which by
+#: then no longer exists anywhere) can never fire forever.
+_REKEY_RE = re.compile(r"^_bmad-output/projects/([^/]+)/planning-artifacts/rekey-[^/]+\.md$")
 TERMINAL = frozenset({"done"})
 
 # A story key is `<id>-<kebab-title>`, where `<id>` is either the canonical
@@ -104,8 +129,26 @@ def _git(target: Path, *args: str) -> str | None:
     """
     try:
         return run_git(target, list(args))
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
+
+
+def _project_merge_subject_template(target: Path, project_slug: str) -> str:
+    """``project_slug``'s own ``merge_subject_template``, read directly from
+    its tracked ``marshal-policy.toml`` as TOML -- never through
+    ``pyforge.marshal`` (this module's independence rule). Degrades to the
+    repo default when the policy file is absent, unreadable, not
+    valid TOML, or does not declare the key -- "degrades, never crashes,"
+    and Story 27.1's own "policy declares no template -> default
+    honoured" row.
+    """
+    path = target / PROJECTS_PREFIX / project_slug / _MARSHAL_POLICY_SUFFIX
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except OSError, UnicodeDecodeError, tomllib.TOMLDecodeError:
+        return _MERGE_SUBJECT_TEMPLATE
+    value = data.get("merge_subject_template")
+    return value if isinstance(value, str) and value else _MERGE_SUBJECT_TEMPLATE
 
 
 def _parse_statuses(text: str) -> dict[str, str]:
@@ -135,15 +178,59 @@ def _parse_statuses(text: str) -> dict[str, str]:
     return out
 
 
+def _rekey_paths(target: Path, rev: str) -> list[str]:
+    listing = _git(target, "ls-tree", "-r", "--name-only", rev) or ""
+    return sorted(p for p in listing.splitlines() if _REKEY_RE.match(p))
+
+
+def _new_rekey_maps(target: Path, base: str, head: str) -> tuple[dict[str, dict[str, str]], list[dict]]:
+    """``{project: forward_mapping}`` from maps shipped in ``base..head``,
+    plus a finding dict for every map that is not clean (malformed line,
+    duplicate old key, two old keys colliding on one new key)."""
+    base_maps = set(_rekey_paths(target, base))
+    maps: dict[str, dict[str, str]] = {}
+    problems: list[dict] = []
+    for path in _rekey_paths(target, head):
+        if path in base_maps:
+            continue
+        m = _REKEY_RE.match(path)
+        project = m.group(1) if m else path.split("/")[2]
+        text = _git(target, "show", f"{head}:{path}")
+        if text is None:
+            problems.append(
+                {
+                    "kind": "rekey-map-unreadable",
+                    "warn": True,
+                    "project": project,
+                    "path": path,
+                    "detail": f"re-key map {path} is tracked at {head} but unreadable",
+                }
+            )
+            continue
+        parsed: RekeyMap = parse_rekey(text)
+        if not parsed.clean:
+            bad = [f"line {no}: {txt.strip()!r}" for no, txt in parsed.malformed]
+            bad += [f"line {no}: duplicate old key {old!r}" for no, old in parsed.duplicates]
+            bad += [f"collision on new key {k!r}" for k in parsed.collisions]
+            problems.append(
+                {
+                    "kind": "rekey-map-malformed",
+                    "project": project,
+                    "path": path,
+                    "count": len(bad),
+                    "keys": bad,
+                    "detail": f"re-key map has {len(bad)} unusable line(s): {'; '.join(bad[:5])}",
+                }
+            )
+        maps.setdefault(project, {}).update(parsed.mapping)
+    return maps, problems
+
+
 def _ledger_paths(target: Path, rev: str) -> list[str]:
     """Tracked ledger paths at ``rev`` — listed from git, not the working
     tree, so a ledger deleted in the working tree is still compared."""
     listing = _git(target, "ls-tree", "-r", "--name-only", rev) or ""
-    return sorted(
-        p
-        for p in listing.splitlines()
-        if p.startswith(PROJECTS_PREFIX) and p.endswith(LEDGER_SUFFIX)
-    )
+    return sorted(p for p in listing.splitlines() if p.startswith(PROJECTS_PREFIX) and p.endswith(LEDGER_SUFFIX))
 
 
 def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
@@ -173,13 +260,13 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
     findings: list[dict] = []
     base_paths = set(_ledger_paths(target, base))
     head_paths = set(_ledger_paths(target, head))
+    rekey_maps, rekey_problems = _new_rekey_maps(target, base, head)
+    findings.extend(rekey_problems)
     compared = 0
     for path in sorted(base_paths | head_paths):
         project = path.split("/")[2]
 
-        before_text = (
-            _git(target, "show", f"{base}:{path}") if path in base_paths else None
-        )
+        before_text = _git(target, "show", f"{base}:{path}") if path in base_paths else None
         if before_text is None:
             if path in base_paths:
                 findings.append(
@@ -189,7 +276,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                         "project": project,
                         "path": path,
                         "detail": (
-                            f"ledger is tracked at {base} but its blob could not "
+                            f"ledger is tracked at {display_ref(base)} but its blob could not "
                             f"be read — this ledger's regression status is unknown"
                         ),
                     }
@@ -197,9 +284,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
             continue  # otherwise: absent at base, i.e. a new ledger — nothing to regress
         before = _parse_statuses(before_text)
 
-        after_text = (
-            _git(target, "show", f"{head}:{path}") if path in head_paths else None
-        )
+        after_text = _git(target, "show", f"{head}:{path}") if path in head_paths else None
         if after_text is None:
             if path in head_paths:
                 findings.append(
@@ -232,6 +317,35 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
         compared += 1
 
         after = _parse_statuses(after_text)
+
+        # Story 25.3: a fold PR renumbers every key and ships the map. Apply it
+        # to the BASE side before comparing, so a `done` row whose key moved
+        # per the map is judged under its new name. The map moves keys and
+        # only keys -- a status flip through it is still caught below. A map
+        # line pointing at a key that exists on neither side is dangling: it
+        # claims a move that did not happen, and is a FAIL in its own right.
+        mapping = rekey_maps.get(project)
+        if mapping:
+            dangling = []
+            for old, new in sorted(mapping.items()):
+                if old not in before:
+                    dangling.append({"line": f"{old} -> {new}", "why": f"{old} not in {display_ref(base)}"})
+                elif new not in after:
+                    dangling.append({"line": f"{old} -> {new}", "why": f"{new} not in {head}"})
+            if dangling:
+                findings.append(
+                    {
+                        "kind": "rekey-map-dangling",
+                        "project": project,
+                        "path": path,
+                        "count": len(dangling),
+                        "keys": [d["line"] for d in dangling],
+                        "transitions": dangling,
+                        "detail": f"{len(dangling)} re-key line(s) name a key that exists on neither side",
+                    }
+                )
+            before = {mapping.get(k, k): v for k, v in before.items()}
+
         surviving_tails = {_tail(k) for k, v in after.items() if v in TERMINAL}
         lost = []
         for key, old in sorted(before.items()):
@@ -252,18 +366,14 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                     "path": path,
                     "count": len(lost),
                     "keys": [k for k, _o, _n in lost],
-                    "transitions": [
-                        {"key": k, "from": o, "to": n} for k, o, n in lost
-                    ],
+                    "transitions": [{"key": k, "from": o, "to": n} for k, o, n in lost],
                     "detail": f"{len(lost)} story key(s) moved out of `done`",
                 }
             )
     return findings, compared
 
 
-def gather(
-    target: Path, *, base: str = "origin/main", head: str = "HEAD"
-) -> tuple[Finding, ...]:
+def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tuple[Finding, ...]:
     """Judge whether any commit between ``base`` and ``head`` un-finished a
     story in a tracked sprint ledger — the library form of
     ``scripts/ledger_regression_check.py``'s own ``main()``, minus the
@@ -271,14 +381,31 @@ def gather(
     ("UNDETERMINED") here becomes one WARN ``Finding`` instead, and every
     regression becomes a FAIL ``Finding`` rather than a printed report.
 
-    ``base``/``head`` default to the script's own hardcoded defaults
-    (``"origin/main"``/``"HEAD"``). Preserves the script's same-commit
+    ``base``/``head`` default to the script's own defaults (``origin/main``/
+    ``"HEAD"``), the base by its full refname ``refs/remotes/origin/main``
+    (Story 31.1: a local branch or tag named ``origin/main`` would otherwise
+    stand in for the remote); findings and evidence name it as people read it
+    (``display_ref``). Preserves the script's same-commit
     fallback: if ``base`` and ``head`` resolve to the same commit (the shape
     CI takes on a ``push: branches: [main]`` event), this compares against
     ``head``'s first parent instead — the honest question for a push is
     "what did this change?", not "compare a revision to itself" (which would
     report clean forever).
+
+    Story 27.1: when ``base`` and ``head`` name DIFFERENT commits (the
+    PR-shaped case), the comparison is against ``merge-base(base, head)``,
+    not ``base``'s own tip. ``base`` (typically ``origin/main``) can advance
+    past the point this ``head`` branch forked from — an unrelated commit
+    landing on ``base`` in the meantime (e.g. an unattended dispatch
+    promoting a sibling story to ``done``) then reads as something ``head``
+    "un-finished," even though ``head`` never touched it (herald PR #1465,
+    2026-09-18, 18:17Z). Comparing against the honest common ancestor
+    instead means only what ``head`` itself changed relative to the fork
+    point is judged. A merge-base that fails to resolve (e.g. unrelated
+    histories) degrades to a WARN rather than silently reverting to the
+    bug this exists to fix.
     """
+    shown = display_ref(base)
     if _git(target, "rev-parse", "--verify", "--quiet", base) is None:
         # Both statuses are WARN, but the MESSAGE has to name the real cause:
         # "no such ref" sends an operator hunting for a ref problem, when the
@@ -286,61 +413,83 @@ def gather(
         # on the failure path, so the healthy case pays nothing extra. Mirrors
         # the dedicated probe `sources/marshal.py`'s own gather() already runs.
         if _git(target, "rev-parse", "--git-dir") is None:
-            message = (
-                f"git is unavailable or {target} is not a repository — ledger "
-                f"regression cannot be evaluated"
-            )
+            message = f"git is unavailable or {target} is not a repository — ledger regression cannot be evaluated"
         else:
-            message = (
-                f"base revision {base!r} not resolvable — ledger regression "
-                f"cannot be evaluated"
-            )
+            message = f"base revision {shown!r} not resolvable — ledger regression cannot be evaluated"
         return (
             Finding(
                 source=Source.LEDGER_REGRESSION,
                 check="ledger-regression",
                 status=DoctorStatus.WARN,
                 message=message,
-                evidence={"base": base, "head": head, "target": str(target)},
+                evidence={"base": shown, "head": head, "target": str(target)},
             ),
         )
 
     base_sha = (_git(target, "rev-parse", base) or "").strip()
     head_sha = (_git(target, "rev-parse", head) or "").strip()
     effective_base = base
+    merge_base_sha: str | None = None
     if base_sha and base_sha == head_sha:
-        parent = (
-            _git(target, "rev-parse", "--verify", "--quiet", f"{head}^") or ""
-        ).strip()
+        parent = (_git(target, "rev-parse", "--verify", "--quiet", f"{head}^") or "").strip()
         if not parent:
             return (
                 Finding(
                     source=Source.LEDGER_REGRESSION,
                     check="ledger-regression",
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"{base!r} and {head!r} are the same commit and it has "
-                        f"no parent — nothing to compare"
-                    ),
+                    message=(f"{shown!r} and {head!r} are the same commit and it has no parent — nothing to compare"),
                     # `target` is carried on BOTH cannot-evaluate WARNs, not
                     # just the unresolvable-base one: same source, same check,
                     # same status, so a consumer reading evidence["target"]
                     # must not KeyError depending on which of the two fired.
-                    evidence={"base": base, "head": head, "target": str(target)},
+                    evidence={"base": shown, "head": head, "target": str(target)},
                 ),
             )
         effective_base = parent
+    elif base_sha and head_sha:
+        # PR-shaped: `base` and `head` name different commits. The honest
+        # comparison point is their common ancestor, not `base`'s own
+        # (possibly since-advanced) tip -- see the docstring's Story 27.1
+        # paragraph. A repo with no common ancestor between the two (e.g.
+        # unrelated histories) cannot be judged; that degrades to a WARN
+        # like every other cannot-evaluate branch in this function, rather
+        # than silently comparing against `base`'s tip (the bug this exists
+        # to fix).
+        merge_base_sha = (_git(target, "merge-base", base, head) or "").strip()
+        if not merge_base_sha:
+            return (
+                Finding(
+                    source=Source.LEDGER_REGRESSION,
+                    check="ledger-regression",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"no common ancestor between {shown!r} and {head!r} — ledger regression cannot be evaluated"
+                    ),
+                    evidence={"base": shown, "head": head, "target": str(target)},
+                ),
+            )
+        if merge_base_sha != base_sha:
+            effective_base = merge_base_sha
 
     # The original script PRINTED a "comparing against {head}^ instead" note
     # when it substituted. A library has no stdout to say that on, so the
     # substitution is carried in evidence instead: without it a `--json`
     # consumer that asked for base="origin/main" gets a 40-char sha back with
     # no way to tell "you asked for this" from "we quietly swapped it."
+    # `merge_base` names the PR-shaped substitution specifically (Story
+    # 27.1); `base_substituted` still names the pre-existing same-commit
+    # push fallback above -- two different reasons a substitution happened,
+    # two distinct evidence shapes, so a consumer can tell which one fired.
     substituted = effective_base != base
-    range_evidence: dict[str, object] = {"base": effective_base, "head": head}
+    shown_base = display_ref(effective_base)
+    range_evidence: dict[str, object] = {"base": shown_base, "head": head}
     if substituted:
-        range_evidence["base_requested"] = base
-        range_evidence["base_substituted"] = True
+        range_evidence["base_requested"] = shown
+        if merge_base_sha is not None and effective_base == merge_base_sha:
+            range_evidence["merge_base"] = merge_base_sha
+        else:
+            range_evidence["base_substituted"] = True
 
     raw_findings, ledgers_compared = _check(target, effective_base, head)
     range_evidence["ledgers_compared"] = ledgers_compared
@@ -351,10 +500,7 @@ def gather(
                 source=Source.LEDGER_REGRESSION,
                 check="ledger-regression",
                 status=DoctorStatus.OK,
-                message=(
-                    f"no tracked ledger un-finishes a story between "
-                    f"{effective_base} and {head}"
-                ),
+                message=(f"no tracked ledger un-finishes a story between {shown_base} and {head}"),
                 evidence=dict(range_evidence),
             ),
         )
@@ -406,12 +552,10 @@ def gather(
                     # re-parse a display string to recover the transition. The
                     # transition now travels beside it, already structured.
                     "keys": item["keys"][:20],
-                    **(
-                        {"transitions": item["transitions"][:20]}
-                        if "transitions" in item
-                        else {}
-                    ),
+                    **({"transitions": item["transitions"][:20]} if "transitions" in item else {}),
                     **range_evidence,
+                    # The remedy is a command handed to git, so it names the full ref (Story 31.1
+                    # review 1): `origin/main` there restored a local shadow's blob, not the base's.
                     "remedy": f"git checkout {effective_base} -- {item['path']}",
                 },
             )
@@ -424,14 +568,13 @@ def gather(
 # Standalone check: tracked ledger vs. git merge history, WITH DIRECTION.
 # Never reads the Tier-3 sprint-status.yaml feed (FR-138). Independence:
 # never imports ``pyforge.marshal`` — merge-subject patterns are restated
-# here so Doctor keeps judging Marshal without Marshal's own code.
+# here so Doctor keeps judging Marshal without Marshal's own code. Story
+# 27.1 adds the templated-merge-subject shape, station-scoped via each
+# project's own tracked ``marshal-policy.toml`` (read as TOML by
+# ``_project_merge_subject_template``, never through ``pyforge.marshal``).
 
-_GITHUB_MERGE_SUBJECT_RE = re.compile(
-    r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$"
-)
-_BMADLOOP_MERGE_SUBJECT_RE = re.compile(
-    r"^Merge bmad-loop/\S+/(?P<key_slug>\S+) into (?P<target>\S+) \(bmad-loop\)$"
-)
+_GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$")
+_BMADLOOP_MERGE_SUBJECT_RE = re.compile(r"^Merge bmad-loop/\S+/(?P<key_slug>\S+) into (?P<target>\S+) \(bmad-loop\)$")
 _STORY_ID_RE = re.compile(r"^(\d+)-(\d+[a-z]?)(?:-.*)?$")
 _STORY_DOT_RE = re.compile(r"^(\d+)\.(\d+[a-z]?)$")
 
@@ -451,16 +594,60 @@ def _story_id(token: str) -> str | None:
     return None
 
 
-def _merged_ids_for_project(subjects: list[str], project_slug: str) -> set[str]:
-    """Story ids durably named in ``subjects`` for ``project_slug``.
+def _merged_ids_for_project(
+    target: Path,
+    commits: list[tuple[str, str]],
+    project_slug: str,
+    *,
+    diff_cache: DiffCache,
+    unreadable_diff_shas: list[str] | None = None,
+) -> set[str]:
+    """Story ids durably named in ``commits`` for ``project_slug``.
 
-    Covers GitHub PR-merge and bmad-loop native subjects, scoped to the
-    station short name / ``loop/<slug>`` target — the same two shapes that
-    catch the live landed-but-unpromoted incidents FR-137 exists for.
+    Covers GitHub PR-merge, bmad-loop native, and templated merge subjects.
+    The first two are scoped to the station short name / ``loop/<slug>``
+    target. The templated shape is attempted unconditionally: since
+    ``merge_subject_template`` is ``{slug}``-scoped fleet-wide by default
+    (Story 50.4), ``parse_templated_merge_subject`` self-scopes internally —
+    a subject rendered by ``project_slug``'s own template parses, and a
+    sibling's subject rendered from a DIFFERENT slug's template segment
+    (even one that resolves to the textually identical default template)
+    refuses. ``Merge pyforge-atlas/13-5 into main`` counts for atlas; a
+    sibling's own ``Merge pyforge-herald/13-5 into main`` does not, even
+    though both projects share the same unset-override template string.
+
+    Before Story 50.4, this templated shape was DELIBERATELY skipped
+    whenever a project's resolved template equalled the (then station-blind)
+    repo default, to avoid the live 2026-09-18 incident where wiring it in
+    unconditionally turned 3 findings into 306 fleet-wide, because most
+    stations shared the identical, contentless template and any one of them
+    could match any other's subject. Story 50.4's slug-scoping is what
+    removes that ambiguity at the source, so the guard that used to carry it
+    is gone — see ``spec-pyforge-marshal`` CAP-247.
+
+    Story 27.5 (CAP-80 amended): once the scoped template, GitHub PR-merge,
+    and bmad-loop shapes above all miss, the bare legacy form
+    (``Merge {key} into main``, no station token -- which can never match a
+    ``{slug}`` template) is tried once more — attributed to ``project_slug``
+    only when ``sha``'s first-parent diff touches this station's own paths
+    AND this station's own tracked ledger already knows the extracted key
+    (``bare_merge.attribute_bare_merge``, shared verbatim with
+    ``sources/marshal.py``'s ``_keys_from_merge_subjects``/``_keys_from_
+    main_commits``). Replaces Story 27.3's reverted ledger-membership-alone
+    gate, which reopened the cross-station collision whenever two stations
+    share a numeric key — the common case under one shared grammar. A
+    sibling's own bare-form merge touches only the SIBLING's paths, so it
+    still attributes to nothing here.
     """
     station = project_slug.removeprefix("pyforge-")
+    template = _project_merge_subject_template(target, project_slug)
+    known_keys = known_story_keys(target, project_slug)
     out: set[str] = set()
-    for subject in subjects:
+    for sha, subject in commits:
+        templated = parse_templated_merge_subject(subject, template, project_slug)
+        if templated is not None:
+            out.add(templated.hyphen_form())
+            continue
         gh = _GITHUB_MERGE_SUBJECT_RE.match(subject)
         if gh is not None:
             branch = gh.group("branch")
@@ -475,6 +662,19 @@ def _merged_ids_for_project(subjects: list[str], project_slug: str) -> set[str]:
             sid = _story_id(bl.group("key_slug"))
             if sid:
                 out.add(sid)
+            continue
+        attribution = attribute_bare_merge(
+            subject,
+            sha,
+            target=target,
+            project_slug=project_slug,
+            known_keys=known_keys,
+            cache=diff_cache,
+        )
+        if attribution.key is not None:
+            out.add(attribution.key.hyphen_form())
+        elif attribution.diff_unreadable_sha is not None and unreadable_diff_shas is not None:
+            unreadable_diff_shas.append(attribution.diff_unreadable_sha)
     return out
 
 
@@ -513,9 +713,102 @@ def _base_done_ids(target: Path, rel_path: str, base_ref: str) -> set[str] | Non
     return out
 
 
-def gather_direction(
-    target: Path, *, base_ref: str = "main"
-) -> tuple[Finding, ...]:
+def _rekey_sid_maps(target: Path, rev: str) -> tuple[dict[str, dict[str, str]], list[Finding]]:
+    """Per-project ``{old_story_id: new_story_id}`` from every re-key map
+    tracked at ``rev`` (Story 27.2 / spec-27-2-ledger-direction-reads-the-
+    stations-rekey-map).
+
+    ``gather_direction`` compares at the ``<epic>-<seq>`` grain (``_story_id``
+    ), never the full ledger key — a templated merge subject's ``{key}``
+    placeholder captures no slug at all (see
+    ``pyforge.core.landing_evidence.parse_templated_merge_subject``), so this
+    reduces each map line's OLD and NEW side to that same grain rather than
+    matching full keys. This is what lets a merge that names a station's OLD
+    number (e.g. atlas's ``13-5`` before ``rekey-2026-09-17.md`` renumbered it
+    to ``12-5``) still resolve to the CURRENT ledger's key before the
+    landed-vs-done comparison, instead of reading as a phantom
+    ``landed-but-unpromoted`` row forever.
+
+    Reuses ``_rekey_paths``/``parse_rekey`` — the same discovery and grammar
+    ``gather()`` already has — rather than re-implementing either. Unlike
+    ``gather()``'s own ``_new_rekey_maps``, there is no base/head range here
+    (``gather_direction`` has only one ref): every map CURRENTLY tracked at
+    ``rev`` is in scope, not merely one freshly shipped by a range.
+
+    An unreadable or malformed map degrades to a WARN ``Finding`` naming the
+    file — never a silent pass, never a crash — under one check name,
+    ``rekey-map-unreadable``, covering both "the blob would not read" and
+    "the blob read but its grammar is broken." ``gather()``'s sibling
+    reports the malformed case as a FAIL instead; here there is no landed
+    range to hold accountable for it, only a degraded input to a comparison
+    that has other evidence (a merge subject, or the base-ref ledger) to
+    fall back on.
+    """
+    maps: dict[str, dict[str, str]] = {}
+    problems: list[Finding] = []
+    for path in _rekey_paths(target, rev):
+        # `_rekey_paths` already filtered every entry through `_REKEY_RE`,
+        # so the match can never be None here.
+        project = _REKEY_RE.match(path).group(1)
+        text = _git(target, "show", f"{rev}:{path}")
+        if text is None:
+            problems.append(
+                Finding(
+                    source=Source.LEDGER_DIRECTION,
+                    check="rekey-map-unreadable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{project}: re-key map {path} is tracked at {display_ref(rev)} "
+                        "but unreadable — landed-key translation for this "
+                        "project may be incomplete"
+                    ),
+                    evidence={"project": project, "path": path},
+                )
+            )
+            continue
+        parsed: RekeyMap = parse_rekey(text)
+        if not parsed.clean:
+            bad = [f"line {no}: {txt.strip()!r}" for no, txt in parsed.malformed]
+            bad += [f"line {no}: duplicate old key {old!r}" for no, old in parsed.duplicates]
+            bad += [f"collision on new key {k!r}" for k in parsed.collisions]
+            problems.append(
+                Finding(
+                    source=Source.LEDGER_DIRECTION,
+                    check="rekey-map-unreadable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{project}: re-key map {path} has {len(bad)} "
+                        f"unusable line(s): {'; '.join(bad[:5])} — "
+                        "landed-key translation for this project may be "
+                        "incomplete"
+                    ),
+                    evidence={"project": project, "path": path, "count": len(bad)},
+                )
+            )
+        project_map = maps.setdefault(project, {})
+        for old, new in parsed.mapping.items():
+            old_sid = _story_id(old)
+            new_sid = _story_id(new)
+            if old_sid and new_sid:
+                project_map[old_sid] = new_sid
+
+    # A station can ship a SECOND rekey map that renumbers an already
+    # renumbered sid (13-5 -> 12-5 in one file, 12-5 -> 11-5 in a later
+    # one). Resolve every entry to its fixed point through its own map --
+    # same hop-walk, same cap, as ``rekey.reverse_map`` -- so a merge naming
+    # the OLDEST spelling still lands on the CURRENT one, not an
+    # intermediate one that itself moved on.
+    for project_map in maps.values():
+        for old_sid in project_map:
+            cur, hops = project_map[old_sid], 0
+            while cur in project_map and hops < 64:
+                cur = project_map[cur]
+                hops += 1
+            project_map[old_sid] = cur
+    return maps, problems
+
+
+def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ...]:
     """Judge tracked-ledger vs. git merge-history drift WITH DIRECTION
     (Story 15.2 / FR-137 / FR-138).
 
@@ -531,6 +824,13 @@ def gather_direction(
 
     Never opens ``implementation-artifacts/sprint-status.yaml``. Degrades
     to WARN when git is unavailable; OK when every twin agrees with git.
+
+    Story 27.2: before the ``landed-but-unpromoted``/``done-but-unmerged``
+    comparison, every merge-derived story id is translated through the
+    station's own ``rekey-*.md`` map(s), if any (``_rekey_sid_maps``) — the
+    same reader ``gather()`` already applies. Without it, a station that
+    renumbered its stories (a fold PR) reads its own merges, which still
+    name the pre-fold number, as ``landed-but-unpromoted`` forever.
     """
     if _git(target, "rev-parse", "--git-dir") is None:
         return (
@@ -539,36 +839,46 @@ def gather_direction(
                 check="ledger-direction",
                 status=DoctorStatus.WARN,
                 message=(
-                    f"git is unavailable or {target} is not a repository — "
-                    "ledger-vs-git direction cannot be checked"
+                    f"git is unavailable or {target} is not a repository — ledger-vs-git direction cannot be checked"
                 ),
                 evidence={"target": str(target)},
             ),
         )
 
-    subjects_raw = _git(target, "log", "--format=%s", base_ref)
-    if subjects_raw is None:
+    # Story 27.5: carries the sha alongside each subject (was subject-only
+    # pre-27.5) -- the bare-form fallback in `_merged_ids_for_project` needs
+    # it to run `git diff --name-only <sha>^1 <sha>`.
+    # Story 31.1: `base_ref` defaults to `refs/heads/main` -- a tag named `main` would otherwise
+    # stand in for the branch; findings name it as people read it.
+    shown = display_ref(base_ref)
+    commits_raw = _git(target, "log", "--format=%H%x00%s", base_ref)
+    if commits_raw is None:
         return (
             Finding(
                 source=Source.LEDGER_DIRECTION,
                 check="ledger-direction",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"cannot read {base_ref!r} commit subjects — "
-                    "ledger-vs-git direction cannot be checked"
-                ),
-                evidence={"target": str(target), "base_ref": base_ref},
+                message=(f"cannot read {shown!r} commit subjects — ledger-vs-git direction cannot be checked"),
+                evidence={"target": str(target), "base_ref": shown},
             ),
         )
-    subjects = subjects_raw.splitlines()
+    commits: list[tuple[str, str]] = []
+    for line in commits_raw.splitlines():
+        if not line:
+            continue
+        sha, _, subject = line.partition("\0")
+        if sha and subject:
+            commits.append((sha, subject))
+    # Shared across every project audited below -- a given sha's touched
+    # station paths do not depend on which project is asking (see
+    # ``bare_merge.DiffCache``'s own docstring).
+    diff_cache: DiffCache = {}
 
-    ledger_paths = sorted(
-        p
-        for p in target.glob(f"{PROJECTS_PREFIX}*/{LEDGER_SUFFIX}")
-        if p.is_file()
-    )
+    ledger_paths = sorted(p for p in target.glob(f"{PROJECTS_PREFIX}*/{LEDGER_SUFFIX}") if p.is_file())
+    rekey_maps, rekey_problems = _rekey_sid_maps(target, base_ref)
     if not ledger_paths:
         return (
+            *rekey_problems,
             Finding(
                 source=Source.LEDGER_DIRECTION,
                 check="ledger-direction",
@@ -580,20 +890,18 @@ def gather_direction(
 
     findings: list[Finding] = []
     audited = 0
+    findings.extend(rekey_problems)
     for path in ledger_paths:
         project = path.relative_to(target).parts[2]
         try:
             text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             findings.append(
                 Finding(
                     source=Source.LEDGER_DIRECTION,
                     check="ledger-direction",
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"{project}: tracked ledger unreadable — "
-                        "direction status unknown"
-                    ),
+                    message=(f"{project}: tracked ledger unreadable — direction status unknown"),
                     evidence={"project": project, "path": str(path)},
                 )
             )
@@ -611,7 +919,44 @@ def gather_direction(
             if status in TERMINAL:
                 done_ids.add(sid)
 
-        merged_ids = _merged_ids_for_project(subjects, project)
+        unreadable_diff_shas: list[str] = []
+        merged_ids = _merged_ids_for_project(
+            target,
+            commits,
+            project,
+            diff_cache=diff_cache,
+            unreadable_diff_shas=unreadable_diff_shas,
+        )
+        for sha in sorted(set(unreadable_diff_shas)):
+            # Story 27.5: the bare-form fallback's `git diff` failed for
+            # this sha -- "cannot evaluate", never a silent non-match and
+            # never a crash. Named individually (project + sha), mirroring
+            # this function's existing per-item WARN Findings (e.g.
+            # `ledger-unreadable`, `rekey-map-unreadable`) rather than
+            # folded into a caveat string.
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_DIRECTION,
+                    check="bare-merge-diff-unreadable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{project}: first-parent diff for {sha} could not "
+                        "be read — a bare legacy-form merge subject naming "
+                        "a key this project's ledger knows could not be "
+                        "attributed"
+                    ),
+                    evidence={"project": project, "sha": sha},
+                )
+            )
+        # Story 27.2: a merge subject names the OLD story id when the
+        # station has since renumbered (a fold PR's rekey-*.md). Translate
+        # through the station's own map before comparing, so a merge that
+        # still names the pre-fold number resolves to what the CURRENT
+        # ledger actually calls it, instead of reading as a phantom
+        # landed-but-unpromoted row forever.
+        sid_map = rekey_maps.get(project)
+        if sid_map:
+            merged_ids = {sid_map.get(sid, sid) for sid in merged_ids}
 
         for sid in sorted(merged_ids - done_ids):
             # A merged key absent from the twin entirely OR present but not
@@ -642,9 +987,7 @@ def gather_direction(
         # authoritative and covers batched PRs; the second still catches a
         # story landed by a scoped PR whose promote commit has not been
         # published to base_ref yet.
-        base_done = _base_done_ids(
-            target, path.relative_to(target).as_posix(), base_ref
-        )
+        base_done = _base_done_ids(target, path.relative_to(target).as_posix(), base_ref)
         landed_ids = merged_ids | (base_done or set())
         base_evidence = "absent-at-base" if base_done is None else "ledger-at-base"
 
@@ -657,7 +1000,7 @@ def gather_direction(
                     message=(
                         f"{project}/{raw_by_id.get(sid, sid)}: "
                         f"{DIRECTION_DONE_UNMERGED} — tracked ledger says "
-                        f"done, but the ledger at {base_ref!r} does not and "
+                        f"done, but the ledger at {shown!r} does not and "
                         "no scoped merge subject names it"
                     ),
                     evidence={
@@ -666,7 +1009,7 @@ def gather_direction(
                         "key": raw_by_id.get(sid, sid),
                         "direction": DIRECTION_DONE_UNMERGED,
                         "path": str(path.relative_to(target)),
-                        "base_ref": base_ref,
+                        "base_ref": shown,
                         "base_evidence": base_evidence,
                     },
                 )
@@ -679,10 +1022,7 @@ def gather_direction(
             source=Source.LEDGER_DIRECTION,
             check="ledger-direction",
             status=DoctorStatus.OK,
-            message=(
-                f"tracked ledgers agree with {base_ref!r} merge history "
-                f"({audited} ledger(s) audited)"
-            ),
-            evidence={"audited": audited, "base_ref": base_ref},
+            message=(f"tracked ledgers agree with {shown!r} merge history ({audited} ledger(s) audited)"),
+            evidence={"audited": audited, "base_ref": shown},
         ),
     )

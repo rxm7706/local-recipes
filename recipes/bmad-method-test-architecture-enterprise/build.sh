@@ -16,7 +16,9 @@ cp -r .claude-plugin "${SHARE}/"
 cp CHANGELOG.md LICENSE README.md "${SHARE}/"
 
 # Node CLIs (upstream package.json "bin"). 1.20.0 first shipped a working
-# tea-test-review; 1.25.0 added tea-fragment-selection-runner + tea-trace-runner.
+# tea-test-review; 1.25.0 added tea-fragment-selection-runner + tea-trace-runner;
+# 1.27.2 added seven more (atdd-red-check, atdd-runner, ci-runner, nfr-runner,
+# routing-runner, test-design-runner, transcript-runner).
 # Vendor cli/ + production node_modules next to it so require() resolves.
 npm install --omit=dev --ignore-scripts --no-audit --no-fund
 cp -r cli "${SHARE}/"
@@ -46,6 +48,13 @@ EOF
 write_wrapper tea-test-review test-review.js
 write_wrapper tea-fragment-selection-runner fragment-selection-runner.js
 write_wrapper tea-trace-runner trace-runner.js
+write_wrapper tea-atdd-red-check atdd-red-check.js
+write_wrapper tea-atdd-runner atdd-runner.js
+write_wrapper tea-ci-runner ci-runner.js
+write_wrapper tea-nfr-runner nfr-runner.js
+write_wrapper tea-routing-runner routing-runner.js
+write_wrapper tea-test-design-runner test-design-runner.js
+write_wrapper tea-transcript-runner transcript-runner.js
 
 
 # Windows entry points, emitted from this SAME noarch build (CFE G116). A .bat is
@@ -69,4 +78,11 @@ write_bat_shim() {
 write_bat_shim tea-test-review test-review.js
 write_bat_shim tea-fragment-selection-runner fragment-selection-runner.js
 write_bat_shim tea-trace-runner trace-runner.js
+write_bat_shim tea-atdd-red-check atdd-red-check.js
+write_bat_shim tea-atdd-runner atdd-runner.js
+write_bat_shim tea-ci-runner ci-runner.js
+write_bat_shim tea-nfr-runner nfr-runner.js
+write_bat_shim tea-routing-runner routing-runner.js
+write_bat_shim tea-test-design-runner test-design-runner.js
+write_bat_shim tea-transcript-runner transcript-runner.js
 

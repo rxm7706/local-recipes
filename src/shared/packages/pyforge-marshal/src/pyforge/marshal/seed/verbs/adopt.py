@@ -363,7 +363,13 @@ def _git_status_porcelain(repo_root: Path, *extra_pathspec: str) -> str | None:
     launch failure is handled."""
     try:
         result = PosixProcess().run(
-            ["git", "status", "--porcelain", "--untracked-files=normal", *(("--", *extra_pathspec) if extra_pathspec else ())],
+            [
+                "git",
+                "status",
+                "--porcelain",
+                "--untracked-files=normal",
+                *(("--", *extra_pathspec) if extra_pathspec else ()),
+            ],
             cwd=repo_root,
             timeout_s=_GIT_TIMEOUT_S,
         )
@@ -459,9 +465,7 @@ def _manifest_for_adopt(manifest: Manifest) -> Manifest:
     to in (ADOPT, BOTH)`` -- see the module docstring's own paragraph on
     why an ``init``-only entry (a ``{{ slug }}``-templated path with no
     ``--slug`` here) must never reach ``classify``/``build_plan`` at all."""
-    entries = tuple(
-        entry for entry in manifest.entries if entry.applies_to in (AppliesTo.ADOPT, AppliesTo.BOTH)
-    )
+    entries = tuple(entry for entry in manifest.entries if entry.applies_to in (AppliesTo.ADOPT, AppliesTo.BOTH))
     return Manifest(model_version=manifest.model_version, never_write=manifest.never_write, entries=entries)
 
 
@@ -475,7 +479,7 @@ def _read_text_or_blank(target: Path) -> str:
         return ""
     try:
         return target.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return ""
 
 
@@ -532,22 +536,16 @@ def _augment_plan_with_first_claims(
                 ),
             )
         )
-        claim_hashes.append(
-            (entry.id, hash_content(_read_text_or_blank(inventory.repo_root / entry.path)))
-        )
+        claim_hashes.append((entry.id, hash_content(_read_text_or_blank(inventory.repo_root / entry.path))))
     if not first_claims:
         return plan
-    merged_actions = tuple(
-        sorted((*plan.actions, *first_claims), key=lambda action: action.artifact_id)
-    )
+    merged_actions = tuple(sorted((*plan.actions, *first_claims), key=lambda action: action.artifact_id))
     # A matching `artifact_hashes` pair per claim is not optional (module
     # docstring): `apply.run.fingerprint_drift` cross-checks `actions`
     # against `artifact_hashes` in BOTH directions and refuses the whole
     # plan as corrupt if either side carries an orphan -- omitting this
     # would make every FR-83 claim unappliable.
-    merged_hashes = tuple(
-        sorted((*plan.repo_fingerprint.artifact_hashes, *claim_hashes), key=lambda pair: pair[0])
-    )
+    merged_hashes = tuple(sorted((*plan.repo_fingerprint.artifact_hashes, *claim_hashes), key=lambda pair: pair[0]))
     fingerprint = dataclasses.replace(plan.repo_fingerprint, artifact_hashes=merged_hashes)
     return dataclasses.replace(plan, actions=merged_actions, repo_fingerprint=fingerprint)
 
@@ -582,9 +580,7 @@ def _managed_records(state: SeedState | None, manifest: Manifest) -> tuple[Manag
                 )
             )
         else:
-            records.append(
-                ManagedRecord(artifact_id=artifact.id, path=artifact.path, body_sha=artifact.body_sha)
-            )
+            records.append(ManagedRecord(artifact_id=artifact.id, path=artifact.path, body_sha=artifact.body_sha))
     return tuple(records)
 
 
@@ -617,9 +613,7 @@ def _staged_bytes_for(staged_paths: Sequence[Path], target_path: str) -> bytes:
     convention (duplicate manifest ids, duplicate hashed fingerprint
     entries, and duplicate managed regions all raise elsewhere)."""
     target_parts = Path(target_path).parts
-    matches = [
-        candidate for candidate in staged_paths if candidate.parts[-len(target_parts) :] == target_parts
-    ]
+    matches = [candidate for candidate in staged_paths if candidate.parts[-len(target_parts) :] == target_parts]
     if not matches:
         raise InternalError(
             f"materialize() produced no staged content for {target_path!r}",
@@ -773,9 +767,7 @@ def _default_commit(
         if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
             assert entry.format is not None  # ManifestEntry.__post_init__ guarantees this
             for region_name, _matched_anchor in action.chosen_anchor:
-                region = next(
-                    (candidate for candidate in entry.regions if candidate.name == region_name), None
-                )
+                region = next((candidate for candidate in entry.regions if candidate.name == region_name), None)
                 if region is None:
                     # Unreachable via any real `Plan` (`action.chosen_anchor`
                     # is `build_plan`'s own output, always drawn from
@@ -786,8 +778,7 @@ def _default_commit(
                     # leaves, never a raw traceback, and `run_apply` has
                     # already begun writing by the time `commit()` runs.
                     raise InternalError(
-                        f"action names region {region_name!r}, which entry {entry.id!r} does"
-                        " not declare",
+                        f"action names region {region_name!r}, which entry {entry.id!r} does not declare",
                         remedy=(
                             "this is a plan/manifest inconsistency -- a broken installation,"
                             " not a problem with the repository being adopted"
@@ -813,9 +804,7 @@ def _default_commit(
                     # unrelated purpose would be silently hijacked into
                     # rendering the live project index instead of its own
                     # intended content.
-                    body = derive_projects_index.derive_projects_table(
-                        repo_root / "_bmad-output" / "projects"
-                    )
+                    body = derive_projects_index.derive_projects_table(repo_root / "_bmad-output" / "projects")
                 else:
                     body = _region_body_from_template(template_path, region_name)
                 text = target.read_text(encoding="utf-8") if target.is_file() else None
@@ -831,8 +820,7 @@ def _default_commit(
                     never_write=never_write,
                 )
         elif (
-            entry.id in derive_adapters.ADAPTER_COMPOSITION
-            and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
+            entry.id in derive_adapters.ADAPTER_COMPOSITION and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
         ):
             # Story 11.1: the three whole-file agent-adapter ids
             # (`cursor-rules`/`gemini-md`/`copilot-instructions`) render via
@@ -848,9 +836,7 @@ def _default_commit(
             # below instead of being silently rerouted through
             # derive-composition.
             content = derive_adapters.render_adapter(entry.id, template_path=template_path)
-            fs.write(
-                target, content.encode("utf-8"), repo_root=repo_root, never_write=never_write
-            )
+            fs.write(target, content.encode("utf-8"), repo_root=repo_root, never_write=never_write)
         else:
             result = _materialized()
             content = _staged_bytes_for(result.staged_paths, action.target_path)
@@ -902,8 +888,7 @@ def _managed_artifact_after_apply(action: Action, entry: ManifestEntry, repo_roo
             # traceback here would leave a real file change with no
             # `ManagedArtifact` recorded for it at all.
             raise InternalError(
-                f"region {region_name!r} was not found in {entry.path!r} immediately after"
-                " insertion",
+                f"region {region_name!r} was not found in {entry.path!r} immediately after insertion",
                 remedy=(
                     "this indicates insert_region silently failed to insert the region it"
                     " was asked to -- a broken installation, not a problem with the"
@@ -916,9 +901,7 @@ def _managed_artifact_after_apply(action: Action, entry: ManifestEntry, repo_roo
             path=entry.path,
             artifact_class=entry.artifact_class.value,
             body_sha=hash_content(body),
-            inserted_region_span=RegionSpanRecord(
-                name=span.name, start=span.body_span[0], end=span.body_span[1]
-            ),
+            inserted_region_span=RegionSpanRecord(name=span.name, start=span.body_span[0], end=span.body_span[1]),
         )
     content = target.read_text(encoding="utf-8")
     return ManagedArtifact(
@@ -949,13 +932,11 @@ def _build_state_after_apply(
         record for record in (state.managed if state is not None else ()) if record.id not in touched_ids
     )
     new_records = tuple(
-        _managed_artifact_after_apply(action, entries_by_id[action.artifact_id], repo_root)
-        for action in plan.actions
+        _managed_artifact_after_apply(action, entries_by_id[action.artifact_id], repo_root) for action in plan.actions
     )
     managed = tuple(sorted((*carried_over, *new_records), key=lambda record: record.id))
     legacy = tuple(
-        LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of)
-        for record in inventory.legacy
+        LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of) for record in inventory.legacy
     )
     recorded_skips = state.skips if state is not None else ()
     for pattern in skip:
@@ -1081,14 +1062,10 @@ def run_adopt(
     # before `run_apply`'s own fresh, unrestricted dirty re-check runs.
     apply_plan = dataclasses.replace(
         plan,
-        repo_fingerprint=dataclasses.replace(
-            plan.repo_fingerprint, dirty=_repo_is_dirty_now(repo_root)
-        ),
+        repo_fingerprint=dataclasses.replace(plan.repo_fingerprint, dirty=_repo_is_dirty_now(repo_root)),
     )
 
-    result: ApplyResult = run_apply(
-        apply_plan, repo_root=repo_root, never_write=never_write, commit=effective_commit
-    )
+    result: ApplyResult = run_apply(apply_plan, repo_root=repo_root, never_write=never_write, commit=effective_commit)
 
     if plan.actions:
         new_state = _build_state_after_apply(

@@ -21,6 +21,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.detect.hashes import check_managed_file, hash_content
 from pyforge.marshal.seed.detect.inventory import (
@@ -148,10 +149,7 @@ def test_detect_surface_never_writes(detect_repo: Path, monkeypatch: pytest.Monk
     kit_findings(
         kit_checks(
             detect_repo,
-            {
-                layer: {"enabled": True, "aggressiveness": "medium"}
-                for layer in ("wire", "output", "structure-graph")
-            },
+            {layer: {"enabled": True, "aggressiveness": "medium"} for layer in ("wire", "output", "structure-graph")},
         )
     )
     check_managed_file("WHOLE.md", "managed whole\n", hash_content("managed whole\n"))

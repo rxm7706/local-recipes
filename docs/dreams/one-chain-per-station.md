@@ -1,0 +1,318 @@
+---
+title: One Dream, one Spec, one PRD, one architecture, one epic chain — per station
+type: dream
+owner: guild
+status: specified
+# status: 2026-09-16 — seeded `dreamt` from the operator's fleet-consolidation
+# ruling the morning the token-savings fold (PRs #1382/#1383) proved the
+# shape on one chain; Spec derived and flipped `ready` the same day once its
+# three open questions were ruled (docs/governance/spec-one-chain-per-station/).
+fold-exemption: governance   # first live use of the vocabulary this Dream mints — a
+                             # Lexicon amendment cannot be a dated section of a station Dream
+---
+
+# One Dream, one Spec, one PRD, one architecture, one epic chain — per station
+
+## The Dream
+
+A station's plan is one chain, readable end to end from one starting point:
+the station Dream says *why*, the station Spec holds every capability in one
+namespace, the PRD decomposes those capabilities into requirements, the
+architecture spine holds the decisions, and one `epics.md` with one ledger
+holds the work. Eight such chains, plus the Guild's — Charter and unifying
+strategy — for what judges all eight. An operator, an agent, or a
+whitepaper opens one file per tier and has the whole station.
+
+Today the fleet has **171 Dreams and 172 Specs** for eight stations. Three of
+the five tiers are already one-per-station (PRD, architecture spine,
+epics/ledger). The two that sprawl — Dream and Spec — sprawl **by rule**:
+Dream-first with no exemption for gap-closure, `bmad-spec`'s one-folder-
+per-slug, and Spec → Story before code compose into a new Dream + Spec pair
+for every effort. Sixty-one Dreams were folded on 2026-08-08; five weeks
+later the count was back at 171, with 30 Dreams and 33 Specs minted in
+the week of 2026-09-07 alone. **Consolidation without a minting rule is a
+treadmill.** This Dream is the rule first, the fold second.
+
+## The two findings that shape it
+
+- **Two requirement namespaces.** Stories cite `spec-X CAP-n` 228 times and
+  `FR-n` 185 times; INV-A accepts both. Marshal's PRD carries 196 FRs and
+  its 58 Specs ~290 CAPs — and the PRD is already downstream of the Specs
+  (its own header records FR-182..187 "backfilled" from Specs after the
+  stories shipped). The PRD is a core BMAD artifact and stays; the fix is
+  the Charter's own reading — **the PRD is the Spec's decomposition, so FRs
+  derive from CAPs**, never independently. Steward's PRD already carries 26
+  FR↔CAP cross-references, marshal's 13; this makes the emerging habit the
+  rule.
+- **Mason is the finished model.** Zero open Specs. Scribe is the disease
+  in miniature: twelve open Specs carrying nineteen CAPs, nine of them
+  single-CAP folders.
+
+## What it looks like when real
+
+- **Dream-append-first.** New work is a dated section in the station Dream,
+  a memlog append and a `CAP-n` on the station Spec, and a Story. A *new*
+  `docs/dreams/*.md` or `specs/spec-*/` folder carries a frontmatter
+  `fold-exemption:` naming a reason from a closed list — `different-owner`,
+  `different-lifecycle`, `cross-station-seam`, `governance` — and a doctor
+  detector (`chain-sprawl-check`) fails an unexempted new folder. This is
+  compatible with the 2026-09-12 gap-closure ruling: a dated section *is* a
+  Dream seed; it is not a new file.
+- **Eight station chains plus the Guild's.** Per station:
+  `docs/dreams/pyforge-<s>.md` (living) → `spec-pyforge-<s>` (living, one
+  CAP namespace) → the existing PRD, `ARCHITECTURE-SPINE.md`, `epics.md`
+  and ledger. Guild: Charter + `spec-pyforge-unifying-strategy`. Not one
+  fleet chain — the Charter's ownership grammar (a Spec lives in its owner's
+  project; the station dispatches its stories) is what made the token-
+  savings fold work.
+- **Everything folds, nothing is deleted.** Every station ends with exactly
+  one Spec folder. Open Specs fold as CAP ranges via `covers-dreams:`;
+  shipped Specs' CAPs re-mint into the station namespace with provenance in
+  the memlog (`CAP-n ← spec-old CAP-m, shipped <date>`); the old folders
+  become `absorbed` pointers that keep their memlogs — the decision record
+  (5,298 entries fleet-wide) survives intact. Regenerate-not-fold is
+  honored: history stays on A.
+- **The station Spec is a living contract.** `shipped` belongs to CAPs and
+  stories, not to a station's standing contract; the eight `spec-pyforge-<s>`
+  read `ready` — "the contract binds" — and stay there (`in-progress` is a
+  state, not an act; it retires from the Spec enum at the rebase). Station Dreams then
+  read `specified` by the README's existing rule ("a Spec at `ready` or
+  beyond") and never flip again — no fifth status; the roster's act-based
+  ladder rejected `building` for the same reason it rejects `living`.
+- **FRs derive from CAPs.** Every FR minted after the rule date carries its
+  source CAP; the PRD is re-derived as part of each fold, not backfilled
+  weeks later; `fr-without-cap` (post-rule-date only) holds it.
+- **The memlog is sharded before it eats the token economy.** A station
+  memlog per CAP range (or a compiled summary the derive reads first) — at
+  marshal scale the single log would pass 1,100 entries and every re-derive
+  would re-read it whole, the `epics.md` problem in a new coat.
+- **The fold is the foundry on-ramp.** The eight folded station Specs are
+  B's starting five-fields (`spec-foundry-regenerate-not-fold` CAP-5's
+  "one starting contract across two git roots"); recorded in that Spec's
+  memlog.
+
+## Constraints
+
+- No new machinery beyond one detector and one FR check. Every fold
+  mechanism already exists with precedent: archive-in-place banners (14),
+  `covers-dreams:` (chain.py:348), `absorbed` + `absorbed-into:` (5),
+  `superseded` + `superseded_by:` (2), `bmad-spec` ID preservation and
+  next-N minting, INV-A range citations, surface-overlap tolerance (Epic 42).
+- **Precedence (operator, 2026-09-16): evergreen standard > historical
+  accuracy > current implementation** — here, and in pyforge-foundry on
+  cutover. CAPs renumber freely into the station namespace; absorbed folders
+  shrink to a pointer plus their memlog; the PRD is re-derived *to* the
+  standard, not reconciled to old FR numbers; where an artifact encodes the
+  old shape, the standard wins and the artifact moves. **A fold is a rebase,
+  not an append** (operator, same day): CAPs, epics *and stories* renumber
+  sequentially from 1 across all four BMAD phases — analysis, planning,
+  solutioning, implementation — with a re-key map in the PR so a `done`
+  row moves as `done`. Done work keeps its status, not its number.
+- **Eventual consistency.** One station PR at a time; folded and unfolded
+  stations both pass every detector throughout; the sprawl check baselines
+  from a dated snapshot. No flag day.
+- Never hand-edit a `SPEC.md`; every fold is memlog appends + re-derive.
+- The decision *record* is never deleted — memlogs and git survive every
+  fold. Folders archive and point; their bodies are disposable.
+- The PRD stays a BMAD artifact. It is derived, not retired.
+- **Shared packages are seams, not stations.** `pyforge-core` and the
+  testing kit stay marshal-owned Spec folders under `fold-exemption:
+  cross-station-seam` — every station imports them and the foundry
+  regenerates them as their own leaves. The Guild is not a home for shared
+  code: it serves every Smith and judges none.
+- Accept two known costs, named: surface drift degrades from "which Spec's
+  memlog must move" to "which station's"; and every fold at marshal scale is
+  a multi-day effort of real stories, not a script.
+- Pilot is **marshal** (operator, 2026-09-16): 58 Specs → 1 (+2 seams),
+  55 Dreams → 1 (eight already folded into `pyforge-marshal.md` on
+  2026-08-08). Biggest payoff and it forces the memlog sharding on day one.
+  **Then steward** (operator, same day; the eventual-consistency proof),
+  **then herald**, then scribe · doctor · atlas · warden **in parallel** —
+  four worktrees, one agent each. Mason is already one Spec.
+
+## Kinships
+
+- [[pyforge-charter]] — this amends the Lexicon's reading of Dream-first
+  (Dream-append-first) and mints the `fold-exemption` vocabulary.
+- [[coverage-gate-independence]] — the shape precedent: Guild-owned Spec,
+  mechanism stories in doctor's `epics.md`.
+- [[marshal-token-economy]] — the proof on one chain (2026-09-16: five
+  Dreams and one Spec folded; `spec-marshal-token-economy` CAP-19..24;
+  Epic 46).
+- [[foundry-regenerate-not-fold]] · [[foundry-capability-ledger]] — the
+  folded station Specs are B's starting contract (never `move`;
+  `spec-python-foundry-cutover` is the cutover's own Spec); the ledger
+  indexes what each station Spec absorbed.
+- [[fleet-chain-completeness]] — the detector family (`chain-completeness`,
+  `dream-chain`, `dreams-hygiene`) this Dream's `chain-sprawl-check` and
+  `fr-without-cap` sit beside.
+- [[vocabulary-one-name-one-job]] — the naming discipline the station
+  namespace inherits.
+- [[pyforge-unifying-strategy]] — the Guild chain's second member; already
+  the de-facto fleet Spec (19 CAPs, 999 governed files, five Specs absorbed).
+
+## Realization log
+
+- **2026-09-16** — Seeded from the operator's ruling after the token-savings
+  consolidation (PRs #1382/#1383) proved one Dream → one Spec → one epic
+  chain on marshal's token-economy chain. Fleet analysis the same morning:
+  171 Dreams / 172 Specs / 8 PRDs / 8 spines / 8 epic chains; 73 open Specs
+  with 334 CAPs and 1,764 memlog entries; the 2026-08-08 61-Dream fold
+  regrown in five weeks. Six operator rulings recorded: (1) Dream-append-
+  first with a detector and a closed exemption list; (2) eight station
+  chains plus the Guild's; (3) fold everything, shipped included, nothing
+  deleted; (4) the PRD stays and derives from the Spec (operator: "isn't
+  the PRD a required and critical artifact of the BMAD-METHOD" — yes; the
+  retire option was withdrawn); (5) the fold is the foundry on-ramp; (6)
+  marshal is the pilot. Next act: `bmad-spec` derives the Guild Spec under
+  `docs/governance/spec-one-chain-per-station/`.
+- **2026-09-16 (same day) — Spec `ready`; Dream `specified`.** The three open
+  questions were ruled by delegated research (Spec memlog 26–28): **no fifth
+  Dream status** — the roster's act-based ladder already rejected `building`,
+  and the README's own rule yields `specified` for every station Dream once
+  its Spec is `in-progress`; **`pyforge-core` is the first `cross-station-
+  seam` exemption**, marshal-owned — the Charter's structural test rules out
+  the Guild ("shared does not qualify"), and the foundry's own-leaf rebuild
+  rules out burying the kernel contract in a marshal CAP range; **the
+  Charter's only ritual is CAP-1** — no vote exists; the `guild` registration
+  is the second instance of the 09-14 shape and Dream-append-first is a
+  reading, not an amendment; both recorded in the Charter's memlog and
+  Realization log in the same PR, enforcement gap named. Then the operator's
+  governing constraint: **evergreen standard > historical accuracy >
+  implementation**, eventual consistency station by station, portable to
+  pyforge-foundry; **marshal first, then steward.** Then, the same hour:
+  **a fold is a rebase** — renumber CAPs, epics and stories to one sequential
+  current state across all four BMAD phases, re-key map in the PR — and the
+  final order: marshal → steward → herald → scribe · doctor · atlas · warden
+  in parallel. And the operator's widening — *"this is our chance to bring
+  consistency across the fleet, for everything, including vocabulary, naming
+  conventions — don't make the operator think"* — became **CAP-9, the chain
+  standard**: one companion page (`CHAIN-STANDARD.md`) composing every
+  existing ruling on hierarchy, relations, sequence, statuses, names and ids
+  with its grandfathering removed; the rebase is when the carve-outs end
+  (one mint function for all 1,445 stories, one `DW-<STATION>-<n>` family,
+  one rule-id family per station, `in-progress` retired). Next act: doctor
+  stories for `chain-sprawl-check` and `fr-without-cap`; the marshal fold as
+  its own effort, CHAIN-STANDARD §7 as its checklist.
+- **2026-09-17 — Portable lock / mop / exemption.** 1:1 is the minting
+  rule (Dream-append-first + `chain-sprawl-check`), not a periodic fleet
+  fold. A fold PR is mop-only cleanup when unexempted satellites already
+  reached `main`. Day-to-day after the eight station folds is
+  `CHAIN-STANDARD.md` §3. Spec CAP-10. Status stays `specified`; nothing
+  is reset or un-archived.
+- **2026-09-29 — One archive home, and a fold that is complete.** An
+  analysis of `docs/dreams/` found 158 archived Dreams still in the live
+  tree, two fold methods (marshal and steward pasted satellite bodies in;
+  the other six stations only added a banner, so 70-odd Dreams' content
+  exists only in the archived file), and four archive locations. Operator
+  rulings: one archive home, `archive/<original path>`; folds are verbatim
+  and carry no banner; a Dream moves out only once its body is in its
+  station Dream; the rule covers Dreams first, then absorbed Spec folders,
+  `docs/intake/` and `docs/specs/`. Spec CAP-11; § *2026-09-29 — One
+  archive home* below. Status stays `specified`.
+
+## 2026-09-17 — Lock, mop, and exemption — the portable rerun
+
+This is the ritual any agent (Claude, Cursor, or any other harness) runs
+so the fleet stays one chain per station. It lives here and in Spec
+**CAP-10**. The checklist for a fold PR is
+[`CHAIN-STANDARD.md` §7](../governance/spec-one-chain-per-station/CHAIN-STANDARD.md)
+— not a vendor-specific workflow and not a store file.
+
+**1:1 is the lock, not a fold campaign.** One living Dream and one living
+Spec per station is kept by Dream-append-first plus `chain-sprawl-check`.
+Do not schedule another fleet-wide fold. Do not mint a new
+`docs/dreams/*.md` for this rule (that would break 1:1); append this
+Guild Dream, then memlog + `bmad-spec` on
+`docs/governance/spec-one-chain-per-station/`.
+
+**A new satellite on a PR is a rewrite, not a second chain.** If a PR
+adds an unexempted `docs/dreams/<slug>.md` or `specs/spec-*/` folder,
+rewrite that work as a dated section on the owning station Dream plus a
+`CAP-n` on that station's Spec, then drop the extra file. Keep a new
+folder only when its frontmatter `fold-exemption:` is a value from the
+closed list in `docs/governance/guild-roster.json` (`fold_exemptions`:
+`different-owner` · `different-lifecycle` · `cross-station-seam` ·
+`governance`).
+
+Three verbs, one job each:
+
+| Verb | When | What the agent does |
+|---|---|---|
+| **lock** | Every new effort | Dated section on the station Dream → memlog → `bmad-spec` CAP → FR ← CAP → Story (`CHAIN-STANDARD` §3). `chain-sprawl-check` fails an unexempted new folder. |
+| **exemption** | The work cannot live on the station chain | `fold-exemption:` from that closed roster list only. Adding a fifth reason is a governance act on the roster, not an ad-hoc string. |
+| **mop** | Unexempted satellites already reached `main` | One station, one PR, branch `fold/<s>`, `CHAIN-STANDARD` §7 checklist. Cleanup of what leaked past the lock — not a reset of the chain. |
+
+**After all eight stations are folded, day-to-day is §3.** Analysis
+through implementation stays append → memlog → spec → FR ← CAP → story.
+A fold PR is not the weekly rhythm.
+
+**Do not reset or un-archive.** Archived Dreams stay archived. Absorbed
+Spec folders stay pointers plus memlog plus companions. Station Dreams
+stay `specified`; station Specs stay `ready`. Done ledger rows stay
+`done`. Never flip an operator `blocked` key.
+
+**Parallel work, shared files serialized.** One worktree per station
+(prefer `pyforge steward workspace start <slug>` from `origin/main`;
+hand-cut the tree if the default dest is unwritable). Never
+`scripts/bmad-switch` from a parallel agent — `BMAD_ACTIVE_PROJECT=<slug>`
+and physical `_bmad-output/projects/<slug>/` paths. Serialize writes to
+shared memlogs, `docs/governance/fr-baseline.json`, and
+`docs/foundry/capability-ledger.yaml`. Land with `gh pr merge --merge`,
+one PR at a time.
+
+**Environment.** `pixi run -e pyforge-guild …` for detectors, ledger
+sync, surface stamps, and this Spec's derive path. Do not load
+`local-recipes` unless the change actually needs Mason's recipe factory.
+`PYTHONPATH="$PWD/_bmad/scripts:$PYTHONPATH"` when rendering BMAD
+skills. `uv run _bmad/scripts/memlog.py` then `bmad-spec` — never
+hand-edit a `SPEC.md`.
+
+## 2026-09-29 — One archive home
+
+**What was found.** On 2026-09-29, `docs/dreams/` held 174 Dream files, and
+158 of them were `archived`. The fold had been done two ways. Marshal (the
+2026-09-16 pilot) and steward pasted each satellite's body into the station
+Dream and kept the satellite as well. The other six stations only added a
+`Consolidated into` banner, so the content of about seventy Dreams existed
+nowhere but in the archived file. Even marshal's fold left 22 satellites
+with nothing pasted in. There were four archive locations: top-level
+`archive/` (295 files, structure-preserving), `docs/dreams/archive/` (one
+file), atlas's `spec-archive/` (29 files) and the in-place `archived`
+status. Archived and live Dreams sat side by side, and every detector,
+console and reader had to filter them apart.
+
+**The rulings (operator, 2026-09-29).**
+
+1. **One archive home:** `archive/<original path>`, the rule
+   `archive/docs/README.md` already states. `docs/dreams/archive/` and
+   atlas's `spec-archive/` fold into it. Nothing is deleted: every move is a
+   `git mv`.
+2. **A fold is complete, and carries no banner.** A satellite's whole body
+   goes, verbatim, into a dated section of its station Dream, with its
+   headings demoted one level. Only then does the file move to
+   `archive/docs/dreams/`. A Dream is live in `docs/dreams/` or archived
+   under `archive/`, never both.
+3. **Scope and order.** Dreams first. Then the absorbed and archived Spec
+   folders, each moving with its memlog and every companion. Then
+   `docs/intake/`, which keeps only its README (the inbox rule stays), and
+   `docs/specs/`, whose legacy intake-spec tier retires. `feedstock-refresh`
+   is unfinished, so it is carried into Mason's chain before its file
+   moves.
+
+These amend two lines of the 2026-09-17 section above. "Absorbed Spec
+folders stay pointers plus memlog plus companions" now means they stay
+that way under `archive/`. CHAIN-STANDARD §7 item 4 (the banner) and §10
+lesson 44 are superseded. "Do not reset or un-archive" stands: a moved
+Dream is still archived.
+
+**How it lands.** This Dream entry and Spec CAP-11 state the rule, and
+CHAIN-STANDARD §7 and §11 carry it. The mechanism comes next, as Stories:
+
+- a doctor check that proves a fold complete before its file moves;
+- the readers that list Dreams (the console's Archived column, the deck
+  facts, scribe's compile, the sibling-drift check) learning where the
+  archive is;
+- then one fold PR per station, which pastes in the missing bodies, moves
+  the satellites and repoints their references;
+- then the Spec folders, `docs/intake/` and `docs/specs/`.

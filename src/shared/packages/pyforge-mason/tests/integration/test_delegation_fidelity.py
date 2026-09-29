@@ -52,10 +52,7 @@ from pyforge.mason import recipe
 from pyforge.mason.resolve import resolve_cfe_root
 
 _FIXTURE_RECIPE_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "fixtures"
-    / "delegation_fidelity_recipe"
-    / "recipe.yaml"
+    Path(__file__).resolve().parent.parent / "fixtures" / "delegation_fidelity_recipe" / "recipe.yaml"
 )
 
 _DIRECT_INVOKE_TIMEOUT_SECONDS = 120.0
@@ -99,9 +96,7 @@ def test_delegation_fidelity_test_skips_when_no_real_cfe_root_resolves(monkeypat
     `_find_real_cfe_root` to return `None` and calling the slow test
     function directly proves the branch itself skips rather than fails,
     without needing an actual CFE-absent environment."""
-    monkeypatch.setattr(
-        f"{__name__}._find_real_cfe_root", lambda start_directory: None
-    )
+    monkeypatch.setattr(f"{__name__}._find_real_cfe_root", lambda start_directory: None)
     with pytest.raises(pytest.skip.Exception):
         test_delegation_fidelity_mason_matches_direct_cfe_invocation()
 

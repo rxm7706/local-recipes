@@ -1,6 +1,13 @@
 """Official-SDK MCP faces for the isolated mcp-host process.
 
-No Langflow. No FastMCP. Imports ``django_pyforge.mcp_dual_era`` only.
+No Langflow. No FastMCP. ``django_pyforge.mcp_dual_era`` is Django-free and
+always available. A station with a real in-process MCP app (currently just
+``django_marshal_portal`` -- spec-mcp-host-real-station-tools CAP-1) is
+discovered through Django's own app registry, the SAME
+``iter_station_mcp_apps`` seam the web pod uses in-process; a station
+without one keeps the generic identity-stub face slice 1 shipped
+(CAP-2 -- Django setup failing for any reason must never break a station
+that doesn't need it).
 """
 
 from __future__ import annotations
@@ -9,6 +16,7 @@ import asyncio
 import contextlib
 import os
 from http import HTTPStatus
+from typing import Any
 from typing import Self
 
 from django_pyforge.mcp_dual_era import asgi_for_station
@@ -36,7 +44,21 @@ def _stations() -> tuple[str, ...]:
     return tuple(part.strip() for part in raw.split(",") if part.strip())
 
 
-_apps = {name: asgi_for_station(name) for name in _stations()}
+def _real_station_apps() -> dict[str, Any]:
+    try:
+        import django  # noqa: PLC0415
+
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mcp_host.settings")
+        django.setup()
+    except Exception:  # noqa: BLE001 -- CAP-2: no real app must still boot every stub station
+        return {}
+    from django_pyforge.mcp_http import iter_station_mcp_apps  # noqa: PLC0415
+
+    return dict(iter_station_mcp_apps())
+
+
+_real_apps = _real_station_apps()
+_apps = {name: _real_apps.get(name, asgi_for_station(name)) for name in _stations()}
 
 
 class _LifespanManager:

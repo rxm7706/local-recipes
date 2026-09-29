@@ -139,4 +139,4 @@ Status: done
 - External overlay render: zero postgres StatefulSet/Service/PVC resources.
 - `pytest tests/test_chart_invariants.py::test_external_postgres_overlay_skips_self_hosted_resources tests/test_chart_invariants.py::test_external_postgres_toggle_off_preserves_self_hosted_postgres` — 2 passed.
 
-**Residual risks:** Operators must pre-populate `existingSecret` with external `DATABASE_URL` / `MIGRATION_DATABASE_URL`; the chart does not compose URLs (by design, AD-12). No consumer profile migrated to this overlay in this story.
+**Residual risks:** Operators must pre-populate `existingSecret` with external `DATABASE_URL` / `MIGRATION_DATABASE_URL`; the chart does not compose URLs (by design, pap:AD-12). No consumer profile migrated to this overlay in this story.

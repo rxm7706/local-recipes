@@ -44,7 +44,7 @@ def _coerce_cadence(ttls: dict, key: str, default: int = DAILY_SECONDS) -> int:
     raw = ttls.get(key) if isinstance(ttls, dict) else None
     try:
         return int(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
 
 
@@ -307,7 +307,7 @@ def _is_missing(v) -> bool:
         return False
     try:
         return bool(pd.isna(v))
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return False
 
 
@@ -527,9 +527,7 @@ def classify_trending_candidates(
     rows: list[dict] = []
     for _, row in trending_candidates.iterrows():
         record = row.to_dict()
-        pypi_name = _resolve_pypi_name(
-            record.get("repo_full_name"), pypi_universe, index=pypi_index
-        )
+        pypi_name = _resolve_pypi_name(record.get("repo_full_name"), pypi_universe, index=pypi_index)
         normalized_name = _normalize_pypi_name(pypi_name) if pypi_name is not None else None
         on_cf = normalized_name is not None and normalized_name in on_cf_names
         intel_row = intel_by_name.get(normalized_name) if normalized_name is not None else None
@@ -839,7 +837,7 @@ def _id_na(value) -> bool:
         return (not v) or v in {"N/A", "n/a", "NA"}
     try:
         return bool(pd.isna(value))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return False
 
 
@@ -1002,9 +1000,7 @@ def _id_from_board_only(name: str, url: str, packages: dict, timestamp: str) -> 
     """Mirrors the legacy script's ``from_board_only``."""
     rec, key = _id_lookup_assoc(name, packages)
     if rec and key:
-        row = _id_from_assoc(
-            name, f"[Conda-Forge Packaging] {name}", "", "", rec, key, timestamp, {name: url}
-        )
+        row = _id_from_assoc(name, f"[Conda-Forge Packaging] {name}", "", "", rec, key, timestamp, {name: url})
         row["identity_source"] = "openteams-board"
         return row
     return {
@@ -1067,7 +1063,12 @@ def _id_load_feedstock_maps(core_feedstock_attribution: pd.DataFrame) -> tuple[d
     for row in core_feedstock_attribution.itertuples(index=False):
         conda_name = getattr(row, "conda_name", None)
         feedstock_name = getattr(row, "feedstock_name", None)
-        if not isinstance(conda_name, str) or not conda_name or not isinstance(feedstock_name, str) or not feedstock_name:
+        if (
+            not isinstance(conda_name, str)
+            or not conda_name
+            or not isinstance(feedstock_name, str)
+            or not feedstock_name
+        ):
             continue
         # URL-encode the path segment (review finding, patch): mirrors
         # _id_metadata_url's guard against a name containing "/", "?", "&", or a
@@ -1145,7 +1146,7 @@ def _id_staged_map(discovery_staged_recipes_prs_raw: pd.DataFrame) -> dict[str, 
     for row in discovery_staged_recipes_prs_raw.itertuples(index=False):
         try:
             number = int(getattr(row, "number"))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         url = getattr(row, "url", None) or ""
         state = getattr(row, "state", None) or ""
@@ -1279,9 +1280,7 @@ def _id_universe_frame(
                 "source_repository_url": "",
             }
         )
-    return pd.DataFrame(
-        rows, columns=["core_python_package_name", "pypi_purl", "conda_purl", "source_repository_url"]
-    )
+    return pd.DataFrame(rows, columns=["core_python_package_name", "pypi_purl", "conda_purl", "source_repository_url"])
 
 
 def build_identity_packages_primary(

@@ -2,9 +2,10 @@
 title: A deck is proven to look right, not merely to render without crashing
 type: dream
 owner: herald
-status: specified
+status: archived
+archived-reason: absorbed
 ---
-
+> **Consolidated into [[pyforge-herald]]** on 2026-09-17 (one-chain-per-station herald fold; folded from `deck-visual-qa`).
 # A deck is proven to look right, not merely to render without crashing
 
 ## The Dream

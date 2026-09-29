@@ -1,9 +1,8 @@
-<!-- RECOVERED 2026-07-25 from a surviving bmad-loop run worktree (.bmad-loop/runs/20260718-101504-2c07/worktrees/6-2-license-axis-producer-gate-flags/_bmad-output/implementation-artifacts/spec-1-4-osv-db-offline-provisioning-spike.md); this is the ORIGINAL spec, not an epics.md regeneration. Promoted to tracked planning-artifacts/specs/ for durability. -->
 ---
 title: 'Story 1.4: OSV-DB offline provisioning spike (decision + fixture DB)'
 type: 'chore' # spike — decision record + hermetic test fixtures + one proof test; no production code
 created: '2026-07-14'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'fcf6fc9e475890d6ab36bed3d1d265536f1d7ab3'
 final_revision: '5660b20901fd7ccf338626d71aeea791fda666a0'
 review_loop_iteration: 0
@@ -14,6 +13,8 @@ context:
   - '{project-root}/_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/epic-1-context.md'
 warnings: [oversized]
 ---
+
+<!-- RECOVERED 2026-07-25 from a surviving bmad-loop run worktree (.bmad-loop/runs/20260718-101504-2c07/worktrees/6-2-license-axis-producer-gate-flags/_bmad-output/implementation-artifacts/spec-1-4-osv-db-offline-provisioning-spike.md); this is the ORIGINAL spec, not an epics.md regeneration. Promoted to tracked planning-artifacts/specs/ for durability. -->
 
 <intent-contract>
 
@@ -188,3 +189,7 @@ Status: done
 **Verification:** `pixi run --frozen -e python-deptry-osv-scanner python-deptry-osv-scanner-test` → **449 passed** (prior 1.1/1.2/1.3 suites + meta-guards unchanged + the spike suite, now 20 tests), re-run after the follow-up patches. `git status` confirms zero production `src/python_deptry_osv_scanner/` and zero `pixi.toml`/`pixi.lock`/`pyproject.toml` changes. Exit codes empirically re-measured this pass: vuln 1, clean 0, DB-absent 127, container-corrupt 127, present-but-empty 0, **content-corrupt 0**, no-packages 128.
 
 **Residual risks:** (1) offline-ness is trusted via `--offline`, not observed at the network layer (subprocess is outside the in-process socket-deny harness) — 5.2 hardening. (2) matching proven only for the exact synthetic pin; PEP-503/PEP-440 normalization is Story 1.5/2.1. (3) NFR-C1 version pins are recommended in the record but not applied to `pixi.toml` (worktree re-solve toxic) — Story 1.5/1.7 hand-off. (4) the content pre-flight's pragmatic bar is "≥1 shape-valid advisory"; a DB with 1 valid + N corrupt entries would pass it — full per-entry validation is a heavier 1.5/2.4 option. **Follow-up review recommended** (`followup_review_recommended: true`): this pass made a material, security-relevant correction to the § 4 defense that gates Story 1.5, and the two-cycle pattern of §-4 false-greens warrants one more independent adversarial look at whether the content pre-flight fully closes the class.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `1-4-osv-db-offline-provisioning-spike: done`).

@@ -46,3 +46,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 exec node "${SCRIPT_DIR}/../lib/node_modules/bmad-method/tools/installer/bmad-cli.js" "$@"
 WRAPPER
 chmod +x "${PREFIX}/bin/bmad-method"
+
+# Windows entry points, emitted from this SAME noarch build. The recipe is
+# noarch: generic, so it builds once on linux and build.bat never runs on any
+# platform -- without this the artifact has no Windows entry points at all. A
+# .bat is just text, so one artifact serves every platform. %~dp0 resolves at
+# RUNTIME to <prefix>\Scripts\, so no build-time prefix is baked in.
+mkdir -p "${PREFIX}/Scripts"
+for cmd in bmad bmad-method; do
+    printf '@echo off\r\nSET "DIR=%%~dp0.."\r\nnode "%%DIR%%\\lib\\node_modules\\bmad-method\\tools\\installer\\bmad-cli.js" %%*\r\n' \
+        > "${PREFIX}/Scripts/${cmd}.bat"
+done

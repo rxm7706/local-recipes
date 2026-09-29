@@ -12,18 +12,1042 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
 <style>
-:root{--color-bg:#f3f2f2;--color-text:#201e1d;--color-accent:#ec3013;--color-accent-700:#c22a10;--color-divider:#d3d0cf;--font-body:'Archivo',Arial,sans-serif;--font-heading:'Archivo Expanded','Archivo',Arial,sans-serif}
-body{margin:0;background:#cfcccb}
-.code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:.85em;letter-spacing:-0.01em}
-.tag{display:inline-block;padding:6px 12px;font-size:13px;font-weight:700;letter-spacing:.02em}
-.tag-accent{background:var(--color-accent);color:var(--color-bg)}
-.tag-neutral{background:#e4e2e1;color:var(--color-text)}
-.tag-outline{border:1.5px solid var(--color-text);color:var(--color-text)}
-a,a:hover{color:var(--color-accent-700)}
+/* Modernist — design-system tokens (family palette shared with the pyforge persona decks). */
+:root {
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201e1d;
+  --color-accent: #ec3013;
+  --color-accent-2: #e15b47;
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  --color-neutral-100: #f8f4f4; --color-neutral-200: #eae7e7; --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6; --color-neutral-500: #9b9797; --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d; --color-neutral-800: #444141; --color-neutral-900: #2d2b2b;
+
+  --color-accent-100: #fff2ef; --color-accent-200: #ffe0d9; --color-accent-300: #ffc4b8;
+  --color-accent-400: #ff9783; --color-accent-500: #ff563c; --color-accent-600: #dd2b0f;
+  --color-accent-700: #ae1800; --color-accent-800: #7c1405; --color-accent-900: #4d170e;
+
+  --font-heading: "Archivo", system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-body: "Archivo", system-ui, sans-serif;
+  --radius-md: 0px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin:0; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); font-size:15px; line-height:1.55; }
+h1,h2,h3,h4 { font-family:var(--font-heading); font-weight:var(--font-heading-weight); line-height:1.12; letter-spacing:-0.015em; margin:0 0 8px; }
+p { margin:0 0 12px; }
+.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.tag { display:inline-block; font-size:11px; letter-spacing:0.02em; padding:3px 10px; border-radius:0; line-height:1.5; }
+.tag-accent { background:var(--color-accent-100); color:var(--color-accent-800); }
+.tag-neutral { background:var(--color-neutral-200); color:var(--color-neutral-800); }
+.tag-outline { border:1px solid var(--color-accent); color:var(--color-accent); }
+.tag-ink { background:var(--color-text); color:var(--color-bg); }
+svg text { font-family:'Archivo', system-ui, sans-serif; }
+
+/* Poster helpers — the Unifying Strategy section / act-band shapes, named once. */
+.xp { font-family:'Archivo Expanded','Archivo',sans-serif; }
+.sec { padding:36px 0 8px; }
+.sechead { display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px; }
+.sechead .num { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent); }
+.sechead h2 { font-size:26px; margin:0; letter-spacing:-0.01em; }
+.lede { font-size:14px; margin:0 0 20px; color:color-mix(in srgb, var(--color-text) 60%, transparent); }
+.act { margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline; }
+.act .lbl { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400); }
+.act .ttl { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em; }
+.act .cap { font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7; }
+.box { border:2px solid var(--color-text); padding:16px 22px; font-size:14px; line-height:1.5; }
+.tint { border:2px solid var(--color-accent); background:#fbe4de; padding:16px 22px; font-size:14.5px; line-height:1.5; }
+.muted { color:color-mix(in srgb, var(--color-text) 62%, transparent); }
+.kicker { font-size:11px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.bignum { font-size:48px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent); }
+table.tbl { border-collapse:collapse; width:100%; margin-top:18px; }
+table.tbl th { background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:13.5px; }
+table.tbl td { border:1px solid var(--color-divider); padding:9px 14px; font-size:14px; line-height:1.4; vertical-align:top; }
+table.tbl tr.hi td { background:#fbe4de; }
+.station { border:2px solid var(--color-text); padding:18px; }
+.station h3 { font-family:'Archivo Expanded','Archivo',sans-serif; font-size:19px; font-weight:800; margin:6px 0 4px; line-height:1.1; }
+.station .role { font-size:13px; font-weight:600; color:color-mix(in srgb, var(--color-text) 65%, transparent); line-height:1.35; }
+.station .motto { font-size:13.5px; font-weight:600; font-style:italic; margin-top:8px; line-height:1.35; color:var(--color-accent-700); }
+.station .verbs { font-size:12.5px; margin-top:10px; color:var(--color-accent-700); font-weight:700; }
+.station.me { background:#fbe4de; border-color:var(--color-accent); }
+.card { border:2px solid var(--color-text); padding:20px 22px; }
+.card .k { font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.card p { font-size:14.5px; line-height:1.5; margin:10px 0 0; font-weight:500; }
+.relaystep { display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--color-divider); }
+.relaynum { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:22px; color:var(--color-accent); min-width:34px; }
+.chip { font-size:9.5px; font-weight:700; padding:1px 6px; background:var(--color-text); color:var(--color-bg); letter-spacing:.04em; text-transform:uppercase; }
+.chip.ok { background:var(--color-accent); }
+.rung { border-left:3px solid var(--color-accent); padding:4px 0 4px 16px; }
+.rung b { font-size:15px; }
+.rung div { font-size:13.5px; line-height:1.45; margin-top:4px; color:color-mix(in srgb, var(--color-text) 72%, transparent); }
 </style>
 </helmet>
-<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;"><header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;"><div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;"><span style="color:var(--color-accent-700);">PYFORGE CREW · CHAPTER DECK · THE PROVISIONER</span><span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Adopted 2026-07-23 · ownership audit</span></div><h1 style="font-family:var(--font-heading); font-weight:900; font-size:86px; line-height:.94; letter-spacing:-0.02em; margin:0;">Steward</h1><div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 55%, transparent);">pyforge-steward</div><p style="max-width:1000px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">The estate the factory stands on. <b>Mason stops at the registry; Steward starts there</b> — provisioning runners and environments, deploying <b>services</b> (not just artifacts), owning the <b>credential lifecycle</b> end-to-end, and enforcing <span style="color:var(--color-accent-700); font-weight:700;">resource ceilings as machine-readable governance</span>.</p><div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;"><span class="tag tag-accent">No privilege outlives its deployment</span><span class="tag tag-neutral">12 pixi envs</span><span class="tag tag-neutral">Budgets as governance</span><span class="tag tag-outline">steward keys rotate</span></div></header><div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);"><div style="padding:20px 20px 20px 0px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Owner</div><div style="font-size:18px; font-weight:700; margin-top:6px;">RXM</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Module</div><div style="font-size:18px; font-weight:700; margin-top:6px;">pyforge.steward</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Status</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Adopted (audit 2026-07-23)</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Scope</div><div style="font-size:18px; font-weight:700; margin-top:6px;">deploy + operate</div></div><div style="padding:20px 20px 20px 20px; "><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Motto</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Keep the lights on</div></div></div><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">01</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The problem</h2></div><div style="display:grid; grid-template-columns:1.5fr 1fr 1fr ; gap:0; margin-top:22px; align-items:center;"><p style="font-size:19px; line-height:1.5; margin:0; padding-right:36px; font-weight:500;">The Implementation view names <b>Deployment &amp; Operations</b> a first-class SDLC stage — but in the crew it fell between two chairs. The Pages console deploys by hand, the pixi estate syncs by convention, keys live in env vars with no lifecycle. The duties were being done — <b>by hand, without a name</b>.</p><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">4</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">duties consolidated under one owner (was: zero)</div></div><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">1</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">live credential-leak case on the desk — the JFROG key</div></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">02</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The four duties</h2></div><table style="border-collapse:collapse; width:100%; margin-top:22px;"><thead><tr><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Duty</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Today (by hand)</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">With the Steward</th></tr></thead><tbody><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Provision</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">pixi envs + <span class="code">environment.yaml</span> sync</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">runners + envs ready before Doctor's pre-flight</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Deploy</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">Pages console via <span class="code">dashboard-gen</span> + push</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">services on platforms, hardened and answered-for</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Hold the keys</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">JFrog chain in env vars</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">audit · rotate · revoke — lifecycle-owned</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Enforce ceilings</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">numbers in wikis</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">machine-readable budgets with alerts</td></tr></tbody></table></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">03</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The live case — privilege drift</h2></div><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The finding</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">The JFROG API key attaches to <b>every outbound request regardless of host</b> — a cross-resolver credential leak, named as an open deviation in the airgap kernel.</p></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The ownership</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">Doctor diagnosed it; <b>Steward owns the remediation</b> and the key lifecycle after it. No privilege outlives its deployment.</p></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">04</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The estate today</h2></div><div style="display:grid; grid-template-columns:repeat(4,1fr); margin-top:16px;"><div style="padding:20px 0px 4px 0px; "><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">12</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">pixi environments under sync discipline</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">1</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">live Pages console (deploys on every push)</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">4</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">credential chains awaiting lifecycle ownership</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">0</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">privileges that should outlive their deployment</div></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">05</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The boundary with Mason</h2></div><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Mason</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">The job ends when the artifact reaches the registry — built, verified, published.</p></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Steward</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">The job starts there: the <b>service on the platform</b> — budgeted, keyed, observed, and answered-for when it breaks at 3am.</p></div></div></section><section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;"><div style="font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; opacity:.85;">The creed</div><div style="font-family:var(--font-heading); font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">Provision the line. Hold the keys. Keep the lights on.</div><div style="font-size:18px; line-height:1.5; margin-top:18px; max-width:900px; opacity:.94;">Nothing the factory needs is missing — and nothing it no longer needs stays privileged.</div><div class="code" style="font-size:13px; margin-top:26px; opacity:.85;">pyforge-steward &nbsp;·&nbsp; pyforge crew &nbsp;·&nbsp; Dream to Code</div></section></div>
+<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;">
+
+  <!-- MASTHEAD -->
+  <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
+      <span style="color:var(--color-accent-700);">PYFORGE GUILD · THE PROVISIONER · STEWARD CHAIN · SPEC-PYFORGE-STEWARD · THE CANOPY</span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream <span data-fact="dream_status">realized</span> · Spec <span data-fact="spec_status">shipped</span> · tree <span data-fact="tree_commit_date">2026-09-15</span></span>
+    </div>
+    <h1 class="xp" style="font-weight:900; font-size:78px; line-height:0.94; letter-spacing:-0.02em; margin:0;">PyForge Steward</h1>
+    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-steward · module pyforge.steward · console script <span data-fact="console_entry">steward</span> · spec-pyforge-steward <span data-fact="spec_capabilities">CAP-1..4</span> · owner of spec-pyforge-unifying-strategy, the Canopy</div>
+    <p style="max-width:1040px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">The estate the factory stands on. Mason ships an artifact and stops at the registry; Doctor observes and prescribes; <b>Steward deploys, provisions and operates</b> — engines and environments present before any pre-flight runs, services on a platform rather than artifacts on a shelf, credentials with a lifecycle instead of env vars with a habit, budgets as machine-readable ceilings, a BMAD core that upgrades repeatably, and the Canopy — <span class="code">src/platform/</span> — that mounts all eight stations under one chrome, one session, one grammar, one event backbone and one query plane. <span style="color:var(--color-accent-700); font-weight:700;">Nothing the factory needs is missing, and nothing it no longer needs stays privileged. Wrap, never reimplement. Duties return evidence; they never exit.</span></p>
+    <div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;">
+      <span class="tag tag-outline code">pyforge steward &lt;duty&gt; &lt;verb&gt;</span>
+      <span class="tag tag-accent">Wrap, never reimplement</span>
+      <span class="tag tag-neutral">DutyResult is frozen evidence</span>
+      <span class="tag tag-neutral">age at rest · no standing service</span>
+      <span class="tag tag-neutral">Reconcile, don't remember</span>
+      <span class="tag tag-ink">No privilege outlives its deployment</span>
+    </div>
+  </header>
+
+  <!-- META STRIP -->
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
+    <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Stories shipped</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="stories_done_total">231/244</span> done</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Epics closed</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="epics_done_total">56/58</span> done</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Capabilities</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">4</span> · all <span data-fact="spec_status">shipped</span></div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Package</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">pyforge-steward <span data-fact="package_version">0.1.0</span></div>
+    </div>
+    <div style="padding:20px 0 20px 20px;">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">CLI surface</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="cli_verbs">30</span> verbs · one exit-code owner</div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div style="margin:0 -56px; padding:46px 56px 0; border-bottom:3px solid var(--color-text);">
+    <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--color-accent-700);">Why a provisioner</div>
+    <h2 class="xp" style="font-weight:900; font-size:56px; line-height:1.0; letter-spacing:-0.02em; margin:14px 0 0; max-width:1080px;">Provision the line. Hold the keys. <span style="color:var(--color-accent);">Keep the lights on.</span></h2>
+    <div style="display:flex; margin-top:32px; border-top:2px solid var(--color-divider);">
+      <div style="flex:1; padding:16px 12px 18px 0; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">provision</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Engines before pre-flight</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">any named pixi environment by one command · BMAD modules · the <span class="code">environment.yaml</span> sync gate · a fresh machine to <span class="code">validate-fast</span></div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">deploy</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Reconciled, not remembered</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">build · diff · commit only on a real change; perimeter manifests; the Helm chart with an OpenShift overlay; the Canopy on a live cluster</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">keys</div><div style="font-size:14px; font-weight:700; margin-top:4px;">A lifecycle, not a habit</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">issue · scope · encrypt · rotate · audit · revoke — host-gated attachment, <span class="code">age</span> at rest, a secret value never printed under any flag</div></div>
+      <div style="flex:1; padding:16px 0 18px 12px;"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">budget · upgrade · suite</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Honest ceilings, repeatable cores</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">a declared ceiling that reports "no data" rather than a fabricated pass; <span class="code">bmad-core</span> pre-flight → apply → prove-landed; pipeline truth over the bmad-suite</div></div>
+    </div>
+  </div>
+
+  <!-- ACT I -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT I</span>
+      <span class="ttl">Duties done by hand, without a name</span>
+    </div>
+    <span class="cap">The problem and the model</span>
+  </div>
+
+  <!-- 01 · THE PROBLEM -->
+  <section class="sec">
+    <div class="sechead" style="margin-bottom:26px;">
+      <span class="num">01</span>
+      <h2>The problem</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:1.25fr 1fr 1fr 1fr; gap:0;">
+      <p style="font-size:17px; line-height:1.5; margin:0; padding-right:32px;">The Implementation view names <b>Deployment &amp; Operations</b> a first-class stage of the lifecycle — and in the crew it fell between two chairs. The Pages console deployed by a hand-run task and a push; the pixi estate synced by convention; keys lived in environment variables with no owner and no lifecycle. The repo paid for that gap twice: <span class="code">_http.py</span> attached the <span class="code">JFROG_API_KEY</span> auth header to <b>every outbound request regardless of host</b> until a human caught it, and a committed provider key needed git history rewritten and the key rotated. <b>Same underlying fault both times — privilege that outlived its intended scope, caught after the fact.</b> Nothing in the Guild owned prevention until the ownership audit found the stage orphaned and adopted the Provisioner.</p>
+      <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
+        <div class="bignum"><span data-fact="groundtruth_pixi_envs">31</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">pixi environments in the estate — every one materializable by name through <span class="code">steward provision --env</span>, every one behind the <span class="code">environment.yaml</span> sync gate</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
+        <div class="bignum"><span data-fact="recipes_count">7864</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">recipes in the local mirror — the shipped estate whose registry Mason stops at and whose platform, cluster and keys Steward starts from</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 0 0 24px;">
+        <div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="bmad_core_version">6.12.0</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">the BMAD core the whole factory plans on — upgraded through <span class="code">steward upgrade bmad-core</span> with a pre-flight, a review branch and a single prove-landed verdict, never by a remembered installer incantation</div>
+      </div>
+    </div>
+    <div class="box" style="margin-top:26px;"><b>Privilege that outlives its scope is only ever caught after the fact — unless someone owns prevention as a duty.</b> The Provisioner's mindset is custody: engines present before the line spins, services answered-for when they break, a credential scoped to the hosts it was issued for and retired the day its deployment ends, a ceiling declared where a machine can read it. <span class="muted">Charter § Steward — the station is the post, not the person; a duty's evidence outlives the session that produced it.</span></div>
+  </section>
+
+  <!-- 02 · THE FOUR DUTIES -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">02</span>
+      <h2>Four duties — the contract at a glance</h2>
+    </div>
+    <p class="lede">The Spec is deliberately thin: a CLI formalizing what this repo's maintainer already did by hand, cloning the already-shipped Warden packaging pattern rather than reimplementing Vault, Backstage, ArgoCD or Kubecost at a scale a one-person factory does not have. Every capability carries a success criterion written to fail when it is absent and a <span class="code">verified:</span> line from a mechanical re-verification at a named HEAD. The Spec reads <span data-fact="spec_status">shipped</span>; the Dream reads <span data-fact="dream_status">realized</span>.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider);">
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; background:var(--color-accent-100);">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-1</span><span class="chip ok">keys</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Credential lifecycle, one CLI</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">issue · scope · rotate · audit · inventory · record revocation. A credential declared with a host allowlist is never attached outside it; <span class="code">rotate</span> re-encrypts under a fresh identity and the old one fails afterward; <span class="code">list</span> never prints a raw value; the historical cross-host leak is a named regression test that fails loudly if the gating is ever removed.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-2</span><span class="chip">deploy</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">One reconciled publish</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);"><span class="code">deploy dashboard</span> replaces the hand-run build + push: twice with no source change → zero commits; a real change → exactly one commit with exactly the changed files; <span class="code">--dry-run</span> builds and diffs without touching git; <span class="code">status</span> reads the last deploy from git history alone, no state store.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-3</span><span class="chip">provision</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Environments by name</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">a valid name materializes via <span class="code">pixi install -e</span>; an invalid one reports a clear error listing every real environment instead of pixi's raw complaint; <span class="code">--list</span> enumerates the <span class="code">[environments]</span> table with composing features; <span class="code">--verify</span> wraps the PR CI sync gate and exits non-zero on drift.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-4</span><span class="chip">budget</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">A ceiling a machine can read</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);"><span class="code">budget set --cap &lt;amount&gt;&lt;currency&gt;/&lt;period&gt;</span> records a documented schema and rejects a malformed cap before writing; <span class="code">show</span> reports plainly when none is declared; <span class="code">check</span> returns a distinct not-configured code — "no data" is never collapsed into a pass, and no cost-SDK import exists anywhere in the codebase.</div>
+      </div>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Duty</th><th>Before — by hand, without a name</th><th>With the Steward</th><th>Governed by</th></tr></thead>
+      <tbody>
+        <tr><td><b>Provision</b></td><td>pixi environments materialized from memory; the <span class="code">environment.yaml</span> export re-run by convention; scratch worktrees typed out five steps at a time</td><td>runners and environments ready before Doctor's pre-flight; the sync gate one verb away; a fresh machine reaches <span class="code">validate-fast</span> through steward verbs alone</td><td>AD-1 wrap · AD-5 never fork Marshal-owned machinery</td></tr>
+        <tr><td><b>Deploy</b></td><td>the Pages console via a pixi task plus <span class="code">git push</span>, whether or not anything changed</td><td>diff-gated reconciliation; perimeter manifests for a shareable dashboard; static export; the Helm chart with an OpenShift overlay, deployed attended on a local cluster and proven with a live health check</td><td>AD-4 CLI-invoked reconciliation, no daemon, no new workflow</td></tr>
+        <tr class="hi"><td><b>Hold the keys</b></td><td>a JFrog chain in env vars, attached to every host; a provider key once committed</td><td>host-scoped attachment through <span class="code">_http.py</span>'s one resolver; <span class="code">age</span>-encrypted at rest; an inventory of identities with provenance; audit · rotate · revoke as verbs; values never printed</td><td>AD-2 single chokepoint · AD-3 no standing secrets service · AD-9 routing inherited</td></tr>
+        <tr><td><b>Enforce ceilings</b></td><td>a number in a wiki — "locked per month" — that no tool could read</td><td>a declared, schema-checked ceiling in <span class="code">.steward/budget.yaml</span>; an honest three-way exit domain; Actions-minutes metering named as the first real spend source</td><td>AD-6 declared-not-enforced until real spend exists</td></tr>
+        <tr><td><b>Keep the core current</b></td><td>a remembered <span class="code">bmad-method install</span> flag set; pins scattered across stations; nobody proving the upgrade landed</td><td><span class="code">upgrade bmad-core</span> pre-flight · deliberate <span class="code">--apply</span> on a review branch · clobber detect and re-apply · pin fan-out report · one prove-landed verdict; <span class="code">suite pipeline-truth</span> over every suite package</td><td>the installer stays the only writer of <span class="code">_bmad/</span>; foreign pin sites reported, never edited</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>Consolidation, not a platform.</b> Domain and technical research converged on the same verdict: no Vault, Backstage, ArgoCD or Kubecost enters the dependency graph. Every duty adapter is a subprocess call or a thin import into a tool that already exists — <span class="code">_http.py</span>, <span class="code">age</span>, <span class="code">pixi</span>, <span class="code">git</span>, <span class="code">gh</span>, the BMAD installer. A duty module carrying its own copy of logic that lives elsewhere is a review-blocking finding.</div>
+      <div class="tint"><b>The counter-signals the Spec refuses to optimize.</b> The number of duties shipped is not a score — a <span class="code">budget</span> duty growing Kubecost-scale before any real spend exists is over-building. Key-rotation frequency is not a metric — more rotations is not better. What must hold: the leak pattern has a passing, named regression test, and the reconciled deploy replaces every manual build-and-push from here on.</div>
+    </div>
+  </section>
+
+  <!-- 03 · THE ESTATE TOPOLOGY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">03</span>
+      <h2>The estate — what Steward wraps, and who stands on it</h2>
+    </div>
+    <p class="lede">A hub with two rails. On the left, the tools that already existed and that Steward shells out to or thinly imports — never re-implements. On the right, the stations and surfaces that stand on what Steward provisions, deploys, keys and budgets. The hub itself is coordination: one <span class="code">Duty</span> protocol, one dispatcher, one owner of the process exit code.</p>
+    <svg viewBox="0 0 1128 720" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker>
+        <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker>
+      </defs>
+      <!-- wrapped-tools rail (left) -->
+      <text x="60" y="44" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">WRAPPED · NEVER REIMPLEMENTED</text>
+      <g>
+        <rect x="60" y="64" width="250" height="70" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+        <text x="76" y="90" fill="#201e1d" font-size="15" font-weight="800">_http.py auth chain</text>
+        <text x="76" y="110" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">auth_headers_for(url) · resolve_*_urls</text>
+        <text x="76" y="125" fill="#605d5d" font-size="10.5">the one host-scoping chokepoint (AD-2)</text>
+
+        <rect x="60" y="154" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="180" fill="#201e1d" font-size="15" font-weight="800">age · age-keygen</text>
+        <text x="76" y="200" fill="#605d5d" font-size="10.5">encrypt · decrypt · rotate shell out to the CLI</text>
+        <text x="76" y="215" fill="#605d5d" font-size="10.5">no vault server, no vendored crypto (AD-3)</text>
+
+        <rect x="60" y="244" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="270" fill="#201e1d" font-size="15" font-weight="800">pixi · pixi.toml</text>
+        <text x="76" y="290" fill="#605d5d" font-size="10.5">[environments] read for inventory, never written</text>
+        <text x="76" y="305" fill="#605d5d" font-size="10.5">pixi install -e verbatim (AD-5)</text>
+
+        <rect x="60" y="334" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="360" fill="#201e1d" font-size="15" font-weight="800">git · gh · docs/dashboard/</text>
+        <text x="76" y="380" fill="#605d5d" font-size="10.5">diff the fresh build against the committed tree</text>
+        <text x="76" y="395" fill="#605d5d" font-size="10.5">commit + push only on a real change (AD-4)</text>
+
+        <rect x="60" y="424" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="450" fill="#201e1d" font-size="15" font-weight="800">BMAD installer · _bmad/</text>
+        <text x="76" y="470" fill="#605d5d" font-size="10.5">bmad-method install --action update, on a branch</text>
+        <text x="76" y="485" fill="#605d5d" font-size="10.5">the installer stays the only writer of core</text>
+
+        <rect x="60" y="514" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="540" fill="#201e1d" font-size="15" font-weight="800">Helm chart · manage.py</text>
+        <text x="76" y="560" fill="#605d5d" font-size="10.5">the platform's own commands drive restore and</text>
+        <text x="76" y="575" fill="#605d5d" font-size="10.5">revoke — steward never imports Django</text>
+      </g>
+      <!-- spokes into the hub -->
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr)">
+        <path d="M310 99 C 380 99, 380 300, 430 300"/>
+        <path d="M310 189 C 380 189, 380 310, 430 310"/>
+        <path d="M310 279 C 380 279, 380 320, 430 320"/>
+        <path d="M310 369 C 380 369, 380 335, 430 335"/>
+        <path d="M310 459 C 380 459, 380 350, 430 350"/>
+        <path d="M310 549 C 380 549, 380 365, 430 365"/>
+      </g>
+      <!-- hub -->
+      <rect x="430" y="200" width="268" height="280" fill="#ec3013"/>
+      <text x="564" y="238" text-anchor="middle" fill="#f3f2f2" font-size="20" font-weight="900" letter-spacing="1">PYFORGE STEWARD</text>
+      <text x="564" y="260" text-anchor="middle" fill="#f3f2f2" font-size="12" font-family="ui-monospace, Menlo, monospace">pyforge.steward · console script steward</text>
+      <line x1="452" y1="276" x2="676" y2="276" stroke="#ffe0d9" stroke-width="1"/>
+      <text x="564" y="300" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">keys · deploy · provision · budget</text>
+      <text x="564" y="322" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">sync · workspace · upgrade · suite</text>
+      <text x="564" y="344" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">init · setup · initrepo · validate-fast</text>
+      <text x="564" y="366" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">restore · revoke</text>
+      <text x="564" y="388" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">dispatch through the Duty protocol only</text>
+      <line x1="452" y1="408" x2="676" y2="408" stroke="#ffe0d9" stroke-width="1"/>
+      <text x="564" y="428" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">WRAP, NEVER REIMPLEMENT</text>
+      <text x="564" y="446" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">ONE DUTY PROTOCOL</text>
+      <text x="564" y="464" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">ONE EXIT-CODE OWNER</text>
+      <!-- spokes out to consumers -->
+      <g stroke="#ec3013" stroke-width="2" fill="none" marker-end="url(#arrA)">
+        <path d="M698 300 C 760 300, 760 99, 818 99"/>
+        <path d="M698 320 C 760 320, 760 189, 818 189"/>
+        <path d="M698 340 C 760 340, 760 279, 818 279"/>
+        <path d="M698 360 C 760 360, 760 369, 818 369"/>
+        <path d="M698 380 C 760 380, 760 459, 818 459"/>
+        <path d="M698 400 C 760 400, 760 549, 818 549"/>
+      </g>
+      <!-- consumers rail (right) -->
+      <text x="818" y="44" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">WHO STANDS ON THE ESTATE</text>
+      <g>
+        <rect x="818" y="64" width="250" height="70" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+        <text x="834" y="90" fill="#201e1d" font-size="15" font-weight="800">The Canopy — src/platform/</text>
+        <text x="834" y="110" fill="#605d5d" font-size="10.5">chrome · portals · MCP faces · Lane 1 · events</text>
+        <text x="834" y="125" fill="#605d5d" font-size="10.5">Steward's flagship chain, deployed and keyed</text>
+
+        <rect x="818" y="154" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="180" fill="#201e1d" font-size="15" font-weight="800">Marshal — the line</text>
+        <text x="834" y="200" fill="#605d5d" font-size="10.5">runners and envs present before the loop spins;</text>
+        <text x="834" y="215" fill="#605d5d" font-size="10.5">marshal init owns the worktree, Steward points</text>
+
+        <rect x="818" y="244" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="270" fill="#201e1d" font-size="15" font-weight="800">Doctor — finds, Steward fixes</text>
+        <text x="834" y="290" fill="#605d5d" font-size="10.5">env-hygiene names the unscoped credential;</text>
+        <text x="834" y="305" fill="#605d5d" font-size="10.5">keys audit --drift proves it stays closed</text>
+
+        <rect x="818" y="334" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="360" fill="#201e1d" font-size="15" font-weight="800">Warden — the one verdict</text>
+        <text x="834" y="380" fill="#605d5d" font-size="10.5">deploy profiles are plugins on its hook spec;</text>
+        <text x="834" y="395" fill="#605d5d" font-size="10.5">deploys pin a digest with a recorded verdict</text>
+
+        <rect x="818" y="424" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="450" fill="#201e1d" font-size="15" font-weight="800">The BMAD estate</text>
+        <text x="834" y="470" fill="#605d5d" font-size="10.5">core upgraded on a review branch; the suite's</text>
+        <text x="834" y="485" fill="#605d5d" font-size="10.5">pipeline truth reported per package, per stage</text>
+
+        <rect x="818" y="514" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="540" fill="#201e1d" font-size="15" font-weight="800">Operator · fresh machine</text>
+        <text x="834" y="560" fill="#605d5d" font-size="10.5">init → setup → initrepo → validate-fast;</text>
+        <text x="834" y="575" fill="#605d5d" font-size="10.5">one grammar for what used to be a habit</text>
+      </g>
+      <!-- envelope rail -->
+      <rect x="230" y="626" width="668" height="60" fill="#eae7e7" stroke="#9b9797" stroke-width="2"/>
+      <text x="564" y="652" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">DutyResult — frozen evidence, never a scratchpad</text>
+      <text x="564" y="672" text-anchor="middle" fill="#605d5d" font-size="11" font-family="ui-monospace, Menlo, monospace">{ ok, summary, details } · details["exit_code"] is a request only main() may honour · --json on every duty</text>
+      <line x1="564" y1="480" x2="564" y2="624" stroke="#201e1d" stroke-width="2" marker-end="url(#arr)"/>
+    </svg>
+    <div style="font-size:13px; margin-top:12px;" class="muted">Duties are added by naming a new module on the same protocol, never by teaching an existing one a second job. The registered set grew from the four contract duties to sync, workspace, upgrade, suite, the machine-bootstrap family, restore and revoke — each one a thin face over a tool the estate already had.</div>
+  </section>
+
+  <!-- 04 · THE CANOPY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">04</span>
+      <h2>The Canopy — Steward's flagship chain, the whole contract at a glance</h2>
+    </div>
+    <p class="lede">Eight stations that each shipped as an excellent command-line tool — and stopped there. Eight terminals, eight mental models, no shared identity, no way for one station to tell another that something happened. <span class="code">spec-pyforge-unifying-strategy</span>, owned by Steward, mounts all eight under one <b>hub-and-spoke modular monolith</b>: one ASGI process carries chrome, identity, portals and service faces; heavy work goes to Celery; infrastructure is exactly PostgreSQL + Redis + Kubernetes. The Canopy is Steward's surface, not a ninth station — the roster stays at eight.</p>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text); margin-bottom:6px;">
+      <div style="border-right:2px solid var(--color-divider); padding:16px 14px 12px 0;"><div class="kicker">Lane 1</div><div style="font-size:15px; font-weight:800; margin:6px 0;">The front door</div><div style="font-size:12.5px; line-height:1.45;">Wagtail at <span class="code">/</span>, pages published without a deploy, admin reachable only through the identity provider. It superseded the statically-built console rather than sitting beside it.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:16px 14px 12px;"><div class="kicker">Lane 2</div><div style="font-size:15px; font-weight:800; margin:6px 0;">Eight portals, one session</div><div style="font-size:12.5px; line-height:1.45;">HTMX apps under <span class="code">/stations/&lt;name&gt;/</span>, each a reusable Django app in its own <span class="code">django-&lt;station&gt;</span> distribution, all on one OIDC session, never leaving the origin.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:16px 14px 12px;"><div class="kicker">Lane 3</div><div style="font-size:15px; font-weight:800; margin:6px 0;">Boards that show your rows</div><div style="font-size:12.5px; line-height:1.45;">Vizro over the semantic layer over the query plane; role isolation enforced at the identity boundary — two roles, the same URL, provably different row sets.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:16px 14px 12px;"><div class="kicker">Agent door · grammar</div><div style="font-size:15px; font-weight:800; margin:6px 0;"><span class="code">pyforge &lt;station&gt; &lt;noun&gt; &lt;verb&gt;</span></div><div style="font-size:12.5px; line-height:1.45;">one entry point dispatching to the eight existing CLIs without reimplementing them; a generated parity matrix fails the build when the two diverge; every station binary stays first-class.</div></div>
+      <div style="padding:16px 0 12px 14px; background:var(--color-accent-100);"><div class="kicker">Agent door · service face</div><div style="font-size:15px; font-weight:800; margin:6px 0;"><span class="code">POST /stations/&lt;name&gt;/mcp</span></div><div style="font-size:12.5px; line-height:1.45;">an MCP endpoint per station on the host ASGI, with a <span class="code">start</span>/<span class="code">get</span> pair over a durable store so a multi-minute operation survives the ingress disconnect — from a different replica if the first is gone.</div></div>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Capability</th><th>What it binds</th><th>What was proven, mechanically or live</th></tr></thead>
+      <tbody>
+        <tr><td><b>CAP-1</b> shared chrome</td><td><span class="code">django-pyforge</span> — app switcher, OIDC-aware base layout, Modernist theme, the registration seam a portal uses to join</td><td>two portals render identical chrome from one package with zero duplicated template or static files — a test fails if a portal ships its own copy</td></tr>
+        <tr><td><b>CAP-2</b> the front door</td><td>Wagtail Lane 1 at <span class="code">/</span>, the only front door; the retired console's views re-homed, its build path removed</td><td>live on the attended local cluster: <span class="code">GET /</span> published from PostgreSQL; an unauthenticated CMS admin request redirected to the IdP, not a local login form</td></tr>
+        <tr><td><b>CAP-3</b> eight portals, one session</td><td>uniform <span class="code">/stations/&lt;name&gt;/</span>; Warden moved off its shipped mount behind a permanent redirect</td><td>all eight portal URLs resolve behind a single session; the host urlconf carries no station roster</td></tr>
+        <tr><td><b>CAP-4</b> service faces</td><td>MCP on the host ASGI, official SDK, era-disciplined handshake — echo the client's revision, never branch on its name</td><td>all eight faces ship <span class="code">start</span>/<span class="code">get</span> over the shared durable store; a transport disconnect mid-<span class="code">get</span> while a gated worker simulates a long operation still returns the result</td></tr>
+        <tr><td><b>CAP-5</b> one grammar</td><td><span class="code">pyforge</span> dispatch to the eight station CLIs</td><td>a CI parity matrix over every station verb, reachable through both the unified entry point and its own binary</td></tr>
+        <tr class="hi"><td><b>CAP-6</b> one client, carrying identity</td><td>a signed RS256 assertion — subject, roles, audience-bound, short-lived — never a trusted header; the host mint verifies the presented IdP bearer before signing</td><td>a service independently verifies which end user a portal call was made on behalf of; no portal constructs a raw request. The unverified-mint CRITICAL from the red-team review was fixed in shipped code</td></tr>
+        <tr><td><b>CAP-7</b> analytics behind the door</td><td>a role-isolated board at <span class="code">/stations/atlas/board/</span> on the estate's secure-dashboard pattern</td><td>two users with different roles receive provably different row sets from the same URL</td></tr>
+        <tr><td><b>CAP-8</b> stations tell each other things</td><td>CloudEvents on Redis Streams riding the broker, never the cache; consumer groups per station; a dead-letter stream; a cascade-depth ceiling</td><td>a poisoned event lands in the DLQ instead of retrying forever; a cyclic publish chain halts at the declared depth</td></tr>
+        <tr class="hi"><td><b>CAP-9</b> schema change is governed</td><td>developers author in Django; <span class="code">sqlmigrate</span> extracts a reviewable Liquibase changeset; a Helm hook Job holds DDL; app pods run on a DML-only role</td><td>live: <span class="code">platform_app</span> exists, <span class="code">CREATE</span> on <span class="code">public</span> refused, health endpoint answers as that role; a schema change with no governed changeset fails the build</td></tr>
+        <tr><td><b>CAP-10</b> failure is contained</td><td>four resilience invariants — circuits trip on async too, one writer for analytical state, validation errors inline, restarts reconcile</td><td>each invariant has a test that fails with the mechanism absent; the circuit breaker and boot reconcile each have a production caller, not a test-only one</td></tr>
+        <tr><td><b>CAP-11</b> queue ≠ cache</td><td><span class="code">redis-broker</span> (no eviction, durable on a volume, bounded memory) split from <span class="code">redis-cache</span></td><td>the chart render hard-fails unless the broker's memory bound sits below its limit; the volatile-unbounded-broker CRITICAL was fixed in shipped code</td></tr>
+        <tr><td><b>CAP-12</b> revocable access, delivered secrets</td><td>authorization from IdP roles, not local state; pod specs carry secret references only; go-sops + <span class="code">age</span> as the in-estate vault; a vault server stays a profile adapter outside the image</td><td>revoking a role at the IdP removes portal access on the next request; no long-lived secret value appears in any pod specification</td></tr>
+        <tr><td><b>CAP-13</b> flags without redeploy</td><td>OpenFeature through the flagd file resolver — the full targeting engine, in-process, offline</td><td>one flag change alters behaviour across Django, service and CLI surfaces with no egress</td></tr>
+        <tr><td><b>CAP-14</b> Scribe's graph outlives a file</td><td>a durable store behind the existing port; lexical recall graded, semantic recall opt-in and honestly approximate</td><td>the same graph operations pass against both drivers; a fixture query returns a grounded, cited answer</td></tr>
+        <tr><td><b>CAP-15 · CAP-16</b> skills and personas</td><td>every station teaches an agent its own work and can be addressed as a persona acting only through the grammar and the face</td><td>the five-tier structural gate reports every cell of the eight-station matrix filled — Mason's skill cell is <span class="code">conda-forge-expert</span></td></tr>
+        <tr class="hi"><td><b>CAP-17</b> run state is a service</td><td>a supervisor publishes live run state; the front door only ever queries it — never an operator's home directory</td><td>live on the deployed, egress-blocked cluster: a real publisher process registered a run, heartbeat it, completed and exited; a separate process read its duration from <span class="code">/runs/</span> afterward</td></tr>
+        <tr><td><b>CAP-18</b> one hook-spec shape</td><td>plugins in <span class="code">pyforge-core</span>; eight stations, not eight plugin APIs; Warden owns the PR-gate hook book</td><td>a dummy plugin loads through the shared API; a second registration mechanism fails the check; a default Warden run stays green with no commercial scanner present</td></tr>
+        <tr><td><b>CAP-19</b> one HTAP query plane</td><td>one DuckDB engine — live read-only attach, a Kedro-written Parquet cache, vectors; stations are clients; agents never get the OLTP DSN</td><td>attach, Parquet cache, HNSW ranking and the plane DSN each pinned by a test; a second writable analytical engine or an agent OLTP DSN is a test failure</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>Extends, never re-mints.</b> The host itself — the cookiecutter-django render with its ASGI seam, the two agent-runtime engines mounted as pluggable apps or a sidecar, Celery, one factory-sourced environment, air-gap parity as a failing check — is prior art, cited as <span class="code">pap:CAP-*</span> and merged into the same contract. The Canopy's bare CAP numbers are a different set; the two namespaces are never collapsed, and no CAP-20 may be minted on the evergreen Spec.</div>
+      <div class="tint"><b>The held lines — every one a recorded ruling.</b> No ninth station. No <span class="code">services/</span> farm of public processes. No fourth backing kind — DuckDB is a query face, and object storage or managed datastores enter only as <i>consumed</i>, never self-hosted. No CodeRed, no La Suite on the host. No second PR-gate verdict. No agent on the OLTP DSN. No CLI absorbed.</div>
+    </div>
+  </section>
+
+  <!-- ACT II -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT II</span>
+      <span class="ttl">The cast</span>
+    </div>
+    <span class="cap">Eight stations · the duties on the floor · persona and skills</span>
+  </div>
+
+  <!-- 05 · THE GUILD -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">05</span>
+      <h2>The Guild — eight stations, one provisioner</h2>
+    </div>
+    <p class="lede">The station is the post, not the person: each is a lifecycle stage plus its independent verdict, under the doctrine's sharpest line — <b>the hand that builds is never the gate that judges.</b> Steward is the estate every other station stands on, and the owner of the Canopy that mounts them. Chips show each station's tracked sprint ledger, stories done over stories total.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;">
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">82/100</span></span></div>
+        <h3>Herald</h3>
+        <div class="role">Visual Media Engine &amp; System Messenger</div>
+        <div class="motto">"Capture the dream. Illustrate the telemetry. Proclaim the release."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">First to touch the Dream and last to ship it: the Claude Design bridge and the deck family, telemetry infographics, weekly updates, omnichannel broadcasts. Owns this poster and the standard it is built to. The dashboard Steward publishes and the boards behind the front door are Herald's stage; Steward keeps the lights on under it.</p>
+        <div class="verbs code">herald deck seed · deck pull · deck status · progress · success · notice · scheduler</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">270/274</span></span></div>
+        <h3>Marshal</h3>
+        <div class="role">Autonomous Build Factory Supervisor &amp; BMAD Orchestrator</div>
+        <div class="motto">"Enforce the spec. Guard the boundaries. Run the line."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The one owner of execution: turns the Spec into validated code through gated story loops. The seam with Steward was ratified explicitly — Marshal owns the build line and its worktrees (<span class="code">marshal init</span> is the one way to make a loop home; Steward's <span class="code">--runner</span> reports and points at it), Steward owns the estate the line runs on. Marshal's run state now publishes to a supervisor Steward deploys.</p>
+        <div class="verbs code">marshal factory spin · gate evaluate · run · land · init</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">03 · The Navigator</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="atlas_stories_done_total">94/95</span></span></div>
+        <h3>Atlas</h3>
+        <div class="role">Dependency Mapper &amp; Data Pipeline Architect</div>
+        <div class="motto">"Chart the dependencies. Map the world. Define the floor."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Maps the Python ecosystem into the cf_atlas graph, Kedro pipelines and the MCP intelligence surface. In the Canopy, Atlas owns the query-plane engine — one DuckDB, live attach, Parquet cache, vectors — while Steward owns the through-line that every other station is rebuilt onto. Its role-isolated board is the first thing behind the front door.</p>
+        <div class="verbs code">pyforge atlas run · read · list · staleness-report · cve-watcher</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">04 · The Guardian</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="warden_stories_done_total">49/49</span></span></div>
+        <h3>Warden</h3>
+        <div class="role">Multi-Axis Dependency Compliance Gate</div>
+        <div class="motto">"Halt the threat. Clear the axes. Protect the perimeter."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The sole PR-gate verdict — hygiene, security, license, currency. Steward's deploy-profile adapters are plugins on Warden's hook-spec contract and raise if asked to publish a second verdict; every deploy pins an image digest with a recorded Warden verdict, never <span class="code">latest</span>. Steward's own packaging cloned Warden's shipped pattern rather than inventing a second one.</p>
+        <div class="verbs code">warden scan · warden --doctor · pyforge warden scan</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">05 · The Artisan Builder</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="mason_stories_done_total">70/70</span></span></div>
+        <h3>Mason</h3>
+        <div class="role">Package &amp; Release Craftsman</div>
+        <div class="motto">"We forge the blocks. We bind the environment. We ship the structure."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Authors recipes with rattler-build, resolves lockfiles, ships to conda-forge — wielding <span class="code">conda-forge-expert</span> rather than a skill of its own. <b>Mason's job ends when the artifact reaches the registry; Steward's starts there.</b> The Canopy's air-gap gate made a PyPI-only package Mason's feedstock work, scheduled as such — the packaging price of an egress-blocked build.</p>
+        <div class="verbs code">pyforge mason · recipe-build · generate-recipe · lint</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">95/105</span></span></div>
+        <h3>Doctor</h3>
+        <div class="role">Ecosystem Health &amp; Diagnostics Officer</div>
+        <div class="motto">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Pre-flight before the run, pulse after the ship, prescriptions with root causes. The precedent for how the two stations divide health from operations: Doctor's <span class="code">env-hygiene</span> finding named the unscoped credential; the fix, the regression test and the lifecycle after it were Steward's. Doctor's <span class="code">check --bmad-core</span> notices when the core falls behind; Steward's <span class="code">upgrade</span> is the remedy.</p>
+        <div class="verbs code">doctor check · monitor · diagnose · backlog-intake</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">35/35</span></span></div>
+        <h3>Scribe</h3>
+        <div class="role">Knowledge Curator &amp; Team Memory Keeper</div>
+        <div class="motto">"Capture the decision. Keep the graph. Answer from memory."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The inward voice — memlogs, ADRs, retros and Dream realization logs captured as they happen, compiled into a graph any session can answer from. Its graph outlives one file because the Canopy gave it a durable store behind its port and, later, a driver onto the query plane; its schema changes ride the governed changelog like everyone else's.</p>
+        <div class="verbs code">scribe capture · graph compile · recall</div>
+      </div>
+      <div class="station me">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">231/244</span> · <span data-fact="steward_epics_done_total">56/58</span></span></div>
+        <h3>Steward</h3>
+        <div class="role">Platform, Deployment &amp; Operations Officer</div>
+        <div class="motto">"Provision the line. Hold the keys. Keep the lights on."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Runs the estate the factory stands on — runners, environments, the Canopy host, the cluster it deploys to, credentials and their rotation, budgets, the BMAD core and suite, the pager. Engines are present before Doctor's pre-flight ever runs; when Doctor finds the fault is the estate's, Steward remediates. Duties return frozen evidence; a crash is never reported as a failed duty.</p>
+        <div class="verbs code">steward keys · deploy · provision · budget · sync · workspace · upgrade · suite · init · restore · revoke</div>
+      </div>
+    </div>
+    <div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>Fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">926/972</span> stories and <span data-fact="fleet_epics_done_total">207/219</span> epics done across the eight guild-roster stations — read with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">epics: herald <span data-fact="herald_epics_done_total">19/23</span> · marshal <span data-fact="marshal_epics_done_total">40/43</span> · atlas <span data-fact="atlas_epics_done_total">23/24</span> · warden <span data-fact="warden_epics_done_total">12/12</span> · mason <span data-fact="mason_epics_done_total">17/17</span> · doctor <span data-fact="doctor_epics_done_total">22/24</span> · scribe <span data-fact="scribe_epics_done_total">18/18</span></span></div>
+  </section>
+
+  <!-- 06 · THE DUTIES ON THE FLOOR -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">06</span>
+      <h2>The duties on the floor — Steward's registered set</h2>
+    </div>
+    <p class="lede">Where Marshal has sub-agents on the floor and Doctor has its source registry, Steward has its <span class="code">DUTIES</span> tuple: one module per duty, each satisfying the same structural <span class="code">Duty</span> protocol, dispatched lazily so <span class="code">steward --help</span> never loads a checkout guard. The registered set is the count; it is enumerated here by name, never written down as a number.</p>
+    <table class="tbl">
+      <thead><tr><th>Duty</th><th>Verbs and flags</th><th>What it does</th><th>Wraps</th><th style="min-width:118px;">Chain</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><span class="code">keys</span></td><td><span class="code">encrypt · decrypt · rotate · list · audit · revoke</span></td><td>the credential lifecycle — age-encrypt to a recipient, decrypt with an identity, rotate an issued identity re-encrypting every secret it protects, list identities with scope and provenance, audit for host-unscoped attachment (<span class="code">--drift</span>) or plaintext-secret-shaped content, mark a credential retired with manual remediation guidance</td><td><span class="code">age</span> CLI · <span class="code">_http.py</span> · <span class="code">.steward/keys-inventory.yaml</span></td><td>Epic 1 · CAP-1</td></tr>
+        <tr><td><span class="code">deploy</span></td><td><span class="code">dashboard [--build | --dry-run] · status · perimeter · static</span></td><td>build and reconcile the program-console dashboard; report the last deploy from git; validate a dashboard topology's cross-worker shareability and render its daphne unit plus nginx edge config with trusted peers and TLS; publish a board as a self-contained static export — refused when the board declares an access column static export cannot honour</td><td>the <span class="code">dashboard-gen</span> task · <span class="code">git</span> · <span class="code">gh</span></td><td>Epics 2 · 9 · CAP-2</td></tr>
+        <tr><td><span class="code">provision</span></td><td><span class="code">--env · --list · --verify · --module · --list-modules · --plugin · --skill · --prove-class-path · --runner</span></td><td>materialize any named pixi environment; list the <span class="code">[environments]</span> table with composing features; the PR CI sync gate; a BMAD module by name (bmb, cis, manticore, tea, utility-skills) with installed/available state derived from the filesystem; the labs plugin-path class with a consent-listed skill; prove the documented fresh-clone class-path; <span class="code">--runner</span> reports and points at <span class="code">marshal init</span>, never provisions</td><td><span class="code">pixi install -e</span> · the BMAD installer · <span class="code">pixi.toml</span> read-only</td><td>Epics 3 · 6 · 31 · CAP-3</td></tr>
+        <tr><td><span class="code">budget</span></td><td><span class="code">set --cap · show [--json] · check</span></td><td>declare a machine-readable ceiling in the <span class="code">&lt;amount&gt;&lt;currency&gt;/&lt;period&gt;</span> shape, validated before any write; print the declared ceilings or say plainly that none exists; report an honest not-configured exit until a real metered spend source lands — Actions minutes are the first one named</td><td><span class="code">.steward/budget.yaml</span> — atomic temp-file write</td><td>Epic 4 · CAP-4</td></tr>
+        <tr><td><span class="code">sync</span></td><td><span class="code">reconcile --github-item | --jira-issue [--dry-run]</span></td><td>bidirectional GitHub Projects V2 ↔ Jira Cloud reconciliation: a webhook or tick is only ever a wake-up; every call re-reads both linked items and compares each side to its per-field baseline — neither differs → no-op; one differs → propagate; both differ → GitHub wins unless <span class="code">field_overrides</span> says otherwise. No sidecar state store</td><td>GraphQL + REST over <span class="code">_http.py</span>'s <span class="code">open_url</span></td><td>Epic 8</td></tr>
+        <tr><td><span class="code">workspace</span></td><td><span class="code">start · ls · status · clean [--merged-only]</span></td><td>story-scoped scratch worktrees, single-repo or declared repo sets with a generated <span class="code">.code-workspace</span>; own-worktrees-only is HARD — Marshal loop homes and hand-made worktrees are invisible by construction; <span class="code">clean</span> archives, never deletes, and refuses on a dirty member by name</td><td><span class="code">git worktree</span> + a bookkeeping file</td><td>Epic 13</td></tr>
+        <tr class="hi"><td><span class="code">upgrade</span></td><td><span class="code">bmad-core [--apply] · pin-fan-out · prove-landed · verify</span></td><td>report-only pre-flight for a target BMAD release; a deliberate <span class="code">--apply</span> — clean tree, branch first, run the installer, refuse on legacy-named custom that would halt shims, land the diff on a review branch, prove <span class="code">_bmad/custom/</span> byte-identical or say why not; detect clobbered repo-custom surfaces and re-apply from the installer's backup; enumerate every known pin site as moved or not-moved, foreign sites reported never edited; one post-apply verdict over drift integrity, CFE meta-tests and every loop home's relay refresh (<span class="code">verify</span> is its alias)</td><td><span class="code">bmad-method install --action update</span> · <span class="code">bmad-loop init</span></td><td>Epic 14</td></tr>
+        <tr><td><span class="code">suite</span></td><td><span class="code">pipeline-truth [--baseline] · advance --package</span></td><td>for every bmad-suite package: upstream latest, recipe version, channel version, installed version, wired-or-not — drift named per stage, every probe fail-open, an offline baseline replay on request; <span class="code">advance</span> chains autotick → build → test → publish → listing verify → a reviewable PR, never auto-merged</td><td>npm · GitHub releases · <span class="code">recipe.yaml</span> · anaconda.org · the skills census — without importing <span class="code">pyforge.doctor</span></td><td>Epics 15 · 31</td></tr>
+        <tr><td><span class="code">init</span> · <span class="code">shell-init</span></td><td><span class="code">[--json]</span></td><td>report pixi, git, gh and podman prerequisites with named remedies, the pixi floor read from the one <span class="code">requires-pixi</span> pin rather than a second hand-pinned floor; emit an idempotent PATH / completions / env snippet for <span class="code">eval</span></td><td><span class="code">shutil.which</span> · the pixi version registry</td><td>Epic 17</td></tr>
+        <tr><td><span class="code">setup</span> · <span class="code">initrepo</span> · <span class="code">validate-fast</span></td><td><span class="code">[--remote] [--dest] [--env] [--json]</span></td><td>clone when missing, <span class="code">pixi install</span>, pre-commit hooks; onboard a checkout — scaffold <span class="code">pyforge.toml</span> when absent, materialize the environment; the composed fast green gate: prerequisites + the sync gate + a steward CLI smoke</td><td><span class="code">git clone</span> · <span class="code">pixi install</span> · <span class="code">pre-commit</span></td><td>Epic 17</td></tr>
+        <tr><td><span class="code">restore</span></td><td><span class="code">--drill --backup-dir</span></td><td>the PostgreSQL restore drill: a custom-format dump restored into a scratch database, <span class="code">run_state</span> and page counts asserted against the backup manifest, frozen evidence returned; the operator's full restore stays a runbook</td><td>the platform's own <span class="code">postgres_backup.py</span>, loaded without importing the host</td><td>Epic 41</td></tr>
+        <tr><td><span class="code">revoke</span></td><td><span class="code">--sub &lt;id&gt; --python &lt;platform interpreter&gt;</span></td><td>stop one runaway subject: its queued Celery tasks revoked, its live run-state rows cancelled. The write is not performed here — run state has exactly one writer, so the duty drives the host's own management command and reports what it said</td><td><span class="code">manage.py revoke_subject</span> — steward never imports Django</td><td>Epic 42</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>One protocol, structurally checked.</b> <span class="code">Duty</span> is a <span class="code">Protocol</span>, not a base class — a duty inherits no behaviour it did not ask for, and conformance is checked by shape. A duty not yet implemented for a subcommand returns a result carrying an explicit not-implemented status rather than raising. The <span class="code">NullDuty</span> seam has existed since the first story so the protocol was exercised before any real duty landed.</div>
+      <div class="tint"><b>Why every duty is thin.</b> The keys module decides only host membership and whether a function's header attachment is gated — it never builds a request. The deploy module diffs and commits — it never renders a dashboard itself. The provision module reads a table and shells out — it never resolves an environment. The one place logic lives is the tool that already owned it; Steward is the grammar, the evidence and the exit code.</div>
+    </div>
+  </section>
+
+  <!-- 07 · PERSONA AND SKILLS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">07</span>
+      <h2>Persona, grammar and the skills wielded</h2>
+    </div>
+    <p class="lede">Skills are wielded, never worn: the Smith authors and upgrades them, and the harness that governs the agent is deliberately not a skill. Steward's identity is a persona plus one content skill plus the platform surfaces it owns — and it is the station that proved the skill-plus-persona shape and built the five-tier reporter the whole roster is measured by.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+      <div class="card"><div class="k">Persona</div><h3 style="font-size:17px; margin:8px 0 4px;">bmad-agent-steward</h3><p>The addressable station persona. Acts only through <span class="code">pyforge steward …</span> grammar and <span class="code">POST /stations/steward/mcp</span>; never freelances against the filesystem, never makes an ad-hoc HTTP call, never touches a secret value. Greets, then dispatches — a crash is exit <span class="code">70</span>, never a failed duty, in every sentence it speaks.</p></div>
+      <div class="card"><div class="k">Content skill</div><h3 style="font-size:17px; margin:8px 0 4px;">pyforge-steward (SKF)</h3><p>Compiled from <span class="code">src/shared/packages/pyforge-steward/</span> as an agentskills.io content skill — quick start, the duty grammar, <span class="code">DutyResult</span> and the exit-code projection, "flags not nested verbs" on provision — so an agent reads documented behaviour instead of training data. Consulted, never imported: the package exports only its version.</p></div>
+      <div class="card"><div class="k">Portal and service face</div><h3 style="font-size:17px; margin:8px 0 4px;">/stations/steward/</h3><p>The Lane 2 portal in its own <span class="code">django-steward</span> distribution — its first job the estate's own status — and the MCP face on the host ASGI. The secure-live-dashboard pattern the other portals adopt (identity at the boundary, an access declaration per board, a master-dataset cache) was built here first, behind the optional <span class="code">[dashboard]</span> extra.</p></div>
+      <div class="card"><div class="k">Craft it never replaces</div><h3 style="font-size:17px; margin:8px 0 4px;">conda-forge-expert</h3><p>Recipe work belongs to the CFE craft, at skill version <span data-fact="cfe_skill_version">8.90.5</span> with gotchas numbered to <span data-fact="groundtruth_gotcha_max">117</span>. Steward's <span class="code">prove-landed</span> runs CFE's meta-tests as one of its gates and the air-gap rule makes a PyPI-only package Mason's feedstock work — Steward authors no recipe and edits no <span class="code">CLAUDE.md</span> or <span class="code">AGENTS.md</span>.</p></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px; margin-top:16px;">
+      <div class="box"><b>The two doors, and only two.</b> Path B is the unified grammar — <span class="code">pyforge steward keys list</span>, <span class="code">pyforge steward provision --verify</span>, <span class="code">pyforge steward upgrade bmad-core --target …</span> — dispatched from the repo root, never a hardcoded absolute path, never the bare <span class="code">steward</span> binary as a second public contract for personas. The service face is <span class="code">POST /stations/steward/mcp</span> on the Canopy host. A transcript of a completed station task shows only those two, plus the one permitted skill consult.</div>
+      <div class="tint"><b>What the persona may never do.</b> No direct filesystem against <span class="code">.steward/</span>, <span class="code">pixi.toml</span> or the chart; no <span class="code">curl</span>, <span class="code">requests</span>, <span class="code">httpx</span> or <span class="code">WebFetch</span>; no printing a secret; no second PR-gate verdict; no replacing <span class="code">conda-forge-expert</span>; no <span class="code">scripts/bmad-switch</span> from a fan-out. The forbidden list is the doctrine, written as a contract an agent can fail.</div>
+    </div>
+  </section>
+
+  <!-- ACT III -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT III</span>
+      <span class="ttl">Running the line</span>
+    </div>
+    <span class="cap">One credential's journey · the flows · the gradient · the relay</span>
+  </div>
+
+  <!-- 08 · ONE CREDENTIAL'S JOURNEY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">08</span>
+      <h2>One credential's journey down the line</h2>
+    </div>
+    <p class="lede">Follow a single API key from issue to retirement. Every stage is a verb with one job and one invariant; no stage may reach around another, and at no stage does a raw value ever reach stdout.</p>
+    <table class="tbl">
+      <thead><tr><th>Stage</th><th>What happens</th><th>Verb / module</th><th>Invariant it must hold</th></tr></thead>
+      <tbody>
+        <tr><td><b>Issue</b></td><td>an <span class="code">age</span> identity is minted for a named scope; the inventory gains an entry with provenance <span class="code">issued</span></td><td><span class="code">keys.py</span> · <span class="code">age-keygen</span></td><td>metadata only in <span class="code">keys-inventory.yaml</span> — never a secret value; the file is written atomically</td></tr>
+        <tr><td><b>Observe</b></td><td>a pre-existing repo credential Steward's audit discovered but did not create joins the inventory as <span class="code">observed</span></td><td><span class="code">keys list</span></td><td>both provenances are listed for drift visibility; only <span class="code">issued</span> entries are rotatable</td></tr>
+        <tr class="hi"><td><b>Scope</b></td><td>the credential is declared with an explicit host allowlist read from <span class="code">_http.py</span>'s own URL table</td><td><span class="code">auth_headers_for(url)</span></td><td>never attached to a request outside the allowlist; no duty module constructs its own request carrying ambient auth (AD-2)</td></tr>
+        <tr><td><b>Encrypt at rest</b></td><td>the payload is age-encrypted to the recipient and lands under <span class="code">.steward/</span> as an <span class="code">.age</span> file</td><td><span class="code">keys encrypt --recipient</span></td><td>a fixture round-trips exactly; no Vault-class server in the dependency graph (AD-3)</td></tr>
+        <tr><td><b>Attach</b></td><td>an outbound call to an allowed host carries the header; a call to any other host carries nothing</td><td><span class="code">_http.py</span></td><td>the historical unconditional-injection shape has a named regression test that fails loudly if the gating is removed or bypassed</td></tr>
+        <tr class="hi"><td><b>Audit</b></td><td><span class="code">--drift</span> AST-scans a source file for the old shape; the plaintext scan flags committed content matching a known secret pattern</td><td><span class="code">keys audit</span></td><td>reports the pattern against a fixture and clean against today's fixed delegate; parses, never executes</td></tr>
+        <tr><td><b>Rotate</b></td><td>a fresh identity is generated; every secret under the scope is re-encrypted; the inventory's <span class="code">last_rotated</span> moves</td><td><span class="code">keys rotate --scope --new-identity</span></td><td>the old identity fails to decrypt afterward; on demand or risk-triggered — no calendar scheduler, ever</td></tr>
+        <tr><td><b>Revoke</b></td><td>the identity is marked retired and manual remediation guidance is printed for the provider</td><td><span class="code">keys revoke --scope</span></td><td>zero third-party API calls — intent is recorded, the provider's console is the operator's job</td></tr>
+        <tr><td><b>Evidence</b></td><td>the duty returns a frozen <span class="code">DutyResult</span>; <span class="code">main()</span> projects it to the process exit code</td><td><span class="code">interfaces.py</span> · <span class="code">cli.py</span></td><td>a duty never calls <span class="code">sys.exit</span>; a crash is <span class="code">70</span>, a failed duty is <span class="code">1</span>, and the two are never conflated (AD-8)</td></tr>
+      </tbody>
+    </table>
+    <div class="box" style="margin-top:18px;"><b>The invariant test that guards the whole table.</b> A dedicated conformance test asserts that <span class="code">keys list</span> and <span class="code">keys audit</span> output contains no raw secret value under any flag combination, and a second fails if the host-gating logic in the resolver is ever removed. The first case on the desk — the cross-host leak — is the reason both exist; Doctor found it, Steward closed it, and the test is what keeps it closed.</div>
+  </section>
+
+  <!-- 09 · THE WAYS WORK FLOWS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">09</span>
+      <h2>Three flows, one shape — reconcile, gate, prove</h2>
+    </div>
+    <p class="lede">Three duties compose the same idea differently: <span class="code">deploy</span> diffs before it mutates, <span class="code">provision</span> verifies a gate the CI already enforces, <span class="code">upgrade</span> proves an installer landed. Each ends in one frozen result and one documented exit code; nothing downstream re-derives what a stage already read.</p>
+    <svg viewBox="0 0 1128 470" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker></defs>
+      <!-- duty column -->
+      <text x="20" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">DUTY</text>
+      <rect x="20" y="52" width="150" height="64" fill="#ec3013"/><text x="95" y="80" text-anchor="middle" fill="#f3f2f2" font-size="16" font-weight="900" font-family="ui-monospace, Menlo, monospace">deploy</text><text x="95" y="100" text-anchor="middle" fill="#ffe0d9" font-size="10.5">dashboard · --dry-run</text>
+      <rect x="20" y="192" width="150" height="64" fill="#ec3013"/><text x="95" y="220" text-anchor="middle" fill="#f3f2f2" font-size="16" font-weight="900" font-family="ui-monospace, Menlo, monospace">provision</text><text x="95" y="240" text-anchor="middle" fill="#ffe0d9" font-size="10.5">--env · --verify · --list</text>
+      <rect x="20" y="332" width="150" height="64" fill="#ec3013"/><text x="95" y="360" text-anchor="middle" fill="#f3f2f2" font-size="16" font-weight="900" font-family="ui-monospace, Menlo, monospace">upgrade</text><text x="95" y="380" text-anchor="middle" fill="#ffe0d9" font-size="10.5">bmad-core · prove-landed</text>
+      <!-- read column -->
+      <text x="230" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">READ</text>
+      <rect x="230" y="52" width="200" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="330" y="78" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">build, then diff</text><text x="330" y="97" text-anchor="middle" fill="#605d5d" font-size="10.5">fresh build vs the committed tree</text>
+      <rect x="230" y="192" width="200" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="330" y="218" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">pixi.toml [environments]</text><text x="330" y="237" text-anchor="middle" fill="#605d5d" font-size="10.5">read-only parse; never written</text>
+      <rect x="230" y="332" width="200" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="330" y="358" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">manifest + release catalog</text><text x="330" y="377" text-anchor="middle" fill="#605d5d" font-size="10.5">installed vs target · clean tree</text>
+      <!-- act -->
+      <text x="490" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">ACT · WHEN WARRANTED</text>
+      <rect x="490" y="52" width="160" height="344" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+      <text x="570" y="150" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">wrap the tool</text>
+      <text x="570" y="172" text-anchor="middle" fill="#605d5d" font-size="10.5">git commit + push on a</text>
+      <text x="570" y="186" text-anchor="middle" fill="#605d5d" font-size="10.5">real diff only</text>
+      <text x="570" y="222" text-anchor="middle" fill="#605d5d" font-size="10.5">pixi install -e &lt;name&gt;</text>
+      <text x="570" y="236" text-anchor="middle" fill="#605d5d" font-size="10.5">verbatim, user-triggered</text>
+      <text x="570" y="272" text-anchor="middle" fill="#605d5d" font-size="10.5">installer on a review</text>
+      <text x="570" y="286" text-anchor="middle" fill="#605d5d" font-size="10.5">branch, --apply only</text>
+      <text x="570" y="322" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="700">never a reimplementation</text>
+      <text x="570" y="336" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="700">of the wrapped tool (AD-1)</text>
+      <!-- prove column -->
+      <text x="710" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">PROVE</text>
+      <rect x="710" y="52" width="190" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="805" y="78" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">status from git alone</text><text x="805" y="97" text-anchor="middle" fill="#605d5d" font-size="10.5">last commit on the tree; no store</text>
+      <rect x="710" y="192" width="190" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="805" y="218" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">the sync gate</text><text x="805" y="237" text-anchor="middle" fill="#605d5d" font-size="10.5">export vs pixi.toml; drift fails</text>
+      <rect x="710" y="332" width="190" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="805" y="358" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">prove-landed</text><text x="805" y="377" text-anchor="middle" fill="#605d5d" font-size="10.5">drift · CFE · relays → one verdict</text>
+      <!-- evidence -->
+      <text x="960" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">EVIDENCE</text>
+      <rect x="960" y="52" width="148" height="344" fill="#201e1d"/>
+      <text x="1034" y="200" text-anchor="middle" fill="#f3f2f2" font-size="14" font-weight="900">DutyResult</text>
+      <text x="1034" y="222" text-anchor="middle" fill="#bab6b6" font-size="10.5">ok · summary · details</text>
+      <text x="1034" y="240" text-anchor="middle" fill="#bab6b6" font-size="10.5">frozen dataclass</text>
+      <text x="1034" y="262" text-anchor="middle" fill="#ff9783" font-size="10.5" font-weight="700">main() alone maps it</text>
+      <text x="1034" y="278" text-anchor="middle" fill="#ff9783" font-size="10.5" font-weight="700">to the exit code</text>
+      <!-- arrows -->
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr2)">
+        <line x1="170" y1="84" x2="228" y2="84"/><line x1="170" y1="224" x2="228" y2="224"/><line x1="170" y1="364" x2="228" y2="364"/>
+        <line x1="430" y1="84" x2="488" y2="84"/><line x1="430" y1="224" x2="488" y2="224"/><line x1="430" y1="364" x2="488" y2="364"/>
+        <line x1="650" y1="84" x2="708" y2="84"/><line x1="650" y1="224" x2="708" y2="224"/><line x1="650" y1="364" x2="708" y2="364"/>
+        <line x1="900" y1="84" x2="958" y2="84"/><line x1="900" y1="224" x2="958" y2="224"/><line x1="900" y1="364" x2="958" y2="364"/>
+      </g>
+      <!-- footnote rail -->
+      <text x="20" y="440" fill="#605d5d" font-size="11.5">Every pixi invocation is an explicit, user-triggered CLI action — never an import-time or build-time side effect. Every subprocess is argv as a list, never a shell string.</text>
+      <text x="20" y="460" fill="#605d5d" font-size="11.5">Meta-tests pin the shape: no duty calls sys.exit · main() is the sole exit-code owner · the pin pair between pyproject.toml and pixi.toml stays byte-identical · no cost-SDK import anywhere.</text>
+    </svg>
+  </section>
+
+  <!-- 10 · THE AUTONOMY GRADIENT -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">10</span>
+      <h2>The autonomy gradient — how far a duty may act on its own</h2>
+    </div>
+    <p class="lede">Steward's autonomy runs from free observation to irreversible mutation, and the further right a verb sits the more explicit the human act that unlocks it. Reporting is free; reconciliation is diff-gated and idempotent; a mutation of keys or the BMAD core needs a flag the operator typed; the outward, irreversible steps of the estate's own cutover are ledger-<span class="code">blocked</span> until the operator flips each one by hand.</p>
+    <svg viewBox="0 0 1128 300" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker></defs>
+      <rect x="40" y="130" width="1048" height="8" fill="#eae7e7"/>
+      <rect x="40" y="130" width="628" height="8" fill="#ec3013"/>
+      <line x1="668" y1="60" x2="668" y2="250" stroke="#201e1d" stroke-width="3" stroke-dasharray="8 6"/>
+      <text x="668" y="48" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="900" letter-spacing="1">THE LINE NOT CROSSED ALONE</text>
+      <text x="360" y="48" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">STEWARD ACTS</text>
+      <text x="950" y="48" text-anchor="middle" fill="#605d5d" font-size="11" font-weight="800" letter-spacing="1.5">OPERATOR DECIDES · STEWARD EXECUTES</text>
+      <g>
+        <circle cx="90" cy="134" r="16" fill="#f3f2f2" stroke="#ec3013" stroke-width="3"/><text x="90" y="139" text-anchor="middle" fill="#201e1d" font-size="10" font-weight="900">read</text>
+        <text x="90" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Report</text><text x="90" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">list · show · status · audit</text><text x="90" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">pipeline-truth · pin-fan-out</text>
+
+        <circle cx="290" cy="134" r="16" fill="#f3f2f2" stroke="#ec3013" stroke-width="3"/><text x="290" y="139" text-anchor="middle" fill="#201e1d" font-size="10" font-weight="900">gate</text>
+        <text x="290" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Verify</text><text x="290" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">provision --verify · validate-fast</text><text x="290" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">prove-landed · budget check</text>
+
+        <circle cx="490" cy="134" r="16" fill="#ec3013" stroke="#ec3013" stroke-width="3"/><text x="490" y="139" text-anchor="middle" fill="#f3f2f2" font-size="9" font-weight="900">diff</text>
+        <text x="490" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Reconcile</text><text x="490" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">deploy dashboard · sync reconcile</text><text x="490" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">idempotent — no diff, no write</text>
+
+        <circle cx="740" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="740" y="139" text-anchor="middle" fill="#201e1d" font-size="9" font-weight="900">flag</text>
+        <text x="740" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Mutate on ask</text><text x="740" y="194" text-anchor="middle" fill="#605d5d" font-size="10">rotate · revoke · --apply</text><text x="740" y="208" text-anchor="middle" fill="#605d5d" font-size="10">review branch, never main</text>
+
+        <circle cx="900" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="900" y="139" text-anchor="middle" fill="#201e1d" font-size="9" font-weight="900">PR</text>
+        <text x="900" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">PR, never merged</text><text x="900" y="194" text-anchor="middle" fill="#605d5d" font-size="10">suite advance opens a PR;</text><text x="900" y="208" text-anchor="middle" fill="#605d5d" font-size="10">a human merges, always --merge</text>
+
+        <circle cx="1060" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="1060" y="139" text-anchor="middle" fill="#201e1d" font-size="9" font-weight="900">flip</text>
+        <text x="1060" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Outward · held</text><text x="1060" y="194" text-anchor="middle" fill="#605d5d" font-size="10">open · submit · archive</text><text x="1060" y="208" text-anchor="middle" fill="#605d5d" font-size="10">each a ledger flip</text>
+      </g>
+      <line x1="60" y1="270" x2="640" y2="270" stroke="#ec3013" stroke-width="2" marker-end="url(#arr3)"/>
+      <text x="350" y="290" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="700">more evidence before more mutation — and every rung returns the same frozen result shape</text>
+    </svg>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:18px;">
+      <div class="rung"><b>Reporting is free</b><div>a report-only verb never writes: <span class="code">keys list</span> prints metadata, <span class="code">pin-fan-out</span> enumerates sites it will never edit, <span class="code">pipeline-truth</span> probes fail-open and aborts nothing</div></div>
+      <div class="rung"><b>Reconcile is idempotent</b><div>the second run with no source change produces zero commits; a webhook is a wake-up, never a value source; both sides of a sync are re-read every time</div></div>
+      <div class="rung"><b>Mutation needs the flag the operator typed</b><div><span class="code">--apply</span>, <span class="code">rotate</span>, <span class="code">revoke</span> — each lands on a review branch or prints remediation guidance; none touches a provider API or <span class="code">main</span></div></div>
+      <div class="rung"><b>Outward steps are held</b><div>opening the foundry repo, Mason's first outward submit, archiving this repo — every one a story held <span class="code">blocked</span> and flipped by hand at dispatch, never auto-drained</div></div>
+    </div>
+  </section>
+
+  <!-- 11 · PHASE × PERSONA × SKILLS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">11</span>
+      <h2>Phase × persona × skills — where the provisioner stands in the pipeline</h2>
+    </div>
+    <p class="lede">The Charter's master pipeline flow, read as a rota: which station holds each phase, what Steward does there, and which skill is wielded. Steward stands before the first step, under every step in the middle, and after the last — the estate is the floor the whole relay runs on.</p>
+    <table class="tbl">
+      <thead><tr><th>Phase</th><th>Station on the floor</th><th>Steward's part</th><th>Verb / surface</th><th>Skill wielded</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><b>Provision</b></td><td>Steward</td><td>a fresh machine reaches the fast green gate; every named environment materializes; the BMAD core is at the intended version and proven landed</td><td><span class="code">steward init · setup · initrepo · validate-fast · provision --env · upgrade prove-landed</span></td><td><span class="code">pyforge-steward</span> (SKF)</td></tr>
+        <tr><td><b>Pre-flight</b></td><td>Doctor</td><td>the engines Doctor checks are the engines Steward provisioned; an unscoped credential Doctor finds becomes a Steward fix</td><td><span class="code">doctor check --env --engines --bmad-core</span></td><td><span class="code">pyforge-doctor</span> (SKF)</td></tr>
+        <tr><td><b>Capture</b></td><td>Herald</td><td>none in the loop; the deck bridge and the dashboard Herald stages ride the estate</td><td>—</td><td><span class="code">bmad-agent-herald</span> · deck bridge</td></tr>
+        <tr><td><b>Spec → stories</b></td><td>Marshal · BMAD team</td><td>the planning chain runs on the BMAD core Steward keeps current and the suite whose pipeline truth it reports</td><td><span class="code">steward suite pipeline-truth</span></td><td><span class="code">bmad-spec</span> · <span class="code">bmad-create-epics-and-stories</span></td></tr>
+        <tr><td><b>Build</b></td><td>Marshal (bmad-loop, bmad-build-auto)</td><td>loop homes are Marshal's (<span class="code">marshal init</span>); scratch worktrees for hand-driven work are Steward's; the two never overlap by ratified seam</td><td><span class="code">steward workspace start · status · clean</span></td><td><span class="code">bmad-build-auto</span> · <span class="code">bmad-review</span></td></tr>
+        <tr><td><b>Map</b></td><td>Atlas</td><td>Atlas owns the query-plane engine; Steward owns the through-line that rebuilt the private stores onto it</td><td>CAP-19 on the Canopy</td><td><span class="code">pyforge-atlas</span> (SKF)</td></tr>
+        <tr><td><b>Audit</b></td><td>Warden</td><td>deploy profiles register as plugins on Warden's hook spec; a deploy pins a digest with a recorded verdict</td><td><span class="code">pyforge.core.hooks</span> · <span class="code">deploy_profile</span></td><td><span class="code">pyforge-warden</span> (SKF)</td></tr>
+        <tr><td><b>Ship</b></td><td>Mason</td><td>the registry is where Mason stops and Steward starts; a PyPI-only platform dependency is scheduled as Mason's feedstock work</td><td>—</td><td><span class="code">conda-forge-expert</span></td></tr>
+        <tr class="hi"><td><b>Deploy · operate</b></td><td>Steward</td><td>the dashboard reconciled; the Canopy on the cluster through the chart with its OpenShift overlay; secrets by reference; the DR drill; a runaway subject stopped with one command</td><td><span class="code">steward deploy dashboard · perimeter · static · restore --drill · revoke --sub</span></td><td><span class="code">pyforge-steward</span> (SKF)</td></tr>
+        <tr><td><b>Pulse</b></td><td>Doctor</td><td>the fleet-health surface Doctor persists is one of the boards Steward publishes</td><td><span class="code">doctor monitor --fleet</span></td><td><span class="code">pyforge-doctor</span> (SKF)</td></tr>
+        <tr class="hi"><td><b>Hold the keys</b></td><td>Steward</td><td>every credential in the estate scoped, encrypted, inventoried, rotated on risk, retired with guidance</td><td><span class="code">steward keys audit · rotate · revoke</span></td><td><span class="code">pyforge-steward</span> (SKF)</td></tr>
+        <tr><td><b>Broadcast</b></td><td>Herald</td><td>the published dashboard and the boards behind the front door are the surfaces Herald proclaims from</td><td><span class="code">deploy dashboard</span> · Lane 1</td><td><span class="code">bmad-agent-herald</span></td></tr>
+        <tr><td><b>Remember</b></td><td>Scribe</td><td>the ownership audit, the seam ratification and every operator ruling on the Canopy are Scribe's decisions of record</td><td><span class="code">scribe capture</span></td><td><span class="code">pyforge-scribe</span> (SKF)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 12 · THE RELAY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">12</span>
+      <h2>The relay — the floor under every baton</h2>
+    </div>
+    <p class="lede">The crew hands configurations and assets to one another in sequence, supervised start to finish by Marshal and framed by Herald. Steward holds the baton twice — the estate provisioned before step one, the service deployed and keyed after the ship — and is the floor every hand-off in between runs on.</p>
+    <svg viewBox="0 0 1128 200" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker></defs>
+      <g>
+        <rect x="8" y="40" width="122" height="70" fill="#ec3013"/><text x="69" y="66" text-anchor="middle" fill="#f3f2f2" font-size="11" font-weight="800" letter-spacing="1">PROVISION</text><text x="69" y="86" text-anchor="middle" fill="#f3f2f2" font-size="15" font-weight="900">Steward</text><text x="69" y="102" text-anchor="middle" fill="#ffe0d9" font-size="9.5" font-family="ui-monospace, Menlo, monospace">provision --env</text>
+        <rect x="149" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="210" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">PRE-FLIGHT</text><text x="210" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Doctor</text><text x="210" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">check</text>
+        <rect x="290" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="351" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">CAPTURE</text><text x="351" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Herald</text><text x="351" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">deck generate</text>
+        <rect x="431" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="492" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">BUILD</text><text x="492" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Marshal</text><text x="492" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">factory spin</text>
+        <rect x="572" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="633" y="66" text-anchor="middle" fill="#ae1800" font-size="10" font-weight="800" letter-spacing="1">MAP · AUDIT</text><text x="633" y="86" text-anchor="middle" fill="#201e1d" font-size="13.5" font-weight="900">Atlas · Warden</text><text x="633" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">map · audit</text>
+        <rect x="713" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="774" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">SHIP</text><text x="774" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Mason</text><text x="774" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">package</text>
+        <rect x="854" y="40" width="122" height="70" fill="#ec3013"/><text x="915" y="66" text-anchor="middle" fill="#f3f2f2" font-size="11" font-weight="800" letter-spacing="1">DEPLOY · KEY</text><text x="915" y="86" text-anchor="middle" fill="#f3f2f2" font-size="15" font-weight="900">Steward</text><text x="915" y="102" text-anchor="middle" fill="#ffe0d9" font-size="9.5" font-family="ui-monospace, Menlo, monospace">deploy · keys</text>
+        <rect x="995" y="40" width="125" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="1057" y="66" text-anchor="middle" fill="#ae1800" font-size="9.5" font-weight="800" letter-spacing="0.8">PULSE · PROCLAIM</text><text x="1057" y="86" text-anchor="middle" fill="#201e1d" font-size="13.5" font-weight="900">Doctor · Herald</text><text x="1057" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">monitor · broadcast</text>
+      </g>
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr4)">
+        <line x1="130" y1="75" x2="147" y2="75"/><line x1="271" y1="75" x2="288" y2="75"/><line x1="412" y1="75" x2="429" y2="75"/><line x1="553" y1="75" x2="570" y2="75"/><line x1="694" y1="75" x2="711" y2="75"/><line x1="835" y1="75" x2="852" y2="75"/><line x1="976" y1="75" x2="993" y2="75"/>
+      </g>
+      <path d="M69 110 C 69 160, 915 160, 915 110" stroke="#ec3013" stroke-width="2" fill="none" stroke-dasharray="6 5"/>
+      <text x="492" y="170" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="700">the same estate under every step — engines before the run, the service and its keys after the ship</text>
+      <text x="564" y="192" text-anchor="middle" fill="#605d5d" font-size="11">supervised start to finish by Marshal — on runners and environments Steward materialized; each hand-off a durable, revision-pinned artifact</text>
+    </svg>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 40px; margin-top:8px;">
+      <div>
+        <div class="relaystep"><span class="relaynum">✓</span><div><b>Provision · Steward</b> — every named environment present, the sync gate green, the BMAD core at its intended version and proven landed. <span class="code">steward provision --env · validate-fast · upgrade prove-landed</span></div></div>
+        <div class="relaystep"><span class="relaynum">1</span><div><b>Pre-flight · Doctor</b> — toolchain and environment verified healthy on the estate Steward stood up; a missing engine fails in the first seconds. <span class="code">doctor check --env --engines</span></div></div>
+        <div class="relaystep"><span class="relaynum">2</span><div><b>Capture · Herald</b> — the raw Dream becomes the strategic vision deck. <span class="code">herald deck generate</span></div></div>
+        <div class="relaystep" style="border-bottom:none;"><span class="relaynum">3</span><div><b>Build · Marshal</b> — the factory floor spins code from the Spec contract on loop homes it owns. <span class="code">marshal factory spin --method bmad</span></div></div>
+      </div>
+      <div>
+        <div class="relaystep"><span class="relaynum">4</span><div><b>Map · Atlas — Audit · Warden</b> — the dependency map, then the strict multi-axis audit; the one PR gate. <span class="code">atlas map · warden audit --axes …</span></div></div>
+        <div class="relaystep"><span class="relaynum">5</span><div><b>Ship · Mason</b> — safe assets bound into platform structures and shipped to the registry, where Mason's job ends. <span class="code">mason package --ship conda-forge</span></div></div>
+        <div class="relaystep"><span class="relaynum">6</span><div><b>Deploy · key · Steward</b> — the service on the platform, budgeted, keyed, observed, answered-for when it breaks. <span class="code">steward deploy dashboard · keys rotate --scope</span></div></div>
+        <div class="relaystep" style="border-bottom:none;"><span class="relaynum">7</span><div><b>Pulse · Doctor — Proclaim · Herald</b> — fleet health monitored post-ship; release telemetry harvested into notables and infographics. <span class="code">doctor monitor --fleet · herald broadcast</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT IV -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT IV</span>
+      <span class="ttl">The product</span>
+    </div>
+    <span class="cap">The CLI · the doctrine · the stack · which tool when · escalation</span>
+  </div>
+
+  <!-- 13 · THE SHIPPED CLI -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">13</span>
+      <h2>The shipped CLI — <span data-fact="cli_verbs">30</span> verbs behind one dispatcher</h2>
+    </div>
+    <p class="lede">Console script <span class="code"><span data-fact="console_entry">steward</span></span>, package <span class="code">pyforge-steward</span> <span data-fact="package_version">0.1.0</span>, run through the unified grammar <span class="code">pyforge steward …</span>. The four contract duties carry the Spec; sync, workspace, upgrade, suite, the bootstrap family, restore and revoke were relayed in by later chains — the seam ratification, the suite lifecycle, the red-team review. <span class="code">--version</span> is top-level only, mirroring Warden.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">duty · credential lifecycle</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">steward keys</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">encrypt FILE -r RECIPIENT -o OUT<br>decrypt FILE -i IDENTITY -o OUT<br>rotate --scope S --new-identity PATH<br>list [--inventory] [--json] · audit [--drift] [--scan]<br>revoke --scope S</div><p>Issue, scope, encrypt, rotate, inventory, audit, retire. <span class="code">list</span> never prints a raw value under any flag; <span class="code">audit --drift</span> scans for the historical unconditional-injection shape; <span class="code">revoke</span> records intent and prints the provider's manual steps — zero third-party API calls.</p></div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">duty · reconciled publishing</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">steward deploy</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">dashboard [--build] [--dry-run]<br>status<br>perimeter [--workers N] [--trusted-peer …]<br>&nbsp;&nbsp;[--tls-cert] [--tls-key] [--output-dir]<br>static --board SLUG [--panel LABEL=PATH …]</div><p>Build, diff, commit only on a real change, push to the existing Pages branch. <span class="code">perimeter</span> validates a topology's cross-worker shareability and renders daphne plus nginx; <span class="code">static</span> refuses a board whose access column it cannot honour.</p></div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">duty · environments and modules</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">steward provision</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">--env NAME · --list [--json]<br>--verify<br>--module NAME · --list-modules<br>--plugin labs --skill NAME<br>--prove-class-path · --runner bmad-loop</div><p>Flags, not nested verbs. A valid name materializes; an invalid one lists every real environment. <span class="code">--verify</span> is the PR CI sync gate. <span class="code">--runner</span> reports and points at <span class="code">marshal init</span> — the seam ratification retired the duplicate.</p></div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">duty · declared ceilings</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">steward budget</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">set --cap &lt;amount&gt;&lt;currency&gt;/&lt;period&gt;<br>show [--json]<br>check</div><p>A malformed cap is rejected before any write. <span class="code">show</span> says plainly when nothing is declared. <span class="code">check</span> returns its own not-configured code until a metered source exists — "no data" is never a pass.</p></div>
+      <div class="card"><div class="k">duty · the BMAD core</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">steward upgrade</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">bmad-core --target VERSION [--apply] [--json]<br>pin-fan-out --tool … --from … --to …<br>prove-landed [--no-init] [--json]<br>verify (alias)</div><p>Pre-flight is report-only; <span class="code">--apply</span> branches first and lands the installer diff for review; the pin fan-out names every site as moved or not, foreign ones never edited; <span class="code">prove-landed</span> returns one verdict over drift integrity, CFE meta-tests and every loop home's relay refresh.</p></div>
+      <div class="card"><div class="k">duty · the suite as a product</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">steward suite</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">pipeline-truth [--baseline] [--json]<br>advance --package NAME</div><p>Per package: upstream, recipe, channel, installed, wired — drift named per stage, every probe fail-open. <span class="code">advance</span> chains autotick → build → test → publish → listing verify → a reviewable PR, never auto-merged.</p></div>
+      <div class="card"><div class="k">duty · scratch worktrees</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">steward workspace</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">start [--set SLUG] [--from REF]<br>ls · status [--json]<br>clean [--merged-only]</div><p>Own-worktrees-only is HARD: loop homes and hand-made worktrees are invisible by construction. <span class="code">clean</span> archives rather than deletes and refuses a dirty member by name; a declared repo set starts all members and writes the workspace file.</p></div>
+      <div class="card"><div class="k">duties · machine bootstrap</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">steward init · setup · initrepo · validate-fast</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">init [--json] · shell-init<br>setup [--remote URL] [--dest DIR]<br>initrepo [--env NAME] · validate-fast</div><p>Prerequisites with named remedies and the pixi floor read from its one registry; an idempotent shell snippet; clone, install, hooks; onboard a checkout; the composed fast green gate — prerequisites, the sync gate, a CLI smoke.</p></div>
+      <div class="card"><div class="k">duties · the cluster's own hands</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">steward restore · revoke · sync</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">restore --drill --backup-dir DIR<br>revoke --sub ID --python INTERP<br>sync reconcile --github-item ID | --jira-issue KEY</div><p>A PostgreSQL restore drill with manifest count assertions; one command to stop a runaway subject, driving the host's own management command because run state has exactly one writer; a board-agnostic two-way reconciliation with a per-field baseline and no sidecar store.</p></div>
+    </div>
+    <div class="box" style="margin-top:16px;"><b>One result shape, every duty.</b> A duty returns a frozen <span class="code">DutyResult</span> — <span class="code">ok</span>, <span class="code">summary</span>, <span class="code">details</span> — and <span class="code">--json</span> renders the same information the human text carries. <span class="code">details["exit_code"]</span> is a request a duty may make (budget's not-configured code is the one in use); only <span class="code">main()</span> honours it. <span class="code">main()</span> catches <span class="code">KeyboardInterrupt</span>, a <span class="code">SystemExit</span> raised inside a duty and any other exception, and projects each to a fixed, documented code — never the interpreter's bare default, because an undocumented failure is indistinguishable from a duty that legitimately failed.</div>
+  </section>
+
+  <!-- 14 · THE DOCTRINE -->
+  <section style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:44px 56px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid color-mix(in srgb, var(--color-bg) 30%, transparent); padding-bottom:10px; margin-bottom:26px;">
+      <span class="xp" style="font-weight:800; font-size:22px; color:var(--color-accent-400);">14</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em; color:var(--color-bg);">The doctrine — nine architecture decisions the code is tested against</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:22px 28px;">
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">AD-1 · Wrap, never reimplement.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">Every duty adapter is a subprocess call or a thin import into <span class="code">_http.py</span>, <span class="code">age</span>, <span class="code">pixi</span>, <span class="code">git</span>, <span class="code">gh</span> or the BMAD installer. A duty module carrying its own copy of logic that already exists elsewhere is a review-blocking finding.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">AD-2 · Keys have one chokepoint.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">Host scoping delegates to <span class="code">auth_headers_for</span>; the allowlist reads the delegate's own URL table. No duty constructs a request carrying ambient auth, and no Steward-owned URL config duplicates the one that exists.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">AD-3 · Encrypted at rest, no standing service.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;"><span class="code">age</span> and <span class="code">age-keygen</span> are required external run-dependencies, never vendored. Encrypt, decrypt and rotate shell out to the CLI. No Vault-, Infisical- or OpenBao-class server enters the graph.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">AD-4 · Deploy is CLI-invoked reconciliation.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">A diff is computed before any git mutation; a no-diff run performs zero commits. No daemon, no scheduler, no new workflow — the operator or an existing workflow invokes the CLI against the existing Pages branch.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">AD-5 · Provision wraps Marshal-owned machinery.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;"><span class="code">pixi install -e</span> runs verbatim; the <span class="code">[environments]</span> table is read for inventory and never written; loop homes are <span class="code">marshal init</span>'s alone — two stations never ship two ways to make the same thing.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">AD-6 · Budget is declared, not enforced — yet.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;"><span class="code">budget check</span> returns a distinct not-configured code; "no data" never collapses into a pass. No cost-SDK import exists until a real metered spend source lands — Actions minutes are named as the first.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">AD-7 · One Duty protocol; missing degrades, never crashes.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">Every duty exposes a protocol-conforming object; the dispatcher goes through the protocol only. A duty not yet implemented for a subcommand returns an explicit not-implemented result rather than raising.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">AD-8 · The exit code has one owner.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;"><span class="code">main()</span> alone returns a process code — catching interrupts, a duty's <span class="code">SystemExit</span> and any other exception with fixed, documented values. A crash is never conflated with a duty that legitimately failed; a duty never calls <span class="code">sys.exit</span>.</div></div>
+      <div><div class="xp" style="font-size:18px; font-weight:800; color:var(--color-accent-400);">AD-9 · Enterprise routing inherited, never duplicated.</div><div style="font-size:13.5px; line-height:1.5; margin-top:8px; opacity:.85;">Any new outbound endpoint is one new row in <span class="code">_http.py</span>'s existing resolver convention — truststore, JFrog, GitHub and <span class="code">.netrc</span> chain included — never a parallel Steward-specific mechanism.</div></div>
+    </div>
+    <div style="margin-top:26px; padding-top:18px; border-top:1px solid color-mix(in srgb, var(--color-bg) 30%, transparent); font-size:13.5px; line-height:1.5; opacity:.85;"><b style="color:var(--color-accent-400);">And the conventions that ride beside them.</b> Credential entries carry a provenance — <span class="code">issued</span> or <span class="code">observed</span> — and only issued ones rotate. A secret value is never printed under any flag, enforced by an invariant test. Pixi invocations are explicit, user-triggered actions, never import-time side effects. Configuration lives in the tracked repo-root <span class="code">.steward/</span> dotdir — a durable operational fact survives a switch of the active BMAD project, so it does not belong under a per-project planning tree.</div>
+  </section>
+
+  <!-- 15 · THE STACK -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">15</span>
+      <h2>The stack — lean by doctrine, wide by custody</h2>
+    </div>
+    <p class="lede">A dedicated lean package in the parent pixi workspace, mirroring Warden's shape: <span class="code">no-default-feature</span>, so the <span class="code">pyforge-steward</span> environment carries only the built package, its conda run-dependencies and a test runner. What the package itself needs is small; what it keeps custody of is the whole estate.</p>
+    <table class="tbl">
+      <thead><tr><th>Layer</th><th>Component</th><th>Why it is there</th><th>Pinned where</th></tr></thead>
+      <tbody>
+        <tr><td><b>Language</b></td><td>Python at the workspace floor — one interpreter for every environment</td><td>the floor the fleet consistency standard raised to match what the workspace actually installs; the measured per-environment matrix lives in the Canopy Dream</td><td><span class="code">pyproject.toml</span> <span class="code">requires-python</span></td></tr>
+        <tr><td><b>Runtime</b></td><td><span class="code">PyYAML</span> · <span class="code">pyforge-core</span></td><td>read and write of <span class="code">.steward/*.yaml</span> with <span class="code">safe_load</span> / <span class="code">safe_dump</span> only; the shared hook-spec contract and CLI dispatch spine</td><td>package run-deps, dual-declared in <span class="code">pixi.toml</span> — the pin-sync meta-test keeps the pair byte-identical</td></tr>
+        <tr class="hi"><td><b>External binaries</b></td><td><span class="code">age</span> · <span class="code">age-keygen</span></td><td>the at-rest encryption CAP-1 shells out to — required run-dependencies, never vendored, never reimplemented (AD-3)</td><td><span class="code">[feature.pyforge-steward.dependencies]</span></td></tr>
+        <tr><td><b>Optional <span class="code">[dashboard]</span> extra</b></td><td>Django · Channels · Daphne · asgiref · channels_redis</td><td>the secure-live-dashboard runtime ships only behind this extra, never as a base dependency — the atlas → warden <span class="code">[gate]</span> precedent verbatim; its floors match the recipes this estate already pins</td><td><span class="code">[project.optional-dependencies]</span> · the same block in <span class="code">pixi.toml</span></td></tr>
+        <tr><td><b>Plugins</b></td><td><span class="code">pyforge.core.hooks</span> · <span class="code">deploy_profile</span> — Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, Jira</td><td>today's deploy-profile backends register as default plugins on the shared hook surface; swapping a vendor is another plugin on the same spec, never a fork; all optional at runtime and the test task passes with none enabled; none may publish a PR verdict</td><td><span class="code">[project.entry-points."pyforge.core.hooks"]</span></td></tr>
+        <tr><td><b>Configuration</b></td><td><span class="code">.steward/</span> — <span class="code">budget.yaml</span> · <span class="code">keys-inventory.yaml</span> · <span class="code">*.age</span> · <span class="code">sync-config.example.yaml</span> · <span class="code">repo-sets.example.yaml</span></td><td>tracked, repo-root, per-kind — never a blanket glob that would silently absorb a stray file dropped into the one directory designated for credential material</td><td>the Spec's own <span class="code">surface:</span> list</td></tr>
+        <tr><td><b>Build</b></td><td>hatchling · pixi-build-python</td><td>wheel, sdist and <span class="code">.conda</span> from one <span class="code">pyforge-steward-build</span> task; the station's own nested <span class="code">pixi.toml</span> run-dependencies mirrored to the root manifest by the catalog sync detector</td><td><span class="code">pixi.toml</span> tasks</td></tr>
+        <tr><td><b>Tests</b></td><td>pytest · unit, meta, fixtures</td><td>meta-tests pin the doctrine: no <span class="code">sys.exit</span> in a duty, <span class="code">main()</span> the sole exit owner, the pin pair in sync, the five-tier structural check over the whole roster, the manifest-sync invariant; the keys suite covers every CAP-1 sub-claim including "never a raw value"</td><td><span class="code">pyforge-steward-test</span></td></tr>
+        <tr class="hi"><td><b>The estate it keeps</b></td><td>BMAD core <span data-fact="bmad_core_version">6.12.0</span> · bmad-loop <span data-fact="bmad_loop_version">0.11.1</span> · conda-forge-expert <span data-fact="cfe_skill_version">8.90.5</span> · <span data-fact="groundtruth_pixi_envs">31</span> pixi environments · <span data-fact="recipes_count">7864</span> recipes</td><td>the core <span class="code">upgrade bmad-core</span> moves and <span class="code">prove-landed</span> verifies; the loop whose homes <span class="code">prove-landed</span> refreshes; the skill whose meta-tests are one of its gates; the environments <span class="code">provision</span> materializes; the shipped estate the platform serves</td><td><span class="code">_bmad/_config/manifest.yaml</span> · <span class="code">pixi.lock</span> · skill frontmatter · <span class="code">bmad-groundtruth</span></td></tr>
+        <tr><td><b>The platform it deploys</b></td><td><span class="code">src/platform/</span> — Django + Wagtail + HTMX on one ASGI · Celery · PostgreSQL + Redis + Kubernetes · a Helm chart with an OpenShift overlay · a Containerfile · Liquibase for governed DDL</td><td>the Canopy host: cookiecutter-django with a FastAPI seam, OIDC through <span class="code">django-allauth</span>, agent-runtime engines as a pluggable app and a sidecar, egress-blocked by a failing check, its app role provably unable to alter its own schema</td><td><span class="code">src/platform/deploy/</span> · <span class="code">pyproject.toml</span> under the platform</td></tr>
+        <tr><td><b>Intelligence it reads</b></td><td>cf_atlas schema <span data-fact="groundtruth_schema_version">29</span> · <span data-fact="groundtruth_atlas_phases">22</span> atlas phases · <span data-fact="groundtruth_mcp_tools">46</span> MCP tools</td><td>the ground truth <span class="code">bmad-groundtruth</span> reports; the surfaces the Canopy mounts behind one session and the query plane Steward's through-line rebuilt the private stores onto</td><td><span class="code">pixi run -e local-recipes bmad-groundtruth</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 16 · WHICH TOOL, WHEN -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">16</span>
+      <h2>Which tool, when</h2>
+    </div>
+    <p class="lede">The estate has several operations-shaped entry points. They are not rivals; each answers a different question, and Steward's verbs sit at most of them — with the two it deliberately does not own named as well.</p>
+    <table class="tbl">
+      <thead><tr><th>You want to…</th><th>Run</th><th>What comes back</th><th>Mutates?</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>Get a fresh machine to a green gate without recalling raw syntax</td><td><span class="code">pyforge steward init → setup → initrepo → validate-fast</span></td><td>prerequisites with named remedies; a clone, an install and hooks; the composed fast gate</td><td>yes — clone and install, user-triggered, idempotent</td></tr>
+        <tr><td>Materialize one named pixi environment</td><td><span class="code">pyforge steward provision --env &lt;name&gt;</span></td><td><span class="code">pixi install -e</span> verbatim; an invalid name lists every real one</td><td>yes — the environment only</td></tr>
+        <tr class="hi"><td>Know whether <span class="code">environment.yaml</span> still matches <span class="code">pixi.toml</span></td><td><span class="code">pyforge steward provision --verify</span></td><td>the PR CI sync gate's own verdict; non-zero on drift</td><td>no — the gate CI enforces, one verb away</td></tr>
+        <tr><td>Make a loop home for a story</td><td><span class="code">marshal init &lt;slug&gt;</span> — <b>not</b> Steward</td><td>worktree plus marker and symlink agreement plus the never-write proof; Steward's <span class="code">--runner</span> only points here</td><td>Marshal's, by ratified seam</td></tr>
+        <tr><td>A scratch worktree for hand-driven work</td><td><span class="code">pyforge steward workspace start · ls · status · clean</span></td><td>own-worktrees-only bookkeeping; archive-not-delete</td><td>yes — own entries only</td></tr>
+        <tr class="hi"><td>Publish the dashboard</td><td><span class="code">pyforge steward deploy dashboard</span></td><td>build · diff · one commit with exactly the changed files, or nothing</td><td>only on a real diff</td></tr>
+        <tr><td>Know which credential is attached without a host scope</td><td><span class="code">doctor check --env</span>, then <span class="code">pyforge steward keys audit --drift</span></td><td>Doctor's finding; Steward's proof the pattern stays closed against the fixed delegate</td><td>no</td></tr>
+        <tr class="hi"><td>Rotate or retire a credential</td><td><span class="code">pyforge steward keys rotate --scope … · keys revoke --scope …</span></td><td>a fresh identity with every secret re-encrypted; or a retired entry with the provider's manual steps</td><td>yes — on the operator's explicit ask</td></tr>
+        <tr><td>Move the BMAD core to a target release, safely</td><td><span class="code">pyforge steward upgrade bmad-core --target … [--apply]</span>, then <span class="code">prove-landed</span></td><td>a report-only pre-flight; a review branch carrying the installer diff; one landed verdict</td><td><span class="code">--apply</span> only, on a branch</td></tr>
+        <tr><td>Know whether the bmad-suite is current, per package, per stage</td><td><span class="code">pyforge steward suite pipeline-truth</span></td><td>upstream · recipe · channel · installed · wired, drift named; offline with <span class="code">--baseline</span></td><td>no</td></tr>
+        <tr><td>Is this machine sound enough to spin the line?</td><td><span class="code">doctor check --env --engines</span> — Doctor's</td><td>tri-state operability over the engines Steward provisioned</td><td>no</td></tr>
+        <tr><td>Is the code this PR touches compliant?</td><td><span class="code">warden scan</span> — Warden's</td><td>the one PR-gate verdict; Steward's plugins can never publish a second</td><td>no — <b>the only gate</b></td></tr>
+        <tr><td>Where does the whole fleet stand?</td><td><span class="code">pixi run -e local-recipes fleet-picture</span></td><td>the read-only progress table — pasted verbatim, never gating</td><td>no</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 17 · ESCALATION AND THE LEDGER -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">17</span>
+      <h2>Escalation and the ledger — how a finding on the estate becomes work</h2>
+    </div>
+    <p class="lede">An operational finding nobody can act on is noise. Steward's findings — and the red-team review's — travel a fixed route into the estate's durable records, and the outward, irreversible steps are held behind an operator's hand at every turn.</p>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="kicker">1 · evidence</div><div style="font-size:15px; font-weight:800; margin:6px 0;">DutyResult</div><div style="font-size:12.5px; line-height:1.45;">frozen, <span class="code">--json</span> on every duty. A verify or a drift audit that fails says so with a documented code; a pre-flight that would clobber custom refuses before it writes.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">2 · defer</div><div style="font-size:15px; font-weight:800; margin:6px 0;">deferred-work ledger</div><div style="font-size:12.5px; line-height:1.45;">work not taken now lands in the station's tracked <span class="code">deferred-work-ledger.md</span> — the red-team's residual band lived there with Steward as owner until stories claimed it.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">3 · correct course</div><div style="font-size:15px; font-weight:800; margin:6px 0;">sprint-change proposal</div><div style="font-size:12.5px; line-height:1.45;"><span class="code">bmad-correct-course</span> mints the epic — the red-team CRITICALs, the HIGH set, the currency review, the datastore exceptions each arrived this way — and appends to the Spec, never rewrites it.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">4 · the flip</div><div style="font-size:15px; font-weight:800; margin:6px 0;">blocked → backlog</div><div style="font-size:12.5px; line-height:1.45;">solutioning stories are held <span class="code">blocked</span>; the operator flips each into Phase 4 by hand; a ledger sync may never move a <span class="code">blocked</span> story off <span class="code">blocked</span>.</div></div>
+      <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);"><div class="kicker">5 · realize</div><div style="font-size:15px; font-weight:800; margin:6px 0;">effect, not merge</div><div style="font-size:12.5px; line-height:1.45;">a capability is realized when its success criterion is exercised in the running estate; the Dream flips on effect, never on ledger bookkeeping — the realization gate Steward's own chain wrote.</div></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:16px; margin-top:22px;">
+      <div>
+        <div class="kicker" style="margin-bottom:8px;">The exit-code domain — fixed, documented, one owner</div>
+        <table class="tbl" style="margin-top:0;">
+          <thead><tr><th>Surface</th><th>Code</th><th>Means</th></tr></thead>
+          <tbody>
+            <tr><td rowspan="6"><span class="code">steward</span> CLI<br><span class="muted" style="font-size:12px;">AD-8 — the sole owner is <span class="code">cli.main</span></span></td><td><span class="code">0</span></td><td>the duty ran and reported ok</td></tr>
+            <tr><td><span class="code">1</span></td><td>the duty ran and reported not-ok — the <b>only</b> legitimate one</td></tr>
+            <tr><td><span class="code">2</span></td><td>usage — the argparse convention</td></tr>
+            <tr class="hi"><td><span class="code">3</span></td><td><span class="code">budget check</span> with no metered spend source configured — never collapsed into a pass</td></tr>
+            <tr class="hi"><td><span class="code">70</span></td><td>an internal error — a crash, never conflated with a failed duty</td></tr>
+            <tr><td><span class="code">130</span></td><td>interrupted at the CLI boundary</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tint" style="display:flex; flex-direction:column; justify-content:center;"><div><b>Why "the tool broke" and "the duty failed" must stay distinguishable.</b> An undocumented failure falling through to the interpreter's default is indistinguishable from a duty that legitimately reported not-ok — exactly the false signal a gate must not emit. So <span class="code">main()</span> never trusts a <span class="code">SystemExit</span> raised inside a duty verbatim, never lets an exception fall through, and projects every ending to a code a caller can read. The budget triad is the same honesty turned toward money: until real spend exists, the only code <span class="code">check</span> ever returns is its own not-configured one.<br><br><b>And why a review branch, never main.</b> <span class="code">upgrade --apply</span> lands the installer's diff where a human reads it; <span class="code">suite advance</span> opens a PR it never merges; the cutover's outward phases are ledger flips. Autonomy stops where reversibility does.</div></div>
+    </div>
+  </section>
+
+  <!-- ACT V -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT V</span>
+      <span class="ttl">Who it serves, where it runs</span>
+    </div>
+    <span class="cap">Value by leader · the deployed estate · air-gap · the seams</span>
+  </div>
+
+  <!-- 18 · WHAT EACH LEADER GETS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">18</span>
+      <h2>What each leader gets</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;">
+      <div class="card"><div class="k">The operator at the keyboard</div><p>One grammar for what used to be a habit: the dashboard publishes with one verb and only when something changed; any environment materializes by name; a fresh machine reaches the fast green gate through steward verbs alone; the BMAD core moves on a review branch with a single landed verdict. The judgement calls stay yours — <span class="code">--apply</span>, <span class="code">rotate</span>, the cutover flips — but each starts from evidence, not from memory.</p></div>
+      <div class="card"><div class="k">Marshal — the line</div><p>Runners and environments present before the loop spins, and a seam ratified so the two stations stop overlapping: loop homes are <span class="code">marshal init</span>'s, scratch worktrees are Steward's, and Steward's <span class="code">--runner</span> points rather than provisions. Run state publishes to a supervisor Steward deploys, so the front door never reads an operator's disk again.</p></div>
+      <div class="card"><div class="k">The security lead</div><p>A credential lifecycle with a chokepoint: host-scoped attachment through one resolver, <span class="code">age</span> at rest, an inventory with provenance, rotation that provably invalidates the old identity, revocation with the provider's steps spelled out — and a named regression test that keeps the cross-host leak closed. On the Canopy: authorization from IdP roles, secrets by reference, a verified mint, a bounded durable broker.</p></div>
+      <div class="card"><div class="k">The platform operator</div><p>The Canopy on a live cluster through a Helm chart with an OpenShift overlay — attended bring-up proven with a live health check and a published front door; a DR contract with a restore drill you can run; consumed managed PostgreSQL, Redis and object storage as configuration-selected paths beside the bundled defaults; one command to stop a runaway subject; deploys pinned by digest with a recorded Warden verdict.</p></div>
+      <div class="card"><div class="k">The BMAD estate's keeper</div><p>The core upgraded repeatably — pre-flight, apply on a branch, clobber detect and re-apply, every pin site enumerated as moved or not, one prove-landed verdict — and the suite treated as a governed product: pipeline truth per package per stage, and a one-command advance that ends in a reviewable PR rather than a merge.</p></div>
+      <div class="card"><div class="k">Finance and the executive reader</div><p>A ceiling declared where a machine can read it, and an honest signal about spend: not-configured is its own answer until a real metered source exists, and Actions minutes are named as the first. No fabricated pass, no vanity metric — the number of duties and the frequency of rotations are explicitly not scores.</p></div>
+    </div>
+  </section>
+
+  <!-- 19 · ENTERPRISE AND AIR-GAP -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">19</span>
+      <h2>The deployed estate — enterprise, air-gap, and the lines that hold there</h2>
+    </div>
+    <p class="lede">The Canopy's deployment target is air-gapped and regulated, so this was never merely a UI project. Every artifact resolves inside the boundary; a build and deploy executed with external egress blocked must succeed end to end, and any external reference is a failing check, not a warning. Steward carries that gate and the estate's own routing chain — <span class="code">_http.py</span>'s truststore and JFrog / GitHub / <span class="code">.netrc</span> auth — so a mirrored deployment configures once and every duty inherits it.</p>
+    <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+      <div class="box"><b>Infrastructure is exactly PostgreSQL + Redis + Kubernetes.</b> A component demanding a fourth backing service has failed its design review; DuckDB is a query face, not a store. Two dated exceptions widened <i>consumption</i>, never self-hosting: an S3-compatible object store and managed PostgreSQL and Redis may be consumed as ops-provided endpoints — configuration-selected, beside the bundled defaults, with backup responsibility named rather than assumed away. No object-store server ever ships inside the image or chart.</div>
+      <div class="box"><b>Every Python dependency resolves from conda-forge.</b> The egress-blocked build is a gate, not a warning: a PyPI-only package is new feedstock work for Mason, scheduled as such. The chain paid that price knowingly — OpenFeature feedstocks absent from the channel entirely, a Liquibase build with the JDBC driver vendored — because container images are governed separately under the internal-registry rule and neither boundary substitutes for the other.</div>
+      <div class="box"><b>Identity revocable, secrets delivered, schema governed.</b> Portal authorization derives from IdP roles — revoke a role and access is gone on the next request. Pod specifications carry secret references only; go-sops and <span class="code">age</span> are the in-estate vault, a vault server stays a profile adapter outside the image. Production schema change flows through one Liquibase authority enforced by database privilege: the app role provably cannot <span class="code">CREATE</span>, <span class="code">ALTER</span> or <span class="code">DROP</span>.</div>
+      <div class="box"><b>Failure contained, data safe, agents bounded.</b> A durable, memory-bounded broker on a volume that loses no queued task on restart; TLS verified on the wire; a DR contract with backup plus WAL archive and a drill; per-subject rate limits on the service faces, a per-station queue ceiling, a concurrent-run ceiling; prefixed roles with bare station names refused; deploys by digest, never <span class="code">latest</span>. Every invariant has a test that fails with the mechanism absent.</div>
+    </div>
+    <div class="tint" style="margin-top:16px;"><b>The attended bring-up that made it real.</b> The chart deployed on a local OpenShift cluster with the official database and cache images under an assigned UID, persistent volumes bound, Liquibase applied and Django reconciled with <span class="code">migrate --fake</span>, the health endpoint answering; then the follow-through — the agent-runtime sidecar ready, the app role running DML-only, the MCP host sidecar up, the front door published from PostgreSQL. The one isolated migration that stays faked is recorded by name; the optional portability CI waits on Actions minutes. An honesty gap, not a stamp gate.</div>
+  </section>
+
+  <!-- 20 · INTEGRATION SEAMS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">20</span>
+      <h2>Integration seams — every edge, and its direction</h2>
+    </div>
+    <p class="lede">Steward's boundaries are enforced by meta-tests and import rules, not by convention. Each seam below has a stated direction and a check that fails when the direction is violated.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+      <div class="card"><div class="k">steward → _http.py (import)</div><p><span class="code">keys.py</span> delegates host membership and header gating to <span class="code">auth_headers_for</span>; <span class="code">sync.py</span> transports through <span class="code">open_url</span>. Steward decides <i>whether</i> a header attaches — never how a request is built. A new endpoint is one new row in the delegate's resolver table.</p></div>
+      <div class="card"><div class="k">steward → age · pixi · git · gh · installer (subprocess)</div><p>Every mutation of the world is a thin, argv-as-list subprocess wrap of the tool that already owns it. <span class="code">pixi.toml</span> is read for inventory and never written; <span class="code">_bmad/</span> has one writer, the installer; the dashboard is built by the task that already built it.</p></div>
+      <div class="card"><div class="k">steward → the host's own commands (never Django)</div><p><span class="code">restore</span> loads the platform's backup module without importing the host; <span class="code">revoke</span> drives <span class="code">manage.py revoke_subject</span> through the platform interpreter named on the command line. Run state has exactly one writer — the supervisor — and Steward is never a second implementation of the platform's own work.</p></div>
+      <div class="card"><div class="k">steward → warden (hook plugins)</div><p>Deploy-profile adapters register on <span class="code">pyforge.core.hooks</span> as default plugins. <span class="code">publish_verdict</span> for a Warden-owned spec raises — the plugins may never publish a PR-gate verdict. A default Warden run stays green with none of them enabled.</p></div>
+      <div class="card"><div class="k">steward ↔ marshal (the ratified seam)</div><p>Loop homes, the build line and its worktrees are Marshal's; environments, modules, the estate and scratch worktrees are Steward's. <span class="code">provision --runner</span> reports and points at <span class="code">marshal init</span>; <span class="code">workspace</span> cannot see a loop home by construction. The seam's obligations landed as their own epic.</p></div>
+      <div class="card"><div class="k">The Canopy ↔ steward (import rule, with carve-outs)</div><p><span class="code">src/platform/</span> consumes the factory's published packages and never imports <span class="code">pyforge.*</span> source — an import-linter rule. Two recorded brownfield exceptions remain until their owning stories land: the project-board ingest under the platform imports <span class="code">pyforge.steward</span> keys and sync, and the atlas portal's tests allow-list the steward dashboard. Exceptions are dated, never a repeal.</p></div>
+    </div>
+    <div class="box" style="margin-top:16px;"><b>What the dependency graph must never contain.</b> A Vault-, Backstage-, ArgoCD- or Kubecost-class client; a cost SDK; a Django import in the steward package itself; <span class="code">pyforge.doctor</span> as a run-dependency (the suite probes reuse Doctor's shapes without importing it); a second registration mechanism beside <span class="code">pyforge.core.hooks</span>. Each absence is asserted by a test or a repo-wide grep the Spec's <span class="code">verified:</span> lines record.</div>
+  </section>
+
+  <!-- ACT VI -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT VI</span>
+      <span class="ttl">Proof and road</span>
+    </div>
+    <span class="cap">Receipts · the seed · now, next, later</span>
+  </div>
+
+  <!-- 21 · PROOF -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">21</span>
+      <h2>Proof — the receipts, from the ledgers</h2>
+    </div>
+    <p class="lede">Every number here is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec and the manifests at tree <span data-fact="tree_commit_date">2026-09-15</span> — never from a prior poster, never from memory. The stub this poster replaces quoted an estate of a dozen environments and four duties; the ledger reads differently now.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid var(--color-text); margin-bottom:22px;">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="bignum"><span data-fact="stories_done_total">231/244</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">stories done — the whole tracked ledger, retros excluded, read with the real parser; the remainder is the cutover's held phases and two realization index rows</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="epics_done_total">56/58</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">epics done — from the credential lifecycle to consumed datastores; the two open are the cutover and the realization gate</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="spec_capabilities">4</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">capabilities, each with a mechanical <span class="code">verified:</span> PASS at a named HEAD; Spec <span data-fact="spec_status">shipped</span></div></div>
+      <div style="padding:18px 0 6px 14px;"><div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="dream_status">realized</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">the Dream's own status — the act that completed, not a promise</div></div>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Capability</th><th>What was proven, mechanically</th><th>Pinned by</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><b>CAP-1</b> keys</td><td>the keys suite covers every sub-claim — audit CLI and drift, host scoping, the plaintext scan, rotate, revoke, the encrypt/decrypt round-trip, list; a live <span class="code">age --version</span> confirms the real binary; a live <span class="code">keys list --json</span> returns inventory entries with a provenance field and an empty secrets array</td><td><span class="code">test_keys_*.py</span> · the host-gating conformance test · the never-a-raw-value invariant</td></tr>
+        <tr><td><b>CAP-2</b> deploy</td><td>build, reconcile, perimeter, static, the profile plugins, dry-run, status and the ledger refusal each carry their own tests; a live <span class="code">deploy status</span> returns a real commit SHA and timestamp read from git history — no separate state store</td><td><span class="code">test_deploy_*.py</span></td></tr>
+        <tr><td><b>CAP-3</b> provision</td><td>live: <span class="code">--list --json</span> enumerates the real <span class="code">pixi.toml</span> environments; <span class="code">--verify</span> reports the export in sync; an invalid name prints a clear "not a valid pixi environment" error listing every real one, not pixi's raw complaint</td><td><span class="code">test_provision_runner.py</span> and siblings</td></tr>
+        <tr><td><b>CAP-4</b> budget</td><td>set, show and check each tested; a live <span class="code">budget show --json</span> returns an empty list cleanly with none declared — no crash, no misleading zero; a repo-wide grep for cost-SDK imports under the package returns nothing</td><td><span class="code">test_budget_*.py</span> · the grep the <span class="code">verified:</span> line records</td></tr>
+        <tr class="hi"><td><b>The Canopy</b> — the chain Steward owns</td><td>chrome dedup, eight portals on one session, eight faces with disconnect-surviving <span class="code">start</span>/<span class="code">get</span>, the CLI parity matrix, the verified mint, DLQ and loop-depth halt, DDL refusal as the app role, four resilience invariants with production callers, the broker's bound hard-failing the render, next-request revoke, flag parity across three surfaces, dual-driver graph parity, the five-tier gate, the live egress-blocked run-state exercise, the hook conformance check, the plane's read-only boundary</td><td><span class="code">src/platform/tests/</span> · the station packages' meta-tests · the Spec's per-CAP <span class="code">verified:</span> lines</td></tr>
+      </tbody>
+    </table>
+    <div class="kicker" style="margin:26px 0 8px;">The fleet the estate carries — stories and epics done, per tracked ledger</div>
+    <table class="tbl" style="margin-top:0;">
+      <thead><tr><th>Station</th><th>Herald</th><th>Marshal</th><th>Atlas</th><th>Warden</th><th>Mason</th><th>Doctor</th><th>Scribe</th><th>Steward</th><th>Fleet</th></tr></thead>
+      <tbody>
+        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">82/100</span></td><td><span data-fact="marshal_stories_done_total">270/274</span></td><td><span data-fact="atlas_stories_done_total">94/95</span></td><td><span data-fact="warden_stories_done_total">49/49</span></td><td><span data-fact="mason_stories_done_total">70/70</span></td><td><span data-fact="doctor_stories_done_total">95/105</span></td><td><span data-fact="scribe_stories_done_total">35/35</span></td><td><b><span data-fact="steward_stories_done_total">231/244</span></b></td><td><b><span data-fact="fleet_stories_done_total">926/972</span></b></td></tr>
+        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">19/23</span></td><td><span data-fact="marshal_epics_done_total">40/43</span></td><td><span data-fact="atlas_epics_done_total">23/24</span></td><td><span data-fact="warden_epics_done_total">12/12</span></td><td><span data-fact="mason_epics_done_total">17/17</span></td><td><span data-fact="doctor_epics_done_total">22/24</span></td><td><span data-fact="scribe_epics_done_total">18/18</span></td><td><b><span data-fact="steward_epics_done_total">56/58</span></b></td><td><b><span data-fact="fleet_epics_done_total">207/219</span></b></td></tr>
+      </tbody>
+    </table>
+    <div class="box" style="margin-top:18px;"><b>The finding that changed what done means.</b> The Canopy's own currency review found the estate very good at building and without a discipline for taking effect: capabilities shipping as passing mechanism and never being switched on, fed or measured. Steward's chain answered with the realization gate — a <span class="code">verified:</span> line on every capability naming which clause has a live exercise and which is fixture-only, a Doctor-owned effect check beside the story-status check, and Dreams that flip to <span class="code">realized</span> on effect rather than on ledger bookkeeping. This poster's own <span data-fact="stories_done_total">231/244</span> is a count of tracked <span class="code">done</span> keys, not a claim about effect.</div>
+  </section>
+
+  <!-- 22 · THE SEED -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">22</span>
+      <h2>The seed — Dream to estate, in the order it happened</h2>
+    </div>
+    <p class="lede">The Dream's realization log carries one dated entry; the rest of the road is read from the epics in the order they were minted. Only the two dates the ledger can source are printed here — nothing is projected.</p>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-07-23">2026-07-23</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">Adopted</div>
+        <div style="font-size:12px; line-height:1.45;">The ownership audit found Deployment &amp; Operations orphaned between stations; the Provisioner joined the Charter's crew, disambiguated from the fleet-stewardship practice. CLI and chapter deck awaited their turns.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">Epics 1–4</div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">The four duties</div>
+        <div style="font-size:12px; line-height:1.45;">Brief, PRD, spine and Spec in one pass; then keys, deploy, provision and budget as vertical slices — the Warden packaging pattern cloned, the cross-host leak closed as a named regression test, the dashboard reconciled, a ceiling declared.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">Epics 5–17</div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">The estate widens</div>
+        <div style="font-size:12px; line-height:1.45;">The Marshal seam ratified; module provisioning; the one-container Guild; two boards, one truth; secure live dashboards; the host takes root, the engines join, deploy anywhere including nowhere-connected; scratch worktrees; the core upgrades repeatably; the suite becomes a governed product; the platform earns its factors; a fresh machine reaches validate-fast.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px; background:var(--color-accent-100);">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">Epics 18–43</div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">The Canopy — dreamt, grounded, drained, proven</div>
+        <div style="font-size:12px; line-height:1.45;">Written as greenfield, grounded against a host that already shipped, owner moved from Herald to Steward; chrome, portals, faces, grammar, events, flags, governed DDL and the hook contract drained under one coordinator; attended bring-up on a local cluster; the front door published; the query plane minted as the evergreen reopen; the red-team's CRITICALs and HIGHs bound and closed.</div>
+      </div>
+      <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="tree_commit_date">2026-09-15</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0; color:var(--color-accent);">Realized · re-derived</div>
+        <div style="font-size:12px; line-height:1.45;">Dream <span data-fact="dream_status">realized</span>, Spec <span data-fact="spec_status">shipped</span>, <span data-fact="epics_done_total">56/58</span> epics — the cutover under contract and held, the realization gate open — and this poster rebuilt from the fact ledger at this tree, to the family standard.</div>
+      </div>
+    </div>
+    <div class="box" style="margin-top:22px;"><b>Why the grounding discipline is the story.</b> The Canopy Dream was drafted as though the platform host were greenfield. The audit proved the host had shipped — a live cookiecutter-django project with an ASGI seam, OIDC, the agent-runtime engines mounted, a chart with an OpenShift overlay — so the chain was rescoped to the residual, bound the host contract as prior art and re-minted nothing. Corrections ran toward reality in both directions: two pessimistic premises dissolved under research, one optimistic one was replaced with a shippable design. A pessimistic premise is as much a planning error as an optimistic one; both had been sized as risk.</div>
+  </section>
+
+  <!-- 23 · NOW · NEXT · LATER -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">23</span>
+      <h2>Now · next · later</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div class="k">Now — shipped and verified</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>The four contract duties plus sync, workspace, upgrade, suite, the bootstrap family, restore and revoke — <span data-fact="cli_verbs">30</span> verbs behind one dispatcher and one exit-code owner</li>
+          <li><span data-fact="spec_capabilities">CAP-1..4</span> each carrying a mechanical <span class="code">verified:</span> PASS; the cross-host leak closed as a named regression test</li>
+          <li>The Canopy's capabilities closed out and proven on an attended cluster — the front door published, the app role DML-only, the live egress-blocked run-state exercise done; the query plane's first slice shipped</li>
+          <li>Both red-team CRITICALs fixed in shipped code; the HIGH set landed as data safety, agent and bus containment, contracts and the document</li>
+          <li>SKF content skill, station persona, the <span class="code">/stations/steward/</span> portal and MCP face; the five-tier reporter the whole roster is measured by</li>
+          <li>Tracked ledger <span data-fact="stories_done_total">231/244</span> · <span data-fact="epics_done_total">56/58</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="k">Next — under contract, held by the operator's hand</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>The cutover to <span class="code">python-foundry</span> — the move-list manifest, the document fixes, open the foundry, fold the packages, move the estate, CFE comes home, the factory island, the working set, Mason submits outward, archive — every story ledger-<span class="code">blocked</span> until flipped one by one; the readiness gate's P-lines must be green first</li>
+          <li>The realization gate widened to the station satellites — effect stories on each owning station's epics, index rows here so one board shows the gate; two index rows still <span class="code">blocked</span></li>
+          <li>Actions-minutes metering as <span class="code">budget check</span>'s first real spend source — the cutover's dispatch, Marshal's drains and the rebuild harness read a real ceiling</li>
+          <li>The red-team's residual band re-read against live code at implementation, never from the recorded claim</li>
+          <li>The sidecar's runtime validation on the raised interpreter floor</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="k">Later — named, deliberately not built</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>A third-party revocation API integration — <span class="code">keys revoke</span> records intent and guides the operator; it does not call JFrog, GitHub or a model provider</li>
+          <li>A calendar-driven rotation scheduler — rotation stays on demand and risk-triggered; frequency is not a metric</li>
+          <li>Kubecost-class cost allocation — no live cloud spend exists to allocate against; the budget duty grows only when it does</li>
+          <li>A standing secrets service, a software catalog, a GitOps controller — each ruled out by research, each a profile adapter outside the image if ever wanted</li>
+          <li>The one isolated migration that stays faked, and the optional portability CI waiting on Actions minutes — recorded by name as honesty gaps, not stamp gates</li>
+          <li>Renaming the platform's pixi environment id — a separate named story if ever, never folded into a cutover move</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSING POSTER -->
+  <section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;">
+    <div style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.85;">The creed</div>
+    <div class="xp" style="font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">Provision the line. Hold the keys. Keep the lights on.</div>
+    <p style="font-size:18px; line-height:1.5; margin:18px 0 0; max-width:960px; opacity:0.94;">Nothing the factory needs is missing — and nothing it no longer needs stays privileged. Engines before the run; the service, its keys and its ceiling after the ship; one Canopy mounting eight stations under one chrome, one session, one grammar, one event backbone and one query plane. Wrapped, never reimplemented. Reconciled, never remembered. Evidence returned, never an exit. The Provisioner holds the estate; the hands that build stand on it.</p>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:36px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13px; font-weight:600;">
+      <span><b>PyForge Steward</b> · steward chain · <span class="code">spec-pyforge-steward</span> · <span data-fact="spec_capabilities">CAP-1..4</span> · <span class="code">spec-pyforge-unifying-strategy</span> · <span class="code">pyforge-steward</span> <span data-fact="package_version">0.1.0</span></span>
+      <span>docs/dreams/pyforge-steward.md · <span class="code">src/shared/packages/pyforge-steward/</span> · <span class="code">src/platform/</span> · PyForge Guild · Dream to Code</span>
+    </div>
+  </section>
+
+</div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:2200}}"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:24888}}"></script>
 </body>
 </html>

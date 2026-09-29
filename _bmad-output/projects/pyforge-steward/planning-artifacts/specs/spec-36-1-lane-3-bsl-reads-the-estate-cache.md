@@ -41,3 +41,16 @@ deferred: []
 ## Verification
 
 `pixi run -e pyforge-atlas -- pytest src/shared/packages/pyforge-atlas/tests/test_estate_cache_bsl.py src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_dryrun.py -q`
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `d9ac225a4f` (2026-08-26, "Merge pull request #872 from rxm7706/steward/36-1-lane-3-bsl-estate-cache"). Ledger row `36-1-lane-3-bsl-reads-the-estate-cache: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-36-1-lane-3-bsl-reads-the-estate-cache.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/__init__.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py`, `src/shared/packages/pyforge-atlas/tests/test_estate_cache_bsl.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

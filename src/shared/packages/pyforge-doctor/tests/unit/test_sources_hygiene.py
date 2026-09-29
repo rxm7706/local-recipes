@@ -59,9 +59,7 @@ def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _git(repo: Path, *args: str) -> str:
-    result = subprocess.run(
-        ["git", *args], cwd=repo, capture_output=True, text=True, check=True
-    )
+    result = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True)
     return result.stdout
 
 
@@ -161,15 +159,9 @@ def test_gather_emits_exactly_five_findings_for_a_synthetic_all_classes_fixture(
     assert kinds == {kind.value for kind in HygieneFindingKind}
     assert all(f.source is Source.BMAD_OUTPUT_HYGIENE for f in findings)
     assert all(f.evidence["station"] == "acme" for f in findings)
-    assert all(
-        isinstance(f.evidence.get("path"), str) and f.evidence["path"]
-        for f in findings
-    )
+    assert all(isinstance(f.evidence.get("path"), str) and f.evidence["path"] for f in findings)
     by_check = {f.check: f for f in findings}
-    assert (
-        by_check[HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value].evidence["path"]
-        == "tests"
-    )
+    assert by_check[HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value].evidence["path"] == "tests"
 
 
 # --- Row: gather() invocation never mutates the tree it scans --------------
@@ -403,7 +395,10 @@ def test_live_repo_gather_reports_no_finding_naming_warden() -> None:
 def _git_grep_matches(repo_root: Path, basename: str) -> list[str]:
     result = subprocess.run(
         ["git", "grep", "-l", "--fixed-strings", "-e", basename],
-        cwd=repo_root, capture_output=True, text=True, check=False,
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     assert result.returncode in (0, 1), f"git grep itself failed: {result.stderr}"
     return [line for line in result.stdout.splitlines() if line.strip()]
@@ -422,9 +417,7 @@ def test_live_repo_gather_surfaces_at_least_one_true_positive_naming_a_non_warde
     # "inbound reference" -- self-sabotaging both this pre-check and
     # `gather()`'s own identical git-grep-based check.
     basename = "deckcraft-board-epics-displaced-2026-08-08" + ".json"
-    own_relpath = (
-        "_bmad-output/projects/pyforge-herald/planning-artifacts/" + basename
-    )
+    own_relpath = "_bmad-output/projects/pyforge-herald/planning-artifacts/" + basename
     herald_file = repo_root / own_relpath
     assert herald_file.is_file(), (
         f"the cited herald fixture {own_relpath} no longer exists -- re-verify "
@@ -442,8 +435,7 @@ def test_live_repo_gather_surfaces_at_least_one_true_positive_naming_a_non_warde
     assert any(
         f.check == HygieneFindingKind.ORPHAN_FILE.value
         and f.evidence.get("station") == "herald"
-        and f.evidence.get("path")
-        == "planning-artifacts/" + basename
+        and f.evidence.get("path") == "planning-artifacts/" + basename
         for f in findings
     ), "expected the re-verified herald orphan file to be reported"
     assert any(f.evidence.get("station") not in (None, "warden") for f in findings)

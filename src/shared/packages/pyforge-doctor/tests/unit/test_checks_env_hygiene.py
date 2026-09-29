@@ -22,9 +22,7 @@ from pyforge.doctor.models import DoctorStatus, Finding, Source
 # mirrors pyforge-warden's tests/unit/test_currency.py::
 # test_bundled_registry_matches_the_cfe_canonical_source_when_present.
 _REPO_ROOT = Path(__file__).resolve().parents[6]
-_HTTP_PY_DIR = (
-    _REPO_ROOT / ".claude" / "skills" / "conda-forge-expert" / "scripts"
-)
+_HTTP_PY_DIR = _REPO_ROOT / ".claude" / "skills" / "conda-forge-expert" / "scripts"
 
 
 def _write(tmp_path: Path, name: str, source: str) -> None:
@@ -47,11 +45,7 @@ def test_gather_direct_unconditional_injection_returns_one_warn_finding(
     _write(
         tmp_path,
         "direct.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    if os.environ.get("X"):\n'
-        '        headers["Y"] = os.environ["X"]\n',
+        'import os\n\ndef handler():\n    if os.environ.get("X"):\n        headers["Y"] = os.environ["X"]\n',
     )
 
     result = gather(tmp_path)
@@ -174,11 +168,7 @@ def test_gather_aliased_os_import_is_still_detected(tmp_path: Path):
     _write(
         tmp_path,
         "aliased_os.py",
-        "import os as o\n"
-        "\n"
-        "def handler():\n"
-        '    if o.environ.get("X"):\n'
-        '        headers["Y"] = o.environ["X"]\n',
+        'import os as o\n\ndef handler():\n    if o.environ.get("X"):\n        headers["Y"] = o.environ["X"]\n',
     )
 
     result = gather(tmp_path)
@@ -193,11 +183,7 @@ def test_gather_from_os_import_environ_is_still_detected(tmp_path: Path):
     _write(
         tmp_path,
         "from_import.py",
-        "from os import environ\n"
-        "\n"
-        "def handler():\n"
-        '    if environ.get("X"):\n'
-        '        headers["Y"] = environ["X"]\n',
+        'from os import environ\n\ndef handler():\n    if environ.get("X"):\n        headers["Y"] = environ["X"]\n',
     )
 
     result = gather(tmp_path)
@@ -234,10 +220,7 @@ def test_gather_chained_assignment_with_a_header_target_is_detected(
     _write(
         tmp_path,
         "chained.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    other["Y"] = headers["X"] = os.environ.get("TOKEN")\n',
+        'import os\n\ndef handler():\n    other["Y"] = headers["X"] = os.environ.get("TOKEN")\n',
     )
 
     result = gather(tmp_path)
@@ -270,9 +253,7 @@ def test_gather_golden_fixture_finds_no_injection_in_the_real_cfe_scripts():
     # (see `_KNOWN_PRE_EXISTING` below); everything else in the directory
     # must stay clean.
     if not _HTTP_PY_DIR.is_dir():
-        pytest.skip(
-            "CFE scripts golden fixture not present (non-monorepo context)"
-        )
+        pytest.skip("CFE scripts golden fixture not present (non-monorepo context)")
 
     # An absence assertion cannot tell "scanned real code, found nothing"
     # apart from "scanned nothing at all": `gather()` over an empty directory
@@ -293,10 +274,7 @@ def test_gather_golden_fixture_finds_no_injection_in_the_real_cfe_scripts():
     assert incomplete == [], f"scan did not complete: {incomplete}"
 
     unconditional = [f for f in result if f.check == CHECK_NAME]
-    seen = {
-        (Path(f.evidence["file"]).name, f.evidence["line"], f.evidence["var_name"])
-        for f in unconditional
-    }
+    seen = {(Path(f.evidence["file"]).name, f.evidence["line"], f.evidence["var_name"]) for f in unconditional}
 
     # DW-FU-1-4 follow-up (2026-09-07): closing the intermediate-variable v1
     # gap (`name = os.environ.get(...); headers[...] = name`) makes this
@@ -322,10 +300,9 @@ def test_gather_golden_fixture_finds_no_injection_in_the_real_cfe_scripts():
         "injection beyond the known, pre-existing findings -- got "
         f"{seen - _KNOWN_PRE_EXISTING}"
     )
-    assert not any(
-        Path(f.evidence["file"]).name in {"_http.py", "inventory_channel.py"}
-        for f in unconditional
-    ), "the original golden-fixture files must stay clean"
+    assert not any(Path(f.evidence["file"]).name in {"_http.py", "inventory_channel.py"} for f in unconditional), (
+        "the original golden-fixture files must stay clean"
+    )
 
 
 # --- gather_one filter-equivalence ---------------------------------------
@@ -335,11 +312,7 @@ def test_gather_one_env_matches_the_filtered_gather_result(tmp_path: Path):
     _write(
         tmp_path,
         "direct.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    if os.environ.get("X"):\n'
-        '        headers["Y"] = os.environ["X"]\n',
+        'import os\n\ndef handler():\n    if os.environ.get("X"):\n        headers["Y"] = os.environ["X"]\n',
     )
 
     expected = next(f for f in gather(tmp_path) if f.check == CHECK_NAME)
@@ -362,9 +335,7 @@ def test_gather_one_env_returns_none_for_a_target_with_no_matches(
     "pruned",
     ["build_artifacts", "build", "dist", ".tox", ".pytest_cache", "site-packages"],
 )
-def test_discover_python_files_prunes_build_output_and_tool_caches(
-    tmp_path: Path, pruned: str
-):
+def test_discover_python_files_prunes_build_output_and_tool_caches(tmp_path: Path, pruned: str):
     # Story 6.1: the profile attributed 6.43s of `doctor check`'s 7.7s scan
     # to this monorepo's gitignored build_artifacts/ (extracted THIRD-PARTY
     # conda sources), which also exhausted the entry cap before the walk
@@ -404,9 +375,7 @@ def test_discovery_walk_reaches_this_packages_own_source(tmp_path: Path):
 # --- discovery-walk incompleteness signal --------------------------------
 
 
-def test_discover_python_files_onerror_marks_incomplete(
-    monkeypatch, tmp_path: Path
-):
+def test_discover_python_files_onerror_marks_incomplete(monkeypatch, tmp_path: Path):
     # Review finding: an unreadable subdirectory previously vanished from
     # the scan with zero signal (os.walk's default onerror=None silently
     # drops it). Drives the walk through a fake os.walk so this is
@@ -424,9 +393,7 @@ def test_discover_python_files_onerror_marks_incomplete(
     assert incomplete is True
 
 
-def test_discover_python_files_entry_cap_marks_incomplete(
-    monkeypatch, tmp_path: Path
-):
+def test_discover_python_files_entry_cap_marks_incomplete(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(env_hygiene, "_DISCOVERY_ENTRY_CAP", 2)
     for i in range(5):
         _write(tmp_path, f"f{i}.py", "x = 1\n")
@@ -436,9 +403,7 @@ def test_discover_python_files_entry_cap_marks_incomplete(
     assert incomplete is True
 
 
-def test_gather_appends_one_warn_finding_when_scan_is_incomplete(
-    monkeypatch, tmp_path: Path
-):
+def test_gather_appends_one_warn_finding_when_scan_is_incomplete(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(env_hygiene, "_DISCOVERY_ENTRY_CAP", 1)
     _write(tmp_path, "a.py", "x = 1\n")
     _write(tmp_path, "b.py", "y = 2\n")
@@ -466,9 +431,7 @@ def test_gather_no_incomplete_finding_when_scan_completes_normally(
     assert not any("INCOMPLETE" in f.message for f in result)
 
 
-def test_gather_one_env_can_address_the_incomplete_sentinel_by_name(
-    monkeypatch, tmp_path: Path
-):
+def test_gather_one_env_can_address_the_incomplete_sentinel_by_name(monkeypatch, tmp_path: Path):
     # Mirrors engines' addressable-sentinel contract: the sentinel's own
     # (never-cataloged) name IS reachable through gather_one's filter,
     # and a real CHECK_NAME finding is returned unshadowed alongside it.
@@ -476,16 +439,11 @@ def test_gather_one_env_can_address_the_incomplete_sentinel_by_name(
     _write(
         tmp_path,
         "a_direct.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    headers["Y"] = os.environ["X"]\n',
+        'import os\n\ndef handler():\n    headers["Y"] = os.environ["X"]\n',
     )
     _write(tmp_path, "b.py", "y = 2\n")
 
-    sentinel = gather_one(
-        "env", SCAN_INCOMPLETE_CHECK_NAME, tmp_path
-    )
+    sentinel = gather_one("env", SCAN_INCOMPLETE_CHECK_NAME, tmp_path)
 
     assert sentinel is not None
     assert "INCOMPLETE" in sentinel.message
@@ -504,9 +462,7 @@ def test_gather_on_a_single_file_target_returns_empty_tuple(tmp_path: Path):
     # "could not read some subdirectory" sentinel -- the established
     # registry convention for a non-directory target is silent ().
     file_target = tmp_path / "single.py"
-    file_target.write_text(
-        'import os\nheaders["Y"] = os.environ["X"]\n', encoding="utf-8"
-    )
+    file_target.write_text('import os\nheaders["Y"] = os.environ["X"]\n', encoding="utf-8")
 
     assert gather(file_target) == ()
 
@@ -531,10 +487,7 @@ def test_gather_skips_a_file_whose_ast_blows_the_recursion_limit(
     _write(
         tmp_path,
         "normal.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    headers["Y"] = os.environ["X"]\n',
+        'import os\n\ndef handler():\n    headers["Y"] = os.environ["X"]\n',
     )
 
     result = gather(tmp_path)  # must not raise
@@ -675,10 +628,7 @@ def test_gather_os_getenv_call_is_detected(tmp_path: Path):
     _write(
         tmp_path,
         "getenv.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    headers["Authorization"] = os.getenv("TOKEN")\n',
+        'import os\n\ndef handler():\n    headers["Authorization"] = os.getenv("TOKEN")\n',
     )
 
     result = gather(tmp_path)
@@ -691,10 +641,7 @@ def test_gather_from_os_import_getenv_is_detected(tmp_path: Path):
     _write(
         tmp_path,
         "from_getenv.py",
-        "from os import getenv\n"
-        "\n"
-        "def handler():\n"
-        '    headers["Authorization"] = getenv("TOKEN")\n',
+        'from os import getenv\n\ndef handler():\n    headers["Authorization"] = getenv("TOKEN")\n',
     )
 
     result = gather(tmp_path)
@@ -709,10 +656,7 @@ def test_gather_star_import_environ_is_detected(tmp_path: Path):
     _write(
         tmp_path,
         "star.py",
-        "from os import *\n"
-        "\n"
-        "def handler():\n"
-        '    headers["Authorization"] = environ["TOKEN"]\n',
+        'from os import *\n\ndef handler():\n    headers["Authorization"] = environ["TOKEN"]\n',
     )
 
     result = gather(tmp_path)
@@ -727,10 +671,7 @@ def test_gather_ann_assign_credential_injection_is_detected(tmp_path: Path):
     _write(
         tmp_path,
         "ann_assign.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    headers["Authorization"]: str = os.environ.get("TOKEN")\n',
+        'import os\n\ndef handler():\n    headers["Authorization"]: str = os.environ.get("TOKEN")\n',
     )
 
     result = gather(tmp_path)
@@ -745,10 +686,7 @@ def test_gather_tuple_unpacking_header_target_is_detected(tmp_path: Path):
     _write(
         tmp_path,
         "tuple_target.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    headers["Authorization"], x = os.environ.get("TOKEN"), 1\n',
+        'import os\n\ndef handler():\n    headers["Authorization"], x = os.environ.get("TOKEN"), 1\n',
     )
 
     result = gather(tmp_path)
@@ -765,10 +703,7 @@ def test_gather_tuple_unpacking_pairs_positionally_no_false_positive(
     _write(
         tmp_path,
         "tuple_positional.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    headers["Content-Type"], x = "text/plain", os.environ.get("D")\n',
+        'import os\n\ndef handler():\n    headers["Content-Type"], x = "text/plain", os.environ.get("D")\n',
     )
 
     assert gather(tmp_path) == ()
@@ -849,11 +784,7 @@ def test_gather_intermediate_variable_credential_injection_is_detected(
     _write(
         tmp_path,
         "intermediate_var.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    token = os.environ.get("X")\n'
-        '    headers["Authorization"] = token\n',
+        'import os\n\ndef handler():\n    token = os.environ.get("X")\n    headers["Authorization"] = token\n',
     )
 
     result = gather(tmp_path)
@@ -912,10 +843,7 @@ def test_gather_dict_literal_assigned_to_header_name_is_detected(
     _write(
         tmp_path,
         "dict_literal.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    headers = {"x-goog-api-key": os.environ.get("KEY")}\n',
+        'import os\n\ndef handler():\n    headers = {"x-goog-api-key": os.environ.get("KEY")}\n',
     )
 
     result = gather(tmp_path)
@@ -933,11 +861,7 @@ def test_gather_dict_literal_with_intermediate_variable_is_detected(
     _write(
         tmp_path,
         "dict_literal_var.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    key = os.environ.get("KEY")\n'
-        '    headers = {"x-goog-api-key": key}\n',
+        'import os\n\ndef handler():\n    key = os.environ.get("KEY")\n    headers = {"x-goog-api-key": key}\n',
     )
 
     result = gather(tmp_path)
@@ -954,10 +878,7 @@ def test_gather_dict_literal_assigned_to_non_header_name_not_flagged(
     _write(
         tmp_path,
         "unrelated_dict.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    config = {"key": os.environ.get("KEY")}\n',
+        'import os\n\ndef handler():\n    config = {"key": os.environ.get("KEY")}\n',
     )
 
     assert gather(tmp_path) == ()

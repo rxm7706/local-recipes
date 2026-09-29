@@ -170,3 +170,16 @@ AC ("backlinks visible in both directions," not "only published backlinks").
 - `addressed_findings`: 1 (high). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
 
 **Follow-up review recommendation:** none outstanding for this story.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `9758f27ef9` (2026-08-21, "marshal: mark Story 11.3 done, promote its spec"); also `f749d937af` (2026-08-21, "marshal: Story 11.3 - migration registry and runner"); also `5f364b9856` (2026-08-15, "doctor: Story 11.3 follow-up review -- close two false-still-open gaps"). Ledger row `11-3-evidence-linking-cross-moment: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-11-3-migration-registry-and-runner.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

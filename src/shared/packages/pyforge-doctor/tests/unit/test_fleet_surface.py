@@ -65,9 +65,7 @@ def test_build_surface_never_carries_a_wall_clock_field():
 
 
 def test_build_surface_reflects_whatever_axes_the_run_covered_including_adoption():
-    document = build_surface(
-        [_finding(Source.ADOPTION, "pkg-a")], axes=["staleness", "cve", "adoption"]
-    )
+    document = build_surface([_finding(Source.ADOPTION, "pkg-a")], axes=["staleness", "cve", "adoption"])
     assert document["axes"] == ["adoption", "cve", "staleness"]
 
 

@@ -56,18 +56,13 @@ _EXISTING_CLAUDE_MD = (
     "Run `make test` before every commit. Deploy via `make release`.\n"
 )
 
-_EXISTING_ADR = (
-    "# ADR 0001: Use PostgreSQL\n\n"
-    "We chose PostgreSQL for its JSONB support and mature tooling.\n"
-)
+_EXISTING_ADR = "# ADR 0001: Use PostgreSQL\n\nWe chose PostgreSQL for its JSONB support and mature tooling.\n"
 
 _BUILD_FILE = '[project]\nname = "data-platform"\nversion = "3.2.1"\n'
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -86,9 +81,7 @@ def _prd_j2_manifest() -> Manifest:
                 applies_to=AppliesTo.BOTH,
                 rationale="the neutral contract's tier core",
                 format=RegionFormat.HTML,
-                regions=(
-                    Region(name="tiers", anchor=("### Spec-driven, framework-neutral layout",)),
-                ),
+                regions=(Region(name="tiers", anchor=("### Spec-driven, framework-neutral layout",)),),
             ),
             # absent: a fresh hybrid artifact this team never had before.
             ManifestEntry(
@@ -146,9 +139,7 @@ def test_prd_j2_adopt_a_repo_that_already_ships(tmp_path: Path) -> None:
     assert not (repo / "README.md").exists()
     assert (repo / "CLAUDE.md").read_text(encoding="utf-8") == _EXISTING_CLAUDE_MD
     assert (repo / "pyproject.toml").read_text(encoding="utf-8") == _BUILD_FILE
-    assert (repo / "docs" / "adr" / "0001-use-postgresql.md").read_text(encoding="utf-8") == (
-        _EXISTING_ADR
-    )
+    assert (repo / "docs" / "adr" / "0001-use-postgresql.md").read_text(encoding="utf-8") == (_EXISTING_ADR)
     assert not (repo / ".marshal" / "seed-state.yml").exists()
 
     # "They review the plan in a PR" -- committing the reviewed plan.json is
@@ -174,9 +165,7 @@ def test_prd_j2_adopt_a_repo_that_already_ships(tmp_path: Path) -> None:
     assert "marshal-seed:begin region=model-badge" in readme
 
     # docs/adr/: present-legacy, recorded, byte-identical, never touched.
-    assert (repo / "docs" / "adr" / "0001-use-postgresql.md").read_text(encoding="utf-8") == (
-        _EXISTING_ADR
-    )
+    assert (repo / "docs" / "adr" / "0001-use-postgresql.md").read_text(encoding="utf-8") == (_EXISTING_ADR)
 
     # The unrelated build file: byte-identical, proving Genesis "never
     # touched a file it did not name."

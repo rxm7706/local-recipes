@@ -48,6 +48,7 @@ from typing import Any, Protocol
 
 from pyforge.core.atomic_write import atomic_write_text
 from pyforge.core.hooks import HookSpec, PluginError
+
 from pyforge.scribe.models import GraphNode
 
 GRAPHSTORE_HOOK_SPEC = HookSpec(name="pyforge.scribe.graph_store", owner="scribe")
@@ -117,9 +118,11 @@ class FlatFileGraphStore:
     def __init__(self, store_path: Path) -> None:
         self.store_path = store_path
         self._nodes: dict[str, GraphNode] = {}
+        self.compiled_at: datetime | None = None
         self._load()
 
     def _load(self) -> None:
+        self.compiled_at = None
         if not self.store_path.is_file():
             return
         raw = self.store_path.read_text(encoding="utf-8")
@@ -127,15 +130,18 @@ class FlatFileGraphStore:
             return
         document = json.loads(raw)
         self._nodes = {
-            node_id: GraphNode.model_validate(payload)
-            for node_id, payload in document.get("nodes", {}).items()
+            node_id: GraphNode.model_validate(payload) for node_id, payload in document.get("nodes", {}).items()
         }
+        raw_compiled = document.get("compiled_at")
+        if isinstance(raw_compiled, str) and raw_compiled:
+            self.compiled_at = datetime.fromisoformat(raw_compiled)
 
     def reset(self) -> None:
         """Clear in-memory state -- `compile.py` calls this before a full
         rebuild (AD-1: the graph is always 100% re-derived from source, never
         hand-edited or incrementally patched)."""
         self._nodes = {}
+        self.compiled_at = None
 
     def upsert_node(self, node: GraphNode) -> None:
         """Insert-or-replace by `node.id` -- idempotent: upserting the same
@@ -151,9 +157,7 @@ class FlatFileGraphStore:
         existing = self._nodes.get(node_id)
         if existing is None:
             raise ValueError(f"cannot invalidate unknown node id {node_id!r} -- upsert it first")
-        self._nodes[node_id] = existing.model_copy(
-            update={"valid_until": ended_at, "superseded_by": superseded_by}
-        )
+        self._nodes[node_id] = existing.model_copy(update={"valid_until": ended_at, "superseded_by": superseded_by})
 
     def query_by_citation(self, citation: str) -> list[GraphNode]:
         return [node for node in self._nodes.values() if node.citation == citation]
@@ -180,16 +184,13 @@ class FlatFileGraphStore:
         exception (a crashed writer never leaves a stray `.tmp` sibling for a
         later `commit()` to trip over).
         """
-        document = {
-            "nodes": {
-                node_id: json.loads(node.model_dump_json())
-                for node_id, node in sorted(self._nodes.items())
-            }
+        document: dict[str, Any] = {
+            "nodes": {node_id: json.loads(node.model_dump_json()) for node_id, node in sorted(self._nodes.items())}
         }
+        if self.compiled_at is not None:
+            document["compiled_at"] = self.compiled_at.isoformat()
         with _locked(self.store_path):
-            atomic_write_text(
-                self.store_path, json.dumps(document, indent=2, sort_keys=True) + "\n"
-            )
+            atomic_write_text(self.store_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
 
 
 @contextlib.contextmanager

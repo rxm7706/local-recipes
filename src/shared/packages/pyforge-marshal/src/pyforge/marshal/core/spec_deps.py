@@ -42,9 +42,7 @@ def parse_deps_text(deps_text: str) -> tuple[StoryKey, ...]:
         if match.group("num") == "*":
             continue
         try:
-            keys.append(
-                normalize(match.group("epic") + "." + match.group("num"))
-            )
+            keys.append(normalize(match.group("epic") + "." + match.group("num")))
         except MalformedStoryKeyError:
             continue
     return tuple(keys)
@@ -55,9 +53,7 @@ def story_deps_from_epics(epics_text: str) -> dict[str, tuple[StoryKey, ...]]:
     headings = list(STORY_HEADING_RE.finditer(epics_text))
     graph: dict[str, tuple[StoryKey, ...]] = {}
     for index, match in enumerate(headings):
-        block_end = (
-            headings[index + 1].start() if index + 1 < len(headings) else len(epics_text)
-        )
+        block_end = headings[index + 1].start() if index + 1 < len(headings) else len(epics_text)
         block = epics_text[match.end() : block_end]
         dep_match = DEPS_FIELD_RE.search(block)
         deps_text = dep_match.group(1).strip() if dep_match else ""

@@ -123,7 +123,7 @@ jobs:
             fi
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             # Get recipes changed in PR
-            RECIPES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')
+            RECIPES=$(git diff --name-only refs/remotes/origin/${{ github.base_ref }}...HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')
           else
             # Push to main - get recipes changed in last commit
             RECIPES=$(git diff --name-only HEAD~1 HEAD -- 'recipes/*' | cut -d'/' -f2 | sort -u | grep -v -E '^(example|example-new-recipe|broken-recipes)$')

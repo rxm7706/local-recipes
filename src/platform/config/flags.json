@@ -7,6 +7,22 @@
         "off": false
       },
       "defaultVariant": "on"
+    },
+    "pyforge.cutover_root": {
+      "state": "ENABLED",
+      "variants": {
+        "local-recipes": "local-recipes",
+        "foundry": "foundry"
+      },
+      "defaultVariant": "local-recipes"
+    },
+    "pyforge.steward.ghe_fleet_credentials": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
     }
   }
 }

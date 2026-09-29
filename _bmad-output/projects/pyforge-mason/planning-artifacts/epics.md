@@ -18,8 +18,8 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-09-07"
-currency_review: "Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
@@ -1922,3 +1922,684 @@ Every story in this epic set builds and tests against **Python 3.14 only**.
 (`spec-fleet-consistency-standard` CAP-5) to match the interpreter the workspace actually
 installs. No story's acceptance criteria change; recorded here so a future story is not
 written against a 3.12 assumption the estate cannot produce.
+
+## Epic 17: The recipes/ fleet is stewarded (spec-fleet-stewardship fs:CAP-1..3)
+
+**Retroactive.** All three CAPs were re-verified PASS on 2026-09-11 at HEAD `b36c8be118`
+with mechanical evidence recorded in the Spec's own `verified:` lines, but no story was
+ever written, so `chain-completeness`'s delivered-Spec arm flagged the Spec as
+undecomposed. This epic documents a practice that is already in force; no new
+implementation. Unlike mason's other epics this Spec governs a **continuous practice**
+over `recipes/**` rather than a discrete build — which is why it carries
+`surface-drift: exempt` (per-recipe governance is the CFE workflow, not spec
+re-derivation) and adopts three legacy Tier-1 workflow specs as companions rather than
+restating them.
+
+### Story 17.1: The local mirror is the source of truth
+
+As a recipe maintainer,
+I want `recipes/<feedstock>/` edited first and verified locally before anything is
+pushed upstream,
+So that a feedstock never receives an unproven change and the mirror never drifts
+behind what shipped.
+
+**Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** spec-fleet-stewardship CAP-1
+**Surface:** `recipes/**` (`surface-drift: exempt`); `test_recipe_yaml_parse_audit.py`
+**Given** recipe work could be done directly on a feedstock **When** this practice is in
+force **Then** the local mirror is edited first, verified with a real build, and only
+then pushed
+**And** the parse audit holds the mirror machine-checkable
+**Status:** done — re-verified 2026-09-11 at `b36c8be118`: 72 commits touched `recipes/`
+since 2026-08-10 (continuous activity), `test_recipe_yaml_parse_audit.py` 6/6 passing
+
+### Story 17.2: Every local recipe carries its internal metadata, stripped on push
+
+As a recipe maintainer,
+I want each local recipe to carry `cfe-*` internal metadata that never reaches an
+upstream PR,
+So that the factory keeps its own provenance without leaking local-only fields into
+conda-forge.
+
+**Type:** docs • **Effort:** S • **Deps:** S-17.1 • **FR/AD:** spec-fleet-stewardship CAP-2
+**Given** `extra: cfe-*` is local-only internal metadata **When** this practice is in
+force **Then** every local recipe carries it and SKILL.md step 8b strips it before push
+**And** a duplicate-key guard (`cfe-conda-name`) keeps the block parseable
+**Status:** done — re-verified 2026-09-11 (meta-test half): parse audit incl. the
+duplicate-key guard 6/6 passing. **Residue recorded in the Spec, not resolved here:** the
+strip-on-push half was not independently re-checked against a real published feedstock
+file that pass — it rests on the documented step-8b convention and prior worked examples
+
+### Story 17.3: The recurring campaigns have a home and a record
+
+As a recipe maintainer,
+I want refresh (Track A/B), platform expansion and red-PR remediation to run as named,
+repeatable campaigns,
+So that bulk feedstock work is a workflow with recorded evidence rather than ad-hoc
+sweeps.
+
+**Type:** docs • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-fleet-stewardship CAP-3
+**Surface:** adopted companions `docs/specs/feedstock-refresh.md`,
+`feedstock-platform-expansion.md`, `feedstock-failure-remediation.md` (legacy Tier-1, in
+force)
+**Given** bulk feedstock work could be ad-hoc **When** this practice is in force **Then**
+each campaign has a named workflow spec and lands its evidence in that spec's own Worked
+Examples / Current State
+**And** dormancy between waves is a currency fact the specs self-document, not a defect
+**Status:** done — re-verified 2026-09-11 (historical; dormant today, matching the Spec's
+own 2026-09-09 realization-gate note): all three companions' last-touch commits still
+match their documented dates (`1aeaf12cee` 2026-07-02, `1bdd5a2f02` 2026-06-28); the
+criterion held when waves ran (Track A Waves B–F)
+
+## Epic 18: The recipe CI picks changed recipes from the remote-tracking ref (spec-pyforge-mason CAP-28)
+
+Minted 2026-09-27 (night) from the station Dream's entry of the same name, closing
+`DW-mason-recipe-ci-short-base-ref-2026-09-27` (found by doctor Story 32.1). Hardening: the pull_request branch is
+dormant today (no recipe workflow runs on `pull_request`). **HARD boundaries:** the manual
+`workflow_dispatch` `recipes` input path is untouched; no recipe and no CFE surface changes; the regression test is
+`pyforge-core:CAP-10`'s workflow scan (marshal Story 63.1), not a second one.
+
+### Story 18.1: The recipe CI picks changed recipes from the remote-tracking ref
+
+As a recipe maintainer whose pull request the recipe CI builds,
+I want the four recipe workflows to choose recipes from a diff against `refs/remotes/origin/${{ github.base_ref }}`,
+So that, when a pull_request trigger returns, a pushed tag named `origin/main` can never empty the changed-recipe set.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-28
+**Surface:** `.github/workflows/test-all.yml`, `.github/workflows/test-linux.yml`, `.github/workflows/test-macos.yml`,
+`.github/workflows/test-windows.yml` (the pull_request changed-recipe `git diff`).
+**Given** a pull request that touches `recipes/<name>/`
+**When** a recipe workflow picks what to build
+**Then** it diffs `refs/remotes/origin/${{ github.base_ref }}...HEAD`, never the short `origin/<base>`
+**And** marshal Story 63.1's workflow test passes over all four, and the manual `recipes` input path is unchanged
+**Status:** done
+
+## Epic 19: Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29)
+
+Minted 2026-09-28 from the station Dream's 2026-09-27 entry of the same name and the operator's four answers of 2026-09-28
+(A-only until the cutover flip; all four skills; the station skill SKF-compiled; the five-tier cell requires both).
+**HARD boundaries:** `conda-forge-expert` is never replaced, forked or demoted, and no Mason skill restates a CFE gotcha or
+recipe workflow — Epic 11's rule holds, since nothing here supersedes CFE; no implementation commit writes the CFE surface
+(AD-15) — the only CFE edit is Story 19.5's `retro(cfe):` commit; `.claude/skills/pyforge-mason/` exists under `AGENTS.md`
+§ Policy's dated `A-only` exception until `pyforge.cutover_root` flips to `foundry`; `docs/foundry/frames/**` is B's and is
+not edited (the Mason Frame's "Do not SKF-compile" line is an operator-owned B-side follow-up). The five-tier rule
+(`spec-pyforge-steward:CAP-160`, Story 72.2) and the Guild environment's `pyforge mason` (`spec-pyforge-steward:CAP-161`, Story 72.1) are
+steward's. The Deps are serial: each story lands on the last, since they share the mason skill meta-test and
+`docs/reference/skills-catalog.md`.
+
+### Story 19.1: Mason's station skill is SKF-compiled, exported and consulted by the persona
+
+As an agent doing mason work,
+I want a `pyforge-mason` station skill compiled from Mason's own package, like the other seven stations' skills,
+So that the `mason` grammar is documented where every station's is, and recipe questions still go to `conda-forge-expert`.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); canopy:AD-17
+**Surface:** `.claude/skills/pyforge-mason/**` (new: `skill-brief.yaml`, `0.1.0/pyforge-mason/{SKILL.md,metadata.json,
+provenance-map.json,context-snippet.md}`, `active` → `0.1.0`); `AGENTS.md` (the SKF block only, written by
+`skf-export-skill`); `.claude/skills/.export-manifest.json` and `.claude/skills/export-skill-result-*.json` (the
+export's own records); `.claude/skills/bmad-agent-mason/{SKILL.md,customize.toml,transcripts/mason-doctor-e2e.json}`;
+`src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py` (new, the shape of steward's
+`test_skf_steward_skill.py`); `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py`;
+`docs/reference/agent-instruction-notes.md` (§ *SKF skills block*); `docs/reference/skills-catalog.md` (regenerated).
+**Given** `AGENTS.md` § Policy carries the dated `A-only` exception for `.claude/skills/pyforge-mason/`
+**When** `skf-brief-skill`, `skf-create-skill` (Quick tier, scope `specific-modules` over `src/pyforge/mason/cli.py`,
+`src/pyforge/mason/__init__.py` and `README.md`, like steward's brief) and `skf-export-skill` run for `pyforge-mason`
+**Then** `.claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md` documents `pyforge mason recipe|package|environment|doctor`
+and `POST /stations/mason/mcp`, and sends every recipe question to `.claude/skills/conda-forge-expert/SKILL.md`; its
+provenance resolves under `src/shared/packages/pyforge-mason/`; the SKF validators report no high finding; `AGENTS.md`'s
+SKF block reads `8 skills`
+**And** the persona consults `pyforge-mason` for the grammar and CFE for recipe work; the mason meta-tests still assert CFE
+is hand-authored and not version-nested, and no longer assert `.claude/skills/pyforge-mason` is absent; the notes line that
+says Mason has no SKF skill is replaced; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 19.2: The package craft skill teaches mason package build and ship
+
+As a maintainer shipping a library,
+I want a Mason skill that walks `mason package build` and `mason package ship` end to end,
+So that one pass to PyPI, a conda channel and conda-forge is a skill I follow, not a spec I reread.
+
+**Type:** feature • **Effort:** S • **Deps:** S-19.1 • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); canopy:AD-17 (an
+operating-procedure skill, hand-authored)
+**Surface:** `.claude/skills/mason-package/**` (new, authored with bmad-builder's `bmad-workflow-builder`, which mason
+wields per the adoption register); `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` (new);
+`docs/reference/skills-catalog.md` (regenerated); `docs/reference/agent-instruction-notes.md` § *Skill Reference* (one row).
+**Given** Mason's native `package` verbs (CAP-3)
+**When** an agent loads `mason-package`
+**Then** it walks `pyforge mason package build` and `pyforge mason package ship --to …` over the four targets (`pypi-test`,
+`pypi`, `channel:<name>`, `conda-forge`): dry-run by default and `--yes` to confirm, the TestPyPI rehearsal that gates the
+irreversible PyPI publish (FR-50), credentials checked before anything is built, and the receipt; the `conda-forge` target
+links CFE, which owns the recipe and the submission
+**And** `test_mason_skills.py` asserts the skill exists, names the verbs it teaches, links `.claude/skills/conda-forge-expert/`,
+and carries no CFE gotcha heading (`### G<n>.`), with a planted heading proving the check is not vacuous;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 19.3: The environment craft skill teaches mason environment lock and check
+
+As a maintainer binding a project's conda and pip dependencies,
+I want a Mason skill that walks `mason environment lock` and `mason environment check`,
+So that one lockfile, and a CI check that says when it went stale, are a skill I follow.
+
+**Type:** feature • **Effort:** S • **Deps:** S-19.2 • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); canopy:AD-17 (an
+operating-procedure skill, hand-authored)
+**Surface:** `.claude/skills/mason-environment/**` (new, authored with `bmad-workflow-builder`);
+`src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` (extended); `docs/reference/skills-catalog.md`
+(regenerated); `docs/reference/agent-instruction-notes.md` § *Skill Reference* (one row).
+**Given** Mason's native `environment` verbs (CAP-4)
+**When** an agent loads `mason-environment`
+**Then** it walks `pyforge mason environment lock` (discovered manifests listed before solving, explicit paths override
+discovery, `--platform` repeatable, the engine's name and version in the output) and `pyforge mason environment check`
+(non-zero on a stale lockfile, machine-readable for CI), with the solve left entirely to the engine
+**And** `test_mason_skills.py` covers the skill the way it covers `mason-package`; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 19.4: The two feedstock campaigns become Mason skills
+
+As a recipe maintainer running a feedstock campaign,
+I want platform expansion and red-PR remediation to run from Mason skills,
+So that each campaign is a skill an agent loads, with CFE still owning every recipe step it drives.
+
+**Type:** docs • **Effort:** M • **Deps:** S-19.3 • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); CAP-20 (the recurring
+campaigns); canopy:AD-17
+**Surface:** `.claude/skills/mason-feedstock-platform-expansion/**` and `.claude/skills/mason-feedstock-failure-remediation/**`
+(new: `SKILL.md` carrying the how-to's parameterized body, `references/worked-examples.md` carrying its Worked Examples);
+`docs/how-to/feedstock-platform-expansion.md` and `docs/how-to/feedstock-failure-remediation.md` (each becomes a short
+pointer to its skill, frontmatter kept); `docs/specs/feedstock-platform-expansion.md` and
+`docs/specs/feedstock-failure-remediation.md` (the stubs point at the skill); `CLAUDE.md` (the two legacy-index rows'
+descriptions); `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` (extended);
+`docs/reference/skills-catalog.md` (regenerated); `docs/reference/agent-instruction-notes.md` § *Skill Reference* (two rows).
+**Given** the two how-tos are the orchestration layer over CFE's procedure — in their own words CFE "owns the procedural
+detail" and is authoritative on any conflict
+**When** this story lands, with `conda-forge-expert` invoked first (Rule 1)
+**Then** each campaign runs from its Mason skill — parameters, waves, open questions, acceptance and the Worked Examples new
+cases append to — moved verbatim, not rewritten; the timeless workflow stays in
+`.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md` and CFE's diagnostic chain, linked, never copied
+**And** the how-to and the `docs/specs/` stub each resolve to the skill; `CLAUDE.md`'s legacy index still names both stub
+filenames (`bmad-drift-check`); `test_mason_skills.py` covers both skills; `docs/specs/feedstock-refresh.md` does not
+move; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 19.5: The closing Rule-2 retro teaches conda-forge-expert it is one of Mason's skills
+
+As the maintainer of `conda-forge-expert`,
+I want CFE to know it is one of Mason's skills and where Mason's other skills live,
+So that a recipe task that starts in CFE finds Mason's grammar and campaigns, and this conda-forge effort closes as every one does.
+
+**Type:** retro • **Effort:** S • **Deps:** S-19.4 • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); CAP-26 (the
+self-improvement loop); FR-47; AD-15
+**Surface:** `.claude/skills/conda-forge-expert/SKILL.md` (a pointer: Mason's station skill routes recipe work here, and the
+feedstock campaigns run as Mason skills), `.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md` (names
+`mason-feedstock-platform-expansion` as its parameterized runner), `.claude/skills/conda-forge-expert/CHANGELOG.md` (a dated
+entry), `.claude/skills/conda-forge-expert/MANIFEST.yaml` and `config/skill-config.yaml` (the version), and
+`config/failure-catalog.yaml` only if the generator regenerates it.
+**Given** Epic 19 is a conda-forge effort (CLAUDE.md Rule 2)
+**When** the retro runs
+**Then** CFE's `SKILL.md` and the guide link Mason's skills, and no gotcha or procedure moves out of CFE; the CHANGELOG
+carries a dated minor-version entry naming Epic 19 (a "guidance held" entry if nothing else is found)
+**And** the commit subject is `retro(cfe): …` and touches only the CFE surface; mason's sanctioned-retro meta-test and the
+CFE suite stay green; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+## Epic 20: No station or environment caps pixi (spec-pyforge-mason CAP-30)
+
+Minted 2026-09-28 from the station Dream's entry of the same name and the operator's ruling of that date: *"we should
+loosen pyforge-mason to be >=0.80.0 with no cap -- we don't need to cap pixi in any station / environment"*. Mason's
+`pixi >=0.80.0,<0.81` run-dependency was the only pixi ceiling in the repo. **HARD boundaries:** the root `pixi.toml` does
+not change (its three pixi pins are already floors) and `environment.yaml` is not regenerated; conda-lock's own upstream
+`virtualenv <21` cap is out of scope; steward Story 72.1 is amended separately and its planning files are not touched
+here; no CFE surface changes.
+
+### Story 20.1: Mason's pixi run-dependency is a floor, and a guard reds any pixi ceiling
+
+As a maintainer composing an environment that carries `pyforge-mason`,
+I want Mason's pixi run-dependency to be a floor, and a check that fails on any capped pixi spec,
+So that no station or environment holds pixi below what the rest of the workspace resolves.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-30 (FR-52); AD-12
+**Surface:** `src/shared/packages/pyforge-mason/pixi.toml` (the `pixi` run-dependency and its comment),
+`src/shared/packages/pyforge-mason/src/pyforge/mason/engines/__init__.py` (`PIXI_VERSION_RANGE`),
+`src/shared/packages/pyforge-mason/tests/meta/test_engine_version_range_sync.py`, `scripts/pixi_version_registry.py`
+(Mason's run-dep registered as a floor site), `scripts/pixi_version_check.py` (the upper-bound finding),
+`tests/scripts/test_pixi_version_check.py` (new), `pixi.lock` (the path dependency's run-deps;
+`spec-pixi-candidate-currency` co-governs it).
+**Given** Mason's run-dependency reads `pixi >=0.80.0,<0.81`
+**When** the story lands
+**Then** it reads `pixi >=0.80.0`, `PIXI_VERSION_RANGE` is the same floor, and the sync meta-test holds them equal
+**And** `pixi-version-check` exits 0 on the tree and 1 when a capped pixi spec is planted in a root feature, a package
+`pixi.toml` or a package `pyproject.toml`
+**And** `pixi.lock` resolves pixi 0.81.x in every environment that carries `pyforge-mason`;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** done
+
+## Epic 21: Mason packages the intake toolchain (spec-pyforge-mason CAP-31)
+
+Minted 2026-09-28 from the station Dream's entry *Mason packages the intake toolchain* and the operator's ruling of that
+date at the triage of three intakes: package all five tools. Packaging is not adopting. Warden adopts `git-pkgs`, `forge`
+and `opengrep`; Atlas adopts `git-pkgs`; Herald adopts `pptxgenjs-plus-jsx`; `gitgres` stays a design reference that
+nothing in the platform loads. Other stations mint rows blocked on mason 21.1 (atlas) and 21.4 (warden) and reference
+21.5 (herald). The five stories are independent. **HARD boundaries:**
+- Each recipe goes through `conda-forge-expert` (Rule 1).
+- A green local build on linux-64 ends each story. No staged-recipes, feedstock or upstream PR is opened without an
+  explicit ask.
+- Each story closes with its own `retro(cfe):` commit carrying a CFE `CHANGELOG.md` semver entry (Rule 2). No other
+  commit touches the CFE surface.
+- No story touches `src/shared/packages/pyforge-mason/`, `pixi.toml` or `pixi.lock`: packaging is not adopting.
+- `gitgres` never builds against PostgreSQL 18 (fnd:CAP-12).
+- Every story is `flag-exempt: recipe-build` (`spec-feature-flag-governance` CAP-1, Q2).
+
+### Story 21.1: git-pkgs builds green from source as a local recipe
+
+As the Warden and Atlas stations, which will adopt `git-pkgs`,
+I want a local conda recipe that builds the `git-pkgs` CLI from source,
+So that adopting it is a channel install, not a download.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-31 (FR-53); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `recipes/git-pkgs/**` (new: `recipe.yaml`, `build.sh`, `build.bat`); the CFE retro surface
+(`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml}`, plus
+`config/failure-catalog.yaml` if a new gotcha regenerates it), committed alone as `retro(cfe): …`.
+**Given** `git-pkgs/git-pkgs` v0.20.0 (2026-09-04, MIT, Go; `go.mod` needs Go 1.26.7; upstream builds with
+`CGO_ENABLED=0` on pure-Go SQLite)
+**When** the recipe builds the tag archive with `compiler("go-nocgo")`, `CGO_ENABLED=0` and `GOTOOLCHAIN=local`, injects
+`-X github.com/git-pkgs/git-pkgs/cmd.version=${PKG_VERSION}`, and bundles the dependency licenses with `go-licenses`
+**Then** `pixi run -e local-recipes recipe-build recipes/git-pkgs` exits 0 on linux-64, and its test sees
+`git-pkgs --version` report 0.20.0
+**And** the recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; its CFE block records the real
+build; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 21.2: forge builds green from source as a local recipe
+
+As the Warden station, which will adopt `forge`,
+I want a local conda recipe that builds the `forge` CLI from source,
+So that one binary answers for GitHub, GitLab, Gitea/Forgejo and Bitbucket from a channel install.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-31 (FR-53); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `recipes/forge/**` (new: `recipe.yaml`, `build.sh`, `build.bat`); the CFE retro surface, committed alone as
+`retro(cfe): …`.
+**Given** `git-pkgs/forge` v0.10.0 (2026-09-02, MIT, Go; `go 1.26.0` with `toolchain go1.26.7`; the CLI's `main` is
+`./cmd/forge`, and `internal/cli.Version` defaults to `dev`)
+**When** the recipe builds `./cmd/forge` from the tag archive with `compiler("go-nocgo")`, `CGO_ENABLED=0` and
+`GOTOOLCHAIN=local`, and injects `-X github.com/git-pkgs/forge/internal/cli.Version=${PKG_VERSION}`
+**Then** `pixi run -e local-recipes recipe-build recipes/forge` exits 0 on linux-64, and its test sees `forge version`
+print `forge 0.10.0`, not `forge dev`
+**And** the name `forge` is re-checked against live conda-forge `channeldata.json` before the build (CFE G74, G118); the
+recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's `retro(cfe):` commit lands a CFE
+`CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 21.3: gitgres builds green against PostgreSQL 17 from a pinned commit
+
+As the maintainer keeping `gitgres` as a design reference,
+I want a local conda recipe that builds its PostgreSQL extension and libgit2 backend against PostgreSQL 17,
+So that the design can be tried in a conda environment without Docker, while nothing in the platform loads it.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-31 (FR-53); fnd:CAP-12; AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `recipes/gitgres/**` (new: `recipe.yaml`, `build.sh`, and a recipe-local `conda_build_config.yaml` only if
+the explicit host pins do not hold 17); the CFE retro surface, committed alone as `retro(cfe): …`.
+**Given** `andrew/gitgres` (MIT) has no tag or release. Its HEAD is `eaf8743f2c137d61a75432e44e13467cad7eceaa`
+(2026-03-08). `ext/` is a PGXS extension (`default_version` 0.1, requires `pgcrypto`, links OpenSSL). `backend/`
+builds `gitgres-backend` and `git-remote-gitgres` against libgit2 and libpq, hard-codes `CC = cc` and has no install
+target. conda-forge-pinning pins `postgresql` and `libpq` at 18.
+**When** the recipe pins that commit as a dev snapshot and builds against host `postgresql >=17.11,<18`,
+`libpq >=17.11,<18`, `libgit2` and `openssl`. It uses `compiler("c")` and `stdlib("c")`, builds `ext` with
+`PG_CONFIG=${PREFIX}/bin/pg_config` and `make -C ext install`, and builds `backend` with `CC="${CC}"`, copying both
+binaries into `${PREFIX}/bin`
+**Then** `pixi run -e local-recipes recipe-build recipes/gitgres` exits 0 on linux-64. Its test initdbs a throwaway
+PostgreSQL 17 cluster on a Unix socket, runs `CREATE EXTENSION gitgres CASCADE` and a query against the extension, and
+sees `gitgres-backend` print its usage
+**And** the rendered build and test environments resolve PostgreSQL 17, never 18; Windows is skipped
+(`build.skip: win`, CFE G102); the recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's
+`retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 21.4: opengrep is repackaged from its release binaries as a local-only recipe
+
+As the Warden station, which will adopt `opengrep`,
+I want a local conda recipe that installs the `opengrep` release binary for each platform,
+So that the scanner is a channel install, with the reason it cannot be built from source written down.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-31 (FR-53); AD-1; AD-15; CFE G44, G101; CFE Rule 1 + Rule 2
+**Surface:** `recipes/opengrep/**` (new: `recipe.yaml`, the tag's `LICENSE` shipped in-recipe, and a test fixture rule
+and file); the CFE retro surface, committed alone as `retro(cfe): …`.
+**Given** `opengrep/opengrep` v1.30.0 (2026-09-07). Its COPYRIGHT grants LGPL version 2.1, so the license is
+`LGPL-2.1-only`. The release ships self-contained binaries (`opengrep_manylinux_x86` and `_aarch64`,
+`opengrep_osx_x86` and `_arm64`, `opengrep_windows_x86.exe`) with cosign signatures and no checksum file. A source build
+is not feasible on conda-forge today: it needs OCaml 5.5.0, while conda-forge's `ocaml` tops out at 5.4.0; `dune` is not
+on conda-forge; there are 69 opam dependencies and a git-URL pin to a gitlab fork branch; and 40 git submodules are
+missing from GitHub archives
+**When** the recipe takes one source per conda subdir (`file_name: opengrep`), per-platform and not noarch, with a
+streamed sha256 per asset and no compiler, and sets `build.dynamic_linking.binary_relocation: false`
+**Then** `pixi run -e local-recipes recipe-build recipes/opengrep` exits 0 on linux-64. Its test sees
+`opengrep --version` report 1.30.0 and a local rule find its planted match with no network access, and the packaged
+binary is byte-identical to the release asset
+**And** the CFE block records `cfe-source-kind: github-release-binary`,
+`cfe-on-conda-forge-status: blocked-pending-prerequisites`, and the source-build blockers in `cfe-forge-blocker-list`, so
+the recipe stays local; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 21.5: pptxgenjs-plus-jsx builds green beside its pptxgenjs-plus sibling
+
+As the Herald station, which will adopt `pptxgenjs-plus-jsx` for decks,
+I want a local conda recipe for the JSX companion, next to a `pptxgenjs-plus` at the version it pins,
+So that Herald gets the JSX authoring layer and its engine from one channel.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-31 (FR-53); AD-1; AD-15; CFE G69, G100, G103, G110; CFE Rule 1 + Rule 2
+**Surface:** `recipes/pptxgenjs-plus-jsx/**` (new: `recipe.yaml`); `recipes/pptxgenjs-plus/recipe.yaml` (4.2.1 → 4.3.4);
+the CFE retro surface, committed alone as `retro(cfe): …`.
+**Given** `pptxgenjs-plus-jsx` 4.3.4 on npm (2026-09-24, MIT, ESM, no bin, `engines.node >=24`). It depends on
+`markdown-it`, `@lofcz/mathlive` and `mathml2omml-plus`, and on `pptxgenjs-plus` at exactly 4.3.4, while
+`recipes/pptxgenjs-plus` sits at 4.2.1
+**When** `recipes/pptxgenjs-plus` moves to 4.3.4 (sha256 recomputed, `build.number` 0, `bin`/`engines`/`dependencies`
+re-read per G110) and the JSX recipe follows the repo's canonical npm pattern for a bin-less library (the
+`recipes/pptxgenjs-plus` shape: `noarch: generic`, `pnpm install --ignore-scripts`, `npm pack`, `npm install --global`,
+`pnpm-licenses`, `node_modules/.bin` stripped, a Windows branch that `call`s every shim), with `nodejs >=24` as a floor
+only (G103)
+**Then** `pixi run -e local-recipes recipe-build recipes/pptxgenjs-plus` and
+`pixi run -e local-recipes recipe-build recipes/pptxgenjs-plus-jsx` both exit 0 on linux-64, and the JSX test loads the
+`.`, `./render` and `./jsx-runtime` exports under Node 24
+**And** both recipes pass `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's `retro(cfe):` commit
+lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+
+## Epic 22: Twelve recipes lose conda-recipe-manager's leaked sentinel key, and CFE's validation refuses the next one (spec-pyforge-mason CAP-32)
+
+Minted 2026-09-28 (night) from the station Dream's entry of the same name and the operator's ruling of that night.
+12 `recipes/*/recipe.yaml` files carry a YAML mapping key written as `<conda_recipe_manager.types.SentinelType object at
+0x…>`, leaked by the 2026-08-16 bulk v0→v1 conversion (`20b2f459fa`) wherever a `meta.yaml` construct had no
+translation. All 12 fail rattler-build's parse, and CFE's `validate_recipe` passes six of them. The two stories are
+independent. **HARD boundaries:**
+- Each recipe judgement goes through `conda-forge-expert` (Rule 1).
+- `meta.yaml` stays beside each recipe: the feedstocks are still v0 (the local-mirror rule).
+- A green render, validate and lint, and a local build where it is cheap, end Story 22.1. No feedstock, staged-recipes
+  or upstream PR is opened without an explicit ask.
+- Each story closes with its own `retro(cfe):` commit carrying a CFE `CHANGELOG.md` semver entry (Rule 2). Story 22.2's
+  code lands in that commit, as Story 16.3's did.
+- No story touches `src/shared/packages/pyforge-mason/`, `pixi.toml` or `pixi.lock`.
+- 22.1 is `flag-exempt: recipe-build`; 22.2 is `flag-exempt: detector-or-gate` (`spec-feature-flag-governance` CAP-1, Q2).
+
+### Story 22.1: The twelve recipes carrying conda-recipe-manager's sentinel key are repaired
+
+As the fleet steward who reads `recipes/` as the local mirror of each feedstock,
+I want each of the twelve `recipe.yaml` files to say in v1 what its `meta.yaml` says,
+So that every one renders, validates and, where cheap, builds, instead of failing rattler-build's parse on a Python
+object's repr.
+
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-32 (FR-54); AD-1; AD-15; CFE G20, G47, G92,
+G93, G95; CFE Rule 1 + Rule 2
+**Surface:** `recipes/{semgrep,boost,pyautogui,pyobjc-framework-systemconfiguration,psycopg2-yugabytedb,vc,django-pygwalker,ctng-compilers,StringZilla,lerc,amundsen-databuilder,shodan}/recipe.yaml`;
+the CFE retro surface (`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml,config/failure-catalog.yaml,tests/meta/test_recipe_yaml_parse_audit.py}`),
+committed alone as `retro(cfe): …`.
+**Given** each sentinel stands for one of five `meta.yaml` constructs: a commented-out key (StringZilla, pyobjc-framework-systemconfiguration,
+lerc); a test with only `requires:` left (semgrep, django-pygwalker, amundsen-databuilder); an `imports:` list split from
+its key (psycopg2-yugabytedb); `test.requires` orphaned at the top level (pyautogui, shodan); or jinja control flow in
+test commands (boost, ctng-compilers, vc)
+**When** each sentinel is replaced by that construct's v1 form, and the conversion defects found beside it are fixed
+(the bare `python ${{ python_min }}` host specs, pyobjc's `name.replace(...)`, boost's loops and context lists,
+ctng-compilers' output-level `run_exports`, vc's `run_exports` shape)
+**Then** `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` finds nothing, and each file renders with
+`rattler-build build --render-only` on a platform it builds and passes `validate_recipe` and the CI-parity lint
+**And** shodan, django-pygwalker, amundsen-databuilder, lerc, StringZilla, psycopg2-yugabytedb and pyautogui build on
+linux-64, with a test env that cannot solve recorded per G95; semgrep, pyobjc-framework-systemconfiguration, boost,
+ctng-compilers and vc are render, validate and lint only; `meta.yaml` stays; the story's `retro(cfe):` commit adds the
+gotcha and a corpus meta-test that reds any `recipes/*/recipe.yaml` carrying a non-string key or an object repr;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 22.2: CFE's validation reds a recipe with a non-string key or a Python object repr
+
+As a recipe author whose next v0→v1 conversion might leak the same way,
+I want `validate_recipe` to refuse a `recipe.yaml` whose parsed tree holds a non-string mapping key or a Python object's
+repr,
+So that the leak fails at the first gate, instead of passing CFE's validation and failing rattler-build's parse.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-32 (FR-54); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `.claude/skills/conda-forge-expert/scripts/validate_recipe.py` (a tree walk in `validate_recipe_yaml`),
+`.claude/skills/conda-forge-expert/tests/unit/test_validate_recipe.py`, fixtures under
+`.claude/skills/conda-forge-expert/tests/fixtures/recipes/`, and the CFE version carriers, all in one `retro(cfe): …`
+commit.
+**Given** `validate_recipe` today passes a `recipe.yaml` whose key is `<conda_recipe_manager.types.SentinelType object at
+0x…>` everywhere but the top level, because PyYAML reads it as a plain string
+**When** `validate_recipe_yaml` walks the parsed tree and reports an error for every non-string mapping key, and for every
+key or whole scalar that matches a Python object repr (`<dotted.Name object at 0x…>`), naming its path
+**Then** `validate_recipe` exits non-zero on fixtures with a sentinel key (nested, not top-level), an int key and a
+whole-scalar repr value, and exits 0 on a clean fixture and on one whose `about.description` prose only mentions an
+object repr
+**And** `mason recipe validate` gains the check with no Mason change (it runs CFE's script by subprocess); the story's
+`retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test`
+green
+**Status:** backlog
+
+## Epic 23: CFE's generator asks instead of guessing, a mismatched copyleft licence is refused, and a negative corpus keeps each check honest (spec-pyforge-mason CAP-33)
+
+Minted 2026-09-29 from the station Dream's entry of the same name and the operator's ruling of that day. A
+capability-by-capability comparison found that Mason and CFE already do almost everything `OpenTeams-WFT-CDO/auto-recipe`
+does, so auto-recipe retires, and the three things they lack come into CFE: a Decided/Ambiguous contract, a
+licence-semantics check and a negative corpus. The operator owns that GitHub org, so code may be ported from
+`auto-recipe@8b53eda`, with a provenance line in each file that carries ported code. The stories run in order: 23.2 uses
+23.1's check, and 23.3 pins 23.1's and 22.2's refusals. **HARD boundaries:**
+- Each story goes through `conda-forge-expert` (Rule 1).
+- Each story's code, tests, fixtures, `CHANGELOG.md` entry and version carriers land in its own `retro(cfe):` commit
+  (Rule 2; the Story 16.3 and 22.2 path).
+- No story touches `src/shared/packages/pyforge-mason/`, `pixi.toml` or `pixi.lock`, and none edits `recipes/**`.
+- No staged-recipes, feedstock or upstream PR is opened.
+- The unattended trigger layer (issue to draft PR, PR watcher, LLM fix loop) and the MCP `generate_recipe_from_pypi`
+  grayskull path are out of scope.
+- 23.1 and 23.3 are `flag-exempt: detector-or-gate`; 23.2 is a fix and carries no flag (`spec-feature-flag-governance`
+  CAP-1, Q1/Q2).
+
+### Story 23.1: CFE refuses a copyleft -only licence whose LICENSE grants any later version
+
+As a recipe author declaring a GPL-family licence,
+I want CFE to catch an `-only` identifier whose LICENSE text grants "any later version",
+So that a valid but wrong SPDX identifier does not ship as package metadata.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-33 (FR-55); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `.claude/skills/conda-forge-expert/scripts/license-checker.py` (a pure `check_license_semantics(declared,
+source_dir)` function, called from the existing `--check-source` path), `tests/unit/` for it, fixtures under
+`tests/fixtures/`, and the CFE version carriers, all in one `retro(cfe): …` commit.
+**Given** `license-checker.py --check-source` today checks only that the licence file exists, and both `GPL-3.0-only` and
+`GPL-3.0-or-later` are valid SPDX, so no CFE check can tell a wrong one from a right one
+**When** the check reads every `LICENSE*`, `LICENCE*` and `COPYING*` file in the source directory for "any later
+version" and compares it with a GPL, LGPL, AGPL or GFDL declared identifier
+**Then** `--check-source` exits non-zero on a `GPL-3.0-only` fixture whose LICENSE says "any later version" and names
+`GPL-3.0-or-later`; exits 0 on the matching `-or-later` fixture; reports a skip, not a pass, for a GPL `-only` fixture
+whose LICENSE says neither; skips an MIT fixture; and exits non-zero when `license_file` is missing from the source
+directory (today it prints `[ERROR]` and exits 0)
+**And** the function carries a provenance line naming `auto-recipe@8b53eda` `verify/checks.py`; removing the comparison
+makes the mismatch fixture's test fail; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 23.2: CFE's recipe generator asks instead of guessing
+
+As a recipe author generating a recipe from PyPI,
+I want `recipe-generator.py` to tell me which choices it could not settle, with the options and the default it took,
+So that a guess becomes a question I answer, instead of a plausible wrong value in a recipe.
+
+**Type:** fix • **Effort:** M • **Deps:** S-23.1 • **FR/AD:** spec-pyforge-mason CAP-33 (FR-55); AD-1; AD-15; CFE Rule 1 + Rule 2; CFE Operating Principle 1
+**Surface:** `.claude/skills/conda-forge-expert/scripts/recipe-generator.py` (a small Decided/Ambiguous type and the six
+decision points on the v1 PyPI path, including the maturin route), `tests/unit/test_recipe_generator.py`, fixture sdists
+under `tests/fixtures/`, and the CFE version carriers, all in one `retro(cfe): …` commit.
+**Given** the generator chooses silently at six points: `determine_build_backend` returns `setuptools` when nothing
+matches; `_extract_import_name_from_sdist` returns an empty string when ambiguous and the caller falls back to the
+distribution name; `_can_noarch_python` decides from classifiers when the sdist is unavailable; `_resolve_license` takes
+the first matching classifier or ends at `REPLACE_LICENSE`; `license_file` defaults to `LICENSE`; and
+`_resolve_python_min` uses the floor when `python_requires` does not parse
+**When** each point returns a decided value or a question carrying its options and default, the licence decision also
+calls 23.1's check on the cached sdist, and the run prints the questions and writes them into the recipe's bottom
+`# CFE comments` block
+**Then** a fixture with no `[build-system]` table, two top-level packages, no licence metadata and an unparseable
+`python_requires` lists one question per point, writes them into the CFE block, and exits 0; with `--strict` it exits
+non-zero and writes no recipe; a fully resolvable fixture lists no questions and writes the same recipe as before
+**And** the Decided/Ambiguous type carries a provenance line naming `auto-recipe@8b53eda` `decisions/base.py`; the
+default run keeps exit 0, so `mason recipe new` and `cfe.generate_recipe` need no change (AD-1); the story's
+`retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test`
+green
+**Status:** backlog
+
+### Story 23.3: A negative corpus proves each CFE check keeps rejecting its defect
+
+As the maintainer of CFE's checks,
+I want a corpus of recipes that must stay rejected, each tied to the rule that rejects it,
+So that a check which stops firing turns a test red instead of passing silently.
+
+**Type:** feature • **Effort:** S • **Deps:** S-23.1, S-22.2 • **FR/AD:** spec-pyforge-mason CAP-33 (FR-55); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** fixtures under `.claude/skills/conda-forge-expert/tests/fixtures/negative/` with a `README`,
+`tests/unit/test_negative_corpus.py`, a native `recipe_optimizer.py` check (next free code, `SEL-005`) only if nothing
+offline rejects skip under noarch, and the CFE version carriers, all in one `retro(cfe): …` commit.
+**Given** CFE has one negative fixture (`tests/fixtures/recipes/v1-broken`), and auto-recipe's `tests/negative/` holds
+two grayskull outputs carrying three defects that passed conda-forge's linter: skip under `noarch: python`, a scalar
+`python_version` test matrix, and `GPL-3.0-only` for an or-later LICENSE
+**When** the two fixtures are ported, CFE's own known-bad shapes are added (the conda-recipe-manager sentinel key from
+22.2, a compiler without `stdlib`), and each fixture's test asserts the specific rule that rejects it (for example
+`TEST-002`, `STD-001`, 23.1's licence check, 22.2's repr check)
+**Then** every fixture is rejected by its named rule, and a parametrized test fails for any fixture that passes every
+check; if only conda-smithy's external lint rejects skip under noarch, a native `SEL-005` check is added so the corpus
+runs offline
+**And** the README says the fixtures must never be "fixed" and names `auto-recipe@8b53eda` `tests/negative` as the source
+of the ported two; removing any one check makes its fixture's test fail; the story's `retro(cfe):` commit lands a CFE
+`CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+## Epic 24: The CFE host-gate tests give the same verdict in any developer shell (spec-pyforge-mason CAP-34)
+
+Minted 2026-09-29 from the station Dream's entry of the same name and the operator's ruling of that day. A local
+`pr-preflight` failed one CFE test that CI passed, because the credential host gate derives its allowlist from every
+`*_BASE_URL` var the shell exports, and a Claude Code shell exports `ANTHROPIC_BASE_URL`. The fix was already implemented
+(CFE v8.91.1, PR #1669) when the operator ruled that it take the whole chain before it merges, so the epic's one story
+is minted at `done` and lands with this chain. **HARD boundaries:**
+- The story goes through `conda-forge-expert` (Rule 1).
+- Its code, tests, `CHANGELOG.md` entry and version carriers land in one `retro(cfe):` commit (Rule 2; the Story 16.3
+  and 22.2 path).
+- It changes no runtime behaviour: `_http.py` and `inventory_channel.py` are untouched.
+- It touches no `src/shared/packages/pyforge-mason/`, `pixi.toml`, `pixi.lock` or `recipes/**` file.
+- 24.1 is a fix and carries no flag (`spec-feature-flag-governance` CAP-1, Q1).
+
+### Story 24.1: CFE's host-gate tests pass in any developer shell
+
+As a maintainer running `pr-preflight` from an agent or enterprise shell,
+I want the CFE host-gate tests to ignore the mirror and tool env vars my shell exports,
+So that a test CI passes does not fail locally and block my push.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-34 (FR-56); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `.claude/skills/conda-forge-expert/tests/conftest.py` (a shared, opt-in `clean_mirror_env` fixture), the six
+host-gate test modules that opt into it, a new `tests/unit/test_clean_mirror_env.py`, SKILL.md's host-gate constraint,
+and the CFE version carriers, all in one `retro(cfe): …` commit.
+**Given** `_http._configured_enterprise_hosts()`, `inventory_channel._fallback_configured_enterprise_hosts()` and
+`dependency-checker.py`'s `_auth_headers` derive their allowlist from every set `*_BASE_URL` var plus npm's registry
+vars, and only one of the six test modules that exercise them cleared all of those vars
+**When** a shared fixture removes every `*_BASE_URL` and each name in `_http._EXTRA_MIRROR_ENV_VARS` before each
+host-gate test, and each of those modules opts in
+**Then** the seven affected test modules pass with `ANTHROPIC_BASE_URL` set and without it, and `pr-preflight` exits 0
+from a shell that exports it
+**And** a regression test plants stray vars before the fixture runs and fails if they survive; with the fixture
+disabled, it fails along with the originally failing test; the `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver
+entry (v8.91.1); `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** done
+
+## Validation note — 2026-09-14 (chain-currency sweep cascade)
+
+Validated against the architecture spine as re-stamped today (its § Currency
+reconciliation — 2026-09-14) and the PRD's same-day reconciliation.
+
+- **Ledger agreement, re-measured with the real parser** (`fleet_scan.parse_sprint_status`,
+  not a regex): **70/70 stories `done` across 17/17 epics.** Every `### Story` heading
+  here maps 1:1 to a `sprint-status-ledger.yaml` key, no orphan either direction. The
+  prior note's 11/50 figure is superseded by growth, not corrected.
+- **Epic 16's realization-gate stories are confirmed landed against live evidence, not
+  against their own status lines.** Story 16.1 (mason's env satisfies the CFE import
+  floor) and Story 16.2 (a first estate caller of `mason recipe`) both read `done`;
+  checked directly this pass, `[feature.pyforge-mason.tasks.pyforge-mason-recipe-build-smoke]`
+  exists in `pixi.toml` and `.github/workflows/pyforge-station-tests.yml:228` invokes
+  it in the mason job. The caller is real and runs on every mason CI run.
+- **The PRD's new FR-14 as-built divergence is deliberately NOT minted as a story
+  here.** `mason recipe update` writes by default while FR-14 promises diff-before-apply
+  (and NFR-9 promises dry-run-by-default). Changing that is a **behaviour change to a
+  shipped verb**, which under this repo's Dream-first rule enters through
+  `docs/dreams/<slug>.md` → `bmad-spec` → a Story, not through a currency sweep
+  hand-writing an epic entry. It is recorded in the PRD (FR-14's divergence box and
+  NFR-9's partial marker) and surfaced to the operator; the story belongs to whoever
+  takes the Dream.
+- **Cross-station note.** The foundry-island wiring that moved mason's package this
+  week (`cfe.py`/`errors.py`/`recipe.py`/`resolve.py`) is **steward Story 44.7**, on
+  steward's epics. No mason story is owed for it, and none is minted — recorded so the
+  package motion is not later read as an undecomposed mason change.
+- No epic or story content above was restructured; this note and the frontmatter
+  `updated:`/`currency_review:` bumps are the whole edit.
+
+## Fold provenance — 2026-09-17
+
+One-chain mason fold. Epics already sequential 1..17 with no gaps (identity remumber). Scite window: `spec-pyforge-mason` CAP-1..27. Story keys reminted for 11.1 / 11.2 only. Ledger regenerated through `rekey-2026-09-17.md`. No `blocked` row flipped.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-28
+
+`arch→epics` edge after the spine's 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28: FR-51 / CAP-29
+lands on AD-1, AD-15 and canopy:AD-17; no AD added, amended or removed). Epic 19 (19.1–19.5) decomposes CAP-29, and each
+story keeps to those decisions: no Mason skill restates recipe knowledge (19.2–19.4's gotcha-heading guard, AD-1's rule
+carried from code to skills); no implementation commit writes the CFE surface, whose one edit is 19.5's `retro(cfe):`
+commit (AD-15); the station skill is SKF-compiled and the four others are hand-authored operating-procedure skills
+(canopy:AD-17). Epic 11's rule — no mason SKF that supersedes CFE — holds: none does. Every Story heading still maps 1:1
+to a `sprint-status-ledger.yaml` key (`19-1`..`19-5` and `epic-19` added at `backlog`, `epic-19-retrospective` at
+`optional`, through the Tier-3 feed and `sprint-ledger-sync`). `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (later)
+
+`arch→epics` edge after the spine's second 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28 (later): FR-52 /
+CAP-30 lands on AD-12 as written; no AD added, amended or removed). Epic 20 (Story 20.1) decomposes CAP-30 and keeps to
+AD-12: pixi's range stays declared in the member `pixi.toml` and mirrored by `PIXI_VERSION_RANGE` under the sync
+meta-test, and only its shape changes, to a floor. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key
+(`20-1` and `epic-20` added, `epic-20-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`).
+`updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+`arch→epics` edge after the spine's third 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28 (night): FR-53 /
+CAP-31 lands on AD-1 and AD-15 as written; no AD added, amended or removed). Epic 21 (Stories 21.1–21.5) decomposes
+CAP-31, one recipe per story, and keeps to those decisions. The recipes live under `recipes/`, and no story touches
+Mason's code (AD-1). No implementation commit writes the CFE surface, and each story's one CFE edit is its own
+`retro(cfe):` commit (AD-15, FR-47). Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key. `21-1` to
+`21-5` and `epic-21` were added at `backlog` and `epic-21-retrospective` at `optional`, through the Tier-3 feed and
+`sprint-ledger-sync`. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (night, later)
+
+`arch→epics` edge after the spine's fourth 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28 (night, later):
+FR-54 / CAP-32 lands on AD-1 and AD-15 as written; no AD added, amended or removed). Epic 22 (Stories 22.1 and 22.2)
+decomposes CAP-32 and keeps to those decisions. The recipes live under `recipes/` and the check in CFE's
+`validate_recipe.py`, and no story touches Mason's code (AD-1). Story 22.1's CFE edit is its `retro(cfe):` commit, and
+Story 22.2's code lands in its own `retro(cfe):` commit, as Story 16.3's did (AD-15, FR-47). Every Story heading still
+maps 1:1 to a `sprint-status-ledger.yaml` key. `22-1`, `22-2` and `epic-22` were added at `backlog` and
+`epic-22-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-29
+
+`arch→epics` edge after the spine's 2026-09-29 re-stamp (§ Currency reconciliation — 2026-09-29: FR-55 / CAP-33 lands on
+AD-1 and AD-15 as written; no AD added, amended or removed). Epic 23 (Stories 23.1–23.3) decomposes CAP-33 and keeps to
+those decisions. All three change CFE code only, and no story touches Mason's code (AD-1). Each story's code lands in its
+own `retro(cfe):` commit, as Stories 16.3 and 22.2 set (AD-15, FR-47). The stories are numbered in the order they run,
+so no story depends on a later sibling. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key. `23-1`
+to `23-3` and `epic-23` were added at `backlog` and `epic-23-retrospective` at `optional`, through the Tier-3 feed and
+`sprint-ledger-sync`. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-29 (later)
+
+`arch→epics` edge after the spine's second 2026-09-29 re-stamp (§ Currency reconciliation — 2026-09-29 (later): FR-56 /
+CAP-34 lands on AD-1 and AD-15 as written; no AD added, amended or removed). Epic 24 (Story 24.1) decomposes CAP-34 and
+keeps to those decisions. The change is in CFE's tests, and no story touches Mason's code (AD-1). The story's code lands
+in its own `retro(cfe):` commit (AD-15, FR-47). Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key.
+`24-1` and `epic-24` were added at `done`, and `epic-24-retrospective` at `optional`, through the Tier-3 feed and
+`sprint-ledger-sync`. `updated:` bumped.

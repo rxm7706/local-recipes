@@ -40,6 +40,7 @@ def _by_check(findings, check):
 
 # --- the defect it exists to catch -----------------------------------------
 
+
 def test_forward_dep_on_actionable_story_is_a_fail(tmp_path: Path) -> None:
     _station(
         tmp_path,
@@ -119,6 +120,7 @@ def test_cross_station_reference_is_not_judged(tmp_path: Path) -> None:
 
 # --- whole-epic grammar ----------------------------------------------------
 
+
 def test_whole_epic_ref_unsatisfied_when_any_story_open(tmp_path: Path) -> None:
     _station(
         tmp_path,
@@ -152,6 +154,7 @@ def test_whole_epic_ref_with_no_stories_is_never_satisfied(tmp_path: Path) -> No
 
 
 # --- coverage classes ------------------------------------------------------
+
 
 def test_prose_declaration_reports_partial_not_measured(tmp_path: Path) -> None:
     """The mason false-green: Deps TEXT is not a readable REFERENCE."""
@@ -249,6 +252,7 @@ def test_unparseable_heading_is_not_silently_clean(tmp_path: Path) -> None:
 
 # --- envelope / degradation ------------------------------------------------
 
+
 def test_coverage_finding_is_emitted_even_on_a_red_run(tmp_path: Path) -> None:
     """'How much did you measure?' matters most precisely when something failed."""
     _station(
@@ -277,13 +281,11 @@ def test_every_finding_carries_the_source_tag(tmp_path: Path) -> None:
         "### Story 2.3: Something\n**Deps:** S-3.2\n",
         "development-status:\n  2-3-something: backlog\n",
     )
-    assert all(
-        f.source is Source.FORWARD_DEPENDENCY
-        for f in gather_forward_dependency(tmp_path)
-    )
+    assert all(f.source is Source.FORWARD_DEPENDENCY for f in gather_forward_dependency(tmp_path))
 
 
 # --- the restated constant -------------------------------------------------
+
 
 def test_actionable_statuses_is_the_expected_literal() -> None:
     """Guards the value locally. Equality with the INSTALLED harness is asserted

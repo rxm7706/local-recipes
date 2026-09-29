@@ -18,15 +18,14 @@ from pyforge.marshal.mcp.coverage import (
 )
 
 
-def test_dream_stations_are_the_historical_six():
-    assert DREAM_STATIONS == (
-        "mason",
-        "atlas",
-        "warden",
-        "herald",
-        "steward",
-        "marshal",
-    )
+def test_dream_stations_is_the_one_guild_roster():
+    """Story 59.6 / CAP-137: ``DREAM_STATIONS`` is no longer a hand-kept
+    six-station subset (it silently omitted doctor and scribe) -- it is
+    ``pyforge.core.roster.STATIONS``, the one declared roster of eight."""
+    from pyforge.core.roster import STATIONS
+
+    assert DREAM_STATIONS == STATIONS
+    assert len(DREAM_STATIONS) == 8
 
 
 def test_tool_surface_coverage_report_is_a_number():
@@ -121,16 +120,7 @@ def test_fixture_non_mason_package_mcp_counts(tmp_path: Path):
     (tmp_path / "pixi.toml").write_text("[workspace]\n", encoding="utf-8")
     (tmp_path / ".claude").mkdir()
     server = (
-        tmp_path
-        / "src"
-        / "shared"
-        / "packages"
-        / "pyforge-herald"
-        / "src"
-        / "pyforge"
-        / "herald"
-        / "mcp"
-        / "server.py"
+        tmp_path / "src" / "shared" / "packages" / "pyforge-herald" / "src" / "pyforge" / "herald" / "mcp" / "server.py"
     )
     server.parent.mkdir(parents=True)
     server.write_text("# fixture\n", encoding="utf-8")

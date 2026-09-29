@@ -72,7 +72,7 @@ class _ProbeResult:
 def _satisfies_pin(installed: str, pin: str) -> bool:
     try:
         return Version(installed) in SpecifierSet(pin)
-    except (InvalidVersion, ValueError):
+    except InvalidVersion, ValueError:
         return False
 
 
@@ -87,7 +87,7 @@ def _read_bmad_core_version(repo_root: Path) -> str | None:
         return None
     try:
         payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError, UnicodeDecodeError):
+    except OSError, yaml.YAMLError, UnicodeDecodeError:
         return None
     if not isinstance(payload, dict):
         return None
@@ -158,15 +158,9 @@ def _probe_entry(repo_root: Path, entry: ManifestEntry) -> _ProbeResult:
 
 def _finding_for_entry(entry: ManifestEntry, *, installed: str | None, delegated: bool) -> Finding | None:
     if installed is None:
-        message = (
-            f"{entry.id}: referenced dependency is not installed "
-            f"(manifest pin {entry.pin!r})"
-        )
+        message = f"{entry.id}: referenced dependency is not installed (manifest pin {entry.pin!r})"
     elif not _satisfies_pin(installed, entry.pin or ""):
-        message = (
-            f"{entry.id}: installed version {installed!r} is below manifest floor "
-            f"{entry.pin!r}"
-        )
+        message = f"{entry.id}: installed version {installed!r} is below manifest floor {entry.pin!r}"
     else:
         return None
     if delegated:

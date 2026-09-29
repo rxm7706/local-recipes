@@ -387,6 +387,24 @@ freshness answer either way) and ``MRS-CTX-002`` at ``Verdict.WARN`` (an
 ENABLED ``derived-context`` layer degraded to today's compile-on-hunch
 behavior with a named reason -- the same graceful-degradation tier as
 ``MRS-DISP-033``/``MRS-PREFLIGHT-015``, never a blocked iteration).
+Story 46.1 (``spec-pyforge-marshal`` CAP-192) extends the area for
+``marshal context bootstrap`` / ``pack``: ``MRS-CTX-003`` (rebuilt locally),
+``-005`` (fetched pack refused) and ``-006`` (pack written with a gap) at
+``Verdict.WARN``; ``-004`` (member neither fetched nor rebuilt) and ``-007``
+(nothing packable) at ``Verdict.UNEVALUABLE``.
+Story 46.2 (``spec-pyforge-marshal`` CAP-192) adds ``MRS-CTX-008`` at
+``Verdict.WARN`` for ``marshal context bundle``: a second harness's
+``--expect-digest`` does not match the freshly assembled bundle's digest --
+the same never-blocking tier as ``-002``/``-003``/``-005``/``-006``, since a
+digest mismatch means the two harnesses disagree on what to open with, not
+that either one failed to run.
+Story 46.6 (``spec-pyforge-marshal`` CAP-193, fold-remint of ``spec-marshal-
+token-economy`` CAP-20) adds ``MRS-CTX-009`` at ``Verdict.WARN`` for
+``marshal context advisory``: a declared-active ``[context]`` layer's kit
+item (a kit-provisioned layer gone ``MISSING``/``STALE`` -- ``UNAVAILABLE``
+is deliberately excluded) or scribe binary no longer resolves -- the same
+never-blocking tier as the rest of this area, since the layer's savings
+silently stop but nothing about the session itself failed.
 
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
@@ -455,9 +473,7 @@ GUARDED_EXIT_CODES: frozenset[int] = _LATTICE.exit_codes | {
 # admitted domain (EXIT_USAGE, and the SCOPE_VIOLATION/GATE_FAILED rungs)
 # names a judgment Marshal itself makes -- relaying a child's coincidental
 # 2/3/4 would assert one Marshal never evaluated. See `relay_exit_code`.
-_RELAY_PASSTHROUGH: frozenset[int] = frozenset(
-    {EXIT_OK, _EXIT_BY_VERDICT[Verdict.UNEVALUABLE], EXIT_SIGINT}
-)
+_RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdict.UNEVALUABLE], EXIT_SIGINT})
 
 # Story 1.2's core/identity.py -- the table's first real classifications.
 # Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
@@ -732,6 +748,10 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # contention on the tracked sprint-status-ledger, a refused downgrade sync,
 # or a write/commit failure). Classifies WARN, the same tier as
 # MRS-LAND-010: reported, never blocking -- the wave already landed.
+# Story 68.1 (CAP-277): MRS-LAND-011 also names a second triggering shape, same
+# WARN tier (AD-31: same code, several triggering shapes) -- the dispatch
+# supervisor's blocked-spec-twin publish onto origin/main that could not land
+# (`_promote_blocked_twin`), journaled as a WARN observation.
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to cli/status.py's own MRS-STATUS-* area, both WARN.
 # MRS-STATUS-010: a failed-story patch found via a bare Path.glob over
@@ -853,6 +873,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SPIN-012": Verdict.WARN,
     "MRS-SUPV-008": Verdict.WARN,
     "MRS-SUPV-009": Verdict.WARN,
+    "MRS-SUPV-010": Verdict.WARN,
     "MRS-GATE-007": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-008": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-009": Verdict.UNEVALUABLE,
@@ -1116,6 +1137,53 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # reason — a token-economy layer that did not engage over a launch
     # that is otherwise entirely viable.
     "MRS-DISP-042": Verdict.WARN,
+    # 2026-09-12 (dispatch-tier-routing-fails-safe): the model override was
+    # dropped, not the dispatch -- the harness's own default model applies
+    # and the launch is otherwise entirely viable. The SAME WARN tier as
+    # MRS-DISP-033/042 above and for the same reason.
+    "MRS-DISP-043": Verdict.WARN,
+    # Story 51.1 (verification sees the merge result): the merge-tree
+    # preview of the branch onto `origin/main` failed `verify_commands`, or
+    # the behind-check itself could not be evaluated -- a hard refusal, the
+    # SAME ERROR tier as MRS-DISP-038 above (both fire immediately before
+    # `forge.merge_pr` and both stop the land attempt cold).
+    "MRS-DISP-044": Verdict.ERROR,
+    # Story 51.4 (spec-pyforge-marshal CAP-252): the worktree spec is
+    # `status: blocked` -- the pre-launch guard refuses to relaunch
+    # bmad-build-auto without an operator decision. The SAME ERROR tier as
+    # MRS-DISP-040 above (the sibling `done`-status CAP-4-only refusal).
+    "MRS-DISP-045": Verdict.ERROR,
+    # Story 51.11 (CAP-258): stale blocked-spec baseline mismatch --
+    # advisory only, never blocks the exit classification.
+    "MRS-DISP-046": Verdict.WARN,
+    # Story 53.2 (spec-pyforge-marshal CAP-261b): the landing reconciled
+    # spec-surface drift on the branch's own changed governed paths --
+    # memlog entries appended, exactly those Specs scoped-stamped, a
+    # commit pushed before merge. The reconcile succeeded and the merge
+    # proceeds; this is visibility only (surfaced in `marshal watch` and
+    # `fleet-picture`'s ATTENTION rows), never a refusal -- the SAME WARN
+    # tier as MRS-DISP-046 above.
+    "MRS-DISP-047": Verdict.WARN,
+    # Story 53.2 (spec-pyforge-marshal CAP-261b): a Spec the branch's own
+    # changed paths co-govern also carries drift on a path this branch did
+    # NOT change (foreign drift) -- scoping the stamp to that Spec would
+    # silently launder the unrelated drift too, so the landing is refused
+    # before `forge.merge_pr`. The SAME ERROR tier as MRS-DISP-044 above
+    # (both fire immediately before the merge and both stop the land
+    # attempt cold).
+    "MRS-DISP-048": Verdict.ERROR,
+    # Story 63.4 (spec-pyforge-steward CAP-5): a non-ok `steward session
+    # check` verdict (or the check itself failing to run) folded into a
+    # dispatch-launch finding. Deliberately WARN, never escalated -- the
+    # docstring on `_surface_session_precondition_findings` is explicit that
+    # a session-precondition gap is worth flagging before a dispatch
+    # launches, not worth refusing the launch over.
+    "MRS-DISP-049": Verdict.WARN,
+    # Story 68.1 (spec-pyforge-marshal CAP-277): the landed story's ledger key does
+    # not read `done` on `origin/main` after finalize's promotion step. ERROR, the
+    # tier of MRS-DISP-048 above: it stops a landing being reported clean while the
+    # bookkeeping never reached main (the 64.1 landing, 2026-09-28).
+    "MRS-DISP-051": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight
@@ -1158,6 +1226,27 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # blocks a run".
     "MRS-CTX-001": Verdict.UNEVALUABLE,
     "MRS-CTX-002": Verdict.WARN,
+    # Story 46.1 (a bare clone bootstraps the substrate, spec-pyforge-marshal
+    # CAP-192). A rebuild (003), a refused pack (005) and a pack with a gap
+    # (006) are WARN: the substrate still arrives, loudly and attributably.
+    # A member neither fetched nor rebuilt (004) and a pack with nothing to
+    # pack (007) are UNEVALUABLE: there is no substrate to answer with.
+    "MRS-CTX-003": Verdict.WARN,
+    "MRS-CTX-004": Verdict.UNEVALUABLE,
+    "MRS-CTX-005": Verdict.WARN,
+    "MRS-CTX-006": Verdict.WARN,
+    "MRS-CTX-007": Verdict.UNEVALUABLE,
+    # Story 46.2 (the canonical context bundle is digest-pinned,
+    # spec-pyforge-marshal CAP-192). A digest mismatch (008) is WARN, the
+    # same never-blocking tier as the rest of this area: the two harnesses
+    # disagree on what to open with, but the bundle itself still assembled.
+    "MRS-CTX-008": Verdict.WARN,
+    # Story 46.6 (a persistence advisory for a lapsed [context] layer,
+    # spec-pyforge-marshal CAP-193, fold-remint of spec-marshal-token-economy
+    # CAP-20). WARN, the same never-blocking tier as the rest of this area:
+    # a declared-active layer's kit item or scribe binary no longer
+    # resolves, but the session/iteration itself is otherwise unaffected.
+    "MRS-CTX-009": Verdict.WARN,
     "MRS-PLAN-001": Verdict.WARN,
     # Story 28.7 (index freshness is an advisory finding,
     # SPEC-marshal-token-economy CAP-10): all four staleness codes are
@@ -1176,6 +1265,12 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-BENCH-002": Verdict.ERROR,
     "MRS-BENCH-003": Verdict.ERROR,
     "MRS-BENCH-004": Verdict.WARN,
+    # Story 44.1: marshal watch. Loop-CLI / no-run are hard; git/gh probes
+    # are advisory (finding, not a crash).
+    "MRS-WATCH-001": Verdict.ERROR,
+    "MRS-WATCH-002": Verdict.ERROR,
+    "MRS-WATCH-003": Verdict.WARN,
+    "MRS-WATCH-004": Verdict.WARN,
 }
 
 
@@ -1192,14 +1287,11 @@ def classify(code: str) -> Verdict:
         return _CLASSIFY_TABLE[code]
     except KeyError as exc:
         raise ValueError(
-            f"finding code {code!r} is registered but has no lattice "
-            "classification in _CLASSIFY_TABLE"
+            f"finding code {code!r} is registered but has no lattice classification in _CLASSIFY_TABLE"
         ) from exc
 
 
-def compute_verdict(
-    findings: Iterable[Finding], *, floor: Verdict = Verdict.CLEAN
-) -> Verdict:
+def compute_verdict(findings: Iterable[Finding], *, floor: Verdict = Verdict.CLEAN) -> Verdict:
     """The verdict for a command: the maximum (strongest, per
     ``LATTICE_ORDER``) over every emitted finding's classification, plus a
     command-declared ``floor`` (AD-31). Empty ``findings`` returns ``floor``
@@ -1212,9 +1304,7 @@ def compute_verdict(
         # element is this module's fail-loud ValueError, not a raw
         # AttributeError from deep inside the loop.
         if not isinstance(finding, Finding):
-            raise ValueError(
-                f"findings must contain only Finding instances, got {finding!r}"
-            )
+            raise ValueError(f"findings must contain only Finding instances, got {finding!r}")
         candidate = classify(finding.code)
         if _LATTICE.rank(candidate) < _LATTICE.rank(winner):
             winner = candidate

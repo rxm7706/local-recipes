@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 244
+# stories: 490
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -39,9 +39,9 @@ development_status:
   11-3-migration-registry-and-runner: done
   11-4-marshal-seed-update-two-phase: done
   11-5-referenced-dependency-verification-and-doctor-delegation: done
-  11-6-marshal-seed-explain-and-version: done
+  11-6-marshal-seed-explain-and-marshal-seed-version: done
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: done
-  12-2-the-local-recipes-empty-plan-oracle: done
+  12-2-the-local-recipes-empty-plan-oracle-critical: done
   12-3-offline-operation-and-the-egress-counter: done
   12-4-pattern-meta-tests-and-the-never-write-proof: done
   12-5-cli-contract-idempotence-harness-and-performance-gates: done
@@ -98,7 +98,7 @@ development_status:
   22-1-the-dispatch-verb-launches-one-governed-isolated-story-session: done
   22-10-branch-merged-requires-real-divergence-not-just-ancestry: done
   22-11-station-scoped-drain-and-an-explicit-story-sequence: done
-  22-12-a-shared-surface-diff-also-clears-its-own-full-suite-not-just-the-station-s-bound-gate: done
+  22-12-a-shared-surface-diff-also-clears-its-own-full-suite-not-just-the-stations-bound-gate: done
   22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: done
   22-3-verification-is-the-product-no-landing-on-a-self-report: done
   22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: done
@@ -121,30 +121,30 @@ development_status:
   25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided: done
   25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner: done
   26-1-extract-the-loop-runner-hook: done
-  27-1-skf-skill-and-persona-for-marshal: done
-  27-2-first-portal-slice-loop-homes: done
+  27-1-skf-domain-skill-and-bmad-persona-for-marshal: done
+  27-2-first-portal-slice-list-loop-homes: done
   28-1-the-context-policy-block-rendered-once-for-both-engines: done
   28-10-the-model-cost-catalog-makes-spend-legible-in-dollars: done
   28-11-difficulty-tiers-route-across-providers-and-pools: done
   28-12-dependency-derived-dispatch-ordering: done
   28-13-sanctioned-retry-after-an-operator-initiated-stop: done
   28-14-auto-derived-effective-surface-no-manual-per-story-widening: done
-  28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: done
-  28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint: done
+  28-15-scope-violation-enforcement-mode-policy-declared-default-warn: done
+  28-16-parallel-dispatch-fan-out-when-deps-and-surfaces-are-disjoint: done
   28-17-verify-fail-terminalization-and-transient-auto-redispatch: done
   28-18-re-preflight-when-the-refuse-predicate-can-change: done
   28-19-missing-spec-escalates-never-idle-with-backlog: done
   28-2-wire-compression-at-the-harness-seam: done
   28-20-cap-4-land-heals-mechanical-and-dirty-prs: done
   28-21-push-the-dispatch-branch-before-verify-can-strand-it: done
-  28-22-verify-blast-radius-pre-existing-gate: done
+  28-22-verify-blast-radius-is-pre-existing-gate-not-story-refuse: done
   28-23-stranded-work-signal-after-terminal-verify-fail: done
-  28-24-supervisor-finalizes-when-harness-cannot-run-shell: done
+  28-24-supervisor-finalizes-when-the-harness-cannot-run-shell: done
   28-25-finalize-escalations-self-clear-past-a-later-success: done
-  28-26-cap-4-s-own-feed-sync-guards-missing-keys-too-not-just-regressions: done
+  28-26-cap-4s-own-feed-sync-guards-missing-keys-too-not-just-regressions: done
   28-27-planning-graph-is-proven-live-for-dispatch-extend-the-win-fleet-wide: done
   28-28-scribe-exposes-caller-declared-derived-context-refresh-closing-the-cap-5-cap-6-gap: done
-  28-29-wire-is-structurally-incompatible-with-a-headless-cursor-dispatch-fleet-documented-not-forced: done
+  28-29-wire-is-dead-for-cursor-specifically-copilot-is-a-real-but-uncertain-alternative-documented-either-way: done
   28-3-genesis-seeds-the-token-economy-kit: done
   28-30-output-caveman-compresses-dispatch-sessions-too-not-just-spin: done
   28-31-structure-graph-codegraph-for-dispatch-provisioning-cost-weighed-against-a-single-story-session: done
@@ -156,7 +156,7 @@ development_status:
   28-7-index-freshness-is-an-advisory-finding: done
   28-8-derived-context-recomputes-only-on-source-change: done
   28-9-planning-graph-retrieval-behind-the-scribe-seam: done
-  29-1-done-spec-halts-unless-followup-is-true: done
+  29-1-a-done-spec-halts-unless-follow-up-is-true: done
   29-2-harness-done-is-cap-4-only-never-another-session: done
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
@@ -174,14 +174,14 @@ development_status:
   30-1-the-retired-id-guard-follows-the-6-12-shim-roster: done
   30-2-the-project-context-surface-follows-6-12-d1: done
   30-3-documentation-pointers-follow-6-12: done
-  30-4-bmad-loop-s-repo-skills-match-the-installed-package-by-test: done
-  30-5-the-harness-and-every-live-caller-follow-the-shim-retirement: done
-  31-1-tea-s-workflows-produce-every-station-s-test-architecture: done
+  30-4-bmad-loops-repo-skills-match-the-installed-package-by-test: done
+  30-5-every-live-caller-follows-the-shim-retirement: done
+  31-1-teas-workflows-produce-every-stations-test-architecture: done
   31-2-the-generator-its-meta-tests-and-its-pixi-tasks-retire-behind-the-equivalence-check: done
   31-3-tea-test-review-is-a-marshal-review-lens: done
   31-4-every-in-place-edited-installer-owned-file-is-governed-by-a-marshal-spec-surface: done
   31-5-loop-home-readiness-is-defined-for-the-cutover-flip: done
-  31-6-bmad-os-gh-triage-and-multi-repo-git-ops-are-marshal-wielded: blocked
+  31-6-bmad-os-gh-triage-and-multi-repo-git-ops-are-marshal-wielded: done
   32-1-the-operating-model-standard-is-6-12-accurate-and-derives-what-it-can: done
   32-2-declared-python-floor-equals-the-tested-floor: done
   32-3-dated-planning-artifacts-are-machine-classifiable: done
@@ -193,19 +193,37 @@ development_status:
   33-1-measurement-first-the-benchmark-artifact-with-real-savings-getters: done
   33-10-the-cfe-pin-is-derived-never-stamped: done
   33-11-attribution-becomes-unforgeable-before-the-track-serves-a-second-principal: blocked
+  33-12-cap-1-2-4-5-in-effect-held-runs-publisher-identity-and-the-loop-home-reads-retire: done
+  33-13-cap-3s-mechanism-tier-the-automated-proof-platform-ci-local-gates-on: done
+  33-14-cap-5s-deployed-profile-a-real-device-code-pkce-pyforge-login: done
+  33-15-the-tier-map-names-cursor-models-before-any-unattended-drain: done
   33-2-the-layers-are-enabled-on-factory-dispatch: done
   33-3-the-layers-are-enabled-on-factory-spin-or-spin-is-declared-a-two-layer-engine: done
-  33-4-cap-18-one-publisher-run-state-and-savings-telemetry-reach-the-supervisor: blocked
+  33-4-cap-18-one-publisher-run-state-and-savings-telemetry-reach-the-supervisor: done
   33-5-risk-tiered-review-depth-gets-a-producer-and-a-caller: done
   33-6-adaptive-tiering-is-fed-on-all-eight-stations-and-the-floor-raise-reaches-dispatch: done
   33-7-the-two-epic-20-watchdogs-observe-the-plane-the-estate-actually-runs: done
-  33-8-the-first-live-fan-out-wave-on-a-real-dispatch-max_parallel-key: done
-  33-9-verify_scope-guards-marshal-factory-dispatch: done
+  33-8-the-first-live-fan-out-wave-on-a-real-dispatch-max-parallel-key: done
+  33-9-verify-scope-guards-marshal-factory-dispatch: done
   34-1-factory-spin-refuses-a-second-launch-against-a-live-loop-home: done
-  34-2-a-dispatch-spin-session-s-worktree-is-checkpointed-before-it-can-be-lost-to-a-crash: done
+  34-2-a-dispatch-spin-sessions-worktree-is-checkpointed-before-it-can-be-lost-to-a-crash: done
   34-3-factory-drain-tells-a-crashed-session-apart-from-a-genuinely-failed-one: done
-  34-4-the-attention-block-s-own-refused-verdict-check-gets-the-same-test-coverage-its-station_state-sibling-has: done
-  35-1-a-templated-form-merge-subject-is-corroborated-against-the-querying-project-s-own-tracked-ledger-not-trusted-from-text-alone: done
+  34-4-the-attention-blocks-own-refused-verdict-check-gets-the-same-test-coverage-its-station-state-sibling-has: done
+  35-1-a-templated-form-merge-subject-is-corroborated-against-the-querying-projects-own-tracked-ledger-not-trusted-from-text-alone: done
+  36-1-root-pixi-toml-and-the-catalog-document-every-stations-already-shipped-undocumented-run-dep: done
+  36-2-llms-full-check-reads-every-stations-own-nested-manifest-not-just-root-pixi-toml: done
+  37-1-phase-0-mechanical-debt-to-zero-before-any-semantic-audit: done
+  37-2-phase-1-every-remaining-story-gets-a-cited-verdict: done
+  37-3-phase-2-the-five-completed-stations-audited-at-equal-rigor: done
+  37-4-phase-2b-all-61-dreams-dispositioned: done
+  37-5-phase-3-decomposition-only-behind-a-landed-gate-report: done
+  37-6-phase-4-the-operator-resumes-on-measured-artifacts: done
+  38-1-every-stations-epics-doc-is-swept-for-forward-epic-dependencies: done
+  38-2-a-forward-dependent-story-is-structurally-non-actionable: done
+  38-3-a-permanent-detector-prevents-recurrence: done
+  38-4-an-unparseable-epics-format-is-reported-honestly-never-silently-clean: done
+  39-1-a-null-harness-run-id-recovers-by-filesystem-discovery: done
+  39-2-a-genuinely-unrecoverable-run-still-degrades-honestly: done
   4-1-story-spec-promotion-with-a-durability-predicate: done
   4-10-fleet-wide-branch-retirement: done
   4-11-marshal-land-refuses-while-a-run-is-in-flight: done
@@ -221,6 +239,41 @@ development_status:
   4-7-landing-rules-as-declared-policy: done
   4-8-marshal-land-the-last-mile-lands-itself: done
   4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock: done
+  40-1-one-canonical-epics-md-with-landed-story-identity-preserved: done
+  40-2-one-contiguous-fr-space-and-every-installer-only-namespace-decided: done
+  40-3-both-cli-contradictions-are-decided-not-flagged: done
+  40-4-no-document-still-frames-it-as-a-separate-thing: done
+  40-5-one-dashboard-row-and-no-code-reference-to-the-retired-name: done
+  41-1-dead-scaffolding-is-archived-never-deleted: done
+  41-2-templated-fiction-is-replaced-with-real-content: done
+  41-3-stale-pointers-and-off-convention-layouts-are-corrected: done
+  41-4-the-currency-detector-is-fixed-before-its-data-is-caught-up: done
+  42-1-a-co-governed-file-is-clean-when-any-one-of-its-governing-specs-reconciled-it: done
+  42-2-overlap-tolerance-narrows-a-false-positive-without-widening-what-counts-as-reconciled: done
+  43-1-the-citation-detector-shows-everything-it-knows: done
+  44-1-marshal-watch-ports-the-operators-ritual-into-a-real-cli-verb: done
+  44-2-marshal-watch-is-reachable-over-mcp: done
+  44-3-the-marshal-persona-can-offer-watch-a-run-as-a-menu-action: done
+  44-4-marshal-watchs-report-is-viewable-in-the-portal: done
+  45-1-a-pixi-task-generates-mdc-from-skill-md: done
+  45-2-a-drift-detector-fails-a-stale-generated-mdc: done
+  45-3-the-pilot-pair-uses-task-when-available-and-halts-when-it-is-not: done
+  46-1-a-bare-clone-bootstraps-the-substrate: done
+  46-10-the-matrix-tells-the-truth-copilot-wrapper-gemini-probe-per-currency-cells: backlog
+  46-11-the-dispatched-claude-session-is-launched-with-the-instruction-file-mode-pinned: done
+  46-12-marshal-s-shell-outs-name-the-guild-env: done
+  46-2-the-canonical-context-bundle-is-digest-pinned: done
+  46-3-scribe-capture-is-the-blessed-session-close-ritual: done
+  46-4-wire-auto-resolves-against-the-declared-wrapper: done
+  46-5-the-journal-splits-silent-saves-from-configured-layers-and-the-rollup-speaks-per-harness-currency: done
+  46-6-an-interactive-session-whose-layers-lapse-gets-a-persistence-advisory: done
+  46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: done
+  46-8-the-interactive-claude-session-path-is-one-documented-invocation: done
+  46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: backlog
+  47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: blocked
+  47-2-a-bmad-loop-review-pass-sees-the-same-scoped-feedback-the-dev-pass-saw: backlog
+  47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline: backlog
+  47-4-a-genuine-recall-miss-injects-nothing-never-a-fabricated-confidence-claim: backlog
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done
   5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown: done
@@ -232,6 +285,35 @@ development_status:
   5-7-the-board-answers-how-much-is-left: done
   5-8-a-dead-supervisor-sidecar-doesnt-hide-a-live-engine: done
   5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger: done
+  50-1-a-landing-never-re-dispatches-the-story-it-just-landed: done
+  50-2-a-harness-s-own-usage-wall-wording-is-a-transient-outcome: done
+  50-3-harness-outranks-a-dead-tier-map-harness: done
+  50-4-landing-evidence-carries-the-station-in-every-shape: done
+  50-5-the-promoter-reads-a-spec-through-its-banner: done
+  51-1-verification-sees-the-merge-result: done
+  51-10-the-watch-s-marshal-status-probe-is-executable-and-proven-against-the-real-interpreter: done
+  51-11-a-session-that-halts-blocked-with-its-verdict-uncommitted-is-a-blocked-outcome-not-an-operator-stop: done
+  51-12-a-dispatch-only-checkout-still-has-fleet-rows: done
+  51-13-the-watch-reads-the-dispatch-verdict-in-the-supervisor-s-own-vocabulary: done
+  51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory: done
+  51-3-the-campaign-reads-the-ledger-it-just-promoted: done
+  51-4-a-blocked-outcome-never-lands: done
+  51-5-mrs-disp-043-speaks-for-an-uncatalogued-model: done
+  51-6-marshal-watch-follows-the-engine-that-is-actually-driving-the-station: done
+  51-7-landing-evidence-is-intent-scoped-not-just-station-scoped: done
+  51-8-the-banner-skip-family-is-complete: done
+  51-9-the-campaign-reads-the-ledger-it-just-promoted-re-mint-of-51-3: done
+  52-1-the-six-accumulated-violations-are-cleared: done
+  52-2-the-conformance-suite-is-a-pr-gate: done
+  53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session: done
+  53-2-the-landing-reconciles-from-git-facts-and-runs-intake: done
+  53-3-the-supervisor-entrypoint-reaches-the-floor: done
+  54-1-the-landing-repairs-its-own-feed-drift-before-it-gives-up: backlog
+  55-1-the-7-non-marshal-stations-stop-overriding-context-and-inherit-the-clean-default: done
+  56-1-a-refused-landing-whose-story-has-since-landed-reads-as-superseded: done
+  57-1-a-refresh-pushes-its-own-fast-forward-to-main-with-the-journaled-preflight-opt-out: done
+  58-1-merge-tree-conflict-paths-reads-gits-own-conflicted-file-list: done
+  59-1-a-ledger-only-conflict-is-healed-by-a-merge-of-origin-main-not-a-union-commit: done
   6-1-profile-driven-adapter-selection-project-scoped: done
   6-2-skill-tree-projection: done
   6-3-projection-drift-detection-that-can-actually-fail: done
@@ -241,12 +323,32 @@ development_status:
   6-7-entry-file-family-drift-check-detect-only: done
   6-8-upstream-contribution-register: done
   6-9-tool-surface-rendering-and-preflight-probe: done
+  60-1-every-remote-tracking-read-names-the-full-ref: done
+  61-1-every-local-branch-read-names-the-full-ref: done
+  62-1-the-kits-branch-guards-default-to-the-remote-tracking-ref: done
+  63-1-the-station-tests-lane-picks-suites-from-the-remote-tracking-ref: done
+  64-1-the-dispatch-worktree-carries-its-own-scope-never-the-shared-marker: done
+  65-1-a-drain-plan-reports-every-refusal-it-can-decide-before-launch: backlog
+  65-2-a-story-whose-spec-cannot-bind-is-refused-before-a-session-is-spent: backlog
+  66-1-finalize-carries-a-recommended-follow-up-review-into-the-deferred-work-ledger: backlog
+  66-2-every-landed-follow-up-recommendation-is-backfilled-and-held-by-a-meta-test: backlog
+  67-1-a-landed-dispatch-reads-completed-when-the-primary-checkout-cannot-be-fast-forwarded: backlog
+  68-1-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent: done
+  69-1-the-switch-script-runs-where-it-is-documented-to-run: backlog
   7-1-the-seed-module-tree-inside-pyforge-marshal: done
   7-2-error-taxonomy-and-exit-codes: done
   7-3-the-fs-write-primitive-and-the-never-write-guard: done
   7-4-manifest-schema-loader-and-model-version-ranges: done
-  7-5-the-v1-extraction-manifest: done
-  7-6-spike-0-copier-api-fit: done
+  7-5-the-v1-extraction-manifest-the-model-as-data: done
+  7-6-spike-0-copier-api-fit-critical-gate: done
+  70-1-seed-check-judges-the-paths-the-manifest-means-never-its-placeholders: backlog
+  71-1-the-front-door-names-the-environment-a-roster-station-runs-in: backlog
+  72-1-the-dispatch-supervisor-reads-merge-facts-from-origin-main: backlog
+  73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch: backlog
+  73-2-a-drain-schedules-the-follow-up-review-a-landed-story-recommended: backlog
+  74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-fixture: backlog
+  74-2-dispatch-refuses-a-story-the-flag-gate-would-red-before-any-session-starts: blocked
+  74-3-bmad-spec-bmad-build-and-bmad-tea-carry-the-flag-mandate-in-their-overrides: backlog
   8-1-marker-grammar-and-the-per-format-registry: done
   8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: done
   8-3-span-substitution-the-update-primitive: done
@@ -298,7 +400,7 @@ development_status:
   epic-26-retrospective: optional
   epic-27: done
   epic-27-retrospective: optional
-  epic-28: in-progress
+  epic-28: done
   epic-28-retrospective: optional
   epic-29: done
   epic-29-retrospective: optional
@@ -306,7 +408,7 @@ development_status:
   epic-3-retrospective: done
   epic-30: done
   epic-30-retrospective: optional
-  epic-31: in-progress
+  epic-31: done
   epic-31-retrospective: optional
   epic-32: done
   epic-32-retrospective: done
@@ -316,14 +418,88 @@ development_status:
   epic-34-retrospective: optional
   epic-35: done
   epic-35-retrospective: optional
+  epic-36: done
+  epic-36-retrospective: optional
+  epic-37: done
+  epic-37-retrospective: optional
+  epic-38: done
+  epic-38-retrospective: optional
+  epic-39: done
+  epic-39-retrospective: optional
   epic-4: done
   epic-4-retrospective: done
+  epic-40: done
+  epic-40-retrospective: optional
+  epic-41: done
+  epic-41-retrospective: optional
+  epic-42: done
+  epic-42-retrospective: optional
+  epic-43: done
+  epic-43-retrospective: optional
+  epic-44: done
+  epic-44-retrospective: optional
+  epic-45: done
+  epic-45-retrospective: optional
+  epic-46: in-progress
+  epic-46-retrospective: optional
+  epic-47: backlog
+  epic-47-retrospective: optional
   epic-5: done
   epic-5-retrospective: done
+  epic-50: done
+  epic-50-retrospective: optional
+  epic-51: done
+  epic-51-retrospective: optional
+  epic-52: done
+  epic-52-retrospective: optional
+  epic-53: done
+  epic-53-retrospective: optional
+  epic-54: backlog
+  epic-54-retrospective: optional
+  epic-55: done
+  epic-55-retrospective: optional
+  epic-56: done
+  epic-56-retrospective: optional
+  epic-57: done
+  epic-57-retrospective: optional
+  epic-58: done
+  epic-58-retrospective: optional
+  epic-59: done
+  epic-59-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
+  epic-60: done
+  epic-60-retrospective: optional
+  epic-61: done
+  epic-61-retrospective: optional
+  epic-62: done
+  epic-62-retrospective: optional
+  epic-63: done
+  epic-63-retrospective: optional
+  epic-64: done
+  epic-64-retrospective: optional
+  epic-65: backlog
+  epic-65-retrospective: optional
+  epic-66: backlog
+  epic-66-retrospective: optional
+  epic-67: backlog
+  epic-67-retrospective: optional
+  epic-68: done
+  epic-68-retrospective: optional
+  epic-69: backlog
+  epic-69-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
+  epic-70: backlog
+  epic-70-retrospective: optional
+  epic-71: backlog
+  epic-71-retrospective: optional
+  epic-72: backlog
+  epic-72-retrospective: optional
+  epic-73: backlog
+  epic-73-retrospective: optional
+  epic-74: backlog
+  epic-74-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done

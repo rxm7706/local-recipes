@@ -34,6 +34,7 @@ def test_marshal_conformance_matrix(fixture: dict[str, object]) -> None:
             str(fixture["subject"]),
             template=template,
             project_slug=project_slug,
+            branch=fixture.get("branch"),
         )
     elif "branch" in fixture:
         match = classify_branch_name(str(fixture["branch"]), project_slug=project_slug)

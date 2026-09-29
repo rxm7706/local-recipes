@@ -154,9 +154,7 @@ def lock_path_for(document_path: Path) -> Path:
     ``Path("..")`` is NOT refused -- its ``name`` is ``".."``, not empty, so
     ``with_name`` accepts it and there is no ``ValueError`` to pre-empt."""
     if not document_path.name:
-        raise errors.HeraldError(
-            f"{document_path} is not a file path, so no lock file can be derived for it"
-        )
+        raise errors.HeraldError(f"{document_path} is not a file path, so no lock file can be derived for it")
     return document_path.with_name(document_path.name + ".lock")
 
 

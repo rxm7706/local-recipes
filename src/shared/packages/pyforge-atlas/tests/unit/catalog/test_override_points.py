@@ -20,7 +20,6 @@ from .conftest import (
     EXPECTED_EXTRA_OVERRIDES,
     EXPECTED_FETCHER_URLS,
     EXPECTED_LIVE_OVERRIDE_POINTS,
-    EXPECTED_OVERRIDE_POINTS,
     MEMBER_DIR,
     MEMBER_DIR_RELATIVE_PATHS,
     PATHS_ENV_VARS,
@@ -200,9 +199,7 @@ def test_path_defaults_resolve_inside_the_repo_root(globals_raw):
     # but still landed inside the repo) would pass the escapees check above and go
     # undetected. Pin the exact expected location too.
     expected_seed_root = (REPO_ROOT / ".claude/skills/conda-forge-expert/data").resolve()
-    assert seed_root == expected_seed_root, (
-        f"seed_root resolved to {seed_root}, expected {expected_seed_root}"
-    )
+    assert seed_root == expected_seed_root, f"seed_root resolved to {seed_root}, expected {expected_seed_root}"
     for seed in ("lts-registry.yaml", "cwe_categories_seed.json", "spdx.schema.json"):
         assert (seed_root / seed).is_file(), f"seed file missing: {seed_root / seed}"
 
@@ -245,9 +242,7 @@ def test_catalog_never_hardcodes_a_host(catalog_config):
     bad_urls = {
         name: spec["url"]
         for name, spec in unresolved.items()
-        if isinstance(spec, dict)
-        and "url" in spec
-        and not str(spec["url"]).startswith("${globals:")
+        if isinstance(spec, dict) and "url" in spec and not str(spec["url"]).startswith("${globals:")
     }
     assert not bad_urls, f"catalog url values must begin with ${{globals:...}}: {bad_urls}"
 

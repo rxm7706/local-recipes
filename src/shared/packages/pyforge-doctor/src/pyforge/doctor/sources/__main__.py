@@ -52,13 +52,19 @@ from . import (
     bmad_method,
     board,
     capability_effect,
+    capability_ledger,
     chain,
     deps,
+    docs_currency,
+    docs_map_hygiene,
+    docs_shelf,
     factory,
     frozen_path,
     general_docs_consistency,
     ledger,
+    live_proof_surfaces,
     marshal,
+    one_chain,
     pixi_currency,
     platform_policy,
     sibling_dreams,
@@ -121,6 +127,29 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 22.3 (Epic 22) -- general-docs-consistency beside status-body-
     # consistency in detectors; same shape as PIXI_CURRENCY_LEDGER above.
     Source.GENERAL_DOCS_CONSISTENCY.value: general_docs_consistency.gather,
+    # Story 55.2 -- extract detector vs capability-ledger.yaml.
+    Source.CAPABILITY_LEDGER.value: capability_ledger.gather,
+    # Doctor Epic 25 (spec-one-chain-per-station CAP-2 / CAP-5): both
+    # repo-scope, offline, deterministic -- in detectors-ci from day one.
+    Source.CHAIN_SPRAWL.value: one_chain.gather_chain_sprawl,
+    Source.FR_WITHOUT_CAP.value: one_chain.gather_fr_without_cap,
+    # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md vs the four
+    # Diátaxis quadrants -- missing link FAIL, unmapped page FAIL (promoted
+    # by Story 30.2).
+    Source.DOCS_MAP_HYGIENE.value: docs_map_hygiene.gather,
+    # Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml vs its render
+    # (docs/MAP.md's generated Page registry section), authored-page
+    # staleness, and skill-dir hygiene -- same shape as DOCS_MAP_HYGIENE
+    # above, warn-only, fail-open.
+    Source.DOCS_CURRENCY.value: docs_currency.gather,
+    # Story 23.7 (Epic 23/spec-pyforge-doctor CAP-54) -- leftover-shelf
+    # occupancy vs the docs/MAP.md allow-list; same shape as
+    # GENERAL_DOCS_CONSISTENCY above.
+    Source.DOCS_SHELF_OCCUPANCY.value: docs_shelf.gather,
+    # Story 26.1 (spec-pyforge-doctor CAP-77) -- a touched surface
+    # catalogued in live-proof-surfaces.md gets an advisory finding naming
+    # it; same shape as DOCS_SHELF_OCCUPANCY above.
+    Source.LIVE_PROOF_SURFACE.value: live_proof_surfaces.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six
@@ -184,10 +213,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--project",
         metavar="SLUG",
         default=None,
-        help=(
-            "BMAD project slug for --layers (e.g. pyforge-marshal). "
-            "Required with --layers; ignored otherwise."
-        ),
+        help=("BMAD project slug for --layers (e.g. pyforge-marshal). Required with --layers; ignored otherwise."),
     )
     return parser
 
@@ -197,22 +223,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.groundtruth and args.source != _GROUNDTRUTH_SOURCE:
-        parser.error(
-            f"argument --groundtruth: only valid for source "
-            f"{_GROUNDTRUTH_SOURCE!r}, got {args.source!r}"
-        )
+        parser.error(f"argument --groundtruth: only valid for source {_GROUNDTRUTH_SOURCE!r}, got {args.source!r}")
 
     if args.dreams and args.source != _DREAMS_HYGIENE_SOURCE:
-        parser.error(
-            f"argument --dreams: only valid for source "
-            f"{_DREAMS_HYGIENE_SOURCE!r}, got {args.source!r}"
-        )
+        parser.error(f"argument --dreams: only valid for source {_DREAMS_HYGIENE_SOURCE!r}, got {args.source!r}")
 
     if args.layers and args.source != _LAYERS_AUDIT_SOURCE:
-        parser.error(
-            f"argument --layers: only valid for source "
-            f"{_LAYERS_AUDIT_SOURCE!r}, got {args.source!r}"
-        )
+        parser.error(f"argument --layers: only valid for source {_LAYERS_AUDIT_SOURCE!r}, got {args.source!r}")
 
     if args.layers and not args.project:
         parser.error("argument --layers: requires --project SLUG")
@@ -224,9 +241,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("argument --dreams: not valid together with --groundtruth")
 
     if args.layers and (args.dreams or args.groundtruth):
-        parser.error(
-            "argument --layers: not valid together with --dreams or --groundtruth"
-        )
+        parser.error("argument --layers: not valid together with --dreams or --groundtruth")
 
     target = Path(".")
 
@@ -254,10 +269,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps([finding.to_json_dict() for finding in findings], indent=2))
     else:
         for finding in findings:
-            print(
-                f"[{finding.source.value}] {finding.check}: "
-                f"{finding.status.value} -- {finding.message}"
-            )
+            print(f"[{finding.source.value}] {finding.check}: {finding.status.value} -- {finding.message}")
 
     return exit_code_for(findings)
 

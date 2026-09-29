@@ -18,17 +18,9 @@ How to set up, build, test, debug, and contribute to `local-recipes` locally. Th
 
 ## Prerequisites
 
-| Tool | Minimum version | Why |
-|---|---|---|
-| Pixi | `>=0.73.0` everywhere — `requires-pixi` (workspace gate), the `python` + `local-recipes` features, `environment.yaml`, the linter workflow's env, and the `pixi-version` pin in `.github/workflows/dashboard.yml`. Keep all in step. | Sole environment manager. No conda, no venv. |
-| Python | `>=3.14.6,3.14.*` (pixi-managed, `feature.python`) | `_bmad/scripts/*.py` need 3.11+ for stdlib `tomllib`; the repo env pins 3.14. |
-| Git | any modern | Repo operations. |
-| Docker | any modern | Linux builds run inside Docker via `build-locally.py`. Not required for osx/win native. |
-| GitHub CLI (`gh`) | `>=2.96.0` | PR submission (`submit_pr`, `prepare_pr`). Pixi-managed. |
-| Node.js | `>=24.16.0,24.*,<25.0` (LTS pin) | npm-source recipe generation + the deck/dashboard toolchain. Pixi-managed. |
-| Claude Code (CLI) | latest | Driving the system interactively. Optional for cron / scripted use. |
-
-Don't install pixi globally with a manager that conflicts with the repo's pin. Use the official installer or your distro's pixi package.
+See [`docs/tutorials/getting-started.md`](../../../../docs/tutorials/getting-started.md) for the
+current prerequisites table (Pixi, Python, Docker, `gh`, Node.js) and the platform-specific fast
+paths (Windows / Pixi / Docker-cross).
 
 **Workspace shape** (`[workspace]` in `pixi.toml`): name `staged-recipes`, version 0.2.0, `preview = ["pixi-build"]`, channels `["conda-forge", "SelfExplainML"]`, platforms `["linux-64", "win-64", { name = "osx-arm64-min", platform = "osx-arm64", macos = "14.5" }]`. That last named entry is a virtual-package **floor**, not a pin — the oldest macOS the lock must support, set to 14.5 because `mlx 0.31.2+` requires `__osx >=14.5`; feature `platforms` lists must reference it by the name `osx-arm64-min`, a plain `"osx-arm64"` entry errors. A `TODO` in the manifest tracks adding `osx-64` / `linux-aarch64` / `win-arm64`. There is deliberately **no `[workspace] members` key** — pixi through 0.72.2 has none; workspace members are declared via path dependencies in the product features.
 
@@ -69,44 +61,14 @@ The 17 features: `python`, `build`, `linux`, `osx`, `win`, `grayskull`, `conda-s
 
 ## First-time setup
 
-```bash
-git clone <fork-or-upstream> local-recipes
-cd local-recipes
+See [`docs/tutorials/getting-started.md`](../../../../docs/tutorials/getting-started.md)
+§ *Guild station development (optional)* for the `health-check` → `bootstrap-data` →
+`verify-env` → `bmad-groundtruth` bootstrap sequence, and
+[`docs/how-to/pixi-tasks.md`](../../../../docs/how-to/pixi-tasks.md) for the full task reference
+(including why `bmad-preflight` is broken). For air-gapped / JFrog setups, see
+`deployment-guide.md` and [`docs/how-to/air-gapped-mirror-setup.md`](../../../../docs/how-to/air-gapped-mirror-setup.md).
 
-# Pixi resolves the default env (local-recipes) on first command:
-pixi run health-check                  # validates pixi envs, MCP server, atlas freshness
-```
-
-If `health-check` complains about missing data, run a one-time atlas bootstrap:
-
-```bash
-pixi run bootstrap-data                # full atlas refresh; 30-45 min cold, 5-10 min warm
-pixi run -e vuln-db update-cve-db       # CVE database refresh (separate env)
-```
-
-For air-gapped / JFrog setups, see `deployment-guide.md` § Configure `.pixi/config.toml` **before** running these.
-
-### Verify env wiring
-
-```bash
-pixi run verify-env                          # confirms default-env directive + pixi.toml integrity
-pixi run --frozen -e local-recipes bmad-groundtruth   # live factory facts as JSON
-pixi run --frozen -e local-recipes bmad-drift-check   # artifact-vs-live drift report
-```
-
-> **`pixi run bmad-preflight` is BROKEN — do not use it.** The task shells out to
-> `bash scripts/ensure-bmad-preflight.sh`, and that script **does not exist anywhere in the
-> repo** (verified 2026-07-25). The task will fail with `No such file or directory`. Use
-> `verify-env` + `bmad-groundtruth` instead. Fixing or removing the task is open work.
-
-> **Do NOT run `scripts/bmad-switch` from a parallel agent (HARD rule, 2026-07-25).** The active-project
-> marker and the two gitignored symlinks (`_bmad-output/planning-artifacts` and
-> `_bmad-output/implementation-artifacts`) are **per-working-tree global state**. A second agent
-> switching them retargets every BMAD write-skill in the tree, including the one already running.
-> Address a project by its physical path (`_bmad-output/projects/<slug>/…`) and pass
-> `BMAD_ACTIVE_PROJECT=<slug>` per invocation instead. Interactive, single-agent sessions may still
-> use `scripts/bmad-switch <slug>` — it re-points both symlinks atomically and writes the marker
-> last, and `--current` / `--list` warn on desync.
+The parallel-agent `scripts/bmad-switch` rule is covered below in § Multi-project addressing.
 
 ---
 
@@ -776,7 +738,7 @@ identical to upstream.
 | Cross-compile question | `.claude/skills/conda-forge-expert/guides/cross-compilation.md` |
 | Atlas operations | `.claude/skills/conda-forge-expert/guides/atlas-operations.md` |
 | Writing or refactoring an atlas phase | `.claude/skills/conda-forge-expert/reference/atlas-phase-engineering.md` |
-| Air-gap setup | `docs/reference/enterprise-deployment.md` (or `deployment-guide.md` in this set) |
+| Air-gap setup | `docs/explanation/enterprise-deployment.md` (or `deployment-guide.md` in this set) |
 | MCP server internals | `docs/reference/mcp-server-architecture.md` |
 | Which library / CLI is available where | `docs/reference/library-llms-full.md` (detector: `pixi run llms-full-check`) |
 | Recipe authoring gotchas | `.claude/skills/conda-forge-expert/SKILL.md` § Recipe Authoring Gotchas (G1–G107) |

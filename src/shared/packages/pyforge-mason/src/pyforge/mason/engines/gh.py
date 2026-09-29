@@ -79,7 +79,10 @@ class OpenPrSearchResult:
 
 
 def find_open_pr(
-    repo: str, head_branch: str, *, timeout: float | None = None,
+    repo: str,
+    head_branch: str,
+    *,
+    timeout: float | None = None,
 ) -> OpenPrSearchResult:
     """Search `repo` (e.g. `"conda-forge/staged-recipes"`) for an OPEN pull
     request whose head branch is `head_branch` (e.g. `"add-recipe-<name>"`)
@@ -115,11 +118,17 @@ def find_open_pr(
 
     resolved_timeout = timeout if timeout is not None else _GH_PR_LIST_TIMEOUT_SECONDS
     argv = [
-        _BINARY_NAME, "pr", "list",
-        "--repo", repo,
-        "--head", head_branch,
-        "--state", "open",
-        "--json", "number,url",
+        _BINARY_NAME,
+        "pr",
+        "list",
+        "--repo",
+        repo,
+        "--head",
+        head_branch,
+        "--state",
+        "open",
+        "--json",
+        "number,url",
     ]
     try:
         completed = subprocess.run(
@@ -132,7 +141,7 @@ def find_open_pr(
             timeout=resolved_timeout,
             check=False,
         )
-    except (subprocess.TimeoutExpired, OSError):
+    except subprocess.TimeoutExpired, OSError:
         return OpenPrSearchResult(found=None, url=None)
 
     if completed.returncode != 0:

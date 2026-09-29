@@ -20,14 +20,7 @@ from pyforge.doctor.sources import backlog_intake
 
 
 def _write_ledger(target: Path, project: str, text: str) -> Path:
-    path = (
-        target
-        / "_bmad-output"
-        / "projects"
-        / project
-        / "planning-artifacts"
-        / "deferred-work-ledger.md"
-    )
+    path = target / "_bmad-output" / "projects" / project / "planning-artifacts" / "deferred-work-ledger.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return path
@@ -42,39 +35,25 @@ def test_parse_identifier_accepts_bare_epic_number():
 
 
 def test_parse_identifier_accepts_epic_prefixed_case_insensitive():
-    assert backlog_intake.parse_identifier(
-        "Epic 13"
-    ) == backlog_intake.ParsedIdentifier(epic=13, story=None)
-    assert backlog_intake.parse_identifier(
-        "epic 13"
-    ) == backlog_intake.ParsedIdentifier(epic=13, story=None)
+    assert backlog_intake.parse_identifier("Epic 13") == backlog_intake.ParsedIdentifier(epic=13, story=None)
+    assert backlog_intake.parse_identifier("epic 13") == backlog_intake.ParsedIdentifier(epic=13, story=None)
 
 
 def test_parse_identifier_accepts_dotted_story_id():
-    assert backlog_intake.parse_identifier(
-        "13.1"
-    ) == backlog_intake.ParsedIdentifier(epic=13, story=1)
+    assert backlog_intake.parse_identifier("13.1") == backlog_intake.ParsedIdentifier(epic=13, story=1)
 
 
 def test_parse_identifier_accepts_kebab_story_id():
-    assert backlog_intake.parse_identifier(
-        "13-1"
-    ) == backlog_intake.ParsedIdentifier(epic=13, story=1)
+    assert backlog_intake.parse_identifier("13-1") == backlog_intake.ParsedIdentifier(epic=13, story=1)
 
 
 def test_parse_identifier_accepts_story_prefixed_case_insensitive():
-    assert backlog_intake.parse_identifier(
-        "Story 13.1"
-    ) == backlog_intake.ParsedIdentifier(epic=13, story=1)
-    assert backlog_intake.parse_identifier(
-        "story 13-1"
-    ) == backlog_intake.ParsedIdentifier(epic=13, story=1)
+    assert backlog_intake.parse_identifier("Story 13.1") == backlog_intake.ParsedIdentifier(epic=13, story=1)
+    assert backlog_intake.parse_identifier("story 13-1") == backlog_intake.ParsedIdentifier(epic=13, story=1)
 
 
 def test_parse_identifier_accepts_trailing_lowercase_letter():
-    assert backlog_intake.parse_identifier(
-        "13.1a"
-    ) == backlog_intake.ParsedIdentifier(epic=13, story=1)
+    assert backlog_intake.parse_identifier("13.1a") == backlog_intake.ParsedIdentifier(epic=13, story=1)
 
 
 def test_parse_identifier_rejects_unparseable_text():
@@ -174,12 +153,8 @@ def test_entry_naming_both_epic_and_story_yields_exactly_one_finding(
 
 
 def test_story_level_dotted_query_matches_dotted_and_kebab_prose(tmp_path: Path):
-    _write_ledger(
-        tmp_path, "doctor", "## DW-3: dotted\nsummary: needs Story 13.1.\n"
-    )
-    _write_ledger(
-        tmp_path, "warden", "## DW-4: kebab\nsummary: needs Story 13-1.\n"
-    )
+    _write_ledger(tmp_path, "doctor", "## DW-3: dotted\nsummary: needs Story 13.1.\n")
+    _write_ledger(tmp_path, "warden", "## DW-4: kebab\nsummary: needs Story 13-1.\n")
 
     findings = backlog_intake.gather(tmp_path, identifier="13.1")
 
@@ -188,12 +163,8 @@ def test_story_level_dotted_query_matches_dotted_and_kebab_prose(tmp_path: Path)
 
 
 def test_story_level_kebab_query_matches_dotted_and_kebab_prose(tmp_path: Path):
-    _write_ledger(
-        tmp_path, "doctor", "## DW-3: dotted\nsummary: needs Story 13.1.\n"
-    )
-    _write_ledger(
-        tmp_path, "warden", "## DW-4: kebab\nsummary: needs Story 13-1.\n"
-    )
+    _write_ledger(tmp_path, "doctor", "## DW-3: dotted\nsummary: needs Story 13.1.\n")
+    _write_ledger(tmp_path, "warden", "## DW-4: kebab\nsummary: needs Story 13-1.\n")
 
     findings = backlog_intake.gather(tmp_path, identifier="13-1")
 
@@ -201,9 +172,7 @@ def test_story_level_kebab_query_matches_dotted_and_kebab_prose(tmp_path: Path):
 
 
 def test_story_level_query_also_matches_the_bare_parent_epic(tmp_path: Path):
-    _write_ledger(
-        tmp_path, "doctor", "## DW-5: parent only\nsummary: blocks on Epic 13.\n"
-    )
+    _write_ledger(tmp_path, "doctor", "## DW-5: parent only\nsummary: blocks on Epic 13.\n")
 
     findings = backlog_intake.gather(tmp_path, identifier="13.1")
 
@@ -266,9 +235,7 @@ def test_story_13_1_query_does_not_match_story_13_10_prose(tmp_path: Path):
 
 
 def test_no_matches_anywhere_reports_ok(tmp_path: Path):
-    _write_ledger(
-        tmp_path, "doctor", "## DW-9: irrelevant\nsummary: about Epic 5 only.\n"
-    )
+    _write_ledger(tmp_path, "doctor", "## DW-9: irrelevant\nsummary: about Epic 5 only.\n")
 
     findings = backlog_intake.gather(tmp_path, identifier="13")
 
@@ -300,18 +267,9 @@ def test_unreadable_ledger_is_skipped_and_scan_continues(tmp_path: Path):
     # read_text() raises IsADirectoryError (an OSError), which must be
     # absorbed, not propagated -- and the scan must still find the real
     # match in "warden"'s own (readable) ledger.
-    unreadable = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "doctor"
-        / "planning-artifacts"
-        / "deferred-work-ledger.md"
-    )
+    unreadable = tmp_path / "_bmad-output" / "projects" / "doctor" / "planning-artifacts" / "deferred-work-ledger.md"
     unreadable.mkdir(parents=True)
-    _write_ledger(
-        tmp_path, "warden", "## DW-10: readable\nsummary: names Epic 13.\n"
-    )
+    _write_ledger(tmp_path, "warden", "## DW-10: readable\nsummary: names Epic 13.\n")
 
     findings = backlog_intake.gather(tmp_path, identifier="13")
 
@@ -340,24 +298,19 @@ def test_match_evidence_carries_summary_from_em_dash_heading(tmp_path: Path):
     _write_ledger(
         tmp_path,
         "doctor",
-        "## DW-1-1-1 — The loop's exact command, unfrozen\n"
-        "status: open\n"
-        "summary: names Epic 13 in passing.\n",
+        "## DW-1-1-1 — The loop's exact command, unfrozen\nstatus: open\nsummary: names Epic 13 in passing.\n",
     )
 
     findings = backlog_intake.gather(tmp_path, identifier="13")
 
-    assert findings[0].evidence["summary"] == (
-        "The loop's exact command, unfrozen"
-    )
+    assert findings[0].evidence["summary"] == ("The loop's exact command, unfrozen")
 
 
 def test_match_evidence_carries_summary_from_colon_heading(tmp_path: Path):
     _write_ledger(
         tmp_path,
         "doctor",
-        "### DW-FU-6-4: Follow-up review still recommended\n"
-        "summary: names Epic 13 in passing.\n",
+        "### DW-FU-6-4: Follow-up review still recommended\nsummary: names Epic 13 in passing.\n",
     )
 
     findings = backlog_intake.gather(tmp_path, identifier="13")
@@ -368,9 +321,7 @@ def test_match_evidence_carries_summary_from_colon_heading(tmp_path: Path):
 def test_match_evidence_status_defaults_to_empty_string_when_absent(
     tmp_path: Path,
 ):
-    _write_ledger(
-        tmp_path, "doctor", "## DW-11: no status line\nsummary: names Epic 13.\n"
-    )
+    _write_ledger(tmp_path, "doctor", "## DW-11: no status line\nsummary: names Epic 13.\n")
 
     findings = backlog_intake.gather(tmp_path, identifier="13")
 
@@ -378,15 +329,9 @@ def test_match_evidence_status_defaults_to_empty_string_when_absent(
 
 
 def test_multi_project_matches_are_all_reported_independently(tmp_path: Path):
-    _write_ledger(
-        tmp_path, "doctor", "## DW-12: doctor entry\nsummary: names Epic 13.\n"
-    )
-    _write_ledger(
-        tmp_path, "mason", "## DW-13: mason entry\nsummary: names Epic 13 too.\n"
-    )
-    _write_ledger(
-        tmp_path, "steward", "## DW-14: unrelated\nsummary: names Epic 5 only.\n"
-    )
+    _write_ledger(tmp_path, "doctor", "## DW-12: doctor entry\nsummary: names Epic 13.\n")
+    _write_ledger(tmp_path, "mason", "## DW-13: mason entry\nsummary: names Epic 13 too.\n")
+    _write_ledger(tmp_path, "steward", "## DW-14: unrelated\nsummary: names Epic 5 only.\n")
 
     findings = backlog_intake.gather(tmp_path, identifier="13")
 

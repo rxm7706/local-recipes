@@ -149,9 +149,7 @@ def may_retire_legacy(
             continue
         covered.append(view)
 
-    allowed = len(covered) == len(required) and not (
-        missing or non_credentialed or drifted or unsigned
-    )
+    allowed = len(covered) == len(required) and not (missing or non_credentialed or drifted or unsigned)
     if allowed:
         reason = (
             f"all {len(required)} legacy-surface view(s) have a credentialed, "

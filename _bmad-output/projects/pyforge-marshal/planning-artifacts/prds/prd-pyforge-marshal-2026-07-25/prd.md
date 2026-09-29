@@ -2,7 +2,12 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-08"
+updated: "2026-09-28"   # RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
+# 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
+# 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
+# 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
+# 2026-09-14  # currency reconciliation (§ 19): `spec-pyforge-marshal` moved to 2026-09-13 while this PRD sat at 2026-09-08. The Spec's 2026-09-09 OPERATOR ANSWERING PASS closed six items that this PRD still carried as open under its OWN numbering — Q-4 (fleet budgets), Q-5 (OTel), Q-6 (ACP trigger), Q-7 (idle threshold) — plus the trust-model declaration (Spec F-4) and the freeze-writer clause (Spec F-5). Those four § 13 entries are amended in place with dated ANSWERED text, § 8's fleet-budget Non-Goal is amended, and § 11 gains C-11 (the declared, advisory-in-v1 trust model). This is a CONTENT change, not a re-stamp.
 # 2026-08-26  # currency reconciliation (§ 18): the Spec's 2026-08-22 era-alignment motion folded in (Epic 25 / bmad-loop 0.11 — pin now >=0.11.0,<0.12); FR-192..FR-195 registered from epics.md's 2026-08-15/2026-08-21 additions (with the FR-193 double-assignment recorded as a defect); § 17's static-console line amended per the Unifying Strategy's CAP-2 supersession (2026-08-24). Shipped state re-grounded: 165/165 stories, Epics 1-27.
 # 2026-08-14  # FR-188..FR-191 added to § 7.2: the four undecomposed marshal Specs decomposed into epics.md Epic 20 (Stories 20.1-20.10) — spec-bmad-loop-baseline-drift (FR-188), spec-bmad-loop-intent-gap-work-preservation (FR-189), spec-bmad-switch-scope-enforcement (FR-190, closes DW-1-4-2), spec-landing-evidence-grammar (FR-191, Spec authored the same day from docs/dreams/landing-evidence-grammar.md). ONE FR space now FR-1..FR-191, no gaps.
 # 2026-08-14  # FR-182..FR-187 backfilled into § 7.2/§ 7.3: six FRs cited by epics.md (Stories 3.11/3.12/3.13/2.8/5.9/5.10, all shipped) but absent here — the same INV-A class the 2026-08-11 line closed for FR-181, found ×6 by the 2026-08-14 dream-backlog chain audit. Sources: spec-adaptive-model-tiering (FR-182/183), spec-horizontal-run-concurrency (FR-184), spec-risk-tiered-review-depth (FR-185), spec-quick-dev-reconciliation (FR-186), spec-marshal-land-merge-subject (FR-187). ONE FR space now FR-1..FR-187, no gaps.
@@ -29,6 +34,7 @@ inputs:
   - docs/specs/bmad-loop-adoption.md
   - docs/specs/copilot-bridge-vscode-extension.md
   - docs/specs/bmad-copilot-adapter-upstream.md
+fr-derivation-from: "2026-09-16"
 ---
 
 # PRD: Marshal
@@ -228,55 +234,55 @@ Both legacy specs are to be marked superseded **at merge time by the caller** �
 
 **Functional Requirements:**
 
-#### FR-1: Provision a loop home
+#### FR-1: Provision a loop home ← CAP-1
 The operator can create an isolated loop home for a project slug in one command.
 **Consequences (testable):**
 - A git worktree exists at the conventional sibling path on branch `loop/<slug>`.
 - Re-running against an existing home succeeds and changes nothing (idempotent).
 - The command prints a directly runnable launch line.
 
-#### FR-2: Per-worktree active-project state
+#### FR-2: Per-worktree active-project state ← CAP-1
 Each loop home carries its own BMAD active-project marker and planning-artifact symlinks, independent of every other home and of the main checkout.
 **Consequences:**
 - Provisioning home B leaves home A's and the main checkout's active project unchanged.
 - The marker and the planning symlinks always agree; a desync is reported, never silently tolerated.
 - `BMAD_ACTIVE_PROJECT` is exported in the printed launch line as belt-and-suspenders.
 
-#### FR-3: Single-sourced Tier-3 store
+#### FR-3: Single-sourced Tier-3 store ← CAP-1
 A loop home's `implementation-artifacts` resolves to the main checkout's canonical directory, so every consumer sees one store at an identical repo-relative path.
 **Consequences:**
 - The home's `implementation-artifacts` realpath equals the main checkout's.
 - The canonical directory is created if absent.
 - A real, non-empty local directory is **never** replaced; the command refuses with a named finding.
 
-#### FR-4: Isolation verification
+#### FR-4: Isolation verification ← CAP-1
 The operator can assert that two or more loop homes are genuinely isolated.
 **Consequences:**
 - Exit 0 when markers and symlinks are independent, Tier-3 realpaths are identical, and the main checkout is untouched.
 - Non-zero with a named finding on any cross-talk.
 - Works for N ≥ 2 homes in one invocation. *(Live evidence: seven homes provisioned as of 2026-07-25.)*
 
-#### FR-5: Preflight
+#### FR-5: Preflight ← CAP-1
 Initialization verifies the run can actually start, rather than discovering it cannot at minute 90.
 **Consequences:**
 - Reports: harness present and version; multiplexer backend available; adapter binary present; story feed resolvable and parseable; verify commands resolvable; `main` not checked out twice.
 - Each adapter's declared first-run requirement is surfaced as an explicit human action, because an unanswered first-run dialog is indistinguishable from a session timeout.
 - Exits non-zero on any blocking finding, naming it.
 
-#### FR-6: Teardown
+#### FR-6: Teardown ← CAP-1
 The operator can remove a loop home cleanly.
 **Consequences:**
 - Worktree and branch are removed; `git worktree list` is clean afterwards.
 - Refuses when the home has uncommitted or unmerged work unless explicitly forced.
 - Never touches the canonical Tier-3 store.
 
-#### FR-7: Adapter config seeding
+#### FR-7: Adapter config seeding ← CAP-1
 Gitignored adapter configuration a fresh worktree lacks is seeded into the home.
 **Consequences:**
 - Each loaded adapter's declared seed files are present in the home after init.
 - Project-specific extra paths are seeded from composed policy, not from a hard-coded list.
 
-#### FR-8: Enumerate loop homes
+#### FR-8: Enumerate loop homes ← CAP-1
 The operator can list all loop homes with their resolved active project.
 **Consequences:**
 - One row per home: path, branch, active project, and whether it is desynced.
@@ -289,27 +295,27 @@ The operator can list all loop homes with their resolved active project.
 
 **Functional Requirements:**
 
-#### FR-9: Detached launch by default
+#### FR-9: Detached launch by default ← CAP-2
 Runs and resumes execute detached from the invoking shell.
 **Consequences:**
 - The command returns promptly with a run identifier; the run survives the caller exiting.
 - Foreground execution is available only behind an explicit flag, documented as unsafe for resumes.
 - Attaching to a live run's session is a separate, non-destructive command.
 
-#### FR-10: Scoped launch
+#### FR-10: Scoped launch ← CAP-2
 The operator can scope a run to one story, an epic, a count, or the whole feed.
 **Consequences:**
 - Story, epic, and max-count selectors are supported and composable.
 - The resolved story list is echoed before launch and recorded in the journal.
 
-#### FR-11: Supervisor attaches to every run
+#### FR-11: Supervisor attaches to every run ← CAP-2
 Every run started by Marshal has a supervisor process attached for its lifetime.
 **Consequences:**
 - The supervisor runs outside the agent session and cannot be disabled from within it.
 - Supervisor death is itself detected and journaled; it does not silently stop watching.
 - The supervisor is inert on a run it did not start.
 
-#### FR-12: Idle-strand detection
+#### FR-12: Idle-strand detection ← CAP-2
 A session that has stopped producing output but has not exited is detected and acted on well before any token or time cap.
 **Consequences:**
 - Idleness is measured from observable session output (pane content and log modification time), not from the agent's self-report.
@@ -318,7 +324,7 @@ A session that has stopped producing output but has not exited is detected and a
 - On expiry the supervisor takes a configured action — nudge, then stop-and-retry, then defer — with each step journaled and counted.
 - *Motivating evidence: this class of failure cost three story attempts and one 4M-token review cycle in a single wave.*
 
-#### FR-13: Budget ceilings
+#### FR-13: Budget ceilings ← CAP-2
 A run cannot exceed configured token and wall-clock ceilings without a named stop.
 **Consequences:**
 - Per-story and per-run ceilings are enforced; a breach stops the unit with a named reason rather than a silent defer.
@@ -326,33 +332,33 @@ A run cannot exceed configured token and wall-clock ceilings without a named sto
 - Approaching a ceiling emits a warning before the stop.
 - *(Re-scoped 2026-08-01:)* upstream `bmad-loop` v0.9.0 ships **in-session** budget guards — credited, and not duplicated. Marshal's requirement is the half upstream cannot provide: ceilings enforced **from outside the session** by the supervisor (NFR-4), reachable from externally-observed quantities alone, so a wedged or compromised session cannot outlive its budget by being its own witness.
 
-#### FR-14: Heaviest-story budget advisory
+#### FR-14: Heaviest-story budget advisory ← CAP-2
 Before launch, the operator is warned when a selected story is likely to exceed the configured session budget.
 **Consequences:**
 - Preflight compares the session budget against a per-story hint (spec size, declared difficulty, prior attempt history) and warns.
 - *Motivating evidence: a 90-minute cap killed the keystone story mid-work and burned 25.8M unrecoverable tokens.*
 
-#### FR-15: Escalation surfacing
+#### FR-15: Escalation surfacing ← CAP-2
 An escalation pauses the run and reaches the operator through configured channels.
 **Consequences:**
 - The run pauses; no story proceeds past an unresolved escalation.
 - The escalation is journaled with story key, reason, and the artifact needing a decision.
 - Notification fires on at least a durable file marker; desktop notification is best-effort.
 
-#### FR-16: Deferral capture
+#### FR-16: Deferral capture ← CAP-2
 A story the loop could not land is recorded rather than lost.
 **Consequences:**
 - Every deferral carries story key, reason class, attempt count, and where any preserved work lives.
 - The run continues to the next story unless configured otherwise.
 
-#### FR-17: Resume
+#### FR-17: Resume ← CAP-2
 A paused run can be resumed after a human resolves the blocking condition.
 **Consequences:**
 - Resume is detached, on the same terms as launch (FR-9).
 - Resume re-attaches a supervisor.
 - Resuming a run whose escalation is unresolved is refused with a named finding.
 
-#### FR-18: Run journal
+#### FR-18: Run journal ← CAP-2
 Every run produces a durable, append-only journal owned by Marshal.
 **Consequences:**
 - Records story transitions, gate outcomes, escalations, deferrals, budget consumption, and supervisor actions, each timestamped.
@@ -360,7 +366,7 @@ Every run produces a durable, append-only journal owned by Marshal.
 - It is written incrementally, so a killed run still has a journal up to the kill.
 - *Rationale: vendor retention is 48 hours to 180 days and agent transcript formats are documented as changing between versions. The record must be self-owned.*
 
-#### FR-61: Bounded-loss durability *(added 2026-08-01 — `docs/dreams/durable-runs.md`)*
+#### FR-61: Bounded-loss durability *(added 2026-08-01 — `docs/dreams/durable-runs.md`)* ← CAP-19
 The supervisor pushes a run's work at its own stage boundaries, and durability is on by default for every fleet launch — no separate step a human has to remember to start.
 **Consequences:**
 - After the dev commit, after the review verdict, and after the merge, the supervisor pushes the affected station and per-story branches — loss is bounded by a stage, not by an interval timer.
@@ -368,7 +374,7 @@ The supervisor pushes a run's work at its own stage boundaries, and durability i
 - Push is read-only against working trees and remotes — never a force-push, never a rewrite — so it cannot disturb a live session.
 - *Motivating evidence: measured 2026-07-31 — 6 station loop branches on no remote, ~5,150 lines on `recover/*`, one story's 734-line transport branch (spec included) unpushed six days, 156 dangling commits one `git gc` from unrecoverable, and 1,748 lines sitting 40 minutes as a local-only commit. Nine detectors ran green throughout because none asked the durability question — the window reopens roughly every 60–90 minutes, once per station's dev phase.*
 
-#### FR-170: A retired story branch is not a push failure *(added 2026-08-09 — `docs/dreams/durable-runs.md`)*
+#### FR-170: A retired story branch is not a push failure *(added 2026-08-09 — `docs/dreams/durable-runs.md`)* ← CAP-128
 The supervisor distinguishes a branch that **cannot** be pushed from one that no longer **needs** to be, and proves the difference rather than assuming it.
 **Consequences:**
 - bmad-loop deletes a story's branch when the story merges into the station branch; the supervisor polls, so it routinely acts on a `dev-commit-landed`/`story-merged` boundary *after* the branch is gone. That is the ordinary success path, not a fault.
@@ -376,14 +382,14 @@ The supervisor distinguishes a branch that **cannot** be pushed from one that no
 - `GitVcs.push` is unchanged: raising on "no such branch" is correct — falling back would push to a target the caller never named. The fix belongs to the caller, which should not ask for a push it does not need.
 - *Motivating evidence: measured 2026-08-09 on the doctor Epic 6 run — 6 of 22 `stage-push` records reported `push-failed`/`MRS-SUPV-008` on branches whose work was already safe on `origin/loop/pyforge-doctor`. The false alarm cost an operator an hour and produced the wrong diagnosis "durability is broken."*
 
-#### FR-171: Unpushed work is measured by tip, never by name *(added 2026-08-09 — `docs/dreams/durable-runs.md`)*
+#### FR-171: Unpushed work is measured by tip, never by name *(added 2026-08-09 — `docs/dreams/durable-runs.md`)* ← CAP-129
 `unpushed-work-check` reports a branch whose remote copy is **behind**, not merely one with no remote copy at all.
 **Consequences:**
 - `find_unpushed`'s `if br in remote: continue` is replaced by a tip comparison: a local branch whose remote sha differs and which carries commits the remote lacks is unpushed work, however long its name has existed on origin.
 - Station branches (`loop/*`) are in scope: they are precisely the long-lived branches whose name always exists remotely and whose tip silently falls behind between runs — the case the name check structurally cannot see.
 - *Motivating evidence: measured 2026-08-09 — `loop/pyforge-doctor` on origin at `3f43f486c9` while the local branch stood 8 PRs ahead at `cbd965110b`, reported clean. The Dream's own founding observation ("nine detectors ran green because none asked the durability question") reproduced inside the detector written to ask it.*
 
-#### FR-172: `marshal land` refuses while a run is in flight *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)*
+#### FR-172: `marshal land` refuses while a run is in flight *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)* ← CAP-130
 The last mile knows whether the road is still in use.
 **Consequences:**
 - `land` resolves its head branch to the loop-home **station branch** and retires it by default; invoked during a live run it would merge and then **delete the branch bmad-loop is actively merging stories into**. It now refuses, by name, when a supervisor/engine is live for that slug — the same liveness reading `marshal status` already produces, not a new mechanism.
@@ -391,7 +397,7 @@ The last mile knows whether the road is still in use.
 - Landing a wave while a run continues stays supported; what is refused is the **branch retirement**, not the merge.
 - *Motivating evidence: measured 2026-08-09 — avoided only because a human read `cli/land.py` before invoking it. A safety property that depends on someone reading the source is not one.*
 
-#### FR-173: A landing leaves the loop home current with `main` *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)*
+#### FR-173: A landing leaves the loop home current with `main` *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)* ← CAP-131
 "Resync" means the station branch is current, not merely that the feed is.
 **Consequences:**
 - `landing_resync` today resyncs the **feed**; `landing_resync_commands` is empty by default, so nothing returns the loop home to `main` after its own work merges. The station branch begins drifting the moment the first PR lands.
@@ -399,7 +405,7 @@ The last mile knows whether the road is still in use.
 - Between-runs staleness is in scope: a home with no live run is exactly where drift accumulates unobserved.
 - *Motivating evidence: `loop/pyforge-doctor` measured 5 commits behind `main` minutes after its own stories landed, and 8 PRs behind on origin between runs — reported clean by every detector at the time.*
 
-#### FR-174: The producer reconciles the surface it drifts *(added 2026-08-09 — `docs/dreams/surface-drift-reconciliation.md`)*
+#### FR-174: The producer reconciles the surface it drifts *(added 2026-08-09 — `docs/dreams/surface-drift-reconciliation.md`)* ← CAP-132
 bmad-loop names the governed paths it changed, in the owning Spec's memlog, as part of the story.
 **Consequences:**
 - A loop-produced story that touches governed files leaves that Spec's `.memlog.md` naming each changed path **before the story is complete**, so `spec-surface-check` is green on the station branch without a human editing a memlog at landing.
@@ -407,7 +413,7 @@ bmad-loop names the governed paths it changed, in the owning Spec's memlog, as p
 - Reconciliation is **per-file naming** under FR-165's rule. The loop is never handed `--write-baseline`: a producer that can stamp its own baseline is the laundering FR-165 exists to end.
 - *Motivating evidence: measured 2026-08-09 — the first three loop-produced stories landed drifted 14 governed paths across `spec-pyforge-doctor` plus `pixi.toml` against two further surfaces, every one named by hand at landing. The gate is correct; the machine writing most of the repo's code does not know it exists.*
 
-#### FR-175: The loop's deferred work reaches the tracked ledger *(added 2026-08-09 — the Marshal↔loop seam review)*
+#### FR-175: The loop's deferred work reaches the tracked ledger *(added 2026-08-09 — the Marshal↔loop seam review)* ← CAP-133
 A follow-up the loop defers is a decision of record, not a local note.
 **Consequences:**
 - When bmad-loop spends its damping cap it files "follow-up review still recommended" into `implementation-artifacts/deferred-work.md` — **gitignored Tier-3**, invisible to CI and absent from every clone — under a **generic `DW-<n>` id** that the next damped story collides with.
@@ -415,21 +421,21 @@ A follow-up the loop defers is a decision of record, not a local note.
 - Promotion carries the ledger's `DW-<story>-<n>` convention so ids cannot collide, and happens as part of the story or its landing — not as archaeology someone performs later.
 - Scope note: this is about the **transport** of a deferral into the tracked tier. Whether each follow-up review is then *done* stays the operator's call.
 
-#### FR-176: The failed-story safety net is reported, not merely written *(added 2026-08-09 — the Marshal↔loop seam review)*
+#### FR-176: The failed-story safety net is reported, not merely written *(added 2026-08-09 — the Marshal↔loop seam review)* ← CAP-134
 A `changes.patch` left by a killed story is surfaced, so a patch holding unlanded work cannot sit unnoticed.
 **Consequences:**
 - A session-timeout kill defers a story and preserves its work at `<run>/failed/<story>/changes.patch`. **Nothing in the repo reads that path** — measured 2026-08-09: **7 patches on disk, 26 KB to 205 KB**, across doctor/herald/marshal/mason/warden.
 - All seven belong to stories that later reached `done`, so **nothing is lost today** — which is precisely why it has gone unnoticed. The gap is the absence of a signal, not a present loss.
 - Reported alongside the other durability signals (`unpushed-work-check`'s family), keyed on whether the owning story has since landed: a patch whose story is `done` is spent and can be said so; one whose story is not is real pending work on one disk.
 
-#### FR-177: One pusher, not two *(added 2026-08-09 — the Marshal↔loop seam review)*
+#### FR-177: One pusher, not two *(added 2026-08-09 — the Marshal↔loop seam review)* ← CAP-135
 `loop_push_watch.py`'s role is reconciled with the supervisor that now subsumes it.
 **Consequences:**
 - FR-61 gave the supervisor its own `boundary: "interval"` push (`_INTERVAL_PUSH_BOUNDARY`), so during a run the standalone watcher duplicates it — two processes pushing the same branches on overlapping timers.
 - The script's own pixi description still calls itself "a STOPGAP — the durable fix is for the loop to push at its own stage boundaries", a statement **Marshal made false when FR-61 shipped**. Documentation that describes a world that no longer exists is how an operator (2026-08-09) concluded nothing was pushing at all.
 - Either retired, or re-scoped to the one case the supervisor structurally cannot cover — a home with **no live run** — with its description corrected either way. It must not keep claiming to be the fallback for something already built.
 
-#### FR-178: A loop agent cannot mutate repo-wide git state *(added 2026-08-09 — the Marshal↔loop seam review)*
+#### FR-178: A loop agent cannot mutate repo-wide git state *(added 2026-08-09 — the Marshal↔loop seam review)* ← CAP-136
 Isolation covers the shared git directory, not just the working tree.
 **Consequences:**
 - Every loop home **and every per-story worktree** resolves `--git-common-dir` to the **same** `local-recipes/.git`. `.git/info/exclude`, `.git/config` and the rest of that directory are therefore **repo-wide shared state** that any dev session can write — Marshal's isolation contract (FR-8) covers worktrees and branches, not this.
@@ -437,7 +443,7 @@ Isolation covers the shared git directory, not just the working tree.
 - `marshal preflight`/`homes` reports a loop home whose shared git state has been mutated — at minimum `info/exclude` — so the condition is visible rather than discovered by a missing file weeks later.
 - The existing filesystem-walking guard (`test_skill_files_tracked.py`) stays: it is the only signal that survives the rule, and it is what caught the third recurrence.
 
-#### FR-179: The board answers "how much is left" *(added 2026-08-09 — `docs/dreams/factory-console.md`)*
+#### FR-179: The board answers "how much is left" *(added 2026-08-09 — `docs/dreams/factory-console.md`)* ← CAP-137
 A fleet roll-up renders on both boards; live-only fields stay local.
 **Consequences:**
 - Per-station `done / total`, `epics done / total` and a **PyForge roll-up** row, counted from each project's **tracked** `sprint-status-ledger.yaml` via the same `parse_sprint_status` the deploy already uses — never a second parser, and never the gitignored Tier-3 feed CI cannot read.
@@ -445,7 +451,7 @@ A fleet roll-up renders on both boards; live-only fields stay local.
 - **No live fields on Pages.** Run state, projection and the ATTENTION block derive from `marshal status`, which reads tmux and `~/.bmad-loops`; CI has neither, so publishing them would publish what the deploy cannot measure. `pixi run -e local-recipes fleet-picture` is the local view that adds them.
 - An epic counts as done only when every story in it is done — the same rule the report uses, so the two can never disagree.
 
-#### FR-180: A stale loop home cannot be spun *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)*
+#### FR-180: A stale loop home cannot be spun *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)* ← CAP-138
 Preflight refuses a loop home that is behind `main`, and reports one that has diverged from origin.
 **Consequences:**
 - **Preflight, not the landing path.** FR-173 makes a landing leave the home current, but a landing done by hand (`gh pr merge`) never runs it. Preflight is the chokepoint every `factory spin` must pass, so the check cannot be skipped.
@@ -454,7 +460,7 @@ Preflight refuses a loop home that is behind `main`, and reports one that has di
 - **FR-173 is amended to include the push.** Returning the station branch to `main` locally is not enough: provisioning reads **origin**, so a re-provisioned home would clone a stale branch. Measured the same day — seven homes sat 33–74 commits behind on origin after their work had already landed.
 - Any probe failure yields no finding: a diagnostic must never become a refusal.
 
-#### FR-181: A dead supervisor sidecar doesn't hide a live engine *(added 2026-08-11 — `docs/dreams/fleet-status-supervisor-fallback.md`)*
+#### FR-181: A dead supervisor sidecar doesn't hide a live engine *(added 2026-08-11 — `docs/dreams/fleet-status-supervisor-fallback.md`)* ← CAP-139
 When the supervisor sidecar is dead, `derive_home_state` consults a second, independent liveness signal for the run's engine before reporting `"unsupervised"`, so a dead sidecar behind a demonstrably live engine reads differently from a run that actually needs a re-spin.
 **Consequences:**
 - `derive_home_state`'s first branch (`if not finished and supervisor_alive is False: return "unsupervised"`) returns before ever checking whether the harness itself has an in-flight task; `supervisor_alive` probes only the sidecar Marshal spawns, never the underlying `bmad-loop` engine process it watches.
@@ -463,43 +469,43 @@ When the supervisor sidecar is dead, `derive_home_state` consults a second, inde
 - The two failure shapes (sidecar-dead-engine-alive vs. sidecar-dead-engine-dead) are distinguishable from `marshal status`/`fleet-picture`'s own output, so an operator never again needs the `ps`/`tmux ls`/`state.json` cross-check by hand.
 - *Motivating evidence: measured 2026-08-11 — 5 stations resumed via bare `bmad-loop resume` (which never spawns a fresh sidecar) reported `unsupervised — needs re-spin` for the rest of their run's life, although each was independently verified alive via `ps`/`tmux ls`/`state.json`. Story 5.8 (Epic 5) queues the implementation; the concrete fallback signal is a story-level design decision, not resolved here.*
 
-#### FR-182: A story's declared difficulty actually picks its model *(added 2026-08-14 backfill — `docs/dreams/adaptive-model-tiering.md`; shipped via Story 3.11)*
+#### FR-182: A story's declared difficulty actually picks its model *(added 2026-08-14 backfill — `docs/dreams/adaptive-model-tiering.md`; shipped via Story 3.11)* ← CAP-140
 A project's declared `model_tier_map` and a story's declared `difficulty:` change which model runs each stage: the rendered `policy.toml` differs from the undeclared baseline in exactly the mapped stages, and the resolution is journaled at launch.
 **Consequences:**
 - Reuses FR-51's already-shipped chain (`core/spec_difficulty.py`, `cli/spin.py` resolution, `render_policy_toml` tier-batching) — no second mechanism; this FR is the *feeding* of that chain, which grep proved fully built and permanently unused (zero real map entries, zero declared difficulties across all 8 loop homes).
 - Difficulty is **authored**, not derived: a Tier-3 story-spec frontmatter `difficulty:` key against the vocabulary `marshal-policy.toml` maps.
 - A mismatched or undeclared story still reports via the existing `batching_report` path, unchanged.
 
-#### FR-183: A struggling retry runs under a stronger model *(added 2026-08-14 backfill — `docs/dreams/adaptive-model-tiering.md`; shipped via Story 3.12)*
+#### FR-183: A struggling retry runs under a stronger model *(added 2026-08-14 backfill — `docs/dreams/adaptive-model-tiering.md`; shipped via Story 3.12)* ← CAP-141
 A story whose attempt or review-cycle count crosses a configured threshold — derived from the journal fold (AD-26), never a hand-maintained flag — is next dispatched under a model at least as strong as its resolved tier: a floor-raise only, never a downgrade.
 **Consequences:**
 - The escalation applies on the deferral-then-resume path (`run_resume`'s existing re-render), is journaled with intent/outcome discipline (AD-28) naming trigger and resulting model, and is bounded — it does not re-fire without a new trigger (C-6).
 - A story with no declared difficulty still has a baseline model to escalate from — not a no-op for undeclared stories.
 
-#### FR-184: The parallel-fan-out clamp is surfaced, not silent *(added 2026-08-14 backfill — `docs/dreams/horizontal-run-concurrency.md`; shipped via Story 3.13)*
+#### FR-184: The parallel-fan-out clamp is surfaced, not silent *(added 2026-08-14 backfill — `docs/dreams/horizontal-run-concurrency.md`; shipped via Story 3.13)* ← CAP-142
 `bmad_loop==0.9.0`'s server-side clamp of `max_parallel` to 1 (an unbuilt Phase-5 stub) is surfaced as a loud advisory (`MRS-POLICY-007` WARN), registered in Story 6.8's `upstream-register.json`, and assessed for Marshal-side readiness (`parallel-fan-out-readiness-assessment.md`).
 **Consequences:**
 - Marshal must **not** build concurrent dispatch while upstream clamps (AD-2/AD-3 wrap-never-fork); the capability itself stays parked until upstream Phase 5 ships, at which point adoption starts from the readiness assessment, not a fresh investigation.
 
-#### FR-185: A low-risk story's review runs lighter, never absent *(added 2026-08-14 backfill — `docs/dreams/risk-tiered-review-depth.md`; shipped via Story 2.8)*
+#### FR-185: A low-risk story's review runs lighter, never absent *(added 2026-08-14 backfill — `docs/dreams/risk-tiered-review-depth.md`; shipped via Story 2.8)* ← CAP-143
 A story mechanically classified low-risk (`classify_review_tier`, the Story-2.4 pure-function idiom) runs review at reduced cycle count (`resolve_review_cycles`) while the independent reviewer still runs on every story with no exception.
 **Consequences:**
 - Only cycle count varies by tier; review **occurrence** never does (`gate_mode = "none"` stays human-approval-only).
 - Any tightened cap is checked against `DW-AD23-3` by name: a too-low cap once silently damped five reviewer-recommended follow-ups; the low-risk tier must not reproduce that loss (CAP-3 regression guarantee on `deferred-work-check`'s full capture).
 
-#### FR-186: A story finished by hand isn't invisible to the ledger *(added 2026-08-14 backfill — `docs/dreams/quick-dev-reconciliation.md`; shipped via Story 5.9)*
+#### FR-186: A story finished by hand isn't invisible to the ledger *(added 2026-08-14 backfill — `docs/dreams/quick-dev-reconciliation.md`; shipped via Story 5.9)* ← CAP-144
 A backlog story merged with no `bmad-loop` run record is detected as completed from git plus story-identity artifacts alone (AD-5/AD-33), advanced out of `backlog` with its completion path recorded, and its spec promoted under Story 4.1's durability guarantee — via `deploy reconcile-completions` with advisory-locked ledger writes.
 **Consequences:**
 - Only `backlog` rows are eligible for advancement; `blocked`/`in-progress` are never force-advanced.
 - Documented label deviation (Spec change log 2026-08-12): the completion path is `not-loop-native`, never `bmad-quick-dev` — git alone could not distinguish quick-dev from `marshal land` until FR-187; the label narrows automatically as FR-187 subjects accumulate.
 - Reconciliation around a live run neither reads nor writes that run's journal (CAP-4, proven by test).
 
-#### FR-187: `marshal land` renders a detectable merge subject *(added 2026-08-14 backfill — `docs/dreams/marshal-land-merge-subject.md`; shipped via Story 5.10)*
+#### FR-187: `marshal land` renders a detectable merge subject *(added 2026-08-14 backfill — `docs/dreams/marshal-land-merge-subject.md`; shipped via Story 5.10)* ← CAP-145
 `marshal land` merges render the same templated subject (`identity.render_merge_subject`, AD-24) that `deploy land-story` already renders — threaded as a port-level `subject` parameter through `ForgePort.merge_pr` — so `marshal_native_merged_keys` classifies every Marshal-driven landing correctly.
 **Consequences:**
 - Purely additive and forward-only: no strategy/gate changes, no retroactive relabelling of pre-fix `not-loop-native` rows (explicit non-goal); FR-186's classification precision sharpens with zero change to FR-186 itself.
 
-#### FR-188: A baseline-drift defer can never pass silently *(added 2026-08-14 — `docs/dreams/bmad-loop-baseline-drift.md`; spec-bmad-loop-baseline-drift)*
+#### FR-188: A baseline-drift defer can never pass silently *(added 2026-08-14 — `docs/dreams/bmad-loop-baseline-drift.md`; spec-bmad-loop-baseline-drift)* ← CAP-146
 A Marshal-side detector at the adapter seam recognizes `bmad_loop`'s baseline-drift defer signature from the feeds the package itself writes, surfaces it loudly with the recovery inputs named, and the drafted upstream issue is filed behind its two gates.
 **Consequences:**
 - Reads only feeds `bmad_loop` writes (`journal.jsonl`, `state.json`, `attempt-preserve/*` refs, `failed/*/changes.patch`) — never imports or edits the git-pinned package (HARD constraint: it ships via pixi, is imported by live loops, and is wiped on `pixi install`); scope=runtime like `loop-stall-check`, excluded from `detectors-ci`.
@@ -508,7 +514,7 @@ A Marshal-side detector at the adapter seam recognizes `bmad_loop`'s baseline-dr
 - The upstream filing against `bmad-code-org/bmad-loop` is strictly gated — repo-access check and duplicate search recorded, then either filed (URL in the Dream's Realization log) or a duplicate linked — and carries FR-189's Story 10.1 evidence too: the two loss modes share one coordinated report.
 - *Motivating evidence: five occurrences in one session (2026-08-14) — marshal 8.1–9.5, 9.6, 10.1, mason 3.6–3.9 — each recovered only by manual git archaeology (PRs #482–#484). Queued as Stories 20.1–20.3.*
 
-#### FR-189: An intent-gap revert leaves a recoverable artifact *(added 2026-08-14 — `docs/dreams/bmad-loop-intent-gap-work-preservation.md`; spec-bmad-loop-intent-gap-work-preservation)*
+#### FR-189: An intent-gap revert leaves a recoverable artifact *(added 2026-08-14 — `docs/dreams/bmad-loop-intent-gap-work-preservation.md`; spec-bmad-loop-intent-gap-work-preservation)* ← CAP-147
 When `bmad_loop`'s intent-gap protocol reverts an attempt, Marshal-side compensation at the adapter seam preserves the discarded work the way the deferred-story path already does — branch or patch — the escalation text names the artifact, and a detector flags any halt missing one.
 **Consequences:**
 - Preservation symmetry with `scm.keep_failed`: an `attempt-preserve/*` branch for real commits, a `failed/<story>/changes.patch` otherwise; the worktree stays reverted clean per protocol; no edits to the installed package.
@@ -517,7 +523,7 @@ When `bmad_loop`'s intent-gap protocol reverts an attempt, Marshal-side compensa
 - A post-hoc detector makes any residual gap loud: an intent-gap halt whose preserve artifact is missing is a finding, never a silent pass.
 - *Motivating evidence: Story 10.1 (2026-08-14) — full implementation, 3646 tests green, two adversarial reviews, then a correct halt whose revert left nothing; recovered byte-identical (PR #486) only via a transcript accident. Queued as Stories 20.4–20.5; the upstream evidence rides FR-188's gated filing.*
 
-#### FR-190: A write resolves to the slug the caller asked for *(added 2026-08-14 — `docs/dreams/bmad-switch-scope-enforcement.md`; spec-bmad-switch-scope-enforcement)*
+#### FR-190: A write resolves to the slug the caller asked for *(added 2026-08-14 — `docs/dreams/bmad-switch-scope-enforcement.md`; spec-bmad-switch-scope-enforcement)* ← CAP-148
 One shared `verify_scope(root, expected_slug)` primitive checks the marker/symlink/expected-slug triangle in a single pass, and both existing guards — `scripts/bmad-switch --current` and `marshal init`'s MRS-INIT-003 — consume it and hard-fail on drift.
 **Consequences:**
 - A home internally consistent on the WRONG project is a drift, not a pass, and an unrecognized symlink-target shape reports "unrecognized" rather than inferred agreement — closing DW-1-4-2's blind spots (2) and (1) respectively.
@@ -526,7 +532,7 @@ One shared `verify_scope(root, expected_slug)` primitive checks the marker/symli
 - Cheap by contract — three file reads and string compares, no subprocess — so wiring it into a write-skill preflight is free; fail-closed on parse.
 - *Motivating evidence: the 2026-07-25 five-agent fan-out incident (symlinks observed moving mid-run; one memlog under the wrong project), caught only by voluntary `readlink -f`. DW-1-4-2 (`deferred-work-ledger.md:385`) closes against this. Queued as Stories 20.6–20.7.*
 
-#### FR-191: A legitimate landing is recognizable on every path *(added 2026-08-14 — `docs/dreams/landing-evidence-grammar.md`; spec-landing-evidence-grammar)*
+#### FR-191: A legitimate landing is recognizable on every path *(added 2026-08-14 — `docs/dreams/landing-evidence-grammar.md`; spec-landing-evidence-grammar)* ← CAP-149
 ONE shared grammar of landing-evidence shapes — merge-subject templates, branch-name grammars, and a documented recovery-commit convention — is defined once and consumed by doctor's `story-status` evidence routes, Marshal's promotion classifiers, MRS-STATUS-010, and `marshal retire`'s patch-id matching.
 **Consequences:**
 - HARD: doctor never imports `pyforge.marshal`, so the grammar is a contract with a cross-package conformance test, a shared data artifact both read, or a `pyforge-core` module (the Story 14.2 shared-spine precedent) — the home is a story-level design decision inside that boundary.
@@ -543,26 +549,26 @@ ONE shared grammar of landing-evidence shapes — merge-subject templates, branc
 
 **Functional Requirements:**
 
-#### FR-19: Standalone gate evaluation
+#### FR-19: Standalone gate evaluation ← CAP-3
 The operator or CI can evaluate a project's gates without a run in flight.
 **Consequences:**
 - Runs the project's configured verify commands and reports pass/fail per command with captured output.
 - Exit code is a stable contract: 0 pass, non-zero fail, with a distinct code for "could not evaluate".
 - Evaluation never mutates the working tree.
 
-#### FR-20: Project-scoped verify commands
+#### FR-20: Project-scoped verify commands ← CAP-3
 Verify commands resolve from composed policy and are scoped to the active project.
 **Consequences:**
 - Another project's gates are never run during this project's story.
 - A verify command that cannot be resolved is a blocking finding at preflight (FR-5), not a runtime surprise.
 
-#### FR-21: Deterministic, no-LLM gates
+#### FR-21: Deterministic, no-LLM gates ← CAP-3
 Gate evaluation involves no model call.
 **Consequences:**
 - Evaluation is reproducible: the same tree and commands produce the same verdict.
 - Gate outcome is derived only from command exit codes and the scope check — never from an agent's assertion that it passed.
 
-#### FR-22: Frozen-surface scope check
+#### FR-22: Frozen-surface scope check ← CAP-3
 A story's changed surface is checked against its declared surface and against frozen surfaces.
 **Consequences:**
 - Declared surfaces come from the story spec and may only **narrow** the project-declared surface, never widen it — a story spec is machine-drafted, so it cannot author the allowlist it is judged against (architecture AD-27). Frozen surfaces accumulate from prior stories through the run record (AD-26).
@@ -570,14 +576,14 @@ A story's changed surface is checked against its declared surface and against fr
 - A change outside the declared surface is a failure naming each offending path.
 - *Motivating evidence: the operator performed this check manually on every producer story of a six-epic build.*
 
-#### FR-23: Doc-only story classification
+#### FR-23: Doc-only story classification ← CAP-3
 Stories that legitimately produce no source change are classified before verification.
 **Consequences:**
 - A story whose declared deliverable is a document or decision record does not fail on "no changes in worktree".
 - Classification is recorded in the journal.
 - *Motivating evidence: a design-spike story tripped this false negative into a rollback loop and had to be recovered from a preserved ref by hand.*
 
-#### FR-24: Gate mode ladder
+#### FR-24: Gate mode ladder ← CAP-3
 The run's approval policy is selectable and labelled with its autonomy level.
 **Consequences:**
 - Supports per-story spec approval, per-epic, and none.
@@ -595,19 +601,19 @@ The run's approval policy is selectable and labelled with its autonomy level.
 
 *Grounding: no vendor or analyst publishes an authoritative numbered scale for coding agents; Anthropic explicitly declines, arguing autonomy is a property of the deployment. The labels above are adopted from DeepMind's Levels of Autonomy and Feng/McDonald/Zhang's Operator→Observer framing, and are declared here as Marshal's own documented tiering.*
 
-#### FR-25: Gate evidence record
+#### FR-25: Gate evidence record ← CAP-3
 Every gate evaluation produces a durable record.
 **Consequences:**
 - Records commands run, exit codes, scope-check verdict, tree revision, and timestamp.
 - Referenced from the journal and retrievable per story.
 
-#### FR-26: Never false-green
+#### FR-26: Never false-green ← CAP-3
 No story reaches a merged state without a green verify and a passing scope check.
 **Consequences:**
 - Any path that would merge without both is refused.
 - An unevaluable gate is treated as failure, never as pass. *(Consistency with Warden's never-false-green invariant.)*
 
-#### FR-27: Review-cap landing path
+#### FR-27: Review-cap landing path ← CAP-3
 A story that is sound but did not converge in review can be landed deliberately, under the same gates.
 **Consequences:**
 - A dedicated command lands a named story branch only after re-running the full gate (FR-19, FR-22).
@@ -615,7 +621,7 @@ A story that is sound but did not converge in review can be landed deliberately,
 - The manual landing and its justification are journaled.
 - *Motivating evidence: two warden stories were landed this way by hand.*
 
-#### FR-64: A gate evaluation binds to the spec's Success signal *(added 2026-08-01 — `docs/dreams/fidelity-enforcement.md`, CAP-4)*
+#### FR-64: A gate evaluation binds to the spec's Success signal *(added 2026-08-01 — `docs/dreams/fidelity-enforcement.md`, CAP-4)* ← CAP-22
 Gate evaluation checks that the verify commands it runs still trace to the tracked story spec's declared Success signal, not only that they pass.
 **Consequences:**
 - Evaluating a story's gate resolves its tracked `specs/spec-<key>.md` and confirms the verify commands run are the ones the spec's Success signal names.
@@ -631,21 +637,21 @@ Gate evaluation checks that the verify commands it runs still trace to the track
 
 **Functional Requirements:**
 
-#### FR-28: Batch pull request
+#### FR-28: Batch pull request ← CAP-4
 The operator can open one pull request for a wave of merged stories.
 **Consequences:**
 - Title and body are derived from the merged story set and the journal; the body lists stories with their gate verdicts.
 - The PR targets the configured base branch; it is never opened against an upstream fork's default.
 - Existing-PR detection updates rather than duplicating.
 
-#### FR-29: Repository-hygiene preflight
+#### FR-29: Repository-hygiene preflight ← CAP-4
 Before opening or updating a PR, mechanical repository gates are checked.
 **Consequences:**
 - Reports which project-configured hygiene rules apply to the change set and whether each is satisfied.
 - Rules are declared in project policy, not hard-coded into Marshal.
 - Exits non-zero on an unsatisfied blocking rule with a remediation line.
 
-#### FR-30: Automatic story-spec promotion
+#### FR-30: Automatic story-spec promotion ← CAP-4
 Every merged story's spec is promoted from run scratch into tracked planning artifacts.
 **Consequences:**
 - After a story merges, its spec is copied from the run's Tier-3 scratch into the project's tracked `planning-artifacts/specs/` — the **real** project path, never the gitignored `_bmad-output/planning-artifacts/` symlink — and **committed** by Marshal in a dedicated commit containing only promotion paths.
@@ -655,47 +661,47 @@ Every merged story's spec is promoted from run scratch into tracked planning art
 - Zero-byte or truncated specs are detected and reported rather than promoted.
 - *Motivating evidence: 13 of 31 story specs were lost entirely and 8 more reduced to zero-byte husks before this became convention.*
 
-#### FR-31: Spec-recovery assistance
+#### FR-31: Spec-recovery assistance ← CAP-4
 When a spec is missing, the operator is given the recovery search paths.
 **Consequences:**
 - Reports the ordered candidate locations — surviving run-worktree snapshots first, then the epics-derived contract fallback.
 - Reports, never fabricates: a regenerated contract-only spec is labelled as such.
 
-#### FR-32: Merge-subject conformance
+#### FR-32: Merge-subject conformance ← CAP-4
 Merge commits carry the subject form downstream consumers key on.
 **Consequences:**
 - Marshal-performed merges emit the conventional subject; the exact form is configuration, not a literal in code.
 - Deploy reports any merge in the wave whose subject does not conform.
 - *Rationale: the program console's git-mode status detection keys on this string.*
 
-#### FR-33: Sprint and console feed refresh
+#### FR-33: Sprint and console feed refresh ← CAP-4
 Landing refreshes the derived status surfaces.
 **Consequences:**
 - The project's sprint status is updated from the journal and the merged set.
 - Console data regeneration is invoked where configured.
 - Discrepancies between the ledger and git history are reported, never silently resolved. *(Motivating evidence: a sibling project's sprint file drifted to 26/32 against an actual 32/32.)*
 
-#### FR-34: Deploy is idempotent and re-runnable
+#### FR-34: Deploy is idempotent and re-runnable ← CAP-4
 Re-running deploy after a partial failure completes the remaining steps.
 **Consequences:**
 - Already-promoted specs are not re-promoted or duplicated.
 - Each step reports skipped / done / failed.
 
-#### FR-35: No AI attribution in emitted artifacts
+#### FR-35: No AI attribution in emitted artifacts ← CAP-4
 Commits, PR bodies and comments Marshal emits carry no AI-attribution or courtesy preamble.
 **Consequences:**
 - No co-author trailer, model line, or generated-with line is added by Marshal.
 - Attribution, if ever added, is opt-in configuration and default-off.
 - *Grounding: the repo's standing convention, and the cautionary precedent of an editor vendor defaulting an AI co-author trailer on and reverting it after backlash — a commit trailer is part of the permanent authorship and blame record.*
 
-#### FR-59: Landing rules are declared policy *(added 2026-08-01 — CAP-9, operator ruling via `docs/dreams/pr-lifecycle.md`; resolves Q-3)*
+#### FR-59: Landing rules are declared policy *(added 2026-08-01 — CAP-9, operator ruling via `docs/dreams/pr-lifecycle.md`; resolves Q-3)* ← CAP-9
 The rules a repository demands for landing compose from the policy layers with per-key provenance, like every other governed value.
 **Consequences:**
 - Required checks, merge strategy, label rules, branch-retirement behaviour, and repo-specific triggers are policy keys, not memorized habits — including this repository's `maintenance` label on non-`recipes/` changes and the **ungated** `environment.yaml` sync check that the label does not suppress.
 - The effective landing policy prints with each key's winning layer; an invalid landing policy is a preflight finding.
 - *Grounding: five PRs hand-driven in one session (2026-07-31), each repeating the same written-but-unenforced sequence; one (#170) merged a real detector break because nothing in the landing path asked.*
 
-#### FR-60: The last mile lands itself — `marshal land` *(added 2026-08-01 — CAP-9)*
+#### FR-60: The last mile lands itself — `marshal land` *(added 2026-08-01 — CAP-9)* ← CAP-9
 A story or wave that passed its gates lands on the integration branch without a human driving the sequence.
 **Consequences:**
 - `marshal land` opens or updates the PR, applies required labels, waits on required checks, merges by the declared strategy, retires the branch, and resyncs — idempotently and re-entrantly, so a half-landed story (PR open, checks green, merge never issued) converges on re-run.
@@ -703,7 +709,7 @@ A story or wave that passed its gates lands on the integration branch without a 
 - Every landing writes a journal verdict: which checks were required, which passed, what merged, under whose authority.
 - Wrap-never-absorb carried unchanged: the engine keeps dev/verify/review/commit and deliberately leaves this gap open; Marshal fills it around the engine, in the supervisor's domain.
 
-#### FR-63: Fleet-wide branch retirement *(added 2026-08-01 — `docs/dreams/durable-runs.md`)*
+#### FR-63: Fleet-wide branch retirement *(added 2026-08-01 — `docs/dreams/durable-runs.md`)* ← CAP-21
 Marshal proposes which station and story branches may be released, across the whole fleet, not only the one a landing just merged.
 **Consequences:**
 - A branch is a retirement candidate only when its content is reachable in the integration branch **by patch-id** (never a two-dot or three-dot diff heuristic — both misclassify squash-merges and branches the base has since moved past), its run has concluded, and its story is `done` with a recorded merge sha.
@@ -720,44 +726,44 @@ Marshal proposes which station and story branches may be released, across the wh
 
 **Functional Requirements:**
 
-#### FR-36: Fleet view
+#### FR-36: Fleet view ← CAP-5
 The operator sees every loop home and its current state in one command.
 **Consequences:**
 - One row per home: project, branch, state (idle / running / paused-on-escalation / stopped), current story, elapsed time, budget consumed.
 - Rows are derived from journals and run state, not from a hand-maintained file.
 
-#### FR-37: Per-run detail
+#### FR-37: Per-run detail ← CAP-5
 The operator can drill into one run.
 **Consequences:**
 - Shows the story sequence with per-story gate verdicts, escalations, deferrals, and consumption.
 - Machine-readable output is available for every human view.
 
-#### FR-38: Escalation queue
+#### FR-38: Escalation queue ← CAP-5
 Runs paused on escalations are surfaced first.
 **Consequences:**
 - Paused-on-escalation rows are visually distinguished and sorted to the top.
 - Each carries the reason and the artifact needing a decision.
 
-#### FR-39: Ledger-versus-git reconciliation
+#### FR-39: Ledger-versus-git reconciliation ← CAP-5
 Status reports disagreements between the ledger and git history rather than trusting either blindly.
 **Consequences:**
 - A story marked done with no corresponding merge — and the converse — is reported as a named discrepancy.
 - *Rationale: git history is the durable record; the sprint ledger is the local one, and it has drifted in practice.*
 
-#### FR-40: Stable machine-readable status contract
+#### FR-40: Stable machine-readable status contract ← CAP-5
 Status output has a versioned schema downstream consumers can depend on.
 **Consequences:**
 - A schema version accompanies the payload; additive changes do not bump it, breaking changes do.
 - The console generator and any dashboard can consume it without scraping human output.
 
-#### FR-62: Durability as a reported fleet property *(added 2026-08-01 — `docs/dreams/durable-runs.md`)*
+#### FR-62: Durability as a reported fleet property *(added 2026-08-01 — `docs/dreams/durable-runs.md`)* ← CAP-20
 `marshal status` reports unpushed work as a finding on the owning row, not only in a separate detector's output the operator has to remember to run.
 **Consequences:**
 - A row whose branches carry local-only content is never reported clean — the same refusal the fleet view already applies to an unowned Dream row.
 - The finding names the branch and the extent (line/commit count) so the operator does not have to cross-reference a second command to size the exposure.
 - *Rationale: "is the fleet's work saved?" required four separate commands before this FR (`bmad-loop status`, `tmux capture-pane`, a manual detector run, and re-deriving from git) — the same operator question, asked twice, is the failure signature this FR closes.*
 
-#### FR-65: The detector registry as a verb — `marshal check` *(added 2026-08-01 — `docs/dreams/one-front-door.md`, CAP-3/CAP-5)*
+#### FR-65: The detector registry as a verb — `marshal check` *(added 2026-08-01 — `docs/dreams/one-front-door.md`, CAP-3/CAP-5)* ← CAP-23
 `marshal check` reaches the repo's detector registry through the same front door as every other verb, and every routed call — `check` included — carries its project/loop-home/policy/story context from one resolution rather than each tool re-deriving it.
 **Consequences:**
 - `marshal check` invokes `scripts/detectors.py`'s derived registry and returns the same findings as the standalone pixi task — a route, not a reimplementation (wrap-never-absorb applies to detector tooling exactly as it does to the engine).
@@ -773,7 +779,7 @@ Status output has a versioned schema downstream consumers can depend on.
 
 **Functional Requirements:**
 
-#### FR-41: Skill-tree projection
+#### FR-41: Skill-tree projection ← CAP-6
 Skills are made available in every tree the configured adapters read from.
 **Consequences:**
 - After projection, each configured adapter's declared skill tree contains the project's skills.
@@ -782,48 +788,48 @@ Skills are made available in every tree the configured adapters read from.
 - Re-projection after a source change converges; stale entries are removed.
 - *Motivating evidence: `.agents/` does not exist in this repository; 89 skills live only under `.claude/skills/` (93 directories, 89 carrying a `SKILL.md`; verified 2026-07-30). Four of six adapter profiles would find nothing.*
 
-#### FR-42: Projection drift detection
+#### FR-42: Projection drift detection ← CAP-6
 Divergence between the canonical skill tree and a projected tree is detected.
 **Consequences:**
 - Reports added, removed, and modified skills per adapter tree.
 - Runs as part of preflight when a non-default adapter is configured.
 
-#### FR-43: Adapter probe
+#### FR-43: Adapter probe ← CAP-6
 The operator can capture what an adapter actually supports on this machine.
 **Consequences:**
 - Records binary presence and version, declared capabilities from the profile, and probe output.
 - Sensitive values are redacted from the stored record.
 - Probing an absent adapter reports it as unavailable rather than failing the command.
 
-#### FR-44: Conformance smoke
+#### FR-44: Conformance smoke ← CAP-6
 The operator can drive a canonical smoke story end to end on a named adapter.
 **Consequences:**
 - The smoke story exercises spec read → change → verify → commit and is adapter-agnostic.
 - Result is pass / fail / unavailable with the failing stage named.
 - Runs in a throwaway loop home and leaves no residue.
 
-#### FR-45: Conformance matrix
+#### FR-45: Conformance matrix ← CAP-6
 Per-adapter conformance results accumulate into a dated, tracked artifact, **keyed by host**.
 **Consequences:**
 - One row per adapter: status, adapter version, harness version, date, and the failing stage where applicable.
 - Results older than a configured age are marked stale.
 - The matrix is the only place Marshal makes a portability claim.
 
-#### FR-46: Entry-file family drift check
+#### FR-46: Entry-file family drift check ← CAP-6
 Divergence across the cross-tool instruction-file family is detected and reported.
 **Consequences:**
 - Checks presence and mutual consistency of the configured entry-file family.
 - Reports drift with the specific divergence; **does not edit** the files. *(Ownership is Q-2.)*
 - *Rationale: Cursor applies the union of AGENTS.md and CLAUDE.md, Claude reads only CLAUDE.md, Codex and Copilot read only AGENTS.md — instruction content is not isolated per-CLI, so drift cross-contaminates.*
 
-#### FR-47: First-run acknowledgement per adapter
+#### FR-47: First-run acknowledgement per adapter ← CAP-6
 Each adapter's first-run requirement and unattended-use caveat is surfaced once and recorded.
 **Consequences:**
 - On first configuration of an adapter, the profile's declared first-run requirement is presented as a required human action.
 - A sustained-automation caveat is presented once per adapter and the acknowledgement recorded.
 - Unacknowledged adapters are a blocking preflight finding, because an unanswered first-run dialog is indistinguishable from a session timeout.
 
-#### FR-48: Adapter selection is project-scoped
+#### FR-48: Adapter selection is project-scoped ← CAP-6
 Adapter and model choices resolve per project.
 **Consequences:**
 - Two loop homes may run different adapters simultaneously without cross-configuration.
@@ -837,14 +843,14 @@ Adapter and model choices resolve per project.
 
 **Functional Requirements:**
 
-#### FR-49: Layered policy composition
+#### FR-49: Layered policy composition ← CAP-7
 Effective run policy is composed from ordered layers with defined precedence.
 **Consequences:**
 - Layers: Marshal defaults → project policy → invocation flags, highest last.
 - The composed policy is materialized into the loop home at init and echoed on request.
 - Composition is pure: the same inputs produce the same output.
 
-#### FR-50: Project-scoped policy without hand-editing
+#### FR-50: Project-scoped policy without hand-editing ← CAP-7
 Project-specific values are supplied by the project layer, never by editing a shared file.
 **Consequences:**
 - The worktree-seed path list is generated from the active project, not literal.
@@ -852,7 +858,7 @@ Project-specific values are supplied by the project layer, never by editing a sh
 - *The per-epic surface is mandatory, and its absence is a registered finding naming the epic — never a default.* Architecture AD-27 computes the effective surface as `policy_surface ∩ spec_surface`, so the per-epic entry is what a story spec is intersected against; AD-17 forbids "everything except", so an epic with no entry yields `∅` (every story fails) or `unevaluable` (every story blocks). There is no benign default, which is exactly why a missing entry must be reported as a policy gap rather than silently bricking the epic. *(Added 2026-07-30, **F-18**: AD-27 and this FR were edited in the same pass, and this — the FR that enumerates what the project layer supplies — did not list the key AD-27 requires.)*
 - Switching projects requires no edit to any shared file.
 
-#### FR-51: Per-story model tiering
+#### FR-51: Per-story model tiering ← CAP-7
 A story's declared difficulty selects the model tier without a between-batch config edit.
 **Consequences:**
 - Project policy maps a story difficulty class to per-stage models (dev, review, triage).
@@ -861,7 +867,7 @@ A story's declared difficulty selects the model tier without a between-batch con
 - Where the harness supports only run-level model selection, Marshal batches stories by tier and reports the batching. `[ASSUMPTION: batching is acceptable v1 behaviour; a per-story upstream key is an FR-58 request.]`
 - *Motivating evidence: the live policy file carries a written "HARD-STORY BATCH PROCEDURE" naming which stories to flip and when.*
 
-#### FR-52: Single harness seam
+#### FR-52: Single harness seam ← CAP-7
 All interaction with the underlying orchestrator passes through one internal module.
 **Consequences:**
 - No other module invokes the harness binary or parses its output.
@@ -869,13 +875,13 @@ All interaction with the underlying orchestrator passes through one internal mod
 - An architectural test fails the build if the seam is bypassed.
 - *Rationale: this is what makes §5.4's fork fallback a bounded change rather than a rewrite.*
 
-#### FR-53: Policy validation
+#### FR-53: Policy validation ← CAP-7
 An invalid composed policy is rejected before launch.
 **Consequences:**
 - Unknown keys, unresolvable commands, and out-of-range values are reported with the layer that introduced them.
 - Validation runs in preflight (FR-5).
 
-#### FR-54: Configuration is inspectable
+#### FR-54: Configuration is inspectable ← CAP-7
 The operator can see the effective policy and where each value came from.
 **Consequences:**
 - Output shows each effective key with its winning layer.
@@ -889,14 +895,14 @@ The operator can see the effective policy and where each value came from.
 
 **Functional Requirements:**
 
-#### FR-55: Package identity and layout
+#### FR-55: Package identity and layout ← CAP-8
 Marshal ships as a Python distribution following the crew convention.
 **Consequences:**
 - Distribution `pyforge-marshal`, module `pyforge.marshal`, console script `marshal`.
 - Source lives in the repo's shared packages workspace alongside its siblings.
 - `import pyforge.marshal` succeeds from a clean environment install.
 
-#### FR-56: Conda and wheel artifacts
+#### FR-56: Conda and wheel artifacts ← CAP-8
 Marshal is installable as a conda package and as a wheel.
 **Consequences:**
 - The conda recipe declares the harness as a run dependency, pinned to the supported version range (FR-52).
@@ -904,13 +910,13 @@ Marshal is installable as a conda package and as a wheel.
 - Installing the conda package yields a working `marshal --help` and `marshal --version` with the harness resolvable.
 - *This is the operative half of the §5 wrap decision: one install command yields the whole stack.*
 
-#### FR-57: Version and capability reporting
+#### FR-57: Version and capability reporting ← CAP-8
 `marshal --version` reports Marshal's version and the resolved harness version.
 **Consequences:**
 - Both versions appear in the journal for every run.
 - A harness outside the supported range emits a prominent warning and is a blocking preflight finding when the mismatch is major.
 
-#### FR-58: Upstream contribution register
+#### FR-58: Upstream contribution register ← CAP-8
 Fixes that belong upstream are tracked as such rather than worked around indefinitely.
 **Consequences:**
 - A tracked register lists each upstream-shaped gap, its Marshal workaround, and its upstream status.
@@ -929,7 +935,7 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 - **No HTTP proxy against any vendor's inference endpoint.** §6.
 - **No sandbox or container implementation.** Worktree isolation is in scope; process and network isolation is Steward's provisioning territory. *A worktree isolates the filesystem and branch, not the process or network — this boundary is stated, not hidden.*
 - **No PR-lifecycle automation beyond opening and updating a batch PR** — no CI watching, no auto-merge. (Q-3.) *(AMENDED 2026-07-31: Q-3 resolved — Marshal owns the PR lifecycle, per `docs/dreams/pr-lifecycle.md`. This non-goal narrows at the Spec's memlog-driven re-derivation; the line is annotated rather than deleted so the amendment stays visible.)*
-- **No fleet-level resource budgeting across concurrent runs.** Per-run ceilings only. (Q-4.)
+- **No fleet-level resource budgeting across concurrent runs.** Per-run ceilings only. (Q-4.) *(AMENDED 2026-09-14, folding the operator's 2026-09-09 answer: this is now a **decided** Non-Goal for v1 rather than a deferral awaiting evidence. A cross-run budget would be the first thing to need shared mutable state across loop homes and therefore the first to break C-3's loop-home write boundary.)*
 - **Marshal does not claim to be "the orchestrator."** It is the station around one. *(Q-14 resolved 2026-07-31: this Non-Goal stands with its scope clarified — it targets the engine claim. Marshal may sequence on verdicts it never authors; the route-verb surface belongs to the `spec-one-front-door` derivation.)*
 
 ---
@@ -998,6 +1004,8 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 - **C-8.** Marshal depends on an external harness; the supported version range is declared and enforced (FR-57).
 - **C-9.** Marshal depends on BMAD Method artifact conventions for the story feed.
 - **C-10.** A worktree is not a sandbox. Unattended runs on untrusted input require process and network isolation Marshal does not provide.
+- **C-11.** *(Added 2026-09-14, folding `spec-pyforge-marshal`'s 2026-09-09 operator answer to its F-4.)* **The trust model is declared, and in v1 it is advisory.** The escape hatch for privileged changes is an operator-attributed journal entry admitted at the **call surface only** (`core/journal.py:159`). No authentication primitive exists in the package; the governed agent is **trusted**, and attribution is an audit record rather than an enforcement boundary. This is stated, not hidden: C-10 above is precisely why — a worktree isolates the filesystem and branch, not the process, so an unforgeable attribution would need isolation Marshal deliberately does not provide. The contract becomes unforgeable before the dispatch journal serves a second principal; until then, advisory is the honest description.
+- **C-12.** *(Added 2026-09-14, folding `spec-pyforge-marshal`'s 2026-09-09 operator answer to its F-5.)* **There is no unattended mid-run freeze writer, by design.** Under the `none` and `per-epic` gate modes no operator is present and a story may not declare its own freeze; mid-run freezes therefore require **per-story approval**. The vocabulary and the writer constraint already ship (`KIND_FREEZE_DECLARED` / `KIND_FREEZE_REMOVED`, `core/journal.py:152-163`); what was missing was the statement that the absence of an unattended writer is the decision, not a gap.
 
 ---
 
@@ -1026,10 +1034,10 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 1. **Q-1 — Wrap versus absorb.** **RESOLVED (§5): wrap and supervise.** Revisit triggers recorded in §5.4.
 2. **Q-2 — Ownership of the AGENTS.md entry-file family.** `AGENTS.md` states the portable Dream→spec handoff is Herald's job; `docs/dreams/agent-portability.md` records portability as re-scoped to Marshal on 2026-07-23. One is stale. Marshal ships **detection only** (FR-46) until this is settled; it edits nothing.
 3. **Q-3 — PR-lifecycle automation.** **RESOLVED (operator, 2026-07-31): Marshal owns it.** Input Dream: `docs/dreams/pr-lifecycle.md` — landing rules become a declared policy surface; `marshal land` performs the last mile and refuses like teardown; wrap-never-absorb unchanged. The §8 non-goal narrows at the Spec's memlog-driven re-derivation, not by hand-patch.
-4. **Q-4 — Fleet-level resource budgets.** Per-run ceilings ship in v1; cross-run budgeting is deferred. Revisit when two projects routinely run heavy loops concurrently.
-5. **Q-5 — OpenTelemetry `gen_ai.*` emission.** Deferred; the conventions moved repositories in June 2026 and remain Development-stability with live renames. Revisit when the conventions stabilize or an external consumer requires them.
-6. **Q-6 — ACP migration trigger.** Proposed trigger: the upstream harness gains an ACP client path, **or** two adapters Marshal must support ship ACP-only, **or** ACP schema v2 reaches stable with the Claude adapter's known gaps closed. Until then, the harness's declarative profiles are the adapter contract.
-7. **Q-7 — Idle threshold default.** 25 minutes is carried from the production stopgap. Needs one wave of data to confirm it does not false-positive on legitimately slow verify steps.
+4. **Q-4 — Fleet-level resource budgets.** Per-run ceilings ship in v1; cross-run budgeting is deferred. Revisit when two projects routinely run heavy loops concurrently. **ANSWERED 2026-09-09 (operator, folded in here 2026-09-14 — recorded in `spec-pyforge-marshal` as its Q-11): a cross-run (fleet-level) budget is OUT of scope for v1, for the reason the question itself names — it would be the first thing to need shared mutable state across loop homes, and therefore the first to break the loop-home write boundary (C-3). The deferral is now a decision with a stated cause, not an open item. § 8's Non-Goal is amended to match.**
+5. **Q-5 — OpenTelemetry `gen_ai.*` emission.** Deferred; the conventions moved repositories in June 2026 and remain Development-stability with live renames. Revisit when the conventions stabilize or an external consumer requires them. **ANSWERED 2026-09-09 (operator, folded in here 2026-09-14 — `spec-pyforge-marshal` Q-12): deferred with the resumption condition now NAMED rather than left to judgement — emission waits until the semantic conventions reach **stable**. Paying v1 cost against Development-stability attributes that are still being renamed buys instrumentation that must be redone. The run journal carries equivalent information in a self-owned format until then.**
+6. **Q-6 — ACP migration trigger.** Proposed trigger: the upstream harness gains an ACP client path, **or** two adapters Marshal must support ship ACP-only, **or** ACP schema v2 reaches stable with the Claude adapter's known gaps closed. Until then, the harness's declarative profiles are the adapter contract. **ANSWERED 2026-09-09 (operator, folded in here 2026-09-14 — `spec-pyforge-marshal` Q-13): trigger one has **FIRED** — bmad-loop 0.9.0 shipped a sanctioned `copilot` profile plus `copilot --acp`, so the harness has gained an ACP client path. One trigger alone does **not** start the migration; the declarative profiles remain the adapter contract until a second trigger fires. Recorded as a fired-trigger state, not as a scheduled migration.**
+7. **Q-7 — Idle threshold default.** 25 minutes is carried from the production stopgap. Needs one wave of data to confirm it does not false-positive on legitimately slow verify steps. **ANSWERED 2026-09-09 (operator, folded in here 2026-09-14 — `spec-pyforge-marshal` Q-14): the 25-minute default **stands**, and the "one wave of data" becomes an acceptance clause rather than an open experiment — the threshold is real and operator-tunable, and it holds until a wave is actually *read* from the dispatch journals. The question closes; the measurement obligation survives as a condition on changing the number, not as a blocker on shipping it.**
 8. **Q-8 — Difficulty declaration source.** FR-51 reads story difficulty from the story's declaration; whether that lives in the story spec frontmatter or the epics document is an architecture-phase call.
 9. **Q-9 — Conformance smoke story content.** What minimal story exercises spec→change→verify→commit while staying adapter-agnostic and cheap? Architecture phase.
 
@@ -1813,29 +1821,29 @@ Two Specs are deliberately **not** decomposed here, and are recorded rather than
 **Description.** Every station already has real pytest coverage; what is missing is
 narrower and more mechanical than "write tests." Realizes the charter's CAP-1..CAP-5.
 
-#### FR-128: Correct fleet-wide TEA signal
+#### FR-128: Correct fleet-wide TEA signal ← CAP-86
 The dashboard's `tea` completeness signal reads the canonical test location.
 **Consequences:** `_stage_globs` resolves `src/shared/packages/pyforge-<slug>/tests/`, not the
 planning-scaffold `_bmad-output/projects/<slug>/tests/`; atlas and warden report populated,
 not pending.
 
-#### FR-129: One automation path, run for real per station
+#### FR-129: One automation path, run for real per station ← CAP-87
 `bmad_tea_playwright.py` produces every station's `test-architecture.md`.
 **Consequences:** all 8 stations have one; output containing a `TBD` token is a failed run,
 not a delivered document; the filename convention is reconciled across stations.
 
-#### FR-130: Shared test-support package
+#### FR-130: Shared test-support package ← CAP-88
 A `pyforge-testing-kit` exists, seeded from Marshal's four real mocks rather than rewritten.
 **Consequences:** CLI-runner, page-object, DB-factory and auth/HTTP/time primitives ship; at
 least one station other than the seed source imports from it. *(Open: Q-26 — whether this is
 its own leaf or a module of `pyforge-core`, see § 16.8.)*
 
-#### FR-131: Coverage gate enforced, not just measured
+#### FR-131: Coverage gate enforced, not just measured ← CAP-89
 A PR that drops a touched package below its station's threshold fails CI, naming the module.
 **Consequences:** per-station unit >80% / integration >70% gates run in CI; the failure names
 the uncovered module rather than printing a percentage.
 
-#### FR-132: Test architecture stays current as stories land
+#### FR-132: Test architecture stays current as stories land ← CAP-90
 Re-running the generator keeps each document true as code lands.
 **Consequences:** regeneration is idempotent on an unchanged tree; a station whose tests moved
 produces a changed document rather than a stale one.
@@ -1845,17 +1853,17 @@ produces a changed document rather than a stale one.
 **Description.** Keeping 8 loop homes current with `main` is a hand-run two-step ritual —
 lived on 2026-08-08 when all of them were found 227 commits stale.
 
-#### FR-133: Fleet-wide staleness detection
+#### FR-133: Fleet-wide staleness detection ← CAP-91
 One command reports every loop home's distance from `main`.
 **Consequences:** each home reports its behind-count and current ref; a home that cannot be
 read is reported, never skipped silently.
 
-#### FR-134: Fast-forward and push with a clean-worktree check
+#### FR-134: Fast-forward and push with a clean-worktree check ← CAP-92
 Refresh is fast-forward-only and refuses on a dirty tree.
 **Consequences:** a dirty home is refused by name, not merged; no non-fast-forward merge is
 ever attempted; the push targets `loop/<slug>` only.
 
-#### FR-135: Policy re-render as a checked step of the same refresh
+#### FR-135: Policy re-render as a checked step of the same refresh ← CAP-93
 The `marshal config --write-harness-policy` step is part of refresh, not a separately
 remembered second command.
 **Consequences:** a refresh that fast-forwards but fails to re-render reports the home as
@@ -1867,7 +1875,7 @@ incompletely refreshed; each step reports `done | skipped | failed` (AD-21).
 three live incidents in one session. **This is the Marshal half of the Marshal↔Steward
 contract** (§ 17).
 
-#### FR-136: Promotion runs on landing, not on memory
+#### FR-136: Promotion runs on landing, not on memory ← CAP-94
 Landing triggers ledger promotion mechanically.
 **Consequences:** a landed story's tracked-ledger entry is current without a separately
 remembered command; the trigger is deterministic, not heuristic.
@@ -1875,17 +1883,17 @@ remembered command; the trigger is deterministic, not heuristic.
 isolated detached worktree (CAP-5). It must not be committed on the operator
 `main` checkout — that leftover diverged local `main` after every `gh pr merge`.
 
-#### FR-137: Staleness is detectable on its own
+#### FR-137: Staleness is detectable on its own ← CAP-95
 A check answers "is the tracked ledger behind git?" independently of any run.
 **Consequences:** ledger-versus-git discrepancies are reported per key with the direction of
 the drift.
 
-#### FR-138: The check is real, never approximated
+#### FR-138: The check is real, never approximated ← CAP-96
 The comparison reads git and the ledger, never infers from the feed.
 **Consequences:** no story status is derived from `sprint-status.yaml` (a statement of intent);
 the oracle is merge history.
 
-#### FR-139: Promotion never races the orchestrator, and never downgrades
+#### FR-139: Promotion never races the orchestrator, and never downgrades ← CAP-97
 Single-writer discipline, and terminal states are monotonic.
 **Consequences:** concurrent promotion attempts serialize on a lock; **a transition moving any
 key backwards from `done` is refused and named, not written** — closing DW-SYNC-2026-08-08-1,
@@ -1898,21 +1906,21 @@ keys while reporting success.
 places, each with its own patch for the slug≠directory cases. A `TODO` at `generate.py:~45`
 names this exact gap.
 
-#### FR-140: One resolver, one override table
+#### FR-140: One resolver, one override table ← CAP-98
 Slug→path resolution happens in one function with one exception table.
 **Consequences:** no second call site builds a project path by string concatenation.
 
-#### FR-141: `PROJECT_SOURCES` is derived, not declared
+#### FR-141: `PROJECT_SOURCES` is derived, not declared ← CAP-99
 The dashboard discovers projects rather than hard-coding them.
 **Consequences:** a new station appears without a hand edit; a dissolved-and-absorbed project
 resolves to its owner's tree rather than 404-ing.
 
-#### FR-142: Resolution ships in `data.js`; the JS never re-derives
+#### FR-142: Resolution ships in `data.js`; the JS never re-derives ← CAP-100
 Path resolution is computed once, at generation time.
 **Consequences:** `index.html` contains no slug→path special case (today it carries one for
 the retired `pyforge-genesis`).
 
-#### FR-143: An unresolvable slug fails loud
+#### FR-143: An unresolvable slug fails loud ← CAP-101
 **Consequences:** generation exits non-zero naming the slug, rather than emitting a row whose
 links 404.
 
@@ -1921,22 +1929,22 @@ links 404.
 **Description.** Both detectors gate the tree; nothing gates the detectors. Three real
 incidents, one as recent as 2026-08-08.
 
-#### FR-144: Fixture-based meta-tests for `dream_chain_check.py`
+#### FR-144: Fixture-based meta-tests for `dream_chain_check.py` ← CAP-102
 **Consequences:** known-good and known-bad trees assert *exact* findings, not "the live repo
 passes"; the `covers-dreams:`/`## Satellite:` coverage path is regression-pinned; unparseable
 frontmatter surfaces as a finding rather than being swallowed by `except: return {}`.
 
-#### FR-145: Fixture-based meta-tests for `bmad_drift_check.py`
+#### FR-145: Fixture-based meta-tests for `bmad_drift_check.py` ← CAP-103
 **Consequences:** pin-missing, archive-misplaced, stray-file and spec-status-stale each have a
 fixture; the existing live-repo integrity test stays — it gates the tree, these gate the
 detector.
 
-#### FR-146: A detector-incident log
+#### FR-146: A detector-incident log ← CAP-104
 **Consequences:** a tracked companion records date, detector, wrong claim, true value, root
 cause, fixing commit and pinning fixture; a new entry is mandatory in the same change that
 fixes a detector.
 
-#### FR-147: The `--dreams` hygiene mode
+#### FR-147: The `--dreams` hygiene mode ← CAP-105
 **Consequences:** the mode promised by the 2026-07-23 restructure exists and reports Dream-tier
 hygiene findings.
 
@@ -1945,22 +1953,22 @@ hygiene findings.
 **Description.** Keeping Dream→Spec→Research→Brief→PRD→Architecture→Epics→Code coherent is
 manual and fragile; this very session is the proof.
 
-#### FR-148: Orchestrated chain regeneration
+#### FR-148: Orchestrated chain regeneration ← CAP-106
 **Consequences:** regenerating a project's chain is one invocation, in dependency order.
 
-#### FR-149: Code-status preservation
+#### FR-149: Code-status preservation ← CAP-107
 **Consequences:** every story key with `status=done` before a regeneration has the identical
 key after it; only backlog epics may be restructured.
 
-#### FR-150: Chain-completeness audit mode
+#### FR-150: Chain-completeness audit mode ← CAP-108
 **Consequences:** a read-only mode reports, per project, which chain layers exist and which
 are missing.
 
-#### FR-151: Orphan detection with review-gated cleanup
+#### FR-151: Orphan detection with review-gated cleanup ← CAP-109
 **Consequences:** specs referencing deleted Dreams and epics referencing orphaned specs are
 reported; nothing is deleted without review.
 
-#### FR-152: Configurable per-project invocation
+#### FR-152: Configurable per-project invocation ← CAP-110
 **Consequences:** the chain runs for one named project without touching another's tree.
 
 ### 16.7 The governed tool surface — `spec-agent-tool-surface`
@@ -1968,19 +1976,19 @@ reported; nothing is deleted without review.
 **Description.** Every factory capability should be reachable through one governed, typed
 surface. The surface shipped without one.
 
-#### FR-153: One governed surface
+#### FR-153: One governed surface ← CAP-111
 **Consequences:** capabilities are exposed as named tools with typed arguments and structured
 answers, not bespoke integrations.
 
-#### FR-154: The surface survives a clone
+#### FR-154: The surface survives a clone ← CAP-112
 **Consequences:** registration is per-home and rendered (the `marshal init` `.mcp.json`
 pattern), never a machine-absolute hand edit of `~/.claude.json` — AD-43 already forbids the
 latter.
 
-#### FR-155: CLI ⇄ tool parity is gated, not reviewed
+#### FR-155: CLI ⇄ tool parity is gated, not reviewed ← CAP-113
 **Consequences:** a capability present in one surface and absent from the other fails a check.
 
-#### FR-156: Coverage is measured, not assumed
+#### FR-156: Coverage is measured, not assumed ← CAP-114
 **Consequences:** per-station tool-surface coverage is reported as a number; the 2026-07-28
 finding that recorded 2-of-6 coverage with Marshal itself at zero, inside a Dream marked
 `realized`, is the reason this is measured rather than asserted.
@@ -1992,36 +2000,36 @@ stations. Minted 2026-08-08; see `docs/dreams/pyforge-core.md` for the measured 
 **Sequencing: FR-157 and FR-158 must land before Epic 7's stories S-7.2 and S-7.3**, which
 would otherwise mint copy #21 of atomic write and copy #6 of the verdict lattice.
 
-#### FR-157: The leaf exists and is provably a leaf
+#### FR-157: The leaf exists and is provably a leaf ← CAP-115
 **Consequences:** pure stdlib; a meta-test fails the build if any module imports from
 `pyforge.<station>`; every station stays independently conda-installable.
 
-#### FR-158: Atomic write has one implementation
+#### FR-158: Atomic write has one implementation ← CAP-116
 **Consequences:** all 20 measured copies across the 6 stations that have them are removed **in
 the same story that extracts the primitive**; per-call-site durability semantics are verified,
 not assumed uniform.
 
-#### FR-159: The verdict lattice is declared once
+#### FR-159: The verdict lattice is declared once ← CAP-117
 **Consequences:** doctor's `{0, 2, 130}` is an enforced narrowing of warden's `{0, 1, 2, 130}`
 rather than a docstring claim; all five declarations retire; observable exit codes are
 unchanged.
 
-#### FR-160: One report envelope
+#### FR-160: One report envelope ← CAP-118
 **Consequences:** warden's 22 KB schema becomes an extension of one base; doctor's and
 marshal's resolve to it; captured real reports from each station validate unchanged.
 
-#### FR-161: One exception root
+#### FR-161: One exception root ← CAP-119
 **Consequences:** herald's and mason's independent roots re-parent; no existing `except`
 clause changes behaviour — asserted by test, since re-parenting can silently widen a catch.
 
-#### FR-162: The subprocess seam is reconciled
+#### FR-162: The subprocess seam is reconciled ← CAP-120
 **Consequences:** one guard, chosen deliberately between doctor's `cli_bridge.run_cli_json` and
 marshal's `ProcessPort`; **Marshal's own 7 importing modules — the widest ungated surface in
 the fleet — route through it**; steward's deliberate raw-`CalledProcessError` propagation is
 folded in or recorded as a tested opt-out; warden's existing single seam is confirmed
 conforming, not "fixed."
 
-#### FR-163: A second implementation cannot appear unnoticed
+#### FR-163: A second implementation cannot appear unnoticed ← CAP-121
 **Consequences:** one sole-ownership meta-test per extracted primitive; each fails the build
 when a second implementation appears anywhere under `src/shared/packages/`.
 
@@ -2037,7 +2045,7 @@ unactionable in one direction and untrustworthy in the other. Realizes CAP-1..CA
 that Spec — CAP-5 added 2026-08-09, after operating the gate the first four turned green
 surfaced a third instance of the same granularity error.
 
-#### FR-164: A baseline can be stamped for one spec
+#### FR-164: A baseline can be stamped for one spec ← CAP-122
 **Consequences:** `--write-baseline` gains `--spec NAME` (repeatable), merging only the
 named specs into the committed baseline and leaving every other entry byte-identical; an
 unknown name exits 2 with the known set listed. Today the stamp is all-or-nothing, so the
@@ -2045,7 +2053,7 @@ sanctioned fix for one `[no-baseline]` finding necessarily accepts ~34 other spe
 pending drift — which is why the honest move has been to leave the red standing. Unscoped
 stamping survives, and says in its own help text what it accepts.
 
-#### FR-165: A moved contract reconciles only the paths it names
+#### FR-165: A moved contract reconciles only the paths it names ← CAP-123
 **Consequences:** the drift pass stops short-circuiting per SPEC
 (`if b["memlog"] != cur["memlog"]: continue`) and checks each drifted file against the
 memlog's text; named paths clear, unnamed paths surface as a **non-gating**
@@ -2054,7 +2062,7 @@ these entries already cite files in — because inferring intent from prose woul
 the blanket it replaces. A memlog naming no paths stays legal: it degrades to
 `[drift-presumed]`, never to a hard failure, or the gate reds for every historical entry.
 
-#### FR-166: The standing 61 findings are dispositioned, not carried
+#### FR-166: The standing 61 findings are dispositioned, not carried ← CAP-124
 **Consequences:** 24 `[no-baseline]` scoped-stamped; 34 `[drift]` (23 of them one steward
 Epic-2/3 delivery) each either genuinely reconciled through its spec **or** scoped-stamped
 with the reasoning recorded in that spec's own memlog; 2 `[ungoverned]` Charter files given
@@ -2062,14 +2070,14 @@ a surface or an allowlist entry; 1 `[stale-allowlist]` pattern (`pixi.toml`) rem
 Anything that cannot be honestly cleared is filed as deferred work with its reason —
 never suppressed, and never bulk-stamped.
 
-#### FR-167: Neither fix can regress into the blanket it replaces
+#### FR-167: Neither fix can regress into the blanket it replaces ← CAP-125
 **Consequences:** both are mutation-tested **both ways** — removing `--spec` scoping re-reds
 the isolation test, and restoring the per-spec short-circuit re-reds a laundering test that
 replays the live incident (an unrelated memlog append dropping findings 63 → 61 and clearing
 two detectors nobody reconciled). Charter §6 applies directly: the fix is granularity, never
 a relaxed threshold.
 
-#### FR-168: A Spec cannot declare a surface it has no contract for
+#### FR-168: A Spec cannot declare a surface it has no contract for ← CAP-126
 **Added 2026-08-09, realizing CAP-5.** Two days of operating the now-green gate exposed a
 third instance of the same granularity error, found twice in two days: a Spec that declares a
 `surface:` but ships with **no `.memlog.md`** is **drift-blind**. `contract_hash()` returns
@@ -2087,7 +2095,7 @@ its baseline in the same change, since a new memlog otherwise downgrades that sp
 drift from gating to informational — trading a false green for a quiet one. The detector
 never writes the memlog it checks for.
 
-#### FR-169: The presumed set is worked down by measurement, not carried
+#### FR-169: The presumed set is worked down by measurement, not carried ← CAP-127
 **Added 2026-08-09, realizing CAP-6.** FR-165 made a previously-invisible set visible: **994
 `[drift-presumed]` entries** across four station Specs. Carrying them unexamined would repeat
 the mistake this whole Dream was seeded to correct — a standing number that hardens into
@@ -2174,7 +2182,7 @@ Epic 21–27 era — and re-grounds the document's live claims. Nothing above is
 epics-side usage; all of their stories are `done` in the tracked ledger (one exception
 since 2026-08-27: Story 22.7, minted for FR-193's CAP-7, is `backlog`):
 
-#### FR-192: The planning chain regenerates itself, and audits whether it is coherent
+#### FR-192: The planning chain regenerates itself, and audits whether it is coherent ← CAP-150
 The **second, full decomposition** of `spec-fleet-chain-completeness` (CAP-1..5) into
 **Epic 21** (Stories 21.1–21.5, added 2026-08-15) — orchestrated regeneration,
 code-status preservation, the audit mode extended to full CAP-3 coverage, review-gated
@@ -2195,7 +2203,7 @@ surfaces outside the planning chain — `pixi.toml`'s `chain-layers-audit-check`
 either side would desync code that cites these ids. No `done` story key was touched;
 `epics.md`'s Epic 17 and Epic 21 goals now carry the same partition.
 
-#### FR-193: Single-story dispatch is a marshal verb, not a session's discipline
+#### FR-193: Single-story dispatch is a marshal verb, not a session's discipline ← CAP-151
 Decomposes `spec-marshal-single-story-dispatch` (CAP-1..7) into **Epic 22** (Stories
 22.1–22.6, added 2026-08-21; Story 22.7 added 2026-08-27 for CAP-7 fleet drain, `backlog`
 — the 2026-08-21 pass covered CAP-1..6 only, naming CAP-7 merely as an acceptance
@@ -2215,12 +2223,12 @@ FR-193 is the dispatch Spec's id alone; no fresh number was needed. The promoted
 spec `specs/spec-19-4-test-architecture-stays-current-as-stories-land.md` retains its
 historical FR-193 mention as a dev-run record.
 
-#### FR-194: Velocity captures hand-driven work
+#### FR-194: Velocity captures hand-driven work ← CAP-152
 Decomposes `spec-dashboard-velocity-captures-hand-driven-work` (CAP-1..3) into **Epic 23**
 (Stories 23.1–23.3): wall-clock fallback derived from promoted-spec revision fields,
 never blended with active compute, with the coverage caption partitioned by true reason.
 
-#### FR-195: Liveness is one command
+#### FR-195: Liveness is one command ← CAP-153
 Decomposes `spec-bmad-loop-liveness-footgun` (CAP-1..3) into **Epic 24** (Stories
 24.1–24.3): the missing liveness primitive, the operator answer as one documented
 command, and a cheap documented double-check for UNSUPERVISED rows.
@@ -2236,7 +2244,7 @@ leaving FR-193 solely the dispatch Spec's.
 
 Everything in §§ 4–6 citing `bmad-loop 0.9.0` and the `<0.10` pin is intake-era history —
 correct when written, superseded in the shipped tree. Live facts: the pin is
-**`bmad-loop >=0.11.0,<0.12`** (member `pyproject.toml`; 0.11.1 resolves;
+**`bmad-loop >=0.11.0,<0.13`** (member `pyproject.toml`; 0.12.0 resolves — cap widened 2026-09-26;
 `marshal --version` reports both). **Epic 25** (`spec-bmad-611-era-alignment`, Stories
 25.1–25.7, all done 2026-08-22) carried the era into the product: retired v6 skill ids
 purged from seed templates and guarded by meta-test (25.1); repo skills matched to the
@@ -2292,3 +2300,701 @@ the generator's Story Coverage Matrix now reads 394 "none observed" of 404 rows 
 
 `spec-deferred-work-resolution-sweep`'s CAP-2/CAP-3/CAP-6 were measured during the sweep and
 found inert against these ledgers — see that Spec's `sweep-tooling-effectiveness-2026-09-08.md`.
+
+---
+
+## 19. Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep: `spec-pyforge-marshal`'s SPEC.md moved through 2026-09-09..09-12
+and its `.memlog` to 2026-09-13T08:33 while this PRD sat at 2026-09-08 — five days,
+past the runbook's 2-day grace window.*
+
+**This is the rare cascade that produced real content edits rather than a note.** The
+Spec's **2026-09-09 operator answering pass** closed six items. Four of them exist in
+this document under **different numbers**, and all four still read as open. Number
+translation, recorded here because it is the thing a future reader will get wrong:
+
+| `spec-pyforge-marshal` | this PRD | subject |
+|---|---|---|
+| Q-11 | **Q-4** | fleet-level resource budgets |
+| Q-12 | **Q-5** | OpenTelemetry `gen_ai.*` emission |
+| Q-13 | **Q-6** | ACP migration trigger |
+| Q-14 | **Q-7** | 25-minute idle threshold |
+| F-4 | *(none — new)* | the trust model |
+| F-5 | *(none — new)* | mid-run freeze writer |
+
+**What was changed in place, above:**
+
+1. **§ 13 Q-4, Q-5, Q-6, Q-7 each gained a dated `ANSWERED 2026-09-09 (operator, folded
+   in here 2026-09-14)` clause** carrying the operator's actual answer and its stated
+   reason — not a pointer to the Spec. Per the runbook's grounding triple: fold the
+   upstream content in, do not merely cite it.
+2. **§ 8's fleet-budget Non-Goal was amended** from a deferral-awaiting-evidence to a
+   decided v1 Non-Goal, with C-3 named as the reason.
+3. **§ 11 gained C-11 and C-12** — the declared advisory-in-v1 trust model (Spec F-4)
+   and the no-unattended-freeze-writer rule (Spec F-5). Both were amended into the
+   Spec's own Constraints on 2026-09-09 and had no home here at all. C-11 is the more
+   consequential of the two: it states plainly that operator attribution is an audit
+   record, not an enforcement boundary, and ties that to C-10's worktree-is-not-a-sandbox
+   position rather than leaving the two facts in separate sections to be reconciled by
+   the reader.
+
+**What moved in the Spec and did NOT need a change here.**
+
+- **`status: shipped` added to the Spec (2026-09-09).** One of eight fleet-wide
+  status-less Specs, three of them marshal's — a bookkeeping defect that made
+  `chain-completeness` report its CAPs uncovered. No PRD consequence.
+- **The genesis-installer → seed-installer name retirement (CAP-6, closed 2026-09-12).**
+  Checked against this document: **§ 15 is already titled "The seed installer —
+  `marshal seed`"** (retitled 2026-08-08). The three remaining "Genesis Installer"
+  strings at §§ 15's provenance block are **historical prose** — the original
+  frontmatter and the archive path of the superseded satellite PRD — and they keep
+  their original names by convention. Nothing to repoint.
+- **Eighteen dated `verified:` lines (2026-09-11 operator-directed sweep).** Evidence
+  about the shipped contract, not changes to it. Several are `PARTIAL` and say so;
+  none contradicts an FR in this document.
+- **The 2026-09-12 tier-routing fail-safe surface reconcile and Story 12.1's
+  `planning_graph.py`.** Both governed by their own narrower Specs
+  (`spec-dispatch-tier-routing-fails-safe`, the recall-kinds work) and already
+  reconciled there; this kernel's memlog records them so `spec-surface-check` does not
+  later read them as ungoverned drift. A 31-path `surface-drift-exclude:` block exists
+  for the same reason. No FR describes drift-tracking bookkeeping.
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a
+regex): **273 story keys — 270 `done`, 2 `backlog`, 1 `blocked` — across 42 epics** (40
+`done`, 1 `in-progress`, 1 `backlog`). The § 18 figure of 165/165 across Epics 1–27 is
+superseded by growth, not corrected.
+
+**Content changed:** § 8 (one Non-Goal amended), § 11 (C-11, C-12 added), § 13 (four
+answers folded in). No FR added, renumbered or removed — the FR space is unchanged.
+
+## 20. Currency reconciliation — 2026-09-18
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-244..248 on 2026-09-18 (its
+`.memlog` stamped 2026-09-18T18:50) while this PRD sat at 2026-09-14. Same-day
+reconcile; FRs derived from the CAPs per `one-chain-per-station`'s rule that the PRD is the
+Spec's decomposition, never an independent namespace.*
+
+### 20.1 The FR space: FR-196..FR-200 registered
+
+Herald's Epic 23 was drained to zero on 2026-09-18 by `marshal factory dispatch` on the Claude
+harness — four stories verified, landed and ledger-flipped unattended, the first since
+2026-09-12 — and every one of the four still needed a human within the hour. The station Dream's
+2026-09-18 Realization-log entry measures the five things that human did on the run journals;
+each FR below is one of them, decomposed into **Epic 50** (Stories 50.1–50.5). Epics 48 and 49
+are reserved holes: their keys are already poisoned on `origin/main` by steward's
+`Story 48.N:` / `Story 49.N:` direct-commit subjects — the very defect FR-199 closes.
+
+#### FR-196: A landing never re-dispatches the story it just landed ← CAP-244
+The fleet campaign supervisor treats the window between a dispatch session exiting and
+`dispatch_land_finalize` promoting the ledger as still in flight, and reads a session's own
+"already merged" refusal as *advance*, never *blocked*. Success: a fixture journal replaying
+the herald sequence (`…151925342Z-82ce96c8`: dispatched → landed → respawned 46 s later →
+blocked, complete) chains the next story instead. Story 50.1.
+
+#### FR-197: A harness's own usage-wall wording is a transient outcome ← CAP-245
+`classify_session_log` recognises Cursor's live "You're out of usage … increase your limit"
+text (and Claude Code's weekly/monthly-limit text) as `quota_exceeded`, keyed per harness in
+one table, so the fleet planner classifies the block transient. Story 50.2.
+
+#### FR-198: `--harness` outranks a dead tier-map harness ← CAP-246
+An explicit invocation flag leads the harness walk over an inline-table tier-map harness
+without a policy edit; the model is resolved for the harness actually chosen, never a foreign
+id (spec-cursor-native-tier-map CAP-1's fails-safe preserved); without the flag, today's
+behaviour is byte-identical. Story 50.3.
+
+#### FR-199: Landing evidence carries the station in every shape ← CAP-247
+The AD-24 templated merge subject carries the station slug by default
+(`Merge {slug}/{key} into main`); the un-scoped `Story N.M:` shape needs branch/station
+corroboration; live history is grandfathered through the SHA/recovery allowlist and never
+re-attributed. Extends FR-193's Story 35.1 corroboration, which cannot help when the key exists
+in both ledgers. Story 50.4.
+
+#### FR-200: The promoter reads a spec through its banner ← CAP-248
+`is_valid_spec_text` and `parse_declared_surface` accept a leading `<!-- … -->` block before
+the frontmatter, so `_already_promoted_keys` never mistakes a banner-topped tracked spec for
+unpromoted and finalize never overwrites a reconciled copy with a stale Tier-3 twin
+(local commit `b0b7f3019f`, 2026-09-18, dropped before push). Story 50.5.
+
+**ONE FR space now FR-1..FR-200** (FR-201 = next free id).
+
+### 20.2 Harness policy, this week
+
+Cursor ran out of usage on 2026-09-18 (operator ruling). Every station's `marshal-policy.toml`
+that named the 2026-09-13 Cursor Ultra ladder moved back to `harness_preference = ["claude"]`
+with the sonnet-dev / opus-review tier map (herald PR #1458 first; marshal and doctor with this
+reconcile). FR-198 exists so the next such flip needs no policy PR. The tests that pinned the
+Cursor ids (`test_dispatch_retry.py`, `test_spin.py`) now assert the shape the station's own
+tier map declares — a pinned ladder had turned marshal's own verify command red on `main`.
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a regex):
+**300 story keys — 281 `done`, 18 `backlog`, 1 `blocked` — across 48 epics** (44 `done`, 3
+`backlog`, 1 `in-progress`). Epic 50 is the newest of the three backlog epics.
+
+**Content changed:** § 20 added (FR-196..FR-200 registered, harness-policy note). No FR
+renumbered or removed.
+
+## 21. Currency reconciliation — 2026-09-19
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-249..256 and `spec-pyforge-core`
+(hosted here, as Epic 14 was) gained CAP-8..9 on 2026-09-19 while this PRD sat at 2026-09-18.
+Same-day reconcile; FRs derived from the CAPs per `one-chain-per-station`'s rule that the PRD is
+the Spec's decomposition, never an independent namespace.*
+
+### 21.1 The FR space: FR-201..FR-210 registered
+
+The second autonomous drain (2026-09-18/19) landed 17 stories across herald, doctor and marshal
+under Epic 50's fixes, and the human acts it still needed are different in kind from the first
+drain's — a green branch that was not a green merge, a landing record finalize never saw, an
+operator pull before every cycle, a `blocked` session landed as `done`, a silent guard, a watch
+reading the wrong engine, a mint branch poisoning a key, and a conformance suite with no lane.
+The station Dream's "2026-09-18 (later)" Realization-log entry measures each on the run journals
+and PRs; FR-201..FR-208 decompose into **Epic 51** (Stories 51.1–51.8), FR-209..FR-210 into
+**Epic 52** (Stories 52.1–52.2). Epics 48 and 49 remain reserved holes.
+
+#### FR-201: Verification sees the merge result ← CAP-249
+`dispatch land` materialises `git merge-tree --write-tree origin/main <head>` whenever the branch
+baseline is behind `origin/main` on a file the branch touches, runs the station's own
+`verify_commands` against that tree, and refuses with a named finding when it is red; a
+conflict-free green merge lands unattended; a branch already at `origin/main` verifies once.
+Fixture: 50.4 vs doctor 27.5 (`1a5895317f`). Story 51.1.
+
+#### FR-202: The landing record follows the session's write, not the primary's directory ← CAP-250
+`dispatch_land_finalize` reads the dispatch worktree's `implementation-artifacts/` as a discovery
+source beside the primary's, before teardown, so the Review Triage Log, Auto Run Result and
+`deferred:` items a session wrote there reach the tracked spec and the ledger; a land refused after
+the PR was opened journals `pr_number` / `marshal_native`. Fixture: 50.4 (#1488). Story 51.2.
+
+#### FR-203: The campaign reads the ledger it just promoted ← CAP-251
+After finalize promotes the tracked ledger onto `origin/main`, the next campaign cycle reads it:
+the primary checkout is fast-forwarded only when it is a clean `main` (refused by name otherwise),
+else the ledger is read from `origin/main`. Fixture: herald 23.x. Story 51.3.
+
+#### FR-204: A blocked outcome never lands ← CAP-252
+A session ending `blocked` produces no PR, no `done` promotion and a `dispatch-blocked` journal
+fact with its reason; a revert-to-baseline plus a status flip is not git progress. Fixture:
+doctor 27.3 (PR #1476). Story 51.4.
+
+#### FR-205: MRS-DISP-043 speaks for an uncatalogued model ← CAP-253
+The fails-safe guard fires for a model catalogued under no provider, with the chosen harness's own
+default/alias ids kept silent. Closes DW-FU-50-3. Story 51.5.
+
+#### FR-206: `marshal watch` follows the engine that is actually driving the station ← CAP-254
+The station's current run is the engine whose last journal fact is most recent — a dispatch run
+journaled today outranks a loop row paused in August. Story 51.6.
+
+#### FR-207: Landing evidence is intent-scoped, not just station-scoped ← CAP-255
+Only the shapes marshal mints for a landing mark a key merged; `doctor/27-4-mint` (PR #1477) no
+longer lands 27.4; `_branch_belongs_to_project` gains its production caller. Closes DW-FU-50-4.
+Co-governed by spec-landing-evidence-grammar / spec-pyforge-core. Story 51.7.
+
+#### FR-208: The banner-skip family is complete ← CAP-256
+`_skip_leading_banner` (both copies) tolerates leading whitespace/BOM; `parse_declared_low_risk`
+skips a banner. Closes DW-FU-50-6 (severity high) and DW-FU-50-5. Story 51.8.
+
+#### FR-209: The six accumulated violations are cleared ← spec-pyforge-core CAP-9
+`pyforge-core-test` → 0 failed on `main` (today 6 failed / 1855 passed: three exception-root, three
+second-subprocess), each fix the way CAP-5/CAP-6 prescribe; hand-driven (warden and testing-kit
+files are outside marshal's dispatch surface). Story 52.1.
+
+#### FR-210: The conformance suite is a PR gate ← spec-pyforge-core CAP-8
+A `core-test` job beside the eight station jobs runs the `pyforge-core-test` pixi task on every
+PR touching `src/shared/packages/**`, and `pr-preflight` depends on it; never a hand-enumerated
+file list. Realizes CAP-7's "fails the build". Story 52.2.
+
+**ONE FR space now FR-1..FR-210** (FR-211 = next free id).
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a regex):
+**310 story keys — 286 `done`, 23 `backlog`, 1 `blocked` — across 50 epics** (45 `done`, 4
+`backlog`, 1 `in-progress`). Epics 51 and 52 are the two newest of the four backlog epics.
+
+**Content changed:** § 21 added (FR-201..FR-210 registered). No FR renumbered or removed.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this PRD. `updated:` bumped to record that the
+check ran.*
+
+## 22. Currency reconciliation — 2026-09-24
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-265 on 2026-09-24 while this PRD sat at
+2026-09-20. Same-day reconcile; FR derived from the CAP per `one-chain-per-station`'s rule that the
+PRD is the Spec's decomposition, never an independent namespace.*
+
+### 22.1 The FR space: FR-211 registered
+
+Doctor 24.2 and 24.3 (PRs #1577/#1578, #1579/#1580) each landed cleanly but needed a hand
+`--repair-feed` + hand-promote + separate PR to reach the tracked ledger, because
+`sprint-ledger-sync`'s regression guard correctly refused over unrelated stale Tier-3 feed keys
+(13 and 14, respectively). FR-211 decomposes into **Epic 54** (Story 54.1) — a new epic because
+Epic 51 (the `dispatch_land_finalize` reliability thread this continues) is `done`.
+
+#### FR-211: The hand ledger sync repairs unrelated feed drift itself ← CAP-265 *(amended 2026-09-28, § 31.7)*
+~~`dispatch_land_finalize`'s promotion retries with the Tier-3 feed's stale-but-safe keys pulled
+forward from the tracked twin … whenever the regression guard's refusal names only keys other than
+the one being promoted.~~ Re-scoped by operator ruling 2026-09-28 (the automatic promotion never
+depended on the feed; its 24.2/24.3 failures were the push timeout, FR-223): `sprint-ledger-sync --
+--project <station>` pulls the twin's `done` / story `blocked` values and twin-only keys forward into
+a stale Tier-3 feed — `--repair-feed`'s own move, never away from `done`, never rewriting a key the
+feed advances — then promotes and names every key it repaired, instead of refusing;
+`--allow-regression` stays the one way out of `done`; the feed's trailing metadata survives.
+Fixture: doctor 24.2's hand-sync shape. Story 54.1.
+
+**ONE FR space now FR-1..FR-211** (FR-212 = next free id).
+
+**Content changed:** § 22 added (FR-211 registered). No FR renumbered or removed. No AD amended —
+the fix lands on the existing `dispatch_land_finalize` design without a new architectural decision.
+
+## Currency reconciliation — 2026-09-26
+
+`spec→prd` edge (`spec-pyforge-marshal`'s `.memlog.md` moved 2026-09-26) and the `behind-code`
+edge (marshal's tree moved the same day) — both from one change: the `bmad-loop` runtime range
+widened from `>=0.11.0,<0.12` to `>=0.11.0,<0.13` after 0.12.0 was verified.
+
+**What moved, and why the FR delta is none.** FR-52 makes `adapters/harness_bmadloop.py` the one
+source of truth for the harness range; its three spellings (`_HARNESS_MIN_VERSION`,
+`_HARNESS_MAX_MINOR_EXCLUSIVE`, `HARNESS_VERSION_RANGE_TEXT`) moved together with the pyproject
+and package-manifest pins, and the sync tripwire (`test_manifest_sync.py`) held. Verification was
+the requirement's own procedure: the four `bmad_loop` modules the harness lazily imports ship in
+0.12.0, and the full suite (8652 tests) passes in an environment re-solved onto 0.12.0. The only
+behavioural difference 0.12.0 introduced is that `bmad_loop.bmadconfig` now validates a
+non-mapping `config.yaml` itself (`… must contain a top-level mapping`) before marshal's own
+"invalid bmad-config shape" guard can fire — the contract (never raise, report) is unchanged and
+one test accepts both wordings. Two facts recorded for the record, neither an FR: the estate's
+`pixi.toml` pins `bmad-loop` to the SelfExplainML channel because `conda-forge/bmad-loop-feedstock`
+(2026-09-20, not this repo's) ships `__unix`-gated builds that strict channel priority would
+otherwise prefer; and the § 22 Stack literal above is corrected in place, the same way the
+2026-08-26 reconcile corrected `<0.10` → `<0.12`. `updated:` bumped to record that the check ran.
+
+## 23. Currency reconciliation — 2026-09-27
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-266 on 2026-09-27 while this PRD sat at
+2026-09-26. Same-day reconcile; FR derived from the CAP per `one-chain-per-station`'s rule that the
+PRD is the Spec's decomposition, never an independent namespace.*
+
+### 23.1 The FR space: FR-212 registered
+
+The 2026-09-25..27 fleet pictures kept `landing refused -- MRS-DISP-020` in ATTENTION for doctor
+30.3 (PR #1585) and marshal 46.6 (PR #1597) after both PRs had merged by another route and both
+keys read `done` in their tracked ledgers. FR-212 decomposes into **Epic 56** (Story 56.1) — a new
+epic because Epic 53, whose Story 53.2 review first surfaced landing findings in status, is `done`.
+
+#### FR-212: A landing refusal whose story has since landed is reported as superseded ← CAP-266
+`marshal status` keeps the newest dispatch run's landing findings verbatim and, when one is
+ERROR-severity and the row's story key is among `main`'s corroborated merged keys (the check
+`dispatch land` already uses for ALREADY_LANDED), adds `dispatch_landing_superseded: true` to the
+JSON row — a git fact — with the run's own story as `dispatch_story`; `main` is read at most once
+per sweep, and an unreadable `main` or a policy ERROR leaves the marker off. Because a post-merge
+promote + ledger failure journals the same `MRS-DISP-020`, `fleet-picture` lists a refusal as not
+waiting on the operator only when the marker is set AND the tracked ledger reads the story `done`;
+otherwise it stays in ATTENTION (amended 2026-09-27 after the story's review). Fixture: doctor
+30.3 / marshal 46.6. Story 56.1.
+
+**ONE FR space now FR-1..FR-212** (FR-213 = next free id).
+
+**Content changed:** § 23 added (FR-212 registered). No FR renumbered or removed. No AD amended —
+the marker is the journal fact and the git fact reported side by side (AD-5, AD-33), with no new
+port or decision boundary.
+
+## 24. Currency reconciliation — 2026-09-27 (later)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-267 later on 2026-09-27. Same-day
+reconcile; FR derived from the CAP per `one-chain-per-station`.*
+
+### 24.1 The FR space: FR-213 registered
+
+`marshal refresh`'s eight fast-forward pushes of `loop/<slug>` to `origin/main` each ran the
+repo's ~10-minute pre-push preflight (steward CAP-154). Steward's hook-side "nothing new" skip was
+refused in review (under pre-commit the hook sees only one ref of a multi-ref push); the proof
+belongs to the tool that pushed. FR-213 decomposes into **Epic 57** (Story 57.1) — a new epic
+because Epic 56 is `done`.
+
+#### FR-213: A loop-home refresh sends its proven fast-forward past the pre-push preflight ← CAP-267
+When `refresh` has itself fast-forwarded `loop/<slug>` to `refs/remotes/origin/main` (the full
+refname — a local branch or tag named `origin/main` never stands in), it hands the sha it
+fast-forwarded to as `VcsPort.push`'s keyword-only `proven_on_main_sha`; the adapter re-checks it
+against `refs/remotes/origin/main`, pushes exactly that sha, and sets the existing journaled
+opt-out — its reason naming the branch, `origin/main` and the sha — for that one `git` process.
+Any other `--base`, a host without the POSIX `env` utility, and every other push caller push
+through the preflight. Story 57.1.
+
+**ONE FR space now FR-1..FR-213** (FR-214 = next free id).
+
+**Content changed:** § 24 added (FR-213 registered). No AD amended — the `VcsPort` keyword is an
+additive change to an existing port, and the proof is `refresh`'s own git operation.
+
+## 25. Currency reconciliation — 2026-09-27 (evening)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-268 on the evening of 2026-09-27.
+Same-day reconcile; FR derived from the CAP per `one-chain-per-station`.*
+
+### 25.1 The FR space: FR-214 registered
+
+Story 28.20's landing heal never saw a conflict: `merge_tree_conflict_paths` parsed a line that
+the legacy three-arg `git merge-tree` never prints. FR-214 decomposes into **Epic 58** (Story 58.1)
+— a new epic because Epic 28, which owns the heal, is `done`.
+
+#### FR-214: The landing heal sees every merge conflict ← CAP-268
+`merge_tree_conflict_paths` returns git's own conflicted-file list (`merge-tree --write-tree
+--name-only -z`): none for a clean merge, every conflicted path otherwise, and an error — never an
+empty list — when merge-tree itself fails or a conflict names no file. The heal's decisions
+(ledger union, named escalation, the local-merge fallback) are unchanged; a conflict outside the
+ledger now escalates by name. The union itself clears only a same-row ledger conflict until
+a follow-up story makes it a merge of the base. Story 58.1.
+
+**ONE FR space now FR-1..FR-214** (FR-215 = next free id).
+
+**Content changed:** § 25 added (FR-214 registered). No AD amended — the fix is inside the existing
+`VcsPort` adapter; the port's contract is the one Story 28.20 already specified.
+
+## 26. Currency reconciliation — 2026-09-27 (evening, cont.)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-269 the same evening as CAP-268, from
+Story 58.1's review. Same-day reconcile; FR derived from the CAP per `one-chain-per-station`.*
+
+### 26.1 The FR space: FR-215 registered
+
+With conflicts visible (FR-214), the ledger union heal was reachable and fell short: a
+single-parent union commit clears a same-row status conflict but not adjacent added rows, and it
+was pushed to the PR branch regardless. FR-215 decomposes into **Epic 59** (Story 59.1) — a new
+epic because Epic 58 rolled up to `done`.
+
+#### FR-215: The ledger union heal merges the base ← CAP-269
+The heal probes `refs/remotes/origin/main` after a fetch; a ledger-only conflict is healed by a
+real two-parent merge of that ref into the dispatch branch with the landing project's own ledger
+resolved three-way against the merge base (`done` never regresses, `blocked` is never undone),
+and any other conflict aborts the merge before a commit or a push; once the heal's merge is
+committed, a failure ends the attempt — never the local-`main` advance; only the landing
+project's ledger is mechanical. Story 59.1.
+
+**ONE FR space now FR-1..FR-215** (FR-216 = next free id).
+
+**Content changed:** § 26 added (FR-215 registered). No AD amended — one additive `VcsPort` method
+(`merge_ref_resolving`); the heal stays outside `core/` (AD-4) and its classification stays pure.
+
+## 27. Currency reconciliation — 2026-09-27 (night)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-270 the night of 2026-09-27. Same-day
+reconcile; FR derived from the CAP per `one-chain-per-station`.*
+
+### 27.1 The FR space: FR-216 registered
+
+After Stories 57.1 and 59.1 closed the short-name shadowing trap in `refresh` and the landing heal,
+a sweep and two reviews found ten more call sites handing git `origin/<branch>`, one of them a push. FR-216 decomposes into
+**Epic 60** (Story 60.1) — a new epic because Epic 59 is `done`.
+
+#### FR-216: Every remote-tracking read names the full ref ← CAP-270
+Every place marshal hands git a remote-tracking ref names it `refs/remotes/<remote>/<branch>`,
+through one pure helper (`core/refs.py`); a local branch or tag named like the remote changes
+nothing marshal reads, diffs, fast-forwards to or pushes. Messages keep the short name. Story 60.1.
+
+**ONE FR space now FR-1..FR-216** (FR-217 = next free id).
+
+**Content changed:** § 27 added (FR-216 registered). No AD amended — a pure helper in `core/`
+and constant values; no new port, adapter or decision boundary.
+
+## 28. Currency reconciliation — 2026-09-27 (late)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-271 late on 2026-09-27. Same-day
+reconcile; FR derived from the CAP per `one-chain-per-station`.*
+
+### 28.1 The FR space: FR-217 registered
+
+Story 60.1's second review found the other half of the shadowing trap: a tag named `main` stands in
+for the local branch `main`, and marshal still hands git its local branches by short name, while
+`landing_base_branch` accepts `origin/main`. FR-217 decomposes into **Epic 61** (Story 61.1) — a new
+epic because Epic 60 is `done`.
+
+#### FR-217: Every local-branch read names the full ref ← CAP-271
+Every place marshal hands git one of its local branches to read names it `refs/heads/<branch>`,
+through `core/refs.py` — in the package and in the repo-root scripts marshal owns or runs; a tag named
+like a branch changes nothing marshal reads, diffs, merges or pushes. Arguments git reads as a
+branch name stay bare. `landing_base_branch` refuses a full refname, a ref namespace or a
+remote's branch, and `land` / `batch-pr` refuse to run on one rather than fall back to `main`.
+Story 61.1.
+
+**ONE FR space now FR-1..FR-217** (FR-218 = next free id).
+
+**Content changed:** § 28 added (FR-217 registered). No AD amended — one more pure helper in
+`core/refs.py`, a stricter policy validator and call-site arguments; no new port, adapter or
+decision boundary.
+
+## 29. Currency reconciliation — 2026-09-27 (late, cont.)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-272 late on 2026-09-27. Same-day reconcile;
+FR derived from the CAP per `one-chain-per-station`.*
+
+### 29.1 The FR space: FR-218 registered
+
+Doctor Story 31.1's review found the shadowing trap in `pyforge-testing-kit`, the shared test kit
+marshal seeded: its branch-diff guards default to the short name `origin/main`. FR-218 decomposes
+into **Epic 62** (Story 62.1) — a new epic because Epic 61 is `done`.
+
+#### FR-218: The shared test kit's branch guards diff against the remote ← CAP-272
+`branch_diff_guard` defaults to `refs/remotes/origin/main` and reads an explicit `origin/<branch>`
+by its full refname; a local ref named `origin/main` changes nothing a guard sees. No caller
+changes. Story 62.1.
+
+**ONE FR space now FR-1..FR-218** (FR-219 = next free id).
+
+**Content changed:** § 29 added (FR-218 registered). No AD amended — a kit constant and default
+arguments; no new port, adapter or decision boundary.
+
+## 30. Currency reconciliation — 2026-09-27 (late night)
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-273 and CAP-274 late on 2026-09-27.
+Same-day reconcile; FRs derived from the CAPs per `one-chain-per-station`.*
+
+### 30.1 The FR space: FR-219 registered
+
+On 2026-09-25 `marshal factory dispatch pyforge-marshal 46.9` was refused `MRS-DISP-041` while
+pyforge-steward held the primary checkout's shared active-project marker and both compatibility
+links; on 2026-09-27 the marker still names pyforge-steward, so only one station is dispatchable at
+a time. FR-219 decomposes into **Epic 64** (Story 64.1) — a new epic because Epic 63 is `done`.
+
+#### FR-219: A dispatch carries its own scope, never the shared marker ← CAP-273
+`marshal factory dispatch` and every `factory drain` cycle stop reading the primary checkout's
+marker and links, which nothing a dispatch launches reads (the session runs in its own fresh
+worktree with `BMAD_ACTIVE_PROJECT` pinned; every launcher path is a physical
+`_bmad-output/projects/<slug>/` path). Before launch the dispatch worktree gets its own marker and
+both links naming the slug — a missing corner written, a foreign corner never repointed — and
+`verify_scope(worktree, slug)` must pass; a contradicting `BMAD_ACTIVE_PROJECT` or a worktree
+triangle naming another project still refuses `MRS-DISP-041`. No lock, no flip. Story 64.1.
+
+### 30.2 The FR space: FR-220 registered
+
+Reading steward's drain queue by hand on 2026-09-27 found 44.4–44.6 parked only in prose in
+`epics.md`, 44.4's Deps `done` and its spec without `## Verification`: a drain would have
+dispatched it, `MRS-GATE-010` would have refused it after a whole session, and the transient
+classification of that gate would have re-dispatched it every cycle. There is no way to ask a drain
+what it would do before it launches. FR-220 decomposes into **Epic 65** (Stories 65.1, 65.2).
+
+#### FR-220: A drain can be asked what it would dispatch before it launches anything ← CAP-274
+`marshal factory drain --plan` computes each station's queue through the same read-only planner a
+drain cycle uses, with no worktree, session, journal, lock or other write, and reports for the next
+story (every queued story on request) each refusal decidable without launching — scope, spec
+presence and status, legacy branch, leftover worktree state, spec binding, verify-command shape,
+merge-subject nativeness, already landed, Deps readiness in both modes, declared skips — plus prose
+parks no `skip_policies` entry mirrors and override lists whose keys are all done. Environment
+probes run only behind `--check-env`. Findings are `MRS-DRAINPLAN-*`; the exit is ERROR-tier when a
+station's next story would not dispatch cleanly (Story 65.1). `dispatch_once` refuses a story whose
+tracked spec cannot bind before it provisions anything, under `MRS-DISP-050`, which re-preflight
+clears when the spec or the verify commands change (Story 65.2).
+
+**ONE FR space now FR-1..FR-220** (FR-221 = next free id).
+
+**Content changed:** § 30 added (FR-219 and FR-220 registered). No AD amended — `verify_scope` stays
+the one triangle check, now called on the dispatch worktree the way `marshal init` calls it on a
+loop home; the seeding writes go through `FsPort`; the plan's predicates are pure in `core/` and its
+reads stay in `cli/`; no new port, adapter or decision boundary.
+
+## 31. Currency reconciliation — 2026-09-28
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-275 and CAP-276 on 2026-09-28, both from
+the station Dream's 2026-09-19 (the third drain) entry, items (5) and (2), and CAP-277 the same day
+from marshal 64.1's landing. Same-day reconcile; FRs derived from the CAPs per
+`one-chain-per-station`.*
+
+### 31.1 The FR space: FR-221 registered
+
+A dispatched session that ends `done` with `followup_review_recommended: true` has the flag copied
+into the tracked spec (CAP-250) and then nothing acts on it: its only reader is the re-dispatch
+guard of a `done` story, and a drain never re-dispatches a `done` key. Story 51.3 landed on 51.2's
+files with no review. On 2026-09-28, 210 tracked specs read `done` with the flag true, and 181 of
+them are carried by nothing. FR-221 decomposes into **Epic 66** (Stories 66.1, 66.2).
+
+#### FR-221: A follow-up review a landed story recommends is carried into the deferred-work ledger ← CAP-275
+When `dispatch_land_finalize` lands a story whose tracked spec on `origin/main` reads `status: done`
+with `followup_review_recommended: true`, it adds exactly one `DW-FRR-<story>` row
+(`origin: dispatch-followup-review`, `status: open`) to that project's tracked
+`deferred-work-ledger.md`. The write shares the intake step's lock and publish, is idempotent, and
+finalize names the id in its `dispatch-land-finalize-resync` observation; a failed write is a
+non-gating `MRS-DISP-047` WARN (Story 66.1). A one-time backfill carries every already-landed
+flagged spec across the eight stations' ledgers, and a repo-wide meta test holds the invariant that
+every such spec has a carrying row (Story 66.2).
+
+### 31.2 The FR space: FR-222 registered
+
+Item (2), every successful land reading `stopped_externally`, was closed as a side effect of Story
+51.9 (merge `df813208e9`), whose finalize fast-forwards the primary checkout's `main`. The verdict
+still rests on that fast-forward: after its own land, the supervisor re-resolves from repository
+facts read on local `main` alone, and finalize skips the fast-forward for a dirty primary or one not
+at `main`'s tip. FR-222 decomposes into **Epic 67** (Story 67.1).
+
+#### FR-222: A landed dispatch reads completed even when the primary checkout cannot be fast-forwarded ← CAP-276
+After the dispatch supervisor lands a story from its terminal branch, a `dispatch-land` OUTCOME for
+the run journaled `ok` with verdict `landed` or `already_landed` resolves the session verdict
+`completed` with `stop_reason: null`, the rule its loop head, its post-finalize re-read and
+`marshal status` already apply; only without one does the verdict come from repository facts. The
+repository-fact reads and their local-`main` base are unchanged, and the completion still reports
+them as read. Story 67.1.
+
+### 31.3 The FR space: FR-223 registered
+
+Later on 2026-09-28, marshal 64.1 landed (PR #1647) and its tracked ledger still read `backlog` on
+`origin/main`. The finalize promotion's push to `main` ran the repository's `pre-push` hook
+(`spec-pyforge-steward:CAP-154`). The hook runs the full `pr-preflight` on the primary checkout, not
+on the pushed commit, and the publish's 120 s git timeout killed the push. The promotion reported
+that only as a WARN, finalize exited 0, and `dispatch land` journaled `landed` / clean. Since the
+hook landed on 2026-09-20, 0 of 9 promotion intents reached `origin/main`. FR-223 decomposes into
+**Epic 68** (Story 68.1).
+
+#### FR-223: A landing's ledger promotion reaches origin/main, and a failed one is never silent ← CAP-277
+The publish that carries a landing's bookkeeping onto `origin/main` sets the pre-push hook's
+journaled opt-out for its one push, with a reason naming the new sha, the paths and the story. It
+does so only when a caller passes that reason and the commit it built names no path outside the
+written set, all under the station's `planning-artifacts/`; any other diff is refused before the
+push. The ledger promotion, finalize's intake publish and the supervisor's blocked-twin publish all
+pass the story key. A failure is never silent: the promotion pairs its INTENT with an OUTCOME `ok:
+false`; finalize journals every finding it collected and, when the landed key does not read `done`
+on `origin/main` after its promotion, adds `MRS-DISP-051` (ERROR) and exits non-zero; `dispatch
+land` turns a non-zero finalize exit into `MRS-DISP-020`, REFUSED; and a failed blocked-twin publish
+is journaled. Story 68.1.
+
+### 31.4 The FR space: FR-224 registered
+
+The same day, `scripts/bmad-switch --current` crashed under the system interpreter (Python 3.12.3
+here): the script's shebang is `#!/usr/bin/env python3`, the Story 20.6 primitive it imports lives in
+`pyforge-marshal`, and the source-tree fallback reaches `scope.py`, whose Python 3.14-only
+`except A, B:` form is a `SyntaxError` there. Every document names the bare form. FR-224 decomposes
+into **Epic 69** (Story 69.1).
+
+#### FR-224: The switch script runs where it is documented to run ← CAP-278
+When the scope primitive will not load, `scripts/bmad-switch` re-executes itself once under the Guild
+environment (`pixi run --frozen -e pyforge-guild python <script> <argv>`, guarded against a loop)
+before any verb prints, and returns that run's exit code; with no `pixi`, or a second failure, it
+exits 8 with one line naming the interpreter, the requirement and the command. The switch and
+`--clear` are unchanged; `scope.py` stays the sole primitive. Story 69.1.
+
+### 31.5 The FR space: FR-225 registered
+
+`marshal seed check --json` exits 1 on this repository with HARD `artifact-missing` findings at the
+manifest's own unrendered placeholders (`docs/dreams/{{ slug }}.md` and four more) and at the literal
+glob `.claude/skills/**`, while all eight projects carry every rendered path. Only `seed init` renders
+`{{ slug }}`; Story 10.7 named the gap. FR-225 decomposes into **Epic 70** (Story 70.1).
+
+#### FR-225: Seed check judges the paths the manifest means ← CAP-279
+`seed check` renders `{{ slug }}` with the project it already resolves (`--project`, then
+`BMAD_ACTIVE_PROJECT`, then the target's marker) through the one renderer `seed init` uses; with no
+project, each templated entry is one INFO `slug-unresolved` finding, never a HARD finding at a
+literal placeholder. An `unclassified-deferred` entry is never reported missing. No state key is
+added, and no repository is exempted by name — this repository stays SC-02's oracle. *(Amended
+2026-09-28, operator ruling; § 31.10.)* A manifest entry may declare `required_in: loop-home`, and
+`.bmad-loop/policy.toml` does: absent from a target that is not a loop home, it is not reported
+missing; in a loop home, or where the target's branch cannot be read, it is judged as before. The
+scope is the entry's, never a repository's name. Story 70.1.
+
+### 31.6 The FR space: FR-226 registered (spec-pyforge-core)
+
+`pixi run -e pyforge-guild pyforge warden --help` answers "unknown station 'warden'" and lists five
+stations; atlas and mason answer the same. All three are on the one roster
+(`pyforge.core.roster.STATIONS`) and simply not installed in the Guild environment (warden on
+purpose). FR-226 registers `spec-pyforge-core` CAP-11, hosted on marshal as CAP-8..9 were (§ 21), and
+decomposes into **Epic 71** (Story 71.1).
+
+#### FR-226: The front door names the environment a roster station runs in ← spec-pyforge-core CAP-11
+A token on the roster but not installed is refused as not installed here, naming its environment
+(`-e pyforge-<station>`, the roster's long form) and the command to run it; a token on no roster
+keeps today's "unknown station" message byte-for-byte; the usage listing names the roster stations
+this environment lacks. Exit codes are unchanged, and `pyforge-core` reads no `pixi.toml`.
+Story 71.1.
+
+### 31.7 FR-211 amended (CAP-265 re-scoped)
+
+Operator ruling 2026-09-28: CAP-265's premise was a misread. Doctor 24.2's and 24.3's automatic
+promotions computed the promotion and died on the pre-push push timeout (FR-223, Story 68.1);
+`cli/land._promote_sprint_ledger` advances the landed key in the twin directly and only warns about
+feed drift. Feed drift blocked only the human fallback, `sprint-ledger-sync`, whose regression guard
+refuses a whole sync over keys the operator is not promoting. FR-211 is amended in place (§ 22) to
+that hand path; its number, Epic 54 and Story 54.1's ledger key are kept. No FR renumbered.
+
+### 31.8 The FR space: FR-227 registered
+
+The dispatch supervisor's merge facts read local `main` (`is_branch_merged(…, into="main")`, subjects
+from `refs/heads/main`) while the same gather diffs from `origin/main` and reads spec status there.
+Local `main` moves only when finalize can fast-forward the primary checkout; FR-222 (Story 67.1)
+works around that for the post-land verdict. FR-227 decomposes into **Epic 72** (Story 72.1).
+
+#### FR-227: The dispatch supervisor judges merge facts from origin/main ← CAP-280
+`gather_dispatch_git_facts` reads `branch_merged` and `story_merged_on_main` from
+`refs/remotes/origin/main` (the port's `is_branch_merged` gains a full-ref target; its branch-name form
+stays), and the supervisor fetches `origin main` after its own land before re-reading. The land
+trigger, the stuck-land retry and the exit decision all judge the remote-tracking ref; the landing
+journal still decides first (FR-222); an unreadable `origin/main` is a failed gather. *(Widened
+2026-09-28, operator ruling; § 31.10.)* `dispatch land`'s ALREADY_LANDED check reads its merge
+subjects from `origin/main` too, after a tolerated fetch; an unreadable `origin/main` there is still
+`MRS-DISP-016`. Every merge fact the dispatch path judges comes from the remote-tracking ref. Story 72.1.
+
+### 31.9 The FR space: FR-228 registered
+
+FR-221 (Story 66.1) carries a recommended follow-up review into an open `DW-FRR-<story>` row, and
+nothing runs it: a drain never dispatches a `done` key; the supervisor would judge a review run
+finished on its first tick, because the story's first landing already put its merge subject on
+`main`; and `dispatch land` would answer ALREADY_LANDED for the same reason. FR-228 decomposes into
+**Epic 73** (Stories 73.1, 73.2).
+
+#### FR-228: A drain runs the follow-up review a landed story recommended ← CAP-281
+A run on a `done` spec whose `followup_review_recommended` is true is a follow-up review run,
+journaled with the open row it answers; it is judged and landed by its own branch (merges after its
+own baseline, its own head on `origin/main`, a spec-only review counted), and finalize closes the row
+when it lands (Story 73.1). A drain queues open rows whose spec still qualifies after the
+station's implementable backlog, reports stale rows, and `drain --plan` lists both (Story 73.2). The
+row's state gates a follow-up; the ledger key stays `done` and is never re-queued. *(Amended
+2026-09-28, operator ruling; § 31.10.)* A drain campaign queues at most
+`dispatch.max_followup_reviews_per_campaign` follow-ups (Marshal default 2; 0 turns scheduling off),
+counted across its stations and cycles and resolved from the repository's policy layers, newest
+landings first; the rest wait for a later campaign, named in one INFO finding.
+
+### 31.10 FR-225, FR-227 and FR-228 amended (operator rulings, 2026-09-28)
+
+Three rulings the same evening amend not-yet-implemented FRs in place; every number, epic, story key
+and status is kept, and no FR is added.
+- **FR-225 (CAP-279, Story 70.1).** `.bmad-loop/policy.toml` is required in loop homes only, never on
+  a primary checkout: this repository is the seed's home, not a loop home, and every writer renders
+  the file into a loop home (`write_policy_toml(effective, <loop_home>)`). The manifest entry carries
+  the scope (`required_in: loop-home`), so `seed check` on this repository can pass honestly; a loop
+  home, or a target whose branch cannot be read, still owes the file.
+- **FR-227 (CAP-280, Story 72.1).** Widened to `dispatch land`'s ALREADY_LANDED read
+  (`dispatch_land.py:687`), which read its merge subjects from `refs/heads/main` while its landing
+  merges through the forge. Every merge fact the dispatch path judges now comes from `origin/main`.
+  The local-`main` reads outside the dispatch path (`marshal status`, the loop landing in
+  `cli/deploy.py`, `retire`, the loop supervisor) are not moved; that is recorded as an open question.
+- **FR-228 (CAP-281, Story 73.2).** The wave size the mint left open is capped: at most
+  `dispatch.max_followup_reviews_per_campaign` follow-ups per drain campaign, default 2, newest
+  landings first. Story 66.2's backfill opens 181 rows (measured 2026-09-28), so an uncapped campaign
+  would spend a session on each of them at once.
+
+### 31.11 Epic 74 hosts three Guild CAPs (no FR registered)
+
+`docs/governance/spec-feature-flag-governance/` (Guild-owned, `ready` 2026-09-28: every capability ships behind a flag,
+and a gate no station owns checks that it does) gives Marshal three of its seven CAPs in its *Who does the work* table:
+CAP-4, because the testing kit is Marshal's cross-station seam; CAP-3, because dispatch is Marshal's; and CAP-6, because
+`_bmad/custom/` is where Marshal already carries bmad-build-auto's facts (Story 46.7). They decompose into **Epic 74**:
+Story 74.1 (the kit's flag fixture), Story 74.2 (dispatch refuses a story the gate would red, before any session; minted
+`blocked` behind doctor Story 34.2, the gate) and Story 74.3 (the mandate in bmad-spec's, bmad-build's and bmad-tea's
+overrides).
+
+**No FR is registered.** A Guild Spec's CAPs are enumerated in the executing Smith's `epics.md` and in the Spec's own
+`.memlog.md`, never re-registered as station requirements — the relay doctor's Epics 24, 25 and 32 follow for
+`spec-coverage-gate-independence` and `spec-one-chain-per-station`, and doctor Epic 34 follows for CAP-1, CAP-2 and CAP-7
+of this Spec. An `FR-n ← CAP-m` line here would resolve in `fr-without-cap` only because marshal's own Spec happens to
+declare a CAP-3, a CAP-4 and a CAP-6. FR-226 is not a precedent against this: `spec-pyforge-core` is hosted in this
+project's own `specs/` tree, and the Guild Spec is not.
+
+**ONE FR space still FR-1..FR-228** (FR-229 = next free id; § 31.11 registers none).
+
+**Content changed:** § 31 added (FR-221, FR-222 and FR-223 registered; FR-224 through FR-228 later the same day; FR-211 amended in § 22, recorded in § 31.7). No AD amended — the follow-up row's
+selection and rendering are pure in `core/` and its publish reuses finalize's existing locked write
+onto `origin/main` (AD-4, AD-29, AD-42); the supervisor's verdict reads the process fact it
+journaled while the repository facts stay git's (AD-5, AD-33); the promotion's unpaired INTENT gets
+its OUTCOME (AD-6), the new refusal is a coded finding (AD-15), and whether the key reached `done` is
+read from `origin/main` (AD-29, AD-33); no new port, adapter or decision boundary. § 31.10 later
+(FR-225, FR-227, FR-228 amended in place): AD-55 is amended in place, additively (a manifest entry's
+optional `required_in`); FR-227's widening lands on AD-29 and AD-33 as written; FR-228's cap is one
+more field of the composed `dispatch` block (AD-16's layers unchanged). § 31.11 later (Epic 74, `spec-feature-flag-governance` CAP-3, CAP-4, CAP-6; no FR): the dispatch refusal lands on AD-4, AD-5, AD-8 and AD-15 as written — a pure decision in `core/` over the verdict a repo-root gate prints, the gate run as a process through the edge `dispatch_verify` already uses; the kit and the `_bmad/custom/` overrides sit outside the hexagon. No AD amended.

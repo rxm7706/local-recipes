@@ -11,8 +11,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from pyforge.core.process import ProcessError, ProcessResult
+
 from pyforge.marshal.adapters import scribe_cli
 from pyforge.marshal.adapters.scribe_cli import ScribeCli, ScribeRefreshOutcome
 
@@ -66,9 +66,7 @@ class TestBinaryResolution:
 
 class TestRefreshSuccess:
     def test_reports_the_grammars_own_two_name_lists(self, tmp_path):
-        process = _FakeProcess(
-            _ok("refreshed: a; skipped (unchanged): b -> /x/index.json\n")
-        )
+        process = _FakeProcess(_ok("refreshed: a; skipped (unchanged): b -> /x/index.json\n"))
         outcome = ScribeCli(process).refresh(
             repo_root=tmp_path,
             manifest_path=tmp_path / "m.json",
@@ -129,37 +127,25 @@ class TestRefreshDegradesNeverRaises:
         assert "compile-on-hunch" in str(outcome.reason)
         assert process.calls == []
 
-    def test_nonzero_exit_names_the_declaration_grammar_as_the_likely_gap(
-        self, tmp_path, manifest
-    ):
+    def test_nonzero_exit_names_the_declaration_grammar_as_the_likely_gap(self, tmp_path, manifest):
         """A shipped scribe whose ``index refresh`` does not accept
         caller-declared artifacts exits non-zero -- the operator must be
         told that, not left with a silent no-op."""
-        process = _FakeProcess(
-            ProcessResult(
-                returncode=2, stdout="", stderr="Error: No such option: --declare\n"
-            )
-        )
-        outcome = ScribeCli(process).refresh(
-            repo_root=tmp_path, manifest_path=manifest, binary_path="/usr/bin/scribe"
-        )
+        process = _FakeProcess(ProcessResult(returncode=2, stdout="", stderr="Error: No such option: --declare\n"))
+        outcome = ScribeCli(process).refresh(repo_root=tmp_path, manifest_path=manifest, binary_path="/usr/bin/scribe")
         assert outcome.ok is False
         assert "No such option: --declare" in str(outcome.reason)
         assert "caller-declared artifacts" in str(outcome.reason)
 
     def test_launch_failure(self, tmp_path, manifest):
         process = _FakeProcess(error=ProcessError("boom"))
-        outcome = ScribeCli(process).refresh(
-            repo_root=tmp_path, manifest_path=manifest, binary_path="/usr/bin/scribe"
-        )
+        outcome = ScribeCli(process).refresh(repo_root=tmp_path, manifest_path=manifest, binary_path="/usr/bin/scribe")
         assert outcome.ok is False
         assert "could not run" in str(outcome.reason)
 
     def test_clean_exit_with_no_report_line(self, tmp_path, manifest):
         process = _FakeProcess(_ok("all good\n"))
-        outcome = ScribeCli(process).refresh(
-            repo_root=tmp_path, manifest_path=manifest, binary_path="/usr/bin/scribe"
-        )
+        outcome = ScribeCli(process).refresh(repo_root=tmp_path, manifest_path=manifest, binary_path="/usr/bin/scribe")
         assert outcome.ok is False
         assert "printed no" in str(outcome.reason)
 
@@ -177,7 +163,51 @@ class TestRefreshDegradesNeverRaises:
             assert outcome.ok is False
             assert outcome.reason
 
+
 # The Block-If itself ("no `import cocoindex` anywhere in `pyforge.marshal`",
 # and the pyforge-scribe SKILL.md's "the CLI is the public contract") is a
 # PACKAGE-WIDE property, not this module's -- it is an AST guard over every
 # module, in `tests/meta/test_no_engine_or_scribe_internals_import.py`.
+
+
+class TestRebuild:
+    """Story 46.1 (spec-pyforge-marshal CAP-192) -- ``rebuild`` runs one
+    substrate member's scribe rebuild and, like every seam here, degrades to
+    a reason instead of raising."""
+
+    def test_runs_the_tail_from_the_repo_root(self, tmp_path):
+        process = _FakeProcess(_ok("compiled\n"))
+        outcome = ScribeCli(process).rebuild(
+            repo_root=tmp_path, argv_tail=("graph", "compile", "--nightly"), binary_path="/usr/bin/scribe"
+        )
+        assert outcome.ok is True
+        assert outcome.reason is None
+        assert outcome.argv == ("/usr/bin/scribe", "graph", "compile", "--nightly")
+        argv, cwd, timeout = process.calls[0]
+        assert argv == outcome.argv
+        assert cwd == tmp_path
+        assert timeout == scribe_cli._REBUILD_TIMEOUT_S
+
+    def test_unresolved_binary_names_where_it_looked(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(scribe_cli.shutil, "which", lambda _name: None)
+        process = _FakeProcess(_ok(""))
+        outcome = ScribeCli(process).rebuild(repo_root=tmp_path, argv_tail=("index", "refresh"))
+        assert outcome.ok is False
+        assert "did not resolve" in str(outcome.reason)
+        assert process.calls == []
+
+    def test_launch_failure_is_a_reason(self, tmp_path):
+        process = _FakeProcess(error=ProcessError("timed out after 1800s"))
+        outcome = ScribeCli(process).rebuild(
+            repo_root=tmp_path, argv_tail=("index", "refresh"), binary_path="/usr/bin/scribe"
+        )
+        assert outcome.ok is False
+        assert "could not run (timed out after 1800s)" in str(outcome.reason)
+
+    def test_non_zero_exit_carries_the_last_output_line(self, tmp_path):
+        process = _FakeProcess(ProcessResult(returncode=2, stdout="", stderr="progress\nError: graphifyy missing\n"))
+        outcome = ScribeCli(process).rebuild(
+            repo_root=tmp_path, argv_tail=("index", "refresh"), binary_path="/usr/bin/scribe"
+        )
+        assert outcome.ok is False
+        assert "exited 2 (Error: graphifyy missing)" in str(outcome.reason)

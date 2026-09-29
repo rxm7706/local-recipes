@@ -15,25 +15,39 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from pyforge.herald import state
-from pyforge.herald.deck_pipeline import DeckStatus, _is_stale_mirror, status
+
+from pyforge.herald import registry, state
+from pyforge.herald.deck_pipeline import (
+    AccountProjectStatus,
+    DeckStatus,
+    _is_stale_mirror,
+    account_status,
+    status,
+)
 from pyforge.herald.errors import HeraldError, TransportCallError
-from pyforge.herald.transport.base import FileRead, ListedFile
+from pyforge.herald.transport.base import FileRead, ListedFile, ProjectSummary
 
 
 class FakeStatusTransport:
     """A hand-written ``DesignTransport`` double exercising only
-    ``read_file``/``list_files`` -- every other method raises, since
-    ``status`` must never call a write-side transport method (FR-13)."""
+    ``read_file``/``list_files``/``list_projects`` -- every other method
+    raises, since ``status``/``account_status`` must never call a
+    write-side transport method (FR-13)."""
 
     def __init__(
-        self, *, read_answers=None, list_files_answer=None, list_files_fails=None
+        self,
+        *,
+        read_answers=None,
+        list_files_answer=None,
+        list_files_fails=None,
+        list_projects_answer=None,
     ):
         self.calls: list[tuple[str, dict]] = []
         # path -> FileRead | Exception | list of either, consumed per call.
         self._read_answers: dict = dict(read_answers or {})
         self._list_files_answer = list(list_files_answer or [])
         self._list_files_fails = list_files_fails
+        self._list_projects_answer = list_projects_answer
 
     def read_file(self, **kwargs) -> FileRead:
         self.calls.append(("read_file", kwargs))
@@ -45,9 +59,7 @@ class FakeStatusTransport:
         if isinstance(answer, Exception):
             raise answer
         if answer is None:
-            raise AssertionError(
-                f"FakeStatusTransport has no canned answer for {path!r}"
-            )
+            raise AssertionError(f"FakeStatusTransport has no canned answer for {path!r}")
         return answer
 
     def list_files(self, **kwargs) -> list[ListedFile]:
@@ -77,6 +89,12 @@ class FakeStatusTransport:
     def render_preview(self, **kwargs):
         raise NotImplementedError("status never calls render_preview")
 
+    def list_projects(self):
+        self.calls.append(("list_projects", {}))
+        if self._list_projects_answer is None:
+            raise NotImplementedError("status never calls list_projects")
+        return self._list_projects_answer
+
     def names(self) -> list[str]:
         return [name for name, _kwargs in self.calls]
 
@@ -88,15 +106,11 @@ def _make_deck_dir(tmp_path: Path, slug: str) -> Path:
     return deck_dir
 
 
-def _seed_state(
-    tmp_path: Path, slug: str, *, project_id="p-1", etags=None, last_pull=None
-) -> None:
+def _seed_state(tmp_path: Path, slug: str, *, project_id="p-1", etags=None, last_pull=None) -> None:
     state.write(
         tmp_path / state.DEFAULT_STATE_PATH,
         slug,
-        state.DeckState(
-            project_id=project_id, etags=dict(etags or {}), last_pull=last_pull
-        ),
+        state.DeckState(project_id=project_id, etags=dict(etags or {}), last_pull=last_pull),
     )
 
 
@@ -113,11 +127,7 @@ def test_status_no_slug_reports_every_known_deck_linked_and_unlinked(tmp_path: P
         last_pull="2026-08-01T00:00:00+00:00",
     )
     transport = FakeStatusTransport(
-        read_answers={
-            "PyForge Warden.dc.html": FileRead(
-                path="x", etag="E1", body=None, unchanged=True
-            )
-        }
+        read_answers={"PyForge Warden.dc.html": FileRead(path="x", etag="E1", body=None, unchanged=True)}
     )
 
     results = status(transport, repo_root=tmp_path)
@@ -147,11 +157,7 @@ def test_status_with_a_slug_reports_only_that_deck(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
     _seed_state(tmp_path, "pyforge-warden", etags={"prototype": "E1"})
     transport = FakeStatusTransport(
-        read_answers={
-            "PyForge Warden.dc.html": FileRead(
-                path="x", etag="E1", body=None, unchanged=True
-            )
-        }
+        read_answers={"PyForge Warden.dc.html": FileRead(path="x", etag="E1", body=None, unchanged=True)}
     )
 
     results = status(transport, slug="pyforge-warden", repo_root=tmp_path)
@@ -180,11 +186,7 @@ def test_status_an_unknown_slug_returns_a_single_unlinked_result_no_error(
 def test_status_classifies_changed_when_an_etag_no_longer_matches(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden", etags={"prototype": "E1"})
     transport = FakeStatusTransport(
-        read_answers={
-            "PyForge Warden.dc.html": FileRead(
-                path="x", etag="E2", body="<html/>", unchanged=False
-            )
-        }
+        read_answers={"PyForge Warden.dc.html": FileRead(path="x", etag="E2", body="<html/>", unchanged=False)}
     )
     [result] = status(transport, slug="pyforge-warden", repo_root=tmp_path)
     assert result.sync == "changed"
@@ -212,9 +214,7 @@ def test_status_conflict_takes_precedence_over_changed(tmp_path: Path):
     )
     transport = FakeStatusTransport(
         read_answers={
-            "PyForge Warden.dc.html": FileRead(
-                path="x", etag="E2", body="<html/>", unchanged=False
-            ),
+            "PyForge Warden.dc.html": FileRead(path="x", etag="E2", body="<html/>", unchanged=False),
             "warden-deck.md": TransportCallError("read file: file not found"),
         }
     )
@@ -227,9 +227,7 @@ def test_status_reports_conflict_when_the_tracked_file_is_gone_server_side(
 ):
     _seed_state(tmp_path, "pyforge-warden", etags={"prototype": "E1"})
     transport = FakeStatusTransport(
-        read_answers={
-            "PyForge Warden.dc.html": TransportCallError("read file: file not found")
-        }
+        read_answers={"PyForge Warden.dc.html": TransportCallError("read file: file not found")}
     )
     [result] = status(transport, slug="pyforge-warden", repo_root=tmp_path)
     assert result.sync == "conflict"
@@ -253,11 +251,7 @@ def test_status_multi_deck_isolates_one_slugs_malformed_entry(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-good", etags={"prototype": "E1"})
     _seed_state(tmp_path, "pyforge-bad", etags={"bogus-key": "E1"})
     transport = FakeStatusTransport(
-        read_answers={
-            "PyForge Good.dc.html": FileRead(
-                path="x", etag="E1", body="<html/>", unchanged=True
-            )
-        }
+        read_answers={"PyForge Good.dc.html": FileRead(path="x", etag="E1", body="<html/>", unchanged=True)}
     )
 
     results = {r.slug: r for r in status(transport, repo_root=tmp_path)}
@@ -277,11 +271,7 @@ def test_status_list_files_failure_is_reported_as_conflict_not_a_crash(
     transport failure in this function."""
     _seed_state(tmp_path, "pyforge-warden", etags={"prototype": "E1"})
     transport = FakeStatusTransport(
-        read_answers={
-            "PyForge Warden.dc.html": FileRead(
-                path="x", etag="E1", body="<html/>", unchanged=True
-            )
-        },
+        read_answers={"PyForge Warden.dc.html": FileRead(path="x", etag="E1", body="<html/>", unchanged=True)},
         list_files_fails=TransportCallError("list_files: network blip"),
     )
 
@@ -304,19 +294,13 @@ def test_status_uses_the_short_name_marp_path_and_persona_standalone_path(
     )
     transport = FakeStatusTransport(
         read_answers={
-            "warden-executive-summary.md": FileRead(
-                path="x", etag="M1", body=None, unchanged=True
-            ),
-            "Warden Infographic standalone.html": FileRead(
-                path="x", etag="S1", body=None, unchanged=True
-            ),
+            "warden-executive-summary.md": FileRead(path="x", etag="M1", body=None, unchanged=True),
+            "Warden Infographic standalone.html": FileRead(path="x", etag="S1", body=None, unchanged=True),
         }
     )
     [result] = status(transport, slug="pyforge-warden", repo_root=tmp_path)
     assert result.sync == "unchanged"
-    read_paths = {
-        kwargs["path"] for name, kwargs in transport.calls if name == "read_file"
-    }
+    read_paths = {kwargs["path"] for name, kwargs in transport.calls if name == "read_file"}
     assert read_paths == {
         "warden-executive-summary.md",
         "Warden Infographic standalone.html",
@@ -337,11 +321,7 @@ def test_status_never_writes_a_file_on_either_surface(tmp_path: Path):
     state_path = tmp_path / state.DEFAULT_STATE_PATH
     before = state_path.read_bytes()
     transport = FakeStatusTransport(
-        read_answers={
-            "PyForge Warden.dc.html": FileRead(
-                path="x", etag="E1", body=None, unchanged=True
-            )
-        }
+        read_answers={"PyForge Warden.dc.html": FileRead(path="x", etag="E1", body=None, unchanged=True)}
     )
 
     status(transport, repo_root=tmp_path)
@@ -394,10 +374,7 @@ def _hand_mirrored_repo_files() -> list[ListedFile]:
     files = [ListedFile(path=p, etag=f"E{i}") for i, p in enumerate(nested + flat)]
     # Pad out well past the file-count threshold with more nested paths --
     # a real hand-mirrored copy of an app tree runs to hundreds of files.
-    files += [
-        ListedFile(path=f"src/pyforge/atlas/extra_{i}.py", etag=f"X{i}")
-        for i in range(10)
-    ]
+    files += [ListedFile(path=f"src/pyforge/atlas/extra_{i}.py", etag=f"X{i}") for i in range(10)]
     return files
 
 
@@ -413,9 +390,7 @@ def test_is_stale_mirror_requires_both_file_count_and_nesting():
     """File count alone (many flat files) must not flag -- a future story
     giving a deck many more tracked Marp sources is still a normal bridge
     project, not a hand mirror."""
-    many_flat = [
-        ListedFile(path=f"warden-note-{i}.md", etag=f"E{i}") for i in range(20)
-    ]
+    many_flat = [ListedFile(path=f"warden-note-{i}.md", etag=f"E{i}") for i in range(20)]
     assert _is_stale_mirror(many_flat) is False
 
     few_nested = [
@@ -447,3 +422,259 @@ def test_status_never_flags_stale_mirror_for_an_unlinked_deck(tmp_path: Path):
     assert result.linked is False
     assert result.stale_mirror is False
     assert transport.calls == []
+
+
+# --- Story 23.1: account_status (CAP-1) --------------------------------------
+
+
+def _register_local_twin(tmp_path: Path, slug: str, project_id: str) -> None:
+    deck_dir = _make_deck_dir(tmp_path, slug)
+    registry.register(
+        deck_dir / "README.md",
+        f"PyForge {slug.title()} deck",
+        project_id,
+        f"https://claude.ai/design/p/{project_id}",
+    )
+
+
+def _write_exclusions(tmp_path: Path, rows: dict[str, str]) -> None:
+    presentations_dir = tmp_path / "presentations"
+    presentations_dir.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# presentations/",
+        "",
+        "## Excluded projects (never twinned)",
+        "",
+        "| Project | Reason |",
+        "|---|---|",
+        *[f"| {name} | {reason} |" for name, reason in rows.items()],
+        "",
+    ]
+    (presentations_dir / "README.md").write_text("\n".join(lines), encoding="utf-8")
+
+
+def test_account_status_classifies_a_linked_presentation(tmp_path: Path):
+    _register_local_twin(tmp_path, "pyforge-warden", "p-1")
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-1",
+                name="PyForge Warden deck",
+                url="https://claude.ai/design/p/p-1",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result == AccountProjectStatus(
+        project_id="p-1",
+        name="PyForge Warden deck",
+        url="https://claude.ai/design/p/p-1",
+        status="linked",
+        slug="pyforge-warden",
+        reason=None,
+    )
+
+
+def test_account_status_classifies_an_untwinned_presentation(tmp_path: Path):
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-9",
+                name="PyForge six-quarter roadmap",
+                url="https://claude.ai/design/p/p-9",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "untwinned"
+    assert result.slug is None
+    assert result.reason is None
+
+
+def test_account_status_classifies_a_known_design_system_as_mirrored(
+    tmp_path: Path,
+):
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-modernist",
+                name="Modernist",
+                url="https://claude.ai/design/p/p-modernist",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "mirrored"
+    assert result.slug is None
+
+
+def test_account_status_classifies_an_excluded_project_with_its_reason(
+    tmp_path: Path,
+):
+    _write_exclusions(
+        tmp_path,
+        {"REMOVED-PyForge Unifying Strategy": "ad-hoc duplicate, retired"},
+    )
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-removed",
+                name="REMOVED-PyForge Unifying Strategy",
+                url="https://claude.ai/design/p/p-removed",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "excluded"
+    assert result.reason == "ad-hoc duplicate, retired"
+    assert result.slug is None
+
+
+def test_account_status_exclusion_is_exact_name_never_a_heuristic(tmp_path: Path):
+    """A name merely resembling an excluded one (a heuristic match) must
+    not be excluded -- only an exact match against the recorded table
+    counts (the story's own Never boundary)."""
+    _write_exclusions(
+        tmp_path,
+        {"REMOVED-PyForge Unifying Strategy": "ad-hoc duplicate, retired"},
+    )
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-similar",
+                name="REMOVED-PyForge Unifying Strategy Deck",
+                url="https://claude.ai/design/p/p-similar",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "untwinned"
+
+
+def test_account_status_reports_no_project_absent(tmp_path: Path):
+    """CAP-1's own success signal: every project the account returns
+    appears in the report, whatever its classification."""
+    _register_local_twin(tmp_path, "pyforge-warden", "p-1")
+    _write_exclusions(tmp_path, {"Local recipes repository connection": "stale hand-mirrored copy"})
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-1",
+                name="PyForge Warden deck",
+                url="https://claude.ai/design/p/p-1",
+            ),
+            ProjectSummary(
+                project_id="p-2",
+                name="Modernist",
+                url="https://claude.ai/design/p/p-2",
+            ),
+            ProjectSummary(
+                project_id="p-3",
+                name="Local recipes repository connection",
+                url="https://claude.ai/design/p/p-3",
+            ),
+            ProjectSummary(
+                project_id="p-4",
+                name="LLM Knowledge Bases",
+                url="https://claude.ai/design/p/p-4",
+            ),
+        ]
+    )
+
+    results = account_status(transport, repo_root=tmp_path)
+
+    assert [r.status for r in results] == [
+        "linked",
+        "mirrored",
+        "excluded",
+        "untwinned",
+    ]
+    assert {r.project_id for r in results} == {"p-1", "p-2", "p-3", "p-4"}
+
+
+def test_account_status_is_read_only(tmp_path: Path):
+    """Never calls a write-side transport method and never touches
+    ``state.py`` (mirrors CAP-3's identical FR-13/NFR-08 guarantee)."""
+    _register_local_twin(tmp_path, "pyforge-warden", "p-1")
+    transport = FakeStatusTransport(list_projects_answer=[])
+
+    account_status(transport, repo_root=tmp_path)
+
+    assert transport.names() == ["list_projects"]
+    assert not (tmp_path / ".herald").exists()
+
+
+def test_account_status_on_no_local_presentations_dir_reports_untwinned(
+    tmp_path: Path,
+):
+    transport = FakeStatusTransport(
+        list_projects_answer=[ProjectSummary(project_id="p-1", name="Some Deck", url="https://claude.ai/design/p/p-1")]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "untwinned"
+
+
+def _register_malformed_twin(tmp_path: Path, slug: str) -> Path:
+    """A local deck whose README's own § *Design project* section has the
+    wrong body-line count (one line, not the canonical two) -- the shape
+    ``registry.read`` raises ``errors.HeraldError`` on."""
+    deck_dir = _make_deck_dir(tmp_path, slug)
+    (deck_dir / "README.md").write_text(
+        f"# {slug}\n\n## Design project (the bridge's far end)\nonly one line, not the canonical two\n",
+        encoding="utf-8",
+    )
+    return deck_dir
+
+
+def test_account_status_isolates_one_slugs_malformed_registry_section(
+    tmp_path: Path,
+):
+    """Regression: a single malformed local README (``registry.read``
+    raises) must not crash the whole ``--account`` report -- mirrors
+    ``status()``'s own proven guarantee
+    (``test_status_multi_deck_isolates_one_slugs_malformed_entry``)."""
+    _register_local_twin(tmp_path, "pyforge-warden", "p-1")
+    _register_malformed_twin(tmp_path, "pyforge-bad")
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-1",
+                name="PyForge Warden deck",
+                url="https://claude.ai/design/p/p-1",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "linked"
+    assert result.slug == "pyforge-warden"
+
+
+def test_account_status_raises_on_duplicate_registered_project_id(tmp_path: Path):
+    """Two local decks registered against the same Design project id must
+    not silently let the later-sorted slug win -- that would misattribute
+    ``AccountProjectStatus.slug`` with no error."""
+    _register_local_twin(tmp_path, "pyforge-aaa", "p-dup")
+    _register_local_twin(tmp_path, "pyforge-bbb", "p-dup")
+    transport = FakeStatusTransport(list_projects_answer=[])
+
+    with pytest.raises(HeraldError) as exc_info:
+        account_status(transport, repo_root=tmp_path)
+
+    message = str(exc_info.value)
+    assert "pyforge-aaa" in message
+    assert "pyforge-bbb" in message
+    assert "p-dup" in message

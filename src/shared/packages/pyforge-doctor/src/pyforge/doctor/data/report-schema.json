@@ -87,7 +87,14 @@
             "capability-effect",
             "status-body-consistency",
             "pixi-currency-ledger",
-            "general-docs-consistency"
+            "general-docs-consistency",
+            "capability-ledger",
+            "chain-sprawl",
+            "fr-without-cap",
+            "docs-map-hygiene",
+            "docs-shelf-occupancy",
+            "live-proof-surface",
+            "docs-currency"
           ]
         },
         "check": { "type": "string" },

@@ -260,9 +260,7 @@ _ON_SHIP_FIELDS = frozenset(
         "unblock_narrative",
     )
 )
-_ON_PR_CLOSE_FIELDS = frozenset(
-    ("merged", "gates_passed", "project_name", "shipped_date", "event_id", "evidence")
-)
+_ON_PR_CLOSE_FIELDS = frozenset(("merged", "gates_passed", "project_name", "shipped_date", "event_id", "evidence"))
 """The complete field set each route accepts. Anything else is a 400 --
 see ``_problem_unknown_fields``."""
 
@@ -383,9 +381,7 @@ def verify_signature(
     now_seconds = int(datetime.now(UTC).timestamp())
     if abs(now_seconds - timestamp_seconds) > MAX_TIMESTAMP_SKEW_SECONDS:
         return False
-    expected = hmac.new(
-        secret, timestamp_header.encode("ascii") + b"." + body, hashlib.sha256
-    ).hexdigest()
+    expected = hmac.new(secret, timestamp_header.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, provided.lower())
 
 
@@ -406,8 +402,7 @@ def resolve_webhook_secret(env: Mapping[str, str] | None = None) -> bytes:
     value = source.get(SECRET_ENV_VAR)
     if not value:
         raise errors.HeraldError(
-            f"{SECRET_ENV_VAR} is not set -- the webhook cannot verify HMAC "
-            f"signatures without a shared secret"
+            f"{SECRET_ENV_VAR} is not set -- the webhook cannot verify HMAC signatures without a shared secret"
         )
     return value.encode("utf-8")
 
@@ -825,10 +820,7 @@ def _problem_on_pr_close_shipped(repo_root: Path, payload: Mapping[str, Any]) ->
                 if _problem_text(f"evidence {key}", entry[key]) is not None:
                     return f"each 'evidence' entry's {key} must be valid UTF-8"
             if entry["type"] not in claims.EVIDENCE_TYPES:
-                return (
-                    f"each 'evidence' entry's type must be one of "
-                    f"{claims.EVIDENCE_TYPES}; got {entry['type']!r}"
-                )
+                return f"each 'evidence' entry's type must be one of {claims.EVIDENCE_TYPES}; got {entry['type']!r}"
             if entry["type"] == "notice":
                 # A `notice` entry's `url` holds a Notice COMPONENT NAME,
                 # not an HTTP URL, and both `claims.publish` and
@@ -920,10 +912,7 @@ def _claim_id_for(payload: Mapping[str, Any], shipped_date: str) -> str:
         key = [
             "evidence",
             shipped_date,
-            [
-                [entry["type"], entry["url"], entry["label"]]
-                for entry in payload.get("evidence", [])
-            ],
+            [[entry["type"], entry["url"], entry["label"]] for entry in payload.get("evidence", [])],
         ]
     name = json.dumps(
         ["herald-claim", payload["project_name"].strip(), key],
@@ -984,8 +973,7 @@ def handle_on_pr_close(
     # and `"Marshal\n"` are two projects to every reader downstream.
     project_name = payload["project_name"].strip()
     evidence = tuple(
-        claims.Evidence(type=e["type"], url=e["url"], label=e["label"])
-        for e in payload.get("evidence", [])
+        claims.Evidence(type=e["type"], url=e["url"], label=e["label"]) for e in payload.get("evidence", [])
     )
 
     def attempt() -> claims.Claim:
@@ -1010,9 +998,7 @@ def handle_on_pr_close(
     except errors.HeraldError as exc:
         _log_retry_exhausted("on-pr-close", payload, exc)
         return WebhookResponse(500, {"error": "storage failure"})
-    return WebhookResponse(
-        201, {"claim_id": claim.id, "project_name": claim.project_name}
-    )
+    return WebhookResponse(201, {"claim_id": claim.id, "project_name": claim.project_name})
 
 
 # --- the ASGI3 boundary (AD-8: "protocol, not framework") --------------------
@@ -1076,14 +1062,10 @@ async def _read_body(receive: Receive) -> bytes:
     while more_body:
         message = await receive()
         if message.get("type") == "http.disconnect":
-            raise _ClientDisconnected(
-                "client disconnected before the body was complete"
-            )
+            raise _ClientDisconnected("client disconnected before the body was complete")
         messages += 1
         if messages > MAX_BODY_MESSAGES:
-            raise _BodyTooLarge(
-                f"request body arrived in more than {MAX_BODY_MESSAGES} chunks"
-            )
+            raise _BodyTooLarge(f"request body arrived in more than {MAX_BODY_MESSAGES} chunks")
         chunk = message.get("body", b"")
         size += len(chunk)
         if size > MAX_BODY_BYTES:
@@ -1293,14 +1275,10 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
                 handler = handle_on_pr_close
                 event_name = "on-pr-close"
             else:
-                await _send_json(
-                    tracking_send, 404, {"error": f"no such webhook route: {path!r}"}
-                )
+                await _send_json(tracking_send, 404, {"error": f"no such webhook route: {path!r}"})
                 return
             if scope.get("method") != "POST":
-                await _send_json(
-                    tracking_send, 405, {"error": "method not allowed; use POST"}
-                )
+                await _send_json(tracking_send, 405, {"error": "method not allowed; use POST"})
                 return
 
             body = await _read_body(receive)
@@ -1324,7 +1302,7 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
                 # which this module's own contract then invites CI to
                 # re-fire forever, one alert record each time.
                 payload = json.loads(body, object_pairs_hook=_reject_duplicate_keys)
-            except (ValueError, RecursionError):
+            except ValueError, RecursionError:
                 await fail(400, {"error": "malformed JSON payload"})
                 return
 

@@ -29,16 +29,13 @@ from pyforge.steward.deploy_profiles import (
     PLUGIN_TACHYON,
     TachyonDeployPlugin,
     default_deploy_profile_registry,
-    register_default_deploy_profile_plugins,
     run_golden_path,
     select_deploy_profile_plugin,
 )
 
 _PKG_ROOT = Path(__file__).resolve().parents[2]
 _PYPROJECT = _PKG_ROOT / "pyproject.toml"
-_PROFILES_SRC = (
-    _PKG_ROOT / "src" / "pyforge" / "steward" / "deploy_profiles.py"
-)
+_PROFILES_SRC = _PKG_ROOT / "src" / "pyforge" / "steward" / "deploy_profiles.py"
 
 
 def _repo_root() -> Path:
@@ -62,9 +59,7 @@ def _registry_with_defaults() -> PluginRegistry:
 def test_default_plugins_register_the_six_vendor_ids():
     registry = _registry_with_defaults()
     ids = [
-        getattr(plugin, "plugin_id")
-        for plugin in registry.plugins
-        if plugin.hook_spec == DEPLOY_PROFILE_HOOK_SPEC_NAME
+        getattr(plugin, "plugin_id") for plugin in registry.plugins if plugin.hook_spec == DEPLOY_PROFILE_HOOK_SPEC_NAME
     ]
     assert tuple(ids) == DEFAULT_DEPLOY_PROFILE_IDS
     assert all(plugin.owner == DEPLOY_PROFILE_OWNER for plugin in registry.plugins)
@@ -110,9 +105,7 @@ def test_alternate_plugin_registers_on_same_spec_without_fork():
     ctx: dict[str, Any] = {"ran": []}
     plugin.call("around", ctx)
     assert ctx["ran"] == ["alt-cd"]
-    assert select_deploy_profile_plugin("harness", registry=registry).plugin_id == (
-        "harness"
-    )
+    assert select_deploy_profile_plugin("harness", registry=registry).plugin_id == ("harness")
 
 
 def test_unknown_hook_point_raises_plugin_error():
@@ -165,10 +158,7 @@ def test_publish_verdict_on_warden_pr_gate_raises_second_verdict_error():
 
 def test_owner_matched_publish_on_steward_spec_is_allowed():
     plugin = select_deploy_profile_plugin("jira")
-    assert (
-        publish_verdict(DEPLOY_PROFILE_HOOK_SPEC, plugin, {"ran": True})
-        == {"ran": True}
-    )
+    assert publish_verdict(DEPLOY_PROFILE_HOOK_SPEC, plugin, {"ran": True}) == {"ran": True}
 
 
 def test_deploy_profiles_module_never_calls_publish_verdict():
@@ -188,21 +178,15 @@ def _golden_path_task_table() -> dict[str, Any]:
     data = tomllib.loads(_PIXI.read_text(encoding="utf-8"))
     feature = data["feature"]["pyforge-steward"]
     tasks = feature["tasks"]
-    assert GOLDEN_PATH_PIXI_TASK in tasks, (
-        f"Golden Path Pixi task {GOLDEN_PATH_PIXI_TASK!r} missing"
-    )
+    assert GOLDEN_PATH_PIXI_TASK in tasks, f"Golden Path Pixi task {GOLDEN_PATH_PIXI_TASK!r} missing"
     return tasks[GOLDEN_PATH_PIXI_TASK]
 
 
 def test_golden_path_pixi_task_does_not_require_optional_vendors():
     task = _golden_path_task_table()
-    blob = " ".join(
-        str(task.get(key, "")) for key in ("cmd", "description", "depends-on")
-    ).lower()
+    blob = " ".join(str(task.get(key, "")) for key in ("cmd", "description", "depends-on")).lower()
     for token in OPTIONAL_VENDOR_TOKENS:
-        assert token not in blob, (
-            f"Golden Path Pixi task must not require optional vendor {token!r}"
-        )
+        assert token not in blob, f"Golden Path Pixi task must not require optional vendor {token!r}"
     cmd = str(task.get("cmd", ""))
     assert "pytest" in cmd
     assert "tachyon" not in cmd.lower()

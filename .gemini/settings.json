@@ -1,0 +1,9 @@
+{
+  "$comment": "Gemini CLI / Antigravity project settings (spec-pyforge-scribe CAP-27, Story 19.1). context.fileName makes Gemini load AGENTS.md -- the one cross-tool contract -- before GEMINI.md, at every level of the hierarchy. Without it Gemini never reads AGENTS.md.",
+  "context": {
+    "fileName": [
+      "AGENTS.md",
+      "GEMINI.md"
+    ]
+  }
+}

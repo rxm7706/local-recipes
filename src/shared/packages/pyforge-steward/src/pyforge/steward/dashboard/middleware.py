@@ -112,9 +112,7 @@ def _header_values(scope: Scope, header_name: str) -> list[str]:
     """
     target = header_name.lower().encode("latin-1")
     return [
-        raw_value.decode("latin-1")
-        for raw_name, raw_value in scope.get("headers") or ()
-        if raw_name.lower() == target
+        raw_value.decode("latin-1") for raw_name, raw_value in scope.get("headers") or () if raw_name.lower() == target
     ]
 
 

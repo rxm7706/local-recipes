@@ -2,9 +2,12 @@
 title: A custom-branded Python distributable, if this repo ever needs one
 type: dream
 owner: mason
-status: specified   # 2026-08-22 — reframed as an EXTENSION-POINT (operator): the fleet ships the socket/contract; the capability develops separately (incl. air-gapped) — see the spec's Extension contract section
+status: archived
+archived-reason: folded-into-station-dream
+sibling-acknowledged: 7b55342fd8cdec52c87c7ce086b99ed4456e705930f6740f13aec4d8122d460b
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `miniforge-installer`).
 # A custom-branded Python distributable, if this repo ever needs one
 
 ## The Dream

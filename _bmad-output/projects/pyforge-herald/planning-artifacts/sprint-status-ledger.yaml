@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 106
+# stories: 184
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -20,17 +20,17 @@ development_status:
   1-4-bridge-core-skeleton-state-errors-determinism-boundary: done
   1-5-registry-module-readme-design-project: done
   1-6-herald-deck-seed-slug: done
-  10-1-notice-data-model-and-archive-storage: done
+  10-1-notice-data-model-archive-storage: done
   10-2-notice-authoring-workflow-cli: done
-  10-3-notice-archive-and-redirects: done
+  10-3-notice-archive-redirects: done
   10-4-notice-cli: done
   10-5-operations-web-tab: done
   10-6-notice-lifecycle: done
-  11-1-integration-testing-cli-web-and-automation: done
+  11-1-integration-testing-cli-web-automation: done
   11-2-automation-reliability: done
   11-3-evidence-linking-cross-moment: done
   11-4-performance-testing: done
-  12-1-cli-runbooks-and-troubleshooting: done
+  12-1-cli-runbooks-troubleshooting: done
   12-2-web-surface-ux-guide: done
   12-3-operator-runbook: done
   12-4-automation-troubleshooting-guide: done
@@ -46,9 +46,9 @@ development_status:
   15-1-template-parse-then-fill-produces-a-genuinely-editable-deck: done
   15-2-dense-content-renders-as-shapes-that-fit: done
   16-1-extract-deck-export-format-plugins: done
-  17-1-skf-skill-and-persona-for-herald: done
-  17-2-first-portal-slice-deck-status: done
-  18-1-the-first-station-video-renders-from-herald-s-studio: done
+  17-1-skf-domain-skill-and-bmad-persona-for-herald: done
+  17-2-first-portal-slice-deck-status-for-one-slug: done
+  18-1-the-first-station-video-renders-from-heralds-studio: done
   18-2-release-comms-go-through-bmad-os-changelog-and-social: done
   18-3-slides-generator-is-herald-wielded: done
   19-1-the-webhook-routes-move-onto-the-station-api-seam: done
@@ -59,8 +59,60 @@ development_status:
   2-2-commit-opt-in: done
   2-3-marp-source-pull: done
   2-4-standalone-bundle-pull: done
+  20-1-the-standard-has-one-home-and-the-deck-spec-points-to-it: done
+  20-10-warden-poster-rebuilt-to-the-standard-from-its-ledger: done
+  20-11-pyforge-genesis-poster-rebuilt-to-the-standard-from-its-ledger: done
+  20-12-the-canopy-poster-re-derived-and-its-design-project-created: done
+  20-13-the-bridge-sees-the-family-herald-deck-status-reports-all-ten-linked: done
+  20-14-deck-facts-refresh-rewrites-stale-marked-literals-from-the-ledger: done
+  20-2-deck-facts-derives-a-per-deck-fact-ledger-and-checks-a-poster-against-it: done
+  20-3-pyforge-atlas-poster-rebuilt-to-the-standard-from-its-ledger: done
+  20-4-pyforge-doctor-poster-rebuilt-to-the-standard-from-its-ledger: done
+  20-5-pyforge-herald-poster-rebuilt-to-the-standard-from-its-ledger: done
+  20-6-pyforge-marshal-poster-rebuilt-to-the-standard-from-its-ledger: done
+  20-7-pyforge-mason-poster-rebuilt-to-the-standard-from-its-ledger: done
+  20-8-pyforge-scribe-poster-rebuilt-to-the-standard-from-its-ledger: done
+  20-9-pyforge-steward-poster-rebuilt-to-the-standard-from-its-ledger: done
+  21-1-deck-trio-derives-the-infographic-head-from-the-standalone: done
+  21-10-the-registry-sees-all-fourteen-decks: done
+  21-11-one-deck-proves-the-design-loop-end-to-end: done
+  21-12-the-transport-speaks-the-mcp-sdk-it-actually-has-pinned: done
+  21-2-deck-trio-derives-the-infographic-deck-from-the-standalone: done
+  21-3-deck-facts-refreshes-every-marked-surface-not-just-the-poster: done
+  21-4-the-ten-decks-trios-re-derived-refreshed-and-pushed: done
+  21-5-the-exec-summaries-and-the-export-set-follow-the-same-ledger: done
+  21-6-unity-data-stack-rebuilt-to-the-standard: done
+  21-7-wasm-analytics-stack-rebuilt-to-the-standard: done
+  21-8-deckcraft-rebuilt-to-the-standard: done
+  21-9-presenton-pixi-image-rebuilt-to-the-standard: done
+  22-1-the-dossier-is-the-source-and-pages-is-a-render: done
+  23-1-the-account-is-enumerated-and-reconciled-against-the-registry: done
+  23-2-every-presentation-has-a-local-twin-design-systems-are-mirrored-as-libraries: done
+  23-3-the-potx-path-template-filled-powerpoints-and-every-derived-file-stamped: done
+  23-4-powerpoints-push-back-and-every-push-proves-itself: done
+  23-5-the-family-is-browsable-and-downloadable-on-pages: done
+  23-6-one-command-idempotent-reported: done
+  24-1-the-windowed-design-read-never-loops-on-a-stalled-window: done
+  24-2-the-docsite-has-a-pr-gate: done
+  24-3-the-second-sync-all-run-is-proven-unchanged-on-a-real-deck: done
+  25-1-the-deck-pipeline-runs-from-the-guild-env: done
+  26-1-the-dossier-reads-the-a-b-cutover-as-control-plane-fact: done
+  27-1-the-docs-shelf-builds-as-a-starlight-site-in-place: backlog
+  27-2-one-pages-artifact-carries-the-docs-site-the-dossier-and-the-dashboard: backlog
+  27-3-the-sidebar-is-generated-from-docs-map-yaml-order: backlog
+  27-4-the-docs-validators-gate-every-pr: backlog
+  27-5-pr-preflight-runs-the-pages-build-check-only-when-docsite-check-yml-s-paths-change: blocked
+  28-1-each-deck-keeps-one-current-version-of-each-export: backlog
+  28-2-a-new-export-replaces-the-version-it-supersedes: backlog
+  29-1-herald-deck-publish-puts-each-current-export-in-the-object-store: blocked
+  29-2-the-published-exports-are-listed-and-streamed-behind-the-herald-role: blocked
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
+  30-1-a-deck-s-html-twins-are-self-contained-and-published: backlog
+  30-2-the-herald-portal-shows-a-deck-in-the-browser-from-its-html-twin: backlog
+  31-1-the-pages-artifact-builds-for-the-host-that-deploys-it: backlog
+  31-2-how-to-deploy-the-docs-site-to-github-enterprise-pages: backlog
+  32-1-a-deck-exports-as-a-native-editable-pptx-through-pptxgenjs-plus: backlog
   4-1-poll-loop-with-quiescence-debounce: done
   4-2-idle-backoff: done
   4-3-halt-on-auth-error: done
@@ -68,20 +120,20 @@ development_status:
   5-2-conflict-refusal-on-export-push: done
   6-1-implement-herald-cli-dispatcher: done
   6-2-implement-shared-argument-conventions: done
-  6-3-implement-cli-authentication-and-authorization: done
+  6-3-implement-cli-authentication-authorization: done
   6-4-implement-evidence-link-validation-protocol-shared-infrastructure: done
-  6-5-cli-help-and-first-day-usability: done
-  7-1-design-and-implement-web-layout-header-tabs-sidebar-responsive: done
-  7-2-implement-web-tooltips-and-inline-help: done
-  8-1-implement-progress-data-model-and-database-schema: done
-  8-2-implement-on-ship-webhook-and-weekly-cron-automation: done
-  8-3-implement-progress-cli: done
+  6-5-cli-help-first-day-usability-inline: done
+  7-1-design-implement-web-layout-header-tabs-sidebar-responsive: done
+  7-2-implement-web-tooltips-inline-help: done
+  8-1-implement-progress-data-model-database-schema: done
+  8-2-implement-on-ship-webhook-weekly-cron-automation: done
+  8-3-implement-progress-cli-herald-progress-subcommand: done
   8-4-implement-progress-web-tab: done
-  9-1-implement-claim-data-model-and-database-schema: done
-  9-2-implement-auto-extract-and-operator-review-gate: done
+  9-1-implement-claim-data-model-database-schema: done
+  9-2-implement-auto-extract-operator-review-gate: done
   9-3-implement-success-cli: done
   9-4-implement-success-web-archive: done
-  9-5-implement-evidence-validation-sync-and-async: done
+  9-5-implement-evidence-validation-sync-async: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -106,8 +158,34 @@ development_status:
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
+  epic-20: done
+  epic-20-retrospective: optional
+  epic-21: done
+  epic-21-retrospective: optional
+  epic-22: done
+  epic-22-retrospective: optional
+  epic-23: done
+  epic-23-retrospective: optional
+  epic-24: done
+  epic-24-retrospective: optional
+  epic-25: done
+  epic-25-retrospective: optional
+  epic-26: done
+  epic-26-retrospective: optional
+  epic-27: backlog
+  epic-27-retrospective: optional
+  epic-28: backlog
+  epic-28-retrospective: optional
+  epic-29: backlog
+  epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
+  epic-30: backlog
+  epic-30-retrospective: optional
+  epic-31: backlog
+  epic-31-retrospective: optional
+  epic-32: backlog
+  epic-32-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

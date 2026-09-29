@@ -9,6 +9,7 @@ matched/unmatched dispatch.
 from __future__ import annotations
 
 import pytest
+
 from pyforge.core.verdict import Lattice, dispatch_exit_code
 
 

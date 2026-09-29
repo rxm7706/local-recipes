@@ -54,6 +54,27 @@ from pyforge.core.errors import PyforgeError
 
 _FRONTMATTER_DELIMITER = "---"
 _SURFACE_KEY = "surface:"
+_BANNER_PREFIX = "<!--"
+_BANNER_SUFFIX = "-->"
+
+
+def _skip_leading_banner(text: str) -> str:
+    """Skip a leading HTML-comment provenance banner (Story 50.5, CAP-248)
+    -- see ``core.promotion``'s identical helper for the full rationale: a
+    recovered or minted tracked spec may carry a ``<!-- ... -->`` banner
+    ABOVE its frontmatter fence instead of below it, and this parser's
+    ``lines[0] == "---"`` check must not read that as "no frontmatter at
+    all". Tolerates a leading BOM, blank lines, or spaces before the
+    banner's opening marker (Story 51.8, CAP-256, DW-FU-50-6) -- the banner
+    need not sit at literal text offset 0. Returns ``text`` unchanged when
+    no banner is found there, or when the marker is never closed."""
+    stripped = text.lstrip("\ufeff \t\r\n")
+    if not stripped.startswith(_BANNER_PREFIX):
+        return text
+    end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    if end == -1:
+        return text
+    return stripped[end + len(_BANNER_SUFFIX) :].lstrip()
 
 
 class SurfaceParseError(PyforgeError, ValueError):
@@ -73,8 +94,11 @@ class SurfaceParseError(PyforgeError, ValueError):
 
 def parse_declared_surface(text: str) -> tuple[str, ...] | None:
     """Parse the ``surface:`` field out of ``text``'s YAML-ish frontmatter
-    block (the region between the first line -- which must be exactly
-    ``---`` -- and the next line that is exactly ``---``).
+    block. ``text`` is first stripped of a leading HTML-comment provenance
+    banner if one is present (Story 50.5, CAP-248; see
+    ``_skip_leading_banner``); the frontmatter block is then the region
+    between the resulting first line -- which must be exactly ``---`` --
+    and the next line that is exactly ``---``.
 
     Returns ``None`` when: ``text`` carries no recognizable frontmatter
     block (no leading ``---``, or no closing ``---``); the block has no
@@ -95,7 +119,7 @@ def parse_declared_surface(text: str) -> tuple[str, ...] | None:
     if not isinstance(text, str):
         raise TypeError(f"text must be a str, got {text!r}")
 
-    lines = text.splitlines()
+    lines = _skip_leading_banner(text).splitlines()
     if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
         return None
 
@@ -129,11 +153,9 @@ def parse_declared_surface(text: str) -> tuple[str, ...] | None:
             )
         try:
             value = ast.literal_eval(raw)
-        except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError):
+        except ValueError, SyntaxError, TypeError, MemoryError, RecursionError:
             return None
-        if isinstance(value, list) and all(
-            isinstance(item, str) and item != "" for item in value
-        ):
+        if isinstance(value, list) and all(isinstance(item, str) and item != "" for item in value):
             return tuple(value)
         return None
 

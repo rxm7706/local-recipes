@@ -18,7 +18,7 @@ the registry is exercised with synthetic data (fixture mode).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -70,10 +70,7 @@ LEGACY_SURFACE_VIEWS: tuple[LegacySurfaceView, ...] = (
     LegacySurfaceView(
         view="v_current_version_vulns",
         kedro_datasets=("vulnerability_package_version_vulns",),
-        scope_note=(
-            "the ONLY query-time-correct vuln source; the packages.vuln_* rollup "
-            "is report-only (spec §3.3)"
-        ),
+        scope_note=("the ONLY query-time-correct vuln source; the packages.vuln_* rollup is report-only (spec §3.3)"),
     ),
 )
 
@@ -98,9 +95,7 @@ NEW_SIGNAL_DATASETS: tuple[NewSignalDataset, ...] = (
 )
 
 # The frozen exclusion set the scope test asserts the parity set never intersects.
-EXCLUDED_NEW_SIGNAL_DATASETS: frozenset[str] = frozenset(
-    d.name for d in NEW_SIGNAL_DATASETS
-)
+EXCLUDED_NEW_SIGNAL_DATASETS: frozenset[str] = frozenset(d.name for d in NEW_SIGNAL_DATASETS)
 
 
 def legacy_surface_view_names() -> tuple[str, ...]:

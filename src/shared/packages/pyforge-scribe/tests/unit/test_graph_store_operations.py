@@ -110,9 +110,7 @@ def test_invalidate_edge_marks_ended_but_keeps_node_present(
     store.reset()
     store.upsert_node(_node())
     ended_at = datetime(2026, 8, 2, tzinfo=timezone.utc)
-    store.invalidate_edge(
-        "memory:feedback/x", ended_at=ended_at, superseded_by="memory:feedback/newer"
-    )
+    store.invalidate_edge("memory:feedback/x", ended_at=ended_at, superseded_by="memory:feedback/newer")
     store.commit()
 
     nodes = list(graph_store_factory().iter_nodes())

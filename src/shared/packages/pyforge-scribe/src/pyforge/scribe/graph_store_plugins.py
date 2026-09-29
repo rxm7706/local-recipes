@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 from pyforge.core.hooks import PluginError, PluginRegistry
+
 from pyforge.scribe.graph_store import (
     GRAPHSTORE_HOOK_SPEC,
     FlatFileGraphStorePlugin,
@@ -45,13 +46,11 @@ def open_graph_store(
         registry = PluginRegistry()
         registry.load_entry_points()
     if owner == GRAPHSTORE_HOOK_SPEC.owner and not any(
-        plugin.hook_spec == GRAPHSTORE_HOOK_SPEC.name and plugin.owner == owner
-        for plugin in registry.plugins
+        plugin.hook_spec == GRAPHSTORE_HOOK_SPEC.name and plugin.owner == owner for plugin in registry.plugins
     ):
         registry.register(FlatFileGraphStorePlugin())
     if owner == "atlas" and not any(
-        plugin.hook_spec == GRAPHSTORE_HOOK_SPEC.name and plugin.owner == owner
-        for plugin in registry.plugins
+        plugin.hook_spec == GRAPHSTORE_HOOK_SPEC.name and plugin.owner == owner for plugin in registry.plugins
     ):
         from pyforge.scribe.graph_store_plane import PlaneGraphStorePlugin
 
@@ -63,10 +62,7 @@ def open_graph_store(
             selected = plugin
             break
     if selected is None:
-        raise PluginError(
-            f"no graph-store plugin registered for owner {owner!r} "
-            f"(spec {GRAPHSTORE_HOOK_SPEC.name!r})"
-        )
+        raise PluginError(f"no graph-store plugin registered for owner {owner!r} (spec {GRAPHSTORE_HOOK_SPEC.name!r})")
 
     context: dict = {"store_path": store_path}
     dsn = os.environ.get(_DSN_ENV) or os.environ.get("DATABASE_URL")
@@ -78,7 +74,5 @@ def open_graph_store(
     selected.call("around", context)
     store = context.get("store")
     if store is None:
-        raise PluginError(
-            f"graph-store plugin owner={owner!r} did not set context['store']"
-        )
+        raise PluginError(f"graph-store plugin owner={owner!r} did not set context['store']")
     return store

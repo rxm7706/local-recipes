@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'Story 1.10: Render the harness policy from the canonical EffectivePolicy'
 type: 'feature'
@@ -13,6 +12,8 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md'
 warnings: ['oversized']
 ---
+
+<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 
 <intent-contract>
 

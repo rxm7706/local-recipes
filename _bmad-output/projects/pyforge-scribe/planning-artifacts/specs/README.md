@@ -7,6 +7,10 @@ specs are durable (tracked), NOT Tier-3." After a story merges, its spec is
 promoted from the run's `implementation-artifacts/` into this directory and
 committed here as the source of record.
 
+**Status (2026-09-13):** `spec-scribe-code-navigation-owner` + Story 17.1
+hoists parked later-caps:CAP-14. Prior `spec-scribe-recall-modes` + Story 16.1.
+later-caps:CAP-6–later-caps:CAP-13 hoisted. Prior note kept below.
+
 **Status (2026-08-08):** all 9 done stories have a spec here. `spec-1-4`
 (pointer stub write-back, idempotent re-invocation) and `spec-1-5` (seed
 promotion — the story that closed Epic 1) were recovered the same day — no

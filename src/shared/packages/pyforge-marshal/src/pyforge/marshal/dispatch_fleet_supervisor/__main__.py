@@ -106,7 +106,7 @@ def cycle_completion(stdout: str) -> bool | None:
     """
     try:
         envelope = json.loads(stdout)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
     if not isinstance(envelope, dict):
         return None
@@ -151,8 +151,7 @@ def run_fleet_campaign_supervisor(
     while True:
         if max_cycles and cycles >= max_cycles:
             print(
-                f"fleet campaign supervisor: reached the {max_cycles}-cycle "
-                f"ceiling for campaign {run_id!r}; stopping",
+                f"fleet campaign supervisor: reached the {max_cycles}-cycle ceiling for campaign {run_id!r}; stopping",
                 file=sys.stderr,
             )
             return 0
@@ -190,17 +189,14 @@ def run_fleet_campaign_supervisor(
         unreadable_streak = 0
         if completion:
             print(
-                f"fleet campaign supervisor: campaign {run_id!r} complete "
-                f"after {cycles} supervised cycle(s)",
+                f"fleet campaign supervisor: campaign {run_id!r} complete after {cycles} supervised cycle(s)",
                 file=sys.stderr,
             )
             return 0
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Fleet-drain campaign supervisor (Story 22.7)"
-    )
+    parser = argparse.ArgumentParser(description="Fleet-drain campaign supervisor (Story 22.7)")
     parser.add_argument("repo_root")
     parser.add_argument("run_id")
     parser.add_argument("mode")

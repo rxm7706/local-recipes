@@ -1,5 +1,5 @@
 ---
-status: shipped
+status: done
 audit_note: |
   AUD-ATLAS-048 (catalog entry count) — DISPOSITION: the body's `EXPECTED_TOTAL = 73` is
   HISTORICALLY CORRECT and is deliberately left as written. It records what B6 actually saw:
@@ -244,3 +244,7 @@ Status: review (left at `review` per the orchestrator-owns-git mandate — NOT a
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `3-6-port-the-seed-gaps-pipeline: done`).

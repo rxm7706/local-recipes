@@ -129,9 +129,7 @@ _DEFAULT_BASELINE_REASON = "grandfathered via .warden-baseline.yaml"
 
 # Rungs already at or below "suppressed"/"inapplicable" have nothing left to
 # waive -- never rewritten by apply_waivers/bypass_blocking.
-_NON_BLOCKING_STATUSES = frozenset(
-    {Status.CLEAN, Status.NOT_APPLICABLE, Status.BYPASSED}
-)
+_NON_BLOCKING_STATUSES = frozenset({Status.CLEAN, Status.NOT_APPLICABLE, Status.BYPASSED})
 
 
 class WaiverError(PyforgeError, ValueError):
@@ -285,16 +283,10 @@ def _parse_timestamp(
         try:
             parsed = datetime.fromisoformat(value)
         except ValueError as exc:
-            raise error_cls(
-                f"{path}: {label}[{index}].{field} is not a valid ISO-8601 "
-                f"timestamp: {value!r}"
-            ) from exc
+            raise error_cls(f"{path}: {label}[{index}].{field} is not a valid ISO-8601 timestamp: {value!r}") from exc
         normalized = value
     else:
-        raise error_cls(
-            f"{path}: {label}[{index}].{field} must be a non-empty ISO-8601 "
-            f"string, got {value!r}"
-        )
+        raise error_cls(f"{path}: {label}[{index}].{field} must be a non-empty ISO-8601 string, got {value!r}")
     if parsed.tzinfo is None:
         raise error_cls(
             f"{path}: {label}[{index}].{field} must carry a UTC offset (a "
@@ -305,21 +297,13 @@ def _parse_timestamp(
 
 def _validate_entry(raw_entry: object, *, path: Path, index: int) -> WaiverEntry:
     if not isinstance(raw_entry, dict):
-        raise WaiverValidationError(
-            f"{path}: waivers[{index}] must be a mapping, got "
-            f"{type(raw_entry).__name__}"
-        )
+        raise WaiverValidationError(f"{path}: waivers[{index}] must be a mapping, got {type(raw_entry).__name__}")
     missing = [field for field in _REQUIRED_ENTRY_FIELDS if field not in raw_entry]
     if missing:
-        raise WaiverValidationError(
-            f"{path}: waivers[{index}] missing required field(s): {missing}"
-        )
+        raise WaiverValidationError(f"{path}: waivers[{index}] missing required field(s): {missing}")
     entry_id = raw_entry["id"]
     if not isinstance(entry_id, str) or not entry_id:
-        raise WaiverValidationError(
-            f"{path}: waivers[{index}].id must be a non-empty string, got "
-            f"{entry_id!r}"
-        )
+        raise WaiverValidationError(f"{path}: waivers[{index}].id must be a non-empty string, got {entry_id!r}")
     if not _is_finding_family_id(entry_id):
         raise WaiverValidationError(
             f"{path}: waivers[{index}].id {entry_id!r} matches none of the "
@@ -328,36 +312,24 @@ def _validate_entry(raw_entry: object, *, path: Path, index: int) -> WaiverEntry
         )
     reason = raw_entry["reason"]
     if not isinstance(reason, str):
-        raise WaiverValidationError(
-            f"{path}: waivers[{index}].reason must be a string, got "
-            f"{type(reason).__name__}"
-        )
+        raise WaiverValidationError(f"{path}: waivers[{index}].reason must be a string, got {type(reason).__name__}")
     if len(reason) > _MAX_REASON_LENGTH:
-        raise WaiverValidationError(
-            f"{path}: waivers[{index}].reason exceeds {_MAX_REASON_LENGTH} "
-            "characters"
-        )
+        raise WaiverValidationError(f"{path}: waivers[{index}].reason exceeds {_MAX_REASON_LENGTH} characters")
     authorized_by = raw_entry["authorized_by"]
     if not isinstance(authorized_by, str) or not authorized_by:
         raise WaiverValidationError(
-            f"{path}: waivers[{index}].authorized_by must be a non-empty "
-            f"string, got {authorized_by!r}"
+            f"{path}: waivers[{index}].authorized_by must be a non-empty string, got {authorized_by!r}"
         )
     if len(authorized_by) > _MAX_AUTHORIZED_BY_LENGTH:
         raise WaiverValidationError(
-            f"{path}: waivers[{index}].authorized_by exceeds "
-            f"{_MAX_AUTHORIZED_BY_LENGTH} characters"
+            f"{path}: waivers[{index}].authorized_by exceeds {_MAX_AUTHORIZED_BY_LENGTH} characters"
         )
     accepted_at, accepted_at_str = _parse_timestamp(
         raw_entry["accepted_at"], path=path, index=index, field="accepted_at"
     )
-    expires_at, expires_at_str = _parse_timestamp(
-        raw_entry["expires_at"], path=path, index=index, field="expires_at"
-    )
+    expires_at, expires_at_str = _parse_timestamp(raw_entry["expires_at"], path=path, index=index, field="expires_at")
     if expires_at <= accepted_at:
-        raise WaiverValidationError(
-            f"{path}: waivers[{index}].expires_at must be after accepted_at"
-        )
+        raise WaiverValidationError(f"{path}: waivers[{index}].expires_at must be after accepted_at")
     return WaiverEntry(
         id=entry_id,
         reason=reason,
@@ -374,9 +346,7 @@ def _validate_document(document: object, *, path: Path) -> WaiverFile:
         # never guessed).
         document = {}
     if not isinstance(document, dict):
-        raise WaiverValidationError(
-            f"{path}: waiver file must be a mapping, got {type(document).__name__}"
-        )
+        raise WaiverValidationError(f"{path}: waiver file must be a mapping, got {type(document).__name__}")
     version = document.get("version")
     # Review finding: `1.0 != 1` is False in Python, so a YAML float would
     # silently pass an `isinstance(version, bool) or version != 1` check --
@@ -384,31 +354,22 @@ def _validate_document(document: object, *, path: Path) -> WaiverFile:
     # int through) is the only check that actually enforces "the literal
     # int 1, nothing else".
     if type(version) is not int or version != _SUPPORTED_VERSION:
-        raise WaiverValidationError(
-            f"{path}: 'version' must be the literal int {_SUPPORTED_VERSION}, "
-            f"got {version!r}"
-        )
+        raise WaiverValidationError(f"{path}: 'version' must be the literal int {_SUPPORTED_VERSION}, got {version!r}")
     raw_waivers = document.get("waivers", [])
     if not isinstance(raw_waivers, list):
-        raise WaiverValidationError(
-            f"{path}: 'waivers' must be a list, got {type(raw_waivers).__name__}"
-        )
+        raise WaiverValidationError(f"{path}: 'waivers' must be a list, got {type(raw_waivers).__name__}")
     entries: list[WaiverEntry] = []
     seen_ids: set[str] = set()
     for index, raw_entry in enumerate(raw_waivers):
         entry = _validate_entry(raw_entry, path=path, index=index)
         if entry.id in seen_ids:
-            raise WaiverValidationError(
-                f"{path}: duplicate waiver id {entry.id!r} (waivers[{index}])"
-            )
+            raise WaiverValidationError(f"{path}: duplicate waiver id {entry.id!r} (waivers[{index}])")
         seen_ids.add(entry.id)
         entries.append(entry)
     return WaiverFile(version=version, waivers=tuple(entries))
 
 
-def _validate_baseline_entry(
-    raw_entry: object, *, path: Path, index: int
-) -> BaselineEntry:
+def _validate_baseline_entry(raw_entry: object, *, path: Path, index: int) -> BaselineEntry:
     """Mirrors ``_validate_entry`` with the looser, bulk-accepted baseline
     shape: only ``id``/``expires_at`` are required, ``reason`` is optional
     (defaults to ``_DEFAULT_BASELINE_REASON``), and there is no
@@ -416,23 +377,13 @@ def _validate_baseline_entry(
     accepted_at`` check either (there is no ``accepted_at`` to compare
     against)."""
     if not isinstance(raw_entry, dict):
-        raise BaselineValidationError(
-            f"{path}: baseline[{index}] must be a mapping, got "
-            f"{type(raw_entry).__name__}"
-        )
-    missing = [
-        field for field in _REQUIRED_BASELINE_ENTRY_FIELDS if field not in raw_entry
-    ]
+        raise BaselineValidationError(f"{path}: baseline[{index}] must be a mapping, got {type(raw_entry).__name__}")
+    missing = [field for field in _REQUIRED_BASELINE_ENTRY_FIELDS if field not in raw_entry]
     if missing:
-        raise BaselineValidationError(
-            f"{path}: baseline[{index}] missing required field(s): {missing}"
-        )
+        raise BaselineValidationError(f"{path}: baseline[{index}] missing required field(s): {missing}")
     entry_id = raw_entry["id"]
     if not isinstance(entry_id, str) or not entry_id:
-        raise BaselineValidationError(
-            f"{path}: baseline[{index}].id must be a non-empty string, got "
-            f"{entry_id!r}"
-        )
+        raise BaselineValidationError(f"{path}: baseline[{index}].id must be a non-empty string, got {entry_id!r}")
     if not _is_finding_family_id(entry_id):
         raise BaselineValidationError(
             f"{path}: baseline[{index}].id {entry_id!r} matches none of the "
@@ -441,15 +392,9 @@ def _validate_baseline_entry(
         )
     reason = raw_entry.get("reason", _DEFAULT_BASELINE_REASON)
     if not isinstance(reason, str):
-        raise BaselineValidationError(
-            f"{path}: baseline[{index}].reason must be a string, got "
-            f"{type(reason).__name__}"
-        )
+        raise BaselineValidationError(f"{path}: baseline[{index}].reason must be a string, got {type(reason).__name__}")
     if len(reason) > _MAX_REASON_LENGTH:
-        raise BaselineValidationError(
-            f"{path}: baseline[{index}].reason exceeds {_MAX_REASON_LENGTH} "
-            "characters"
-        )
+        raise BaselineValidationError(f"{path}: baseline[{index}].reason exceeds {_MAX_REASON_LENGTH} characters")
     _, expires_at_str = _parse_timestamp(
         raw_entry["expires_at"],
         path=path,
@@ -470,18 +415,14 @@ def _validate_baseline_document(document: object, *, path: Path) -> BaselineFile
         # never guessed).
         document = {}
     if not isinstance(document, dict):
-        raise BaselineValidationError(
-            f"{path}: baseline file must be a mapping, got "
-            f"{type(document).__name__}"
-        )
+        raise BaselineValidationError(f"{path}: baseline file must be a mapping, got {type(document).__name__}")
     version = document.get("version")
     # Mirrors _validate_document's own literal-int-1 check (see its
     # comment): `type(version) is not int` rejects both a bool and a
     # float, either of which `!=`/`isinstance` alone would silently admit.
     if type(version) is not int or version != _SUPPORTED_VERSION:
         raise BaselineValidationError(
-            f"{path}: 'version' must be the literal int {_SUPPORTED_VERSION}, "
-            f"got {version!r}"
+            f"{path}: 'version' must be the literal int {_SUPPORTED_VERSION}, got {version!r}"
         )
     # Review finding: UNLIKE _validate_document's own `document.get("waivers",
     # [])` (a missing `waivers:` key is fine there -- load_waivers' own
@@ -496,17 +437,13 @@ def _validate_baseline_document(document: object, *, path: Path) -> BaselineFile
         raise BaselineValidationError(f"{path}: missing required key 'baseline'")
     raw_entries = document["baseline"]
     if not isinstance(raw_entries, list):
-        raise BaselineValidationError(
-            f"{path}: 'baseline' must be a list, got {type(raw_entries).__name__}"
-        )
+        raise BaselineValidationError(f"{path}: 'baseline' must be a list, got {type(raw_entries).__name__}")
     entries: list[BaselineEntry] = []
     seen_ids: set[str] = set()
     for index, raw_entry in enumerate(raw_entries):
         entry = _validate_baseline_entry(raw_entry, path=path, index=index)
         if entry.id in seen_ids:
-            raise BaselineValidationError(
-                f"{path}: duplicate baseline id {entry.id!r} (baseline[{index}])"
-            )
+            raise BaselineValidationError(f"{path}: duplicate baseline id {entry.id!r} (baseline[{index}])")
         seen_ids.add(entry.id)
         entries.append(entry)
     return BaselineFile(version=version, entries=tuple(entries))
@@ -633,9 +570,7 @@ def _baseline_notice(entry: BaselineEntry) -> BaselineNotice:
     """Factor the ``BaselineNotice`` construction shared between
     ``apply_waivers``'s applied and expired baseline branches (Story 6.8,
     mirrors ``_waiver_notice``)."""
-    return BaselineNotice(
-        id=entry.id, reason=entry.reason, expires_at=entry.expires_at
-    )
+    return BaselineNotice(id=entry.id, reason=entry.reason, expires_at=entry.expires_at)
 
 
 def apply_waivers(
@@ -727,9 +662,7 @@ def bypass_blocking(
     return [
         (
             Status.BYPASSED
-            if driver is not None
-            and status not in _NON_BLOCKING_STATUSES
-            and _is_finding_family_id(driver.finding_id)
+            if driver is not None and status not in _NON_BLOCKING_STATUSES and _is_finding_family_id(driver.finding_id)
             else status,
             driver,
         )
@@ -742,9 +675,7 @@ def bypass_blocking(
 # regardless of adoption mode), never an already non-blocking/WARN rung. A
 # 2-element frozenset, not the full 7-status lattice order (guard-safe --
 # see tests/meta/test_verdict_sole_ownership.py).
-_WARN_ONLY_DOWNGRADE_STATUSES = frozenset(
-    {Status.POLICY_VIOLATION, Status.INDETERMINATE}
-)
+_WARN_ONLY_DOWNGRADE_STATUSES = frozenset({Status.POLICY_VIOLATION, Status.INDETERMINATE})
 
 
 def warn_blocking(
@@ -804,9 +735,7 @@ def emit_bypass_stanza(
         {
             driver.finding_id
             for status, driver in rungs
-            if driver is not None
-            and status not in _NON_BLOCKING_STATUSES
-            and _is_finding_family_id(driver.finding_id)
+            if driver is not None and status not in _NON_BLOCKING_STATUSES and _is_finding_family_id(driver.finding_id)
         }
     )
     expires_at = accepted_at + timedelta(days=expiry_days)

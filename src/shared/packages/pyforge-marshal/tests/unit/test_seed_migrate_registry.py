@@ -22,6 +22,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.apply.run import run_apply
 from pyforge.marshal.seed.detect.hashes import hash_content
@@ -88,7 +89,10 @@ def _manifest(*entries: ManifestEntry) -> Manifest:
 
 def _whole_file(entry_id: str, path: str, artifact_class: ArtifactClass) -> ManifestEntry:
     return ManifestEntry(
-        id=entry_id, artifact_class=artifact_class, path=path, applies_to=AppliesTo.BOTH,
+        id=entry_id,
+        artifact_class=artifact_class,
+        path=path,
+        applies_to=AppliesTo.BOTH,
         rationale="test",
     )
 
@@ -306,9 +310,7 @@ def test_compose_concatenates_actions_from_each_migration_and_shares_one_fingerp
         to_version=_V2,
         fn=_fn_returning(_absent_action("b", "b.txt", ArtifactClass.COPIED_MANAGED)),
     )
-    shared_fingerprint = _fresh_fingerprint(
-        tmp_path, ("a", hash_content("")), ("b", hash_content(""))
-    )
+    shared_fingerprint = _fresh_fingerprint(tmp_path, ("a", hash_content("")), ("b", hash_content("")))
 
     plan = compose(
         (mig_a, mig_b),
@@ -403,9 +405,7 @@ def test_compose_raises_never_write_violation_before_returning_for_a_protected_t
 # --- compose(): pass-2 review findings --------------------------------------
 
 
-@pytest.mark.parametrize(
-    "escaping_path", ["/etc/passwd", "../outside.txt", "sub/../../outside.txt"]
-)
+@pytest.mark.parametrize("escaping_path", ["/etc/passwd", "../outside.txt", "sub/../../outside.txt"])
 def test_compose_refuses_an_absolute_or_escaping_target_path_at_plan_time(tmp_path, escaping_path):
     """Review finding, verified by execution against the pre-fix code: an
     absolute or `..`-traversing target_path passed `compose()` completely
@@ -474,11 +474,7 @@ def test_compose_merges_a_migrations_own_declared_skips_into_the_result(tmp_path
         return Plan(
             actions=(),
             repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
-            skipped=(
-                registry.SkippedArtifact(
-                    artifact_id="own-skip", target_path="own.txt", pattern="*.txt"
-                ),
-            ),
+            skipped=(registry.SkippedArtifact(artifact_id="own-skip", target_path="own.txt", pattern="*.txt"),),
         )
 
     migration = Migration(from_version=_V1, to_version=_V1_1, fn=fn)
@@ -572,9 +568,7 @@ def test_sc07_a_simulated_v1_to_v2_breaking_change_is_absorbed_via_the_real_pipe
         ("renamed", hash_content("")),
         ("tiers-file", hash_content("intro\n<!-- anchor -->\noutro\n")),
     )
-    plan = compose(
-        migrations, view, state, repo_fingerprint=fingerprint, repo_root=tmp_path, never_write=_OPEN
-    )
+    plan = compose(migrations, view, state, repo_fingerprint=fingerprint, repo_root=tmp_path, never_write=_OPEN)
     assert [action.artifact_id for action in plan.actions] == ["renamed", "tiers-file"]
     assert plan.skipped == ()
 
@@ -606,8 +600,7 @@ def test_sc07_a_simulated_v1_to_v2_breaking_change_is_absorbed_via_the_real_pipe
     # absorbed the breaking change.
     post_inventory = classify(manifest, tmp_path)
     assert all(
-        classification.state == ArtifactState.PRESENT_CONFORMANT
-        for classification in post_inventory.classifications
+        classification.state == ArtifactState.PRESENT_CONFORMANT for classification in post_inventory.classifications
     )
     assert (tmp_path / "new-name.txt").read_text(encoding="utf-8") == "v2 content\n"
     assert "tier: 1" in (tmp_path / "TIERS.md").read_text(encoding="utf-8")

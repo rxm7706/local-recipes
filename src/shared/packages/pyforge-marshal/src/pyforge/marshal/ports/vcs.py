@@ -71,8 +71,8 @@ primitives:
   ``core.promotion.merged_story_keys`` (AD-33: git is the sole authority
   for "merged or not"; this method is that authority's one read
   primitive) to answer AD-29's "pushed to the remote" route
-  (``ref="origin/main"``) and "merged to the integration branch" route
-  (``ref="main"``) -- the caller decides which ``ref`` each route needs;
+  (``ref="refs/remotes/origin/main"``) and "merged to the integration branch" route
+  (``ref="refs/heads/main"``, Story 61.1) -- the caller decides which ``ref`` each route needs;
   this method has no branch-name opinion of its own.
 - ``commit_paths`` -- the one write: stages EXACTLY ``paths`` (an
   individual ``git add -- <path>`` per entry, never ``git add -A``) and
@@ -167,6 +167,7 @@ succeeded by the time this resync step runs)."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -259,6 +260,18 @@ class VcsPort(Protocol):
         with no flag. Raises ``VcsCommandError`` on any git failure."""
         ...
 
+    def prune_worktrees(self, repo_root: Path) -> None:
+        """``git worktree prune`` -- clears stale worktree registrations
+        left behind when a worktree's directory was removed by some means
+        other than ``remove_worktree`` (e.g. a raw filesystem delete).
+        Story 51.1's own best-effort cleanup fallback (mirroring
+        ``merge_branch``'s) calls this after a raw ``shutil.rmtree`` when
+        ``remove_worktree`` itself has failed. Raises ``VcsCommandError`` on
+        any git failure -- callers that treat this as best-effort swallow it
+        themselves, matching how ``remove_worktree`` failures are already
+        swallowed."""
+        ...
+
     def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
         """Delete ``branch`` (``git branch -d``/``-D``). ``force`` selects
         ``-D``: git's own ``-d`` uses commit-SHA ancestry and would
@@ -269,13 +282,18 @@ class VcsPort(Protocol):
         git failure."""
         ...
 
-    def push(self, repo_root: Path, branch: str) -> None:
+    def push(self, repo_root: Path, branch: str, *, proven_on_main_sha: str | None = None) -> None:
         """A plain ``git push`` of ``branch`` (Story 3.8, AD-46), naming
         ``branch`` explicitly rather than relying on ``repo_root``'s own
         checked-out HEAD: if ``branch`` already has a configured upstream,
-        ``git push <remote> <branch>:<remote_branch>``; otherwise
-        ``git push origin <branch>`` (the branch's first push, no ``-u`` --
-        this never rewrites the caller's own tracking config). ``repo_root``
+        ``git push <remote> refs/heads/<branch>:refs/heads/<remote_branch>``
+        with ``<remote>``/``<remote_branch>`` read from the branch's own
+        config; otherwise ``git push origin
+        refs/heads/<branch>:refs/heads/<branch>`` (the branch's first push, no
+        ``-u`` -- this never rewrites the caller's own tracking config).
+        ``branch`` is a branch NAME the adapter qualifies (Story 61.1: a tag
+        named like it, locally or on the remote, never makes the push
+        ambiguous). ``repo_root``
         need not have ``branch`` checked out (refs are shared across every
         worktree of one repo). Never ``--force``/``--force-with-lease``,
         never a rewrite -- the durability watcher's push is read-only
@@ -284,12 +302,20 @@ class VcsPort(Protocol):
         push performs). Raises ``VcsCommandError`` on any git failure
         (rejected non-fast-forward, no network, no configured remote) -- the
         caller treats that as a registered ``WARN``, never a run-halting
-        condition."""
+        condition.
+
+        ``proven_on_main_sha`` (Story 57.1, CAP-267): the commit a caller has
+        itself fast-forwarded ``branch`` to. The adapter re-checks that it is
+        an ancestor of ``refs/remotes/origin/main`` (raising
+        ``VcsCommandError`` when not), pushes exactly that commit, and runs the
+        push with the repo's journaled pre-push opt-out
+        (``PYFORGE_PREFLIGHT_SKIP=1`` and a reason naming the branch and sha)
+        where the platform can set it -- otherwise through the preflight. The
+        hook cannot prove a push carries nothing new under pre-commit
+        (steward 68.2); only the caller that made the fast-forward can."""
         ...
 
-    def changed_files(
-        self, repo_root: Path, worktree_path: Path, *, base: str
-    ) -> tuple[str, ...]:
+    def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
         """Story 2.3's frozen-surface scope check (AD-27): every repo-
         relative POSIX path ``worktree_path`` has touched relative to
         ``base`` -- the UNION of (a) ``git diff --name-only
@@ -307,9 +333,7 @@ class VcsPort(Protocol):
         repository, a corrupted repo)."""
         ...
 
-    def worktree_unified_patch(
-        self, worktree_path: Path, *, baseline_sha: str
-    ) -> str:
+    def worktree_unified_patch(self, worktree_path: Path, *, baseline_sha: str) -> str:
         """Story 22.6: unified diff of all recoverable work in ``worktree_path``
         since ``baseline_sha`` — committed range plus working-tree overlay.
         Returns an empty string when there is nothing to preserve. Read-only.
@@ -324,7 +348,7 @@ class VcsPort(Protocol):
         subject that isn't a story-merge subject at all, so this method's
         job is exhaustive enumeration, not classification. Raises
         ``VcsCommandError`` if ``ref`` does not resolve (e.g. no ``origin``
-        remote configured for ``ref="origin/main"``, or a corrupted repo
+        remote configured for ``ref="refs/remotes/origin/main"``, or a corrupted repo
         with no ``main``) or on any other git failure."""
         ...
 
@@ -386,7 +410,10 @@ class VcsPort(Protocol):
         failure (``into`` moved concurrently), or other git failure -- a
         caller treats that as a hard stop: never retried, never
         auto-resolved. The temp worktree used internally is always removed
-        before this returns or raises, on every exit path."""
+        before this returns or raises, on every exit path. ``branch`` is a
+        revision -- a sha or a full ``refs/heads/<branch>`` (Story 61.1: a
+        bare name lets a tag of that name stand in); ``into`` is a branch
+        name, which this method qualifies itself."""
         ...
 
     def worktree_head_sha(self, worktree_path: Path) -> str:
@@ -405,11 +432,14 @@ class VcsPort(Protocol):
         ...
 
     def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
-        """Story 4.12 (FR-173): ``git fetch <remote> <ref>`` against
+        """Story 4.12 (FR-173): ``git fetch <remote> refs/heads/<ref>`` against
         ``repo_root`` -- a NETWORK read updating ONLY the remote-tracking
-        ref ``refs/remotes/<remote>/<ref>``, never any local branch.
-        Raises ``VcsCommandError`` on any git failure (no network, an
-        unknown remote, an unresolvable ``ref``)."""
+        ref ``refs/remotes/<remote>/<ref>``, never any local branch. ``ref``
+        is the remote's branch NAME, which the adapter qualifies (Story 61.1:
+        a short source resolves to the remote's tag of that name first, which
+        updates nothing but ``FETCH_HEAD``) -- never a tag, a sha or a full
+        ref. Raises ``VcsCommandError`` on any git failure (no network, an
+        unknown remote, no such branch on the remote)."""
         ...
 
     def fast_forward(self, worktree_path: Path, ref: str) -> str:
@@ -435,18 +465,62 @@ class VcsPort(Protocol):
         than inventing a count."""
         ...
 
-    def merge_tree_conflict_paths(
-        self, repo_root: Path, base: str, branch: str
-    ) -> tuple[str, ...]:
+    def merge_tree_conflict_paths(self, repo_root: Path, base: str, branch: str) -> tuple[str, ...]:
         """Story 28.20: ``git merge-tree`` conflict paths between ``base``
         and ``branch``, read-only. Returns an empty tuple when the merge
-        tree is clean. Raises ``VcsCommandError`` on git failure."""
+        tree is clean, and every conflicted path otherwise -- content,
+        modify/delete and add/add alike (Story 58.1, CAP-268). Raises
+        ``VcsCommandError`` on git failure (an unknown ref included) and on a
+        conflict that names no file, never an empty tuple for either."""
+        ...
+
+    def merge_ref_resolving(
+        self,
+        worktree_path: Path,
+        ref: str,
+        *,
+        resolutions: Mapping[str, str],
+        message: str,
+    ) -> str:
+        """Story 59.1 (CAP-269): merge ``ref`` into ``worktree_path``'s checked-out branch as a
+        real two-parent merge commit. Every conflicted path must be a key of ``resolutions``
+        (repo-relative POSIX path -> the full resolved text), which is written and staged;
+        any other conflicted path aborts the merge -- the worktree back at its previous HEAD,
+        nothing committed -- and raises ``VcsCommandError``, as does any git failure. A merge
+        already in progress in the worktree is refused, never adopted or aborted. Returns the
+        merge commit's sha (HEAD itself when ``ref`` is already merged). Never pushes."""
         ...
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
         """Story 28.20: ``git show ref:path``, read-only. Returns ``None``
         when the path is absent at ``ref``. Raises ``VcsCommandError`` on
         other git failures."""
+        ...
+
+    def merge_tree_write(self, repo_root: Path, base: str, branch: str) -> str | None:
+        """Story 51.1: ``git merge-tree --write-tree base branch``'s
+        ``--write-tree`` sibling of ``merge_tree_conflict_paths`` above --
+        read-only, and it never performs a real merge or moves any ref.
+        Returns the resulting tree's oid when the merge-tree preview is
+        clean; ``None`` when git itself reports a real conflict (the
+        existing ``merge_tree_conflict_paths``/``MRS-DISP-038`` heal path
+        already owns that case). Raises ``VcsCommandError`` only on a
+        genuine git failure -- an ordinary conflict is a normal outcome,
+        never an exception."""
+        ...
+
+    def add_worktree_for_tree(self, repo_root: Path, home: Path, tree_oid: str, *, parent: str) -> None:
+        """Story 51.1: wraps ``tree_oid`` (typically ``merge_tree_write``'s
+        own output) in a throwaway commit -- pinned ``user.name``/
+        ``user.email``/``commit.gpgsign=false``, mirroring
+        ``is_branch_merged``'s own ``commit-tree`` discipline -- with
+        ``parent`` as its sole parent, then checks it out detached at
+        ``home`` (``git worktree add --detach``, mirroring ``add_worktree``
+        above). The synthetic commit is never referenced by any branch or
+        tag; it exists solely so ``home`` has a commit-ish to check out, and
+        is eligible for garbage collection once ``home`` is removed
+        (``remove_worktree``). Raises ``VcsCommandError`` on any git
+        failure."""
         ...
 
     def commit_paths_onto_remote_tip(
@@ -457,6 +531,7 @@ class VcsPort(Protocol):
         ref: str,
         writes: tuple[tuple[str, str], ...],
         message: str,
+        preflight_skip_reason: str | None = None,
     ) -> str:
         """CAP-5 / land-promote-isolation: fetch ``remote``/``ref``, commit
         ``writes`` (repo-relative POSIX path, full file text) onto that
@@ -469,7 +544,27 @@ class VcsPort(Protocol):
         ``repo_root`` is used only as ``git -C`` for fetch / worktree add /
         push (shared object store). Never ``--force``.
 
+        Story 68.1 (spec-pyforge-marshal CAP-277): ``preflight_skip_reason``
+        (keyword-only) is the proof-carrying opt-out from the repository's
+        ``pre-push`` preflight (``spec-pyforge-steward:CAP-154``), for a
+        landing's bookkeeping publish, which the preflight would otherwise
+        run in full and outlast the push's git timeout. A caller passing one
+        NAMES THE STORY in it. The adapter then (1) refuses, before any
+        write or fetch, a written path that is not a normalized
+        ``_bmad-output/projects/<slug>/planning-artifacts/...`` path, and
+        (2) refuses, after building the commit and before any push, a commit
+        that names any path outside the written set. Only a commit that
+        passes both is pushed with the hook's journaled opt-out
+        (``PYFORGE_PREFLIGHT_SKIP=1`` and a ``PYFORGE_PREFLIGHT_SKIP_REASON``
+        naming the new sha, the paths and the caller's reason), set for that
+        one ``git push`` only through the POSIX ``env`` utility, exactly as
+        ``push`` does for Story 57.1. Where ``env`` does not exist the push
+        runs the preflight. With ``None`` (the default) the push is
+        unchanged and the hook runs as it always did.
+
         Returns the new commit sha. Raises ``VcsCommandError`` if
-        ``writes`` is empty, fetch fails, the push is not a fast-forward,
-        or on any other git failure."""
+        ``writes`` is empty, a reason is given for a write outside
+        ``planning-artifacts/`` or for a commit naming an unwritten path,
+        fetch fails, the push is not a fast-forward, or on any other git
+        failure."""
         ...

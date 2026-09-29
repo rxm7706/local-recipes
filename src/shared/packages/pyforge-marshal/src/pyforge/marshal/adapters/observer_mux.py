@@ -57,13 +57,14 @@ of its own managed windows.
 from __future__ import annotations
 
 import json
-import time
+
 # `subprocess` is imported for this module's own tests' monkeypatch anchor
 # (`monkeypatch.setattr(module.subprocess, "run", ...)` -- the same physical
 # stdlib module object `PosixProcess.run` itself calls, so patching it here
 # still reaches the real launch below) -- the production code never calls
 # `subprocess.*` directly (Story 14.4, SPEC-pyforge-core CAP-6).
 import subprocess  # noqa: F401
+import time
 from pathlib import Path
 
 from pyforge.core.process import PosixProcess, ProcessError
@@ -151,7 +152,7 @@ class MultiplexerObserver:
         try:
             redacted = to_redacted({"pane": result.stdout})
             return json.loads(redacted.text)["pane"]
-        except (ValueError, LookupError, TypeError):
+        except ValueError, LookupError, TypeError:
             # Review finding (Story 3.4): these two lines -- the only ones in
             # this method that TRANSFORM data -- sat outside the try above,
             # so this port's documented "never raises" contract rested
@@ -216,7 +217,7 @@ class MultiplexerObserver:
     def mtime(self, path: Path) -> float | None:
         try:
             return path.stat().st_mtime
-        except (OSError, ValueError):
+        except OSError, ValueError:
             # `ValueError` alongside `OSError` (review finding, Story 3.4):
             # `Path.stat` raises a plain `ValueError` -- not an `OSError` --
             # for a path containing an embedded NUL byte, which would

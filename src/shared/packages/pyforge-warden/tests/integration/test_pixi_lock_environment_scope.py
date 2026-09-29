@@ -55,9 +55,7 @@ def _expected_identities_from_lock(document: object) -> set[tuple[str, str | Non
 def test_root_pixi_lock_python_agent_platform_linux64_matches_env_list():
     document = yaml.safe_load(_ROOT_PIXI_LOCK.read_text(encoding="utf-8"))
     expected = _expected_identities_from_lock(document)
-    extractor = PixiLockExtractor(
-        DefaultRouter(), environment=_ENVIRONMENT, platform=_PLATFORM
-    )
+    extractor = PixiLockExtractor(DefaultRouter(), environment=_ENVIRONMENT, platform=_PLATFORM)
     components = extractor.extract(_ROOT_PIXI_LOCK, _MANIFEST)
     actual = {(c.name, c.version) for c in components}
     assert actual == expected

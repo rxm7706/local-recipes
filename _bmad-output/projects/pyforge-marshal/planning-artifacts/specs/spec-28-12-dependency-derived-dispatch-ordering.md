@@ -2,7 +2,7 @@
 title: 'Dependency-derived dispatch ordering (Story 28.12, Epic 28)'
 type: 'feature'
 created: '2026-08-31'
-status: 'shipped'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: medium
@@ -85,3 +85,17 @@ existing `factory drain`/`dispatch` machinery only). Motivating incident:
 
 - 2026-08-31: drafted from marshal-dependency-aware-dispatch fold-in (CAP-14; bmad-correct-course sprint-change-proposal-2026-08-31)
 - 2026-09-01: shipped — `dependency_ordered_backlog` + epics `Deps:` parse in `dispatch_fleet.py`; `execute_fleet_cycle` loads deps when no `--stories`/`order_override`
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `bbb208bbf7` (2026-08-31, "marshal: add ready-for-dev specs for Epic 28 stories 28.12–28.15"); also `5c947eebec` (2026-08-31, "marshal: fold dependency-aware dispatch into Epic 28 (Stories 28.12/28.13)"). Ledger row `28-12-dependency-derived-dispatch-ordering: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-12-dependency-derived-dispatch-ordering.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-13-sanctioned-retry-after-an-operator-initiated-stop.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-14-auto-derived-effective-surface-no-manual-per-story-widening.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `28-12-dependency-derived-dispatch-ordering: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

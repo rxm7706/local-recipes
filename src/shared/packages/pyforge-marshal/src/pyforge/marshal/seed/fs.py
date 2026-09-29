@@ -186,25 +186,13 @@ class NeverWrite:
 
     def __post_init__(self) -> None:
         patterns = tuple(self.patterns) if isinstance(self.patterns, list) else self.patterns
-        if not isinstance(patterns, tuple) or not all(
-            isinstance(item, str) and item.strip() for item in patterns
-        ):
-            raise ValueError(
-                f"NeverWrite.patterns must contain only non-blank str, got {self.patterns!r}"
-            )
+        if not isinstance(patterns, tuple) or not all(isinstance(item, str) and item.strip() for item in patterns):
+            raise ValueError(f"NeverWrite.patterns must contain only non-blank str, got {self.patterns!r}")
         object.__setattr__(self, "patterns", tuple(item.strip() for item in patterns))
 
-        exempt = (
-            frozenset(self.exempt)
-            if isinstance(self.exempt, (list, set, tuple))
-            else self.exempt
-        )
-        if not isinstance(exempt, frozenset) or not all(
-            isinstance(item, str) and item.strip() for item in exempt
-        ):
-            raise ValueError(
-                f"NeverWrite.exempt must contain only non-blank str, got {self.exempt!r}"
-            )
+        exempt = frozenset(self.exempt) if isinstance(self.exempt, (list, set, tuple)) else self.exempt
+        if not isinstance(exempt, frozenset) or not all(isinstance(item, str) and item.strip() for item in exempt):
+            raise ValueError(f"NeverWrite.exempt must contain only non-blank str, got {self.exempt!r}")
         object.__setattr__(self, "exempt", frozenset(item.strip() for item in exempt))
 
 
@@ -246,9 +234,7 @@ def _matches(never_write: NeverWrite, relative_posix_str: str) -> str | None:
     return None
 
 
-def _guard(
-    path: Path, *, repo_root: Path, never_write: NeverWrite, resolve_leaf: bool = True
-) -> None:
+def _guard(path: Path, *, repo_root: Path, never_write: NeverWrite, resolve_leaf: bool = True) -> None:
     """The one check ``write``, ``replace_span``, and ``remove`` all share,
     run before any of them touches the filesystem.
 
@@ -405,9 +391,7 @@ def replace_span(
     _guard(path, repo_root=repo_root, never_write=never_write)
     original = path.read_bytes()
     if not (0 <= start <= end <= len(original)):
-        raise ValueError(
-            f"invalid span [{start}, {end}) for {path} ({len(original)} bytes)"
-        )
+        raise ValueError(f"invalid span [{start}, {end}) for {path} ({len(original)} bytes)")
     spliced = original[:start] + new_body + original[end:]
     atomic_write_bytes(path, spliced)
 
@@ -498,9 +482,7 @@ def symlink(link_path: Path, target: Path | str, *, repo_root: Path, never_write
     target_str = str(target)
     if link_path.is_symlink():
         current_target = os.readlink(link_path)
-        if _resolved_symlink_target(link_path, current_target) == _resolved_symlink_target(
-            link_path, target_str
-        ):
+        if _resolved_symlink_target(link_path, current_target) == _resolved_symlink_target(link_path, target_str):
             return
     elif link_path.exists():
         raise SymlinkTargetOccupiedError(

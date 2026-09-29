@@ -118,23 +118,15 @@ def run_evidence_revalidation(
     means every entry this run actually revalidates carries the exact
     stamp compared against below."""
     resolved_now = now()
-    updated = claims.revalidate_all(
-        claims_path, validate=validate, now=lambda: resolved_now
-    )
+    updated = claims.revalidate_all(claims_path, validate=validate, now=lambda: resolved_now)
     stamp = resolved_now.isoformat()
     broken_ids = tuple(
-        claim.id
-        for claim in updated
-        if any(not e.validated and e.validated_at == stamp for e in claim.evidence)
+        claim.id for claim in updated if any(not e.validated and e.validated_at == stamp for e in claim.evidence)
     )
-    return EvidenceRevalidationResult(
-        claims_checked=len(updated), broken_evidence_claim_ids=broken_ids
-    )
+    return EvidenceRevalidationResult(claims_checked=len(updated), broken_evidence_claim_ids=broken_ids)
 
 
-def run_progress_aggregation(
-    progress_path: Path, out_dir: Path
-) -> ProgressAggregationResult:
+def run_progress_aggregation(progress_path: Path, out_dir: Path) -> ProgressAggregationResult:
     """Thin wrapper over ``progress.write_snapshot`` -- writes
     ``out_dir/progress.json`` from every currently-stored progress record,
     the same shape ``scripts/export_progress_snapshot.py`` has always
@@ -149,9 +141,7 @@ def run_progress_aggregation(
     caller for one extra integer)."""
     records_aggregated = len(progress.list_records(progress_path))
     snapshot_path = progress.write_snapshot(progress_path, out_dir)
-    return ProgressAggregationResult(
-        records_aggregated=records_aggregated, snapshot_path=snapshot_path
-    )
+    return ProgressAggregationResult(records_aggregated=records_aggregated, snapshot_path=snapshot_path)
 
 
 def run_scheduled_jobs(
@@ -179,9 +169,7 @@ def run_scheduled_jobs(
         revalidation = run_evidence_revalidation(claims_path, validate=validate, now=now)
     except HeraldError as exc:
         revalidation_error = exc
-        revalidation = EvidenceRevalidationResult(
-            claims_checked=0, broken_evidence_claim_ids=()
-        )
+        revalidation = EvidenceRevalidationResult(claims_checked=0, broken_evidence_claim_ids=())
     aggregation = run_progress_aggregation(progress_path, out_dir)
     if revalidation_error is not None:
         raise revalidation_error

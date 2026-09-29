@@ -21,9 +21,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, TypedDict
 
-LEDGER_KEY = (
-    "28-31-structure-graph-codegraph-for-dispatch-provisioning-cost-weighed-against-a-single-story-session"
-)
+LEDGER_KEY = "28-31-structure-graph-codegraph-for-dispatch-provisioning-cost-weighed-against-a-single-story-session"
 REPRESENTATIVE_STORY_KEY = "28-31"
 ARTIFACT_SCHEMA = "marshal-structure-graph-dispatch-benchmark/v1"
 # Same chars/4 heuristic caveman and headroom use for rough token estimates.
@@ -45,8 +43,7 @@ REPRESENTATIVE_NAVIGATION_PATHS: tuple[str, ...] = (
     "spec-28-5-the-pinned-wrapped-vs-unwrapped-benchmark.md",
     "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/"
     "spec-28-33-the-structure-graph-reference-is-wired-for-spin-unblocking-the-already-built-loop-home-index.md",
-    "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/"
-    "spec-marshal-token-economy/integration-layers.md",
+    "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/integration-layers.md",
     "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/token_economy_benchmark.py",
 )
 

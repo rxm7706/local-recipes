@@ -42,3 +42,16 @@ final_revision: b33964096f7bd2d2428fac45bf9caf3f8a88423d
 ## Verification
 
 - `pixi run --frozen -e platform-dev pytest src/platform/tests/test_chart_invariants.py`
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `b33964096f` (2026-08-23, "Merge pull request #644 from rxm7706/steward/12-6-redis-hardened"). Ledger row `12-6-redis-is-hardened-still-ephemeral: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/platform/deploy/README.md`, `src/platform/deploy/charts/platform/templates/NOTES.txt`, `src/platform/deploy/charts/platform/templates/_helpers.tpl`, `src/platform/deploy/charts/platform/templates/redis-deployment.yaml`, `src/platform/deploy/charts/platform/templates/redis-networkpolicy.yaml`, `src/platform/deploy/charts/platform/values.yaml`, `src/platform/tests/test_chart_invariants.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -132,3 +132,5 @@ verifiably conform to their applicable clauses or carry dated deviations; CAP-2 
 with its extraction-not-import rule and third-surface trigger recorded; and the owner dream reads
 `status: specified` with a Realization-log entry closing the "spec'd with (not after) the family"
 obligation.
+
+> Mason one-chain fold 2026-09-17: this folder stays `absorbed-into: spec-pyforge-unifying-strategy` (pre-existing cross-station absorb). Dream archived into [[pyforge-mason]]. Companions/surface unchanged.

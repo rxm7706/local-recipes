@@ -32,6 +32,8 @@ on:
       - 'src/shared/packages/pyforge-*/**'
       - 'scripts/coverage_gates_ci.py'
       - 'scripts/run_station_coverage_gate.py'
+      - 'scripts/coverage_gate.py'
+      - 'docs/governance/coverage-thresholds.toml'
       - '.github/workflows/coverage-gates.yml'
   push:
     branches: [main]
@@ -39,6 +41,8 @@ on:
       - 'src/shared/packages/pyforge-*/**'
       - 'scripts/coverage_gates_ci.py'
       - 'scripts/run_station_coverage_gate.py'
+      - 'scripts/coverage_gate.py'
+      - 'docs/governance/coverage-thresholds.toml'
       - '.github/workflows/coverage-gates.yml'
   workflow_dispatch:
 
@@ -66,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="origin/${GITHUB_BASE_REF}"
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
           elif [ "${{ github.event_name }}" = "push" ]; then
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           else
@@ -75,7 +79,11 @@ jobs:
           # pyforge-core, pyforge-testing-kit, pixi.toml/lock and this workflow are
           # shared surface: all eight stations depend on core and pixi.lock pins
           # every env at once, so a change to any of them gates the whole fleet.
-          # Same rule as pyforge-station-tests.yml, deliberately.
+          # Same rule as pyforge-station-tests.yml, deliberately. scripts/coverage_gate.py
+          # and docs/governance/coverage-thresholds.toml (the evaluator + its thresholds,
+          # moved outside every pyforge.<station> package 2026-09-20, doctor Story 24.1)
+          # are shared surface for the same reason as the two drivers below: every
+          # station's gate reads them.
           SHARED=false
           if ! git diff --quiet "$BASE"...HEAD -- \
               src/shared/packages/pyforge-core \
@@ -83,6 +91,8 @@ jobs:
               pixi.toml pixi.lock \
               scripts/coverage_gates_ci.py \
               scripts/run_station_coverage_gate.py \
+              scripts/coverage_gate.py \
+              docs/governance/coverage-thresholds.toml \
               .github/workflows/coverage-gates.yml 2>/dev/null; then
             SHARED=true
           fi
@@ -111,6 +121,27 @@ jobs:
       fail-fast: false
       matrix:
         station: ${{ fromJSON(needs.changes.outputs.stations) }}
+    # scribe's leg collects tests/unit/test_graph_store_pg.py and test_recall_semantic.py,
+    # whose conftest fails loudly (never skips) without a reachable PostgreSQL + pgvector --
+    # the same service pyforge-station-tests.yml's scribe-test job runs. This lane never
+    # had it, so every scribe-selected run (any scribe edit, or the shared surface) ended
+    # "18 errors ... pytest failed for pyforge-scribe unit (exit 1)" before the gate could
+    # evaluate anything (found live 2026-09-19 on PR #1513, a pixi.lock change). Services
+    # are job-level in a matrix, so every leg gets the container; only scribe uses it.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17  # PostgreSQL 17, like every pin in the estate (steward Story 67.1)
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: scribe
+          POSTGRES_DB: scribe_graph
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v7
         with:
@@ -121,19 +152,28 @@ jobs:
           environments: pyforge-${{ matrix.station }}
           cache: true
 
+      - name: Enable pgvector extension (scribe)
+        if: matrix.station == 'scribe'
+        env:
+          PGPASSWORD: scribe
+        run: psql -h 127.0.0.1 -p 5433 -U postgres -d scribe_graph -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
       # herald's tests/meta/test_skf_skill_and_persona.py invokes `uv run` directly
       # (its skf-frontmatter validator is meant to be runnable standalone via uv, not
       # as a pixi dependency). pyforge-station-tests.yml provides this for the same
       # reason; the coverage lane collects tests/meta too, so it needs it as well.
       - uses: astral-sh/setup-uv@v5
 
-      # The gate's own fixture proof lives in marshal (it owns coverage_gate.py),
-      # so it runs only on marshal's job rather than eight times.
+      # The gate's own fixture proof lives at scripts/coverage_gate.py -- guild-owned
+      # (docs/governance/spec-coverage-gate-independence/ CAP-1), outside every
+      # pyforge.<station> package since 2026-09-20 (doctor Story 24.1) -- so it runs
+      # once, on doctor's job (the mechanism owner under Charter §5's outcome/
+      # mechanism rule), rather than eight times.
       - name: Named-module fixture proof
-        if: matrix.station == 'marshal'
+        if: matrix.station == 'doctor'
         run: >
-          pixi run --frozen -e pyforge-marshal pytest
-          src/shared/packages/pyforge-marshal/tests/meta/test_coverage_gate_names_module.py
+          pixi run --frozen -e pyforge-doctor pytest
+          tests/scripts/test_coverage_gate_names_module.py
           -q --tb=short
 
       - name: Coverage gate for ${{ matrix.station }}
@@ -150,7 +190,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="origin/${GITHUB_BASE_REF}"
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi

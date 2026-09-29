@@ -120,3 +120,16 @@ avoids touching `linter.py` and matches how staged-recipes forks already vendor 
 
 **Commands:**
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `3b519841c7` (2026-08-22, "Merge pull request #631 from rxm7706/mason/9-1-workflow-call-wrappers"); also `95f1db76aa` (2026-08-13, "Merge branch 'bmad-loop/20260813-094919-bfcb/9-1-findings-model-severity-types-remedies' i"). Ledger row `9-1-the-repos-ci-is-consumable-via-workflow-call: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.github/workflows/reusable-staged-recipes-linter-selftest.yml`, `.github/workflows/reusable-staged-recipes-linter.yml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

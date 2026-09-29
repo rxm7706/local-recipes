@@ -116,10 +116,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
                         source=Source.BMAD_OUTPUT_HYGIENE,
                         check="station-unevaluable",
                         status=DoctorStatus.WARN,
-                        message=(
-                            f"{station}: could not be evaluated here — "
-                            f"{exc.__class__.__name__}: {exc}"
-                        ),
+                        message=(f"{station}: could not be evaluated here — {exc.__class__.__name__}: {exc}"),
                         evidence={"station": station},
                     )
                 )
@@ -141,9 +138,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
     return tuple(findings)
 
 
-def _evaluate_station(
-    target: Path, project_dir: Path, findings: list[Finding]
-) -> None:
+def _evaluate_station(target: Path, project_dir: Path, findings: list[Finding]) -> None:
     """Append one station's hygiene findings to the CALLER's ``findings``
     list -- appended directly, not built locally and returned, so a raise
     part-way through does not discard the findings this station has already
@@ -157,25 +152,17 @@ def _evaluate_station(
     _check_orphan_files(target, project_dir, station, findings)
 
 
-def _check_dead_test_scaffolding(
-    project_dir: Path, station: str, findings: list[Finding]
-) -> None:
+def _check_dead_test_scaffolding(project_dir: Path, station: str, findings: list[Finding]) -> None:
     tests_dir = project_dir / "tests"
     # Computed once and reused for both the has-a-candidate check and the
     # marker-only evidence path below -- avoids re-scanning the filesystem a
     # second time and the `next()`-on-a-possibly-empty-iterator risk that
     # re-deriving it later would carry.
-    matched_markers = [
-        name for name in _TEST_MARKER_FILES if (project_dir / name).is_file()
-    ]
+    matched_markers = [name for name in _TEST_MARKER_FILES if (project_dir / name).is_file()]
     if not tests_dir.is_dir() and not matched_markers:
         return
     if tests_dir.is_dir():
-        relpaths = [
-            str(path.relative_to(tests_dir))
-            for path in sorted(tests_dir.rglob("*"))
-            if path.is_file()
-        ]
+        relpaths = [str(path.relative_to(tests_dir)) for path in sorted(tests_dir.rglob("*")) if path.is_file()]
         evidence_path = "tests"
         reason = "tests/ scaffolding holds no real test_*.py file"
     else:
@@ -199,9 +186,7 @@ def _check_dead_test_scaffolding(
     )
 
 
-def _check_hollow_sprint_status(
-    project_dir: Path, station: str, findings: list[Finding]
-) -> None:
+def _check_hollow_sprint_status(project_dir: Path, station: str, findings: list[Finding]) -> None:
     sprint_status = project_dir / "planning-artifacts" / _SPRINT_STATUS_FILENAME
     if not sprint_status.is_file():
         return
@@ -213,10 +198,7 @@ def _check_hollow_sprint_status(
             source=Source.BMAD_OUTPUT_HYGIENE,
             check=HygieneFindingKind.HOLLOW_SPRINT_STATUS.value,
             status=DoctorStatus.WARN,
-            message=(
-                f"{station}: {_SPRINT_STATUS_FILENAME} declares zero "
-                f"epics, zero stories, and 0% completion"
-            ),
+            message=(f"{station}: {_SPRINT_STATUS_FILENAME} declares zero epics, zero stories, and 0% completion"),
             evidence={
                 "station": station,
                 "path": f"planning-artifacts/{_SPRINT_STATUS_FILENAME}",
@@ -225,9 +207,7 @@ def _check_hollow_sprint_status(
     )
 
 
-def _check_readme_placeholder(
-    project_dir: Path, station: str, findings: list[Finding]
-) -> None:
+def _check_readme_placeholder(project_dir: Path, station: str, findings: list[Finding]) -> None:
     readme = project_dir / "README.md"
     if not readme.is_file():
         return
@@ -306,9 +286,7 @@ def _ledger_all_done(project_dir: Path) -> bool:
     return all(value == "done" for value in statuses.values())
 
 
-def _check_stale_dream_status(
-    target: Path, project_dir: Path, station: str, findings: list[Finding]
-) -> None:
+def _check_stale_dream_status(target: Path, project_dir: Path, station: str, findings: list[Finding]) -> None:
     dream_path = target / "docs" / "dreams" / f"{project_dir.name}.md"
     if not dream_path.is_file():
         return
@@ -323,10 +301,7 @@ def _check_stale_dream_status(
             source=Source.BMAD_OUTPUT_HYGIENE,
             check=HygieneFindingKind.STALE_DREAM_STATUS.value,
             status=DoctorStatus.WARN,
-            message=(
-                f"{station}: Dream status is still 'specified' while every "
-                f"tracked story is done"
-            ),
+            message=(f"{station}: Dream status is still 'specified' while every tracked story is done"),
             evidence={
                 "station": station,
                 "path": f"docs/dreams/{project_dir.name}.md",
@@ -344,9 +319,7 @@ def _orphan_file_candidates(project_dir: Path) -> list[Path]:
     candidates = [path for path in sorted(project_dir.iterdir()) if path.is_file()]
     planning_artifacts = project_dir / "planning-artifacts"
     if planning_artifacts.is_dir():
-        candidates.extend(
-            path for path in sorted(planning_artifacts.rglob("*")) if path.is_file()
-        )
+        candidates.extend(path for path in sorted(planning_artifacts.rglob("*")) if path.is_file())
     return candidates
 
 
@@ -377,9 +350,7 @@ def _has_inbound_references(target: Path, repo_relpath: str) -> bool:
     return bool(others)
 
 
-def _check_orphan_files(
-    target: Path, project_dir: Path, station: str, findings: list[Finding]
-) -> None:
+def _check_orphan_files(target: Path, project_dir: Path, station: str, findings: list[Finding]) -> None:
     for candidate in _orphan_file_candidates(project_dir):
         relpath = str(candidate.relative_to(project_dir))
         # Cheap pre-filter (Never clause): a conventional name/directory is
@@ -400,10 +371,7 @@ def _check_orphan_files(
                     source=Source.BMAD_OUTPUT_HYGIENE,
                     check="orphan-file-unevaluable",
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"{station}: {relpath} — inbound-reference check "
-                        f"could not be evaluated here — {exc}"
-                    ),
+                    message=(f"{station}: {relpath} — inbound-reference check could not be evaluated here — {exc}"),
                     evidence={"station": station, "path": relpath},
                 )
             )
@@ -415,10 +383,7 @@ def _check_orphan_files(
                 source=Source.BMAD_OUTPUT_HYGIENE,
                 check=HygieneFindingKind.ORPHAN_FILE.value,
                 status=DoctorStatus.WARN,
-                message=(
-                    f"{station}: {relpath} is unreferenced and its name/"
-                    f"location is non-conventional"
-                ),
+                message=(f"{station}: {relpath} is unreferenced and its name/location is non-conventional"),
                 evidence={"station": station, "path": relpath},
             )
         )

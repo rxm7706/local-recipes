@@ -75,8 +75,20 @@ _FUTURE_NOW_TOLERANCE = timedelta(seconds=60)
 # `isnull`, whose value is a bool.
 _DATE_PART_LOOKUPS = frozenset(
     {
-        "date", "time", "year", "iso_year", "quarter", "month", "day", "week",
-        "week_day", "iso_week_day", "hour", "minute", "second", "isnull",
+        "date",
+        "time",
+        "year",
+        "iso_year",
+        "quarter",
+        "month",
+        "day",
+        "week",
+        "week_day",
+        "iso_week_day",
+        "hour",
+        "minute",
+        "second",
+        "isnull",
     }
 )
 
@@ -213,9 +225,7 @@ def _check_reference_datetime(field_name: str, value) -> None:
     # `datetime` before `date`: `datetime` is a `date` subclass, so an
     # `isinstance(value, _dt.date)` check would admit a bare `date`.
     if not isinstance(value, _dt.datetime):
-        raise TypeError(
-            f"{field_name} must be a datetime, got {type(value).__name__}"
-        )
+        raise TypeError(f"{field_name} must be a datetime, got {type(value).__name__}")
     expected_aware = timezone.is_aware(timezone.now())
     if timezone.is_aware(value) != expected_aware:
         shape = "aware" if expected_aware else "naive"
@@ -252,10 +262,7 @@ def _check_actor_and_role(
     defect pass 2 fixed for `occurred_at`.
     """
     if not isinstance(actor, str):
-        raise TypeError(
-            f"{caller}'s {actor_param} must be a string, got "
-            f"{type(actor).__name__}"
-        )
+        raise TypeError(f"{caller}'s {actor_param} must be a string, got {type(actor).__name__}")
     if not actor.strip():
         raise ValueError(
             f"{caller} requires a non-blank {actor_param} — CAP-4's 'who "
@@ -266,10 +273,7 @@ def _check_actor_and_role(
     if role is None:
         return
     if not isinstance(role, str):
-        raise TypeError(
-            f"{caller}'s {role_param} must be None or a string, got "
-            f"{type(role).__name__}"
-        )
+        raise TypeError(f"{caller}'s {role_param} must be None or a string, got {type(role).__name__}")
     if not role.strip():
         raise ValueError(
             f"{caller}'s {role_param} must be None (no role "
@@ -329,18 +333,14 @@ def _check_filters(filters: dict) -> None:
             # exhausted iterator that silently matches nothing.
             elements = list(filter_value)
             filters[filter_name] = elements
-        elif isinstance(filter_value, (str, bytes)) or not hasattr(
-            filter_value, "__iter__"
-        ):
+        elif isinstance(filter_value, (str, bytes)) or not hasattr(filter_value, "__iter__"):
             elements = [filter_value]
         else:
             # An opaque iterable (a queryset used as an `__in` subquery, a
             # query expression) — not this function's to interpret.
             continue
 
-        if isinstance(field, models.DateTimeField) and not (
-            set(parts[1:]) & _DATE_PART_LOOKUPS
-        ):
+        if isinstance(field, models.DateTimeField) and not (set(parts[1:]) & _DATE_PART_LOOKUPS):
             for element in elements:
                 _check_reference_datetime(filter_name, element)
         elif isinstance(field, models.CharField):
@@ -383,10 +383,7 @@ def record_audit_entry(
     _check_actor_and_role(actor, role)
 
     if not isinstance(target, str):
-        raise TypeError(
-            f"record_audit_entry's target must be a string, got "
-            f"{type(target).__name__}"
-        )
+        raise TypeError(f"record_audit_entry's target must be a string, got {type(target).__name__}")
     _check_string_field("target", target)
 
     # Wrong TYPE and wrong VALUE are separate errors (review pass 4). `action`
@@ -396,8 +393,7 @@ def record_audit_entry(
     # for `actor`/`role`, never applied to the last parameter that had it.
     if not isinstance(action, str):
         raise TypeError(
-            f"record_audit_entry's action must be a string (an AuditAction "
-            f"value), got {type(action).__name__}"
+            f"record_audit_entry's action must be a string (an AuditAction value), got {type(action).__name__}"
         )
     if action not in AuditAction.values:
         raise ValueError(
@@ -412,10 +408,7 @@ def record_audit_entry(
     # Python and `True < 0` is `False`, so a caller passing a boolean flag
     # by mistake would otherwise sail through as `row_count=1`/`0`.
     if not isinstance(row_count, int) or isinstance(row_count, bool):
-        raise TypeError(
-            f"record_audit_entry's row_count must be an int, got "
-            f"{type(row_count).__name__}"
-        )
+        raise TypeError(f"record_audit_entry's row_count must be an int, got {type(row_count).__name__}")
     if row_count < 0:
         raise ValueError(
             f"record_audit_entry's row_count must be >= 0, got {row_count} "
@@ -448,9 +441,7 @@ def record_audit_entry(
     )
 
 
-def query_audit_entries(
-    *, reader_actor: str, reader_role: str | None, **filters
-) -> list[AuditEntry]:
+def query_audit_entries(*, reader_actor: str, reader_role: str | None, **filters) -> list[AuditEntry]:
     """Read the audit trail, and record that this read happened (AD-7).
 
     Any keyword filters are applied via `AuditEntry.objects.filter(**filters)`.

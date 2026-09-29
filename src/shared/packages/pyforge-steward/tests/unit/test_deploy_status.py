@@ -11,6 +11,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.deploy import DeployRecord, last_deploy_commit
 
@@ -93,7 +94,7 @@ def test_deploy_status_via_cli_reports_the_last_deploy(tmp_path, monkeypatch):
     (work / "docs" / "dashboard" / "data.js").write_text("v1\n")
     _git("add", "-A", cwd=work)
     _git("commit", "-m", "dashboard: refresh status", cwd=work)
-    expected_sha = _git("rev-parse", "HEAD", cwd=work).stdout.strip()
+    _git("rev-parse", "HEAD", cwd=work).stdout.strip()
 
     monkeypatch.setattr("pyforge.steward.deploy.repo_root", lambda: work)
 

@@ -24,6 +24,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed.detect.findings import FindingType, Severity
 from pyforge.marshal.seed.detect.inventory import (
     ArtifactState,
@@ -59,9 +60,7 @@ def _manifest(*entries: ManifestEntry, never_write: tuple[str, ...] = ()) -> Man
     return Manifest(model_version=_VERSION, never_write=never_write, entries=tuple(entries))
 
 
-def _referenced(
-    entry_id: str, path: str = "unused", *, legacy_of: str | None = None
-) -> ManifestEntry:
+def _referenced(entry_id: str, path: str = "unused", *, legacy_of: str | None = None) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.REFERENCED,
@@ -112,9 +111,7 @@ def _doc(*lines: str) -> str:
 def _hybrid_text(name: str, fmt: RegionFormat = RegionFormat.HTML) -> str:
     body = "line1\n"
     sha = region_sha(body)
-    return _doc(
-        "intro", render_begin(fmt, name, _VERSION, sha), "line1", render_end(fmt, name), "outro"
-    )
+    return _doc("intro", render_begin(fmt, name, _VERSION, sha), "line1", render_end(fmt, name), "outro")
 
 
 def _one(inventory: Inventory) -> Classification:
@@ -218,9 +215,7 @@ def test_hybrid_entry_with_malformed_markers_is_present_divergent_not_raised(tmp
     """``parse_regions`` raises ``RegionParseError`` for a stray end marker
     -- caught internally here, never propagated (the Always bullet's
     explicit list)."""
-    (tmp_path / "CLAUDE.md").write_text(
-        _doc("intro", render_end(RegionFormat.HTML, "tiers"), "outro")
-    )
+    (tmp_path / "CLAUDE.md").write_text(_doc("intro", render_end(RegionFormat.HTML, "tiers"), "outro"))
     manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
     inventory = classify(manifest, tmp_path)
     assert _one(inventory) == Classification(entry_id="h", state=ArtifactState.PRESENT_DIVERGENT)
@@ -590,18 +585,14 @@ def test_classify_is_read_only_against_a_permission_locked_tree(tmp_path):
 
 def test_present_legacy_whole_file_entry_is_present_legacy_with_one_legacy_record(tmp_path):
     (tmp_path / "old.txt").write_text("hand-authored\n")
-    manifest = _manifest(
-        _whole_file("a", "old.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ")
-    )
+    manifest = _manifest(_whole_file("a", "old.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ"))
     inventory = classify(manifest, tmp_path)
     assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.PRESENT_LEGACY)
     assert inventory.legacy == (LegacyRecord(entry_id="a", path="old.txt", legacy_of="succ"),)
 
 
 def test_absent_legacy_of_entry_stays_absent_with_no_legacy_record(tmp_path):
-    manifest = _manifest(
-        _whole_file("a", "missing.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ")
-    )
+    manifest = _manifest(_whole_file("a", "missing.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ"))
     inventory = classify(manifest, tmp_path)
     assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.ABSENT)
     assert inventory.legacy == ()
@@ -645,16 +636,12 @@ def test_canonical_specs_dir_legacy_worked_example(tmp_path):
         )
     )
     inventory = classify(manifest, tmp_path)
-    assert _one(inventory) == Classification(
-        entry_id="specs-dir-legacy", state=ArtifactState.PRESENT_LEGACY
-    )
+    assert _one(inventory) == Classification(entry_id="specs-dir-legacy", state=ArtifactState.PRESENT_LEGACY)
     (finding,) = legacy_findings(inventory)
     assert finding.severity == Severity.INFO
     assert finding.type == FindingType.LEGACY_PRESENT
     assert finding.path == "docs/specs/"
-    assert finding.message == (
-        "docs/specs/: superseded by 'planning-artifacts-symlink'; preserved, never modified"
-    )
+    assert finding.message == ("docs/specs/: superseded by 'planning-artifacts-symlink'; preserved, never modified")
 
 
 def test_manifest_with_no_legacy_entries_yields_empty_legacy_and_empty_findings(tmp_path):
@@ -668,9 +655,7 @@ def test_manifest_with_no_legacy_entries_yields_empty_legacy_and_empty_findings(
 def test_effective_never_write_unions_manifest_patterns_with_legacy_paths(tmp_path):
     (tmp_path / "docs" / "specs").mkdir(parents=True)
     manifest = _manifest(
-        _whole_file(
-            "specs-dir-legacy", "docs/specs/", ArtifactClass.COPIED_MANAGED, legacy_of="succ"
-        ),
+        _whole_file("specs-dir-legacy", "docs/specs/", ArtifactClass.COPIED_MANAGED, legacy_of="succ"),
         never_write=("a/*",),
     )
     inventory = classify(manifest, tmp_path)
@@ -683,9 +668,7 @@ def test_effective_never_write_dedupes_when_legacy_path_already_in_never_write(t
     twice or otherwise change the result's membership."""
     (tmp_path / "docs" / "specs").mkdir(parents=True)
     manifest = _manifest(
-        _whole_file(
-            "specs-dir-legacy", "docs/specs/", ArtifactClass.COPIED_MANAGED, legacy_of="succ"
-        ),
+        _whole_file("specs-dir-legacy", "docs/specs/", ArtifactClass.COPIED_MANAGED, legacy_of="succ"),
         never_write=("docs/specs/", "b/*"),
     )
     inventory = classify(manifest, tmp_path)
@@ -702,9 +685,7 @@ def test_writable_exemptions_includes_copied_managed_and_copied_seeded_entries(t
         _whole_file("specs-readme", "specs/README.md", ArtifactClass.COPIED_SEEDED),
     )
     inventory = classify(manifest, tmp_path)
-    assert writable_exemptions(manifest, inventory) == frozenset(
-        {"docs/dreams/README.md", "specs/README.md"}
-    )
+    assert writable_exemptions(manifest, inventory) == frozenset({"docs/dreams/README.md", "specs/README.md"})
 
 
 def test_writable_exemptions_excludes_every_other_artifact_class(tmp_path):
@@ -736,9 +717,7 @@ def test_writable_exemptions_subtracts_a_path_that_is_also_present_legacy(tmp_pa
         )
     )
     inventory = classify(manifest, tmp_path)
-    assert inventory.legacy == (
-        LegacyRecord(entry_id="dreams-readme", path="docs/dreams/README.md", legacy_of="succ"),
-    )
+    assert inventory.legacy == (LegacyRecord(entry_id="dreams-readme", path="docs/dreams/README.md", legacy_of="succ"),)
     assert writable_exemptions(manifest, inventory) == frozenset()
 
 

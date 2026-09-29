@@ -1,10 +1,13 @@
----
-title: One conda metapackage installs the whole SelfExplainML bmad-suite at latest
+---title: One conda metapackage installs the whole SelfExplainML bmad-suite at latest
 type: dream
 owner: steward
-status: realized   # 2026-09-06 — spec-bmad-suite-metapackage shipped: steward Epic 39 (4/4 done 2026-09-01); bmad-suite 2026.9.5 on the channel; recorded late
+status: archived   # 2026-09-06 — spec-bmad-suite-metapackage shipped: steward Epic 39 (4/4 done 2026-09-01); bmad-suite 2026.9.5 on the channel; recorded late
 parent: docs/dreams/bmad-suite-channel-product.md
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `bmad-suite-metapackage`).
+
 
 # The bmad-suite metapackage
 

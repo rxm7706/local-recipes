@@ -43,9 +43,7 @@ PACKAGE_DIR = Path(_PACKAGE_FILE).resolve().parent
 # The two sanctioned filesystem-write sites (Stories 4.2, 48.5) -- exempted
 # from this scan, mirroring `test_atlas_sole_mcp_import.py`'s identical
 # `_EXEMPT_RELATIVE_PATHS` pattern for the mcp-import surface.
-_EXEMPT_RELATIVE_PATHS = frozenset(
-    {Path("fleet_surface.py"), Path("actuators/flag_kill_switch.py")}
-)
+_EXEMPT_RELATIVE_PATHS = frozenset({Path("fleet_surface.py"), Path("actuators/flag_kill_switch.py")})
 
 _WRITE_METHOD_NAMES = frozenset(
     {
@@ -68,9 +66,7 @@ _WRITE_METHOD_NAMES = frozenset(
 
 def _package_modules() -> list[Path]:
     return sorted(
-        path
-        for path in PACKAGE_DIR.rglob("*.py")
-        if path.relative_to(PACKAGE_DIR) not in _EXEMPT_RELATIVE_PATHS
+        path for path in PACKAGE_DIR.rglob("*.py") if path.relative_to(PACKAGE_DIR) not in _EXEMPT_RELATIVE_PATHS
     )
 
 
@@ -86,15 +82,9 @@ def _open_call_violations(tree: ast.Module) -> list[int]:
     ``some_file.open(...)``)."""
     violations: list[int] = []
     for node in ast.walk(tree):
-        is_builtin_open = (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Name)
-            and node.func.id == "open"
-        )
+        is_builtin_open = isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "open"
         is_attribute_open = (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Attribute)
-            and node.func.attr == "open"
+            isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "open"
         )
         if not (isinstance(node, ast.Call) and (is_builtin_open or is_attribute_open)):
             continue
@@ -142,8 +132,7 @@ def test_package_scan_surface_is_not_empty():
 def test_fleet_surface_module_exists():
     fleet_surface_path = PACKAGE_DIR / "fleet_surface.py"
     assert fleet_surface_path.is_file(), (
-        f"expected {fleet_surface_path} -- the Story 4.2 sanctioned write "
-        "site is missing"
+        f"expected {fleet_surface_path} -- the Story 4.2 sanctioned write site is missing"
     )
 
 
@@ -162,10 +151,7 @@ def test_fleet_surface_itself_writes_somewhere():
 
 def test_flag_kill_switch_module_exists():
     kill_switch_path = PACKAGE_DIR / "actuators" / "flag_kill_switch.py"
-    assert kill_switch_path.is_file(), (
-        f"expected {kill_switch_path} -- the Story 48.5 sanctioned write "
-        "site is missing"
-    )
+    assert kill_switch_path.is_file(), f"expected {kill_switch_path} -- the Story 48.5 sanctioned write site is missing"
 
 
 def test_flag_kill_switch_is_exempted_from_this_scan():
@@ -177,9 +163,7 @@ def test_flag_kill_switch_itself_writes_somewhere():
     """Non-vacuous proof: the sanctioned site actually contains a
     filesystem-write call site -- so this exemption is narrowing a real
     permission, not an accidentally-unused one."""
-    violations = _read_only_violations(
-        _parse(PACKAGE_DIR / "actuators" / "flag_kill_switch.py")
-    )
+    violations = _read_only_violations(_parse(PACKAGE_DIR / "actuators" / "flag_kill_switch.py"))
     assert violations, "flag_kill_switch.py does not write to the filesystem at all"
 
 

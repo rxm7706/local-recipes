@@ -1,6 +1,10 @@
 {
     "cursor.general.gitGraphIndexing": "enabled",
 
+    // GitHub Copilot chat in VS Code reads AGENTS.md only with this setting (off by default);
+    // the Copilot cloud agent and CLI read it natively (spec-pyforge-scribe CAP-27, Story 19.1).
+    "chat.useAgentsMdFile": true,
+
     // build_artifacts/ is the rattler-build output root (CONDA_BLD_PATH, pixi.toml:71).
     // CMake FetchContent / cargo clone real git repos into the build tree (arrow, re2,
     // protobuf, azure-sdk-for-rust, ...), and builds patch them in place. Those are

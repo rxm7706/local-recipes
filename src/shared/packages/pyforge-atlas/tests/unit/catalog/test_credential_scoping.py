@@ -35,11 +35,7 @@ def _is_artifactory_host(host: str) -> bool:
 
 
 def _entries_with_credentials(catalog_config):
-    return {
-        name: spec["credentials"]
-        for name, spec in catalog_config.items()
-        if "credentials" in spec
-    }
+    return {name: spec["credentials"] for name, spec in catalog_config.items() if "credentials" in spec}
 
 
 def test_credentials_attach_only_where_the_host_requires_them(catalog_config):
@@ -51,10 +47,7 @@ def test_credentials_attach_only_where_the_host_requires_them(catalog_config):
 def test_github_token_scopes_to_the_github_api_host(catalog_config):
     url = catalog_config["vcs_github_api_raw"]["url"]
     host = urlparse(url).netloc.lower()
-    assert host == "api.github.com", (
-        "github_token may only attach to the GitHub API destination host "
-        f"(got {host})"
-    )
+    assert host == "api.github.com", f"github_token may only attach to the GitHub API destination host (got {host})"
 
 
 def test_jfrog_named_key_never_reachable_from_a_non_jfrog_host(catalog_config):
@@ -75,9 +68,7 @@ def test_jfrog_named_key_never_reachable_from_a_non_jfrog_host(catalog_config):
         host = urlparse(str(location)).netloc.lower()
         if not _is_artifactory_host(host):
             offenders[name] = {"credentials": cred_key, "host": host}
-    assert not offenders, (
-        f"JFrog-named credential attached to non-JFrog destination host(s): {offenders}"
-    )
+    assert not offenders, f"JFrog-named credential attached to non-JFrog destination host(s): {offenders}"
 
 
 def test_artifactory_host_matcher_rejects_substring_tricks():
@@ -108,8 +99,7 @@ def test_local_credentials_file_is_gitignored():
         capture_output=True,
     )
     assert result.returncode == 0, (
-        "conf/local/credentials.yml is NOT gitignored — the per-host "
-        "credential file must never be trackable"
+        "conf/local/credentials.yml is NOT gitignored — the per-host credential file must never be trackable"
     )
 
 
@@ -122,6 +112,4 @@ def test_no_credential_material_in_tracked_config():
         for p in CONF_SOURCE.rglob("*credentials*")
         if "local" not in p.relative_to(CONF_SOURCE).parts
     ]
-    assert not offenders, (
-        f"credential-named file(s) in tracked conf/ (conf/local only, gitignored): {offenders}"
-    )
+    assert not offenders, f"credential-named file(s) in tracked conf/ (conf/local only, gitignored): {offenders}"

@@ -2,9 +2,17 @@ name: pyforge pip-install
 
 # The ONE lane that proves the pyforge packages work as ordinary Python
 # distributions, INSTALLED OUTSIDE PIXI. That is the whole reason it exists:
-# `pyforge-station-tests.yml` already runs every one of the tests below inside
-# pixi, so the assertions are not what is unique here -- the installation path
-# is. `requires-python` honoured by a real interpreter, `--no-deps` importability
+# `pyforge-station-tests.yml`'s `core-test` job (Story 52.2) runs pyforge-core's
+# WHOLE `tests/` tree inside pixi via the `pyforge-core-test` task -- that lane
+# is the conformance gate, this one is not. The hand-enumerated list below
+# keeps `tests/unit` plus exactly three `tests/meta` files (cli-parity matrix,
+# leaf constraint, plugin-registration conformance) because each is an
+# outside-pixi IMPORTABILITY proof; the `*_sole_ownership.py` guards are
+# deliberately not in it, and the list must not grow -- an enumerated list is
+# how those guards went un-run for weeks, and the pixi task is the only place
+# that runs the tree. So the assertions are not what is unique here -- the
+# installation path is.
+# `requires-python` honoured by a real interpreter, `--no-deps` importability
 # with nothing else on the path, and steward's fresh-clone class-path resolving
 # with no pixi workspace present are all invisible to a pixi run.
 #

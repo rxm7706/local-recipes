@@ -56,19 +56,14 @@ def _parse(path: Path) -> ast.Module:
 
 
 def _is_forbidden(module_name: str) -> bool:
-    return any(
-        module_name == prefix or module_name.startswith(f"{prefix}.")
-        for prefix in _FORBIDDEN_PREFIXES
-    )
+    return any(module_name == prefix or module_name.startswith(f"{prefix}.") for prefix in _FORBIDDEN_PREFIXES)
 
 
 def _violations(tree: ast.Module) -> list[str]:
     found: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
-            found.extend(
-                alias.name for alias in node.names if _is_forbidden(alias.name)
-            )
+            found.extend(alias.name for alias in node.names if _is_forbidden(alias.name))
         elif isinstance(node, ast.ImportFrom):
             if node.level != 0 or node.module is None:
                 continue
@@ -112,7 +107,6 @@ def test_guard_does_not_fire_on_the_sanctioned_neighbours():
     not what this guard is about -- a guard that flags them would be
     quietly disabled by the next contributor."""
     tree = ast.parse(
-        "from pyforge.core.process import PosixProcess\n"
-        "from pyforge.marshal.core import derived_context\n"
+        "from pyforge.core.process import PosixProcess\nfrom pyforge.marshal.core import derived_context\n"
     )
     assert _violations(tree) == []

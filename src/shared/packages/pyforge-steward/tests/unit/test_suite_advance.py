@@ -25,9 +25,7 @@ from pyforge.steward.suite_advance import (
 
 def _marker_repo(tmp_path: Path) -> Path:
     (tmp_path / "scripts").mkdir()
-    (tmp_path / "scripts" / "bmad-loop-worktree").write_text(
-        "#!/bin/sh\n", encoding="utf-8"
-    )
+    (tmp_path / "scripts" / "bmad-loop-worktree").write_text("#!/bin/sh\n", encoding="utf-8")
     return tmp_path
 
 
@@ -63,14 +61,12 @@ def _success_hooks() -> AdvanceHooks:
 def test_detect_autotick_mode_tag_vs_head(tmp_path: Path):
     tag = tmp_path / "tag.yaml"
     tag.write_text(
-        "context:\n  version: '1.0.0'\n"
-        "about:\n  cfe-source-kind: github-tag\n",
+        "context:\n  version: '1.0.0'\nabout:\n  cfe-source-kind: github-tag\n",
         encoding="utf-8",
     )
     head = tmp_path / "head.yaml"
     head.write_text(
-        "context:\n  version: '1.0.0.dev0'\n  commit: abcdef\n"
-        "about:\n  cfe-source-kind: github-commit\n",
+        "context:\n  version: '1.0.0.dev0'\n  commit: abcdef\nabout:\n  cfe-source-kind: github-commit\n",
         encoding="utf-8",
     )
     assert detect_autotick_mode(tag) == "tag"
@@ -96,8 +92,7 @@ def test_advance_dry_run_chain_tag_mode_never_merges(tmp_path: Path):
     recipe_dir = repo / "recipes" / "bmad-method"
     recipe_dir.mkdir(parents=True)
     (recipe_dir / "recipe.yaml").write_text(
-        "context:\n  version: '6.11.0'\n"
-        "about:\n  cfe-source-kind: github-tag\n",
+        "context:\n  version: '6.11.0'\nabout:\n  cfe-source-kind: github-tag\n",
         encoding="utf-8",
     )
     calls: list[str] = []
@@ -145,9 +140,7 @@ def test_advance_head_mode_for_commit_pinned_recipe(tmp_path: Path):
     recipe_dir = repo / "recipes" / "bmad-method"
     recipe_dir.mkdir(parents=True)
     (recipe_dir / "recipe.yaml").write_text(
-        "context:\n  version: '6.12.0.dev0'\n"
-        "  commit: deadbeefcafebabe\n"
-        "about:\n  cfe-source-kind: github-commit\n",
+        "context:\n  version: '6.12.0.dev0'\n  commit: deadbeefcafebabe\nabout:\n  cfe-source-kind: github-commit\n",
         encoding="utf-8",
     )
     seen_modes: list[str] = []
@@ -181,8 +174,7 @@ def test_advance_refuses_not_stale_and_unknown(tmp_path: Path):
     repo = _marker_repo(tmp_path)
     (repo / "recipes" / "bmad-utility-skills").mkdir(parents=True)
     (repo / "recipes" / "bmad-utility-skills" / "recipe.yaml").write_text(
-        "context:\n  version: '2.0.0'\n  commit: abc\n"
-        "about:\n  cfe-source-kind: github-commit\n",
+        "context:\n  version: '2.0.0'\n  commit: abc\nabout:\n  cfe-source-kind: github-commit\n",
         encoding="utf-8",
     )
     not_stale = run_advance(
@@ -195,9 +187,7 @@ def test_advance_refuses_not_stale_and_unknown(tmp_path: Path):
     assert not_stale.ok is False
     assert "not stale" in not_stale.summary
 
-    unknown = run_advance(
-        repo, "not-a-suite-pkg", dry_run=True, baseline=True, hooks=_success_hooks()
-    )
+    unknown = run_advance(repo, "not-a-suite-pkg", dry_run=True, baseline=True, hooks=_success_hooks())
     assert unknown.ok is False
     assert "unknown suite package" in unknown.summary
 
@@ -241,9 +231,7 @@ def test_advance_refuses_open_pr_hook_that_claims_merge(tmp_path: Path):
 def test_cli_advance_verb_wired_and_duty_dispatches(tmp_path: Path):
     del tmp_path
     parser = build_parser()
-    ns = parser.parse_args(
-        ["suite", "advance", "--package", "bmad-method", "--dry-run", "--baseline"]
-    )
+    ns = parser.parse_args(["suite", "advance", "--package", "bmad-method", "--dry-run", "--baseline"])
     assert ns.suite_verb == "advance"
     assert ns.package == "bmad-method"
     assert ns.dry_run is True
@@ -286,9 +274,7 @@ def test_format_advance_report_json_roundtrip(tmp_path: Path):
         "context:\n  version: '6.11.0'\nabout:\n  cfe-source-kind: github-tag\n",
         encoding="utf-8",
     )
-    report = run_advance(
-        repo, "bmad-method", dry_run=True, baseline=True, hooks=_success_hooks()
-    )
+    report = run_advance(repo, "bmad-method", dry_run=True, baseline=True, hooks=_success_hooks())
     text = format_advance_report(report, as_json=True)
     assert '"merged": false' in text
     assert '"package": "bmad-method"' in text

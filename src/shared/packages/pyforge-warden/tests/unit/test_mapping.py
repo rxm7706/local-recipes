@@ -15,9 +15,7 @@ import pytest
 
 from pyforge.warden.mapping import load_conda_pypi_map
 
-_SCRIPT_PATH = (
-    Path(__file__).resolve().parent.parent.parent / "scripts" / "generate_conda_pypi_map.py"
-)
+_SCRIPT_PATH = Path(__file__).resolve().parent.parent.parent / "scripts" / "generate_conda_pypi_map.py"
 
 
 def _load_converter():
@@ -218,9 +216,7 @@ def test_converter_duplicate_conda_name_upgrades_to_a_later_more_trusted_row(tmp
     }
 
 
-def test_converter_reports_equal_confidence_conflicts_and_keeps_first(
-    tmp_path, capsys
-):
+def test_converter_reports_equal_confidence_conflicts_and_keeps_first(tmp_path, capsys):
     """Two equal-trust rows for one conda name with DIFFERENT pypi names tie
     on rank: the first-seen row is kept (deterministic for a given TSV) and
     the conflict is reported to stderr — an upstream data-integrity alarm

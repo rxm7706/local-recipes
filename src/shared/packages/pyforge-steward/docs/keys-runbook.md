@@ -5,7 +5,7 @@ custody**. Steward records metadata in `.steward/keys-inventory.yaml` and
 performs age re-encryption via `steward keys rotate`; it never calls Vault,
 ESO, or cloud revocation APIs.
 
-**Profiles.** See `docs/reference/enterprise-deployment.md` § 7 for the
+**Profiles.** See `docs/explanation/enterprise-deployment.md` § 7 for the
 dev (age + manual Secret) vs enterprise (Vault + ESO) split. Platform deploy
 prerequisites: `src/platform/deploy/README.md`.
 

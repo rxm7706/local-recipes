@@ -420,21 +420,37 @@ def _platform_python_rels() -> list[str]:
     # so importing a `pyforge.*` package here, even a test-only one, would
     # trip this very guard (self-referentially, since this file lives under
     # `src/platform/tests/`). The git mechanics stay duplicated on purpose.
+    # The base is the full refname, as the kit's is (steward Story 70.1): a short
+    # `origin/main` resolves to a local branch or tag of that name first, and one
+    # at HEAD would empty this diff into a pass. (Literal argv, as ruff's S603 wants.)
     has_base = subprocess.run(
-        ["git", "rev-parse", "--verify", "--quiet", "origin/main^{commit}"],
+        [
+            "git",
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            "refs/remotes/origin/main^{commit}",
+        ],
         cwd=REPO_ROOT,
         capture_output=True,
         check=False,
     )
     if has_base.returncode != 0:
         # A depth-1 CI checkout carries no origin/main; the Platform CI test job
-        # fetches it explicitly so this guard runs there. Skip loudly, never
-        # crash on `fatal: bad revision`.
+        # fetches it explicitly (into refs/remotes/origin/main) so this guard runs
+        # there. Skip loudly, never crash on `fatal: bad revision`.
         pytest.skip(
-            "origin/main is not available in this checkout; the diff guard needs the base ref",
+            "refs/remotes/origin/main is not available in this checkout; the diff guard needs the base ref",
         )
     tracked = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", "src/platform"],
+        [
+            "git",
+            "diff",
+            "--name-only",
+            "refs/remotes/origin/main",
+            "--",
+            "src/platform",
+        ],
         cwd=REPO_ROOT,
         text=True,
     )

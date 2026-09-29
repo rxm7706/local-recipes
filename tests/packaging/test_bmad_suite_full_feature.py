@@ -11,6 +11,7 @@ when `pixi` is not on PATH -- never a false failure in a pixi-less CI shard.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tomllib
@@ -52,10 +53,13 @@ BASELINE_LOCAL_RECIPES_BMAD_PINS = {
 }
 
 # feature.bmad-ui's dependency table, byte-identical to the baseline this
-# story must not touch (spec's own AC).
+# story must not touch (spec's own AC). Steward Story 67.1 (2026-09-26) added
+# the postgresql pin: mybmad-dashboard's `postgresql >=14` floated to 18, and
+# the estate holds PostgreSQL 17 in every environment (fnd:CAP-12).
 BASELINE_BMAD_UI_DEPENDENCIES = {
     "bmad-dashboard": ">=1.2.2.dev0",
     "mybmad-dashboard": ">=0.1.0.dev0",
+    "postgresql": ">=17.11,<18",
 }
 
 
@@ -69,7 +73,11 @@ def test_bmad_suite_full_feature_declares_selfexplainml_and_a_calver_floor() -> 
     assert "conda-forge" in feat["channels"]
 
     deps = feat["dependencies"]
-    assert deps["bmad-suite"] == ">=2026.9.5"
+    # A calver FLOOR (">=YYYY.M.D"), never a pinned literal: the floor moves on
+    # every upgrade sweep (2026.9.5 on 2026-09-05, 2026.9.9 on 2026-09-12) and
+    # a pinned string here turned marshal's second verify command red on
+    # `main` for six days without anyone touching this feature.
+    assert re.fullmatch(r">=2026\.\d{1,2}\.\d{1,2}", deps["bmad-suite"]), deps["bmad-suite"]
 
 
 def test_bmad_suite_full_feature_is_linux_64_only_and_does_not_duplicate_member_pins() -> None:
@@ -168,10 +176,12 @@ def test_eval_quality_pin_lives_in_the_shared_table() -> None:
     The floor tracks the newest PUBLISHED build, never the newest the recipe
     builds -- a floor above what the channel serves reds every solve. 1.4.1 was
     published (both ``__unix`` and ``__win``) in the same change that raised
-    this floor, so the two moved together.
+    this floor, so the two moved together. The bmad-suite advance (PR #1607,
+    2026-09-26) moved it to 4.3.0 by the same rule, once the ``__win`` 4.3.0
+    build was on the channel.
     """
     feat = _data()["feature"]["local-recipes"]
-    assert feat["dependencies"]["bmad-eval-quality"] == ">=1.4.1"
+    assert feat["dependencies"]["bmad-eval-quality"] == ">=4.3.0"
     assert "bmad-method-wds-expansion" not in feat["dependencies"]
     for plat in ("linux-64", "osx-arm64", "win-64"):
         deps = feat["target"].get(plat, {}).get("dependencies", {})

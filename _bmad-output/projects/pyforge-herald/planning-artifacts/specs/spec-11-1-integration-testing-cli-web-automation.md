@@ -135,3 +135,16 @@ scoped choice.
 - `addressed_findings`: 1 (medium). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
 
 **Follow-up review recommendation:** none outstanding for this story; if `nodejs` is later added to the `pyforge-herald` pixi feature for another reason, the `skipif` guard becomes a no-op and can be removed.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `ee5316e216` (2026-09-07, "feat(warden): Story 11.1 -- bmad-os-review-pr and findings-triage are warden-wielded advisory lenses"); also `d570630ed3` (2026-08-21, "marshal: mark Story 11.1 done, promote its spec"); also `d630deb2f4` (2026-08-21, "marshal: Story 11.1 - neutral contract and agent-adapter fan-out"). Ledger row `11-1-integration-testing-cli-web-automation: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/bmad-agent-warden/SKILL.md`, `_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-warden/tests/unit/test_advisory_lenses.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

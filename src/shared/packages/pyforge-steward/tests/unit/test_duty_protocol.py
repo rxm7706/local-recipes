@@ -29,11 +29,12 @@ def test_a_duty_returns_a_result_rather_than_exiting():
 def test_dutyresult_is_frozen():
     """A result is evidence — it must not be mutated after the duty returns."""
     import dataclasses
+
     import pytest
 
     result = DutyResult(ok=True, summary="x")
     with pytest.raises(dataclasses.FrozenInstanceError):
-        result.ok = False        # type: ignore[misc]
+        result.ok = False  # type: ignore[misc]
 
 
 def test_an_object_missing_run_is_not_a_duty():

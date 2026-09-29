@@ -611,9 +611,7 @@ def test_conform_unsupported_platform_reports_unevaluable_never_confirmed(capsys
     assert ".agents/skills" in envelope["data"]["unevaluated_trees"]
 
 
-def test_conform_unsupported_platform_still_reports_a_previously_projected_only_tree(
-    capsys, monkeypatch
-):
+def test_conform_unsupported_platform_still_reports_a_previously_projected_only_tree(capsys, monkeypatch):
     """Review finding (Edge Case Hunter): `plan.unsupported_trees` alone is
     scoped to the CURRENTLY DESIRED set (Story 6.2's own `plan_projection`
     contract) -- a tree that is previously-projected but no longer desired
@@ -896,7 +894,6 @@ def test_probe_text_format_renders_without_crashing(capsys):
     out = capsys.readouterr().out
     assert "adapters probe" in out
     assert "available" in out
-
 
 
 # --- Story 6.5: `marshal adapters smoke` ------------------------------------
@@ -1217,7 +1214,7 @@ def test_smoke_write_failure_reports_error_but_still_reports_the_observation(cap
         return real_write_redacted_atomic(path, payload)
 
     fs.write_redacted_atomic = _fail_only_state_write  # type: ignore[method-assign]
-    code = _run_smoke(fs, harness, vcs)
+    _run_smoke(fs, harness, vcs)
     envelope = _envelope_from(capsys)
     codes = {f["code"] for f in envelope["findings"]}
     assert "MRS-SMOKE-006" in codes
@@ -1336,14 +1333,7 @@ def _patch_matrix(monkeypatch):
 
 def _matrix_path(slug: str = "pyforge-marshal") -> Path:
     return (
-        _MATRIX_ROOT
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-        / "conformance"
-        / "matrix"
-        / "host1.md"
+        _MATRIX_ROOT / "_bmad-output" / "projects" / slug / "planning-artifacts" / "conformance" / "matrix" / "host1.md"
     )
 
 
@@ -1420,9 +1410,7 @@ def test_matrix_reports_pass_fail_unavailable_not_attempted(capsys, _patch_matri
 def test_matrix_marks_stale_rows(capsys, _patch_matrix):
     fs = FakeFs(
         texts={
-            _SMOKE_STATE_PATH: json.dumps(
-                {"claude": {"status": "pass", "recorded_at": "2020-01-01T00:00:00+00:00"}}
-            )
+            _SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2020-01-01T00:00:00+00:00"}})
         }
     )
     code = adapters_cli.run_adapters_matrix(_matrix_args(stale_after_days=30), fs=fs)
@@ -1450,7 +1438,9 @@ def test_matrix_malformed_probe_state_reports_matrix_001_and_still_uses_smoke_st
 
 def test_matrix_write_failure_reports_error_but_still_reports_rows(capsys, _patch_matrix):
     fs = FakeFs(
-        texts={_SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"}})}
+        texts={
+            _SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"}})
+        }
     )
     fs.fail_write_text = FsError("disk full")
     code = adapters_cli.run_adapters_matrix(_matrix_args(), fs=fs)
@@ -1465,7 +1455,9 @@ def test_matrix_write_failure_reports_error_but_still_reports_rows(capsys, _patc
 
 def test_matrix_text_format_renders_without_crashing(capsys, _patch_matrix):
     fs = FakeFs(
-        texts={_SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"}})}
+        texts={
+            _SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"}})
+        }
     )
     adapters_cli.run_adapters_matrix(_matrix_args(fmt="text"), fs=fs)
     out = capsys.readouterr().out
@@ -1477,7 +1469,9 @@ def test_matrix_written_content_matches_render_matrix_markdown(capsys, _patch_ma
     from pyforge.marshal.core.conformance import build_matrix_row, render_matrix_markdown
 
     fs = FakeFs(
-        texts={_SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"}})}
+        texts={
+            _SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"}})
+        }
     )
     adapters_cli.run_adapters_matrix(_matrix_args(), fs=fs)
     envelope = _envelope_from(capsys)
@@ -1517,7 +1511,7 @@ def _consistent_entry_texts() -> dict[Path, str]:
 
     texts: dict[Path, str] = {_ENTRY_ROOT / ENTRY_FILE_FAMILY[0]: "the hub, AGENTS.md\n"}
     for path in ENTRY_FILE_FAMILY[1:]:
-        texts[_ENTRY_ROOT / path] = f"see AGENTS.md for the full rules\n"
+        texts[_ENTRY_ROOT / path] = "see AGENTS.md for the full rules\n"
     return texts
 
 

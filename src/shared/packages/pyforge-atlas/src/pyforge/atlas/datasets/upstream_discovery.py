@@ -112,7 +112,7 @@ def _safe_int(value: Any) -> int | None:
         return None
     try:
         return int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
 
 
@@ -195,7 +195,7 @@ def parse_search_api_response(payload: Any) -> list[dict]:
     if isinstance(payload, (str, bytes)):
         try:
             payload = json.loads(payload)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return []
     if not isinstance(payload, dict):
         return []
@@ -489,7 +489,6 @@ def _as_text(payload: Any) -> str | None:
     return None
 
 
-
 # -- Anaconda Distribution 2026.x ---------------------------------------------
 
 # The release-notes page's package table starts with this header cell (live shape
@@ -709,11 +708,7 @@ def parse_aoss_python_package_names(html: Any) -> list[str]:
         heading = soup.find(id=_AOSS_PYTHON_HEADING_ID)
         if heading is None:
             heading = next(
-                (
-                    h
-                    for h in soup.find_all(["h2", "h3"])
-                    if "python packages" in h.get_text(" ", strip=True).lower()
-                ),
+                (h for h in soup.find_all(["h2", "h3"]) if "python packages" in h.get_text(" ", strip=True).lower()),
                 None,
             )
         listing = heading.find_next("ul") if heading is not None else None
@@ -959,10 +954,7 @@ class AboutMaintainersDataset(ExternalRefreshDataset):
         text = _as_text(payload)
         rows = parse_about_readme(text) if text else []
         if not rows:
-            logger.warning(
-                "about README parsed zero maintainer rows (layout break / empty fetch) "
-                "— keeping last-good"
-            )
+            logger.warning("about README parsed zero maintainer rows (layout break / empty fetch) — keeping last-good")
         return pd.DataFrame(rows, columns=list(_ABOUT_MAINTAINERS_COLUMNS))
 
     @property
@@ -1004,4 +996,3 @@ class AboutMaintainersDataset(ExternalRefreshDataset):
         base = super()._describe()
         base.update({"readme_url": self._readme_url})
         return base
-

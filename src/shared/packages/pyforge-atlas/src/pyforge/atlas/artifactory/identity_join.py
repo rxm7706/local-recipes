@@ -74,7 +74,7 @@ def _is_missing(v) -> bool:
         return False
     try:
         return bool(pd.isna(v))
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return False
 
 

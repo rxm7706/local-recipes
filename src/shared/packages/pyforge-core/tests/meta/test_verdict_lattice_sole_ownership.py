@@ -75,10 +75,7 @@ def _is_rank_comprehension(node: ast.DictComp) -> bool:
     index_name, element_name = target.elts[0].id, target.elts[1].id
     key, value = node.key, node.value
     return (
-        isinstance(key, ast.Name)
-        and key.id == element_name
-        and isinstance(value, ast.Name)
-        and value.id == index_name
+        isinstance(key, ast.Name) and key.id == element_name and isinstance(value, ast.Name) and value.id == index_name
     )
 
 

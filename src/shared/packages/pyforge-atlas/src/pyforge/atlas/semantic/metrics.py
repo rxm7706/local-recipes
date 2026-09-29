@@ -314,8 +314,7 @@ METRIC_PROVENANCE: dict[str, dict[str, str]] = {
         "legacy_source": "core/nodes.py::compute_downloads (downloads_total)",
         "provenance": "legacy-formula",
         "data_wiring": "migrated-column",
-        "note": "core_downloads.downloads_total — a per-package sum; the BSL measure "
-        "re-aggregates it with sum().",
+        "note": "core_downloads.downloads_total — a per-package sum; the BSL measure re-aggregates it with sum().",
     },
     "downloads_30d": {
         "kind": "measure",
@@ -353,8 +352,7 @@ METRIC_PROVENANCE: dict[str, dict[str, str]] = {
     },
     "maintainer": {
         "kind": "dimension",
-        "legacy_source": "package_maintainers ⋈ maintainers (staleness/feedstock-health "
-        "--maintainer X JOINs)",
+        "legacy_source": "package_maintainers ⋈ maintainers (staleness/feedstock-health --maintainer X JOINs)",
         "provenance": "legacy-formula",
         "data_wiring": "migrated-column",
         "note": "First-class dimension over vcs_package_maintainers ⋈ vcs_maintainers; "
@@ -418,27 +416,21 @@ def identity_local_build_status(t: Any) -> Any:
 
 def identity_is_pypi_verified(t: Any) -> Any:
     """PyPI verification per ``write_workbook_canvas`` ``is_pypi`` (null-safe)."""
-    return (
-        (t.primary_type.fill_null("") == "pypi")
-        | t.primary_purl.fill_null("").startswith("pkg:pypi/")
-    ).fill_null(False)
+    return ((t.primary_type.fill_null("") == "pypi") | t.primary_purl.fill_null("").startswith("pkg:pypi/")).fill_null(
+        False
+    )
 
 
 def identity_is_cf_verified(t: Any) -> Any:
     """conda-forge verification per ``write_workbook_canvas`` ``is_cf`` (null-safe)."""
-    return (
-        (t["Conda-Forge_FeedStock_URL"].fill_null("") != "")
-        | (t.conda_purl.fill_null("") != "")
-    ).fill_null(False)
+    return ((t["Conda-Forge_FeedStock_URL"].fill_null("") != "") | (t.conda_purl.fill_null("") != "")).fill_null(False)
 
 
 def verification_match_bucket(t: Any) -> Any:
     """``jfrogMap`` bucket: ``both`` / ``pypi_only`` / ``cf_only`` / ``neither``."""
     pypi = identity_is_pypi_verified(t)
     cf = identity_is_cf_verified(t)
-    return (
-        pypi & cf
-    ).ifelse(
+    return (pypi & cf).ifelse(
         "both",
         pypi.ifelse("pypi_only", cf.ifelse("cf_only", "neither")),
     )

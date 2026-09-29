@@ -30,7 +30,10 @@ harness count), not marshal's raw ``running`` count.
 
 UNSUPERVISED rows (no Marshal supervisor sidecar) are supervision state, not
 engine liveness — the ATTENTION block names the CAP-2 follow-up before any
-re-spin (`reference/fleet-landing-pass-liveness.md`).
+restart (`reference/fleet-landing-pass-liveness.md`). Preferred restart is
+``marshal factory dispatch`` (bmad-build-auto), not ``factory spin``. Live
+run ops belong on ``marshal watch --fleet`` / ``marshal watch --project``;
+this report stays the ledger board.
 """
 from __future__ import annotations
 
@@ -56,7 +59,7 @@ STALE_BEHIND_THRESHOLD = 20
 AWAITING_OPERATOR_LABEL = "awaiting-operator (run bmad-loop confirm)"
 
 # UNSUPERVISED follow-up (marshal Story 24.3, FR-195 CAP-3): the one-command
-# engine-liveness check before assuming a re-spin — same primary check as
+# engine-liveness check before assuming a restart — same primary check as
 # fleet landing-pass STEP 2 (`.claude/memory/reference/fleet-landing-pass-liveness.md`).
 UNSUPERVISED_LIVENESS_FOLLOWUP = (
     "`bmad-loop status <run_id> --json` + `bmad-loop list --json` "
@@ -101,6 +104,7 @@ def dispatch_terminal_dead_tail(live_row: dict) -> bool:
     if live_row.get("dispatch_completion_verdict") not in (
         "failed",
         "stopped_externally",
+        "blocked",
     ):
         return False
     return live_row.get("dispatch_phase") is None
@@ -151,7 +155,7 @@ def _dispatch_stranded_work_needs_lines(
     if isinstance(stranded, dict) and stranded.get("kind") == "unpushed-branch":
         ref = stranded.get("ref") or "?"
         files = stranded.get("files")
-        remedy = stranded.get("remedy") or f"git push origin {ref}"
+        remedy = stranded.get("remedy") or f"git push origin refs/heads/{ref}:refs/heads/{ref}"
         lines.append(
             f"{slug}: stranded dispatch work for {story} — unpushed branch "
             f"{ref!r} ({files} file(s) not on origin) — {remedy}"
@@ -266,6 +270,22 @@ def ledger_story_done(stories: dict[str, str], story: str) -> bool:
     return any(k.startswith(prefix) and v == "done" for k, v in stories.items())
 
 
+_STORY_KEY_STEM = re.compile(r"(\d+)[.-](\d+)([a-z]?)(?:-|$)")
+
+
+def ledger_story_key_done(stories: dict[str, str], story: str) -> bool:
+    """True when the tracked ledger marks exactly ``story`` done -- a key
+    given as ``30.3``, ``30-3`` or ``30-3-<title>``, with an optional letter
+    suffix (``6.1a``). Unlike ``ledger_story_done``'s epic-seq fallback, a
+    suffixed story never matches its base story's row, and anything that
+    does not parse is not done (Story 56.1, review 2)."""
+    m = _STORY_KEY_STEM.match(story.strip())
+    if not m:
+        return False
+    stem = f"{m.group(1)}-{m.group(2)}{m.group(3)}"
+    return any(v == "done" and (k == stem or k.startswith(stem + "-")) for k, v in stories.items())
+
+
 def story_ledger_status(stories: dict[str, str], story: str) -> str | None:
     """Ledger status for ``story``'s epic-seq key, if any."""
     if not story:
@@ -302,8 +322,8 @@ def station_state(*, running: bool, story: str, hstate: str, done: int,
     A `hstate == "awaiting-operator"` station (bmad-loop 0.11: >=1 story
     parked for external human-only actions, nothing else active) is NAMED
     with the confirm remedy -- never folded into the stopped/unsupervised
-    "needs re-spin" bucket: the parked story's work is already committed,
-    so `bmad-loop confirm` is the next action, not a re-spin."""
+    "needs dispatch" bucket: the parked story's work is already committed,
+    so `bmad-loop confirm` is the next action, not a restart."""
     if running:
         # `dispatch_verification_verdict` is dispatch-specific state that
         # persists on the row until the NEXT dispatch run overwrites it --
@@ -342,7 +362,7 @@ def station_state(*, running: bool, story: str, hstate: str, done: int,
     if hstate == "paused-on-escalation":
         return "PAUSED - needs you (escalation)"
     if hstate in ("stopped", "unsupervised", "unknown") and backlog:
-        return f"{hstate.upper()} - {backlog} left, needs re-spin"
+        return f"{hstate.upper()} - {backlog} left, needs dispatch"
     if done == total:
         return "complete"
     if backlog:
@@ -374,11 +394,11 @@ def loop_home_staleness(
             if not branch:
                 continue  # detached HEAD
             subprocess.run(
-                ["git", "fetch", "--quiet", "origin", "main"],
+                ["git", "fetch", "--quiet", "origin", "refs/heads/main"],  # Story 61.1: never a remote tag `main`
                 cwd=home, capture_output=True, text=True, timeout=60, check=True,
             )
             count = subprocess.run(
-                ["git", "rev-list", "--count", f"{branch}..origin/main"],
+                ["git", "rev-list", "--count", "HEAD..refs/remotes/origin/main"],  # Stories 60.1/61.1: no short names
                 cwd=home, capture_output=True, text=True, timeout=30, check=True,
             ).stdout.strip()
             if count.isdigit() and int(count) >= threshold:
@@ -410,11 +430,11 @@ def primary_checkout_staleness(
         if not branch:
             return None  # detached HEAD
         subprocess.run(
-            ["git", "fetch", "--quiet", "origin", "main"],
+            ["git", "fetch", "--quiet", "origin", "refs/heads/main"],  # Story 61.1: never a remote tag `main`
             cwd=repo, capture_output=True, text=True, timeout=60, check=True,
         )
         count = subprocess.run(
-            ["git", "rev-list", "--count", f"{branch}..origin/main"],
+            ["git", "rev-list", "--count", "HEAD..refs/remotes/origin/main"],  # Stories 60.1/61.1: no short names
             cwd=repo, capture_output=True, text=True, timeout=30, check=True,
         ).stdout.strip()
         if count.isdigit() and int(count) >= threshold:
@@ -816,6 +836,17 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 # scope-violation advisories, visible here too -- never
                 # journal-only.
                 "scope_advisories": r.get("dispatch_verification_scope_advisories") or [],
+                # Story 53.2 review (I1): `execute_dispatch_land`'s envelope
+                # findings (MRS-DISP-047/048), same visibility rationale as
+                # `scope_advisories` above.
+                "landing_findings": r.get("dispatch_landing_findings") or [],
+                # Story 56.1 (CAP-266): the refused landing's story is on
+                # `main` -- marshal status reports it beside the unchanged
+                # findings, set only on a corroborated merge -- and the
+                # dispatch run's own story, which `current_story` is not
+                # (review 1, medium).
+                "landing_superseded": r.get("dispatch_landing_superseded") is True,
+                "landing_story": r.get("dispatch_story") or "",
                 "awaiting_operator_remedy": r.get("awaiting_operator_remedy"),
                 "missing_spec_escalation_glob": r.get("missing_spec_escalation_glob"),
                 "dispatch_stranded_work": r.get("dispatch_stranded_work"),
@@ -949,6 +980,11 @@ def main() -> int:
         f"LEFT AFTER:   {tot['tot'] - tot['proj']} stories, "
         f"{tot['ep'] - tot['epp']} epics  ({tot['blkd']} blocked)"
     )
+    print(
+        "LIVE OPS:     `marshal watch --fleet` "
+        "(or `marshal watch --project pyforge-<slug>`); "
+        "restart prefer `marshal factory dispatch` (bmad-build-auto)"
+    )
 
     # --- ATTENTION: what, if anything, is waiting on a human ----------------
     # Deterministic causes only. A pause Claude itself took (an epic boundary,
@@ -959,7 +995,7 @@ def main() -> int:
     open_prs_by_head = _open_prs_by_head_ref()
     for (
         slug, n, done, _cmpl, _proj, blkd, _ep, _epn, _epc, _epp, run, hstate, back,
-        awaiting, _stories, _qb, _in_flight,
+        awaiting, stories, _qb, _in_flight,
     ) in rows:
         live_row = live.get(slug, {}) or {}
         story = current.get(slug, live_row.get("story") or "")
@@ -998,15 +1034,19 @@ def main() -> int:
             needs.append(
                 f"{slug}: UNSUPERVISED with {back} story(ies) left -- "
                 f"verify engine liveness first ({UNSUPERVISED_LIVENESS_FOLLOWUP}); "
-                f"re-spin only if dead (`marshal factory spin pyforge-{slug}` "
-                f"or `marshal factory resume {slug}`)"
+                f"if dead, prefer `marshal factory dispatch pyforge-{slug}` "
+                f"(bmad-build-auto); `marshal factory resume {slug}` only for a "
+                f"still-active loop home"
             )
         elif hstate == "stopped" and back:
-            needs.append(f"{slug}: run stopped with {back} story(ies) left -- "
-                         f"needs `marshal factory spin pyforge-{slug}`")
+            needs.append(
+                f"{slug}: run stopped with {back} story(ies) left -- "
+                f"prefer `marshal factory dispatch pyforge-{slug}` "
+                f"(bmad-build-auto); live ops: `marshal watch --project pyforge-{slug}`"
+            )
         elif hstate == "unknown":
             watch.append(f"{slug}: status unreadable (stale journal) -- cosmetic "
-                         f"unless it persists after a spin")
+                         f"unless it persists after a dispatch")
         elif hstate == "awaiting-operator":
             live_row = live.get(slug, {}) or {}
             spec_glob = live_row.get("missing_spec_escalation_glob")
@@ -1021,8 +1061,8 @@ def main() -> int:
         elif not run and back and done != n:
             watch.append(
                 f"{slug}: {back} story(ies) backlog — idle (not draining); "
-                f"start with `marshal factory drain --station pyforge-{slug}` "
-                f"when ready"
+                f"prefer `marshal factory dispatch pyforge-{slug}` "
+                f"(bmad-build-auto) when ready"
             )
         # bmad-loop 0.11 (marshal Story 25.5): stories parked at
         # `awaiting-operator` in the TRACKED ledger -- the durable board
@@ -1057,6 +1097,49 @@ def main() -> int:
             ))
             watch.append(f"{slug}: {len(advisories)} scope-violation advisory(ies) "
                          f"(warn mode, not blocking) -- {codes}")
+        # Story 53.2 review (I1): `execute_dispatch_land`'s envelope findings
+        # (MRS-DISP-047/048) -- same non-dict/None guarding as `advisories`
+        # above. An ERROR-severity finding (MRS-DISP-048) means the landing
+        # was refused and a human must act, so it goes to `needs`; anything
+        # else (MRS-DISP-047, WARN) is FYI in `watch`, matching the
+        # scope-advisory treatment.
+        land_findings = (live.get(slug, {}) or {}).get("landing_findings") or []
+        if land_findings:
+            errors = [
+                f for f in land_findings
+                if isinstance(f, dict) and f.get("severity") == "error"
+            ]
+            warns = [f for f in land_findings if f not in errors]
+            if errors:
+                codes = ",".join(dict.fromkeys(
+                    str(f.get("code") or "?") for f in errors
+                ))
+                # Story 56.1 (CAP-266): marshal status marks a refusal whose
+                # story is on `main` (a git fact). It is history only when the
+                # tracked ledger -- this report's own source -- also reads the
+                # story `done`: a finalize (promote + ledger) that failed
+                # AFTER the merge journals the same MRS-DISP-020 and still
+                # owes that work (review 1, high).
+                landed = str(live_row.get("landing_story") or "")
+                on_main = live_row.get("landing_superseded") is True
+                if on_main and ledger_story_key_done(stories, landed):
+                    watch.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
+                                 f"-- {codes} -- but {landed} has since landed on main "
+                                 f"and reads done, not waiting on you")
+                elif on_main:
+                    needs.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
+                                 f"-- {codes} -- {landed or 'its story'} is on main but "
+                                 f"its ledger key is not done: finish the promote + ledger")
+                else:
+                    needs.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
+                                 f"-- {codes}")
+            if warns:
+                codes = ",".join(dict.fromkeys(
+                    str(f.get("code") or "?") if isinstance(f, dict) else "?"
+                    for f in warns
+                ))
+                watch.append(f"{slug}: {len(warns)} landing finding(s) "
+                             f"(not blocking) -- {codes}")
     try:
         prs = subprocess.run(
             ["gh", "pr", "list", "--repo", "rxm7706/local-recipes",

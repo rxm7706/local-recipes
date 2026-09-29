@@ -114,9 +114,7 @@ class CaptureRecord(BaseModel):
         if capture_type not in CAPTURE_TYPES:
             raise ValueError(f"invalid or missing metadata.type in frontmatter: {capture_type!r}")
 
-        return cls(
-            type=capture_type, name=name, description=description, text=text, supersedes=supersedes
-        )
+        return cls(type=capture_type, name=name, description=description, text=text, supersedes=supersedes)
 
 
 #: What kind of real-tool surface a compiled `GraphNode` was read from

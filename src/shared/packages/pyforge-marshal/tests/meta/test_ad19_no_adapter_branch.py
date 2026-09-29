@@ -154,7 +154,5 @@ def test_detector_does_not_fire_on_a_non_string_comparison():
 
 
 def test_detector_does_not_fire_on_membership_rather_than_equality():
-    tree = ast.parse(
-        'adapter_name = "claude"\nif adapter_name in ("claude", "codex"):\n    pass\n'
-    )
+    tree = ast.parse('adapter_name = "claude"\nif adapter_name in ("claude", "codex"):\n    pass\n')
     assert _adapter_branch_violations(tree) == []

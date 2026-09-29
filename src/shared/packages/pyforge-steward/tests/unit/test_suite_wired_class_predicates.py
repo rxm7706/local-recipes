@@ -15,14 +15,13 @@ from pyforge.steward.suite import (
     INSTALL_CLASS_SKIP,
     INSTALL_CLASS_VSCODE_EXTENSION,
     SUITE_PACKAGES,
-    SuitePackageDef,
-    format_pipeline_truth,
-    probe_wired,
-    build_pipeline_truth_report,
     ProbeHooks,
     StageProbe,
+    SuitePackageDef,
+    build_pipeline_truth_report,
+    format_pipeline_truth,
+    probe_wired,
 )
-
 
 _SIX_CLASSES = {
     "bmad-method": INSTALL_CLASS_INSTALLER_TREE,
@@ -118,7 +117,7 @@ def test_dashboard_docs_surface_alone_is_not_wired(tmp_path: Path):
 
 def test_dashboard_pixi_task_is_runnable(tmp_path: Path):
     (tmp_path / "pixi.toml").write_text(
-        "[feature.bmad-ui.tasks.bmad-dashboard-install]\ncmd = \"bmad-dashboard-install\"\n",
+        '[feature.bmad-ui.tasks.bmad-dashboard-install]\ncmd = "bmad-dashboard-install"\n',
         encoding="utf-8",
     )
     probe = probe_wired(tmp_path, _by_name()["bmad-dashboard"])
@@ -170,9 +169,9 @@ def test_cli_class_falls_back_to_the_local_recipes_env_bin_dir(tmp_path: Path, m
     # declaring it missing.
     eq = _by_name()["bmad-eval-quality"]
     monkeypatch.setenv("PATH", str(tmp_path))
-    local_recipes_bin = tmp_path / ".pixi" / "envs" / "local-recipes" / "bin"
-    local_recipes_bin.mkdir(parents=True)
-    exe = local_recipes_bin / "eval-quality"
+    guild_bin = tmp_path / ".pixi" / "envs" / "pyforge-guild" / "bin"
+    guild_bin.mkdir(parents=True)
+    exe = guild_bin / "eval-quality"
     exe.write_text("#!/bin/sh\n", encoding="utf-8")
     exe.chmod(0o755)
     runnable = probe_wired(tmp_path, eq)
@@ -193,8 +192,7 @@ def test_report_names_each_of_the_six_by_class(tmp_path: Path):
     playbook.parent.mkdir(parents=True)
     playbook.write_text("npx skills add bmad-labs/skills\n", encoding="utf-8")
     (tmp_path / "pixi.toml").write_text(
-        "[feature.bmad-ui.tasks.bmad-dashboard-install]\ncmd = \"x\"\n"
-        "[feature.bmad-ui.tasks.mybmad]\ncmd = \"y\"\n",
+        '[feature.bmad-ui.tasks.bmad-dashboard-install]\ncmd = "x"\n[feature.bmad-ui.tasks.mybmad]\ncmd = "y"\n',
         encoding="utf-8",
     )
 
@@ -222,8 +220,9 @@ def test_report_names_each_of_the_six_by_class(tmp_path: Path):
 
 
 def test_baseline_json_names_install_class_for_the_six(capsys):
-    from pyforge.steward.cli import EXIT_OK, main
     import json
+
+    from pyforge.steward.cli import EXIT_OK, main
 
     rc = main(["suite", "pipeline-truth", "--baseline", "--json"])
     assert rc == EXIT_OK
@@ -288,9 +287,7 @@ def test_bmb_partial_dirs_stays_unwired_even_with_the_config_key_present(tmp_pat
     for name in ("bmad-bmb-setup", "bmad-agent-builder", "bmad-module-builder"):
         (skills / name).mkdir()
     (tmp_path / "_bmad").mkdir()
-    (tmp_path / "_bmad" / "config.yaml").write_text(
-        "bmb:\n  provisioned_by: steward\n", encoding="utf-8"
-    )
+    (tmp_path / "_bmad" / "config.yaml").write_text("bmb:\n  provisioned_by: steward\n", encoding="utf-8")
     probe = probe_wired(tmp_path, _by_name()["bmad-builder"])
     assert probe.value == "unwired"
 
@@ -302,18 +299,14 @@ def test_module_code_roster_wires_tea_cis_utility_skills(tmp_path: Path):
     config_toml = tmp_path / "_bmad" / "custom" / "config.toml"
     config_toml.parent.mkdir(parents=True)
     config_toml.write_text(
-        '[modules.tea]\nprovisioned_by = "steward"\n\n'
-        '[modules.utility-skills]\nprovisioned_by = "steward"\n',
+        '[modules.tea]\nprovisioned_by = "steward"\n\n[modules.utility-skills]\nprovisioned_by = "steward"\n',
         encoding="utf-8",
     )
     config_yaml = tmp_path / "_bmad" / "config.yaml"
     config_yaml.write_text("cis:\n  provisioned_by: steward\n", encoding="utf-8")
 
     by_name = _by_name()
-    assert (
-        probe_wired(tmp_path, by_name["bmad-method-test-architecture-enterprise"]).value
-        == "wired"
-    )
+    assert probe_wired(tmp_path, by_name["bmad-method-test-architecture-enterprise"]).value == "wired"
     assert probe_wired(tmp_path, by_name["bmad-creative-intelligence-suite"]).value == "wired"
     assert probe_wired(tmp_path, by_name["bmad-utility-skills"]).value == "wired"
 
@@ -354,9 +347,7 @@ def test_manticore_wired_when_studio_has_bmad_and_mc_skill(tmp_path: Path, monke
     assert probe.value == "wired"
 
 
-def test_manticore_studio_root_env_set_but_empty_falls_back_to_default_not_cwd(
-    tmp_path: Path, monkeypatch
-):
+def test_manticore_studio_root_env_set_but_empty_falls_back_to_default_not_cwd(tmp_path: Path, monkeypatch):
     """Review finding (medium): `os.environ.get(key, default)` only falls
     back to `default` when the key is ABSENT, not when it is
     present-but-empty (`PYFORGE_STUDIO_ROOT=""`). An earlier draft would
@@ -412,9 +403,7 @@ def test_live_repo_wired_predicates_ad9_and_five_name_and_studio(monkeypatch):
     roster = _by_name()
     assert probe_wired(repo, roster["bmad-labs-skills"]).value == "wired"
     assert probe_wired(repo, roster["bmad-builder"]).value == "wired"
-    assert (
-        probe_wired(repo, roster["bmad-method-test-architecture-enterprise"]).value == "wired"
-    )
+    assert probe_wired(repo, roster["bmad-method-test-architecture-enterprise"]).value == "wired"
     assert probe_wired(repo, roster["bmad-creative-intelligence-suite"]).value == "wired"
     assert probe_wired(repo, roster["bmad-utility-skills"]).value == "wired"
 

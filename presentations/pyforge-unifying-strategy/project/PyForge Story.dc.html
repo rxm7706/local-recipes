@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&family=Archivo+Expanded:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="./doc-page.js"></script>
+<style>
+doc-page:not(:defined){visibility:hidden}
+@page { margin: 0; }
+</style>
+</helmet>
+
+<doc-page margin="1in">
+
+<div slot="header" style="display:flex; justify-content:space-between; align-items:center; padding:0 0 12px; border-bottom:2px solid #201e1d; font-family:'Archivo',sans-serif; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; color:#9b9797;">
+  <span>PyForge</span>
+  <span>Platform Overview</span>
+</div>
+
+<!-- TITLE BLOCK -->
+<div style="margin-top:16px;">
+  <div style="font-family:'Archivo',sans-serif; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; color:#ec3013;">Platform Narrative</div>
+  <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:42px; line-height:1.05; letter-spacing:-0.02em; margin:12px 0 0; color:#201e1d;">PyForge</h1>
+  <p style="font-family:'Archivo',sans-serif; font-size:18px; line-height:1.5; font-weight:500; color:#444141; margin:16px 0 0; max-width:620px;">One governed, air-gap-ready enterprise platform for compliance, resiliency, and productivity.</p>
+</div>
+
+<div style="height:2px; background:#201e1d; margin:32px 0;"></div>
+
+<!-- THE PITCH -->
+<div style="column-count:2; column-gap:40px; font-family:'Archivo',sans-serif; font-size:14.5px; line-height:1.65; color:#201e1d;">
+
+<p style="font-size:16px; font-weight:600; line-height:1.55; margin:0 0 16px;">PyForge turns a collection of open-source Python and AI tools into one governed, air-gap-ready enterprise platform that a developer, operator, or AI agent can use from a single interface to make informed decisions on compliance, resiliency, and productivity.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:24px 0 10px; color:#ec3013;">The problem we solve</h2>
+
+<p style="margin:0 0 14px;">Enterprise Python teams adopt dozens of open-source tools — packaging managers, compliance scanners, AI workflow engines, analytics frameworks, orchestration layers. Each tool has its own install story, its own CLI, its own data silo, and its own deployment contract. The result is predictable: fragmented governance, inconsistent environments, and a sprawl of bespoke integrations that break whenever any single piece upgrades.</p>
+
+<p style="margin:0 0 14px;">Worse, many of these tools cannot run inside air-gapped networks without significant re-engineering. Enterprises that need the strongest security posture are forced to choose between capability and compliance.</p>
+
+<p style="margin:0 0 14px;">PyForge eliminates that choice.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">One platform, eight stations</h2>
+
+<p style="margin:0 0 14px;">PyForge organizes capability into eight purpose-built stations, each owning a distinct domain of the software lifecycle. Every station ships a CLI, a web portal, a programmatic API, a domain skill, and an agent persona — the same five tiers, the same grammar, the same governance.</p>
+
+<p style="margin:0 0 6px; font-weight:700;">The stations:</p>
+<ul style="margin:0 0 14px; padding-left:18px;">
+<li><b>Warden</b> — the sole compliance gate. Every pull request, every recipe, every dependency change passes through one verdict. Scanners are plugins, not competing governance planes.</li>
+<li><b>Atlas</b> — package graph intelligence. Kedro pipelines map the dependency landscape; the semantic layer makes it queryable.</li>
+<li><b>Mason</b> — recipe building and conda-forge packaging. The factory that turns upstream source into governed, reproducible packages.</li>
+<li><b>Marshal</b> — orchestration and dispatch. Loop control, run lineage, and the coordination layer for multi-agent campaigns.</li>
+<li><b>Doctor</b> — health diagnostics and auto-remedy. Workspace hygiene, syntax linting, and self-healing before problems reach production.</li>
+<li><b>Herald</b> — presentations, documentation, and narrative. Deck engines, diagram export, and the voice of the platform.</li>
+<li><b>Scribe</b> — team memory. Knowledge graphs, transcript mining, and compiled facts that persist across sessions and agents.</li>
+<li><b>Steward</b> — infrastructure, deployment, and the platform itself. The station that owns the platform's own lifecycle and carries the governance mandate.</li>
+</ul>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">One interface, not eight terminals</h2>
+
+<p style="margin:0 0 14px;">The platform mounts all eight stations under a single Django + Wagtail host. Sign in once with your enterprise identity provider — Keycloak, Entra, Okta, or Ping — and every station is one click or one command away. The CLI follows a universal grammar: <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:13px; background:#eae9e9; padding:2px 6px;">pyforge &lt;station&gt; &lt;noun&gt; &lt;verb&gt;</span>. The same grammar works for humans in a terminal, scripts in CI, and AI agents over MCP.</p>
+
+<p style="margin:0 0 14px;">Stations share a session, an event bus (CloudEvents on Redis), and a unified query plane. When Warden blocks a non-compliant dependency, Marshal knows the run failed, Doctor can diagnose the root cause, and Scribe records the decision — all without any station importing another's code.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">Air-gap first, not air-gap later</h2>
+
+<p style="margin:0 0 14px;">Every capability in PyForge works without internet egress. Static assets are bundled (WhiteNoise, zero CDN calls). Dependencies resolve from conda-forge packages the factory itself built and published. Container images deploy on Red Hat OpenShift under restricted-v2 security policies. Enterprise TLS certificates bind through the OS native truststore. A capability that only works online is an incomplete capability — that rule is enforced, not aspirational.</p>
+
+<p style="margin:0 0 14px;">Infrastructure is exactly PostgreSQL, Redis, and Kubernetes. A component that demands a fourth piece of infrastructure has failed its design review.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">The golden path</h2>
+
+<p style="margin:0 0 14px;">Developers, CI runners, and coding agents invoke the same Pixi task contract. The artifact that passed Warden is the artifact Steward deploys. There is no "works on my machine" — one locked environment, one image, three deployment modes:</p>
+
+<ul style="margin:0 0 14px; padding-left:18px;">
+<li><b>Mode A</b> — a single all-in-one container for laptops, demos, and ephemeral CI.</li>
+<li><b>Mode B</b> — a local Podman pod (PostgreSQL, Redis, the host) for full-stack development with production parity.</li>
+<li><b>Mode C</b> — multi-container OpenShift or Kubernetes for enterprise scale, with Helm charts and OCP overlays.</li>
+</ul>
+
+<p style="margin:0 0 14px;">The same image runs all three modes. Scaling is replicating the service. Statelessness is mandatory — all state lives in PostgreSQL and Redis.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">Pixi: one environment manager to rule them all</h2>
+
+<p style="margin:0 0 14px;">PyForge is built on Pixi, the cross-platform package and environment manager that unifies conda-forge and PyPI. The entire dependency tree — over 1,000 packages including Django, Wagtail, FastAPI, Langflow, DB-GPT, DuckDB, Kedro, Vizro, Celery, and Polars — solves cleanly across Python 3.12, 3.13, and 3.14, on Linux, macOS (Apple Silicon), and Windows. Native binaries. No Docker required for development. No virtualenv sprawl.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">AI agents as first-class citizens</h2>
+
+<p style="margin:0 0 14px;">Every station exposes its capabilities through the Model Context Protocol (MCP). AI agents — Claude, Cursor, Antigravity, or custom orchestrators — call the same tools a human uses, through the same governance layer. Langflow and DB-GPT are mounted on the host as pluggable agentic engines, not as separate deployments to manage. The platform provides the infrastructure; the stations provide the domain intelligence.</p>
+
+<p style="margin:0 0 14px;">Path A is deterministic code — Django, FastAPI, Celery. Path B is agentic work through station personas and the agentic engines. Both paths run on the same platform, under the same compliance gate, producing the same auditable artifacts.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">One query plane</h2>
+
+<p style="margin:0 0 14px;">PyForge unifies analytical access through a single hybrid transactional/analytical query plane built on DuckDB. Live federation reads from PostgreSQL without copying data. Kedro extracts refresh a Parquet cache for dashboards and autonomous queries. Vector search runs on the same engine. Agents cannot touch production OLTP — they query the plane. Vizro dashboards sit on the Boring Semantic Layer, giving every station a governed, consistent view of the data it needs.</p>
+
+<p style="margin:0 0 14px;">One engine. One writer discipline. One place a question goes.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">The operating model</h2>
+
+<p style="margin:0 0 14px;">Every deliverable in the PyForge estate is an outcome with a spec — why it exists, what capabilities it provides, how you test success, and what it will never do. Work follows a promotion discipline:</p>
+
+<ul style="margin:0 0 14px; padding-left:18px;">
+<li><b>Tier 01</b> — one-off: a spec and a script or analysis. Built because the question needed answering once.</li>
+<li><b>Tier 02</b> — short-term: a spec and a skill. Expected to repeat; worth encoding.</li>
+<li><b>Tier 03</b> — long-term: a spec, a capability (deterministic or agentic), an owner, and an SLA. Supported, productionized, owing all five tiers.</li>
+</ul>
+
+<p style="margin:0 0 14px;">Promotion is earned, not assumed. Build only what value and ownership justify. Advance only when repeatability, risk, adoption, integration, and ownership justify the investment. Every change is gated by automated validation through Warden — one verdict, one gate, no competing governance planes.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">Hooks and plugins, not forks</h2>
+
+<p style="margin:0 0 14px;">Every layer in the platform is replaceable by design. A process owns hook specifications — named points you attach to. A plugin implements or replaces a layer without forking the process. Profile settings choose which plugins load. Enterprise scanners (SonarQube, Checkmarx, Black Duck) are Warden plugins, not a second governance plane. Identity providers (Keycloak, Entra, Okta) are profile adapters, not hardcoded integrations. The same pattern governs build engines, deploy profiles, LLM providers, and storage backends.</p>
+
+<p style="margin:0 0 14px;">Contracts are not plugin surfaces. Pixi task names, the golden-path artifact identity, and the three infrastructure kinds (PostgreSQL, Redis, Kubernetes) are invariants. Everything else is configurable.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">The foundry destination</h2>
+
+<p style="margin:0 0 14px;">The lasting git root is <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:13px; background:#eae9e9; padding:2px 6px;">python-foundry</span> (workspace name <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:13px; background:#eae9e9; padding:2px 6px;">pyforge</span>). The current <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:13px; background:#eae9e9; padding:2px 6px;">local-recipes</span> monorepo is the copy source, then archive. The recipe factory lives in its own island with its own lock file, so the factory solver farm never merges into the estate lock.</p>
+
+<p style="margin:0 0 14px;">Scribe, the team memory station, is built on three ports: a persist port (<span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:13px; background:#eae9e9; padding:2px 6px;">graph_store</span>), a fan-in ingest port (<span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:13px; background:#eae9e9; padding:2px 6px;">compile_surface</span>), and a retrieval port (<span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:13px; background:#eae9e9; padding:2px 6px;">recall_ranker</span>). Ingest writes through the persist port, never beside it. Air-gap default: optional extras off.</p>
+
+<p style="margin:0 0 14px;">Fleet conventions enforce consistency across stations: fully-qualified decision tags, one authoritative source per fleet status fact, and declared state-storage choices. Marshal measures horizontally; owning stations close their rows; Doctor holds the verdict on Marshal's own row.</p>
+
+<h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-0.01em; margin:28px 0 10px; color:#ec3013;">What we are building toward</h2>
+
+<p style="margin:0 0 14px;">PyForge is not a product launch — it is an estate that compounds. The eight stations are live. The platform host serves traffic. The five-tier roster is complete at 40 out of 40 cells. The query plane's first slice is shipped. What comes next is depth, not breadth:</p>
+
+<ul style="margin:0 0 14px; padding-left:18px;">
+<li>The query plane matures — catalog, face, and Scribe cutover bring every station's analytical needs onto one engine.</li>
+<li>The Build League and Balanced Product Scorecard make contribution and quality visible across human, agent, and team dimensions — measured by published rules, never by unpublished intuition.</li>
+<li>Lane 3 dashboards (Vizro over the semantic layer) give operators real-time visibility without touching production schemas.</li>
+<li>The plugin architecture extends to every enterprise tool boundary — so adopting PyForge means adapting it to your stack, not replacing your stack.</li>
+<li>Epic 40 resolves two red-team CRITICALs — verified assertion minting and durable bounded broker — before cutover Phase 1. Epics 41–43 address the HIGH findings.</li>
+<li>The foundry cutover (phases 0–6) migrates to <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:13px; background:#eae9e9; padding:2px 6px;">python-foundry</span> as the lasting git root, with the factory as an island and the recipe universe as a working set, not a clone.</li>
+</ul>
+
+<p style="margin:0 0 14px;">The through-line is simple: informed decisions on compliance, resiliency, and productivity — from one place, for everyone who needs them.</p>
+
+<div style="height:2px; background:#201e1d; margin:32px 0 24px;"></div>
+
+<p style="font-family:'Archivo',sans-serif; font-size:12px; color:#9b9797; font-weight:600; letter-spacing:0.04em;">PYFORGE ESTATE · STEWARD CHAIN · EVERGREEN · GROUNDING 2026-08-30 · EPIC 40 RED-TEAM 2026-09-02</p>
+
+</div>
+
+</doc-page>
+</x-dc>
+</body>
+</html>

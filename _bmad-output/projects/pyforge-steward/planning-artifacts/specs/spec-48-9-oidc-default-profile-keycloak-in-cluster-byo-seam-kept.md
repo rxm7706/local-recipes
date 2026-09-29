@@ -34,7 +34,7 @@ declared_low_risk: false
 
 ## Boundaries & Constraints
 
-**Always:** AD-12 holds — chart never renders `kind: Secret`; `COMPONENT_OIDC_CLIENT_SECRET` and Keycloak admin/DB passwords arrive via `existingSecret` secretKeyRef only. Keycloak is a chart `Deployment`, not a new infra kind — state lives in existing PostgreSQL (separate `keycloak` database). Realm JSON mirrors compose groups/clients/mappers. NetworkPolicy: web/worker egress to keycloak; keycloak ingress from web (+ ingress controller namespace for browser login); keycloak egress to postgres + DNS. Co-decision with Story 49.6 is naming-only here — do **not** set `IDP_CLAIMS_SNAPSHOT` / `IDP_USERINFO` (49.6 owns that). Update AD-1 image inventory test to include Keycloak image (sixth workload image).
+**Always:** pap:AD-12 holds — chart never renders `kind: Secret`; `COMPONENT_OIDC_CLIENT_SECRET` and Keycloak admin/DB passwords arrive via `existingSecret` secretKeyRef only. Keycloak is a chart `Deployment`, not a new infra kind — state lives in existing PostgreSQL (separate `keycloak` database). Realm JSON mirrors compose groups/clients/mappers. NetworkPolicy: web/worker egress to keycloak; keycloak ingress from web (+ ingress controller namespace for browser login); keycloak egress to postgres + DNS. Co-decision with Story 49.6 is naming-only here — do **not** set `IDP_CLAIMS_SNAPSHOT` / `IDP_USERINFO` (49.6 owns that). Update AD-1 image inventory test to include Keycloak image (sixth workload image).
 
 **Never:** No SaaS IdP as default. No Vault HTTP clients. No fourth backing-service kind beyond PostgreSQL + Redis + Kubernetes. No hand-edit of `sprint-status-ledger.yaml`.
 

@@ -1,9 +1,12 @@
----
-title: A ticket moves once, both boards know
+---title: A ticket moves once, both boards know
 type: dream
 owner: steward
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `jira-github-projects-sync`).
+
 
 # A ticket moves once, both boards know
 

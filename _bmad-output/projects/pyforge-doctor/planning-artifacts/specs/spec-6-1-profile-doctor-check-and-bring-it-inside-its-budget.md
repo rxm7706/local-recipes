@@ -1,8 +1,3 @@
-<!-- RECOVERED 2026-08-09 Tier 3 (epics.md-derived Intent + ACs). No session transcript,
-     bmad-loop worktree snapshot, or Tier-3 draft survived — this story landed via hand-driven
-     PR #323, not a bmad-loop run, so no spec was ever drafted to promote. Regenerated from
-     epics.md (which carries a complete, numbers-bearing Outcome section) plus its merged-PR
-     Delivery Record, per CLAUDE.md's recovery priority order. -->
 ---
 title: "Story 6-1: Profile `doctor check` and bring it inside its budget"
 type: "change"
@@ -12,6 +7,12 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-08-09"
 ---
+
+<!-- RECOVERED 2026-08-09 Tier 3 (epics.md-derived Intent + ACs). No session transcript,
+     bmad-loop worktree snapshot, or Tier-3 draft survived — this story landed via hand-driven
+     PR #323, not a bmad-loop run, so no spec was ever drafted to promote. Regenerated from
+     epics.md (which carries a complete, numbers-bearing Outcome section) plus its merged-PR
+     Delivery Record, per CLAUDE.md's recovery priority order. -->
 
 ## Intent
 
@@ -79,3 +80,16 @@ found a blind one.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `ca254233ed` (2026-08-14, "Merge branch 'bmad-loop/20260813-094917-9bba/6-11-the-classifier-recognizes-a-spike-report' into land/doctor-6"). Ledger row `6-1-profile-doctor-check-and-bring-it-inside-its-budget: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-drift-new-artifact-shape/.memlog.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-drift-new-artifact-shape/SPEC.md`, `scripts/.spec-surface-baseline.json`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

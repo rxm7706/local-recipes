@@ -225,7 +225,13 @@ from . import cfe
 from .engines.build_hooks import select_build_engine_plugin
 from .errors import CfeImportFloorError, RecipeGenerationError
 from .models import BuildResult, CfeResult, ShipState, ShipTargetResult
-from .resolve import resolve_cfe_interpreter, resolve_cfe_root
+from .resolve import (
+    _ENV_FACTORY_ROOT,
+    _ENV_FOUNDRY_ROOT,
+    resolve_cfe_interpreter,
+    resolve_cfe_root,
+    resolve_factory_island,
+)
 
 _OPTIMIZE_RELEVANT_FLOOR: tuple[str, ...] = ("ruamel.yaml",)
 """The subset of `cfe.CFE_IMPORT_FLOOR` the wrapped optimizer actually
@@ -310,9 +316,7 @@ def new(
 
     if result.returncode != 0:
         cfe_message = (
-            result.stdout.strip()
-            or result.stderr.strip()
-            or f"CFE exited with code {result.returncode} and no output"
+            result.stdout.strip() or result.stderr.strip() or f"CFE exited with code {result.returncode} and no output"
         )
         raise RecipeGenerationError(source=source, cfe_message=cfe_message)
 
@@ -406,6 +410,23 @@ def build(
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
     cfe.ensure_cfe_root(resolved_root)
 
+    foundry_root_arg = environ.get(_ENV_FOUNDRY_ROOT)
+    factory_island = resolve_factory_island(
+        recipe_path,
+        foundry_root_arg=foundry_root_arg,
+        environ=environ,
+        start_directory=start_directory,
+    )
+    if factory_island is not None:
+        recipe_path = str(factory_island.recipe_path)
+        build_env = {
+            **environ,
+            _ENV_FACTORY_ROOT: str(factory_island.factory_root),
+            _ENV_FOUNDRY_ROOT: str(factory_island.foundry_root),
+        }
+    else:
+        build_env = environ
+
     if docker:
         resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
         return cfe.build_docker(
@@ -414,6 +435,7 @@ def build(
             interpreter=resolved_interpreter.path,
             timeout=cfe_timeout_arg,
             stderr_sink=stderr_sink,
+            env=build_env,
         )
 
     plugin = select_build_engine_plugin()
@@ -424,6 +446,7 @@ def build(
             root=resolved_root.root,
             timeout=cfe_timeout_arg,
             stderr_sink=stderr_sink,
+            env=build_env,
         )
 
     return plugin.call("around", {"next": _native_next})
@@ -637,7 +660,10 @@ def submit(
         recipe_dir = Path(recipe_path).expanduser().resolve()
     except (OSError, ValueError) as exc:
         return ShipTargetResult(
-            target="conda-forge", state=ShipState.FAILED, reference=None, message=str(exc),
+            target="conda-forge",
+            state=ShipState.FAILED,
+            reference=None,
+            message=str(exc),
         )
     args = [recipe_dir.name]
     if not confirm:
@@ -658,7 +684,9 @@ def submit(
 
 
 def _ship_target_result_from_cfe_result(
-    result: CfeResult, *, confirm: bool,
+    result: CfeResult,
+    *,
+    confirm: bool,
 ) -> ShipTargetResult:
     """Map a `submit_pr` `CfeResult` onto a `ShipTargetResult` (AD-9) -- the
     one Mason-side reinterpretation of a CFE JSON body this epic makes
@@ -702,14 +730,17 @@ def _ship_target_result_from_cfe_result(
 
     if not confirm:
         return ShipTargetResult(
-            target="conda-forge", state=ShipState.NOT_ATTEMPTED,
-            reference=None, message=message,
+            target="conda-forge",
+            state=ShipState.NOT_ATTEMPTED,
+            reference=None,
+            message=message,
         )
 
     succeeded = body.get("success") if body is not None else result.returncode == 0
     if not succeeded:
         return ShipTargetResult(
-            target="conda-forge", state=ShipState.FAILED,
+            target="conda-forge",
+            state=ShipState.FAILED,
             reference=(body.get("fork_branch_url") if body else None),
             message=message,
         )
@@ -717,7 +748,10 @@ def _ship_target_result_from_cfe_result(
     pr_url = body.get("pr_url") if body else None
     reference = pr_url if pr_url else (body.get("fork_branch_url") if body else None)
     return ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING, reference=reference, message=message,
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference=reference,
+        message=message,
     )
 
 

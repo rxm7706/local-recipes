@@ -114,22 +114,11 @@ def is_advance_stale(pkg: PackageTruth) -> bool:
     return bool(_ADVANCE_DRIFTS.intersection(pkg.drifts))
 
 
-def _default_autotick(
-    repo: Path, package: str, mode: str, dry_run: bool
-) -> Mapping[str, Any]:
+def _default_autotick(repo: Path, package: str, mode: str, dry_run: bool) -> Mapping[str, Any]:
     recipe = recipe_path_for(repo, package)
-    script = (
-        repo / ".claude" / "scripts" / "conda-forge-expert" / "github_updater.py"
-    )
+    script = repo / ".claude" / "scripts" / "conda-forge-expert" / "github_updater.py"
     if not script.is_file():
-        script = (
-            repo
-            / ".claude"
-            / "skills"
-            / "conda-forge-expert"
-            / "scripts"
-            / "github_updater.py"
-        )
+        script = repo / ".claude" / "skills" / "conda-forge-expert" / "scripts" / "github_updater.py"
     cmd = [sys.executable, str(script), str(recipe)]
     if mode == "head":
         cmd.append("--head")
@@ -272,24 +261,16 @@ def run_advance(
 
     if _suite_package(package) is None:
         report.summary = f"suite advance: unknown suite package {package!r}"
-        report.stages.append(
-            {"stage": "resolve", "ok": False, "error": "unknown package"}
-        )
+        report.stages.append({"stage": "resolve", "ok": False, "error": "unknown package"})
         return report
 
     probe_hooks = hooks_from_baseline(BASELINE_2026_08_22) if baseline else None
     baseline_id = BASELINE_ID_2026_08_22 if baseline else None
-    truth = build_pipeline_truth_report(
-        repo, hooks=probe_hooks, baseline_id=baseline_id
-    )
+    truth = build_pipeline_truth_report(repo, hooks=probe_hooks, baseline_id=baseline_id)
     pkg_truth = next((p for p in truth.packages if p.name == package), None)
     if pkg_truth is None:
-        report.summary = (
-            f"suite advance: package {package!r} missing from truth report"
-        )
-        report.stages.append(
-            {"stage": "resolve", "ok": False, "error": "missing from truth"}
-        )
+        report.summary = f"suite advance: package {package!r} missing from truth report"
+        report.stages.append({"stage": "resolve", "ok": False, "error": "missing from truth"})
         return report
 
     report.drifts = tuple(pkg_truth.drifts)
@@ -329,9 +310,7 @@ def run_advance(
     stage_runners: list[tuple[str, Callable[[], Mapping[str, Any]]]] = [
         (
             "autotick",
-            lambda: (hooks.autotick or _default_autotick)(
-                repo, package, mode, dry_run
-            ),
+            lambda: (hooks.autotick or _default_autotick)(repo, package, mode, dry_run),
         ),
         (
             "build",
@@ -375,9 +354,7 @@ def run_advance(
                 report.merged = False
                 return report
         if not ok:
-            report.summary = (
-                f"suite advance: failed at stage {stage_name!r} for {package}"
-            )
+            report.summary = f"suite advance: failed at stage {stage_name!r} for {package}"
             return report
 
     report.ok = True
@@ -390,8 +367,7 @@ def run_advance(
     else:
         pr_bit = ""
     report.summary = (
-        f"suite advance: {action} {package} via {mode}-mode "
-        f"({' → '.join(_STAGE_ORDER)}); merged=false{pr_bit}"
+        f"suite advance: {action} {package} via {mode}-mode ({' → '.join(_STAGE_ORDER)}); merged=false{pr_bit}"
     )
     return report
 
@@ -417,9 +393,7 @@ def format_advance_report(report: AdvanceReport, *, as_json: bool) -> str:
     return "\n".join(lines) + "\n"
 
 
-def advance_from_namespace(
-    ns: argparse.Namespace, *, hooks: AdvanceHooks | None = None
-) -> DutyResult:
+def advance_from_namespace(ns: argparse.Namespace, *, hooks: AdvanceHooks | None = None) -> DutyResult:
     """CLI entry for ``suite advance``."""
     package = getattr(ns, "package", None)
     if not package:
@@ -428,9 +402,7 @@ def advance_from_namespace(
     dry_run = bool(getattr(ns, "dry_run", False))
     baseline = bool(getattr(ns, "baseline", False))
     as_json = bool(getattr(ns, "json", False))
-    report = run_advance(
-        repo, package, dry_run=dry_run, baseline=baseline, hooks=hooks
-    )
+    report = run_advance(repo, package, dry_run=dry_run, baseline=baseline, hooks=hooks)
     return DutyResult(
         ok=report.ok,
         summary=format_advance_report(report, as_json=as_json),

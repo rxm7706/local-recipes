@@ -56,16 +56,12 @@ def _prescriptions_from_findings(
     lookups so CLI tests that monkeypatch ``prescribe`` still apply."""
     partitioned = prescribe.partition(findings)
     ranked = prescribe.rank(partitioned)
-    rank_by_finding = {
-        id(rp.finding): (rp.rank, rp.rank_factors) for rp in ranked
-    }
+    rank_by_finding = {id(rp.finding): (rp.rank, rp.rank_factors) for rp in ranked}
 
     prescriptions: list[Prescription] = []
     for pf in partitioned:
         rank_value, rank_factors = rank_by_finding.get(id(pf.finding), (None, None))
-        safe_upgrade_target, safe_upgrade_reason = prescribe.recommend_safe_upgrade(
-            pf.finding
-        )
+        safe_upgrade_target, safe_upgrade_reason = prescribe.recommend_safe_upgrade(pf.finding)
         prescriptions.append(
             Prescription(
                 finding_ref=f"{pf.finding.source.value}:{pf.finding.check}",

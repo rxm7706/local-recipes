@@ -106,7 +106,35 @@ _DOCKER_RUN_TIMEOUT_SECONDS = 120
 # worst-case (a hang), not a normal upper bound, and is one constant for
 # all eight stations on purpose (no per-station tuning absent evidence any
 # one is structurally slower).
-_CLI_SMOKE_TIMEOUT_SECONDS = 10
+#
+# RAISED 10 -> 30, 2026-09-14: that evidence now exists. `guild-container
+# (docker)` failed on PR #1355 with `pyforge-atlas: timed out (> 10s)`
+# while the other seven passed, and it had passed on the preceding run --
+# i.e. the 10s budget had become a coin-flip rather than a bound.
+# Measured directly (console script, no `pixi run` or `docker run`
+# overhead, warm page cache): **pyforge-atlas 2.26s vs warden 0.23s** --
+# roughly 10x, and the 0.31-0.74s band above no longer describes atlas at
+# all. The cause is deliberate and load-bearing, not a regression:
+# atlas delegates its CLI to Kedro's own Click group, so `--help` pays a full
+# Kedro framework bootstrap: `configure_project()` plus `kedro.framework.cli`
+# and `kedro.framework.project` (whose rich-logging config prints the
+# `rich_logging.yml` INFO banner visible on any atlas `--help`).
+# Re-measured 2026-09-14: `--version` is **0.34s** because Story 7.1 intercepts
+# it BEFORE the Kedro imports; `--help` is **2.29s**. Imports are only ~0.36s of
+# that and pandas ~0.28s, so the module-scope pandas pin is ~12% of the cost and
+# NOT the cause -- an earlier note here said otherwise and was wrong.
+# A cold container on a shared runner multiplies that warm 2.26s well past
+# 10s, which is exactly what CI observed.
+# 30s keeps this a hang bound (its stated job) instead of a latency
+# assertion, which the gate was never meant to be. There is no cheap fix:
+# you cannot render Kedro's help without building Kedro's CLI, and the
+# `--version` trick works only because that output is atlas's own. Tracked as
+# `DW-ATLAS-CLI-STARTUP-1`, re-classified accepted-risk -- a sub-second atlas
+# `--help` means atlas no longer delegating its CLI to Kedro, which is an
+# architecture decision, not a startup micro-optimisation. Do NOT "fix" this
+# by touching the pandas pin: that is ~12% of the cost and a correctness
+# contract (AUD-ATLAS-011).
+_CLI_SMOKE_TIMEOUT_SECONDS = 30
 _MARKER_FILENAME = ".container-gates-roundtrip-marker"
 # `--mount` becomes the `DST` half of docker's `-v SRC:DST` shorthand AND is
 # interpolated into an in-container `sh -c` string -- a `:` would corrupt the

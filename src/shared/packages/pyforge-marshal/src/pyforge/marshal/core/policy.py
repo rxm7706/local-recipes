@@ -200,6 +200,7 @@ from types import MappingProxyType
 
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
+from .refs import ORIGIN
 
 # --- the closed 33-key vocabulary -------------------------------------------
 
@@ -351,6 +352,13 @@ _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
 
 _STAGE_NAMES: frozenset[str] = frozenset({"dev", "review", "triage"})
 _GATE_MODES: frozenset[str] = frozenset({"none", "per-epic", "per-story-spec-approval"})
+
+#: Characters git's branch-name rules refuse anywhere in a name (besides a
+#: space and control characters) -- ``_valid_landing_base_branch``.
+_BRANCH_NAME_BAD: frozenset[str] = frozenset("~^:?*[\\\x7f")
+#: A first path segment that spells a ref's namespace or the remote, not a
+#: branch -- ``_valid_landing_base_branch`` (Story 61.1).
+_REF_NAMESPACES: frozenset[str] = frozenset({"refs", "heads", "tags", "remotes", ORIGIN})
 # Story 28.15's closed 3-value vocabulary (CAP-17): the per-station
 # scope-violation enforcement mode `core/gate.py::check_scope_with_mode`
 # consumes. `_valid_scope_violation_mode` mirrors `_valid_gate_mode`'s own
@@ -429,18 +437,12 @@ GATE_MODE_AUTONOMY_LABELS: Mapping[str, Mapping[str, str]] = {
     "per-epic": {
         "level": "L3",
         "name": "Conditional / Context Gates",
-        "meaning": (
-            "Machine-readable boundaries; human at epic seams. The "
-            "production ceiling."
-        ),
+        "meaning": ("Machine-readable boundaries; human at epic seams. The production ceiling."),
     },
     "none": {
         "level": "L4",
         "name": "Approver",
-        "meaning": (
-            "Runs independently; surfaces only at blockers or "
-            "pre-specified conditions."
-        ),
+        "meaning": ("Runs independently; surfaces only at blockers or pre-specified conditions."),
     },
 }
 
@@ -448,16 +450,14 @@ GATE_MODE_AUTONOMY_LABELS: Mapping[str, Mapping[str, str]] = {
 # as ONE literal path segment of the generated worktree_seed_paths entry
 # (`_bmad-output/projects/<slug>/implementation-artifacts`), so anything that
 # could split or escape that segment is out.
-_SLUG_CHARS: frozenset[str] = frozenset(
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
-)
+_SLUG_CHARS: frozenset[str] = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
 
 # Marshal's OWN built-in defaults for the 8 literal-valued keys -- see the
 # module docstring for why this is independent of any one project's rendered
 # policy file, and why `worktree_seed_paths` has no entry here.
 DEFAULT_POLICY: Mapping[str, object] = {
     "verify_commands": (),
-    "merge_subject_template": "Merge {key} into main",
+    "merge_subject_template": "Merge {slug}/{key} into main",
     "model_tier_map": {},
     "gate_mode": "per-story-spec-approval",
     "frozen_surfaces": (),
@@ -953,7 +953,13 @@ def _valid_context_block(value: object) -> dict[str, object] | None:
     ``bool`` only, the same strict-no-coercion posture ``_valid_bool``
     applies. ``aggressiveness`` is OPTIONAL, drawn from the closed
     ``_CONTEXT_AGGRESSIVENESS`` vocabulary when present -- CAP-8's later
-    graduated ladder escalates it, this story only shapes it."""
+    graduated ladder escalates it, this story only shapes it.
+
+    Story 46.4: the ``wire`` layer alone additionally accepts the literal
+    string ``"auto"`` for ``enabled`` -- a tri-state resolved later, against
+    the concrete harness profile, by ``harness_profile.resolve_wire_enabled``
+    (never here, and never force-coerced to ``bool``). The other 4 layers
+    keep the strict-``bool``-only posture unchanged."""
     if not isinstance(value, Mapping):
         return None
     result: dict[str, object] = {}
@@ -974,14 +980,12 @@ def _valid_context_block(value: object) -> dict[str, object] | None:
             return None
         enabled = settings.get("enabled")
         if not isinstance(enabled, bool):
-            return None
+            if not (layer_name == "wire" and enabled == "auto"):
+                return None
         entry: dict[str, object] = {"enabled": enabled}
         if "aggressiveness" in settings:
             aggressiveness = settings["aggressiveness"]
-            if (
-                not isinstance(aggressiveness, str)
-                or aggressiveness not in _CONTEXT_AGGRESSIVENESS
-            ):
+            if not isinstance(aggressiveness, str) or aggressiveness not in _CONTEXT_AGGRESSIVENESS:
                 return None
             entry["aggressiveness"] = aggressiveness
         result[layer_name] = entry
@@ -1146,9 +1150,7 @@ def _valid_landing_rule(value: object) -> LandingRule | None:
     if label is not None and (not isinstance(label, str) or label == ""):
         return None
     required_check = value.get("required_check")
-    if required_check is not None and (
-        not isinstance(required_check, str) or required_check == ""
-    ):
+    if required_check is not None and (not isinstance(required_check, str) or required_check == ""):
         return None
     if label is None and required_check is None:
         return None
@@ -1258,15 +1260,33 @@ def _valid_merge_subject_template(value: object) -> str | None:
 
 
 def _valid_landing_base_branch(value: object) -> str | None:
-    """``landing_base_branch``: a non-empty ``str`` only -- the same shape
-    ``_valid_merge_subject_template`` validates, deliberately a separate
-    function rather than a shared alias: the two fields answer unrelated
-    questions (a subject template vs. a branch name), and a future
-    branch-name-specific check (e.g. rejecting whitespace) must not silently
-    apply to the subject template too."""
-    if isinstance(value, str) and value != "":
-        return value
-    return None
+    """``landing_base_branch``: a plain local branch name -- deliberately a
+    separate function from ``_valid_merge_subject_template``: the two fields
+    answer unrelated questions (a subject template vs. a branch name).
+
+    Story 61.1 (CAP-271): every git read of this value names
+    ``refs/heads/<value>``, so a ref spelled with its namespace (``refs/...``,
+    ``heads/...``, ``tags/...``, ``remotes/...``) or a remote's branch
+    (``origin/...``) can only mean something marshal cannot do -- the forge's
+    PR base is a branch name too. Refused as well: whatever git's branch-name
+    rules refuse (``git check-ref-format``: ``..``, ``@{``, a space, control
+    characters, ``~^:?*[\\``, a leading ``-``, an empty, dot-led or ``.lock``
+    component, a trailing ``/`` or ``.``, ``HEAD``, ``@``). Pure: no git
+    call, so a name is judged the same with or without a repository at hand
+    -- which is also why another remote's name (``upstream/...``) cannot be
+    told from a branch here. ``release/2026`` stays a valid name. ``land``
+    and ``batch-pr`` refuse to run on a refused value rather than fall back
+    to ``main`` (MRS-LAND-002 / MRS-DEPLOY-015)."""
+    if not isinstance(value, str) or value in ("", "HEAD", "@"):
+        return None
+    first, slash, _rest = value.partition("/")
+    if (slash and first in _REF_NAMESPACES) or value.startswith("-") or value.endswith(("/", ".")):
+        return None
+    if ".." in value or "@{" in value or any(ch == " " or ord(ch) < 0x20 or ch in _BRANCH_NAME_BAD for ch in value):
+        return None
+    if any(part == "" or part.startswith(".") or part.endswith(".lock") for part in value.split("/")):
+        return None
+    return value
 
 
 def _valid_gate_mode(value: object) -> str | None:
@@ -1463,7 +1483,7 @@ def _valid_positive_number(value: object) -> int | float | None:
     # malformed-value finding every other bad value already produces.
     try:
         as_float = float(value)
-    except (OverflowError, ValueError):
+    except OverflowError, ValueError:
         return None
     if not (as_float > 0 and math.isfinite(as_float)):
         return None
@@ -1525,12 +1545,7 @@ def _is_valid_project_slug(slug: str) -> bool:
     consumer; the charset is ASCII, so characters == bytes), drawn from the
     conservative ``_SLUG_CHARS`` charset, and not a pure-dot name
     (``.``/``..`` would alias or escape the ``projects/`` directory)."""
-    return (
-        bool(slug)
-        and len(slug) <= 255
-        and set(slug) <= _SLUG_CHARS
-        and slug.strip(".") != ""
-    )
+    return bool(slug) and len(slug) <= 255 and set(slug) <= _SLUG_CHARS and slug.strip(".") != ""
 
 
 def _project_slug_finding(slug: str) -> Finding:
@@ -1762,8 +1777,7 @@ class EffectivePolicy:
             raise ValueError(f"_seed must be a Mapping, got {self._seed!r}")
         if set(self._seed.keys()) != _SEED_KEYS:
             raise ValueError(
-                f"_seed must carry exactly the seed keys {sorted(_SEED_KEYS)}, "
-                f"got {sorted(self._seed.keys())}"
+                f"_seed must carry exactly the seed keys {sorted(_SEED_KEYS)}, got {sorted(self._seed.keys())}"
             )
         for seed_key, field in self._seed.items():
             if not isinstance(field, PolicyField):
@@ -1809,9 +1823,7 @@ class EffectivePolicy:
                 "dispatch",
             )
         )
-        seed = ", ".join(
-            f"{key!r}: {_field_repr(key, field)}" for key, field in sorted(self._seed.items())
-        )
+        seed = ", ".join(f"{key!r}: {_field_repr(key, field)}" for key, field in sorted(self._seed.items()))
         return f"{type(self).__name__}({static}, _seed={{{seed}}})"
 
     def seed_view(self) -> Mapping[str, PolicyField]:
@@ -1865,9 +1877,7 @@ class EffectivePolicy:
             "model_cost_catalog": _field_payload(self.model_cost_catalog),
             "dispatch": _field_payload(self.dispatch),
         }
-        payload.update(
-            {key: _field_payload(field) for key, field in self._seed.items()}
-        )
+        payload.update({key: _field_payload(field) for key, field in self._seed.items()})
         canonical = json.dumps(payload, sort_keys=True)
         return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
@@ -1891,18 +1901,27 @@ def resolve_context_layers(effective: EffectivePolicy) -> dict[str, dict[str, ob
     Both ``adapters/harness_bmadloop.py::render_policy_toml`` (bmad-loop
     spin's ``policy.toml`` render) and ``cli/dispatch.py::dispatch_once``
     (factory dispatch's launch data/journal) call this SAME function rather
-    than each re-deriving "layer absent = off" independently."""
+    than each re-deriving "layer absent = off" independently.
+
+    Story 46.4: this function runs at policy-composition time, before any
+    harness profile is chosen, so the ``wire`` layer's declared value is
+    passed through UNRESOLVED -- ``"auto"``, ``True``, or ``False``
+    (defaulting to ``False`` when the layer is absent) -- rather than
+    force-coerced to ``bool``. ``bool("auto")`` would silently destroy the
+    tri-state before it ever reaches ``harness_profile.resolve_wire_enabled``,
+    the profile-aware resolver that finalizes it. The other 4 layers keep the
+    existing ``bool(...)`` coercion -- validation already guarantees a real
+    ``bool`` for them."""
     declared = effective.context.value
     resolved: dict[str, dict[str, object]] = {}
     for layer in CONTEXT_LAYER_NAMES:
         layer_declared = declared.get(layer, {})
         if not isinstance(layer_declared, Mapping):
             layer_declared = {}
+        raw_enabled = layer_declared.get("enabled", False)
         resolved[layer] = {
-            "enabled": bool(layer_declared.get("enabled", False)),
-            "aggressiveness": layer_declared.get(
-                "aggressiveness", _CONTEXT_DEFAULT_AGGRESSIVENESS
-            ),
+            "enabled": raw_enabled if layer == "wire" else bool(raw_enabled),
+            "aggressiveness": layer_declared.get("aggressiveness", _CONTEXT_DEFAULT_AGGRESSIVENESS),
         }
     return resolved
 
@@ -1924,7 +1943,11 @@ def resolve_compression_escalation_threshold(effective: EffectivePolicy) -> floa
 
 
 def compose(
-    *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
+    *,
+    project_slug: str,
+    repo_defaults: Mapping[str, object] | None = None,
+    project: Mapping[str, object],
+    flags: Mapping[str, object],
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
     wins (AD-16), over Marshal's closed 33-key policy vocabulary. Never reads a
@@ -1956,9 +1979,7 @@ def compose(
     if repo_defaults is None:
         repo_defaults = {}
     if isinstance(repo_defaults, str) or not isinstance(repo_defaults, Mapping):
-        raise TypeError(
-            f"repo_defaults must be a Mapping, not a bare str: {repo_defaults!r}"
-        )
+        raise TypeError(f"repo_defaults must be a Mapping, not a bare str: {repo_defaults!r}")
     if isinstance(project, str) or not isinstance(project, Mapping):
         raise TypeError(f"project must be a Mapping, not a bare str: {project!r}")
     if isinstance(flags, str) or not isinstance(flags, Mapping):

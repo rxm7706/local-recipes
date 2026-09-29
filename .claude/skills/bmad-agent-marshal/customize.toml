@@ -39,6 +39,11 @@ description = "List homes via FR-13 grammar"
 prompt = "Complete the station task by running `pyforge marshal homes` only. Do not inspect worktrees yourself. Do not call HTTP except POST /stations/marshal/mcp."
 
 [[agent.menu]]
+code = "WATCH"
+description = "Watch a run via FR-13 grammar"
+prompt = "Complete the station task by running `pyforge marshal watch` (add --project SLUG, --run RUN_ID, or --fleet as the operator named). Do not read or write files. Do not call HTTP except POST /stations/marshal/mcp."
+
+[[agent.menu]]
 code = "MCP"
 description = "Call the marshal service face"
 prompt = "POST /stations/marshal/mcp only (initialize and tools/call station_face). No other URL or method. No filesystem."

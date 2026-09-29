@@ -32,9 +32,7 @@ from pyforge.warden.sbom import render_cyclonedx
 _VALIDATOR = JsonStrictValidator(SchemaVersion.V1_6)
 
 
-def _coverage(
-    *, deps_total: int = 0, deps_assessed: int = 0
-) -> tuple[AxisCoverage, ...]:
+def _coverage(*, deps_total: int = 0, deps_assessed: int = 0) -> tuple[AxisCoverage, ...]:
     return (
         AxisCoverage(
             axis=AXIS_HYGIENE,
@@ -55,9 +53,7 @@ def _coverage(
     )
 
 
-def make_report(
-    *, coverage: tuple[AxisCoverage, ...] | None = None, inventory_count: int = 0
-) -> ComplianceReport:
+def make_report(*, coverage: tuple[AxisCoverage, ...] | None = None, inventory_count: int = 0) -> ComplianceReport:
     return ComplianceReport(
         schema_version="1.0.0",
         tool_name="warden",
@@ -98,9 +94,7 @@ def test_empty_inventory_validates():
 def test_minimal_populated_inventory_validates(component_factory):
     component = component_factory(name="requests", version="2.31.0")
     inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1
-    )
+    report = make_report(coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1)
     document_str = render_cyclonedx(inventory, report)
     validate(document_str)
     document = json.loads(document_str)
@@ -130,9 +124,7 @@ def test_rich_inventory_across_ecosystems_and_identity_sources_validates(
         ),
     )
     inventory = ResolvedInventory(components=components, resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=3, deps_assessed=3), inventory_count=3
-    )
+    report = make_report(coverage=_coverage(deps_total=3, deps_assessed=3), inventory_count=3)
     document_str = render_cyclonedx(inventory, report)
     validate(document_str)
     document = json.loads(document_str)
@@ -148,16 +140,10 @@ def test_additive_cfe_property_still_validates(component_factory):
     addition) must still validate."""
     component = component_factory(name="requests", version="2.31.0")
     inventory = ResolvedInventory(components=(component,), resolved_scan_set=())
-    report = make_report(
-        coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1
-    )
+    report = make_report(coverage=_coverage(deps_total=1, deps_assessed=1), inventory_count=1)
     document = json.loads(render_cyclonedx(inventory, report))
-    document["components"][0].setdefault("properties", []).append(
-        {"name": "cfe:future-field", "value": "anything"}
-    )
-    document["metadata"].setdefault("properties", []).append(
-        {"name": "cfe:another-future-field", "value": "anything"}
-    )
+    document["components"][0].setdefault("properties", []).append({"name": "cfe:future-field", "value": "anything"})
+    document["metadata"].setdefault("properties", []).append({"name": "cfe:another-future-field", "value": "anything"})
     validate(json.dumps(document))
 
 

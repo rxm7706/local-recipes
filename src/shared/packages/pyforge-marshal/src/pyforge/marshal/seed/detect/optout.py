@@ -246,10 +246,7 @@ def _has_content(text: str) -> bool:
     Categories rather than a hand-listed character set, so the rule covers
     the whole class instead of the three members that happened to be
     tested."""
-    return any(
-        not char.isspace() and unicodedata.category(char) not in _EMPTY_CATEGORIES
-        for char in text
-    )
+    return any(not char.isspace() and unicodedata.category(char) not in _EMPTY_CATEGORIES for char in text)
 
 
 def marker_region_names(text: str, entry: ManifestEntry) -> frozenset[str]:
@@ -440,9 +437,7 @@ def _claims_region(state: SeedState, entry: ManifestEntry, region_name: str) -> 
     )
 
 
-def classify_regions(
-    entry: ManifestEntry, text: str, state: SeedState | None
-) -> tuple[RegionStatus, ...]:
+def classify_regions(entry: ManifestEntry, text: str, state: SeedState | None) -> tuple[RegionStatus, ...]:
     """One ``RegionStatus`` per region ``entry`` declares, in DECLARED
     order (never parse order, never sorted) -- the order the manifest's
     author wrote and the order a reader of both documents can follow.
@@ -473,7 +468,7 @@ def classify_regions(
     assert entry.format is not None
     try:
         spans = parse_regions(text, entry.format)
-    except (RegionParseError, MarkerError, NotImplementedError):
+    except RegionParseError, MarkerError, NotImplementedError:
         return ()
     present_names = frozenset(span.name for span in spans)
     # Every region name whose marker line survives ANYWHERE in the raw
@@ -581,16 +576,13 @@ def region_findings(statuses: tuple[RegionStatus, ...]) -> tuple[Finding, ...]:
                     # branch having been installed, deleted, and forgotten,
                     # and the message would have asserted otherwise. What is
                     # actually known is what is now said.
-                    f"{status.path}#{status.region}: declared managed region is not"
-                    " present",
+                    f"{status.path}#{status.region}: declared managed region is not present",
                 )
             )
     return tuple(findings)
 
 
-def opt_outs_to_record(
-    statuses: tuple[RegionStatus, ...], state: SeedState | None
-) -> tuple[tuple[str, str], ...]:
+def opt_outs_to_record(statuses: tuple[RegionStatus, ...], state: SeedState | None) -> tuple[tuple[str, str], ...]:
     """The ``(artifact_id, region)`` pairs of every ``OPTED_OUT`` status
     ``state`` does not ALREADY record, in the order given -- the argument
     list a mutating verb feeds to ``state.record_opt_out`` before it builds

@@ -249,3 +249,16 @@ collision; no new design questions opened.
 **Re-verification (2026-08-07, after the patch):** `pixi run --frozen -e pyforge-herald
 pyforge-herald-test` -- **349 passed, 2 skipped** (whole-package total, incl. Story 1.6's own
 tests landed in the same close-out pass); `ruff format --check`/`ruff check` clean.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `bfe644d692` (2026-08-07, "Merge pull request #293 from rxm7706/herald/1-3-and-1-6-epic-1-close-out"). Ledger row `1-3-fallback-transport-adapter: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-1-3-fallback-transport-adapter.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-1-6-herald-deck-seed-slug.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/__init__.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/agent_sdk_transport.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/base.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py`, `src/shared/packages/pyforge-herald/tests/test_agent_sdk_transport.py`, `src/shared/packages/pyforge-herald/tests/test_bridge.py` (+2 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

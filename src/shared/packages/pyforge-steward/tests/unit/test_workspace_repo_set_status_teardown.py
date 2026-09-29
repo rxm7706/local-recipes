@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.workspace import (
     WorkspaceError,
@@ -20,9 +21,7 @@ from pyforge.steward.workspace import (
 
 
 def _git(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
-    )
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
 
 
 def _make_repo(tmp_path: Path, name: str) -> Path:
@@ -73,16 +72,12 @@ def two_repos(tmp_path: Path) -> tuple[Path, Path]:
 
 
 @pytest.fixture
-def open_set(
-    two_repos: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
-) -> tuple[Path, Path, Path]:
+def open_set(two_repos: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path, Path]:
     primary, secondary = two_repos
     config = primary / ".steward" / "repo-sets.yaml"
     _write_repo_sets(config, primary=primary, secondary=secondary)
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: primary)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_repo_sets_path", lambda: config
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_repo_sets_path", lambda: config)
     start_repo_set("fleet-feature", from_ref="origin/main")
     return primary, secondary, config
 
@@ -158,7 +153,9 @@ def test_clean_repo_set_merged_only_archives_per_member(
     assert result["archived"][0]["member"] == "primary"
     archive = Path(result["archived"][0]["archive"])
     assert archive.is_file()
-    assert archive.name.endswith(".tar.gz")
+    # Story 69.1 (CAP-157): primary is clean and on origin/main -- a note, not a tarball.
+    assert archive.name.endswith(".landed.txt")
+    assert "nothing unlanded" in archive.read_text(encoding="utf-8")
 
     assert len(result["skipped"]) == 1
     assert result["skipped"][0]["member"] == "secondary"
@@ -214,9 +211,7 @@ def test_clean_repo_set_archives_not_deletes_when_clean(
     assert len(result["archived"]) == 2
     import tarfile
 
-    primary_archive = Path(
-        next(r["archive"] for r in result["archived"] if r["member"] == "primary")
-    )
+    primary_archive = Path(next(r["archive"] for r in result["archived"] if r["member"] == "primary"))
     with tarfile.open(primary_archive, "r:gz") as tar:
         names = tar.getnames()
     assert any(n.endswith("keep-me.txt") for n in names)
@@ -269,9 +264,7 @@ def test_cli_status_and_clean_repo_set(
 ) -> None:
     primary, _secondary, config = open_set
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: primary)
-    monkeypatch.setattr(
-        "pyforge.steward.workspace.default_repo_sets_path", lambda: config
-    )
+    monkeypatch.setattr("pyforge.steward.workspace.default_repo_sets_path", lambda: config)
 
     rc = main(["workspace", "status", "fleet-feature", "--json"])
     assert rc == EXIT_OK
@@ -290,3 +283,31 @@ def test_cli_status_and_clean_repo_set(
     err = json.loads(captured.err or captured.out)
     assert "dirty member" in err["error"]
     assert dirty_name in err["error"]
+
+
+def test_cli_clean_repo_set_exits_failed_when_a_member_errored(
+    open_set: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """Story 68.1 review 2 (L-A): a member that cannot be archived is reported and kept, and
+    the repo-set clean exits non-zero like the single-worktree and fleet forms."""
+    import pyforge.steward.workspace as ws
+
+    primary, _secondary, config = open_set
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: primary)
+    monkeypatch.setattr("pyforge.steward.workspace.default_repo_sets_path", lambda: config)
+    real_archive = ws._archive_worktree
+    failing = open_repo_set_members("fleet-feature")[1].record.path
+
+    def _archive(record, **kwargs):
+        if record.path == failing:
+            raise ws.WorkspaceError(f"could not archive {record.path}: simulated disk full")
+        return real_archive(record, **kwargs)
+
+    monkeypatch.setattr(ws, "_archive_worktree", _archive)
+
+    rc = main(["workspace", "clean", "fleet-feature", "--merged-only", "--json"])
+
+    assert rc == EXIT_FAILED
+    captured = capsys.readouterr()
+    payload = json.loads(captured.err or captured.out)
+    assert any(row["reason"].startswith("error: could not archive") for row in payload["skipped"])

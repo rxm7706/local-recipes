@@ -162,42 +162,101 @@ verify_commands = [
   "AGENTS.md",
 ]
 
+"12" = [  # A promotion gate that has seen what it ships (spec-golden-path-conda-blind-spot, reminted CAP-18..22), added 2026-09-28:
+  # Epics 12 and 13 were minted without an entry, so MRS-GATE-007 would fire on every path a follow-up touches;
+  # both mirror the station-wide default of Epics 1-10
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]
+"13" = [  # The TEA advisory reviews the diff from the remote-tracking ref (spec-pyforge-warden CAP-23), added 2026-09-28
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]
+
+"14" = [  # The fix-PR actuator finishes the fix on the estate's repos (spec-pyforge-warden CAP-24), added 2026-09-28
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  # the flag key in the one tree (spec-feature-flag-governance:CAP-1)
+  "src/platform/config/flags.json",
+  # pyforge.core.flags.read_boolean, if steward Story 75.1 has not landed -- in exactly 75.1's shape (spec-pyforge-core co-governs)
+  "src/shared/packages/pyforge-core/src/pyforge/core/**",
+  "src/shared/packages/pyforge-core/tests/**",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
+"15" = [  # SAST joins as an optional plugin: opengrep (spec-pyforge-warden CAP-25), added 2026-09-28
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  # the opengrep run-dependency in the warden feature
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/platform/config/flags.json",
+  "src/shared/packages/pyforge-core/src/pyforge/core/**",
+  "src/shared/packages/pyforge-core/tests/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
+"16" = [  # Warden scans the enterprise fleet on GitHub Enterprise (spec-pyforge-warden CAP-26), added 2026-09-28
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  # 16.1-16.3: the fleet lives in django-warden (spine 2026-09-28 Decision 2); its tests live under src/platform/tests/
+  "src/shared/packages/django-warden/**",
+  "src/platform/tests/**",
+  # the covering Liquibase changesets for the new django-warden migrations
+  "src/platform/db/changelog/**",
+  "src/platform/db/sqlmigrate-map.yaml",
+  "src/platform/config/flags.json",
+  "src/shared/packages/pyforge-core/src/pyforge/core/**",
+  "src/shared/packages/pyforge-core/tests/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
-# context.planning-graph (Story 28.27, token-economy CAP-6/CAP-13): verified
-# live 2026-09-10 against pyforge-marshal (the canary) -- grounded retrieval,
-# real measured savings, zero further engineering needed. scribe recall's
-# own project-scoping gap (a lexical query naming a project slug could still
-# be outscored by another project's denser-vocabulary node) was found and
-# fixed in the same pass -- see scribe Story marshal-28.27 / recall.py's own
-# scope= parameter. wire/output/structure-graph/derived-context stay
-# declared-off (undeclared = default off) pending Story 28.31 (dispatch
-# cost spike) / 28.33 (spin reference wiring).
-[context."planning-graph"]
-enabled = true
+# context (Story 28.34, token-economy CAP-3): this station declares NO
+# [context] block -- 28.31 (dispatch-cost spike) and 28.33 (spin reference
+# wiring) both landed 2026-09-10/20, so the two layers this file used to
+# hold declared-off (wire, structure-graph) are no longer blocked. Per
+# policy-defaults.toml's own composition rule (declaring ANY part of
+# [context] here wholesale-replaces the 5-layer default for this station),
+# the fix is to declare nothing and inherit the clean repo-wide default:
+# all 4 harness-agnostic layers on, wire auto-resolved per harness.
 
-# context.derived-context (Story 28.28/28.32, token-economy CAP-5): scribe's
-# `index refresh --declare` shipped and the lean pyforge-scribe env's
-# missing cocoindex dependency was fixed -- verified live 2026-09-10
-# against pyforge-marshal, mode: incremental with zero findings.
-[context."derived-context"]
-enabled = true
-
-# context.output (Story 28.30/28.32, token-economy CAP-3): caveman skill
-# deployment now reaches dispatch worktrees too (not just loop homes), and
-# bmad-build-auto's own step-01-clarify-and-route.md tells the agent to
-# invoke it.
-[context.output]
-enabled = true
-
+# 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): Cursor Ultra
+# ladder as explicit {harness, model} tables so a Cursor id cannot land
+# on claude --model (fails-safe CAP-1). Unattended drain stays off until
+# 28.29 is separately proven. This IDE drives the wave.
 [model_tier_map.heavy]
-dev = "composer-2.5-fast"
-review = "composer-2.5"
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.medium]
-dev = "composer-2.5-fast"
-review = "composer-2.5"
+dev = { harness = "cursor", model = "grok-4.6" }
+review = { harness = "cursor", model = "grok-4.6" }
 
 [model_tier_map.easy]
-dev = "composer-2.5-fast"
+dev = { harness = "cursor", model = "composer-2.5" }
 

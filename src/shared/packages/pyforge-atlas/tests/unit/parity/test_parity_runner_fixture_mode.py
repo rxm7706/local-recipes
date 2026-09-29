@@ -15,13 +15,14 @@ from contextlib import closing
 import pandas as pd
 import pytest
 
+from pyforge.atlas.parity import legacy_surface_view_names
+from pyforge.atlas.parity.evidence import RUN_MODE_CREDENTIALED, RUN_MODE_FIXTURE
+
 from .parity_runner import (
     build_synthetic_legacy_db,
     diff_view,
     run_parity,
 )
-from pyforge.atlas.parity import legacy_surface_view_names
-from pyforge.atlas.parity.evidence import RUN_MODE_CREDENTIALED, RUN_MODE_FIXTURE
 
 
 def test_fixture_mode_runs_offline_zero_material_drift():
@@ -58,8 +59,11 @@ def test_diff_view_benign_timestamp_only_is_not_material():
     legacy = pd.DataFrame([{"conda_name": "a", "n": 1, "fetched_at": "T1"}])
     kedro = pd.DataFrame([{"conda_name": "a", "n": 1, "fetched_at": "T2"}])
     rec = diff_view(
-        "v_actionable_packages", legacy, kedro,
-        run_mode=RUN_MODE_FIXTURE, benign_columns=("fetched_at",),
+        "v_actionable_packages",
+        legacy,
+        kedro,
+        run_mode=RUN_MODE_FIXTURE,
+        benign_columns=("fetched_at",),
     )
     assert not rec.material_drift
     assert rec.benign_diffs
@@ -90,10 +94,7 @@ def test_credentialed_mode_against_synthetic_db_matches():
         # Route the in-memory connection through run_parity's read path by
         # monkey-free injection: read views directly here to keep the test
         # honest to the real code path.
-        legacy_views = {
-            v: pd.read_sql_query(f"SELECT * FROM {v}", conn)
-            for v in legacy_surface_view_names()
-        }
+        legacy_views = {v: pd.read_sql_query(f"SELECT * FROM {v}", conn) for v in legacy_surface_view_names()}
 
     records = [
         diff_view(

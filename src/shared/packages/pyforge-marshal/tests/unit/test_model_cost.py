@@ -6,8 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.core import model_cost
-from pyforge.marshal.core import policy
+from pyforge.marshal.core import model_cost, policy
 from pyforge.marshal.core.model_cost import (
     TokenCounts,
     catalog_declared,
@@ -16,7 +15,6 @@ from pyforge.marshal.core.model_cost import (
     resolve_model_price,
     weighted_total,
 )
-
 
 _SAMPLE_CATALOG = {
     "providers": {
@@ -58,12 +56,8 @@ def test_empty_catalog_is_not_declared_and_policy_default_is_byte_identical():
 
 
 def test_per_provider_cache_read_ratio_differs_from_global_default():
-    cursor_ratio = resolve_cache_read_ratio(
-        _SAMPLE_CATALOG, provider="cursor", model="composer-2.5"
-    )
-    anthropic_ratio = resolve_cache_read_ratio(
-        _SAMPLE_CATALOG, provider="anthropic", model="sonnet-5"
-    )
+    cursor_ratio = resolve_cache_read_ratio(_SAMPLE_CATALOG, provider="cursor", model="composer-2.5")
+    anthropic_ratio = resolve_cache_read_ratio(_SAMPLE_CATALOG, provider="anthropic", model="sonnet-5")
     assert cursor_ratio == pytest.approx(0.40)
     assert anthropic_ratio == pytest.approx(0.10)
     assert cursor_ratio != anthropic_ratio
@@ -88,9 +82,7 @@ def test_unknown_model_is_not_fabricated():
 
 
 def test_estimate_spend_usd_from_declared_prices():
-    price = resolve_model_price(
-        _SAMPLE_CATALOG, provider="cursor", model="composer-2.5"
-    )
+    price = resolve_model_price(_SAMPLE_CATALOG, provider="cursor", model="composer-2.5")
     assert price is not None
     tokens = TokenCounts(
         input_tokens=1_000_000,
@@ -129,10 +121,7 @@ def test_model_cost_module_has_no_network_imports():
 
 def test_marshal_policy_toml_seed_catalog_parses():
     repo_root = Path(__file__).resolve().parents[6]
-    policy_path = (
-        repo_root
-        / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
-    )
+    policy_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
     if not policy_path.is_file():
         pytest.skip("marshal-policy.toml not present in this checkout")
     import tomllib

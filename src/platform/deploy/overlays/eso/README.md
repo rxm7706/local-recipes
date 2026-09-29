@@ -50,4 +50,4 @@ pixi run -e platform-dev helm install platform src/platform/deploy/charts/platfo
 | `PYFORGE_ASSERTION_PUBLIC_KEY` | optional env (verify path) | `secret/data/platform/assertion` → `public_pem` |
 
 Rotation procedures: `src/shared/packages/pyforge-steward/docs/keys-runbook.md`.
-Custody and profile comparison: `docs/reference/enterprise-deployment.md` § 7.
+Custody and profile comparison: `docs/explanation/enterprise-deployment.md` § 7.

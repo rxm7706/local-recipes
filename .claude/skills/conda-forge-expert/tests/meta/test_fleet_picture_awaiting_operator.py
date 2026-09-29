@@ -3,9 +3,9 @@
 Marshal Story 25.5 (spec-bmad-611-era-alignment CAP-5, absorbing DW-BL011-1):
 bmad-loop 0.11's operator-parked run state must be NAMED
 `awaiting-operator (run bmad-loop confirm)` wherever run state is shown —
-never folded into the stopped/unsupervised "needs re-spin" bucket (the parked
+never folded into the stopped/unsupervised "needs dispatch" bucket (the parked
 story's work is already committed; `bmad-loop confirm` is the next action, not
-a re-spin) and never shown as running/stalled/dead.
+a restart) and never shown as running/stalled/dead.
 
 `station_state()` is the pure state-column helper extracted for exactly this
 pin (driving `main()` would spawn the real `marshal status` subprocess sweep);
@@ -44,12 +44,13 @@ def test_awaiting_operator_state_is_named_with_the_confirm_remedy():
     assert cell == mod.AWAITING_OPERATOR_LABEL
 
 
-def test_awaiting_operator_outranks_the_needs_respin_bucket():
+def test_awaiting_operator_outranks_the_needs_dispatch_bucket():
     """The mislabel DW-BL011-1 names: a parked station with backlog left
-    must NOT read '... left, needs re-spin' (the stopped/unsupervised
-    shape) — the confirm is the next action, not a re-spin."""
+    must NOT read '... left, needs dispatch' (the stopped/unsupervised
+    shape) — the confirm is the next action, not a restart."""
     mod = _load_fleet_picture()
     cell = _state(mod, hstate="awaiting-operator", done=3, backlog=2)
+    assert "needs dispatch" not in cell
     assert "re-spin" not in cell
     assert "STOPPED" not in cell and "UNSUPERVISED" not in cell
     assert cell == AWAITING_LABEL
@@ -79,13 +80,13 @@ def test_every_pre_existing_state_cell_is_unchanged():
         "PAUSED - needs you (escalation)"
     )
     assert _state(mod, hstate="stopped", backlog=2) == (
-        "STOPPED - 2 left, needs re-spin"
+        "STOPPED - 2 left, needs dispatch"
     )
     assert _state(mod, hstate="unsupervised", backlog=1) == (
-        "UNSUPERVISED - 1 left, needs re-spin"
+        "UNSUPERVISED - 1 left, needs dispatch"
     )
     assert _state(mod, hstate="unknown", backlog=3) == (
-        "UNKNOWN - 3 left, needs re-spin"
+        "UNKNOWN - 3 left, needs dispatch"
     )
     assert _state(mod, hstate="idle", done=5, total=5) == "complete"
     assert _state(mod, hstate="idle", done=2, total=5, backlog=3) == (

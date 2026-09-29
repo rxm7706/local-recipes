@@ -42,11 +42,12 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any
 
-import pyforge.marshal.seed.state as state_package
 import pytest
 import yaml
 from jsonschema import Draft202012Validator
 from pyforge.core import atomic_write as core_atomic_write
+
+import pyforge.marshal.seed.state as state_package
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.errors import InternalError, NeverWriteViolation, SeedError, StateInvalid
 from pyforge.marshal.seed.model.manifest import ArtifactClass
@@ -104,11 +105,7 @@ def _sample_state(**overrides: Any) -> SeedState:
             ),
         ),
         "skips": ("docs/legacy/*.md",),
-        "legacy": (
-            LegacyArtifact(
-                id="legacy-spec", path="docs/specs/old.md", legacy_of="dream-template"
-            ),
-        ),
+        "legacy": (LegacyArtifact(id="legacy-spec", path="docs/specs/old.md", legacy_of="dream-template"),),
         "migrations_applied": ("1.1.0", "1.2.0"),
         "opted_out": ("agents-md#tiers",),
     }
@@ -184,15 +181,8 @@ def test_schema_mode_enum_is_the_two_materializing_verbs():
 def _schema_patterns(node: Any) -> list[str]:
     """Every ``pattern`` value anywhere in the schema, at any depth."""
     if isinstance(node, dict):
-        return [
-            value
-            for key, value in node.items()
-            if key == "pattern" and isinstance(value, str)
-        ] + [
-            pattern
-            for key, value in node.items()
-            if key != "pattern"
-            for pattern in _schema_patterns(value)
+        return [value for key, value in node.items() if key == "pattern" and isinstance(value, str)] + [
+            pattern for key, value in node.items() if key != "pattern" for pattern in _schema_patterns(value)
         ]
     if isinstance(node, list):
         return [pattern for item in node for pattern in _schema_patterns(item)]
@@ -230,9 +220,7 @@ def test_schema_opt_out_artifact_half_is_as_permissive_as_a_managed_id():
     must not be stricter -- a legally-named entry with an unrepresentable
     opt-out is the defect this pairing exists to prevent."""
     schema = store._load_schema()
-    assert schema["$defs"]["managedArtifact"]["properties"]["id"]["$ref"] == (
-        "#/$defs/nonBlankString"
-    )
+    assert schema["$defs"]["managedArtifact"]["properties"]["id"]["$ref"] == ("#/$defs/nonBlankString")
     pattern = schema["properties"]["opted_out"]["items"]["pattern"]
     for accepted in ("bmad.method#tiers", "AGENTS.md#tiers", "a_b#t", "10.2#region-1"):
         assert re.search(pattern, accepted), accepted
@@ -271,9 +259,7 @@ def test_a_missing_packaged_schema_is_an_internal_error(monkeypatch, _uncached_s
     ValidationError`` scope, so a raw ``FileNotFoundError`` escaped the read
     path entirely -- and a broken installation is exit 10, never invalid
     state (exit 5), which would send an operator to repair a fine file."""
-    monkeypatch.setattr(
-        store.resources, "files", lambda package: _UnreadableResource(FileNotFoundError(package))
-    )
+    monkeypatch.setattr(store.resources, "files", lambda package: _UnreadableResource(FileNotFoundError(package)))
     with pytest.raises(InternalError) as excinfo:
         store._load_schema()
     assert excinfo.value.exit_code == 10
@@ -297,9 +283,7 @@ def test_a_corrupt_packaged_schema_is_an_internal_error(monkeypatch, _uncached_s
     "schema",
     [
         pytest.param({"properties": {}}, id="key-gone"),
-        pytest.param(
-            {"properties": {"opted_out": {"items": {"pattern": "("}}}}, id="uncompilable"
-        ),
+        pytest.param({"properties": {"opted_out": {"items": {"pattern": "("}}}}, id="uncompilable"),
         pytest.param({"properties": {"opted_out": {"items": []}}}, id="wrong-shape"),
     ],
 )
@@ -326,14 +310,10 @@ def test_a_schema_that_lost_its_opt_out_pattern_is_an_internal_error(monkeypatch
     assert "opted_out" in str(excinfo.value)
 
 
-def test_a_broken_packaged_schema_never_escapes_the_read_path(
-    tmp_path, monkeypatch, _uncached_schema_text
-):
+def test_a_broken_packaged_schema_never_escapes_the_read_path(tmp_path, monkeypatch, _uncached_schema_text):
     _write_raw(tmp_path, yaml.safe_dump(_valid_document(), sort_keys=False))
     store._validator.cache_clear()
-    monkeypatch.setattr(
-        store.resources, "files", lambda package: _UnreadableResource(FileNotFoundError("gone"))
-    )
+    monkeypatch.setattr(store.resources, "files", lambda package: _UnreadableResource(FileNotFoundError("gone")))
     try:
         with pytest.raises(InternalError):
             read_state(tmp_path)
@@ -636,15 +616,9 @@ def test_read_state_reports_a_directory_at_the_state_path_as_invalid(tmp_path):
     ("mutate", "expected_fragment"),
     [
         pytest.param(lambda doc: doc.pop("mode"), "mode", id="missing-required-key"),
-        pytest.param(
-            lambda doc: doc.update(slug="local-recipes"), "slug", id="unknown-top-level-key"
-        ),
-        pytest.param(
-            lambda doc: doc["managed"][0].update(body_sha="ZZ"), "body_sha", id="bad-body-sha"
-        ),
-        pytest.param(
-            lambda doc: doc.update(mode="update"), "mode", id="mode-outside-the-enum"
-        ),
+        pytest.param(lambda doc: doc.update(slug="local-recipes"), "slug", id="unknown-top-level-key"),
+        pytest.param(lambda doc: doc["managed"][0].update(body_sha="ZZ"), "body_sha", id="bad-body-sha"),
+        pytest.param(lambda doc: doc.update(mode="update"), "mode", id="mode-outside-the-enum"),
         pytest.param(
             lambda doc: doc.update(adopted_at="2026-08-14 09:15"),
             "adopted_at",
@@ -655,32 +629,22 @@ def test_read_state_reports_a_directory_at_the_state_path_as_invalid(tmp_path):
             "start",
             id="negative-byte-offset",
         ),
-        pytest.param(
-            lambda doc: doc.update(agents=["Claude Code"]), "agents", id="non-kebab-agent-id"
-        ),
-        pytest.param(
-            lambda doc: doc.update(opted_out=["agents-md"]), "opted_out", id="opt-out-without-region"
-        ),
+        pytest.param(lambda doc: doc.update(agents=["Claude Code"]), "agents", id="non-kebab-agent-id"),
+        pytest.param(lambda doc: doc.update(opted_out=["agents-md"]), "opted_out", id="opt-out-without-region"),
         pytest.param(
             lambda doc: doc.update(migrations_applied=["1.2.0", "1.2.0"]),
             "migrations_applied",
             id="duplicate-migration",
         ),
-        pytest.param(
-            lambda doc: doc["managed"][0].update(extra="x"), "extra", id="unknown-managed-key"
-        ),
-        pytest.param(
-            lambda doc: doc.update(model_version="1.2"), "model_version", id="non-semver-version"
-        ),
+        pytest.param(lambda doc: doc["managed"][0].update(extra="x"), "extra", id="unknown-managed-key"),
+        pytest.param(lambda doc: doc.update(model_version="1.2"), "model_version", id="non-semver-version"),
         pytest.param(
             lambda doc: doc["managed"][0].update(inserted_region_span=None),
             "inserted_region_span",
             id="hybrid-claim-without-a-span",
         ),
         pytest.param(
-            lambda doc: doc["managed"][1].update(
-                inserted_region_span={"name": "tiers", "start": 0, "end": 1}
-            ),
+            lambda doc: doc["managed"][1].update(inserted_region_span={"name": "tiers", "start": 0, "end": 1}),
             "inserted_region_span",
             id="whole-file-claim-carrying-a-span",
         ),
@@ -701,9 +665,7 @@ def test_read_state_reports_a_directory_at_the_state_path_as_invalid(tmp_path):
         ),
     ],
 )
-def test_schema_violations_raise_state_invalid_naming_the_field(
-    tmp_path, mutate, expected_fragment
-):
+def test_schema_violations_raise_state_invalid_naming_the_field(tmp_path, mutate, expected_fragment):
     document = _valid_document()
     mutate(document)
     _write_raw(tmp_path, yaml.safe_dump(document, sort_keys=False))
@@ -734,9 +696,7 @@ def test_schema_violations_raise_state_invalid_naming_the_field(
         ),
     ],
 )
-def test_a_trailing_newline_never_satisfies_an_anchored_pattern(
-    tmp_path, mutate, expected_fragment
-):
+def test_a_trailing_newline_never_satisfies_an_anchored_pattern(tmp_path, mutate, expected_fragment):
     """Python's ``$`` matches immediately before a final newline, so
     ``"0123abcd\\n"`` passed ``^[0-9a-f]{8}$`` -- falsifying the schema's
     own stated guarantees (DW-FU-9-3's closure, "always round-trips through
@@ -947,9 +907,7 @@ def test_a_refused_write_leaves_an_existing_state_file_byte_identical(tmp_path):
     write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
     original = state_path(tmp_path).read_bytes()
     with pytest.raises(StateInvalid):
-        write_state(
-            _sample_state(mode="update"), repo_root=tmp_path, never_write=_NO_PATTERNS
-        )
+        write_state(_sample_state(mode="update"), repo_root=tmp_path, never_write=_NO_PATTERNS)
     assert state_path(tmp_path).read_bytes() == original
 
 
@@ -1054,9 +1012,7 @@ def test_a_repo_root_that_is_not_a_directory_raises_the_documented_value_error(t
     (that would fight ``fs.py``'s contract), so ``write_state``'s docstring
     has to say so."""
     with pytest.raises(ValueError, match="does not resolve to an existing directory"):
-        write_state(
-            _sample_state(), repo_root=tmp_path / "never-created", never_write=_NO_PATTERNS
-        )
+        write_state(_sample_state(), repo_root=tmp_path / "never-created", never_write=_NO_PATTERNS)
     assert "ValueError" in write_state.__doc__
     assert "repo_root" in write_state.__doc__
 
@@ -1088,9 +1044,7 @@ def test_a_hybrid_entrys_span_strips_its_region_without_touching_the_rest():
         path="AGENTS.md",
         artifact_class="hybrid-managed-region",
         body_sha="0123abcd",
-        inserted_region_span=RegionSpanRecord(
-            name="tiers", start=len(prefix), end=len(prefix) + len(body)
-        ),
+        inserted_region_span=RegionSpanRecord(name="tiers", start=len(prefix), end=len(prefix) + len(body)),
     )
     span = artifact.inserted_region_span
     assert span is not None
@@ -1195,9 +1149,7 @@ def _resolved_marshal_imports() -> set[str]:
     resolved: set[str] = set()
     for node in ast.walk(ast.parse(_store_source())):
         if isinstance(node, ast.Import):
-            resolved.update(
-                alias.name for alias in node.names if alias.name.startswith("pyforge.marshal")
-            )
+            resolved.update(alias.name for alias in node.names if alias.name.startswith("pyforge.marshal"))
         elif isinstance(node, ast.ImportFrom):
             if node.level == 0:
                 if node.module and node.module.startswith("pyforge.marshal"):
@@ -1245,9 +1197,7 @@ def test_store_imports_only_its_declared_marshal_surface():
 #: the module avoids `mkstemp`, while missing `os.rename`, `Path.rename`,
 #: `shutil.move`, `mkdtemp`, and a bare `open(path, "wb")` entirely
 #: (review finding).
-_FORBIDDEN_WRITE_CALLS = frozenset(
-    {"mkstemp", "mkdtemp", "NamedTemporaryFile", "write_bytes", "write_text", "rename"}
-)
+_FORBIDDEN_WRITE_CALLS = frozenset({"mkstemp", "mkdtemp", "NamedTemporaryFile", "write_bytes", "write_text", "rename"})
 
 
 def _is_write_mode_call(node: ast.Call, *, mode_index: int) -> bool:
@@ -1259,11 +1209,7 @@ def _is_write_mode_call(node: ast.Call, *, mode_index: int) -> bool:
     for keyword in node.keywords:
         if keyword.arg == "mode":
             mode_arg = keyword.value
-    return (
-        isinstance(mode_arg, ast.Constant)
-        and isinstance(mode_arg.value, str)
-        and mode_arg.value.startswith("w")
-    )
+    return isinstance(mode_arg, ast.Constant) and isinstance(mode_arg.value, str) and mode_arg.value.startswith("w")
 
 
 def _write_mechanics_calls(tree: ast.AST) -> list[str]:
@@ -1310,15 +1256,11 @@ def test_store_implements_no_temp_file_or_rename_mechanics():
         pytest.param("import os\nos.rename(a, b)\n", ["os.rename"], id="os-rename"),
         pytest.param("p.rename(other)\n", ["p.rename"], id="path-rename"),
         pytest.param("import shutil\nshutil.move(a, b)\n", ["shutil.move"], id="shutil-move"),
-        pytest.param(
-            "import tempfile\ntempfile.mkdtemp()\n", ["tempfile.mkdtemp"], id="mkdtemp"
-        ),
+        pytest.param("import tempfile\ntempfile.mkdtemp()\n", ["tempfile.mkdtemp"], id="mkdtemp"),
         pytest.param('open(path, "wb").write(b"x")\n', ["open"], id="bare-write-open"),
         pytest.param('path.open("w")\n', ["path.open"], id="method-write-open"),
         pytest.param("import os\nos.replace(a, b)\n", ["os.replace"], id="os-replace"),
-        pytest.param(
-            "import tempfile\ntempfile.mkstemp()\n", ["tempfile.mkstemp"], id="mkstemp"
-        ),
+        pytest.param("import tempfile\ntempfile.mkstemp()\n", ["tempfile.mkstemp"], id="mkstemp"),
         pytest.param("p.write_bytes(b'x')\n", ["p.write_bytes"], id="write-bytes"),
     ],
 )
@@ -1337,7 +1279,7 @@ def test_the_write_mechanics_guard_exempts_prose():
         'MESSAGE = "refusing to open(path, \\"wb\\")"\n'
     )
     assert _write_mechanics_calls(ast.parse(prose)) == []
-    assert _write_mechanics_calls(ast.parse('x = path.read_bytes()\ny = f.read_text()\n')) == []
+    assert _write_mechanics_calls(ast.parse("x = path.read_bytes()\ny = f.read_text()\n")) == []
 
 
 def test_store_never_references_the_copier_answers_file():
@@ -1350,12 +1292,7 @@ def test_store_never_references_the_copier_answers_file():
 
 
 def test_state_file_is_not_git_ignored_by_the_packaged_template():
-    template = (
-        Path(store.__file__).resolve().parents[1]
-        / "templates"
-        / "files"
-        / "model-ignores.gitignore.j2"
-    )
+    template = Path(store.__file__).resolve().parents[1] / "templates" / "files" / "model-ignores.gitignore.j2"
     assert template.is_file()
     rules = [
         line.strip()
@@ -1871,9 +1808,7 @@ def test_record_then_clear_returns_the_original_minus_the_dropped_claim():
     """The reinstate round trip, stated as an equality against a state built
     without the claim at all."""
     before = _clean_state()
-    expected = dataclasses.replace(
-        before, managed=tuple(a for a in before.managed if a.id != "agents-md")
-    )
+    expected = dataclasses.replace(before, managed=tuple(a for a in before.managed if a.id != "agents-md"))
     round_tripped = clear_opt_out(record_opt_out(before, "agents-md", "tiers"), "agents-md", "tiers")
     assert round_tripped == expected
 

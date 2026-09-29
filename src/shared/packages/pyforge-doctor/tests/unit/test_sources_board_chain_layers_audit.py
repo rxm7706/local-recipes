@@ -14,6 +14,7 @@ import shutil
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus, Finding, Source
 from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import board
@@ -22,13 +23,8 @@ try:
     _REPO_ROOT: Path | None = Path(__file__).resolve().parents[6]
 except IndexError:
     _REPO_ROOT = None
-_HAVE_REAL_SCAN = bool(
-    _REPO_ROOT and (_REPO_ROOT / "scripts" / "fleet_scan.py").is_file()
-)
-_HAVE_REAL_ROSTER = bool(
-    _REPO_ROOT
-    and (_REPO_ROOT / "docs" / "governance" / "guild-roster.json").is_file()
-)
+_HAVE_REAL_SCAN = bool(_REPO_ROOT and (_REPO_ROOT / "scripts" / "fleet_scan.py").is_file())
+_HAVE_REAL_ROSTER = bool(_REPO_ROOT and (_REPO_ROOT / "docs" / "governance" / "guild-roster.json").is_file())
 
 pytestmark = pytest.mark.skipif(
     not (_HAVE_REAL_SCAN and _HAVE_REAL_ROSTER),
@@ -41,7 +37,7 @@ def _install_generate(target: Path) -> None:
     (target / "scripts").mkdir(parents=True, exist_ok=True)
     (target / "docs" / "governance").mkdir(parents=True, exist_ok=True)
     (target / "docs" / "dreams").mkdir(parents=True, exist_ok=True)
-    (target / "pixi.toml").write_text("[workspace]\nname = \"fixture\"\n", encoding="utf-8")
+    (target / "pixi.toml").write_text('[workspace]\nname = "fixture"\n', encoding="utf-8")
     shutil.copy(
         _REPO_ROOT / "scripts" / "fleet_scan.py",
         target / "scripts" / "fleet_scan.py",
@@ -76,9 +72,7 @@ def _write_project_skeleton(
         sdir = pa / "specs" / f"spec-{project}"
         sdir.mkdir(parents=True, exist_ok=True)
         (sdir / "SPEC.md").write_text("---\nstatus: ready\n---\n# Spec\n", encoding="utf-8")
-        (sdir / ".memlog.md").write_text(
-            "---\nupdated: 2026-08-01\n---\n", encoding="utf-8"
-        )
+        (sdir / ".memlog.md").write_text("---\nupdated: 2026-08-01\n---\n", encoding="utf-8")
     if brief:
         (pa / f"product-brief-{project}.md").write_text("# brief\n", encoding="utf-8")
     if prd:
@@ -91,9 +85,7 @@ def _write_project_skeleton(
 
 def test_reports_present_and_missing_layers(tmp_path: Path) -> None:
     _install_generate(tmp_path)
-    _write_project_skeleton(
-        tmp_path, "pyforge-marshal", dream=True, spec=True, brief=True
-    )
+    _write_project_skeleton(tmp_path, "pyforge-marshal", dream=True, spec=True, brief=True)
     findings = board.gather_chain_layers_audit(tmp_path, "pyforge-marshal")
     layer_summary = [f for f in findings if f.check == "chain-layers-audit"]
     assert len(layer_summary) == 1
@@ -112,9 +104,7 @@ def test_reports_present_and_missing_layers(tmp_path: Path) -> None:
     checks = {f.check for f in findings}
     assert "chain-audit-checkpoint-layers" in checks
     assert "chain-audit-verdict" in checks
-    layers_cp = next(
-        f for f in findings if f.check == "chain-audit-checkpoint-layers"
-    )
+    layers_cp = next(f for f in findings if f.check == "chain-audit-checkpoint-layers")
     assert layers_cp.status is DoctorStatus.FAIL
 
 
@@ -139,9 +129,7 @@ def test_full_applicable_layers_reports_ok(tmp_path: Path) -> None:
     (pa / "research" / "market-pyforge-marshal.md").write_text("x\n", encoding="utf-8")
     (pa / "research" / "technical-pyforge-marshal.md").write_text("x\n", encoding="utf-8")
     (tmp_path / "presentations" / project / "project").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "presentations" / project / "project" / "x.html").write_text(
-        "<html></html>\n", encoding="utf-8"
-    )
+    (tmp_path / "presentations" / project / "project" / "x.html").write_text("<html></html>\n", encoding="utf-8")
     (tmp_path / "AGENTS.md").write_text("# ctx\n", encoding="utf-8")
     (pa / "sprint-status-ledger.yaml").write_text("development_status:\n", encoding="utf-8")
     pkg = tmp_path / "src" / "shared" / "packages" / project
@@ -151,9 +139,7 @@ def test_full_applicable_layers_reports_ok(tmp_path: Path) -> None:
     (pa / "implementation-readiness-report.md").write_text("# gate\n", encoding="utf-8")
     (pa / "retros").mkdir(exist_ok=True)
     (pa / "retros" / "retro-pyforge-marshal.md").write_text("# retro\n", encoding="utf-8")
-    (tmp_path / "pixi.toml").write_text(
-        f'[tasks]\n"{project}-test" = "true"\n', encoding="utf-8"
-    )
+    (tmp_path / "pixi.toml").write_text(f'[tasks]\n"{project}-test" = "true"\n', encoding="utf-8")
 
     findings = board.gather_chain_layers_audit(tmp_path, project)
     layer_summary = [f for f in findings if f.check == "chain-layers-audit"]
@@ -201,9 +187,7 @@ def test_isolation_does_not_credit_sibling_project_artifacts(
 
 
 def test_missing_generate_is_unevaluable(tmp_path: Path) -> None:
-    (tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts").mkdir(
-        parents=True
-    )
+    (tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts").mkdir(parents=True)
     findings = board.gather_chain_layers_audit(tmp_path, "pyforge-marshal")
     assert findings[0].check == "chain-layers-audit-unevaluable"
     assert findings[0].status is DoctorStatus.WARN
@@ -218,9 +202,7 @@ def test_unknown_project_is_unevaluable(tmp_path: Path) -> None:
 def test_cap3_checkpoint_findings_use_pass_fail(tmp_path: Path) -> None:
     """Story 21.1: each CAP-3 checkpoint is OK or FAIL, not warn-only."""
     _install_generate(tmp_path)
-    _write_project_skeleton(
-        tmp_path, "pyforge-marshal", dream=True, spec=True, brief=True
-    )
+    _write_project_skeleton(tmp_path, "pyforge-marshal", dream=True, spec=True, brief=True)
     findings = board.gather_chain_layers_audit(tmp_path, "pyforge-marshal")
     checkpoint_checks = {
         "chain-audit-checkpoint-layers",
@@ -235,9 +217,7 @@ def test_cap3_checkpoint_findings_use_pass_fail(tmp_path: Path) -> None:
         assert status in (DoctorStatus.OK, DoctorStatus.FAIL)
 
 
-def test_layers_cli_invokes_audit(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_layers_cli_invokes_audit(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     ok = (
         Finding(
             source=Source.CHAIN_LAYERS_AUDIT,
@@ -247,17 +227,13 @@ def test_layers_cli_invokes_audit(
             evidence={"project": "pyforge-marshal", "present": [], "missing": []},
         ),
     )
-    monkeypatch.setattr(
-        board, "gather_chain_layers_audit", lambda target, project: ok
-    )
+    monkeypatch.setattr(board, "gather_chain_layers_audit", lambda target, project: ok)
     monkeypatch.setitem(
         dispatch.DISPATCH,
         "chain-completeness",
         lambda target: (_ for _ in ()).throw(AssertionError("INV gather ran")),
     )
-    code = dispatch.main(
-        ["chain-completeness", "--layers", "--project", "pyforge-marshal", "--json"]
-    )
+    code = dispatch.main(["chain-completeness", "--layers", "--project", "pyforge-marshal", "--json"])
     assert code == 0
     assert json.loads(capsys.readouterr().out) == [f.to_json_dict() for f in ok]
 
@@ -275,9 +251,7 @@ def test_layers_on_wrong_source_is_usage_error(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     with pytest.raises(SystemExit) as exc:
-        dispatch.main(
-            ["dream-chain", "--layers", "--project", "pyforge-marshal"]
-        )
+        dispatch.main(["dream-chain", "--layers", "--project", "pyforge-marshal"])
     assert exc.value.code == 2
     err = capsys.readouterr().err
     assert "--layers" in err
@@ -296,15 +270,67 @@ def test_default_chain_completeness_unchanged(
             evidence={},
         ),
     )
-    monkeypatch.setitem(
-        dispatch.DISPATCH, "chain-completeness", lambda target: inv_ok
-    )
+    monkeypatch.setitem(dispatch.DISPATCH, "chain-completeness", lambda target: inv_ok)
     monkeypatch.setattr(
         board,
         "gather_chain_layers_audit",
         lambda *a, **k: (_ for _ in ()).throw(AssertionError("layers ran")),
     )
     assert dispatch.main(["chain-completeness", "--json"]) == 0
-    assert json.loads(capsys.readouterr().out) == [
-        f.to_json_dict() for f in inv_ok
-    ]
+    assert json.loads(capsys.readouterr().out) == [f.to_json_dict() for f in inv_ok]
+
+
+# --- the git date index must cover every stage glob (found live 2026-09-20) -------
+#
+# scan_fleet reads a stage as REACHED only when _artifact_dates() dates one of the
+# files _resolve() found, and _artifact_dates() dates a path from the filename, its
+# frontmatter, or the one `git log -- *_GIT_SCOPES` pass. Story 30.2 (2026-09-06)
+# repointed the `context` stage at the root AGENTS.md -- no path date, no frontmatter,
+# and outside every scope -- so every station but atlas carried a phantom `context`
+# gap and the CAP-3 layers checkpoint read `fail` beside "15/15 layers present". The
+# fixture tests above cannot see it: a tmp_path is not a git repo and its files carry
+# no dates, so nothing is reached, `required` collapses to ["dream"], and "context not
+# in gaps" holds vacuously. These two pin the invariant structurally and live.
+
+
+def _live_scan():
+    assert _REPO_ROOT is not None
+    return board._load_dashboard_generate(_REPO_ROOT)
+
+
+def _glob_root(pattern: str) -> str:
+    """The literal prefix of a glob, up to its first wildcard segment."""
+    parts: list[str] = []
+    for seg in pattern.split("/"):
+        if any(ch in seg for ch in "*?["):
+            break
+        parts.append(seg)
+    return "/".join(parts)
+
+
+def test_every_stage_glob_is_inside_the_git_date_index() -> None:
+    gen = _live_scan()
+    scopes = tuple(gen._GIT_SCOPES)
+    outside: list[str] = []
+    for slug, project, *_rest in gen._fleet_chains():
+        for stage, patterns in gen._stage_globs(slug, project, slug == project).items():
+            for pat in patterns:
+                root = _glob_root(pat)
+                if not any(root == s or root.startswith(s + "/") for s in scopes):
+                    outside.append(f"{slug}/{stage}: {pat}")
+    assert not outside, (
+        "stage globs outside _GIT_SCOPES -- _artifact_dates() cannot date what it "
+        "finds there, so scan_fleet reads the stage as never reached:\n  " + "\n  ".join(sorted(set(outside))[:20])
+    )
+
+
+def test_root_agents_md_is_dated_by_the_git_index() -> None:
+    gen = _live_scan()
+    assert _REPO_ROOT is not None
+    if not (_REPO_ROOT / ".git").exists():  # pragma: no cover - a tarball checkout
+        pytest.skip("not a git checkout")
+    created, updated = gen._artifact_dates("AGENTS.md")
+    assert created and updated, (
+        "AGENTS.md is the `context` stage for every station (Story 30.2) and must "
+        f"date from the git index; got created={created!r} updated={updated!r}"
+    )

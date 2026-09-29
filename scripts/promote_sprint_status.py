@@ -190,6 +190,54 @@ def apply_epic_rollups(statuses: dict[str, str]) -> dict[str, str]:
     return out
 
 
+def _load_rekey_parser():
+    """``pyforge.doctor.rekey.parse_rekey`` -- the ONE grammar for a fold PR's
+    re-key map (doctor Story 25.3). Imported lazily so a plain sync never
+    needs the doctor package on its path."""
+    try:
+        from pyforge.doctor.rekey import parse_rekey  # type: ignore
+    except ImportError:
+        sys.path.insert(
+            0, str(REPO_ROOT / "src" / "shared" / "packages" / "pyforge-doctor" / "src")
+        )
+        from pyforge.doctor.rekey import parse_rekey  # type: ignore
+    return parse_rekey
+
+
+def apply_rekey(
+    feed_path: Path,
+    statuses: dict[str, str],
+    mapping: dict[str, str],
+) -> tuple[dict[str, str] | None, list[str]]:
+    """Translate the Tier-3 feed's keys through ``mapping`` (old -> new), write
+    the translated feed back (so the next bare sync agrees), and return the
+    translated map. Refuses -- returns ``(None, reasons)`` -- when an old key
+    is not in the feed (a dangling line: the map claims a move that cannot
+    happen) or two feed keys would collapse onto one new key. Statuses are
+    carried, never changed: the map moves keys and only keys."""
+    reasons: list[str] = []
+    for old in sorted(mapping):
+        if old not in statuses:
+            reasons.append(f"dangling: {old} -> {mapping[old]} ({old} not in the feed)")
+    translated: dict[str, str] = {}
+    for k, v in statuses.items():
+        new = mapping.get(k, k)
+        if new in translated:
+            reasons.append(f"collision: two feed keys map onto {new}")
+            continue
+        translated[new] = v
+    if reasons:
+        return None, reasons
+    lost_done = [k for k, v in statuses.items() if v == "done"
+                 and translated.get(mapping.get(k, k)) != "done"]
+    if lost_done:
+        return None, [f"would drop done: {k}" for k in lost_done]
+    feed_body = "".join(f"  {k}: {v}\n" for k, v in sorted(translated.items()))
+    head = feed_path.read_text(encoding="utf-8").split("development_status:")[0]
+    feed_path.write_text(head + "development_status:\n" + feed_body, encoding="utf-8")
+    return translated, []
+
+
 def repair_feed(
     feed_path: Path,
     incoming: dict[str, str],
@@ -266,7 +314,41 @@ def main(argv: list[str] | None = None) -> int:
              "Every affected key is still named. Use only when the tracked twin is "
              "genuinely the wrong one.",
     )
+    ap.add_argument(
+        "--rekey",
+        metavar="MAP",
+        help="A fold PR's re-key map (planning-artifacts/rekey-<date>.md, one `old -> new` "
+             "per line; doctor Story 25.3). Translates the Tier-3 feed's keys through it, "
+             "writes the translated feed back, and compares against the tracked twin "
+             "THROUGH the same map so a renumbered `done` row is continuity, not a "
+             "regression. Requires exactly one --project. Refuses on a malformed map, a "
+             "dangling old key, a collision, or any `done` row that would not survive.",
+    )
     args = ap.parse_args(argv)
+
+    rekey_mapping: dict[str, str] | None = None
+    if args.rekey:
+        if len(args.project or []) != 1:
+            print("--rekey requires exactly one --project (a fold is one station's PR)")
+            return 2
+        map_path = Path(args.rekey)
+        if not map_path.is_absolute():
+            map_path = REPO_ROOT / map_path
+        try:
+            parsed = _load_rekey_parser()(map_path.read_text(encoding="utf-8"))
+        except OSError as exc:
+            print(f"cannot read re-key map {map_path}: {exc}")
+            return 2
+        if not parsed.clean:
+            print(f"re-key map {map_path} is not clean:")
+            for no, txt in parsed.malformed:
+                print(f"  line {no}: malformed: {txt.strip()!r}")
+            for no, old in parsed.duplicates:
+                print(f"  line {no}: duplicate old key {old!r}")
+            for k in parsed.collisions:
+                print(f"  collision: two old keys -> {k!r}")
+            return 2
+        rekey_mapping = parsed.mapping
 
     gen = _load_generate()
     wrote, unchanged, skipped, refused = [], [], [], []
@@ -293,6 +375,15 @@ def main(argv: list[str] | None = None) -> int:
             # write nothing over something.
             skipped.append(f"{key} (feed parsed 0 statuses — refusing to blank the twin)")
             continue
+        if rekey_mapping is not None:
+            translated, reasons = apply_rekey(src, statuses, rekey_mapping)
+            if translated is None:
+                refused.append(f"{key} — --rekey refused: " + "; ".join(reasons[:8]))
+                continue
+            moved = sum(1 for k in statuses if k in rekey_mapping)
+            print(f"  REKEYED   {key}: {moved} key(s) moved through {Path(args.rekey).name}; "
+                  f"feed rewritten")
+            statuses = translated
         dest = ledger_path_for(slug)
         if not dest.parent.is_dir():
             skipped.append(f"{key} (no planning-artifacts dir at {dest.parent})")
@@ -302,6 +393,10 @@ def main(argv: list[str] | None = None) -> int:
         # to overwrite and refuse to un-finish anything, unless explicitly allowed.
         if dest.is_file():
             existing = gen.parse_sprint_status(dest)
+            if rekey_mapping is not None:
+                # Judge the twin THROUGH the map: a done row whose key moved is
+                # the same row, not a dropped one. Statuses carry unchanged.
+                existing = {rekey_mapping.get(k, k): v for k, v in existing.items()}
             lost = regressions(existing, statuses)
             # Repair triggers on EITHER a terminal regression or a key the feed has
             # simply lost. The first cut keyed only on regression, so a feed already

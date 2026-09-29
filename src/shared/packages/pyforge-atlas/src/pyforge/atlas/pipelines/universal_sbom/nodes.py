@@ -125,7 +125,7 @@ def _atlas_built_at(bom: dict[str, Any]) -> int | None:
         if p.get("name") == "cfe:atlas_built_at":
             try:
                 return int(float(p.get("value")))
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 return None
     return None
 
@@ -151,8 +151,7 @@ def check_universe_freshness(
     age_days = (now - built) / 86400
     if age_days > stale_after_days and not allow_stale:
         raise StaleUniverseError(
-            f"universe BOM is {age_days:.1f} days old (> {stale_after_days}); "
-            "rebuild it or pass allow_stale"
+            f"universe BOM is {age_days:.1f} days old (> {stale_after_days}); rebuild it or pass allow_stale"
         )
     return built
 
@@ -222,7 +221,9 @@ def normalize_intake_to_cyclonedx(
 
     deps = list(base_deps)
     seen = {(d.get("ecosystem"), fold_name(d.get("name", ""))) for d in deps}
-    meta_props: list[dict[str, str]] = [{"name": "cfe:resolution", "value": str(resolution.get("resolution", "unresolved"))}]
+    meta_props: list[dict[str, str]] = [
+        {"name": "cfe:resolution", "value": str(resolution.get("resolution", "unresolved"))}
+    ]
 
     if resolution.get("resolution") == "resolved":
         for td in resolution.get("deps") or []:
@@ -281,7 +282,11 @@ def _build_indexes(
         pname, cname = r.get("pypi_name"), r.get("conda_name")
         if not pname or pd.isna(pname) or not cname or pd.isna(cname):
             continue
-        rec = conda_by_name.get(str(cname).lower()) or {"conda_name": cname, "cf_latest": None, "upstream_version": None}
+        rec = conda_by_name.get(str(cname).lower()) or {
+            "conda_name": cname,
+            "cf_latest": None,
+            "upstream_version": None,
+        }
         mapping_by_fold.setdefault(fold_name(str(pname)), rec)
         conda_to_pypifold.setdefault(str(cname).lower(), fold_name(str(pname)))
 

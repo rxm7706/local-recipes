@@ -58,13 +58,13 @@ def _api_json(payload: Any) -> dict[str, Any] | None:
         try:
             data = payload.json()
             return data if isinstance(data, dict) else None
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             return None
     if isinstance(payload, (bytes, str)):
         try:
             data = json.loads(payload)
             return data if isinstance(data, dict) else None
-        except (json.JSONDecodeError, TypeError, UnicodeDecodeError):
+        except json.JSONDecodeError, TypeError, UnicodeDecodeError:
             return None
     return None
 
@@ -81,7 +81,7 @@ def parse_feedstock_outputs_zip(zip_bytes: bytes) -> pd.DataFrame:
                 continue
             try:
                 payload = json.loads(zf.read(name))
-            except (json.JSONDecodeError, UnicodeDecodeError):
+            except json.JSONDecodeError, UnicodeDecodeError:
                 continue
             feedstocks = payload.get("feedstocks") or []
             if feedstocks:
@@ -205,14 +205,14 @@ def parse_cf_graph_tarball(tar_bytes: bytes) -> pd.DataFrame:
                 feedstock = member.name.rsplit("/", 1)[-1][:-5]
                 try:
                     pr_info_data[feedstock] = json.load(f)
-                except (json.JSONDecodeError, UnicodeDecodeError):
+                except json.JSONDecodeError, UnicodeDecodeError:
                     pass
                 continue
             if "/version_pr_info/" in member.name:
                 feedstock = member.name.rsplit("/", 1)[-1][:-5]
                 try:
                     version_pr_info_data[feedstock] = json.load(f)
-                except (json.JSONDecodeError, UnicodeDecodeError):
+                except json.JSONDecodeError, UnicodeDecodeError:
                     pass
                 continue
             if "/node_attrs/" not in member.name:
@@ -220,7 +220,7 @@ def parse_cf_graph_tarball(tar_bytes: bytes) -> pd.DataFrame:
             feedstock_basename = member.name.rsplit("/", 1)[-1][:-5]
             try:
                 payload = json.load(f)
-            except (json.JSONDecodeError, UnicodeDecodeError):
+            except json.JSONDecodeError, UnicodeDecodeError:
                 continue
             health = _health_from_pr_info(
                 pr_info_data.get(feedstock_basename),
@@ -424,9 +424,7 @@ class S3DownloadStatsDataset(AbstractDataset):
         self.metadata = metadata
 
     def load(self) -> pd.DataFrame:
-        return pd.DataFrame(
-            columns=["conda_name", "month", "platform", "pyver", "channel", "downloads"]
-        )
+        return pd.DataFrame(columns=["conda_name", "month", "platform", "pyver", "channel", "downloads"])
 
     def save(self, data: Any) -> None:
         raise NotImplementedError(f"{type(self).__name__} is read-only")

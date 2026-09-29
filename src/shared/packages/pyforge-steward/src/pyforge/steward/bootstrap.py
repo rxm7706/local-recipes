@@ -29,10 +29,15 @@ from .provision import check_environment_sync, materialize_environment
 
 _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
 _PIXI_TOML_RELATIVE_PATH = Path("pixi.toml")
-_PRE_COMMIT_CONFIG_RELATIVE_PATH = Path("pre-commit-config.yaml")
+_PRE_COMMIT_CONFIG_RELATIVE_PATH = Path(
+    ".pre-commit-config.yaml"
+)  # the canonical dotfile; the dotless name never matched anything (fixed 2026-09-20, Story 66.2)
 _PYFORGE_TOML_RELATIVE_PATH = Path("pyforge.toml")
 _DEFAULT_REPO_URL = "https://github.com/rxm7706/local-recipes.git"
-_DEFAULT_PIXI_ENV = "local-recipes"
+# Story 63.6 (spec-pyforge-steward CAP-152): the default a bare clone bootstraps is the
+# Guild env -- the bare minimum every harness gets at runtime. `local-recipes` (the recipe
+# factory, 10 GB) is an explicit `--env local-recipes` for recipe work, never the default.
+_DEFAULT_PIXI_ENV = "pyforge-guild"
 _REQUIRES_PIXI_RE = re.compile(r'requires-pixi = ">=([^"]+)"')
 _SHELL_INIT_MARKER = "# pyforge-steward shell-init"
 _VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)")
@@ -130,7 +135,7 @@ def _tool_version(name: str, path: str) -> str | None:
             capture_output=True,
             text=True,
         )
-    except (OSError, subprocess.CalledProcessError):
+    except OSError, subprocess.CalledProcessError:
         return None
     return _first_version(proc.stdout) or _first_version(proc.stderr)
 
@@ -345,10 +350,7 @@ def setup_steps(
                     name="clone",
                     ok=False,
                     detail=f"destination {dest} does not exist",
-                    remedy=(
-                        "clone-repo: pass --url <git-url> and --dest <path> "
-                        "or create the checkout first"
-                    ),
+                    remedy=("clone-repo: pass --url <git-url> and --dest <path> or create the checkout first"),
                 )
             )
             return tuple(steps)
@@ -408,10 +410,7 @@ def setup_steps(
                     name="hooks",
                     ok=False,
                     detail=tail,
-                    remedy=(
-                        f"hooks: from {dest} run "
-                        f"`pixi run -e {env} pre-commit install`"
-                    ),
+                    remedy=(f"hooks: from {dest} run `pixi run -e {env} pre-commit install`"),
                 )
             )
     else:
@@ -446,9 +445,7 @@ def scaffold_pyforge_toml(*, root: Path) -> bool:
     if target.exists():
         return False
     target.write_text(
-        "# scaffolded by steward initrepo — extend as the repo's conventions grow\n"
-        "[project]\n"
-        f'name = "{root.name}"\n',
+        f'# scaffolded by steward initrepo — extend as the repo\'s conventions grow\n[project]\nname = "{root.name}"\n',
         encoding="utf-8",
     )
     return True
@@ -501,10 +498,7 @@ def validate_fast_steps(*, root: Path, env: str) -> tuple[ValidateFastStep, ...]
                     name="env-sync",
                     ok=False,
                     detail=str(exc),
-                    remedy=(
-                        "env-sync: run `pixi project export conda-environment -e build "
-                        "> environment.yaml`"
-                    ),
+                    remedy=("env-sync: run `pixi project export conda-environment -e build > environment.yaml`"),
                 )
             )
             return tuple(steps)
@@ -516,10 +510,7 @@ def validate_fast_steps(*, root: Path, env: str) -> tuple[ValidateFastStep, ...]
                     name="env-sync",
                     ok=False,
                     detail="environment.yaml drift",
-                    remedy=(
-                        "env-sync: run `pixi project export conda-environment -e build "
-                        "> environment.yaml`"
-                    ),
+                    remedy=("env-sync: run `pixi project export conda-environment -e build > environment.yaml`"),
                 )
             )
             return tuple(steps)

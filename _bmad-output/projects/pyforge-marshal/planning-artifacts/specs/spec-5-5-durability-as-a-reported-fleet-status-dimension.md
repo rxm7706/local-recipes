@@ -104,3 +104,16 @@ baseline_revision: '8f8c22376765aeef9c6ff592ae797c06a59478dc'
 
 - The two renamed/inverted degraded-row tests, plus the full `TestUnpushedWork` matrix.
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `3195f8c292` (2026-08-07, "Merge pull request #287 from rxm7706/marshal/5-5-durability-fleet-status-dimension"). Ledger row `5-5-durability-as-a-reported-fleet-status-dimension: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_status.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

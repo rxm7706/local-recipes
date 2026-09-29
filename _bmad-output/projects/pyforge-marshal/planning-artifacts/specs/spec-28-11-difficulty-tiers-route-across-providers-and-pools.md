@@ -12,15 +12,8 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/model-economics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
 warnings:
-  - This story extends the FR-51 seam's vocabulary. It must not mint a second
-    model-selection mechanism, and it must respect spec-adaptive-model-tiering's shipped
-    constraints (run-level batching; escalation is floor-raise only). Routing is a
-    launch-time decision, never a mid-run model change.
-  - The Copilot subscription is Pro today with a downgrade pending (operator clarification
-    2026-08-30): while Pro lasts its premium-request quota can drive the copilot harness as
-    a secondary pool, but routing must not depend on it persisting — when the downgrade
-    lands it becomes inline/chat only and stops being a story-session harness. Treat it as
-    a fall-through candidate, never a preferred pool.
+  - "This story extends the FR-51 seam's vocabulary. It must not mint a second model-selection mechanism, and it must respect spec-adaptive-model-tiering's shipped constraints (run-level batching; escalation is floor-raise only). Routing is a launch-time decision, never a mid-run model change."
+  - "The Copilot subscription is Pro today with a downgrade pending (operator clarification 2026-08-30): while Pro lasts its premium-request quota can drive the copilot harness as a secondary pool, but routing must not depend on it persisting — when the downgrade lands it becomes inline/chat only and stops being a story-session harness. Treat it as a fall-through candidate, never a preferred pool."
 ---
 
 <intent-contract>

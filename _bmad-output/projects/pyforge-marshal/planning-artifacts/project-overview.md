@@ -351,7 +351,7 @@ These touch all five parts:
 
 - `.claude/skills/conda-forge-expert/scripts/_http.py` — runtime HTTP helper: truststore + JFrog/GitHub/.netrc auth chain. Used by every Part 1, 2, 3 outbound request.
 - Per-host env-var overrides: `CONDA_FORGE_BASE_URL`, `S3_PARQUET_BASE_URL`, `PYPI_BASE_URL`, `ANACONDA_API_BASE`, etc.
-- `JFROG_API_KEY` — critical security constraint: when set, it attaches to **every** outbound request regardless of host. See `deployment-guide.md` § Cross-host credential leak and `docs/reference/enterprise-deployment.md`.
+- `JFROG_API_KEY` — critical security constraint: when set, it attaches to **every** outbound request regardless of host. See `deployment-guide.md` § Cross-host credential leak and `docs/explanation/enterprise-deployment.md`.
 - Phase F S3 parquet backend (closes the `api.anaconda.org` dependency for atlas).
 - Phase H cf-graph backend (closes the pypi.org dependency for atlas).
 
@@ -431,7 +431,7 @@ This document set synthesizes the following existing sources. To rebuild faithfu
 - `.claude/skills/conda-forge-expert/quickref/*.md` — 2 quick-reference files
 - `docs/dreams/*.md` — Tier 0; `pyforge-charter.md` is the identity source of truth
 - `docs/reference/mcp-server-architecture.md` — MCP server + name-mapping subsystem
-- `docs/reference/enterprise-deployment.md` — air-gap + JFrog + JFROG_API_KEY cross-host leak
+- `docs/explanation/enterprise-deployment.md` — air-gap + JFrog + JFROG_API_KEY cross-host leak
 - `docs/reference/developer-guide.md` — local testing + recipe development
 - `docs/reference/library-llms-full.md` — LLM-facing catalog of every library/CLI in the pixi envs
 - `docs/specs/*.md` — 19 legacy Tier-1 intake specs; indexed in CLAUDE.md, statuses via `bmad-drift-check --specs`

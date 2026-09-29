@@ -14,6 +14,15 @@ parity BEFORE retirement (AD-19, attended). That reads the OLD store to retire i
 the migrated engine, and it lives in ``tests/`` (never shipped in the package). This gate
 asserts that boundary holds: the legacy-SQLite reader is in tests/, never in src/.
 
+A second, INDIRECT exception exists and is deliberate: ``pyforge.atlas.views.cli_bridge``
+(Story 14.1) dynamically loads conda-forge-expert skill CLI scripts from
+``.claude/skills/conda-forge-expert/scripts/`` — outside this test's ``ATLAS_SRC`` scan
+tree — and those scripts internally call ``sqlite3.connect()`` against the legacy
+``cf_atlas.db``. Because the loading is dynamic (a runtime path string, never a literal
+``import sqlite3`` in ``cli_bridge.py`` itself) this AST scan cannot and is not meant to see
+it; the design is recorded in
+``_bmad-output/implementation-artifacts/spec-14-1-static-view-catalog.md``'s Design Notes.
+
 The **cold-start / warm-incremental benchmark** (the FR-5 performance claim) is the ATTENDED
 half of F1 — threshold fixed in the story spec first (SM-3), adjudicated at the attended event
 by operator sign-off. It is DEFERRED here (DW-F1-1); this gate is the offline, always-on half.
@@ -66,13 +75,10 @@ def test_no_sqlite_in_the_migrated_surface():
     """FR-5 / AD-4: DuckDB is the sole engine — the migrated ``pyforge/atlas`` src package
     contains NO sqlite3 read/write path (import, from-import, or dynamic import)."""
     offenders = {
-        str(p.relative_to(ATLAS_SRC)): hits
-        for p in sorted(ATLAS_SRC.rglob("*.py"))
-        if (hits := _sqlite_hits(p))
+        str(p.relative_to(ATLAS_SRC)): hits for p in sorted(ATLAS_SRC.rglob("*.py")) if (hits := _sqlite_hits(p))
     }
     assert not offenders, (
-        "FR-5 violation — the DuckDB-singularity surface must have NO sqlite3 path; "
-        f"found: {offenders}"
+        f"FR-5 violation — the DuckDB-singularity surface must have NO sqlite3 path; found: {offenders}"
     )
 
 

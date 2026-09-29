@@ -217,8 +217,9 @@ def test_malformed_json_on_decode_does_not_crash():
 def test_schema_validation_failure_is_controlled():
     # extra/forbidden field → controlled A2ADecodeError, not a raw ValidationError bubbling up.
     with pytest.raises(A2ADecodeError):
-        decode_payload('{"kind": "alert", "subject": "x", "build_stamp": "t", "rule": "r", '
-                        '"severity": "high", "bogus": 1}')
+        decode_payload(
+            '{"kind": "alert", "subject": "x", "build_stamp": "t", "rule": "r", "severity": "high", "bogus": 1}'
+        )
 
 
 def test_missing_evidence_is_allowed_and_empty(alert: AtlasAlert):
@@ -237,13 +238,9 @@ def test_non_json_native_field_fails_fast_at_construction():
     # a set is not JSON-native — pydantic would silently coerce it to a list (a silent
     # round-trip mutation), so we reject it at construction with a controlled error.
     with pytest.raises(ValueError, match="non-JSON-native"):
-        build_insight_payload(
-            subject="x", metric_id="is_actionable", value={"s": {1, 2, 3}}, build_stamp=STAMP
-        )
+        build_insight_payload(subject="x", metric_id="is_actionable", value={"s": {1, 2, 3}}, build_stamp=STAMP)
     with pytest.raises(ValueError, match="non-JSON-native"):
-        build_alert_payload(
-            subject="x", severity="low", rule="r", evidence={"o": object()}, build_stamp=STAMP
-        )
+        build_alert_payload(subject="x", severity="low", rule="r", evidence={"o": object()}, build_stamp=STAMP)
 
 
 def test_non_finite_floats_are_rejected():
@@ -291,7 +288,9 @@ def test_model_construct_bypass_is_caught_at_the_serialization_boundary():
     int-key that model_dump_json() silently coerces — the round-trip would then MUTATE it
     with no error. to_message's serialization self-check must reject it (Reviewer-B F1)."""
     corrupt = AtlasInsight.model_construct(
-        build_stamp=STAMP, subject="numpy", metric_id="staleness_age_days",
+        build_stamp=STAMP,
+        subject="numpy",
+        metric_id="staleness_age_days",
         value={1, 2, 3},  # a set — not JSON-native; validation was skipped
     )
     with pytest.raises(A2ATransportError):

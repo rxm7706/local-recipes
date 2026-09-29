@@ -51,11 +51,8 @@ Engine files must stay **byte-identical** across every deck — apply any engine
 to all decks in the same change (`diff -q` to prove it).
 
 ## Design project (the bridge's far end)
-
 Prototype lives in Claude Design project **"PyForge Marshal deck"** (`ad84d4f6-c292-42c8-98bf-ede78a567773`):
-https://claude.ai/design/p/ad84d4f6-c292-42c8-98bf-ede78a567773?file=PyForge+Marshal.dc.html
-Pull it into this deck with the MCP bridge ("pull marshal") — see
-`docs/specs/presentation-deck.md` § *The MCP bridge*.
+https://claude.ai/design/p/ad84d4f6-c292-42c8-98bf-ede78a567773?file=PyForge%20Marshal.dc.html
 
 ## Ledger — 2026-07-31 six-act rebuild (Design ↔ repo sync)
 
@@ -71,3 +68,99 @@ Authored repo-side this generation (inverted from the usual Design-first flow);
 pushed byte-for-byte via the DesignSync localPath pipeline. On the next
 Design-side edit session, finish with a byte-exact pull per
 `docs/specs/presentation-deck.md` § the MCP bridge.
+
+## Ledger — 2026-09-13 standard rebuild (Story 20.6)
+
+Re-derived to `infographic-standard.md` (spec-deck-family-currency CAP-1..3) from
+`presentations/pyforge-marshal/facts.yaml` (`pixi run -e local-recipes deck-facts pyforge-marshal
+--with-tests`, re-derived on the clean tree of the commit that landed this poster — the ledger's
+`tree:` names it, following the 20.2 convention of deriving on the parent commit). The 2026-07-31 six-act arc and its 19-section order are kept;
+every count, version, status and date is now a `data-fact` mark resolving to a ledger row — the
+July claims (`bmad-method 6.10.0`, `bmad-loop 0.9.0`, "128/333 fleet-wide", "Epic 1 · 10/10",
+the per-station July chips, "785 tests", the stack table's module versions) are gone. Dropped for
+lack of a fact row: the stack table's per-module versions for BMB / TEA / CIS / SKF / pyforge-core
+(column shows `—`; only `bmad_core_version`, `bmad_loop_version`, `cfe_skill_version`,
+`package_version` print), the "10 detectors" / "51 skills" / "16 skf" counts, the "8 concurrent
+homes" numeral (now "one home per station"), and `bmad-dashboard` (retired console). Sections
+kept in full: no section of the standard's set was dropped.
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `PyForge Marshal Infographic standalone.html` | 112,843 B · 19 sections (21 `<section` incl. doctrine + creed bands) · 6 acts · 4 SVG · 6 tables · facts 128/128 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789296212120129` · 112,843 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git; refreshed and re-pushed the same day by the first currency sweep (`deck-facts <slug> --refresh`)` (operator pushes via DesignSync after review) | rendered 2026-09-13 at 1240 px, page 16,427 px, no clipped or blank region; `deck-facts pyforge-marshal --check` → `0 unmarked, 0 mismatch, 0 drifted, 1 unsourced (tests_collected, --with-tests only), 0 unshown`; head + Infographic Deck derived 2026-09-15 via `deck-trio --head --deck` (Story 21.4 local sweep; Design push/read-back still pending) |
+
+Floors: act bands 6/6 · sections 19 ≥ 18 · inline SVGs 4 ≥ 3 · bytes 112,843 ≥ 90,000 · tables
+6 ≥ 3 · cast cards 8/8 full (role, motto, paragraph, verbs, stories + epics chips) · render
+reviewed as eight 2100 px slices. Render artifacts live under the gitignored
+`.herald/deck-qa/pyforge-marshal/`.
+## Ledger — 2026-09-14 currency sweep (spec-deck-family-currency CAP-6)
+
+The poster had gone stale on the fleet's own merges since the 2026-09-13 rebuild — 18 ledger
+rows drifted (`doctor_epics_done_total`, `doctor_stories_done_total`, `epics_done_total`, `fleet_epics_done_total`, `fleet_stories_done_total`, `groundtruth_pixi_envs`, `herald_epics_done_total`, `herald_stories_done_total`, `marshal_epics_done_total`, `marshal_stories_done_total`, `mason_epics_done_total`, `mason_stories_done_total`, `scribe_epics_done_total`, `scribe_stories_done_total`, `steward_epics_done_total`, `steward_stories_done_total`, `stories_done_total`, `tree_commit_date`). Swept repo-side first, per CAP-6:
+`pixi run -e local-recipes deck-facts pyforge-marshal --refresh --check `--with-tests`` at tree `168bbedb13` re-derived
+`facts.yaml` and rewrote **56** stale `data-fact` literals in place, keeping their shape; the
+re-check reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 0 unshown; facts 128/128`. Then the mirror (CAP-4): pushed via DesignSync `finalize_plan` →
+`write_files` (`localPath`, no context relay) to project `ad84d4f6-c292-42c8-98bf-ede78a567773`, and read back through the
+serve URL with the injected harness stripped — **byte-identical to disk**.
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Marshal Infographic standalone.html` | 112,851 | `1789417220069499` | identical ✓ |
+
+Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
+still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
+(Stories 21.1–21.4), not a refresh.
+
+## Ledger — 2026-09-15 infographic head re-derived; deck blocked (Story 21.4)
+
+`pixi run -e local-recipes deck-trio pyforge-marshal --head` at tree `a407cd03f6` mechanically
+re-derived the head from the standalone (x-dc/helmet wrap, verbatim `<style>`/`<link>`
+relocation, a measured `$preview` height): `PyForge Marshal - Infographic.dc.html` now 112,992 B.
+A second `--head` run changed nothing on disk (verified). `--deck` refuses per **DW-4** (open,
+`_bmad-output/implementation-artifacts/deferred-work.md:522`): `no <section class="sec">
+elements found` — this poster's 19 sections are inline-styled divs, not `section.sec`; the
+pre-existing `- Infographic Deck.dc.html` on disk is untouched (not re-derived, not regressed).
+Widening the selector or re-authoring the poster is out of this story's Code Map.
+
+`pixi run -e local-recipes deck-facts pyforge-marshal --refresh` then `--check` at the same tree
+rewrote **30** stale `data-fact` literals across poster and head (`fleet_epics_done_total`,
+`fleet_stories_done_total`, `herald_epics_done_total`, `herald_stories_done_total`,
+`poster_last_commit_date`, `tree_commit_date` — drift since the 2026-09-14 sweep). Because a
+plain `--refresh` omits `tests_collected` (only derived under `--with-tests`), that first
+`--check` flagged the deck's 10 pre-existing `tests_collected` marks (5 on the poster, inherited
+onto the freshly-derived head) as `mismatch … no such row in facts.yaml` — a regression from
+this deck's established convention (the 2026-09-13 ledger's `1 unsourced (tests_collected,
+--with-tests only)`, not a `mismatch`). Re-ran `deck-facts pyforge-marshal --refresh
+--with-tests` (pytest `--collect-only` over `pyforge-marshal`'s own suite; count unchanged at
+7934) to restore the persisted row. Final re-check reads `0 unmarked, 0 mismatch, 0 drifted, 1
+unsourced, 0 unshown; facts 256/256` — the intended state restored, not a new gap.
+
+**Design push/read-back: not performed this session — no working credential.**
+`~/.claude/.credentials.json` has no `designOauth` block, and the `claude-design` MCP connector
+independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-probed live via
+`pixi run -e pyforge-herald herald deck push pyforge-warden` → `AuthError: ... has no
+'designOauth' block -- run /design-login in Claude Code to refresh it` (one shared credential
+file, so this applies identically to every deck — not re-probed per deck). No push attempted, no
+etag fabricated. The pre-push gap narrowed to: the head is now re-derived and facts-current on
+disk, not yet mirrored to Design; the Infographic Deck remains blocked on DW-4, unrelated to the
+credential.
+
+## Ledger — 2026-09-17 head pushed + read back; deck still blocked on DW-4 (Story 21.4)
+
+`pyforge-herald`'s `mcp` 2.2.0 transport symbol drift (Story 21.12) is fixed and merged, so the
+credential blocker above is resolved: `resolve_design_credential()` succeeds this session. Pushed
+via `pyforge.herald.transport.mcp_transport.McpTransport` directly (`finalize_plan` →
+`write_files`, inline `data` — `write_files`'s `local_path` field is not implemented
+server-side today, so `herald deck push`'s own CLI verb, which covers only the CAP-5
+marp-regenerated export, doesn't reach these `project/` trio files) to project
+`ad84d4f6-c292-42c8-98bf-ede78a567773`, then read back and SHA-256-compared against disk:
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Marshal - Infographic.dc.html` | 112,992 | `1789635952454442` | identical ✓ |
+
+Under the 256 KiB `read_file` cap, so a single call plus entity-decoded SHA-256 comparison is the
+read-back proof. `deck-facts pyforge-marshal --check` still reads 0 mismatch. DW-4 remains open
+(`no <section class="sec"> elements found` — pre-existing, out of this story's Code Map): the
+pre-existing `- Infographic Deck.dc.html` on disk was never re-derived and stays untouched, so
+there is nothing new to push for it. The head is fully synced (disk = Design, byte-identical);
+the deck's gap is DW-4, not a push gap.

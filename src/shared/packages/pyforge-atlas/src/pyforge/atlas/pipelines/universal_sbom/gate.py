@@ -55,9 +55,10 @@ import os
 from pathlib import Path
 from typing import Any, Callable
 
+from pyforge.core.errors import PyforgeError
+
 from pyforge.atlas.a2a import AtlasAlert, Severity, build_alert_payload
 from pyforge.atlas.validation import ContractViolation, DataContractViolation
-from pyforge.core.errors import PyforgeError
 
 # The catalog name of the terminal artifact — the dataset the gate is the single
 # producer of, and the dataset the halt (DataContractViolation) is attributed to.
@@ -155,9 +156,9 @@ def run_dependency_hygiene(
     Emits a plain, JSON-native dict (never a ``ComplianceReport`` — AD-12: only
     the terminal gate node produces that)."""
     params = parameters or {}
-    source_dir = _as_dict(params.get("gate")).get("hygiene_source_dir") or _as_dict(
-        params.get("hygiene")
-    ).get("source_dir")
+    source_dir = _as_dict(params.get("gate")).get("hygiene_source_dir") or _as_dict(params.get("hygiene")).get(
+        "source_dir"
+    )
     if not source_dir:
         return _not_applicable_hygiene(
             "no project source accompanies the intake (bare manifest / lockfile / "
@@ -172,21 +173,15 @@ def run_dependency_hygiene(
     target = Path(source_dir)
     if not target.is_dir() or not has_adjacent_python_source(target):
         return _not_applicable_hygiene(
-            f"no adjacent Python source under {source_dir!r} — deptry's AST/import "
-            "analysis is not applicable (FR-16)"
+            f"no adjacent Python source under {source_dir!r} — deptry's AST/import analysis is not applicable (FR-16)"
         )
 
     # deptry reads the project's own pyproject.toml natively (FR9). An empty
     # inventory front-door is a documented no-op for a pyproject-native scan; a
     # richer intake-derived front-door is future work (DW-F4-1).
     result = DeptryEngine().run(target, ResolvedInventory(components=(), resolved_scan_set=()))
-    findings = [
-        {"id": f.id, "message": f.message, "subject": f.subject} for f in result.findings
-    ]
-    errors = [
-        {"kind": e.kind.value, "owner": e.owner, "message": e.message}
-        for e in result.errors
-    ]
+    findings = [{"id": f.id, "message": f.message, "subject": f.subject} for f in result.findings]
+    errors = [{"kind": e.kind.value, "owner": e.owner, "message": e.message} for e in result.errors]
     raw_assessed = max((c.deps_assessed for c in result.coverage), default=0)
     raw_total = max((c.deps_total for c in result.coverage), default=0)
     n = len(findings)
@@ -268,18 +263,14 @@ def assemble_and_gate(
         hyg_errors = _as_list(hyg.get("errors"))
         for ed in hyg_errors:
             errors.append(
-                models.ErrorRecord(
-                    kind=models.ErrorKind(ed["kind"]), owner=ed["owner"], message=ed["message"]
-                )
+                models.ErrorRecord(kind=models.ErrorKind(ed["kind"]), owner=ed["owner"], message=ed["message"])
             )
         if hyg_errors:
             first = hyg_errors[0]
             rungs.append(
                 (
                     models.Status.ERROR,
-                    models.StatusDriver(
-                        models.AXIS_INGESTION, f"error:{first['kind']}:{first['owner']}"
-                    ),
+                    models.StatusDriver(models.AXIS_INGESTION, f"error:{first['kind']}:{first['owner']}"),
                 )
             )
         n_hyg = len(_as_list(hyg.get("findings")))
@@ -336,9 +327,7 @@ def assemble_and_gate(
         elif policy.get("kev_gate") and kev_hit_id is not None:
             breach_id = kev_hit_id
         if breach_id is not None:
-            rungs.append(
-                (models.Status.POLICY_VIOLATION, models.StatusDriver(models.AXIS_VULNERABILITY, breach_id))
-            )
+            rungs.append((models.Status.POLICY_VIOLATION, models.StatusDriver(models.AXIS_VULNERABILITY, breach_id)))
         else:
             # No breach → WARN (exit 0, no false halt). warden's engines routinely emit ONLY
             # indeterminate:* ids (offline db, name-level CVE, stale data), so an all-indeterminate
@@ -354,9 +343,7 @@ def assemble_and_gate(
             driver_id = vuln_ids[0] if vuln_ids else vuln_axis_ids[0]
             rungs.append((models.Status.WARN, models.StatusDriver(models.AXIS_VULNERABILITY, driver_id)))
         coverage.append(
-            models.AxisCoverage(
-                models.AXIS_VULNERABILITY, 1, 1, len(security_findings), len(security_findings), None
-            )
+            models.AxisCoverage(models.AXIS_VULNERABILITY, 1, 1, len(security_findings), len(security_findings), None)
         )
         vuln_data = models.VulnData(
             source=security.get("source", "atlas-cve"),
@@ -372,9 +359,7 @@ def assemble_and_gate(
     match = sbom_match_report_entry or {}
     match_components = match.get("components")
     if match_components is not None:
-        coverage.append(
-            models.AxisCoverage("currency", 1, 1, len(match_components), len(match_components), None)
-        )
+        coverage.append(models.AxisCoverage("currency", 1, 1, len(match_components), len(match_components), None))
         # Currency is a flag-activated gate (OFF in v1): populated, informational,
         # never blocking — it contributes a clean rung, never a finding.
         rungs.append((models.Status.CLEAN, None))
@@ -395,9 +380,7 @@ def assemble_and_gate(
             )
             findings.append(finding)
             rungs.append((models.Status.WARN, models.StatusDriver("license", finding.id)))
-        coverage.append(
-            models.AxisCoverage("license", 1, 1, len(license_findings), len(license_findings), None)
-        )
+        coverage.append(models.AxisCoverage("license", 1, 1, len(license_findings), len(license_findings), None))
     else:
         coverage.append(models.AxisCoverage("license", 0, 0, 0, 0, None))
         rungs.append((models.Status.NOT_APPLICABLE, None))

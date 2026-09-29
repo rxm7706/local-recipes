@@ -125,6 +125,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-SPIN-012",
             "MRS-SUPV-008",
             "MRS-SUPV-009",
+            "MRS-SUPV-010",
             "MRS-GATE-007",
             "MRS-GATE-008",
             "MRS-GATE-009",
@@ -319,6 +320,46 @@ def test_registered_codes_contains_the_real_codes():
             # deploying the caveman skill into a dispatch worktree
             # degraded -- unavailable instrument or a write failure.
             "MRS-DISP-042",
+            # 2026-09-12 (dispatch-tier-routing-fails-safe): a tier-mapped
+            # model's cost-catalog provider disagreed with the
+            # live-verified harness the walk landed on -- override dropped.
+            "MRS-DISP-043",
+            # Story 51.1 (verification sees the merge result): the
+            # merge-tree preview of the branch onto `origin/main` failed
+            # `verify_commands`, or the behind-check itself was unevaluable.
+            "MRS-DISP-044",
+            # Story 51.4 (spec-pyforge-marshal CAP-252): the pre-launch
+            # guard's worktree spec is `status: blocked` -- refuse to
+            # relaunch bmad-build-auto without an operator decision.
+            "MRS-DISP-045",
+            # Story 51.11 (CAP-258): worktree spec reads status: blocked but
+            # its baseline_revision predates this run -- advisory only.
+            "MRS-DISP-046",
+            # Story 53.2 (spec-pyforge-marshal CAP-261b): 047 the landing
+            # reconciled spec-surface drift found on the branch's own
+            # changed files before merging (or could not even evaluate
+            # drift, e.g. the doctor source tree unreachable), or
+            # `dispatch_land_finalize` ran `deferred_work_intake.py --fix`
+            # and it refused a deferral -- always WARN, non-blocking,
+            # visible in `marshal watch`/`fleet-picture` ATTENTION rows.
+            # 048 the branch's own spec-surface drift named a path this
+            # branch did not change (foreign drift) or the reconcile
+            # machinery itself failed to safely APPLY a known reconcile
+            # (`VcsPort.changed_files`, memlog append, the scoped stamp, or
+            # the reconcile commit/push) -- refuses the landing.
+            "MRS-DISP-047",
+            "MRS-DISP-048",
+            # Story 63.4 (spec-pyforge-steward CAP-5): dispatch_once shells
+            # `steward session check --json` right after repo_root resolves
+            # and folds a non-ok session-precondition verdict into a WARN
+            # finding -- non-blocking, mirroring MRS-DISP-036's worktree-WIP
+            # surfacing shape.
+            "MRS-DISP-049",
+            # Story 68.1 (spec-pyforge-marshal CAP-277): after its ledger promotion,
+            # finalize read `origin/main`'s tracked ledger and the landed story's
+            # key does not read `done` there (absent, another status, unreadable) --
+            # ERROR: finalize exits 1 and `dispatch land` refuses (MRS-DISP-020).
+            "MRS-DISP-051",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",
@@ -361,6 +402,27 @@ def test_registered_codes_contains_the_real_codes():
             # and MRS-PREFLIGHT-015).
             "MRS-CTX-001",
             "MRS-CTX-002",
+            # Story 46.1 (a bare clone bootstraps the substrate,
+            # spec-pyforge-marshal CAP-192): 003 WARN rebuilt locally, 004
+            # UNEVALUABLE neither fetched nor rebuilt, 005 WARN fetched pack
+            # refused, 006 WARN pack with a gap, 007 UNEVALUABLE nothing
+            # packable.
+            "MRS-CTX-003",
+            "MRS-CTX-004",
+            "MRS-CTX-005",
+            "MRS-CTX-006",
+            "MRS-CTX-007",
+            # Story 46.2 (the canonical context bundle is digest-pinned,
+            # spec-pyforge-marshal CAP-192): `marshal context bundle`'s own
+            # code -- 008 WARN, a second harness's `--expect-digest` does
+            # not match the freshly assembled bundle's digest; never blocks.
+            "MRS-CTX-008",
+            # Story 46.6 (a persistence advisory for a lapsed [context]
+            # layer, spec-pyforge-marshal CAP-193, fold-remint of
+            # spec-marshal-token-economy CAP-20): `marshal context
+            # advisory`'s own code -- 009 WARN, a declared-active layer's
+            # kit item or scribe binary no longer resolves; never blocks.
+            "MRS-CTX-009",
             # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
             # `marshal context retrieve`'s degradation code -- WARN, never
             # blocking; falls back to Story 28.8's epic-context file.
@@ -382,6 +444,11 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-BENCH-002",
             "MRS-BENCH-003",
             "MRS-BENCH-004",
+            # Story 44.1 (marshal watch).
+            "MRS-WATCH-001",
+            "MRS-WATCH-002",
+            "MRS-WATCH-003",
+            "MRS-WATCH-004",
         }
     )
 
@@ -444,3 +511,19 @@ def test_require_registered_still_rejects_other_codes_after_monkeypatch(monkeypa
 
 def test_unregistered_finding_code_error_is_a_value_error():
     assert issubclass(findings.UnregisteredFindingCodeError, ValueError)
+
+
+def test_mrs_disp_051_is_registered_at_the_error_tier():
+    """Story 68.1 (CAP-277): the landed story's ledger key does not read `done` on `origin/main` -- a code
+    finalize's exit rule (ERROR only) must be able to act on, so it is registered AND classified ERROR."""
+    from pyforge.marshal.core import verdict
+    from pyforge.marshal.core.model import Finding, Severity
+
+    assert "MRS-DISP-051" in findings.REGISTERED_CODES
+    assert verdict.classify("MRS-DISP-051") is verdict.Verdict.ERROR
+    assert (
+        verdict.compute_verdict(
+            (Finding(code="MRS-DISP-051", severity=Severity.ERROR, message="not done on origin/main"),)
+        )
+        is verdict.Verdict.ERROR
+    )

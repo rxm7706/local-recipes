@@ -106,7 +106,5 @@ def home_result_to_dict(result: HomeRefreshResult) -> dict[str, object]:
         "current_ref": result.current_ref,
         "incomplete": result.incomplete,
         "refused_reason": result.refused_reason,
-        "steps": [
-            {"name": s.name, "status": s.status, "detail": s.detail} for s in result.steps
-        ],
+        "steps": [{"name": s.name, "status": s.status, "detail": s.detail} for s in result.steps],
     }

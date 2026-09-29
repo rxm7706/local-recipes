@@ -1,9 +1,13 @@
 ---
-title: A spike report is not a corrupt file, and the classifier can't yet tell the difference
+title: A spike report is not a corrupt file, and the classifier can't yet tell the
+  difference
 type: dream
 owner: doctor
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-doctor]]** on 2026-09-17 (one-chain-per-station doctor fold).
 
 # A spike report is not a corrupt file, and the classifier can't yet tell the difference
 

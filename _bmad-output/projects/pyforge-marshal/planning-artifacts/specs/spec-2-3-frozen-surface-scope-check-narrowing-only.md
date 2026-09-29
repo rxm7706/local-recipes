@@ -210,3 +210,16 @@ baseline_revision: 'fbccf6ee0dbeb9a8701fc53ae2350d801808d44d'
 
 - `parse_declared_surface` parsing matrix.
   [`test_spec_surface.py:1`](../../../../src/shared/packages/pyforge-marshal/tests/unit/test_spec_surface.py#L1)
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `51d51597b0` (2026-08-05, "Merge pull request #269 from rxm7706/marshal/2-3-frozen-surface-scope-check"). Ledger row `2-3-frozen-surface-scope-check-narrowing-only: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/gate.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/journal.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_surface.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/policy.json` (+7 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

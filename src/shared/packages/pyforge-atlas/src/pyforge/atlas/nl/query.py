@@ -44,7 +44,7 @@ def bsl_model_names() -> list[str]:
         for attr in dir(semantic)
         if attr.startswith("build_")
         and attr.endswith("_model")
-        and (name := attr[len("build_"):-len("_model")])  # drop a bare ``build__model`` → ""
+        and (name := attr[len("build_") : -len("_model")])  # drop a bare ``build__model`` → ""
     )
 
 

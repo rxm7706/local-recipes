@@ -23,6 +23,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.core.landing_evidence import StoryKeyRef
 
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import marshal
@@ -88,14 +89,7 @@ def _commit(target: Path, subject: str) -> str:
 
 
 def _write_feed(target: Path, slug: str, done_keys: list[str]) -> None:
-    feed = (
-        target
-        / "_bmad-output"
-        / "projects"
-        / f"pyforge-{slug}"
-        / "implementation-artifacts"
-        / "sprint-status.yaml"
-    )
+    feed = target / "_bmad-output" / "projects" / f"pyforge-{slug}" / "implementation-artifacts" / "sprint-status.yaml"
     feed.parent.mkdir(parents=True, exist_ok=True)
     lines = ["development_status:"]
     lines.extend(f"  {key}: done" for key in done_keys)
@@ -106,6 +100,39 @@ def _write_state(loop_root: Path, slug: str, run: str, tasks: dict) -> None:
     state = loop_root / f"pyforge-{slug}" / ".bmad-loop" / "runs" / run / "state.json"
     state.parent.mkdir(parents=True, exist_ok=True)
     state.write_text(json.dumps({"tasks": tasks}), encoding="utf-8")
+
+
+def _write_policy(target: Path, slug: str, merge_subject_template: str) -> None:
+    """A minimal ``marshal-policy.toml`` declaring only the one key Story
+    27.1 reads per-project instead of the hardcoded repo default."""
+    policy = target / "_bmad-output" / "projects" / f"pyforge-{slug}" / "planning-artifacts" / "marshal-policy.toml"
+    policy.parent.mkdir(parents=True, exist_ok=True)
+    policy.write_text(f'merge_subject_template = "{merge_subject_template}"\n', encoding="utf-8")
+
+
+def _write_ledger(target: Path, slug: str, statuses: dict[str, str]) -> None:
+    """A minimal tracked ``sprint-status-ledger.yaml`` -- Story 27.5's
+    ``bare_merge.known_story_keys`` corroboration source, distinct from the
+    gitignored Tier-3 feed ``_write_feed`` writes."""
+    ledger = (
+        target / "_bmad-output" / "projects" / f"pyforge-{slug}" / "planning-artifacts" / "sprint-status-ledger.yaml"
+    )
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    lines = ["development_status:"]
+    lines.extend(f"  {key}: {value}" for key, value in statuses.items())
+    ledger.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _commit_touching(target: Path, subject: str, *, path: str) -> str:
+    """A REAL commit (unlike ``_commit``'s ``--allow-empty``) whose diff
+    touches exactly ``path`` -- Story 27.5's diff-path gate needs an actual
+    file change to classify, not an empty merge."""
+    file_path = target / path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_text("x\n", encoding="utf-8")
+    _git(target, "add", path)
+    _git(target, "commit", "-q", "-m", subject)
+    return _git(target, "rev-parse", "HEAD").strip()
 
 
 # --- False-green story -------------------------------------------------
@@ -256,15 +283,21 @@ def test_false_greens_across_multiple_station_feeds_are_all_reported(
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
     _write_state(
-        loop_root, "mason", "run1",
+        loop_root,
+        "mason",
+        "run1",
         {"2-2-bar": {"phase": "escalated", "commit_sha": None}},
     )
     _write_state(
-        loop_root, "doctor", "run1",
+        loop_root,
+        "doctor",
+        "run1",
         {"3-3-baz": {"phase": "done", "commit_sha": "cafef00d"}},
     )
 
@@ -298,7 +331,9 @@ def test_merge_commit_naming_the_key_suppresses_the_false_green(
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -320,7 +355,9 @@ def test_merge_commit_for_a_different_key_does_not_suppress(tmp_path: Path) -> N
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -331,15 +368,425 @@ def test_merge_commit_for_a_different_key_does_not_suppress(tmp_path: Path) -> N
     assert findings[0].evidence["key"] == "1-1-foo"
 
 
+# --- Story 27.1: templated merge subject, scoped to the project's OWN
+# marshal-policy.toml rather than the hardcoded repo default -------------
+
+
+def test_own_scoped_template_merge_suppresses_the_false_green(tmp_path: Path) -> None:
+    """A station's own ``merge_subject_template`` (read from its tracked
+    policy file) is valid Route 2 landing evidence, exactly like the bare
+    legacy default used to be for every project unconditionally."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_policy(target, "doctor", "Merge pyforge-doctor/{key} into main")
+    _commit(target, "Merge pyforge-doctor/1-1 into main")
+    _write_feed(target, "doctor", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "doctor",
+        "run1",
+        {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_sibling_bare_default_merge_does_not_suppress_once_scoped(
+    tmp_path: Path,
+) -> None:
+    """The live incident, mirrored on the story-status side: once a station
+    declares its OWN scoped template, a sibling's plain ``Merge <key> into
+    main`` -- rendered from THAT sibling's still-unscoped legacy default --
+    must not be read as this station's landing evidence, even when the
+    numeric key coincides."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_policy(target, "doctor", "Merge pyforge-doctor/{key} into main")
+    # A sibling's own (unscoped) legacy-default merge, same numeric key.
+    _commit(target, "Merge 1-1 into main")
+    _write_feed(target, "doctor", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "doctor",
+        "run1",
+        {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "1-1-foo"
+
+
+def test_no_override_scoped_default_merge_suppresses_own_station(
+    tmp_path: Path,
+) -> None:
+    """Story 50.4: a station with NO ``marshal-policy.toml`` override still
+    gets credit for a landing rendered from the (now ``{slug}``-scoped) repo
+    default -- the templated route no longer needs an explicit per-project
+    override to self-scope."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(target, "Merge pyforge-mason/7-2 into main")
+    _write_feed(target, "mason", ["7-2-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "mason",
+        "run1",
+        {"7-2-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_no_override_sibling_scoped_default_merge_does_not_suppress(
+    tmp_path: Path,
+) -> None:
+    """The other half: two stations sharing the identical unset-override
+    default template do not cross-attribute, since each renders its OWN
+    ``{slug}`` segment -- a sibling's ``Merge pyforge-atlas/7-2 into main``
+    is not mason's landing evidence, even though the numeric key
+    coincides."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(target, "Merge pyforge-atlas/7-2 into main")
+    _write_feed(target, "mason", ["7-2-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "mason",
+        "run1",
+        {"7-2-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "7-2-foo"
+
+
+# --- Story 27.5 (CAP-80 amended): a bare-form merge is attributed by the
+# paths its diff touches, never by ledger membership alone -----------------
+
+
+def test_bare_form_merge_is_attributed_by_the_paths_its_diff_touches(
+    tmp_path: Path,
+) -> None:
+    """The real regression this story fixes: marshal's own `34-3`
+    (`dcda31b8cb Merge 34-3 into main`, 2026-09-12) -- no scoped template
+    override, but its first-parent diff touches ONLY marshal's own paths,
+    and marshal's own tracked ledger already marks the key `done`."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(
+        target,
+        "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "marshal",
+        "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_bare_form_merge_touching_only_a_sibling_station_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """27.3's own reopened gap: this station's ledger ALSO knows the key
+    (the common case under one shared numbering grammar), but the merge's
+    diff never touches this station's own paths -- ledger membership alone
+    must not be enough."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(
+        target,
+        "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-steward/core/whatever.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "marshal",
+        "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "34-3-factory-drain"
+
+
+def test_bare_form_merge_touching_two_stations_with_the_same_key_attributes_to_neither(
+    tmp_path: Path,
+) -> None:
+    """The compound collision Blind Hunter caught in review: a genuinely
+    cross-cutting commit touches BOTH marshal's and a sibling's own paths,
+    and BOTH stations' ledgers independently track the same numeric key
+    (the module's own docstring calls that "the common case, not the
+    exception"). `project_slug in slugs` alone would attribute this to
+    marshal too, exactly the "fleet-wide mop commit... attributed to every
+    station it touches" collision the spec's Never bullet forbids -- the
+    diff must touch marshal's paths EXCLUSIVELY to attribute."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    (target / "src/shared/packages/pyforge-marshal/core").mkdir(parents=True)
+    (target / "src/shared/packages/pyforge-marshal/core/a.py").write_text(
+        "x\n",
+        encoding="utf-8",
+    )
+    (target / "src/shared/packages/pyforge-steward/core").mkdir(parents=True)
+    (target / "src/shared/packages/pyforge-steward/core/b.py").write_text(
+        "x\n",
+        encoding="utf-8",
+    )
+    _git(target, "add", "-A")
+    _git(target, "commit", "-q", "-m", "Merge 34-3 into main")
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "marshal",
+        "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "34-3-factory-drain"
+
+
+def test_bare_form_merge_touching_no_station_path_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """A merge touching no ``_bmad-output/projects/*`` or ``src/shared/
+    packages/*`` path at all (docs, root config) attributes to nothing --
+    not even a fleet-wide mop commit gets laundered into landing evidence."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(target, "Merge 34-3 into main", path="docs/some-note.md")
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "marshal",
+        "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+
+
+def test_bare_form_merge_diff_query_failure_warns_even_alongside_a_false_green(
+    tmp_path: Path,
+) -> None:
+    """A ``git diff`` call that cannot run (here: the merge sha is the
+    repository's ROOT commit, so ``<sha>^1`` does not resolve) degrades to a
+    standalone WARN naming the sha, surfaced even when the SAME run also
+    produces an unrelated false-green FAIL -- a version of this that only
+    rode on the OK Finding's caveat string would have dropped it silently
+    the moment `false_greens` also fired, since that branch returns first."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _git(target, "init", "-q", "--initial-branch=main")
+    _git(target, "config", "user.email", "doctor-test@example.com")
+    _git(target, "config", "user.name", "Doctor Test")
+    _git(target, "config", "commit.gpgsign", "false")
+    _git(target, "config", "core.hooksPath", "/dev/null")
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _git(target, "add", "-A")
+    _git(target, "commit", "-q", "-m", "Merge 34-3 into main")
+    root_sha = _git(target, "rev-parse", "HEAD").strip()
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "marshal",
+        "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    warns = [f for f in findings if f.check == "bare-merge-diff-unreadable"]
+    assert len(warns) == 1
+    assert warns[0].status is DoctorStatus.WARN
+    assert warns[0].evidence == {"project": "pyforge-marshal", "sha": root_sha}
+
+    fails = [f for f in findings if f.status is DoctorStatus.FAIL]
+    assert len(fails) == 1
+    assert fails[0].evidence["key"] == "34-3-factory-drain"
+
+
+def test_keys_from_main_commits_attributes_a_bare_form_merge_via_diff_and_ledger(
+    tmp_path: Path,
+) -> None:
+    """Direct proof at Route 3's own boundary: ``_keys_from_main_commits``'s
+    bare-merge fallback branch alone, isolated from Route 2
+    (``_keys_from_merge_subjects`` over ``--all``, a superset of ``main``)
+    which always resolves first inside ``gather_story_status`` and would
+    shadow a bug in Route 3's own fallback forever."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    sha = _commit_touching(
+        target,
+        "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+
+    keys = marshal._keys_from_main_commits(
+        target,
+        [(sha, "Merge 34-3 into main")],
+        project_slug="pyforge-marshal",
+        diff_cache={},
+    )
+
+    assert keys == frozenset({StoryKeyRef(34, 3)})
+
+
+def test_bare_form_merge_still_attributes_once_the_station_has_its_own_override(
+    tmp_path: Path,
+) -> None:
+    """The literal real-world scenario this story exists to fix: marshal
+    has carried its own scoped ``merge_subject_template`` since PR #1467,
+    but ``34-3`` (``dcda31b8cb``) landed under the bare default BEFORE that
+    override existed. A real (non-empty) historical bare-form commit whose
+    diff touches only marshal's own paths, naming a key marshal's own
+    ledger already knows, must still attribute -- the scoped-template
+    fixtures elsewhere in this file all use EMPTY commits, and the
+    bare-fallback fixtures elsewhere all use a project with NO override, so
+    neither alone proves this combination works."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_policy(target, "marshal", "Merge pyforge-marshal/{key} into main")
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(
+        target,
+        "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "marshal",
+        "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_bare_form_merge_touching_own_paths_but_key_absent_from_ledger_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """The mirror of the already-covered "ledger knows it, path doesn't
+    match" case: the diff touches ONLY this station's own paths, but the
+    extracted key is absent from this station's own tracked ledger
+    entirely -- the ledger gate is checked BEFORE the diff is even queried
+    (``bare_merge.attribute_bare_merge``), so this must not attribute
+    either."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"9-9-unrelated": "done"})  # no 34-3 row at all
+    _commit_touching(
+        target,
+        "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "marshal",
+        "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "34-3-factory-drain"
+
+
 # --- Route 3: hand-landed, named in a commit subject on main ---------------
 
 
-def test_hand_landed_commit_subject_on_main_suppresses_the_false_green(
+def test_bare_story_subject_on_main_no_longer_suppresses_the_false_green(
     tmp_path: Path,
 ) -> None:
-    """Route 3: a commit SUBJECT reachable from ``main`` naming both the slug
-    and ``Story <epic>.<seq>``. This is the most intricate rule in the port
-    and the one with no coverage before now."""
+    """Story 50.4/FR-191 CAP-247: a bare ``Story <epic>.<seq>: …`` commit
+    subject carries no station token, so on its own (no branch, no
+    co-occurring station name) Route 3 can no longer treat it as this
+    station's landing evidence -- exactly the shape that let one station's
+    bare direct commit poison a same-numbered key on another station's
+    ledger (the steward ``Story 48.2:``/``Story 48.4:`` incident that
+    poisoned marshal's own 48.2/48.4). A real hand-landed commit still
+    suppresses via Route 4's loose station+key co-occurrence (see the
+    ``test_loose_co_occurrence_*`` tests below) once the station name is
+    part of the subject."""
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
@@ -348,14 +795,16 @@ def test_hand_landed_commit_subject_on_main_suppresses_the_false_green(
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
 
     findings = marshal.gather_story_status(target, loop_root=loop_root)
 
     assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].status is DoctorStatus.FAIL
 
 
 def test_route3_requires_matching_story_ref_not_a_neighbour(tmp_path: Path) -> None:
@@ -368,7 +817,9 @@ def test_route3_requires_matching_story_ref_not_a_neighbour(tmp_path: Path) -> N
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -392,7 +843,9 @@ def test_non_repository_target_warns_instead_of_accusing(tmp_path: Path) -> None
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -478,6 +931,26 @@ def test_non_dict_tasks_payload_is_skipped(tmp_path: Path) -> None:
 # --- Most-advanced run record selection ------------------------------------
 
 
+def test_harness_tasks_prefers_published_plane_over_loop_home(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "warden",
+        "run1",
+        {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    def _published(_slug: str) -> dict[str, dict]:
+        return {"1-1-foo": {"phase": "done", "commit_sha": "from-plane"}}
+
+    monkeypatch.setattr(marshal, "_published_story_tasks", _published)
+    tasks = marshal._harness_tasks(loop_root, "warden")
+    assert tasks["1-1-foo"]["commit_sha"] == "from-plane"
+
+
 def test_later_run_with_a_commit_sha_wins_over_an_earlier_deferral(
     tmp_path: Path,
 ) -> None:
@@ -491,17 +964,19 @@ def test_later_run_with_a_commit_sha_wins_over_an_earlier_deferral(
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
     _write_state(
-        loop_root, "warden", "run2",
+        loop_root,
+        "warden",
+        "run2",
         {"1-1-foo": {"phase": "done", "commit_sha": "abc123"}},
     )
 
-    assert marshal._harness_tasks(loop_root, "warden")["1-1-foo"]["commit_sha"] == (
-        "abc123"
-    )
+    assert marshal._harness_tasks(loop_root, "warden")["1-1-foo"]["commit_sha"] == ("abc123")
 
     findings = marshal.gather_story_status(target, loop_root=loop_root)
     assert len(findings) == 1
@@ -515,17 +990,19 @@ def test_earlier_run_with_a_commit_sha_is_not_overwritten_by_a_later_deferral(
     read -- glob order must not decide the verdict."""
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "done", "commit_sha": "abc123"}},
     )
     _write_state(
-        loop_root, "warden", "run2",
+        loop_root,
+        "warden",
+        "run2",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
 
-    assert marshal._harness_tasks(loop_root, "warden")["1-1-foo"]["commit_sha"] == (
-        "abc123"
-    )
+    assert marshal._harness_tasks(loop_root, "warden")["1-1-foo"]["commit_sha"] == ("abc123")
 
 
 # --- The green verdict must not vouch for what it never checked ------------
@@ -546,7 +1023,9 @@ def test_ok_message_does_not_claim_evidence_for_unchecked_stories(
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "done", "commit_sha": "abc123"}},
     )  # 2-2-bar deliberately has no run record
 
@@ -595,15 +1074,15 @@ def test_a_fully_evidenced_audit_reports_no_caveats(tmp_path: Path) -> None:
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "done", "commit_sha": "abc123"}},
     )
 
     findings = marshal.gather_story_status(target, loop_root=loop_root)
 
-    assert findings[0].message == (
-        "no `done` story contradicts its landing evidence (1 audited)"
-    )
+    assert findings[0].message == ("no `done` story contradicts its landing evidence (1 audited)")
     # Evidence shape is pinned by the spec's I/O matrix -- unchanged.
     assert findings[0].evidence == {"audited": 1}
 
@@ -621,23 +1100,32 @@ def test_a_missing_main_branch_does_not_convict_a_hand_landed_story(
     harness verdict and was accused of being a false green.
 
     The repo-level ``rev-parse --git-dir`` probe does not cover this: the repo
-    is perfectly valid, it just has no ``main``."""
+    is perfectly valid, it just has no ``main``.
+
+    The commit subject names the station (Story 50.4/FR-191 CAP-247: a bare
+    ``Story <epic>.<seq>:`` subject alone no longer suppresses via Route 3 --
+    see ``test_bare_story_subject_on_main_no_longer_suppresses_the_false_green``
+    -- so the control assertion below relies on Route 4's loose station+key
+    co-occurrence, which reads ``git log --all`` and is unaffected by the
+    later ``main`` rename; the ``main_commits_unavailable`` short-circuit
+    still skips straight to "could not be queried" before Route 4 ever runs,
+    which is exactly the behaviour this test exists to pin)."""
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
     _write_feed(target, "warden", ["1-1-foo"])
-    _commit(target, "Story 1.1 - foo, landed by hand")
+    _commit(target, "warden: Story 1.1 - foo, landed by hand")
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
 
     # Control: with `main` present, Route 3 finds the subject and stays quiet.
-    assert marshal.gather_story_status(
-        target, loop_root=loop_root
-    )[0].status is DoctorStatus.OK
+    assert marshal.gather_story_status(target, loop_root=loop_root)[0].status is DoctorStatus.OK
 
     _git(target, "branch", "-m", "main", "pr-branch")
 
@@ -645,6 +1133,56 @@ def test_a_missing_main_branch_does_not_convict_a_hand_landed_story(
 
     assert [f.status for f in findings] == [DoctorStatus.OK]
     assert "1 whose git landing evidence could not be queried" in findings[0].message
+
+
+def test_route3_reads_the_branch_main_never_a_tag_named_main(tmp_path: Path) -> None:
+    """Story 31.1 (CAP-85): Route 3 reads ``refs/heads/main``. With the branch renamed away and a
+    tag ``main`` left on the fixture's first commit, the short name read the TAG's history as
+    though it were the branch -- "queried main, nothing there" -- and fell through to Route 4,
+    vouching for the story on evidence never seen on ``main``. The full refname knows ``main``
+    is gone and says so."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    first = _git(target, "rev-parse", "HEAD").strip()
+    _write_feed(target, "warden", ["1-1-foo"])
+    _commit(target, "warden: Story 1.1 - foo, landed by hand")
+    loop_root = tmp_path / "loop_root"
+    _write_state(loop_root, "warden", "run1", {"1-1-foo": {"phase": "deferred", "commit_sha": None}})
+    _git(target, "branch", "-m", "main", "pr-branch")
+    _git(target, "tag", "main", first)
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+    assert "1 whose git landing evidence could not be queried" in findings[0].message
+
+
+def test_route3_asks_git_for_refs_heads_main(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 31.1 review 1: with a tag ``main`` merely OLDER than the branch, Route 4 over
+    ``--all`` vouches either way, so the verdict cannot show which ref Route 3 read -- the argv
+    does."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _git(target, "tag", "main", "HEAD")
+    _write_feed(target, "warden", ["1-1-foo"])
+    _commit(target, "warden: Story 1.1 - foo, landed by hand")
+    loop_root = tmp_path / "loop_root"
+    _write_state(loop_root, "warden", "run1", {"1-1-foo": {"phase": "deferred", "commit_sha": None}})
+    calls: list[tuple[str, ...]] = []
+    real_git = marshal._git
+
+    def recording_git(repo: Path, *args: str, timeout: float | None = None) -> str | None:
+        calls.append(args)
+        return real_git(repo, *args, timeout=timeout)
+
+    monkeypatch.setattr(marshal, "_git", recording_git)
+
+    marshal.gather_story_status(target, loop_root=loop_root)
+
+    main_reads = [args for args in calls if args[:1] == ("log",) and "--all" not in args]
+    assert main_reads == [("log", "--format=%H%x00%s", "refs/heads/main")]
 
 
 def test_a_story_with_a_record_but_no_evidence_is_not_vouched_for(
@@ -662,16 +1200,16 @@ def test_a_story_with_a_record_but_no_evidence_is_not_vouched_for(
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "warden", "run1",
+        loop_root,
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "review-running", "commit_sha": None}},
     )
 
     findings = marshal.gather_story_status(target, loop_root=loop_root)
 
     assert [f.status for f in findings] == [DoctorStatus.OK]
-    assert (
-        "1 with no landing evidence and no harness verdict" in findings[0].message
-    )
+    assert "1 with no landing evidence and no harness verdict" in findings[0].message
 
 
 # --- Malformed harness state, revisited ------------------------------------
@@ -693,7 +1231,9 @@ def test_a_non_scalar_phase_value_does_not_crash_the_gather(
     loop_root = tmp_path / "loop_root"
     for phase in (["deferred"], {"was": "deferred"}, 7):
         _write_state(
-            loop_root, "warden", "run1",
+            loop_root,
+            "warden",
+            "run1",
             {"1-1-foo": {"phase": phase, "commit_sha": None}},
         )
 
@@ -744,15 +1284,15 @@ def test_malformed_records_for_unaudited_keys_do_not_inflate_the_caveat(
     for i in (1, 2, 3):
         _write_state(loop_root, "warden", f"r{i}", {f"9-{i}-not-in-any-feed": "bad"})
     _write_state(
-        loop_root, "warden", "r9",
+        loop_root,
+        "warden",
+        "r9",
         {"1-1-foo": {"phase": "done", "commit_sha": "abc123"}},
     )
 
     findings = marshal.gather_story_status(target, loop_root=loop_root)
 
-    assert findings[0].message == (
-        "no `done` story contradicts its landing evidence (1 audited)"
-    )
+    assert findings[0].message == ("no `done` story contradicts its landing evidence (1 audited)")
 
 
 def test_a_superseded_malformed_record_is_not_counted(tmp_path: Path) -> None:
@@ -767,15 +1307,15 @@ def test_a_superseded_malformed_record_is_not_counted(tmp_path: Path) -> None:
     loop_root = tmp_path / "loop_root"
     _write_state(loop_root, "warden", "run1", {"1-1-foo": "malformed"})
     _write_state(
-        loop_root, "warden", "run2",
+        loop_root,
+        "warden",
+        "run2",
         {"1-1-foo": {"phase": "done", "commit_sha": "abc123"}},
     )
 
     findings = marshal.gather_story_status(target, loop_root=loop_root)
 
-    assert findings[0].message == (
-        "no `done` story contradicts its landing evidence (1 audited)"
-    )
+    assert findings[0].message == ("no `done` story contradicts its landing evidence (1 audited)")
 
 
 def test_an_unreadable_feed_is_named_rather_than_silently_dropped(
@@ -792,10 +1332,7 @@ def test_an_unreadable_feed_is_named_rather_than_silently_dropped(
     _write_feed(target, "warden", ["1-1-foo"])
     _write_feed(target, "atlas", ["2-1-bar"])
 
-    broken = (
-        target / "_bmad-output" / "projects" / "pyforge-warden"
-        / "implementation-artifacts" / "sprint-status.yaml"
-    )
+    broken = target / "_bmad-output" / "projects" / "pyforge-warden" / "implementation-artifacts" / "sprint-status.yaml"
     broken.write_bytes(b"development_status:\n  1-1-f\xe9o: done\n")
 
     findings = marshal.gather_story_status(target, loop_root=tmp_path / "loop_root")
@@ -811,12 +1348,19 @@ def test_an_unreadable_feed_is_named_rather_than_silently_dropped(
 @pytest.mark.parametrize(
     ("slug", "key", "subject", "commit_sha"),
     [
-        (
-            "marshal",
-            "8-2-region-parser",
-            "Story 8.2: region parser -- span discovery, nesting rejection, fence awareness",
-            "accc097e6a",
-        ),
+        # marshal 8-2's real historical commit ("Story 8.2: region parser
+        # ...", sha accc097e6a) is intentionally NOT parametrized here.
+        # Story 50.4/FR-191 CAP-247 requires branch corroboration for a bare
+        # ``Story <epic>.<seq>:`` subject (see
+        # ``test_hand_landed_commit_subject_on_main_suppresses_the_false_
+        # green``), so this case only ever passed via the SHA allowlist --
+        # but ``_git(target, "commit", ...)`` cannot fabricate a commit with
+        # that exact real SHA, so this repo-level fixture never actually
+        # exercised the allowlist path. The allowlist match itself is
+        # covered directly (no synthetic git repo needed) by
+        # ``landing_evidence.conformance_fixtures()``'s
+        # ``allowlist_accc097e6a`` row, shared with
+        # ``test_landing_evidence_conformance.py``.
         (
             "marshal",
             "10-1-copier-engine",
@@ -888,7 +1432,9 @@ def test_land_branch_wrapped_in_a_github_pr_subject_suppresses_the_false_green(
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "doctor", "run1",
+        loop_root,
+        "doctor",
+        "run1",
         {"6-9-the-scripts-shims-retire": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -912,7 +1458,9 @@ def test_bmadloop_branch_wrapped_in_a_github_pr_subject_suppresses_the_false_gre
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "marshal", "run1",
+        loop_root,
+        "marshal",
+        "run1",
         {"8-2-region-parser": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -939,7 +1487,9 @@ def test_an_unrelated_pr_branch_does_not_suppress(tmp_path: Path) -> None:
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "doctor", "run1",
+        loop_root,
+        "doctor",
+        "run1",
         {"11-1-due-for-verification": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -967,7 +1517,9 @@ def test_loose_co_occurrence_suppresses_a_hand_authored_landing_commit(
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "doctor", "run1",
+        loop_root,
+        "doctor",
+        "run1",
         {"11-1-due-for-verification": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -978,7 +1530,7 @@ def test_loose_co_occurrence_suppresses_a_hand_authored_landing_commit(
 
 
 def test_loose_co_occurrence_does_not_confuse_a_longer_key(tmp_path: Path) -> None:
-    """"11.10" must not satisfy key "11-1" -- the digit-boundary guard."""
+    """ "11.10" must not satisfy key "11-1" -- the digit-boundary guard."""
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
@@ -987,7 +1539,9 @@ def test_loose_co_occurrence_does_not_confuse_a_longer_key(tmp_path: Path) -> No
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "doctor", "run1",
+        loop_root,
+        "doctor",
+        "run1",
         {"11-1-due-for-verification": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -1009,7 +1563,9 @@ def test_loose_co_occurrence_requires_the_station_too(tmp_path: Path) -> None:
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "doctor", "run1",
+        loop_root,
+        "doctor",
+        "run1",
         {"11-1-due-for-verification": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -1034,7 +1590,9 @@ def test_loose_co_occurrence_does_not_confuse_an_unsuffixed_key_with_a_suffixed_
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "doctor", "run1",
+        loop_root,
+        "doctor",
+        "run1",
         {"11-1a-suffixed-sibling": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -1058,7 +1616,9 @@ def test_loose_co_occurrence_does_not_confuse_a_suffixed_key_with_the_bare_one(
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "doctor", "run1",
+        loop_root,
+        "doctor",
+        "run1",
         {"11-1-bare-story": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -1079,7 +1639,9 @@ def test_loose_co_occurrence_matches_the_exact_suffixed_key(tmp_path: Path) -> N
 
     loop_root = tmp_path / "loop_root"
     _write_state(
-        loop_root, "doctor", "run1",
+        loop_root,
+        "doctor",
+        "run1",
         {"11-1a-suffixed-story": {"phase": "deferred", "commit_sha": None}},
     )
 
@@ -1092,9 +1654,7 @@ def test_loose_co_occurrence_matches_the_exact_suffixed_key(tmp_path: Path) -> N
 # --- The documented loop_root default --------------------------------------
 
 
-def test_loop_root_defaults_to_the_bmad_loops_dir_under_home(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_loop_root_defaults_to_the_bmad_loops_dir_under_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Every other test here passes ``loop_root`` explicitly, so the documented
     default (``Path.home() / ".bmad-loops"``, matching the source script's own
     hardcoded ``LOOP_ROOT``) had no coverage at all -- ``".bmad-loop"`` for
@@ -1106,7 +1666,9 @@ def test_loop_root_defaults_to_the_bmad_loops_dir_under_home(
 
     home = tmp_path / "home"
     _write_state(
-        home / ".bmad-loops", "warden", "run1",
+        home / ".bmad-loops",
+        "warden",
+        "run1",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
@@ -1117,9 +1679,7 @@ def test_loop_root_defaults_to_the_bmad_loops_dir_under_home(
     assert findings[0].evidence["key"] == "1-1-foo"
 
 
-def test_an_unresolvable_home_degrades_instead_of_raising(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_an_unresolvable_home_degrades_instead_of_raising(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """``Path.home()`` RAISES ``RuntimeError`` when ``HOME`` is unset and the
     uid has no passwd entry -- the ordinary rootless-container shape. It
     escaped before any Finding could be built, including for the no-feeds case

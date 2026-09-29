@@ -16,6 +16,7 @@ import textwrap
 from pathlib import Path
 
 import pytest
+
 from pyforge.warden import sources as sources_module
 from pyforge.warden.models import Ecosystem
 from pyforge.warden.sources import (
@@ -97,9 +98,7 @@ def test_package_identity_is_frozen():
 
 def test_source_evidence_is_frozen():
     identity = resolve_identity(Ecosystem.PYPI, "requests", "2.31.0")
-    evidence = SourceEvidence(
-        identity=identity, source_name="test", locator="loc", raw_name="requests"
-    )
+    evidence = SourceEvidence(identity=identity, source_name="test", locator="loc", raw_name="requests")
     with pytest.raises(dataclasses.FrozenInstanceError):
         evidence.raw_name = "other"  # type: ignore[misc]
 
@@ -250,8 +249,7 @@ def test_cyclonedx_adapter_versionless_purl_resolves_to_none_version(tmp_path):
 
 def test_manifest_adapter_happy_path_every_evidence_field(tmp_path):
     (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "demo"\nversion = "0.1.0"\n'
-        'dependencies = ["Requests==2.31.0"]\n',
+        '[project]\nname = "demo"\nversion = "0.1.0"\ndependencies = ["Requests==2.31.0"]\n',
         encoding="utf-8",
     )
 
@@ -276,9 +274,7 @@ def test_manifest_adapter_skips_malformed_manifest_keeps_valid_one(tmp_path):
     )
     bad_dir = tmp_path / "bad"
     bad_dir.mkdir()
-    (bad_dir / "pyproject.toml").write_text(
-        "[project\ndependencies = [", encoding="utf-8"
-    )
+    (bad_dir / "pyproject.toml").write_text("[project\ndependencies = [", encoding="utf-8")
 
     evidence = ManifestSourceAdapter(tmp_path).ingest()
 
@@ -377,9 +373,7 @@ def test_ac1_heterogeneous_sources_yield_evidence_through_identical_interface(
 
 
 def _snapshot(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        sources_module, "_SOURCE_FACTORIES", [*sources_module._SOURCE_FACTORIES]
-    )
+    monkeypatch.setattr(sources_module, "_SOURCE_FACTORIES", [*sources_module._SOURCE_FACTORIES])
 
 
 class _StubSource:
@@ -489,8 +483,7 @@ def test_registry_has_no_adapter_specific_branching():
     """AC3, structurally verified: the registry has no adapter-specific
     branching."""
     registry_source = "".join(
-        inspect.getsource(func)
-        for func in (register_source, source_factories, registered_sources)
+        inspect.getsource(func) for func in (register_source, source_factories, registered_sources)
     )
     assert "CycloneDXSourceAdapter" not in registry_source
     assert "ManifestSourceAdapter" not in registry_source

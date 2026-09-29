@@ -9,12 +9,14 @@ from pyforge.marshal.core.identity import StoryKey, render_merge_subject
 from pyforge.marshal.core.promotion import (
     SpecCandidate,
     classify_promotion_candidates,
+    corroborated_merged_story_keys,
     count_conforming_subjects,
     extract_story_key_from_bmadloop_merge_subject,
     extract_story_key_from_github_merge_subject,
     is_valid_spec_text,
     marshal_native_merged_keys,
     merged_story_keys,
+    read_spec_status,
 )
 
 _TEMPLATE = "Merge {key} into main"
@@ -33,8 +35,7 @@ _REAL_SUBJECT_3_8 = "Merge pull request #266 from rxm7706/marshal/3-8-stage-boun
 _REAL_SUBJECT_AMBIGUOUS = "Merge pull request #265 from rxm7706/marshal/refresh-dashboard-3-7"
 _REAL_SUBJECT_NON_STORY_1 = "Merge pull request #268 from rxm7706/marshal/epic-3-retro"
 _REAL_SUBJECT_NON_STORY_2 = (
-    "Merge bmad-loop/20260803-023308-65b7/3-7-escalation-deferral-and-resume "
-    "into loop/pyforge-marshal (bmad-loop)"
+    "Merge bmad-loop/20260803-023308-65b7/3-7-escalation-deferral-and-resume into loop/pyforge-marshal (bmad-loop)"
 )
 _REAL_SUBJECT_NOT_A_MERGE_1 = "fastmcp-v4"
 _REAL_SUBJECT_NOT_A_MERGE_2 = 'pixi update requires-pixi = ">=0.75.0"'
@@ -45,9 +46,7 @@ _REAL_SUBJECT_NOT_A_MERGE_2 = 'pixi update requires-pixi = ">=0.75.0"'
 # "already landed". PR #441 is a routine dependency-bump branch with no
 # story association at all, previously mis-parsed as a bogus key by the
 # same unscoped classifier.
-_REAL_SUBJECT_MARSHAL_4_2 = (
-    "Merge pull request #274 from rxm7706/marshal/4-2-teardown-reachability-spec-recovery"
-)
+_REAL_SUBJECT_MARSHAL_4_2 = "Merge pull request #274 from rxm7706/marshal/4-2-teardown-reachability-spec-recovery"
 _REAL_SUBJECT_PIXI_BUMP = "Merge pull request #441 from rxm7706/2026-08-11-Pixi-v0.76.2"
 _MASON_PROJECT_SLUG = "pyforge-mason"
 
@@ -56,15 +55,11 @@ _MASON_PROJECT_SLUG = "pyforge-mason"
 
 
 def test_extracts_key_from_real_github_merge_subject_2_3():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_2_3, _PROJECT_SLUG) == StoryKey(
-        2, 3
-    )
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_2_3, _PROJECT_SLUG) == StoryKey(2, 3)
 
 
 def test_extracts_key_from_real_github_merge_subject_3_8():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_3_8, _PROJECT_SLUG) == StoryKey(
-        3, 8
-    )
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_3_8, _PROJECT_SLUG) == StoryKey(3, 8)
 
 
 def test_ambiguous_real_subject_with_non_leading_digits_is_rejected():
@@ -73,9 +68,7 @@ def test_ambiguous_real_subject_with_non_leading_digits_is_rejected():
     only at position 0, so this correctly returns None rather than
     extracting 3.7. This is the tricky case the spec's amendment calls
     out by name."""
-    assert (
-        extract_story_key_from_github_merge_subject(_REAL_SUBJECT_AMBIGUOUS, _PROJECT_SLUG) is None
-    )
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_AMBIGUOUS, _PROJECT_SLUG) is None
 
 
 def test_real_non_story_merge_subject_returns_none():
@@ -96,19 +89,14 @@ def test_github_pattern_rejects_a_different_projects_story_key_collision():
     Querying it under mason's own project_slug must return None, not
     StoryKey(4, 2) -- the exact false positive that made `marshal land
     pyforge-mason` report story 4.2 as already landed."""
-    assert (
-        extract_story_key_from_github_merge_subject(_REAL_SUBJECT_MARSHAL_4_2, _MASON_PROJECT_SLUG)
-        is None
-    )
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_MARSHAL_4_2, _MASON_PROJECT_SLUG) is None
 
 
 def test_github_pattern_still_recognizes_the_owning_projects_own_key():
     """The same subject, queried under its OWN project_slug, still
     resolves correctly -- the fix narrows false positives, it does not
     break real matches."""
-    assert extract_story_key_from_github_merge_subject(
-        _REAL_SUBJECT_MARSHAL_4_2, _PROJECT_SLUG
-    ) == StoryKey(4, 2)
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_MARSHAL_4_2, _PROJECT_SLUG) == StoryKey(4, 2)
 
 
 def test_github_pattern_rejects_an_empty_station_rather_than_matching_any_branch():
@@ -126,10 +114,7 @@ def test_github_pattern_rejects_an_unrelated_branch_for_any_project():
     """A routine dependency-bump branch with no story association at all
     (PR #441) must never resolve to a key for ANY project."""
     assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_PIXI_BUMP, _PROJECT_SLUG) is None
-    assert (
-        extract_story_key_from_github_merge_subject(_REAL_SUBJECT_PIXI_BUMP, _MASON_PROJECT_SLUG)
-        is None
-    )
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_PIXI_BUMP, _MASON_PROJECT_SLUG) is None
 
 
 # --- extract_story_key_from_bmadloop_merge_subject ---------------------------
@@ -145,8 +130,7 @@ def test_github_pattern_rejects_an_unrelated_branch_for_any_project():
 
 def test_extract_story_key_from_bmadloop_merge_subject_parses_a_real_one():
     subject = (
-        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
-        "into loop/pyforge-marshal (bmad-loop)"
+        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification into loop/pyforge-marshal (bmad-loop)"
     )
     assert extract_story_key_from_bmadloop_merge_subject(subject, _PROJECT_SLUG) == StoryKey(2, 4)
 
@@ -156,12 +140,9 @@ def test_extract_story_key_from_bmadloop_merge_subject_parses_a_different_projec
     bmad-loop merge shape (verified against pyforge-warden's own history) --
     as long as the CALLER passes the matching project_slug."""
     subject = (
-        "Merge bmad-loop/20260724-042801-7c01/6-7-epss-feed-the-min-epss-gate "
-        "into loop/pyforge-warden (bmad-loop)"
+        "Merge bmad-loop/20260724-042801-7c01/6-7-epss-feed-the-min-epss-gate into loop/pyforge-warden (bmad-loop)"
     )
-    assert extract_story_key_from_bmadloop_merge_subject(subject, "pyforge-warden") == StoryKey(
-        6, 7
-    )
+    assert extract_story_key_from_bmadloop_merge_subject(subject, "pyforge-warden") == StoryKey(6, 7)
 
 
 def test_extract_story_key_from_bmadloop_merge_subject_rejects_a_different_projects_merge():
@@ -170,8 +151,7 @@ def test_extract_story_key_from_bmadloop_merge_subject_rejects_a_different_proje
     must NOT be read as pyforge-marshal's Story 6.8 just because the key
     segment happens to parse -- the merge TARGET has to match too."""
     warden_subject = (
-        "Merge bmad-loop/20260724-055419-3c0e/6-8-baseline-grandfathering "
-        "into loop/pyforge-warden (bmad-loop)"
+        "Merge bmad-loop/20260724-055419-3c0e/6-8-baseline-grandfathering into loop/pyforge-warden (bmad-loop)"
     )
     assert extract_story_key_from_bmadloop_merge_subject(warden_subject, _PROJECT_SLUG) is None
 
@@ -181,10 +161,7 @@ def test_extract_story_key_from_bmadloop_merge_subject_returns_none_for_github_s
 
 
 def test_extract_story_key_from_bmadloop_merge_subject_returns_none_for_non_merge():
-    assert (
-        extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_1, _PROJECT_SLUG)
-        is None
-    )
+    assert extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_1, _PROJECT_SLUG) is None
 
 
 # --- merged_story_keys -------------------------------------------------------
@@ -192,9 +169,7 @@ def test_extract_story_key_from_bmadloop_merge_subject_returns_none_for_non_merg
 
 def test_merged_story_keys_parses_conforming_subjects():
     subjects = ("Merge 1.2 into main", "Merge 3.8 into main")
-    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
-        {StoryKey(1, 2), StoryKey(3, 8)}
-    )
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(1, 2), StoryKey(3, 8)})
 
 
 def test_merged_story_keys_skips_a_non_story_merge_subject():
@@ -203,7 +178,7 @@ def test_merged_story_keys_skips_a_non_story_merge_subject():
     is skipped, never a hard failure for the whole scan."""
     subjects = (
         "fastmcp-v4",
-        "pixi update requires-pixi = \">=0.75.0\"",
+        'pixi update requires-pixi = ">=0.75.0"',
         "Merge 2.3 into main",
     )
     assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(2, 3)})
@@ -228,20 +203,22 @@ def test_merged_story_keys_land_slug_branch_shape_recognized_for_owning_station(
     in GitHub PR merge subjects are recognized via
     ``classify_branch_name`` at the grammar boundary."""
     subject = "Merge pull request #516 from rxm7706/land/mason-4-4"
-    assert merged_story_keys((subject,), _TEMPLATE, _MASON_PROJECT_SLUG) == frozenset(
-        {StoryKey(4, 4)}
-    )
+    assert merged_story_keys((subject,), _TEMPLATE, _MASON_PROJECT_SLUG) == frozenset({StoryKey(4, 4)})
     assert merged_story_keys((subject,), _TEMPLATE, _PROJECT_SLUG) == frozenset()
 
 
 def test_merged_story_keys_recognizes_recovery_and_story_direct_subjects():
+    """Story 50.4/FR-191 CAP-247: ``merged_story_keys`` scans plain commit
+    subjects with no branch info available to corroborate -- the recovery
+    shape carries its own station token in the text and still classifies,
+    but the bare ``Story 8.2: ...`` direct-commit subject alone no longer
+    does (this is the exact shape steward's real ``Story 48.2:``/
+    ``Story 48.4:`` subjects used to poison marshal's own ledger with)."""
     subjects = (
         "recover marshal 10-1 (Copier engine wrapper — the single seam)",
         "Story 8.2: region parser -- span discovery, nesting rejection, fence awareness",
     )
-    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
-        {StoryKey(10, 1), StoryKey(8, 2)}
-    )
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(10, 1)})
 
 
 def test_branch_story_merge_confirmed_by_grammar_when_patch_id_alone_fails():
@@ -284,8 +261,7 @@ def test_merged_story_keys_recognizes_real_bmadloop_merge_subjects_too():
     shapes in the same `merged_story_keys` call, alongside a genuine
     non-story merge (an epic-retro PR) that matches neither."""
     bmadloop_subject = (
-        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
-        "into loop/pyforge-marshal (bmad-loop)"
+        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification into loop/pyforge-marshal (bmad-loop)"
     )
     subjects = (_REAL_SUBJECT_2_3, bmadloop_subject, _REAL_SUBJECT_NON_STORY_1)
     assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(2, 3), StoryKey(2, 4)})
@@ -309,12 +285,8 @@ def test_merged_story_keys_templated_form_unscoped_when_known_keys_omitted():
     ANY project_slug -- the exact cross-station collision this Story
     closes when the caller opts in."""
     subjects = ("Merge 22.5 into main",)
-    assert merged_story_keys(subjects, _TEMPLATE, "pyforge-doctor") == frozenset(
-        {StoryKey(22, 5)}
-    )
-    assert merged_story_keys(subjects, _TEMPLATE, _MASON_PROJECT_SLUG) == frozenset(
-        {StoryKey(22, 5)}
-    )
+    assert merged_story_keys(subjects, _TEMPLATE, "pyforge-doctor") == frozenset({StoryKey(22, 5)})
+    assert merged_story_keys(subjects, _TEMPLATE, _MASON_PROJECT_SLUG) == frozenset({StoryKey(22, 5)})
 
 
 def test_merged_story_keys_templated_form_filters_to_known_keys():
@@ -323,9 +295,9 @@ def test_merged_story_keys_templated_form_filters_to_known_keys():
     ledger provides, since the subject text cannot."""
     subjects = ("Merge 22.5 into main", "Merge 22.11 into main")
     doctors_own_keys = frozenset({StoryKey(22, 1), StoryKey(22, 5), StoryKey(22, 6)})
-    assert merged_story_keys(
-        subjects, _TEMPLATE, "pyforge-doctor", known_keys=doctors_own_keys
-    ) == frozenset({StoryKey(22, 5)})
+    assert merged_story_keys(subjects, _TEMPLATE, "pyforge-doctor", known_keys=doctors_own_keys) == frozenset(
+        {StoryKey(22, 5)}
+    )
 
 
 def test_merged_story_keys_templated_form_known_keys_empty_set_excludes_everything():
@@ -333,9 +305,7 @@ def test_merged_story_keys_templated_form_known_keys_empty_set_excludes_everythi
     ledger that failed to load) trusts nothing from the templated shape --
     fails closed, not open."""
     subjects = ("Merge 1.1 into main",)
-    assert merged_story_keys(
-        subjects, _TEMPLATE, _PROJECT_SLUG, known_keys=frozenset()
-    ) == frozenset()
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG, known_keys=frozenset()) == frozenset()
 
 
 def test_merged_story_keys_known_keys_does_not_affect_already_scoped_shapes():
@@ -344,9 +314,173 @@ def test_merged_story_keys_known_keys_does_not_affect_already_scoped_shapes():
     real `project_slug` scoping and must be unaffected by an unrelated
     (even empty) `known_keys`."""
     subjects = (_REAL_SUBJECT_2_3, _REAL_SUBJECT_3_8)
-    assert merged_story_keys(
-        subjects, _TEMPLATE, _PROJECT_SLUG, known_keys=frozenset()
-    ) == frozenset({StoryKey(2, 3), StoryKey(3, 8)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG, known_keys=frozenset()) == frozenset(
+        {StoryKey(2, 3), StoryKey(3, 8)}
+    )
+
+
+# --- Story 50.4/FR-191 CAP-247: the station-scoped `{slug}` template and
+# branch-corroborated story-direct commits -------------------------------------
+
+# Real subjects pulled verbatim from `git log origin/main --format='%s'`
+# (2026-09-18) -- the exact 2026-09-18 fixture this story's spec names.
+_SLUG_SCOPED_TEMPLATE = "Merge {slug}/{key} into main"
+
+_ATLAS_23_SUBJECTS = tuple(f"Merge 23-{n} into main" for n in range(1, 10))
+_HERALD_23_SUBJECTS = (
+    "Merge pyforge-herald/23-1 into main",
+    "Merge pyforge-herald/23-2 into main",
+    "Merge pyforge-herald/23-5 into main",
+    "Merge pyforge-herald/23-6 into main",
+)
+_STEWARD_DIRECT_SUBJECT_48_2 = "Story 48.2: R-18 platform chart sizing rewrite."
+_STEWARD_DIRECT_SUBJECT_48_4 = "Story 48.4: R-20 secrets profile for platform deploy."
+
+
+def test_merged_story_keys_slug_scoped_template_never_inherits_a_foreign_stations_landings():
+    """The motivating 2026-09-18 incident: atlas's seven unscoped `Merge
+    23-N into main` commits must NOT read as herald's own 23.1/23.2/23.5/
+    23.6 once herald renders/parses under the new `{slug}`-scoped default
+    template -- a foreign-station subject carries no `pyforge-herald/`
+    prefix at all and simply fails to match."""
+    assert merged_story_keys(_ATLAS_23_SUBJECTS, _SLUG_SCOPED_TEMPLATE, "pyforge-herald") == frozenset()
+
+
+def test_merged_story_keys_slug_scoped_template_still_recognizes_its_own_stations_landings():
+    """The fix narrows false positives, it does not break real matches --
+    herald's OWN rendered subjects still classify under its own slug."""
+    assert merged_story_keys(_HERALD_23_SUBJECTS, _SLUG_SCOPED_TEMPLATE, "pyforge-herald") == frozenset(
+        {StoryKey(23, 1), StoryKey(23, 2), StoryKey(23, 5), StoryKey(23, 6)}
+    )
+
+
+def test_merged_story_keys_story_direct_commit_no_longer_poisons_a_foreign_stations_same_numbered_key():
+    """The other 2026-09-18 incident: steward's real `Story 48.2:`/`Story
+    48.4:` direct-commit subjects must NOT poison marshal's own 48.2/48.4 --
+    `merged_story_keys` never has branch data (a subject-only
+    `git log --format=%s` scan), so the story-direct shape now refuses by
+    default rather than matching unscoped."""
+    subjects = (_STEWARD_DIRECT_SUBJECT_48_2, _STEWARD_DIRECT_SUBJECT_48_4)
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset()
+
+
+# --- corroborated_merged_story_keys (Story 51.7/CAP-255) ----------------------
+#
+# The 2026-09-18 `doctor/27-4-mint` incident: PR #1477 merged a MINT branch
+# (spec-27-4 at `status: ready`), not a landing, and `merged_story_keys` read
+# 27.4 as already-landed anyway. `corroborated_merged_story_keys` requires a
+# `status: done` tracked spec before trusting a GITHUB_PR_MERGE_SUBJECT match
+# reached through a bare station branch -- every other shape is trusted
+# exactly as `merged_story_keys` already trusts it, with no `spec_status_for`
+# call at all.
+
+_REAL_SUBJECT_DOCTOR_27_4_MINT = "Merge pull request #1477 from rxm7706/doctor/27-4-mint"
+_DOCTOR_PROJECT_SLUG = "pyforge-doctor"
+
+
+def test_corroborated_merged_story_keys_excludes_a_mint_pr_whose_spec_is_not_done():
+    """The PR #1477 fixture itself: 27.4 is present in the unscoped
+    `merged_story_keys` but ABSENT from `corroborated_merged_story_keys`
+    while its tracked spec reads `status: ready` (a mint PR, not a
+    landing)."""
+    subjects = (_REAL_SUBJECT_DOCTOR_27_4_MINT,)
+    assert merged_story_keys(subjects, _TEMPLATE, _DOCTOR_PROJECT_SLUG) == frozenset({StoryKey(27, 4)})
+    assert (
+        corroborated_merged_story_keys(subjects, _TEMPLATE, _DOCTOR_PROJECT_SLUG, spec_status_for=lambda key: "ready")
+        == frozenset()
+    )
+
+
+def test_corroborated_merged_story_keys_includes_a_landing_whose_spec_is_done():
+    """The same shape, once the tracked spec has been promoted to `status:
+    done` (a real landing merges the promoted twin) -- now corroborated."""
+    subjects = (_REAL_SUBJECT_DOCTOR_27_4_MINT,)
+    assert corroborated_merged_story_keys(
+        subjects, _TEMPLATE, _DOCTOR_PROJECT_SLUG, spec_status_for=lambda key: "done"
+    ) == frozenset({StoryKey(27, 4)})
+
+
+def test_corroborated_merged_story_keys_excludes_on_an_unreadable_spec():
+    """A git-read failure (unreadable ref, missing path, malformed
+    frontmatter) reports `None` and must fail closed -- never corroborate."""
+    subjects = (_REAL_SUBJECT_DOCTOR_27_4_MINT,)
+    assert (
+        corroborated_merged_story_keys(subjects, _TEMPLATE, _DOCTOR_PROJECT_SLUG, spec_status_for=lambda key: None)
+        == frozenset()
+    )
+
+
+def test_corroborated_merged_story_keys_never_calls_spec_status_for_a_dispatch_branch():
+    """Story 22.9's own `dispatch/<slug>/<key>` branch is an intent signal
+    marshal mints only when it dispatched THIS key -- trusted exactly as
+    `merged_story_keys` already trusts it, with no spec read at all."""
+    subject = "Merge pull request #900 from rxm7706/dispatch/pyforge-marshal/22.9"
+
+    def _boom(key):
+        raise AssertionError("spec_status_for must not be called for a dispatch branch")
+
+    assert corroborated_merged_story_keys((subject,), _TEMPLATE, _PROJECT_SLUG, spec_status_for=_boom) == frozenset(
+        {StoryKey(22, 9)}
+    )
+
+
+def test_corroborated_merged_story_keys_never_calls_spec_status_for_non_github_shapes():
+    """The templated, bmad-loop-native and recovery-commit shapes never
+    reach a station branch at all -- `spec_status_for` must not be called
+    for them either."""
+
+    def _boom(key):
+        raise AssertionError("spec_status_for must not be called")
+
+    subjects = (
+        "Merge 5.5 into main",
+        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification into loop/pyforge-marshal (bmad-loop)",
+        "recover marshal 10-1 (Copier engine wrapper — the single seam)",
+    )
+    assert corroborated_merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG, spec_status_for=_boom) == frozenset(
+        {StoryKey(5, 5), StoryKey(2, 4), StoryKey(10, 1)}
+    )
+
+
+def test_corroborated_merged_story_keys_land_branch_fallback_needs_no_corroboration():
+    """The `land/<station>-<epic>-<seq>` recovery-branch fallback embedded
+    in a GitHub PR merge subject only fires once the grammar's own
+    merge-subject shapes have all failed -- it is not the
+    `GITHUB_PR_MERGE_SUBJECT` shape at all, so it is trusted with no spec
+    read, exactly as `merged_story_keys` already trusts it."""
+    subject = "Merge pull request #500 from rxm7706/land/marshal-10-1-recovery"
+
+    def _boom(key):
+        raise AssertionError("spec_status_for must not be called for the land/ fallback")
+
+    assert corroborated_merged_story_keys((subject,), _TEMPLATE, _PROJECT_SLUG, spec_status_for=_boom) == frozenset(
+        {StoryKey(10, 1)}
+    )
+
+
+def test_corroborated_merged_story_keys_known_keys_parity_with_merged_story_keys():
+    """`known_keys` gates the templated shape identically to
+    `merged_story_keys` -- this function does not relax or replace that
+    pre-existing Story 35.1 corroboration."""
+    subjects = ("Merge 22.5 into main", "Merge 22.11 into main")
+    doctors_own_keys = frozenset({StoryKey(22, 5)})
+    assert corroborated_merged_story_keys(
+        subjects,
+        _TEMPLATE,
+        "pyforge-doctor",
+        spec_status_for=lambda key: "done",
+        known_keys=doctors_own_keys,
+    ) == frozenset({StoryKey(22, 5)})
+
+
+def test_corroborated_merged_story_keys_regression_parity_with_real_subjects():
+    """Regression guard (the spec's own "0 regressions" bar): every real,
+    already-landed subject `merged_story_keys`'s own suite covers still
+    classifies once its ambiguous match is corroborated `status: done`."""
+    subjects = (_REAL_SUBJECT_2_3, _REAL_SUBJECT_3_8, _REAL_SUBJECT_MARSHAL_4_2)
+    assert corroborated_merged_story_keys(
+        subjects, _TEMPLATE, _PROJECT_SLUG, spec_status_for=lambda key: "done"
+    ) == frozenset({StoryKey(2, 3), StoryKey(3, 8), StoryKey(4, 2)})
 
 
 # --- marshal_native_merged_keys (Story 5.9) -----------------------------------
@@ -356,21 +490,17 @@ def test_marshal_native_merged_keys_recognizes_the_templated_form():
     """The AD-24 templated form -- `deploy land-story`'s own rendered
     merge-subject signature -- is Marshal-driven and IS included."""
     subjects = ("Merge 5.5 into main",)
-    assert marshal_native_merged_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
-        {StoryKey(5, 5)}
-    )
+    assert marshal_native_merged_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(5, 5)})
 
 
 def test_marshal_native_merged_keys_recognizes_a_land_rendered_subject():
     """Story 5.10: `marshal land`'s full-merge path renders its subject via
-    the SAME `identity.render_merge_subject(key, template)` `deploy
+    the SAME `identity.render_merge_subject(key, template, slug)` `deploy
     land-story` already uses -- proving that rendered subject classifies as
     Marshal-native, not merely reading the code that claims it does."""
     key = StoryKey(5, 10)
-    rendered_subject = render_merge_subject(key, _TEMPLATE)
-    assert marshal_native_merged_keys(
-        (rendered_subject,), _TEMPLATE, _PROJECT_SLUG
-    ) == frozenset({key})
+    rendered_subject = render_merge_subject(key, _TEMPLATE, _PROJECT_SLUG)
+    assert marshal_native_merged_keys((rendered_subject,), _TEMPLATE, _PROJECT_SLUG) == frozenset({key})
 
 
 def test_marshal_native_merged_keys_recognizes_the_bmadloop_native_form():
@@ -378,12 +508,9 @@ def test_marshal_native_merged_keys_recognizes_the_bmadloop_native_form():
     (Story 5.9's own Design Notes: "Marshal already knows") and IS
     included."""
     bmadloop_subject = (
-        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
-        "into loop/pyforge-marshal (bmad-loop)"
+        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification into loop/pyforge-marshal (bmad-loop)"
     )
-    assert marshal_native_merged_keys(
-        (bmadloop_subject,), _TEMPLATE, _PROJECT_SLUG
-    ) == frozenset({StoryKey(2, 4)})
+    assert marshal_native_merged_keys((bmadloop_subject,), _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(2, 4)})
 
 
 def test_marshal_native_merged_keys_excludes_the_github_pr_form():
@@ -402,8 +529,7 @@ def test_marshal_native_merged_keys_is_a_strict_subset_of_merged_story_keys():
     three subject shapes in one call proves the narrowing, not merely the
     exclusion of one shape in isolation."""
     bmadloop_subject = (
-        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
-        "into loop/pyforge-marshal (bmad-loop)"
+        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification into loop/pyforge-marshal (bmad-loop)"
     )
     subjects = ("Merge 5.5 into main", bmadloop_subject, _REAL_SUBJECT_2_3)
 
@@ -421,12 +547,9 @@ def test_marshal_native_merged_keys_scopes_bmadloop_pattern_to_project_slug():
     project's bmad-loop merge must never be misread as this project's own
     key."""
     warden_subject = (
-        "Merge bmad-loop/20260724-055419-3c0e/6-8-baseline-grandfathering "
-        "into loop/pyforge-warden (bmad-loop)"
+        "Merge bmad-loop/20260724-055419-3c0e/6-8-baseline-grandfathering into loop/pyforge-warden (bmad-loop)"
     )
-    assert (
-        marshal_native_merged_keys((warden_subject,), _TEMPLATE, _PROJECT_SLUG) == frozenset()
-    )
+    assert marshal_native_merged_keys((warden_subject,), _TEMPLATE, _PROJECT_SLUG) == frozenset()
 
 
 def test_marshal_native_merged_keys_skips_non_merge_subjects():
@@ -446,16 +569,14 @@ def test_marshal_native_merged_keys_templated_form_filters_to_known_keys():
     stay exposed to the same cross-station collision."""
     subjects = ("Merge 22.5 into main", "Merge 22.11 into main")
     doctors_own_keys = frozenset({StoryKey(22, 5)})
-    assert marshal_native_merged_keys(
-        subjects, _TEMPLATE, "pyforge-doctor", known_keys=doctors_own_keys
-    ) == frozenset({StoryKey(22, 5)})
+    assert marshal_native_merged_keys(subjects, _TEMPLATE, "pyforge-doctor", known_keys=doctors_own_keys) == frozenset(
+        {StoryKey(22, 5)}
+    )
 
 
 def test_marshal_native_merged_keys_templated_form_unscoped_when_known_keys_omitted():
     subjects = ("Merge 22.11 into main",)
-    assert marshal_native_merged_keys(subjects, _TEMPLATE, "pyforge-doctor") == frozenset(
-        {StoryKey(22, 11)}
-    )
+    assert marshal_native_merged_keys(subjects, _TEMPLATE, "pyforge-doctor") == frozenset({StoryKey(22, 11)})
 
 
 # --- count_conforming_subjects ------------------------------------------------
@@ -521,9 +642,108 @@ def test_is_valid_spec_text_false_for_status_inside_a_comment():
 
 
 def test_is_valid_spec_text_true_for_status_key_regardless_of_line_position():
-    assert (
-        is_valid_spec_text("---\nstatus: 'draft'\ntitle: 'x'\n---\n\nbody\n") is True
-    )
+    assert is_valid_spec_text("---\nstatus: 'draft'\ntitle: 'x'\n---\n\nbody\n") is True
+
+
+# --- leading provenance banner (Story 50.5, CAP-248) --------------------------
+
+
+def test_is_valid_spec_text_true_for_banner_above_frontmatter():
+    """Herald's pre-#1460 `spec-1-4` shape: a single-line HTML-comment
+    banner sits above the `---` fence instead of below it."""
+    text = "<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_true_for_multiline_banner_above_frontmatter():
+    text = "<!--\nRECOVERED\nfrom a session transcript\n-->\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_true_for_banner_below_frontmatter_unaffected():
+    """The PR #1460 data-side fix's own shape (banner directly below the
+    closing fence) never starts with `<!--`, so it is untouched by the
+    banner-skip and must keep parsing exactly as before."""
+    text = "---\ntitle: 'x'\nstatus: 'shipped'\n---\n\n<!-- Promoted ... -->\n\nbody\n"
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_false_for_unclosed_banner():
+    """An unclosed `<!--` is not a banner this parser recognizes -- the
+    text still doesn't start with `---`, so it stays invalid."""
+    text = "<!-- never closed\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is False
+
+
+def test_is_valid_spec_text_true_for_blank_line_before_banner():
+    """Story 51.8 (DW-FU-50-6): a leading blank line before the banner's
+    opening marker must not fall through to "no frontmatter"."""
+    text = "\n<!-- Promoted ... -->\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_true_for_spaces_before_banner():
+    text = "  <!-- Promoted ... -->\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_true_for_bom_before_banner():
+    text = "\ufeff<!-- Promoted ... -->\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_false_for_no_frontmatter_still_invalid():
+    """A leading blank line/BOM tolerance must not widen into accepting a
+    spec with no frontmatter at all once the (non-existent) banner is
+    skipped."""
+    assert is_valid_spec_text("\nno frontmatter here\n") is False
+
+
+# --- read_spec_status (Story 51.7/CAP-255) -------------------------------------
+
+
+def test_read_spec_status_extracts_the_value():
+    assert read_spec_status(_VALID_SPEC) == "shipped"
+
+
+def test_read_spec_status_none_for_none():
+    assert read_spec_status(None) is None
+
+
+def test_read_spec_status_none_for_empty_string():
+    assert read_spec_status("") is None
+
+
+def test_read_spec_status_none_for_no_frontmatter():
+    assert read_spec_status("just some body text, no frontmatter at all\n") is None
+
+
+def test_read_spec_status_none_for_unterminated_frontmatter():
+    assert read_spec_status("---\nstatus: 'shipped'\nno closing fence\n") is None
+
+
+def test_read_spec_status_none_for_frontmatter_missing_status():
+    assert read_spec_status("---\ntitle: 'x'\n---\n\nbody\n") is None
+
+
+def test_read_spec_status_none_for_status_as_a_bare_substring_not_a_key():
+    assert read_spec_status("---\ntitle: 'x'\nsubstatus: 'draft'\n---\n\nbody\n") is None
+
+
+def test_read_spec_status_unquoted_value():
+    assert read_spec_status("---\ntitle: 'x'\nstatus: done\n---\n\nbody\n") == "done"
+
+
+def test_read_spec_status_double_quoted_value():
+    text = "---\ntitle: 'x'\nstatus: \"ready\"\n---\n\nbody\n"
+    assert read_spec_status(text) == "ready"
+
+
+def test_read_spec_status_tolerates_a_leading_banner():
+    """Story 50.5/CAP-248's banner tolerance, extended to `read_spec_status`
+    per Story 51.8/CAP-256."""
+    text = "<!-- Promoted from implementation-artifacts/ -->\n" + _VALID_SPEC
+    assert read_spec_status(text) == "shipped"
 
 
 # --- classify_promotion_candidates -------------------------------------------
@@ -605,9 +825,7 @@ def test_not_yet_merged_story_produces_nothing_in_either_bucket():
 
 
 def test_zero_candidates_and_zero_merged_keys_is_a_clean_empty_plan():
-    plan = classify_promotion_candidates(
-        candidates=(), merged_keys=frozenset(), already_promoted=frozenset()
-    )
+    plan = classify_promotion_candidates(candidates=(), merged_keys=frozenset(), already_promoted=frozenset())
     assert plan.to_promote == ()
     assert plan.gaps == ()
 
@@ -671,9 +889,7 @@ def test_missing_spec_keys_names_only_the_no_spec_at_all_case():
 
 
 def test_missing_spec_keys_defaults_to_empty_for_a_clean_plan():
-    plan = classify_promotion_candidates(
-        candidates=(), merged_keys=frozenset(), already_promoted=frozenset()
-    )
+    plan = classify_promotion_candidates(candidates=(), merged_keys=frozenset(), already_promoted=frozenset())
     assert plan.missing_spec_keys == frozenset()
     assert plan.invalid_spec_keys == frozenset()
 

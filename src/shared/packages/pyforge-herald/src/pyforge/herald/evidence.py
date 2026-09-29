@@ -96,9 +96,7 @@ class LinkValidation:
 
 
 def _make_client(timeout: float) -> httpx2.Client:
-    return httpx2.Client(
-        follow_redirects=True, max_redirects=MAX_REDIRECTS, timeout=timeout
-    )
+    return httpx2.Client(follow_redirects=True, max_redirects=MAX_REDIRECTS, timeout=timeout)
 
 
 def validate_link(
@@ -120,7 +118,7 @@ def validate_link(
     try:
         try:
             response = active.head(url)
-        except (httpx2.HTTPError, httpx2.InvalidURL):
+        except httpx2.HTTPError, httpx2.InvalidURL:
             return LinkValidation(
                 url=url,
                 is_valid=False,
@@ -162,9 +160,7 @@ def validate_for_publish(
     future story wires in."""
     result = validate_link(url, client=client, timeout=timeout)
     if not result.is_valid:
-        raise EvidenceLinkError(
-            f"Evidence link broken: {url}. Fix or remove before publishing."
-        )
+        raise EvidenceLinkError(f"Evidence link broken: {url}. Fix or remove before publishing.")
     return result
 
 
@@ -195,9 +191,7 @@ def schedule_async_validation(
             # real wall-clock moment -- so every entry in one run shares
             # one `last_validated_at`, and an injected `now` (tests, or a
             # deterministic scheduler) is honored end to end.
-            results.append(
-                replace(fresh, is_stale=was_stale, last_validated_at=current_time)
-            )
+            results.append(replace(fresh, is_stale=was_stale, last_validated_at=current_time))
         return results
     finally:
         if owns_client:

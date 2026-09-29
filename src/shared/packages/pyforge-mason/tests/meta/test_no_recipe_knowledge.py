@@ -170,9 +170,7 @@ CATEGORY_CHECK_CODE = "check-code-prefix"
 CATEGORY_V1_FIELD = "v1-field-name"
 CATEGORY_PIN_SHAPE = "pin-constraint-shape"
 
-_REQUIRED_CATEGORIES = frozenset(
-    {CATEGORY_GOTCHA, CATEGORY_CHECK_CODE, CATEGORY_V1_FIELD, CATEGORY_PIN_SHAPE}
-)
+_REQUIRED_CATEGORIES = frozenset({CATEGORY_GOTCHA, CATEGORY_CHECK_CODE, CATEGORY_V1_FIELD, CATEGORY_PIN_SHAPE})
 
 _IDENTIFIER_CAPABLE_CATEGORIES = frozenset({CATEGORY_GOTCHA, CATEGORY_V1_FIELD})
 """Categories whose pattern can also be expressed as a valid bare Python
@@ -238,9 +236,7 @@ _CHECK_CODE_ENTRY = DenyListEntry(
     # Case-insensitive (review pass): `"std-001"` names the same CFE check as
     # `"STD-001"` and scanned clean. Verified against the real tree first --
     # zero occurrences under either casing.
-    pattern=re.compile(
-        r"\b(?:" + "|".join(_CHECK_CODE_PREFIXES) + r")-\d{3}\b", re.IGNORECASE
-    ),
+    pattern=re.compile(r"\b(?:" + "|".join(_CHECK_CODE_PREFIXES) + r")-\d{3}\b", re.IGNORECASE),
     citation="SKILL.md Core Tools Reference table (optimize_recipe check codes) + reference/*.md",
     rationale=(
         "A check-code identifier (e.g. STD-001) names one of CFE's own policy checks; "
@@ -377,13 +373,11 @@ def _read_source(path: Path) -> str:
         # is a file it cannot prove clean -- a raw traceback is not an
         # actionable test failure (mirrors test_dependency_direction.py).
         raise AssertionError(
-            f"{path}: unreadable ({exc}); the AD-1 recipe-knowledge guard "
-            "cannot AST-scan this file"
+            f"{path}: unreadable ({exc}); the AD-1 recipe-knowledge guard cannot AST-scan this file"
         ) from exc
     except UnicodeDecodeError as exc:
         raise AssertionError(
-            f"{path}: not valid UTF-8; the AD-1 recipe-knowledge guard cannot "
-            "AST-scan this file"
+            f"{path}: not valid UTF-8; the AD-1 recipe-knowledge guard cannot AST-scan this file"
         ) from exc
 
 
@@ -392,8 +386,7 @@ def _parse_source(source: str, path: Path) -> ast.Module:
         return ast.parse(source, filename=str(path))
     except SyntaxError as exc:
         raise AssertionError(
-            f"{path}: invalid Python syntax; the AD-1 recipe-knowledge guard "
-            "cannot AST-scan this file"
+            f"{path}: invalid Python syntax; the AD-1 recipe-knowledge guard cannot AST-scan this file"
         ) from exc
 
 
@@ -587,9 +580,7 @@ def _collect_identifier_targets(tree: ast.Module) -> list[tuple[int, str]]:
     return list(dict.fromkeys(targets))
 
 
-def _scan_file_for_deny_list_matches(
-    path: Path, deny_list: Sequence[DenyListEntry]
-) -> list[Violation]:
+def _scan_file_for_deny_list_matches(path: Path, deny_list: Sequence[DenyListEntry]) -> list[Violation]:
     tree = _parse_source(_read_source(path), path)
     docstring_ids = _docstring_string_ids(tree)
     format_spec_ids = _format_spec_string_ids(tree)
@@ -633,9 +624,7 @@ def _scan_file_for_deny_list_matches(
     return violations
 
 
-def _scan_tree_for_deny_list_matches(
-    root: Path, deny_list: Sequence[DenyListEntry]
-) -> list[Violation]:
+def _scan_tree_for_deny_list_matches(root: Path, deny_list: Sequence[DenyListEntry]) -> list[Violation]:
     violations: list[Violation] = []
     for path in sorted(root.rglob("*.py")):
         violations.extend(_scan_file_for_deny_list_matches(path, deny_list))
@@ -655,9 +644,7 @@ def _find_incomplete_entries(
 
 def test_no_recipe_knowledge_in_the_real_tree():
     # Guard the guard: a stale PKG_ROOT would make this pass vacuously.
-    assert PKG_ROOT.is_dir(), (
-        f"AD-1 recipe-knowledge guard is scanning nothing -- package root moved? {PKG_ROOT}"
-    )
+    assert PKG_ROOT.is_dir(), f"AD-1 recipe-knowledge guard is scanning nothing -- package root moved? {PKG_ROOT}"
     # ...and a root that exists but holds no modules is the same vacuity with
     # a green result (review pass: the sibling AD-3 guard already fails loudly
     # when its own source -- cfe.py's table -- parses to nothing; this one had
@@ -670,14 +657,13 @@ def test_no_recipe_knowledge_in_the_real_tree():
     assert not violations, (
         "AD-1: pyforge.mason must contain zero recipe-authoring knowledge; found:\n"
         + "\n".join(
-            f"  {v.path}:{v.lineno} [{v.category}] entry {v.entry_name!r} matched "
-            f"{v.matched_text!r}"
+            f"  {v.path}:{v.lineno} [{v.category}] entry {v.entry_name!r} matched {v.matched_text!r}"
             for v in violations
         )
         + (
             f"\n\nIf a [{CATEGORY_PIN_SHAPE}] hit above is an ordinary numeric "
-            "message rather than a conda-forge pin (\"--timeout must be > 0\", "
-            "\"requires Python >=3.11\"), reword the message -- do not weaken the "
+            'message rather than a conda-forge pin ("--timeout must be > 0", '
+            '"requires Python >=3.11"), reword the message -- do not weaken the '
             "pattern; see this module's docstring for why that collision is "
             "expected and why the pattern stays broad."
         )
@@ -734,16 +720,11 @@ def test_every_required_v1_field_name_is_actually_detected(tmp_path, field_name)
     whole suite green."""
     root = tmp_path / "mason"
     root.mkdir()
-    (root / "sneaky.py").write_text(
-        f'SPEC = {{"{field_name}": ["foo"]}}\n', encoding="utf-8"
-    )
+    (root / "sneaky.py").write_text(f'SPEC = {{"{field_name}": ["foo"]}}\n', encoding="utf-8")
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
 
-    assert any(
-        v.category == CATEGORY_V1_FIELD and v.entry_name == field_name
-        for v in violations
-    )
+    assert any(v.category == CATEGORY_V1_FIELD and v.entry_name == field_name for v in violations)
 
 
 @pytest.mark.parametrize("prefix", sorted(_REQUIRED_CHECK_CODE_PREFIXES))
@@ -787,7 +768,8 @@ def test_detector_fires_on_a_planted_v1_field_name(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'SPEC = {"run_exports": ["foo"]}\n', encoding="utf-8",
+        'SPEC = {"run_exports": ["foo"]}\n',
+        encoding="utf-8",
     )
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
@@ -809,7 +791,8 @@ def test_clean_synthetic_module_produces_zero_matches(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "VALUE = 42\ndef helper(x):\n    return x + 1\n", encoding="utf-8",
+        "VALUE = 42\ndef helper(x):\n    return x + 1\n",
+        encoding="utf-8",
     )
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
@@ -880,7 +863,8 @@ def test_a_bare_string_not_preceded_by_an_assignment_is_still_flagged(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "leaky.py").write_text(
-        "print('unrelated')\n'G41'\n", encoding="utf-8",
+        "print('unrelated')\n'G41'\n",
+        encoding="utf-8",
     )
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
@@ -895,7 +879,8 @@ def test_detector_fires_on_a_planted_v1_field_as_a_function_parameter(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "def build(*, run_exports=None):\n    return run_exports\n", encoding="utf-8",
+        "def build(*, run_exports=None):\n    return run_exports\n",
+        encoding="utf-8",
     )
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
@@ -917,7 +902,8 @@ def test_detector_fires_on_a_planted_gotcha_as_a_function_parameter(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "def apply_fix(*, G41=False):\n    return G41\n", encoding="utf-8",
+        "def apply_fix(*, G41=False):\n    return G41\n",
+        encoding="utf-8",
     )
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
@@ -932,9 +918,7 @@ def test_detector_fires_on_a_planted_v1_field_as_an_attribute_target(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "class Spec:\n"
-        "    def __init__(self):\n"
-        "        self.run_exports = []\n",
+        "class Spec:\n    def __init__(self):\n        self.run_exports = []\n",
         encoding="utf-8",
     )
 
@@ -947,7 +931,8 @@ def test_detector_fires_on_a_planted_v1_field_as_a_function_name(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "def pin_subpackage(name):\n    return name\n", encoding="utf-8",
+        "def pin_subpackage(name):\n    return name\n",
+        encoding="utf-8",
     )
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
@@ -999,7 +984,8 @@ def test_detector_fires_on_a_v1_field_read_as_an_attribute(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "def summarize(spec):\n    return spec.run_exports\n", encoding="utf-8",
+        "def summarize(spec):\n    return spec.run_exports\n",
+        encoding="utf-8",
     )
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
@@ -1011,8 +997,7 @@ def test_detector_fires_on_a_v1_field_bound_by_an_import(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "from .helpers import run_exports\n"
-        "import helpers as pin_subpackage\n",
+        "from .helpers import run_exports\nimport helpers as pin_subpackage\n",
         encoding="utf-8",
     )
 
@@ -1094,10 +1079,7 @@ def test_format_spec_alignment_is_not_a_pin(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "render.py").write_text(
-        'ROW_TEMPLATE = "{:>6} {:<20}"\n'
-        "\n"
-        "\ndef row(name, count):\n"
-        '    return f"{name:<30}{count:>8}"\n',
+        'ROW_TEMPLATE = "{:>6} {:<20}"\n\n\ndef row(name, count):\n    return f"{name:<30}{count:>8}"\n',
         encoding="utf-8",
     )
 
@@ -1112,7 +1094,8 @@ def test_a_real_pin_inside_an_f_string_is_still_flagged(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'def msg(name):\n    return f"{name} >=1.0,<2.0"\n', encoding="utf-8",
+        'def msg(name):\n    return f"{name} >=1.0,<2.0"\n',
+        encoding="utf-8",
     )
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
@@ -1142,7 +1125,8 @@ def test_fat_arrow_before_a_number_is_not_a_pin(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "cli.py").write_text(
-        'HELP = "flag => MASON_TIMEOUT => 300"\n', encoding="utf-8",
+        'HELP = "flag => MASON_TIMEOUT => 300"\n',
+        encoding="utf-8",
     )
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
@@ -1157,7 +1141,8 @@ def test_detector_fires_on_an_uppercase_v1_field_name(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'RUN_EXPORTS = ("libfoo",)\nX = "IGNORE_RUN_EXPORTS"\n', encoding="utf-8",
+        'RUN_EXPORTS = ("libfoo",)\nX = "IGNORE_RUN_EXPORTS"\n',
+        encoding="utf-8",
     )
 
     violations = _scan_tree_for_deny_list_matches(root, _DENY_LIST)
@@ -1184,9 +1169,7 @@ def test_detector_fires_on_a_v1_field_bound_by_a_pep695_type_alias(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "type run_exports = list[str]\n"
-        "\n"
-        "\ndef build[pin_subpackage](x):\n    return x\n",
+        "type run_exports = list[str]\n\n\ndef build[pin_subpackage](x):\n    return x\n",
         encoding="utf-8",
     )
 
@@ -1202,7 +1185,7 @@ def test_detector_fires_on_a_v1_field_read_as_a_bare_name(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "from .helpers import *\n" "\n" "\ndef go():\n    return run_exports\n",
+        "from .helpers import *\n\n\ndef go():\n    return run_exports\n",
         encoding="utf-8",
     )
 

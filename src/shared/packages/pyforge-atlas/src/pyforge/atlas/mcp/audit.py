@@ -121,17 +121,9 @@ def registered_surface_tools() -> set[str]:
 def read_dataset_targets() -> set[str]:
     """The catalog dataset names referenced by ``read_dataset:`` verdicts."""
     prefix = "read_dataset:"
-    return {
-        verdict[len(prefix):]
-        for verdict in ATLAS_TOOL_AUDIT.values()
-        if verdict.startswith(prefix)
-    }
+    return {verdict[len(prefix) :] for verdict in ATLAS_TOOL_AUDIT.values() if verdict.startswith(prefix)}
 
 
 def deferred_tools() -> set[str]:
     """The legacy tools recorded as deferred-to-BSL(D1)."""
-    return {
-        tool
-        for tool, verdict in ATLAS_TOOL_AUDIT.items()
-        if verdict == "deferred-to-BSL(D1)"
-    }
+    return {tool for tool, verdict in ATLAS_TOOL_AUDIT.items() if verdict == "deferred-to-BSL(D1)"}

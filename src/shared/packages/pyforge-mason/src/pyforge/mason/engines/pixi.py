@@ -90,11 +90,13 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import probe_engine, require_engine
 from ..errors import (
-    EngineAbsentError, PackageBuildTimeoutError, PackageProjectPathError,
+    EngineAbsentError,
+    PackageBuildTimeoutError,
+    PackageProjectPathError,
     ShipChannelUploadTimeoutError,
 )
+from . import probe_engine, require_engine
 
 name = "pixi"
 """`EngineAdapter.name` -- an `engines/__init__.py::_KNOWN_ENGINES` key."""
@@ -324,7 +326,11 @@ a real file transfer)."""
 
 
 def search(
-    name: str, version: str, channel: str, *, timeout: float | None = None,
+    name: str,
+    version: str,
+    channel: str,
+    *,
+    timeout: float | None = None,
 ) -> bool | None:
     """Interrogate whether `name`==`version` is already present in `channel`
     (Story 3.7, FR-18, AD-10) via `pixi search --channel <channel>
@@ -374,7 +380,7 @@ def search(
             timeout=resolved_timeout,
             check=False,
         )
-    except (subprocess.TimeoutExpired, OSError):
+    except subprocess.TimeoutExpired, OSError:
         return None
 
     if completed.returncode == 0:

@@ -1,5 +1,5 @@
 {
- "recorded": "2026-09-08",
+ "recorded": "2026-09-14",
  "known": [
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md cites bare AD-11, which this project does not define -- qualify it (`<spine>:AD-11`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-34-1-read-only-live-attach.md cites bare AD-13, which this project does not define -- qualify it (`<spine>:AD-13`) or fix the id",

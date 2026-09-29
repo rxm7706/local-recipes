@@ -651,7 +651,8 @@ SAME mechanism to the missing-single-field case instead of special-casing it.
 
 ## Auto Run Result
 
-Status: blocked
+Status: done
+Reconciled 2026-09-20: the `blocked` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `72c86bd002 2026-08-15 steward: promote story 8.7 to done in the tracked ledger` — that promotion is the ruling this record now reflects.
 Blocking condition: intent gap in intent contract
 
 **What ran.** A follow-up review pass (pass 3) on the `done` spec, per `bmad-dev-auto` step-01's
@@ -704,3 +705,7 @@ passes — while assignee propagation does not function on any pre-existing pair
 data-loss paths are live. Landing it as-is would ship a feature that is inert in production and a
 regression risk to Jira assignee data. The four findings are contract-level, not code-level: a
 re-run of this same review against the same contract will reach the same halt.
+
+## Status reconcile 2026-09-20
+
+- Auto Run Result `Status: blocked` → `done` (see the reconcile line under it).

@@ -71,3 +71,80 @@ packages = ["src/pyforge"]
 # sit here; current hatchling rejects the duplicate ("A second file is being added
 # to the wheel archive at the same path"), which broke every pip install of this
 # package (pyforge-steward-fresh-clone / five-tier CI, 2026-09-04).
+
+# Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the lint gate `pixi run -e pyforge-guild ruff`
+# / `ruff-format` reads THIS block (run from inside the package). Line width is ruff format's job;
+# E501 is off because 290 legacy long strings/comments predate the gate -- format keeps code at 120.
+[tool.ruff]
+target-version = "py314"
+line-length = 120
+extend-exclude = ["*/migrations/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]   # re-exports
+"**/tests/**" = ["E402"]    # test modules that bootstrap sys.path before importing the package
+
+# Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the type gate `pixi run -e pyforge-guild mypy`
+# reads THIS block (run from inside the package). The [[tool.mypy.overrides]] entries below are the
+# 2026-09-20 baseline: every finding the gate met on its first run, disabled PER MODULE with exactly
+# the error codes that module trips -- never `ignore_errors` -- so the gate is live for every other
+# module and every other code. Tighten or drop an entry whenever its module is touched.
+[tool.mypy]
+python_version = "3.14"
+mypy_path = "src"
+explicit_package_bases = true   # `pyforge` is a namespace package (no src/pyforge/__init__.py)
+check_untyped_defs = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+# Sibling stations and bmad_loop ship no py.typed marker; their imports are checked as untyped, not refused.
+disable_error_code = ["import-untyped"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.catalog"
+disable_error_code = ["arg-type", "assignment", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.dashboard.audit"
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.dashboard.migrations.0001_initial"
+disable_error_code = ["var-annotated"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.dashboard.views_htmx"
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.deploy"
+disable_error_code = ["arg-type", "operator"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.provision"
+disable_error_code = ["arg-type", "index"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.sprint_ledger_query"
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.suite_advance"
+disable_error_code = ["unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.sync"
+disable_error_code = ["arg-type", "attr-defined", "index"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.upgrade"
+disable_error_code = ["assignment", "attr-defined", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = "pyforge.steward.workspace"
+disable_error_code = ["arg-type", "assignment"]

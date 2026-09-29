@@ -174,10 +174,7 @@ def test_story_does_not_add_pyforge_under_src_platform():
 def test_wave_b_portal_slice_is_owned_by_33_2():
     """33.1 must not own the portal slice; 33.2's suite gates django-steward."""
     root = _repo_root()
-    views = (
-        root
-        / "src/shared/packages/django-steward/src/django_steward_portal/views.py"
-    )
+    views = root / "src/shared/packages/django-steward/src/django_steward_portal/views.py"
     assert views.is_file()
     text = views.read_text(encoding="utf-8")
     assert "PortalClient" in text

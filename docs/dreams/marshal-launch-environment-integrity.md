@@ -2,8 +2,11 @@
 title: Marshal trusts the environment it launches into — until it silently doesn't
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `marshal-launch-environment-integrity`).
 
 # Marshal trusts the environment it launches into — until it silently doesn't
 

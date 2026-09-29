@@ -77,9 +77,7 @@ def test_no_spec_surface_effective_is_policy_surface_unchanged():
 def test_spec_surface_narrower_than_policy_intersects():
     policy_surface = ("recipes/x/**", "recipes/y/**", "recipes/z/**")
     spec_surface = ("recipes/x/**",)
-    assert gate.compute_effective_surface(policy_surface, spec_surface) == (
-        "recipes/x/**",
-    )
+    assert gate.compute_effective_surface(policy_surface, spec_surface) == ("recipes/x/**",)
 
 
 def test_spec_surface_wider_than_policy_never_expands():
@@ -89,9 +87,7 @@ def test_spec_surface_wider_than_policy_never_expands():
     a finding, via check_scope)."""
     policy_surface = ("recipes/x/**",)
     spec_surface = ("recipes/x/**", "recipes/outside/**")
-    assert gate.compute_effective_surface(policy_surface, spec_surface) == (
-        "recipes/x/**",
-    )
+    assert gate.compute_effective_surface(policy_surface, spec_surface) == ("recipes/x/**",)
 
 
 def test_spec_surface_disjoint_from_policy_intersects_to_empty():
@@ -133,9 +129,7 @@ def test_compute_effective_surface_rejects_non_tuple_spec_surface():
 #: ``BinOp(BitOr)``/``BinOp(Sub)`` scan already catches, but as an
 #: ``ast.Call`` rather than an ``ast.BinOp`` -- invisible to a scan that
 #: only inspects binary operators.
-_FORBIDDEN_SET_METHODS = frozenset(
-    {"union", "difference", "symmetric_difference", "update", "difference_update"}
-)
+_FORBIDDEN_SET_METHODS = frozenset({"union", "difference", "symmetric_difference", "update", "difference_update"})
 
 
 def test_meta_compute_effective_surface_uses_only_set_intersection():
@@ -163,11 +157,7 @@ def test_meta_compute_effective_surface_uses_only_set_intersection():
     assert isinstance(func_def, ast.FunctionDef)
     body_nodes = [node for stmt in func_def.body for node in ast.walk(stmt)]
     forbidden_ops = (ast.BitOr, ast.Sub)
-    violations = [
-        node.op
-        for node in body_nodes
-        if isinstance(node, ast.BinOp) and isinstance(node.op, forbidden_ops)
-    ]
+    violations = [node.op for node in body_nodes if isinstance(node, ast.BinOp) and isinstance(node.op, forbidden_ops)]
     assert not violations, (
         "compute_effective_surface must combine policy_surface/spec_surface "
         "via set intersection (&) only -- found a union/difference operator "
@@ -186,11 +176,7 @@ def test_meta_compute_effective_surface_uses_only_set_intersection():
         f"{method_violations!r} method call in the function body, which "
         "achieves the same widening a union/difference OPERATOR would"
     )
-    intersections = [
-        node
-        for node in body_nodes
-        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitAnd)
-    ]
+    intersections = [node for node in body_nodes if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitAnd)]
     assert intersections, (
         "compute_effective_surface must use set intersection (&) to combine "
         "policy_surface and spec_surface when spec_surface is not None"
@@ -204,8 +190,7 @@ def test_meta_guard_method_scan_detects_a_synthetic_union_call():
     ``core/verdict.py``'s own "mechanism proven synthetically" precedent
     for an otherwise-never-exercised guard)."""
     synthetic_source = (
-        "def fake(policy_surface, spec_surface):\n"
-        "    return tuple(set(policy_surface).union(set(spec_surface)))\n"
+        "def fake(policy_surface, spec_surface):\n    return tuple(set(policy_surface).union(set(spec_surface)))\n"
     )
     tree = ast.parse(synthetic_source)
     (func_def,) = tree.body
@@ -288,16 +273,12 @@ def test_check_scope_glob_matching_uses_fnmatch_semantics():
     ``*`` matches ANY character including ``/`` -- so a shallow glob still
     matches a deeper path. Confirms the real matcher, rather than assuming
     a path-aware recursive-glob library this module does not use."""
-    findings = gate.check_scope(
-        ("recipes/x/*.yaml",), (), ("recipes/x/sub/deep.yaml",)
-    )
+    findings = gate.check_scope(("recipes/x/*.yaml",), (), ("recipes/x/sub/deep.yaml",))
     assert findings == ()
 
 
 def test_check_scope_exact_literal_path_with_no_wildcard_matches_only_itself():
-    findings = gate.check_scope(
-        ("recipes/x/recipe.yaml",), (), ("recipes/x/other.yaml",)
-    )
+    findings = gate.check_scope(("recipes/x/recipe.yaml",), (), ("recipes/x/other.yaml",))
     assert len(findings) == 1
     assert findings[0].code == "MRS-GATE-007"
 
@@ -336,9 +317,7 @@ def test_check_scope_with_mode_off_is_always_empty_even_with_a_real_violation():
     """AC3: 'off declared for a station, when files change outside surface,
     then MRS-GATE-007/008 are not evaluated -- zero findings, zero journal
     entries'."""
-    findings = gate.check_scope_with_mode(
-        ("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="off"
-    )
+    findings = gate.check_scope_with_mode(("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="off")
     assert findings == ()
 
 
@@ -346,9 +325,7 @@ def test_check_scope_with_mode_off_never_calls_check_scope(monkeypatch):
     """'not evaluated at all' is proven, not just observed as an empty
     result: check_scope itself must never run in off mode."""
     called = []
-    monkeypatch.setattr(
-        gate, "check_scope", lambda *a, **k: called.append(1) or ()
-    )
+    monkeypatch.setattr(gate, "check_scope", lambda *a, **k: called.append(1) or ())
     gate.check_scope_with_mode(("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="off")
     assert called == []
 
@@ -357,9 +334,7 @@ def test_check_scope_with_mode_warn_replaces_mrs_gate_007_with_advisory_012():
     """AC1: 'no scope-violation mode declared for a station, when a scope
     violation occurs, then it lands as a named, journaled advisory finding
     and does not refuse landing (warn default)'."""
-    findings = gate.check_scope_with_mode(
-        ("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="warn"
-    )
+    findings = gate.check_scope_with_mode(("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="warn")
     assert len(findings) == 1
     finding = findings[0]
     assert finding.code == "MRS-GATE-012"
@@ -370,9 +345,7 @@ def test_check_scope_with_mode_warn_replaces_mrs_gate_007_with_advisory_012():
 
 def test_check_scope_with_mode_warn_replaces_mrs_gate_008_with_advisory_013():
     frozen = (FrozenPath(path="recipes/x/recipe.yaml", story_key="6.1"),)
-    findings = gate.check_scope_with_mode(
-        ("recipes/x/**",), frozen, ("recipes/x/recipe.yaml",), mode="warn"
-    )
+    findings = gate.check_scope_with_mode(("recipes/x/**",), frozen, ("recipes/x/recipe.yaml",), mode="warn")
     assert len(findings) == 1
     finding = findings[0]
     assert finding.code == "MRS-GATE-013"
@@ -385,18 +358,14 @@ def test_check_scope_with_mode_warn_never_emits_the_raw_error_severity_code():
     in warn mode -- compute_verdict/judge_dispatch_verification key off
     Finding.code (AD-31), not Finding.severity, so leaking the raw code
     here would still refuse landing regardless of any severity override."""
-    findings = gate.check_scope_with_mode(
-        ("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="warn"
-    )
+    findings = gate.check_scope_with_mode(("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="warn")
     codes = {finding.code for finding in findings}
     assert "MRS-GATE-007" not in codes
     assert "MRS-GATE-008" not in codes
 
 
 def test_check_scope_with_mode_warn_names_the_offending_path_in_the_message():
-    findings = gate.check_scope_with_mode(
-        ("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="warn"
-    )
+    findings = gate.check_scope_with_mode(("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="warn")
     assert "recipes/y/recipe.yaml" in findings[0].message
 
 
@@ -423,7 +392,5 @@ def test_check_scope_with_mode_rejects_unknown_mode():
 
 def test_check_scope_with_mode_returns_finding_instances_in_every_mode():
     for mode in ("hard", "warn", "off"):
-        findings = gate.check_scope_with_mode(
-            ("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode=mode
-        )
+        findings = gate.check_scope_with_mode(("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode=mode)
         assert all(isinstance(finding, Finding) for finding in findings)

@@ -1,9 +1,12 @@
----
-title: Firewalled Factory
+---title: Firewalled Factory
 type: practice
 owner: steward
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `enterprise-airgap`).
+
 
 # Enterprise air-gap — everything works where the internet doesn't
 

@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from a surviving bmad-loop run worktree (.bmad-loop/runs/20260718-101504-2c07/worktrees/6-2-license-axis-producer-gate-flags/_bmad-output/implementation-artifacts/spec-1-1-frozen-contract-verdict-lattice-projection-safety.md); this is the ORIGINAL spec, not an epics.md regeneration. Promoted to tracked planning-artifacts/specs/ for durability. -->
 ---
 title: 'Story 1.1: Frozen contract, verdict lattice & projection-safety (C0a)'
 type: 'feature'
@@ -13,6 +12,8 @@ context:
   - '{project-root}/_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/epic-1-context.md'
 warnings: [oversized]
 ---
+
+<!-- RECOVERED 2026-07-25 from a surviving bmad-loop run worktree (.bmad-loop/runs/20260718-101504-2c07/worktrees/6-2-license-axis-producer-gate-flags/_bmad-output/implementation-artifacts/spec-1-1-frozen-contract-verdict-lattice-projection-safety.md); this is the ORIGINAL spec, not an epics.md regeneration. Promoted to tracked planning-artifacts/specs/ for durability. -->
 
 <intent-contract>
 

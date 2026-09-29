@@ -76,9 +76,7 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 3000
 # Repo-root-relative default for the CLI (the pixi task runs at repo root);
 # lands inside the atlas member's gitignored data/ tree.
-DEFAULT_PLANE_PATH = (
-    Path("src/shared/packages/pyforge-atlas/data/plane") / ATLAS_DUCKDB_NAME
-)
+DEFAULT_PLANE_PATH = Path("src/shared/packages/pyforge-atlas/data/plane") / ATLAS_DUCKDB_NAME
 
 Launcher = Callable[[Sequence[str]], Any]
 
@@ -269,10 +267,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--path",
         type=Path,
         default=DEFAULT_PLANE_PATH,
-        help=(
-            "plane database path (basename must be "
-            f"{ATLAS_DUCKDB_NAME}; default: {DEFAULT_PLANE_PATH})"
-        ),
+        help=(f"plane database path (basename must be {ATLAS_DUCKDB_NAME}; default: {DEFAULT_PLANE_PATH})"),
     )
     parser.add_argument(
         "--host",

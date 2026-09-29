@@ -1,0 +1,277 @@
+# Deploying the platform (Story 12.1)
+
+Helm deployment for the python-agent-platform host: a **vanilla-Kubernetes
+core chart** (`charts/platform/`) plus a **thin OCP overlay**
+(`overlays/ocp/`) — AD-11's shape. The core chart renders only plain
+Kubernetes kinds; everything OpenShift-specific lives in the overlay.
+Invariants are enforced by `src/platform/tests/test_chart_invariants.py`.
+Disaster recovery contract and restore runbook: `DR.md` and `restore.md`
+(Story 41.1).
+
+**BYO PostgreSQL backup/PITR (Story 51.3):** when the external-postgres
+overlay is active (`postgres.external.enabled: true`, Story 51.1), the chart
+does not deploy the in-cluster `postgres-backup` CronJob — pyforge does not
+run a shadow backup of a database it does not own. Backup and point-in-time
+recovery for that path are owned and operated by the **enterprise database
+team** using their own managed-PostgreSQL backup tooling; follow their runbooks,
+not `DR.md`/`restore.md`, for that datastore.
+
+## Prerequisites
+
+- **helm from the `platform-dev` pixi env** (AD-16 — never a system helm):
+  every command below is `pixi run -e platform-dev helm ...` from the repo
+  root. Verified against Helm v4.2.4 (conda-forge).
+- The **Story 10.3 platform image** pushed somewhere the cluster can pull
+  (values: `image.registry`/`image.repository` plus **`image.digest`** (preferred)
+  or a pinned non-latest `image.tag` — Story 43.4 refuses `latest` and bare
+  renders; CAP-6 registry relocation uses `registry` alone).
+- A **pre-created Secret** (AD-12: the chart never renders a Secret and
+  carries no credential defaults). Default name `platform-secrets`
+  (values: `existingSecret`), keys:
+
+  | key | value |
+  |---|---|
+  | `DJANGO_SECRET_KEY` | Django's `SECRET_KEY` |
+  | `DATABASE_URL` | app-role DML URL, e.g. `postgres://platform_app:<password>@<release>-postgres:5432/platform` |
+  | `MIGRATION_DATABASE_URL` | migration-role DDL URL for the Liquibase Job, e.g. `postgres://platform:<password>@<release>-postgres:5432/platform` (postgres Service DNS, not a pooler) |
+  | `POSTGRES_PASSWORD` | the same `<password>`, consumed by the postgres container |
+  | `REDIS_PASSWORD` | Redis AUTH password (Story 12.6); consumed by redis and wired into platform pods' `REDIS_URL` |
+  | `KEYCLOAK_ADMIN_PASSWORD` | Keycloak bootstrap admin (Story 48.9 bundled OIDC profile only) |
+  | `COMPONENT_OIDC_CLIENT_SECRET` | BYO IdP client secret (`oidc.profile=byo` only; bundled default uses PKCE public client) |
+
+  `helm install` prints the exact in-cluster DNS names (NOTES.txt), so the
+  operator composes `DATABASE_URL` from them — the chart never composes it
+  (that would drag the password into the render path).
+
+**Secrets profile (Story 48.4 / R-20):** custody, age rotation, and the
+Vault/ESO enterprise path are documented in
+`docs/explanation/enterprise-deployment.md` § 7. Example ExternalSecret
+manifests live under `overlays/eso/`. Step-by-step rotation runbooks:
+`src/shared/packages/pyforge-steward/docs/keys-runbook.md`.
+
+**OIDC profile (Story 48.9 / CAP-1):** default `oidc.profile=bundled`
+deploys Keycloak in-cluster (PostgreSQL-backed, realm-as-code ConfigMap).
+Set `oidc.profile=byo` and populate `oidc.byo.*` to use an external IdP
+via the `COMPONENT_OIDC_*` seam. Full profile comparison:
+`docs/explanation/enterprise-deployment.md` § 8.
+
+## Vanilla Kubernetes
+
+```sh
+kubectl create secret generic platform-secrets \
+    --from-literal=DJANGO_SECRET_KEY=... \
+    --from-literal=DATABASE_URL=postgres://platform_app:...@platform-postgres:5432/platform \
+    --from-literal=MIGRATION_DATABASE_URL=postgres://platform:...@platform-postgres:5432/platform \
+    --from-literal=POSTGRES_PASSWORD=... \
+    --from-literal=REDIS_PASSWORD=... \
+    --from-literal=KEYCLOAK_ADMIN_PASSWORD=...
+pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
+    --set-file flags.tree=src/platform/config/flags.json \
+    --set image.digest=sha256:<digest-from-platform-ci>
+```
+
+**Golden-path CD (Story 43.4):** Platform CI's `golden-path-promotion` job
+uploads one artifact (`golden-path-promotion.json`) with the three chart
+image digests and the Warden verdict for the commit. Deploy only that digest
+via `.github/workflows/platform-deploy.yml` (`workflow_dispatch` with the
+CI run id and digests) — the workflow refuses a digest that is not recorded
+with a Warden verdict. Sidecar images use `sidecar.image.digest` and
+`mcpHost.image.digest` the same way. Optional registry push:
+`PLATFORM_CI_PUSH_REGISTRY=true` + `PLATFORM_CI_REGISTRY` repo variable.
+
+Renders: web Deployment (gunicorn, probes `/api/health` liveness + `/ht/`
+readiness), Celery worker Deployment (the general pool), a `worker-builds`
+Deployment (the builds pool) and a single-replica `beat` Deployment (Story
+42.4), one `consume-events-<station>`
+Deployment per station in `events.consumers` (Story 42.3), migrate hook Job
+(`post-install,pre-upgrade` — the image CMD never migrates), postgres:17
+StatefulSet + PVC, redis:7 Deployment, Services, ServiceAccounts, and an
+Ingress on `ingress.host` (default `platform.internal`).
+
+**TLS:** the default values assume a TLS-terminating ingress controller —
+`ingress.tls` supplies the cert blocks, and `django.secureSslRedirect:
+"True"` relies on the edge sending `X-Forwarded-Proto` (production.py's
+`SECURE_PROXY_SSL_HEADER`). For a bare-HTTP dev install with no TLS
+terminator, set `django.secureSslRedirect: "False"` — the same switch the
+compose stack flips locally.
+
+**Broker TLS (Story 41.4):** a `rediss://` broker is *verified*, not merely
+encrypted — `ssl_cert_reqs` is `CERT_REQUIRED` and the certificate is checked
+against a real CA. The chart wires plaintext `redis://` today, so these knobs
+matter once a deployment points `REDIS_URL` / `REDIS_BROKER_URL` at a TLS
+broker:
+
+  | env | value |
+  |---|---|
+  | `COMPONENT_BROKER_CA_BUNDLE` | Path to the corporate CA — a concatenated PEM file or a hashed directory. **Second tier:** consulted only when the OS trust store resolves nothing, so on a host that ships a default CA file the OS store wins. To override that store, set `SSL_CERT_FILE` / `SSL_CERT_DIR` instead. |
+  | `COMPONENT_BROKER_SSL_CERT_REQS` | `required` (default) or `none`. `none` is honoured **only** under `COMPONENT_RUNTIME=local` — a deployed component that sets it refuses to boot rather than connecting unverified. |
+
+A deployed component with a `rediss://` broker and no resolvable CA trust
+refuses to boot, naming any path that was configured and rejected. Install the
+CA into the OS trust store (`update-ca-certificates` and friends) or set
+`COMPONENT_BROKER_CA_BUNDLE` to a path the container can read; the whole
+posture is declared in `src/platform/config/broker_tls.py`.
+
+## OpenShift
+
+**Cluster bring-up** (CRC 2.63.0 / OpenShift 4.22.7, internal-registry image
+push, keys inventory): follow
+`overlays/ocp/cluster-bringup.md` end to end before installing the chart.
+
+Two installs after the cluster is Running and the platform image is in the
+internal registry (see `overlays/ocp/README.md` for detail):
+
+```sh
+pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
+    -f src/platform/deploy/overlays/ocp/core-overrides.yaml \
+    --set-file flags.tree=src/platform/config/flags.json
+pixi run -e platform-dev helm install platform-ocp src/platform/deploy/overlays/ocp/chart
+```
+
+The overrides turn the Ingress off and null the data services'
+`runAsUser`/`fsGroup` so the `restricted-v2` SCC assigns arbitrary UIDs;
+the overlay chart adds the Route. The platform-image pods carry the
+`restricted-v2` contract hardcoded in the core templates (runAsNonRoot,
+RuntimeDefault seccomp, no privilege escalation, drop ALL, **no fixed UID
+anywhere** — the image's own `USER 1001:0` covers vanilla K8s).
+
+## Verifying locally (no cluster)
+
+```sh
+pixi run -e platform-dev helm lint src/platform/deploy/charts/platform src/platform/deploy/overlays/ocp/chart
+pixi run -e platform-dev helm template platform src/platform/deploy/charts/platform \
+    --set-file flags.tree=src/platform/config/flags.json \
+    --set image.digest=sha256:<digest> \
+    --set sidecar.image.digest=sha256:<digest> \
+    --set mcpHost.image.digest=sha256:<digest>
+```
+
+`src/platform/tests/test_chart_invariants.py` asserts the story's
+invariants over parsed `helm template` output (vanilla-kinds allowlist,
+Route-only overlay, restricted-v2 on the platform pods, the exact
+three-image AD-1 inventory, override behavior) and skips with a
+capability-naming reason where helm/PyYAML are absent.
+
+## Honest limitations
+
+- **OCP live-cluster verification is opt-in CI (Story 12.9), with attended
+  closeout still Story 12.7.** Bring-up and internal-registry push are
+  documented in `overlays/ocp/cluster-bringup.md` (Story 12.4). The optional
+  `ocp-portability-smoke` job in `.github/workflows/platform-ci.yml` (default
+  off; requires `CRC_PULL_SECRET` and `PLATFORM_CI_OCP_PORTABILITY_SMOKE=true`
+  or workflow_dispatch) deploys core + overlay on CRC and curls through an
+  admitted Route — proving SCC-assigned UIDs and the OCP edge path when enabled.
+  Story 12.7 remains the attended verification for sidecar contingencies,
+  postgres/redis image fallbacks, and full Tier-3 closeout. Story 12.2's
+  `gke-portability-smoke` job DOES deploy this same core chart onto a real
+  ephemeral `kind` cluster and curl it through a live `Ingress` +
+  ingress-nginx controller — so the vanilla-K8s path is live-verified.
+- **Fresh installs have a transient migration window.** On a FIRST
+  install the web pods go Ready before the post-install migrate Job has
+  run: the `/ht/` readiness `Database` check is connectivity-only (a bare
+  `SELECT` — `config/urls.py` documents exactly this), so an unmigrated
+  database still answers 200 while ORM-touching pages 500 with
+  `relation "django_site" does not exist` — the same behavior
+  `compose/compose.yml` documents for its stack. The window closes when
+  the migrate Job completes; **upgrades are not affected** (the
+  `pre-upgrade` hook runs migrations before the new pods roll out). The
+  hook shape is deliberate — see the deadlock rationale in
+  `charts/platform/templates/migrate-job.yaml`.
+- **Redis is AUTH-protected with a NetworkPolicy (Story 12.6).** The
+  pre-created Secret's `REDIS_PASSWORD` key feeds `--requirepass` on the
+  redis container and is wired into platform pods' `REDIS_URL` via
+  secretKeyRef + runtime env expansion. A NetworkPolicy restricts ingress
+  on port 6379 to web/worker/worker-builds/beat/migrate and `consume-events-*` pods only. **redis-cache** stays
+  on `emptyDir` (ephemeral, `allkeys-lru`). **redis-broker** is durable
+  and bounded (Story 40.2): AOF on a dedicated RWO PVC at `/data`,
+  `--maxmemory` strictly below the container memory limit, and
+  `noeviction`. Clusters without a CNI that enforces NetworkPolicy get
+  AUTH only, not network isolation.
+- **Network baseline (Story 48.3 / R-19).** When `networkPolicy.enabled`
+  is true (the default), the chart renders a namespace default-deny
+  NetworkPolicy plus per-workload egress and ingress allows: web reaches
+  postgres, both redis roles, mcp-host, and dbgpt; worker reaches
+  postgres, redis, and dbgpt; mcp-host egress is DNS-only; postgres and
+  dbgpt accept ingress only from platform-image clients. Both
+  ServiceAccounts set `automountServiceAccountToken: false`. **CRC attended
+  bring-up:** after `helm upgrade`, confirm the Route still serves `/ht/`
+  (web ingress allows `openshift-ingress` by default in
+  `networkPolicy.webIngressFrom`); exec into web and worker pods and curl
+  postgres/redis Services; confirm dbgpt and mcp-host are reachable from
+  web only on :5670/:8090. Trim `webIngressFrom` if your ingress controller
+  lives in a different namespace. `worker-builds` may set
+  `networkPolicy.workerBuilds.allowExternalEgress=true` for Mason builds
+  that reach external registries.
+- **Event delivery (Story 42.3).** `events.consumers` renders one
+  `consume-events-<station>` Deployment per station
+  (`manage.py consume_events --station <name>`; consumer group = station).
+  A handler failure leaves the entry pending, records the (secret-redacted)
+  error under `pyforge.events.lasterror:<stream_id>` (TTL = the applied-key
+  TTL) and retries after 1s/2s/4s/8s (`DJANGO_PYFORGE_EVENT_BACKOFF_BASE_MS`
+  / `_MAX_MS`); after `DJANGO_PYFORGE_EVENT_MAX_ATTEMPTS` (5) the event is
+  written to the DLQ with `reason`, `error`, `attempts`, `group`,
+  `stream_id`, `quarantined_at` and only then ACKed (`manage.py
+  list_event_dlq` prints them). `harvest_poison` reclaims entries another
+  consumer abandoned only once idle ≥ `DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS`
+  (300s). These `DJANGO_PYFORGE_EVENT_*` knobs are process environment
+  variables, not chart values. The envelope carries `traceparent`;
+  `enqueue_supervised_run` forwards it as a Celery header.
+- **Celery hardening and the builds pool (Story 42.4).** Delivery is
+  at-least-once (`task_acks_late`, `task_reject_on_worker_lost`,
+  `worker_prefetch_multiplier = 1`): a worker killed mid-task hands its
+  message back and the task re-runs once; a second loss terminalises the
+  run as `worker_lost` instead of looping. Queues are declared once, in
+  `django_pyforge.queues`: `priority` (Doctor remedies, supervisor
+  housekeeping), `default`, one per station, and `builds`. The `worker`
+  Deployment consumes `worker.queues` in that order (`priority` first;
+  the render refuses a list naming `builds`); `worker-builds` consumes only
+  `builds` with `--time-limit worker.builds.taskTimeLimitSeconds` (4h by
+  default, must exceed 300s) and a `terminationGracePeriodSeconds` derived
+  as limit + `drainSlackSeconds`. The same limit is exported to every
+  platform pod as `CELERY_BUILDS_TASK_TIME_LIMIT`, which sizes the broker
+  visibility timeout and the supervisor's sweep. `beat` (one replica,
+  Recreate) fires `prune-run-state` and `sweep-lost-runs`; the sweep marks
+  a live run FAILED with reason `worker_lost` once it has been silent for
+  its pool's limit and no worker reports holding its task (`manage.py
+  sweep_lost_runs` runs it by hand).
+- **Dead-letter retention (Story 40.2).** The `pyforge.events.dlq` stream
+  is never auto-trimmed. Operators inspect it with
+  `manage.py list_event_dlq` and purge deliberately, e.g.
+  `redis-cli -a "$REDIS_PASSWORD" XTRIM pyforge.events.dlq MAXLEN 0` on
+  the broker pod, after triage.
+- **The official `postgres`/`redis` images may need image overrides under
+  OCP `restricted-v2`.** Both declare a root `USER` and step down at
+  runtime; under an SCC-assigned arbitrary UID they generally run, but
+  hardened clusters may require UID-agnostic builds (e.g. Bitnami or Red
+  Hat images) via `postgres.image`/`redis.image`. The **platform image is
+  the one that passes `restricted-v2` by contract** (Story 10.3's
+  arbitrary-UID design); the data-service images are documented, not
+  solved, here. When swapping the postgres image, also set
+  `postgres.dataMountPath` to **that image's data directory** (Bitnami
+  uses `/bitnami/postgresql`, Red Hat `/var/lib/pgsql/data`) — the PVC
+  mounts at `dataMountPath` and `PGDATA` derives from it, so a mismatch
+  silently lands the database on the container's ephemeral filesystem
+  instead of the PVC. The official **redis:7** image stores AOF/RDB under
+  `/data` — the broker PVC mounts there (`redis.broker.persistence`).
+- **DB-GPT sidecar (Story 12.5).** The chart renders a singleton sidecar
+  Deployment (`replicas: 1`, `strategy: Recreate`), a dedicated SQLite PVC
+  at `sidecar.metadataMountPath` (default
+  `/app/.home/.dbgpt/workspace/pilot/meta_data`), and an internal ClusterIP
+  Service. Platform web/worker pods receive `DBGPT_SIDECAR_BASE_URL` pointing
+  at that Service. Override `sidecar.image` for air-gap registry relocation;
+  optional `sidecar.llm.*` keys mirror compose.yml's LLM passthrough (unset
+  keys fall through to the image's baked TOML defaults). LLM API keys, when
+  wired, come from the same pre-created `existingSecret` via
+  `sidecar.llm.apiKeySecretKey` — the chart never renders Secrets (AD-12).
+- **Sizing (Story 48.2 / R-18).** Default requests/limits land on web (memory-bound;
+  Langflow + Vizro/BSL in-process), general worker, worker-builds, mcp-host, DB-GPT
+  sidecar, and the Liquibase hook Job. Web gunicorn runs with `--preload` and an explicit
+  worker count; `ANYIO_MAX_THREADS` is set on the web pod. HPA scales web and general
+  worker; PodDisruptionBudgets guard both. **LLM inference is external** — point
+  `sidecar.llm.apiBase` at Ollama, Tachyon, vLLM, or another HTTP provider; the platform
+  image does not ship transformers, diffusers, or llama.cpp.
+- Media is a `ReadWriteMany` PVC (Story 20.2, canopy:AD-13) mounted by every
+  platform Deployment (web, worker, worker-builds, beat, consume-events); on a multi-node
+  cluster set `media.persistence.storageClassName` to an RWX-capable class or the claim stays
+  `Pending` and nothing that mounts it schedules. Proven on CRC (`crc-csi-hostpath-provisioner`,
+  single-node, 2026-08-25).

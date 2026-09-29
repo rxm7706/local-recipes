@@ -2,8 +2,11 @@
 title: Marshal Dependency-Aware Dispatch — the fleet orders its own backlog and forgets nothing it kills
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `marshal-dependency-aware-dispatch`).
 
 # Marshal Dependency-Aware Dispatch
 

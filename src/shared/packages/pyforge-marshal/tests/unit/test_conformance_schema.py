@@ -26,14 +26,7 @@ _NOW = datetime(2026, 8, 7, tzinfo=timezone.utc)
 
 
 def _schema() -> dict:
-    path = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "pyforge"
-        / "marshal"
-        / "schemas"
-        / "conformance.json"
-    )
+    path = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "conformance.json"
     return json.loads(path.read_text())
 
 

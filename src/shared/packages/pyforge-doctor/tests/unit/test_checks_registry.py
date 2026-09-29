@@ -12,6 +12,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pyforge.warden import engines as engines_mod
+from pyforge.warden.engines import DoctorCheck
 
 from pyforge.doctor.checks.registry import (
     _CATALOG,
@@ -21,8 +23,6 @@ from pyforge.doctor.checks.registry import (
 )
 from pyforge.doctor.models import DoctorStatus
 from pyforge.doctor.sources import warden as warden_source
-from pyforge.warden import engines as engines_mod
-from pyforge.warden.engines import DoctorCheck
 
 # The test suite's OWN copy of the six names, deliberately NOT imported
 # from the module under test -- importing registry's tuple would make the
@@ -38,9 +38,7 @@ _ENGINE_NAMES = (
     "tea",
 )
 
-_EXPECTED_ENGINE_SPECS = tuple(
-    CheckSpec(category="engines", name=name) for name in _ENGINE_NAMES
-)
+_EXPECTED_ENGINE_SPECS = tuple(CheckSpec(category="engines", name=name) for name in _ENGINE_NAMES)
 
 # The test suite's OWN copy of the one env-hygiene check name (Story 1.4),
 # deliberately NOT imported from ``env_hygiene`` -- same anti-tautology
@@ -91,10 +89,7 @@ def test_list_checks_unknown_category_returns_empty_tuple_no_exception():
 
 def test_list_checks_never_invokes_run_doctor_checks(monkeypatch):
     def _boom(target):
-        raise AssertionError(
-            "list_checks() must never execute a real check to build its "
-            "catalog"
-        )
+        raise AssertionError("list_checks() must never execute a real check to build its catalog")
 
     monkeypatch.setattr(engines_mod, "run_doctor_checks", _boom)
 
@@ -104,9 +99,7 @@ def test_list_checks_never_invokes_run_doctor_checks(monkeypatch):
 # --- gather_one ---------------------------------------------------------------
 
 
-def test_gather_one_matches_the_named_finding_from_a_full_gather(
-    monkeypatch, tmp_path: Path
-):
+def test_gather_one_matches_the_named_finding_from_a_full_gather(monkeypatch, tmp_path: Path):
     checks = _checks(
         ("deptry", True, "within tested range"),
         ("osv-scanner", False, "osv-scanner binary not found on PATH"),
@@ -139,9 +132,7 @@ def test_gather_one_unknown_check_name_returns_none(monkeypatch, tmp_path: Path)
     assert gather_one("engines", "not-a-real-check", tmp_path) is None
 
 
-def test_gather_one_unknown_category_raises_value_error(
-    monkeypatch, tmp_path: Path
-):
+def test_gather_one_unknown_category_raises_value_error(monkeypatch, tmp_path: Path):
     # The guard must reject BEFORE gathering: if a refactor ever moves the
     # category check after the gather call, warden's degrade-never-crash
     # wrapper would swallow this sentinel and no ValueError would surface,
@@ -152,15 +143,11 @@ def test_gather_one_unknown_category_raises_value_error(
 
     monkeypatch.setattr(engines_mod, "run_doctor_checks", _boom)
 
-    with pytest.raises(
-        ValueError, match=r"unsupported check category: 'bogus-category'"
-    ):
+    with pytest.raises(ValueError, match=r"unsupported check category: 'bogus-category'"):
         gather_one("bogus-category", "x", tmp_path)
 
 
-def test_every_cataloged_category_is_dispatchable_by_gather_one(
-    monkeypatch, tmp_path: Path
-):
+def test_every_cataloged_category_is_dispatchable_by_gather_one(monkeypatch, tmp_path: Path):
     # Coherence tripwire, enforcing what registry.py's dispatch comment
     # can only ask for: every category registered in _CATALOG must have a
     # matching dispatch branch in gather_one. A category added to the
@@ -173,9 +160,7 @@ def test_every_cataloged_category_is_dispatchable_by_gather_one(
         assert gather_one(category, "no-such-check", tmp_path) is None
 
 
-def test_gather_one_can_address_the_degradation_sentinel_by_name(
-    monkeypatch, tmp_path: Path
-):
+def test_gather_one_can_address_the_degradation_sentinel_by_name(monkeypatch, tmp_path: Path):
     # Filter semantics cut both ways (the complement of the sentinel->None
     # test below): the degradation sentinel's own check name -- one
     # list_checks() never advertises -- IS addressable, and returns the
@@ -195,9 +180,7 @@ def test_gather_one_can_address_the_degradation_sentinel_by_name(
     assert sentinel.status is DoctorStatus.FAIL
 
 
-def test_gather_one_returns_none_when_gather_degrades_to_sentinel_finding(
-    monkeypatch, tmp_path: Path
-):
+def test_gather_one_returns_none_when_gather_degrades_to_sentinel_finding(monkeypatch, tmp_path: Path):
     # When sources.warden.gather() degrades to its single "pyforge-warden"
     # sentinel Finding (warden absent/unimportable/raising -- Story 1.2's
     # own tests cover all three shapes), no Finding named "osv-scanner"
@@ -232,17 +215,12 @@ def test_live_catalog_matches_real_warden_gather_check_names(tmp_path: Path):
     # environment) would otherwise fail the assert below reading exactly
     # like catalog drift (review finding, 2026-07-30).
     if live_names == ("pyforge-warden",):
-        pytest.fail(
-            "warden degraded in this environment (not catalog drift): "
-            + live_findings[0].message
-        )
+        pytest.fail("warden degraded in this environment (not catalog drift): " + live_findings[0].message)
 
     # Filtered to "engines" -- unfiltered list_checks() also carries the
     # unrelated "env" category (Story 1.4), which warden's own gather()
     # knows nothing about.
-    catalog_names = tuple(
-        spec.name for spec in list_checks(category="engines")
-    )
+    catalog_names = tuple(spec.name for spec in list_checks(category="engines"))
 
     assert catalog_names == live_names
 

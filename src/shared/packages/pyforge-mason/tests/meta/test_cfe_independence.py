@@ -59,6 +59,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+
 from pyforge.mason import environment, package
 from pyforge.mason.engines.condalock import CondaLockCheckResult, CondaLockResult
 from pyforge.mason.engines.pep517 import Pep517BuildResult
@@ -89,6 +90,7 @@ def test_cfe_dependent_ship_targets_allow_list_has_exactly_one_entry():
 
 
 # --- Shared CFE-unresolvable setup ------------------------------------------
+
 
 @pytest.fixture
 def cfe_unresolvable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[dict[str, str], Path]:
@@ -146,13 +148,19 @@ def test_package_build_runs_normally_with_cfe_root_unresolvable(cfe_unresolvable
     proj = start_directory / "proj"
     proj.mkdir()
 
-    with patch(
-        "pyforge.mason.package.pep517.build", return_value=_PEP517_RESULT,
-    ) as mock_pep517, patch(
-        "pyforge.mason.package.pixi.build", return_value=_PIXI_BUILD_RESULT,
-    ) as mock_pixi, patch(
-        "pyforge.mason.package.resolve_cfe_root",
-    ) as mock_resolve:
+    with (
+        patch(
+            "pyforge.mason.package.pep517.build",
+            return_value=_PEP517_RESULT,
+        ) as mock_pep517,
+        patch(
+            "pyforge.mason.package.pixi.build",
+            return_value=_PIXI_BUILD_RESULT,
+        ) as mock_pixi,
+        patch(
+            "pyforge.mason.package.resolve_cfe_root",
+        ) as mock_resolve,
+    ):
         result = package.build(str(proj))
 
     mock_pep517.assert_called_once()
@@ -167,7 +175,9 @@ def test_package_build_runs_normally_with_cfe_root_unresolvable(cfe_unresolvable
 # with the FR-5 reason specifically (AC1, AC2, AC3) -------------------------
 
 _TWINE_UPLOAD_RESULT = TwineUploadResult(
-    returncode=0, url="https://pypi.org/project/pkg/0.1.0/", stdout="View at:\n...\n",
+    returncode=0,
+    url="https://pypi.org/project/pkg/0.1.0/",
+    stdout="View at:\n...\n",
 )
 _PIXI_UPLOAD_RESULT = PixiUploadResult(returncode=0, stdout="Uploaded\n")
 
@@ -202,18 +212,31 @@ def test_ship_multi_target_all_but_conda_forge_succeed_with_cfe_root_unresolvabl
     environ = {**environ, **_SHIP_CREDENTIALS}
     recipe_path = str(start_directory / "recipes" / "some-pkg")
 
-    with patch(
-        "pyforge.mason.package.pep517.build", return_value=_PEP517_RESULT,
-    ), patch(
-        "pyforge.mason.package.pixi.build", return_value=_PIXI_BUILD_RESULT,
-    ), patch(
-        "pyforge.mason.package.pypi_index.version_exists", return_value=False,
-    ), patch(
-        "pyforge.mason.package.twine.upload", return_value=_TWINE_UPLOAD_RESULT,
-    ), patch(
-        "pyforge.mason.package.pixi.search", return_value=False,
-    ), patch(
-        "pyforge.mason.package.pixi.upload", return_value=_PIXI_UPLOAD_RESULT,
+    with (
+        patch(
+            "pyforge.mason.package.pep517.build",
+            return_value=_PEP517_RESULT,
+        ),
+        patch(
+            "pyforge.mason.package.pixi.build",
+            return_value=_PIXI_BUILD_RESULT,
+        ),
+        patch(
+            "pyforge.mason.package.pypi_index.version_exists",
+            return_value=False,
+        ),
+        patch(
+            "pyforge.mason.package.twine.upload",
+            return_value=_TWINE_UPLOAD_RESULT,
+        ),
+        patch(
+            "pyforge.mason.package.pixi.search",
+            return_value=False,
+        ),
+        patch(
+            "pyforge.mason.package.pixi.upload",
+            return_value=_PIXI_UPLOAD_RESULT,
+        ),
     ):
         results = package.ship(
             "pypi,channel:acme,conda-forge",
@@ -232,16 +255,13 @@ def test_ship_multi_target_all_but_conda_forge_succeed_with_cfe_root_unresolvabl
     cfe_unresolved_identifier = CfeUnresolvedError().identifier
     for target_name, result in by_target.items():
         if target_name in _CFE_DEPENDENT_SHIP_TARGETS:
-            assert result.state is ShipState.FAILED, (
-                f"{target_name!r} (CFE-dependent) should FAIL with no CFE present"
-            )
+            assert result.state is ShipState.FAILED, f"{target_name!r} (CFE-dependent) should FAIL with no CFE present"
             assert result.message is not None and cfe_unresolved_identifier in result.message, (
                 f"{target_name!r} failed, but not for the FR-5 reason: {result.message!r}"
             )
         else:
             assert result.state is ShipState.TERMINAL, (
-                f"{target_name!r} (not CFE-dependent) should succeed normally, got "
-                f"{result.state!r}: {result.message!r}"
+                f"{target_name!r} (not CFE-dependent) should succeed normally, got {result.state!r}: {result.message!r}"
             )
             assert result.message is None or cfe_unresolved_identifier not in result.message
 
@@ -275,7 +295,8 @@ def test_environment_lock_runs_normally_with_cfe_root_unresolvable(cfe_unresolva
     output_path = str(start_directory / "conda-lock.yml")
 
     with patch(
-        "pyforge.mason.environment.condalock.lock", return_value=_CONDA_LOCK_RESULT,
+        "pyforge.mason.environment.condalock.lock",
+        return_value=_CONDA_LOCK_RESULT,
     ) as mock_lock:
         result = environment.lock([manifest], output_path)
 
@@ -295,7 +316,8 @@ def test_environment_check_runs_normally_with_cfe_root_unresolvable(cfe_unresolv
     lockfile = str(start_directory / "conda-lock.yml")
 
     with patch(
-        "pyforge.mason.environment.condalock.check", return_value=_CONDA_LOCK_CHECK_RESULT,
+        "pyforge.mason.environment.condalock.check",
+        return_value=_CONDA_LOCK_CHECK_RESULT,
     ) as mock_check:
         result = environment.check(lockfile, [manifest])
 

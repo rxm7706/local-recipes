@@ -1,5 +1,5 @@
 ---
-status: shipped
+status: done
 frontmatter_added: 2026-07-28
 frontmatter_note: |
   This YAML block was ADDED post-recovery (operator decision 2026-07-27, AUD-ATLAS-045) so all
@@ -922,3 +922,17 @@ deferred-work.md, both gitignored Tier-3). Story and sprint feed remain
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `471e214840` (2026-08-07, "herald: Story 2.2 — --commit opt-in flag on herald deck pull"); also `a65962b2bb` (2026-08-07, "scribe: Story 2.2 — nightly compile from named tool surfaces"); also `0ae1a7797c` (2026-08-07, "doctor: Story 2.2 — cve and abandonment watch axes"). Ledger row `2-2-define-the-data-catalog-for-all-sources-outputs: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/tests/test_cli_pull.py`, `src/shared/packages/pyforge-herald/tests/test_deck_pipeline.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `2-2-define-the-data-catalog-for-all-sources-outputs: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -16,6 +16,7 @@ from pyforge.marshal.mcp.tools import (
     marshal_refresh,
     marshal_status,
     marshal_upstream,
+    marshal_watch,
     run_marshal,
 )
 
@@ -129,6 +130,31 @@ def test_marshal_upstream_and_refresh():
         "acme",
         "--base",
         "main",
+    ]
+
+
+def test_marshal_watch_forwards_project_run_and_fleet():
+    seen: list[list[str]] = []
+
+    def fake_main(argv):
+        seen.append(list(argv))
+        print('{"command":"watch","data":{"sections":{}}}')
+        return 0
+
+    out = marshal_watch(project="herald", run="run-1", fleet=True, main=fake_main)
+    assert out["ok"] is True
+    assert out["command"] == "watch"
+    assert seen == [
+        [
+            "watch",
+            "--format",
+            "json",
+            "--project",
+            "herald",
+            "--run",
+            "run-1",
+            "--fleet",
+        ]
     ]
 
 

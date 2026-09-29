@@ -9,6 +9,8 @@ from pathlib import Path
 
 from pyforge.testing_kit import changed_paths_since
 
+from pyforge.doctor.refs import ORIGIN_MAIN
+
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 
 
@@ -113,10 +115,8 @@ def test_empty_last_pulse_is_advisory_empty_state():
     assert shown["empty"] is True
     assert shown["advisory"] is True
     assert shown["summary"] is None
-    html = (_portal_root(_repo_root()) / "templates" / "doctor_portal" / "home.html").read_text(
-        encoding="utf-8"
-    )
-    assert "id=\"doctor-fleet-pulse\"" in html
+    html = (_portal_root(_repo_root()) / "templates" / "doctor_portal" / "home.html").read_text(encoding="utf-8")
+    assert 'id="doctor-fleet-pulse"' in html
     assert "No last" in html
     assert "advisory" in html.lower()
     assert "second PR gate" in html
@@ -140,11 +140,9 @@ def test_django_doctor_is_client_only_no_pyforge_no_raw_http():
 
 
 def test_home_extends_shared_chrome_not_a_copy():
-    html = (
-        _portal_root(_repo_root()) / "templates" / "doctor_portal" / "home.html"
-    ).read_text(encoding="utf-8")
+    html = (_portal_root(_repo_root()) / "templates" / "doctor_portal" / "home.html").read_text(encoding="utf-8")
     assert '{% extends "django_pyforge/base.html" %}' in html
-    assert "id=\"doctor-body\"" in html
+    assert 'id="doctor-body"' in html
     chrome_copies = list((_portal_root(_repo_root()) / "templates").rglob("chrome.html"))
     assert chrome_copies == []
 
@@ -163,7 +161,7 @@ def test_story_does_not_add_pyforge_under_src_platform():
         # not this story's doing -- a branch that merely touches the file
         # (2026-09-04, PR #1043: a Ruff fix on station_port.py) must not trip it.
         before = subprocess.run(
-            ["git", "show", f"origin/main:{rel}"], cwd=root, capture_output=True, text=True, check=False
+            ["git", "show", f"{ORIGIN_MAIN}:{rel}"], cwd=root, capture_output=True, text=True, check=False
         )
         if before.returncode == 0:
             base_tree = ast.parse(before.stdout)

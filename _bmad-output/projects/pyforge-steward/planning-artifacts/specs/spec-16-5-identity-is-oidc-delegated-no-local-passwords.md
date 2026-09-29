@@ -2,7 +2,7 @@
 title: Identity is OIDC-delegated, no local passwords
 type: feature
 created: '2026-08-23'
-status: shipped
+status: done
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -47,10 +47,16 @@ baseline_revision: 9b488aee70
 
 ## Auto Run Result
 
-Status: shipped
+Status: done
+Reconciled 2026-09-20: `shipped` is the Spec-level word; a story's terminal state is `done` (ledger row `16-5-identity-is-oidc-delegated-no-local-passwords: done`).
 PR: https://github.com/rxm7706/local-recipes/pull/696
 Merge SHA: eb3ab8c95dcb562e2ce0b1e25170acbaa4c73b2b
 CI: GitHub Actions billing blocked — admin merge after local tests green
 Tests: 57 passed (OIDC + policy + startup + health); 107 passed full `tests/` (langflow mount excluded)
 Finalize SHA: d5030f4f82
 Blocking condition: none
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `16-5-identity-is-oidc-delegated-no-local-passwords: done`).
+- Auto Run Result `Status: shipped` → `done` (see the reconcile line under it).

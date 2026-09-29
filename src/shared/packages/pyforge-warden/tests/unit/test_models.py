@@ -260,9 +260,7 @@ def test_report_exit_code_outside_frozen_set_raises():
 
 def test_non_clean_driverless_report_raises():
     with pytest.raises(ValueError, match="status_driver"):
-        dataclasses.replace(
-            _sample_report(), status=Status.POLICY_VIOLATION, exit_code=1
-        )
+        dataclasses.replace(_sample_report(), status=Status.POLICY_VIOLATION, exit_code=1)
 
 
 def test_report_schema_version_must_be_v1_core_semver():
@@ -317,7 +315,6 @@ def test_finding_accepts_epss_object():
     )
     assert finding.epss.score == 0.42
     assert finding.epss.percentile == 0.9
-
 
 
 def test_coverage_parsed_exceeding_found_raises():
@@ -420,9 +417,7 @@ def test_raw_string_status_fails_at_construction():
 
 
 def test_raw_string_error_kind_and_severity_tier_coerce_or_raise():
-    assert ErrorRecord(kind="engine-timeout", owner="infra", message="m").kind is (
-        ErrorKind.ENGINE_TIMEOUT
-    )
+    assert ErrorRecord(kind="engine-timeout", owner="infra", message="m").kind is (ErrorKind.ENGINE_TIMEOUT)
     with pytest.raises(ValueError):
         ErrorRecord(kind="engine-explosion", owner="infra", message="m")
     assert Severity(tier="high", raw=None).tier is SeverityTier.HIGH
@@ -448,9 +443,7 @@ def test_incoherent_status_exit_pairs_fail_at_construction(status, exit_code):
         else StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-x:p@1.0")
     )
     with pytest.raises(ValueError, match="incoherent"):
-        dataclasses.replace(
-            _sample_report(), status=status, status_driver=driver, exit_code=exit_code
-        )
+        dataclasses.replace(_sample_report(), status=status, status_driver=driver, exit_code=exit_code)
 
 
 def test_indeterminate_exit_zero_is_coherent():
@@ -460,9 +453,7 @@ def test_indeterminate_exit_zero_is_coherent():
     the pairing (not merely reject it, per the OLD, now-superseded
     incoherence the parametrized test above used to pin at (INDETERMINATE,
     0) — moved to (INDETERMINATE, 2), still genuinely incoherent)."""
-    driver = StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="indeterminate:empty-extraction:scan"
-    )
+    driver = StatusDriver(axis=AXIS_VULNERABILITY, finding_id="indeterminate:empty-extraction:scan")
     report = dataclasses.replace(
         _sample_report(),
         status=Status.INDETERMINATE,
@@ -525,9 +516,7 @@ def test_sigint_exit_is_coherent_with_every_status():
             if status in (Status.CLEAN, Status.NOT_APPLICABLE)
             else StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-x:p@1.0")
         )
-        report = dataclasses.replace(
-            _sample_report(), status=status, status_driver=driver, exit_code=130
-        )
+        report = dataclasses.replace(_sample_report(), status=status, status_driver=driver, exit_code=130)
         assert report.exit_code == 130
 
 
@@ -567,9 +556,7 @@ def test_vuln_data_concrete_verdict_requires_provenance():
         VulnData(source=None, snapshot_at=None, max_age_ok=True)
     with pytest.raises(ValueError, match="provenance"):
         VulnData(source="osv-offline", snapshot_at=None, max_age_ok=False)
-    assert VulnData(
-        source="osv-offline", snapshot_at="2026-07-10", max_age_ok=True
-    ).max_age_ok is True
+    assert VulnData(source="osv-offline", snapshot_at="2026-07-10", max_age_ok=True).max_age_ok is True
 
 
 def test_trailing_and_embedded_newlines_rejected():
@@ -654,9 +641,7 @@ def test_license_finding_with_allowed_verdict_raises():
             message="m",
             subject=None,
             severity=None,
-            license=LicenseInfo(
-                expression="MIT", family=None, verdict=LicenseVerdict.ALLOWED
-            ),
+            license=LicenseInfo(expression="MIT", family=None, verdict=LicenseVerdict.ALLOWED),
         )
 
 
@@ -699,9 +684,7 @@ def test_currency_finding_without_currency_subobject_raises():
     ],
     ids=["eol", "over-lag"],
 )
-def test_currency_eol_over_lag_finding_requires_non_null_provenance(
-    finding_id, verdict
-):
+def test_currency_eol_over_lag_finding_requires_non_null_provenance(finding_id, verdict):
     """(d) An eol/over-lag finding whose CurrencyInfo leaves latest/lag/
     eol_date at their None defaults is incoherent — there is a problem to
     explain, so its provenance must be stated."""
@@ -734,9 +717,7 @@ def test_coherent_license_and_currency_findings_still_construct():
         message="denied",
         subject="numpy",
         severity=None,
-        license=LicenseInfo(
-            expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED
-        ),
+        license=LicenseInfo(expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED),
     )
     assert denied.license.verdict is LicenseVerdict.DENIED
     eol = Finding(
@@ -771,9 +752,7 @@ def _report_with_all_new_fields() -> ComplianceReport:
             message="denied license",
             subject="numpy",
             severity=None,
-            license=LicenseInfo(
-                expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED
-            ),
+            license=LicenseInfo(expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED),
         ),
         Finding(
             id="license:unknown:mystery@0.1.0",
@@ -781,9 +760,7 @@ def _report_with_all_new_fields() -> ComplianceReport:
             message="unresolvable license",
             subject="mystery",
             severity=None,
-            license=LicenseInfo(
-                expression="unknown", family="permissive", verdict=LicenseVerdict.UNKNOWN
-            ),
+            license=LicenseInfo(expression="unknown", family="permissive", verdict=LicenseVerdict.UNKNOWN),
         ),
         Finding(
             id="currency:eol:django@1.11.29",
@@ -841,9 +818,7 @@ def _report_with_all_new_fields() -> ComplianceReport:
     return dataclasses.replace(
         _sample_report(),
         status=Status.POLICY_VIOLATION,
-        status_driver=StatusDriver(
-            axis=AXIS_LICENSE, finding_id="license:GPL-3.0-only:numpy@1.26.4"
-        ),
+        status_driver=StatusDriver(axis=AXIS_LICENSE, finding_id="license:GPL-3.0-only:numpy@1.26.4"),
         exit_code=1,
         findings=findings,
         suppressions=suppressions,

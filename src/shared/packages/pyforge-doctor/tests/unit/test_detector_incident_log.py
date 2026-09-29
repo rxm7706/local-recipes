@@ -12,15 +12,9 @@ import ast
 import re
 from pathlib import Path
 
-_FACTORY_TESTS = (
-    Path(__file__).resolve().parent / "test_sources_factory.py"
-)
+_FACTORY_TESTS = Path(__file__).resolve().parent / "test_sources_factory.py"
 
-_LOG = (
-    Path(__file__).resolve().parents[2]
-    / "docs"
-    / "detector-incident-log.md"
-)
+_LOG = Path(__file__).resolve().parents[2] / "docs" / "detector-incident-log.md"
 
 _REQUIRED_SECTIONS = (
     "## Mandatory-entry rule",
@@ -49,11 +43,7 @@ _BMAD_DRIFT_PIN_TESTS = (
 
 def _factory_test_names() -> set[str]:
     tree = ast.parse(_FACTORY_TESTS.read_text(encoding="utf-8"))
-    return {
-        node.name
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")
-    }
+    return {node.name for node in tree.body if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")}
 
 
 def test_detector_incident_log_exists_with_mandatory_entry_rule() -> None:

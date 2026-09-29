@@ -373,12 +373,8 @@ def run_apply(
         ) from failure
     if drift:
         raise PreconditionFailure(
-            "stale-plan: the repo no longer matches the fingerprint this plan was"
-            f" built against -- {'; '.join(drift)}",
-            remedy=(
-                "re-run the plan against the current repo state and review the fresh"
-                " plan before applying it"
-            ),
+            f"stale-plan: the repo no longer matches the fingerprint this plan was built against -- {'; '.join(drift)}",
+            remedy=("re-run the plan against the current repo state and review the fresh plan before applying it"),
         )
 
     snapshots: list[tuple[Path, bytes | None]] = []

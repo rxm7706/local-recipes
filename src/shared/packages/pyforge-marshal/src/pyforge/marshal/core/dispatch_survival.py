@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from .dispatch import DispatchJournalFacts
 from .dispatch_completion import (
     DispatchCompletionInput,
     DispatchGitFacts,
@@ -17,7 +18,6 @@ from .dispatch_completion import (
     has_git_progress,
     judge_dispatch_completion,
 )
-from .dispatch import DispatchJournalFacts
 
 
 @dataclass(frozen=True)
@@ -81,6 +81,11 @@ def derive_supervision_state(
         DispatchSessionVerdict.COMPLETED.value,
         DispatchSessionVerdict.FAILED.value,
         DispatchSessionVerdict.STOPPED_EXTERNALLY.value,
+        # Story 51.11 (CAP-258): a committed `blocked` verdict is terminal --
+        # without this, a dead session with committed wip would re-derive as
+        # LIVE (has_git_progress=True) and fleet tooling would think the run
+        # is still unsupervised-live.
+        DispatchSessionVerdict.BLOCKED.value,
     }:
         verdict = DispatchSessionVerdict(journal.completion_verdict)
         return DispatchSupervisionState(
@@ -91,9 +96,7 @@ def derive_supervision_state(
             unsupervised_live=False,
         )
     if git is not None:
-        verdict = judge_dispatch_completion(
-            DispatchCompletionInput(session_alive=session_alive, git=git)
-        )
+        verdict = judge_dispatch_completion(DispatchCompletionInput(session_alive=session_alive, git=git))
     elif session_alive:
         verdict = DispatchSessionVerdict.LIVE
     else:
@@ -115,9 +118,7 @@ def reconcile_unsupervised_verdict(
     git: DispatchGitFacts,
 ) -> DispatchSessionVerdict:
     """Git facts reconcile completion the supervisor missed while unsupervised."""
-    return judge_dispatch_completion(
-        DispatchCompletionInput(session_alive=session_alive, git=git)
-    )
+    return judge_dispatch_completion(DispatchCompletionInput(session_alive=session_alive, git=git))
 
 
 def format_entry_ts(moment: datetime) -> str:

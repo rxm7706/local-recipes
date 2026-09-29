@@ -149,21 +149,17 @@ def _read_bounded(manifest_path: Path, manifest: ScannedManifest) -> str:
     raw = manifest_path.read_bytes()
     if len(raw) > _MAX_LOCKFILE_BYTES:
         raise UnparsableManifestError(
-            f"unparsable manifest {manifest.path}: exceeds the "
-            f"{_MAX_LOCKFILE_BYTES}-byte size cap (NFR-S5)"
+            f"unparsable manifest {manifest.path}: exceeds the {_MAX_LOCKFILE_BYTES}-byte size cap (NFR-S5)"
         )
     for line in raw.split(b"\n"):
         if len(line) > _MAX_LINE_BYTES:
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: a line exceeds the "
-                f"{_MAX_LINE_BYTES}-byte length cap (NFR-S5)"
+                f"unparsable manifest {manifest.path}: a line exceeds the {_MAX_LINE_BYTES}-byte length cap (NFR-S5)"
             )
     try:
         return raw.decode("utf-8")
     except UnicodeDecodeError as exc:
-        raise UnparsableManifestError(
-            f"unparsable manifest {manifest.path}: {exc}"
-        ) from exc
+        raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {exc}") from exc
 
 
 def _load_yaml(manifest_path: Path, manifest: ScannedManifest) -> object:
@@ -171,14 +167,10 @@ def _load_yaml(manifest_path: Path, manifest: ScannedManifest) -> object:
     try:
         return yaml_safe_load_strict(text)
     except yaml.YAMLError as exc:
-        raise UnparsableManifestError(
-            f"unparsable manifest {manifest.path}: {exc}"
-        ) from exc
+        raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {exc}") from exc
 
 
-def _optional_str_field(
-    entry: dict[str, object], key: str, manifest: ScannedManifest
-) -> str | None:
+def _optional_str_field(entry: dict[str, object], key: str, manifest: ScannedManifest) -> str | None:
     """``entry[key]`` as a string, ``None`` when the key is absent/``null``,
     or a raised ``UnparsableManifestError`` when present with the WRONG
     type (a structural schema violation, not a content-level degeneracy)."""
@@ -187,8 +179,7 @@ def _optional_str_field(
         return None
     if not isinstance(value, str):
         raise UnparsableManifestError(
-            f"unparsable manifest {manifest.path}: {key!r} must be a "
-            f"string, got {type(value).__name__}"
+            f"unparsable manifest {manifest.path}: {key!r} must be a string, got {type(value).__name__}"
         )
     return value
 
@@ -218,18 +209,13 @@ class PixiLockExtractor:
         """Structured diagnostics from the last ``extract`` call (stderr-owned)."""
         return self._warnings
 
-    def extract(
-        self, manifest_path: Path, manifest: ScannedManifest
-    ) -> tuple[Component, ...]:
+    def extract(self, manifest_path: Path, manifest: ScannedManifest) -> tuple[Component, ...]:
         document = _load_yaml(manifest_path, manifest)
         if document is None:
             self._warnings = ()
             return ()
         if not isinstance(document, dict):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: top-level document "
-                "is not a mapping"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: top-level document is not a mapping")
         packages, self._warnings = self._package_entries(document, manifest)
         return tuple(self._component(entry, manifest) for entry in packages)
 
@@ -238,11 +224,7 @@ class PixiLockExtractor:
     ) -> tuple[list[object], tuple[str, ...]]:
         if self._environment is None:
             environments = document.get("environments")
-            env_count = (
-                len(environments)
-                if isinstance(environments, dict)
-                else 0
-            )
+            env_count = len(environments) if isinstance(environments, dict) else 0
             warnings: tuple[str, ...] = ()
             if env_count > 1:
                 warnings = (
@@ -254,36 +236,29 @@ class PixiLockExtractor:
             if packages is None:
                 packages = []
             if not isinstance(packages, list):
-                raise UnparsableManifestError(
-                    f"unparsable manifest {manifest.path}: 'packages' must "
-                    "be a list"
-                )
+                raise UnparsableManifestError(f"unparsable manifest {manifest.path}: 'packages' must be a list")
             return packages, warnings
 
         platform = self._platform if self._platform is not None else _host_platform()
         environments = document.get("environments")
         if not isinstance(environments, dict):
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: 'environments' must "
-                "be a mapping for scoped pixi.lock extraction"
+                f"unparsable manifest {manifest.path}: 'environments' must be a mapping for scoped pixi.lock extraction"
             )
         env_block = environments.get(self._environment)
         if not isinstance(env_block, dict):
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: unknown pixi "
-                f"environment {self._environment!r}"
+                f"unparsable manifest {manifest.path}: unknown pixi environment {self._environment!r}"
             )
         packages_by_platform = env_block.get("packages")
         if not isinstance(packages_by_platform, dict):
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: environment "
-                f"{self._environment!r} has no 'packages' mapping"
+                f"unparsable manifest {manifest.path}: environment {self._environment!r} has no 'packages' mapping"
             )
         platform_entries = packages_by_platform.get(platform)
         if platform_entries is None:
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: environment "
-                f"{self._environment!r} has no platform {platform!r}"
+                f"unparsable manifest {manifest.path}: environment {self._environment!r} has no platform {platform!r}"
             )
         if not isinstance(platform_entries, list):
             raise UnparsableManifestError(
@@ -293,14 +268,9 @@ class PixiLockExtractor:
             )
         return platform_entries, ()
 
-    def _component(
-        self, entry: object, manifest: ScannedManifest
-    ) -> Component:
+    def _component(self, entry: object, manifest: ScannedManifest) -> Component:
         if not isinstance(entry, dict):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: a 'packages' entry "
-                "is not a mapping"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: a 'packages' entry is not a mapping")
         if "conda" in entry:
             return self._conda_row(entry, manifest)
         if "pypi" in entry:
@@ -312,13 +282,9 @@ class PixiLockExtractor:
             "neither a 'conda', 'pypi', nor 'conda_source' key"
         )
 
-    def _conda_row(
-        self, entry: dict[str, object], manifest: ScannedManifest
-    ) -> Component:
+    def _conda_row(self, entry: dict[str, object], manifest: ScannedManifest) -> Component:
         ecosystem = self._router.route(manifest.kind, PIXI_LOCK_CONDA_SECTION)
-        provenance = (
-            Provenance(manifest=manifest.path, section=PIXI_LOCK_CONDA_SECTION),
-        )
+        provenance = (Provenance(manifest=manifest.path, section=PIXI_LOCK_CONDA_SECTION),)
         value = _optional_str_field(entry, "conda", manifest) or ""
         basename = value.rsplit("/", 1)[-1]  # basename-FIRST (see docstring)
         match = _CONDA_BASENAME_RE.match(basename) if basename else None
@@ -326,13 +292,9 @@ class PixiLockExtractor:
             return _raw_malformed(ecosystem, value, provenance)
         return _conda_component(match.group(1), match.group(2), provenance)
 
-    def _pypi_row(
-        self, entry: dict[str, object], manifest: ScannedManifest
-    ) -> Component:
+    def _pypi_row(self, entry: dict[str, object], manifest: ScannedManifest) -> Component:
         ecosystem = self._router.route(manifest.kind, PIXI_LOCK_PYPI_SECTION)
-        provenance = (
-            Provenance(manifest=manifest.path, section=PIXI_LOCK_PYPI_SECTION),
-        )
+        provenance = (Provenance(manifest=manifest.path, section=PIXI_LOCK_PYPI_SECTION),)
         name = _optional_str_field(entry, "name", manifest)
         version = _optional_str_field(entry, "version", manifest)
         if not name:
@@ -342,13 +304,9 @@ class PixiLockExtractor:
             return _raw_malformed(ecosystem, url, provenance)
         return _pypi_component(name, version, provenance)
 
-    def _conda_source_row(
-        self, entry: dict[str, object], manifest: ScannedManifest
-    ) -> Component:
+    def _conda_source_row(self, entry: dict[str, object], manifest: ScannedManifest) -> Component:
         ecosystem = self._router.route(manifest.kind, PIXI_LOCK_CONDA_SECTION)
-        provenance = (
-            Provenance(manifest=manifest.path, section=PIXI_LOCK_CONDA_SECTION),
-        )
+        provenance = (Provenance(manifest=manifest.path, section=PIXI_LOCK_CONDA_SECTION),)
         value = _optional_str_field(entry, "conda_source", manifest) or ""
         match = _CONDA_SOURCE_RE.match(value)
         if match is None:
@@ -364,41 +322,25 @@ class CondaLockExtractor:
     def __init__(self, router: Router) -> None:
         self._router = router
 
-    def extract(
-        self, manifest_path: Path, manifest: ScannedManifest
-    ) -> tuple[Component, ...]:
+    def extract(self, manifest_path: Path, manifest: ScannedManifest) -> tuple[Component, ...]:
         document = _load_yaml(manifest_path, manifest)
         if document is None:
             return ()
         if not isinstance(document, dict):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: top-level document "
-                "is not a mapping"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: top-level document is not a mapping")
         entries = document.get("package")
         if entries is None:
             entries = []
         if not isinstance(entries, list):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: 'package' must be "
-                "a list"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: 'package' must be a list")
         return tuple(self._component(entry, manifest) for entry in entries)
 
-    def _component(
-        self, entry: object, manifest: ScannedManifest
-    ) -> Component:
+    def _component(self, entry: object, manifest: ScannedManifest) -> Component:
         if not isinstance(entry, dict):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: a 'package' entry "
-                "is not a mapping"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: a 'package' entry is not a mapping")
         name = _optional_str_field(entry, "name", manifest)
         if not name:
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: a 'package' entry "
-                "has no name"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: a 'package' entry has no name")
         manager = entry.get("manager")
         if manager == "conda":
             section = CONDA_LOCK_CONDA_SECTION

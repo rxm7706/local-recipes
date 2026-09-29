@@ -51,8 +51,8 @@ if not settings.configured:
         USE_TZ=True,
     )
 
-from django.core.cache.backends.locmem import LocMemCache  # noqa: E402
 from django.core.cache import caches  # noqa: E402 -- must follow settings.configure()
+from django.core.cache.backends.locmem import LocMemCache  # noqa: E402
 
 from pyforge.steward.dashboard.cache import get_master_dataset  # noqa: E402
 
@@ -203,9 +203,7 @@ def test_finally_never_releases_a_lock_it_does_not_own():
 
     get_master_dataset(key, fetch, cache=backend, lock_timeout=30)
 
-    assert backend.get(lock_key) == "someone-elses-token", (
-        "this call's finally block released a lock it did not own"
-    )
+    assert backend.get(lock_key) == "someone-elses-token", "this call's finally block released a lock it did not own"
 
 
 @pytest.mark.parametrize("bad", [0, None, -1, 1.5, True, "30"])
@@ -238,6 +236,7 @@ def test_release_failure_never_masks_the_real_outcome():
     already-cached success into a failure -- and, worse, swallowed a genuine
     `fetch()` error and reported the blip instead.
     """
+
     class ExplodingRelease:
         """Delegates everything to a real backend, but fails on lock reads."""
 
@@ -277,6 +276,7 @@ def test_a_cache_write_failure_never_discards_a_successful_fetch():
     fetch into a hard failure and threw the fetched data away. A cache is an
     accelerator; returning uncached data beats failing the request.
     """
+
     class ExplodingWrite:
         """Delegates everything to a real backend, but fails writing the value."""
 
@@ -385,7 +385,7 @@ def test_winning_the_lock_rechecks_the_key_before_fetching():
     Simulated deterministically rather than by thread timing: the backend
     populates the data key at the exact instant the lock is won.
     """
-    backend = _fresh_backend()
+    _fresh_backend()
     key = "double-checked-locking"
     calls: list[int] = []
 

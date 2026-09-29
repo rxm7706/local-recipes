@@ -135,9 +135,7 @@ _TEMPLATE_MARKER_RE = re.compile(r"\$?\{\{")
 # marker. `[^{}]*` can never cross a `{`/`}` boundary, so a multi-expression
 # line now correctly falls through to the generic degrade ladder instead of
 # being wrongly excluded whole. No nested unbounded quantifiers (NFR-S5).
-_EXCLUDE_CALL_RE = re.compile(
-    r"^\$?\{\{\s*(compiler|stdlib|pin_subpackage)\s*\([^{}]*\)\s*\}\}$"
-)
+_EXCLUDE_CALL_RE = re.compile(r"^\$?\{\{\s*(compiler|stdlib|pin_subpackage)\s*\([^{}]*\)\s*\}\}$")
 
 # A `{# ... #}` Jinja comment span (Fix 1) — see ``strip_jinja_comments``.
 # Non-greedy so multiple comments per line are each matched independently.
@@ -275,12 +273,7 @@ def best_effort_name(raw: str) -> str | None:
     token = raw_token.rstrip("<>=!~,")
     if not token:
         return None
-    if (
-        marker is not None
-        and len(stripped.split()) == 1
-        and prefix == prefix.rstrip()
-        and token == raw_token
-    ):
+    if marker is not None and len(stripped.split()) == 1 and prefix == prefix.rstrip() and token == raw_token:
         # The single pre-marker token runs straight into the marker with no
         # operator debris between them: the name itself is templated.
         return None
@@ -347,9 +340,7 @@ def requirement_component(
     if _TEMPLATE_MARKER_RE.search(substituted):
         name = best_effort_name(substituted)
         if name:
-            return _conda_component(
-                name, None, provenance, extraction_mode=ExtractionMode.NAME_ONLY
-            )
+            return _conda_component(name, None, provenance, extraction_mode=ExtractionMode.NAME_ONLY)
         # str(raw), not raw: meta_v0.py may hand this a `LineStr` (a `str`
         # subclass carrying `.source_line` for selector-comment correlation,
         # review pass 3) -- Component.name must stay a plain str, never leak
@@ -447,14 +438,10 @@ def _walk_if_branch(
     if isinstance(value, list) and value:
         components: list[Component] = []
         for item in value:
-            components += _walk_if_branch(
-                item, context, provenance, ecosystem, section_suffix
-            )
+            components += _walk_if_branch(item, context, provenance, ecosystem, section_suffix)
         return components
     if isinstance(value, dict) and "if" in value:
-        return walk_if_then_else(
-            value, context, provenance, ecosystem, outer_suffix=section_suffix
-        )
+        return walk_if_then_else(value, context, provenance, ecosystem, outer_suffix=section_suffix)
     if isinstance(value, str):
         component = requirement_component(value, context, provenance, ecosystem)
         if component is None:
@@ -468,9 +455,7 @@ def _walk_if_branch(
     ]
 
 
-def selector_tag_suffix(
-    entry: object, selector_comments: Mapping[int, str] | None
-) -> str | None:
+def selector_tag_suffix(entry: object, selector_comments: Mapping[int, str] | None) -> str | None:
     """The shared "look up a selector tag" half of the tag-building logic
     (the other half, "build the suffix, apply it, escalate the mode", is
     ``_identity.py::apply_union_tag``) — both ``walk_requirements`` below
@@ -558,9 +543,7 @@ class RecipeV1Extractor:
     def __init__(self, router: Router) -> None:
         self._router = router
 
-    def extract(
-        self, manifest_path: Path, manifest: ScannedManifest
-    ) -> tuple[Component, ...]:
+    def extract(self, manifest_path: Path, manifest: ScannedManifest) -> tuple[Component, ...]:
         text = read_bounded_text(
             manifest_path,
             manifest,
@@ -575,8 +558,7 @@ class RecipeV1Extractor:
                 return ()
             if not isinstance(document, dict):
                 raise UnparsableManifestError(
-                    f"unparsable manifest {manifest.path}: top-level document "
-                    "is not a mapping"
+                    f"unparsable manifest {manifest.path}: top-level document is not a mapping"
                 )
             context = context_map(document)
             components: list[Component] = []
@@ -599,9 +581,7 @@ class RecipeV1Extractor:
             # precedent (which wraps only the parse call) BECAUSE it also
             # has to cover the walk -- an intentional, documented tradeoff,
             # not an oversight.
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: {exc}"
-            ) from exc
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {exc}") from exc
         return tuple(components)
 
     def _walk_tests(
@@ -628,9 +608,7 @@ class RecipeV1Extractor:
             )
         return components
 
-    def _walk_outputs(
-        self, outputs: object, context: Mapping[str, str], manifest: ScannedManifest
-    ) -> list[Component]:
+    def _walk_outputs(self, outputs: object, context: Mapping[str, str], manifest: ScannedManifest) -> list[Component]:
         if not isinstance(outputs, list):
             return []
         components: list[Component] = []

@@ -6,11 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.mason.boot import BootInterrupted
-from pyforge.mason.boot import NaiveAppendStore
-from pyforge.mason.boot import SqliteIndexStore
-from pyforge.mason.boot import insert_always
-from pyforge.mason.boot import reconcile_boot
+from pyforge.mason.boot import BootInterrupted, NaiveAppendStore, SqliteIndexStore, insert_always, reconcile_boot
 
 
 def _three_files(root: Path) -> None:

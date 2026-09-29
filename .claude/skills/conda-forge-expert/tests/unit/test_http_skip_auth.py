@@ -22,6 +22,9 @@ _http = importlib.util.module_from_spec(spec)
 sys.modules["_http"] = _http
 spec.loader.exec_module(_http)
 
+# The baselines here go through the host gate, which scans every `*_BASE_URL`.
+pytestmark = pytest.mark.usefixtures("clean_mirror_env")
+
 
 class TestSkipAuth:
     """`skip_auth=True` returns empty regardless of env / netrc state."""

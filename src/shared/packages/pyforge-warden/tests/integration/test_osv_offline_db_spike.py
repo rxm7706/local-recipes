@@ -69,6 +69,7 @@ FIXTURE_ADVISORY_ID = "PDOS-FIXTURE-0001"
 FIXTURE_PACKAGE = "pdos-vuln-fixture"
 FIXTURE_CVSS_VECTOR = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
 
+
 def _osv_scanner_bin() -> str:
     """Return the ``osv-scanner`` path, HARD-FAILING (never skipping) if it is
     not on PATH — the engine is a provisioned conda run-dep (NFR-C1)."""
@@ -113,11 +114,7 @@ class OsvRun:
 
     def _packages(self) -> list[dict]:
         doc = self.document or {}
-        return [
-            pkg
-            for result in doc.get("results", [])
-            for pkg in result.get("packages", [])
-        ]
+        return [pkg for result in doc.get("results", []) for pkg in result.get("packages", [])]
 
     def vulnerabilities(self) -> list[dict]:
         return [vuln for pkg in self._packages() for vuln in pkg.get("vulnerabilities", [])]
@@ -235,17 +232,11 @@ def test_clean_pin_is_clean_offline(tmp_path, offline_cache):
 # --- (c) a non-`requirements.txt` name is parsed via -L parser:path ----------
 
 
-def test_non_requirements_txt_name_is_parsed_via_parser_override(
-    tmp_path, offline_cache
-):
+def test_non_requirements_txt_name_is_parsed_via_parser_override(tmp_path, offline_cache):
     # Copy the vulnerable pins to a file whose name is NOT requirements.txt.
     oddly_named = tmp_path / "pdos-osv-vuln-abc123.txt"
-    oddly_named.write_text(
-        LOCKFILE_VULNERABLE.read_text(encoding="utf-8"), encoding="utf-8"
-    )
-    run = _run_osv_offline(
-        tmp_path, offline_cache, oddly_named, parser_id=OSV_PIP_PARSER_ID
-    )
+    oddly_named.write_text(LOCKFILE_VULNERABLE.read_text(encoding="utf-8"), encoding="utf-8")
+    run = _run_osv_offline(tmp_path, offline_cache, oddly_named, parser_id=OSV_PIP_PARSER_ID)
 
     # The parser override removes the "input must be named requirements.txt"
     # constraint — the arbitrarily-named file is still parsed and matched.
@@ -399,9 +390,7 @@ def test_present_but_empty_db_false_greens_and_a_nonemptiness_preflight_catches_
         (b'{"id": "PDOS-FIXTURE-0001"}', "valid JSON but no affected[] (truncated advisory)"),
     ],
 )
-def test_present_but_content_corrupt_db_false_greens_and_a_content_preflight_catches_it(
-    tmp_path, corrupt_entry, why
-):
+def test_present_but_content_corrupt_db_false_greens_and_a_content_preflight_catches_it(tmp_path, corrupt_entry, why):
     """F1 (the follow-up review's cardinal finding). A VALID zip CONTAINER whose
     ``<id>.json`` entry is **content-corrupt** — empty ``{}``, malformed JSON, or
     a shape-invalid/truncated advisory — is LOADED by osv-scanner and exits
@@ -609,9 +598,7 @@ def test_builder_rejects_non_concrete_version_spec(tmp_path):
         json.dumps(
             {
                 "id": "PDOS-EMPTY-VERSION",
-                "affected": [
-                    {"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": [""]}
-                ],
+                "affected": [{"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": [""]}],
             }
         ),
         encoding="utf-8",

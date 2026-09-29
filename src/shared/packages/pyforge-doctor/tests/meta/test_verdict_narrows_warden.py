@@ -23,8 +23,9 @@ exactly this kind of test use, without doctor ever declaring warden as a
 
 from __future__ import annotations
 
-from pyforge.doctor.verdict import LATTICE as DOCTOR_LATTICE
 from pyforge.warden.verdict import LATTICE as WARDEN_LATTICE
+
+from pyforge.doctor.verdict import LATTICE as DOCTOR_LATTICE
 
 
 def test_doctor_lattice_narrows_warden_lattice():

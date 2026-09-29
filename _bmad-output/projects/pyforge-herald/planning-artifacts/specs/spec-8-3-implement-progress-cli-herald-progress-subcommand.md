@@ -143,3 +143,16 @@ tested identically in `test_cli_progress.py`.
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `f71a381c3c` (2026-08-15, "doctor: land Story 8.3 -- sprint ledger, dashboard, epics outcome, spec promotion"); also `d2617c4036` (2026-08-15, "doctor: Story 8.3 -- deferred_work_promote.py, the --fix mode"); also `4c547d0a58` (2026-08-08, "herald: Story 8.2 + 8.3 — herald progress subcommand (CLI-triggered, no webhook)"). Ledger row `8-3-implement-progress-cli-herald-progress-subcommand: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `docs/dashboard/data.js`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

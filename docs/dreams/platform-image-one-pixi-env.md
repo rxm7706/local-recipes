@@ -1,9 +1,12 @@
----
-title: One pixi env for the platform image
+---title: One pixi env for the platform image
 type: dream
 owner: steward
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `platform-image-one-pixi-env`).
+
 
 # One pixi env for the platform image
 

@@ -49,12 +49,22 @@ def parse_recall_cli(stdout: str) -> dict[str, Any]:
     return {"grounded": grounded, "text": text, "citation": citation}
 
 
-def _grammar_recall(payload: dict[str, Any]) -> dict[str, Any]:
-    query = str(payload.get("query", ""))
+def recall_cli_argv(query: str, mode: str | None = None) -> list[str]:
+    """Portal recall grammar. Story 12.1: never ``--kind``. Story 18.1:
+    ``mode`` is optional and never defaults to planning or code."""
     pyforge = shutil.which("pyforge")
     argv = [pyforge, "scribe", "recall", query] if pyforge else ["scribe", "recall", query]
+    if mode:
+        argv.extend(["--mode", str(mode)])
+    return argv
+
+
+def _grammar_recall(payload: dict[str, Any]) -> dict[str, Any]:
+    query = str(payload.get("query", ""))
+    raw_mode = payload.get("mode")
+    mode = str(raw_mode) if raw_mode else None
     completed = subprocess.run(
-        argv,
+        recall_cli_argv(query, mode=mode),
         capture_output=True,
         text=True,
         check=False,

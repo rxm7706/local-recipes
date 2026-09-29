@@ -177,14 +177,10 @@ def test_recipe_v1_extraction_is_a_superset_of_the_rattler_build_render():
     assert extracted_names, "the fixture must contribute at least one component"
 
     text = RECIPE_FIXTURE.read_text(encoding="utf-8")
-    rendered = rattler_build.Stage0Recipe.from_yaml(text).render(
-        rattler_build.VariantConfig.from_yaml("{}")
-    )
+    rendered = rattler_build.Stage0Recipe.from_yaml(text).render(rattler_build.VariantConfig.from_yaml("{}"))
     assert rendered, "the fixture must render to at least one variant"
     requirements = rendered[0].recipe.requirements.to_dict()
-    rendered_names = _names_from_matchspecs(
-        [*requirements.get("host", []), *requirements.get("run", [])]
-    )
+    rendered_names = _names_from_matchspecs([*requirements.get("host", []), *requirements.get("run", [])])
     assert rendered_names, "the fixture must render at least one requirement"
 
     assert extracted_names >= rendered_names
@@ -201,9 +197,7 @@ def test_meta_v0_extraction_is_a_superset_of_the_conda_build_render():
     extracted_names = {c.name for c in components}
     assert extracted_names, "the fixture must contribute at least one component"
 
-    metas = api.render(
-        str(META_FIXTURE.parent), finalize=False, bypass_env_check=True
-    )
+    metas = api.render(str(META_FIXTURE.parent), finalize=False, bypass_env_check=True)
     assert metas, "the fixture must render to at least one metadata object"
     meta = metas[0][0]
     rendered_run = meta.get_value("requirements/run") or []
@@ -215,9 +209,7 @@ def test_meta_v0_extraction_is_a_superset_of_the_conda_build_render():
     # run_constrained must never leak into either side's comparison set.
     assert "scipy" not in extracted_names
     assert "scipy" not in rendered_names
-    rendered_constrained = _names_from_matchspecs(
-        meta.get_value("requirements/run_constrained") or []
-    )
+    rendered_constrained = _names_from_matchspecs(meta.get_value("requirements/run_constrained") or [])
     assert "scipy" in rendered_constrained
 
 
@@ -230,9 +222,7 @@ def test_recipe_v1_complex_extraction_is_a_superset_of_the_rattler_build_render(
     recipe, live-verified render included."""
     rattler_build = _rattler_build_module()
     manifest = ScannedManifest(path="recipe.yaml", kind=RECIPE_YAML_KIND)
-    components = RecipeV1Extractor(DefaultRouter()).extract(
-        RECIPE_COMPLEX_FIXTURE, manifest
-    )
+    components = RecipeV1Extractor(DefaultRouter()).extract(RECIPE_COMPLEX_FIXTURE, manifest)
     extracted_names = {c.name for c in components}
     assert extracted_names, "the fixture must contribute at least one component"
 
@@ -287,15 +277,11 @@ def test_meta_v0_complex_extraction_is_a_superset_of_the_conda_build_render():
     ``pin_subpackage()`` (intra-recipe exclude)."""
     api = _conda_build_module()
     manifest = ScannedManifest(path="meta.yaml", kind=META_YAML_KIND)
-    components = MetaV0Extractor(DefaultRouter()).extract(
-        META_COMPLEX_FIXTURE, manifest
-    )
+    components = MetaV0Extractor(DefaultRouter()).extract(META_COMPLEX_FIXTURE, manifest)
     extracted_names = {c.name for c in components}
     assert extracted_names, "the fixture must contribute at least one component"
 
-    metas = api.render(
-        str(META_COMPLEX_FIXTURE.parent), finalize=False, bypass_env_check=True
-    )
+    metas = api.render(str(META_COMPLEX_FIXTURE.parent), finalize=False, bypass_env_check=True)
     assert metas, "the fixture must render to at least one metadata object"
 
     rendered_names: set[str] = set()
@@ -304,9 +290,7 @@ def test_meta_v0_complex_extraction_is_a_superset_of_the_conda_build_render():
         rendered_run = meta.get_value("requirements/run") or []
         rendered_host = meta.get_value("requirements/host") or []
         rendered_build = meta.get_value("requirements/build") or []
-        rendered_names |= _names_from_matchspecs(
-            [*rendered_run, *rendered_host, *rendered_build]
-        )
+        rendered_names |= _names_from_matchspecs([*rendered_run, *rendered_host, *rendered_build])
         build_names |= _names_from_matchspecs(rendered_build)
     assert rendered_names, "the fixture must render at least one requirement"
     rendered_names -= _BUILD_TOOL_RENDERED_NAMES
@@ -413,7 +397,7 @@ def test_corpus_recipe_v1_extraction_is_a_superset_of_the_rattler_build_render()
         text = path.read_text(encoding="utf-8")
         try:
             rendered = rattler_build.Stage0Recipe.from_yaml(text).render(variant_config)
-        except (SystemExit, Exception):  # noqa: BLE001 — a render failure here
+        except SystemExit, Exception:  # noqa: BLE001 — a render failure here
             # just means this file isn't oracle-verifiable with a generic
             # variant config (see the config's own comment above) — never a
             # bug in OUR extractor, so it's excluded from the assertion set
@@ -421,9 +405,7 @@ def test_corpus_recipe_v1_extraction_is_a_superset_of_the_rattler_build_render()
             continue
         if not rendered:
             continue
-        if _EXCLUDED_CONSTRUCT_RE.search(text) or any(
-            c.extraction_mode in _DEGRADED_MODES for c in components
-        ):
+        if _EXCLUDED_CONSTRUCT_RE.search(text) or any(c.extraction_mode in _DEGRADED_MODES for c in components):
             continue
         extracted_names = {c.name.lower() for c in components}
         rendered_names: set[str] = set()
@@ -468,7 +450,7 @@ def test_corpus_meta_v0_extraction_is_a_superset_of_the_conda_build_render():
         text = path.read_text(encoding="utf-8")
         try:
             metas = api.render(str(path.parent), finalize=False, bypass_env_check=True)
-        except (SystemExit, Exception):  # noqa: BLE001 — see the recipe.yaml
+        except SystemExit, Exception:  # noqa: BLE001 — see the recipe.yaml
             # sweep above: conda_build itself calls sys.exit() on some
             # malformed real-world meta.yaml files (live-verified —
             # "Error: bad character '*' in package name dependency '*'"),
@@ -477,9 +459,7 @@ def test_corpus_meta_v0_extraction_is_a_superset_of_the_conda_build_render():
             continue
         if not metas:
             continue
-        if _EXCLUDED_CONSTRUCT_RE.search(text) or any(
-            c.extraction_mode in _DEGRADED_MODES for c in components
-        ):
+        if _EXCLUDED_CONSTRUCT_RE.search(text) or any(c.extraction_mode in _DEGRADED_MODES for c in components):
             continue
         extracted_names = {c.name.lower() for c in components}
         rendered_names: set[str] = set()
@@ -487,9 +467,7 @@ def test_corpus_meta_v0_extraction_is_a_superset_of_the_conda_build_render():
             rendered_run = meta.get_value("requirements/run") or []
             rendered_host = meta.get_value("requirements/host") or []
             rendered_build = meta.get_value("requirements/build") or []
-            rendered_names |= _corpus_names_from_matchspecs(
-                [*rendered_run, *rendered_host, *rendered_build]
-            )
+            rendered_names |= _corpus_names_from_matchspecs([*rendered_run, *rendered_host, *rendered_build])
         compared += 1
         missing = rendered_names - extracted_names
         if missing:

@@ -54,7 +54,9 @@ machine-readable ceiling; `check` may request `EXIT_BUDGET_NOT_CONFIGURED` (3)
 when no metered source exists [SRC:src/pyforge/steward/cli.py:L25-L33].
 
 <!-- [MANUAL:additional-notes] -->
-<!-- Add custom notes here. This section is preserved during skill updates. -->
+**Track** (`steward track assemble --run-dir DIR --out PATH`) (Story 53.3 / hub:CAP-3):
+write one tracked `track.json` from a run dir. Field list is marshal-relayed
+(`TRACK_FIELDS`); this duty is the Track writer. Not a detector.
 <!-- [/MANUAL:additional-notes] -->
 
 ## Common Workflows
@@ -85,9 +87,11 @@ Public SKF extract of `cli.py` (Quick mode): `build_parser`, `resolve_duty`,
 `main` [SRC:src/pyforge/steward/cli.py]. Console script:
 `steward = pyforge.steward.cli:main` [SRC:pyproject.toml:L52-L53].
 
-Registered duties [SRC:src/pyforge/steward/cli.py:L41-L55]: `keys`, `deploy`,
+Registered duties [SRC:src/pyforge/steward/cli.py]: `keys`, `deploy`,
 `provision`, `budget`, `sync`, `workspace`, `upgrade`, `suite`, `init`,
-`shell-init`, `setup`, `initrepo`, `validate-fast`.
+`shell-init`, `setup`, `initrepo`, `validate-fast`, `restore`, `revoke`,
+`track`, `guards`. `guards` is a library (catalog / lacking / source-ground),
+never a PR verdict.
 
 ## Usage
 
@@ -138,5 +142,5 @@ steward init|shell-init|setup|initrepo|validate-fast [--json]
 ```
 
 <!-- [MANUAL:api-notes] -->
-<!-- Add custom notes here. This section is preserved during skill updates. -->
+steward track assemble --run-dir DIR --out PATH
 <!-- [/MANUAL:api-notes] -->

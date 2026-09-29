@@ -1,0 +1,11 @@
+# Steward corridor -- transports (Story 61.1, spec-pyforge-steward CAP-139).
+# Every transport writes the SAME loader (batch sha + waybill,
+# corridor.py::load_extract). A new transport is a declared row bound to a
+# state, never an engine rewrite.
+transports:
+  app-upload:
+    state: on
+  shared-folder:
+    state: off
+  email:
+    state: off

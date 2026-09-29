@@ -37,15 +37,60 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from pyforge.scribe.compile import source_committed_after
 from pyforge.scribe.graph_store import GraphStore
-from pyforge.scribe.models import GraphNode
+from pyforge.scribe.models import GraphNode, GraphNodeKind
+
+#: Default `answer()` / `scribe recall` candidate kinds (Story 8.5 / CAP-4).
+#: `code` stays in the store for `index report` and `--kind code`; it is
+#: not a default lexical/semantic peer of memory, Dreams, or SPECs.
+DEFAULT_RECALL_KINDS: frozenset[GraphNodeKind] = frozenset({"memory", "memlog", "commit", "doc", "transcript"})
+_ALL_RECALL_KINDS: frozenset[str] = frozenset({"memory", "memlog", "commit", "doc", "transcript", "code"})
+#: User-facing `--mode` bags (Story 16.1 / CAP-11). Distinct from
+#: `answer(..., mode=)` which is lexical vs semantic ranking.
+RECALL_MODE_KINDS: dict[str, frozenset[str]] = {
+    "planning": frozenset({"doc", "memlog"}),
+    "memory": frozenset({"memory"}),
+    "code": frozenset({"code"}),
+}
 
 _STOPWORDS = frozenset(
     {
-        "a", "an", "the", "did", "do", "does", "we", "i", "is", "are", "was",
-        "were", "to", "of", "in", "on", "for", "and", "or", "why", "what",
-        "when", "how", "this", "that", "it", "be", "have", "has", "had",
-        "with", "at", "by", "from", "our",
+        "a",
+        "an",
+        "the",
+        "did",
+        "do",
+        "does",
+        "we",
+        "i",
+        "is",
+        "are",
+        "was",
+        "were",
+        "to",
+        "of",
+        "in",
+        "on",
+        "for",
+        "and",
+        "or",
+        "why",
+        "what",
+        "when",
+        "how",
+        "this",
+        "that",
+        "it",
+        "be",
+        "have",
+        "has",
+        "had",
+        "with",
+        "at",
+        "by",
+        "from",
+        "our",
     }
 )
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
@@ -90,20 +135,59 @@ def _scope_prefix(scope: str) -> str:
     return f"_bmad-output/projects/{scope}/"
 
 
+#: Herald fact ledger compiled by Story 8.3. Scoped retrieve admits the
+#: ledger whose directory name equals `--scope` (Story 9.1 / CAP-1).
+_FACTS_LEDGER_CITATION_RE = re.compile(r"^presentations/(?P<slug>[^/]+)/facts\.yaml$")
+
+
 def _citation_in_scope(citation: str, scope: str | None) -> bool:
     """Whether `citation` belongs to `scope` (a project slug).
 
     `scope=None` admits every citation -- today's unscoped behavior,
-    unchanged. A given `scope` admits only citations under that project's
-    own `_bmad-output/projects/<scope>/` tree; every other citation shape
-    (`commit:<sha>`, a transcript `<jsonl>:L<n>`, or a bare code path) has
-    no reliable per-project attribution in the citation string itself, so
-    it is excluded rather than guessed at -- a scoped caller asked for THIS
-    project's planning facts, not an arbitrary commit or code line that
-    happens to score well lexically."""
+    unchanged. A given `scope` admits citations under that project's
+    own `_bmad-output/projects/<scope>/` tree, plus exactly
+    `presentations/<scope>/facts.yaml` (Story 9.1). Every other citation
+    shape (`commit:<sha>`, a transcript `<jsonl>:L<n>`, a bare code path,
+    another deck's ledger, or the presentations export tree) has no
+    reliable per-project attribution, so it is excluded rather than
+    guessed at."""
     if scope is None:
         return True
-    return citation.startswith(_scope_prefix(scope))
+    if citation.startswith(_scope_prefix(scope)):
+        return True
+    match = _FACTS_LEDGER_CITATION_RE.fullmatch(citation)
+    return bool(match and match.group("slug") == scope)
+
+
+def resolve_recall_kinds(kinds: frozenset[str] | None) -> frozenset[str]:
+    """`None` is the default bag (no `code`). An explicit set is used as-is
+    after rejecting unknown kind tokens."""
+    if kinds is None:
+        return DEFAULT_RECALL_KINDS
+    unknown = kinds - _ALL_RECALL_KINDS
+    if unknown:
+        raise ValueError(f"unknown recall kind(s) {sorted(unknown)!r}; expected one of {sorted(_ALL_RECALL_KINDS)}")
+    return kinds
+
+
+def resolve_recall_selection(
+    *,
+    kinds: frozenset[str] | None = None,
+    surface: str | None = None,
+) -> frozenset[str]:
+    """Resolve `--mode` or `--kind` to a kind bag (Story 16.1).
+
+    The two flags are exclusive. ``surface`` is the user-facing mode
+    (`planning` / `memory` / `code`), not lexical/semantic ranking.
+    """
+    if surface is not None and kinds is not None:
+        raise ValueError("--mode and --kind are exclusive")
+    if surface is not None:
+        bag = RECALL_MODE_KINDS.get(surface)
+        if bag is None:
+            raise ValueError(f"unknown recall mode {surface!r}; expected one of {sorted(RECALL_MODE_KINDS)}")
+        return bag
+    return resolve_recall_kinds(kinds)
 
 
 def answer(
@@ -113,6 +197,8 @@ def answer(
     repo_root: Path,
     mode: str = "lexical",
     scope: str | None = None,
+    kinds: frozenset[str] | None = None,
+    surface: str | None = None,
 ) -> RecallAnswer:
     """Deterministic, cited retrieval over the compiled graph (AD-6/AD-8).
 
@@ -133,10 +219,15 @@ def answer(
     node can outscore a correct-project node using less generic
     vocabulary. `scope` filters candidates to one project's own citation
     tree BEFORE scoring, closing that gap for both lexical and semantic
-    modes; `scope=None` is the prior, unscoped behavior, byte-for-byte.
+    modes;     `scope=None` is the prior, unscoped behavior, byte-for-byte.
+
+    `kinds` (Story 8.5): `None` omits `code`. An explicit frozenset is the
+    only candidate kinds — `--kind code` is opt-in, not additive.
+    `surface` (Story 16.1): named `--mode` bag; exclusive with `kinds`.
     """
+    allowed = resolve_recall_selection(kinds=kinds, surface=surface)
     if mode == "semantic":
-        return _answer_semantic(query, store, repo_root=repo_root, scope=scope)
+        return _answer_semantic(query, store, repo_root=repo_root, scope=scope, kinds=allowed)
     if mode != "lexical":
         raise ValueError(f"unknown recall mode {mode!r}; expected 'lexical' or 'semantic'")
 
@@ -148,6 +239,8 @@ def answer(
     for node in store.iter_nodes():
         if not node.is_current or node.stale:
             continue
+        if node.kind not in allowed:
+            continue
         if not _citation_in_scope(node.citation, scope):
             continue
         node_tokens = _tokenize(f"{node.title} {node.text}")
@@ -158,6 +251,8 @@ def answer(
     scored.sort(key=lambda pair: (-pair[0], pair[1].id))
 
     for _score, node in scored:
+        if _withheld_as_stale(node, store, repo_root):
+            continue
         if _citation_is_resolvable(node.citation, repo_root):
             return RecallAnswer(grounded=True, text=node.text, citation=node.citation, node_id=node.id)
         # Unresolvable citation -- never surface an uncited/unverifiable answer; try the next candidate.
@@ -166,20 +261,38 @@ def answer(
 
 
 def _answer_semantic(
-    query: str, store: GraphStore, *, repo_root: Path, scope: str | None = None
+    query: str,
+    store: GraphStore,
+    *,
+    repo_root: Path,
+    scope: str | None = None,
+    kinds: frozenset[str] | None = None,
 ) -> RecallAnswer:
+    allowed = resolve_recall_kinds(kinds)
     if not query.strip():
         return _no_grounded_answer()
     for node in store.query_similar(query, limit=16):
         if not node.is_current or node.stale:
             continue
+        if node.kind not in allowed:
+            continue
         if not _citation_in_scope(node.citation, scope):
             continue
+        if _withheld_as_stale(node, store, repo_root):
+            continue
         if _citation_is_resolvable(node.citation, repo_root):
-            return RecallAnswer(
-                grounded=True, text=node.text, citation=node.citation, node_id=node.id
-            )
+            return RecallAnswer(grounded=True, text=node.text, citation=node.citation, node_id=node.id)
     return _no_grounded_answer()
+
+
+def _withheld_as_stale(node: GraphNode, store: GraphStore, repo_root: Path) -> bool:
+    """Stored `stale` bit, plus recall-time compare to `compiled_at`."""
+    if node.stale:
+        return True
+    compiled_at = getattr(store, "compiled_at", None)
+    if compiled_at is None:
+        return False
+    return source_committed_after(repo_root, node, compiled_at)
 
 
 def _no_grounded_answer() -> RecallAnswer:

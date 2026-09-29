@@ -71,13 +71,13 @@ _LEDGER_SECTIONS: tuple[_LedgerSection, ...] = (
 def _git(target: Path, *args: str) -> str | None:
     try:
         return run_git(target, list(args))
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
 
 
 def _line_range_spec(start_heading: str, end_heading: str, dream_rel: str) -> str:
     start = re.escape(start_heading)
-    end = re.escape(end_heading)
+    re.escape(end_heading)
     return f"/^{start}/,/^## /:{dream_rel}"
 
 
@@ -175,10 +175,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                     source=Source.PIXI_CURRENCY_LEDGER,
                     check=_CHECK_LEDGER_UNREADABLE,
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"cannot read ledger section {section.slug!r} "
-                        f"from {_DREAM_REL}"
-                    ),
+                    message=(f"cannot read ledger section {section.slug!r} from {_DREAM_REL}"),
                     evidence={
                         "ledger": section.slug,
                         "dream": _DREAM_REL,
@@ -195,10 +192,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                     source=Source.PIXI_CURRENCY_LEDGER,
                     check=_CHECK_PIXI_UNREADABLE,
                     status=DoctorStatus.WARN,
-                    message=(
-                        f"cannot count {_PIXI_REL} commits since "
-                        f"{section.slug} was last updated"
-                    ),
+                    message=(f"cannot count {_PIXI_REL} commits since {section.slug} was last updated"),
                     evidence={"ledger": section.slug, "since_commit": sha},
                 )
             )
@@ -220,9 +214,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                     evidence={
                         "ledger": section.slug,
                         "pixi_commits_since_ledger_touch": pixi_commits,
-                        "threshold_pixi_commits": (
-                            PIXI_CURRENCY_LEDGER_STALENESS_PIXI_COMMITS
-                        ),
+                        "threshold_pixi_commits": (PIXI_CURRENCY_LEDGER_STALENESS_PIXI_COMMITS),
                         "ledger_last_commit": sha,
                         "ledger_last_touch": timestamp,
                         "pixi_toml": _PIXI_REL,

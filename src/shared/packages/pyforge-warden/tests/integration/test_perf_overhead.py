@@ -50,13 +50,7 @@ from pyforge.warden.models import (
     AXIS_VULNERABILITY,
 )
 
-REPRESENTATIVE_TARGET = (
-    Path(__file__).resolve().parent.parent
-    / "fixtures"
-    / "corpus"
-    / "recipes"
-    / "types-lxml"
-)
+REPRESENTATIVE_TARGET = Path(__file__).resolve().parent.parent / "fixtures" / "corpus" / "recipes" / "types-lxml"
 
 PERF_ITERATIONS = 30
 PERF_OVERHEAD_P95_BUDGET_SECONDS = 1.0
@@ -93,9 +87,7 @@ def _p95(samples: list[float]) -> float:
 
 
 def test_stubbed_engine_overhead_holds_the_p95_budget(capsys, monkeypatch):
-    assert REPRESENTATIVE_TARGET.is_dir(), (
-        f"{REPRESENTATIVE_TARGET} missing -- run scripts/harvest_corpus.py"
-    )
+    assert REPRESENTATIVE_TARGET.is_dir(), f"{REPRESENTATIVE_TARGET} missing -- run scripts/harvest_corpus.py"
     stubs = [
         _make_stub_engine("stub-hygiene", AXIS_HYGIENE),
         _make_stub_engine("stub-vulnerability", AXIS_VULNERABILITY),

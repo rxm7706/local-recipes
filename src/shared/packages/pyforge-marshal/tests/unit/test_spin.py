@@ -23,6 +23,7 @@ import jsonschema
 import pytest
 from pyforge.core.process import ProcessError
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
+
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError, render_policy_toml
 from pyforge.marshal.cli import spin as spin_module
@@ -33,14 +34,7 @@ from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, pre
 from pyforge.marshal.core.verdict import EXIT_OK, EXIT_SIGINT, Verdict, exit_code_for
 from pyforge.marshal.ports.harness import DeferredStory, RunStatusSnapshot, SpinResult
 
-_SCHEMA_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "pyforge"
-    / "marshal"
-    / "schemas"
-    / "envelope.v1.json"
-)
+_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "envelope.v1.json"
 
 
 class FakeFs:
@@ -109,11 +103,7 @@ class FakeFs:
         # store" MEANS -- unless the test declared it dangling. Without this
         # the fake would describe an impossible world (a symlink to a real
         # store that is somehow not a directory) for every scenario.
-        return (
-            path in self.read_symlink_target_calls
-            and self.tier3_backlink
-            and not self.tier3_dangling
-        )
+        return path in self.read_symlink_target_calls and self.tier3_backlink and not self.tier3_dangling
 
     def read_symlink_target(self, path: Path) -> Path | None:
         self.calls.append("read_symlink_target")
@@ -184,9 +174,7 @@ class FakeHarness:
         # past the adapter's catch tuples.
         self.fail_feed_error: Exception | None = None
         self.feed_keys: tuple[str, ...] = ()
-        self.spin_result: SpinResult = SpinResult(
-            pid=4242, harness_run_id="acme-20260803T054512123Z-ab12cd"
-        )
+        self.spin_result: SpinResult = SpinResult(pid=4242, harness_run_id="acme-20260803T054512123Z-ab12cd")
         self.fail_spin: Exception | None = None
         self.spin_calls: list[dict[str, object]] = []
         self.attach_result: int = 0
@@ -273,9 +261,7 @@ class FakeHarness:
         max_count: int | None,
     ) -> int:
         self.calls.append("run_foreground")
-        self.foreground_calls.append(
-            {"project": project, "epic": epic, "story": story, "max_count": max_count}
-        )
+        self.foreground_calls.append({"project": project, "epic": epic, "story": story, "max_count": max_count})
         if self.fail_run_foreground:
             raise self.fail_run_foreground
         return self.foreground_result
@@ -429,9 +415,7 @@ def test_spin_happy_path_mints_run_id_journals_and_spawns(home, capsys):
 
     # Exactly two journal appends: intent (fsync=True) then outcome (fsync=False).
     assert len(fs.appended_lines) == 2
-    (intent_path, intent_line, intent_fsync), (outcome_path, outcome_line, outcome_fsync) = (
-        fs.appended_lines
-    )
+    (intent_path, intent_line, intent_fsync), (outcome_path, outcome_line, outcome_fsync) = fs.appended_lines
     assert intent_path == outcome_path
     assert intent_fsync is True
     assert outcome_fsync is False
@@ -493,9 +477,7 @@ def test_spin_composed_selectors_filter_the_preview_and_pass_through(home):
     harness = FakeHarness()
     harness.feed_keys = ("1-1-a", "1-2-b", "2-1-c")
 
-    exit_code = run_spin(
-        _spin_namespace("acme", epic=1, story="1-2", max_count=5), fs=fs, harness=harness
-    )
+    exit_code = run_spin(_spin_namespace("acme", epic=1, story="1-2", max_count=5), fs=fs, harness=harness)
 
     assert exit_code == EXIT_OK
     [spin_call] = harness.spin_calls
@@ -517,9 +499,7 @@ def test_spin_unparseable_story_selector_previews_empty_without_raising(home):
     harness = FakeHarness()
     harness.feed_keys = ("1-1-a",)
 
-    exit_code = run_spin(
-        _spin_namespace("acme", story="some-slug-fragment"), fs=fs, harness=harness
-    )
+    exit_code = run_spin(_spin_namespace("acme", story="some-slug-fragment"), fs=fs, harness=harness)
 
     # Never pre-refuses on a zero-count preview (the spec's own Never
     # clause) -- the launch still proceeds.
@@ -647,9 +627,7 @@ def test_spin_uncaught_story_feed_keys_error_exits_cleanly_as_mrs_spin_005(home,
     assert harness.spin_calls == []
 
 
-def test_spin_outcome_journal_write_failure_after_successful_spawn_is_mrs_spin_006(
-    home, capsys
-):
+def test_spin_outcome_journal_write_failure_after_successful_spawn_is_mrs_spin_006(home, capsys):
     """Distinct from ``test_spin_detached_launch_failure_journals_a_failed_outcome``
     above: here the spawn itself SUCCEEDS (``harness.spin`` returns a real
     ``SpinResult``) and only the OUTCOME journal write fails -- review
@@ -940,9 +918,7 @@ def test_attach_projects_out_of_domain_exit_codes_to_the_error_rung(home, child_
         (143, exit_code_for(Verdict.ERROR)),  # SIGTERM, likewise
     ],
 )
-def test_foreground_relay_survives_mains_handler_clamp(
-    home, monkeypatch, child_code, expected
-):
+def test_foreground_relay_survives_mains_handler_clamp(home, monkeypatch, child_code, expected):
     """End-to-end through ``main()`` -- the ONLY level at which the original
     defect was observable. Before the fix every out-of-domain row here
     returned ``EXIT_USAGE`` (2)."""
@@ -1010,9 +986,7 @@ def test_spin_checks_the_backlink_at_the_local_tier3_path(home):
 
     run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
 
-    assert fs.read_symlink_target_calls == [
-        home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
-    ]
+    assert fs.read_symlink_target_calls == [home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"]
 
 
 def test_spin_foreground_needs_no_tier3_backlink(home):
@@ -1101,9 +1075,7 @@ def test_spin_unreadable_tier3_backlink_never_escapes_through_main(home, monkeyp
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
 
-    monkeypatch.setattr(
-        spin_module, "run_spin", lambda args: run_spin(args, fs=fs, harness=harness)
-    )
+    monkeypatch.setattr(spin_module, "run_spin", lambda args: run_spin(args, fs=fs, harness=harness))
 
     assert main(["factory", "spin", "acme"]) == exit_code_for(Verdict.ERROR)
 
@@ -1208,9 +1180,7 @@ def test_preflight_advisory_does_not_confuse_story_3_6_with_story_3_60(home, cap
 
     spec_dir = home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
     spec_dir.mkdir(parents=True)
-    (spec_dir / "spec-1-10-a-completely-different-story.md").write_bytes(
-        b"x" * (spin_module._LARGE_SPEC_BYTES + 1)
-    )
+    (spec_dir / "spec-1-10-a-completely-different-story.md").write_bytes(b"x" * (spin_module._LARGE_SPEC_BYTES + 1))
 
     exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
 
@@ -1281,20 +1251,14 @@ def test_preflight_advisory_only_covers_the_selected_stories(home, capsys):
 
     spec_dir = home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
     spec_dir.mkdir(parents=True)
-    (spec_dir / "spec-9-9-the-heavy-one.md").write_bytes(
-        b"x" * (spin_module._LARGE_SPEC_BYTES + 1)
-    )
+    (spec_dir / "spec-9-9-the-heavy-one.md").write_bytes(b"x" * (spin_module._LARGE_SPEC_BYTES + 1))
 
-    exit_code = run_spin(
-        _spin_namespace("acme", story="1-1-first-story", fmt="json"), fs=fs, harness=harness
-    )
+    exit_code = run_spin(_spin_namespace("acme", story="1-1-first-story", fmt="json"), fs=fs, harness=harness)
 
     envelope = json.loads(capsys.readouterr().out)
     codes = {finding["code"] for finding in envelope["findings"]}
     assert envelope["data"]["preview"] == ["1.1"]
-    assert "MRS-SPIN-009" not in codes, (
-        "warned about story 9.9, which this launch's own --story selector excludes"
-    )
+    assert "MRS-SPIN-009" not in codes, "warned about story 9.9, which this launch's own --story selector excludes"
     assert exit_code == EXIT_OK
 
 
@@ -1310,9 +1274,7 @@ def test_preflight_advisory_survives_a_deeply_nested_prior_state_json(home, caps
 
     prior_run_dir = home / ".bmad-loop" / "runs" / "acme-prior-run"
     prior_run_dir.mkdir(parents=True)
-    (prior_run_dir / "state.json").write_text(
-        "[" * 200_000 + "]" * 200_000, encoding="utf-8"
-    )
+    (prior_run_dir / "state.json").write_text("[" * 200_000 + "]" * 200_000, encoding="utf-8")
 
     exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
 
@@ -1512,9 +1474,7 @@ def test_spin_introduces_no_new_argv_surface_for_durability(home):
     assert len(call["argv"]) == 13
 
 
-def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding(
-    home, tmp_path, monkeypatch, capsys
-):
+def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding(home, tmp_path, monkeypatch, capsys):
     """Review finding: ``policy.compose()``'s own ``Finding`` list for the
     ``idle_threshold_minutes`` lookup used to be captured into a variable
     that was never looked at again -- a malformed override in the
@@ -1540,9 +1500,7 @@ def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding
 
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text('idle_threshold_minutes = "not-a-number"\n', encoding="utf-8")
-    monkeypatch.setattr(
-        spin_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
 
     exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
 
@@ -1563,9 +1521,7 @@ def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding
     assert harness.spin_calls  # the harness launch was actually attempted
 
 
-def test_spin_never_aborts_a_live_launch_over_an_unreadable_project_policy(
-    home, tmp_path, monkeypatch, capsys
-):
+def test_spin_never_aborts_a_live_launch_over_an_unreadable_project_policy(home, tmp_path, monkeypatch, capsys):
     """Review finding: this read is the LAST step on the post-launch path.
     By the time it runs a real bmad-loop process is already live and
     journalled, and the detached supervisor has not been spawned yet -- so
@@ -1585,9 +1541,7 @@ def test_spin_never_aborts_a_live_launch_over_an_unreadable_project_policy(
 
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text("idle_threshold_minutes = 30\n", encoding="utf-8")
-    monkeypatch.setattr(
-        spin_module, "conventional_project_policy_path", lambda slug: policy_path
-    )
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
 
     def _explode(path):
         raise RecursionError("maximum recursion depth exceeded")
@@ -1696,11 +1650,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
             got_max_wall_clock_minutes_per_run,
         )
     ] = recovered
-    assert (
-        supervisor_main._run_dir(got_home, got_slug, got_run_id)
-        / supervisor_main._JOURNAL_FILENAME
-        == journal_path
-    )
+    assert supervisor_main._run_dir(got_home, got_slug, got_run_id) / supervisor_main._JOURNAL_FILENAME == journal_path
     assert got_pid == harness.spin_result.pid
     assert got_log == call["log_path"]
     assert got_threshold == 25.0
@@ -1825,13 +1775,21 @@ def test_spin_foreground_never_spawns_a_supervisor(home):
 # --- follow-up review pass: the sidecar branch of _append_entry ----------------
 
 
-def test_spin_oversized_preview_writes_the_sidecar_blob_before_its_line(home):
+def test_spin_oversized_preview_writes_the_sidecar_blob_before_its_line(home, monkeypatch, tmp_path):
     """Review finding (Blind Hunter): ``_append_entry``'s sidecar branch was
     reachable from ``run_spin`` (a preview list long enough to push the
     payload past ``SIDECAR_THRESHOLD_BYTES``) but entirely unexercised --
     no test built a payload that large. The ordering is the invariant that
     matters: the blob must land BEFORE the line referencing it, or a reader
-    can observe a ``sidecar_ref`` that does not yet resolve."""
+    can observe a ``sidecar_ref`` that does not yet resolve.
+
+    Wire declared explicitly off (Story 46.4 made the undeclared default
+    ``"auto"``, which would otherwise attempt a real, non-deterministic PATH
+    lookup for ``headroom`` and -- when it resolves -- write a second file
+    via ``compression-ladder.json``, breaking this test's own single-write
+    assertion) -- incidental to this test's intent, which is purely about
+    sidecar-blob ordering, not wire disposition."""
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=False)
     events: list[str] = []
     fs = FakeFs(dirs={home}, events=events)
     harness = FakeHarness(events=events)
@@ -1854,14 +1812,20 @@ def test_spin_oversized_preview_writes_the_sidecar_blob_before_its_line(home):
 # --- review pass 4: the text projection is not a shell for forged output ------
 
 
-def test_render_text_quotes_a_newline_injected_selector(home, capsys):
+def test_render_text_quotes_a_newline_injected_selector(home, capsys, monkeypatch, tmp_path):
     """Review finding (Edge Case Hunter, reproduced live): ``_render_text``
     interpolated every field RAW, so a newline inside one forged whole lines
     of the report. ``--story $'9.9\\nfindings:\\n  MRS-SPIN-001 [error] ...'``
     printed a ``findings:`` block that no ``Finding`` produced, on a run that
     had genuinely LAUNCHED and exited 0. ``cli/gate.py``'s own
     ``_render_text`` already carries exactly this ``!r`` hardening across two
-    of its own review passes; this module shipped without it."""
+    of its own review passes; this module shipped without it.
+
+    Wire declared explicitly off (Story 46.4 made the undeclared default
+    ``"auto"``, which would otherwise attempt a real, non-deterministic PATH
+    lookup for ``headroom`` here) -- incidental to this test's own intent,
+    which is purely about line-forgery, not wire disposition."""
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=False)
     forged = "9.9\nfindings:\n  MRS-SPIN-001 [error] FORGED: launch refused"
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
@@ -1992,9 +1956,7 @@ def test_spin_story_feed_error_that_raises_never_escapes_through_main(home, monk
     harness = FakeHarness()
     harness.fail_feed_error = RecursionError("maximum recursion depth exceeded")
 
-    monkeypatch.setattr(
-        spin_module, "run_spin", lambda args: run_spin(args, fs=fs, harness=harness)
-    )
+    monkeypatch.setattr(spin_module, "run_spin", lambda args: run_spin(args, fs=fs, harness=harness))
 
     assert main(["factory", "spin", "acme"]) == exit_code_for(Verdict.ERROR)
 
@@ -2030,9 +1992,7 @@ def test_spin_story_selector_past_the_int_conversion_limit_previews_empty(home):
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
 
-    exit_code = run_spin(
-        _spin_namespace("acme", story="1" * 4301 + ".1"), fs=fs, harness=harness
-    )
+    exit_code = run_spin(_spin_namespace("acme", story="1" * 4301 + ".1"), fs=fs, harness=harness)
 
     assert exit_code == EXIT_OK
     # The 4301-digit selector pushes the intent payload past
@@ -2238,21 +2198,28 @@ def _declare_wire_layer(monkeypatch, tmp_path: Path, *, enabled: bool) -> None:
     resolver."""
     path = tmp_path / "marshal-policy.toml"
     path.write_text(
-        "[context.wire]\n"
-        f"enabled = {str(enabled).lower()}\n"
-        'aggressiveness = "high"\n',
+        f'[context.wire]\nenabled = {str(enabled).lower()}\naggressiveness = "high"\n',
         encoding="utf-8",
     )
-    monkeypatch.setattr(
-        spin_module, "conventional_project_policy_path", lambda _slug: path
-    )
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda _slug: path)
 
 
-def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys):
-    """Story 28.2 (SPEC-marshal-token-economy CAP-2): a spin report always
-    says what the wire-compression layer did, exactly as it always says
-    where ``supervisor.log`` is. Undeclared -> off, and NOTHING is raised:
-    a layer nobody enabled has no degradation to name."""
+def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys, monkeypatch):
+    """Story 28.2 (SPEC-marshal-token-economy CAP-2) / Story 46.4: a spin
+    report always says what the wire-compression layer did, exactly as it
+    always says where ``supervisor.log`` is. Undeclared now means the
+    repo-default tri-state ``"auto"`` (Story 46.4), not off -- the packaged
+    ``claude`` profile declares a ``[wrapper]``, so with its binary
+    resolvable the layer genuinely applies. This is the spec's own I/O
+    matrix row 1: fresh loop home, zero station config, Claude profile.
+
+    Resolver patched to a fixed path -- see
+    ``test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available``
+    for why real PATH/fallback-dir resolution isn't deterministic across
+    environments."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
+    monkeypatch.setattr(bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom")
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -2260,18 +2227,14 @@ def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys):
     run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
 
     envelope = json.loads(capsys.readouterr().out)
-    assert envelope["data"]["wire"] == {
-        "applied": False,
-        "reason": None,
-        "store_dir": None,
-        "aggressiveness": None,
-    }
+    assert envelope["data"]["wire"]["applied"] is True
+    assert envelope["data"]["wire"]["reason"] is None
+    assert envelope["data"]["wire"]["aggressiveness"] == "medium"
+    assert envelope["data"]["wire"]["store_dir"] is not None
     assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"] == []
 
 
-def test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available(
-    home, capsys, monkeypatch, tmp_path
-):
+def test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available(home, capsys, monkeypatch, tmp_path):
     """Story 33.3: when headroom resolves, factory spin writes a bmad-loop
     profile overlay and reports ``wire.applied=True`` instead of the pre-33.3
     hard-coded inapplicability message.
@@ -2286,9 +2249,7 @@ def test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available(
     from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
 
     _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
-    monkeypatch.setattr(
-        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
-    )
+    monkeypatch.setattr(bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom")
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -2306,18 +2267,14 @@ def test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available(
     assert len(harness.spin_calls) == 1
 
 
-def test_spin_degrades_enabled_wire_layer_when_wrapper_binary_missing(
-    home, capsys, monkeypatch, tmp_path
-):
+def test_spin_degrades_enabled_wire_layer_when_wrapper_binary_missing(home, capsys, monkeypatch, tmp_path):
     """Story 33.3 negative branch: an enabled wire layer with no resolvable
     wrapper still reports degradation (``MRS-SPIN-017``) rather than silently
     skipping."""
     from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
 
     _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
-    monkeypatch.setattr(
-        bmadloop_module, "_resolve_wrapper_binary", lambda *_args, **_kwargs: None
-    )
+    monkeypatch.setattr(bmadloop_module, "_resolve_wrapper_binary", lambda *_args, **_kwargs: None)
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -2332,9 +2289,7 @@ def test_spin_degrades_enabled_wire_layer_when_wrapper_binary_missing(
     assert envelope["data"]["wire"]["reason"] == finding["message"]
 
 
-def test_spin_wire_payload_has_exactly_the_single_spellings_fields(
-    home, capsys, monkeypatch, tmp_path
-):
+def test_spin_wire_payload_has_exactly_the_single_spellings_fields(home, capsys, monkeypatch, tmp_path):
     """Both engines project this payload through the SAME
     ``WireWrap.journal_payload()``. The expected key set is derived from
     that method rather than restated, so a hand-spelled literal that drifts
@@ -2364,9 +2319,7 @@ def test_spin_text_output_states_the_wire_disposition(home, capsys, monkeypatch,
     from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
 
     _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
-    monkeypatch.setattr(
-        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
-    )
+    monkeypatch.setattr(bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom")
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -2378,9 +2331,7 @@ def test_spin_text_output_states_the_wire_disposition(home, capsys, monkeypatch,
     assert "MRS-SPIN-017" not in out
 
 
-def test_spin_stays_silent_on_an_explicitly_disabled_wire_layer(
-    home, capsys, monkeypatch, tmp_path
-):
+def test_spin_stays_silent_on_an_explicitly_disabled_wire_layer(home, capsys, monkeypatch, tmp_path):
     """A DECLARED-but-disabled layer is still nothing to report -- only an
     enabled layer that could not be applied is a degradation."""
     _declare_wire_layer(monkeypatch, tmp_path, enabled=False)
@@ -2395,35 +2346,31 @@ def test_spin_stays_silent_on_an_explicitly_disabled_wire_layer(
     assert envelope["data"]["wire"]["aggressiveness"] is None
 
 
-def test_spin_writes_compression_ladder_sidecar_when_wire_is_enabled(
-    home, monkeypatch, tmp_path
-):
+def test_spin_writes_compression_ladder_sidecar_when_wire_is_enabled(home, monkeypatch, tmp_path):
     """Story 28.6 (CAP-8): supervisor spawn materializes
     ``compression-ladder.json`` from the composed ``[context]`` block when
-    the wire layer is on -- the same composition site dispatch uses."""
+    the wire layer is on -- the same composition site dispatch uses.
+
+    Resolver patched to a fixed path -- see
+    ``test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available``
+    for why real PATH/fallback-dir resolution isn't deterministic across
+    environments."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text(
-        "[context]\n"
-        "escalation_threshold = 0.85\n"
-        "[context.wire]\n"
-        "enabled = true\n"
-        'aggressiveness = "low"\n',
+        '[context]\nescalation_threshold = 0.85\n[context.wire]\nenabled = true\naggressiveness = "low"\n',
         encoding="utf-8",
     )
-    monkeypatch.setattr(
-        spin_module, "conventional_project_policy_path", lambda _slug: policy_path
-    )
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda _slug: policy_path)
+    monkeypatch.setattr(bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom")
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
 
     assert run_spin(_spin_namespace("acme"), fs=fs, harness=harness) == EXIT_OK
 
-    sidecar_paths = [
-        path
-        for path in fs.written_texts
-        if path.name == "compression-ladder.json"
-    ]
+    sidecar_paths = [path for path in fs.written_texts if path.name == "compression-ladder.json"]
     assert len(sidecar_paths) == 1
     payload = json.loads(fs.written_texts[sidecar_paths[0]])
     assert payload["escalation_threshold"] == 0.85
@@ -2443,13 +2390,9 @@ def test_resume_reports_the_wire_layer_too(home, capsys, monkeypatch, tmp_path):
     from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
 
     _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
-    monkeypatch.setattr(
-        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
-    )
+    monkeypatch.setattr(bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom")
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
 
     run_resume(
@@ -2464,7 +2407,7 @@ def test_resume_reports_the_wire_layer_too(home, capsys, monkeypatch, tmp_path):
     assert [f["code"] for f in envelope["findings"]].count("MRS-SPIN-017") == 0
 
 
-def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
+def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch, tmp_path):
     """Review finding: ``_render_text``'s own comment states that finding
     MESSAGES are deliberately NOT quoted and requires "every message that
     interpolates an untrusted value quotes it at construction instead" --
@@ -2473,10 +2416,15 @@ def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
     unvalidated, so a newline in it forged whole lines of the DEFAULT text
     report on a run that genuinely launched -- reintroducing on this
     story's own new finding exactly the defect a prior pass fixed for
-    ``--story`` and raw feed keys."""
-    poisoned_root = (
-        str(home.parent) + "\nfindings:\n  MRS-SPIN-001 [error] FORGED: launch refused"
-    )
+    ``--story`` and raw feed keys.
+
+    Wire declared explicitly off (Story 46.4 made the undeclared default
+    ``"auto"``, which would otherwise attempt a real, non-deterministic PATH
+    lookup for ``headroom`` and add its own genuine ``MRS-SPIN-017``
+    finding) -- incidental to this test's own intent, which is purely about
+    ``MRS-SPIN-007``'s own path-quoting."""
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=False)
+    poisoned_root = str(home.parent) + "\nfindings:\n  MRS-SPIN-001 [error] FORGED: launch refused"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", poisoned_root)
     poisoned_home = Path(poisoned_root) / "acme"
 
@@ -2497,16 +2445,10 @@ def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
     # distinction is the whole defect: forgery is about line STRUCTURE.
     assert "FORGED" in out
     # Exactly one `findings:` header -- the report's own.
-    assert [line for line in out.splitlines() if line.startswith("findings:")] == [
-        "findings:"
-    ]
+    assert [line for line in out.splitlines() if line.startswith("findings:")] == ["findings:"]
     # ...and no forged FINDING line: every rendered finding is one of the
     # report's own, at the `_render_text` indent.
-    forged = [
-        line
-        for line in out.splitlines()
-        if line.startswith("  MRS-") and "MRS-SPIN-007" not in line
-    ]
+    forged = [line for line in out.splitlines() if line.startswith("  MRS-") and "MRS-SPIN-007" not in line]
     assert forged == [], forged
 
 
@@ -2515,9 +2457,7 @@ def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
 # =============================================================================
 
 
-def _outcome_line(
-    run_id: str, *, kind: str = "run-launch", harness_run_id: str | None, watched_pid: int = 4242
-) -> str:
+def _outcome_line(run_id: str, *, kind: str = "run-launch", harness_run_id: str | None, watched_pid: int = 4242) -> str:
     """A minimal, valid ``phase: outcome`` journal line for a PRIOR run --
     the one entry ``_resolve_harness_run_id_for_resume`` looks for. Mirrors
     ``test_supervisor.py::_launch_outcome_line``'s identical shape,
@@ -2543,9 +2483,7 @@ def _seed_prior_run(home: Path, slug: str, run_id: str) -> Path:
     Story 3.6). The caller still configures ``FakeFs.read_text_contents``
     for the journal ``run_resume`` reads back through the injected
     ``fs``."""
-    run_dir = (
-        home / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
-    )
+    run_dir = home / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
     run_dir.mkdir(parents=True)
     return run_dir
 
@@ -2566,9 +2504,7 @@ def _seed_resolvable_prior_run(
 def test_resume_happy_path_journals_ad45_fields_and_spawns(home):
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
         paused_stage="escalation",
@@ -2579,7 +2515,9 @@ def test_resume_happy_path_journals_ad45_fields_and_spawns(home):
         escalated_task_phase="pending",
         deferred=(),
     )
-    harness.resolution_reference_result = "/home/acme-loop/.bmad-loop/runs/acme-hh01/resolve/3-7-escalation-deferral-and-resume/resolution.json"
+    harness.resolution_reference_result = (
+        "/home/acme-loop/.bmad-loop/runs/acme-hh01/resolve/3-7-escalation-deferral-and-resume/resolution.json"
+    )
     process = FakeProcess()
 
     exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
@@ -2608,9 +2546,7 @@ def test_resume_happy_path_journals_ad45_fields_and_spawns(home):
             "log_path": new_run_dir / spin_module._LOG_FILENAME,
         }
     ]
-    assert harness.resolution_reference_calls == [
-        (home, "acme-hh01", "3-7-escalation-deferral-and-resume")
-    ]
+    assert harness.resolution_reference_calls == [(home, "acme-hh01", "3-7-escalation-deferral-and-resume")]
     assert process.spawn_calls, "a fresh supervisor sidecar is spawned"
     argv = process.spawn_calls[0]["argv"]
     assert argv[:3] == [sys.executable, "-m", "pyforge.marshal.supervisor"]
@@ -2625,9 +2561,7 @@ def test_resume_proceeds_with_a_null_resolution_reference_when_no_marker_exists(
     null`` in the ``run-resume`` payload; resume still proceeds."""
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     harness.resolution_reference_result = None
     process = FakeProcess()
@@ -2639,9 +2573,7 @@ def test_resume_proceeds_with_a_null_resolution_reference_when_no_marker_exists(
     assert intent["payload"]["resolution_reference"] is None
 
 
-def test_resume_omits_resolution_reference_from_the_report_when_there_is_none(
-    home, capsys
-):
+def test_resume_omits_resolution_reference_from_the_report_when_there_is_none(home, capsys):
     """Follow-up review finding: the REPORT field is conditional, exactly
     like `story_key` -- the overwhelmingly common resume is an ordinary,
     never-escalated one, where a bare `resolution_reference: null` line
@@ -2650,9 +2582,7 @@ def test_resume_omits_resolution_reference_from_the_report_when_there_is_none(
     four)."""
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     harness.resolution_reference_result = None
     process = FakeProcess()
@@ -2670,9 +2600,7 @@ def test_resume_picks_the_most_recent_prior_run_when_several_exist(home):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_prior_run(home, slug, "acme-20260801T000000000Z-aaaa")
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260802T000000000Z-bbbb", harness_run_id="acme-hh-newer"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260802T000000000Z-bbbb", harness_run_id="acme-hh-newer")
     harness = FakeHarness()
     process = FakeProcess()
 
@@ -2711,9 +2639,7 @@ def test_resume_resolver_attribution_uses_getpass_getuser(home, monkeypatch):
     monkeypatch.setattr(spin_module.getpass, "getuser", lambda: "operator-42")
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     process = FakeProcess()
 
@@ -2737,9 +2663,7 @@ def test_resume_resolver_falls_back_to_none_when_getpass_fails(home, monkeypatch
     monkeypatch.setattr(spin_module.getpass, "getuser", _raise)
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     process = FakeProcess()
 
@@ -2760,9 +2684,7 @@ def test_resume_does_not_populate_ad45_fields_for_a_non_escalation_pause(home):
     resolved when nothing of the sort happened."""
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
         paused_stage="spec-approval",
@@ -2794,9 +2716,7 @@ def test_resume_warns_and_proceeds_when_live_status_read_fails(home, capsys):
     sample degrades to a registered WARN, never a silent pass" precedent."""
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     harness.run_status_snapshot_result = None
     process = FakeProcess()
@@ -2811,9 +2731,7 @@ def test_resume_warns_and_proceeds_when_live_status_read_fails(home, capsys):
 def test_resume_text_output_labels_itself_factory_resume(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     process = FakeProcess()
 
@@ -2827,9 +2745,7 @@ def test_resume_text_output_labels_itself_factory_resume(home, capsys):
 def test_resume_json_envelope_command_is_factory_resume(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     process = FakeProcess()
 
@@ -2845,9 +2761,7 @@ def test_resume_json_envelope_command_is_factory_resume(home, capsys):
 def test_resume_refuses_when_escalation_is_unresolved(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
         paused_stage="escalation",
@@ -2875,9 +2789,7 @@ def test_resume_refusal_never_raises(home):
     column)."""
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
         paused_stage="escalation",
@@ -2918,9 +2830,7 @@ def test_resume_refuses_an_already_finished_run(home, capsys):
     supervisor for a resume that never happened."""
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
         paused_stage=None,
@@ -2952,9 +2862,7 @@ def test_resume_proceeds_for_a_run_that_is_not_finished(home):
     never refuse them for lack of a `paused_stage`."""
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
         paused_stage=None,
@@ -3013,9 +2921,7 @@ def test_resume_rejects_a_malformed_slug(capsys):
     harness = FakeHarness()
     process = FakeProcess()
 
-    exit_code = run_resume(
-        _resume_namespace("../escaped"), fs=fs, harness=harness, process=process
-    )
+    exit_code = run_resume(_resume_namespace("../escaped"), fs=fs, harness=harness, process=process)
 
     assert exit_code == exit_code_for(Verdict.UNEVALUABLE)
     assert "MRS-SPIN-001" in capsys.readouterr().out
@@ -3037,9 +2943,7 @@ def test_resume_rejects_a_dangling_tier3_backlink(home, capsys):
     fs = FakeFs(dirs={home})
     fs.tier3_dangling = True
 
-    exit_code = run_resume(
-        _resume_namespace("acme"), fs=fs, harness=FakeHarness(), process=FakeProcess()
-    )
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=FakeHarness(), process=FakeProcess())
 
     assert exit_code == exit_code_for(Verdict.ERROR)
     assert "MRS-SPIN-002" in capsys.readouterr().out
@@ -3051,9 +2955,7 @@ def test_resume_rejects_a_dangling_tier3_backlink(home, capsys):
 def test_resume_launch_failure_journals_a_failed_outcome(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     harness.fail_resume = HarnessError("cannot launch: bmad-loop not found")
     process = FakeProcess()
@@ -3073,9 +2975,7 @@ def test_resume_launch_failure_journals_a_failed_outcome(home, capsys):
 def test_resume_outcome_write_failure_registers_a_warn_but_still_spawns(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     # Call #1 is the intent append; call #2 is the outcome append.
     fs.fail_append_line_on_call = 2
     harness = FakeHarness()
@@ -3091,9 +2991,7 @@ def test_resume_outcome_write_failure_registers_a_warn_but_still_spawns(home, ca
 def test_resume_supervisor_spawn_failure_registers_a_warn(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness = FakeHarness()
     process = FakeProcess()
     process.fail_spawn = ProcessError("cannot launch: python not found")
@@ -3163,9 +3061,7 @@ _BASELINE_POLICY_TOML = (
 )
 
 
-def _deferred_story(
-    story_key: str, *, attempt: int = 0, review_cycle: int = 0
-) -> DeferredStory:
+def _deferred_story(story_key: str, *, attempt: int = 0, review_cycle: int = 0) -> DeferredStory:
     return DeferredStory(
         story_key=story_key,
         reason=None,
@@ -3178,12 +3074,14 @@ def _deferred_story(
 
 
 def _seed_resume_with_deferred(
-    home: Path, fs: FakeFs, harness: FakeHarness, *, deferred: tuple[DeferredStory, ...],
+    home: Path,
+    fs: FakeFs,
+    harness: FakeHarness,
+    *,
+    deferred: tuple[DeferredStory, ...],
     policy_toml: str = _BASELINE_POLICY_TOML,
 ) -> None:
-    _seed_resolvable_prior_run(
-        home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness.run_status_snapshot_result = RunStatusSnapshot(
         paused_stage=None,
         paused_story_key=None,
@@ -3204,9 +3102,7 @@ def test_resume_escalates_a_struggling_deferred_story_to_the_review_model(home, 
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     process = FakeProcess()
-    _seed_resume_with_deferred(
-        home, fs, harness, deferred=(_deferred_story("3.6", attempt=2, review_cycle=0),)
-    )
+    _seed_resume_with_deferred(home, fs, harness, deferred=(_deferred_story("3.6", attempt=2, review_cycle=0),))
 
     exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
 
@@ -3265,9 +3161,7 @@ def test_resume_escalates_on_a_review_cycle_ceiling_through_the_full_pipeline(ho
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     process = FakeProcess()
-    _seed_resume_with_deferred(
-        home, fs, harness, deferred=(_deferred_story("3.6", attempt=0, review_cycle=3),)
-    )
+    _seed_resume_with_deferred(home, fs, harness, deferred=(_deferred_story("3.6", attempt=0, review_cycle=3),))
 
     exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
 
@@ -3357,9 +3251,7 @@ def test_resume_does_not_escalate_a_fresh_deferred_story(home):
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     process = FakeProcess()
-    _seed_resume_with_deferred(
-        home, fs, harness, deferred=(_deferred_story("3.6", attempt=1, review_cycle=0),)
-    )
+    _seed_resume_with_deferred(home, fs, harness, deferred=(_deferred_story("3.6", attempt=1, review_cycle=0),))
 
     exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
 
@@ -3431,9 +3323,7 @@ def test_resume_policy_write_failure_registers_mrs_spin_016_and_proceeds(home, c
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     process = FakeProcess()
-    _seed_resume_with_deferred(
-        home, fs, harness, deferred=(_deferred_story("3.6", attempt=2, review_cycle=0),)
-    )
+    _seed_resume_with_deferred(home, fs, harness, deferred=(_deferred_story("3.6", attempt=2, review_cycle=0),))
     # Occupy `.bmad-loop` with a plain file so write_policy_document's own
     # `mkdir(parents=True, exist_ok=True)` raises OSError.
     (home / ".bmad-loop").write_text("not a directory", encoding="utf-8")
@@ -3455,9 +3345,7 @@ def test_resume_missing_status_snapshot_skips_escalation(home, capsys):
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     process = FakeProcess()
-    _seed_resolvable_prior_run(
-        home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
-    )
+    _seed_resolvable_prior_run(home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
     harness.run_status_snapshot_result = None
     fs.read_text_contents[home / ".bmad-loop" / "policy.toml"] = _BASELINE_POLICY_TOML
 
@@ -3493,11 +3381,7 @@ def _model_tier_map_policy_path(tmp_path: Path) -> Path:
     project_policy_finding`` already established."""
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text(
-        "[model_tier_map.heavy]\n"
-        'dev = "opus"\n'
-        'review = "opus"\n'
-        "[model_tier_map.easy]\n"
-        'dev = "haiku"\n',
+        '[model_tier_map.heavy]\ndev = "opus"\nreview = "opus"\n[model_tier_map.easy]\ndev = "haiku"\n',
         encoding="utf-8",
     )
     return policy_path
@@ -3520,9 +3404,7 @@ def test_spin_undeclared_difficulty_resolves_no_override(home):
     assert "model_tier_batching" not in outcome["payload"]
 
 
-def test_spin_resolves_declared_difficulty_present_in_model_tier_map(
-    home, tmp_path, monkeypatch
-):
+def test_spin_resolves_declared_difficulty_present_in_model_tier_map(home, tmp_path, monkeypatch):
     _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
     monkeypatch.setattr(
         spin_module,
@@ -3541,9 +3423,7 @@ def test_spin_resolves_declared_difficulty_present_in_model_tier_map(
     assert "model_tier_batching" not in outcome["payload"]
 
 
-def test_spin_persists_the_resolved_model_tier_to_the_loop_homes_policy_toml(
-    home, tmp_path, monkeypatch
-):
+def test_spin_persists_the_resolved_model_tier_to_the_loop_homes_policy_toml(home, tmp_path, monkeypatch):
     """Review finding (Blind Hunter): the resolved model tiering must reach
     the ACTUAL `.bmad-loop/policy.toml` the spawned `bmad-loop run` process
     reads, not just the journaled/reported `data.resolved_models` -- a
@@ -3568,9 +3448,7 @@ def test_spin_persists_the_resolved_model_tier_to_the_loop_homes_policy_toml(
     assert parsed["adapter"]["review"]["model"] == "opus"
 
 
-def test_spin_declared_difficulty_absent_from_map_resolves_no_override(
-    home, tmp_path, monkeypatch
-):
+def test_spin_declared_difficulty_absent_from_map_resolves_no_override(home, tmp_path, monkeypatch):
     """A declared difficulty NOT present in `model_tier_map` is treated
     identically to undeclared -- never an error (`model_tier_map` is this
     project's own declared vocabulary, per the spec's own I/O matrix)."""
@@ -3591,9 +3469,7 @@ def test_spin_declared_difficulty_absent_from_map_resolves_no_override(
     assert outcome["payload"]["resolved_models"] == {}
 
 
-def test_spin_malformed_difficulty_registers_mrs_spin_013_and_treated_as_undeclared(
-    home, capsys
-):
+def test_spin_malformed_difficulty_registers_mrs_spin_013_and_treated_as_undeclared(home, capsys):
     """A multi-line YAML block `difficulty:` declaration -- a form
     `parse_declared_difficulty` does not support -- registers MRS-SPIN-013
     and is treated as undeclared for governance purposes, never silently
@@ -3617,9 +3493,7 @@ def test_spin_malformed_difficulty_registers_mrs_spin_013_and_treated_as_undecla
     assert harness.spin_calls, "a malformed difficulty must never block the launch"
 
 
-def test_spin_valid_sibling_spec_file_is_not_masked_by_an_earlier_malformed_one(
-    home, tmp_path, monkeypatch, capsys
-):
+def test_spin_valid_sibling_spec_file_is_not_masked_by_an_earlier_malformed_one(home, tmp_path, monkeypatch, capsys):
     """Edge Case Hunter finding: a stale `spec-<key>.md` with a malformed
     multi-line `difficulty:` block must not shadow a well-formed
     declaration in a sibling `-2`-suffixed re-run spec -- ALL candidates are
@@ -3628,9 +3502,7 @@ def test_spin_valid_sibling_spec_file_is_not_masked_by_an_earlier_malformed_one(
     resolved, from the sibling file."""
     spec_dir = home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
     spec_dir.mkdir(parents=True, exist_ok=True)
-    (spec_dir / "spec-1-1.md").write_text(
-        "---\ndifficulty:\n  heavy\n---\n\n<intent-contract>\n", encoding="utf-8"
-    )
+    (spec_dir / "spec-1-1.md").write_text("---\ndifficulty:\n  heavy\n---\n\n<intent-contract>\n", encoding="utf-8")
     (spec_dir / "spec-1-1-a-rerun.md").write_text(
         "---\ndifficulty: heavy\n---\n\n<intent-contract>\n", encoding="utf-8"
     )
@@ -3675,9 +3547,7 @@ def test_spin_homogeneous_batch_declares_no_batching_report(home, tmp_path, monk
     assert "model_tier_batching" not in outcome["payload"]
 
 
-def test_spin_heterogeneous_batch_reports_the_mismatch_and_picks_the_most_common(
-    home, tmp_path, monkeypatch
-):
+def test_spin_heterogeneous_batch_reports_the_mismatch_and_picks_the_most_common(home, tmp_path, monkeypatch):
     """Multiple in-scope stories declaring DIFFERENT difficulties: ONE
     governing difficulty renders (the tie-break: most common declared
     difficulty, ties broken by earliest declaration order), and every
@@ -3706,9 +3576,7 @@ def test_spin_heterogeneous_batch_reports_the_mismatch_and_picks_the_most_common
     assert batching["mismatched"] == [{"story": "1.3", "declared": "easy"}]
 
 
-def test_spin_heterogeneous_batch_tie_break_is_earliest_declaration_order(
-    home, tmp_path, monkeypatch
-):
+def test_spin_heterogeneous_batch_tie_break_is_earliest_declaration_order(home, tmp_path, monkeypatch):
     """A genuine tie (one story each declaring a different difficulty):
     the FIRST story, in `preview`'s own selection order, to declare its
     difficulty wins -- the spec's own documented deterministic tie-break."""
@@ -3731,9 +3599,7 @@ def test_spin_heterogeneous_batch_tie_break_is_earliest_declaration_order(
     assert batching["mismatched"] == [{"story": "1.2", "declared": "heavy"}]
 
 
-def test_spin_unwritable_loop_home_degrades_policy_write_to_mrs_spin_015(
-    home, tmp_path, monkeypatch, capsys
-):
+def test_spin_unwritable_loop_home_degrades_policy_write_to_mrs_spin_015(home, tmp_path, monkeypatch, capsys):
     """An unwritable `.bmad-loop` directory (write_policy_toml's own
     `HarnessPolicyWriteError`) must never abort an already-viable launch --
     it registers MRS-SPIN-015 (WARN) and the launch proceeds on whatever
@@ -3794,9 +3660,7 @@ def test_spin_empty_preview_skips_model_tiering_entirely(home):
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
 
-    exit_code = run_spin(
-        _spin_namespace("acme", story="9.9", fmt="json"), fs=fs, harness=harness
-    )
+    exit_code = run_spin(_spin_namespace("acme", story="9.9", fmt="json"), fs=fs, harness=harness)
 
     assert exit_code == EXIT_OK
     outcome = json.loads(fs.appended_lines[1][1])
@@ -3841,9 +3705,7 @@ def test_spin_populated_model_tier_map_renders_a_different_policy_toml_than_an_e
     harness_populated = FakeHarness()
     harness_populated.feed_keys = ("1-1-first-story",)
 
-    exit_code_populated = run_spin(
-        _spin_namespace("acme", fmt="json"), fs=fs_populated, harness=harness_populated
-    )
+    exit_code_populated = run_spin(_spin_namespace("acme", fmt="json"), fs=fs_populated, harness=harness_populated)
 
     assert exit_code_populated == EXIT_OK
     outcome_populated = json.loads(fs_populated.appended_lines[1][1])
@@ -3861,9 +3723,7 @@ def test_spin_populated_model_tier_map_renders_a_different_policy_toml_than_an_e
     harness_empty = FakeHarness()
     harness_empty.feed_keys = ("1-1-first-story",)
 
-    exit_code_empty = run_spin(
-        _spin_namespace("acme", fmt="json"), fs=fs_empty, harness=harness_empty
-    )
+    exit_code_empty = run_spin(_spin_namespace("acme", fmt="json"), fs=fs_empty, harness=harness_empty)
 
     assert exit_code_empty == EXIT_OK
     outcome_empty = json.loads(fs_empty.appended_lines[1][1])
@@ -3905,20 +3765,38 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
     assert parsed["gate_mode"] == "none"
     assert len(parsed["verify_commands"]) == 2
     assert len(parsed["landing_rules"]) == 2
-    assert parsed["model_tier_map"] == {
-        "heavy": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
-        "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
-        "easy": {"dev": "composer-2.5-fast"},
-    }
+    # 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): every station's
+    # dev/review stages name an explicit {harness, model} inline table (CAP-1)
+    # so a foreign model id cannot land on the wrong adapter. 2026-09-18: the
+    # ids themselves are volatile per-week config (Cursor ran out of usage and
+    # the fleet moved back to claude/sonnet), so this asserts the SHAPE the
+    # story established, not a pinned ladder -- pinned ids turned this test
+    # red on `main` the first time the harness changed.
+    tier_map = parsed["model_tier_map"]
+    assert set(tier_map) == {"heavy", "medium", "easy"}
+    for difficulty, stages in tier_map.items():
+        assert "dev" in stages, difficulty
+        for stage, entry in stages.items():
+            assert set(entry) == {"harness", "model"}, (difficulty, stage, entry)
+            assert entry["harness"] and entry["model"], (difficulty, stage, entry)
+    assert set(tier_map["easy"]) == {"dev"}  # easy overrides dev only
 
-    effective, findings = policy_module.compose(
-        project=parsed, project_slug="pyforge-marshal", flags={}
-    )
+    effective, findings = policy_module.compose(project=parsed, project_slug="pyforge-marshal", flags={})
     assert findings == ()
 
     rendered_easy = render_policy_toml(effective, difficulty="easy")
     parsed_easy = tomllib.loads(rendered_easy)
-    assert parsed_easy["adapter"]["dev"]["model"] == "composer-2.5-fast"
+    easy_dev = tier_map["easy"]["dev"]
+    if easy_dev["harness"] == "claude":
+        # Happy path: the tier map names the adapter this render targets, so
+        # the override applies as an [adapter.dev] sub-table.
+        assert parsed_easy["adapter"]["dev"]["model"] == easy_dev["model"]
+    else:
+        # Fails-safe path (Story 33.15 CAP-2): a foreign harness's model
+        # against the claude adapter is dropped entirely -- no [adapter.dev]
+        # sub-table, per FR-51's "absent stage inherits [adapter].model".
+        assert "dev" not in parsed_easy["adapter"]
+    assert parsed_easy["adapter"]["model"] == "sonnet"
     assert parsed_easy["adapter"]["review"]["model"] == "opus"
 
 

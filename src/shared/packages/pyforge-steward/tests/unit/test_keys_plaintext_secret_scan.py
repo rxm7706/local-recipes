@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.keys import (
     DriftFinding,
     PlaintextSecretFinding,
@@ -51,9 +52,7 @@ def test_nonexistent_directory_raises_instead_of_silently_reporting_clean(tmp_pa
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="chmod 000 does not restrict Windows")
-@pytest.mark.skipif(
-    hasattr(os, "geteuid") and os.geteuid() == 0, reason="chmod 000 does not restrict root"
-)
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="chmod 000 does not restrict root")
 def test_unreadable_subdirectory_raises_instead_of_silently_reporting_clean(tmp_path):
     locked = tmp_path / "locked"
     locked.mkdir()
@@ -67,9 +66,7 @@ def test_unreadable_subdirectory_raises_instead_of_silently_reporting_clean(tmp_
 
 
 def test_binary_age_file_alongside_a_leaked_secret_does_not_crash_the_scan(tmp_path):
-    (tmp_path / "leaked.txt").write_text(
-        "sk-ant-api03-SYNTHETIC00000000000000000000000000000000000000TEST\n"
-    )
+    (tmp_path / "leaked.txt").write_text("sk-ant-api03-SYNTHETIC00000000000000000000000000000000000000TEST\n")
     (tmp_path / "ciphertext.age").write_bytes(bytes(range(256)))
 
     findings = scan_directory_for_secrets(tmp_path)
@@ -82,12 +79,8 @@ def test_age_identity_and_pem_header_patterns_are_each_detected(tmp_path):
     # Word-marked placeholder, NOT a generated key: `O` is outside the Bech32
     # charset, so this string can never parse as a real age identity — it only
     # has to satisfy the scanner's deliberately loose [A-Z0-9]{20,} tail.
-    (tmp_path / "identity.txt").write_text(
-        "AGE-SECRET-KEY-1TEST00FAKE00PLACEHOLDER00NOTREAL00SYNTHETIC\n"
-    )
-    (tmp_path / "key.pem").write_text(
-        "-----BEGIN RSA PRIVATE KEY-----\nSYNTHETIC\n-----END RSA PRIVATE KEY-----\n"
-    )
+    (tmp_path / "identity.txt").write_text("AGE-SECRET-KEY-1TEST00FAKE00PLACEHOLDER00NOTREAL00SYNTHETIC\n")
+    (tmp_path / "key.pem").write_text("-----BEGIN RSA PRIVATE KEY-----\nSYNTHETIC\n-----END RSA PRIVATE KEY-----\n")
 
     findings = scan_directory_for_secrets(tmp_path)
 

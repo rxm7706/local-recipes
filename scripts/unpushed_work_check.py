@@ -72,7 +72,9 @@ def git(*args: str, cwd: pathlib.Path = ROOT) -> str:
 
 
 def default_remote_head() -> str:
-    for ref in ("origin/main", "origin/master"):
+    # Full refnames (marshal Story 60.1, CAP-270): a local branch or tag named `origin/main` would
+    # shadow the short name and make unpushed work read as already on the remote.
+    for ref in ("refs/remotes/origin/main", "refs/remotes/origin/master"):
         if git("rev-parse", "--verify", "--quiet", ref):
             return ref
     return ""
@@ -108,10 +110,14 @@ def rescued() -> set[str]:
 
 def find_unpushed(base: str, remote: dict[str, str]) -> list[dict]:
     findings = []
-    for br in git("for-each-ref", "--format=%(refname:short)", "refs/heads/").splitlines():
+    # Marshal Story 61.1: `lstrip=2`, not `short` -- `short` prints `heads/<br>`
+    # when a tag shares the name, which then matches no remote branch; and every
+    # read below names `refs/heads/<br>`, never the bare name a tag stands in for.
+    for br in git("for-each-ref", "--format=%(refname:lstrip=2)", "refs/heads/").splitlines():
         br = br.strip()
         if not br:
             continue
+        head = f"refs/heads/{br}"
         remote_sha = remote.get(br)
         ahead = 0
         if remote_sha:
@@ -121,17 +127,17 @@ def find_unpushed(base: str, remote: dict[str, str]) -> list[dict]:
             # remote lacks; an unknown remote sha (never fetched) counts as behind
             # rather than as safe, which is the correct default for a durability
             # check: better one redundant finding than one missed loss.
-            ahead_out = git("rev-list", "--count", f"{remote_sha}..{br}")
+            ahead_out = git("rev-list", "--count", f"{remote_sha}..{head}")
             if ahead_out.isdigit():
                 ahead = int(ahead_out)
             elif not git("cat-file", "-e", f"{remote_sha}^{{commit}}"):
                 ahead = -1                # remote tip not present locally
             if ahead == 0:
                 continue                  # remote is at or ahead of us: safe
-        files = [f for f in git("diff", "--name-only", f"{base}...{br}").splitlines() if f]
+        files = [f for f in git("diff", "--name-only", f"{base}...{head}").splitlines() if f]
         if not files:
             continue                      # merged/empty: untidy, not at risk
-        stat = git("diff", "--shortstat", f"{base}...{br}")
+        stat = git("diff", "--shortstat", f"{base}...{head}")
         if remote_sha:
             behind = f"{ahead} commit(s)" if ahead > 0 else "an unfetched tip"
             note = (f"origin has this branch at {remote_sha[:10]} but is behind by "
@@ -140,7 +146,7 @@ def find_unpushed(base: str, remote: dict[str, str]) -> list[dict]:
             note = "no branch of this name on origin at all"
         findings.append({"kind": "unpushed-branch", "ref": br,
                          "files": len(files), "stat": stat, "detail": note,
-                         "remedy": f"git push origin {br}"})
+                         "remedy": f"git push origin refs/heads/{br}:refs/heads/{br}"})
     return findings
 
 

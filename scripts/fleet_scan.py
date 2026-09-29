@@ -692,9 +692,11 @@ def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[s
     `project_keys` seeds the buckets from the LIVE project set rather than a
     literal, so a newly provisioned smith is never missing one.
     """
-    ref = branch
+    # Marshal Story 61.1: the branch by its full refname -- a tag named `main`
+    # would otherwise stand in for it and its history would lack every landing.
+    ref = f"refs/heads/{branch}"
     if subprocess.run(
-        ["git", "rev-parse", "--verify", "--quiet", branch], capture_output=True
+        ["git", "rev-parse", "--verify", "--quiet", ref], capture_output=True
     ).returncode != 0:
         ref = "HEAD"  # detached checkout (e.g. some CI) — HEAD is the branch tip
     log = subprocess.run(
@@ -1673,8 +1675,15 @@ def _fleet_chains() -> list[tuple[str, str, str, str]]:
 
 
 _ISO = re.compile(r"(\d{4}-\d{2}-\d{2})")
+# Every path a stage glob can resolve MUST sit under one of these, or _artifact_dates()
+# returns ("", "") for it and scan_fleet reads the stage as never reached even though
+# _resolve() found the file. Root AGENTS.md joined 2026-09-20: Story 30.2 (2026-09-06)
+# repointed the `context` stage at it without widening this tuple, and every station
+# except atlas (whose child AGENTS.md sits under src/shared/packages) carried a phantom
+# `context` gap — the CAP-3 layers checkpoint read `fail` beside "15/15 layers present".
+# The doctor's test_every_stage_glob_is_inside_the_git_date_index pins the invariant.
 _GIT_SCOPES = ("docs/dreams", "docs/governance", "_bmad-output", "presentations",
-               "src/shared/packages")
+               "src/shared/packages", "AGENTS.md")
 _GIT_FIRST: dict[str, str] = {}
 _GIT_LAST: dict[str, str] = {}
 
@@ -2247,12 +2256,19 @@ def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
 PITCH_TITLES = {"agentic-sdlc": "Agentic AI across the SDLC"}
 # the 6-artifact family standard, per docs/specs/presentation-deck.md
 _PITCH_CHECK = ("prototype", "exec", "infographic", "marp", "standalone", "pptx")
+# spec-design-sync-loop CAP-2 (Story 23.2): presentations/_design-systems/ is
+# a library home (Modernist/Broadsheet/Nocturne, mirrored not authored), not
+# a deck; six-quarter-roadmap/ and llm-knowledge-bases/ are local twins that
+# do not follow the deck-family build pipeline either (each one's own README
+# says so) -- scoring any of the three against the 6-artifact standard would
+# report a permanent, meaningless partial "deck".
+_NOT_A_DECK = frozenset({"_design-systems", "six-quarter-roadmap", "llm-knowledge-bases"})
 
 
 def scan_pitch() -> list[dict]:
     cards: list[dict] = []
     for deck_dir in sorted((REPO_ROOT / "presentations").iterdir()):
-        if not deck_dir.is_dir():
+        if not deck_dir.is_dir() or deck_dir.name in _NOT_A_DECK:
             continue
         slug = deck_dir.name
         proj, marp, pptx = deck_dir / "project", deck_dir / "src" / "marp", deck_dir / "src" / "pptx"
@@ -3455,7 +3471,7 @@ def build_status(data: dict, source: str) -> dict:
 
     shipped = None
     out = subprocess.run(
-        ["git", "log", MAIN_BRANCH, "--format=%H%x1f%ct%x1f%s", "-n", "400"],
+        ["git", "log", f"refs/heads/{MAIN_BRANCH}", "--format=%H%x1f%ct%x1f%s", "-n", "400"],  # Story 61.1
         capture_output=True, text=True, cwd=REPO_ROOT).stdout
     for line in out.splitlines():
         parts = line.split("\x1f")

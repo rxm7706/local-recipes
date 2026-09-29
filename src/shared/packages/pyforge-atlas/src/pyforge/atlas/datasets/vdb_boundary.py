@@ -66,5 +66,5 @@ def coerce_cvss_score(value: Any) -> float | None:
     # numeric string.
     try:
         return float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None

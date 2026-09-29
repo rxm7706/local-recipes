@@ -301,10 +301,12 @@ def test_clean_batch_promotes_real_orphans_and_writes_once(tmp_path: Path):
     promoted = [e for e in entries if e.id and e.id != "DW-1-1-1"]
     assert len(promoted) == 2
     ids = {e.id for e in promoted}
-    # mason mints suffixed DW-<story>-<n>, never bare -- both orphans share
-    # story key 1-8 (same source_spec), so this also proves already_minted
-    # threading: the second orphan must NOT collide with the first.
-    assert ids == {"DW-1-8-1", "DW-1-8-2"}
+    # vocabulary Dream Ruling 14: mason mints under its own station token
+    # like every other station now (no more forced-suffix special case) --
+    # bare first, then suffixed. Both orphans share story key 1-8 (same
+    # source_spec), so this also proves already_minted threading: the
+    # second orphan must NOT collide with the first.
+    assert ids == {"DW-mason-1-8", "DW-mason-1-8-2"}
     for e in promoted:
         assert e.shape is Tier3Shape.IDENTIFIED_BULLETED
         assert e.fields["status"] == "open"
@@ -329,7 +331,7 @@ def test_clean_batch_against_a_fresh_project_with_no_pre_existing_tracked_ledger
     assert tracked is not None
     entries = classify_tier3_entries(repo / "_bmad-output" / "projects" / "pyforge-doctor" / TRACKED_REL)
     assert len(entries) == 1
-    assert entries[0].id == "DW-FU-1-8"  # doctor is non-mason: bare DW-FU-<story>
+    assert entries[0].id == "DW-doctor-1-8"  # vocabulary Dream Ruling 14: real station token, bare
 
 
 # --- I/O matrix row: an already-identified entry with no tracked twin -- Story 8.7 promotes it ---
@@ -424,7 +426,7 @@ def test_mixed_batch_promotes_orphans_and_identified_entries_together(tmp_path: 
     )
     assert len(entries) == 2
     ids = {e.id for e in entries}
-    assert "DW-FU-1-8" in ids  # the minted orphan, same id `_REAL_ORPHAN_C` mints elsewhere
+    assert "DW-doctor-1-8" in ids  # the minted orphan, same id `_REAL_ORPHAN_C` mints elsewhere
     assert "DW-FU-9-9" in ids  # the identified entry, verbatim, never re-minted
 
 
@@ -560,13 +562,13 @@ def test_followup_review_budget_entry_is_also_excluded_not_promoted(tmp_path: Pa
     r = _run(promoter, repo, "--project", "doctor")
     assert r.returncode == 0, r.stdout
     assert "ABORTED" not in r.stdout
-    assert "promoted 1 orphan(s) -- DW-FU-1-8" in r.stdout
+    assert "promoted 1 orphan(s) -- DW-doctor-1-8" in r.stdout
 
     entries = classify_tier3_entries(
         repo / "_bmad-output" / "projects" / "pyforge-doctor" / TRACKED_REL
     )
     assert len(entries) == 1
-    assert entries[0].id == "DW-FU-1-8"  # only the orphan promoted; DW-1 excluded entirely
+    assert entries[0].id == "DW-doctor-1-8"  # only the orphan promoted; DW-1 excluded entirely
 
 
 def test_harvest_damping_entry_is_excluded_not_promoted_and_does_not_block_a_sibling_orphan(
@@ -586,13 +588,13 @@ def test_harvest_damping_entry_is_excluded_not_promoted_and_does_not_block_a_sib
     r = _run(promoter, repo, "--project", "doctor")
     assert r.returncode == 0, r.stdout
     assert "ABORTED" not in r.stdout
-    assert "promoted 1 orphan(s) -- DW-FU-1-8" in r.stdout
+    assert "promoted 1 orphan(s) -- DW-doctor-1-8" in r.stdout
 
     entries = classify_tier3_entries(
         repo / "_bmad-output" / "projects" / "pyforge-doctor" / TRACKED_REL
     )
     assert len(entries) == 1
-    assert entries[0].id == "DW-FU-1-8"  # only the orphan promoted; DW-6 excluded entirely
+    assert entries[0].id == "DW-doctor-1-8"  # only the orphan promoted; DW-6 excluded entirely
 
 
 # --- MEDIUM (2026-08-28, this story's own adversarial review): a bare id
@@ -1084,7 +1086,7 @@ def test_atomic_write_leaves_no_stray_temp_file_and_correct_content_on_success(
         repo / "_bmad-output" / "projects" / "pyforge-doctor" / TRACKED_REL
     )
     assert len(entries) == 1
-    assert entries[0].id == "DW-FU-1-8"
+    assert entries[0].id == "DW-doctor-1-8"
 
 
 # --- HIGH 3: content fidelity -- extra fields preserved, status never force-overwritten ---

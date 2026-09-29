@@ -264,12 +264,9 @@ class VulnData:
         # Mirrors the schema's if/then clause: a concrete max_age_ok verdict
         # (true/false) implies vuln data WAS consulted, so its provenance
         # must be stated.
-        if self.max_age_ok is not None and (
-            self.source is None or self.snapshot_at is None
-        ):
+        if self.max_age_ok is not None and (self.source is None or self.snapshot_at is None):
             raise ValueError(
-                "a concrete max_age_ok verdict requires source and "
-                "snapshot_at to be stated (vuln-data provenance)"
+                "a concrete max_age_ok verdict requires source and snapshot_at to be stated (vuln-data provenance)"
             )
 
 
@@ -286,14 +283,9 @@ class Epss:
         for field_name in ("score", "percentile"):
             value = getattr(self, field_name)
             if isinstance(value, bool) or not (
-                isinstance(value, (int, float))
-                and math.isfinite(value)
-                and 0.0 <= value <= 1.0
+                isinstance(value, (int, float)) and math.isfinite(value) and 0.0 <= value <= 1.0
             ):
-                raise ValueError(
-                    f"epss {field_name} must be a finite number in [0, 1], "
-                    f"got {value!r}"
-                )
+                raise ValueError(f"epss {field_name} must be a finite number in [0, 1], got {value!r}")
             # Coerce to float and canonicalize -0.0 -> 0.0 (equal under
             # comparison but rendering differently, which would break
             # byte-identical serialization).
@@ -334,14 +326,8 @@ class CurrencyInfo:
         # Reject bool AND float (matches AxisCoverage/Epss's numeric-guard
         # pattern): lag is an integer release count, never a truthy bool or a
         # fractional float that would render an ill-typed slot later.
-        if self.lag is not None and (
-            isinstance(self.lag, bool)
-            or not isinstance(self.lag, int)
-            or self.lag < 0
-        ):
-            raise ValueError(
-                f"currency lag must be an int >= 0 or None, got {self.lag!r}"
-            )
+        if self.lag is not None and (isinstance(self.lag, bool) or not isinstance(self.lag, int) or self.lag < 0):
+            raise ValueError(f"currency lag must be an int >= 0 or None, got {self.lag!r}")
 
 
 @dataclass(frozen=True)
@@ -397,10 +383,7 @@ class Finding:
             # The range check now lives on Epss.__post_init__; a non-Epss
             # value (a stray float/bool) fails loud HERE instead of rendering
             # an ill-typed slot later.
-            raise ValueError(
-                f"epss must be None or an Epss(score, percentile), got "
-                f"{self.epss!r}"
-            )
+            raise ValueError(f"epss must be None or an Epss(score, percentile), got {self.epss!r}")
         # License/currency id-payload coherence (Story 6.1), mirroring the
         # schema's allOf coherence clauses so an incoherent finding can never
         # be BUILT (this class's docstring promise). Guarded on the id prefix
@@ -410,9 +393,7 @@ class Finding:
         # reason regex, so split()[1] is always one of the three keys below.
         if self.id.startswith("license:"):
             if self.license is None:
-                raise ValueError(
-                    "license: finding must carry a license sub-object"
-                )
+                raise ValueError("license: finding must carry a license sub-object")
             if self.license.verdict not in (
                 LicenseVerdict.DENIED,
                 LicenseVerdict.UNKNOWN,
@@ -423,9 +404,7 @@ class Finding:
                 )
         if self.id.startswith("currency:"):
             if self.currency is None:
-                raise ValueError(
-                    "currency: finding must carry a currency sub-object"
-                )
+                raise ValueError("currency: finding must carry a currency sub-object")
             reason = self.id.split(":", 2)[1]
             expected_verdict = {
                 "eol": CurrencyVerdict.EOL,
@@ -439,14 +418,9 @@ class Finding:
                     f"{self.currency.verdict.value!r}"
                 )
             if reason in ("eol", "over-lag") and (
-                self.currency.latest is None
-                or self.currency.lag is None
-                or self.currency.eol_date is None
+                self.currency.latest is None or self.currency.lag is None or self.currency.eol_date is None
             ):
-                raise ValueError(
-                    "currency eol/over-lag finding requires non-null "
-                    "latest/lag/eol_date"
-                )
+                raise ValueError("currency eol/over-lag finding requires non-null latest/lag/eol_date")
 
 
 @dataclass(frozen=True)
@@ -480,14 +454,10 @@ class AxisCoverage:
                 raise ValueError(f"{field_name} must be an int >= 0, got {value!r}")
         if self.manifests_parsed > self.manifests_found:
             raise ValueError(
-                f"manifests_parsed ({self.manifests_parsed}) exceeds "
-                f"manifests_found ({self.manifests_found})"
+                f"manifests_parsed ({self.manifests_parsed}) exceeds manifests_found ({self.manifests_found})"
             )
         if self.deps_assessed > self.deps_total:
-            raise ValueError(
-                f"deps_assessed ({self.deps_assessed}) exceeds "
-                f"deps_total ({self.deps_total})"
-            )
+            raise ValueError(f"deps_assessed ({self.deps_assessed}) exceeds deps_total ({self.deps_total})")
         if self.resolution_depth is not None:
             # Coerce through the closed vocabulary (StrEnum), then store the
             # plain token — the field's frozen shape stays `str | None`.
@@ -538,12 +508,9 @@ class FeedProvenance:
     max_age_ok: bool | None
 
     def __post_init__(self) -> None:
-        if self.max_age_ok is not None and (
-            self.source is None or self.snapshot_at is None
-        ):
+        if self.max_age_ok is not None and (self.source is None or self.snapshot_at is None):
             raise ValueError(
-                "a concrete max_age_ok verdict requires source and "
-                "snapshot_at to be stated (feed provenance)"
+                "a concrete max_age_ok verdict requires source and snapshot_at to be stated (feed provenance)"
             )
 
 
@@ -571,10 +538,7 @@ class SuppressedFinding:
 
     def __post_init__(self) -> None:
         if self.origin not in _SUPPRESSION_ORIGINS:
-            raise ValueError(
-                f"suppression origin must be one of "
-                f"{sorted(_SUPPRESSION_ORIGINS)}, got {self.origin!r}"
-            )
+            raise ValueError(f"suppression origin must be one of {sorted(_SUPPRESSION_ORIGINS)}, got {self.origin!r}")
 
 
 @dataclass(frozen=True)
@@ -622,10 +586,7 @@ class ComplianceReport:
         # would otherwise admit it and crash later in to_json_dict.
         object.__setattr__(self, "status", Status(self.status))
         if isinstance(self.exit_code, bool) or self.exit_code not in valid_exit_codes:
-            raise ValueError(
-                f"exit_code must be one of {sorted(valid_exit_codes)}, "
-                f"got {self.exit_code!r}"
-            )
+            raise ValueError(f"exit_code must be one of {sorted(valid_exit_codes)}, got {self.exit_code!r}")
         if self.exit_code not in _LEGAL_EXITS_BY_STATUS[self.status]:
             raise ValueError(
                 f"status {self.status.value!r} is incoherent with exit_code "
@@ -636,10 +597,7 @@ class ComplianceReport:
         if (
             self.status is Status.INDETERMINATE
             and self.exit_code == 0
-            and (
-                self.status_driver is None
-                or self.status_driver.finding_id != EMPTY_EXTRACTION_DRIVER_ID
-            )
+            and (self.status_driver is None or self.status_driver.finding_id != EMPTY_EXTRACTION_DRIVER_ID)
         ):
             raise ValueError(
                 "status 'indeterminate' may only pair with exit_code 0 when "
@@ -647,18 +605,13 @@ class ComplianceReport:
                 "(the one sanctioned --allow-empty exception) — got "
                 f"{self.status_driver!r}"
             )
-        if (
-            self.status not in (Status.CLEAN, Status.NOT_APPLICABLE)
-            and self.status_driver is None
-        ):
+        if self.status not in (Status.CLEAN, Status.NOT_APPLICABLE) and self.status_driver is None:
             raise ValueError(
                 f"status {self.status.value!r} requires a status_driver — an "
                 "exit that can't say why is an incoherent contract"
             )
         if isinstance(self.inventory_count, bool) or self.inventory_count < 0:
-            raise ValueError(
-                f"inventory_count must be an int >= 0, got {self.inventory_count!r}"
-            )
+            raise ValueError(f"inventory_count must be an int >= 0, got {self.inventory_count!r}")
         if not _SCHEMA_VERSION_RE.fullmatch(self.schema_version):
             raise ValueError(
                 f"schema_version must match '1.<minor>.<patch>' (core semver "
@@ -669,9 +622,7 @@ class ComplianceReport:
             raise ValueError(f"coverage axes must be unique, got {axes!r}")
         finding_ids = [f.id for f in self.findings]
         if len(finding_ids) != len(set(finding_ids)):
-            duplicates = sorted(
-                {fid for fid in finding_ids if finding_ids.count(fid) > 1}
-            )
+            duplicates = sorted({fid for fid in finding_ids if finding_ids.count(fid) > 1})
             raise ValueError(
                 f"finding ids must be unique (waiver matching and by-id "
                 f"consumers depend on it), duplicated: {duplicates!r}"
@@ -679,23 +630,19 @@ class ComplianceReport:
         for finding in self.findings:
             if finding.id.startswith("vuln:") and finding.axis != AXIS_VULNERABILITY:
                 raise ValueError(
-                    f"vuln-family finding {finding.id!r} must carry axis "
-                    f"{AXIS_VULNERABILITY!r}, got {finding.axis!r}"
+                    f"vuln-family finding {finding.id!r} must carry axis {AXIS_VULNERABILITY!r}, got {finding.axis!r}"
                 )
             if finding.id.startswith("hygiene:") and finding.axis != AXIS_HYGIENE:
                 raise ValueError(
-                    f"hygiene-family finding {finding.id!r} must carry axis "
-                    f"{AXIS_HYGIENE!r}, got {finding.axis!r}"
+                    f"hygiene-family finding {finding.id!r} must carry axis {AXIS_HYGIENE!r}, got {finding.axis!r}"
                 )
             if finding.id.startswith("license:") and finding.axis != AXIS_LICENSE:
                 raise ValueError(
-                    f"license-family finding {finding.id!r} must carry axis "
-                    f"{AXIS_LICENSE!r}, got {finding.axis!r}"
+                    f"license-family finding {finding.id!r} must carry axis {AXIS_LICENSE!r}, got {finding.axis!r}"
                 )
             if finding.id.startswith("currency:") and finding.axis != AXIS_CURRENCY:
                 raise ValueError(
-                    f"currency-family finding {finding.id!r} must carry axis "
-                    f"{AXIS_CURRENCY!r}, got {finding.axis!r}"
+                    f"currency-family finding {finding.id!r} must carry axis {AXIS_CURRENCY!r}, got {finding.axis!r}"
                 )
         # suppressions[] invariants (Story 6.1): at most one entry per
         # finding_id, and every finding_id references an existing findings[].id
@@ -703,9 +650,7 @@ class ComplianceReport:
         # finding-id uniqueness check exists to prevent).
         suppressed_ids = [s.finding_id for s in self.suppressions]
         if len(suppressed_ids) != len(set(suppressed_ids)):
-            duplicates = sorted(
-                {sid for sid in suppressed_ids if suppressed_ids.count(sid) > 1}
-            )
+            duplicates = sorted({sid for sid in suppressed_ids if suppressed_ids.count(sid) > 1})
             raise ValueError(
                 f"suppressions must be unique by finding_id (waiver wins the "
                 f"tie-break; echoed once), duplicated: {duplicates!r}"
@@ -714,8 +659,7 @@ class ComplianceReport:
         dangling = sorted(sid for sid in suppressed_ids if sid not in known_ids)
         if dangling:
             raise ValueError(
-                f"suppressions[].finding_id must reference an existing "
-                f"findings[].id, dangling: {dangling!r}"
+                f"suppressions[].finding_id must reference an existing findings[].id, dangling: {dangling!r}"
             )
 
     def to_json_dict(self) -> dict[str, object]:
@@ -735,12 +679,8 @@ class ComplianceReport:
                 "driver": _driver_dict(self.status_driver),
             },
             "exit_code": self.exit_code,
-            "findings": [
-                _finding_dict(f) for f in sorted(self.findings, key=_finding_sort_key)
-            ],
-            "coverage": [
-                _coverage_dict(c) for c in sorted(self.coverage, key=_coverage_sort_key)
-            ],
+            "findings": [_finding_dict(f) for f in sorted(self.findings, key=_finding_sort_key)],
+            "coverage": [_coverage_dict(c) for c in sorted(self.coverage, key=_coverage_sort_key)],
             "vuln_data": {
                 "source": self.vuln_data.source,
                 "snapshot_at": self.vuln_data.snapshot_at,
@@ -748,20 +688,14 @@ class ComplianceReport:
             },
             "inventory_count": self.inventory_count,
             "resolved_scan_set": [
-                {"path": m.path, "kind": m.kind}
-                for m in sorted(self.resolved_scan_set, key=lambda m: (m.path, m.kind))
+                {"path": m.path, "kind": m.kind} for m in sorted(self.resolved_scan_set, key=lambda m: (m.path, m.kind))
             ],
             "errors": [
                 {"kind": e.kind.value, "owner": e.owner, "message": e.message}
-                for e in sorted(
-                    self.errors, key=lambda e: (e.kind.value, e.owner, e.message)
-                )
+                for e in sorted(self.errors, key=lambda e: (e.kind.value, e.owner, e.message))
             ],
             "suppressions": [
-                _suppressed_finding_dict(s)
-                for s in sorted(
-                    self.suppressions, key=_suppressed_finding_sort_key
-                )
+                _suppressed_finding_dict(s) for s in sorted(self.suppressions, key=_suppressed_finding_sort_key)
             ],
             "license_data": _feed_provenance_dict(self.license_data),
             "currency_data": _feed_provenance_dict(self.currency_data),

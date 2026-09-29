@@ -2,7 +2,7 @@
 title: 'Close the CFE rebuild campaign — cut callers over to slices 1–2 or retire the mirrors'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -85,3 +85,17 @@ runs through `conda-forge-expert` per CLAUDE.md Rule 1/2 (it is CFE-surface work
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `0e325050cc` (2026-09-12, "feat(mason): Story 15.1 -- retire both CFE rebuild-campaign mirrors"). Ledger row `15-1-close-the-cfe-rebuild-campaign-cut-callers-over-to-slices-1-2-or-retire-the-mirrors: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/SKILL.md`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/context-snippet.md`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/metadata.json`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/references/cfy-template.md`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/references/github-updater.md`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/references/knowledge-gotchas.md`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/references/name-resolver.md`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/references/recipe-generator.md`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/scripts/_cfy_template.py`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/scripts/github_updater.py`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/scripts/github_version_checker.py`, `.claude/skills/cfe-recipe-generation/1.0.0/cfe-recipe-generation/scripts/name_resolver.py` (+72 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready-for-dev` → `done` (ledger row `15-1-close-the-cfe-rebuild-campaign-cut-callers-over-to-slices-1-2-or-retire-the-mirrors: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

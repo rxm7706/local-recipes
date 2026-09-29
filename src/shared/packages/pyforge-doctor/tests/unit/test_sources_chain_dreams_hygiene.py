@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import chain
@@ -57,6 +58,12 @@ def _write_roster(target: Path) -> None:
                     "archived",
                 ],
                 "dream_types": ["dream", "practice"],
+                "spec_statuses_ready_or_beyond": [
+                    "ready",
+                    "in-progress",
+                    "shipped",
+                    "absorbed",
+                ],
             }
         ),
         encoding="utf-8",
@@ -93,15 +100,7 @@ def _write_spec(
     status: str = "draft",
     owner_dream: str | None = None,
 ) -> Path:
-    spec_dir = (
-        target
-        / "_bmad-output"
-        / "projects"
-        / project
-        / "planning-artifacts"
-        / "specs"
-        / f"spec-{slug}"
-    )
+    spec_dir = target / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs" / f"spec-{slug}"
     spec_dir.mkdir(parents=True, exist_ok=True)
     od = owner_dream or f"docs/dreams/{slug}.md"
     (spec_dir / "SPEC.md").write_text(
@@ -160,6 +159,38 @@ def test_bad_status_reports_dream_vocab(tmp_path: Path) -> None:
     assert all(f.source is Source.DREAMS_HYGIENE for f in findings)
 
 
+def test_status_trailing_comment_reports(tmp_path: Path) -> None:
+    """Story 59.6 / CAP-137, Ruling 19: a trailing ``# ...`` on the same
+    line as Dream ``status:`` is a finding, distinct from ``dream-vocab``
+    (the parsed status value itself, ``ready``, is on-vocabulary)."""
+    _write_roster(tmp_path)
+    path = tmp_path / "docs" / "dreams" / "foo.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "---\nowner: marshal\nstatus: dreamt   # leftover note\ntype: dream\ntitle: Foo\n---\n\nbody\n",
+        encoding="utf-8",
+    )
+    _write_readme(tmp_path, [("foo.md", "dreamt")])
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    kinds = {f.check for f in findings}
+    assert "dream-status-trailing-comment" in kinds
+    assert "dream-vocab" not in kinds
+    hit = next(f for f in findings if f.check == "dream-status-trailing-comment")
+    assert hit.status is DoctorStatus.WARN
+    assert hit.evidence["subject"] == "foo"
+    assert "# leftover note" in hit.evidence["line"]
+
+
+def test_status_without_trailing_comment_is_clean(tmp_path: Path) -> None:
+    """No false positive on a plain ``status:`` line with no ``#``."""
+    _write_roster(tmp_path)
+    _write_dream(tmp_path, "foo", status="dreamt", realization_log=False)
+    _write_readme(tmp_path, [("foo.md", "dreamt")])
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    kinds = {f.check for f in findings}
+    assert "dream-status-trailing-comment" not in kinds
+
+
 def test_bad_owner_reports_dream_unowned(tmp_path: Path) -> None:
     _write_roster(tmp_path)
     _write_dream(tmp_path, "foo", owner="crew", realization_log=True)
@@ -178,9 +209,7 @@ def test_missing_title_reports(tmp_path: Path) -> None:
 
 def test_realized_without_realization_log_reports(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "foo", status="realized", title="Foo", realization_log=False
-    )
+    _write_dream(tmp_path, "foo", status="realized", title="Foo", realization_log=False)
     _write_readme(tmp_path, [("foo.md", "realized")])
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert any(f.check == "realization-log-missing" for f in findings)
@@ -219,16 +248,12 @@ def test_living_unifying_strategy_has_no_historical_section_finding(
     monkeypatch.chdir(repo)
     findings = chain.gather_dreams_hygiene(repo)
     hist = [f for f in findings if f.check == "historical-section-too-long"]
-    assert not any(
-        f.evidence.get("subject") == "pyforge-unifying-strategy" for f in hist
-    )
+    assert not any(f.evidence.get("subject") == "pyforge-unifying-strategy" for f in hist)
 
 
 def test_dreamt_may_omit_realization_log(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "foo", status="dreamt", title="Foo", realization_log=False
-    )
+    _write_dream(tmp_path, "foo", status="dreamt", title="Foo", realization_log=False)
     _write_readme(tmp_path, [("foo.md", "dreamt")])
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert not any(f.check == "realization-log-missing" for f in findings)
@@ -238,9 +263,7 @@ def test_dreamt_may_omit_realization_log(tmp_path: Path) -> None:
 
 def test_readme_table_orphan_reports(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "foo", status="dreamt", title="Foo", realization_log=False
-    )
+    _write_dream(tmp_path, "foo", status="dreamt", title="Foo", realization_log=False)
     _write_readme(tmp_path, [("missing.md", "dreamt")])
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert any(f.check == "readme-table-orphan" for f in findings)
@@ -248,9 +271,7 @@ def test_readme_table_orphan_reports(tmp_path: Path) -> None:
 
 def test_readme_table_status_drift_reports(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "foo", status="realized", title="Foo", realization_log=True
-    )
+    _write_dream(tmp_path, "foo", status="realized", title="Foo", realization_log=True)
     _write_readme(tmp_path, [("foo.md", "dreamt")])
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert any(f.check == "readme-table-drift" for f in findings)
@@ -301,9 +322,7 @@ def test_cli_dreams_flag_rejected_on_other_source() -> None:
 
 def test_dream_readme_missing_reports_on_fixture(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "orphan-dream", status="dreamt", title="Orphan", realization_log=False
-    )
+    _write_dream(tmp_path, "orphan-dream", status="dreamt", title="Orphan", realization_log=False)
     _write_readme(tmp_path, [])
     findings = chain.gather_dreams_hygiene(tmp_path)
     hit = [f for f in findings if f.check == "dream-readme-missing"]
@@ -313,15 +332,13 @@ def test_dream_readme_missing_reports_on_fixture(tmp_path: Path) -> None:
 
 
 def test_live_tree_dream_readme_missing_count() -> None:
-    """Measured live 2026-09-11 (re-measured 2026-09-12, mason 15.1 recovery
-    pass): 66 Dream files lack a README.md table row (one more than the prior
-    2026-09-11 measurement — an unrelated Dream landed on `main` in between
-    without its row; not chased down further here, this test only tracks the
-    live count)."""
+    """Measured live 2026-09-18: 65 Dream files lack a README.md table row
+    (was 67 on 2026-09-12 — two rows caught up; this test only tracks the live
+    count)."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     missing = [f for f in findings if f.check == "dream-readme-missing"]
-    assert len(missing) == 66
+    assert len(missing) == 65
 
 
 def test_specified_spec_not_ready_reports_on_fixture(tmp_path: Path) -> None:
@@ -351,18 +368,12 @@ def test_specified_spec_not_ready_reports_on_fixture(tmp_path: Path) -> None:
 
 
 def test_live_tree_specified_spec_not_ready_count() -> None:
-    """Measured live 2026-09-11: 3 ``specified`` Dreams whose covering Spec is
-    not ``ready`` or beyond (``django-accelerator-framework`` archived since)."""
+    """Measured live 2026-09-18: 0 ``specified`` Dreams whose covering Spec is
+    not ``ready`` or beyond (was 3 on 2026-09-11 — those cleared)."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     bad = [f for f in findings if f.check == "specified-spec-not-ready"]
-    assert len(bad) == 3
-    subjects = {f.evidence["subject"] for f in bad}
-    assert subjects == {
-        "miniforge-installer",
-        "python-agent-platform",
-        "reusable-cicd-workflows",
-    }
+    assert len(bad) == 0
 
 
 def test_kinship_wikilink_dead_reports_on_fixture(tmp_path: Path) -> None:
@@ -422,12 +433,98 @@ def test_kinship_wikilink_skips_frontmatter_fence(tmp_path: Path) -> None:
     assert not any(f.check == "kinship-wikilink-dead" for f in findings)
 
 
+def test_kinship_wikilink_skips_frontmatter_with_a_quoted_dashes_scalar(
+    tmp_path: Path,
+) -> None:
+    """Story 28.1 / CAP-81, body boundary: a frontmatter scalar quoting
+    ``"---"`` BEFORE a ``[[...]]`` inside the fence. The parser now accepts
+    this Dream (the quoted ``---`` is not a fence line); the body-side
+    reader must bound the body by the SAME line-anchored scan, or the
+    frontmatter tail after the quoted ``---`` is scanned as Kinship body
+    and ``[[not-a-link]]`` fires a false ``kinship-wikilink-dead`` (the
+    known-bad state review pass 1 reproduced with the parser fixed but
+    ``_dream_body_after_frontmatter`` still on ``split("---", 2)``)."""
+    _write_roster(tmp_path)
+    path = tmp_path / "docs" / "dreams" / "quoted.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "\n".join(
+            [
+                "---",
+                "owner: herald",
+                "status: dreamt",
+                "type: dream",
+                "title: Quoted",
+                "evidence: 'the gate still checks lines[0] == \"---\" first'",
+                "note: [[not-a-link]]",
+                "---",
+                "",
+                "Body only.",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_readme(tmp_path, [("quoted.md", "dreamt")])
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    assert not any(f.check == "unparseable-frontmatter" for f in findings)
+    assert not any(f.check == "kinship-wikilink-dead" for f in findings)
+
+
+def test_kinship_wikilink_skips_frontmatter_below_a_banner(tmp_path: Path) -> None:
+    """Story 28.1 / CAP-81, body boundary: a banner-topped Dream with a
+    ``[[...]]`` inside the fence. The parser skips the banner and accepts
+    the block; the body-side reader must skip it the same way -- before
+    this story the file was refused outright and never reached the scan,
+    and with only the parser fixed the old ``startswith("---")`` guard
+    returned the whole text (banner, frontmatter and all) as body."""
+    _write_roster(tmp_path)
+    path = tmp_path / "docs" / "dreams" / "bannered.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "\n".join(
+            [
+                "<!-- Promoted from implementation-artifacts/ on 2026-09-19 -->",
+                "---",
+                "owner: herald",
+                "status: dreamt",
+                "type: dream",
+                "title: Bannered",
+                "note: [[not-a-link]]",
+                "---",
+                "",
+                "Body only.",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_readme(tmp_path, [("bannered.md", "dreamt")])
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    assert not any(f.check == "unparseable-frontmatter" for f in findings)
+    assert not any(f.check == "kinship-wikilink-dead" for f in findings)
+
+
 def test_live_tree_kinship_wikilink_dead_count() -> None:
-    """Measured live 2026-09-11: 24 dead Kinship wikilinks under docs/dreams/."""
+    """Measured live 2026-09-19 under Story 28.1's opener rule: 31 dead
+    Kinship wikilinks under docs/dreams/ (was 33 on 2026-09-18, 26 on
+    2026-09-14). The -2 is one archived Dream, ``enterprise-airgap.md``,
+    whose glued ``---title:`` opener (the 2026-09-17 fold, deliberately
+    left in place by ``0b74756679``) is now refused as
+    ``unparseable-frontmatter`` before the Kinship scan runs; the old
+    reader parsed that opener leniently and scanned its body, where
+    ``[[deckcraft]]`` and ``[[pyforge-genesis]]`` do not resolve. The
+    count rises by two once that Dream's opener is repaired (and its two
+    links are still dead); this test only tracks the live count.
+
+    30 since 2026-09-25 (32 once ``enterprise-airgap.md``'s opener is repaired): ``pyforge-pages.md``'s ``[[python-foundry-cutover]]``
+    (no Dream by that name; the cutover Spec's owning Dream is
+    ``pyforge-unifying-strategy``) was repointed in the unifying-strategy
+    consolidation."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     dead = [f for f in findings if f.check == "kinship-wikilink-dead"]
-    assert len(dead) == 24
+    assert len(dead) == 30
 
 
 def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:
@@ -444,6 +541,111 @@ def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:
     _write_spec(tmp_path, "ready-dream", status="ready-for-dev")
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert not any(f.check == "specified-spec-not-ready" for f in findings)
+    # Positive proof the live roster was actually read, not a silent
+    # degrade-to-fallback that happens to produce the same suppression.
+    assert not any(f.check == "spec-status-roster-degraded" for f in findings)
+
+
+def test_specified_spec_absorbed_suppresses_finding(tmp_path: Path) -> None:
+    """Story 59.2: ``absorbed`` is in ``spec_statuses_ready_or_beyond`` (and
+    in ``guild-roster.json``'s ``spec_statuses_terminal``) -- a covering Spec
+    at ``absorbed`` must suppress ``specified-spec-not-ready``."""
+    _write_roster(tmp_path)
+    _write_dream(
+        tmp_path,
+        "absorbed-dream",
+        status="specified",
+        title="Absorbed Dream",
+        owner="doctor",
+        realization_log=True,
+    )
+    _write_readme(tmp_path, [("absorbed-dream.md", "specified")])
+    _write_spec(tmp_path, "absorbed-dream", status="absorbed")
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    assert not any(f.check == "specified-spec-not-ready" for f in findings)
+
+
+def test_specified_spec_archived_reports_not_ready(tmp_path: Path) -> None:
+    """Story 59.2: ``archived`` is in ``guild-roster.json``'s
+    ``spec_statuses_terminal`` but NOT in ``spec_statuses_ready_or_beyond`` --
+    a covering Spec at ``archived`` must still raise
+    ``specified-spec-not-ready``, the one non-obvious invariant that
+    motivated the new declared key over reusing ``spec_statuses_terminal``."""
+    _write_roster(tmp_path)
+    _write_dream(
+        tmp_path,
+        "archived-dream",
+        status="specified",
+        title="Archived Dream",
+        owner="doctor",
+        realization_log=True,
+    )
+    _write_readme(tmp_path, [("archived-dream.md", "specified")])
+    _write_spec(tmp_path, "archived-dream", status="archived")
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    hit = [f for f in findings if f.check == "specified-spec-not-ready"]
+    assert len(hit) == 1
+    assert hit[0].status is DoctorStatus.WARN
+    assert hit[0].evidence["subject"] == "archived-dream"
+    assert hit[0].evidence["spec_statuses"] == ["archived"]
+
+
+def test_missing_spec_statuses_ready_or_beyond_degrades_to_fallback(
+    tmp_path: Path,
+) -> None:
+    """A roster present but missing ``spec_statuses_ready_or_beyond`` (Story
+    59.2's new key) falls back to the CAP-1 subset
+    (``ready``/``in-progress``/``shipped``/``absorbed``) rather than crashing
+    or silently accepting nothing -- a covering Spec at ``ready`` still
+    suppresses the finding, and a ``spec-status-roster-degraded`` WARN
+    surfaces the broken declaration rather than swallowing it."""
+    path = tmp_path / "docs" / "governance" / "guild-roster.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "stations": [
+                    "herald",
+                    "marshal",
+                    "atlas",
+                    "warden",
+                    "mason",
+                    "doctor",
+                    "scribe",
+                    "steward",
+                ],
+                "guild_dreams": ["pyforge-charter"],
+                "dream_statuses": [
+                    "dreamt",
+                    "pitched",
+                    "specified",
+                    "realized",
+                    "archived",
+                ],
+                "dream_types": ["dream", "practice"],
+                # spec_statuses_ready_or_beyond deliberately absent.
+            }
+        ),
+        encoding="utf-8",
+    )
+    _write_dream(
+        tmp_path,
+        "ready-dream",
+        status="specified",
+        title="Ready Dream",
+        owner="doctor",
+        realization_log=True,
+    )
+    _write_readme(tmp_path, [("ready-dream.md", "specified")])
+    _write_spec(tmp_path, "ready-dream", status="ready")
+
+    findings = chain.gather_dreams_hygiene(tmp_path)
+
+    assert not any(f.check == "specified-spec-not-ready" for f in findings)
+    degraded = [f for f in findings if f.check == "spec-status-roster-degraded"]
+    assert len(degraded) == 1
+    assert degraded[0].status is DoctorStatus.WARN
+    assert degraded[0].source is Source.DREAMS_HYGIENE
 
 
 def test_specified_spec_not_ready_when_covering_spec_unevaluable(
@@ -510,15 +712,7 @@ def test_specified_spec_not_ready_via_satellite_title(tmp_path: Path) -> None:
             ("host-dream.md", "realized"),
         ],
     )
-    spec_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-herald"
-        / "planning-artifacts"
-        / "specs"
-        / "spec-host"
-    )
+    spec_dir = tmp_path / "_bmad-output" / "projects" / "pyforge-herald" / "planning-artifacts" / "specs" / "spec-host"
     spec_dir.mkdir(parents=True, exist_ok=True)
     (spec_dir / "SPEC.md").write_text(
         "\n".join(
@@ -536,10 +730,7 @@ def test_specified_spec_not_ready_via_satellite_title(tmp_path: Path) -> None:
     )
     findings = chain.gather_dreams_hygiene(tmp_path)
     hit = [
-        f
-        for f in findings
-        if f.check == "specified-spec-not-ready"
-        and f.evidence.get("subject") == "satellite-dream"
+        f for f in findings if f.check == "specified-spec-not-ready" and f.evidence.get("subject") == "satellite-dream"
     ]
     assert len(hit) == 1
     assert hit[0].evidence["spec_statuses"] == ["draft"]
@@ -556,15 +747,7 @@ def test_specified_spec_not_ready_via_covers_dreams(tmp_path: Path) -> None:
         realization_log=True,
     )
     _write_readme(tmp_path, [("satellite-dream.md", "specified")])
-    spec_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-herald"
-        / "planning-artifacts"
-        / "specs"
-        / "spec-host"
-    )
+    spec_dir = tmp_path / "_bmad-output" / "projects" / "pyforge-herald" / "planning-artifacts" / "specs" / "spec-host"
     spec_dir.mkdir(parents=True, exist_ok=True)
     (spec_dir / "SPEC.md").write_text(
         "\n".join(
@@ -590,9 +773,7 @@ def test_specified_spec_not_ready_via_covers_dreams(tmp_path: Path) -> None:
 
 def test_kinship_wikilink_resolves_existing_dream(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "target", status="dreamt", title="Target", realization_log=False
-    )
+    _write_dream(tmp_path, "target", status="dreamt", title="Target", realization_log=False)
     path = tmp_path / "docs" / "dreams" / "linker.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -611,8 +792,6 @@ def test_kinship_wikilink_resolves_existing_dream(tmp_path: Path) -> None:
         + "\n",
         encoding="utf-8",
     )
-    _write_readme(
-        tmp_path, [("target.md", "dreamt"), ("linker.md", "dreamt")]
-    )
+    _write_readme(tmp_path, [("target.md", "dreamt"), ("linker.md", "dreamt")])
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert not any(f.check == "kinship-wikilink-dead" for f in findings)

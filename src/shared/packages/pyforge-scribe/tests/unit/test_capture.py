@@ -36,11 +36,7 @@ def memory_root(tmp_path: Path) -> Path:
 def _other_files(root: Path, exclude: Path) -> list[Path]:
     """Every file under tmp_path's parent that is NOT under `root` or `exclude`."""
     tmp_root = root.parent.parent  # tmp_path
-    return [
-        p
-        for p in tmp_root.rglob("*")
-        if p.is_file() and root not in p.parents and p != exclude
-    ]
+    return [p for p in tmp_root.rglob("*") if p.is_file() and root not in p.parents and p != exclude]
 
 
 def test_happy_path_writes_file_and_one_index_line(memory_root: Path) -> None:

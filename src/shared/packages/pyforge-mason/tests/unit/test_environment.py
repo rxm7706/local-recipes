@@ -52,12 +52,15 @@ _CONDA_LOCK_RESULT = CondaLockResult(
 
 def test_lock_happy_path_wraps_conda_lock_result():
     with patch(
-        "pyforge.mason.environment.condalock.lock", return_value=_CONDA_LOCK_RESULT,
+        "pyforge.mason.environment.condalock.lock",
+        return_value=_CONDA_LOCK_RESULT,
     ) as mock_lock:
         result = lock(["environment.yml"], "/proj/conda-lock.yml")
 
     mock_lock.assert_called_once_with(
-        ["environment.yml"], "/proj/conda-lock.yml", platforms=(),
+        ["environment.yml"],
+        "/proj/conda-lock.yml",
+        platforms=(),
     )
     assert isinstance(result, LockResult)
     assert result.manifest_paths == ("environment.yml",)
@@ -71,53 +74,66 @@ def test_lock_happy_path_wraps_conda_lock_result():
 
 def test_lock_passes_multiple_manifest_paths_through_in_order():
     with patch(
-        "pyforge.mason.environment.condalock.lock", return_value=_CONDA_LOCK_RESULT,
+        "pyforge.mason.environment.condalock.lock",
+        return_value=_CONDA_LOCK_RESULT,
     ) as mock_lock:
         result = lock(["environment.yml", "pyproject.toml"], "/proj/conda-lock.yml")
 
     mock_lock.assert_called_once_with(
-        ["environment.yml", "pyproject.toml"], "/proj/conda-lock.yml", platforms=(),
+        ["environment.yml", "pyproject.toml"],
+        "/proj/conda-lock.yml",
+        platforms=(),
     )
     assert result.manifest_paths == ("environment.yml", "pyproject.toml")
 
 
 def test_lock_splits_comma_separated_platforms():
     with patch(
-        "pyforge.mason.environment.condalock.lock", return_value=_CONDA_LOCK_RESULT,
+        "pyforge.mason.environment.condalock.lock",
+        return_value=_CONDA_LOCK_RESULT,
     ) as mock_lock:
         result = lock(["environment.yml"], "lock.yml", platforms="linux-64,osx-arm64")
 
     mock_lock.assert_called_once_with(
-        ["environment.yml"], "lock.yml", platforms=("linux-64", "osx-arm64"),
+        ["environment.yml"],
+        "lock.yml",
+        platforms=("linux-64", "osx-arm64"),
     )
     assert result.platforms == ("linux-64", "osx-arm64")
 
 
 def test_lock_strips_whitespace_around_platform_tokens():
     with patch(
-        "pyforge.mason.environment.condalock.lock", return_value=_CONDA_LOCK_RESULT,
+        "pyforge.mason.environment.condalock.lock",
+        return_value=_CONDA_LOCK_RESULT,
     ) as mock_lock:
         lock(["environment.yml"], "lock.yml", platforms=" linux-64 , osx-arm64 ")
 
     mock_lock.assert_called_once_with(
-        ["environment.yml"], "lock.yml", platforms=("linux-64", "osx-arm64"),
+        ["environment.yml"],
+        "lock.yml",
+        platforms=("linux-64", "osx-arm64"),
     )
 
 
 def test_lock_drops_empty_tokens_between_commas():
     with patch(
-        "pyforge.mason.environment.condalock.lock", return_value=_CONDA_LOCK_RESULT,
+        "pyforge.mason.environment.condalock.lock",
+        return_value=_CONDA_LOCK_RESULT,
     ) as mock_lock:
         lock(["environment.yml"], "lock.yml", platforms="linux-64,,osx-arm64")
 
     mock_lock.assert_called_once_with(
-        ["environment.yml"], "lock.yml", platforms=("linux-64", "osx-arm64"),
+        ["environment.yml"],
+        "lock.yml",
+        platforms=("linux-64", "osx-arm64"),
     )
 
 
 def test_lock_platforms_none_passes_through_as_empty_tuple():
     with patch(
-        "pyforge.mason.environment.condalock.lock", return_value=_CONDA_LOCK_RESULT,
+        "pyforge.mason.environment.condalock.lock",
+        return_value=_CONDA_LOCK_RESULT,
     ) as mock_lock:
         result = lock(["environment.yml"], "lock.yml", platforms=None)
 
@@ -127,7 +143,8 @@ def test_lock_platforms_none_passes_through_as_empty_tuple():
 
 def test_lock_platforms_empty_string_passes_through_as_empty_tuple():
     with patch(
-        "pyforge.mason.environment.condalock.lock", return_value=_CONDA_LOCK_RESULT,
+        "pyforge.mason.environment.condalock.lock",
+        return_value=_CONDA_LOCK_RESULT,
     ) as mock_lock:
         lock(["environment.yml"], "lock.yml", platforms="")
 
@@ -167,7 +184,9 @@ def test_check_happy_path_wraps_conda_lock_check_result():
         result = check("/proj/conda-lock.yml", ["environment.yml"])
 
     mock_check.assert_called_once_with(
-        "/proj/conda-lock.yml", ["environment.yml"], platforms=(),
+        "/proj/conda-lock.yml",
+        ["environment.yml"],
+        platforms=(),
     )
     assert isinstance(result, CheckResult)
     assert result.lockfile_path == "/proj/conda-lock.yml"
@@ -182,7 +201,11 @@ def test_check_happy_path_wraps_conda_lock_check_result():
 
 def test_check_stale_true_passes_through():
     stale = CondaLockCheckResult(
-        stale=True, returncode=0, engine_name="conda-lock", engine_version="4.0.2", stdout="",
+        stale=True,
+        returncode=0,
+        engine_name="conda-lock",
+        engine_version="4.0.2",
+        stdout="",
     )
     with patch("pyforge.mason.environment.condalock.check", return_value=stale):
         result = check("/proj/conda-lock.yml", ["environment.yml"])
@@ -198,7 +221,9 @@ def test_check_passes_multiple_manifest_paths_through_in_order():
         result = check("lock.yml", ["environment.yml", "pyproject.toml"])
 
     mock_check.assert_called_once_with(
-        "lock.yml", ["environment.yml", "pyproject.toml"], platforms=(),
+        "lock.yml",
+        ["environment.yml", "pyproject.toml"],
+        platforms=(),
     )
     assert result.manifest_paths == ("environment.yml", "pyproject.toml")
 
@@ -211,7 +236,9 @@ def test_check_splits_comma_separated_platforms():
         result = check("lock.yml", ["environment.yml"], platforms="linux-64,osx-arm64")
 
     mock_check.assert_called_once_with(
-        "lock.yml", ["environment.yml"], platforms=("linux-64", "osx-arm64"),
+        "lock.yml",
+        ["environment.yml"],
+        platforms=("linux-64", "osx-arm64"),
     )
     assert result.platforms == ("linux-64", "osx-arm64")
 
@@ -224,7 +251,9 @@ def test_check_strips_whitespace_around_platform_tokens():
         check("lock.yml", ["environment.yml"], platforms=" linux-64 , osx-arm64 ")
 
     mock_check.assert_called_once_with(
-        "lock.yml", ["environment.yml"], platforms=("linux-64", "osx-arm64"),
+        "lock.yml",
+        ["environment.yml"],
+        platforms=("linux-64", "osx-arm64"),
     )
 
 
@@ -236,7 +265,9 @@ def test_check_drops_empty_tokens_between_commas():
         check("lock.yml", ["environment.yml"], platforms="linux-64,,osx-arm64")
 
     mock_check.assert_called_once_with(
-        "lock.yml", ["environment.yml"], platforms=("linux-64", "osx-arm64"),
+        "lock.yml",
+        ["environment.yml"],
+        platforms=("linux-64", "osx-arm64"),
     )
 
 
@@ -262,6 +293,7 @@ def test_check_platforms_empty_string_passes_through_as_empty_tuple():
 
 
 # --- Story 4.2: discover_manifests -- I/O & Edge-Case Matrix ----------------
+
 
 def test_discover_manifests_all_four_kinds_present(tmp_path):
     (tmp_path / "pyproject.toml").write_text("")
@@ -325,7 +357,10 @@ def test_discover_manifests_empty_directory_raises(tmp_path):
     exc = exc_info.value
     assert exc.directory == str(tmp_path)
     assert exc.filenames == (
-        "pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml",
+        "pyproject.toml",
+        "environment.yml",
+        "requirements*.txt",
+        "pixi.toml",
     )
 
 

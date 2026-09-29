@@ -64,9 +64,7 @@ def _free_loopback_port() -> int:
 
 
 def _sign(secret: bytes, timestamp: str, body: bytes) -> str:
-    return "sha256=" + hmac.new(
-        secret, timestamp.encode("ascii") + b"." + body, hashlib.sha256
-    ).hexdigest()
+    return "sha256=" + hmac.new(secret, timestamp.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
 
 
 def _wait_for_port(host: str, port: int, *, timeout: float) -> None:
@@ -79,9 +77,7 @@ def _wait_for_port(host: str, port: int, *, timeout: float) -> None:
         except OSError as exc:
             last_error = exc
             time.sleep(0.1)
-    raise TimeoutError(
-        f"daphne never started listening on {host}:{port} within {timeout}s"
-    ) from last_error
+    raise TimeoutError(f"daphne never started listening on {host}:{port} within {timeout}s") from last_error
 
 
 @pytest.fixture

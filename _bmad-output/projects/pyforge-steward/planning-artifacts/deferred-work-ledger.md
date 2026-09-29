@@ -888,7 +888,7 @@ status: open
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-11-2-2: DB-GPT's own metadata store cannot be wired to real PostgreSQL — verified upstream limitation, AD-9-blocked
-- source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-11-2-db-gpt-joins-as-a-pluggable-app.md`
+- source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-11-2-db-gpt-joins-via-its-configured-integration-pattern.md`
   summary: a second attempt at Story 11-2 (this one pap:AD-17/Pattern-B-correct, not the reverted
   Pattern-A attempt DW-11-2-1 describes) built and live-verified the whole registry-driven
   integration — `dbgpt_schema` migration, `config/engine_patterns.py` pap:AD-17 registry, a
@@ -928,7 +928,7 @@ status: open
 
   verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
 
-  verified: 2026-09-02 — resolved — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-steward/implementation-artifacts/spec-11-2-db-gpt-joins-as-a-pluggable-app.md); ledger status mapped to resolved; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-09-02 — resolved — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-steward/implementation-artifacts/spec-11-2-db-gpt-joins-via-its-configured-integration-pattern.md); ledger status mapped to resolved; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-11-4
 
@@ -1637,7 +1637,7 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
 ### DW-FU-33-2: django-pyforge chrome base.html does not vendor htmx.min.js, so hx-* on the steward inventory section is markup-only until chrome loads HTMX.
 
-- source_spec: `planning-artifacts/specs/spec-33-2-first-portal-slice-provision-list.md`
+- source_spec: `planning-artifacts/specs/spec-33-2-first-portal-slice-provision-inventory.md`
   summary: django-pyforge chrome base.html does not vendor htmx.min.js, so hx-* on the steward inventory section is markup-only until chrome loads HTMX.
   evidence: src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html has theme.css and the switcher, not an HTMX script. Pre-existing; this story server-renders inventory on GET /stations/steward/.
   location: src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html
@@ -2489,11 +2489,11 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-17** — Lock topology: `factory/` island lock and per-package `pixi.toml` scheduled ahead of any further eight-wide station wave; `environment.yaml` regeneration automated in CI. (red-team D-2)
   evidence: Review § 4 (R-17); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: promoted
-  disposition: 2026-09-04 — promoted to steward Story 44.7 (spec-python-foundry-cutover fnd:CAP-4, Phase 3 factory island; R-17a env export in 44.3); held ledger `blocked` pending solutioning review (sprint-change-proposal-2026-09-04-foundry-cutover.md)
+  status: resolved
+  disposition: 2026-09-13 — resolved by Story 44.7: `python-foundry/factory/pixi.toml` + `factory/pixi.lock` exist; estate root lock carries no solver-farm deps; island CI triggers on `factory/**` only; `mason recipe build factory/recipes/<r>` uses today's CFE native-build wrap via `MASON_FACTORY_ROOT`.
 
-  vessel: steward Story 44.7 (`fnd:CAP-4`, Phase 3 factory island; R-17a env export in 44.3) — **`blocked` today**, so the owed semantic re-read (below) is gated behind the cutover; annotate at dispatch, not before (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
-  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  vessel: steward Story 44.7 (`fnd:CAP-4`, Phase 3 factory island) — **done** 2026-09-13.
+  verified: 2026-09-13 — resolved — factory island lock present on `rxm7706/python-foundry`; mason factory path resolution landed in pyforge-mason; spec-reusable-cicd-workflows trigger evaluated and declined (island pixi lives under `factory/`, not repo root).
 
 ### DW-RT-2026-09-02-2
 
@@ -2899,7 +2899,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1: Nothing outside the pytest settings supplies PYFORGE_ASSERTION_PUBLIC_KEY, so a deployed or laptop run now answers 503 on every station MCP route.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: Nothing outside the pytest settings supplies PYFORGE_ASSERTION_PUBLIC_KEY, so a deployed or laptop run now answers 503 on every station MCP route.
   evidence: `config/settings/base.py:610-611` defaults both assertion keys to `""`; only `config/settings/test.py:66-67` assigns them, and `grep -rn ASSERTION src/platform/deploy/` returns nothing — `platform.djangoEnv` carries no such env and no secretKeyRef. `resolve_public_pem()` therefore yields `""` and the gate takes its fail-closed 503 branch. The underlying gap is pre-existing — `supervisor.start_run`/`get`, `assertion/client.py`, `AssertionMiddleware` and the mason/doctor portals already call `crypto.verify_assertion`, whose `_setting_pem` raises on an empty key — but this story widens the blast radius from "the supervisor tools and portals" to "every JSON-RPC method on every station". Wiring the keypair Secret is canopy:AD-19 / Story 40.1 territory; the matching chart invariant and a `REQUIRED_SETTINGS` entry belong with it.
   location: src/platform/deploy/charts/platform/templates/_helpers.tpl (platform.djangoEnv)
@@ -2912,7 +2912,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-2: The new NetworkPolicy admits only `component: web`, while mcp-host's three probes are httpGet on the same port and originate from the node.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: The new NetworkPolicy admits only `component: web`, while mcp-host's three probes are httpGet on the same port and originate from the node.
   evidence: `mcp-host-deployment.yaml:40-55` uses httpGet startup/liveness/readiness probes on `:8090`; the policy has no ipBlock or node allowance. The chart's only prior NetworkPolicy guards Redis, whose probes are `exec`, so there is no in-repo precedent for an HTTP-probed pod behind a podSelector-only ingress rule. On a CNI that subjects node→pod probe traffic to NetworkPolicy the pod never passes its startupProbe. Not fixable inside this story: AC 4 requires ingress "only from web pods", and the invariant enforces exactly one ingress rule, so a probe exception would fail the story's own test. Needs a deploy-profile decision alongside the mTLS/mesh item above.
   location: src/platform/deploy/charts/platform/templates/mcp-host-networkpolicy.yaml
@@ -2925,7 +2925,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-3: The sidecar hop never watches `receive` for `http.disconnect`, and its budget rose from 5s to at least 300s.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: The sidecar hop never watches `receive` for `http.disconnect`, and its budget rose from 5s to at least 300s.
   evidence: `_stream_upstream_body` relays until upstream ends; with `Queue(maxsize=1)` backpressure an abandoned request pins both the pump task and the upstream sidecar connection for the full read budget. Harmless at the old 5s cap, a real resource-holding window at the Celery hard limit. Out of scope on intent authority — the intent asks only that the budget be raised.
   location: src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
@@ -2938,7 +2938,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-4: Agent-facing docs and station skills still document a bare `POST /stations/<name>/mcp`, which now returns 401.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: Agent-facing docs and station skills still document a bare `POST /stations/<name>/mcp`, which now returns 401.
   evidence: `CLAUDE.md`, `AGENTS.md`, the eight `.claude/skills/pyforge-*/SKILL.md` blocks and the `bmad-agent-*` persona skills all describe the route with no `Authorization: Bearer <assertion>` requirement and no pointer to how a caller obtains one. No in-repo caller breaks (portals call in-process by design, per `assertion/client.py`), so the whole behavioural change lands on out-of-repo callers whose contract lives in files this story does not touch.
   origin: spec-deferred 025d5b60e556 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
@@ -2951,7 +2951,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-5: AC 4's only chart-render proof is `@requires_helm`, and the CI test env has no helm, so it silently skips there.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: AC 4's only chart-render proof is `@requires_helm`, and the CI test env has no helm, so it silently skips there.
   evidence: `requires_helm` is a `skipif`, not a failure. The Platform CI `test` job runs the `platform-ci-test` pixi env, whose deps declare no helm; `kubernetes-helm` is only in `feature.platform-dev`. The story's three (now eight) guard-removed companions are not helm-gated but feed hand-built dicts to the helper, so they prove the helper, not the chart — the template could be deleted with a green CI run. Pre-existing for every chart test in this suite, not introduced here.
   location: src/platform/tests/test_chart_invariants.py
@@ -2964,7 +2964,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-6: 401/403 refusals carry no `WWW-Authenticate` challenge and the body is not JSON-RPC-shaped.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: 401/403 refusals carry no `WWW-Authenticate` challenge and the body is not JSON-RPC-shaped.
   evidence: `TransportRefusal.body()` emits `{"error": "..."}` on an endpoint that otherwise speaks JSON-RPC 2.0, and no challenge header points a client at the mint view or at protected-resource metadata, so an MCP client has no discoverable path from the refusal to a working call. The intent specifies the status codes only.
   location: src/shared/packages/django-pyforge/src/django_pyforge/mcp_auth.py
@@ -3031,14 +3031,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 - source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
   summary: Nothing outside the pytest settings supplies `PYFORGE_ASSERTION_PUBLIC_KEY` (inherited from Story 42.1), so the limiter is unreachable in a deployed run.
-  evidence: The rate limiter sits behind the transport gate, which answers 503 when no public key resolves. Until the canopy:AD-19 keypair Secret lands (Story 40.1 territory), no deployed MCP call gets far enough to be counted. Recorded here only because it now also gates this story's AC 1; the underlying gap and its remedy are already tracked on `spec-42-1-mcp-transport-authorization.md`.
+  evidence: The rate limiter sits behind the transport gate, which answers 503 when no public key resolves. Until the canopy:AD-19 keypair Secret lands (Story 40.1 territory), no deployed MCP call gets far enough to be counted. Recorded here only because it now also gates this story's AC 1; the underlying gap and its remedy are already tracked on `spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`.
   location: src/platform/deploy/charts/platform/templates/_helpers.tpl
   origin: spec-deferred 1886c187bae3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
-  verified: 2026-09-08 — still-open — CONFIRMED, and it is a CAP-6 duplicate rather than an independent finding. `PYFORGE_ASSERTION_PUBLIC_KEY` returns **zero matches** in `deploy/charts/platform/templates/_helpers.tpl`, so nothing outside the pytest settings supplies it and the transport gate still answers 503 before the limiter is ever reached. This is the SAME defect as `DW-FU-42-1` (and the entry says so itself: 'inherited from Story 42.1 ... already tracked on spec-42-1-mcp-transport-authorization.md'). One defect class, two ledger rows; closing the keypair Secret closes both.
+  verified: 2026-09-08 — still-open — CONFIRMED, and it is a CAP-6 duplicate rather than an independent finding. `PYFORGE_ASSERTION_PUBLIC_KEY` returns **zero matches** in `deploy/charts/platform/templates/_helpers.tpl`, so nothing outside the pytest settings supplies it and the transport gate still answers 503 before the limiter is ever reached. This is the SAME defect as `DW-FU-42-1` (and the entry says so itself: 'inherited from Story 42.1 ... already tracked on spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md'). One defect class, two ledger rows; closing the keypair Secret closes both.
 
 ### DW-FU-42-2-6: `test_mcp_start_audit_returns_handle` leaks a committed live `RunState` row per run, which `MAX_RUNNING_PER_SUB` now counts.
 
@@ -3688,7 +3688,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-7: Every station app is built `json_response=True`, so the keep-alive frame never fires against the real sidecar and the raised budget stays capped by the ~30s ingress idle timeout.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: Every station app is built `json_response=True`, so the keep-alive frame never fires against the real sidecar and the raised budget stays capped by the ~30s ingress idle timeout.
   evidence: `mcp_dual_era.py:55-56` builds every station MCP app with `json_response=True, stateless_http=True`, so the sidecar's body is always `application/json` and never `text/event-stream`. `_keepalive_frame()` returns `None` for anything but an event stream — correctly, since a comment frame injected into JSON corrupts it — which means the keep-alive path is unreachable in production and a JSON tool call still emits no bytes until it completes. T-5 is therefore only partially closed: the 5s cap and the full-response buffering are gone, but a long JSON call still dies at whatever idle timeout sits in front of the pod. Not fixable inside this story: the intent prescribes comment frames, and there is no legal way to keep a JSON body alive. Closing it needs either SSE-shaped sidecar responses or an ingress idle-timeout decision.
   location: src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
@@ -3701,7 +3701,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-8: The chart wires `MCP_HOST_SIDECAR_BASE_URL` into worker and migrate-job pods that the new NetworkPolicy then denies.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: The chart wires `MCP_HOST_SIDECAR_BASE_URL` into worker and migrate-job pods that the new NetworkPolicy then denies.
   evidence: `_helpers.tpl` (`platform.djangoEnv`) injects the sidecar URL into `worker-deployment.yaml` and `migrate-job.yaml`, and `test_platform_pods_wire_mcp_host_sidecar_base_url_to_internal_service` (`test_chart_invariants.py:1349`) asserts web AND worker carry it — while the new policy admits only `component: web` and the X-5 guard pins the rule to exactly one peer. Nothing breaks today: the only reader is `sidecar_base_url()`, reached solely from `config/asgi.py`'s dispatch, which runs in web. But the two invariants now encode opposite intents, and the first worker-side MCP call will fail at the network layer rather than at the config layer.
   location: src/platform/deploy/charts/platform/templates/mcp-host-networkpolicy.yaml
@@ -3714,7 +3714,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-9: No test drives the real ASGI entrypoint; every test builds its own app around `dispatch_station_mcp`.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: No test drives the real ASGI entrypoint; every test builds its own app around `dispatch_station_mcp`.
   evidence: The single production caller is `_dispatch_http` in `src/platform/config/asgi.py`. `test_mcp_transport_auth.py` calls `dispatch_station_mcp` directly with hand-built scope dicts, and the five updated files each wrap it in their own `application`. So the ACs' "Given `POST /stations/atlas/mcp`" is proved against an assembled callable, not the app gunicorn serves — a reordering inside `_dispatch_http` that let a station path bypass the gate would not fail any test. Pre-existing convention across this suite, not introduced here.
   location: src/platform/config/asgi.py
@@ -3727,7 +3727,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-10: `MCP_PROXY_TIMEOUT_SECONDS` is documented only in a source comment.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: `MCP_PROXY_TIMEOUT_SECONDS` is documented only in a source comment.
   evidence: The new env var appears in no `values.yaml`, no chart template, and not in `src/platform/deploy/overlays/ocp/cluster-bringup.md`, which already carries an mcp-host readiness checklist. An operator raising the sidecar budget has to read `mcp_http.py` to learn the name exists.
   location: src/platform/deploy/overlays/ocp/cluster-bringup.md
@@ -3740,7 +3740,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-43-2: PyForgeStationClient default urllib transport has no executing test.
 
-- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
+- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract-and-the-api-v1-collision.md`
   summary: PyForgeStationClient default urllib transport has no executing test.
   evidence: Unit tests inject a mock transport; _urllib path untested in CI.
   location: src/shared/packages/pyforge-core/src/pyforge/core/client.py
@@ -3753,7 +3753,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-43-2-2: Langflow /langflow/api/v1/ prefix-preserving redirect not gated in platform-ci-test.
 
-- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
+- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract-and-the-api-v1-collision.md`
   summary: Langflow /langflow/api/v1/ prefix-preserving redirect not gated in platform-ci-test.
   evidence: test_langflow_mount.py requires langflow package; langflow-free suite covers bare /api/v1 only.
   location: src/platform/tests/test_langflow_mount.py
@@ -3766,7 +3766,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-43-2-3: Server-side X-PyForge-API-Version header enforcement not implemented.
 
-- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
+- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract-and-the-api-v1-collision.md`
   summary: Server-side X-PyForge-API-Version header enforcement not implemented.
   evidence: Client sets header; station_api.py never validates it against URL version.
   location: src/platform/config/station_api.py
@@ -3779,7 +3779,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-43-2-4: django-warden portal has not adopted StationHttpClient for host calls.
 
-- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
+- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract-and-the-api-v1-collision.md`
   summary: django-warden portal has not adopted StationHttpClient for host calls.
   evidence: Contract test proves header parity via mock transport only; no portal wiring in diff.
   origin: spec-deferred 700930453bc1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
@@ -3791,7 +3791,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-43-2-5: OpenAPI documents are not schema-validated beyond path-key presence.
 
-- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
+- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract-and-the-api-v1-collision.md`
   summary: OpenAPI documents are not schema-validated beyond path-key presence.
   evidence: Tests assert paths keys exist; no OpenAPI validator or golden document.
   origin: spec-deferred 5da93f3e807e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
@@ -4271,7 +4271,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-46-6: The studio's manticore module tracks main/next (unpinned, floating) with no lockfile or version-check -- re-running the sanctioned command later can silently install a different version, unlike every other custom module in this register
 
-- source_spec: `planning-artifacts/specs/spec-46-6-herald-s-manticore-studio-has-a-root-and-a-proven-native-path.md`
+- source_spec: `planning-artifacts/specs/spec-46-6-heralds-manticore-studio-has-a-root-and-a-proven-native-path.md`
   summary: The studio's manticore module tracks main/next (unpinned, floating) with no lockfile or version-check -- re-running the sanctioned command later can silently install a different version, unlike every other custom module in this register
   evidence: Edge Case Hunter finding; recorded in adoption-register.md row 9's Hazards cell as an open reproducibility risk, not resolved here (AD-7 prove-and-relay boundary)
   location: docs/reference/manticore-studio.md; adoption-register.md row 9
@@ -4284,7 +4284,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-46-6-2: The isolation guarantee's two halves (checksum bracket vs. .claude/skills/ zero-mc-* claim) have uneven evidentiary rigor -- the latter has no equivalent tight before/after snapshot of its own, though independently re-verified true by three reviewers
 
-- source_spec: `planning-artifacts/specs/spec-46-6-herald-s-manticore-studio-has-a-root-and-a-proven-native-path.md`
+- source_spec: `planning-artifacts/specs/spec-46-6-heralds-manticore-studio-has-a-root-and-a-proven-native-path.md`
   summary: The isolation guarantee's two halves (checksum bracket vs. .claude/skills/ zero-mc-* claim) have uneven evidentiary rigor -- the latter has no equivalent tight before/after snapshot of its own, though independently re-verified true by three reviewers
   evidence: Edge Case Hunter finding; not retroactively fixable for an already-completed run, noted for future re-runs of the same command
   location: docs/reference/manticore-studio.md (isolation guarantee section)
@@ -4297,7 +4297,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-46-9: _skills_census() now runs unconditionally at the top of _module_census_hit, a wasted iterdir() for bmad-module-skill-forge (which could previously short-circuit via wire_bmad_dirs alone)
 
-- source_spec: `planning-artifacts/specs/spec-46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env.md`
+- source_spec: `planning-artifacts/specs/spec-46-9-pipeline-truths-installed-stage-reads-the-applied-core-and-wired-is-a-declared-per-class-predicate.md`
   summary: _skills_census() now runs unconditionally at the top of _module_census_hit, a wasted iterdir() for bmad-module-skill-forge (which could previously short-circuit via wire_bmad_dirs alone)
   evidence: Edge Case Hunter finding #3; negligible cost, no behavioral effect
   location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py::_module_census_hit
@@ -4310,7 +4310,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-46-9-2: Manticore's wired probe (studio root + _bmad/ + mc-* census) is written against best-available evidence but not empirically verified against a real, completed studio install, since Story 46.6 is separately blocked (interactive installer, awaiting operator --tools decision)
 
-- source_spec: `planning-artifacts/specs/spec-46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env.md`
+- source_spec: `planning-artifacts/specs/spec-46-9-pipeline-truths-installed-stage-reads-the-applied-core-and-wired-is-a-declared-per-class-predicate.md`
   summary: Manticore's wired probe (studio root + _bmad/ + mc-* census) is written against best-available evidence but not empirically verified against a real, completed studio install, since Story 46.6 is separately blocked (interactive installer, awaiting operator --tools decision)
   evidence: Spec's own Boundaries & Constraints, re-confirmed sound by Intent Alignment review; this story's own manticore tests correctly assert unwired against the real, empty studio root
   location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py::probe_wired (INSTALL_CLASS_STUDIO_MODULE branch)
@@ -4375,7 +4375,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-47-5: cutover-readiness.md P11/P12's own state cells still read 'not done' (2026-09-06 snapshot) even though their producers (marshal 30.5/30.2, steward 14.9) are all confirmed done -- correcting those cells is each producer's own job, out of this story's Surface line
 
-- source_spec: `planning-artifacts/specs/spec-47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines.md`
+- source_spec: `planning-artifacts/specs/spec-47-5-epic-44-depends-on-the-era-tail-and-44-13s-scope-names-the-spines.md`
   summary: cutover-readiness.md P11/P12's own state cells still read 'not done' (2026-09-06 snapshot) even though their producers (marshal 30.5/30.2, steward 14.9) are all confirmed done -- correcting those cells is each producer's own job, out of this story's Surface line
   evidence: Named explicitly in G3's own resolution note; independently confirmed by three reviewers this staleness is real and correctly left untouched here
   location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/cutover-readiness.md rows P11/P12
@@ -4385,3 +4385,468 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   status: open
 
   verified: 2026-09-08 — resolved — RESOLVED HERE. Verified the premise first: all three producers read `done` in their tracked ledgers — marshal `30-2-the-project-context-surface-follows-6-12-d1` and `30-5-the-harness-and-every-live-caller-follow-the-shim-retirement`, and steward `14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims` — while `cutover-readiness.md` rows P11 and P12 still read **not done**. Both cells are corrected in this commit to record producer-done, each keeping an explicit 're-confirm the live count before the flip' caveat so a corrected cell is not mistaken for a fresh measurement.
+
+### DW-FU-23-1-2: canopy:AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
+
+- source_spec: `planning-artifacts/specs/spec-23-1-same-url-different-rows.md`
+  summary: canopy:AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
+  evidence: Story 23.1 ACs and canopy:FR-16 name same-URL row isolation via filter_by_role / AccessDeclaration. Audit and build_navigation are already in pyforge.steward.dashboard from Epic 9 and were not wired onto /stations/atlas/board/.
+  location: src/shared/packages/django-atlas/src/django_atlas_portal/board.py
+  origin: spec-deferred 93ba6e43a00d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-VOCAB-2026-09-14-1: the Charter names SEVEN Intelligence Hub abstractions; upstream names six — a factual error in a Tier-0 document, propagated to two more artifacts
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `docs/dreams/pyforge-charter.md:606` reads *"The whitepaper names Frames · Cogs · Ops · Guards · Gates · Tracks · Organizational Memory."* Upstream names **six** shared abstractions; Organizational Memory is a Layer-1 *infrastructure* term ("the Hub's persistent context substrate"), not one of the six execution/accountability abstractions. Folding it in erases a distinction OpenTeams draws deliberately — the architecture is three layers plus a cross-cutting Accountability Plane, explicitly "never 'four layers'". The Charter's substantive rulings (cross-walk never joins; the Cogs/Smith collision; Charter·Guild·Stations have no Hub counterpart) are unaffected — only the enumeration.
+  evidence: Three independent upstream sources agree on six, verified 2026-09-14: `openteams-ai/inthub-whitepaper` README (*"the shared abstractions (Frames, Cogs, Ops, Guards, Gates, Tracks)"*); the guide's glossary entry **Shared abstraction** (*"Frames, Cogs, Ops, Guards, Gates, and Tracks are proposed as the AI era's set"*); and guide §13 (*"ask it to adopt **six nouns**"*). The whitepaper's `GLOSSARY.md` — which self-declares as *"the authoritative definition set"* — carries the six-verb mnemonic ("Frames guide… Cogs perform… Ops orchestrate… Guards verify… Gates decide… Tracks make the work accountable"). Propagation confirmed by grep: `spec-intelligence-hub/SPEC.md:48` (§ Why) and `:68` (CAP-1 intent), plus `vocabulary-map.md`'s table, which carries Organizational Memory as a peer row.
+  location: docs/dreams/pyforge-charter.md:606
+  severity: high
+  status: closed
+  raised: 2026-09-14 — Owner: steward. **The Charter is Tier 0 and changes only by recorded amendment**, so this is an amendment with a Realization-log entry, never an edit — deliberately NOT fixed inline during the research pass that found it. The two downstream artifacts correct in the same change. Recorded as correction C-1 in the owning Spec.
+
+  closed: 2026-09-14 — Corrected as a Tier-0 **amendment** with a Realization-log entry, never a silent edit. `pyforge-charter.md` § The Lexicon now reads *"the whitepaper names **six** shared abstractions — Frames · Cogs · Ops · Guards · Gates · Tracks — and tiers **Organizational Memory** separately, as Layer-1 infrastructure rather than a seventh peer."* The two downstream copies were corrected in the same pass (`spec-intelligence-hub/SPEC.md` § Why and CAP-1 intent) with a memlog correction. **`vocabulary-map.md` deliberately unchanged** — it is a mapping table that claims no count, and its Organizational Memory row is a correct mapping, since Scribe's GraphStore and team memory really do relay it. The *mapping* was always right; only the count and the tiering were wrong, and no substantive ruling depends on the enumeration — CAP-4's cross-walk-never-join, the Cogs/Smith collision and the reverse walk all stand untouched. Root cause kept on the record: the count had been copied forward three times (Dream → Charter → Spec) without anyone re-reading the whitepaper.
+### DW-VOCAB-2026-09-14-2: Guard categories are recorded in the wrong order — Source-Grounding ranks second upstream, not sixth
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `spec-intelligence-hub/SPEC.md:192-199` (decision B7) lists the seven Guard categories with Source-Grounding sixth. Whitepaper §5.5 "Seven Categories of Guards" orders them: 1 Algorithmic · 2 **Source-Grounding** · 3 Consensus · 4 Expert · 5 Policy & Safety · 6 Regression & Drift · 7 Outcome, in Title Case. The seven are right; the ordinal is not.
+  evidence: Verified 2026-09-14 against whitepaper §5.5. The substantive B7 finding is unaffected and still stands — Source-Grounding exists at exactly one site (`scribe/recall.py` AD-8) and Outcome is absent entirely. The correction matters because "SOURCE-GROUNDING GOES FIRST", which B7 recorded as our own sequencing preference, turns out to be **upstream's own ranking** (algorithmic strongest → Outcome most business-meaningful), which strengthens rather than weakens the decision.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-intelligence-hub/SPEC.md:192
+  severity: low
+  status: closed
+  raised: 2026-09-14 — Owner: steward. Recorded as correction C-2 in the owning Spec. Lands with DW-VOCAB-2026-09-14-1's amendment, since both touch the same Hub-vocabulary surface.
+
+  closed: 2026-09-14 — Recorded where it was actually misleading. The upstream §5.5 ranking is **1 Algorithmic · 2 Source-Grounding · 3 Consensus · 4 Expert · 5 Policy & Safety · 6 Regression & Drift · 7 Outcome**, and `docs/dreams/intelligence-hub.md:427` already carried it correctly. The defect was in the shipped library: `docs/foundry/guards/README.md`'s table is sorted **alphabetically**, which put `source_grounding` sixth and read as a ranking. The table now says so explicitly and states upstream's order beneath it. This matters to one claim in particular — landing Source-Grounding as the library's *first addition* (Story 53.4) was **not** a local departure from upstream's priorities but a following of them, and `outcome`, the one category still missing, is genuinely upstream's last.
+### DW-VOCAB-2026-09-14-3: the Design tier teaches a practice vocabulary that entered no repo artifact, still names four retired BMAD skills, and has drifted 13.5 KB out of sync
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: Three problems in one surface. (a) The 45-slide `Agentic SDLC` deck teaches **four phases**, **three tracks** (Quick Flow / BMad Method / Enterprise), parallel track, party mode, execution matrix, method-vs-machinery, and project-context-as-constitution — and **none** of it appears in `vocabulary-map.md`, the Charter cross-walk, or any repo glossary. (b) It still names `bmad-quick-dev`, `bmad-dev-auto`, `bmad-create-story`, `bmad-dev-story` — all renamed or deprecated in BMAD 6.11 — plus **Paige**, the Tech Writer persona retired in 6.11, three times. `CLAUDE.md` records the renames correctly, so the repo knows; the public-facing deck does not. (c) The local pull is stale: `Agentic SDLC.dc.html` is 193,114 B in-repo against 206,638 B in Design — **13.5 KB behind**.
+  evidence: Measured 2026-09-14 against Design project `f58c0f17-087b-417e-9cfa-c410de6169dc` and `presentations/agentic-sdlc/project/` (local copies dated 2026-08-01). Retired-name counts by grep on `Agentic SDLC.marp.md`: one hit each for the four skills, three for Paige. The two Lexicon posters differ only by harness-strip artifacts; the deck is materially behind. The Lexicon slide itself **was** verified current — its seven nouns match the Charter exactly, including the Spec's 2026-07-25 addition. This is a recurrence, not a new class: the Charter's own log (line 826) records the 2026-08-01 pull as the *first* one ever, made precisely because two Design-side Lexicon artifacts had described the pre-2026-07-25 six-noun model since 2026-07-25 and were never pulled.
+  location: presentations/agentic-sdlc/project/
+  severity: medium
+  status: open
+  raised: 2026-09-14 — Owner: steward rules the vocabulary; **herald owns the deck surface** and the pull discipline (`docs/specs/presentation-deck.md` § the MCP bridge). Carried as CAP-5 of the owning Spec ("the Design tier stops drifting") and as its open questions 8 and 10-11.
+
+  scope-added: 2026-09-14 — **the `Track` qualification's Design half lands here.** The operator ruled that `Track` is written out in full wherever either sense appears — *evidence Track* (the Hub's durable run record) and *planning track* (a BMAD lane) — recorded as a Charter amendment. The 20 legacy intake-spec header rows in `docs/specs/` were qualified to `| Planning track |` in the same pass. **The deck could not be**: `presentations/agentic-sdlc/README.md:82` states `fragments/*.html` are *generated* from the prototype, and `project/*.dc.html` is a byte-pull from Claude Design — so editing either in the repo would be overwritten by the next extract AND would manufacture exactly the Design→repo drift the Charter's 2026-08-01 amendment exists to prevent. The deck's "Three tracks, sized to the work" slide has to change **in Design first**, then be pulled. That makes it the same remediation as this entry's existing content (four retired BMAD skill names, the retired Paige persona, and a local pull already 13.5 KB behind), so it is folded in rather than tracked separately — one Design-side pass closes all of it. The two dated `src/marp/*-2026-0*.md` snapshots are deliberately excluded: historical prose keeps its original names.
+
+  progress: 2026-09-14 (later, Design reachable) — **(c) closed, (b) mostly closed by a pull; (a) and `Track` still Design-side.** Operator ruled *pull only* — no Design-side edits this pass. Pulled byte-exact from project `f58c0f17` (`render_preview` → curl → harness strip; every byte count verified against `list_files`): `Agentic SDLC.dc.html` 193,114 → 206,638 B (the 2026-09-09 v6.12 refresh that Design's own `github.md` records: AiDD rebrand, skills 14 → 8 with the v6.12 names, Paige retired, `bmad-loop`/`bmad-spec`/`bmad-ux` added, six modules, a new *Workflow matrix* slide — 50 → 51 sections), plus both Lexicon posters (their hard-coded Dream/Spec counts dropped for evergreen copy) and `github.md` verbatim; `extract` + `build` re-derived 51 fragments + manifest. **Verified against the pulled deck, not the prior entry's claim:** the four `bmad-`-prefixed retired names and all three `Paige` mentions are gone (0 hits each), but **four unprefixed `quick-dev`/`dev-auto` mentions survived** the Design-side rename (one body line on *Quick flow*, three speaker notes on *Quick flow* / *Workflow matrix*). Two further Design-side items surfaced: *Lexicon to PyForge*'s Guildhall line now names the retired `docs/dashboard/ → GitHub Pages` surface (the referent is the open Charter §7 question, so any wording is provisional — recorded, not corrected in a mirror), and `Agentic SDLC.marp.md` (a parallel Marp export, not derived from the prototype; Design etag unchanged since 2026-08-01) still carries the pre-6.11 names. **Remaining for one Design-side pass, then pull:** the *Scale-adaptive* title "Three tracks" → "Three **planning** tracks"; the four unprefixed retired names; the Guildhall line once §7 is ruled; the Marp export. (a) — the Design-tier practice vocabulary entering no repo artifact — is untouched by a pull and stays open. Herald's spec-surface key was deliberately **not** re-stamped for this pull (its memlog names every pulled and regenerated path literally, so nothing reads as drift; the key also carries herald's own recorded-but-unstamped 2026-09-13 drift-exclude and the Story 21.11 pull, which a stamp from this branch would launder — herald re-stamps once, as its own act).
+
+  progress: 2026-09-25 — Story 59.4 closes the third leg of this entry, the recurrence detector: a new steward duty, `pyforge steward deck-drift --slug <slug> --path <path>` (`pyforge.steward.deck_integrity`), fingerprints (size + sha256) the pulled artifact at each observed `.herald/bridge-state.json` etag into a steward-owned baseline sidecar (`.steward/deck-integrity-baseline.json`) and flags a finding when the fingerprint changes with no recorded new pull. This session's Claude Design MCP connection was unreachable (`FIRST_PARTY_AUTH_REJECTED`), so (a) — the teaching-only self-label except the two named exceptions — and the four surviving unprefixed `quick-dev`/`dev-auto` mentions remain open, Design-side, and are recorded as `deferred:` entries on the story's own spec rather than closed here.
+### DW-VOCAB-2026-09-14-4: our nine Frames are authored against an unmerged, unlicensed frame-spec draft
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: The Company Frame and eight station Frames (steward Epic 53, Stories 53.2/53.5) carry `type: frame [0.3]`, `identifier:` and an Apache-2.0 `license:` IRI. All three are **v0.3-only fields**, from `openteams-ai/frame-spec` PR #28, which is **still open**. The released spec is v0.2.0, whose required set is exactly `type`/`name`/`description`/`visibility` and whose optional set is `version`/`scope`/`maintainer`/`inherits` — `identifier` and `license` do not exist in it, and `owner` never existed in any version (the field is `maintainer`, renamed from `author` by merged PR #20).
+  evidence: Verified 2026-09-14. `GET /repos/openteams-ai/frame-spec/license` returns **404** and the repo's `license` field is `null` — there is **no LICENSE on `main` today**, so the spec text currently grants no rights; PR #28, which would add Apache-2.0 along with the v0.3 data model, was created 2026-09-07 and has not merged. PR #29 (reference validator) is open against #28's branch, not main. Separately, the advertised v0.2.0 release is not backed by any git tag or GitHub release. Story 53.5 accepted this knowingly ("we adjust when #28 / #29 merge"); this entry exists so the acceptance is tracked rather than remembered.
+  location: docs/foundry/frames/
+  severity: medium
+  status: accepted-risk
+  raised: 2026-09-14 — Owner: steward. Trigger to revisit: PR #28 merging (or closing). Our in-repo four-field preflight is correctly bound to v0.2's required set and does **not** depend on upstream's unlicensed `tools/validate_frames.py`, so the preflight itself is unaffected either way — the exposure is the frontmatter fields and the licence, not the gate.
+
+  accepted: 2026-09-14 — **Operator ruled: adopt v0.3 now, knowingly.** *"we move forward by adopting frame-spec v0.3 — the PR will merge, and no point starting with an outdated version."* This entry's premise remains literally true (openteams-ai/frame-spec#28 is still open, branch `spec/v0.3-working-draft`, 38 commits, mergeable, no approval, and `main` still carries no LICENSE), so it is recorded as accepted risk rather than closed. What changed is the exposure, which was worse before the ruling than after: Story 53.5 had already stamped `type: frame [0.3]` on the nine Frames while their bodies stayed v0.2-shaped, so the estate conformed to **neither** version. Story 53.6 completed the adoption against the normative profile fetched from the PR head (`spec/profile/frame-core.csv` + `spec/frame-spec.md`), not a summary — qualified-ref `identifier`s, prose `name`s, sequence-shaped repeatables, `owner:` folded into the registered `maintainer`. The four fixes are stable properties of the v0.3 **Markdown encoding**, so a further draft revision cannot invalidate them; if #28's element registry does change before merge, the nine Frames and `frames.py` are re-run from the same profile CSV. De-register once #28 merges and the Apache-2.0 LICENSE lands.
+
+  re-verified: 2026-09-14 (later) — **premise still holds; exposure unchanged; stays accepted-risk.** `openteams-ai/frame-spec#28` is `OPEN`, not draft, `reviewDecision: CHANGES_REQUESTED` (review by `jbouder`, 2026-09-10 — "in favor of the direction, with one substantive reservation" on the body taxonomy, plus concrete fixes the author replied to as done 2026-09-11, including "only `type` is required, the other three recommended"), last commit on the branch 2026-09-09, `updatedAt` 2026-09-14T14:34Z; `GET /repos/openteams-ai/frame-spec/license` still 404. The in-repo four-field preflight is bound to v0.2's required set, so upstream's move to "only `type` required" loosens, not breaks, our conformance; the four v0.3 Markdown-encoding properties Story 53.6 adopted are unaffected by a body-taxonomy revision. Trigger unchanged: #28 merging or closing.
+  re-verified: 2026-09-16 — **premise still holds; exposure REDUCED; stays accepted-risk.** `openteams-ai/frame-spec#28` OPEN (39 commits, head `d7213c185e`, `MERGEABLE`, `reviewDecision` still `CHANGES_REQUESTED`, last review activity 09-11); `#29` OPEN (81 commits, head `4596579f71`, `spec/v0.3-validator` based on #28); `main` still has no LICENSE. What moved since 09-14: #28's same-day commit removed the draft's version number (documents omit the token; our `frame [0.3]` stamps corrected to bare `type: frame`, steward Story 64.1) and #29 shipped the reference validator, composition fixtures, `--self-check` and conformance profiles (§7 MUST — PyForge's published, Story 64.2). Exposure is lower because conformance is now *measured* rather than asserted: upstream's own `validate_frame.py` at `4596579f` passes our nine Frames 9/9 and accepts our profile (`pixi run -e pyforge-steward frame-upstream-check`, opt-in, read-only, pinned in `docs/foundry/frames/upstream-pin.yaml`). Trigger unchanged: #28/#29 merging or closing → re-pin to the release SHA and drop the "as if v0.3" posture. No commits or comments to openteams-ai.
+
+### DW-VOCAB-2026-09-14-5: `epic-18` is a ledger row with no `## Epic 18` heading, so three stories render under Epic 17 and fleet-picture over-counts
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `sprint-status-ledger.yaml` carries `epic-18: done` and `epic-18-retrospective: optional`, and `epics.md` carries `### Story 18.1/18.2/18.3` with matching ledger keys — but **no `## Epic 18:` heading**. The headings run 16, 17, 19. The three stories therefore render structurally under Epic 17, and `fleet-picture` (which counts epics from ledger keys) reports 57 epics for steward against 56 declared headings.
+  evidence: Measured 2026-09-14 by parsing both files. Epic 18 is referenced by name throughout the FR mapping prose (`epics.md:1440-1456`, "canopy:FR-1: Epic 18 — chrome package", FR-2, FR-3, FR-14, FR-15), so the epic is real and its heading was simply never written. Invisible to `chain-completeness` INV-B by construction — see DW-CHAIN-COMPLETENESS-7.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
+  severity: low
+  status: closed
+  raised: 2026-09-14 — Owner: steward. Data fix (write the missing heading over the existing three stories); tracked separately from the detector gap so neither blocks the other.
+  closed: 2026-09-14 — Fixed, and the diagnosis above was **wrong about the cause**: Epic 18's heading was not missing, it was **mis-levelled**. `### Epic 18: Chrome and the trusted client` sat at H3 (line 1563) as the body heading, with an identically-titled summary-list entry at line 1503. Promoted the body heading to `##`; the summary entry is untouched. Verified `count == 1` for the body form and `== 2` overall before editing, so the promotion could not land on the summary row. The observable symptoms the entry describes were all real — headings ran 16, 17, 19; the three stories rendered under Epic 17; `fleet-picture` reported 57 against 56 — an H3 is invisible to every `^## Epic` parser in the estate, so a mis-levelled heading and an absent one are indistinguishable from the outside. Now caught by construction: doctor's DW-CHAIN-COMPLETENESS-7 landed the INV-B epic arm the same day, which compares `^##\s+Epic\s+(\d+)` headings against `epic-N` keys in both directions.
+
+### DW-VOCAB-2026-09-14-7: `docs/dreams/README.md`'s "36 backlog stories" example is three weeks stale — every one of those stories is `done`
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `docs/dreams/README.md:93-96` teaches the rule *"Status is NOT a proxy for work remaining, in either direction — the ledger is"* using two examples. The second reads: *"the largest single block of unbuilt work in the fleet — marshal's E7–E12, **36 backlog stories** — sits under `genesis-installer`."* That block is no longer unbuilt. The **rule is correct and should stand**; only the example is stale.
+  evidence: Measured 2026-09-14 directly against the live tracked ledger (the very artifact the passage tells the reader to trust): marshal's E7–E12 hold **37 story rows, all `done`** — zero `backlog`, zero `in-progress`. They landed between 2026-08-10 (`6115ce7669`, Story 7-1) and 2026-08-23 (`52fbe2fac3`, Story 12-6, PR #654); the 37th (`10-8-manifest-declared-writable-artifacts…`) was added after the epics merge. Found during the delivered-Spec decomposition sweep while surveying `spec-genesis-installer-name-retirement`, whose own scope touched E7–E12 **only as documents to merge and renumber, never as work to build** — so nothing in that Spec is contradicted by this; the README simply was not updated when the stories shipped.
+  location: docs/dreams/README.md:94
+  severity: low
+  status: closed
+  raised: 2026-09-14 — Owner: steward. Fix is to re-point the example at a block that is genuinely unbuilt today (or state the figure as an as-of-date), **not** to weaken the rule it illustrates. Note the irony worth preserving in the rewrite: the passage's own closing advice — *"read `sprint-status-ledger.yaml`"* — is exactly what falsifies its example.
+
+  closed: 2026-09-14 — Re-measured rather than softened, per this entry's own instruction not to weaken the rule it illustrates. marshal's E7–E12 is now **37 of 37 done** (0 backlog), so the "36 backlog stories" example was fully spent. Rewritten to use the resolution as the sharper evidence: `genesis-installer` read `archived` while that block went from all-unbuilt to all-shipped underneath it, so the status was useless in **both** directions over time — a stronger version of the original point, not a retreat from it. Today's real figures are cited as an as-of-date aside: steward's Epic 44 (8 blocked + 3 backlog) and herald's Epic 21 (10 backlog), both under Dreams reading `specified`, which is correct and still says nothing about what is left.
+### DW-VOCAB-2026-09-14-8: `2` means FAIL to a doctor source and "could-not-run" to the aggregator, and CLAUDE.md taught the wrong one
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: Four exit-code domains are live at once. `pyforge.doctor.verdict` is frozen at `{0, 2, 130}` where **2 = FAIL** and `1` does not exist; `scripts/detectors.py` uses `{0, 1, 2}` where **2 = could-not-run**; `pyforge.warden.verdict` uses `{0, 1, 2, 130}`; `pyforge.marshal.core.verdict` invents `{0, 1, 2, 3, 4, 130}` with `gate-failed = 3`. `CLAUDE.md` stated the aggregator's domain as if it were universal, while the same file tells the reader to run `bmad-drift-check` / `story-status-check` / `spec-surface-check` / `capability-effect-check`, all of which dispatch through `python -m pyforge.doctor.sources` and therefore project through DOCTOR's domain. So a genuine FAIL from any of those reads, under the documented mapping, as "the check couldn't run" — the precise false-green class `scripts/detectors.py:39-41` exists to prevent, inverted.
+  evidence: Confirmed live 2026-09-14 **by walking into it**: this session ran `python -m pyforge.doctor.sources chain-completeness`, received exit 2 alongside one FAIL finding, and reported it to the operator as "could-not-run, not a pass — a false green signal", which was wrong. The error was caught only by then reading `doctor/verdict.py:45-57` directly. A detector that misleads its own maintainer inside one session is not a theoretical defect. Doctor's subset of warden's domain IS deliberate and documented (`doctor/verdict.py:4-7` — it omits warden's policy rung `1` because Doctor reports operability, not policy); the collision with the aggregator's `2` is not documented anywhere.
+  location: CLAUDE.md (§ Health / status), scripts/detectors.py, src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
+  severity: high
+  status: partially-fixed
+  raised: 2026-09-14 — Owner: steward (vocabulary), doctor (the domains). **The documentation half is fixed**: CLAUDE.md now states both domains and warns that `2` inverts between them. **The design half is open** — four lattices, three of which invented their own numbers, with only the Doctor↔Warden relationship documented as intentional and Marshal's recorded in its own docstring as "a recorded assumption, not architecture-dictated". A single declared exit-code vocabulary is CAP-2's natural scope.
+
+  progress: 2026-09-14 (second pass) — the **rot risk is now closed**, which was the actionable half. `tests/scripts/test_exit_code_domains_are_declared.py` pins all four domains against `docs/reference/judgement-vocabulary.md`, which is now their declared home: doctor's `{0, 2, 130}` with `warn` fixed at 0 and `1` provably absent; warden's `{0, 1, 2, 130}` retaining the policy rung doctor's docstring justifies omitting; and the aggregator's `2`-from-`unknown`. The aggregator assertions read the **code**, not its prose — a comment-matching test would pass while the projection underneath it changed. The glossary assertions pin that the inversion is stated and that doctor's and warden's domains appear side by side, since that adjacency is what makes the subset relationship legible to a reader. So changing any domain without updating the declaration now fails a test instead of silently re-opening the 2026-09-14 misread.
+    **Still open: the unification itself** — one declared exit-code vocabulary the four surfaces read, rather than four hand-maintained constants. That is a cross-station code change (doctor, warden, marshal, `scripts/detectors.py`) and needs its own Dream. Note the four are not arbitrarily divergent: doctor's is a documented subset of warden's, and marshal's own docstring calls its numbering "a recorded assumption, not architecture-dictated". Only the aggregator's `2` genuinely conflicts, and it is the one surface with no lattice at all.
+
+  ruled: 2026-09-14 (later) — **"needs its own Dream" was the wrong framing; the operator folded the unification into `spec-vocabulary-one-name-one-job` CAP-2.** That Dream already owns "one name, one job" for the estate's vocabulary and CAP-2 is literally "one declared vocabulary source the detectors read" — the exit-code lattices are its second vocabulary, not a new chain. SPEC.md CAP-2 carries a dated scope-widening block naming all four surfaces and the constraints above (Doctor⊂Warden stays a declared subset); the Story is minted when that Spec flips to `ready` (it is `draft` with seven operator questions open). Status stays `partially-fixed` — nothing in code changed this pass — but the entry's remedy is now a bound CAP, not an unowned wish.
+### DW-VOCAB-2026-09-14-9: `Guard`/`Gate` carry three senses and the Charter ruled on the neighbouring collision but not this one
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: Three live senses. (1) Intelligence Hub: *"Guards check. Gates decide."* — shipped as `docs/foundry/guards/README.md` + `steward/guards.py`. (2) Ours: `gate_mode` as a run-level approval policy, ~30 `*-check` detectors, and marshal's own `Verdict.GATE_FAILED` rung. (3) Upstream BMAD: `PASS`/`CONCERNS`/`FAIL` as a readiness-gate verdict, live in eight implementation-readiness reports across six stations. The Charter names the Cogs/Smith collision explicitly at `pyforge-charter.md:615` and `:622-623` — and gives Guards/Gates a single cross-walk cell at `:617` with no collision marker at all. The asymmetry looks deliberate but is explained nowhere.
+  evidence: Measured 2026-09-14 across the estate. Worse than an unnamed overload: the only two rulings that DO exist contradict each other — `docs/dreams/intelligence-hub.md:757` says *"Gates are the verdict plus operator confirmation"*, while `spec-pyforge-marshal/glossary.md:52-55` says a Gate is *"a checkpoint that must pass before a story progresses. Three kinds: an approval gate, a verify gate, and a scope check"*, none of which is "the verdict plus operator confirmation". A reader cannot determine which is binding.
+  location: docs/dreams/pyforge-charter.md:617, docs/dreams/intelligence-hub.md:757, _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/glossary.md:52-66
+  severity: medium
+  status: closed
+  raised: 2026-09-14 — Owner: steward. This is exactly `spec-vocabulary-one-name-one-job` CAP-4 ("the unnamed collisions get rulings"), which is still `draft`. A ruling is a Charter amendment with a Realization-log entry, never an edit — and it must also settle `Track` (Hub evidence record vs BMAD planning lane), which has the same shape and is equally unruled.
+  closed: 2026-09-14 — Ruled by the same Charter amendment that closed `DW-VOCAB-2026-09-14-10`: `pyforge-charter.md` § The Lexicon → `### Gate has three senses; verdict has one`, with a Realization-log entry. The three senses are named and scoped (Warden's PR verdict / the harness CI gate / upstream BMAD's readiness gate), authors must say which, and `verdict` is additionally reserved as the narrow word. The contradiction this entry flagged — `intelligence-hub.md:757` ("Gates are the verdict plus operator confirmation") against `spec-pyforge-marshal/glossary.md:52-55` ("a checkpoint … three kinds") — is resolved by the amendment being Tier 0: both downstream texts now read as sense-scoped restatements rather than rival definitions. **`Track` is NOT closed by this** and remains CAP-4's outstanding half; it was carried deliberately rather than bundled, because its two senses sit in a public-facing deck and 24 legacy intake-spec headers, a different remediation shape from a code-adjacent word.
+
+### DW-VOCAB-2026-09-14-10: nothing reconciles "Warden is the sole PR verdict" with "detectors-ci fails CI"
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: The Charter's rule is *"Warden stays the sole PR verdict"* (`pyforge-charter.md:617`) under the doctrine *"the hand that builds is never the gate that judges"* (`:451-454`). Yet `detectors-ci` genuinely runs in CI and genuinely fails it, and several non-Warden surfaces say so in their own words: `scripts/detectors.py:212` (*"the FAIL half … is what actually gates"*), `sources/platform_policy.py:41-43` (*"a REAL, ACTIONABLE gate"*), `pixi.toml:1077` (*"install it … to make this a real gate"*), `pyforge-marshal/README.md:31` (*"Read-only conformance report (CI gate)"*), `pixi.toml:1563` (Atlas, *"CI gate (exit 2 on violations)"*). The Charter's harness clause (`:668-673`, "CI verify gates" are the unit of governance) arguably covers this — but no document connects the two, so each surface decides for itself whether calling itself a gate is legal.
+  evidence: Measured 2026-09-14. The tension is not merely verbal: marshal publishes a second `verdict` lattice with a dedicated `GATE_FAILED` rung (`marshal/core/gate.py:41-42`) in the station the Charter explicitly bars from grading its own work (`pyforge-charter.md:269` assigns Marshal's verdict to Doctor). Contrast the surfaces that get it right and say so — `pyforge-warden/README.md:135-138` mechanically raises `SecondVerdictError`, and `steward/frames.py:315` / `docs/foundry/frames/README.md:58` both state "Not a detector; Warden stays the sole PR verdict."
+  location: docs/dreams/pyforge-charter.md:451-454 and :617, scripts/detectors.py:212, src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/platform_policy.py:41-43, src/shared/packages/pyforge-marshal/README.md:31
+  severity: medium
+  status: closed
+  raised: 2026-09-14 — Owner: steward (the ruling), then each named station (its own wording). Deliberately NOT fixed by editing the five call sites: rewording them would hide an unresolved doctrine question behind tidier prose. The ruling decides whether "gate" is reserved for the PR verdict (and every CI-failing check needs a different word) or whether "PR verdict" is the narrow reserved term and CI checks may gate freely.
+  closed: 2026-09-14 — **Operator ruled the second option, plus a reservation.** Landed as a Charter amendment, `docs/dreams/pyforge-charter.md` § The Lexicon → `### Gate has three senses; verdict has one`, with a Realization-log entry (Tier 0 changes by recorded amendment, never a silent edit). The ruling: `Gate` carries three legitimate senses — Warden's **PR verdict**, the **harness CI gate** (`detectors-ci`, `*-check` tasks, `gate_mode`, a loop's verify gate), and upstream BMAD's **readiness gate** (`PASS`/`CONCERNS`/`FAIL`, not ours to redefine) — named and scoped in the same shape the Charter used for Cogs/Smith, with authors required to say which. Additionally **`verdict` is reserved**: a station publishes it, only about work it did not do, and only Warden publishes the PR one.
+    The five flagged surfaces turn out **not to have been in violation**. § *Execution Doctrine* had already placed CI verify gates in the **harness** — the unit of governance — rather than among station verdicts; governance gates, stations judge. That reading was simply never written down, so `platform_policy.py`, `pixi.toml`, `scripts/detectors.py`, `pyforge-marshal/README.md` and an Atlas task each resolved the ambiguity alone and each concluded, in its own prose, that it was breaking a rule it was not breaking. **No code was changed** — which was the point of not rewording them in the first place.
+    Two things deliberately NOT closed here: **`Track`** stays unruled (`spec-vocabulary-one-name-one-job` CAP-4), and **marshal's own six-rung verdict lattice with its `GATE_FAILED` rung** is a question of FACT rather than vocabulary — does that value ever leave the loop and reach a PR? — so the amendment explicitly does not pre-judge it. Operator direction: investigate before deciding.
+
+### DW-VOCAB-2026-09-14-11: `check` does four jobs, and `detector`/`check`/`preflight` are nowhere distinguished
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `check` is simultaneously (1) a `Finding` field naming which check produced it, (2) a marshal CLI verb over the detector registry, (3) one of marshal's three gate kinds (*"a scope check"*), and (4) the filename suffix of ~30 `*-check` pixi tasks that are detectors. `preflight` is separately (1) the Frame validator, (2) a marshal loop-home step, (3) a BigQuery cost dry-run, and (4) Doctor's own tagline for its `check` verb. No artifact anywhere in the estate contrasts detector vs check vs preflight; the only two statements are negative (*"Not a detector"*, twice), defining by exclusion and never saying what the thing is instead. `advisory` is likewise defined only as "not a gate" in all four of its definition sites, and `lens` — load-bearing in `bmad-review`, the Guard library and warden's epics — is defined nowhere at all.
+  evidence: Measured 2026-09-14. This is the Lexicon's own rule failing on the estate's most-used operational nouns: *"Every noun does exactly one job; every job has exactly one noun"* (`pyforge-charter.md:596-599`). The Lexicon's seven nouns satisfy it; the words the fleet actually types every day do not.
+  location: docs/dreams/pyforge-charter.md:596-599, src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py, scripts/detectors.py:23-32
+  severity: low
+  status: closed
+  raised: 2026-09-14 — Owner: steward. Folds into CAP-1/CAP-3. Cheapest real fix is a glossary that states each positively (what a detector IS, what advisory obliges a reader to do) rather than four more "not a gate" disclaimers.
+
+  closed: 2026-09-14 — Closed by writing the glossary this entry asked for: `docs/reference/judgement-vocabulary.md`, linked from the Charter's § The Lexicon and indexed in `docs/MAP.md`. Each word is now stated **positively**, which was the actual defect — `advisory` had four definition sites and all four said only "not a gate", and `lens` had none at all. The positive definitions are the substance: **advisory** means *the decision stays with a human*, not *unimportant*; a **detector** reports and declines to decide; a **preflight** runs before the thing it guards and its failure means "do not proceed" rather than "this is broken"; a **lens** is a named point of view so two passes over one diff look for different things. **`check`'s four jobs were deliberately NOT collapsed** — the `Finding.check` field, the `marshal check` verb, marshal's scope-check gate kind and the `*-check` filename suffix are load-bearing in four different layers, and renaming any of them would cost more than the ambiguity does; the page says "say which" instead, matching the Gate ruling's shape. The page also carries the exit-code table, including the `2` inversion between a doctor source (FAIL) and the aggregator (could-not-run) that caused a real misread this session, and the never-read-a-detector-through-a-pipe rule. It rules nothing: `Gate`, `Track` and `kernel` were ruled by Charter amendment and the page restates them for a reader who needs them at hand. Adding a word there is documentation; changing what one means stays a Charter amendment.
+### DW-VOCAB-2026-09-14-12: six structural nouns are overloaded and nothing in the estate acknowledges them
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: A fourth sweep (2026-09-14) measured the ARCHITECTURAL nouns, which `spec-vocabulary-one-name-one-job` does not cover — its scope is status vocabularies and identifier shapes. Six are UNRULED, meaning the overload exists and no document names it: **Surface** (5 senses — a Spec's `surface:` frontmatter, a story's `**Surface:**` field, marshal's *frozen surface*, an API surface, and "shared/estate surface"), **Layer** (7 numbered stacks, including two rival config-precedence chains that both live in `_bmad-output/` and never cite each other), **estate / fleet / foundry** (3 senses each), **Tier** beyond the one named collision (three further systems: `five_tier.py`'s station shape, model/cost tiering, test tiers), **Plane** (8 senses; two ADs each claim "one plane" for a *different* plane), and **Spine** (2 senses, and never defined anywhere at all — the word is inherited silently from `bmad-architecture` as a filename).
+  evidence: Surface ranks first on blast radius: 142 `SPEC.md` carry `surface:`, 422 story rows carry `**Surface:**`, `scripts/spec_surface_check.py` gates on the first sense and `marshal/core/gate.py:528` on the third — and `marshal/epics.md:496` uses senses 2 and 3 in one sentence with no qualifier. Marshal's `architecture.md:823-827` § 10.4 is the estate's only terms-of-art list; it rules the Tier collision ("the collision is historical, so always say which") but omits Surface, while marshal owns two of its five senses. `island` is the counter-example worth copying: one definition (`ARCHITECTURE-SPINE.md:604-608`), one owner, three enforcing ADs, a CI `paths:` rule and a test.
+  location: docs/dreams/pyforge-charter.md, _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture.md:823-827, scripts/spec_surface_check.py
+  severity: medium
+  status: open
+  raised: 2026-09-14 — Owner: steward. Needs its own Dream or an explicit widening of `vocabulary-one-name-one-job`, whose § The shapes covers identifiers and whose CAP-4 covers Track/Guard/Gate — none of these six. The `island` pattern (define once, name an owner, enforce with an AD) is the shape to hold the rest to.
+
+### DW-VOCAB-2026-09-14-13: "kernel" was retired and is now MORE overloaded than before the ban
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: The Charter bans one sense at `pyforge-charter.md:387-389` — *"Never call the Spec a 'kernel' — that is `bmad-spec`'s internal jargon … and it demotes the most load-bearing artifact in the ecosystem to a tool detail"* — and then uses the banned form itself 440 lines later at `:827` (*"this Dream's own Spec kernel"*). `_bmad-output/EXEMPLAR-STANDARD.md:447-465` builds an entire named rule on the banned sense (**"## The kernel/companion rule"**, 16 occurrences), and `PROJECTS.md:64` plus `CHARTER-ALIGNMENT-PLAN.md` follow it. Meanwhile two NEW senses arrived after the ban and were never contemplated by it: "kernel spec" meaning a station's broad umbrella Spec (`docs/dreams/spec-surface-overlap-tolerance.md`, and the branch name `maintenance/kernel-spec-surface-overlap-2026-09-12`), and "foundry kernel" meaning the regenerated core of B (`docs/dreams/foundry-regenerate-not-fold.md`, steward Epic 54). Plus "governance kernel" at `guild-roster.json:17`.
+  evidence: Measured 2026-09-14 — ~120 occurrences across ~40 in-scope files, in four distinct senses. A retirement that the retiring document violates, that a Tier-2 standard builds a named rule on, and that two later efforts extended in new directions, is not a retirement.
+  location: docs/dreams/pyforge-charter.md:387-389 and :827, _bmad-output/EXEMPLAR-STANDARD.md:447-465
+  severity: medium
+  status: closed
+  raised: 2026-09-14 — Owner: steward. Either the ban is real (and EXEMPLAR-STANDARD's rule is renamed, and the Charter fixes its own line) or it is narrowed to "never call **the Spec** a kernel, but `kernel` is legal for an umbrella-vs-narrow relationship and for B's core". Both are defensible; the current state — banned and load-bearing at once — is not.
+
+  closed: 2026-09-14 — **Operator narrowed the ban to its one real target.** Charter § Branding now reads *"Never call **the Spec** a 'kernel'"*, with the other three senses blessed by name: a station's broad **umbrella spec** as against its narrow story specs (`spec-surface-overlap-tolerance`'s "kernel spec"), the regenerated core of B (Epic 54's "foundry kernel"), and `guild-roster.json`'s "governance kernel" — on the same say-which-sense footing as the Gate ruling the same day. Landed as a Tier-0 amendment with a Realization-log entry. **No file renamed:** `EXEMPLAR-STANDARD.md`'s named "kernel/companion rule" stands, and this Charter's own Realization-log use of "Spec kernel" stands, because neither was ever calling *the Spec* a kernel — they use the umbrella and artifact senses. The reasoning recorded for posterity: a prohibition its own author violates 440 lines later, that a Tier-2 standard builds a named rule on, and that two later efforts extend in new directions is not a prohibition — it is a dead letter that quietly makes every reader wrong. Keeping the ban's real content while admitting practice is the honest resolution; enforcing it fully would have renamed a live standard's rule to protect a word upstream tooling uses for its own five-field shape anyway.
+### DW-VOCAB-2026-09-14-14: "the station is the post, not the ___" forked, and two artifacts cite Charter §5 for the variant it does not contain
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: Charter §5 says *"the station is the post, not the **person**"* (`pyforge-charter.md:451`) — station ≠ Smith, the being can be swapped. A second, different ruling also lives in §5 at `:474-485` (*"Owning is becoming — at the planning tier … It does not rename the package"*) — planning home ≠ package identity. Those two rulings have collapsed into one memorable formula with a swappable last word: `docs/dreams/README.md:110` and `docs/dreams/intelligence-hub.md:841` say *"post, not the **product**"*, and `docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md:1519` plus `spec-pyforge-unifying-strategy/.memlog.md:6` **cite "Charter §5" for a sentence §5 does not contain**.
+  evidence: Measured 2026-09-14. Both underlying rulings are correct and both are in §5, which is why this went unnoticed — it is a citation-integrity defect, not a semantic one. The public deck (`presentations/agentic-sdlc/…:740`) and the Charter agree on "person"; the Dream README and four in-flight memlogs drifted to "product". Related: station / post / office are three nouns for one job inside the very document whose Spec says *"every job has exactly one noun … never a synonym smuggled into prose"* (`docs/governance/spec-pyforge-charter/SPEC.md:77-79`).
+  location: docs/dreams/pyforge-charter.md:451 and :474-485, docs/dreams/README.md:110, docs/dreams/intelligence-hub.md:841
+  severity: low
+  status: closed
+  raised: 2026-09-14 — Owner: steward. Fix is to give the second ruling its own formula rather than overloading the first, and correct the two miscitations. Memlogs are append-only, so the memlog one is corrected by a later entry, never an edit.
+
+  closed: 2026-09-14 — All four sites fixed. The fork existed because Charter §5 holds **two** rulings and one memorable formula had absorbed both: *"the station is the post, not the **person**"* (`:451` — a Smith is swappable at a station, which is what makes model tiering safe) and the 2026-07-28 amendment *"Owning is becoming — at the planning tier … It does not rename the package"* (`:474-485`). The second now gets its own words — **"the planning home is not the package name"** — so it stops borrowing the first's. `docs/dreams/README.md:110` carried a second, separate error nobody had flagged: it still read *"Owning is **not** becoming"*, the wording the 2026-07-28 amendment superseded, so it was contradicting Tier 0 outright. Corrected there and at `docs/dreams/intelligence-hub.md:841`. The two **miscitations** were repointed rather than reworded, a citation being a pointer: `docs/dreams/archive/…-topology.md:1519` in place, and `spec-pyforge-unifying-strategy/.memlog.md` by appended correction, memlogs being append-only. The ownership decision both miscitations record — steward over herald — is correct and untouched; only the citation was wrong.
+### DW-VOCAB-2026-09-14-15: chain-currency reports 9 findings across 8 stations — deferred to a dedicated reconciler pass
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `chain_currency_sweep_check` reports 9 currency-checkpoint failures spanning all eight stations — 8 × `chain-audit-checkpoint-staleness` plus 1 × `chain-audit-checkpoint-coherence` (warden). Clearing them requires the full reconciler sweep documented in `CHAIN-CURRENCY-RUNBOOK.md`, which is a per-station pass over each chain's artifacts, not a mechanical fix.
+  evidence: Observed live 2026-09-14 in a full `pixi run -e local-recipes detectors` run, alongside the other reds cleared that day (governance-currency, deferred-work, chain-completeness, ad-citation, loop-stall, spec-surface). Deliberately NOT attempted in the same session: the chain-currency cost is stages, not diff size — a prior one-line edit cascaded into 9 reconciles and 6 retros — so folding it into a session already carrying a Frame-spec adoption, a detector arm and a 15-spec surface reconcile would have produced a poor pass at both.
+  location: scripts/chain_currency_sweep_check.py, _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md
+  severity: medium
+  status: closed
+  raised: 2026-09-14 — Owner: each station, sequenced by the runbook. Operator direction the same day: defer to a dedicated next session. This entry exists so the deferral is tracked rather than forgotten — it is the only red left open from that session's sweep.
+  note: 2026-09-14 (the dedicated reconciler pass ran) — **8 of 9 cleared; 1 residual, deliberately not stamped over.** `chain_currency_sweep_check` now exits 1 with a single finding: `pyforge-warden` `chain-audit-checkpoint-coherence`. All eight `staleness` findings are cleared by genuine per-station cascades (atlas: a real 2026-08-26→09-14 retro; the other seven: PRD + architecture-spine reconciliations, plus epics validation notes for doctor/mason/warden where `arch→epics` would have fired next; steward additionally a brief reconciliation for its `research→brief` edge). **The residual is operator-owned and cannot be cleared by an agent:** `overtaken` is non-empty `open_questions:` on `spec-pyforge-warden`, and the runbook's own remedy for `overtaken` is "resolve the spec's residual open_questions with the operator." The three questions are (1) is warden v1 *released* or *story-complete* — the legacy v1 DoD still carries the CFE Rule-2 closeout retro and the internal JFrog publish unchecked; (2) does `docs/specs/pyforge-warden.md` get re-stamped shipped-and-superseded or frozen as a historical record; (3) what promotes provenance and maintenance out of vision, and until then does the product describe itself as four-axis or six-axis. Answering them unilaterally would be the "stamp without a genuine reconcile" the runbook forbids. Full record: `_bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md` § Worked Examples, run 2026-09-14; the per-station detail is in each station's own § Currency reconciliation — 2026-09-14. Also corrected in this entry: `location:` cited the runbook under `pyforge-marshal`; it lives under `pyforge-doctor`.
+
+  closed: 2026-09-14 — **Fully cleared: 9 findings across 8 stations → 0.** The last one, warden's `chain-audit-checkpoint-coherence`, was `overtaken` by three operator-owned questions in `spec-pyforge-warden`'s `open_questions:`; the runbook's remedy for `overtaken` is explicitly "resolve with the operator", so it could not be closed by inference. Operator ruled all three this date: (1) **v1 is story-complete, not released** — all 31 stories merged but the release-level DoD items (the CFE Rule-2 closeout retro, the internal JFrog publish behind the engine version-range gate) are genuinely unticked, and were left unticked rather than redefined, since retroactively moving "done" to match what shipped is what `docs/dreams/README.md:90-98` warns against; (2) **the legacy Tier-1 spec is re-stamped shipped and superseded** — its premise turned out stale, the file having been corrected to `shipped` on 2026-09-03, so only the `superseded_by:` pointer was ever missing, and its Goals prose is kept as written because its own § Release buckets already records D12's move of the former v1.1 content into v1; (3) **the product stays six-axis with provenance and maintenance annotated unbuilt**, declining the four-axis alternative because it would have made the docs and the Charter disagree about what Warden is — and that annotation was already correct at `pyforge-charter.md:182,192` and `spec-pyforge-warden/SPEC.md:112`, so no artifact needed changing. `chain_currency_sweep_check` now exits 0: all 8 station spines current.
+
+### DW-VOCAB-2026-09-14-16: the judge advises while the judged station's own gate blocks — §5's force ratio is inverted
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `.github/workflows/detectors.yml:119` carries `continue-on-error: true` — *"ADVISORY, NOT BLOCKING — operator decision 2026-07-31"* — so Doctor's verdict on Marshal's row, which Charter §6 exists to make independent, cannot red a PR. Meanwhile `coverage-gates.yml` has no `continue-on-error` anywhere, so the gate shipping inside marshal's own package **does** red marshal's PRs. The judge annotates; the judged station's own gate blocks. Charter §5 assumes the opposite ordering — *"Mason's build does not pass because Mason says so; it passes when Warden's gate says so."*
+  evidence: Measured 2026-09-14 alongside `DW-COVERAGE-GATE-INDEPENDENCE-1`. Both halves are individually deliberate and defensible — the advisory sweep was an explicit operator decision to avoid false-green brittleness, with one scoped exception already carved out (`cfe_rebuild_guard_check`) — which is precisely why the inversion went unnoticed: nobody chose it, it emerged from two independently sound decisions meeting.
+  location: .github/workflows/detectors.yml:27-34 and :119, .github/workflows/coverage-gates.yml
+  severity: low
+  status: closed
+  raised: 2026-09-14 — Owner: steward (fleet CI policy). Operator direction the same day: **track, decide separately** — making Doctor's marshal-row findings blocking would reverse the 2026-07-31 decision fleet-wide, which is too large to ride along with the coverage-gate fix. The narrower option, if it is ever taken, is a scoped carve-out for `marshal-durability` alone, mirroring the `cfe_rebuild_guard_check` exception that already exists.
+
+  closed: 2026-09-14 (later) — **Operator took the narrow option: a scoped carve-out, landed.** `detectors.yml` now has a second dedicated blocking step beside `cfe_rebuild_guard_check` — *"Doctor's durability verdict on Marshal (blocking — ruling 2026-09-14)"* — running `python -m pyforge.doctor.sources ledger-regression` after the advisory sweep and letting its exit code stand (Doctor's frozen domain `{0, 2, 130}`: `2` is a real regression, not could-not-run). **One correction to the entry's own wording:** it named `marshal-durability`, but that source compares the *working tree* against `HEAD` — on a runner those are one commit, so it can observe nothing; `ledger-regression` is the same durability verdict (the 2026-08-08 96-`done`-markers incident class) in the committed-range form its own docstring says was designed for CI, made resolvable by the workflow's `fetch-depth: 0`. Verified green before wiring (`exit=0`, "no tracked ledger un-finishes a story between f391d6a43d and HEAD") so the first blocking run cannot red an unrelated PR; the local mirror already existed — `detectors-ci` (hence `pr-preflight`) exits 1 on any finding, stricter than CI. Scope is exactly one row: `ledger-direction` and every other Marshal-row source stay advisory; widening is a further ruling. Recorded in the Charter's Realization log (with the §5 amendment of the same date) and the workflow's header comment ("TWO SCOPED EXCEPTIONS"); the coverage-gate Dream/Spec non-goal now reads "fleet-wide".
+
+### DW-FU-65-1: The HTMX backlog view and the `WorkPassport` admin ship as a library (AD-1 — the pipeline, not the routing): no URLconf under `src/` registers `sprint_backlog_view` and no host `INSTALLED_APPS` lists the dashboard app, so the view and the admin are reachable only from a host project that wires them. First consumer story wires one host or records why none should.
+
+- source_spec: `planning-artifacts/specs/spec-65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill.md`
+  summary: The HTMX backlog view and the `WorkPassport` admin ship as a library (AD-1 — the pipeline, not the routing): no URLconf under `src/` registers `sprint_backlog_view` and no host `INSTALLED_APPS` lists the dashboard app, so the view and the admin are reachable only from a host project that wires them. First consumer story wires one host or records why none should.
+  evidence: `views.py` ships a view factory only; `routing.py` / `asgi.py` carry websocket patterns; `grep -rn build_navigation_view src/` finds no URLconf reference (implementer report, PR #1507 review 2026-09-19).
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views_htmx.py
+  origin: spec-deferred dfdcdcda9e88 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-65-1-2: Every HTMX render re-parses all eight stations' `epics.md` + ledgers (no caching, no mtime check); fine for a handful of operators, a hot loop for a dashboard polling on a timer. A `pre_query` hook or a source-level mtime cache is the shape when it matters.
+
+- source_spec: `planning-artifacts/specs/spec-65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill.md`
+  summary: Every HTMX render re-parses all eight stations' `epics.md` + ledgers (no caching, no mtime check); fine for a handful of operators, a hot loop for a dashboard polling on a timer. A `pre_query` hook or a source-level mtime cache is the shape when it matters.
+  evidence: `sprint_backlog_view` builds a fresh `SprintLedgerQueryEngine()` per request and `TrackedLedgerSource.load_station` reads the files every call.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views_htmx.py
+  origin: spec-deferred 225ebde45408 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-65-1-3: `LedgerQueryHook`'s three default no-op methods trip ruff `B024`/`B027` (abstract base with no abstract methods); steward has no ruff lane or config, so nothing reds, but the first station-wide lint pass will.
+
+- source_spec: `planning-artifacts/specs/spec-65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill.md`
+  summary: `LedgerQueryHook`'s three default no-op methods trip ruff `B024`/`B027` (abstract base with no abstract methods); steward has no ruff lane or config, so nothing reds, but the first station-wide lint pass will.
+  evidence: `ruff check --select B024,B027 src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py` reports both; `F`/`E9` are clean.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py
+  origin: spec-deferred 7932f56631b7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-OPS-2026-09-20-1: `eval-quality` is pinned only in the `local-recipes` env, so `test_wired_column_agrees_with_live_pipeline_truth_for_every_row` fails in any fresh worktree that installs station envs only
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`
+  summary: `pixi.toml` pins `bmad-eval-quality` (`eval-quality` CLI) in the `local-recipes` feature only (`pixi.toml:836`, `:1916`); `suite.py:705-718` cannot see it via `shutil.which` under `-e pyforge-steward` and falls back to `<repo>/.pixi/envs/local-recipes/bin/eval-quality`, which exists on the operator's primary checkout (10 GB env) and not in a fresh worktree, so the adoption register's `Wired` column disagrees with the live probe there. Fix: pin `bmad-eval-quality` in the `pyforge-steward` feature (steward wields it), regenerate the lock, run `pyforge-station-tests` (shared surface); then drop the `local-recipes` fallback or keep it as a secondary probe.
+  evidence: 2026-09-20 in `../local-recipes-wt-agents-md-mod` (station envs only): steward 1577 passed / 1 failed on that test; the same test passes on the main checkout at the same tree. Found on the fleet PR #1551's shared-surface run.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py
+  severity: low
+  status: done
+  verified: 2026-09-20 — resolved by steward Story 63.5 in the same PR (#1551): `bmad-eval-quality` pinned in `[feature.pyforge-steward.dependencies]`, lock re-solved, `test_wired_column_agrees_with_live_pipeline_truth_for_every_row` passes in a station-envs-only worktree (1578 passed). The `suite.py:714` fallback itself is Story 63.6's to remove.
+  raised: 2026-09-20 — Owner: steward (suite adoption register, Story 45.1's pin). Not caused by #1551; recorded at shutdown rather than folded in (a `pixi.toml` dep change is its own lane).
+
+### DW-OPS-2026-09-19-5: `.gitignore:740` is an unanchored `data/` pattern — it swallows every `data/` directory in the tree, including packaged JSON schemas that must ship (two `git add -f` so far); worktree hygiene pass pending for 17 merged sibling/agent worktrees
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`
+  summary: (a) `data/` at `.gitignore:740` ignores `src/shared/packages/pyforge-steward/src/pyforge/steward/data/*.schema.json` (`track.schema.json`, `sprint-ledger-query.schema.json` were force-added); a plain `git add -A` silently drops the next one. Anchor the rule (`/data/`) or add `!src/**/data/*.json`; line 902's own comment already warns about unanchored patterns. (b) Hygiene: `../local-recipes-wt-{agents-governance-enhancements,ci-fix-steward-doctor-live-baselines,hub-scribe-17-mint,ledger-flip-23-2-46-4,mason-cfe-surface-policy,pyforge-pages,sprint-ledger-query-module,steward-pyforge-guild-env}`, `../lr-pwb` and eight `.claude/worktrees/agent-*` are all merged (`ahead=0`); `lr-m50` / `lr-s59` are live dispatch clones and stay. Removal is operator work (agent sessions are classifier-blocked on `git worktree remove`; `pyforge steward workspace clean` is the sanctioned door for the steward-made ones).
+  evidence: `git check-ignore -v src/shared/packages/pyforge-steward/src/pyforge/steward/data/sprint-ledger-query.schema.json` → `.gitignore:740:data/`; `git -C <wt> rev-list --count origin/main..HEAD` = 0 for each listed worktree (2026-09-19).
+  location: .gitignore
+  severity: low
+  status: open
+  raised: 2026-09-19 — Owner: steward (repo hygiene, scratch-worktree lifecycle). Operator-only for (b).
+
+### DW-FU-60-1: The committed generated manifests bake recipe `version`/`description` (and the frame count) from inputs — `recipes/bmad-{builder,utility-skills,creative-intelligence-suite,method-test-architecture-enterprise}/recipe.yaml` and `docs/foundry/frames/**` — that never trigger the steward CI job, so a recipe-only PR leaves `main` with `manifest-drift` and `steward catalog check` red until the next steward PR runs `steward catalog render` and commits.
+
+- source_spec: `planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md`
+  summary: The committed generated manifests bake recipe `version`/`description` (and the frame count) from inputs — `recipes/bmad-{builder,utility-skills,creative-intelligence-suite,method-test-architecture-enterprise}/recipe.yaml` and `docs/foundry/frames/**` — that never trigger the steward CI job, so a recipe-only PR leaves `main` with `manifest-drift` and `steward catalog check` red until the next steward PR runs `steward catalog render` and commits.
+  evidence: Verified by execution: with `read_recipe_version` returning `9.9.9` for `bmad-builder`, `CatalogEngine.drift()` on the committed tree goes from `[]` to `[("manifest-drift", ".claude-plugin/marketplace.json")]`; `.github/workflows/pyforge-station-tests.yml` `paths` lists `src/shared/packages/pyforge-*/**`, `pixi.toml`, `pixi.lock` and container files — neither `recipes/**` nor `docs/foundry/frames/**`; those four recipes bumped on 2026-08-21, 09-09, 09-11 and 09-12 as recipe-only PRs. Closure: add the four `recipes/bmad-*/**` paths and `docs/foundry/frames/**` to the steward trigger, or put `steward catalog render --check` into `detectors-ci`/`pr-preflight`; Story 60.3 (ship backends) needs a render gate before it can publish a snapshot anyway. Both edits are outside this story's surface.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py (WieldedSuiteSource.listings / CatalogEngine.drift); .github/workflows/pyforge-station-tests.yml
+  origin: spec-deferred 0aa69350d691 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-60-1-2: The `test_track.py` `_SCHEMA` path fix (`_PKG.parents[1]` → `_PKG.parent`) is never executed in either CI lane: `test_schema_accepts_assembled_track` opens with `pytest.importorskip("jsonschema")` and `jsonschema` is not a `pyforge-steward` feature dependency, so the track-schema contract stays unpinned in CI exactly as before.
+
+- source_spec: `planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md`
+  summary: The `test_track.py` `_SCHEMA` path fix (`_PKG.parents[1]` → `_PKG.parent`) is never executed in either CI lane: `test_schema_accepts_assembled_track` opens with `pytest.importorskip("jsonschema")` and `jsonschema` is not a `pyforge-steward` feature dependency, so the track-schema contract stays unpinned in CI exactly as before.
+  evidence: `.pixi/envs/pyforge-steward/bin/python -c "import jsonschema"` → `ModuleNotFoundError`; the station suite reports `SKIPPED [1] test_track.py:111: could not import 'jsonschema'`; both `pyforge-station-tests.yml` and `coverage-gates.yml` run steward in that env. Closure: add `jsonschema` to `[feature.pyforge-steward.dependencies]` in `pixi.toml` (shared-surface rule: `environment.yaml` regen + all eight station suites) or drop the `importorskip` — a `pixi.toml` change outside this story.
+  location: src/shared/packages/pyforge-steward/tests/unit/test_track.py:111
+  origin: spec-deferred b7304c5a328d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-60-1-3: `.claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md` "Registered duties" now trails the CLI by three (`cutover`, `ledger-query`, `catalog`); it is an SKF-managed agent-context file, so the roster is refreshed by an SKF re-export, not a hand edit in a story.
+
+- source_spec: `planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md`
+  summary: `.claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md` "Registered duties" now trails the CLI by three (`cutover`, `ledger-query`, `catalog`); it is an SKF-managed agent-context file, so the roster is refreshed by an SKF re-export, not a hand edit in a story.
+  evidence: `SKILL.md:90-94` lists seventeen duties; `cli.py` `DUTIES` has twenty. `tests/meta/test_skf_steward_skill.py` guards the managed-section shape.
+  location: .claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md:90
+  origin: spec-deferred 7fd098265974 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-60-1-4: The BMAD installer resolves the catalog directory but installs nothing from it: `bmad-method install --custom-source <catalog>` (6.12.0, `--yes`) reports "Local source resolved" then "Found 0 modules", because discovery mode installs only module trees inside the source (a plugin dir with `module.yaml`) and does not follow a plugin's `github` source; the v1 rows are all github pointers.
+
+- source_spec: `planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md`
+  summary: The BMAD installer resolves the catalog directory but installs nothing from it: `bmad-method install --custom-source <catalog>` (6.12.0, `--yes`) reports "Local source resolved" then "Found 0 modules", because discovery mode installs only module trees inside the source (a plugin dir with `module.yaml`) and does not follow a plugin's `github` source; the v1 rows are all github pointers.
+  evidence: Verified live 2026-09-19 in a scratch directory (`/tmp/bmad-cs-test`): the real catalog → "Found 0 modules", only core installed; a probe marketplace with one `./plugins/probe-mod` (SKILL.md, no `module.yaml`) and one github-object entry → also "Found 0 modules". Claude Code's marketplace resolution (github/url plugin sources) is the documented form and is unaffected. Closure: Story 60.3's snapshot vendors each listed module's tree under the catalog (upstream layout `skills/module.yaml`, e.g. bmad-builder) so discovery finds them; until then `steward catalog pointers` prints the limitation beside the `--custom-source` line and each row's `repository`/`install_hint` is the install path.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py (CatalogEngine.pointers → installer_note); src/shared/packages/pyforge-steward/catalog/.claude-plugin/marketplace.json
+  origin: spec-deferred 0973772ed109 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-62-1: The "First cut (all `on`, 2026-09-15)" section heading in measure-catalog.md duplicates the new per-row `State` values with nothing forcing the heading to update once Story 62.2's add/switch/archive config flips an individual row.
+
+- source_spec: `planning-artifacts/specs/spec-62-1-the-catalog-names-eight-measures-and-their-states.md`
+  summary: The "First cut (all `on`, 2026-09-15)" section heading in measure-catalog.md duplicates the new per-row `State` values with nothing forcing the heading to update once Story 62.2's add/switch/archive config flips an individual row.
+  evidence: Real future-maintenance risk once a row's state diverges from "all on", but the heading text is untouched pre-existing content (outside this diff's hunk) and the update mechanism belongs to Story 62.2, which is explicitly out of scope for 62.1's Boundaries & Constraints.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md:7
+  origin: spec-deferred abfa62358d40 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-62-1-2: `spec-pyforge-steward/SPEC.md` CAP-44/45/46 already read "(shipped 2026-09-15)" ahead of Epic 62's actual landing, and their `success` bullets are truncated mid-sentence.
+
+- source_spec: `planning-artifacts/specs/spec-62-1-the-catalog-names-eight-measures-and-their-states.md`
+  summary: `spec-pyforge-steward/SPEC.md` CAP-44/45/46 already read "(shipped 2026-09-15)" ahead of Epic 62's actual landing, and their `success` bullets are truncated mid-sentence.
+  evidence: Confirmed by direct read: CAP-44/45/46 all carry a premature "(shipped 2026-09-15)" annotation and each `success` bullet ends mid-sentence (e.g. CAP-44: "the eight first-cut ids are in `measure-catalog.md` and"). Pre-existing defect in a different file, not caused by this diff; not this story's surface to fix.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md:253-261
+  origin: spec-deferred 192de21a2de3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-61-2: This PR touches only non-recipe paths and needs the `maintenance` label at PR open time.
+
+- source_spec: `planning-artifacts/specs/spec-61-2-work-passport-and-core-schema.md`
+  summary: This PR touches only non-recipe paths and needs the `maintenance` label at PR open time.
+  evidence: Diff touches only `_bmad-output/**` and `src/shared/packages/**`, no `recipes/**`. CLAUDE.md / AGENTS.md require `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance` for any such PR. No PR exists yet from this single-story dev dispatch.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
+  origin: spec-deferred 69522e746566 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done
+  verified: 2026-09-20 — resolved at landing: PR #1532 carried the `maintenance` label, applied by `dispatch_land.py` (`_MAINTENANCE_LABEL`) as every dispatch landing does; no code or spec defect (merged 03112ba2d7).
+
+### DW-FU-63-3: `match_bmad_switch_unsafe` denies `scripts/bmad-switch` in every worktree unconditionally, but this repo's own recorded convention says running `bmad-switch` inside a bmad-loop run worktree is the sanctioned exception (to backlink Tier-3), distinct from the "never from a parallel agent" rule the hook is meant to enforce.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: `match_bmad_switch_unsafe` denies `scripts/bmad-switch` in every worktree unconditionally, but this repo's own recorded convention says running `bmad-switch` inside a bmad-loop run worktree is the sanctioned exception (to backlink Tier-3), distinct from the "never from a parallel agent" rule the hook is meant to enforce.
+  evidence: The intent-contract's literal trigger text ("a worktree ... is present") is unconditional and does not carve out the bmad-loop-run case. AGENTS.md's own governing rule is actually narrower ("never ... from a parallel agent"), and a separate team-memory entry documents the bmad-loop-run-worktree exception explicitly. The hook cannot currently distinguish a solo bmad-loop run worktree from any other worktree, so it would deny a documented-safe action. Resolving this needs an operator decision: either teach the hook a reliable signal for "this is a bmad-loop run's own worktree," or update the team memory/AGENTS.md to say the new hook supersedes the old exception.
+  location: .claude/hooks/pre-shell.py:404-413 (match_bmad_switch_unsafe)
+  origin: spec-deferred 7684351f25e0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-63-3-2: `direct-write-governed-path` only fires for Claude's `Edit`/`Write` tool_input; a write to a governed path via a `Bash` heredoc or redirect (`cat > SPEC.md <<EOF ... EOF`) is invisible to the hook entirely, even though this repo's own documented workaround for a restricted path is exactly that Bash/heredoc technique.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: `direct-write-governed-path` only fires for Claude's `Edit`/`Write` tool_input; a write to a governed path via a `Bash` heredoc or redirect (`cat > SPEC.md <<EOF ... EOF`) is invisible to the hook entirely, even though this repo's own documented workaround for a restricted path is exactly that Bash/heredoc technique.
+  evidence: `session_denials`' `direct-write-governed-path` rule declares `"applies_to": "edit_write"`, so `main()` never evaluates it for a `kind == "bash"` tool call, regardless of tokenizer quality. Closing this fully needs Bash-side write/redirect detection (heredocs, `sed -i`, `python -c "...write(...)"`, `>`/`>>`), which is materially more engineering than this story's ten matchers and is consistent with the hook's own stated "a guardrail, not a sandbox" design philosophy rather than a defect in the current ten rules.
+  location: .claude/hooks/pre-shell.py:487-498 (match_direct_write_governed_path); docs/governance/guild-roster.json (direct-write-governed-path applies_to: edit_write)
+  origin: spec-deferred 98df9df4abe1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-63-3-3: `.cursor/hooks.json` invokes the script with a bare relative path (`python3 .claude/hooks/pre-shell.py`) while `.claude/settings.json` deliberately uses the cwd-independent `$CLAUDE_PROJECT_DIR` env var; if Cursor ever runs a hook with a process cwd other than the workspace root, the relative path would fail to resolve and the Cursor half of the guardrail would silently not run at all.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: `.cursor/hooks.json` invokes the script with a bare relative path (`python3 .claude/hooks/pre-shell.py`) while `.claude/settings.json` deliberately uses the cwd-independent `$CLAUDE_PROJECT_DIR` env var; if Cursor ever runs a hook with a process cwd other than the workspace root, the relative path would fail to resolve and the Cursor half of the guardrail would silently not run at all.
+  evidence: Not independently confirmed against Cursor's actual hook-invocation cwd contract (whether `beforeShellExecution`/`afterFileEdit` always run with cwd at the workspace root, or can vary by multi-root workspace / a different worktree). If it can vary, the consequence is a full silent bypass of the Cursor-side enforcement, which would be high severity; settling this needs checking Cursor's hooks documentation/behavior directly for the cwd guarantee, or adding a self-check the script logs on load.
+  location: .cursor/hooks.json:5,11 (command: "python3 .claude/hooks/pre-shell.py")
+  origin: spec-deferred 56aa57d39a84 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high (unverified)
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-63-3-4: `git commit` opened with no `-m`/`-F`/`--message`/`--file` flag (a plain `git commit` or `git commit --amend` that opens `$EDITOR`) carries no message text on the command line at all, so `match_git_commit_guardrail`'s attribution check cannot see it — an AI-attribution or Co-Authored-By line typed into the editor is never caught by this pre-emptive hook.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: `git commit` opened with no `-m`/`-F`/`--message`/`--file` flag (a plain `git commit` or `git commit --amend` that opens `$EDITOR`) carries no message text on the command line at all, so `match_git_commit_guardrail`'s attribution check cannot see it — an AI-attribution or Co-Authored-By line typed into the editor is never caught by this pre-emptive hook.
+  evidence: `_extract_commit_message` only reads argv tokens; an editor-composed message never appears there. This is a real, non-adversarial gap (a completely ordinary git workflow), not just a deliberate-evasion path. The only pre-shell-hook-level mitigations are either a behavior change (deny any `git commit` that doesn't supply a message via a recognized flag, forcing all commits through the flag-based, inspectable path) or an AGENTS.md/CLAUDE.md policy addition mandating explicit `-m` in agent sessions — the second is an agent-context-file edit, not a code fix, so it is recorded here for an operator decision rather than patched blind. The separate authoritative `commit-msg` git hook still catches this case after the fact (per the rule's own reason text), so this is a gap in the pre-emptive layer specifically, not a total gap.
+  location: .claude/hooks/pre-shell.py:291-316 (_extract_commit_message), 416-431 (match_git_commit_guardrail)
+  origin: spec-deferred 8b063dc17d11 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-63-3-5: `match_gh_pr_merge_squash` only denies `--squash`; AGENTS.md's own policy line ("never `--squash`... never `--rebase`... a rebase merge leaves no merge subject for landing evidence either") names `--rebase` as the case that actually lands undetected, since squash is already disabled server-side and therefore unreachable regardless of hook coverage.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: `match_gh_pr_merge_squash` only denies `--squash`; AGENTS.md's own policy line ("never `--squash`... never `--rebase`... a rebase merge leaves no merge subject for landing evidence either") names `--rebase` as the case that actually lands undetected, since squash is already disabled server-side and therefore unreachable regardless of hook coverage.
+  evidence: Confirmed: AGENTS.md's Trunk/worktrees/PRs section states squash is disabled in repository settings (so this hook's --squash coverage guards an already-unreachable case) while --rebase is not server-side-blocked and is called out by the same sentence as the one that breaks landing-evidence detection. The story's own literal Given/When/Then names only `gh pr merge --squash` as the trigger, and the intent-contract explicitly frames the closed list as "adding to it is a governance act" -- so extending coverage to `--rebase` is a deliberate, separate governance act on guild-roster.json, not a defect in this story's faithful implementation of its own named trigger.
+  location: docs/governance/guild-roster.json (session_denials: gh-pr-merge-squash); .claude/hooks/pre-shell.py:434-440 (match_gh_pr_merge_squash)
+  origin: spec-deferred b5cfd1fb2eaf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-63-3-6: The Problem statement names four deployment modes by name ("Claude Code local or web, Cursor IDE or Cloud"), but the hook and its docs only distinguish two harness families (claude vs cursor) by JSON shape; nothing confirms or documents whether Claude Code web and Cursor Cloud (background agents) actually load and enforce the same settings.json/hooks.json the way the IDE/local surfaces do.
+
+- source_spec: `planning-artifacts/specs/spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`
+  summary: The Problem statement names four deployment modes by name ("Claude Code local or web, Cursor IDE or Cloud"), but the hook and its docs only distinguish two harness families (claude vs cursor) by JSON shape; nothing confirms or documents whether Claude Code web and Cursor Cloud (background agents) actually load and enforce the same settings.json/hooks.json the way the IDE/local surfaces do.
+  evidence: `detect()` and every comment in pre-shell.py, `.cursor/hooks.json`, and AGENTS.md's new section treat "claude"/"cursor" as monolithic. The one live-verification citation in the diff is scoped to Cursor's IDE hooks schema; there is no equivalent citation for Cursor Cloud or Claude Code web. If either of those two surfaces does not load the same config the same way, the Problem statement's own named coverage would be silently incomplete rather than named as an exception the way Gemini/Copilot/Devin are. Settling this needs confirming, per-surface, that project-level `.claude/settings.json` and `.cursor/hooks.json` are honored identically in Claude Code web and Cursor Cloud.
+  location: .claude/hooks/pre-shell.py:12-23 (module docstring, detect()); AGENTS.md Session guardrails section
+  origin: spec-deferred 60d67e31d137 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-59-4: The pulled deck does not yet state teaching-only except the two named exceptions (method-vs-machinery, project-context-as-constitution) -- that is a Design-side content edit, and this session has no reachable Claude Design MCP connection (claude-design: FIRST_PARTY_AUTH_REJECTED, confirmed live this session) to make it.
+
+- source_spec: `planning-artifacts/specs/spec-59-4-design-teaching-is-named-the-pull-cannot-silently-rot.md`
+  summary: The pulled deck does not yet state teaching-only except the two named exceptions (method-vs-machinery, project-context-as-constitution) -- that is a Design-side content edit, and this session has no reachable Claude Design MCP connection (claude-design: FIRST_PARTY_AUTH_REJECTED, confirmed live this session) to make it.
+  evidence: DW-VOCAB-2026-09-14-3's 2026-09-14 progress note: operator ruled "pull only -- no Design-side edits this pass" for the prior pull: (a), the Design-tier practice vocabulary entering no repo artifact (four-phases/three-tracks teaching), is explicitly still open and untouched by a pull.
+  location: presentations/agentic-sdlc/project/Agentic SDLC.dc.html
+  origin: spec-deferred e6011d230ef2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-59-4-2: Four unprefixed `quick-dev`/`dev-auto` mentions survived the 2026-09-14 Design-side rename pass (one body line on Quick flow, three speaker notes on Quick flow / Workflow matrix); Paige and the four `bmad`-prefixed retired skill names are already gone (0 hits each).
+
+- source_spec: `planning-artifacts/specs/spec-59-4-design-teaching-is-named-the-pull-cannot-silently-rot.md`
+  summary: Four unprefixed `quick-dev`/`dev-auto` mentions survived the 2026-09-14 Design-side rename pass (one body line on Quick flow, three speaker notes on Quick flow / Workflow matrix); Paige and the four `bmad`-prefixed retired skill names are already gone (0 hits each).
+  evidence: DW-VOCAB-2026-09-14-3's 2026-09-14 progress note, verified against the pulled deck rather than the entry's original claim.
+  location: presentations/agentic-sdlc/project/Agentic SDLC.dc.html
+  origin: spec-deferred 44d6be34a8fd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-59-5: `mint_sweep_id` (the sweep-scoped `DW-{station}-{slug}-{date}[-n]` family) and `slugify_title`/`StoryIdentity`/`mint_story_identity` (one mint-time slugify deriving a new story's heading, ledger key, and spec filename) have no caller yet: `scripts/deferred_work_promote.py` only imports the story-scoped `mint_id_for_entry`, and no script mints a new story's three spellings today (that still happens by hand, mirroring `epics.md`'s own established numbering convention per `AGENTS.md` § *Spec → Stor... [truncated, 648 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-59-5-one-mint-time-slugify-and-two-dw-families.md`
+  summary: `mint_sweep_id` (the sweep-scoped `DW-{station}-{slug}-{date}[-n]` family) and `slugify_title`/`StoryIdentity`/`mint_story_identity` (one mint-time slugify deriving a new story's heading, ledger key, and spec filename) have no caller yet: `scripts/deferred_work_promote.py` only imports the story-scoped `mint_id_for_entry`, and no script mints a new story's three spellings today (that still happens by hand, mirroring `epics.md`'s own established numbering convention per `AGENTS.md` § *Spec → Stor... [truncated, 648 chars total]
+  evidence: `grep -rn "mint_sweep_id\|mint_story_identity\|slugify_title\|StoryIdentity" --include="*.py" .` outside `sources/chain.py` and its tests returns nothing. Closure: wire `mint_sweep_id` into a future sweep-promotion entrypoint (natural home: `scripts/deferred_work_promote.py`, alongside `mint_id_for_entry`) and `mint_story_identity` into whichever script first automates `bmad-create-epics-and-stories`' hand-mirrored numbering convention — both outside this story's surface.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
+  origin: spec-deferred b8614a9a7e69 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+## DW-steward-suite-advance-gaps-2026-09-25 — `steward suite advance` (CAP-2) cannot complete a live member bump end to end; the 2026-09-25 bmad-suite advance went by hand through CFE instead
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md` (CAP-2 suite advance; `src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py`)
+  summary: four gaps, found trying to drive the chain live for bmad-loop 0.11.1→0.12.0, TEA 1.26.0→1.27.2 and eval-quality 3.0.0→4.2.0 (operator chose the hand path; the three bumps landed via `github_updater.py` + local rattler-build in a worktree, one reviewable PR). (1) `_default_publish` refuses every non-dry run — there is no credential hook and the anaconda CLI is not on PATH, so channel publish stays a hand step. (2) `_default_open_pr` runs `gh pr create --head steward/suite-advance-<pkg>` without ever creating that branch or committing the autotick edit, so it can only fail. (3) `_default_autotick` edits the recipe in the checkout it is pointed at, in place — on the shared primary checkout that is a `Never commit on the shared checkout` violation waiting to happen; it needs a worktree (`steward workspace start`). (4) It routes every member through `github_updater.py` in tag/head mode regardless of `cfe-upstream-registry`; for an npm-registry member (`recipes/bmad-module-skill-forge`, `cfe-upstream-registry: npm`, still 2.1.0 against 2.2.0) the right tool is `npm_updater.py` (`autotick-npm`), which the recipe metadata already points at. The GitHub-side half of (4) — `github_updater.py` refusing the recipe with "No GitHub URL detected" although `about.homepage`/`about.repository` are GitHub URLs, because it only read the v0 `about.home` key — is a CFE-skill defect and is fixed in the same PR (CFE v8.90.6); the registry routing is still owed here.
+  evidence: 2026-09-25 attempt in the primary checkout — `suite advance --package bmad-loop --dry-run` succeeds, the live run stops at publish; `_default_open_pr` inspected (no branch/commit step); `github_updater.py recipes/bmad-module-skill-forge --dry-run` → `{"success": false, "error": "No GitHub URL detected in this recipe. …"}`; `run_advance(..., hooks: AdvanceHooks | None)` accepts injected hooks, so the fix is hook-level, not a redesign.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py
+  severity: medium
+  fix: (a) `_default_autotick` picks the updater from the recipe's `cfe-upstream-registry` (npm → `npm_updater.py`, github → `github_updater.py`) and runs inside a `steward workspace start` worktree; (b) `_default_open_pr` creates the branch, commits the recipe diff, pushes, then `gh pr create --repo rxm7706/local-recipes` and adds the `maintenance` label when non-recipe files moved; (c) `_default_publish` stays refuse-by-default but gains a documented credential hook (`ANACONDA_API_TOKEN` + `anaconda -s https://api.anaconda.org upload`) the operator opts into per run; (d) after publish, `generate-bmad-suite` and the `pixi.toml` floors follow the published builds (G117 floor rule), never the recipe. Chain: Dream append on `docs/dreams/pyforge-steward.md` → CAP amendment → Story under Epic 14 or a new epic, before code.
+  status: open
+
+## DW-steward-platform-diff-guard-short-origin-main-2026-09-27 — the platform's copy of the branch diff guard reads the short `origin/main`, which a local branch or tag of that name shadows
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md` (its surface governs `src/platform/tests/`); found by marshal Story 62.1's review
+  summary: `src/platform/tests/test_warden_portal_audit_start_get.py` keeps a deliberate copy of the testing kit's guard (it may not import `pyforge.*`, `pap:AD-2`) and runs `git rev-parse --verify origin/main^{commit}` and `git diff --name-only origin/main -- src/platform`. The kit now reads `refs/remotes/origin/main` (marshal Story 62.1); the copy does not, so a local `origin/main` at HEAD empties its diff and the guard passes having checked nothing. CI fetches with `--no-tags`, so only local runs are exposed.
+  evidence: `grep -n origin/main src/platform/tests/test_warden_portal_audit_start_get.py` (lines 424-437); the kit's fix in marshal Story 62.1.
+  location: src/platform/tests/test_warden_portal_audit_start_get.py
+  severity: low
+  fix: `refs/remotes/origin/main` in both git calls and the skip text, through steward's chain; run `platform-ci-local -- --test`.
+  status: closed
+  resolved: 2026-09-27 (steward Story 70.1, spec-pyforge-steward CAP-158) — the guard's `rev-parse`, skip text and `diff` name `refs/remotes/origin/main` (literal argv, as ruff's S603 wants); `platform-ci-local -- --test` 7/7 PASS and the guard runs rather than skips. The same story fixed a worse steward read found on the way: `workspace clean --merged-only` past a shadow at an unmerged tip removed the worktree and deleted its branch.
+
+### DW-steward-75-1: The generated station cheat sheet still lists the six-verb `keys` line without `exec`.
+
+- source_spec: `planning-artifacts/specs/spec-75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity.md`
+  summary: The generated station cheat sheet still lists the six-verb `keys` line without `exec`.
+  evidence: `steward keys --help` now reads `{encrypt,decrypt,rotate,list,audit,revoke,exec}`, but `docs/reference/station-cheat-sheet.md` (generated by `scripts/docs_station_cli.py`) still shows `encrypt/decrypt/rotate/list/audit/revoke`. The page was already stale before this story (`docs_station_cli.py --check` exits 1 on `main`: it lacks the `session` and `deck-drift` duties), and a regeneration run from this worktree rewrites unrelated sections (atlas and warden help, dated stamps in `docs/map.yaml`) because the station environments differ. Named blocker: regenerate it with `pixi run -e pyforge-guild` in a checkout where every station environment resolves.
+  location: docs/reference/station-cheat-sheet.md:195
+  origin: spec-deferred 2bd80b19ce15 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-75-1-2: The SKF-compiled steward station skill still lists the six-verb `keys` grammar without `exec`.
+
+- source_spec: `planning-artifacts/specs/spec-75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity.md`
+  summary: The SKF-compiled steward station skill still lists the six-verb `keys` grammar without `exec`.
+  evidence: `.claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md` names `steward keys {encrypt,decrypt,rotate,list,audit,revoke}` at lines 46 and 132, and AGENTS.md sends agents to the station skill for the CLI grammar, so an agent reading it does not learn `keys exec`, its `--approval` contract or its exit codes. The skill is compiled by the SKF workflow, so a hand edit would drift from its provenance; the named blocker is a `skf-update-skill` run for pyforge-steward.
+  location: .claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md:46
+  origin: spec-deferred df60309b41ef — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

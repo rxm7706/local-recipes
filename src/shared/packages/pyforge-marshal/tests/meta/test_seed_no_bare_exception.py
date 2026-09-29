@@ -29,8 +29,9 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-import pyforge.marshal.seed
 import pytest
+
+import pyforge.marshal.seed
 
 _SEED_PACKAGE_FILE = pyforge.marshal.seed.__file__
 if _SEED_PACKAGE_FILE is None:
@@ -104,9 +105,7 @@ def test_guard_is_alive_synthetic_violations_fire():
     re-raise."""
     assert _bare_exception_violations(ast.parse('raise Exception("boom")\n')) == [1]
     assert _bare_exception_violations(ast.parse("raise Exception\n")) == [1]
-    assert _bare_exception_violations(ast.parse('raise SystemExit(1)\n')) == [1]
+    assert _bare_exception_violations(ast.parse("raise SystemExit(1)\n")) == [1]
     assert _bare_exception_violations(ast.parse("raise SystemExit\n")) == [1]
     assert _bare_exception_violations(ast.parse('raise ValueError("boom")\n')) == []
-    assert _bare_exception_violations(
-        ast.parse("try:\n    pass\nexcept Exception:\n    raise\n")
-    ) == []
+    assert _bare_exception_violations(ast.parse("try:\n    pass\nexcept Exception:\n    raise\n")) == []

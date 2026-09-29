@@ -107,10 +107,7 @@ def _print_table(envelope: dict) -> None:
     if not candidates:
         print("(no candidates)")
         return
-    widths = {
-        c: max(len(c), *(len(str(row.get(c, ""))) for row in candidates))
-        for c in _TABLE_COLUMNS
-    }
+    widths = {c: max(len(c), *(len(str(row.get(c, ""))) for row in candidates)) for c in _TABLE_COLUMNS}
     print("  ".join(c.ljust(widths[c]) for c in _TABLE_COLUMNS))
     print("  ".join("-" * widths[c] for c in _TABLE_COLUMNS))
     for row in candidates:

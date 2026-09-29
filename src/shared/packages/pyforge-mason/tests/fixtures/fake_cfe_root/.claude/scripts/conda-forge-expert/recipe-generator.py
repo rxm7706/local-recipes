@@ -11,6 +11,7 @@ wrapper's subprocess-delegation one). Invocable as
 `--output`, `<path>`) is ignored, never rejected -- matching
 `validate_recipe.py`/`submit_pr.py`'s identical convention above.
 """
+
 import sys
 from pathlib import Path
 
@@ -18,6 +19,4 @@ sys.path.insert(0, str(Path(__file__).parent))
 import _stub_support  # noqa: E402
 
 if __name__ == "__main__":
-    sys.exit(_stub_support.emit(
-        "Fetching info for demo...\nGenerated: recipes/demo/recipe.yaml\n"
-    ))
+    sys.exit(_stub_support.emit("Fetching info for demo...\nGenerated: recipes/demo/recipe.yaml\n"))

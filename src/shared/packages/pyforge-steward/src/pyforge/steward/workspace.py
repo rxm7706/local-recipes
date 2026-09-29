@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -37,7 +38,7 @@ _BOOKKEEPING_RELATIVE_PATH = Path(".steward/workspaces.yaml")
 _ARCHIVE_RELATIVE_PATH = Path(".steward/workspace-archive")
 _REPO_SETS_RELATIVE_PATH = Path(".steward/repo-sets.yaml")
 _CODE_WORKSPACE_RELATIVE_DIR = Path(".steward/workspaces")
-_DEFAULT_FROM = "origin/main"
+_DEFAULT_FROM = "origin/main"  # recorded as written; git reads it through _source_ref
 _FEATURE_BRANCH_PREFIX = "f-"
 _SLUG_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 
@@ -201,26 +202,18 @@ def load_repo_sets(path: str | Path | None = None) -> dict[str, RepoSet]:
     out: dict[str, RepoSet] = {}
     for feature, body in projects.items():
         if not isinstance(body, dict):
-            raise WorkspaceError(
-                f"{path}: projects[{feature!r}] must be a mapping"
-            )
+            raise WorkspaceError(f"{path}: projects[{feature!r}] must be a mapping")
         repos = body.get("repos") or {}
         if not isinstance(repos, dict):
-            raise WorkspaceError(
-                f"{path}: projects[{feature!r}].repos must be a mapping"
-            )
+            raise WorkspaceError(f"{path}: projects[{feature!r}].repos must be a mapping")
         members: list[RepoSetMember] = []
         for name, repo_body in repos.items():
             if not isinstance(repo_body, dict):
-                raise WorkspaceError(
-                    f"{path}: projects[{feature!r}].repos[{name!r}] must be a mapping"
-                )
+                raise WorkspaceError(f"{path}: projects[{feature!r}].repos[{name!r}] must be a mapping")
             try:
                 declared = str(repo_body["path"])
             except KeyError as exc:
-                raise WorkspaceError(
-                    f"{path}: projects[{feature!r}].repos[{name!r}] missing path"
-                ) from exc
+                raise WorkspaceError(f"{path}: projects[{feature!r}].repos[{name!r}] missing path") from exc
             members.append(RepoSetMember(name=str(name), declared_path=declared))
         out[str(feature)] = RepoSet(feature=str(feature), members=tuple(members))
     return out
@@ -267,9 +260,7 @@ def _rollback_repo_set_starts(
         if wt.exists():
             _git_ok("worktree", "remove", "--force", str(wt), cwd=wt_root)
         bookkeeping = _bookkeeping_for(wt_root)
-        remaining = tuple(
-            r for r in load_bookkeeping(bookkeeping) if r.slug != record.slug
-        )
+        remaining = tuple(r for r in load_bookkeeping(bookkeeping) if r.slug != record.slug)
         save_bookkeeping(bookkeeping, remaining)
         _git_ok("branch", "-D", record.branch, cwd=wt_root)
 
@@ -287,10 +278,7 @@ def start_repo_set(
     sets = load_repo_sets(repo_sets_path)
     repo_set = sets.get(feature)
     if repo_set is None:
-        raise WorkspaceError(
-            f"repo set {feature!r} not found in "
-            f"{repo_sets_path or default_repo_sets_path()}"
-        )
+        raise WorkspaceError(f"repo set {feature!r} not found in {repo_sets_path or default_repo_sets_path()}")
     if not repo_set.members:
         raise WorkspaceError(f"repo set {feature!r} has no registered repos")
 
@@ -306,9 +294,7 @@ def start_repo_set(
 
     if missing:
         names = ", ".join(sorted(missing))
-        raise WorkspaceError(
-            f"repo set {feature!r}: missing local repos (not guessed): {names}"
-        )
+        raise WorkspaceError(f"repo set {feature!r}: missing local repos (not guessed): {names}")
 
     started: list[WorkspaceRecord] = []
     roots_by_path: dict[str, Path] = {}
@@ -371,10 +357,7 @@ def open_repo_set_members(
     sets = load_repo_sets(repo_sets_path)
     repo_set = sets.get(feature)
     if repo_set is None:
-        raise WorkspaceError(
-            f"repo set {feature!r} not found in "
-            f"{repo_sets_path or default_repo_sets_path()}"
-        )
+        raise WorkspaceError(f"repo set {feature!r} not found in {repo_sets_path or default_repo_sets_path()}")
     branch = feature_branch_name(feature)
     opened: list[RepoSetMemberOpen] = []
     for member in repo_set.members:
@@ -384,9 +367,7 @@ def open_repo_set_members(
         bookkeeping = _bookkeeping_for(member_root)
         for record in load_bookkeeping(bookkeeping):
             if record.slug == branch or record.branch == branch:
-                opened.append(
-                    RepoSetMemberOpen(name=member.name, root=member_root, record=record)
-                )
+                opened.append(RepoSetMemberOpen(name=member.name, root=member_root, record=record))
                 break
     return tuple(opened)
 
@@ -398,9 +379,7 @@ def status_repo_set(
     anchor: Path | None = None,
 ) -> tuple[RepoSetMemberStatus, ...]:
     """Story 13.4: dirty/unpushed across every open member of a repo set."""
-    opened = open_repo_set_members(
-        feature, repo_sets_path=repo_sets_path, anchor=anchor
-    )
+    opened = open_repo_set_members(feature, repo_sets_path=repo_sets_path, anchor=anchor)
     return tuple(
         RepoSetMemberStatus(
             member=item.name,
@@ -425,9 +404,7 @@ def clean_repo_set(
     skips unmerged members per-repo. Own-worktrees-only: foreign trees ignored.
     """
     anchor = anchor if anchor is not None else repo_root()
-    opened = open_repo_set_members(
-        feature, repo_sets_path=repo_sets_path, anchor=anchor
-    )
+    opened = open_repo_set_members(feature, repo_sets_path=repo_sets_path, anchor=anchor)
     if not opened:
         return {"archived": [], "skipped": []}
 
@@ -435,16 +412,12 @@ def clean_repo_set(
     for item in opened:
         st = status_of(item.record, root=item.root)
         if st.error is not None:
-            raise WorkspaceError(
-                f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}"
-            )
+            raise WorkspaceError(f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}")
         if st.dirty:
             dirty_names.append(item.name)
     if dirty_names:
         named = ", ".join(sorted(dirty_names))
-        raise WorkspaceError(
-            f"repo set {feature!r}: refuse removal — dirty member(s): {named}"
-        )
+        raise WorkspaceError(f"repo set {feature!r}: refuse removal — dirty member(s): {named}")
 
     archived: list[dict[str, str]] = []
     skipped: list[dict[str, str]] = []
@@ -453,13 +426,9 @@ def clean_repo_set(
         # become dirty after the set-wide gate above.
         st = status_of(item.record, root=item.root)
         if st.error is not None:
-            raise WorkspaceError(
-                f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}"
-            )
+            raise WorkspaceError(f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}")
         if st.dirty:
-            raise WorkspaceError(
-                f"repo set {feature!r}: refuse removal — dirty member(s): {item.name}"
-            )
+            raise WorkspaceError(f"repo set {feature!r}: refuse removal — dirty member(s): {item.name}")
         result = clean_workspaces(
             merged_only=merged_only,
             slug=item.record.slug,
@@ -474,9 +443,7 @@ def clean_repo_set(
             skipped.append({**row, "member": item.name})
 
     # Drop the coordinated .code-workspace when nothing remains open for the set.
-    still_open = open_repo_set_members(
-        feature, repo_sets_path=repo_sets_path, anchor=anchor
-    )
+    still_open = open_repo_set_members(feature, repo_sets_path=repo_sets_path, anchor=anchor)
     if not still_open:
         branch = feature_branch_name(feature)
         ws_file = anchor / _CODE_WORKSPACE_RELATIVE_DIR / f"{branch}.code-workspace"
@@ -495,9 +462,7 @@ def scratch_path_for(slug: str, *, root: Path | None = None) -> Path:
 
 def _validate_slug(slug: str) -> None:
     if not _SLUG_PATTERN.match(slug):
-        raise WorkspaceError(
-            f"invalid slug {slug!r}: expected [A-Za-z0-9][A-Za-z0-9._/-]*"
-        )
+        raise WorkspaceError(f"invalid slug {slug!r}: expected [A-Za-z0-9][A-Za-z0-9._/-]*")
 
 
 def load_bookkeeping(path: str | Path) -> tuple[WorkspaceRecord, ...]:
@@ -587,7 +552,7 @@ def start_workspace(
         raise WorkspaceError(f"scratch path already exists: {dest}")
 
     try:
-        _git("worktree", "add", str(dest), "-b", slug, from_ref, cwd=root)
+        _git("worktree", "add", str(dest), "-b", slug, _source_ref(from_ref), cwd=root)
     except subprocess.CalledProcessError as exc:
         detail = (exc.stderr or exc.stdout or str(exc)).strip()
         raise WorkspaceError(f"git worktree add failed: {detail}") from exc
@@ -618,43 +583,55 @@ def list_workspaces(
 
 
 def _worktree_dirty(wt: Path) -> bool:
-    result = _git_ok("status", "--porcelain", cwd=wt)
+    # Pinned, not read from config (Story 69.1 review 1): `status.showUntrackedFiles=no` hid an
+    # untracked file and a submodule `ignore=all` hid a submodule's local commit -- both then read
+    # as clean. Marshal's `has_uncommitted_changes` pins the same way.
+    result = _git_ok(
+        "-c", "status.showUntrackedFiles=normal", "status", "--porcelain", "--ignore-submodules=none", cwd=wt
+    )
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
-        raise WorkspaceError(
-            f"git status --porcelain failed in {wt} "
-            f"(exit {result.returncode}): {detail}"
-        )
+        raise WorkspaceError(f"git status --porcelain failed in {wt} (exit {result.returncode}): {detail}")
     return bool((result.stdout or "").strip())
+
+
+def _source_ref(source: str) -> str:
+    """A recorded source as git must read it: ``origin/<b>`` as ``refs/remotes/origin/<b>``, anything else (a full
+    ref, a sha, a local branch) unchanged. Git resolves a short name to a local branch or tag of that name before
+    ``refs/remotes/<name>``; past a stray ``origin/main`` at an unmerged tip, ``clean --merged-only`` read the
+    branch as merged, removed the worktree and deleted the branch (Story 70.1, CAP-158)."""
+    return f"refs/remotes/{source}" if source.startswith("origin/") else source
+
+
+def _branch_ref(branch: str) -> str:
+    """A workspace branch as git must read it, ``refs/heads/<branch>``: a tag named like it never stands in. A
+    record's branch is always the slug ``start`` created, so a slug that itself begins ``refs/`` is prefixed too
+    (``worktree add -b refs/heads/x`` makes ``refs/heads/refs/heads/x``), as ``_archive_worktree`` does."""
+    return f"refs/heads/{branch}"
 
 
 def _ahead_behind(wt: Path, source: str, branch: str) -> tuple[int, int]:
     """Return (ahead, behind) of *branch* vs *source* via ``rev-list --left-right``.
 
     ``git rev-list --left-right --count <source>...<branch>``: left = behind,
-    right = ahead (commits on branch not in source).
+    right = ahead (commits on branch not in source). Both by full refname (Story 70.1).
     """
-    range_spec = f"{source}...{branch}"
+    range_spec = f"{_source_ref(source)}...{_branch_ref(branch)}"
     result = _git_ok("rev-list", "--left-right", "--count", range_spec, cwd=wt)
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
         raise WorkspaceError(
-            f"git rev-list --left-right --count {range_spec} failed in {wt} "
-            f"(exit {result.returncode}): {detail}"
+            f"git rev-list --left-right --count {range_spec} failed in {wt} (exit {result.returncode}): {detail}"
         )
     parts = (result.stdout or "").strip().split()
     if len(parts) != 2:
-        raise WorkspaceError(
-            f"unexpected rev-list output in {wt}: {result.stdout!r}"
-        )
+        raise WorkspaceError(f"unexpected rev-list output in {wt}: {result.stdout!r}")
     # left = commits reachable from source not in branch → behind
     # right = commits reachable from branch not in source → ahead
     try:
         behind, ahead = int(parts[0]), int(parts[1])
     except ValueError as exc:
-        raise WorkspaceError(
-            f"unexpected rev-list counts in {wt}: {parts!r}"
-        ) from exc
+        raise WorkspaceError(f"unexpected rev-list counts in {wt}: {parts!r}") from exc
     return ahead, behind
 
 
@@ -723,25 +700,167 @@ def status_workspaces(
         if not matches:
             raise WorkspaceError(f"workspace {slug!r} not in bookkeeping")
         if len(matches) > 1:
-            raise WorkspaceError(
-                f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows"
-            )
+            raise WorkspaceError(f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows")
         records = tuple(matches)
     return tuple(status_of(r, root=root) for r in records)
 
 
 def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
-    """True when ``branch`` is an ancestor of ``into`` (already merged)."""
-    result = _git_ok("merge-base", "--is-ancestor", branch, into, cwd=root)
+    """True when ``branch`` is an ancestor of ``into`` (already merged). Both by full refname (Story 70.1)."""
+    result = _git_ok("merge-base", "--is-ancestor", _branch_ref(branch), _source_ref(into), cwd=root)
     if result.returncode == 0:
         return True
     if result.returncode == 1:
         return False
     detail = (result.stderr or result.stdout or "").strip()
-    raise WorkspaceError(
-        f"git merge-base --is-ancestor {branch} {into} failed "
-        f"(exit {result.returncode}): {detail}"
-    )
+    raise WorkspaceError(f"git merge-base --is-ancestor {branch} {into} failed (exit {result.returncode}): {detail}")
+
+
+#: Reinstallable pixi dirs, relative to a worktree root: the environments
+#: (rebuilt from `pixi.lock`) and the path-dependency build cache (rebuilt on
+#: demand). They run to ~13 GB and 1-2 GB in a worktree that has run
+#: `pr-preflight`, so an archive leaves them out; every other file under
+#: `.pixi/` (the tracked `config.toml`) still archives (Story 68.1, CAP-155).
+REINSTALLABLE_ENV_DIRS: tuple[str, ...] = (".pixi/envs", ".pixi/solve-group-envs", ".pixi/bld")
+
+
+def _without_reinstallable_envs(arcroot: str):
+    """A ``tarfile`` filter dropping ``REINSTALLABLE_ENV_DIRS`` (and everything
+    beneath them) from an archive whose members are rooted at ``arcroot``."""
+    prefixes = tuple(f"{arcroot}/{d}" for d in REINSTALLABLE_ENV_DIRS)
+
+    def _filter(info: tarfile.TarInfo) -> tarfile.TarInfo | None:
+        name = info.name
+        if any(name == p or name.startswith(p + "/") for p in prefixes):
+            return None
+        return info
+
+    return _filter
+
+
+#: A git-ignored path under one of these prefixes that is a real file or directory -- not a
+#: backlink symlink -- can hold Tier-3 work (story drafts, sprint feeds) that exists nowhere
+#: else, so it forces a tarball (Story 69.1 review 1).
+_IGNORED_WORK_PREFIXES: tuple[str, ...] = ("_bmad-output/",)
+#: How many git-ignored paths (and skip-journal lines) a note lists before it counts the rest.
+_NOTE_IGNORED_LIMIT = 200
+#: The pre-push gate's per-worktree skip journal (CAP-156): a note copies its lines, since the
+#: file itself is git-ignored and goes with the worktree (Story 69.1 review 2).
+_SKIP_JOURNAL = Path(".steward/preflight-skips.log")
+
+
+def _git_bytes(*args: str, cwd: Path) -> subprocess.CompletedProcess[bytes]:
+    """``_git_ok`` without text decoding, for NUL-separated (``-z``) output whose paths need
+    not be valid UTF-8 -- one such name crashed the whole sweep (Story 69.1 review 2)."""
+    return subprocess.run(["git", *args], cwd=cwd, check=False, capture_output=True)
+
+
+def _commit_of(ref: str, *, cwd: Path) -> str | None:
+    """``ref``'s commit, or None when git cannot resolve it."""
+    result = _git_ok("rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}", cwd=cwd)
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _source_commit(source: str, *, root: Path) -> str | None:
+    """The commit ``source`` names when git resolves it to a remote-tracking ref, else None.
+    A short name like ``origin/main`` resolves to a local branch or tag of that name first,
+    with a warning that config can switch off and a locale can reword; so the proof asks git
+    which ref won (``--symbolic-full-name``) -- only one under ``refs/remotes/`` is a landing
+    (Story 69.1 reviews 1 and 2). ``origin/<b>`` is asked for by its full refname, so a shadow
+    no longer turns a provable landing into a tarball (Story 70.1)."""
+    full = _git_ok("rev-parse", "--verify", "--symbolic-full-name", "--end-of-options", _source_ref(source), cwd=root)
+    name = (full.stdout or "").strip()
+    if full.returncode != 0 or not name.startswith("refs/remotes/") or "\n" in name:
+        return None
+    return _commit_of(name, cwd=root)
+
+
+def _landed_note_text(record: WorkspaceRecord, *, root: Path, stamp: str) -> str | None:
+    """Story 69.1 (CAP-157): the note a worktree leaves instead of a tarball, or None when git
+    cannot prove it holds nothing unlanded -- then it archives exactly as CAP-155 does. The
+    proof, all of it (review 1 found each gap by probe):
+
+    - ``status --porcelain`` is empty, pinned against config (``_worktree_dirty``);
+    - no index entry is marked skip-worktree or assume-unchanged (``ls-files -v``) -- both hide
+      an edited file from ``status``;
+    - HEAD and the recorded branch (when it exists) are both ancestors of the source, and the
+      source resolves to a remote-tracking ref: cleanup deletes the branch, not HEAD, so a
+      detached HEAD proves nothing about the branch;
+    - no gitlink (a submodule's own ignored files would go unnamed) and no per-worktree ref
+      (``refs/worktree/``, ``refs/bisect/``) that could hold a commit nothing else does;
+    - the git-ignored listing succeeds, and none of it is Tier-3 work under ``_bmad-output/``
+      other than a backlink symlink.
+
+    Any command that fails, answers ambiguously, or prints what cannot be decoded is no proof
+    (review 2: a non-UTF-8 ignored name crashed the sweep). Raises only if git cannot be
+    launched at all, which the sweep reports as an error row and keeps the record."""
+    wt = Path(record.path)
+    try:
+        return _landed_note_body(record, wt=wt, root=root, stamp=stamp)
+    except WorkspaceError, ValueError:
+        return None
+
+
+def _landed_note_body(record: WorkspaceRecord, *, wt: Path, root: Path, stamp: str) -> str | None:
+    if _worktree_dirty(wt):
+        return None
+    flags = _git_ok("ls-files", "-v", cwd=wt)
+    if flags.returncode != 0 or any(
+        line[:1].islower() or line[:1] == "S" for line in (flags.stdout or "").splitlines()
+    ):
+        return None
+    staged = _git_ok("ls-files", "--stage", cwd=wt)
+    if staged.returncode != 0 or any(line.startswith("160000 ") for line in (staged.stdout or "").splitlines()):
+        return None
+    local_refs = _git_ok("for-each-ref", "--format=%(refname)", "refs/worktree/", "refs/bisect/", cwd=wt)
+    if local_refs.returncode != 0 or (local_refs.stdout or "").strip():
+        return None
+    head_sha = _commit_of("HEAD", cwd=wt)
+    source_sha = _source_commit(record.source, root=root)
+    if head_sha is None or source_sha is None:
+        return None
+    tips = [head_sha]
+    if _git_ok("rev-parse", "--verify", "--quiet", f"refs/heads/{record.branch}", cwd=root).returncode == 0:
+        branch_sha = _commit_of(f"refs/heads/{record.branch}", cwd=root)
+        if branch_sha is None:
+            return None
+        tips.append(branch_sha)
+    for tip in tips:
+        if _git_ok("merge-base", "--is-ancestor", tip, source_sha, cwd=root).returncode != 0:
+            return None
+    listed = _git_bytes("-c", "status.showUntrackedFiles=normal", "status", "--ignored", "--porcelain", "-z", cwd=wt)
+    if listed.returncode != 0:
+        return None
+    raw_ignored = [entry[3:] for entry in listed.stdout.split(b"\0") if entry.startswith(b"!! ")]
+    work_prefixes = tuple(prefix.encode() for prefix in _IGNORED_WORK_PREFIXES)
+    for raw in raw_ignored:
+        if raw.startswith(work_prefixes) and not (wt / os.fsdecode(raw.rstrip(b"/"))).is_symlink():
+            return None
+    ignored = [raw.decode("utf-8", "backslashreplace") for raw in raw_ignored]
+    shown = ignored[:_NOTE_IGNORED_LIMIT]
+    journal: list[str] = []
+    journal_path = wt / _SKIP_JOURNAL
+    if journal_path.is_file() and not journal_path.is_symlink():
+        try:
+            journal = journal_path.read_text(encoding="utf-8", errors="backslashreplace").splitlines()
+        except OSError:
+            return None
+    lines = [
+        f"workspace {record.slug!r} cleaned {stamp}: nothing unlanded, so no archive was kept (Story 69.1).",
+        f"branch: {record.branch}",
+        f"path: {record.path}",
+        f"HEAD: {head_sha}",
+        f"on source: {record.source} at {source_sha}",
+        "working tree: clean (no tracked change, no untracked file, no hidden index entry)",
+        f"git-ignored paths not kept ({len(ignored)}):",
+        *(f"  {path}" for path in shown),
+    ]
+    if len(ignored) > len(shown):
+        lines.append(f"  ... and {len(ignored) - len(shown)} more")
+    if journal:
+        lines.append(f"pre-push skip journal ({_SKIP_JOURNAL}), copied ({len(journal)} line(s)):")
+        lines.extend(f"  {line}" for line in journal[-_NOTE_IGNORED_LIMIT:])
+    return "\n".join(lines) + "\n"
 
 
 def _archive_worktree(
@@ -749,22 +868,40 @@ def _archive_worktree(
     *,
     root: Path,
     archive_dir: Path,
-) -> Path:
+) -> tuple[Path, bool]:
     """Archive-not-delete: tar the tree, then ``git worktree remove``.
 
-    After a successful remove/prune, also best-effort deletes the local branch
-    so a later ``start`` with the same slug can recreate ``-b`` cleanly. The
-    tar (or missing marker) is retained — archive-not-delete of tree content.
+    A worktree git proves already landed keeps a ``.landed.txt`` note instead
+    of a tar (Story 69.1, CAP-157): there is no unlanded content to archive.
+    After a successful remove/prune, the local branch is deleted when it is on
+    the record's source, so a later ``start`` with the same slug can recreate
+    ``-b`` cleanly; an unmerged branch is kept -- its commits exist nowhere
+    else, since a tar holds files, never history -- and a later ``start`` of
+    that slug needs it deleted by hand. Returns the archive (or note or
+    marker) path and whether the branch was kept.
     """
     try:
         archive_dir.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         safe = record.slug.replace("/", "-")
         wt = Path(record.path)
-        if wt.is_dir():
+        note = _landed_note_text(record, root=root, stamp=stamp) if wt.is_dir() else None
+        if note is not None:
+            archive_path = archive_dir / f"{safe}-{stamp}.landed.txt"
+            archive_path.write_text(note, encoding="utf-8")
+        elif wt.is_dir():
             archive_path = archive_dir / f"{safe}-{stamp}.tar.gz"
-            with tarfile.open(archive_path, "w:gz") as tar:
-                tar.add(wt, arcname=wt.name)
+            try:
+                with tarfile.open(archive_path, "w:gz") as tar:
+                    tar.add(wt, arcname=wt.name, filter=_without_reinstallable_envs(wt.name))
+            except BaseException as exc:
+                # A half-written archive is not an archive -- whatever stopped the tar,
+                # a Ctrl-C included; the record is kept and retried by the next sweep,
+                # so leaving it would leak one per sweep (Story 68.1 reviews 1 and 2).
+                archive_path.unlink(missing_ok=True)
+                if isinstance(exc, (OSError, tarfile.TarError)):
+                    raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
+                raise
         else:
             # Path already gone — still write a marker so clean is recoverable.
             archive_path = archive_dir / f"{safe}-{stamp}.missing.txt"
@@ -789,9 +926,21 @@ def _archive_worktree(
         else:
             _git_ok("worktree", "prune", cwd=root)
 
-        # Branch may still exist after worktree remove; drop it so slug reuse works.
-        _git_ok("branch", "-D", record.branch, cwd=root)
-        return archive_path
+        # Branch may still exist after worktree remove; drop it so slug reuse works -- but only
+        # when it is on the source. An unmerged branch's commits exist nowhere else (a tarball
+        # holds files, never history), so it is kept (Story 69.1 review 1).
+        branch_kept = False
+        if _git_ok("rev-parse", "--verify", "--quiet", f"refs/heads/{record.branch}", cwd=root).returncode == 0:
+            source_sha = _commit_of(_source_ref(record.source), cwd=root)
+            merged = source_sha is not None and (
+                _git_ok("merge-base", "--is-ancestor", f"refs/heads/{record.branch}", source_sha, cwd=root).returncode
+                == 0
+            )
+            if merged:
+                _git_ok("branch", "-D", record.branch, cwd=root)
+            else:
+                branch_kept = True
+        return archive_path, branch_kept
     except OSError as exc:
         raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
 
@@ -829,9 +978,7 @@ def clean_workspaces(
         if not matches:
             raise WorkspaceError(f"workspace {slug!r} not in bookkeeping")
         if len(matches) > 1:
-            raise WorkspaceError(
-                f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows"
-            )
+            raise WorkspaceError(f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows")
         # Keep non-matching rows in remaining; only consider the match for archive.
         others = [r for r in records if r.slug != slug]
         records = matches
@@ -843,23 +990,45 @@ def clean_workspaces(
     remaining: list[WorkspaceRecord] = list(others)
     pending = list(records)
 
+    # The record being decided right now: popped from `pending` but not yet placed
+    # in `remaining` or `archived`. The `finally` saves it back, so no exception --
+    # not even a Ctrl-C at the confirm prompt -- can drop it (Story 68.1 review 1).
+    in_flight: WorkspaceRecord | None = None
     try:
         while pending:
             record = pending.pop(0)
-            if merged_only and not _branch_merged_into(root, record.branch, record.source):
-                skipped.append({**record.to_dict(), "reason": "not-merged"})
+            in_flight = record
+            # Story 68.1 (CAP-155): a record this sweep cannot decide (its branch
+            # gone, an archive that fails) is reported and KEPT, and the sweep
+            # goes on -- it used to abort here, and the `finally` below then
+            # saved bookkeeping without the popped record, silently dropping it.
+            try:
+                if merged_only and not _branch_merged_into(root, record.branch, record.source):
+                    skipped.append({**record.to_dict(), "reason": "not-merged"})
+                    remaining.append(record)
+                    in_flight = None
+                    continue
+                if not merged_only and not confirm_fn(record.slug):
+                    skipped.append({**record.to_dict(), "reason": "declined"})
+                    remaining.append(record)
+                    in_flight = None
+                    continue
+                archive_path, branch_kept = _archive_worktree(record, root=root, archive_dir=archive_dir)
+            except WorkspaceError as exc:
+                skipped.append({**record.to_dict(), "reason": f"error: {exc}"})
                 remaining.append(record)
+                in_flight = None
                 continue
-            if not merged_only and not confirm_fn(record.slug):
-                skipped.append({**record.to_dict(), "reason": "declined"})
-                remaining.append(record)
-                continue
-            archive_path = _archive_worktree(record, root=root, archive_dir=archive_dir)
-            archived.append({**record.to_dict(), "archive": str(archive_path)})
+            in_flight = None
+            row = {**record.to_dict(), "archive": str(archive_path)}
+            if branch_kept:
+                row["branch_kept"] = record.branch  # unmerged: its commits exist nowhere else (Story 69.1)
+            archived.append(row)
     finally:
         # Persist removals already archived even if a later record fails —
         # otherwise archived trees stay listed in bookkeeping.
-        save_bookkeeping(bookkeeping, tuple(remaining + pending))
+        kept_in_flight = [in_flight] if in_flight is not None else []
+        save_bookkeeping(bookkeeping, tuple(remaining + kept_in_flight + pending))
 
     return {"archived": archived, "skipped": skipped}
 
@@ -906,15 +1075,11 @@ def format_status(statuses: tuple[WorkspaceStatus, ...], *, as_json: bool) -> st
             continue
         dirt = "dirty" if s.dirty else "clean"
         merged = "merged" if s.merged else "unmerged"
-        lines.append(
-            f"{s.slug}\t{dirt}\tahead={s.ahead}\tbehind={s.behind}\t{merged}\t{s.path}"
-        )
+        lines.append(f"{s.slug}\t{dirt}\tahead={s.ahead}\tbehind={s.behind}\t{merged}\t{s.path}")
     return "\n".join(lines)
 
 
-def format_repo_set_status(
-    statuses: tuple[RepoSetMemberStatus, ...], *, as_json: bool
-) -> str:
+def format_repo_set_status(statuses: tuple[RepoSetMemberStatus, ...], *, as_json: bool) -> str:
     if as_json:
         return json.dumps([s.to_dict() for s in statuses], indent=2)
     if not statuses:
@@ -929,10 +1094,7 @@ def format_repo_set_status(
         unpushed = (s.ahead or 0) > 0
         push = "unpushed" if unpushed else "pushed"
         merged = "merged" if s.merged else "unmerged"
-        lines.append(
-            f"{row.member}\t{s.slug}\t{dirt}\t{push}\tahead={s.ahead}\t"
-            f"behind={s.behind}\t{merged}\t{s.path}"
-        )
+        lines.append(f"{row.member}\t{s.slug}\t{dirt}\t{push}\tahead={s.ahead}\tbehind={s.behind}\t{merged}\t{s.path}")
     return "\n".join(lines)
 
 
@@ -947,7 +1109,8 @@ def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> s
     for item in archived:
         member = item.get("member")
         prefix = f"archived {member}/" if member else "archived "
-        lines.append(f"{prefix}{item['slug']} -> {item['archive']}")
+        kept = f" (branch {item['branch_kept']} kept: not on its source)" if item.get("branch_kept") else ""
+        lines.append(f"{prefix}{item['slug']} -> {item['archive']}{kept}")
     for item in skipped:
         member = item.get("member")
         prefix = f"skipped {member}/" if member else "skipped "
@@ -976,16 +1139,12 @@ class WorkspaceDuty:
                 feature = ns.slug
                 repo_sets = load_repo_sets()
                 if feature in repo_sets:
-                    result = start_repo_set(
-                        feature, from_ref=ns.from_ref or _DEFAULT_FROM
-                    )
+                    result = start_repo_set(feature, from_ref=ns.from_ref or _DEFAULT_FROM)
                     return DutyResult(
                         ok=True,
                         summary=format_repo_set_start(result, as_json=as_json),
                     )
-                record = start_workspace(
-                    feature, from_ref=ns.from_ref or _DEFAULT_FROM
-                )
+                record = start_workspace(feature, from_ref=ns.from_ref or _DEFAULT_FROM)
                 return DutyResult(ok=True, summary=format_start(record, as_json=as_json))
             if verb == "ls":
                 records = list_workspaces()
@@ -999,17 +1158,19 @@ class WorkspaceDuty:
                         summary=format_repo_set_status(statuses, as_json=as_json),
                     )
                 statuses = status_workspaces(slug)
-                return DutyResult(
-                    ok=True, summary=format_status(statuses, as_json=as_json)
-                )
+                return DutyResult(ok=True, summary=format_status(statuses, as_json=as_json))
             # clean — optional slug targets a repo set or a single owned worktree
             slug = getattr(ns, "slug", None)
             merged_only = bool(getattr(ns, "merged_only", False))
+            # Story 68.1 review 1/2: a sweep finishes past a record it could not
+            # decide, but that record is still a failure -- the exit code says so,
+            # for a repo-set feature as for a single worktree or the fleet.
             if slug is not None and slug in load_repo_sets():
-                result = clean_repo_set(slug, merged_only=merged_only)
-                return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
-            result = clean_workspaces(merged_only=merged_only, slug=slug)
-            return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
+                cleaned = clean_repo_set(slug, merged_only=merged_only)
+            else:
+                cleaned = clean_workspaces(merged_only=merged_only, slug=slug)
+            errored = any(row.get("reason", "").startswith("error: ") for row in cleaned["skipped"])
+            return DutyResult(ok=not errored, summary=format_clean(cleaned, as_json=as_json))
         except WorkspaceError as exc:
             return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
         except RuntimeError as exc:

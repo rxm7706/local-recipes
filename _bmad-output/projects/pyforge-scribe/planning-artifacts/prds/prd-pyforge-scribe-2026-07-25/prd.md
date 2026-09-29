@@ -1,9 +1,10 @@
 ---
+fr-derivation-from: "2026-09-17"
 title: pyforge-scribe
 created: 2026-07-25
-updated: "2026-09-07"
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-26 (Stories 21.1 / 21.2 / 22.1 / 23.1 landing reconciles; surface gains the instruction pointer files) and 2026-09-28 (AGENTS.md Policy line, mason CAP-29 surface reconcile); no FR change. See § Currency reconciliation — 2026-09-28. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
 status: final
-currency_review: Reviewed 2026-09-04 — chain-currency sweep (PR #1043); spec-pyforge-scribe's .memlog moved 2026-08-31 (surface reconcile, no CAP text change) and 2026-09-03 (fleet-hygiene restamp); Epic 6 landed above the FR ceiling, owned by spec-pyforge-unifying-strategy CAP-18 / stack.md and spec-marshal-token-economy CAP-13. See § Currency reconciliation — 2026-09-04. Prior — Reviewed 2026-08-26 — reconciled against SPEC-scribe (status shipped, re-stamped 2026-08-22), the 2026-08-08 research refreshes, the Unifying Strategy pack (2026-08-26), and as-built code through the 2026-08-26 plane driver; §5's transcript non-goal amended, §8's open questions dispositioned. See § Currency reconciliation.
+currency_review: "Reviewed 2026-09-17 — one-chain scribe fold; FR-1..15 cite CAP-1..4; reminted station CAPs 1..26 live on spec-pyforge-scribe. FR delta: citations only."
 ---
 
 # PRD: pyforge-scribe (Scribe)
@@ -63,36 +64,36 @@ Scribe ships in two waves that are each independently valuable: Wave 1 completes
 
 **Description:** The checked-in `.claude/memory/` directory, the promotion workflow that moves entries from user-local memory into it, and the wiring that makes team memory auto-load every session. This feature is the legacy `claude-team-memory` spec's full scope (its 10 stories, Waves A/B/C), migrated into Scribe as the foundation the graph compiles from. Realizes UJ-1, UJ-4. FR IDs below map 1:1 to the legacy spec's FR-1 through FR-9 (renumbered for this PRD's global sequence; intent unchanged unless noted).
 
-#### FR-1: Frontmatter schema parity
+#### FR-1: Frontmatter schema parity ← CAP-1
 Entries in `.claude/memory/` use the same frontmatter fields as user-local auto-memory (`name`, `description`, `type` ∈ `{feedback, project, reference}`), so migration in either direction is mechanical. *(= legacy FR-1)*
 
 **Consequences (testable):**
 - A `.claude/memory/<type>/*.md` file with a missing or malformed `type` field fails a schema check.
 - Promotion tooling reads and writes this exact schema without a translation step.
 
-#### FR-2: MEMORY.md index size discipline
+#### FR-2: MEMORY.md index size discipline ← CAP-1
 `.claude/memory/MEMORY.md` stays under 200 lines (Claude Code truncates beyond that); enforced by convention (entries are one-line `- [Title](file.md) — hook`), no tooling gate in Wave 1. *(= legacy FR-2)*
 
-#### FR-3: Proposal-then-confirm promotion
+#### FR-3: Proposal-then-confirm promotion ← CAP-1
 `scribe capture --promote` (or equivalent) stops after producing the proposed diff and waits for explicit confirmation before writing. No auto-commit, no unreviewed multi-file write. *(= legacy FR-3)*
 
 **Consequences (testable):**
 - Running the promotion path against a set of user-local entries produces a structured proposal (files + full content + updated `MEMORY.md`) and halts before any write.
 - Nothing under `.claude/memory/` changes on disk until confirmation is given.
 
-#### FR-4: Team-voice rewrite required
+#### FR-4: Team-voice rewrite required ← CAP-1
 Promoted entries are rewritten per the team-voice rules (strip first-person, drop "user prefers" framing, drop incident-specific anecdotes, preserve **Why:**/**How to apply:** structure, preserve paths/commands/identifiers verbatim) — never a verbatim copy. *(= legacy FR-4)*
 
-#### FR-5: Pointer stub after promotion
+#### FR-5: Pointer stub after promotion ← CAP-1
 After confirmation, the source user-local entry is replaced with the pointer-stub format (`promoted: true` + redirect body naming the promoted file's path and date) — not deleted, preserving traceability. *(= legacy FR-5)*
 
-#### FR-6: Detect already-promoted entries (idempotency)
+#### FR-6: Detect already-promoted entries (idempotency) ← CAP-1
 The promotion workflow detects `promoted: true` frontmatter and skips re-classification/re-promotion. Repeated invocation is a no-op against already-promoted entries. *(= legacy FR-6)*
 
-#### FR-7: Read-only outside `.claude/memory/` (and Scribe's own package/skill surface)
+#### FR-7: Read-only outside `.claude/memory/` (and Scribe's own package/skill surface) ← CAP-1
 Scribe's capture/promotion path never writes to `.claude/skills/` (other skills), `.claude/scripts/`, `.claude/agents/`, `.mcp.json`, `recipes/`, `_bmad/`, or `_bmad-output/` outside its own project. `CLAUDE.md` edits (wiring the `@import`) remain human-driven, not automated. *(= legacy FR-7, scope note updated: Scribe's own package files are now an explicit exception since Scribe itself is code under `.claude/skills/` or a `src/` package — see `addendum.md` for the exact write-boundary list.)*
 
-#### FR-8: Type taxonomy match
+#### FR-8: Type taxonomy match ← CAP-1
 `.claude/memory/` subdirectories are `feedback/`, `project/`, `reference/` — matching user-local memory's taxonomy; promotion defaults to the source entry's `type` unless a human reclassifies during review. *(= legacy FR-8)*
 
 **Feature-specific NFRs:**
@@ -104,20 +105,20 @@ Scribe's capture/promotion path never writes to `.claude/skills/` (other skills)
 
 **Description:** `scribe graph compile --nightly` reads the tools the team already uses and compiles them into a graph — artifacts as nodes, references as edges — on a cadence, without anyone hand-maintaining a separate app. This is Sentinel's core claim, finally given an owner. Realizes UJ-3.
 
-#### FR-9: Nightly compile reads named tool surfaces
+#### FR-9: Nightly compile reads named tool surfaces ← CAP-2
 `scribe graph compile --nightly` ingests, at minimum: `.claude/memory/` (team memory), `.memlog.md` files across BMAD projects, git commit/PR history, retro outputs, CHANGELOGs, and `docs/dreams/`. The exact v1 input list is confirmed at architecture/epics time (see Open Questions); this FR fixes the *shape* (multiple named, already-existing tool surfaces — not a new authored-content app) as binding.
 
 **Consequences (testable):**
 - Running the compile step against a repo state with entries in each named surface produces graph nodes traceable to their source file and line/commit.
 - Running the compile step with no new source activity since the last run is idempotent (no duplicate nodes, no spurious edges).
 
-#### FR-10: Fact supersession, not deletion
+#### FR-10: Fact supersession, not deletion ← CAP-2
 When the compile step detects a new record that supersedes an older one (e.g., a new decision superseding a prior one per the ADR "never edit in place, link instead" convention), the graph invalidates the old fact's validity rather than deleting the node — conceptually borrowed from Graphiti's bi-temporal model per the domain research, without adopting its storage engine.
 
 **Consequences (testable):**
 - A capture that explicitly supersedes a prior record (naming it) results in the old record remaining queryable (marked superseded) rather than vanishing from the graph.
 
-#### FR-11: Compile is unattended and idempotent
+#### FR-11: Compile is unattended and idempotent ← CAP-2
 The compile step runs without interactive input and produces the same graph state given the same source inputs, regardless of how many times it is re-run (subject to source-content changes).
 
 **Feature-specific NFRs:**
@@ -128,14 +129,14 @@ The compile step runs without interactive input and produces the same graph stat
 
 **Description:** `scribe recall <query>` answers from the compiled graph so a session starts already knowing what the team knows, with every answer traceable to the record it's grounded in. Realizes UJ-2.
 
-#### FR-12: Recall returns a grounded, cited answer
+#### FR-12: Recall returns a grounded, cited answer ← CAP-3
 `scribe recall "<natural-language query>"` returns an answer derived from the compiled graph, with an explicit citation (file path / capture ID / commit) to the specific record(s) the answer is grounded in.
 
 **Consequences (testable):**
 - Every `scribe recall` response includes at least one citation resolvable to a real file/record in the repo.
 - A query with no relevant graph coverage returns an explicit "no grounded answer found" rather than a fabricated one.
 
-#### FR-13: Recall is queryable by any session, any operator
+#### FR-13: Recall is queryable by any session, any operator ← CAP-3
 `scribe recall` works identically regardless of which human operator or which concurrent agent worktree invokes it — the compiled graph is the single shared source, not per-session state.
 
 **Out of Scope:**
@@ -148,11 +149,24 @@ The compile step runs without interactive input and produces the same graph stat
 
 **Description:** Scribe ships as `pyforge-scribe` (dist name), `pyforge.scribe` (module), `scribe` (CLI entry point) — a pixi-workspace member package, installable and importable like any other package in this monorepo's dual-ecosystem model.
 
-#### FR-14: CLI is the public contract
+#### FR-14: CLI is the public contract ← CAP-4
 `scribe capture`, `scribe graph compile --nightly`, and `scribe recall` are the three top-level commands; each is independently invocable and independently testable. Sub-flags (`--type`, `--text`, `--promote`, `--nightly`) extend without breaking the top-level contract.
 
-#### FR-15: Pixi workspace membership
+#### FR-15: Pixi workspace membership ← CAP-4
 Scribe is registered as a pixi workspace member (per this repo's dual-ecosystem, multi-package pattern), with its own `pyproject.toml`/`recipe.yaml` posture consistent with sibling pyforge-* packages (Warden, Herald) once they exist as precedent.
+
+#### FR-16: The session contract reaches every harness from one file ← CAP-27
+`AGENTS.md` is the only place the cross-tool contract is written; Claude Code reaches it through the
+`CLAUDE.md` `@AGENTS.md` import, Gemini through `.gemini/settings.json` `context.fileName`, VS Code
+chat through `chat.useAgentsMdFile`, and Cursor / Codex / the Copilot cloud agent / Devin / Jules
+natively. Per-tool files are addenda; team memory is cited as `.claude/memory/` paths that exist and
+filled with `scribe capture`. A scribe meta-test reds a missing pointer, a duplicated section, an
+oversized per-tool file or a dangling memory path.
+
+#### FR-17: `scribe capture` and `scribe recall` run from the session default environment ← CAP-28
+The scribe core package is a member of the `pyforge-guild` feature (the default every harness's
+sandbox installs); the compile extras stay in `-e pyforge-scribe`. FR-13's "any session, any
+operator" now reads **any harness**.
 
 **Feature-specific NFRs:**
 - **Language/Runtime:** Python, matching this repo's existing pixi environments; no new language introduced.
@@ -209,7 +223,7 @@ Scribe is registered as a pixi workspace member (per this repo's dual-ecosystem,
 1. **Graph storage engine** — embedded graph database (e.g., LadybugDB, successor to the now-archived KuzuDB) vs. a flat-file/index model extending `.claude/memory/MEMORY.md`'s existing pattern. Domain research flags this as genuinely undecided; resolve at architecture phase, ideally via an ADR captured through Scribe itself once `scribe capture` exists (dogfooding opportunity).
 2. **Wave 2's exact v1 input surface for `scribe graph compile`** — FR-9 fixes the shape (git history, memlogs, retros, CHANGELOGs, team memory, `docs/dreams/`) but the precise file-glob/inclusion list is a PRD-to-epics scope decision, not resolved here.
 3. **Does `scribe recall` require a local LLM, or can v1 ship as pure grounded retrieval (return the matching record + citation, no generative synthesis)?** Air-gap posture favors the latter as a safer v1 default; unresolved here, flagged for architecture.
-4. **Naming/interop with the ADR convention** — should `scribe capture --type decision` formally adopt the `docs/adr/`-style numbering/format the domain research found as dominant practice, or keep its own vocabulary that happens to be ADR-shaped? Affects whether Scribe should also *read* any pre-existing `docs/adr/`-style files in a target repo.
+4. **Naming/interop with the ADR convention** — should `scribe capture --type decision` formally adopt the `docs/adr/`-style numbering/format the domain research found as dominant practice, or keep its own vocabulary that happens to be ADR-shaped? Affects whether Scribe should also *read* any pre-existing `docs/adr/`-style files in a target repo. **ANSWERED 2026-09-09, folded in here 2026-09-14: NO ADR numbering — and it is a Non-goal, not a deferral.** `scribe capture --type` stays **closed at `{feedback, project, reference}`** because AD-3 requires byte-identical shape parity with Claude Code's user-local auto-memory schema (CAP-1's own success criterion), and a fourth `decision` type would break that parity for a naming convention Scribe can already express inside the three it has. **Consequence for this document, recorded not hidden: UJ-1 above writes `scribe capture --type decision`, which is not a valid invocation as shipped** — `CaptureType = Literal["feedback", "project", "reference"]` (`models.py:34`), verified live 2026-09-14. UJ-1's *substance* (capture a decision at the moment it is made, git-diffable, reviewable in the next PR) is fully delivered; only its literal command line is wrong, and it is left as written with this pointer rather than silently edited, because the journey is the historical record of what was asked for.
 5. **`anthropics/claude-code#38536` (native team-shared memory)** — if Anthropic ships first-class team memory during Scribe's build, does `.claude/memory/`'s file-based layer get absorbed into the native surface, leaving Scribe's value entirely in graph-compile + recall? Watch-item, not a blocker.
 6. **Legacy `CLAUDE.md` §"BMAD ↔ conda-forge-expert integration" de-duplication (Q3 from the legacy spec)** — defaults to "remove, single source of truth in `.claude/memory/`" but is a human-reviewed edit, not an automated one; confirm at Wave 1 implementation.
 
@@ -313,3 +327,114 @@ failure mode as a fabricated test-architecture document: it reads as verified to
 agent. There is no `recipes/pyforge-scribe/`, so the package is built by `pixi-build-python`
 for this estate and is not published to conda-forge; no external consumer depended on the
 wider floor.
+
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep: `spec-pyforge-scribe`'s SPEC.md moved to 2026-09-12 and its
+`.memlog` to 2026-09-13T12:24 while this PRD sat at 2026-09-07 — five days, past the
+runbook's 2-day grace window.*
+
+**The Spec closed its own § Open Questions entirely.** All three (the GraphStore-engine
+spike, the nightly input-glob enumeration, ADR interop) were answered on 2026-09-09, the
+section was **deleted**, and `open_questions: []` was set. This PRD's § 8 had already
+dispositioned its six on 2026-08-26, so the two documents now agree — but two of the
+Spec's answers add something this PRD did not have, and both are folded in:
+
+1. **ADR numbering is a decided Non-goal (§ 8 item 4, amended above).** `--type` stays
+   closed at `{feedback, project, reference}` because AD-3 requires byte-identical
+   shape parity with Claude Code's auto-memory schema. **This makes UJ-1's literal
+   command line (`--type decision`) unrunnable as shipped** — verified live against
+   `models.py:34`. Recorded at UJ-1's own § 8 entry rather than edited away.
+2. **The GraphStore port question is closed by evidence, not by a spike.** The Spec now
+   records "three drivers now sit behind it and the port still fixes nothing beyond
+   itself." Verified live this pass: `graph_store.py`, `graph_store_pg.py`,
+   `graph_store_plane.py`, plus `graph_store_plugins.py`. § 8 item 1 asked which engine
+   to pick; the answer is that the port made the question unnecessary — three engines
+   coexist and no PRD-level choice was ever owed.
+
+**A second real divergence, found by reading SM-4 against the code.** § 7's **SM-4**
+states that "the documented, opt-in operator crontab entry in
+`src/shared/packages/pyforge-scribe/docs/cli-runbooks.md` is the trigger and the
+evidence." That is **no longer how the nightly compile fires.** Story 8.1 replaced the
+hand-typed crontab line with a **checked-in systemd-user timer** plus its installer and
+a freshness check — verified live: `src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-compile.timer`,
+`scripts/scribe_install_nightly_trigger.py`, `scripts/scribe_nightly_trigger.py`,
+`scripts/scribe_graph_freshness_check.py`. SM-4's *criterion* (four consecutive
+unattended runs) is unchanged and still correct; only its named trigger and evidence
+source are stale. **Not rewritten here**: SM-4 is a success metric whose evidence trail
+matters, and replacing the sentence would erase the fact that the crontab era existed
+and was superseded. The correction is this paragraph; a future edit that re-words SM-4
+should cite it.
+
+**An ownership ruling worth carrying, because it prevents a duplicate capability.** The
+Spec now states **"Not canopy:CAP-14"**: the Unifying-Strategy semantic-recall capability
+belongs to **steward Story 49.7**, and no parallel scribe-side CAP is minted for it.
+Charter §5 decides it — the owner of the outcome writes the story, the owner of the
+mechanism owns the verb it calls. Scribe owns the mechanism (`recall`); it does not own
+steward's outcome. No FR is added here for the same reason.
+
+**Four new governed script surfaces, all already-landed work.** `scripts/scribe_pg.py`
+(the local PostgreSQL+pgvector the durable GraphStore tests require),
+`scripts/scribe_nightly_trigger.py`, `scripts/scribe_install_nightly_trigger.py` and
+`scripts/scribe_graph_freshness_check.py` joined the Spec's `surface:`. They are
+infrastructure for FR-11's nightly compile, which this PRD already specifies; no new FR.
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a
+regex): **35/35 stories `done` across 18/18 epics.**
+
+**Content changed:** § 8 item 4 (dated answer folded in, with the UJ-1 consequence
+named). No FR added, renumbered or removed.
+
+## Currency reconciliation — 2026-09-19
+
+*Chain-currency cascade: the brief re-stamped 2026-09-19 after the multi-harness research
+(`research/multi-harness-instruction-surface-2026-09-19.md`); this PRD follows in the same commit.*
+
+Two FRs added above from `spec-pyforge-scribe` CAP-27 and CAP-28 (minted 2026-09-19 at the review
+of PR #1513; Epic 19 / Stories 19.1–19.2, both landed in that PR). FR-13 widens from "any session,
+any operator" to "any harness". No existing FR changes; § 5 Non-Goals unchanged (the instruction
+surface is repo-scoped, air-gapped and manual-invocation like everything else here). The seven
+later items on the Dream entry (size discipline, skills path, non-Claude transcript ingestion,
+recall over MCP, pointer files in `governance-currency`, per-spec baselines, Devin / Copilot
+analogues) are not FRs until a `bmad-spec` pass mints their CAPs.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this PRD. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-25
+
+`spec→prd` edge: `spec-pyforge-scribe`'s `.memlog.md` moved to 2026-09-24T20:28 while this PRD
+sat at 2026-09-20.
+
+**What moved, and why the FR delta is none.** Two entries from marshal Story 46.3: `AGENTS.md`,
+`GEMINI.md` and `.github/copilot-instructions.md` gained the session-close ritual statement
+(`scribe capture`, with its capture hygiene), and the parity meta-test gained two assertions
+guarding it. Both sit inside CAP-27's existing instruction-surface parity contract (FR-16);
+nothing new is required of Scribe. `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-09-28
+
+`spec→prd` edge: `spec-pyforge-scribe`'s `.memlog.md` moved to 2026-09-28T02:43 while this PRD sat at 2026-09-25.
+
+**What moved, and why the FR delta is none.**
+- 2026-09-26: the surface gained the instruction pointer files (`CLAUDE.md`, `.cursorrules`,
+  `.cursor/rules/specs.mdc`, `.cursor/rules/trunk-worktree-pr.mdc`) under CAP-27, and Stories 21.1, 21.2 and 23.1
+  landed their reconciles (the `bmad:context` block refreshed, `AGENTS.md` saying what runs `governance-currency`, the
+  SKF block kept in `AGENTS.md` only). All sit inside CAP-27's instruction-surface parity contract, which FR-16 already
+  states. Story 22.1 landed CAP-31's socket-directory fix for the local Postgres cluster (`scripts/scribe_pg.py`).
+- 2026-09-28: a surface reconcile for `AGENTS.md` — the Policy line on the foundry target tree gained a dated, expiring
+  exception for `.claude/skills/pyforge-mason/` (operator ruling 2026-09-28, `spec-pyforge-mason:CAP-29`). A change to
+  the contract's content, not to how the contract reaches every harness; FR-16 is unchanged.
+
+CAP-31 (minted 2026-09-25) is the local test cluster's start path and states no requirement of Scribe's users; this
+reconcile registers no FR for it, and leaves that reading to the next scribe `bmad-prd` pass. `updated:` bumped to record
+that the check ran.

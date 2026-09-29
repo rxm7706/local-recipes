@@ -34,9 +34,7 @@ def test_terminal_set_mirrors_the_installed_terminal_phases_exactly():
     package, so a fifth terminal phase (or a respelling) reds here instead
     of re-opening the 'stuck work reported as running' mislabel."""
     model = pytest.importorskip("bmad_loop.model")
-    assert status_core._TERMINAL_TASK_PHASES == frozenset(
-        str(phase) for phase in model.TERMINAL_PHASES
-    )
+    assert status_core._TERMINAL_TASK_PHASES == frozenset(str(phase) for phase in model.TERMINAL_PHASES)
 
 
 def test_sweep_refused_reason_slugs_mirror_the_installed_package():
@@ -62,9 +60,7 @@ def test_status_document_carries_the_two_mirrored_keys():
     model = pytest.importorskip("bmad_loop.model")
     documents = pytest.importorskip("bmad_loop.documents")
 
-    state = model.RunState(
-        run_id="vocab-pin-run", project="acme", started_at="2026-08-22T00:00:00Z"
-    )
+    state = model.RunState(run_id="vocab-pin-run", project="acme", started_at="2026-08-22T00:00:00Z")
     state.tasks["25-5-vocab"] = model.StoryTask(
         story_key="25-5-vocab",
         epic=25,
@@ -86,9 +82,7 @@ def test_state_json_round_trip_keeps_the_mirrored_keys():
     the fixture-writer contract every 25.5 test relies on."""
     model = pytest.importorskip("bmad_loop.model")
 
-    state = model.RunState(
-        run_id="vocab-pin-run", project="acme", started_at="2026-08-22T00:00:00Z"
-    )
+    state = model.RunState(run_id="vocab-pin-run", project="acme", started_at="2026-08-22T00:00:00Z")
     state.sweeps_refused["epic-1"] = model.SWEEP_REFUSED_DIRTY
     state.tasks["25-5-vocab"] = model.StoryTask(
         story_key="25-5-vocab",

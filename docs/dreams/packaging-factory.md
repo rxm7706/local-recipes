@@ -2,9 +2,11 @@
 title: The Packaging Factory
 type: practice
 owner: mason
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `packaging-factory`).
 # The Packaging Factory — every library, packaged before you ask
 
 > **Scope note (2026-07-25):** this is the **practice** Dream — the perpetual

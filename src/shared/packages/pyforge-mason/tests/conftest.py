@@ -13,6 +13,7 @@ guards in tests/meta/{test_persona_consults_cfe,test_portal_last_diagnose}.py
 (`_unsanctioned_cfe_commits`, `_existed_at_origin_main`) moved to
 `pyforge.testing_kit.branch_diff_guard` (retro-2026-09-04 action item 11),
 which every station's equivalent guard now shares."""
+
 from __future__ import annotations
 
 import logging

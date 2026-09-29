@@ -2,7 +2,7 @@
 title: The PyForge Charter
 type: dream
 owner: guild
-status: specified   # 2026-09-09 — spec-pyforge-charter is at `in-progress` (past `ready`), holds CAP-1..CAP-8, and five amendments have executed against it; README:71's ladder puts `pitched` two acts behind. NOT `realized`: CAP-3 and CAP-7 name enforcement that no longer exists — see the Realization log.
+status: specified   # 2026-09-09 — spec-pyforge-charter is at `in-progress` (past `ready`), holds CAP-1..CAP-8, and five amendments have executed against it; README:71's ladder puts `pitched` two acts behind. NOT `realized` (held 2026-09-16): CAP-7's Guildhall half is still unbacked. CAP-3's chain.py:96 leftover closed as doctor 21.4 (2026-09-10) — see the Realization log.
 ---
 
 # The PyForge Charter — the Guild, the Smiths, the Mission
@@ -266,7 +266,7 @@ prescribing the fix before they become outages.
 * **Pre-flight Diagnostics:** A `doctor` self-check verifies every required engine and toolchain is present and correctly configured before Marshal spins the factory.
 * **Fleet Health Monitoring:** Continuously tracking feedstock health, version staleness, upstream drift, new advisories, and abandonment signals across the shipped estate.
 * **Remediation Guidance:** Translating health findings into prioritized, actionable worklists — what to patch, upgrade, or retire, and in what order.
-* **Verdict on the Marshal's conformance** *(ratified 2026-07-28)*: the cross-cutting practices — [[agent-tool-surface]], [[agent-portability]], [[agentic-sdlc-autonomy]] — are owned by the Marshal but bind all eight stations. Marshal detects, each station remediates its own row, and **the Doctor holds the verdict on Marshal's own row** — the one station that would otherwise grade itself. This is §5's *the hand that builds is never the gate that judges*, applied to process rather than code, and it follows existing precedent: the `JFROG_API_KEY` leak was a Steward remediation **on a Doctor finding**. *Governance is kept separate:* the Marshal may not weaken, re-threshold or disable a check that judges the Marshal — a conformance gate is amendable by its subject only through the Doctor's verdict, exactly as Mason cannot pass its own build by lowering Warden's bar.
+* **Verdict on the Marshal's conformance** *(ratified 2026-07-28)*: the cross-cutting practices — [[agent-tool-surface]], [[agent-portability]], [[agentic-sdlc-autonomy]] — are owned by the Marshal but bind all eight stations. Marshal detects, each station remediates its own row, and **the Doctor holds the verdict on Marshal's own row** — the one station that would otherwise grade itself. This is §5's *the hand that builds is never the gate that judges*, applied to process rather than code, and it follows existing precedent: the `JFROG_API_KEY` leak was a Steward remediation **on a Doctor finding**. *Governance is kept separate:* the Marshal may not weaken, re-threshold or disable a check that judges the Marshal — a conformance gate is amendable by its subject only through the Doctor's verdict, exactly as Mason cannot pass its own build by lowering Warden's bar. ***Scope, ruled 2026-09-14:*** *this prohibition reads **broadly**. "A check that judges the Marshal" is any check that can red a Marshal pull request — not only a conformance check on the three practices named at the head of this bullet. The analogy above settles it: Mason's build is not one of those three either, and the rule still reaches it, because the rule is about the **structural position of the threshold**, not about which practice is being measured. Live violation found the same day: `pyforge.marshal.coverage_gate` and its `coverage_thresholds.toml` ship inside the marshal package while `coverage-gates.yml` runs that gate over all eight stations, marshal included, with no `continue-on-error` — so a three-line `[stations.marshal]` edit to a file marshal owns lowers marshal's own blocking floor with no Doctor in the loop. Tracked for remedy; see [[coverage-gate-independence]].*
 
 ### CLI Cadence
 ```bash
@@ -384,9 +384,16 @@ steward budget enforce --cap 1500usd/month
   contract — the primary sense, capital S); **the planning chain** (PRD → architecture
   → epics, the Spec's *decomposition*); **story specs** (per-story intent contracts,
   tracked and durable); **legacy intake specs** (`docs/specs/`, phasing out). Never
-  call the Spec a "kernel" — that is `bmad-spec`'s internal jargon for its five-field
+  call **the Spec** a "kernel" — that is `bmad-spec`'s internal jargon for its five-field
   shape, and it demotes the most load-bearing artifact in the ecosystem to a tool
-  detail.
+  detail. *(Narrowed 2026-09-14: the ban is on that sense only. Three other senses are
+  legitimate and in load-bearing use — a station's broad **umbrella spec** as against its
+  narrow story specs ("kernel spec", `spec-surface-overlap-tolerance`); the regenerated
+  core of B ("foundry kernel", Epic 54); and `guild-roster.json`'s "governance kernel".
+  Say which sense, as with Gate. This Charter used the banned form itself at the
+  Realization-log entry below, and `_bmad-output/EXEMPLAR-STANDARD.md` builds a named
+  "kernel/companion rule" on it — both of which the narrowed ban leaves standing, because
+  neither is calling the Spec a kernel.)*
 - **The console keeps its terminal idiom**: masthead *PyForge · Guildhall*; the
   `pyforge ❯` prompt stays lowercase (a prompt is a technical surface).
 
@@ -485,14 +492,32 @@ Two clarifications, because both were live gaps until 2026-07-25:
   is no placeholder project in the target state.
 - **`owner: guild` is reserved** for the one Dream that *precedes* the stations —
   this Charter, which constitutes the Guild and records the Lexicon, the
-  membership, and the seed. Nothing else may claim it; a second `guild` is an
-  unassigned Dream hiding behind a collective noun. (The retired `owner: crew`
-  was exactly that, on four Dreams.)
+  membership, and the seed — **and for a gate that judges all eight Smiths**
+  *(amended 2026-09-14; see the Realization log)*. Nothing else may claim it; a
+  second `guild` is an unassigned Dream hiding behind a collective noun. (The
+  retired `owner: crew` was exactly that, on four Dreams.)
+
+  The second case is the first case's own doctrine applied to itself. "The hand
+  that builds is never the gate that judges" has a corollary: a check that can red
+  every Smith's pull request cannot be any Smith's work, because whichever Smith
+  held it would grade itself on one row — and §6's "the Marshal may not weaken,
+  re-threshold or disable a check that judges the Marshal" cannot be honoured by
+  a check that ships inside the Marshal. The test is narrow and structural, not a
+  convenience: `guild` is legal **only** where no Smith *can* be accountable
+  because the artifact judges all of them. A Dream that is merely cross-cutting,
+  shared, or unowned does not qualify — it names a station or it is unassigned.
+  The outcome is the Guild's; the *mechanism* stories that move the files are a
+  Smith's, per §5's outcome/mechanism rule (Doctor's, for the coverage gate, as
+  the Smith §6 already names Marshal's judge). `guild_dreams` in
+  `docs/governance/guild-roster.json` is the enumeration, and adding to it stays
+  a §5 decision.
 
   **Its chain lives in `docs/governance/`** *(amended 2026-08-08; see the
   Realization log)* — not under `_bmad-output/projects/`, because a constitutive
   document is not a station's work and no Smith may own the document that
-  constitutes the Smiths. `spec-pyforge-charter/` is the whole of it.
+  constitutes the Smiths. `spec-pyforge-charter/` was the whole of it until
+  2026-09-14; `spec-coverage-gate-independence/` sits beside it under the
+  second case above.
 
   **The seed's *installer* is not constitutive and is not held here.**
   Standing up a greenfield or brownfield repo with the pixi environment, python,
@@ -598,6 +623,197 @@ every noun does exactly one job, and every job has exactly one noun.** That prop
 is the same discipline the architecture reviews enforce in code — sole ownership, one
 writer per contract, no dual homes — applied to the organization itself.
 
+### Intelligence Hub vocabulary — cross-walk, never an eighth noun
+
+*(Amended 2026-09-13 — steward Story 53.1 / `spec-intelligence-hub` CAP-1.
+Working table: `spec-intelligence-hub/vocabulary-map.md`.)*
+
+The whitepaper names **six** shared abstractions — Frames · Cogs · Ops ·
+Guards · Gates · Tracks — and tiers **Organizational Memory** separately, as
+Layer-1 infrastructure rather than a seventh peer. *(Corrected 2026-09-14: this
+paragraph, `spec-intelligence-hub/SPEC.md` and `vocabulary-map.md` had all
+folded Organizational Memory into the list and called them seven. The
+cross-walk table below still carries its row — the mapping is right, only the
+count and the tiering were wrong — and none of this section's substantive
+rulings depend on the enumeration.)* Those words **map onto** this Lexicon;
+they **do not join** it (Charter CAP-4). An external vocabulary is cross-walked and never
+enters the seven.
+
+| Hub term | Nearest Lexicon / estate surface |
+|---|---|
+| Intelligence Hub | the estate the Charter authorizes (Foundry + eight stations) |
+| Frames | context the Spec and `AGENTS.md` already bind (git-stored `.frame.md` is CAP-2) |
+| Cogs | Skills / personas — **collision:** Hub “Cog” ≠ Lexicon “Smith”; do not synonymize |
+| Ops | work bound by a Spec and executed at a station |
+| Guards / Gates | station verdicts; Warden stays the sole PR verdict |
+| Tracks | evidence a Guildhall can display; marshal relays `track.json` (CAP-3) |
+| Organizational Memory | Scribe compile + team memory (scribe relay) |
+
+**Reverse walk — Lexicon nouns with no Hub counterpart:** Charter, Guild,
+Stations. Those three stay ours. The Cogs/Skills collision is named so no
+agent treats “Cog” as a ninth Smith.
+
+### BMAD vocabulary — cross-walk, never a shared noun
+
+*(Amended 2026-09-24 — steward Story 59.3 / `spec-vocabulary-one-name-one-job`
+CAP-3 (folded 2026-09-17 into `spec-pyforge-steward` CAP-133 — the id above is
+the originating capability, CAP-133 is where it lives now). Source:
+`docs/dreams/vocabulary-one-name-one-job.md` § Operator rulings (accepted
+2026-09-15), Rulings 5 and 6.)*
+
+BMAD has its own daily nouns — Epic, Story, Sprint, PRD, Retrospective — and,
+same as the Hub whitepaper's vocabulary above, they have no walk of their
+own. Ruling 5's own words are the doctrine here too: these words **map
+onto** this Lexicon; they **do not join** it.
+
+| BMAD term | Nearest Lexicon / estate surface |
+|---|---|
+| Epic | a capability grouping inside a Spec's decomposition, recorded in that station's `epics.md` |
+| Story | the numbered unit BMAD's chain produces from a Spec, tracked as a row in that station's `sprint-status-ledger.yaml` |
+| Sprint | a batch of Stories drawn for one `marshal factory spin` pass, tracked implicitly through that pass's own rows in the station's `sprint-status-ledger.yaml` — not a distinct artifact of its own |
+| PRD | a decomposition artifact beside the Spec, under `planning-artifacts/`, produced only for product/platform scope |
+| Retrospective | the mechanism that re-forges a Skill once an effort closes (Lexicon noun 6's Rule 2: "a skill sharpened by one effort upgrades **every future wielder**") |
+
+`Spec` deliberately has no row above and no reverse-walk entry below: BMAD
+and this estate already use the identical word for the identical thing —
+`bmad-spec` derives the same Spec this repo's planning chain binds to — so
+there is nothing to cross-walk.
+
+Three divergences, named in the open rather than left to infer:
+
+1. **Spec `shipped` ≠ story `done` ≠ Dream `realized`.** All three describe
+   completion, at three different granularities, on three different ladders.
+   A Spec can be `shipped` while a Story on a sibling chain is still open; a
+   Story can be `done` while its Dream is nowhere near `realized` (this very
+   Charter's own frontmatter is the live example: `specified`, not
+   `realized`, because CAP-7's Guildhall half is still unbacked, long after
+   its stories landed). None of the three stands in for either of the
+   others.
+2. **Ledger `blocked` is Guild-only.** `sprint-status-ledger.yaml`'s
+   `blocked` key has no BMAD counterpart — it is this estate's own
+   mechanism for a Story an operator has deliberately halted, and only an
+   operator flips it back.
+3. **BMAD's `optional` is a correctly-reused term, not an invented one.**
+   The story-ledger's `optional` value reuses BMAD's own retrospective
+   lattice, used exactly where it belongs (Ruling 5's own wording). This is
+   a separate, unrelated fact from a Dream sitting at `pitched` (Ruling 6,
+   `docs/dreams/vocabulary-one-name-one-job.md`) — the two share no spelling
+   and nothing else beyond being stated side by side here: `pitched` is a
+   rung on the Dream ladder, used only once Herald has actually made the
+   case (a deck exists) and the Spec is still `draft`, never required and
+   never backfilled onto an existing Dream.
+
+**Reverse walk — Lexicon nouns with no BMAD counterpart:** Charter, Guild,
+Stations, Guildhall, Skills. `Spec` is the deliberate exception, explained
+above rather than listed bare here; `Smiths` is not listed here either —
+Charter § The Smiths already names BMAD's own counterpart (`Smith` = agent =
+**persona**, three registers of one identity), so there is nothing left to
+cross-walk for it beyond that existing equivalence.
+
+### Gate has three senses; verdict has one *(amended 2026-09-14)*
+
+The Cogs/Smith collision was named here and the neighbouring one was not, so
+`Gate` ran loose while `Guards / Gates` above carried a single cell. Ruled, in
+the same shape:
+
+1. **The PR verdict** — the judgement about the *work*, published on a pull
+   request. **Warden's, solely.** `pyforge-warden` enforces this mechanically:
+   a plugin that does not own the verdict spec raises `SecondVerdictError`.
+2. **The harness gate** — a deterministic mechanical check that the *process*
+   held: `detectors-ci`, a `*-check` task, a sandbox or permission gate, a
+   verify gate inside a loop. These **may fail CI**, and doing so is not a
+   verdict and never was. § *Execution Doctrine* already places them: the
+   harness — *“bmad-loop, sandbox and permission gates, CI verify gates,
+   no-LLM tools”* — is the **unit of governance**. Governance gates; stations
+   judge. That distinction was always implied here and is now stated, because
+   five surfaces had independently concluded they were in violation and said
+   so in their own docstrings.
+3. **BMAD's readiness gate** — upstream's `PASS` / `CONCERNS` / `FAIL` on a
+   readiness report. Not ours to redefine (§ Branding: upstream literals are
+   conformed to or the divergence is recorded, never silently redefined).
+
+**Say which sense.** An artifact may use “gate” unqualified only where its
+sense is determinable from context. The operational words around it —
+`detector`, `check`, `preflight`, `advisory`, `lens` — and the exit-code
+domains they project through are stated positively in
+[`docs/reference/judgement-vocabulary.md`](../reference/judgement-vocabulary.md),
+which restates these rulings but rules nothing itself.
+
+**“Verdict” is the reserved word, and it is narrower than “gate”.** Only a
+station publishes a verdict, only about work it did not do, and only one
+station publishes the PR verdict. A deterministic check that fails CI is not
+a verdict however loudly it exits. Where a lattice, a rung or an exit code is
+named “verdict” outside that meaning, it is either renamed or its scope is
+recorded in the owning Spec.
+
+### `Track` is qualified, not overloaded *(ruled 2026-09-14)*
+
+`Track` carried two senses: the Hub's **durable evidence record** (`hub:CAP-3`, Story
+53.3's `track.json`) and BMAD's **planning lane** (Quick Flow / BMad Method /
+Enterprise). Unlike `Gate`, this one is **not** resolved by naming the collision and
+moving on — the operator ruled that both senses are written out in full wherever either
+appears:
+
+- **evidence Track** — the durable record of a run. Capital T when standing alone.
+- **planning track** — a BMAD lane sized to the work. Lowercase.
+
+Bare `Track` is acceptable only inside a context that has already established which.
+This is a stricter remedy than `Gate`'s because the planning-lane sense is public-facing
+(it is taught on the Agentic-SDLC deck) while the evidence sense is the one the estate's
+own code emits — a reader meeting either in isolation has no way to tell.
+
+*(Completes `spec-vocabulary-one-name-one-job` CAP-4, whose other half — `Gate` — is
+ruled above.)*
+
+**The rented-model / owned-context tension:** this factory rents the model
+and harness (Claude Code) while owning context, workflows, checks, and
+evidence — the split the paper says matters most, stated here so CAP-1
+does not assume it.
+
+### The Spec ladder — eight states, three ended acts *(amended 2026-09-18)*
+
+Eight Spec statuses are live in the estate. Before this amendment, only one —
+`extension-point` — carried a prose definition, in `docs/dreams/README.md`.
+The other seven existed only as hardcoded sets split across two Doctor
+modules: `pyforge.doctor.sources.board` (`OPEN_SPEC_STATUSES` /
+`DELIVERED_SPEC_STATUSES`, covering `draft`/`ready`/`in-progress`/`shipped`)
+and `pyforge.doctor.sources.one_chain` (`_CLOSED_SPEC_STATUSES`, covering
+`archived`/`absorbed`/`superseded`) — so a reader had to open both modules'
+source to learn what `shipped` or `absorbed` even meant.
+`docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` §4 already
+carried a summary table listing all eight values (added 2026-09-17), but
+with no per-value definition and not machine-readable — that gap, not the
+bare enumeration, is this amendment's actual delta.
+
+All eight — `draft · ready · in-progress · shipped · archived · absorbed ·
+superseded · extension-point` — are now declared, one definition each, in
+one machine-readable place:
+[`docs/governance/guild-roster.json`](../governance/guild-roster.json)'s
+`spec_statuses`.
+
+Four rulings apply:
+
+1. **The three ended acts stay distinct.** `archived`, `absorbed`, and
+   `superseded` all mean a Spec stopped without shipping, but they answer
+   different questions — abandoned outright, folded into a sibling chain, or
+   replaced by a successor — so they are never collapsed into one value.
+2. **`shipped` remains Spec-terminal**, grouped with the three ended acts as
+   terminal but distinct from them — the one terminal value that delivered
+   rather than ended. It is a Spec-only fact, distinct from story `done` and
+   Dream `realized`; the full cross-walk between those three is
+   `spec-vocabulary-one-name-one-job` CAP-3, not restated here.
+3. **`in-progress` is grandfathered.** No new Spec may be minted at it;
+   existing files stay open until next edited. See
+   `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` §4 for what
+   finally retires it.
+4. **The enum is recommended, not required.** An unregistered status value
+   must be preserved exactly as written and must produce a warning — never
+   silently reset to a value in this list.
+
+The coupling to the Dream ladder is unchanged and stays in
+[`docs/dreams/README.md`](README.md), which this section cites, not
+restates.
+
 ---
 
 ## Satellite: The Seed — the operating model, installed anywhere
@@ -693,6 +909,138 @@ herald broadcast slack,email --channel engineering-updates
 ---
 
 ## Realization log
+
+- **2026-09-14 (amendment, two rulings on §5/§6 force)** — **`owner: guild` widens from
+  "the one constitutive Dream" to "that, and a gate that judges all eight Smiths"**, and
+  **Doctor's durability verdict on Marshal's row becomes blocking in CI.** Both close
+  questions this log opened the same morning (the `§6 read BROADLY` entry below recorded
+  the coverage gate's remedy as "NOT the mechanical move" and the force ratio as "its own
+  question").
+  *The first.* The coverage gate's home was recursive under §5 as written: every candidate
+  (`pyforge-core`, `pyforge-testing-kit`, `scripts/`) is governed by marshal's planning tree,
+  Doctor is constitutionally advisory, and `guild` was closed at one on 2026-08-08 —
+  "Nothing else may claim it". The operator ruled the narrow amendment now in §5: `guild`
+  is legal only where no Smith *can* be accountable because the artifact judges all of
+  them — the §5 doctrine applied to itself, with the `owner: crew` failure mode excluded by
+  construction (cross-cutting or unowned is not the same as judging every Smith).
+  Consequences, all landed this date: `guild_dreams` in `guild-roster.json` gains
+  `coverage-gate-independence`; that Dream is re-owned to `guild` and its Spec moves to
+  `docs/governance/spec-coverage-gate-independence/` at `ready`, its five open questions
+  answered by the ruling; the archived `pyforge-testing-charter` (test *architecture*,
+  legitimately marshal's build work) stays where it is. The mechanism — moving
+  `coverage_gate.py` + `coverage_thresholds.toml` under the governance Spec's surface,
+  amending the AD-3/AD-4 import-linter contract deliberately, and adding the rule that no
+  `pyforge.<station>` module evaluates that station's own CI gate — is Doctor's story work
+  under the outcome/mechanism rule, as this log's C8 row already established for Doctor.
+  *The second.* `detectors.yml` gains a second scoped blocking step beside
+  `cfe_rebuild_guard_check`: `ledger-regression`, Doctor's committed-range durability
+  verdict on Marshal's ledgers (the 2026-08-08 incident class). The 2026-07-31 advisory
+  posture stands for every other detector — this reverses it for exactly one row, the one
+  §6 makes independent, so that the judge's verdict has force and the judged station's own
+  gate is no longer the only thing that reds a Marshal PR. Widening to `ledger-direction`
+  or any other Marshal-row source is a further ruling, not a drift. Closes
+  `DW-VOCAB-2026-09-14-16`; `DW-COVERAGE-GATE-INDEPENDENCE-1` carries the mechanism.
+
+- **2026-09-14 (amendment, ruling)** — **`Track` is qualified in prose**, completing CAP-4's
+  other half. Hub's *evidence Track* (`track.json`, Story 53.3) and BMAD's *planning track*
+  (Quick Flow / BMad Method / Enterprise) had shared one word with nothing naming the clash.
+  The operator chose the **stricter** remedy here than for `Gate`: not "name the collision and
+  say which", but write both out — *evidence Track*, *planning track* — wherever either appears.
+  The asymmetry is deliberate and worth recording: the planning-lane sense is **public-facing**,
+  taught on the Agentic-SDLC deck, while the evidence sense is what the estate's own code emits,
+  so a reader meeting either in isolation has no context to disambiguate from. `Gate`'s three
+  senses all live inside the estate, where context usually supplies the answer.
+  Applied this pass to the surfaces we own: the 20 legacy intake-spec header rows in
+  `docs/specs/` and the live slide fragment. **Deliberately not applied** to
+  `presentations/agentic-sdlc/project/*` — those are byte-pulls from Claude Design, and editing
+  them locally would manufacture exactly the Design↔repo drift the 2026-08-01 amendment
+  (line ~826) was written to stop; the Design side has to change first. The two dated
+  `src/marp/*-2026-0*.md` snapshots keep their original wording, historical prose keeping its
+  original names. Closes `DW-VOCAB-2026-09-14-9`'s carried half.
+
+- **2026-09-14 (amendment, scope narrowing)** — **the "kernel" ban is narrowed to its one real
+  target.** § Branding banned the word outright; the estate then went on using it in four senses,
+  ~120 times across ~40 files — including **this document**, which used "Spec kernel" in a
+  Realization-log entry 440 lines after banning it, and `_bmad-output/EXEMPLAR-STANDARD.md`, which
+  built a named **"kernel/companion rule"** on the banned sense. Two further senses arrived *after*
+  the ban and were never contemplated by it: the umbrella-vs-narrow "kernel spec"
+  (`spec-surface-overlap-tolerance`) and Epic 54's "foundry kernel". A prohibition that its own
+  author violates, that a Tier-2 standard builds a rule on, and that two later efforts extend in new
+  directions is not a prohibition — it is a dead letter that quietly makes every reader wrong.
+  The operator ruling keeps the ban's real content — *do not call **the Spec** a kernel*, which was
+  always the point, since that is the demotion § Branding objected to — and blesses the other three
+  by name, on the same say-which-sense footing as the Gate ruling earlier the same day. No file is
+  renamed and EXEMPLAR-STANDARD's rule stands, because neither was ever calling the Spec a kernel.
+  Closes `DW-VOCAB-2026-09-14-13`.
+
+- **2026-09-14 (amendment, correction)** — **the Hub has SIX shared abstractions, not seven.**
+  § The Lexicon's cross-walk preamble folded **Organizational Memory** into the list; upstream
+  tiers it as Layer-1 infrastructure, beneath the six rather than beside them. Corrected here as
+  an amendment rather than an edit because the enumeration is Tier-0 text. The cross-walk table
+  keeps its Organizational Memory row — the *mapping* was always right, and Scribe does relay it;
+  only the count and the tiering were wrong. **No substantive ruling moves**: CAP-4's
+  cross-walk-never-join, the Cogs/Smith collision, and the reverse walk (Charter · Guild ·
+  Stations have no Hub counterpart) are all independent of how many abstractions upstream
+  publishes. Two downstream artifacts inherited the same error and are corrected in the same pass:
+  `spec-intelligence-hub/SPEC.md` and its `vocabulary-map.md`. Found by the 2026-09-14 three-source
+  reconciliation, which read the whitepaper directly rather than trusting our own restatement of
+  it — the failure mode being that the count had been copied forward three times without anyone
+  re-reading the source. Closes `DW-VOCAB-2026-09-14-1`.
+
+- **2026-09-14 (amendment, scope ruling)** — **§6's Marshal-conformance bullet is read BROADLY**
+  (operator ruling). Its prohibition — *"the Marshal may not weaken, re-threshold or disable a
+  check that judges the Marshal"* — sits inside a bullet whose subject is the three cross-cutting
+  practices, so whether it reached a coverage gate was genuinely ambiguous. It does: the bullet's
+  own analogy (*"exactly as Mason cannot pass its own build by lowering Warden's bar"*) turns on
+  the **structural position of the threshold**, and Mason's build is not one of the three named
+  practices either.
+  What the ruling was needed for: an investigation this date **cleared** the suspicion that
+  marshal's six-rung verdict lattice self-grades — it does not. `Verdict.GATE_FAILED` is
+  documented in marshal's own source as *"a project's own gate failed"* as against the `ERROR`
+  tier's *"an internal Marshal operation failed"*, two subjects deliberately kept on separate
+  rungs; every classification predicates on the **story's** diff, surface and verify commands.
+  `marshal seed check`'s *"(CI gate)"* label is likewise not literal here (zero hits in
+  `.github/`) — it is literal only in the adoption guide, where an adopting repo gates its own
+  conformance. And Doctor genuinely does hold Marshal's row, with the strongest independence in
+  the estate: `doctor/sources/marshal.py` reads only durable artifacts and **never imports
+  `pyforge.marshal`**, enforced structurally by a meta-test.
+  The real violation was one directory up and unlooked-for: **`pyforge/marshal/coverage_gate.py`
+  plus `coverage_thresholds.toml`**, shipping inside the marshal package and gating marshal's own
+  PRs with no `continue-on-error`. The remedy is NOT the mechanical move it first appears to be —
+  `pyforge-core` and `pyforge-testing-kit`, the obvious new homes, are **both governed by
+  marshal's own planning tree**, so relocating there would move the violation rather than end it;
+  and `pyforge.marshal.coverage_gate` is named in an AD-3/AD-4 import-linter contract. Carried as
+  [[coverage-gate-independence]] rather than executed inline.
+  Recorded and NOT acted on in the same pass: Doctor's verdict on marshal runs
+  `continue-on-error: true` (advisory, per the 2026-07-31 operator decision) while marshal's own
+  coverage gate blocks — the judge advises, the judged station's gate reds the PR. That inverts
+  §5's assumed force ratio and is its own question.
+
+- **2026-09-14 (amendment)** — **§ The Lexicon gains `### Gate has three senses; verdict has
+  one`** (operator ruling, this date). The 2026-09-13 Hub cross-walk named the Cogs/Smith
+  collision and gave `Guards / Gates` a single cell with no collision marker, so `Gate` ran
+  loose across three live senses: Warden's PR verdict, the harness CI gate (`detectors-ci`,
+  the `*-check` tasks, `gate_mode`, a loop's verify gate), and upstream BMAD's
+  `PASS`/`CONCERNS`/`FAIL` readiness gate. The amendment rules them in the Cogs/Smith shape —
+  name the collision, scope each sense, require authors to say which — and additionally
+  **reserves “verdict”** as the narrow word: a station publishes it, only about work it did
+  not do, and only Warden publishes the PR one.
+  The evidence that forced it: five non-Warden surfaces had each independently concluded they
+  were violating the sole-verdict rule and said so in their own prose — `platform_policy.py`
+  (*“a REAL, ACTIONABLE gate”*), `pixi.toml` (*“install it … to make this a real gate”*),
+  `scripts/detectors.py` (*“what actually gates”*), `pyforge-marshal/README.md`
+  (*“conformance report (CI gate)”*), and an Atlas task (*“CI gate (exit 2 on violations)”*).
+  They were not in violation. § *Execution Doctrine* had already placed CI verify gates in the
+  **harness** — the unit of governance — rather than among station verdicts; that reading was
+  simply never written down, so each surface resolved the ambiguity alone. **No code changed
+  in this amendment**, deliberately: rewording those five would have buried the doctrinal gap
+  behind tidier prose, which is why they were left standing until the rule existed.
+  Two things this does NOT settle, both carried forward rather than quietly closed:
+  **`Track`** (Hub's durable evidence record vs BMAD's planning lane) stays unruled under
+  `spec-vocabulary-one-name-one-job` CAP-4; and **marshal's own six-rung verdict lattice with
+  its `GATE_FAILED` rung** is under investigation against §5 / the §269 ruling that Doctor holds
+  the verdict on Marshal's row — a question of fact (does that value ever leave the loop?), not
+  of vocabulary, so the ruling above does not pre-judge it.
 
 - **2026-08-08 (amendment)** — **`owner: guild` closes at one Dream; `pyforge-genesis`
   retires as a name and is absorbed here** (operator decision). §5 previously read
@@ -842,3 +1190,94 @@ herald broadcast slack,email --channel engineering-updates
     inside § The Lexicon carrying a reverse block (Charter, Guild, Stations have no Hub
     counterpart) and an explicit CAP-4 ruling that an external vocabulary is cross-walked and
     never enters the seven.
+  - **2026-09-13** — **§ The Lexicon** gained `### Intelligence Hub vocabulary`
+    (steward Story 53.1): the cross-walk, reverse block (Charter / Guild /
+    Stations; Cogs collision), CAP-4 ruling, and rented-model tension. External
+    terms still do not join the seven.
+  - **2026-09-16 (status held, not an amendment)** — operator confirmed: do not
+    advance this Dream to `realized` (that would lie the same way `shipped` on
+    the Spec would). The 2026-09-09 CAP-3 leftover — `chain.py:96` hardcoding
+    `CONSTITUTIVE` — is **closed in code** as doctor Story 21.4 (`done`
+    2026-09-10): `_load_constitutive()` reads `guild_dreams`; a second roster
+    entry is honored; roster failure warns and falls back. Do **not** mint a
+    second doctor epic for the same verb. The Spec body still names the old
+    mirror until the next `bmad-spec` re-derive (memlog appended). HELD reason
+    that remains: **CAP-7 / CAP-2** — Guildhall referent still open; no
+    successor surface refuses an unattributable row. Autonomy L1–L5 stays
+    teaching-only on steward 59.4 until that hall exists.
+- **2026-09-16 (§5 second instance; and a reading under CAP-1, not an
+  amendment)** — **`guild_dreams` gains [[one-chain-per-station]]**, the
+  second instance of the 09-14 shape ("a gate that judges all eight Smiths").
+  The structural test holds: its `chain-sprawl-check` grades every Smith's
+  Dream/Spec count — steward alone carries 22 open Dreams and cannot judge
+  itself — where the counter-precedent [[vocabulary-one-name-one-job]] stays
+  steward's because it grades no one's row. The 09-14 entry's "first and only
+  instance" is historical from this date. Mechanism stories stay Doctor's;
+  per-station fold stories stay each Smith's. **Same entry, a reading:**
+  Dream-first is read as Dream-**append**-first — new work is a dated section
+  in the station Dream, a `CAP-n` on the station Spec, and a Story; a *new*
+  Dream or Spec folder carries `fold-exemption:` from `{different-owner,
+  different-lifecycle, cross-station-seam, governance}`. No Lexicon text is
+  superseded (§1 and §2 define Dream and Spec without per-file granularity;
+  the §-amendment bar is adopting a new noun) — recorded here so the reading
+  is auditable. **Enforcement gap recorded** (Constraint *Gating amendments
+  on tooling*): the detector does not exist yet; the reading is asserted, not
+  enforced, until it lands. Artifacts moved in the same commit:
+  `guild-roster.json`, README row, this entry, the Spec memlog. `SPEC.md`
+  not hand-edited; re-derive on the next amendment (09-14 precedent).
+
+- **2026-09-18 (amendment, declaration)** — **The Spec ladder's eight statuses
+  are declared in one machine-readable place**, closing the gap where only
+  `extension-point` was defined (in prose, `docs/dreams/README.md`) and the
+  other seven lived only as hardcoded sets split across
+  `pyforge.doctor.sources.board` (`OPEN_SPEC_STATUSES` /
+  `DELIVERED_SPEC_STATUSES`, covering `draft`/`ready`/`in-progress`/`shipped`)
+  and `pyforge.doctor.sources.one_chain` (`_CLOSED_SPEC_STATUSES`, covering
+  `archived`/`absorbed`/`superseded`) — `CHAIN-STANDARD.md` §4 (2026-09-17)
+  already enumerated all eight in a summary table, but with no per-value
+  definition and not machine-readable, which is this amendment's real delta.
+  `docs/governance/guild-roster.json` gains a new
+  `spec_statuses` block (mirroring the existing `dream_statuses` block) plus
+  `spec_statuses_ended_acts`, `spec_statuses_terminal`, and
+  `spec_statuses_grandfathered`, each with a `$comment_spec_statuses` prose
+  definition per value. Four rulings, stated in the new § The Lexicon
+  subsection above and mirrored in the declaration's own comment: the three
+  ended acts (`archived`, `absorbed`, `superseded`) stay distinct, never
+  collapsed; `shipped` remains Spec-terminal, grouped with the ended acts as
+  terminal but explicitly not one of them; `in-progress` stays the sole
+  grandfathered value (CHAIN-STANDARD.md §4 retires it); the enum is
+  recommended, not required — an unregistered value must be preserved and
+  must produce a warning, never silently reset. `docs/dreams/README.md` was
+  **not** touched; it stays the Dream ladder's home, coupled but separate.
+  Pinned by `tests/scripts/test_spec_ladder_is_declared.py`. **Deferred, out
+  of scope here:** wiring `board.py` / `chain.py` / `one_chain.py` /
+  `status_body_consistency.py` to *consume* this declaration (rather than
+  hardcode their own copies — `one_chain.py`'s `_CLOSED_SPEC_STATUSES` is an
+  exact duplicate of the new `spec_statuses_ended_acts`) is Story 59.2, not
+  yet landed; the BMAD↔Lexicon cross-walk content (Spec `shipped` ≠ story
+  `done` ≠ Dream `realized`) is `spec-vocabulary-one-name-one-job` CAP-3
+  (Story 59.3), referenced above but not written out here.
+
+- **2026-09-24 (amendment)** — **The BMAD↔Lexicon cross-walk this section
+  deferred (2026-09-18, above) now exists.** New subsection "BMAD vocabulary
+  — cross-walk, never a shared noun" maps Epic / Story / Sprint / PRD /
+  Retrospective onto the nearest Lexicon/estate surface, same "map, never
+  join" shape as the Intelligence Hub walk, per
+  `docs/dreams/vocabulary-one-name-one-job.md` § Operator rulings (accepted
+  2026-09-15) Ruling 5. Three divergences are named in the open: Spec
+  `shipped` ≠ story `done` ≠ Dream `realized`; ledger `blocked` is
+  Guild-only; and BMAD's `optional` retrospective-lattice value is a
+  correctly-reused term, unrelated to (and sharing no spelling with) a
+  Dream sitting at `pitched`. `Spec` deliberately carries no row and no
+  reverse-walk entry — BMAD and this estate already use the identical word
+  for the identical thing. Companion change, Ruling 6: `pitched` stays
+  declared and optional — never required to advance `dreamt` to `specified`,
+  never backfilled onto an existing Dream, used only once Herald has
+  actually made the case (a deck exists) and the Spec is still `draft` —
+  declared as prose in `docs/governance/guild-roster.json`'s
+  `$comment_dream_statuses`, beside the existing `dream_statuses` array,
+  which is unchanged. No other Dream file's frontmatter changed; no Epic 44
+  `blocked` key was flipped. Pinned by
+  `tests/scripts/test_bmad_cross_walk_is_declared.py`. Closes
+  `spec-vocabulary-one-name-one-job` CAP-3 (Story 59.3), folded 2026-09-17
+  into `spec-pyforge-steward` CAP-133.

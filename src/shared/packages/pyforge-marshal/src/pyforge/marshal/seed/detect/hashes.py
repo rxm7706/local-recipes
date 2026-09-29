@@ -115,9 +115,7 @@ def check_managed_file(path: str, current_text: str, recorded_sha: str | None) -
     )
 
 
-def check_managed_region(
-    path: str, text: str, span: RegionSpan, recorded_sha: str | None
-) -> Finding | None:
+def check_managed_region(path: str, text: str, span: RegionSpan, recorded_sha: str | None) -> Finding | None:
     """Compare one managed region's current body-content hash against its
     recorded state -- always ``recorded_sha`` (the out-of-band value from
     state), never ``span.sha`` (the hash the region's OWN begin marker

@@ -2,8 +2,11 @@
 title: Parallel dispatch fan-out when dependencies and surfaces are disjoint — without breaking the zombie guards
 type: dream
 owner: marshal
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `marshal-parallel-dispatch-fanout`).
 
 # Parallel dispatch fan-out when dependencies and surfaces are disjoint
 

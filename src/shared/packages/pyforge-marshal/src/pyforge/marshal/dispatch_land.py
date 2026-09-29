@@ -8,18 +8,20 @@ FR-187 subject, Story 4.1 spec promotion, Epic 15 ledger). Lives outside
 
 from __future__ import annotations
 
+import re
+import shutil
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from .adapters.forge_gh import GhForge
-from .adapters.fs_local import FsError, LocalFs
+from .adapters.fs_local import LocalFs
 from .adapters.vcs_git import GitVcs, VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import identity, promotion
-from .dispatch_land_heal import try_heal_dispatch_land_merge
 from .core.dispatch_landing import (
     DispatchLandingVerdict,
     may_attempt_dispatch_landing,
@@ -31,8 +33,14 @@ from .core.egress import Redacted
 from .core.identity import StoryKey, normalize, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
+from .core.refs import ORIGIN_MAIN as _ORIGIN_MAIN
+from .core.refs import ORIGIN_MAIN_SHORT, local_branch_ref
 from .core.verdict import compute_verdict
-from .dispatch_verify import compose_dispatch_policy
+from .dispatch_land_heal import DispatchLandHealResult, try_heal_dispatch_land_merge
+from .dispatch_verify import (
+    compose_dispatch_policy,
+    run_verify_commands_only,
+)
 from .ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from .ports.fs import FsPort
 from .ports.vcs import VcsPort
@@ -40,11 +48,27 @@ from .ports.vcs import VcsPort
 _FORGE_REPO = "rxm7706/local-recipes"
 _MERGE_BASE = "main"
 _MAINTENANCE_LABEL = "maintenance"
+# Story 51.1: `_ORIGIN_MAIN` (imported above from `core.refs`, Story 60.1) is
+# deliberately never `_MERGE_BASE` (the LOCAL landing base used everywhere
+# else in this file). Verifying against the local `main` would reproduce
+# the exact blind spot this story fixes: the 50.4/27.5 incident's
+# operator-composed merge commit landed against `origin/main`, not
+# whatever a stale local `main` happened to be.
+_ORIGIN_REMOTE = "origin"
+# `_ORIGIN_MAIN` is the full refname (Story 60.1, CAP-270; the heal's probe since 59.1);
+# messages name it `ORIGIN_MAIN_SHORT`, as people read it.
+# Story 68.1: how much of a failed finalize's stderr the MRS-DISP-020 message keeps (its tail).
+_FINALIZE_DETAIL_MAX_CHARS = 1500
 
 
 @dataclass(frozen=True)
 class DispatchLandingResult:
-    """Outcome of a dispatch land attempt."""
+    """Outcome of a dispatch land attempt.
+
+    ``pr_number``/``subject``/``marshal_native`` are populated on
+    ``REFUSED`` too, once each is known (Story 51.2) -- not just on
+    ``LANDED``. ``merge_sha`` stays ``None`` on every ``REFUSED`` result;
+    it is only ever set once an actual merge SHA exists."""
 
     verdict: DispatchLandingVerdict
     merge_sha: str | None = None
@@ -58,8 +82,487 @@ def _dispatch_pr_title(slug: str, story_key: StoryKey) -> Redacted:
 
 
 def _dispatch_pr_body(story_key: StoryKey) -> Redacted:
-    return Redacted(
-        f"Dispatch-landed story {story_key} via marshal factory dispatch (CAP-4)."
+    return Redacted(f"Dispatch-landed story {story_key} via marshal factory dispatch (CAP-4).")
+
+
+def _tail_lines(text: str, *, limit: int = 20) -> str:
+    lines = text.strip().splitlines()
+    return "\n".join(lines[-limit:])
+
+
+def _describe_verify_failures(reports: tuple[dict[str, object], ...], verify_findings: tuple[Finding, ...]) -> str:
+    """Names each failing command plus the tail of its captured output, so
+    a runtime exception (e.g. the 50.4/27.5 fixture's ``bare_merge.py``
+    ``TypeError``) is legible directly from the ``MRS-DISP-044`` finding,
+    not just from the envelope's own data blob.
+
+    Review finding (2026-09-19): re-deriving the "ran but failed" phrasing
+    from ``reports`` alone reported a signal-killed command as "exited -9"
+    instead of "was terminated by signal 9", and a never-ran command's
+    reason as a generic "could not be run" -- discarding the real reason
+    ``gate.classify_outcome`` already computed. This now reuses each
+    failing command's own ``Finding.message`` (already phrased correctly
+    for both cases) as the header, only appending the captured
+    stdout/stderr tail when the command actually ran -- ``Finding.message``
+    itself never carries captured output. ``reports`` and
+    ``verify_findings`` come from the same single pass over
+    ``effective.verify_commands.value`` (one report per command, one
+    finding only for a non-passing command), so filtering ``reports`` down
+    to the non-passing ones lines them up with ``verify_findings`` in
+    order."""
+    failing_reports = [r for r in reports if r.get("returncode") != 0]
+    parts: list[str] = []
+    for report, finding in zip(failing_reports, verify_findings, strict=True):
+        if not report.get("resolvable", True):
+            parts.append(finding.message)
+            continue
+        captured = f"{report.get('stdout') or ''}{report.get('stderr') or ''}"
+        parts.append(f"{finding.message}: {_tail_lines(captured)}")
+    return "; ".join(parts)
+
+
+def _refuse_via_merge_tree_preview(
+    *,
+    git_repo_root: Path,
+    worktree: Path,
+    head_branch: str,
+    head_sha: str,
+    effective: EffectivePolicy,
+    vcs: VcsPort,
+    process: ProcessPort,
+) -> Finding | None:
+    """Story 51.1: before ``forge.merge_pr``, when the branch's baseline is
+    behind ``origin/main`` at all, materialize the tree ``git merge-tree
+    --write-tree`` would actually produce into a throwaway worktree and
+    re-run the station's own ``verify_commands`` against it -- catching a
+    runtime break the branch's own verification never sees, because it only
+    ever ran against the branch's own tree (the 2026-09-18 50.4/27.5
+    incident this story fixes). Returns an ``MRS-DISP-044`` finding when the
+    preview run is red or unevaluable; ``None`` when the branch is already
+    even with ``origin/main``, or the preview is clean and green. A real
+    (git-detected) merge conflict is untouched: ``merge_tree_write``
+    returning ``None`` falls through to the existing ``forge.merge_pr``
+    attempt and its ``MRS-DISP-038``/heal path, which already owns it."""
+    try:
+        vcs.fetch(git_repo_root, _ORIGIN_REMOTE, _MERGE_BASE)
+        behind = vcs.commits_behind(worktree, _ORIGIN_MAIN)
+    except VcsCommandError as exc:
+        return Finding(
+            code="MRS-DISP-044",
+            severity=Severity.ERROR,
+            message=(f"cannot determine whether {head_branch!r} is behind {ORIGIN_MAIN_SHORT!r} before landing: {exc}"),
+        )
+    if behind == 0:
+        return None
+
+    try:
+        tree_oid = vcs.merge_tree_write(git_repo_root, _ORIGIN_MAIN, head_sha)
+    except VcsCommandError as exc:
+        return Finding(
+            code="MRS-DISP-044",
+            severity=Severity.ERROR,
+            message=(f"cannot preview the merge of {head_branch!r} onto {ORIGIN_MAIN_SHORT!r} before landing: {exc}"),
+        )
+    if tree_oid is None:
+        # A real git-detected conflict -- already owned by the existing
+        # MRS-DISP-038/heal path once `forge.merge_pr` itself hits it.
+        return None
+
+    preview_home = Path(tempfile.mkdtemp(prefix="marshal-land-verify-"))
+    # `git worktree add` refuses to reuse a directory it did not create
+    # itself -- mirrors `merge_branch`'s own mkdtemp+rmdir dance.
+    preview_home.rmdir()
+    # Review finding (2026-09-19): the ORIGINAL version only wrapped
+    # `run_verify_commands_only` in this `finally` -- an `add_worktree_for_tree`
+    # failure returned immediately with no cleanup attempt at all, violating
+    # this story's own acceptance criterion that the preview worktree is
+    # always removed (best-effort) on every return-or-raise path. Both calls
+    # now share one `try/finally`. The `finally` itself mirrors `merge_branch`'s
+    # own two-stage cleanup (`adapters/vcs_git.py`): try `remove_worktree`
+    # first; if that fails (or there was nothing to remove, e.g.
+    # `add_worktree_for_tree` never got as far as registering the worktree),
+    # fall back to a raw `shutil.rmtree` plus `prune_worktrees` -- both
+    # swallowing any failure of their own, same as `merge_branch`.
+    try:
+        try:
+            vcs.add_worktree_for_tree(git_repo_root, preview_home, tree_oid, parent=head_sha)
+        except VcsCommandError as exc:
+            return Finding(
+                code="MRS-DISP-044",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot materialize the merge-tree preview of {head_branch!r} onto {ORIGIN_MAIN_SHORT!r}: {exc}"
+                ),
+            )
+
+        reports, verify_findings = run_verify_commands_only(effective, process=process, worktree=preview_home)
+    finally:
+        removed = False
+        try:
+            vcs.remove_worktree(git_repo_root, preview_home, force=True)
+            removed = True
+        except VcsCommandError:
+            pass
+        if not removed:
+            shutil.rmtree(preview_home, ignore_errors=True)
+            try:
+                vcs.prune_worktrees(git_repo_root)
+            except VcsCommandError:
+                pass
+
+    if not verify_findings:
+        return None
+    return Finding(
+        code="MRS-DISP-044",
+        severity=Severity.ERROR,
+        message=(
+            f"merge-tree preview of {head_branch!r} onto {ORIGIN_MAIN_SHORT!r} "
+            f"failed verification: {_describe_verify_failures(reports, verify_findings)}"
+        ),
+    )
+
+
+#: The trailing `--write-baseline --spec {name}` remedy suffix every
+#: `drift`/`drift-presumed` finding message ends with (verbatim from
+#: `pyforge.doctor.sources.chain._drift_findings`) -- the one place the
+#: spec name is recoverable from, since the Finding's own `evidence` carries
+#: only `{"path": ...}`. `\S+` is safe: a spec name is `<project>/<spec-dir>`
+#: and neither segment contains whitespace.
+_SPEC_SURFACE_NAME_RE = re.compile(r"--write-baseline --spec (\S+)\s*$")
+
+
+@dataclass(frozen=True)
+class _SpecSurfaceReconcileOutcome:
+    """Result of ``_reconcile_spec_surface_drift``. ``finding`` is ``None``
+    when there was nothing to reconcile (no drift at all, or the session
+    already reconciled itself); otherwise it is exactly one aggregate
+    finding -- ``MRS-DISP-047`` (WARN, non-blocking) on success, or
+    ``MRS-DISP-048`` (ERROR) when ``refuse`` is also ``True``."""
+
+    finding: Finding | None
+    refuse: bool
+
+
+def _reconcile_spec_surface_drift(
+    *,
+    git_repo_root: Path,
+    worktree: Path,
+    head_branch: str,
+    key: StoryKey,
+    run_id: str | None,
+    vcs: VcsPort,
+    process: ProcessPort,
+) -> _SpecSurfaceReconcileOutcome:
+    """Story 53.2 (spec-pyforge-marshal CAP-261b): before ``forge.merge_pr``,
+    run the spec-surface verdict over the branch's own tree and reconcile
+    any drift that consists ONLY of this branch's own changed files --
+    appending one memlog event per drifted spec (naming the story key, the
+    run id, and every path) and scoped-stamping exactly those specs -- so a
+    session that lands with drift on its own governed files no longer goes
+    green while leaving ``main`` red until a human runs the "Story X landed:
+    <paths>" ritual by hand (the four fallout PRs of 2026-09-20 this story
+    closes). A spec whose drift ALSO names a path this branch did not touch
+    is foreign drift: refused (``MRS-DISP-048``) rather than silently
+    absorbed into a scoped stamp -- scoping the stamp would accept that
+    unrelated drift as reconciled too.
+
+    Reads ``pyforge.doctor.sources.chain.gather_spec_surface`` install-free
+    (this checkout's own files on ``sys.path``, never modified -- Boundaries:
+    doctor's verdict is read-only here, and stays doctor's alone), mirroring
+    ``scripts/spec_surface_reconcile.py``'s own established pattern.
+
+    Two families of failure, two tiers (AD-31's established reuse pattern;
+    c.f. ``MRS-DEPLOY-003``/``MRS-DEPLOY-024``): failing to even EVALUATE
+    drift (the doctor source tree unreachable, or the verdict crashing --
+    both should be unreachable in a real dispatch worktree, which is always
+    a full checkout, but are defended against here regardless) reports
+    through the same non-blocking ``MRS-DISP-047`` tier a successful
+    reconcile does, since blocking every landing on an environment gap this
+    story is not scoped to fix would be a worse outage than the ritual it
+    closes. Failing to safely APPLY a reconcile once drift is already known
+    (``VcsPort.changed_files`` failing to tell own from foreign, a memlog
+    append erroring on a locked/missing-frontmatter file, the scoped stamp
+    subprocess failing, or the reconcile commit failing to push) reports
+    through ``MRS-DISP-048`` and refuses: none of THESE may reach
+    ``forge.merge_pr`` with known, un-reconciled drift left behind."""
+    try:
+        doctor_src = worktree / "src" / "shared" / "packages" / "pyforge-doctor" / "src"
+        if str(doctor_src) not in sys.path:
+            sys.path.insert(0, str(doctor_src))
+        from pyforge.doctor.sources.chain import gather_spec_surface
+    except ImportError as exc:
+        # Unlike the failures below, this fires before we know whether the
+        # branch left ANY drift behind at all -- a real dispatch worktree is
+        # always a full checkout with the doctor source tree in place, so
+        # this is an environmental/wiring gap, not a git fact about this
+        # landing. Blocking every landing on it would be a worse outage than
+        # the ritual this story closes, so it degrades to the same
+        # non-blocking MRS-DISP-047 tier as a successful reconcile (AD-31
+        # reuse) rather than refusing via MRS-DISP-048 -- visible, never
+        # silent, but never gating on an environment problem this story was
+        # not scoped to fix.
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-047",
+                severity=Severity.WARN,
+                message=(
+                    f"cannot reach the spec-surface verdict from {worktree}: "
+                    f"{exc} — landing {key} without a drift reconcile"
+                ),
+            ),
+            refuse=False,
+        )
+
+    try:
+        surface_findings = gather_spec_surface(worktree)
+    except Exception as exc:  # noqa: BLE001 -- a read-only judge's own crash
+        # `gather_spec_surface` already wraps its own body in
+        # `degrade_on_exception` (converts an internal crash to a WARN
+        # finding rather than raising), so this is defense-in-depth for an
+        # exception escaping that boundary itself -- same "can't evaluate,
+        # don't know if there's drift" category as the ImportError above,
+        # so the same non-blocking MRS-DISP-047 tier applies.
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-047",
+                severity=Severity.WARN,
+                message=(
+                    f"spec-surface verdict crashed for {worktree}: "
+                    f"{exc.__class__.__name__}: {exc} — landing {key} "
+                    "without a drift reconcile"
+                ),
+            ),
+            refuse=False,
+        )
+
+    by_spec: dict[str, set[str]] = {}
+    no_baseline: set[str] = set()
+    for finding in surface_findings:
+        if finding.check == "no-baseline":
+            # Story 53.2 review (B2/E1): a spec with no stamped baseline
+            # entry has no per-file drift breakdown to diff against
+            # `changed` at all -- collected separately so it can be
+            # failed closed below rather than silently skipped.
+            match = _SPEC_SURFACE_NAME_RE.search(finding.message)
+            if match:
+                no_baseline.add(match.group(1))
+            continue
+        if finding.check not in ("drift", "drift-presumed"):
+            continue
+        match = _SPEC_SURFACE_NAME_RE.search(finding.message)
+        path = finding.evidence.get("path") if finding.evidence else None
+        if not match or not path:
+            continue
+        by_spec.setdefault(match.group(1), set()).add(path)
+
+    if not by_spec and not no_baseline:
+        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
+
+    try:
+        changed = set(vcs.changed_files(git_repo_root, worktree, base=_ORIGIN_MAIN))
+    except VcsCommandError as exc:
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-048",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot determine {head_branch!r}'s own changed files to "
+                    f"reconcile spec-surface drift: {exc} — refusing to land"
+                ),
+            ),
+            refuse=True,
+        )
+
+    foreign: dict[str, set[str]] = {}
+    own: dict[str, set[str]] = {}
+    for name in no_baseline:
+        # Story 53.2 review (B2/E1): fail closed rather than silently
+        # skip. A never-baselined spec cannot be split into own/foreign
+        # paths (no per-file drift to diff), so only refuse when this
+        # branch actually touched that spec's own tracked folder --
+        # an unrelated repo-wide never-baselined spec stays none of this
+        # landing's business, same as zero-overlap drift below.
+        project, _, spec_dir = name.partition("/")
+        spec_prefix = f"_bmad-output/projects/{project}/planning-artifacts/specs/{spec_dir}/"
+        touched = {p for p in changed if p.startswith(spec_prefix)}
+        if touched:
+            foreign[name] = touched
+    for name, paths in by_spec.items():
+        overlap = paths & changed
+        if not overlap:
+            # Drift with zero overlap against this branch's own changed
+            # files is pre-existing and unrelated -- not this landing's to
+            # reconcile or refuse on (only a path THIS branch touched makes
+            # a spec's drift ours or foreign).
+            continue
+        not_ours = paths - changed
+        if not_ours:
+            foreign[name] = not_ours
+        else:
+            own[name] = paths
+
+    if foreign:
+        detail = "; ".join(f"{name}: {', '.join(sorted(paths))}" for name, paths in sorted(foreign.items()))
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-048",
+                severity=Severity.ERROR,
+                message=(
+                    f"spec-surface drift on {head_branch!r} cannot be safely "
+                    f"reconciled — foreign drift, or a spec with no stamped "
+                    f"baseline to diff against — refusing to land rather than "
+                    f"absorb it into a scoped stamp: {detail}"
+                ),
+            ),
+            refuse=True,
+        )
+
+    if not own:
+        # Every drifted spec had zero overlap with this branch's own
+        # changed files (all skipped above) -- nothing of this branch's to
+        # reconcile. Returning here (rather than falling through) also
+        # guards against building a bare `--write-baseline` with no
+        # `--spec` flags below, which Boundaries forbid outright.
+        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
+
+    memlog_script = worktree / "_bmad" / "scripts" / "memlog.py"
+    stamp_script = worktree / "scripts" / "spec_surface_check.py"
+    run_note = f" (run {run_id})" if run_id else ""
+    for name, paths in sorted(own.items()):
+        project, _, spec_dir = name.partition("/")
+        memlog_path = (
+            worktree / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs" / spec_dir / ".memlog.md"
+        )
+        text = f"Story {key} landed{run_note}: {', '.join(sorted(paths))}"
+        try:
+            result = process.run(
+                [
+                    sys.executable,
+                    str(memlog_script),
+                    "append",
+                    "--path",
+                    str(memlog_path),
+                    "--type",
+                    "event",
+                    "--text",
+                    text,
+                    "--by",
+                    "marshal",
+                ],
+                cwd=worktree,
+            )
+        except ProcessError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"memlog append failed for {name} while reconciling "
+                        f"spec-surface drift on {head_branch!r}: {exc} — "
+                        "refusing to land"
+                    ),
+                ),
+                refuse=True,
+            )
+        if result.returncode != 0:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"memlog append refused for {name} while reconciling "
+                        f"spec-surface drift on {head_branch!r} "
+                        f"(exit {result.returncode}): {result.stderr.strip()} "
+                        "— refusing to land"
+                    ),
+                ),
+                refuse=True,
+            )
+        # Story 53.2 review (B4/E2): commit each spec's memlog append as
+        # soon as it succeeds, rather than batching every spec's commit
+        # until the end -- a later spec's failure then refuses the
+        # landing without leaving an earlier spec's already-successful
+        # append as an uncommitted working-tree edit a retry could
+        # silently under-commit (doctor reads on-disk text regardless of
+        # commit state, so a retry would see the earlier spec as already
+        # clean and never re-touch, and therefore never re-commit, it).
+        try:
+            vcs.commit_paths(
+                worktree,
+                (memlog_path.relative_to(worktree),),
+                f"marshal: reconcile spec-surface drift for {key} ({name})",
+            )
+        except VcsCommandError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot commit the spec-surface reconcile memlog "
+                        f"for {name} on {head_branch!r}: {exc} — refusing "
+                        "to land"
+                    ),
+                ),
+                refuse=True,
+            )
+
+    stamp_argv = [sys.executable, str(stamp_script), "--write-baseline"]
+    for name in sorted(own):
+        stamp_argv.extend(["--spec", name])
+    try:
+        stamp_result = process.run(stamp_argv, cwd=worktree)
+    except ProcessError as exc:
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-048",
+                severity=Severity.ERROR,
+                message=(f"scoped spec-surface baseline stamp failed on {head_branch!r}: {exc} — refusing to land"),
+            ),
+            refuse=True,
+        )
+    if stamp_result.returncode != 0:
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-048",
+                severity=Severity.ERROR,
+                message=(
+                    f"scoped spec-surface baseline stamp refused on "
+                    f"{head_branch!r} (exit {stamp_result.returncode}): "
+                    f"{stamp_result.stderr.strip()} — refusing to land"
+                ),
+            ),
+            refuse=True,
+        )
+    try:
+        vcs.commit_paths(
+            worktree,
+            (Path("scripts") / ".spec-surface-baseline.json",),
+            f"marshal: reconcile spec-surface drift for {key}",
+        )
+        vcs.push(git_repo_root, head_branch)
+    except VcsCommandError as exc:
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(
+                code="MRS-DISP-048",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot commit/push the spec-surface reconcile for {head_branch!r}: {exc} — refusing to land"
+                ),
+            ),
+            refuse=True,
+        )
+
+    reconciled = "; ".join(f"{name}: {', '.join(sorted(paths))}" for name, paths in sorted(own.items()))
+    return _SpecSurfaceReconcileOutcome(
+        finding=Finding(
+            code="MRS-DISP-047",
+            severity=Severity.WARN,
+            message=(
+                f"reconciled spec-surface drift on {head_branch!r} before "
+                f"landing {key} — the session left this unreconciled: {reconciled}"
+            ),
+        ),
+        refuse=False,
     )
 
 
@@ -70,6 +573,7 @@ def execute_dispatch_land(
     worktree: Path,
     repo_root: Path,
     verification_verdict: DispatchVerificationVerdict,
+    run_id: str | None = None,
     effective: EffectivePolicy | None = None,
     fs: FsPort | None = None,
     vcs: VcsPort | None = None,
@@ -81,9 +585,7 @@ def execute_dispatch_land(
     fs = fs if fs is not None else LocalFs()
     vcs = vcs if vcs is not None else GitVcs()
     forge = forge if forge is not None else GhForge()
-    effective = effective if effective is not None else compose_dispatch_policy(
-        project_slug, repo_root
-    )
+    effective = effective if effective is not None else compose_dispatch_policy(project_slug, repo_root)
 
     findings: list[Finding] = []
     data: dict[str, object] = {
@@ -184,7 +686,7 @@ def execute_dispatch_land(
         return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
 
     try:
-        main_subjects = vcs.commit_subjects(git_repo_root, _MERGE_BASE)
+        main_subjects = vcs.commit_subjects(git_repo_root, local_branch_ref(_MERGE_BASE))
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -201,7 +703,21 @@ def execute_dispatch_land(
         )
         return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
 
-    merged_keys = promotion.merged_story_keys(main_subjects, template, project_slug)
+    def _spec_status_for(candidate_key: StoryKey) -> str | None:
+        # Story 51.7/CAP-255: a station-branch match reached through a
+        # GitHub PR-merge subject only corroborates a landing when the
+        # key's tracked spec reads `status: done` on origin/main -- a
+        # mint/fallout/fix PR merges it ready/backlog, not done. Fails
+        # closed (never corroborates) on any git read failure.
+        try:
+            spec_text = dispatch_core.spec_text_at_ref(vcs, git_repo_root, project_slug, str(candidate_key))
+        except VcsCommandError:
+            return None
+        return promotion.read_spec_status(spec_text)
+
+    merged_keys = promotion.corroborated_merged_story_keys(
+        main_subjects, template, project_slug, spec_status_for=_spec_status_for
+    )
     if key in merged_keys:
         data["already_landed"] = True
         envelope = build_envelope(
@@ -212,9 +728,7 @@ def execute_dispatch_land(
         )
         return DispatchLandingResult(verdict=DispatchLandingVerdict.ALREADY_LANDED), envelope
 
-    if not may_attempt_dispatch_landing(
-        verification_verdict, story_merged_on_main=False
-    ):
+    if not may_attempt_dispatch_landing(verification_verdict, story_merged_on_main=False):
         envelope = build_envelope(
             command="dispatch land",
             verdict=compute_verdict(tuple(findings)),
@@ -321,7 +835,7 @@ def execute_dispatch_land(
     except ForgeCommandError:
         pass
 
-    subject = identity.render_merge_subject(key, template)
+    subject = identity.render_merge_subject(key, template, project_slug)
     data["subject"] = subject
     if not merge_subject_is_marshal_native(subject, template, project_slug):
         findings.append(
@@ -340,7 +854,101 @@ def execute_dispatch_land(
             data=data,
             findings=tuple(findings),
         )
-        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+        return (
+            DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED, pr_number=pr.number, subject=subject),
+            envelope,
+        )
+
+    preview_finding = _refuse_via_merge_tree_preview(
+        git_repo_root=git_repo_root,
+        worktree=worktree,
+        head_branch=head_branch,
+        head_sha=head_sha,
+        effective=effective,
+        vcs=vcs,
+        process=process,
+    )
+    if preview_finding is not None:
+        findings.append(preview_finding)
+        envelope = build_envelope(
+            command="dispatch land",
+            verdict=compute_verdict(tuple(findings)),
+            data=data,
+            findings=tuple(findings),
+        )
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.REFUSED,
+                pr_number=pr.number,
+                subject=subject,
+                marshal_native=True,
+            ),
+            envelope,
+        )
+
+    reconcile_outcome = _reconcile_spec_surface_drift(
+        git_repo_root=git_repo_root,
+        worktree=worktree,
+        head_branch=head_branch,
+        key=key,
+        run_id=run_id,
+        vcs=vcs,
+        process=process,
+    )
+    if reconcile_outcome.finding is not None:
+        findings.append(reconcile_outcome.finding)
+    if reconcile_outcome.refuse:
+        envelope = build_envelope(
+            command="dispatch land",
+            verdict=compute_verdict(tuple(findings)),
+            data=data,
+            findings=tuple(findings),
+        )
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.REFUSED,
+                pr_number=pr.number,
+                subject=subject,
+                marshal_native=True,
+            ),
+            envelope,
+        )
+
+    if reconcile_outcome.finding is not None:
+        # A non-refusing finding here is MRS-DISP-047: the reconcile
+        # actually committed and pushed onto `head_branch`, so the sha
+        # captured before this step is stale -- `forge.merge_pr`'s
+        # `expected_head_sha` (and the reported `data["head_sha"]`) must
+        # reflect the pushed reconcile commit, not the pre-reconcile tip.
+        try:
+            head_sha = vcs.resolve_ref(git_repo_root, head_branch)
+        except VcsCommandError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot resolve {head_branch!r} tip after reconciling "
+                        f"spec-surface drift: {exc} — refusing to land"
+                    ),
+                )
+            )
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
+        data["head_sha"] = head_sha
 
     try:
         forge.merge_pr(
@@ -352,22 +960,32 @@ def execute_dispatch_land(
             subject=ForgeRef(subject),
         )
     except ForgeCommandError as exc:
-        heal = try_heal_dispatch_land_merge(
-            project_slug=project_slug,
-            git_repo_root=git_repo_root,
-            worktree=worktree,
-            base=_MERGE_BASE,
-            head_branch=head_branch,
-            head_sha=head_sha,
-            subject=subject,
-            merge_strategy=merge_strategy,
-            delete_branch=delete_branch,
-            repo_ref=repo_ref,
-            pr=pr,
-            fs=fs,
-            vcs=vcs,
-            forge=forge,
-        )
+        # Story 59.1 (CAP-269): the heal measures against what GitHub merges against, fetched now;
+        # a failed fetch skips the heal and the landing refuses as before (MRS-DISP-020).
+        heal_skipped = ""
+        try:
+            vcs.fetch(git_repo_root, _ORIGIN_REMOTE, _MERGE_BASE)
+        except VcsCommandError as fetch_exc:
+            heal = DispatchLandHealResult(healed=False)
+            heal_skipped = f" (heal skipped: could not fetch {ORIGIN_MAIN_SHORT}: {fetch_exc})"
+        else:
+            heal = try_heal_dispatch_land_merge(
+                project_slug=project_slug,
+                git_repo_root=git_repo_root,
+                worktree=worktree,
+                base=_MERGE_BASE,
+                head_branch=head_branch,
+                head_sha=head_sha,
+                subject=subject,
+                merge_strategy=merge_strategy,
+                delete_branch=delete_branch,
+                repo_ref=repo_ref,
+                pr=pr,
+                fs=fs,
+                vcs=vcs,
+                forge=forge,
+                probe_ref=_ORIGIN_MAIN,
+            )
         if heal.escalated_paths:
             paths = ", ".join(heal.escalated_paths)
             findings.append(
@@ -387,13 +1005,21 @@ def execute_dispatch_land(
                 data=data,
                 findings=tuple(findings),
             )
-            return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
         if not heal.healed:
             findings.append(
                 Finding(
                     code="MRS-DISP-020",
                     severity=Severity.ERROR,
-                    message=f"merge of PR #{pr.number} failed: {exc}",
+                    message=f"merge of PR #{pr.number} failed: {exc}{heal_skipped}",
                 )
             )
             envelope = build_envelope(
@@ -402,7 +1028,15 @@ def execute_dispatch_land(
                 data=data,
                 findings=tuple(findings),
             )
-            return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
         if heal.landed_via_local_merge:
             data["local_main_advance"] = True
         if heal.retried_forge_merge:
@@ -410,26 +1044,39 @@ def execute_dispatch_land(
 
     data["merged"] = True
 
+    finalize_failure: str | None = None
     try:
-        process.run(
+        finalize_result = process.run(
             [
                 sys.executable,
                 "-m",
                 "pyforge.marshal.dispatch_land_finalize",
                 project_slug,
                 render_feed_key(key),
+                str(worktree),
             ],
             cwd=git_repo_root,
         )
     except ProcessError as exc:
+        finalize_failure = str(exc)
+    else:
+        # Story 68.1 (CAP-277): `ProcessPort.run` does not raise on a non-zero exit, so a finalize
+        # that exited 1 (an ERROR finding -- MRS-DISP-051, its ledger key not `done` on
+        # `origin/main`) was read as a clean landing until the exit code was read here.
+        if finalize_result.returncode != 0:
+            detail = (finalize_result.stderr or finalize_result.stdout or "").strip()
+            if len(detail) > _FINALIZE_DETAIL_MAX_CHARS:
+                # A crashed finalize's traceback is the tail that matters; keep the finding readable.
+                detail = "..." + detail[-_FINALIZE_DETAIL_MAX_CHARS:]
+            finalize_failure = f"finalize exited with code {finalize_result.returncode}" + (
+                f": {detail}" if detail else ""
+            )
+    if finalize_failure is not None:
         findings.append(
             Finding(
                 code="MRS-DISP-020",
                 severity=Severity.ERROR,
-                message=(
-                    f"dispatch land finalize (promote + ledger) failed for "
-                    f"{key}: {exc}"
-                ),
+                message=(f"dispatch land finalize (promote + ledger) failed for {key}: {finalize_failure}"),
             )
         )
         envelope = build_envelope(
@@ -438,7 +1085,15 @@ def execute_dispatch_land(
             data=data,
             findings=tuple(findings),
         )
-        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.REFUSED,
+                pr_number=pr.number,
+                subject=subject,
+                marshal_native=True,
+            ),
+            envelope,
+        )
 
     envelope = build_envelope(
         command="dispatch land",

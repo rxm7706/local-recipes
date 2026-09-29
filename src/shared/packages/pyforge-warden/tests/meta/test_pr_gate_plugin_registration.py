@@ -13,8 +13,9 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-import pyforge.warden
 from pyforge.core.hooks import ENTRY_POINT_GROUP as CORE_ENTRY_POINT_GROUP
+
+import pyforge.warden
 from pyforge.warden.hooks import ENTRY_POINT_GROUP
 
 _PACKAGE_FILE = pyforge.warden.__file__
@@ -40,9 +41,7 @@ PYPROJECT = _warden_pyproject()
 _PARALLEL_GROUP = re.compile(r"^pyforge\.[^.]+\.(hooks|plugins)$")
 
 
-def _flatten_entry_point_groups(
-    table: dict[str, Any], prefix: str = ""
-) -> dict[str, dict[str, Any]]:
+def _flatten_entry_point_groups(table: dict[str, Any], prefix: str = "") -> dict[str, dict[str, Any]]:
     groups: dict[str, dict[str, Any]] = {}
     if not isinstance(table, dict):
         return groups
@@ -115,17 +114,14 @@ def test_pyproject_has_no_parallel_warden_plugin_group():
     )
     groups = entry_point_groups_from_toml(text)
     canonical = groups.get(CORE_ENTRY_POINT_GROUP, {})
-    assert canonical, (
-        f"pyforge-warden must declare plugins on {CORE_ENTRY_POINT_GROUP!r}"
-    )
+    assert canonical, f"pyforge-warden must declare plugins on {CORE_ENTRY_POINT_GROUP!r}"
 
 
 def test_hooks_py_does_not_import_pluggy():
     assert HOOKS_PY.is_file(), f"missing {HOOKS_PY}"
     hits = pluggy_import_violations(HOOKS_PY.read_text(encoding="utf-8"))
     assert not hits, (
-        "pyforge.warden.hooks imports pluggy — a parallel plugin loader "
-        f"(use {CORE_ENTRY_POINT_GROUP!r}): {hits}"
+        f"pyforge.warden.hooks imports pluggy — a parallel plugin loader (use {CORE_ENTRY_POINT_GROUP!r}): {hits}"
     )
 
 

@@ -226,9 +226,7 @@ class EngineResult:
 class Extractor(Protocol):
     """Turns one discovered manifest into honest (Gap-C) components."""
 
-    def extract(
-        self, manifest_path: Path, manifest: ScannedManifest
-    ) -> tuple[Component, ...]: ...
+    def extract(self, manifest_path: Path, manifest: ScannedManifest) -> tuple[Component, ...]: ...
 
 
 @runtime_checkable
@@ -339,8 +337,7 @@ class DefaultPolicy:
         # universally — only a POSITIVE untrusted candidate is evidence the
         # mapping pipeline actually saw ambiguity for this scan.
         dep001_trusted = all(
-            self._config.is_confidence_trusted(component.mapping_confidence)
-            for component in inventory.components
+            self._config.is_confidence_trusted(component.mapping_confidence) for component in inventory.components
         )
 
         findings: list[Finding] = []
@@ -398,9 +395,7 @@ class DefaultPolicy:
                     # exactly as vuln_severity_policy is above. This REPLACES
                     # the 1.2 indeterminate backstop for the license axis
                     # too — never mapping a finding to clean (C0 preserved).
-                    rungs.append(
-                        license_rung(finding, policy=self._config.license_policy)
-                    )
+                    rungs.append(license_rung(finding, policy=self._config.license_policy))
                 elif finding.axis == AXIS_CURRENCY:
                     # Story 6.3/6.5: currency-axis engine findings route
                     # through currency_rung with self._config.currency_policy
@@ -444,10 +439,7 @@ class DefaultPolicy:
                         Status.ERROR,
                         StatusDriver(
                             axis=result.axis,
-                            finding_id=(
-                                f"error:{record.kind}:"
-                                f"{_sanitize_id_segment(record.owner)}"
-                            ),
+                            finding_id=(f"error:{record.kind}:{_sanitize_id_segment(record.owner)}"),
                         ),
                     )
                 )
@@ -462,8 +454,7 @@ class DefaultPolicy:
                         Status.INDETERMINATE,
                         _sanitize_id_segment(str(component.indeterminate_reason)),
                         AXIS_VULNERABILITY,
-                        f"{component.name}: withheld from vulnerability "
-                        f"matching ({component.indeterminate_reason})",
+                        f"{component.name}: withheld from vulnerability matching ({component.indeterminate_reason})",
                     )
                 )
             elif not component.vuln_matchable:
@@ -487,8 +478,7 @@ class DefaultPolicy:
                         Status.INDETERMINATE,
                         "uncovered",
                         AXIS_HYGIENE,
-                        f"{component.name}: not hygiene-covered — "
-                        "hygiene-axis cleanliness cannot be claimed",
+                        f"{component.name}: not hygiene-covered — hygiene-axis cleanliness cannot be claimed",
                     )
                 )
             # Story 6.1: the license/currency coverage mechanism, landed inert
@@ -503,8 +493,7 @@ class DefaultPolicy:
                         Status.INDETERMINATE,
                         "uncovered-license",
                         AXIS_LICENSE,
-                        f"{component.name}: not license-covered — "
-                        "license-axis cleanliness cannot be claimed",
+                        f"{component.name}: not license-covered — license-axis cleanliness cannot be claimed",
                     )
                 )
             if not component.currency_covered:
@@ -513,8 +502,7 @@ class DefaultPolicy:
                         Status.INDETERMINATE,
                         "uncovered-currency",
                         AXIS_CURRENCY,
-                        f"{component.name}: not currency-covered — "
-                        "currency-axis cleanliness cannot be claimed",
+                        f"{component.name}: not currency-covered — currency-axis cleanliness cannot be claimed",
                     )
                 )
             if not derived:
@@ -548,9 +536,7 @@ class DefaultPolicy:
                 rungs.append(
                     (
                         rung,
-                        StatusDriver(
-                            axis=axis_by_id[finding_id], finding_id=finding_id
-                        ),
+                        StatusDriver(axis=axis_by_id[finding_id], finding_id=finding_id),
                     )
                 )
 

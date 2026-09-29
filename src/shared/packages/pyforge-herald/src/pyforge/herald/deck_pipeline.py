@@ -45,17 +45,19 @@ the story spec's Design Notes:**
 
 from __future__ import annotations
 
+import base64
 import hashlib
+import re
 import subprocess
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from pyforge.core.atomic_write import atomic_write_text as core_atomic_write_text
 
-from . import errors, registry, state
+from . import errors, pptx_pipeline, registry, stamps, state
 
 if TYPE_CHECKING:
     from .transport.base import DesignTransport, FileRead, ListedFile, ProjectRef
@@ -131,19 +133,16 @@ class NpmLocalProver:
             )
         except subprocess.TimeoutExpired as exc:
             raise errors.HeraldError(
-                f"prove-before-cross failed: 'npm run {npm_script}' in "
-                f"{deck_dir} exceeded {self._timeout}s ({exc})"
+                f"prove-before-cross failed: 'npm run {npm_script}' in {deck_dir} exceeded {self._timeout}s ({exc})"
             ) from exc
         except OSError as exc:
             raise errors.HeraldError(
-                f"prove-before-cross failed: could not run 'npm run "
-                f"{npm_script}' in {deck_dir} ({exc})"
+                f"prove-before-cross failed: could not run 'npm run {npm_script}' in {deck_dir} ({exc})"
             ) from exc
         if completed.returncode != 0:
             tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
             raise errors.HeraldError(
-                f"prove-before-cross failed: 'npm run {npm_script}' in "
-                f"{deck_dir} exited {completed.returncode}: {tail}"
+                f"prove-before-cross failed: 'npm run {npm_script}' in {deck_dir} exited {completed.returncode}: {tail}"
             )
 
 
@@ -190,13 +189,9 @@ def seed(
 
     deck_dir = repo_root / "presentations" / slug
     if not deck_dir.is_dir():
-        raise errors.HeraldError(
-            f"cannot seed {slug!r}: no deck directory at {deck_dir}"
-        )
+        raise errors.HeraldError(f"cannot seed {slug!r}: no deck directory at {deck_dir}")
     readme_path = deck_dir / "README.md"
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing_state = state.read(resolved_state_path, slug)
     if existing_state is not None:
         raise errors.SeedConflictError(
@@ -249,19 +244,14 @@ def seed(
     prototype_filename = f"PyForge {persona}.dc.html"
     prototype_path = deck_dir / "project" / prototype_filename
     if not prototype_path.is_file():
-        raise errors.HeraldError(
-            f"cannot seed {slug!r}: no local prototype at {prototype_path} "
-            f"to prove and seed"
-        )
+        raise errors.HeraldError(f"cannot seed {slug!r}: no local prototype at {prototype_path} to prove and seed")
 
     (prover or NpmLocalProver()).prove(deck_dir)
 
     try:
         prototype_text = prototype_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
-        raise errors.HeraldError(
-            f"cannot seed {slug!r}: could not read {prototype_path} ({exc})"
-        ) from exc
+        raise errors.HeraldError(f"cannot seed {slug!r}: could not read {prototype_path} ({exc})") from exc
 
     prompt = transport.get_design_prompt(design_system_id=MODERNIST_DESIGN_SYSTEM_ID)
     if not prompt:
@@ -270,9 +260,7 @@ def seed(
             f"design-system prompt; the mandatory pre-write gate did not hold"
         )
 
-    project = transport.create_project(
-        name=f"PyForge {persona} deck", design_system_id=MODERNIST_DESIGN_SYSTEM_ID
-    )
+    project = transport.create_project(name=f"PyForge {persona} deck", design_system_id=MODERNIST_DESIGN_SYSTEM_ID)
     # Review finding: recording the new project used to happen only AFTER
     # every subsequent transport call succeeded. A failure anywhere in
     # finalize_plan/create_support_js/copy_files/write_files (an etag
@@ -331,9 +319,7 @@ def seed(
         project_id=project.project_id,
         file_url=project.url,
     )
-    return SeedResult(
-        project=project, persona=persona, prototype_filename=prototype_filename
-    )
+    return SeedResult(project=project, persona=persona, prototype_filename=prototype_filename)
 
 
 # --- CAP-2: pull (Design -> repo), Story 2.1 --------------------------------
@@ -366,9 +352,7 @@ class PullResult:
     committed: bool = False
 
 
-def _require_seeded_state(
-    state_path: Path, slug: str, *, verb: str = "pull"
-) -> state.DeckState:
+def _require_seeded_state(state_path: Path, slug: str, *, verb: str = "pull") -> state.DeckState:
     """The deck's recorded ``state.DeckState``, or a ``HeraldError`` naming
     ``herald deck seed`` -- pulling (and, since Story 5.1, pushing) needs a
     ``project_id`` to read from, and ``state.py`` is the only source of one
@@ -380,8 +364,7 @@ def _require_seeded_state(
     existing = state.read(state_path, slug)
     if existing is None:
         raise errors.HeraldError(
-            f"cannot {verb} {slug!r}: no bridge state recorded at {state_path} "
-            f"-- run 'herald deck seed {slug}' first"
+            f"cannot {verb} {slug!r}: no bridge state recorded at {state_path} -- run 'herald deck seed {slug}' first"
         )
     return existing
 
@@ -430,9 +413,7 @@ def _pull_and_land(
     would silently corrupt any pulled file that legitimately contains one of
     those substrings."""
     last_etag = existing.etags.get(artifact_key)
-    file_read = transport.read_file(
-        project_id=existing.project_id, path=remote_path, if_none_match=last_etag
-    )
+    file_read = transport.read_file(project_id=existing.project_id, path=remote_path, if_none_match=last_etag)
     if file_read.unchanged:
         return None
     if file_read.truncated:
@@ -481,7 +462,7 @@ def _record_pull_etag(
 @runtime_checkable
 class DeckExporter(Protocol):
     """The injectable ``deck-export`` seam (re-derive step 4:
-    ``pixi run -e local-recipes deck-export <slug>``), mirroring
+    ``pixi run -e pyforge-guild deck-export <slug>``), mirroring
     ``LocalProver``'s pattern: a real implementation shells a bounded
     subprocess; every test injects a hand-written fake."""
 
@@ -492,7 +473,7 @@ class DeckExporter(Protocol):
 
 
 class PixiDeckExporter:
-    """The real ``DeckExporter``: ``pixi run -e local-recipes deck-export
+    """The real ``DeckExporter``: ``pixi run -e pyforge-guild deck-export
     <slug>`` in ``repo_root``, one bounded subprocess call. Never invoked by
     this package's own tests (every pull test injects a fake)."""
 
@@ -502,7 +483,7 @@ class PixiDeckExporter:
     def export(self, *, slug: str, repo_root: Path) -> None:
         try:
             completed = subprocess.run(
-                ["pixi", "run", "-e", "local-recipes", "deck-export", slug],
+                ["pixi", "run", "-e", "pyforge-guild", "deck-export", slug],
                 cwd=repo_root,
                 capture_output=True,
                 text=True,
@@ -511,20 +492,130 @@ class PixiDeckExporter:
             )
         except subprocess.TimeoutExpired as exc:
             raise errors.HeraldError(
-                f"deck-export failed: 'pixi run -e local-recipes deck-export "
+                f"deck-export failed: 'pixi run -e pyforge-guild deck-export "
                 f"{slug}' in {repo_root} exceeded {self._timeout}s ({exc})"
             ) from exc
         except OSError as exc:
             raise errors.HeraldError(
                 f"deck-export failed: could not run 'pixi run -e "
-                f"local-recipes deck-export {slug}' in {repo_root} ({exc})"
+                f"pyforge-guild deck-export {slug}' in {repo_root} ({exc})"
             ) from exc
         if completed.returncode != 0:
             tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
             raise errors.HeraldError(
-                f"deck-export failed: 'pixi run -e local-recipes deck-export "
+                f"deck-export failed: 'pixi run -e pyforge-guild deck-export "
                 f"{slug}' in {repo_root} exited {completed.returncode}: {tail}"
             )
+
+
+class _PixiPartialDeckExporter:
+    """``PptxTemplateExporter``'s own subprocess seam: ``pixi run -e
+    pyforge-guild deck-export <slug> html infographic-pptx`` -- explicit
+    targets that exclude ``deck-pptx`` (Design Notes: "``.potx`` replaces
+    only the 'deck' PPTX target"), one bounded subprocess call. Mirrors
+    ``PixiDeckExporter``'s subprocess pattern exactly, over a fixed partial
+    target list instead of no arguments (which would regenerate all three,
+    including the one target this story replaces). A separate class rather
+    than a new ``PixiDeckExporter`` parameter, so ``PixiDeckExporter``
+    itself (and every existing caller/test of it) stays untouched. Never
+    invoked by this package's own tests (every test injects a fake)."""
+
+    def __init__(self, *, timeout: float = _DEFAULT_EXPORT_TIMEOUT) -> None:
+        self._timeout = timeout
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        cmd = [
+            "pixi",
+            "run",
+            "-e",
+            "pyforge-guild",
+            "deck-export",
+            slug,
+            "html",
+            "infographic-pptx",
+        ]
+        try:
+            completed = subprocess.run(
+                cmd,
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=self._timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise errors.HeraldError(
+                f"deck-export failed: {' '.join(cmd)!r} in {repo_root} exceeded {self._timeout}s ({exc})"
+            ) from exc
+        except OSError as exc:
+            raise errors.HeraldError(
+                f"deck-export failed: could not run {' '.join(cmd)!r} in {repo_root} ({exc})"
+            ) from exc
+        if completed.returncode != 0:
+            tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
+            raise errors.HeraldError(
+                f"deck-export failed: {' '.join(cmd)!r} in {repo_root} exited {completed.returncode}: {tail}"
+            )
+
+
+class PptxTemplateExporter:
+    """CAP-1's ``.potx`` template-fill path (Story 23.3): routed to in
+    place of ``PixiDeckExporter`` only for a deck whose README declares a
+    ``.potx`` template (``select_exporter``, below). Replaces ONLY the
+    "deck" PPTX target -- the one target whose content shape (a linear
+    slide list) matches ``content_plan.json`` (Design Notes) -- with a
+    genuinely editable PowerPoint via ``pptx_pipeline.run_fill``, never a
+    Marp render. ``html``/``infographic-pptx`` still derive from Marp via
+    ``deck-export``, shelled here with explicit targets that exclude
+    ``deck-pptx`` (``_PixiPartialDeckExporter``); those two are already
+    stamped by ``deck_export.py``'s own subprocess, so this class stamps
+    only the filled PPTX it wrote itself."""
+
+    def __init__(
+        self,
+        *,
+        html_exporter: DeckExporter | None = None,
+        now: Callable[[], datetime] | None = None,
+    ) -> None:
+        self._html_exporter = html_exporter or _PixiPartialDeckExporter()
+        self._now = now or _default_now
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        deck_dir = repo_root / "presentations" / slug
+        readme_path = deck_dir / "README.md"
+        template_rel = registry.read_potx_template(readme_path)
+        if template_rel is None:
+            raise errors.HeraldError(
+                f"cannot export {slug!r} via the .potx path: no PowerPoint template registered in {readme_path}"
+            )
+        content_plan_path = deck_dir / "src" / "content_plan.json"
+        if not content_plan_path.is_file():
+            raise errors.HeraldError(
+                f"cannot export {slug!r} via the .potx path: no content "
+                f"plan at {content_plan_path} (hand-authored, looked up by "
+                f"convention -- never auto-generated)"
+            )
+        template_path = repo_root / template_rel
+        date_str = self._now().strftime("%Y-%m-%d")
+        out_path = deck_dir / "src" / "pptx" / f"{slug}-deck-{date_str}.pptx"
+
+        pptx_pipeline.run_fill(template_path, content_plan_path, out_path)
+        self._html_exporter.export(slug=slug, repo_root=repo_root)
+        stamps.write_stamp(out_path, repo_root=repo_root, slug=slug)
+
+
+def select_exporter(slug: str, repo_root: Path) -> DeckExporter:
+    """Routes a deck's derive path (Story 23.3): ``PptxTemplateExporter``
+    when the deck's README declares a ``.potx`` template
+    (``registry.read_potx_template``), else the existing
+    ``PixiDeckExporter`` -- routing strictly on that one declaration
+    (Boundaries & Constraints: "no other deck's output changes"). Used as
+    the default (an explicit ``exporter=`` argument to any ``pull_*``
+    function always wins) by each of this module's three pull functions."""
+    readme_path = repo_root / "presentations" / slug / "README.md"
+    if registry.read_potx_template(readme_path) is not None:
+        return PptxTemplateExporter()
+    return PixiDeckExporter()
 
 
 def _default_now() -> datetime:
@@ -596,19 +687,16 @@ class SubprocessGitCommitter:
             )
         except subprocess.TimeoutExpired as exc:
             raise errors.HeraldError(
-                f"git commit failed: {' '.join(args)!r} in {repo_root} "
-                f"exceeded {self._timeout}s ({exc})"
+                f"git commit failed: {' '.join(args)!r} in {repo_root} exceeded {self._timeout}s ({exc})"
             ) from exc
         except OSError as exc:
             raise errors.HeraldError(
-                f"git commit failed: could not run {' '.join(args)!r} in "
-                f"{repo_root} ({exc})"
+                f"git commit failed: could not run {' '.join(args)!r} in {repo_root} ({exc})"
             ) from exc
         if completed.returncode != 0:
             tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
             raise errors.HeraldError(
-                f"git commit failed: {' '.join(args)!r} in {repo_root} exited "
-                f"{completed.returncode}: {tail}"
+                f"git commit failed: {' '.join(args)!r} in {repo_root} exited {completed.returncode}: {tail}"
             )
 
 
@@ -639,9 +727,7 @@ def pull_prototype(
     via ``committer`` (default ``SubprocessGitCommitter``, Story 2.2) --
     commit is opt-in, never implicit."""
     resolved_now = now or _default_now
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing = _require_seeded_state(resolved_state_path, slug)
     persona = _persona_from_slug(slug)
     prototype_filename = f"PyForge {persona}.dc.html"
@@ -667,7 +753,7 @@ def pull_prototype(
         )
 
     (prover or NpmLocalProver()).prove(deck_dir)
-    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(slug=slug, repo_root=repo_root)
     # Review finding: the etag is now recorded only after prove+export both
     # succeed -- see `_pull_and_land`'s docstring for why recording it any
     # earlier makes a failed re-derivation unrecoverable via retry.
@@ -743,13 +829,10 @@ def pull_marp_source(
     unchanged pull)."""
     if kind not in _MARP_KINDS:
         raise errors.HeraldError(
-            f"cannot pull {slug!r}: unknown Marp source kind {kind!r}; "
-            f"expected one of {', '.join(sorted(_MARP_KINDS))}"
+            f"cannot pull {slug!r}: unknown Marp source kind {kind!r}; expected one of {', '.join(sorted(_MARP_KINDS))}"
         )
     resolved_now = now or _default_now
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing = _require_seeded_state(resolved_state_path, slug)
     short = _short_name(slug)
     remote_path = f"{short}-{kind}.md"
@@ -776,7 +859,7 @@ def pull_marp_source(
             committed=False,
         )
 
-    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(slug=slug, repo_root=repo_root)
     # Review finding: see `pull_prototype`'s own note -- record only after
     # export succeeds.
     _record_pull_etag(
@@ -845,17 +928,13 @@ def pull_standalone_bundle(
     that boundary is deliberate. ``--commit`` behaves identically to Stories
     2.2/2.3's (opt-in, never on an unchanged pull)."""
     resolved_now = now or _default_now
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing = _require_seeded_state(resolved_state_path, slug)
     persona = _persona_from_slug(slug)
     remote_path = f"{persona} Infographic standalone.html"
     date_str = resolved_now().strftime("%Y-%m-%d")
     deck_dir = repo_root / "presentations" / slug
-    local_path = (
-        deck_dir / "src" / "marp" / f"{slug}-infographic-standalone-{date_str}.html"
-    )
+    local_path = deck_dir / "src" / "marp" / f"{slug}-infographic-standalone-{date_str}.html"
 
     file_read = _pull_and_land(
         transport,
@@ -875,7 +954,7 @@ def pull_standalone_bundle(
             committed=False,
         )
 
-    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(slug=slug, repo_root=repo_root)
     # Review finding: see `pull_prototype`'s own note -- record only after
     # export succeeds.
     _record_pull_etag(
@@ -903,6 +982,298 @@ def pull_standalone_bundle(
         unchanged=False,
         etag=file_read.etag,
         committed=committed,
+    )
+
+
+# --- CAP-2 (from spec-design-sync-loop): adopt, Story 23.2 -------------------
+#
+# `_require_seeded_state`'s own docstring names the gap: pulling (and
+# pushing) a deck needs a `project_id` `state.py` already has on record, and
+# unlike `seed`'s registry-bootstrap fallback there was, until this story,
+# "no analogous 'adopt an already-linked deck' path". `docs/dreams/
+# design-sync-loop.md`'s own measured evidence is the concrete case: Design
+# projects that already exist -- `PyForge six-quarter roadmap`,
+# `LLM Knowledge Bases`, `Agentic AI SLDC deck`, plus the three design-system
+# libraries (`Modernist`/`Broadsheet`/`Nocturne`) -- with no local twin (or,
+# for `agentic-sdlc`, a twin that was never registered). None of these
+# follow the `PyForge <Persona> deck` / `PyForge <Persona>.dc.html` naming
+# convention `_persona_from_slug` derives (`agentic-sdlc`'s own file is
+# `Agentic SDLC.dc.html`; `six-quarter-roadmap`'s are `PyForge Roadmap*.dc.
+# html`; a design system has no "prototype" at all, only a library tree) --
+# so `adopt`, unlike every `pull_*` function above, never derives a remote
+# filename from `slug`. Every artifact is named explicitly by the caller.
+#
+# `adopt` also pulls double duty as the design-system mirror (CAP-30's other
+# half): passing `project_name=None`/`project_url=None` skips the `registry.
+# py` §*Design project* section entirely -- that section's own module doc
+# frames itself narrowly around a deck's single bridge, and design systems
+# are libraries the decks bind to, never decks themselves (`registry.
+# DESIGN_SYSTEM_PROJECT_NAMES`'s own docstring). `state_key` still tracks
+# per-artifact etags in the same shared `.herald/bridge-state.json` --
+# `state.py` treats it as an opaque JSON key, never a deck slug specifically.
+
+
+@dataclass(frozen=True)
+class AdoptedArtifact:
+    """One artifact `adopt` considered: its remote path, where it landed
+    locally, and whether THIS run actually pulled new bytes (`unchanged`
+    mirrors `PullResult`'s own field -- an etag short-circuit is not a
+    write, so a fully-synced second `adopt` call reports every artifact
+    `unchanged` and touches no file)."""
+
+    remote_path: str
+    local_path: Path
+    unchanged: bool
+
+
+@dataclass(frozen=True)
+class AdoptResult:
+    """What `adopt` returns: whether this run bootstrapped a NEW local
+    twin (false on every later, idempotent call), whether it wrote the
+    registry section (false when one already existed, or when this
+    `adopt` call never registers at all -- the design-system case), and
+    one `AdoptedArtifact` per requested artifact, in request order."""
+
+    state_key: str
+    bootstrapped: bool
+    registered: bool
+    artifacts: tuple[AdoptedArtifact, ...]
+
+
+_TRUNCATION_TRAILER_RE = re.compile(
+    r"\n\n…\[\+\d+ bytes truncated at read_file's 256 KiB cap — the body "
+    r"ends at a complete line; continue with offset=\d+\]\Z"
+)
+"""A truncated (non-final) window's ``body`` carries TWO extra lines beyond
+its own declared ``lines="A-B"`` span: a blank separator, then a
+human-readable resumption hint (e.g. ``…[+58491 bytes truncated at
+read_file's 256 KiB cap -- the body ends at a complete line; continue with
+offset=2774]``) -- both inside the wrapper, so `parse_read_response`
+(which only strips the wrapper's own framing newline) passes them straight
+through as if they were file content. Verified live 2026-09-18 pulling
+`six-quarter-roadmap`'s 3377-line prototype: window 1's declared
+``lines="1-2773"`` is accurate for the real file, but its raw `body` came
+back 2775 lines long -- 2773 real lines plus this exact two-line tail. A
+window that reaches end-of-file (this repo's own probe: no further call
+needed) carries no such tail, so this is stripped unconditionally rather
+than only on a still-truncated window -- the pattern cannot occur in real
+file content (its own literal text names the mechanism), so a no-op
+non-match is the correct outcome everywhere else."""
+
+
+def _windowed_read(
+    transport: DesignTransport,
+    *,
+    project_id: str,
+    path: str,
+    if_none_match: str | None = None,
+) -> FileRead:
+    """`transport.read_file`, reassembled across as many offset-paged calls
+    as the server's per-call size cap requires. `_pull_and_land` refuses
+    outright on a truncated single read -- every existing deck's prototype
+    fits comfortably under the cap. `adopt`'s artifacts make no such
+    promise (`docs/dreams/design-sync-loop.md`'s own measured evidence
+    includes one that does not: `six-quarter-roadmap`'s primary prototype,
+    ~320 KB), so this helper pages through ``offset`` until a window's own
+    ``last_line`` reaches its ``total_lines`` -- or, for a file the server
+    answered whole (no window metadata at all), after exactly one call.
+    ``if_none_match`` is honoured only on the FIRST call: an etag
+    precondition is checked against the file's current whole state, never
+    any one window of it. Verified live 2026-09-18: the server does NOT
+    answer its own ``{unchanged: true}`` short-circuit once a file needs
+    windowing at all -- an ``if_none_match`` that exactly matches the
+    current etag still comes back as an ordinary (truncated) first
+    window, never the short-circuit form `_pull_and_land` relies on for
+    every artifact under the cap. This function therefore checks the
+    FIRST window's own ``etag`` against ``if_none_match`` itself, right
+    after that one call and before requesting any further window --
+    without this, a file requiring windowing could never report
+    "unchanged" at all, breaking CAP-30's own idempotency requirement for
+    exactly the one artifact that needs this helper in the first place.
+
+    Windows are joined on their shared line boundary (``"\\n".join``):
+    ``parse_read_response`` already strips exactly the wrapper's own
+    framing newline from each window's ``body``, so the real newline that
+    separated a window's last line from the next window's first line in
+    the original file survives only if this join re-adds it -- never
+    doubled (the framing one was already stripped) and never lost (two
+    real lines were always either side of it). Each window's body is
+    first passed through ``_TRUNCATION_TRAILER_RE`` (see its own
+    docstring) to drop the server's resumption-hint tail before the join
+    -- otherwise it would be joined into the file as two bogus lines.
+
+    Raises ``errors.HeraldError`` naming ``path`` when a window reports a
+    change but returns no body, or reports itself as partial with no
+    ``last_line``/``total_lines`` pair to resume from -- the server's own
+    contract says a window "ends at a complete line", so a window that
+    cannot say where it ended must never be silently treated as the whole
+    file. Raises ``errors.PaginationStalledError`` (DW-FU-23-2, Story
+    23.2's Edge Case Hunter finding) naming ``path`` and the stalled line
+    when a paged-for window's own ``last_line`` does not advance past the
+    previous window's -- unreachable in every live call observed so far
+    (every one paged forward), but a server that repeated a window would
+    otherwise loop here forever."""
+    # Lazy, not module-level -- mirrors `seed`'s own `MODERNIST_DESIGN_
+    # SYSTEM_ID` import (see its call site's comment): this function
+    # constructs a real `FileRead` at call time, unlike every other use of
+    # that name in this module, which is a `TYPE_CHECKING`-only
+    # annotation. `test_importing_deck_pipeline_does_not_load_the_
+    # transport_package` asserts merely importing this module must not
+    # load `transport/__init__.py`'s eager adapter imports.
+    from .transport.base import FileRead
+
+    first = transport.read_file(project_id=project_id, path=path, if_none_match=if_none_match)
+    if first.unchanged:
+        return first
+    if if_none_match is not None and first.etag == if_none_match:
+        # The server's own short-circuit never fires once a file needs
+        # windowing (see this function's own docstring) -- this is that
+        # short-circuit's replacement, checked before any further window
+        # is requested.
+        return FileRead(path=path, etag=first.etag, body=None, unchanged=True)
+    parts: list[str] = []
+    etag = first.etag
+    window: FileRead = first
+    previous_last_line: int | None = None
+    while True:
+        if window.body is None:
+            raise errors.HeraldError(f"cannot read {path!r}: read_file reported a change but returned no body")
+        parts.append(_TRUNCATION_TRAILER_RE.sub("", window.body))
+        etag = window.etag
+        no_window_declared = window.first_line is None and window.last_line is None and window.total_lines is None
+        if no_window_declared:
+            break  # the whole file arrived in this one call
+        if window.last_line is None or window.total_lines is None:
+            raise errors.HeraldError(
+                f"cannot read {path!r}: server reported a partial window "
+                f"with no last_line/total_lines pair to resume from"
+            )
+        if previous_last_line is not None and window.last_line <= previous_last_line:
+            # DW-FU-23-2: a paged-for window whose own last_line did not
+            # advance past the window it was paged FOR (`offset=
+            # previous_last_line + 1`) would otherwise be re-requested at
+            # the same offset forever -- refuse instead of looping.
+            raise errors.PaginationStalledError(
+                f"cannot read {path!r}: read_file returned a window ending "
+                f"at line {window.last_line} of {window.total_lines}, which "
+                f"did not advance past the previous window's line "
+                f"{previous_last_line} -- refusing rather than looping "
+                f"forever on a stalled window"
+            )
+        if window.last_line >= window.total_lines:
+            break  # this window reached end of file
+        previous_last_line = window.last_line
+        window = transport.read_file(project_id=project_id, path=path, offset=window.last_line + 1)
+    return FileRead(path=path, etag=etag, body="\n".join(parts), unchanged=False)
+
+
+def adopt(
+    transport: DesignTransport,
+    *,
+    state_key: str,
+    project_id: str,
+    artifacts: Sequence[tuple[str, str]],
+    dest_dir: Path,
+    repo_root: Path,
+    project_name: str | None = None,
+    project_url: str | None = None,
+    state_path: Path | None = None,
+    now: Callable[[], datetime] | None = None,
+) -> AdoptResult:
+    """Story 23.2 (CAP-2): adopt an existing Design project that has no
+    local twin (or, `agentic-sdlc`'s case, an unregistered one) -- see the
+    module comment above this function for why this cannot reuse `seed`
+    (repo -> Design, creates a NEW remote project) or any `pull_*`
+    function (bound to the `PyForge <Persona>` naming convention).
+
+    ``artifacts`` is ``(remote_path, local_relative_path)`` pairs, pulled
+    in order via ``_windowed_read`` and landed at ``dest_dir /
+    local_relative_path``. Idempotent by construction: each artifact's
+    last-seen etag (``state.py``, keyed by its own ``remote_path`` under
+    ``state_key``) short-circuits exactly like every `pull_*` function's
+    `if_none_match`, so a second `adopt` call for an already-adopted
+    ``state_key`` against unchanged Design content pulls nothing and
+    writes nothing (CAP-30's own success criterion) -- each artifact's new
+    etag is recorded immediately after it lands, mirroring
+    `_record_pull_etag`'s own "only after the write genuinely succeeds"
+    discipline, so a crash mid-loop leaves a retry only re-pulling what
+    did not yet land.
+
+    Creates ``dest_dir`` (and a minimal ``README.md`` skeleton, when
+    ``project_name``/``project_url`` are both given and no README exists
+    yet) on first adoption -- the one structural difference from every
+    ``pull_*`` function, which all require a seeded deck directory to
+    already exist. When both are given, registers the README's §*Design
+    project* section (``registry.register``) exactly once -- skipped on
+    every later call once a section already parses (``registry.read``),
+    never re-written even though its content would come out identical,
+    so a fully-synced second call touches that file not at all. When
+    either is ``None`` (the design-system mirror case -- see the module
+    comment), no README is created or touched and no registry section is
+    ever written.
+
+    Raises ``errors.HeraldError`` when ``artifacts`` is empty, or when
+    ``state_key`` was already adopted against a *different*
+    ``project_id`` (a caller bug or a slug collision -- silently
+    re-pointing an existing twin at a different remote project would
+    misattribute every artifact already on record for it)."""
+    if not artifacts:
+        raise errors.HeraldError(f"cannot adopt {state_key!r}: no artifacts given")
+    resolved_now = now or _default_now
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    existing = state.read(resolved_state_path, state_key)
+    bootstrapped = existing is None
+    if existing is None:
+        existing = state.DeckState(project_id=project_id, etags={}, last_pull=None)
+    elif existing.project_id != project_id:
+        raise errors.HeraldError(
+            f"cannot adopt {state_key!r}: already adopted against Design "
+            f"project {existing.project_id!r}, not {project_id!r}"
+        )
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    registered = False
+    if project_name is not None and project_url is not None:
+        readme_path = dest_dir / "README.md"
+        if not readme_path.is_file():
+            _atomic_write_text(readme_path, f"# {state_key}\n")
+        if registry.read(readme_path) is None:
+            registry.register(
+                readme_path=readme_path,
+                project_name=project_name,
+                project_id=project_id,
+                file_url=project_url,
+            )
+            registered = True
+
+    results: list[AdoptedArtifact] = []
+    for remote_path, relative_local_path in artifacts:
+        local_path = dest_dir / relative_local_path
+        file_read = _windowed_read(
+            transport,
+            project_id=project_id,
+            path=remote_path,
+            if_none_match=existing.etags.get(remote_path),
+        )
+        if file_read.unchanged:
+            results.append(AdoptedArtifact(remote_path=remote_path, local_path=local_path, unchanged=True))
+            continue
+        _atomic_write_text(local_path, file_read.body or "")
+        new_etags = dict(existing.etags)
+        new_etags[remote_path] = file_read.etag
+        existing = state.DeckState(
+            project_id=existing.project_id,
+            etags=new_etags,
+            last_pull=resolved_now().isoformat(),
+        )
+        state.write(resolved_state_path, state_key, existing)
+        results.append(AdoptedArtifact(remote_path=remote_path, local_path=local_path, unchanged=False))
+
+    return AdoptResult(
+        state_key=state_key,
+        bootstrapped=bootstrapped,
+        registered=registered,
+        artifacts=tuple(results),
     )
 
 
@@ -995,9 +1366,7 @@ def _is_stale_mirror(files: Sequence[ListedFile]) -> bool:
     return nested >= _STALE_MIRROR_NESTED_PATH_THRESHOLD
 
 
-def _status_for_slug(
-    transport: DesignTransport, *, slug: str, state_path: Path
-) -> DeckStatus:
+def _status_for_slug(transport: DesignTransport, *, slug: str, state_path: Path) -> DeckStatus:
     """One deck's ``DeckStatus`` -- read-only throughout: ``state.read`` and
     ``transport.read_file``/``transport.list_files`` only, never a write to
     either surface."""
@@ -1094,9 +1463,7 @@ def status(
     directory), returns a single unlinked `DeckStatus` rather than raising:
     unlike `pull_*`, status reporting on an unseeded deck is itself a
     normal, informative answer, not an error."""
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     if slug is not None:
         # A single explicit slug: a structural failure (e.g. a bogus
         # tracked-artifact key -- AD-6) still raises plainly, matching
@@ -1107,9 +1474,7 @@ def status(
     return [_status_or_conflict(transport, one, resolved_state_path) for one in slugs]
 
 
-def _status_or_conflict(
-    transport: DesignTransport, slug: str, state_path: Path
-) -> DeckStatus:
+def _status_or_conflict(transport: DesignTransport, slug: str, state_path: Path) -> DeckStatus:
     """``_status_for_slug``, with one deck's structural failure (``state.py``
     is malformed for this slug, or names an artifact key this version does
     not recognize -- both raise ``errors.HeraldError``, AD-6) downgraded to
@@ -1133,6 +1498,151 @@ def _status_or_conflict(
         )
 
 
+# --- Story 23.1: account-wide reconciliation (CAP-1) -------------------------
+#
+# `herald deck status` above (CAP-3) only ever reports on a deck this repo
+# already knows about -- a slug with a `presentations/<slug>/` directory or a
+# `state.py` entry. It has no way to see a Design project that exists in the
+# signed-in account but has no local twin at all: `docs/dreams/
+# design-sync-loop.md`'s own measured evidence is `PyForge six-quarter
+# roadmap` and `LLM Knowledge Bases` (no twin, ever) and `Agentic AI SLDC
+# deck` (a twin exists, unregistered). `account_status` closes that gap:
+# `transport.list_projects()` enumerates the whole account, and every
+# project is reconciled against the registry -- `registry.read_exclusions`
+# (the family-level exclusion list) and `registry.DESIGN_SYSTEM_PROJECT_NAMES`
+# (the known design-system libraries) first, by exact name; every remaining
+# project is a presentation, "linked" when some local deck's own § *Design
+# project* section (`registry.read`, never `state.py`'s gitignored,
+# per-clone cache) names this exact project id, "untwinned" otherwise. Like
+# CAP-3's `status`, this is read-only end to end: it never calls a
+# write-side transport method and never touches `state.py`.
+
+
+@dataclass(frozen=True)
+class AccountProjectStatus:
+    """One Design project's account-wide reconciliation report (Story
+    23.1, CAP-1): every project ``transport.list_projects()`` returns,
+    classified against the registry so ``herald deck status --account``
+    can report on all of them -- no project absent (CAP-1's own success
+    signal) -- not just the ones a local README registry section already
+    names.
+
+    ``status`` is one of ``"linked"`` (a presentation with a local twin --
+    ``slug`` names it), ``"untwinned"`` (a presentation with no local twin
+    yet), ``"mirrored"`` (a known design system -- a bound library, never a
+    deck), or ``"excluded"`` (recorded by name in ``presentations/
+    README.md`` -- ``reason`` names why)."""
+
+    project_id: str
+    name: str
+    url: str
+    status: str
+    slug: str | None = None
+    reason: str | None = None
+
+
+def _twinned_project_ids(repo_root: Path) -> dict[str, str]:
+    """Every local ``presentations/<slug>/`` deck's own registered Design
+    project id, mapped back to its slug -- read from each deck's own README
+    § *Design project* section (``registry.read``), the durable, git-tracked
+    record CAP-1 reconciles against (never ``state.py``'s gitignored,
+    per-clone operational cache, which a fresh clone starts without --
+    mirrors Story 20.13's identical "no second registry" ruling). A README
+    with no such section, or that fails to parse, contributes nothing for
+    that slug rather than aborting the whole reconciliation -- one
+    malformed deck must not hide every other project's real status.
+
+    Raises ``errors.HeraldError`` naming both slugs and the project id when
+    two local decks are registered against the same Design project id --
+    silently letting the later-sorted slug win would misattribute
+    ``AccountProjectStatus.slug`` with no error, unlike this module's
+    fail-loud handling of every other malformed-registry shape."""
+    presentations_dir = repo_root / "presentations"
+    by_project_id: dict[str, str] = {}
+    if not presentations_dir.is_dir():
+        return by_project_id
+    for entry in sorted(presentations_dir.iterdir()):
+        if not entry.is_dir():
+            continue
+        try:
+            design_project = registry.read(entry / "README.md")
+        except errors.HeraldError:
+            continue
+        if design_project is None:
+            continue
+        project_id = design_project.project_id
+        if project_id in by_project_id:
+            raise errors.HeraldError(
+                f"cannot reconcile the account: {by_project_id[project_id]!r} "
+                f"and {entry.name!r} are both registered against the same "
+                f"Design project id {project_id!r}"
+            )
+        by_project_id[project_id] = entry.name
+    return by_project_id
+
+
+def account_status(transport: DesignTransport, *, repo_root: Path) -> list[AccountProjectStatus]:
+    """CAP-1 (Story 23.1): enumerate every Design project the signed-in
+    account can see and reconcile it against the registry, so
+    ``herald deck status --account`` reports on all of it -- unlike CAP-3's
+    ``status`` above, which only ever reports on a slug this repo already
+    knows about.
+
+    Classification order (never a name heuristic, the story's own Never
+    boundary): an *exact* name match against ``registry.read_exclusions``
+    wins first, then an exact name match against
+    ``registry.DESIGN_SYSTEM_PROJECT_NAMES``, then a presentation --
+    "linked" when some local deck's own registry section names this exact
+    project id, "untwinned" otherwise.
+
+    Read-only, like CAP-3's ``status``: calls only
+    ``transport.list_projects``, never a write-side transport method, and
+    never touches ``state.py``."""
+    exclusions = registry.read_exclusions(repo_root / "presentations" / "README.md")
+    twinned = _twinned_project_ids(repo_root)
+    results: list[AccountProjectStatus] = []
+    for project in transport.list_projects():
+        if project.name in exclusions:
+            results.append(
+                AccountProjectStatus(
+                    project_id=project.project_id,
+                    name=project.name,
+                    url=project.url,
+                    status="excluded",
+                    reason=exclusions[project.name],
+                )
+            )
+        elif project.name in registry.DESIGN_SYSTEM_PROJECT_NAMES:
+            results.append(
+                AccountProjectStatus(
+                    project_id=project.project_id,
+                    name=project.name,
+                    url=project.url,
+                    status="mirrored",
+                )
+            )
+        elif project.project_id in twinned:
+            results.append(
+                AccountProjectStatus(
+                    project_id=project.project_id,
+                    name=project.name,
+                    url=project.url,
+                    status="linked",
+                    slug=twinned[project.project_id],
+                )
+            )
+        else:
+            results.append(
+                AccountProjectStatus(
+                    project_id=project.project_id,
+                    name=project.name,
+                    url=project.url,
+                    status="untwinned",
+                )
+            )
+    return results
+
+
 # --- CAP-5: export push-back, Epic 5 -----------------------------------------
 #
 # `bridge-protocol.md` § *Export push-back*: after `deck-export` regenerates the
@@ -1143,47 +1653,112 @@ def _status_or_conflict(
 # per-file conflict is refused structurally, without aborting the rest of the
 # batch. Design-side names mirror the repo filenames verbatim.
 #
-# **Scope judgment call (recorded here and in the Story 5.1 spec's Design
-# Notes):** `DesignTransport.write_files`'s `data` field is documented as
-# inline *text* content ("Write inline file contents") -- exactly the shape
-# `seed`/`pull_prototype` already exercise for the `.dc.html` prototype, and
-# the only shape any adapter or the wire-format docs in this package have
-# ever proven. Of the three derived exports `docs/specs/presentation-deck.md`
-# § *Standard export set* names (the standalone HTML poster, and two PPTX
-# files), only the HTML is text -- the PPTX pair is binary, and no story in
-# this package has observed or proven a binary write_files wire shape (the
-# same "unpinned wire shape" caveat `seed`'s own module doc already records
-# for a conflicted write, DW-1-2-5). Rather than invent an unverified
-# encoding convention, `_discover_export_files` below covers only the
-# standalone HTML export for now; pushing the two PPTX companions back is a
-# deferred follow-up once a binary `write_files` shape is proven live (see
-# the Story 5.1 spec's Verification section).
+# **Binary write shape, proven live (Story 23.4).**
+# `DesignTransport.write_files`'s `data` field is documented as inline
+# *text* content ("Write inline file contents") -- exactly the shape
+# `seed`/`pull_prototype` already exercise for the `.dc.html` prototype. Of
+# the three derived exports `docs/specs/presentation-deck.md` § *Standard
+# export set* names (the standalone HTML poster, and two PPTX files), only
+# the HTML is text -- the PPTX pair is binary. Story 5.1 deferred pushing
+# them until a binary `write_files` wire shape was proven live (the same
+# "unpinned wire shape" caveat `seed`'s own module doc already records for a
+# conflicted write, DW-1-2-5); Story 23.4 closes that gap -- `write_files`
+# accepts `encoding: "base64"` alongside a base64-encoded `data` string, so
+# `_discover_export_files` below now also discovers the two PPTX
+# companions. The poster's own text push stays byte-for-byte unchanged: it
+# never carries an `encoding` key.
+#
+# **`--prove` (Story 23.4, CAP-6).** `push_exports`'s optional `prove=True`
+# mechanizes the manual "curl the serve URL, strip the injected harness,
+# diff the bytes" recipe (`docs/specs/presentation-deck.md` § *Large-file
+# uploads*) into a read-back assertion run right after a successful push:
+# `transport.fetch_rendered_bytes` fetches each just-pushed file's
+# currently-rendered bytes, `_strip_serve_harness` removes the
+# `data-omelette-injected` harness for an `.html` path (a no-op passthrough
+# for anything else), and the result is compared byte-for-byte against what
+# was actually sent. Every match appends one row to the deck README's dated
+# Ledger (`registry.append_push_ledger_row`); any mismatch raises
+# `errors.ReadBackMismatchError` naming every mismatched file, and that
+# file's `export:` state entry is left exactly as it was (never marked
+# "successfully pushed"), so a retry sees it as still-changed.
 
 
 @dataclass(frozen=True)
 class ExportPushResult:
     """What ``push_exports`` returns: which export filenames were actually
-    written, and which were skipped because their local content hash
-    already matched the last-pushed record. Never populated on a run that
-    hit a conflict -- that path raises ``errors.ExportConflictError``
-    instead (see ``push_exports``'s own docstring)."""
+    written, which were skipped because their local content hash already
+    matched the last-pushed record, and (only when ``prove=True``) which of
+    the pushed files read back byte-identical. ``proven`` is always empty
+    when ``prove`` was not passed (Story 23.4) -- no read-back call is ever
+    made in that case. Never populated on a run that hit a conflict -- that
+    path raises ``errors.ExportConflictError`` instead (see
+    ``push_exports``'s own docstring)."""
 
     slug: str
     pushed: tuple[str, ...]
     skipped: tuple[str, ...]
+    proven: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class _ExportCandidate:
     """One discovered derived-export file: its Design-side filename (the
-    repo basename, mirrored verbatim per ``bridge-protocol.md``), the text
-    content to write, and that content's hash -- computed once, reused both
-    for the skip comparison and for the post-push state record."""
+    repo basename, mirrored verbatim per ``bridge-protocol.md``), the wire
+    payload to write, and that payload's hash -- computed once, reused both
+    for the skip comparison and for the post-push state record.
+
+    ``data`` is the exact ``write_files`` ``data`` field: the file's own
+    text for a text candidate (``binary=False``, the poster), or its bytes
+    base64-encoded to ASCII for a binary one (``binary=True``, Story 23.4's
+    PPTX pair) -- ``_candidate_raw_bytes`` below undoes that encoding for
+    the ``local_hash``/``--prove`` comparisons. ``local_hash`` is always
+    ``hashlib.sha256`` of the *raw* bytes (the text UTF-8-encoded, or the
+    PPTX's own bytes) -- never of the base64 string, so a binary file's
+    hash matches what a byte-for-byte disk comparison would give."""
 
     filename: str
     local_path: Path
     data: str
     local_hash: str
+    binary: bool = False
+
+
+def _candidate_raw_bytes(candidate: _ExportCandidate) -> bytes:
+    """The exact bytes ``push_exports`` sent to Design for ``candidate`` --
+    base64-decoded from the wire payload for a binary candidate, UTF-8
+    encoded from it otherwise. Shared by the ``--prove`` read-back
+    comparison and the Ledger row's byte count (Story 23.4)."""
+    if candidate.binary:
+        return base64.b64decode(candidate.data)
+    return candidate.data.encode("utf-8")
+
+
+def _newest_dated_match(directory: Path, prefix: str, suffix: str) -> Path | None:
+    """The most recent ``{prefix}<ISO-date>{suffix}`` file directly under
+    ``directory``, or ``None`` when ``directory`` does not exist or holds no
+    such file -- the "newest ISO-dated file per kind" rule Story 5.1
+    established for the HTML poster, generalized (Story 23.4) so the PPTX
+    pair uses the identical rule rather than a second copy of it.
+
+    A candidate whose date segment does not parse as ``YYYY-MM-DD`` is
+    excluded rather than risk a plain lexicographic sort silently picking a
+    stray same-prefix file (a hand-copied backup, an aborted draft) over
+    the genuine newest export -- letters would otherwise sort after
+    digits, putting a file like ``-old-backup{suffix}`` last."""
+    if not directory.is_dir():
+        return None
+    dated: list[tuple[str, Path]] = []
+    for candidate_path in directory.glob(f"{prefix}*{suffix}"):
+        date_segment = candidate_path.name[len(prefix) : -len(suffix)]
+        try:
+            date.fromisoformat(date_segment)
+        except ValueError:
+            continue
+        dated.append((date_segment, candidate_path))
+    if not dated:
+        return None
+    # ISO 8601 dates compare lexicographically in filename order.
+    return max(dated, key=lambda pair: pair[0])[1]
 
 
 _EXPORT_ARTIFACT_PREFIX = "export:"
@@ -1197,53 +1772,116 @@ recorded under an export key is a locally computed content hash, not a
 Design-returned etag -- see ``push_exports``'s own docstring for why."""
 
 
-def _discover_export_files(deck_dir: Path, slug: str) -> list[_ExportCandidate]:
-    """The derived export file(s) currently on disk for ``slug``, newest
-    first by dated filename. Only the standalone HTML poster is covered
-    today -- see this section's own module-level scope note for why the
-    PPTX companions are deferred.
+_PPTX_PREFIXES = (
+    "{slug}-deck-",
+    "{slug}_infographic_deck-",
+)
+"""The two ``src/pptx/`` filename kinds ``scripts/deck_export.py`` produces
+(``deck-pptx`` / ``infographic-pptx``) -- also the kind Story 23.5's
+``PptxTemplateExporter`` writes for the ``.potx`` path, since both routes
+write the identical ``{slug}-deck-<date>.pptx`` name for the "deck" target.
+``_discover_export_files`` below applies ``_newest_dated_match`` to each,
+regardless of which exporter produced it."""
 
-    Returns an empty list when ``deck-export`` has never produced the file
-    yet (nothing to push, not an error)."""
-    marp_dir = deck_dir / "src" / "marp"
-    if not marp_dir.is_dir():
-        return []
-    prefix = f"{slug}-infographic-standalone-"
-    dated: list[tuple[str, Path]] = []
-    for candidate_path in marp_dir.glob(f"{prefix}*.html"):
-        date_segment = candidate_path.stem.removeprefix(prefix)
+
+def _discover_export_files(deck_dir: Path, slug: str) -> list[_ExportCandidate]:
+    """The derived export file(s) currently on disk for ``slug``: the
+    standalone HTML poster plus (Story 23.4) the two PPTX companions --
+    each the newest ISO-dated file of its own kind, discovered
+    independently, so a deck with only some of the three exports on disk
+    still pushes whichever ones exist.
+
+    Returns an empty list when ``deck-export`` has never produced any of
+    them yet (nothing to push, not an error)."""
+    candidates: list[_ExportCandidate] = []
+
+    html_path = _newest_dated_match(deck_dir / "src" / "marp", f"{slug}-infographic-standalone-", ".html")
+    if html_path is not None:
         try:
-            date.fromisoformat(date_segment)
-        except ValueError:
-            # Not a dated export -- a stray backup/draft/renamed file that
-            # happens to share the prefix (e.g. "-old-backup.html",
-            # "-FINAL.html"). Plain lexicographic sort would put these
-            # AFTER every real dated file (letters sort after digits),
-            # silently selecting stale/unrelated content instead of the
-            # genuine newest export. Excluded rather than risk pushing it.
-            continue
-        dated.append((date_segment, candidate_path))
-    if not dated:
-        return []
-    # ISO 8601 dates compare lexicographically in filename order -- the
-    # same "newest by name" rule deck_export.py's own `find_source` uses
-    # for its Marp sources, now applied only to confirmed-dated matches.
-    local_path = max(dated, key=lambda pair: pair[0])[1]
-    try:
-        text = local_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        raise errors.HeraldError(
-            f"cannot push exports for {slug!r}: could not read {local_path} ({exc})"
-        ) from exc
-    local_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    return [
-        _ExportCandidate(
-            filename=local_path.name,
-            local_path=local_path,
-            data=text,
-            local_hash=local_hash,
+            text = html_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            raise errors.HeraldError(f"cannot push exports for {slug!r}: could not read {html_path} ({exc})") from exc
+        candidates.append(
+            _ExportCandidate(
+                filename=html_path.name,
+                local_path=html_path,
+                data=text,
+                local_hash=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            )
         )
-    ]
+
+    pptx_dir = deck_dir / "src" / "pptx"
+    for prefix_template in _PPTX_PREFIXES:
+        pptx_path = _newest_dated_match(pptx_dir, prefix_template.format(slug=slug), ".pptx")
+        if pptx_path is None:
+            continue
+        try:
+            raw_bytes = pptx_path.read_bytes()
+        except OSError as exc:
+            raise errors.HeraldError(f"cannot push exports for {slug!r}: could not read {pptx_path} ({exc})") from exc
+        candidates.append(
+            _ExportCandidate(
+                filename=pptx_path.name,
+                local_path=pptx_path,
+                data=base64.b64encode(raw_bytes).decode("ascii"),
+                local_hash=hashlib.sha256(raw_bytes).hexdigest(),
+                binary=True,
+            )
+        )
+
+    return candidates
+
+
+_HEAD_OPEN_RE = re.compile(rb"<head\b[^>]*>", re.IGNORECASE)
+_WHITESPACE_RE = re.compile(rb"\s*")
+_OMELETTE_TAG_RE = re.compile(
+    rb"<(style|script)\b[^>]*\bdata-omelette-injected\b[^>]*>.*?</\1\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+"""One ``<style>``/``<script>`` tag carrying ``data-omelette-injected``
+anywhere in its opening tag (``docs/specs/presentation-deck.md`` § *Large-file
+uploads*: the host editor injects these into a served HTML document and
+marks them so they are "never written back as authored source"). The
+non-greedy ``.*?`` body plus a backreferenced closing tag keeps a run of
+several such tags from being swallowed as one match."""
+
+
+def _strip_serve_harness(content: bytes, *, path: str) -> bytes:
+    """Undo Design's injected preview harness from ``render_preview``'s
+    served bytes for ``path`` (Story 23.4's ``--prove``), so the result can
+    be compared byte-for-byte against what was actually pushed.
+
+    Only an ``.html`` path can carry the harness described in
+    ``docs/specs/presentation-deck.md``: a contiguous run of
+    ``data-omelette-injected`` ``<style>``/``<script>`` tags spliced in
+    immediately after the document's ``<head ...>`` opening tag (whitespace
+    between tags is tolerated). Every other extension -- including both
+    PPTX exports this story adds to the push path -- is returned unchanged;
+    a PPTX is a binary zip archive, not an HTML document, so there is no
+    ``<head>`` for a host editor to inject into (confirmed live during this
+    story's own implementation -- see its spec's Design Notes).
+
+    A match is spliced out and replaced with a single newline, mirroring
+    the manual recipe's own "splice with a single newline" step. Content
+    with no ``<head>`` tag at all, or an ``<head>`` with nothing injected
+    directly after it, is returned unchanged -- this is a targeted removal
+    of a known-shaped block, never a heuristic HTML rewrite."""
+    if not path.lower().endswith(".html"):
+        return content
+    head_match = _HEAD_OPEN_RE.search(content)
+    if head_match is None:
+        return content
+    start = head_match.end()
+    pos = start
+    while True:
+        probe = _WHITESPACE_RE.match(content, pos).end()
+        tag_match = _OMELETTE_TAG_RE.match(content, probe)
+        if tag_match is None:
+            break
+        pos = tag_match.end()
+    if pos == start:
+        return content
+    return content[:start] + b"\n" + content[pos:]
 
 
 def push_exports(
@@ -1253,10 +1891,12 @@ def push_exports(
     repo_root: Path,
     export_dir: Path | None = None,
     state_path: Path | None = None,
+    prove: bool = False,
+    now: Callable[[], datetime] | None = None,
 ) -> ExportPushResult:
-    """CAP-5, Story 5.1/5.2: push the derived export set back into Design
-    after a pull + ``deck-export`` regeneration (``bridge-protocol.md`` §
-    Export push-back). Requires a prior ``seed`` (``_require_seeded_state``,
+    """CAP-5, Story 5.1/5.2/23.6: push the derived export set back into
+    Design after a pull + ``deck-export`` regeneration (``bridge-protocol.md``
+    § Export push-back). Requires a prior ``seed`` (``_require_seeded_state``,
     reused from CAP-2).
 
     For each discovered export file (``_discover_export_files``): compares
@@ -1268,7 +1908,8 @@ def push_exports(
     filenames together, mirroring ``seed``'s own batch-declare shape), then
     written one ``write_files`` call at a time using that file's current
     server-side etag from ``plan.base_etags`` (``"0"`` for a path that does
-    not exist there yet -- FR-18).
+    not exist there yet -- FR-18). A binary candidate's entry also carries
+    ``"encoding": "base64"``; the poster's own text entry never does.
 
     **Conflict handling (Story 5.2, FR-20/NFR-02).** A per-file
     ``write_files`` call that raises ``errors.TransportCallError`` (the
@@ -1283,16 +1924,32 @@ def push_exports(
     ``TransportError``, so a mid-batch credential expiry or outage is never
     mistaken for a per-file conflict, and the caller isn't left hammering
     the remaining files against a connection that's still broken).
-    ``state.py`` is updated once, after every file has been attempted, and
-    only with the files that actually succeeded -- a conflicted file's own
+
+    **``--prove`` (Story 23.4, CAP-6).** When ``prove=True``, every file
+    that was actually written this run (never a skipped or conflicted one)
+    is read back via ``transport.fetch_rendered_bytes`` and compared,
+    after ``_strip_serve_harness``, against the exact bytes just sent. A
+    match appends that file to the returned ``proven`` tuple and one row to
+    the deck README's dated Ledger (``registry.append_push_ledger_row``); a
+    mismatch reverts that file's ``export:`` state entry to whatever it was
+    before this run (so a retry sees it as still-changed) and is collected
+    for ``errors.ReadBackMismatchError``, raised after every other file has
+    been given its own chance to prove -- one file's bad read-back never
+    stops another's. ``prove=False`` (the default) makes no read-back call
+    at all and never touches the README.
+
+    ``state.py`` is updated once, after every file has been attempted, with
+    exactly the files that both pushed successfully and (when ``prove`` is
+    set) proved byte-identical -- a conflicted or mismatched file's own
     ``export:`` record is left exactly as it was, so a retry sees it as
     still-changed rather than falsely "already pushed". If any file
     conflicted, ``push_exports`` raises ``errors.ExportConflictError``
-    naming every conflicted file (after the state write for the successful
-    ones has already landed); otherwise it returns ``ExportPushResult``."""
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    naming every conflicted file; if (with no conflicts) any file
+    mismatched on read-back, it raises ``errors.ReadBackMismatchError``
+    naming every mismatched file -- both after the state write and any
+    Ledger append for the rest of the batch have already landed. Otherwise
+    it returns ``ExportPushResult``."""
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     existing = _require_seeded_state(resolved_state_path, slug, verb="push")
     deck_dir = repo_root / "presentations" / slug
     resolved_export_dir = deck_dir if export_dir is None else export_dir
@@ -1319,33 +1976,82 @@ def push_exports(
     pushed: list[str] = []
     conflicts: list[str] = []
     new_etags = dict(existing.etags)
+    pushed_candidates: dict[str, _ExportCandidate] = {}
     for candidate in to_push:
         if_match = plan.base_etags.get(candidate.filename, _FRESH_ETAG)
+        file_entry: dict[str, Any] = {
+            "path": candidate.filename,
+            "data": candidate.data,
+            "if_match": if_match,
+        }
+        if candidate.binary:
+            file_entry["encoding"] = "base64"
         try:
             transport.write_files(
                 project_id=existing.project_id,
-                files=[
-                    {
-                        "path": candidate.filename,
-                        "data": candidate.data,
-                        "if_match": if_match,
-                    }
-                ],
+                files=[file_entry],
                 plan_token=plan.plan_token,
             )
         except errors.TransportCallError as exc:
             conflicts.append(f"{candidate.filename} ({exc})")
             continue
-        new_etags[f"{_EXPORT_ARTIFACT_PREFIX}{candidate.filename}"] = (
-            candidate.local_hash
-        )
+        new_etags[f"{_EXPORT_ARTIFACT_PREFIX}{candidate.filename}"] = candidate.local_hash
         pushed.append(candidate.filename)
+        pushed_candidates[candidate.filename] = candidate
+
+    proven: list[str] = []
+    mismatches: list[str] = []
+    ledger_rows: list[tuple[str, int]] = []
+    if prove and pushed:
+        for filename in pushed:
+            candidate = pushed_candidates[filename]
+            expected = _candidate_raw_bytes(candidate)
+            try:
+                raw = transport.fetch_rendered_bytes(project_id=existing.project_id, path=filename)
+            except errors.TransportCallError:
+                # A transient read-back failure (network/HTTP) is not a byte
+                # mismatch, but it must be treated identically: the write
+                # already landed, so the file cannot be proven this run and
+                # its `export:` record must revert exactly like a genuine
+                # mismatch, rather than aborting the whole batch or leaking
+                # the new hash for a file nothing ever confirmed.
+                mismatches.append(filename)
+                key = f"{_EXPORT_ARTIFACT_PREFIX}{filename}"
+                if key in existing.etags:
+                    new_etags[key] = existing.etags[key]
+                else:
+                    new_etags.pop(key, None)
+                continue
+            actual = _strip_serve_harness(raw, path=filename)
+            if actual != expected:
+                mismatches.append(filename)
+                key = f"{_EXPORT_ARTIFACT_PREFIX}{filename}"
+                if key in existing.etags:
+                    new_etags[key] = existing.etags[key]
+                else:
+                    new_etags.pop(key, None)
+                continue
+            proven.append(filename)
+            ledger_rows.append((filename, len(expected)))
+
+    # The Ledger append runs BEFORE state.write: if it raises (e.g. a disk
+    # error), state must stay uncommitted so a retry legitimately
+    # re-pushes/re-proves/re-appends a proven file, rather than state
+    # already recording it as unchanged while its Ledger row was lost.
+    if ledger_rows:
+        resolved_now = now or _default_now
+        registry.append_push_ledger_row(
+            deck_dir / "README.md",
+            date=resolved_now().strftime("%Y-%m-%d"),
+            rows=ledger_rows,
+        )
 
     # Persist whichever files actually succeeded -- even when some
-    # conflicted -- so a retry never re-pushes a file that already landed.
-    # A conflicted file's record is simply absent from `new_etags`'s delta
-    # (still whatever it was before this run), so the next attempt sees it
-    # as changed and tries again.
+    # conflicted or (with `--prove`) mismatched on read-back -- so a retry
+    # never re-pushes a file that already landed. A conflicted or
+    # mismatched file's record is simply absent from (or reverted in)
+    # `new_etags`'s delta (still whatever it was before this run), so the
+    # next attempt sees it as changed and tries again.
     if pushed:
         state.write(
             resolved_state_path,
@@ -1358,13 +2064,18 @@ def push_exports(
         )
 
     if conflicts:
-        success_note = (
-            f" ({len(pushed)} other export(s) pushed successfully)" if pushed else ""
-        )
+        success_note = f" ({len(pushed)} other export(s) pushed successfully)" if pushed else ""
         raise errors.ExportConflictError(
             f"cannot push {len(conflicts)} export(s) for {slug!r}: "
             f"{'; '.join(conflicts)} -- refused rather than risk clobbering "
             f"a Design-side edit{success_note}"
         )
 
-    return ExportPushResult(slug=slug, pushed=tuple(pushed), skipped=tuple(skipped))
+    if mismatches:
+        raise errors.ReadBackMismatchError(
+            f"read-back after push did not match for {len(mismatches)} "
+            f"file(s) in {slug!r}: {', '.join(mismatches)} -- refused rather "
+            f"than record an unproven push"
+        )
+
+    return ExportPushResult(slug=slug, pushed=tuple(pushed), skipped=tuple(skipped), proven=tuple(proven))

@@ -162,3 +162,16 @@ baseline_revision: 'f38ec4bc714fc4b5268d43532d3621cd7beb7b98'
 
 - Promotion classification, including P3's invalid-spec-keys coverage.
   [`test_promotion.py:1`](../../../../src/shared/packages/pyforge-marshal/tests/unit/test_promotion.py#L1)
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `4d5218a9c7` (2026-08-06, "Merge pull request #274 from rxm7706/marshal/4-2-teardown-reachability-spec-recovery"). Ledger row `4-2-teardown-reachability-and-spec-recovery-assistance: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_ad11_write_boundary.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_deploy.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_init.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_promotion.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

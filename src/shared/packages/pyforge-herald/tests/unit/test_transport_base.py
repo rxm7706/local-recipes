@@ -38,10 +38,17 @@ def test_fake_caller_conforms_to_the_caller_seam(fake_caller):
     assert isinstance(fake_caller(), ToolCaller)
 
 
-def test_port_exposes_exactly_the_nine_bridge_tools():
+def test_port_exposes_exactly_the_eleven_port_methods():
     """Widened from 8 to 9 by Story 3.1/3.2's spine amendment (F10, ``base.py``'s
     own module docstring): ``list_files`` is CAP-3's only way to enumerate a
-    Design project's files, needed for the stale-hand-mirror heuristic."""
+    Design project's files, needed for the stale-hand-mirror heuristic.
+    Widened again, 9 to 10, by Story 23.4: ``fetch_rendered_bytes`` is the
+    only way to reach ``render_preview``'s ``serve_url`` for a byte-for-byte
+    ``--prove`` read-back -- a 10th *port method*, not a 10th remote tool
+    (it calls ``render_preview`` itself; see ``base.py``'s own module
+    docstring). Widened again, 10 to 11, by Story 23.1 (CAP-1):
+    ``list_projects`` is the only way to enumerate the whole signed-in
+    account's projects, needed for the account-wide reconciliation report."""
     expected = {
         "get_design_prompt",
         "create_project",
@@ -52,6 +59,8 @@ def test_port_exposes_exactly_the_nine_bridge_tools():
         "read_file",
         "render_preview",
         "list_files",
+        "fetch_rendered_bytes",
+        "list_projects",
     }
     assert set(DesignTransport.__protocol_attrs__) == expected
 
@@ -135,20 +144,12 @@ def test_parse_read_response_full_form_decodes_and_strips_the_trailer():
 def test_parse_read_response_decodes_ampersand_last():
     # A file containing the literal text "&lt;" is escaped to "&amp;lt;";
     # decoding &amp; last is what keeps it from collapsing into "<".
-    text = (
-        '<untrusted-project-content path="p" etag="E">\n'
-        "&amp;lt;\n"
-        "</untrusted-project-content>"
-    )
+    text = '<untrusted-project-content path="p" etag="E">\n&amp;lt;\n</untrusted-project-content>'
     assert parse_read_response(text).body == "&lt;"
 
 
 def test_parse_read_response_keeps_interior_blank_lines():
-    text = (
-        '<untrusted-project-content path="p" etag="E">\n'
-        "one\n\nthree\n"
-        "</untrusted-project-content>"
-    )
+    text = '<untrusted-project-content path="p" etag="E">\none\n\nthree\n</untrusted-project-content>'
     assert parse_read_response(text).body == "one\n\nthree"
 
 
@@ -195,11 +196,7 @@ def test_parse_read_response_reports_a_window_that_covers_the_file():
 
 
 def test_parse_read_response_without_a_window_is_not_truncated():
-    text = (
-        '<untrusted-project-content path="p" etag="E">\n'
-        "body\n"
-        "</untrusted-project-content>"
-    )
+    text = '<untrusted-project-content path="p" etag="E">\nbody\n</untrusted-project-content>'
     read = parse_read_response(text)
     assert (read.first_line, read.last_line, read.total_lines) == (None, None, None)
     assert read.truncated is False
@@ -231,11 +228,7 @@ def test_a_declared_window_with_no_parsable_total_fails_closed(attributes):
     # window reported as whole would be written over the prototype, and its
     # etag would then license a whole-file overwrite of the lines outside
     # it. Coverage that cannot be proven is not assumed, either way round.
-    text = (
-        f'<untrusted-project-content path="p" etag="E" {attributes}>\n'
-        "body\n"
-        "</untrusted-project-content>"
-    )
+    text = f'<untrusted-project-content path="p" etag="E" {attributes}>\nbody\n</untrusted-project-content>'
     read = parse_read_response(text)
     assert read.total_lines is None
     assert read.truncated is True
@@ -301,9 +294,7 @@ def test_parse_read_response_refuses_an_unrecognised_shape(text):
 
 
 def test_require_conditional_accepts_a_zero_etag():
-    require_conditional(
-        "write_files", [{"path": "a", "if_match": "0"}], allow_leaf=False
-    )
+    require_conditional("write_files", [{"path": "a", "if_match": "0"}], allow_leaf=False)
 
 
 @pytest.mark.parametrize("etag", [None, "", 5, 0, True, ["x"], {"a": "0"}])
@@ -311,9 +302,7 @@ def test_require_conditional_demands_a_non_empty_string_etag(etag):
     # Truthiness is not the test: 5, True and ["x"] are shapes the server
     # never sends, and accepting one would authorize an unconditional write.
     with pytest.raises(UnconditionalWriteError):
-        require_conditional(
-            "write_files", [{"path": "a", "if_match": etag}], allow_leaf=False
-        )
+        require_conditional("write_files", [{"path": "a", "if_match": etag}], allow_leaf=False)
 
 
 def test_require_conditional_rejects_a_non_mapping_entry():
@@ -339,9 +328,7 @@ def test_require_conditional_accepts_a_populated_leaf_etag_map():
 @pytest.mark.parametrize("leaf", [{}, {"assets/a.css": ""}, {"assets/a.css": 0}, "0"])
 def test_require_conditional_demands_a_populated_leaf_etag_map(leaf):
     with pytest.raises(UnconditionalWriteError):
-        require_conditional(
-            "copy_files", [{"dest": "assets", "leaf_if_match": leaf}], allow_leaf=True
-        )
+        require_conditional("copy_files", [{"dest": "assets", "leaf_if_match": leaf}], allow_leaf=True)
 
 
 # --- the harness itself ----------------------------------------------------

@@ -88,9 +88,7 @@ def test_vuln_severity_policy_threshold_for_each_fail_on(fail_on, policy_violati
         SeverityTier.NONE,
     }
     for tier, status in policy.items():
-        expected = (
-            Status.POLICY_VIOLATION if tier in policy_violation_tiers else Status.WARN
-        )
+        expected = Status.POLICY_VIOLATION if tier in policy_violation_tiers else Status.WARN
         assert status is expected
 
 
@@ -115,9 +113,7 @@ def test_default_fail_on_reproduces_the_module_vuln_default_table():
 
 def test_is_confidence_trusted_none_is_always_trusted():
     assert EffectiveConfig().is_confidence_trusted(None) is True
-    assert EffectiveConfig(dep001_block_confidence="likely").is_confidence_trusted(
-        None
-    ) is True
+    assert EffectiveConfig(dep001_block_confidence="likely").is_confidence_trusted(None) is True
 
 
 def test_is_confidence_trusted_verified_threshold_distrusts_likely():
@@ -247,9 +243,7 @@ def test_wrong_typed_fail_under_coverage_raises_config_validation_error(tmp_path
 
 
 @pytest.mark.parametrize("value", ["-1", "101"])
-def test_out_of_range_fail_under_coverage_raises_config_validation_error(
-    tmp_path, value
-):
+def test_out_of_range_fail_under_coverage_raises_config_validation_error(tmp_path, value):
     _write(
         tmp_path / "pyproject.toml",
         f"[tool.pyforge-warden]\nfail-under-coverage = {value}\n",
@@ -262,9 +256,7 @@ def test_fail_under_coverage_accepts_boundary_values(tmp_path):
     _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nfail-under-coverage = 0\n")
     config, _ = ConfigLoader().load(tmp_path)
     assert config.fail_under_coverage == 0.0
-    _write(
-        tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nfail-under-coverage = 100\n"
-    )
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nfail-under-coverage = 100\n")
     config, _ = ConfigLoader().load(tmp_path)
     assert config.fail_under_coverage == 100.0
 
@@ -353,12 +345,8 @@ def test_waiver_default_expiry_days_default_and_toml_override(tmp_path):
     assert config.waiver_default_expiry_days == 30
 
 
-@pytest.mark.parametrize(
-    "toml_value", ["0", "-1", '"30"', "30.0", "true", "3651"]
-)
-def test_wrong_or_out_of_range_waiver_default_expiry_days_raises_config_validation_error(
-    tmp_path, toml_value
-):
+@pytest.mark.parametrize("toml_value", ["0", "-1", '"30"', "30.0", "true", "3651"])
+def test_wrong_or_out_of_range_waiver_default_expiry_days_raises_config_validation_error(tmp_path, toml_value):
     _write(
         tmp_path / "pyproject.toml",
         f"[tool.pyforge-warden]\nwaiver-default-expiry-days = {toml_value}\n",
@@ -490,9 +478,7 @@ def test_effective_config_rejects_non_bool_fail_on_kev_at_construction():
 
 
 def test_default_with_cli_overrides_applies_both_flags():
-    config = EffectiveConfig.default_with_cli_overrides(
-        cli_fail_on="high", cli_fail_under_coverage=42.0
-    )
+    config = EffectiveConfig.default_with_cli_overrides(cli_fail_on="high", cli_fail_under_coverage=42.0)
     assert config.fail_on is SeverityTier.HIGH
     assert config.fail_under_coverage == 42.0
     assert config.dep001_block_confidence == "verified"
@@ -657,9 +643,7 @@ def test_default_with_cli_overrides_applies_license_flags():
 
 @pytest.mark.parametrize("key", ["allow-licenses", "deny-licenses"])
 @pytest.mark.parametrize("bad_entry", ["GPLv3", "BSD", "Apache 2.0", "()"])
-def test_invalid_spdx_toml_entry_raises_config_validation_error(
-    tmp_path, key, bad_entry
-):
+def test_invalid_spdx_toml_entry_raises_config_validation_error(tmp_path, key, bad_entry):
     """A configured entry that cannot normalize as SPDX could never match
     any resolved license — the gate would read active (gating: true) while
     being structurally unable to fire. Fail at load, like the
@@ -689,10 +673,7 @@ def test_license_ref_with_grant_and_compound_entries_are_accepted(tmp_path):
     WITH grants, and SPDX's user-defined LicenseRef-* references."""
     config, _ = ConfigLoader().load(
         tmp_path,
-        cli_deny_licenses=(
-            "LicenseRef-Proprietary, MIT OR Apache-2.0, "
-            "GPL-2.0-only WITH Classpath-exception-2.0"
-        ),
+        cli_deny_licenses=("LicenseRef-Proprietary, MIT OR Apache-2.0, GPL-2.0-only WITH Classpath-exception-2.0"),
     )
     assert config.deny_licenses == (
         "LicenseRef-Proprietary",
@@ -979,9 +960,7 @@ def test_effective_config_max_lag_none_is_valid():
 
 
 def test_default_with_cli_overrides_applies_currency_flags():
-    config = EffectiveConfig.default_with_cli_overrides(
-        cli_max_lag=5, cli_require_lts=True, cli_fail_on_eol=True
-    )
+    config = EffectiveConfig.default_with_cli_overrides(cli_max_lag=5, cli_require_lts=True, cli_fail_on_eol=True)
     assert config.max_lag == 5
     assert config.require_lts is True
     assert config.fail_on_eol is True

@@ -268,22 +268,15 @@ class EffectiveConfig:
         instance (every field already passed through ``_coerce_*``), so
         this guards direct/test construction only."""
         if self.fail_on not in _SEVERITY_ORDER:
-            raise ValueError(
-                f"fail_on must be one of {_FAIL_ON_CHOICES!r}, got {self.fail_on!r}"
-            )
+            raise ValueError(f"fail_on must be one of {_FAIL_ON_CHOICES!r}, got {self.fail_on!r}")
         if self.dep001_block_confidence not in _CONFIDENCE_RANK:
             raise ValueError(
                 "dep001_block_confidence must be one of "
                 f"{_DEP001_BLOCK_CONFIDENCE_CHOICES!r}, got "
                 f"{self.dep001_block_confidence!r}"
             )
-        if isinstance(self.fail_under_coverage, bool) or not (
-            0.0 <= self.fail_under_coverage <= 100.0
-        ):
-            raise ValueError(
-                "fail_under_coverage must be a number in [0, 100], got "
-                f"{self.fail_under_coverage!r}"
-            )
+        if isinstance(self.fail_under_coverage, bool) or not (0.0 <= self.fail_under_coverage <= 100.0):
+            raise ValueError(f"fail_under_coverage must be a number in [0, 100], got {self.fail_under_coverage!r}")
         if (
             isinstance(self.waiver_default_expiry_days, bool)
             or not isinstance(self.waiver_default_expiry_days, int)
@@ -295,9 +288,7 @@ class EffectiveConfig:
                 f"{self.waiver_default_expiry_days!r}"
             )
         if not isinstance(self.fail_on_kev, bool):
-            raise ValueError(
-                f"fail_on_kev must be a bool, got {self.fail_on_kev!r}"
-            )
+            raise ValueError(f"fail_on_kev must be a bool, got {self.fail_on_kev!r}")
         for field_name in ("allow_licenses", "deny_licenses"):
             value = getattr(self, field_name)
             # item.strip(), not bare item (follow-up review pass,
@@ -305,42 +296,24 @@ class EffectiveConfig:
             # flipped license_gating True over a token _normalize_tokens
             # silently empties — inconsistent with _coerce_license_list's
             # own stripped-token guarantee for the CLI/TOML path.
-            if not isinstance(value, tuple) or not all(
-                isinstance(item, str) and item.strip() for item in value
-            ):
-                raise ValueError(
-                    f"{field_name} must be a tuple of non-blank strings, got "
-                    f"{value!r}"
-                )
+            if not isinstance(value, tuple) or not all(isinstance(item, str) and item.strip() for item in value):
+                raise ValueError(f"{field_name} must be a tuple of non-blank strings, got {value!r}")
         if self.max_lag is not None and (
-            isinstance(self.max_lag, bool)
-            or not isinstance(self.max_lag, int)
-            or self.max_lag < 0
+            isinstance(self.max_lag, bool) or not isinstance(self.max_lag, int) or self.max_lag < 0
         ):
-            raise ValueError(
-                f"max_lag must be an int >= 0 or None, got {self.max_lag!r}"
-            )
+            raise ValueError(f"max_lag must be an int >= 0 or None, got {self.max_lag!r}")
         if not isinstance(self.require_lts, bool):
-            raise ValueError(
-                f"require_lts must be a bool, got {self.require_lts!r}"
-            )
+            raise ValueError(f"require_lts must be a bool, got {self.require_lts!r}")
         if not isinstance(self.fail_on_eol, bool):
-            raise ValueError(
-                f"fail_on_eol must be a bool, got {self.fail_on_eol!r}"
-            )
+            raise ValueError(f"fail_on_eol must be a bool, got {self.fail_on_eol!r}")
         if not isinstance(self.warn_as_error, bool):
-            raise ValueError(
-                f"warn_as_error must be a bool, got {self.warn_as_error!r}"
-            )
+            raise ValueError(f"warn_as_error must be a bool, got {self.warn_as_error!r}")
         if self.min_epss is not None and (
             isinstance(self.min_epss, bool)
             or not isinstance(self.min_epss, (int, float))
             or not (0.0 <= self.min_epss <= 1.0)
         ):
-            raise ValueError(
-                f"min_epss must be a number in [0, 1] or None, got "
-                f"{self.min_epss!r}"
-            )
+            raise ValueError(f"min_epss must be a number in [0, 1] or None, got {self.min_epss!r}")
 
     @classmethod
     def default(cls) -> EffectiveConfig:
@@ -384,47 +357,25 @@ class EffectiveConfig:
         "explicitly false"). ``cli_min_epss`` (Story 6.7) follows the SAME
         pattern as ``cli_max_lag``."""
         defaults = cls.default()
-        fail_on = (
-            _coerce_fail_on(cli_fail_on) if cli_fail_on is not None else defaults.fail_on
-        )
+        fail_on = _coerce_fail_on(cli_fail_on) if cli_fail_on is not None else defaults.fail_on
         fail_under_coverage = (
             _coerce_fail_under_coverage(cli_fail_under_coverage)
             if cli_fail_under_coverage is not None
             else defaults.fail_under_coverage
         )
         allow_licenses = (
-            _coerce_allow_licenses(cli_allow_licenses)
-            if cli_allow_licenses is not None
-            else defaults.allow_licenses
+            _coerce_allow_licenses(cli_allow_licenses) if cli_allow_licenses is not None else defaults.allow_licenses
         )
         deny_licenses = (
-            _coerce_deny_licenses(cli_deny_licenses)
-            if cli_deny_licenses is not None
-            else defaults.deny_licenses
+            _coerce_deny_licenses(cli_deny_licenses) if cli_deny_licenses is not None else defaults.deny_licenses
         )
-        max_lag = (
-            _coerce_max_lag(cli_max_lag) if cli_max_lag is not None else defaults.max_lag
-        )
-        require_lts = (
-            _coerce_require_lts(cli_require_lts)
-            if cli_require_lts is not None
-            else defaults.require_lts
-        )
-        fail_on_eol = (
-            _coerce_fail_on_eol(cli_fail_on_eol)
-            if cli_fail_on_eol is not None
-            else defaults.fail_on_eol
-        )
+        max_lag = _coerce_max_lag(cli_max_lag) if cli_max_lag is not None else defaults.max_lag
+        require_lts = _coerce_require_lts(cli_require_lts) if cli_require_lts is not None else defaults.require_lts
+        fail_on_eol = _coerce_fail_on_eol(cli_fail_on_eol) if cli_fail_on_eol is not None else defaults.fail_on_eol
         warn_as_error = (
-            _coerce_warn_as_error(cli_warn_as_error)
-            if cli_warn_as_error is not None
-            else defaults.warn_as_error
+            _coerce_warn_as_error(cli_warn_as_error) if cli_warn_as_error is not None else defaults.warn_as_error
         )
-        min_epss = (
-            _coerce_min_epss(cli_min_epss)
-            if cli_min_epss is not None
-            else defaults.min_epss
-        )
+        min_epss = _coerce_min_epss(cli_min_epss) if cli_min_epss is not None else defaults.min_epss
         return cls(
             fail_on=fail_on,
             fail_under_coverage=fail_under_coverage,
@@ -454,9 +405,7 @@ class EffectiveConfig:
         DEFAULT_VULN_SEVERITY_POLICY``."""
         threshold_rank = _SEVERITY_ORDER.index(self.fail_on)
         return {
-            tier: (
-                Status.POLICY_VIOLATION if rank <= threshold_rank else Status.WARN
-            )
+            tier: (Status.POLICY_VIOLATION if rank <= threshold_rank else Status.WARN)
             for rank, tier in enumerate(_SEVERITY_ORDER)
         }
 
@@ -471,9 +420,7 @@ class EffectiveConfig:
         fallback in this codebase applies."""
         if mapping_confidence is None:
             return True
-        threshold = _CONFIDENCE_RANK.get(
-            self.dep001_block_confidence, _CONFIDENCE_RANK["verified"]
-        )
+        threshold = _CONFIDENCE_RANK.get(self.dep001_block_confidence, _CONFIDENCE_RANK["verified"])
         return _CONFIDENCE_RANK.get(mapping_confidence, -1) >= threshold
 
     @property
@@ -565,36 +512,25 @@ def _extract_table(document: dict[str, object], *, source: str) -> dict[str, obj
     regardless of which file ``source`` names."""
     tool = document.get("tool", {})
     if not isinstance(tool, dict):
-        raise ConfigValidationError(
-            f"{source}: [tool] must be a table, got {type(tool).__name__}"
-        )
+        raise ConfigValidationError(f"{source}: [tool] must be a table, got {type(tool).__name__}")
     table = tool.get("pyforge-warden", {})
     if not isinstance(table, dict):
-        raise ConfigValidationError(
-            f"{source}: [tool.pyforge-warden] must be a table, got "
-            f"{type(table).__name__}"
-        )
+        raise ConfigValidationError(f"{source}: [tool.pyforge-warden] must be a table, got {type(table).__name__}")
     return table
 
 
 def _coerce_fail_on(value: object) -> SeverityTier:
     if not isinstance(value, str) or value not in _FAIL_ON_CHOICES:
-        raise ConfigValidationError(
-            f"'fail-on' must be one of {_FAIL_ON_CHOICES!r}, got {value!r}"
-        )
+        raise ConfigValidationError(f"'fail-on' must be one of {_FAIL_ON_CHOICES!r}, got {value!r}")
     return SeverityTier(value)
 
 
 def _coerce_fail_under_coverage(value: object) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ConfigValidationError(
-            f"'fail-under-coverage' must be a number in [0, 100], got {value!r}"
-        )
+        raise ConfigValidationError(f"'fail-under-coverage' must be a number in [0, 100], got {value!r}")
     numeric = float(value)
     if not (0.0 <= numeric <= 100.0):
-        raise ConfigValidationError(
-            f"'fail-under-coverage' must be in [0, 100], got {value!r}"
-        )
+        raise ConfigValidationError(f"'fail-under-coverage' must be in [0, 100], got {value!r}")
     return numeric
 
 
@@ -606,25 +542,19 @@ def _coerce_max_lag(value: object) -> int:
     CLI flag itself (a malformed ``--max-lag`` is a usage error, exit 2,
     never reaching this function)."""
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise ConfigValidationError(
-            f"'max-lag' must be an int >= 0, got {value!r}"
-        )
+        raise ConfigValidationError(f"'max-lag' must be an int >= 0, got {value!r}")
     return value
 
 
 def _coerce_require_lts(value: object) -> bool:
     if not isinstance(value, bool):
-        raise ConfigValidationError(
-            f"'require-lts' must be a bool, got {value!r}"
-        )
+        raise ConfigValidationError(f"'require-lts' must be a bool, got {value!r}")
     return value
 
 
 def _coerce_fail_on_eol(value: object) -> bool:
     if not isinstance(value, bool):
-        raise ConfigValidationError(
-            f"'fail-on-eol' must be a bool, got {value!r}"
-        )
+        raise ConfigValidationError(f"'fail-on-eol' must be a bool, got {value!r}")
     return value
 
 
@@ -633,9 +563,7 @@ def _coerce_warn_as_error(value: object) -> bool:
     shape exactly — a plain bool, malformed is a typed
     ``ConfigValidationError``."""
     if not isinstance(value, bool):
-        raise ConfigValidationError(
-            f"'warn-as-error' must be a bool, got {value!r}"
-        )
+        raise ConfigValidationError(f"'warn-as-error' must be a bool, got {value!r}")
     return value
 
 
@@ -647,14 +575,10 @@ def _coerce_min_epss(value: object) -> float:
     CLI flag itself (a malformed ``--min-epss`` is a usage error, exit 2,
     never reaching this function)."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ConfigValidationError(
-            f"'min-epss' must be a number in [0, 1], got {value!r}"
-        )
+        raise ConfigValidationError(f"'min-epss' must be a number in [0, 1], got {value!r}")
     numeric = float(value)
     if not (0.0 <= numeric <= 1.0):
-        raise ConfigValidationError(
-            f"'min-epss' must be in [0, 1], got {value!r}"
-        )
+        raise ConfigValidationError(f"'min-epss' must be in [0, 1], got {value!r}")
     return numeric
 
 
@@ -667,40 +591,29 @@ def _describe_read_failure(exc: Exception) -> str:
     (``TOMLDecodeError``/``RecursionError``/``UnicodeDecodeError``) has no
     such problem — its ``str()`` carries no path, so it is used verbatim."""
     if isinstance(exc, OSError) and exc.errno is not None:
-        return (
-            f"[errno {errno_module.errorcode.get(exc.errno, str(exc.errno))}] "
-            f"{exc.__class__.__name__}"
-        )
+        return f"[errno {errno_module.errorcode.get(exc.errno, str(exc.errno))}] {exc.__class__.__name__}"
     return str(exc)
 
 
 def _coerce_dep001_block_confidence(value: object) -> str:
     if not isinstance(value, str) or value not in _DEP001_BLOCK_CONFIDENCE_CHOICES:
         raise ConfigValidationError(
-            "'dep001-block-confidence' must be one of "
-            f"{_DEP001_BLOCK_CONFIDENCE_CHOICES!r}, got {value!r}"
+            f"'dep001-block-confidence' must be one of {_DEP001_BLOCK_CONFIDENCE_CHOICES!r}, got {value!r}"
         )
     return value
 
 
 def _coerce_waiver_default_expiry_days(value: object) -> int:
-    if (
-        isinstance(value, bool)
-        or not isinstance(value, int)
-        or not (0 < value <= _MAX_WAIVER_DEFAULT_EXPIRY_DAYS)
-    ):
+    if isinstance(value, bool) or not isinstance(value, int) or not (0 < value <= _MAX_WAIVER_DEFAULT_EXPIRY_DAYS):
         raise ConfigValidationError(
-            "'waiver-default-expiry-days' must be a positive int <= "
-            f"{_MAX_WAIVER_DEFAULT_EXPIRY_DAYS}, got {value!r}"
+            f"'waiver-default-expiry-days' must be a positive int <= {_MAX_WAIVER_DEFAULT_EXPIRY_DAYS}, got {value!r}"
         )
     return value
 
 
 def _coerce_fail_on_kev(value: object) -> bool:
     if not isinstance(value, bool):
-        raise ConfigValidationError(
-            f"'fail-on-kev' must be a bool, got {value!r}"
-        )
+        raise ConfigValidationError(f"'fail-on-kev' must be a bool, got {value!r}")
     return value
 
 
@@ -742,10 +655,7 @@ def _coerce_license_list(value: object, *, key: str) -> tuple[str, ...]:
     elif isinstance(value, list) and all(isinstance(item, str) for item in value):
         candidates = value
     else:
-        raise ConfigValidationError(
-            f"'{key}' must be a comma-separated string or a list of "
-            f"strings, got {value!r}"
-        )
+        raise ConfigValidationError(f"'{key}' must be a comma-separated string or a list of strings, got {value!r}")
     tokens = tuple(token.strip() for token in candidates if token.strip())
     if not tokens:
         raise ConfigValidationError(
@@ -867,16 +777,11 @@ class ConfigLoader:
         unrecognized = sorted(set(merged) - _RECOGNIZED_KEYS)
         if unrecognized:
             raise ConfigValidationError(
-                f"unrecognized [tool.pyforge-warden] key(s): {unrecognized} "
-                f"(recognized: {sorted(_RECOGNIZED_KEYS)})"
+                f"unrecognized [tool.pyforge-warden] key(s): {unrecognized} (recognized: {sorted(_RECOGNIZED_KEYS)})"
             )
 
         defaults = EffectiveConfig.default()
-        fail_on = (
-            _coerce_fail_on(merged["fail-on"])
-            if "fail-on" in merged
-            else defaults.fail_on
-        )
+        fail_on = _coerce_fail_on(merged["fail-on"]) if "fail-on" in merged else defaults.fail_on
         fail_under_coverage = (
             _coerce_fail_under_coverage(merged["fail-under-coverage"])
             if "fail-under-coverage" in merged
@@ -892,46 +797,20 @@ class ConfigLoader:
             if "waiver-default-expiry-days" in merged
             else defaults.waiver_default_expiry_days
         )
-        fail_on_kev = (
-            _coerce_fail_on_kev(merged["fail-on-kev"])
-            if "fail-on-kev" in merged
-            else defaults.fail_on_kev
-        )
+        fail_on_kev = _coerce_fail_on_kev(merged["fail-on-kev"]) if "fail-on-kev" in merged else defaults.fail_on_kev
         allow_licenses = (
-            _coerce_allow_licenses(merged["allow-licenses"])
-            if "allow-licenses" in merged
-            else defaults.allow_licenses
+            _coerce_allow_licenses(merged["allow-licenses"]) if "allow-licenses" in merged else defaults.allow_licenses
         )
         deny_licenses = (
-            _coerce_deny_licenses(merged["deny-licenses"])
-            if "deny-licenses" in merged
-            else defaults.deny_licenses
+            _coerce_deny_licenses(merged["deny-licenses"]) if "deny-licenses" in merged else defaults.deny_licenses
         )
-        max_lag = (
-            _coerce_max_lag(merged["max-lag"])
-            if "max-lag" in merged
-            else defaults.max_lag
-        )
-        require_lts = (
-            _coerce_require_lts(merged["require-lts"])
-            if "require-lts" in merged
-            else defaults.require_lts
-        )
-        fail_on_eol = (
-            _coerce_fail_on_eol(merged["fail-on-eol"])
-            if "fail-on-eol" in merged
-            else defaults.fail_on_eol
-        )
+        max_lag = _coerce_max_lag(merged["max-lag"]) if "max-lag" in merged else defaults.max_lag
+        require_lts = _coerce_require_lts(merged["require-lts"]) if "require-lts" in merged else defaults.require_lts
+        fail_on_eol = _coerce_fail_on_eol(merged["fail-on-eol"]) if "fail-on-eol" in merged else defaults.fail_on_eol
         warn_as_error = (
-            _coerce_warn_as_error(merged["warn-as-error"])
-            if "warn-as-error" in merged
-            else defaults.warn_as_error
+            _coerce_warn_as_error(merged["warn-as-error"]) if "warn-as-error" in merged else defaults.warn_as_error
         )
-        min_epss = (
-            _coerce_min_epss(merged["min-epss"])
-            if "min-epss" in merged
-            else defaults.min_epss
-        )
+        min_epss = _coerce_min_epss(merged["min-epss"]) if "min-epss" in merged else defaults.min_epss
 
         # CLI flags win over both files. Routed through the SAME _coerce_*
         # helpers the TOML-sourced values use (review finding: a bare
@@ -1007,12 +886,8 @@ class ConfigLoader:
         ) as exc:
             detail = _describe_read_failure(exc)
             if hard_fail_on_parse_error:
-                raise ConfigParseError(
-                    f"{source}: cannot read or parse: {detail}"
-                ) from exc
-            warnings.append(
-                f"{source}: cannot read or parse ({detail}) — treated as absent"
-            )
+                raise ConfigParseError(f"{source}: cannot read or parse: {detail}") from exc
+            warnings.append(f"{source}: cannot read or parse ({detail}) — treated as absent")
             return {}
         return _extract_table(document, source=source)
 

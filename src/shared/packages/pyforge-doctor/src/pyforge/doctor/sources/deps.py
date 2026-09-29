@@ -189,9 +189,7 @@ def story_deps(epics_file: Path) -> list[tuple[int, str, str, str]]:
         block = text[m.end() : block_end]
         dm = DEPS_FIELD_RE.search(block)
         deps = dm.group(1).strip() if dm else ""
-        out.append(
-            (int(m.group("pe")), m.group("pn"), (m.group("title") or "").strip(), deps)
-        )
+        out.append((int(m.group("pe")), m.group("pn"), (m.group("title") or "").strip(), deps))
     return out
 
 
@@ -201,9 +199,7 @@ def ledger_statuses(ledger_path: Path) -> dict[str, str]:
         return {}
     return {
         f"{ep}-{num}{suf}": status
-        for ep, num, suf, status in LEDGER_STORY_RE.findall(
-            ledger_path.read_text(encoding="utf-8")
-        )
+        for ep, num, suf, status in LEDGER_STORY_RE.findall(ledger_path.read_text(encoding="utf-8"))
     }
 
 
@@ -284,9 +280,7 @@ def gather_forward_dependency(target: Path) -> tuple[Finding, ...]:
             continue
 
         try:
-            ledger = ledger_statuses(
-                project_dir / "planning-artifacts" / "sprint-status-ledger.yaml"
-            )
+            ledger = ledger_statuses(project_dir / "planning-artifacts" / "sprint-status-ledger.yaml")
             station_stories: list[tuple[int, str, str, str]] = []
             for ef in epics_files:
                 station_stories.extend(story_deps(ef))
@@ -322,9 +316,7 @@ def gather_forward_dependency(target: Path) -> tuple[Finding, ...]:
         # TEXT. The old gate (`any(deps)`) reported mason measured-and-clean with
         # 0 of 30 declarations parseable -- a false green in this check's own
         # bookkeeping, for months.
-        prose = [
-            d for d in declared if not DEP_RE.findall(d) and not NO_DEP_RE.match(d)
-        ]
+        prose = [d for d in declared if not DEP_RE.findall(d) and not NO_DEP_RE.match(d)]
         if prose:
             partial.append((slug, len(declared) - len(prose), len(declared), prose[:2]))
         else:
@@ -336,11 +328,7 @@ def gather_forward_dependency(target: Path) -> tuple[Finding, ...]:
             # is a real dependency the per-station picker also cannot see, but
             # that is a different defect and an explicit SPEC non-goal (no
             # general dependency graph) -- it must not be judged here.
-            same_station = [
-                (m.group("epic"), m.group("num"))
-                for m in DEP_RE.finditer(deps)
-                if not m.group("station")
-            ]
+            same_station = [(m.group("epic"), m.group("num")) for m in DEP_RE.finditer(deps) if not m.group("station")]
             # A forward reference only blocks while it is UNSATISFIED. Ordering
             # alone used to be the whole test, which meant a story could never
             # leave `blocked` once its later-epic dep actually landed: the
@@ -348,13 +336,7 @@ def gather_forward_dependency(target: Path) -> tuple[Finding, ...]:
             # or this check went red. Found live 2026-08-08 when doctor's S-6.1
             # completed and unblocked S-5.2 -- the first time in the fleet a
             # forward dep was satisfied rather than merely declared.
-            forward = sorted(
-                {
-                    de
-                    for de, dn in same_station
-                    if int(de) > epic and not _dep_satisfied(ledger, de, dn)
-                }
-            )
+            forward = sorted({de for de, dn in same_station if int(de) > epic and not _dep_satisfied(ledger, de, dn)})
             if not forward:
                 continue
             key = f"{epic}-{num}"

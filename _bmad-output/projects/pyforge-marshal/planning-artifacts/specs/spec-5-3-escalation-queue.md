@@ -81,3 +81,16 @@ baseline_revision: '0e021d10cd0f39dc3f056bd2fc81f4e23d775f5f'
 
 - The two new dead-supervisor/finished-but-stale-escalation regression tests.
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `d4b746bea8` (2026-08-07, "Merge pull request #285 from rxm7706/marshal/5-3-escalation-queue"). Ledger row `5-3-escalation-queue: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_status.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

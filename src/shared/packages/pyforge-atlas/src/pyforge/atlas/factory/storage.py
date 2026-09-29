@@ -68,7 +68,5 @@ def resolve_storage_config() -> WikiStorageConfig:
         backend="minio",
         endpoint=endpoint,
         bucket=_env_or(WIKI_S3_BUCKET_ENV),
-        has_credentials=bool(
-            _env_or(WIKI_S3_ACCESS_KEY_ENV) and _env_or(WIKI_S3_SECRET_KEY_ENV)
-        ),
+        has_credentials=bool(_env_or(WIKI_S3_ACCESS_KEY_ENV) and _env_or(WIKI_S3_SECRET_KEY_ENV)),
     )

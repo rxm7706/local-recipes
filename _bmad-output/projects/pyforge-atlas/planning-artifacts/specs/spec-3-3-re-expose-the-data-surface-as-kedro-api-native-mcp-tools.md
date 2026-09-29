@@ -1,5 +1,5 @@
 ---
-status: shipped
+status: done
 frontmatter_added: 2026-07-28
 frontmatter_note: |
   This YAML block was ADDED post-recovery (operator decision 2026-07-27, AUD-ATLAS-045) so all
@@ -152,3 +152,17 @@ review substituted for this thin passthrough surface. Any follow-up → DW-B3.
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `39ab78ca2b` (2026-08-07, "steward: Story 3.3 — the operator can see every environment that exists, before picking one"); also `1ce28cd68f` (2026-08-07, "doctor: Story 3.3 — root-cause naming"); also `52b0cbbb8d` (2026-08-03, "marshal: promote Story 3.3 to done, refresh dashboard"). Ledger row `3-3-re-expose-the-data-surface-as-kedro-api-native-mcp-tools: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py`, `src/shared/packages/pyforge-steward/tests/conformance/test_provision_list.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `3-3-re-expose-the-data-surface-as-kedro-api-native-mcp-tools: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

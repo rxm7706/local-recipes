@@ -1562,3 +1562,48 @@ status: open
     Worse than an import: `services/icon_finder_service.py:134` runs `ICON_FINDER_SERVICE = IconFinderService()` at MODULE SCOPE, and that `__init__` evaluates `FastembedEmbeddingModel.AllMiniLML6V2` — so the package's API is exercised at import time, not merely bound. Dropping it from the locked environment therefore fails the import of the whole `/api/v1/ppt` router, taking down presentation generation, not just icon search. The service's own `_initialized` / `_initialization_failed` flags are RUNTIME resilience after a successful import and do not help here.
 
     CONSEQUENCE FOR AD-7 / AD-23: the architecture holds and needs no rework — AD-7 pre-wired both branches and said explicitly "if it requires a source patch instead, this AD's default-OFF shape still holds, the patch just becomes part of the presenton-export-node/pptx-assembler patch set already in scope." The trace simply selects that branch. The remaining 6(b) decision is now a steering call on known facts (add ONE recipe, `fastembed-vectorstore`, or carry a patch that makes the icon subsystem import-optional) rather than an open investigation. It stays `open` because the Dream is archived and no Epic-1 story may be promoted while exits 1, 2, 4 and 5 are unresolved.
+
+### DW-16-3-1: `pyforge-mason-test` still fails on pre-existing portal meta `test_django_mason_has_no_raw_http_pyforge_or_minio` (boot_reconcile.py imports pyforge.mason.boot); present on baseline before Story 16.3.
+
+- source_spec: `planning-artifacts/specs/spec-16-3-mason-s-mcp-tool-surface-passes-the-cli-tool-parity-gate.md`
+  summary: `pyforge-mason-test` still fails on pre-existing portal meta `test_django_mason_has_no_raw_http_pyforge_or_minio` (boot_reconcile.py imports pyforge.mason.boot); present on baseline before Story 16.3.
+  evidence: Reproduced on e16443693d before any 16.3 edits; unrelated to parity gate.
+  location: src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py
+  origin: spec-deferred 17b9964347f1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-15-1-1: pyforge-marshal/.sync-baseline.json's skill_version field is now one version behind this story's CFE retro bump (8.90.1 -> 8.90.2).
+
+- source_spec: `planning-artifacts/specs/spec-15-1-close-the-cfe-rebuild-campaign-cut-callers-over-to-slices-1-2-or-retire-the-mirrors.md`
+  summary: pyforge-marshal/.sync-baseline.json's skill_version field is now one version behind this story's CFE retro bump (8.90.1 -> 8.90.2).
+  evidence: Confirmed via `git log -- _bmad-output/projects/pyforge-marshal/.sync-baseline.json` that re-stamping this file is an established, separate periodic-reconciliation task (2 dedicated "chore(bmad-drift)"/"reconcile" commits found historically), not something bundled into individual CFE retro commits — the 15 most recent CFE retro commits (v8.86.1 through v8.90.1, including yesterday's) did not bundle a sync-baseline update either. The detector this baseline backs is advisory/integrity-only, not a PR gate.
+  location: _bmad-output/projects/pyforge-marshal/.sync-baseline.json
+  origin: spec-deferred a4d0004994b8 — promoted from Tier-3 (`implementation-artifacts/deferred-work.md` DW-7), renamed from bmad-loop's own generic damped id to this ledger's DW-<story>-<n> convention on promotion so a future damped story minting its own "DW-7" cannot collide with it
+  severity: low
+  reason: Settle by running the next scheduled `python scripts/bmad_drift_check.py --write-baseline` sweep, which will pick up 8.90.2 along with any other accumulated drift.
+  promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
+  status: open
+
+### DW-17-2-1: Strip-on-push half of CAP-2 was not independently re-checked against a real published feedstock file on the 2026-09-11 realization-gate pass.
+
+- source_spec: `planning-artifacts/specs/spec-17-2-every-local-recipe-carries-its-internal-metadata-stripped-on-push.md`
+  summary: Strip-on-push half of CAP-2 was not independently re-checked against a real published feedstock file on the 2026-09-11 realization-gate pass.
+  evidence: Spec verified: line (git `0cf57f3389` SPEC.md) and epics.md Story 17.2 Status: meta-test 6/6 including the cfe-conda-name duplicate-key guard; absence of cfe-* on a live published feedstock rests on SKILL.md step 8b / G60 / G62 and prior worked examples.
+  location: .claude/skills/conda-forge-expert/SKILL.md (step 8b, G60, G62)
+  origin: spec-deferred 458d88df995f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+## DW-mason-recipe-ci-short-base-ref-2026-09-27 — the recipe CI workflows pick changed recipes from `origin/<base_ref>...HEAD`, a short name a local ref or tag of that name shadows
+
+- source_spec: the recipe factory's CI (`.github/workflows/test-{all,linux,macos,windows}.yml`, under the `.github/**` line of `scripts/spec_surface_allowlist.txt`); found by doctor Story 32.1 while fixing the coverage gate's identical base
+  summary: each workflow runs `git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*'` to choose which recipes to build. `actions/checkout` with `fetch-depth: 0` fetches tags, so a pushed tag named `origin/main` lands as `refs/tags/origin/main` and wins over `refs/remotes/origin/main`: the changed-recipe set comes out empty and the PR builds nothing.
+  evidence: `grep -n base_ref .github/workflows/test-linux.yml` (line 132); the git resolution order marshal Stories 60.1 / 61.1 recorded by probe; the coverage gate's fix in doctor Story 32.1.
+  location: .github/workflows/test-all.yml; .github/workflows/test-linux.yml; .github/workflows/test-macos.yml; .github/workflows/test-windows.yml
+  severity: low
+  fix: `refs/remotes/origin/${{ github.base_ref }}...HEAD` in all four, through the recipe factory's chain.
+  status: closed
+  resolved: 2026-09-27 (mason Story 18.1, spec-pyforge-mason CAP-28) — all four diff from `refs/remotes/origin/${{ github.base_ref }}...HEAD`. Correction found in review: the branch is dormant today (no recipe workflow runs on `pull_request`; `test-all.yml` is dispatch-only and calls the other three), so no PR could have built nothing from it; this is hardening, kept by pyforge-core:CAP-10's workflow scan.

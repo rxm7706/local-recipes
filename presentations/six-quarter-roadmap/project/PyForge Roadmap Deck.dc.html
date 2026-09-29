@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <link rel="stylesheet" href="_ds/modernist-fbc1d6c8-b35f-4df6-9044-a64d2675427b/styles.css">
+  <script src="_ds/modernist-fbc1d6c8-b35f-4df6-9044-a64d2675427b/_ds_bundle.js"></script>
+  <style>
+    :root {
+      --type-title: 64px;
+      --type-subtitle: 44px;
+      --type-body: 34px;
+      --type-small: 28px;
+      --type-caption: 24px;
+      --pad-top: 100px;
+      --pad-bottom: 80px;
+      --pad-x: 100px;
+      --gap-title: 52px;
+      --gap-item: 28px;
+    }
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <!-- SLIDE 1: TITLE -->
+  <section data-label="Title" data-screen-label="01" style="display: flex; flex-direction: column; justify-content: flex-end; padding: var(--pad-top) var(--pad-x) var(--pad-bottom); background: var(--color-bg); color: #201e1d;">
+    <div style="border-top: 3px solid var(--color-accent); padding-top: 32px;">
+      <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent);">PyForge Guild</span>
+    </div>
+    <h1 style="font-family: var(--font-heading); font-weight: 800; font-size: 96px; line-height: 1.05; margin: 16px 0 0;">6-Quarter Roadmap</h1>
+    <p style="font-family: var(--font-body); font-size: var(--type-body); color: var(--color-neutral-600); margin: 24px 0 0; max-width: 900px;">Eight stations, 830 stories, one governed agentic SDLC — 90% complete.</p>
+    <p style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-500); margin: 12px 0 0;">Q3 2026 – Q4 2027 · Derived from sprint-status ledgers · 2026-09-10</p>
+  </section>
+
+  <!-- SLIDE 2: KEY METRICS -->
+  <section data-label="Key metrics" data-screen-label="02" style="display: flex; flex-direction: column; padding: var(--pad-top) var(--pad-x) var(--pad-bottom); background: var(--color-bg); color: #201e1d;">
+    <h2 style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-title); margin: 0 0 var(--gap-title);">Fleet at a glance</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; background: var(--color-divider);">
+      <div style="background: var(--color-bg); padding: 48px 40px;">
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: 96px; line-height: 1;">749</div>
+        <div style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); margin-top: 8px;">Stories shipped</div>
+      </div>
+      <div style="background: var(--color-bg); padding: 48px 40px;">
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: 96px; line-height: 1;">81</div>
+        <div style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); margin-top: 8px;">Stories remaining</div>
+      </div>
+      <div style="background: var(--color-bg); padding: 48px 40px;">
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: 96px; line-height: 1; color: var(--color-accent);">90%</div>
+        <div style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); margin-top: 8px;">Fleet completion</div>
+      </div>
+      <div style="background: var(--color-bg); padding: 48px 40px;">
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: 96px; line-height: 1;">182</div>
+        <div style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); margin-top: 8px;">Epics across 8 stations</div>
+      </div>
+    </div>
+    <div style="margin-top: 40px; display: flex; gap: 48px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 48px; height: 8px; background: var(--color-accent);"></div>
+        <span style="font-family: var(--font-body); font-size: 20px; color: var(--color-neutral-500);">+541 stories since last snapshot (308 → 830)</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 48px; height: 8px; background: var(--color-neutral-800);"></div>
+        <span style="font-family: var(--font-body); font-size: 20px; color: var(--color-neutral-500);">+535 shipped since Aug 15 (214 → 749)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: STATION STATUS -->
+  <section data-label="Station status" data-screen-label="03" style="display: flex; flex-direction: column; padding: var(--pad-top) var(--pad-x) var(--pad-bottom); background: var(--color-bg); color: #201e1d;">
+    <h2 style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-title); margin: 0 0 var(--gap-title);">Station status</h2>
+    <div style="display: flex; flex-direction: column; gap: 0; border-top: 2px solid var(--color-text);">
+      <!-- Marshal -->
+      <div style="display: grid; grid-template-columns: 200px 1fr 160px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--color-neutral-300);">
+        <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small);">Marshal</span>
+        <div style="height: 8px; background: var(--color-neutral-200);"><div style="height: 8px; background: var(--color-accent); width: 99%;"></div></div>
+        <span style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); text-align: right;">225 / 228</span>
+      </div>
+      <!-- Steward -->
+      <div style="display: grid; grid-template-columns: 200px 1fr 160px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--color-neutral-300);">
+        <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small);">Steward</span>
+        <div style="height: 8px; background: var(--color-neutral-200);"><div style="height: 8px; background: var(--color-accent); width: 80%;"></div></div>
+        <span style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); text-align: right;">173 / 215</span>
+      </div>
+      <!-- Atlas -->
+      <div style="display: grid; grid-template-columns: 200px 1fr 160px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--color-neutral-300);">
+        <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small);">Atlas</span>
+        <div style="height: 8px; background: var(--color-neutral-200);"><div style="height: 8px; background: var(--color-accent); width: 97%;"></div></div>
+        <span style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); text-align: right;">91 / 94</span>
+      </div>
+      <!-- Doctor -->
+      <div style="display: grid; grid-template-columns: 200px 1fr 160px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--color-neutral-300);">
+        <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small);">Doctor</span>
+        <div style="height: 8px; background: var(--color-neutral-200);"><div style="height: 8px; background: var(--color-accent); width: 82%;"></div></div>
+        <span style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); text-align: right;">73 / 89</span>
+      </div>
+      <!-- Herald -->
+      <div style="display: grid; grid-template-columns: 200px 1fr 160px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--color-neutral-300);">
+        <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small);">Herald</span>
+        <div style="height: 8px; background: var(--color-neutral-200);"><div style="height: 8px; background: var(--color-accent); width: 94%;"></div></div>
+        <span style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); text-align: right;">64 / 68</span>
+      </div>
+      <!-- Mason -->
+      <div style="display: grid; grid-template-columns: 200px 1fr 160px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--color-neutral-300);">
+        <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small);">Mason</span>
+        <div style="height: 8px; background: var(--color-neutral-200);"><div style="height: 8px; background: var(--color-accent); width: 91%;"></div></div>
+        <span style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); text-align: right;">61 / 67</span>
+      </div>
+      <!-- Warden -->
+      <div style="display: grid; grid-template-columns: 200px 1fr 160px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--color-neutral-300);">
+        <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small);">Warden</span>
+        <div style="height: 8px; background: var(--color-neutral-200);"><div style="height: 8px; background: var(--color-accent); width: 88%;"></div></div>
+        <span style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); text-align: right;">43 / 49</span>
+      </div>
+      <!-- Scribe -->
+      <div style="display: grid; grid-template-columns: 200px 1fr 160px; align-items: center; padding: 16px 0; border-bottom: 2px solid var(--color-text);">
+        <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small);">Scribe</span>
+        <div style="height: 8px; background: var(--color-neutral-200);"><div style="height: 8px; background: var(--color-accent); width: 95%;"></div></div>
+        <span style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-600); text-align: right;">19 / 20</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: ROADMAP GRID -->
+  <section data-label="6-Quarter Roadmap" data-screen-label="04" data-om-raster style="display: flex; flex-direction: column; padding: 60px var(--pad-x) 40px; background: var(--color-bg); color: #201e1d;">
+    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 24px;">
+      <h2 style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-subtitle); margin: 0;">6-Quarter Roadmap</h2>
+      <div style="display: flex; gap: 16px; margin-left: auto;">
+        <div style="display: flex; align-items: center; gap: 5px;"><div style="width: 10px; height: 10px; background: var(--color-neutral-800);"></div><span style="font-size: 16px; color: var(--color-neutral-600);">Shipped</span></div>
+        <div style="display: flex; align-items: center; gap: 5px;"><div style="width: 10px; height: 10px; background: var(--color-accent);"></div><span style="font-size: 16px; color: var(--color-neutral-600);">Active</span></div>
+        <div style="display: flex; align-items: center; gap: 5px;"><div style="width: 10px; height: 10px; background: var(--color-neutral-300);"></div><span style="font-size: 16px; color: var(--color-neutral-600);">Planned</span></div>
+        <div style="display: flex; align-items: center; gap: 5px;"><div style="width: 10px; height: 10px; background: var(--color-accent-200); border: 1px solid var(--color-accent-300);"></div><span style="font-size: 16px; color: var(--color-neutral-600);">Blocked</span></div>
+      </div>
+    </div>
+    <div style="flex: 1; display: grid; grid-template-columns: 140px repeat(6, 1fr); grid-template-rows: auto repeat(8, 1fr); border-top: 2px solid var(--color-text); border-bottom: 2px solid var(--color-text); overflow: hidden;">
+      <!-- HEADER ROW -->
+      <div style="padding: 8px 8px 8px 0; font-family: var(--font-heading); font-weight: 800; font-size: 14px; color: var(--color-neutral-500); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 2px solid var(--color-text);">Station</div>
+      <div style="padding: 8px; border-left: 1px solid var(--color-neutral-300); border-bottom: 2px solid var(--color-text);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 16px; color: var(--color-accent);">Q3 2026</div><div style="font-size: 12px; color: var(--color-neutral-500);">NOW</div></div>
+      <div style="padding: 8px; border-left: 1px solid var(--color-neutral-300); border-bottom: 2px solid var(--color-text);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 16px;">Q4 2026</div></div>
+      <div style="padding: 8px; border-left: 1px solid var(--color-neutral-300); border-bottom: 2px solid var(--color-text);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 16px;">Q1 2027</div></div>
+      <div style="padding: 8px; border-left: 1px solid var(--color-neutral-300); border-bottom: 2px solid var(--color-text);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 16px;">Q2 2027</div></div>
+      <div style="padding: 8px; border-left: 1px solid var(--color-neutral-300); border-bottom: 2px solid var(--color-text);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 16px;">Q3 2027</div></div>
+      <div style="padding: 8px; border-left: 1px solid var(--color-neutral-300); border-bottom: 2px solid var(--color-text);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 16px;">Q4 2027</div></div>
+
+      <!-- MARSHAL -->
+      <div style="padding: 8px 8px 8px 0; border-bottom: 1px solid var(--color-neutral-200);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 15px;">Marshal</div><div style="font-size: 11px; color: var(--color-neutral-500);">225/228</div></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-800); color: #fff;">E1–29, 32 shipped</span>
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E30 6.12 convergence</span>
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E31 TEA test arch</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-accent-200); color: var(--color-accent-800);">E33 Savings (3 blocked)</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+
+      <!-- STEWARD -->
+      <div style="padding: 8px 8px 8px 0; border-bottom: 1px solid var(--color-neutral-200);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 15px;">Steward</div><div style="font-size: 11px; color: var(--color-neutral-500);">173/215</div></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-800); color: #fff;">E1–43 shipped</span>
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E45 Eval quality</span>
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E46 Adoption register</span>
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E47 Readiness checklist</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-accent-200); color: var(--color-accent-800);">E44 Foundry cutover (15)</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E48 Hardening (11)</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E49 Realization gates (13)</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+
+      <!-- ATLAS -->
+      <div style="padding: 8px 8px 8px 0; border-bottom: 1px solid var(--color-neutral-200);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 15px;">Atlas</div><div style="font-size: 11px; color: var(--color-neutral-500);">91/94</div></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-800); color: #fff;">E1–23 shipped</span>
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E24 MCP builder</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E25 Lane-3 &amp; parity</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+
+      <!-- DOCTOR -->
+      <div style="padding: 8px 8px 8px 0; border-bottom: 1px solid var(--color-neutral-200);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 15px;">Doctor</div><div style="font-size: 11px; color: var(--color-neutral-500);">73/89</div></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-800); color: #fff;">E1–19 shipped</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E20 Suite drift (5)</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E21 Detectors v2 (16)</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+
+      <!-- HERALD -->
+      <div style="padding: 8px 8px 8px 0; border-bottom: 1px solid var(--color-neutral-200);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 15px;">Herald</div><div style="font-size: 11px; color: var(--color-neutral-500);">64/68</div></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-800); color: #fff;">E1–17 shipped</span>
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E18 Studio &amp; comms</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E19 Live pipeline (4)</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+
+      <!-- MASON -->
+      <div style="padding: 8px 8px 8px 0; border-bottom: 1px solid var(--color-neutral-200);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 15px;">Mason</div><div style="font-size: 11px; color: var(--color-neutral-500);">61/67</div></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-800); color: #fff;">E1–14 shipped</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-accent-200); color: var(--color-accent-800);">E15 CFE campaign close</span>
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E16 Estate callers (4)</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+
+      <!-- WARDEN -->
+      <div style="padding: 8px 8px 8px 0; border-bottom: 1px solid var(--color-neutral-200);"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 15px;">Warden</div><div style="font-size: 11px; color: var(--color-neutral-500);">43/49</div></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-800); color: #fff;">E1–10 shipped</span>
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E11 Advisory lenses</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E12 Lockfile extraction (6)</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); border-bottom: 1px solid var(--color-neutral-200);"></div>
+
+      <!-- SCRIBE -->
+      <div style="padding: 8px 8px 8px 0;"><div style="font-family: var(--font-heading); font-weight: 800; font-size: 15px;">Scribe</div><div style="font-size: 11px; color: var(--color-neutral-500);">19/20</div></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300); display: flex; flex-wrap: wrap; gap: 3px; align-content: start;">
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-800); color: #fff;">E1–7 shipped</span>
+        <span style="font-size: 10px; padding: 1px 4px; background: var(--color-neutral-300); color: var(--color-neutral-800);">E8 Nightly trigger</span>
+      </div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300);"></div>
+      <div style="padding: 6px; border-left: 1px solid var(--color-neutral-300);"></div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: WHAT SHIPPED (Q3 2026 recap) -->
+  <section data-label="What shipped" data-screen-label="05" style="display: flex; flex-direction: column; padding: var(--pad-top) var(--pad-x) var(--pad-bottom); background: var(--color-bg); color: #201e1d;">
+    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: var(--gap-title);">
+      <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); color: var(--color-accent);">Q3 2026</span>
+      <h2 style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-title); margin: 0;">What shipped</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px 64px;">
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Marshal — 33 epics, 30 shipped</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">Full orchestration loop: dispatch, factory, gates, landing, fleet ops, board truth, instruments, governed tools, testing charter, work preservation, chain completeness, 6.12 convergence, TEA test architecture, savings measurement.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Steward — 49 epics, 43 shipped</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">Platform stack: keys, deploy, provision, budget, container image, pluggable apps, Helm/K8s, workspace verbs, installer upgrades, Django portal, MCP faces, supervisor, events bus, DR contract, metapackage suite, five-tier declaration.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Atlas — 24 epics, 22 shipped</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">Kedro/Dagster/DuckDB migration, semantic layer, dashboards, WASM portability, AI factory, trending discovery, Artifactory intelligence, Wagtail deploy, MCP builder, ranked export bridge.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Doctor — 21 epics, 19 shipped</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">Pre-flight, fleet pulse, diagnostics, frontier, verdicts, deferred-work visibility, hygiene sweep, version drift, drafting sessions, bmad suite comparison, source plugins, SKF persona.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Herald — 19 epics, 17 shipped</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">Design↔Code bridge, deck pipeline, moments 2–4, live backend, render verification, template parse, deck export plugins, SKF persona, studio &amp; release comms.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Mason / Warden / Scribe</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">Mason: 14 epics shipped — dual-ecosystem, CFE rebuild pilot, eval quality. Warden: 10 epics — 4-axis compliance, plugin scanners. Scribe: 7 epics — knowledge graph, recall, graphify ingest.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6: Q4 2026 — CLOSE-OUT -->
+  <section data-label="Q4 2026" data-screen-label="06" style="display: flex; flex-direction: column; padding: var(--pad-top) var(--pad-x) var(--pad-bottom); background: var(--color-bg); color: #201e1d;">
+    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: var(--gap-title);">
+      <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); color: var(--color-accent);">Q4 2026</span>
+      <h2 style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-title); margin: 0;">Station close-out</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px 64px;">
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Doctor — Suite drift detection</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">E20: suite drift maps every active member, render halt detection, frozen path change detector, bmad-os root cause analysis, version drift open questions resolved.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Mason — CFE campaign &amp; estate callers</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">E15: close the CFE rebuild campaign — cut callers over or retire mirrors. E16: Mason's own env, first estate caller, MCP tool parity gate, containerfile convention.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Herald — Live pipeline</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">E19: webhook routes onto station API seam, persistent-store recording, deck QA gate caller, first real station deck through PPTX pipeline.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Warden — Lockfile extraction</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">E12: environment-scoped lockfile extraction, shipped-closure scanning, offline OSV provisioning in CI, honest verdicts, deploy gate preservation.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Atlas — Lane-3 &amp; MCP parity</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">E25: retire second lane-3 runtime, materialize cap-8 canonical parquets, MCP tool parity gate. Scribe E8: nightly compile trigger and freshness signal.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Steward — Foundry pre-work</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">E45–47 close-out (stories mostly done). Readiness checklist, adoption register, eval quality — final verification pass before the foundry cutover.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 7: Q1 2027 — FOUNDRY CUTOVER -->
+  <section data-label="Q1 2027" data-screen-label="07" style="display: flex; flex-direction: column; padding: var(--pad-top) var(--pad-x) var(--pad-bottom); background: var(--color-bg); color: #201e1d;">
+    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: var(--gap-title);">
+      <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); color: var(--color-accent);">Q1 2027</span>
+      <h2 style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-title); margin: 0;">Foundry cutover</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px 64px;">
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Steward E44 — The Big Move</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">15 stories (mostly blocked pending solutioning): move list manifest, red-team fixes, open the foundry, fold packages, move the estate, CFE comes home, factory island, working set, archive local-recipes, Windows native estate, cutover flag &amp; replay harness.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Steward E48 — Platform hardening</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">11 stories: ledger syncer guards, sizing rewrite, network baseline, secrets profile, observability contract, live browser streaming, cap-axis namespace pass, single-spec merge, OIDC default profile, one-container guild build, warden engine import.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Doctor E21 — Detector improvements</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">16 stories: deferred-spec live exemptions, no-status findings, sibling Dreams drift, constitutive derivation, project-relative source resolution, Dreams hygiene enforcement, pixi candidate staleness, verified capability column, effect check rendering.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); margin-bottom: 12px; border-top: 2px solid var(--color-text); padding-top: 12px;">Marshal — Blocked stories</div>
+        <p style="font-size: var(--type-caption); color: var(--color-neutral-600); margin: 0;">3 remaining: bmad-os GH triage &amp; multi-repo git ops (E31), cap-18 publisher telemetry reaching supervisor (E33), unforgeable attribution before second principal (E33).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 8: Q2-Q4 2027 — MATURITY -->
+  <section data-label="Q2–Q4 2027" data-screen-label="08" style="display: flex; flex-direction: column; padding: var(--pad-top) var(--pad-x) var(--pad-bottom); background: var(--color-accent);">
+    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: var(--gap-title);">
+      <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); color: rgba(255,255,255,0.7);">Q2–Q4 2027</span>
+      <h2 style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-title); margin: 0; color: #fff;">Platform maturity</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px 64px;">
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-subtitle); color: #fff; margin-bottom: 12px; border-top: 2px solid rgba(255,255,255,0.4); padding-top: 12px;">Realization gates</div>
+        <p style="font-size: var(--type-caption); color: rgba(255,255,255,0.7); margin: 0;">Steward E49: 13 capability-effect stories proving each capability in production — MCP start/get, real board or fixture, eviction, revocation, semantic recall, run-state publishing.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-subtitle); color: #fff; margin-bottom: 12px; border-top: 2px solid rgba(255,255,255,0.4); padding-top: 12px;">Cross-station integration</div>
+        <p style="font-size: var(--type-caption); color: rgba(255,255,255,0.7); margin: 0;">Hardened inter-station contracts. Shared evidence grammar consumed fleet-wide. Realization-gate index stories for Marshal, Atlas, Herald, Mason, and Scribe.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-subtitle); color: #fff; margin-bottom: 12px; border-top: 2px solid rgba(255,255,255,0.4); padding-top: 12px;">Enterprise validation</div>
+        <p style="font-size: var(--type-caption); color: rgba(255,255,255,0.7); margin: 0;">Air-gap parity proven. Deployment on OpenShift and GKE validated end-to-end. OIDC default profile. One-container guild CI build.</p>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-subtitle); color: #fff; margin-bottom: 12px; border-top: 2px solid rgba(255,255,255,0.4); padding-top: 12px;">v2 planning</div>
+        <p style="font-size: var(--type-caption); color: rgba(255,255,255,0.7); margin: 0;">Guild-wide retrospective. 830-story estate audit. Next-generation capabilities scoped. Standing practices refreshed.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 9: BLOCKERS & RISKS -->
+  <section data-label="Blockers & risks" data-screen-label="09" style="display: flex; flex-direction: column; padding: var(--pad-top) var(--pad-x) var(--pad-bottom); background: var(--color-bg); color: #201e1d;">
+    <h2 style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-title); margin: 0 0 var(--gap-title);">Blockers &amp; risks</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 64px;">
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 24px; border-top: 2px solid var(--color-text); padding-top: 16px;">Blocked stories (critical path)</div>
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <span style="font-size: var(--type-caption); padding: 2px 10px; background: var(--color-accent); color: #fff; flex-shrink: 0;">STW</span>
+            <span style="font-size: var(--type-caption); line-height: 1.4; color: var(--color-neutral-700);">E44 Foundry cutover — 14 of 15 stories blocked pending solutioning review</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <span style="font-size: var(--type-caption); padding: 2px 10px; background: var(--color-accent); color: #fff; flex-shrink: 0;">MSH</span>
+            <span style="font-size: var(--type-caption); line-height: 1.4; color: var(--color-neutral-700);">E33 cap-18 publisher telemetry and unforgeable attribution — 2 stories blocked</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <span style="font-size: var(--type-caption); padding: 2px 10px; background: var(--color-accent); color: #fff; flex-shrink: 0;">MSH</span>
+            <span style="font-size: var(--type-caption); line-height: 1.4; color: var(--color-neutral-700);">E31 bmad-os GH triage &amp; multi-repo git ops — 1 story blocked</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <span style="font-size: var(--type-caption); padding: 2px 10px; background: var(--color-accent); color: #fff; flex-shrink: 0;">MSN</span>
+            <span style="font-size: var(--type-caption); line-height: 1.4; color: var(--color-neutral-700);">E15 CFE rebuild campaign close — 1 story blocked on slice cutover</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 24px; border-top: 2px solid var(--color-text); padding-top: 16px;">Risk areas</div>
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <span style="font-size: var(--type-caption); padding: 2px 10px; background: var(--color-accent-200); color: var(--color-accent-800); flex-shrink: 0;">RISK</span>
+            <span style="font-size: var(--type-caption); line-height: 1.4; color: var(--color-neutral-700);">Steward E49 realization gates have 8 blocked stories awaiting upstream index stories from other stations</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <span style="font-size: var(--type-caption); padding: 2px 10px; background: var(--color-accent-200); color: var(--color-accent-800); flex-shrink: 0;">RISK</span>
+            <span style="font-size: var(--type-caption); line-height: 1.4; color: var(--color-neutral-700);">Atlas E25 — cap-8 parquet materialization blocked on dependency</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <span style="font-size: var(--type-caption); padding: 2px 10px; background: var(--color-accent-200); color: var(--color-accent-800); flex-shrink: 0;">RISK</span>
+            <span style="font-size: var(--type-caption); line-height: 1.4; color: var(--color-neutral-700);">Herald E19 — persistent-store story blocked on concurrency prerequisite</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <span style="font-size: var(--type-caption); padding: 2px 10px; background: var(--color-neutral-300); color: var(--color-neutral-700); flex-shrink: 0;">SCALE</span>
+            <span style="font-size: var(--type-caption); line-height: 1.4; color: var(--color-neutral-700);">Doctor E21 is 16 detector stories — the largest single-epic backlog outside Steward</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 10: CLOSE -->
+  <section data-label="Close" data-screen-label="10" style="display: flex; flex-direction: column; justify-content: flex-end; padding: var(--pad-top) var(--pad-x) var(--pad-bottom); background: var(--color-bg); color: #201e1d;">
+    <div style="border-top: 3px solid var(--color-accent); padding-top: 32px;">
+      <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--type-small); letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent);">PyForge Guild</span>
+    </div>
+    <h2 style="font-family: var(--font-heading); font-weight: 800; font-size: 80px; line-height: 1.1; margin: 16px 0 0; max-width: 1200px;">Forging the Agentic SDLC</h2>
+    <p style="font-family: var(--font-body); font-size: var(--type-body); color: var(--color-neutral-600); margin: 24px 0 0; font-style: italic;">Humans Dream, Agents Deliver — Governed. Auditable. Production-ready.</p>
+    <p style="font-family: var(--font-body); font-size: var(--type-caption); color: var(--color-neutral-500); margin: 32px 0 0;">rxm7706/local-recipes · sprint-status-ledger.yaml · 2026-09-10</p>
+  </section>
+
+</x-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+class Component extends DCLogic {
+  componentDidMount() {
+    this._tryFix();
+  }
+  componentWillUnmount() {
+    clearInterval(this._poll);
+  }
+  _tryFix() {
+    const stage = document.querySelector('deck-stage');
+    if (!stage || !stage.shadowRoot) {
+      setTimeout(() => this._tryFix(), 100);
+      return;
+    }
+    const sr = stage.shadowRoot;
+    const container = sr.querySelector('div[style*="--deck-design"]');
+    const slot = sr.querySelector('slot');
+    if (container) container.style.setProperty('color', '#201e1d', 'important');
+    if (slot) slot.style.setProperty('color', '#201e1d', 'important');
+    if (!container && !slot) {
+      setTimeout(() => this._tryFix(), 100);
+    }
+  }
+  renderVals() { return {}; }
+}
+
+</script>
+</body>
+</html>

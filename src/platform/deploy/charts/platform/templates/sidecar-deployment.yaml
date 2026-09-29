@@ -1,3 +1,4 @@
+{{- if .Values.sidecar.enabled }}
 # DB-GPT sidecar Deployment (Story 10.5 image, Story 12.5 chart).
 # Singleton semantics: replicas 1 + Recreate strategy so only one pod
 # ever mounts the SQLite PVC (ReadWriteOnce). Same restricted-v2 contract
@@ -93,3 +94,4 @@ spec:
         - name: sqlite-data
           persistentVolumeClaim:
             claimName: {{ include "platform.dbgpt.pvcName" . }}
+{{- end }}

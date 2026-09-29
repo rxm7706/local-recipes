@@ -14,11 +14,8 @@ from pathlib import Path
 import duckdb
 import pytest
 
-from pyforge.atlas.duckdb_writer import ATLAS_DUCKDB_NAME
-from pyforge.atlas.duckdb_writer import connect_writer
-from pyforge.atlas.live_attach import PostgresNotProvisionedError
-from pyforge.atlas.live_attach import attach_postgres_readonly
-from pyforge.atlas.live_attach import load_postgres_offline
+from pyforge.atlas.duckdb_writer import ATLAS_DUCKDB_NAME, connect_writer
+from pyforge.atlas.live_attach import PostgresNotProvisionedError, attach_postgres_readonly, load_postgres_offline
 
 ATLAS_ROOT = Path(__file__).resolve().parents[2]
 LIVE_ATTACH_MODULE = ATLAS_ROOT / "src" / "pyforge" / "atlas" / "live_attach.py"
@@ -113,10 +110,7 @@ def fixture_postgres(tmp_path: Path) -> Iterator[str]:
         "--no-sync",
     )
     port = _free_port()
-    options = (
-        f"-p {port} -h 127.0.0.1 -k '{sock_dir}' "
-        "-c fsync=off -c synchronous_commit=off -c full_page_writes=off"
-    )
+    options = f"-p {port} -h 127.0.0.1 -k '{sock_dir}' -c fsync=off -c synchronous_commit=off -c full_page_writes=off"
     try:
         _run_pg(
             bindir,
@@ -333,16 +327,12 @@ def test_attach_strips_dsn_whitespace() -> None:
 
 
 @requires_postgres_ext
-def test_federated_read_across_two_schemas(
-    tmp_path: Path, fixture_postgres: str
-) -> None:
+def test_federated_read_across_two_schemas(tmp_path: Path, fixture_postgres: str) -> None:
     plane = connect_writer(tmp_path / ATLAS_DUCKDB_NAME)
     try:
         attach_postgres_readonly(plane, fixture_postgres, alias="oltp")
         row = plane.execute(
-            "SELECT o.id, i.qty "
-            "FROM oltp.ops.orders AS o "
-            "JOIN oltp.inventory.items AS i ON o.sku = i.sku"
+            "SELECT o.id, i.qty FROM oltp.ops.orders AS o JOIN oltp.inventory.items AS i ON o.sku = i.sku"
         ).fetchone()
         assert row == (1, 42)
     finally:
@@ -350,9 +340,7 @@ def test_federated_read_across_two_schemas(
 
 
 @requires_postgres_ext
-def test_write_through_attach_is_refused(
-    tmp_path: Path, fixture_postgres: str
-) -> None:
+def test_write_through_attach_is_refused(tmp_path: Path, fixture_postgres: str) -> None:
     plane = connect_writer(tmp_path / ATLAS_DUCKDB_NAME)
     try:
         attach_postgres_readonly(plane, fixture_postgres, alias="oltp")

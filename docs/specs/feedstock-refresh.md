@@ -54,7 +54,7 @@ spec_updated: 2026-07-02
 | ----- | ----- |
 | Status | **SHIPPED (local-only) 2026-06-21.** All waves complete + committed. Wave A re-baselined to **256 BEHIND**. **Wave B (v1-refresh, 55)** — `1fe1848b43`. **Waves C–F (197 recipes: C 174 v0-migration, D 10 compiled/host-blocked, E 13 gh-numbering) + CFE skill v8.40.0 (G46–G51)** — `363537dd43`. Build tally: 190 success, 4 build-clean-test-blocked, 3 not-attempted (osx/win host-blocked). Committed + pushed to `origin/main`; **NOT submitted to conda-forge** (deliberate — no-push hard rule + Q2 defers feedstock v0→v1 PRs to a separate wave). Per-recipe results in the Review Digest below; deferred work in Follow-ups. |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only) |
+| Planning track | BMAD Quick Flow (tech-spec only) |
 | Scope | Every `recipes/<name>/` that backs a **sole-maintainer** conda-forge feedstock and is **behind** the feedstock's published version. |
 | Goal | Bring each local recipe up to its feedstock's published version via **full CFE regenerate (diff-apply)**, modernizing grayskull regressions, folding in **platform expansion where the recipe is compiled**, and migrating **v0 feedstocks** to v1. |
 | Hard rule | **No auto-commit, no push** *by default* — everything stays uncommitted for the user's per-recipe `git diff` review. **Exception (Q1 resolved):** the user may explicitly authorize a **per-bucket grouped commit after reviewing** (Wave B was committed `1fe1848b43` on explicit instruction); even then, do NOT push without a separate explicit instruction. |
@@ -500,7 +500,7 @@ These surfaced during Waves C/D/E and are recorded here so they aren't lost. Non
 | ----- | ----- |
 | Status | **READY — intake complete, unimplemented.** Headline counts computed live from cf_atlas (build 2026-06-19 21:55): **232 co-maintained feedstocks**, of which **190 have a local recipe** (62 v1 + 128 v0) and **42 have no `dir==conda` local recipe** (mapping-resolve or net-new); rough version delta among the 190 = **~143 BEHIND, 8 AHEAD, 39 MATCH**. Wave A re-verifies exactly (atlas refresh + GH-numbering guard + dir↔conda mapping). No recipes processed yet. |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only) |
+| Planning track | BMAD Quick Flow (tech-spec only) |
 | Scope | Every `recipes/<name>/` (and net-new where missing) that backs a **co-maintainer** conda-forge feedstock — i.e. rxm7706 is in the maintainer list but is **not** the sole maintainer. Disjoint from the sole-maintainer spec's set by construction. |
 | Goal | Bring each co-maintained local recipe up to its feedstock's published version via **full CFE regenerate (diff-apply)**, modernizing grayskull regressions, folding in **platform expansion where compiled**, migrating **v0→v1**, and creating local mirrors where none exist — so **every** co-maintained feedstock has a local `recipe.yaml` with the full `cfe-*` metadata block that passes build + test + lint + optimize locally. |
 | Co-maintainer hard rule | **Preserve every other maintainer's work.** Never drop a co-maintainer from `extra.recipe-maintainers`; never override a *deliberate* maintainer choice (intentional pin, platform exclusion, version cadence) — only fix grayskull regressions + genuine staleness. At submission time (separate wave) **open a PR, do not self-merge** (co-maintainer etiquette), even though write access exists. |

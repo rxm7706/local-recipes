@@ -2,8 +2,11 @@
 title: Marshal-driven landings are provably Marshal-driven
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `marshal-land-merge-subject`).
 
 # marshal land renders a detectable merge subject
 

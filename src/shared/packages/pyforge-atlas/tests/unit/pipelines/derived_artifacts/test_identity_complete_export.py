@@ -167,8 +167,26 @@ def test_happy_path_populates_ranking_jfrog_and_verification():
         jfrog_rows=[_jfrog_row("happy-pkg")],
         verified_rows=[_verified_row("happy-pkg")],
         universe_rows=[_universe_row("happy-pkg", in_basilisk=True)],
-        cross_rows=[{"conda_name": "happy-pkg", "in_pytorch": True, "in_bioconda": False, "in_nvidia": False, "in_robostack": False, "in_selfexplainml": False}],
-        tier3_rows=[{"pypi_name": "happy-pkg", "in_homebrew": True, "in_nixpkgs": False, "in_spack": False, "in_debian": False, "in_fedora": False}],
+        cross_rows=[
+            {
+                "conda_name": "happy-pkg",
+                "in_pytorch": True,
+                "in_bioconda": False,
+                "in_nvidia": False,
+                "in_robostack": False,
+                "in_selfexplainml": False,
+            }
+        ],
+        tier3_rows=[
+            {
+                "pypi_name": "happy-pkg",
+                "in_homebrew": True,
+                "in_nixpkgs": False,
+                "in_spack": False,
+                "in_debian": False,
+                "in_fedora": False,
+            }
+        ],
     )
     row = out.iloc[0]
     assert row["Package"] == "happy-pkg"
@@ -180,9 +198,9 @@ def test_happy_path_populates_ranking_jfrog_and_verification():
     assert row["OpenTeams_Batch"] == row["Work"] == "Create recipe"
     assert row["OpenTeams_Coverage"] == "Have_Issue"
     assert row["PyPI_Verified"] == "Yes"
-    assert row["in_basilisk"] == True
-    assert row["in_pytorch"] == True
-    assert row["in_homebrew"] == True
+    assert row["in_basilisk"]
+    assert row["in_pytorch"]
+    assert row["in_homebrew"]
     assert row["Verification_Timestamp_UTC"] == _FIXED_TS
 
 
@@ -235,8 +253,8 @@ def test_board_only_row_has_blank_verification_and_enterprise():
 def test_absent_tier3_source_yields_false_not_failure():
     out = _run([_identity_row("no-tier3")], tier3_rows=None)
     row = out.iloc[0]
-    assert row["in_debian"] == False
-    assert row["in_fedora"] == False
+    assert not row["in_debian"]
+    assert not row["in_fedora"]
 
 
 def test_openteams_cohort_jfrog_new_vs_on_cf():

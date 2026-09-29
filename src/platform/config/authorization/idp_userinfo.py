@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 from typing import Any
 
 import structlog
-from allauth.socialaccount.models import SocialToken
 from django.conf import settings
 from django.core.cache import cache
 
@@ -54,6 +53,13 @@ def _cache_timeout() -> int:
 
 
 def _access_token_for(user: object) -> str | None:
+    # Deferred: a module-level import of a Django model here makes this module
+    # (imported by production.py at settings-load time) crash with
+    # AppRegistryNotReady whenever settings load before django.setup() runs
+    # (e.g. a subprocess entrypoint check) -- this function only ever runs
+    # after the app registry is ready (an authenticated request exists).
+    from allauth.socialaccount.models import SocialToken  # noqa: PLC0415
+
     row = (
         SocialToken.objects.filter(account__user_id=getattr(user, "pk", None))
         .order_by("-expires_at", "-id")

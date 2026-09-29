@@ -93,9 +93,7 @@ def test_assoc_fetch_success_persists_and_not_stale(tmp_path):
 
 def test_assoc_fetch_failure_keeps_last_good_and_marks_stale(tmp_path):
     p = tmp_path / "assoc"
-    _assoc(p, fetcher=lambda url: _ASSOC_PAYLOAD).save(
-        RefreshRequest(store="purl_associator_mappings_raw", force=True)
-    )
+    _assoc(p, fetcher=lambda url: _ASSOC_PAYLOAD).save(RefreshRequest(store="purl_associator_mappings_raw", force=True))
 
     def boom(url):
         raise ConnectionError("unreachable")
@@ -109,9 +107,7 @@ def test_assoc_fetch_failure_keeps_last_good_and_marks_stale(tmp_path):
 
 def test_assoc_offline_no_fetcher_marks_stale_and_keeps_last_good(tmp_path):
     p = tmp_path / "assoc"
-    _assoc(p, fetcher=lambda url: _ASSOC_PAYLOAD).save(
-        RefreshRequest(store="purl_associator_mappings_raw", force=True)
-    )
+    _assoc(p, fetcher=lambda url: _ASSOC_PAYLOAD).save(RefreshRequest(store="purl_associator_mappings_raw", force=True))
     offline = _assoc(p)
     offline.save(RefreshRequest(store="purl_associator_mappings_raw", force=True))
     assert offline.is_stale() is True
@@ -194,9 +190,7 @@ def _board_page(nodes, *, has_next=False, cursor=None) -> dict:
 
 
 def _board(path, *, fetcher=None) -> OpenTeamsBoardDataset:
-    return OpenTeamsBoardDataset(
-        filepath=str(path), url=BOARD_URL, fetcher=fetcher, credentials={"token": "stub"}
-    )
+    return OpenTeamsBoardDataset(filepath=str(path), url=BOARD_URL, fetcher=fetcher, credentials={"token": "stub"})
 
 
 def test_board_constructs_offline_no_refresher(tmp_path):
@@ -354,9 +348,7 @@ def test_parse_pr_files_response_malformed_returns_empty(payload):
 
 
 def _staged(path, *, fetcher=None) -> StagedRecipesPRDataset:
-    return StagedRecipesPRDataset(
-        filepath=str(path), url=STAGED_URL, fetcher=fetcher, credentials={"token": "stub"}
-    )
+    return StagedRecipesPRDataset(filepath=str(path), url=STAGED_URL, fetcher=fetcher, credentials={"token": "stub"})
 
 
 def test_staged_constructs_offline_no_refresher(tmp_path):
@@ -396,7 +388,13 @@ def test_staged_per_pr_files_fetch_failure_degrades_to_empty_never_drops_row(tmp
 
 
 _STAGED_FULL_PAGE = [
-    {"number": n, "state": "closed", "merged_at": "2026-01-01T00:00:00Z", "html_url": f"https://x/{n}", "title": f"pkg-{n} recipe"}
+    {
+        "number": n,
+        "state": "closed",
+        "merged_at": "2026-01-01T00:00:00Z",
+        "html_url": f"https://x/{n}",
+        "title": f"pkg-{n} recipe",
+    }
     for n in range(1, 101)
 ]
 
@@ -432,9 +430,7 @@ def test_staged_fully_empty_fetch_keeps_last_good_and_marks_stale(tmp_path):
             return _STAGED_PAGE_1
         return []
 
-    _staged(p, fetcher=good_fetcher).save(
-        RefreshRequest(store="discovery_staged_recipes_prs_raw", force=True)
-    )
+    _staged(p, fetcher=good_fetcher).save(RefreshRequest(store="discovery_staged_recipes_prs_raw", force=True))
 
     def empty_fetcher(url):
         raise ConnectionError("unreachable")

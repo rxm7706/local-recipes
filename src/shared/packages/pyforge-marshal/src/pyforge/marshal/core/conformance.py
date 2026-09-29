@@ -59,9 +59,7 @@ STATUS_ADDED = "added"
 STATUS_REMOVED = "removed"
 STATUS_MODIFIED = "modified"
 
-ALL_STATUSES: frozenset[str] = frozenset(
-    {STATUS_LINK_TARGET_CONFIRMED, STATUS_ADDED, STATUS_REMOVED, STATUS_MODIFIED}
-)
+ALL_STATUSES: frozenset[str] = frozenset({STATUS_LINK_TARGET_CONFIRMED, STATUS_ADDED, STATUS_REMOVED, STATUS_MODIFIED})
 
 # Story 6.4 (FR-43, AD-31) -- a SECOND, independent closed status pair for a
 # DIFFERENT fact ("does this adapter exist on this host", never conflated
@@ -187,8 +185,7 @@ def _check_symlink_identity(state: TreeLiveState) -> TreeConformance:
             state.tree,
             state.adapters,
             STATUS_ADDED,
-            "a configured adapter declares this tree but it has never been "
-            "projected -- run 'marshal adapters sync'",
+            "a configured adapter declares this tree but it has never been projected -- run 'marshal adapters sync'",
         )
 
     # live_kind in {"symlink_wrong", "conflict"} -- present, but the
@@ -389,8 +386,7 @@ def evaluate_smoke(facts: SmokeFacts) -> SmokeReport:
             failing_stage=STAGE_COMMIT,
             detail=(
                 "a commit landed but does not fully corroborate a completed run "
-                f"(target file changed={facts.file_changed}, returncode={facts.returncode})"
-                + detail_suffix
+                f"(target file changed={facts.file_changed}, returncode={facts.returncode})" + detail_suffix
             ),
         )
     if facts.file_changed:
@@ -406,10 +402,7 @@ def evaluate_smoke(facts: SmokeFacts) -> SmokeReport:
         return SmokeReport(
             status=STATUS_SMOKE_FAIL,
             failing_stage=STAGE_CHANGE,
-            detail=(
-                "the harness launched but produced no observable change"
-                + detail_suffix
-            ),
+            detail=("the harness launched but produced no observable change" + detail_suffix),
         )
     return SmokeReport(
         status=STATUS_SMOKE_FAIL,
@@ -728,9 +721,7 @@ def evaluate_entry_file_family(
     for path in ENTRY_FILE_FAMILY:
         state = states.get(path)
         affected_tools = tuple(sorted(tool.tool for tool in tools_tuple if path in tool.reads))
-        cross_contaminating = any(
-            path in tool.reads and len(tool.reads) > 1 for tool in tools_tuple
-        )
+        cross_contaminating = any(path in tool.reads and len(tool.reads) > 1 for tool in tools_tuple)
         if state is None or not state.exists:
             divergences.append(
                 EntryFileDivergence(

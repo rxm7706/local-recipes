@@ -153,7 +153,11 @@ def extract_github_repo(recipe_file: Path) -> tuple[str, str] | None:
     """
     Scan a recipe for a GitHub URL and return (owner, repo), or None.
 
-    Checks (in order): context.*, source.url, about.home.
+    Checks (in order): context.*, source.url, then the ``about:`` repo/home
+    fields in BOTH spellings — v1 ``repository`` / ``homepage`` and v0
+    ``dev_url`` / ``home`` (CFE G2: the v1 names are what every recipe.yaml
+    carries; reading only ``about.home`` made an npm- or PyPI-sourced v1
+    recipe with a GitHub ``repository:`` undetectable — v8.90.6).
     """
     data = _parse_recipe(recipe_file)
 
@@ -164,7 +168,9 @@ def extract_github_repo(recipe_file: Path) -> tuple[str, str] | None:
     for src in ([data.get("source")] if isinstance(data.get("source"), dict) else data.get("source", [])):
         if isinstance(src, dict):
             candidates.append(str(src.get("url", "")))
-    candidates.append(str((data.get("about") or {}).get("home", "")))
+    about = data.get("about") or {}
+    for key in ("repository", "dev_url", "homepage", "home"):
+        candidates.append(str(about.get(key, "")))
 
     for text in candidates:
         m = _GITHUB_URL_RE.search(text)

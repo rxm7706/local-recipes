@@ -42,3 +42,16 @@ baseline_revision: 7e8631433f
 
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`
 - Integration/slow markers as established for perf gates
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `728fc697db` (2026-08-23, "Merge pull request #653 from rxm7706/marshal/12-5-cli-contract-gates"); also `c208eb830a` (2026-08-23, "Merge pull request #652 from rxm7706/marshal/12-5-cli-contract-gates"). Ledger row `12-5-cli-contract-idempotence-harness-and-performance-gates: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/referenced_deps.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

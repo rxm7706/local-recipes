@@ -15,14 +15,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-
 from pyforge.core.hooks import PluginError
-from pyforge.scribe.graph_store_plane import ATLAS_DUCKDB_NAME
-from pyforge.scribe.graph_store_plane import PlaneGraphStore
-from pyforge.scribe.graph_store_plane import PlaneGraphStorePlugin
+
+from pyforge.scribe.graph_store_plane import ATLAS_DUCKDB_NAME, PlaneGraphStore, PlaneGraphStorePlugin
 from pyforge.scribe.models import GraphNode
-from pyforge.scribe.recall import _answer_semantic
-from pyforge.scribe.recall import answer
+from pyforge.scribe.recall import _answer_semantic, answer
 
 
 def test_chroma_and_memory_paths_fail(tmp_path: Path) -> None:
@@ -44,9 +41,7 @@ def test_recall_callers_do_not_isinstance_the_driver() -> None:
             func = node.func
             name = getattr(func, "id", None) or getattr(func, "attr", None)
             assert name != "isinstance"
-    assert "query_similar" in answer.__code__.co_names or "query_similar" in (
-        _answer_semantic.__code__.co_names
-    )
+    assert "query_similar" in answer.__code__.co_names or "query_similar" in (_answer_semantic.__code__.co_names)
 
 
 def test_stale_round_trips_against_live_duckdb(tmp_path: Path) -> None:

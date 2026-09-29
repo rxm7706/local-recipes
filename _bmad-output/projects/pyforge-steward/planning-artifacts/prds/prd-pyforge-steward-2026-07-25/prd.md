@@ -1,9 +1,14 @@
 ---
+fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-09-08"
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+# 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
+# 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
+# 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (brief->prd, spec->prd) — the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); § Currency reconciliation — 2026-09-25 appended; no FR added. Prior 2026-09-24
 status: final
-currency_review: Reviewed 2026-09-09 — chain-currency (spec→prd) — spec-pyforge-unifying-strategy's `SPEC.md` re-stamped 2026-09-09 by `bmad-correct-course` (operator-approved `sprint-change-proposal-2026-09-09-currency-review.md`): `:488` line-count constraint retired by operator ruling, `:73`/`:315` Python floor corrected to `3.14.*`, a dated Constraints block, § Residual (2026-09-09) replacing "none", two `open_questions`. Checked against FR-1..31 — no FR added or changed; the realization gate is a definition-of-done discipline over existing requirements, and Epics 48–49 decompose the Spec's Residual and Constraints, not a requirement here. § 14 gained a dated paragraph; deltas in § Currency reconciliation — 2026-09-09. Reviewed 2026-09-08 — chain-currency (spec→prd) — spec-pyforge-steward's `.memlog.md` moved 2026-09-08 for the deferred-work sweep follow-ups; the one substantive motion is `_persona_mentions` in tests/meta/test_adoption_register.py gaining word-boundary matching and a widened scan (README.md + reference/*.md). Checked against FR-1..31 — this PRD states no requirement about the adoption register or persona-routing text (searched for `adoption register` and `persona mention`, zero hits), so this is a test-helper precision fix inside an already-decomposed story surface and adds no FR; one new story was authored on the epics side (43.7, re-homing mason DW-13-2-2's sidecar 3.14 runtime validation), which decomposes existing pap:CAP-5/CAP-6 rather than minting a requirement here. Deltas in § Currency reconciliation — 2026-09-08. Reviewed 2026-09-05 — chain-currency (spec→prd) — spec-pyforge-steward's .memlog.md moved twice on 2026-09-05 (the post-merge follow-up-review landing, PR #1056, and the bmad-suite 2026.9.5 roster change) and spec-bmad-eval-quality was created the same day (CAP-1 suite membership, CAP-2 pilot contract → Epic 45); neither adds an FR here — suite membership is governed by spec-bmad-suite-channel-product / -metapackage and eval-quality decomposes from its own owned Spec; deltas in § Currency reconciliation — 2026-09-05. Reviewed 2026-09-02 — chain-currency: spec-pyforge-steward's 2026-09-01 git touch (de24e396, the 23-1 merge) is the Spec landing at its sharded path `specs/spec-pyforge-steward/SPEC.md`; CAP-1..4, AD-1..9, non-goals and success signal are unchanged against this PRD, so no FR changes. Same day the red-team correct-courses minted Epics 40–43 on the unifying chain; those bind spec-pyforge-unifying-strategy, not this PRD. Reviewed 2026-08-29 — reconciled against spec-pyforge-steward's spec-surface drift catch-up and the retroactive Epic 38 decomposition; FR-1..31 unchanged, zero new capability; deltas recorded in § Currency reconciliation — 2026-08-29 (previously 2026-08-26).
+currency_review: "Reviewed 2026-09-24 — chain-currency (spec→prd) — spec-pyforge-steward's .memlog.md moved to 2026-09-24T20:08 (Story 63.4, `steward session check`, plus a merge reconcile of a co-governor spec-pyforge-core memlog entry from concurrent marshal Story 46.2 landing) while this PRD sat at 2026-09-20 — four days, past the runbook's 2-day grace. Story 63.4 decomposes Epic 63 (`environment pyforge-guild`, spec-pyforge-steward CAP-5), consolidating seven pre-existing session-precondition findings into one `pyforge steward session check` duty wired into four entry points; CAP-5 already covers the pyforge-guild environment-default capability this duty verifies. No FR added or changed. Reconciled in § Currency reconciliation — 2026-09-24. FR delta: none. Prior — Reviewed 2026-09-20 — chain-currency (spec→prd) — spec-pyforge-steward's .memlog.md moved to 2026-09-20T02:28 with the landing entries for Stories 61.1–61.3 (corridor transports, work passport + core schema, as-of glass and mailed query — CAP-141..143 realized, Epic 61 in progress) plus the DW-FU-61-2 closure and two co-governor reconciles, while this PRD sat at 2026-09-17. All three stories decompose Spec capabilities already folded 2026-09-17; no FR added or changed. Reconciled in § Currency reconciliation — 2026-09-20. FR delta: none. Prior — Reviewed 2026-09-17 — chain-currency (spec→prd) — one-chain steward fold reminted spec-pyforge-steward CAP-1..145 (31 absorbed Specs, 35 covers-dreams) while this PRD sat at 2026-09-14 with fr-derivation-from already 2026-09-17. Kernel FR-1..18 unchanged; absorbed CAPs were already decomposed as Epics 9–64 on their own Specs — remint is provenance, not a new FR set. Reconciled in § Currency reconciliation — 2026-09-17. FR delta: none. Prior — Reviewed 2026-09-14 — chain-currency (spec→prd) — spec-pyforge-steward's own SPEC.md moved to 2026-09-12 (a 4-path surface-drift-exclude block; dated verified: lines on CAP-1..CAP-4 from the 2026-09-11 sweep, all holding, one scoped honestly as not-re-exercised-live) and its memlog to 2026-09-13T23:59 (a bulk post-outage surface reconcile of five already-landed stories, plus Story 53.6's frames.py re-key from `name` onto `identifier` per Frame Spec v0.3 §4.2.1) while this PRD sat at 2026-09-08. Reconciled in § Currency reconciliation — 2026-09-14. FR delta: none. Prior — Reviewed 2026-09-09 — chain-currency (spec→prd) — spec-pyforge-unifying-strategy's `SPEC.md` re-stamped 2026-09-09 by `bmad-correct-course` (operator-approved `sprint-change-proposal-2026-09-09-currency-review.md`): `:488` line-count constraint retired by operator ruling, `:73`/`:315` Python floor corrected to `3.14.*`, a dated Constraints block, § Residual (2026-09-09) replacing \"none\", two `open_questions`. Checked against FR-1..31 — no FR added or changed; the realization gate is a definition-of-done discipline over existing requirements, and Epics 48–49 decompose the Spec's Residual and Constraints, not a requirement here. § 14 gained a dated paragraph; deltas in § Currency reconciliation — 2026-09-09. Reviewed 2026-09-08 — chain-currency (spec→prd) — spec-pyforge-steward's `.memlog.md` moved 2026-09-08 for the deferred-work sweep follow-ups; the one substantive motion is `_persona_mentions` in tests/meta/test_adoption_register.py gaining word-boundary matching and a widened scan (README.md + reference/*.md). Checked against FR-1..31 — this PRD states no requirement about the adoption register or persona-routing text (searched for `adoption register` and `persona mention`, zero hits), so this is a test-helper precision fix inside an already-decomposed story surface and adds no FR; one new story was authored on the epics side (43.7, re-homing mason DW-13-2-2's sidecar 3.14 runtime validation), which decomposes existing pap:CAP-5/CAP-6 rather than minting a requirement here. Deltas in § Currency reconciliation — 2026-09-08. Reviewed 2026-09-05 — chain-currency (spec→prd) — spec-pyforge-steward's .memlog.md moved twice on 2026-09-05 (the post-merge follow-up-review landing, PR #1056, and the bmad-suite 2026.9.5 roster change) and spec-bmad-eval-quality was created the same day (CAP-1 suite membership, CAP-2 pilot contract → Epic 45); neither adds an FR here — suite membership is governed by spec-bmad-suite-channel-product / -metapackage and eval-quality decomposes from its own owned Spec; deltas in § Currency reconciliation — 2026-09-05. Reviewed 2026-09-02 — chain-currency: spec-pyforge-steward's 2026-09-01 git touch (de24e396, the 23-1 merge) is the Spec landing at its sharded path `specs/spec-pyforge-steward/SPEC.md`; CAP-1..4, AD-1..9, non-goals and success signal are unchanged against this PRD, so no FR changes. Same day the red-team correct-courses minted Epics 40–43 on the unifying chain; those bind spec-pyforge-unifying-strategy, not this PRD. Reviewed 2026-08-29 — reconciled against spec-pyforge-steward's spec-surface drift catch-up and the retroactive Epic 38 decomposition; FR-1..31 unchanged, zero new capability; deltas recorded in § Currency reconciliation — 2026-08-29 (previously 2026-08-26)."
 ---
 
 # PRD: Steward (`pyforge-steward`)
@@ -1219,6 +1224,9 @@ motive: one domain skill of eight and zero station personas. **2026-08-26 (Epic 
 the check reports **40/40**; mason's skill cell is `conda-forge-expert` (no
 `pyforge-mason/` skill). 01/02 work does not owe this matrix. Fewer-than-five on an
 **03 capability** remains a contract violation — the check now fails CI on a missing cell.
+*(Superseded 2026-09-28 by FR-33, operator ruling: Mason's skill cell is `pyforge-mason` **and**
+`conda-forge-expert`, both required — Story 72.2, after mason Story 19.1 compiles the station skill. The
+2026-08-26 sentence above is history.)*
 
 **Functional Requirements:**
 
@@ -2106,3 +2114,333 @@ qualified CAP citations), § Residual (2026-09-09), `open_questions` `realizatio
 `single-spec-merge-timing`, two research companions. **FR delta: none.** Epics 48–49 (sixteen
 stories) decompose the Residual and the new Constraints; § 14 carries the dated paragraph. Record:
 `sprint-change-proposal-2026-09-09-currency-review.md`.
+
+## Currency reconciliation — 2026-09-14
+
+`spec→prd` edge, this time for **this station's own kernel Spec** rather than the Unifying
+Strategy: `spec-pyforge-steward`'s SPEC.md moved to 2026-09-12 and its memlog to
+2026-09-13T23:59 while this PRD sat at 2026-09-08.
+
+**What moved, and why the FR delta is none.**
+
+1. **Dated `verified:` lines on CAP-1..CAP-4 (2026-09-11 sweep).** All four hold, and they
+   hold against *live* evidence rather than test counts alone: `steward keys list --json`
+   returns real inventory entries with a `provenance` field and `secrets: []` (no raw value
+   printed); `steward deploy status` returns a real commit SHA and timestamp read from git
+   history with no separate state store; `steward provision --list --json` enumerates the
+   real `pixi.toml` environments and `--env not-a-real-env` produces a clear error listing
+   the valid names rather than pixi's raw one; `steward budget show --json` returns `[]`
+   cleanly with none declared, and a repo-wide grep for `kubecost`/`opencost`/`infracost`/
+   `boto3`/`google-cloud-billing` under the package returns zero hits. **One is scoped
+   honestly and that scoping is worth preserving:** CAP-3's `--runner bmad-loop`
+   materialization was *not* re-exercised live (it creates a real worktree) and the Spec
+   says so in the same breath, leaning on `test_provision_runner.py` instead. A verification
+   that states what it did not do is the only kind worth trusting.
+2. **A 4-path `surface-drift-exclude:` block.** `dashboard/asgi.py`,
+   `dashboard/consumers.py`, `dashboard/routing.py` and `upgrade.py` — all also governed by
+   `pyforge-marshal/spec-pyforge-core`, which reconciles them on its own cadence. Coverage
+   is unchanged; only this kernel's own drift tracking for those four is off. Detector
+   bookkeeping, no FR.
+3. **A bulk post-outage surface reconcile of five already-landed stories (2026-09-14).**
+   The cutover flag reader + replay harness, per-run `track.json` assembly, Hub Guard
+   library exposure, the foundry strangler kit, and the suite-skip work all drifted this
+   Spec's baseline **while a ~5-day GitHub Actions billing outage kept `spec-surface` CI
+   from ever running**. The reconcile is bookkeeping; the *lesson* is not, and it belongs at
+   PRD altitude because it is about how this station knows things: a detector that cannot
+   run does not report "unknown", it reports nothing, and five days of drift arrived at once
+   the moment CI resumed. That is the same fail-open shape this station already guards
+   against in `steward keys` (a credential check that cannot reach its source must not read
+   as clean).
+4. **Story 53.6 re-keyed the in-repo Frame preflight from `name` onto `identifier`.**
+   Verified live: `frames.py` now carries `COMPANY_IDENTIFIER`/`PUBLISHER`, lists
+   `identifier` in `REQUIRED_FIELDS`, and indexes by identifier. Frame Spec v0.3 §4.2.1
+   makes `identifier` the one mandatory identity element and §5.3 SHOULDs a `qualified-ref`;
+   the element profile marks `title` — which the Markdown `name` key aliases — as MUST NOT
+   be slug-constrained. Keying preflight off `name` was therefore keying identity off a
+   *label*, and off a string that was simultaneously the Frame key and the Python
+   distribution name. The full record lives in `spec-intelligence-hub`'s memlog (CAP-2);
+   this PRD's FR set is untouched because the Intelligence-Hub adoption is decomposed there,
+   not here.
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a
+regex): **244 story keys — 231 `done`, 10 `blocked`, 3 `backlog` — across 58 epics** (56
+`done`, 2 `in-progress`).
+
+**One repair made in passing, and it is not cosmetic.** This PRD's frontmatter
+`currency_review:` value was **invalid YAML at HEAD** — an unquoted scalar containing
+`: ` sequences, so `yaml.safe_load` failed on the whole block. It parsed only because
+`fleet_scan._frontmatter_scalars` is a deliberately naive line reader. The value is now a
+properly quoted scalar with its inner quotes escaped. No text was removed. Recorded because
+the failure mode is silent in exactly the tooling that reads it most.
+
+**No FR text altered.**
+
+## Currency reconciliation — 2026-09-17
+
+`spec→prd` edge after the one-chain-per-station steward fold. `spec-pyforge-steward`
+re-derived on 2026-09-17 as CAP-1..145 covering 35 Dreams and 31 absorbed pointer Specs,
+while this PRD's `updated:` stayed at 2026-09-14 even though `fr-derivation-from` already
+read `2026-09-17`.
+
+**What moved, and why the FR delta is none.**
+
+1. **Station Spec remint, not a new FR set.** Absorbed capabilities were already
+   decomposed as Epics 9–64 on their own Specs. The remint writes provenance
+   (`← spec-<old> CAP-m (shipped <date>)`) onto sequential CAP-1..145. Kernel
+   FR-1..18 (keys, deploy, provision, budget) are the same four duties this PRD
+   has always bound.
+2. **Station contract stays `ready` / Dream `specified`.** Per the marshal CAP-8
+   pilot and CHAIN-STANDARD, the station Spec is not flipped to `shipped` by a
+   fold, and the station Dream is not flipped to `realized`.
+3. **Pointer SPECs keep companions; bodies are record.** That is CHAIN-STANDARD
+   §7 item 3. No requirement here changes because a pointer folder still holds
+   its spine or inventory files.
+4. **Smashed Dream frontmatter was a parse defect, not a product change.** The
+   fold concatenated `---` onto `title:` / `status:`, so `_frontmatter_scalars`
+   could not read `owner: steward` and the chain-currency coherence checkpoint
+   marked the station `unowned`. Restored parseable frontmatter. Owner, type,
+   and status values are unchanged.
+
+**No FR text altered.**
+
+## Currency reconciliation — 2026-09-20
+
+`spec→prd` edge: `spec-pyforge-steward`'s `.memlog.md` moved to 2026-09-20T02:28 while this PRD
+sat at 2026-09-17 — three days, past the runbook's 2-day grace.
+
+**What moved, and why the FR delta is none.** Six entries, all landing bookkeeping on capabilities
+this PRD already covers through the 2026-09-17 fold: Story 61.1 (corridor transports, PR #1528),
+61.2 (work passport + core schema, PR #1532), 61.3 (as-of glass and mailed query, PR #1539) — each
+an autonomous dispatch landing whose entry names the paths the session left unreconciled; the
+`DW-FU-61-2` closure (a PR-label deferral resolved at landing); and two co-governor reconciles for
+doctor Story 30.1's station README pointer line. Epic 61 decomposes `spec-work-passports-dated-
+extracts` (absorbed as CAP-141..145); nothing here is a new requirement of Steward. `updated:` bumped
+to record that the check ran.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this PRD. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-24
+
+`spec→prd` edge: `spec-pyforge-steward`'s `.memlog.md` moved to 2026-09-24T20:08 while this PRD
+sat at 2026-09-20 — four days, past the runbook's 2-day grace.
+
+**What moved, and why the FR delta is none.** Two entries: the Story 63.4 (`steward session
+check`) surface-reconcile naming `src/shared/packages/pyforge-steward/src/pyforge/steward/session.py`
+and its four entry-point wirings (`cli.py`, `.claude/hooks/session-start.sh`,
+`.cursor/environment.json`, `.github/workflows/copilot-setup-steps.yml`, plus
+`pyforge-marshal`'s `dispatch.py`), and a merge-reconcile entry unioning that motion against a
+concurrent co-governor edit from marshal Story 46.2 on the shared `spec-pyforge-core` memlog
+(`context_bundle.py`) landed via PR #1588 while this branch was in flight. Story 63.4 decomposes
+Epic 63 (`environment pyforge-guild`, spec-pyforge-steward CAP-5) — consolidating seven
+pre-existing, independently-checked session-precondition findings (Tier-3 feed absence, stale
+`BMAD_ACTIVE_PROJECT`, symlink/marker desync, and others already described piecemeal across
+existing duties) into one verdict duty run from every session entry point. CAP-5's own scope
+(the `pyforge-guild` environment is the default for every agent and harness) already covers
+verifying that a session's environment preconditions hold; this story adds a duty, not a
+requirement. `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-09-25
+
+`brief→prd` edge (brief re-stamped 2026-09-25 for the whitepaper research) and `spec→prd` edge
+(`spec-python-foundry-cutover` re-derived 2026-09-25) — both from the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md).
+
+**What moved, and why the FR delta is none.** The cutover Spec gained `fnd:CAP-12..15` (laptop
+SBOM, checkable SBOM, the dossier as the cutover's control plane, an estate-first instruction
+surface) and retired `fnd:CAP-7` (no archive of A). The cutover Spec decomposes straight into
+steward epics — the Epic 44 / Epic 54 precedent, recorded as a no-op PRD step in that Spec's
+memlog (2026-09-25 note) — so the new work lands as Epic 67 plus herald 26.1 and scribe 21.1
+without a new FR here. The brief's delta is research only (see the brief's 2026-09-25 section).
+`updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-09-27
+
+`spec→prd` edge: `spec-pyforge-steward` gained CAP-159 on 2026-09-27 while this PRD sat at
+2026-09-25. Same-day reconcile; the FR is derived from the CAP (`one-chain-per-station`: the PRD is
+the Spec's decomposition, never an independent namespace). CAP-155..158 (minted 2026-09-27 as
+fixes to `workspace clean`, the pre-push journal and full-ref reads) extend CAP-107 / CAP-154,
+which this PRD already covers through the 2026-09-17 fold, and register no FR.
+
+### The FR space: FR-32 registered
+
+The station Dream's 2026-09-27 entry measured `pr-preflight` — the one command that makes a green
+local run mean a green CI run, which CAP-154's `pre-push` hook runs on every push — at 28 leaf lanes
+run one at a time, 622.8 s on a 16-core laptop for a marshal-only branch: 250.4 s of station suites
+CI would not run for that diff, and marshal's unit suite run twice (its coverage gate re-runs it
+under coverage). FR-32 decomposes into **Epic 71** (Stories 71.1–71.7).
+
+#### FR-32: The preflight answers in under a minute ← CAP-159
+`pixi run -e pyforge-guild pr-preflight` runs the lanes CI's own rules select for the branch's diff —
+read from `.github/workflows/` against `refs/remotes/origin/main`, never from a second list; a lane
+whose rule cannot be evaluated, or that has no CI counterpart, runs — concurrently, with no mutable
+state shared between lanes, a station's coverage gate measured from its suite's own run, the large
+suites under `pytest-xdist` in their own tasks, and every run's per-lane wall time and exit code
+journaled. **Consequences:** on a single-station branch the verdict arrives in under 60 s of wall
+clock on the 16-core reference laptop, and a budget check reading the journal reds a run that does
+not; a shared-surface branch still runs every lane, bounded by its slowest; verdicts stay each
+lane's exit code; `PYFORGE_PREFLIGHT_SKIP=1` stays the one journaled opt-out; the not-covered list
+does not grow. Stories 71.1–71.7.
+
+**ONE kernel FR space now FR-1..FR-32** (FR-33 = next free id; the `canopy:`, `suite:` and other
+prefixed satellite FR spaces are unchanged).
+
+**Content changed:** this section added (FR-32 registered). No FR renumbered or removed.
+`updated:` bumped.
+
+## Currency reconciliation — 2026-09-28
+
+`spec→prd` edge: `spec-pyforge-steward` gained CAP-160 and CAP-161 on 2026-09-28 while this PRD sat at 2026-09-27.
+Same-day reconcile; the FRs are derived from the CAPs (`one-chain-per-station`: the PRD is the Spec's decomposition,
+never an independent namespace).
+
+### The FR space: FR-33 and FR-34 registered
+
+The operator answered the Mason Dream's 2026-09-27 entry (*Mason has its own skills, and `conda-forge-expert` is one of
+them*) on 2026-09-28 (`spec-pyforge-mason:CAP-29`, mason Epic 19). Two pieces are steward code; they decompose into
+**Epic 72** (Stories 72.1 and 72.2).
+
+#### FR-33: Mason's five-tier skill cell requires its station skill and conda-forge-expert ← CAP-160
+The five-tier check counts Mason's `skill` cell present only when `.claude/skills/pyforge-mason/` holds a `SKILL.md` and
+`.claude/skills/conda-forge-expert/SKILL.md` exists. **Consequences:** a tree with only one of the two reads Mason's cell
+missing and fails `check` naming `skill`; the live roster stays 40/40 once mason Story 19.1 has landed; every other
+station's cell rule is unchanged. Supersedes § 4.13's 2026-08-26 mason clause (canopy:FR-39's check, not its
+consequences, changes). Story 72.2, minted `blocked` behind mason Story 19.1.
+
+#### FR-34: The Guild environment answers `pyforge mason` ← CAP-161
+`pyforge-guild`, the session default (CAP-5), installs `pyforge-mason`, so `pyforge mason …` resolves and `mason` is on
+`PATH` there. **Consequences:** `pixi run -e pyforge-guild pyforge mason --help` and `… pyforge mason doctor --format json`
+exit 0; a meta-test reds the feature without `pyforge-mason`; the Guild still installs under CAP-5's bound from cold
+*(amended in place 2026-09-28, operator ruling: the bound is restated at 2 GB, was 1 GB; see § Currency reconciliation —
+2026-09-28 (operator rulings))*; the Guild's resolved pixi does not move when Mason joins *(amended 2026-09-28;
+`spec-pyforge-mason:CAP-30`)*; the front door (`pyforge-core`) is unchanged; warden stays out of the Guild. Story 72.1.
+
+**ONE kernel FR space now FR-1..FR-34** (FR-35 = next free id; the `canopy:`, `suite:` and other prefixed satellite FR
+spaces are unchanged).
+
+**Content changed:** this section added (FR-33, FR-34 registered); § 4.13 gains a dated superseded note. No FR renumbered
+or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (later)
+
+`spec→prd` edge: `spec-pyforge-steward` gained CAP-162 later on 2026-09-28, and a decision on its memlog (atlas stays out
+of the Guild). Same-day reconcile; the FR is derived from the CAP (`one-chain-per-station`).
+
+### The FR space: FR-35 registered
+
+Every `marshal factory dispatch` warned `MRS-DISP-049` because `steward session check` reported `token-kit` and
+`codegraph-index` "unparseable". The seed check's output was valid JSON all along: since marshal Story 12.5 (FR-123) it is
+a `{verb, ok, result|error}` envelope, and the check read `kit` at the top level. FR-35 decomposes into **Epic 73**
+(Story 73.1) — a new epic because Epic 63, whose Story 63.4 built the check, is `done`.
+
+#### FR-35: `steward session check` reads `marshal seed check`'s envelope, whatever its exit code ← CAP-162
+The session check reads the kit at `result.kit` of the seed check's envelope whatever the process exit code, and reports
+the kit entries' real statuses. **Consequences:** a document recorded from the live CLI (exit 1, `result.failing: true`)
+yields `token-kit` and `codegraph-index` findings that name the kit's statuses, never "unparseable"; an all-`ok` kit reads
+ok whether the seed check exited 0 or 1; an `ok: false` envelope names the seed error; only stdout that is not JSON reads
+"unparseable output"; a JSON document with no `result.kit` reads "no kit report". Steward shells marshal's CLI and never
+imports it. Story 73.1.
+
+### FR-34: a dated note (2026-09-28, later)
+
+`pyforge-atlas` is not added to the Guild, and `pixi.toml`'s Guild section records why beside warden's (the memlog's
+2026-09-28 decision; Story 72.1's banner rewrite). It solves — `pyforge-foundry-full` locks the union on all three
+platforms — but its run-dependency closure adds 257 packages / ~841 MB installed to a ~1,396 MB Guild, moves the Guild's
+own pins (libabseil, and so nodejs 26 → 24; protobuf 7 → 6; filelock 4 → 3), and would still be partial without its
+feature-level supply. Measured the same day, FR-34's consequence "the Guild still installs under 1 GB from cold" is
+already false before mason joins: a cold `pixi install -e pyforge-guild` is 1.5 GB (`du`). Story 72.1 records the
+measurement; whether CAP-5's bound moves is the operator's call. FR-34 itself is unchanged.
+
+**ONE kernel FR space now FR-1..FR-35** (FR-36 = next free id; the `canopy:`, `suite:` and other prefixed satellite FR
+spaces are unchanged).
+
+**Content changed:** this section added (FR-35 registered; FR-34's dated note). No FR renumbered or removed. `updated:`
+bumped.
+
+## Currency reconciliation — 2026-09-28 (operator rulings)
+
+`spec→prd` edge: the operator ruled on both questions the note above left open, and `spec-pyforge-steward`'s memlog records
+them (two decision entries; CAP-5's success and CAP-161 re-rendered). FR-34 is amended in place; no FR is added.
+
+- **CAP-5's size bound is restated, not silently loosened.** It becomes the measured size plus headroom, dated, so the
+  criterion checks growth instead of failing on day one: **1 GB → 2 GB** for a cold `pixi install -e pyforge-guild`. Old:
+  1 GB (859 MB measured 2026-09-16, Story 63.1). Measured 2026-09-28 before mason: 1.5 GB by `du -sh`, 1,461 MiB by
+  `du -sm`, 243 packages. Estimated with mason: +50 packages, ~146 MB. Story 72.1 measures the Guild with mason and records
+  it against the new bound; a measurement at or over 2 GB stops the story. Story 63.1's done record keeps its 1 GB text as
+  history.
+- **The Guild's pixi does not move.** No station or environment caps pixi: `spec-pyforge-mason:CAP-30` (mason Story 20.1)
+  makes Mason's run-dependency `pixi >=0.80.0`. FR-34 gains the consequence; Story 72.1 lands after 20.1.
+- **virtualenv 21 → 20 (and filelock 4 → 3) is accepted,** recorded in Story 72.1: conda-lock's own upstream
+  `virtualenv <21` (and virtualenv 20's `filelock <4`); the Guild's only virtualenv consumer is `pre-commit`, whose hooks here
+  build no virtualenv, and `pyforge-foundry-full` already locks the pair.
+
+**Content changed:** this section added; FR-34's consequences amended in place. No FR renumbered or removed. `updated:`
+bumped.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+`spec→prd` edge: `spec-pyforge-steward` gained CAP-163 and CAP-164 on the night of 2026-09-28, from the two
+Realization-log entries of that night (the object-storage seam's first consumer; GitHub Enterprise credentials through the
+key inventory), and a decision on its memlog (the enterprise host stays out of `_http.py`; AD-2 amended). Same-day
+reconcile; each FR is derived from its CAP (`one-chain-per-station`).
+
+### The FR space: FR-36 and FR-37 registered
+
+#### FR-36: The object-storage seam gets its first consumer — a station streams bytes in and out by sha256 key ← CAP-163
+
+A station stores and reads large bytes (Herald's deck exports first) through one streaming, content-addressed contract over
+the platform's consumed object store, never through PostgreSQL. **Consequences (testable):**
+- `django_pyforge.object_store` puts a stream under `<prefix>/sha256/<hex>` and returns the key, sha256, size and content
+  type; the same bytes land once; `get` streams them back in chunks; no whole object is held in memory or a model field.
+- The client is CAP-97's `config.object_storage.object_storage_client()`, named by a setting; the chrome builds no second
+  client and imports nothing from the host's `config` package; `src/platform/` imports no `pyforge.*`.
+- A key that is not `sha256/<64 lowercase hex>` is refused before any client call; an unset bucket or prefix raises
+  `ImproperlyConfigured` naming the setting.
+- The Helm chart names the bucket and prefix per release, carries only secret references for credentials
+  (canopy:AD-19), renders no object-store workload, and with `networkPolicy` enabled allows egress to the consumed endpoint
+  from web and worker only.
+- No presigned URLs in v1; the portal streams every byte behind OIDC and the station role.
+- Behind `pyforge.steward.object_store_consumer`: OFF, `put` and `get` refuse with `ObjectStoreDisabled`.
+
+Decomposes into **Epic 74** (Story 74.1, the contract herald's Stories 29.1 / 29.2 are minted `blocked` on; Story 74.2, the
+chart). A new epic because Epic 50, whose Stories built the seam (CAP-94..97), is `done`.
+
+#### FR-37: `steward keys` learns the GitHub Enterprise host — a read identity for the fleet scan, a PR-draft identity only for an approved proposal ← CAP-164
+
+The key inventory holds the two scoped GitHub Enterprise identities warden's fleet scan and its approved proposals need,
+and hands each token to a child process only. **Consequences (testable):**
+- The resolver resolves an issued enterprise identity for the host `_http.py`'s `GITHUB_API_BASE_URL` row names, and for
+  no other host — github.com, another host, or a look-alike get nothing; unset, nothing resolves.
+- `.steward/keys-inventory.yaml` gains two `issued` rows, `ghe-fleet-read` and `ghe-fleet-pr-draft`, each with its own
+  age payload, each rotated by `steward keys rotate --scope`; `keys list` / `keys audit` never print a value, and `audit`
+  reports one payload serving both scopes.
+- `steward keys exec --scope <scope> [--approval <ref>] -- <argv>` puts `GH_HOST` and `GH_ENTERPRISE_TOKEN` in the child's
+  environment only, removes the four ambient GitHub token variables first, and writes the token to no argv, stream or log;
+  the draft scope refuses without an approval reference and journals the reference without the token.
+- `.claude/skills/conda-forge-expert/scripts/_http.py` does not change; the `JFROG_API_KEY` cross-host regression stays
+  green; no inbound route, webhook or scheduler is added.
+- Behind `pyforge.steward.ghe_fleet_credentials`: OFF, `keys exec` is listed as disabled and exits 2, and the resolver
+  resolves no enterprise host.
+
+Decomposes into **Epic 75** (Story 75.1, the story warden's Story 16.1 is minted `blocked` on). A new epic because Epic 1,
+whose Stories built FR-5 and FR-7, is `done`.
+
+### The Guild's CAP-5 lands on this station's backlog without an FR
+
+`docs/governance/spec-feature-flag-governance/SPEC.md` (the Guild's, `ready` 2026-09-28) assigns its CAP-5 — per-environment
+flag values, flag metadata, and the fold of `.steward/flags.json` into the one tree — to steward. It decomposes into
+**Epic 76** (Stories 76.1–76.3) citing that CAP directly, and mints no station FR, as doctor Epic 24 did for
+`spec-coverage-gate-independence` CAP-1..3.
+
+**ONE kernel FR space now FR-1..FR-37** (FR-38 = next free id; the `canopy:`, `suite:` and other prefixed satellite FR
+spaces are unchanged).
+
+**Content changed:** this section added (FR-36, FR-37 registered; the Guild CAP-5 routing note). No FR renumbered or
+removed. `updated:` bumped.

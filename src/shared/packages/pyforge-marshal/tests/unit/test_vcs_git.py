@@ -5,19 +5,21 @@
 
 from __future__ import annotations
 
+import errno
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 
+from pyforge.marshal.adapters import vcs_git as vcs_git_module
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -49,11 +51,7 @@ def _worktree_paths(repo: Path) -> list[str]:
     ``repo`` -- used to prove ``merge_branch``'s own temp detached worktree
     never leaks (code review, 2026-08-06, P1)."""
     result = _git(repo, "worktree", "list", "--porcelain")
-    return [
-        line.removeprefix("worktree ")
-        for line in result.stdout.splitlines()
-        if line.startswith("worktree ")
-    ]
+    return [line.removeprefix("worktree ") for line in result.stdout.splitlines() if line.startswith("worktree ")]
 
 
 # --- repo_common_root ---------------------------------------------------------
@@ -133,9 +131,7 @@ def test_worktree_path_for_branch_ignores_other_branches(vcs, repo, tmp_path):
     assert vcs.worktree_path_for_branch(repo, "loop/two") is None
 
 
-def test_worktree_path_for_branch_raises_on_a_block_without_worktree_line(
-    vcs, repo, monkeypatch
-):
+def test_worktree_path_for_branch_raises_on_a_block_without_worktree_line(vcs, repo, monkeypatch):
     """Review finding: a porcelain block carrying a `branch` line but no
     `worktree` line (a worktree path containing a blank line splits one
     block in two) raised a raw KeyError instead of the port's error."""
@@ -279,9 +275,7 @@ def test_add_worktree_raises_on_branch_checked_out_twice(vcs, repo, tmp_path):
         vcs.add_worktree(repo, other_home, "loop/dup", base="main")
 
 
-def test_add_worktree_attaches_the_branch_even_when_a_same_named_tag_exists(
-    vcs, repo, tmp_path
-):
+def test_add_worktree_attaches_the_branch_even_when_a_same_named_tag_exists(vcs, repo, tmp_path):
     """A `loop/<slug>` tag colliding with the branch of the same name must
     not make `add_worktree` attach in detached HEAD instead of the branch
     (empirically: `git worktree add <path> <bare-name>` recognizes the
@@ -300,9 +294,7 @@ def test_add_worktree_attaches_the_branch_even_when_a_same_named_tag_exists(
     assert result.stdout.strip() == "refs/heads/loop/tagged"
 
 
-def test_add_worktree_from_a_remote_tracking_base_sets_no_upstream(
-    vcs, cloned_repo, tmp_path
-):
+def test_add_worktree_from_a_remote_tracking_base_sets_no_upstream(vcs, cloned_repo, tmp_path):
     """Regression (2026-08-30/31): minting a new branch from a
     remote-tracking ``base`` (every dispatch/loop-home caller passes
     ``origin/main``) must NOT auto-configure that branch's upstream to
@@ -318,14 +310,10 @@ def test_add_worktree_from_a_remote_tracking_base_sets_no_upstream(
         capture_output=True,
         text=True,
     )
-    assert result.returncode != 0, (
-        f"expected no upstream configured, got {result.stdout.strip()!r}"
-    )
+    assert result.returncode != 0, f"expected no upstream configured, got {result.stdout.strip()!r}"
 
 
-def test_add_worktree_creates_a_new_branch_when_only_a_same_named_tag_exists(
-    vcs, repo, tmp_path
-):
+def test_add_worktree_creates_a_new_branch_when_only_a_same_named_tag_exists(vcs, repo, tmp_path):
     """Review finding, the actual bug: with only a TAG present (no branch),
     a bare `rev-parse --verify <branch>` (pre-fix `branch_exists`) resolves
     the tag and reports `True`, so `add_worktree` would take the "attach to
@@ -393,9 +381,7 @@ def test_run_replaces_undecodable_git_output(monkeypatch):
 
     from pyforge.marshal.adapters.vcs_git import _run
 
-    result = _run(
-        [sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'\\xff')"]
-    )
+    result = _run([sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'\\xff')"])
     assert result.returncode == 0
     assert result.stdout == "�"
 
@@ -436,9 +422,7 @@ def test_has_uncommitted_changes_raises_outside_a_repo(vcs, tmp_path):
         vcs.has_uncommitted_changes(outside)
 
 
-def test_has_uncommitted_changes_true_for_untracked_file_despite_local_config_hiding_it(
-    vcs, repo
-):
+def test_has_uncommitted_changes_true_for_untracked_file_despite_local_config_hiding_it(vcs, repo):
     """Review finding: an operator's LOCAL ``status.showUntrackedFiles=no``
     would otherwise hide an untracked file from plain ``git status
     --porcelain``, silently defeating the refusal this method exists to
@@ -542,9 +526,7 @@ def test_is_branch_merged_true_for_a_squash_merged_branch(vcs, repo):
     # Confirms the parent count really is 1 -- the exact live-verified shape
     # this method exists to handle.
     show = _git(repo, "cat-file", "-p", "HEAD")
-    assert show.stdout.count("\nparent ") + (
-        1 if show.stdout.startswith("parent ") else 0
-    ) == 1
+    assert show.stdout.count("\nparent ") + (1 if show.stdout.startswith("parent ") else 0) == 1
     # Confirms bare ancestry really would misreport this as unmerged.
     ancestry = subprocess.run(
         ["git", "-C", str(repo), "merge-base", "--is-ancestor", "loop/squash", "main"],
@@ -555,9 +537,7 @@ def test_is_branch_merged_true_for_a_squash_merged_branch(vcs, repo):
     assert vcs.is_branch_merged(repo, "loop/squash", into="main") is True
 
 
-def test_is_branch_merged_true_for_a_squash_merge_even_after_main_advances_further(
-    vcs, repo
-):
+def test_is_branch_merged_true_for_a_squash_merge_even_after_main_advances_further(vcs, repo):
     """Confirms the live-verified claim from the story's Design Notes: the
     squash-merge recognition survives `main` advancing with further,
     unrelated commits after the squash landed."""
@@ -575,9 +555,7 @@ def test_is_branch_merged_true_for_a_squash_merge_even_after_main_advances_furth
     assert vcs.is_branch_merged(repo, "loop/squash2", into="main") is True
 
 
-def test_is_branch_merged_commit_tree_call_never_depends_on_global_git_identity(
-    vcs, tmp_path, monkeypatch
-):
+def test_is_branch_merged_commit_tree_call_never_depends_on_global_git_identity(vcs, tmp_path, monkeypatch):
     """Boundaries & Constraints: the internal commit-tree call must pin its
     own author/committer identity and disable GPG signing so it never
     depends on the operator's global git config -- proven against a repo/
@@ -650,9 +628,7 @@ def test_is_branch_merged_commit_tree_call_never_depends_on_global_git_identity(
     # is_branch_merged's own internal commit-tree call must succeed even
     # here -- if it relied on ambient identity it would raise
     # VcsCommandError instead of returning a bool.
-    assert (
-        vcs.is_branch_merged(no_identity_repo, "loop/noidentity", into="main") is False
-    )
+    assert vcs.is_branch_merged(no_identity_repo, "loop/noidentity", into="main") is False
 
 
 def test_is_branch_merged_raises_on_unknown_branch(vcs, repo):
@@ -752,9 +728,7 @@ def test_delete_branch_force_removes_an_unmerged_branch(vcs, repo):
     assert vcs.branch_exists(repo, "loop/forcedelete") is False
 
 
-def test_delete_branch_force_removes_a_squash_merged_branch_plain_d_would_refuse(
-    vcs, repo
-):
+def test_delete_branch_force_removes_a_squash_merged_branch_plain_d_would_refuse(vcs, repo):
     """The exact rationale this story's Design Notes give for always using
     -D once Marshal's own merged-check authorizes removal: plain `-d`'s
     ancestry-only heuristic refuses a squash-merged branch even though it is
@@ -823,9 +797,7 @@ def cloned_repo(remote: Path, tmp_path: Path) -> Path:
     ``main``'s own upstream is set up exactly the way a real clone does
     it."""
     clone = tmp_path / "clone"
-    subprocess.run(
-        ["git", "clone", str(remote), str(clone)], capture_output=True, text=True, check=True
-    )
+    subprocess.run(["git", "clone", str(remote), str(clone)], capture_output=True, text=True, check=True)
     _git(clone, "config", "user.email", "test@example.com")
     _git(clone, "config", "user.name", "Test")
     (clone / "README.md").write_text("hello\n", encoding="utf-8")
@@ -865,6 +837,70 @@ def test_push_with_configured_upstream_pushes_new_commits(vcs, cloned_repo, remo
     assert remote_head == local_head
 
 
+def _record_hook_env(repo: Path) -> Path:
+    """A real `pre-push` hook that appends what opt-out variables it received."""
+    seen = repo / "hook-env.txt"
+    hook = repo / ".git" / "hooks" / "pre-push"
+    hook.write_text(
+        "#!/usr/bin/env bash\n"
+        f'printf "%s|%s\\n" "${{PYFORGE_PREFLIGHT_SKIP:-unset}}" "${{PYFORGE_PREFLIGHT_SKIP_REASON:-unset}}" >> {seen}\n',
+        encoding="utf-8",
+    )
+    hook.chmod(0o755)
+    return seen
+
+
+def test_push_with_a_proven_main_sha_reaches_the_hook_as_the_journaled_opt_out(vcs, cloned_repo, remote):
+    """Story 57.1 (CAP-267): a sha on refs/remotes/origin/main -- the proof refresh holds after
+    its fast-forward -- is pushed with PYFORGE_PREFLIGHT_SKIP=1 and a reason naming the branch
+    and sha; a push without a proof sets neither variable."""
+    seen = _record_hook_env(cloned_repo)
+    tip = _git(cloned_repo, "rev-parse", "refs/remotes/origin/main").stdout.strip()
+    _git(cloned_repo, "branch", "loop/acme", tip)
+    vcs.push(cloned_repo, "loop/acme", proven_on_main_sha=tip)
+    _git(cloned_repo, "branch", "loop/beta", tip)
+    vcs.push(cloned_repo, "loop/beta")
+
+    lines = seen.read_text(encoding="utf-8").splitlines()
+    assert lines[0] == (
+        f"1|marshal refresh: loop/acme at {tip[:12]} is a fast-forward to origin/main; "
+        "every pushed commit is already on origin/main"
+    )
+    assert lines[1] == "unset|unset"
+    assert _git(remote, "rev-parse", "loop/acme").stdout.strip() == tip
+
+
+def test_push_refuses_the_opt_out_for_a_sha_not_on_origin_main(vcs, cloned_repo, remote):
+    """Review 2 (L-B): the proof is re-checked against the FULL refname -- a local branch named
+    `origin/main` carrying an unverified commit must not stand in for the remote-tracking ref."""
+    _git(cloned_repo, "checkout", "-q", "-b", "loop/acme")
+    (cloned_repo / "unverified.txt").write_text("x\n", encoding="utf-8")
+    _git(cloned_repo, "add", "unverified.txt")
+    _git(cloned_repo, "commit", "-m", "unverified")
+    unverified = _git(cloned_repo, "rev-parse", "HEAD").stdout.strip()
+    _git(cloned_repo, "branch", "origin/main", unverified)  # the trap: a LOCAL branch of that name
+
+    with pytest.raises(VcsCommandError, match="is not on refs/remotes/origin/main"):
+        vcs.push(cloned_repo, "loop/acme", proven_on_main_sha=unverified)
+    assert "loop/acme" not in _git(remote, "branch", "--list", "loop/acme").stdout
+
+
+def test_push_sends_exactly_the_proven_commit_even_if_the_branch_moved(vcs, cloned_repo, remote):
+    """Review 2 (L-C): the pushed commit is the proven one, not whatever the branch points at by
+    push time -- a commit made after the fast-forward never leaves with the opt-out."""
+    seen = _record_hook_env(cloned_repo)
+    tip = _git(cloned_repo, "rev-parse", "refs/remotes/origin/main").stdout.strip()
+    _git(cloned_repo, "checkout", "-q", "-b", "loop/acme", tip)
+    (cloned_repo / "later.txt").write_text("x\n", encoding="utf-8")
+    _git(cloned_repo, "add", "later.txt")
+    _git(cloned_repo, "commit", "-m", "made after the fast-forward")
+
+    vcs.push(cloned_repo, "loop/acme", proven_on_main_sha=tip)
+
+    assert _git(remote, "rev-parse", "loop/acme").stdout.strip() == tip
+    assert seen.read_text(encoding="utf-8").startswith("1|")
+
+
 def test_push_never_passes_force(vcs, cloned_repo, remote, monkeypatch):
     """Structural proof the port's own contract holds: no invocation this
     method makes ever carries `--force`/`--force-with-lease`, on either the
@@ -896,9 +932,7 @@ def test_push_never_passes_force(vcs, cloned_repo, remote, monkeypatch):
         assert "--set-upstream" not in args
 
 
-def test_push_does_not_depend_on_repo_root_having_the_branch_checked_out(
-    vcs, cloned_repo, remote
-):
+def test_push_does_not_depend_on_repo_root_having_the_branch_checked_out(vcs, cloned_repo, remote):
     """`repo_root` need not have `branch` checked out as HEAD -- refs are
     shared across the repo, and this method names `branch` EXPLICITLY as
     the source refspec rather than relying on a bare `git push`."""
@@ -922,9 +956,7 @@ def test_push_raises_on_no_configured_remote(vcs, repo):
         vcs.push(repo, "main")
 
 
-def test_push_raises_rather_than_falls_back_on_a_non_missing_upstream_rev_parse_failure(
-    vcs, repo, monkeypatch
-):
+def test_push_raises_rather_than_falls_back_on_a_non_missing_upstream_rev_parse_failure(vcs, repo, monkeypatch):
     """Review finding (P3, Blind Hunter + Edge Case Hunter): the earlier
     implementation treated ANY non-zero `git rev-parse --abbrev-ref
     <branch>@{upstream}` exit as "no upstream configured" and silently fell
@@ -1051,9 +1083,7 @@ def test_changed_files_a_committed_rename_reports_only_the_new_path(vcs, repo, t
     assert "README.md" not in result
 
 
-def test_changed_files_an_untracked_directory_reports_each_file_individually(
-    vcs, repo, tmp_path
-):
+def test_changed_files_an_untracked_directory_reports_each_file_individually(vcs, repo, tmp_path):
     """Review finding (Blind Hunter + Edge Case Hunter): git's default
     `--untracked-files=normal` collapses a wholly-new untracked directory
     into a single "dir/" porcelain line -- which never matches a
@@ -1303,9 +1333,7 @@ def test_merge_branch_merges_cleanly_and_returns_the_new_commit_sha(vcs, repo, t
     assert log.stdout.strip() == "Merge 1.2 into main"
     # --no-ff: a real merge commit, with two parents, even though this was
     # a fast-forward-eligible branch.
-    parents = (
-        _git(repo, "log", "-1", "--format=%P", "refs/heads/main").stdout.strip().split()
-    )
+    parents = _git(repo, "log", "-1", "--format=%P", "refs/heads/main").stdout.strip().split()
     assert len(parents) == 2
 
 
@@ -1330,9 +1358,7 @@ def test_merge_branch_never_touches_repo_roots_own_active_checkout(vcs, repo, tm
     assert _git(repo, "branch", "--show-current").stdout.strip() == "some-other-branch"
     assert _git(repo, "rev-parse", "HEAD").stdout.strip() == head_before
     # `main` itself DID advance -- that is the one intended write.
-    assert _git(repo, "log", "-1", "--format=%s", "refs/heads/main").stdout.strip() == (
-        "Merge 1.2 into main"
-    )
+    assert _git(repo, "log", "-1", "--format=%s", "refs/heads/main").stdout.strip() == ("Merge 1.2 into main")
 
 
 def test_merge_branch_never_checks_out_branch_itself(vcs, repo, tmp_path):
@@ -1430,9 +1456,7 @@ def test_merge_branch_refuses_when_into_moves_concurrently(vcs, repo, tmp_path, 
     assert not any("marshal-land-" in path for path in _worktree_paths(repo))
 
 
-def test_merge_branch_still_returns_the_sha_if_temp_worktree_cleanup_fails(
-    vcs, repo, tmp_path, monkeypatch
-):
+def test_merge_branch_still_returns_the_sha_if_temp_worktree_cleanup_fails(vcs, repo, tmp_path, monkeypatch):
     """P5: a cosmetic post-merge-success failure (here, the temp worktree's
     own removal) must never mask an already-durable merge -- cleanup is
     best-effort and swallows this class of failure internally, so a
@@ -1449,9 +1473,7 @@ def test_merge_branch_still_returns_the_sha_if_temp_worktree_cleanup_fails(
 
     def _flaky_run(args, *, timeout_s=vcs_git_module._GIT_TIMEOUT_S):
         if "worktree" in args and "remove" in args:
-            return subprocess.CompletedProcess(
-                args, 1, stdout="", stderr="simulated cleanup failure"
-            )
+            return subprocess.CompletedProcess(args, 1, stdout="", stderr="simulated cleanup failure")
         return real_run(args, timeout_s=timeout_s)
 
     monkeypatch.setattr(vcs_git_module, "_run", _flaky_run)
@@ -1465,9 +1487,7 @@ def test_merge_branch_still_returns_the_sha_if_temp_worktree_cleanup_fails(
     assert not any("marshal-land-" in path for path in _worktree_paths(repo))
 
 
-def test_merge_branch_still_returns_the_sha_if_cleanup_raises_outright(
-    vcs, repo, tmp_path, monkeypatch
-):
+def test_merge_branch_still_returns_the_sha_if_cleanup_raises_outright(vcs, repo, tmp_path, monkeypatch):
     """P5, the stronger case: `_run` itself can RAISE `VcsCommandError`
     (a launch failure, a timeout) rather than merely returning a non-zero
     exit code -- the `finally` block's own cleanup must swallow that too,
@@ -1630,9 +1650,7 @@ def test_fetch_raises_when_repo_root_is_not_a_git_repository(vcs, tmp_path):
         vcs.fetch(not_a_repo, "origin", "main")
 
 
-def test_fetch_only_updates_the_remote_tracking_ref_never_a_local_branch(
-    vcs, repo, remote, tmp_path
-):
+def test_fetch_only_updates_the_remote_tracking_ref_never_a_local_branch(vcs, repo, remote, tmp_path):
     """`fetch` alone (no `fast_forward` call) must never move `home`'s own
     checked-out branch -- only `refs/remotes/origin/<ref>` advances."""
     _git(repo, "remote", "add", "origin", str(remote))
@@ -1650,9 +1668,10 @@ def test_fetch_only_updates_the_remote_tracking_ref_never_a_local_branch(
     vcs.fetch(home, "origin", "main")
 
     assert _git(home, "rev-parse", "HEAD").stdout.strip() == before
-    assert _git(home, "rev-parse", "refs/remotes/origin/main").stdout.strip() == _git(
-        repo, "rev-parse", "main"
-    ).stdout.strip()
+    assert (
+        _git(home, "rev-parse", "refs/remotes/origin/main").stdout.strip()
+        == _git(repo, "rev-parse", "main").stdout.strip()
+    )
 
 
 def test_fast_forward_raises_on_an_unresolvable_ref(vcs, repo):
@@ -1660,9 +1679,260 @@ def test_fast_forward_raises_on_an_unresolvable_ref(vcs, repo):
         vcs.fast_forward(repo, "origin/no-such-branch")
 
 
-def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(
-    vcs, repo, remote
-):
+# --- commits_behind (Story 15.1; Story 57.1 review 2 moved refresh to the full refname) ---
+
+
+def test_commits_behind_counts_against_the_full_remote_tracking_ref_not_a_shadowing_branch(vcs, repo, remote, tmp_path):
+    """`refs/remotes/origin/main` is what refresh counts against since review 2 -- a LOCAL
+    branch named `origin/main` (which the short name would resolve to first) is ignored."""
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "origin", "main")
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/behind", base="main")
+    for n in (1, 2):
+        (repo / f"advance-{n}.txt").write_text(f"{n}\n", encoding="utf-8")
+        _git(repo, "add", f"advance-{n}.txt")
+        _git(repo, "commit", "-m", f"advance {n}")
+    _git(repo, "push", "origin", "main")
+    vcs.fetch(home, "origin", "main")
+    _git(home, "branch", "origin/main", "HEAD")  # the shadow: 0 behind if it were consulted
+
+    assert vcs.commits_behind(home, "refs/remotes/origin/main") == 2
+    assert vcs.commits_behind(home, "origin/main") == 0  # why refresh no longer passes the short name
+
+
+def test_commits_behind_raises_on_an_unresolvable_ref(vcs, repo):
+    with pytest.raises(VcsCommandError, match="rev-list --count"):
+        vcs.commits_behind(repo, "refs/remotes/origin/no-such-branch")
+
+
+def test_push_without_the_env_utility_goes_through_the_preflight(vcs, cloned_repo, remote, monkeypatch):
+    """Story 57.1 review 2 (L-D): where the POSIX `env` utility is absent (win-64), a proven
+    push still pushes the proven sha, but through the preflight -- no opt-out variables."""
+    import pyforge.marshal.adapters.vcs_git as vcs_git
+
+    seen = _record_hook_env(cloned_repo)
+    real_which = vcs_git.shutil.which
+    monkeypatch.setattr(
+        vcs_git.shutil, "which", lambda name, *a, **k: None if name == "env" else real_which(name, *a, **k)
+    )
+    tip = _git(cloned_repo, "rev-parse", "refs/remotes/origin/main").stdout.strip()
+    _git(cloned_repo, "branch", "loop/acme", tip)
+
+    vcs.push(cloned_repo, "loop/acme", proven_on_main_sha=tip)
+
+    assert seen.read_text(encoding="utf-8").splitlines() == ["unset|unset"]
+    assert _git(remote, "rev-parse", "loop/acme").stdout.strip() == tip
+
+
+# --- worktree_unified_patch (Story 22.6) / merge_tree_conflict_paths + file_text_at_ref (Story 28.20) ---
+
+
+def test_worktree_unified_patch_carries_committed_and_dirty_changes(vcs, repo):
+    baseline = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    (repo / "committed.txt").write_text("committed\n", encoding="utf-8")
+    _git(repo, "add", "committed.txt")
+    _git(repo, "commit", "-m", "committed change")
+    (repo / "README.md").write_text("dirty edit\n", encoding="utf-8")
+
+    patch = vcs.worktree_unified_patch(repo, baseline_sha=baseline)
+
+    assert "+committed" in patch
+    assert "+dirty edit" in patch
+
+
+def test_worktree_unified_patch_is_empty_with_no_change(vcs, repo):
+    baseline = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    assert vcs.worktree_unified_patch(repo, baseline_sha=baseline) == ""
+
+
+def test_worktree_unified_patch_raises_on_an_unresolvable_baseline(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.worktree_unified_patch(repo, baseline_sha="0" * 40)
+
+
+def _conflicting_branch(repo: Path) -> None:
+    """`main` and `feature/conflict` both edit `README.md` and `b c.txt`, both add `e.txt`
+    with different content (add/add), and `main` deletes `d.txt`, which `feature/conflict`
+    modifies (modify/delete)."""
+    (repo / "b c.txt").write_text("b\n", encoding="utf-8")
+    (repo / "d.txt").write_text("d\n", encoding="utf-8")
+    _git(repo, "add", "b c.txt", "d.txt")
+    _git(repo, "commit", "-m", "base files")
+    base_sha = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    (repo / "README.md").write_text("main version\n", encoding="utf-8")
+    (repo / "b c.txt").write_text("main b\n", encoding="utf-8")
+    (repo / "e.txt").write_text("main e\n", encoding="utf-8")
+    _git(repo, "rm", "-q", "d.txt")
+    _git(repo, "add", "e.txt")
+    _git(repo, "commit", "-am", "main edits")
+    _git(repo, "checkout", "-q", "-b", "feature/conflict", base_sha)
+    (repo / "README.md").write_text("feature version\n", encoding="utf-8")
+    (repo / "b c.txt").write_text("feature b\n", encoding="utf-8")
+    (repo / "d.txt").write_text("feature d\n", encoding="utf-8")
+    (repo / "e.txt").write_text("feature e\n", encoding="utf-8")
+    _git(repo, "add", "e.txt")
+    _git(repo, "commit", "-am", "feature edits")
+    _git(repo, "checkout", "-q", "main")
+
+
+def test_merge_tree_conflict_paths_names_every_conflicted_file(vcs, repo):
+    """Story 58.1 (CAP-268): content, add/add and modify/delete conflicts alike, a space in
+    a name intact. The legacy three-arg merge-tree this replaced returned () here."""
+    _conflicting_branch(repo)
+
+    assert vcs.merge_tree_conflict_paths(repo, "main", "feature/conflict") == (
+        "README.md",
+        "b c.txt",
+        "d.txt",
+        "e.txt",
+    )
+
+
+def test_merge_tree_conflict_paths_refuses_a_conflict_that_names_no_file(vcs, repo):
+    """Story 58.1 review (low): git's manual -- "do NOT interpret an empty Conflicted file info
+    list as a clean merge". A directory-rename split (main scatters `a/`'s files into `b/` and
+    `c/`; the branch adds `a/new.txt`) exits 1 with a tree and no path; it must not read as clean."""
+    (repo / "a").mkdir()
+    for n in range(1, 5):
+        (repo / "a" / f"f{n}").write_text(f"{n}\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "base dir")
+    _git(repo, "checkout", "-q", "-b", "feature/new-in-a")
+    (repo / "a" / "new.txt").write_text("n\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a/new.txt")
+    _git(repo, "checkout", "-q", "main")
+    (repo / "b").mkdir()
+    (repo / "c").mkdir()
+    for n, dest in ((1, "b"), (2, "b"), (3, "c"), (4, "c")):
+        _git(repo, "mv", f"a/f{n}", f"{dest}/f{n}")
+    _git(repo, "commit", "-m", "split a/ into b/ and c/")
+
+    with pytest.raises(VcsCommandError, match="names no file"):
+        vcs.merge_tree_conflict_paths(repo, "main", "feature/new-in-a")
+
+
+def test_merge_tree_conflict_paths_never_touches_the_working_tree_or_refs(vcs, repo):
+    _conflicting_branch(repo)
+    before = _git(repo, "for-each-ref").stdout, _git(repo, "status", "--porcelain").stdout
+
+    vcs.merge_tree_conflict_paths(repo, "main", "feature/conflict")
+
+    assert (_git(repo, "for-each-ref").stdout, _git(repo, "status", "--porcelain").stdout) == before
+
+
+def test_merge_tree_conflict_paths_raises_on_an_unknown_branch(vcs, repo):
+    """An unknown ref also exits 1 -- the conflicted-merge code -- but prints no tree, so it
+    is an error, never an empty list that reads as a clean merge."""
+    with pytest.raises(VcsCommandError, match="merge-tree --write-tree"):
+        vcs.merge_tree_conflict_paths(repo, "main", "no-such-branch")
+
+
+def test_merge_ref_resolving_commits_a_two_parent_merge_with_the_given_resolution(vcs, repo):
+    """Story 59.1 (CAP-269): the conflicted path takes the given text; the result is a real
+    merge of the ref, so a later three-way merge against that ref is clean."""
+    _conflicting_branch(repo)
+    _git(repo, "checkout", "-q", "-b", "readme-only", "feature/conflict~1")
+    (repo / "README.md").write_text("readme-only version\n", encoding="utf-8")
+    _git(repo, "commit", "-am", "only README differs")
+    main_sha = _git(repo, "rev-parse", "main").stdout.strip()
+    # main also touched b c.txt / d.txt / e.txt, which this branch never did -> they merge cleanly
+    sha = vcs.merge_ref_resolving(repo, "main", resolutions={"README.md": "resolved\n"}, message="union heal")
+
+    parents = _git(repo, "rev-list", "--parents", "-n", "1", sha).stdout.split()[1:]
+    assert parents[1] == main_sha
+    assert (repo / "README.md").read_text(encoding="utf-8") == "resolved\n"
+    assert _git(repo, "log", "-1", "--format=%s", sha).stdout.strip() == "union heal"
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert vcs.merge_tree_conflict_paths(repo, "main", "readme-only") == ()
+
+
+def test_merge_ref_resolving_aborts_on_a_conflict_it_cannot_resolve(vcs, repo):
+    _conflicting_branch(repo)
+    _git(repo, "checkout", "-q", "feature/conflict")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    with pytest.raises(VcsCommandError, match="conflicts outside the resolvable paths: .*README.md"):
+        vcs.merge_ref_resolving(repo, "main", resolutions={"b c.txt": "x\n"}, message="union heal")
+
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    probe = subprocess.run(["git", "-C", str(repo), "rev-parse", "-q", "--verify", "MERGE_HEAD"], capture_output=True)
+    assert probe.returncode != 0  # no merge left in progress
+
+
+def test_merge_ref_resolving_reports_an_unwritable_resolution_as_a_vcs_error_and_aborts(vcs, repo, monkeypatch):
+    """Story 59.1 review 2: an OSError writing the resolution used to escape raw and crash
+    `dispatch land`; it is the port's `VcsCommandError`, and the merge is aborted."""
+    _conflicting_branch(repo)
+    _git(repo, "checkout", "-q", "-b", "readme-only", "feature/conflict~1")
+    (repo / "README.md").write_text("readme-only version\n", encoding="utf-8")
+    _git(repo, "commit", "-am", "only README differs")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    def _refuse(self, *args, **kwargs):
+        raise PermissionError(13, "Permission denied", str(self))
+
+    monkeypatch.setattr(Path, "write_text", _refuse)
+    with pytest.raises(VcsCommandError, match="cannot write the resolution of README.md"):
+        vcs.merge_ref_resolving(repo, "main", resolutions={"README.md": "resolved\n"}, message="union heal")
+    monkeypatch.undo()
+
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+    assert _git(repo, "status", "--porcelain").stdout == ""
+
+
+def test_merge_ref_resolving_refuses_and_leaves_a_merge_already_in_progress(vcs, repo):
+    """Story 59.1 review: a pending merge in the worktree is someone else's -- never adopted
+    (committed under the heal's message) nor aborted (their work lost)."""
+    _conflicting_branch(repo)
+    _git(repo, "checkout", "-q", "feature/conflict")
+    subprocess.run(["git", "-C", str(repo), "merge", "--no-commit", "main"], capture_output=True)  # conflicts
+    theirs = _git(repo, "rev-parse", "MERGE_HEAD").stdout.strip()
+
+    with pytest.raises(VcsCommandError, match="already in progress"):
+        vcs.merge_ref_resolving(repo, "main", resolutions={"README.md": "x\n"}, message="union heal")
+
+    assert _git(repo, "rev-parse", "MERGE_HEAD").stdout.strip() == theirs
+
+
+def test_merge_ref_resolving_is_a_no_op_for_a_ref_already_merged(vcs, repo):
+    _git(repo, "checkout", "-q", "-b", "ahead")
+    (repo / "ahead.txt").write_text("a\n", encoding="utf-8")
+    _git(repo, "add", "ahead.txt")
+    _git(repo, "commit", "-m", "ahead of main")
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    assert vcs.merge_ref_resolving(repo, "main", resolutions={}, message="union heal") == head
+
+
+def test_merge_ref_resolving_raises_on_an_unknown_ref(vcs, repo):
+    with pytest.raises(VcsCommandError, match="git merge --no-commit no-such-ref failed"):
+        vcs.merge_ref_resolving(repo, "no-such-ref", resolutions={}, message="union heal")
+
+
+def test_merge_tree_conflict_paths_is_empty_for_a_clean_merge(vcs, repo):
+    _git(repo, "checkout", "-q", "-b", "feature/clean")
+    (repo / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(repo, "add", "feature.txt")
+    _git(repo, "commit", "-m", "add feature.txt")
+    _git(repo, "checkout", "-q", "main")
+
+    assert vcs.merge_tree_conflict_paths(repo, "main", "feature/clean") == ()
+
+
+def test_file_text_at_ref_reads_a_path_and_returns_none_for_a_missing_one(vcs, repo):
+    assert vcs.file_text_at_ref(repo, "main", "README.md") == (repo / "README.md").read_text(encoding="utf-8")
+    assert vcs.file_text_at_ref(repo, "main", "no-such-file.txt") is None
+
+
+def test_file_text_at_ref_raises_on_an_unresolvable_ref(vcs, repo):
+    with pytest.raises(VcsCommandError, match="git show"):
+        vcs.file_text_at_ref(repo, "no-such-ref", "README.md")
+
+
+def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(vcs, repo, remote):
     """CAP-5: promote publishes on origin/main from a throwaway worktree.
     The operator checkout stays on its pre-promote HEAD, dirty files stay,
     and no detached worktree is leaked."""
@@ -1693,6 +1963,433 @@ def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(
 
 def test_commit_paths_onto_remote_tip_refuses_empty_writes(vcs, repo):
     with pytest.raises(VcsCommandError, match="at least one write"):
-        vcs.commit_paths_onto_remote_tip(
-            repo, remote="origin", ref="main", writes=(), message="nope"
+        vcs.commit_paths_onto_remote_tip(repo, remote="origin", ref="main", writes=(), message="nope")
+
+
+# --- commit_paths_onto_remote_tip: the proof-carrying pre-push opt-out (Story 68.1, CAP-277) ----
+#
+# 64.1's landing (2026-09-28): the promotion push ran the repository's `pre-push` preflight, which
+# outlasted the publish's git timeout, three times. These tests use a real repository with a real
+# bare remote and a real `pre-push` hook -- one that sleeps past the (shortened) push timeout
+# unless `PYFORGE_PREFLIGHT_SKIP=1`, and then logs `PYFORGE_PREFLIGHT_SKIP_REASON` -- so the
+# adapter's opt-out is proven against git's own hook machinery, not a fake.
+
+
+@pytest.fixture(autouse=True)
+def _no_ambient_preflight_opt_out(monkeypatch):
+    """An operator (or a harness) with the pre-push opt-out exported would leak it into every hook the
+    tests below observe and fail their `unset` / not-in-`os.environ` assertions (Story 68.1 review)."""
+    monkeypatch.delenv("PYFORGE_PREFLIGHT_SKIP", raising=False)
+    monkeypatch.delenv("PYFORGE_PREFLIGHT_SKIP_REASON", raising=False)
+
+
+_LEDGER_REL = "_bmad-output/projects/acme/planning-artifacts/sprint-status-ledger.yaml"
+_LEDGER_TEXT = "development_status:\n  64-1-a-landing: done\n"
+_SKIP_REASON = "marshal ledger promotion for 'acme', story 64-1-a-landing"
+_PUSH_TIMEOUT_S = 2.5
+
+
+def _publish_setup(repo: Path, remote: Path) -> None:
+    """Point ``repo`` at ``remote`` and push ``main`` BEFORE any hook is installed."""
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "-u", "origin", "main")
+
+
+def _install_pre_push_hook(repo: Path, *, sleeps: bool) -> tuple[Path, Path]:
+    """A ``pre-push`` hook in ``repo`` that records the opt-out variables it saw in ``env.log``
+    and, when ``PYFORGE_PREFLIGHT_SKIP=1``, appends the reason to ``skips.log`` and lets the push
+    through (as ``scripts/pre_push_preflight.sh`` does). Without the opt-out it sleeps past the
+    push timeout (``sleeps=True``, the stand-in for ``pr-preflight``) or just exits 0.
+    Returns ``(skips.log, env.log)``."""
+    skip_log = repo.parent / "skips.log"
+    seen_log = repo.parent / "env.log"
+    hooks = repo / ".git" / "hooks"
+    hooks.mkdir(exist_ok=True)
+    # A global `core.hooksPath` would shadow `.git/hooks`; pin this repository's own.
+    _git(repo, "config", "core.hooksPath", str(hooks))
+    tail = "sleep 8\nexit 1\n" if sleeps else "exit 0\n"
+    hook = hooks / "pre-push"
+    hook.write_text(
+        "#!/bin/sh\n"
+        "printf 'SKIP=%s REASON=%s\\n' "
+        f'"${{PYFORGE_PREFLIGHT_SKIP-unset}}" "${{PYFORGE_PREFLIGHT_SKIP_REASON-unset}}" >> "{seen_log}"\n'
+        'if [ "$PYFORGE_PREFLIGHT_SKIP" = "1" ]; then\n'
+        f'  printf \'%s\\n\' "$PYFORGE_PREFLIGHT_SKIP_REASON" >> "{skip_log}"\n'
+        "  exit 0\n"
+        "fi\n" + tail,
+        encoding="utf-8",
+    )
+    hook.chmod(0o755)
+    return skip_log, seen_log
+
+
+def _remote_main(remote: Path) -> str:
+    return _git(remote, "rev-parse", "refs/heads/main").stdout.strip()
+
+
+def _publish(vcs: GitVcs, repo: Path, *, writes=((_LEDGER_REL, _LEDGER_TEXT),), **kwargs) -> str:
+    return vcs.commit_paths_onto_remote_tip(
+        repo,
+        remote="origin",
+        ref="main",
+        writes=writes,
+        message="marshal: promote sprint-status ledger for 'acme' (1 key(s) -> done)",
+        **kwargs,
+    )
+
+
+def test_a_publish_with_a_reason_outruns_a_preflight_that_would_time_out_the_push(vcs, repo, remote, monkeypatch):
+    """AC 1: the push completes past a hook that sleeps beyond the push timeout, the remote's main
+    holds the commit, and the hook logged a reason naming the sha, the ledger path and the story."""
+    _publish_setup(repo, remote)
+    skip_log, _seen = _install_pre_push_hook(repo, sleeps=True)
+    monkeypatch.setattr(vcs_git_module, "_GIT_FETCH_TIMEOUT_S", _PUSH_TIMEOUT_S)
+
+    sha = _publish(vcs, repo, preflight_skip_reason=_SKIP_REASON)
+
+    assert _remote_main(remote) == sha
+    [logged] = skip_log.read_text(encoding="utf-8").splitlines()
+    assert sha in logged
+    assert _LEDGER_REL in logged
+    assert "story 64-1-a-landing" in logged
+    # Never process-wide: the opt-out reached that one git process only.
+    assert "PYFORGE_PREFLIGHT_SKIP" not in os.environ
+    assert "PYFORGE_PREFLIGHT_SKIP_REASON" not in os.environ
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+
+
+def test_a_publish_without_a_reason_still_runs_the_preflight_and_times_out(vcs, repo, remote, monkeypatch):
+    """The 64.1 failure, reproduced: with no reason the push is what it always was -- the hook runs
+    with no opt-out variable in its environment, outlasts the timeout, and the remote is untouched."""
+    _publish_setup(repo, remote)
+    skip_log, seen_log = _install_pre_push_hook(repo, sleeps=True)
+    monkeypatch.setattr(vcs_git_module, "_GIT_FETCH_TIMEOUT_S", _PUSH_TIMEOUT_S)
+    before = _remote_main(remote)
+
+    with pytest.raises(VcsCommandError, match="timed out"):
+        _publish(vcs, repo)
+
+    assert _remote_main(remote) == before
+    assert seen_log.read_text(encoding="utf-8").splitlines() == ["SKIP=unset REASON=unset"]
+    assert not skip_log.exists()
+
+
+def test_a_publish_without_a_reason_reaches_the_hook_with_no_opt_out_variables(vcs, repo, remote):
+    """AC 3: no reason -> byte-identical push; neither opt-out variable reaches the hook."""
+    _publish_setup(repo, remote)
+    skip_log, seen_log = _install_pre_push_hook(repo, sleeps=False)
+
+    sha = _publish(vcs, repo)
+
+    assert _remote_main(remote) == sha
+    assert seen_log.read_text(encoding="utf-8").splitlines() == ["SKIP=unset REASON=unset"]
+    assert not skip_log.exists()
+
+
+def test_a_publish_with_a_reason_but_no_env_utility_runs_the_preflight(vcs, repo, remote, monkeypatch):
+    """I/O matrix, 'no env utility': the opt-out needs POSIX `env`; without it the push goes
+    through the preflight -- slower, never unchecked."""
+    _publish_setup(repo, remote)
+    skip_log, seen_log = _install_pre_push_hook(repo, sleeps=False)
+    real_which = shutil.which
+    monkeypatch.setattr(
+        vcs_git_module.shutil, "which", lambda name, *a, **k: None if name == "env" else real_which(name, *a, **k)
+    )
+
+    sha = _publish(vcs, repo, preflight_skip_reason=_SKIP_REASON)
+
+    assert _remote_main(remote) == sha
+    assert seen_log.read_text(encoding="utf-8").splitlines() == ["SKIP=unset REASON=unset"]
+    assert not skip_log.exists()
+
+
+@pytest.mark.parametrize(
+    "bad_path",
+    [
+        "src/pyforge/marshal/cli/land.py",
+        "_bmad-output/projects/acme/implementation-artifacts/sprint-status.yaml",
+        "_bmad-output/projects/acme/planning-artifacts/../../../../escape.txt",
+        "_bmad-output/projects/acme/planning-artifacts/./sprint-status-ledger.yaml",
+        "_bmad-output/projects//planning-artifacts/sprint-status-ledger.yaml",
+        "_bmad-output/projects/acme/planning-artifacts/",
+        "_bmad-output/projects/acme/planning-artifacts",
+        "/etc/planning-artifacts/x.yaml",
+        "_bmad-output\\projects\\acme\\planning-artifacts\\x.yaml",
+        "_bmad-output/projects/acme/planning-artifacts/tab\tname.yaml",
+        "_bmad-output/projects/acme/planning-artifacts/line\nbreak.yaml",
+        "_bmad-output/projects/acme/planning-artifacts/.git/config",
+        "",
+    ],
+)
+def test_a_reason_refuses_a_written_path_outside_planning_artifacts_before_any_fetch_or_write(
+    vcs, repo, remote, monkeypatch, bad_path
+):
+    """AC 2 / I/O matrix 'path outside planning-artifacts': refused before any fetch, write or push
+    -- a `../` path would otherwise be written before the post-commit check ever saw it."""
+    _publish_setup(repo, remote)
+    _skip_log, seen_log = _install_pre_push_hook(repo, sleeps=False)
+    fetches: list[tuple] = []
+    monkeypatch.setattr(GitVcs, "fetch", lambda self, *args: fetches.append(args))
+    before = _remote_main(remote)
+
+    with pytest.raises(VcsCommandError, match="planning-artifacts"):
+        _publish(
+            vcs,
+            repo,
+            writes=((_LEDGER_REL, _LEDGER_TEXT), (bad_path, "x\n")),
+            preflight_skip_reason=_SKIP_REASON,
         )
+
+    assert fetches == []
+    assert _remote_main(remote) == before
+    assert not seen_log.exists()
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+
+
+@pytest.mark.parametrize("failing_step", ["mkdtemp", "write_text"])
+def test_an_oserror_building_the_publish_worktree_is_a_vcs_command_error(vcs, repo, remote, monkeypatch, failing_step):
+    """Story 68.1 review (AD-6): a full disk or a bad TMPDIR while the adapter makes its scratch directory or
+    writes the files is a publish failure the caller journals as `MRS-LAND-011` -- never a raw `OSError` that
+    crashes `_promote_sprint_ledger` with its INTENT unpaired. Nothing is pushed and no scratch worktree
+    or directory is left behind."""
+    _publish_setup(repo, remote)
+    before = _remote_main(remote)
+    written: list[Path] = []
+    if failing_step == "mkdtemp":
+
+        def failing_mkdtemp(*args, **kwargs):
+            raise OSError(errno.ENOSPC, "No space left on device")
+
+        monkeypatch.setattr(vcs_git_module.tempfile, "mkdtemp", failing_mkdtemp)
+    else:
+        real_write_text = Path.write_text
+
+        def failing_write_text(self, *args, **kwargs):
+            if "marshal-promote-" in str(self):
+                written.append(self)
+                raise OSError(errno.ENOSPC, "No space left on device")
+            return real_write_text(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "write_text", failing_write_text)
+
+    with pytest.raises(VcsCommandError, match="No space left on device") as excinfo:
+        _publish(vcs, repo)
+
+    assert isinstance(excinfo.value.__cause__, OSError)
+    assert _remote_main(remote) == before
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+    if failing_step == "write_text":
+        [attempted] = written
+        scratch = next(parent for parent in attempted.parents if parent.name.startswith("marshal-promote-"))
+        assert not scratch.exists()
+
+
+@pytest.mark.parametrize("empty", ["", "   ", "\n\t"])
+def test_an_empty_reason_is_refused_never_a_blanket_skip(vcs, repo, remote, empty):
+    _publish_setup(repo, remote)
+    before = _remote_main(remote)
+
+    with pytest.raises(VcsCommandError, match="reason is empty"):
+        _publish(vcs, repo, preflight_skip_reason=empty)
+
+    assert _remote_main(remote) == before
+
+
+def _commit_everything(self, repo_root, paths, message):
+    """A stand-in `commit_paths` that sweeps in whatever else is in the worktree -- the shape the
+    adapter's post-commit path proof exists to catch (the real `commit_paths` commits only `paths`)."""
+    _git(repo_root, "add", "-A")
+    _git(repo_root, "commit", "-m", message)
+    return _git(repo_root, "rev-parse", "HEAD").stdout.strip()
+
+
+@pytest.mark.parametrize("stray", ["added", "deleted"])
+def test_a_commit_naming_a_path_outside_the_written_set_is_refused_before_any_push(
+    vcs, repo, remote, monkeypatch, stray
+):
+    """AC 2 / I/O matrix 'extra path in the commit': an added path and a deleted one both fail the
+    proof; the remote's main is unchanged and the hook never ran (no push was attempted)."""
+    _publish_setup(repo, remote)
+    _skip_log, seen_log = _install_pre_push_hook(repo, sleeps=False)
+    before = _remote_main(remote)
+
+    def sneaky_commit(self, repo_root, paths, message):
+        if stray == "added":
+            (repo_root / "src").mkdir()
+            (repo_root / "src" / "evil.py").write_text("print('evil')\n", encoding="utf-8")
+        else:
+            (repo_root / "README.md").unlink()
+        return _commit_everything(self, repo_root, paths, message)
+
+    monkeypatch.setattr(GitVcs, "commit_paths", sneaky_commit)
+
+    with pytest.raises(VcsCommandError, match="outside the written set"):
+        _publish(vcs, repo, preflight_skip_reason=_SKIP_REASON)
+
+    assert _remote_main(remote) == before
+    assert not seen_log.exists()
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+
+
+def test_a_rename_pairing_cannot_hide_a_deleted_unwritten_file_behind_a_written_path(vcs, repo, remote, monkeypatch):
+    """`git diff --name-only` pairs a deleted file with an added one of identical content as a rename and
+    lists only the NEW name -- so without `--no-renames` a commit that deletes an unwritten tracked file
+    while adding the written ledger path with the same bytes would pass the path proof. Both ends must be
+    named: the deletion is refused and the remote's main is unchanged."""
+    unwritten = "notes/old-ledger.yaml"
+    (repo / "notes").mkdir()
+    (repo / unwritten).write_text(_LEDGER_TEXT, encoding="utf-8")
+    _git(repo, "add", unwritten)
+    _git(repo, "commit", "-m", "an unrelated tracked file whose bytes equal the ledger's")
+    _publish_setup(repo, remote)
+    _skip_log, seen_log = _install_pre_push_hook(repo, sleeps=False)
+    before = _remote_main(remote)
+
+    def rename_shaped_commit(self, repo_root, paths, message):
+        _git(repo_root, "rm", "-q", unwritten)
+        return _commit_everything(self, repo_root, paths, message)
+
+    monkeypatch.setattr(GitVcs, "commit_paths", rename_shaped_commit)
+
+    with pytest.raises(VcsCommandError, match="outside the written set") as excinfo:
+        _publish(vcs, repo, preflight_skip_reason=_SKIP_REASON)
+
+    assert unwritten in str(excinfo.value)
+    assert _remote_main(remote) == before
+    assert not seen_log.exists()
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+
+
+def test_the_same_extra_path_commit_is_not_judged_without_a_reason(vcs, repo, remote, monkeypatch):
+    """With no reason the adapter makes no claim about the commit's paths -- the proof belongs to the
+    opt-out, and the push is unchanged (the hook decides)."""
+    _publish_setup(repo, remote)
+    _install_pre_push_hook(repo, sleeps=False)
+
+    def sneaky_commit(self, repo_root, paths, message):
+        (repo_root / "extra.txt").write_text("extra\n", encoding="utf-8")
+        return _commit_everything(self, repo_root, paths, message)
+
+    monkeypatch.setattr(GitVcs, "commit_paths", sneaky_commit)
+
+    sha = _publish(vcs, repo)
+
+    assert _remote_main(remote) == sha
+
+
+def test_a_reason_is_one_line_however_the_caller_wrote_it(vcs, repo, remote):
+    """The hook's skip journal is tab-separated, one line per push -- no tab or newline survives."""
+    _publish_setup(repo, remote)
+    skip_log, _seen = _install_pre_push_hook(repo, sleeps=False)
+
+    sha = _publish(vcs, repo, preflight_skip_reason="story 64-1\tpromoted\nby marshal\r\n\x07")
+
+    text = skip_log.read_text(encoding="utf-8")
+    assert text.count("\n") == 1
+    assert "\t" not in text
+    assert "\r" not in text
+    assert sha in text
+    assert "story 64-1 promoted by marshal" in text
+
+
+@pytest.mark.parametrize(
+    ("rel", "expected"),
+    [
+        ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", True),
+        ("_bmad-output/projects/acme/planning-artifacts/specs/spec-1-1.md", True),
+        ("_bmad-output/projects/acme/planning-artifacts/deferred-work-ledger.md", True),
+        ("_bmad-output/projects/acme/planning-artifacts", False),
+        ("_bmad-output/projects/acme/planning-artifacts/", False),
+        ("_bmad-output/projects/acme/implementation-artifacts/x.md", False),
+        ("_bmad-output/projects/../planning-artifacts/x.md", False),
+        ("_bmad-output/projects/./planning-artifacts/x.md", False),
+        ("_bmad-output/planning-artifacts/x.md", False),
+        ("_bmad-output/projects/acme/planning-artifacts/../x.md", False),
+        ("./_bmad-output/projects/acme/planning-artifacts/x.md", False),
+        ("/_bmad-output/projects/acme/planning-artifacts/x.md", False),
+        ("_bmad-output/projects/acme/planning-artifacts/x.md\x00", False),
+        ("_bmad-output/projects/acme/planning-artifacts/.GIT/x", False),
+        ("src/planning-artifacts/x.md", False),
+        ("", False),
+    ],
+)
+def test_is_planning_artifact_path(rel, expected):
+    assert vcs_git_module._is_planning_artifact_path(rel) is expected
+
+
+# --- merge_tree_write / add_worktree_for_tree (Story 51.1) --------------------
+#
+# Review finding (2026-09-19): these two methods -- the actual git mechanics
+# this story's whole fix depends on -- had no real-git coverage at all, only
+# a hand-rolled fake in test_dispatch_landing.py. Added here to match this
+# module's own established convention (add_worktree, is_branch_merged) of
+# testing GitVcs against real temp git repos.
+
+
+def test_merge_tree_write_returns_tree_oid_for_a_clean_merge(vcs, repo):
+    _git(repo, "checkout", "-b", "feature/clean")
+    (repo / "feature.txt").write_text("feature content\n", encoding="utf-8")
+    _git(repo, "add", "feature.txt")
+    _git(repo, "commit", "-m", "add feature.txt")
+    _git(repo, "checkout", "main")
+    (repo / "main-only.txt").write_text("main content\n", encoding="utf-8")
+    _git(repo, "add", "main-only.txt")
+    _git(repo, "commit", "-m", "add main-only.txt")
+
+    tree_oid = vcs.merge_tree_write(repo, "main", "feature/clean")
+
+    assert tree_oid is not None
+    assert _git(repo, "cat-file", "-t", tree_oid).stdout.strip() == "tree"
+    names = _git(repo, "ls-tree", "-r", "--name-only", tree_oid).stdout.split()
+    assert "feature.txt" in names
+    assert "main-only.txt" in names
+
+
+def test_merge_tree_write_returns_none_on_a_real_conflict(vcs, repo):
+    _git(repo, "commit", "--allow-empty", "-m", "checkpoint")
+    base_sha = _git(repo, "rev-parse", "HEAD~1").stdout.strip()
+    (repo / "README.md").write_text("main version\n", encoding="utf-8")
+    _git(repo, "commit", "-am", "main edits README")
+    _git(repo, "checkout", "-b", "feature/conflict", base_sha)
+    (repo / "README.md").write_text("feature version\n", encoding="utf-8")
+    _git(repo, "commit", "-am", "feature edits README")
+
+    assert vcs.merge_tree_write(repo, "main", "feature/conflict") is None
+
+
+def test_add_worktree_for_tree_checks_out_the_merged_content(vcs, repo, tmp_path):
+    _git(repo, "checkout", "-b", "feature/clean")
+    (repo / "feature.txt").write_text("feature content\n", encoding="utf-8")
+    _git(repo, "add", "feature.txt")
+    _git(repo, "commit", "-m", "add feature.txt")
+    feature_sha = _git(repo, "rev-parse", "feature/clean").stdout.strip()
+    _git(repo, "checkout", "main")
+    (repo / "main-only.txt").write_text("main content\n", encoding="utf-8")
+    _git(repo, "add", "main-only.txt")
+    _git(repo, "commit", "-m", "add main-only.txt")
+
+    tree_oid = vcs.merge_tree_write(repo, "main", "feature/clean")
+    assert tree_oid is not None
+
+    home = tmp_path / "merge-tree-preview-home"
+    vcs.add_worktree_for_tree(repo, home, tree_oid, parent=feature_sha)
+
+    assert (home / "feature.txt").read_text(encoding="utf-8") == "feature content\n"
+    assert (home / "main-only.txt").read_text(encoding="utf-8") == "main content\n"
+    assert any("merge-tree-preview-home" in path for path in _worktree_paths(repo))
+
+    # the synthetic wrapper commit is never referenced by any branch or tag.
+    synthetic_sha = _git(home, "rev-parse", "HEAD").stdout.strip()
+    assert synthetic_sha != feature_sha
+    contains = _git(repo, "for-each-ref", "--contains", synthetic_sha)
+    assert contains.stdout.strip() == ""
+
+    vcs.remove_worktree(repo, home, force=True)
+    assert not any("merge-tree-preview-home" in path for path in _worktree_paths(repo))
+
+
+def test_add_worktree_for_tree_raises_vcs_command_error_on_an_unresolvable_parent(vcs, repo, tmp_path):
+    tree_oid = _git(repo, "rev-parse", "HEAD^{tree}").stdout.strip()
+    home = tmp_path / "merge-tree-preview-home"
+    with pytest.raises(VcsCommandError):
+        vcs.add_worktree_for_tree(repo, home, tree_oid, parent="no-such-ref")

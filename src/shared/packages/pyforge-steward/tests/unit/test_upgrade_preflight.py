@@ -74,11 +74,9 @@ def _write_610_repo(root: Path, *, with_legacy_custom: bool = True) -> Path:
 
     manifest_dir = root / "_bmad" / "_config"
     manifest_dir.mkdir(parents=True)
-    (manifest_dir / "manifest.yaml").write_text(
-        "installation:\n  version: 6.10.0\n", encoding="utf-8"
-    )
+    (manifest_dir / "manifest.yaml").write_text("installation:\n  version: 6.10.0\n", encoding="utf-8")
     (manifest_dir / "skill-manifest.csv").write_text(
-        'canonicalId,name\n'
+        "canonicalId,name\n"
         '"bmad-dev-auto","bmad-dev-auto"\n'
         '"bmad-check-implementation-readiness","bmad-check-implementation-readiness"\n'
         '"bmad-index-docs","bmad-index-docs"\n',
@@ -122,8 +120,7 @@ def _write_611_package(root: Path, *, version: str = "6.11.0") -> Path:
     scripts = root / "src" / "scripts"
     scripts.mkdir(parents=True)
     (scripts / "resolve_config.py").write_text(
-        '"""upstream four-layer resolve_config — no multi-project marker."""\n'
-        "def main():\n    pass\n",
+        '"""upstream four-layer resolve_config — no multi-project marker."""\ndef main():\n    pass\n',
         encoding="utf-8",
     )
     return root
@@ -163,9 +160,7 @@ def test_catalog_ships_612_custom_modules():
     # Story 46.7: the --pin skf=v2.1.0 question is closed — the catalog pins it.
     assert raw[0]["pin"] == "v2.1.0"
     assert skf.pin == "v2.1.0"
-    assert skf.packaged_source == (
-        ".pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src"
-    )
+    assert skf.packaged_source == (".pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src")
     assert "Trap 13" in skf.notes and "Trap 14" in skf.notes
     assert "skf-campaign" in skf.notes
 
@@ -196,9 +191,7 @@ def test_preflight_611_retrodicts_failure_mode_traps(tmp_path):
     assert tuple(report.trap_ids) == _EXPECTED_TRAPS
 
     # Trap 1 — locally modified upstream-touched resolve_config.py
-    assert any(
-        m.path == "_bmad/scripts/resolve_config.py" for m in report.locally_modified
-    )
+    assert any(m.path == "_bmad/scripts/resolve_config.py" for m in report.locally_modified)
 
     # Trap 2 — legacy custom halt
     assert any("bmad-dev-auto.toml" in c.path for c in report.legacy_custom)
@@ -279,9 +272,7 @@ def test_cli_bmad_core_json_report_only(tmp_path, capsys):
 def test_preflight_warns_on_package_version_mismatch(tmp_path):
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
     package = _write_611_package(tmp_path / "pkg", version="6.12.0")
-    report = build_preflight_report(
-        repo=repo, target_version="6.11.0", package_root=package
-    )
+    report = build_preflight_report(repo=repo, target_version="6.11.0", package_root=package)
     assert any("package.json version is 6.12.0" in n for n in report.notes)
 
 
@@ -325,19 +316,14 @@ def _write_package_root(
     """Minimal installed/target package tree: one bmm-skills skill + two scripts."""
     root.mkdir(parents=True, exist_ok=True)
     skills_root = root / "src" / "bmm-skills"
-    skill_dir = (
-        (skills_root / "v6-shims" / "bmad-dev-auto")
-        if v6_shim_only
-        else (skills_root / "bmad-dev-auto")
-    )
+    skill_dir = (skills_root / "v6-shims" / "bmad-dev-auto") if v6_shim_only else (skills_root / "bmad-dev-auto")
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text(skill_body, encoding="utf-8")
     scripts_root = root / "src" / "scripts"
     scripts_root.mkdir(parents=True)
     (scripts_root / "helper.py").write_text(script_body, encoding="utf-8")
     (scripts_root / "resolve_config.py").write_text(
-        '"""upstream four-layer resolve_config — no multi-project marker."""\n'
-        "def main():\n    pass\n",
+        '"""upstream four-layer resolve_config — no multi-project marker."""\ndef main():\n    pass\n',
         encoding="utf-8",
     )
     return root
@@ -384,9 +370,7 @@ def test_default_installed_package_root_home_unresolvable_returns_none(monkeypat
     assert default_installed_package_root("6.10.0") is None
 
 
-def test_preflight_no_installed_package_root_and_no_cache_match_is_report_only(
-    tmp_path, monkeypatch
-):
+def test_preflight_no_installed_package_root_and_no_cache_match_is_report_only(tmp_path, monkeypatch):
     # Deterministic regardless of the real machine's rattler cache contents.
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "fake-home")
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
@@ -400,9 +384,7 @@ def test_scan_finds_skill_file_edited_in_place(tmp_path):
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
     _add_skill_and_script(repo, skill_body="# bmad-dev-auto (LOCALLY EDITED)\n")
     package = _write_package_root(tmp_path / "pkg")
-    report = build_preflight_report(
-        repo=repo, target_version="6.11.0", installed_package_root=package
-    )
+    report = build_preflight_report(repo=repo, target_version="6.11.0", installed_package_root=package)
     assert TRAP_LOCAL_CUSTOMIZATION in report.trap_ids
     paths = {f.path for f in report.local_customizations}
     assert ".claude/skills/bmad-dev-auto/SKILL.md" in paths
@@ -413,22 +395,15 @@ def test_scan_skips_v6_shims_skill_dir(tmp_path):
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
     _add_skill_and_script(repo, skill_body="# bmad-dev-auto (LOCALLY EDITED)\n")
     package = _write_package_root(tmp_path / "pkg", v6_shim_only=True)
-    report = build_preflight_report(
-        repo=repo, target_version="6.11.0", installed_package_root=package
-    )
-    assert not any(
-        f.path == ".claude/skills/bmad-dev-auto/SKILL.md"
-        for f in report.local_customizations
-    )
+    report = build_preflight_report(repo=repo, target_version="6.11.0", installed_package_root=package)
+    assert not any(f.path == ".claude/skills/bmad-dev-auto/SKILL.md" for f in report.local_customizations)
 
 
 def test_scan_finds_script_edited_in_place(tmp_path):
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
     _add_skill_and_script(repo, script_body="print('LOCALLY EDITED')\n")
     package = _write_package_root(tmp_path / "pkg")
-    report = build_preflight_report(
-        repo=repo, target_version="6.11.0", installed_package_root=package
-    )
+    report = build_preflight_report(repo=repo, target_version="6.11.0", installed_package_root=package)
     assert any(f.path == "_bmad/scripts/helper.py" for f in report.local_customizations)
 
 
@@ -438,13 +413,8 @@ def test_scan_script_with_no_packaged_counterpart_is_not_a_finding(tmp_path):
         "print('repo-only TEA helper')\n", encoding="utf-8"
     )
     package = _write_package_root(tmp_path / "pkg")
-    report = build_preflight_report(
-        repo=repo, target_version="6.11.0", installed_package_root=package
-    )
-    assert not any(
-        f.path == "_bmad/scripts/bmad_tea_playwright.py"
-        for f in report.local_customizations
-    )
+    report = build_preflight_report(repo=repo, target_version="6.11.0", installed_package_root=package)
+    assert not any(f.path == "_bmad/scripts/bmad_tea_playwright.py" for f in report.local_customizations)
 
 
 def test_scan_excludes_upstream_touched_paths(tmp_path):
@@ -452,12 +422,8 @@ def test_scan_excludes_upstream_touched_paths(tmp_path):
     # `upstream_touched_paths` entry — CAP-8 must not double-report it.
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
     package = _write_package_root(tmp_path / "pkg")
-    report = build_preflight_report(
-        repo=repo, target_version="6.11.0", installed_package_root=package
-    )
-    assert not any(
-        f.path == "_bmad/scripts/resolve_config.py" for f in report.local_customizations
-    )
+    report = build_preflight_report(repo=repo, target_version="6.11.0", installed_package_root=package)
+    assert not any(f.path == "_bmad/scripts/resolve_config.py" for f in report.local_customizations)
     # Still governed by trap 1 (the pre-existing marker-based mechanism).
     assert any(m.path == "_bmad/scripts/resolve_config.py" for m in report.locally_modified)
 
@@ -469,9 +435,7 @@ def test_scan_excludes_skill_shaped_upstream_touched_path(tmp_path):
     package = _write_package_root(tmp_path / "pkg")
     catalog = {"upstream_touched_paths": [".claude/skills/bmad-dev-auto/SKILL.md"]}
     findings = _local_customization_findings(repo, package, catalog)
-    assert not any(
-        f.path == ".claude/skills/bmad-dev-auto/SKILL.md" for f in findings
-    )
+    assert not any(f.path == ".claude/skills/bmad-dev-auto/SKILL.md" for f in findings)
     # The script-side finding (not named in upstream_touched_paths) still surfaces.
     assert any(f.path == "_bmad/scripts/helper.py" for f in findings)
 
@@ -484,9 +448,7 @@ def test_scan_skips_pycache_noise(tmp_path):
     pycache_dir.mkdir(parents=True)
     (pycache_dir / "helper.cpython-311.pyc").write_bytes(b"repo-only compiled noise")
     package = _write_package_root(tmp_path / "pkg")
-    report = build_preflight_report(
-        repo=repo, target_version="6.11.0", installed_package_root=package
-    )
+    report = build_preflight_report(repo=repo, target_version="6.11.0", installed_package_root=package)
     assert not any("__pycache__" in f.path for f in report.local_customizations)
     assert not any(f.path.endswith((".pyc", ".pyo")) for f in report.local_customizations)
 
@@ -498,26 +460,18 @@ def test_scan_skips_own_customization_conflict_sibling(tmp_path):
     """
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
     _add_skill_and_script(repo)
-    conflict_sibling = (
-        repo / ".claude" / "skills" / "bmad-dev-auto" / "SKILL.md.customization-conflict"
-    )
+    conflict_sibling = repo / ".claude" / "skills" / "bmad-dev-auto" / "SKILL.md.customization-conflict"
     conflict_sibling.write_text("<<<<<<< ours\n=======\n>>>>>>> theirs\n", encoding="utf-8")
     package = _write_package_root(tmp_path / "pkg")
-    report = build_preflight_report(
-        repo=repo, target_version="6.11.0", installed_package_root=package
-    )
-    assert not any(
-        f.path.endswith(".customization-conflict") for f in report.local_customizations
-    )
+    report = build_preflight_report(repo=repo, target_version="6.11.0", installed_package_root=package)
+    assert not any(f.path.endswith(".customization-conflict") for f in report.local_customizations)
 
 
 def test_preflight_installed_package_root_bad_path_notes_scan_skipped(tmp_path):
     """An explicit --installed-package-root that isn't a directory must not go silent."""
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
     bad_root = tmp_path / "does-not-exist"
-    report = build_preflight_report(
-        repo=repo, target_version="6.11.0", installed_package_root=bad_root
-    )
+    report = build_preflight_report(repo=repo, target_version="6.11.0", installed_package_root=bad_root)
     assert report.local_customizations == ()
     assert TRAP_LOCAL_CUSTOMIZATION not in report.trap_ids
     notes = " ".join(report.notes)
@@ -530,9 +484,7 @@ def test_preflight_installed_package_root_wrong_shape_notes_scan_skipped(tmp_pat
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
     wrong_root = tmp_path / "wrong-shape-root"
     (wrong_root / "some-other-tool").mkdir(parents=True)
-    report = build_preflight_report(
-        repo=repo, target_version="6.11.0", installed_package_root=wrong_root
-    )
+    report = build_preflight_report(repo=repo, target_version="6.11.0", installed_package_root=wrong_root)
     assert report.local_customizations == ()
     assert TRAP_LOCAL_CUSTOMIZATION not in report.trap_ids
     notes = " ".join(report.notes)
@@ -552,21 +504,15 @@ def _write_repo_with_skills(root: Path, skill_names: list[str]) -> Path:
     (root / "scripts" / "bmad-loop-worktree").write_text("#!/bin/sh\n", encoding="utf-8")
     manifest_dir = root / "_bmad" / "_config"
     manifest_dir.mkdir(parents=True)
-    (manifest_dir / "manifest.yaml").write_text(
-        "installation:\n  version: 9.9.8\n", encoding="utf-8"
-    )
+    (manifest_dir / "manifest.yaml").write_text("installation:\n  version: 9.9.8\n", encoding="utf-8")
     lines = ["canonicalId,name"]
     for name in skill_names:
         lines.append(f'"{name}","{name}"')
-    (manifest_dir / "skill-manifest.csv").write_text(
-        "\n".join(lines) + "\n", encoding="utf-8"
-    )
+    (manifest_dir / "skill-manifest.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
     return root
 
 
-def _write_shims_catalog(
-    directory: Path, *, version: str = "9.9.9", shims: list[str] | None = None
-) -> Path:
+def _write_shims_catalog(directory: Path, *, version: str = "9.9.9", shims: list[str] | None = None) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     (directory / f"{version}.yaml").write_text(
         yaml.safe_dump(
@@ -583,9 +529,7 @@ def _write_shims_catalog(
 
 
 def test_shims_to_retire_is_catalog_installed_intersection_sorted(tmp_path):
-    repo = _write_repo_with_skills(
-        tmp_path / "repo", ["bmad-dev-auto", "bmad-quick-dev", "bmad-review"]
-    )
+    repo = _write_repo_with_skills(tmp_path / "repo", ["bmad-dev-auto", "bmad-quick-dev", "bmad-review"])
     catalog_directory = _write_shims_catalog(
         tmp_path / "catalog",
         shims=["bmad-quick-dev", "bmad-dev-auto", "bmad-not-installed"],
@@ -604,9 +548,7 @@ def test_shims_to_retire_is_catalog_installed_intersection_sorted(tmp_path):
 
 def test_shims_to_retire_empty_when_catalog_and_installed_disjoint(tmp_path):
     repo = _write_repo_with_skills(tmp_path / "repo", ["bmad-review"])
-    catalog_directory = _write_shims_catalog(
-        tmp_path / "catalog", shims=["bmad-dev-auto", "bmad-quick-dev"]
-    )
+    catalog_directory = _write_shims_catalog(tmp_path / "catalog", shims=["bmad-dev-auto", "bmad-quick-dev"])
     report = build_preflight_report(
         repo=repo,
         target_version="9.9.9",
@@ -664,15 +606,7 @@ def test_format_preflight_shims_to_retire_none_when_empty(tmp_path):
 
 def test_preflight_never_mutates_tree(tmp_path):
     repo = _write_610_repo(tmp_path / "repo")
-    before = {
-        p.relative_to(repo): p.read_bytes()
-        for p in repo.rglob("*")
-        if p.is_file()
-    }
+    before = {p.relative_to(repo): p.read_bytes() for p in repo.rglob("*") if p.is_file()}
     build_preflight_report(repo=repo, target_version="6.11.0")
-    after = {
-        p.relative_to(repo): p.read_bytes()
-        for p in repo.rglob("*")
-        if p.is_file()
-    }
+    after = {p.relative_to(repo): p.read_bytes() for p in repo.rglob("*") if p.is_file()}
     assert before == after

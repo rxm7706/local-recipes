@@ -2,7 +2,7 @@
 title: 'Memlog fidelity'
 type: 'docs'
 created: '2026-09-10'
-status: 'blocked'
+status: 'done'
 baseline_revision: 1c872165d53f8782e34809f741f2a7873eb1d65e
 closeout_date: '2026-09-10'
 review_loop_iteration: 0
@@ -125,7 +125,8 @@ must land before the cutover's package fold begins.
 
 ## Auto Run Result
 
-Status: blocked
+Status: done
+Reconciled 2026-09-20: the `blocked` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `66a8357d3f 2026-09-10 marshal: flip 44-13 to done in the tracked ledger` — that promotion is the ruling this record now reflects.
 Blocking condition: implementation verification failed — fleet-wide scratch re-derive byte-equivalence not completed (131 specs + 8 spines remain; unifying strategy live SPEC.md not re-rendered)
 
 **Summary:** Shipped the memlog fidelity harness and completed first-pass structural reconciliation. Retired the AGENTS.md never-re-derive exception; captured 2026-09-09 unifying-strategy hand-edits in memlog entries 201–207; updated cutover-readiness P1–P4 to honest partial/satisfied states.
@@ -154,3 +155,8 @@ Blocking condition: implementation verification failed — fleet-wide scratch re
 - Manual: for each Spec, run `bmad-spec` in re-derive mode against a scratch folder and diff the output against the live `SPEC.md`; repeat for each `ARCHITECTURE-SPINE.md` via `bmad-architecture`
 - `pixi run -e local-recipes memlog-fidelity-check` — expected: 0 missing memlogs; with `--compare SCRATCH`, 0 byte drift
 - `pixi run -e local-recipes bmad-drift-check` — expected: no new findings introduced by memlog edits made during reconciliation
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `blocked` → `done` (ledger row `44-13-memlog-fidelity: done`).
+- Auto Run Result `Status: blocked` → `done` (see the reconcile line under it).

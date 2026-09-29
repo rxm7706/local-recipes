@@ -210,6 +210,29 @@ BASELINE_UNDECLARED_IMPORTS: dict[str, dict[str, str]] = {
             "install. Closing this needs the scanner to recognize "
             "framework-plugin modules, not a manifest line."
         ),
+        "channels": (
+            "OPEN. Story 48.6 (R-22): dashboard/asgi.py and dashboard/consumers.py "
+            "-- the live browser-streaming websocket face -- import channels "
+            "unconditionally at module level, same shape and same reason as the "
+            "`django` entry above (both files live under the dashboard/ package, "
+            "so the real gate is still "
+            "test_no_module_outside_dashboard_imports_dashboard_django_or_channels, "
+            "not this scanner). `channels` is already declared in the [dashboard] "
+            "extra (Story 9.5); this entry was simply never added when Story 48.6 "
+            "landed the two new dashboard-only consumers."
+        ),
+        "django_pyforge": (
+            "OPEN. Story 48.6 (R-22): dashboard/consumers.py verifies RS256 "
+            "assertions via django_pyforge's assertion primitives. Unlike "
+            "`channels`/`django`, django-pyforge is a workspace-local sibling "
+            "package (src/shared/packages/django-pyforge), not a distributable "
+            "dependency this manifest can pin the normal way -- it reaches "
+            "consumers.py only via a test-time PYTHONPATH override (pixi.toml's "
+            "pyforge-steward feature env, Story 48.6 comment) the same way "
+            "`_http` above reaches keys.py. Declaring it in [project.dependencies] "
+            "or the [dashboard] extra would need django-pyforge packaged and "
+            "published as a real distribution first, not a manifest line."
+        ),
     },
 }
 

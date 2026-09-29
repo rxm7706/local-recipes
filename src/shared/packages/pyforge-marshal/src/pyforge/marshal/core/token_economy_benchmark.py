@@ -20,8 +20,8 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from typing import Literal, TypedDict
 
-from . import policy
 from ..ports.harness import LayerSavings
+from . import policy
 
 LEDGER_KEY = "28-5-the-pinned-wrapped-vs-unwrapped-benchmark"
 # Reuses the adapter conformance smoke story — a minimal, station-owned pin
@@ -107,9 +107,7 @@ class BenchmarkArtifact:
                 "reasons": list(self.equivalence_gate.reasons),
             },
             "void": self.void,
-            "legs": {
-                key: _leg_to_dict(leg) for key, leg in self.legs.items()
-            },
+            "legs": {key: _leg_to_dict(leg) for key, leg in self.legs.items()},
             "layer_comparison": list(self.layer_comparison),
             "totals": dict(self.totals),
         }
@@ -125,9 +123,7 @@ def _leg_to_dict(leg: BenchmarkLegRecord) -> dict[str, object]:
         "story_weighted_tokens": leg.story_weighted_tokens,
         "run_weighted_tokens": leg.run_weighted_tokens,
         "cache_read_weight": leg.cache_read_weight,
-        "context_layers": {
-            name: dict(entry) for name, entry in leg.context_layers.items()
-        },
+        "context_layers": {name: dict(entry) for name, entry in leg.context_layers.items()},
         "run_id": leg.run_id,
         "policy_digest": leg.policy_digest,
     }
@@ -159,9 +155,7 @@ def _savings_value(layer_savings: LayerSavings | None, layer: str) -> object:
     return getattr(layer_savings, attr)
 
 
-def build_layer_comparison(
-    off_leg: BenchmarkLegRecord, on_leg: BenchmarkLegRecord
-) -> tuple[LayerComparisonRow, ...]:
+def build_layer_comparison(off_leg: BenchmarkLegRecord, on_leg: BenchmarkLegRecord) -> tuple[LayerComparisonRow, ...]:
     """Per-layer before/after rows (off = before, on = after)."""
     rows: list[LayerComparisonRow] = []
     for layer in policy.CONTEXT_LAYER_NAMES:
@@ -174,40 +168,28 @@ def build_layer_comparison(
             "savings_before": before,
             "savings_after": after,
         }
-        if (
-            off_leg.story_weighted_tokens is not None
-            and on_leg.story_weighted_tokens is not None
-        ):
-            row["weighted_tokens_delta"] = (
-                on_leg.story_weighted_tokens - off_leg.story_weighted_tokens
-            )
+        if off_leg.story_weighted_tokens is not None and on_leg.story_weighted_tokens is not None:
+            row["weighted_tokens_delta"] = on_leg.story_weighted_tokens - off_leg.story_weighted_tokens
         else:
             row["weighted_tokens_delta"] = None
         rows.append(row)
     return tuple(rows)
 
 
-def check_equivalence(
-    off_leg: BenchmarkLegRecord, on_leg: BenchmarkLegRecord
-) -> EquivalenceResult:
+def check_equivalence(off_leg: BenchmarkLegRecord, on_leg: BenchmarkLegRecord) -> EquivalenceResult:
     """Equivalence gate — comparison is void when this fails."""
     reasons: list[str] = []
     if off_leg.story_key != on_leg.story_key:
-        reasons.append(
-            f"story key mismatch: off={off_leg.story_key!r} on={on_leg.story_key!r}"
-        )
+        reasons.append(f"story key mismatch: off={off_leg.story_key!r} on={on_leg.story_key!r}")
     if off_leg.task_phase != on_leg.task_phase:
-        reasons.append(
-            f"verdict phase mismatch: off={off_leg.task_phase!r} on={on_leg.task_phase!r}"
-        )
+        reasons.append(f"verdict phase mismatch: off={off_leg.task_phase!r} on={on_leg.task_phase!r}")
     if off_leg.task_phase != "done":
         reasons.append(f"off leg did not land (phase={off_leg.task_phase!r})")
     if on_leg.task_phase != "done":
         reasons.append(f"on leg did not land (phase={on_leg.task_phase!r})")
     if off_leg.gate_fingerprint != on_leg.gate_fingerprint:
         reasons.append(
-            "gate results differ: "
-            f"off={list(off_leg.gate_fingerprint)!r} on={list(on_leg.gate_fingerprint)!r}"
+            f"gate results differ: off={list(off_leg.gate_fingerprint)!r} on={list(on_leg.gate_fingerprint)!r}"
         )
     if not off_leg.reviewer_ran:
         reasons.append("off leg: independent reviewer did not run")
@@ -216,14 +198,9 @@ def check_equivalence(
     return EquivalenceResult(passed=not reasons, reasons=tuple(reasons))
 
 
-def build_totals(
-    off_leg: BenchmarkLegRecord, on_leg: BenchmarkLegRecord
-) -> dict[str, int | None]:
+def build_totals(off_leg: BenchmarkLegRecord, on_leg: BenchmarkLegRecord) -> dict[str, int | None]:
     delta: int | None = None
-    if (
-        off_leg.story_weighted_tokens is not None
-        and on_leg.story_weighted_tokens is not None
-    ):
+    if off_leg.story_weighted_tokens is not None and on_leg.story_weighted_tokens is not None:
         delta = on_leg.story_weighted_tokens - off_leg.story_weighted_tokens
     return {
         "weighted_tokens_before": off_leg.story_weighted_tokens,
@@ -269,22 +246,14 @@ def leg_from_mapping(payload: Mapping[str, object]) -> BenchmarkLegRecord:
     layer_savings: LayerSavings | None = None
     if isinstance(savings_raw, Mapping):
         layer_savings = LayerSavings(
-            output_compression_saved=_optional_measurement(
-                savings_raw.get("output_compression_saved")
-            ),
-            wire_compression_saved=_optional_measurement(
-                savings_raw.get("wire_compression_saved")
-            ),
+            output_compression_saved=_optional_measurement(savings_raw.get("output_compression_saved")),
+            wire_compression_saved=_optional_measurement(savings_raw.get("wire_compression_saved")),
             graph_hits_vs_file_reads=_optional_graph_stats(
                 savings_raw.get("graph_hits_vs_file_reads"),
                 savings_raw,
             ),
-            derived_context_cache_hits=_optional_measurement(
-                savings_raw.get("derived_context_cache_hits")
-            ),
-            planning_graph_tokens_saved=_optional_measurement(
-                savings_raw.get("planning_graph_tokens_saved")
-            ),
+            derived_context_cache_hits=_optional_measurement(savings_raw.get("derived_context_cache_hits")),
+            planning_graph_tokens_saved=_optional_measurement(savings_raw.get("planning_graph_tokens_saved")),
         )
     context_raw = payload.get("context_layers")
     context_layers: dict[str, dict[str, object]] = {}
@@ -332,13 +301,11 @@ def _optional_measurement(value: object) -> int | str | None:
         return value
     try:
         return int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
 
 
-def _optional_graph_stats(
-    value: object, savings_raw: Mapping[str, object]
-) -> tuple[int, int] | str | None:
+def _optional_graph_stats(value: object, savings_raw: Mapping[str, object]) -> tuple[int, int] | str | None:
     if isinstance(value, str):
         return value
     hits = savings_raw.get("graph_hits")
@@ -346,7 +313,7 @@ def _optional_graph_stats(
         reads_raw = savings_raw.get("file_reads", 0)
         try:
             reads = int(reads_raw) if reads_raw is not None else 0
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
         return (hits, reads)
     return _optional_pair(value)

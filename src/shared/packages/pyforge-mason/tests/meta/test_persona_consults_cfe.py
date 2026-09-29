@@ -292,7 +292,6 @@ def test_persona_is_bmad_launcher_not_skf_compiled():
     assert "skf-create-skill" in customize
 
 
-
 def test_conda_forge_expert_not_replaced_or_skf_nested():
     root = _repo_root()
     cfe = root / ".claude" / "skills" / CONTENT_SKILL
@@ -300,11 +299,7 @@ def test_conda_forge_expert_not_replaced_or_skf_nested():
     assert not (cfe / "metadata.json").exists()
     assert not (cfe / "active").exists()
     assert not (cfe / "provenance-map.json").exists()
-    version_dirs = [
-        path
-        for path in cfe.iterdir()
-        if path.is_dir() and re.fullmatch(r"\d+\.\d+\.\d+", path.name)
-    ]
+    version_dirs = [path for path in cfe.iterdir() if path.is_dir() and re.fullmatch(r"\d+\.\d+\.\d+", path.name)]
     assert not version_dirs, f"CFE became version-nested SKF: {version_dirs}"
     for path in cfe.rglob("*"):
         if path.name in {"metadata.json", "SKILL.md"} and path.is_file():
@@ -336,6 +331,7 @@ def _mason_commits_touching(*paths: str) -> list[str]:
     so they are checked per commit, not as a whole-branch diff: a fleet branch
     that also carries platform or context-file work is not a mason story
     editing the platform (2026-09-04, PR #1043)."""
+
     def _under(rel: str) -> bool:
         return any(rel == p or rel.startswith(f"{p}/") for p in paths)
 

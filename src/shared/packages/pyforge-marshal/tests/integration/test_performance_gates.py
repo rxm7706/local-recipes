@@ -12,6 +12,7 @@ from importlib import resources
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed.model.manifest import Manifest, load_manifest
 from pyforge.marshal.seed.verbs.adopt import run_adopt
 from pyforge.marshal.seed.verbs.check import run_check
@@ -37,9 +38,7 @@ _bmad-output/projects/*/implementation-artifacts/
 
 
 def _git(repo: Path, *args: str) -> None:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 

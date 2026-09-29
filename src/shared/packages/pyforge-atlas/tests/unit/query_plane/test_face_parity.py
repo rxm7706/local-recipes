@@ -56,13 +56,8 @@ def _plane(tmp_path: Path) -> Path:
 def _seed_fixture(path: Path) -> None:
     writer = connect_writer(path)
     try:
-        writer.execute(
-            f"CREATE TABLE {FIXTURE_TABLE} (id INTEGER, label VARCHAR, amount DOUBLE)"
-        )
-        writer.execute(
-            f"INSERT INTO {FIXTURE_TABLE} VALUES "
-            "(1, 'alpha', 1.5), (2, 'beta', 2.5), (3, 'gamma', 3.5)"
-        )
+        writer.execute(f"CREATE TABLE {FIXTURE_TABLE} (id INTEGER, label VARCHAR, amount DOUBLE)")
+        writer.execute(f"INSERT INTO {FIXTURE_TABLE} VALUES (1, 'alpha', 1.5), (2, 'beta', 2.5), (3, 'gamma', 3.5)")
     finally:
         writer.close()
 
@@ -111,7 +106,7 @@ def _wait_until_ready(process: Any, endpoint: str) -> None:
         try:
             _post_query(endpoint, "SELECT 1")
             return
-        except (urllib.error.URLError, ConnectionError, OSError):
+        except urllib.error.URLError, ConnectionError, OSError:
             time.sleep(0.2)
     pytest.fail("HTTP/Arrow endpoint never became reachable")
 
@@ -138,10 +133,7 @@ def _shutdown_boot(boot: PlaneBoot) -> None:
 
 requires_duckdb_server = pytest.mark.skipif(
     shutil.which("duckdb-server") is None,
-    reason=(
-        "duckdb-server is not provisioned (the linux-64 pyforge-atlas pixi "
-        "env carries it)"
-    ),
+    reason=("duckdb-server is not provisioned (the linux-64 pyforge-atlas pixi env carries it)"),
 )
 
 
@@ -180,9 +172,7 @@ def _compare(
     reason: str | None = None,
 ) -> QueryParity:
     if http_rows is None:
-        return QueryParity(
-            status="not_applicable", library_rows=library_rows, http_rows=None, reason=reason
-        )
+        return QueryParity(status="not_applicable", library_rows=library_rows, http_rows=None, reason=reason)
     status = "match" if library_rows == http_rows else "mismatch"
     return QueryParity(status=status, library_rows=library_rows, http_rows=http_rows)
 
@@ -191,14 +181,11 @@ def _assert_parity(report: dict[str, QueryParity]) -> None:
     """The gate's pass/fail contract — names the divergent quer(y/ies)."""
     mismatches = {name: qp for name, qp in report.items() if qp.status == "mismatch"}
     assert not mismatches, "face parity violated for " + "; ".join(
-        f"{name} (library={qp.library_rows!r}, http={qp.http_rows!r})"
-        for name, qp in sorted(mismatches.items())
+        f"{name} (library={qp.library_rows!r}, http={qp.http_rows!r})" for name, qp in sorted(mismatches.items())
     )
 
 
-def _run_face_parity(
-    path: Path, queries: tuple[tuple[str, str], ...], *, stack_up: bool
-) -> dict[str, QueryParity]:
+def _run_face_parity(path: Path, queries: tuple[tuple[str, str], ...], *, stack_up: bool) -> dict[str, QueryParity]:
     """Read the library face first, then raise (or not) the HTTP face and read
     it — sequential snapshots of the SAME fixture, per the module docstring's
     sequencing note."""
@@ -207,10 +194,7 @@ def _run_face_parity(
     try:
         if boot.http is None:
             notice = next(n for n in boot.notices if n["event"] == "http-face-not-raised")
-            return {
-                name: _compare(rows, None, reason=notice["reason"])
-                for name, rows in library_results.items()
-            }
+            return {name: _compare(rows, None, reason=notice["reason"]) for name, rows in library_results.items()}
         _wait_until_ready(boot.http.process, boot.http.endpoint)
         return {
             name: _compare(library_results[name], json.loads(_post_query(boot.http.endpoint, sql)))
@@ -289,15 +273,11 @@ def test_seeded_divergence_fails_and_names_the_divergent_query(tmp_path: Path) -
     try:
         assert boot.http is not None
         _wait_until_ready(boot.http.process, boot.http.endpoint)
-        http_results = {
-            name: json.loads(_post_query(boot.http.endpoint, sql)) for name, sql in QUERIES
-        }
+        http_results = {name: json.loads(_post_query(boot.http.endpoint, sql)) for name, sql in QUERIES}
     finally:
         _shutdown_boot(boot)
 
-    report = {
-        name: _compare(library_results[name], http_results[name]) for name, _ in QUERIES
-    }
+    report = {name: _compare(library_results[name], http_results[name]) for name, _ in QUERIES}
 
     # The two queries touching id=2 diverge; the unrelated "empty" query does
     # not -- the gate names exactly the affected queries, not everything.

@@ -98,8 +98,9 @@ def test_env_only_provisioning_is_untouched(tmp_path, monkeypatch):
     root = _write_repo_fixture(tmp_path)
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: root)
     seen = {}
-    monkeypatch.setattr(provision_mod, "materialize_environment",
-                        lambda name, cwd=None: seen.update(name=name, cwd=cwd))
+    monkeypatch.setattr(
+        provision_mod, "materialize_environment", lambda name, cwd=None: seen.update(name=name, cwd=cwd)
+    )
 
     result = ProvisionDuty().run(_ns(env="pyforge-steward"))
 

@@ -12,10 +12,7 @@ context:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-1-the-graphify-ingest-extra-and-its-move-list-verbs.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
 warnings:
-  - Marshal Story 28.9 (planning-graph retrieval, pyforge-marshal project) consumes the
-    `stale` field via the scribe grammar only, as its fifth acceptance criterion — no
-    graphifyy/scribe internals import inside `pyforge.marshal`. Declared as an external
-    consumer, not a co-dependency: this story ships and is verifiable standalone.
+  - "Marshal Story 28.9 (planning-graph retrieval, pyforge-marshal project) consumes the `stale` field via the scribe grammar only, as its fifth acceptance criterion — no graphifyy/scribe internals import inside `pyforge.marshal`. Declared as an external consumer, not a co-dependency: this story ships and is verifiable standalone."
 ---
 
 <intent-contract>

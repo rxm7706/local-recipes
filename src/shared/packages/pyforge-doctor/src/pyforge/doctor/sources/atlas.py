@@ -128,6 +128,18 @@ _ABANDONMENT_HEALTH_FILTERS = ("stuck", "bad")
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_CVE_SEVERITY = "C"  # mirrors cve_watcher.py's own CLI default
 
+# `Finding.check` is a kebab finding-code, never runtime data (spec
+# vocabulary-one-name-one-job CAP-8) -- one constant per normalizer below,
+# never the row's own feedstock/package name. The row's identity lives in
+# `evidence["conda_name"]` (every row carries it) instead, and is folded
+# into `message` via `_row_identifier` for human-readable output.
+_CHECK_STALENESS = "atlas-staleness"
+_CHECK_CVE = "atlas-cve"
+_CHECK_FEEDSTOCK_HEALTH = "atlas-feedstock-health"
+_CHECK_RELEASE_CADENCE = "atlas-release-cadence"
+_CHECK_ADOPTION_STAGE = "atlas-adoption-stage"
+_CHECK_VERSION_DOWNLOADS = "atlas-version-downloads"
+
 
 def _default_repo_root() -> Path:
     """Walk up from this file to the repo root -- anchored on ``.git`` (a
@@ -146,18 +158,10 @@ def _default_mcp_server_script() -> Path:
 
 
 def _default_cli_script(script_name: str) -> Path:
-    return (
-        _default_repo_root()
-        / ".claude"
-        / "scripts"
-        / "conda-forge-expert"
-        / script_name
-    )
+    return _default_repo_root() / ".claude" / "scripts" / "conda-forge-expert" / script_name
 
 
-def _one_fail_finding(
-    source: Source, message: str, *, check: str = "doctor.sources.atlas"
-) -> Finding:
+def _one_fail_finding(source: Source, message: str, *, check: str = "doctor.sources.atlas") -> Finding:
     return Finding(
         source=source,
         check=check,
@@ -167,7 +171,12 @@ def _one_fail_finding(
     )
 
 
-def _row_check_name(row: dict[str, Any]) -> str:
+def _row_identifier(row: dict[str, Any]) -> str:
+    """A human-readable identifier for ``row``, for ``message`` prefixing
+    only -- NEVER ``Finding.check`` (that field is a kebab finding-code;
+    Story 59.7 moved every row's identity out of it). ``evidence["conda_name"]``
+    is the machine-readable join key other modules (e.g. ``prescribe.py``'s
+    CVE/staleness correlation) key on instead."""
     name = row.get("feedstock_name") or row.get("conda_name") or row.get("name")
     return str(name) if name else "<unknown feedstock>"
 
@@ -190,14 +199,12 @@ def _normalize_staleness_rows(rows: list[Any]) -> tuple[Finding, ...]:
         version = row.get("latest_conda_version")
         uploaded = row.get("uploaded_iso")
         age_days = row.get("age_days")
-        message = (
-            f"latest_conda_version={version!s} uploaded={uploaded!s} "
-            f"age_days={age_days!s}"
-        )
+        name = _row_identifier(row)
+        message = f"{name}: latest_conda_version={version!s} uploaded={uploaded!s} age_days={age_days!s}"
         findings.append(
             Finding(
                 source=Source.STALENESS_REPORT,
-                check=_row_check_name(row),
+                check=_CHECK_STALENESS,
                 # A staleness signal is a drift warning, not a hard
                 # failure -- the report is already filtered/sorted to
                 # stale-first by construction; there is no pass/fail
@@ -230,17 +237,16 @@ def _normalize_cve_rows(rows: list[Any], *, severity: str) -> tuple[Finding, ...
         delta = row.get("delta")
         now_v = row.get("now_v")
         then_v = row.get("then_v")
+        name = _row_identifier(row)
         message = (
-            f"severity={severity} then={then_v!s} now={now_v!s} "
+            f"{name}: severity={severity} then={then_v!s} now={now_v!s} "
             f"delta={delta!s} latest_conda_version={row.get('latest_conda_version')!s}"
         )
         findings.append(
             Finding(
                 source=Source.CVE_WATCHER,
-                check=_row_check_name(row),
-                status=DoctorStatus.FAIL
-                if isinstance(delta, (int, float)) and delta > 0
-                else DoctorStatus.WARN,
+                check=_CHECK_CVE,
+                status=DoctorStatus.FAIL if isinstance(delta, (int, float)) and delta > 0 else DoctorStatus.WARN,
                 message=message,
                 evidence=dict(row, severity=severity),
             )
@@ -248,9 +254,7 @@ def _normalize_cve_rows(rows: list[Any], *, severity: str) -> tuple[Finding, ...
     return tuple(findings)
 
 
-def _normalize_feedstock_health_rows(
-    rows: list[Any], *, filter_kind: str
-) -> tuple[Finding, ...]:
+def _normalize_feedstock_health_rows(rows: list[Any], *, filter_kind: str) -> tuple[Finding, ...]:
     """One ``Finding`` per ``feedstock_health`` row, tagged
     ``Source.FEEDSTOCK_HEALTH`` (Story 2.2 AC2, the "abandonment" axis's
     first sub-instrument). ``filter_kind == "bad"`` (cf-graph's own
@@ -266,8 +270,9 @@ def _normalize_feedstock_health_rows(
                 )
             )
             continue
+        name = _row_identifier(row)
         message = (
-            f"filter={filter_kind} bot_version_errors_count="
+            f"{name}: filter={filter_kind} bot_version_errors_count="
             f"{row.get('bot_version_errors_count')!s} feedstock_bad="
             f"{row.get('feedstock_bad')!s} bot_open_pr_count="
             f"{row.get('bot_open_pr_count')!s}"
@@ -275,10 +280,8 @@ def _normalize_feedstock_health_rows(
         findings.append(
             Finding(
                 source=Source.FEEDSTOCK_HEALTH,
-                check=_row_check_name(row),
-                status=DoctorStatus.FAIL
-                if filter_kind == "bad"
-                else DoctorStatus.WARN,
+                check=_CHECK_FEEDSTOCK_HEALTH,
+                status=DoctorStatus.FAIL if filter_kind == "bad" else DoctorStatus.WARN,
                 message=message,
                 evidence=dict(row, filter_kind=filter_kind),
             )
@@ -306,15 +309,16 @@ def _normalize_release_cadence_rows(rows: list[Any]) -> tuple[Finding, ...]:
         trend = row.get("trend")
         if trend not in _ABANDONMENT_CADENCE_TRENDS:
             continue
+        name = _row_identifier(row)
         message = (
-            f"trend={trend} releases_30d={row.get('releases_30d')!s} "
+            f"{name}: trend={trend} releases_30d={row.get('releases_30d')!s} "
             f"releases_90d={row.get('releases_90d')!s} "
             f"releases_365d={row.get('releases_365d')!s}"
         )
         findings.append(
             Finding(
                 source=Source.RELEASE_CADENCE,
-                check=_row_check_name(row),
+                check=_CHECK_RELEASE_CADENCE,
                 status=DoctorStatus.FAIL if trend == "silent" else DoctorStatus.WARN,
                 message=message,
                 evidence=dict(row),
@@ -348,8 +352,9 @@ def _normalize_adoption_stage_rows(rows: list[Any]) -> tuple[Finding, ...]:
             )
             continue
         stage = row.get("stage")
+        name = _row_identifier(row)
         message = (
-            f"stage={stage} age_days={row.get('age_days')!s} "
+            f"{name}: stage={stage} age_days={row.get('age_days')!s} "
             f"releases_30d={row.get('releases_30d')!s} "
             f"total_downloads={row.get('total_downloads')!s}"
         )
@@ -362,7 +367,7 @@ def _normalize_adoption_stage_rows(rows: list[Any]) -> tuple[Finding, ...]:
         findings.append(
             Finding(
                 source=Source.ADOPTION,
-                check=_row_check_name(row),
+                check=_CHECK_ADOPTION_STAGE,
                 status=status,
                 message=message,
                 evidence=dict(row),
@@ -371,9 +376,7 @@ def _normalize_adoption_stage_rows(rows: list[Any]) -> tuple[Finding, ...]:
     return tuple(findings)
 
 
-def _normalize_version_downloads_rows(
-    rows: list[Any], *, package: str
-) -> tuple[Finding, ...]:
+def _normalize_version_downloads_rows(rows: list[Any], *, package: str) -> tuple[Finding, ...]:
     """One ``Finding`` per ``version_downloads`` row, tagged
     ``Source.ADOPTION`` (Story 4.3 AC1's second sub-instrument). Rows carry
     NO package-identity field of their own (the underlying query is already
@@ -393,14 +396,11 @@ def _normalize_version_downloads_rows(
                 )
             )
             continue
-        message = (
-            f"version={row.get('version')!s} "
-            f"total_downloads={row.get('total_downloads')!s}"
-        )
+        message = f"{package}: version={row.get('version')!s} total_downloads={row.get('total_downloads')!s}"
         findings.append(
             Finding(
                 source=Source.ADOPTION,
-                check=package,
+                check=_CHECK_VERSION_DOWNLOADS,
                 status=DoctorStatus.OK,
                 message=message,
                 evidence=dict(row, conda_name=package),
@@ -438,18 +438,12 @@ async def _call_mcp_async(
     from mcp.client.stdio import StdioServerParameters, stdio_client
 
     async def _run() -> str:
-        params = StdioServerParameters(
-            command=sys.executable, args=[str(server_script_path)]
-        )
+        params = StdioServerParameters(command=sys.executable, args=[str(server_script_path)])
         async with stdio_client(params) as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
                 result = await session.call_tool(tool_name, arguments)
-        text = "".join(
-            block.text
-            for block in result.content
-            if getattr(block, "type", "") == "text"
-        )
+        text = "".join(block.text for block in result.content if getattr(block, "type", "") == "text")
         if result.isError:
             raise RuntimeError(f"{tool_name} MCP tool returned an error: {text}")
         return text
@@ -482,13 +476,8 @@ def _call_mcp(
     except RuntimeError:
         pass  # no loop running: `asyncio.run` is free to make one
     else:
-        raise RuntimeError(
-            "the synchronous atlas MCP transport cannot run inside a live "
-            "event loop"
-        )
-    return asyncio.run(
-        _call_mcp_async(server_script_path, tool_name, arguments, timeout=timeout)
-    )
+        raise RuntimeError("the synchronous atlas MCP transport cannot run inside a live event loop")
+    return asyncio.run(_call_mcp_async(server_script_path, tool_name, arguments, timeout=timeout))
 
 
 # --- CLI fallback --------------------------------------------------------
@@ -523,9 +512,7 @@ def _extract_list_rows(payload: Any) -> list[Any]:
     """``staleness_report``/``feedstock_health``/``release_cadence`` all
     print a bare JSON list of rows."""
     if not isinstance(payload, list):
-        raise ValueError(
-            f"expected a JSON list of rows, got {type(payload).__name__}"
-        )
+        raise ValueError(f"expected a JSON list of rows, got {type(payload).__name__}")
     return payload
 
 
@@ -535,10 +522,7 @@ def _extract_cve_rows(payload: Any) -> list[Any]:
     this, per Story 2.1's own Design Notes precedent of never assuming a
     tool's JSON shape."""
     if not isinstance(payload, dict) or not isinstance(payload.get("rows"), list):
-        raise ValueError(
-            "expected a JSON object with a 'rows' list, got "
-            f"{type(payload).__name__}"
-        )
+        raise ValueError(f"expected a JSON object with a 'rows' list, got {type(payload).__name__}")
     return payload["rows"]
 
 
@@ -591,13 +575,11 @@ def _fetch_rows(
         rows = extract_rows(payload)
     except CliBridgeError as exc:
         raise _FetchFailed(
-            f"{tool_name} unavailable: MCP failed ({mcp_error!r}) and CLI "
-            f"fallback failed ({exc!r})"
+            f"{tool_name} unavailable: MCP failed ({mcp_error!r}) and CLI fallback failed ({exc!r})"
         ) from exc
     except Exception as exc:  # noqa: BLE001 -- degrade, never crash the verb
         raise _FetchFailed(
-            f"{tool_name} unavailable: MCP failed ({mcp_error!r}) and CLI "
-            f"fallback failed unexpectedly ({exc!r})"
+            f"{tool_name} unavailable: MCP failed ({mcp_error!r}) and CLI fallback failed unexpectedly ({exc!r})"
         ) from exc
     return rows
 
@@ -715,9 +697,7 @@ def _gather_abandonment(
         except _FetchFailed as exc:
             findings.append(_one_fail_finding(Source.FEEDSTOCK_HEALTH, str(exc)))
         else:
-            findings.extend(
-                _normalize_feedstock_health_rows(rows, filter_kind=filter_kind)
-            )
+            findings.extend(_normalize_feedstock_health_rows(rows, filter_kind=filter_kind))
 
     cli_args = ["--json"]
     if target is not None:
@@ -846,9 +826,7 @@ def gather(
     failure). ``mcp_caller`` / ``cli_runner`` are the injectable unit-test
     seams; neither is used outside tests."""
     if axis not in _VALID_AXES:
-        raise ValueError(
-            f"unknown axis {axis!r}; expected one of {sorted(_VALID_AXES)}"
-        )
+        raise ValueError(f"unknown axis {axis!r}; expected one of {sorted(_VALID_AXES)}")
 
     server_script_path = server_script_path or _default_mcp_server_script()
 

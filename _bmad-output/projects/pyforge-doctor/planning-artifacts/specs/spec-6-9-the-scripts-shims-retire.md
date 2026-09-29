@@ -2,7 +2,7 @@
 title: "Story 6-9: The `scripts/` shims retire"
 type: "change"
 created: "2026-08-09"
-status: "ready-for-dev"
+status: "done"
 authored: "spec-first, ahead of implementation (operator instruction 2026-08-09: seed -> Dream -> Spec -> code)"
 owner-dream: docs/dreams/pyforge-doctor.md
 context:
@@ -136,3 +136,17 @@ judges is Marshal-governed.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `b8131a1df6` (2026-08-07, "docs: promote marshal Story 6.9 + steward Epic 4 story specs to tracked planning-artifacts"); also `5cf23f9d33` (2026-08-07, "marshal: sync sprint-status ledger — Story 6.9 done, Epic 6 fully closed (9/9)"); also `8bd05ca2e2` (2026-08-07, "marshal: fix Story 6.9 review finding (relative-path cwd-dependent resolvability)"). Ledger row `6-9-the-scripts-shims-retire: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-6-9-tool-surface-rendering-and-preflight-probe.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-4-1-a-ceiling-can-be-declared-machine-readably.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-4-2-the-declared-ceiling-is-one-command-away.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-4-3-asking-am-i-under-budget-never-lies.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready-for-dev` → `done` (ledger row `6-9-the-scripts-shims-retire: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

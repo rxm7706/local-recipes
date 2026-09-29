@@ -164,3 +164,16 @@ baseline_revision: '93061c9511e4707c2cf68f68afebc4b72005e317'
 
 - `tests/unit/test_land.py`'s full I/O matrix, re-entrancy test, and the four new regression tests added by this review pass.
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `c0c0736eaf` (2026-08-06, "Merge pull request #280 from rxm7706/marshal/4-8-marshal-land-last-mile"). Ledger row `4-8-marshal-land-the-last-mile-lands-itself: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/forge_gh.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/forge.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_cli.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_land.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

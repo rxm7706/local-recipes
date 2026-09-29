@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 
 import pytest
+
 from pyforge.herald import db, notices
 from pyforge.herald.errors import HeraldError
 
@@ -85,9 +86,7 @@ def test_re_authoring_with_a_changed_type_removes_the_stale_markdown_file(
     assert not old_path.exists()
 
 
-def test_a_failed_commit_does_not_delete_the_markdown_the_index_rolls_back_to(
-    tmp_path: Path, monkeypatch
-):
+def test_a_failed_commit_does_not_delete_the_markdown_the_index_rolls_back_to(tmp_path: Path, monkeypatch):
     """The index must never point at a markdown file this call has already
     deleted.
 
@@ -128,9 +127,7 @@ def test_a_failed_commit_does_not_delete_the_markdown_the_index_rolls_back_to(
     assert old_path.exists()
 
 
-def test_author_publish_close_write_markdown_before_the_index(
-    tmp_path: Path, monkeypatch
-):
+def test_author_publish_close_write_markdown_before_the_index(tmp_path: Path, monkeypatch):
     """Regression: the index was written before the markdown file, so a
     markdown-write failure left a phantom index entry pointing at a file
     that was never created -- reported by get/list/the web export as a
@@ -199,9 +196,7 @@ def test_a_corrupted_revisions_column_raises_herald_error(tmp_path: Path):
 
 def test_publish_transitions_draft_to_published(tmp_path: Path):
     _author(tmp_path)
-    published = notices.publish_notice(
-        tmp_path, "auth-api-v1", now="2026-08-03T00:00:00+00:00"
-    )
+    published = notices.publish_notice(tmp_path, "auth-api-v1", now="2026-08-03T00:00:00+00:00")
     assert published.status == "published"
     assert published.published_at == "2026-08-03T00:00:00+00:00"
 
@@ -238,9 +233,7 @@ def test_close_requires_published_not_draft(tmp_path: Path):
 
 def test_close_transitions_published_to_closed(tmp_path: Path):
     _author(tmp_path, publish=True)
-    closed = notices.close_notice(
-        tmp_path, "auth-api-v1", reason="migration complete", closed_by="operator:env"
-    )
+    closed = notices.close_notice(tmp_path, "auth-api-v1", reason="migration complete", closed_by="operator:env")
     assert closed.status == "closed"
     assert closed.close_reason == "migration complete"
     assert closed.closed_by == "operator:env"
@@ -365,9 +358,7 @@ def test_publish_follows_a_redirect(tmp_path: Path):
 # --- Story 13.1: concurrency (closing DW-1-4-2) -----------------------------
 
 
-def test_two_concurrent_authors_for_different_components_both_land(
-    tmp_path: Path, monkeypatch
-):
+def test_two_concurrent_authors_for_different_components_both_land(tmp_path: Path, monkeypatch):
     """Story 13.1/13.3 regression: two ``author_notice`` calls for
     different components racing the same database must both survive --
     forced, deterministic interleaving (not a timing-dependent sleep
@@ -417,9 +408,7 @@ def test_two_concurrent_authors_for_different_components_both_land(
     assert components == {"component-a", "component-b"}
 
 
-def test_two_concurrent_reauthors_of_the_same_component_do_not_lose_a_revision(
-    tmp_path, monkeypatch
-):
+def test_two_concurrent_reauthors_of_the_same_component_do_not_lose_a_revision(tmp_path, monkeypatch):
     """DW-1-4-2's real guarantee for this module, which the
     different-components test above cannot hold: two ``author_notice``
     calls racing on the SAME component each read the current revision
@@ -467,8 +456,7 @@ def test_two_concurrent_reauthors_of_the_same_component_do_not_lose_a_revision(
 
     notice = notices.get_notice(tmp_path, "auth-api-v1")
     assert len(notice.revisions) == 3, (
-        "one re-author's revision was lost: the read-modify-write did not "
-        "stay inside a single transaction"
+        "one re-author's revision was lost: the read-modify-write did not stay inside a single transaction"
     )
 
 
@@ -484,9 +472,7 @@ def test_two_concurrent_reauthors_of_the_same_component_do_not_lose_a_revision(
     ],
     ids=["publish", "close", "rename"],
 )
-def test_mutating_calls_leave_no_files_behind_when_no_index_exists(
-    tmp_path: Path, call, message
-):
+def test_mutating_calls_leave_no_files_behind_when_no_index_exists(tmp_path: Path, call, message):
     """Story 13.1/13.3 regression: opening ``db.transaction`` creates
     ``index_path``'s parent directory and the database file itself, so a
     mutating call that can only ever fail (no notice index exists at all --
@@ -498,9 +484,7 @@ def test_mutating_calls_leave_no_files_behind_when_no_index_exists(
     with pytest.raises(HeraldError, match=message):
         call(tmp_path)
 
-    assert list(tmp_path.iterdir()) == [], (
-        "a failed mutating call left files behind where there was no index"
-    )
+    assert list(tmp_path.iterdir()) == [], "a failed mutating call left files behind where there was no index"
 
 
 @pytest.mark.parametrize(
@@ -515,9 +499,7 @@ def test_mutating_calls_leave_no_files_behind_when_no_index_exists(
     ],
     ids=["publish", "close", "rename"],
 )
-def test_an_unreadable_index_is_never_reported_as_a_missing_notice(
-    tmp_path: Path, call, wrong_message
-):
+def test_an_unreadable_index_is_never_reported_as_a_missing_notice(tmp_path: Path, call, wrong_message):
     """The pre-lock fail-fast must distinguish "no index" from "the index
     cannot be opened".
 

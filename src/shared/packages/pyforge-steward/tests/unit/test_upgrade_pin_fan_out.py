@@ -16,7 +16,6 @@ from pyforge.steward.upgrade import (
     format_pin_fan_out,
 )
 
-
 _TRAP5_BMAD_LOOP_STATIC = catalog_site_ids_for("bmad-loop")
 _TRAP5_BMAD_METHOD_STATIC = catalog_site_ids_for("bmad-method")
 
@@ -144,9 +143,7 @@ def test_report_enumerates_moved_and_not_moved(tmp_path: Path):
     loops = tmp_path / "loops"
     home = loops / "pyforge-steward"
     (home / ".bmad-loop").mkdir(parents=True)
-    (home / ".bmad-loop" / "bmad_loop_hook.py").write_text(
-        "# stale fixture relay\n", encoding="utf-8"
-    )
+    (home / ".bmad-loop" / "bmad_loop_hook.py").write_text("# stale fixture relay\n", encoding="utf-8")
 
     report = build_pin_fan_out_report(
         repo=repo,
@@ -179,15 +176,11 @@ def test_report_never_edits_foreign_or_local_files(tmp_path: Path):
     repo = _write_trap5_repo(tmp_path / "repo", move_marshal=False)
     tracked = [
         repo / "pixi.toml",
-        repo
-        / "src/shared/packages/pyforge-marshal/pyproject.toml",
+        repo / "src/shared/packages/pyforge-marshal/pyproject.toml",
         repo / "src/shared/packages/pyforge-marshal/pixi.toml",
-        repo
-        / "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py",
-        repo
-        / "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/manifest.yaml",
-        repo
-        / "src/shared/packages/pyforge-marshal/tests/unit/test_seed_templates_manifest.py",
+        repo / "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py",
+        repo / "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/manifest.yaml",
+        repo / "src/shared/packages/pyforge-marshal/tests/unit/test_seed_templates_manifest.py",
     ]
     before = {str(p): _sha(p) for p in tracked}
 
@@ -199,7 +192,11 @@ def test_report_never_edits_foreign_or_local_files(tmp_path: Path):
         loops_home=tmp_path / "empty-loops",
     )
     assert all(s.status == "not_moved" for s in report.sites if not s.site_id.startswith("loop-home"))
-    assert all(s.foreign for s in report.sites if s.site_id.startswith("marshal") or "seed" in s.site_id or "drift" in s.site_id or "harness" in s.site_id)
+    assert all(
+        s.foreign
+        for s in report.sites
+        if s.site_id.startswith("marshal") or "seed" in s.site_id or "drift" in s.site_id or "harness" in s.site_id
+    )
 
     after = {str(p): _sha(p) for p in tracked}
     assert before == after

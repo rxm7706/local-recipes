@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 from pyforge.core.hooks import PluginError, PluginRegistry
+
 from pyforge.warden.cli import main
 from pyforge.warden.engines import (
     CurrencyEngine,
@@ -35,9 +36,7 @@ def _defaults_only_registry() -> PluginRegistry:
     registry = PluginRegistry()
     for factory in engine_factories():
         registry.register(_plugin_for_factory(factory))
-    present = {
-        getattr(plugin, "scanner_id", plugin.owner) for plugin in registry.plugins
-    }
+    present = {getattr(plugin, "scanner_id", plugin.owner) for plugin in registry.plugins}
     assert present.isdisjoint(OPTIONAL_SCANNER_IDS)
     return registry
 
@@ -67,11 +66,7 @@ def _mentions_optional_absence(text: str) -> bool:
     ):
         return True
     return any(
-        scanner_id in lowered
-        and any(
-            token in lowered
-            for token in ("absent", "missing", "not installed", "not found")
-        )
+        scanner_id in lowered and any(token in lowered for token in ("absent", "missing", "not installed", "not found"))
         for scanner_id in OPTIONAL_SCANNER_IDS
     )
 
@@ -85,9 +80,7 @@ def _optional_absence_errors(report: dict) -> list[dict]:
     return hits
 
 
-def test_default_scan_is_green_without_commercial_plugins(
-    monkeypatch, tmp_path: Path, capsys
-):
+def test_default_scan_is_green_without_commercial_plugins(monkeypatch, tmp_path: Path, capsys):
     registry = _install_defaults_only_registry(monkeypatch)
     selected = select_scanner_plugins(registry=registry)
     ids = {getattr(plugin, "scanner_id", plugin.owner) for plugin in selected}
@@ -101,18 +94,13 @@ def test_default_scan_is_green_without_commercial_plugins(
     assert report["status"]["value"] is not None
 
 
-def test_absence_of_named_optional_is_not_a_warden_failure(
-    monkeypatch, tmp_path: Path, capsys
-):
+def test_absence_of_named_optional_is_not_a_warden_failure(monkeypatch, tmp_path: Path, capsys):
     registry = _install_defaults_only_registry(monkeypatch)
     assert OPTIONAL_ABSENT_IS_NOT_FAILURE is True
     try:
         selected = select_scanner_plugins(registry=registry)
     except PluginError as exc:
-        pytest.fail(
-            "absence of a named optional plugin was treated as a Warden failure: "
-            f"{exc}"
-        )
+        pytest.fail(f"absence of a named optional plugin was treated as a Warden failure: {exc}")
     ids = {getattr(plugin, "scanner_id", plugin.owner) for plugin in selected}
     assert ids.isdisjoint(OPTIONAL_SCANNER_IDS)
     assert "checkmarx" not in ids
@@ -123,16 +111,13 @@ def test_absence_of_named_optional_is_not_a_warden_failure(
     report = json.loads(captured.out)
     absence_errors = _optional_absence_errors(report)
     assert absence_errors == [], (
-        "absence of a named optional plugin was treated as a Warden failure: "
-        f"{absence_errors!r}"
+        f"absence of a named optional plugin was treated as a Warden failure: {absence_errors!r}"
     )
     assert "PluginError" not in captured.err
     assert "Traceback" not in captured.err
 
 
-def test_live_default_registry_scan_does_not_require_checkmarx(
-    monkeypatch, tmp_path: Path, capsys
-):
+def test_live_default_registry_scan_does_not_require_checkmarx(monkeypatch, tmp_path: Path, capsys):
     """Shipped in-tree registry still registers optional stubs; default
     scan must not require Checkmarx to be enabled or 'installed'."""
     monkeypatch.delenv("WARDEN_OPTIONAL_SCANNERS", raising=False)
@@ -145,20 +130,13 @@ def test_live_default_registry_scan_does_not_require_checkmarx(
     assert rc == 0
     report = json.loads(captured.out)
     assert _optional_absence_errors(report) == []
-    assert "indeterminate:checkmarx:plugin" not in [
-        finding["id"] for finding in report.get("findings") or ()
-    ]
+    assert "indeterminate:checkmarx:plugin" not in [finding["id"] for finding in report.get("findings") or ()]
 
 
-def test_own_engines_may_still_fail_without_optional_absence_errors(
-    monkeypatch, tmp_path: Path, capsys
-):
+def test_own_engines_may_still_fail_without_optional_absence_errors(monkeypatch, tmp_path: Path, capsys):
     _install_defaults_only_registry(monkeypatch)
     (tmp_path / "pyproject.toml").write_text(
-        "[project]\n"
-        'name = "demo"\n'
-        'version = "0.0.1"\n'
-        'dependencies = ["requests==2.31.0"]\n',
+        '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = ["requests==2.31.0"]\n',
         encoding="utf-8",
     )
 

@@ -82,9 +82,7 @@ def test_audit_covers_exactly_the_23_atlas_tools():
 
 def test_every_verdict_uses_the_declared_vocabulary():
     for tool, verdict in audit.ATLAS_TOOL_AUDIT.items():
-        assert verdict.startswith(VALID_VERDICT_PREFIXES), (
-            f"{tool}: unknown verdict {verdict!r}"
-        )
+        assert verdict.startswith(VALID_VERDICT_PREFIXES), f"{tool}: unknown verdict {verdict!r}"
 
 
 def test_every_read_dataset_target_is_a_declared_catalog_dataset():
@@ -92,9 +90,7 @@ def test_every_read_dataset_target_is_a_declared_catalog_dataset():
     targets = audit.read_dataset_targets()
     assert targets, "audit must serve at least some tools via read_dataset"
     missing = targets - declared
-    assert not missing, (
-        f"read_dataset verdicts point at undeclared catalog datasets: {missing}"
-    )
+    assert not missing, f"read_dataset verdicts point at undeclared catalog datasets: {missing}"
 
 
 def test_cli_only_tools_stay_cli_only():
@@ -125,10 +121,7 @@ def test_pipeline_trigger_tools_match_the_registered_pipelines():
         "run_derived_artifacts_pipeline",  # B7: the derived_artifacts pipeline trigger
         "run_upstream_discovery_pipeline",  # Story 13.1: the upstream_discovery pipeline trigger
     )
-    stems = tuple(
-        name.removeprefix("run_").removesuffix("_pipeline")
-        for name in audit.PIPELINE_TRIGGER_TOOLS
-    )
+    stems = tuple(name.removeprefix("run_").removesuffix("_pipeline") for name in audit.PIPELINE_TRIGGER_TOOLS)
     assert stems == tools.PIPELINE_NAMES
 
 
@@ -142,12 +135,8 @@ def test_pipeline_names_mirror_the_real_registry():
         mod = importlib.import_module(f"pyforge.atlas.pipelines.{name}.pipeline")
         assert callable(mod.create_pipeline), name
 
-    pipelines_dir = (
-        MEMBER_DIR / "src" / "pyforge" / "atlas" / "pipelines"
-    )
-    discovered = {
-        p.parent.name for p in pipelines_dir.glob("*/pipeline.py")
-    }
+    pipelines_dir = MEMBER_DIR / "src" / "pyforge" / "atlas" / "pipelines"
+    discovered = {p.parent.name for p in pipelines_dir.glob("*/pipeline.py")}
     assert discovered - NO_MCP_TRIGGER_PIPELINES == set(tools.PIPELINE_NAMES)
     # the exemption itself must name a REAL discovered pipeline -- never a stale entry.
     assert NO_MCP_TRIGGER_PIPELINES <= discovered

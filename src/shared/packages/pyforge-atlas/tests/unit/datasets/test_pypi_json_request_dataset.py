@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 
 import pytest
+
 from pyforge.atlas.datasets import PyPIJsonRequestDataset, RateLimitedScheduler
 
 
@@ -174,7 +175,7 @@ def test_fanout_dataset_filters_non_string_conda_name(tmp_path):
         url="https://pypi.org", filepath=str(tmp_path / "store"), mapping_filepath=str(mapping_path)
     )
     seen_names: list[str] = []
-    ds.load_many = lambda names, **kw: (seen_names.extend(names) or {n: {} for n in names})
+    ds.load_many = lambda names, **kw: seen_names.extend(names) or {n: {} for n in names}
     ds.fetch_candidates()
     assert seen_names == ["numpy"]  # "broken" (non-string value) / "" (falsy key) dropped
 
@@ -189,7 +190,7 @@ def test_fanout_limit_truncates_candidate_names(tmp_path, monkeypatch):
         url="https://pypi.org", filepath=str(tmp_path / "store"), mapping_filepath=str(mapping_path)
     )
     seen_names: list[str] = []
-    ds.load_many = lambda names, **kw: (seen_names.extend(names) or {n: None for n in names})
+    ds.load_many = lambda names, **kw: seen_names.extend(names) or {n: None for n in names}
     ds.fetch_candidates()
     assert seen_names == ["a", "b"]  # sorted candidate order, truncated to the limit
 
@@ -229,7 +230,7 @@ def test_fanout_limit_default_is_bounded_not_unlimited(tmp_path):
         url="https://pypi.org", filepath=str(tmp_path / "store"), mapping_filepath=str(mapping_path)
     )
     seen_names: list[str] = []
-    ds.load_many = lambda ns, **kw: (seen_names.extend(ns) or {n: None for n in ns})
+    ds.load_many = lambda ns, **kw: seen_names.extend(ns) or {n: None for n in ns}
     ds.fetch_candidates()
     assert len(seen_names) == _DEFAULT_PYPI_JSON_FANOUT_LIMIT
 

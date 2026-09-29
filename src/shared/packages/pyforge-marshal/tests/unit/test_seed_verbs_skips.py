@@ -25,6 +25,7 @@ import dataclasses
 import json
 
 import pytest
+
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.errors import UsageError
 from pyforge.marshal.seed.fs import NeverWrite, _matches
@@ -184,11 +185,7 @@ def test_the_agreement_table_is_not_vacuous():
     """Non-vacuous proof: the shared table must produce BOTH matches and
     non-matches, or the parametrized agreement above would pass by never
     exercising a real hit."""
-    results = [
-        first_match((pattern,), path)
-        for pattern in _AGREEMENT_PATTERNS
-        for path in _AGREEMENT_PATHS
-    ]
+    results = [first_match((pattern,), path) for pattern in _AGREEMENT_PATTERNS for path in _AGREEMENT_PATHS]
     assert any(result is not None for result in results)
     assert any(result is None for result in results)
 
@@ -257,9 +254,7 @@ def test_apply_skips_matching_one_action_moves_exactly_that_one():
     result = apply_skips(_three_action_plan(), ("CLAUDE.md",))
 
     assert [action.artifact_id for action in result.actions] == ["a", "b"]
-    assert result.skipped == (
-        SkippedArtifact(artifact_id="c", target_path="CLAUDE.md", pattern="CLAUDE.md"),
-    )
+    assert result.skipped == (SkippedArtifact(artifact_id="c", target_path="CLAUDE.md", pattern="CLAUDE.md"),)
 
 
 def test_apply_skips_drops_the_skipped_artifacts_hash_pair_from_the_fingerprint():
@@ -468,9 +463,7 @@ def test_apply_skips_matches_a_dot_slash_prefixed_target_path():
     result = apply_skips(_one_action_plan("./AGENTS.md"), ("AGENTS.md",))
 
     assert result.actions == ()
-    assert result.skipped == (
-        SkippedArtifact(artifact_id="a", target_path="./AGENTS.md", pattern="AGENTS.md"),
-    )
+    assert result.skipped == (SkippedArtifact(artifact_id="a", target_path="./AGENTS.md", pattern="AGENTS.md"),)
 
 
 def test_apply_skips_matches_a_target_path_with_duplicate_separators():
@@ -547,9 +540,7 @@ def test_apply_skips_carries_an_unknown_plan_field_through():
 
 
 def _record(artifact_id: str) -> ManagedRecord:
-    return ManagedRecord(
-        artifact_id=artifact_id, path=f"{artifact_id}.md", body_sha="deadbeef"
-    )
+    return ManagedRecord(artifact_id=artifact_id, path=f"{artifact_id}.md", body_sha="deadbeef")
 
 
 def test_managed_after_skips_drops_the_records_for_skipped_artifacts():

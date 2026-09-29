@@ -8,6 +8,8 @@ owner: atlas
 scope: "Intelligence layer, cf_atlas data pipeline, phase orchestration, schema evolution"
 ---
 
+> **Consolidated into** [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) on 2026-09-17 (one-chain-per-station CAP-3). This file is the record; new work appends to the station Dream.
+
 > **Superseded.** This Dream restates scope already fully realized by
 > [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) (status: realized) and its shipped
 > 38-story, 11-wave chain (Waves 0, A–H, I). Its "Realization" list maps directly onto

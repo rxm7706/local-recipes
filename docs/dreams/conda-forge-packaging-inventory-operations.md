@@ -2,8 +2,10 @@
 title: Build a conda-forge packaging inventory from scratch as a continuous intake engine
 type: dream
 owner: atlas
-status: specified   # 2026-08-22 — spec + station decomposition landed same day
+status: archived
 ---
+
+> **Consolidated into** [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) on 2026-09-17 (one-chain-per-station CAP-3). This file is the record; new work appends to the station Dream.
 
 # Build a conda-forge packaging inventory from scratch as a continuous intake engine
 

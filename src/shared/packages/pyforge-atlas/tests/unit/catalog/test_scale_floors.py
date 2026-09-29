@@ -28,7 +28,6 @@ import pytest
 
 from pyforge.atlas.datasets import (
     BasiliskPackagesDataset,
-    HomebrewPackagesDataset,
     RefreshRequest,
     TrackedSeedDataset,
     channeldata_json_to_rows,
@@ -81,15 +80,16 @@ def _git_says_not_ignored(path) -> bool | None:
     try:
         inside = subprocess.run(
             [git, "rev-parse", "--is-inside-work-tree"],
-            cwd=path.parent, capture_output=True, text=True, timeout=30,
+            cwd=path.parent,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
-    except (OSError, subprocess.SubprocessError):
+    except OSError, subprocess.SubprocessError:
         return None
     if inside.returncode != 0 or inside.stdout.strip() != "true":
         return None
-    probe = subprocess.run(
-        [git, "check-ignore", "-q", str(path)], cwd=path.parent, capture_output=True, timeout=30
-    )
+    probe = subprocess.run([git, "check-ignore", "-q", str(path)], cwd=path.parent, capture_output=True, timeout=30)
     if probe.returncode == 0:
         return False  # ignored
     if probe.returncode == 1:

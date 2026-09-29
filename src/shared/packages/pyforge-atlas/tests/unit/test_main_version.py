@@ -6,6 +6,7 @@ to Kedro at all. Scoped to the FIRST token only (mirrors marshal's
 documented `--version` convention), so `--version` appearing later among
 real run flags/values doesn't short-circuit a legitimate invocation.
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -26,9 +27,7 @@ def test_version_flag_prints_version_and_returns(capsys: pytest.CaptureFixture[s
     assert result is None
 
 
-def test_bare_argv_version_via_sys_argv(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_bare_argv_version_via_sys_argv(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     monkeypatch.setattr("sys.argv", ["pyforge-atlas", "--version"])
 
     result = main()

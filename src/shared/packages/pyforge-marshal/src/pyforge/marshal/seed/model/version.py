@@ -173,9 +173,7 @@ class ModelVersion:
                 raise ValueError(f"{name} must be a tuple of str, got {value!r}")
             for item in value:
                 if pattern.fullmatch(item) is None:
-                    raise ValueError(
-                        f"{name} identifier {item!r} is not a valid SemVer 2.0.0 identifier"
-                    )
+                    raise ValueError(f"{name} identifier {item!r} is not a valid SemVer 2.0.0 identifier")
 
     @staticmethod
     def parse(text: str) -> ModelVersion:
@@ -188,9 +186,7 @@ class ModelVersion:
             raise InvalidVersionError(f"version must be a str, got {text!r}")
         match = _SEMVER_PATTERN.fullmatch(text)
         if match is None:
-            raise InvalidVersionError(
-                f"{text!r} is not a valid SemVer 2.0.0 version string"
-            )
+            raise InvalidVersionError(f"{text!r} is not a valid SemVer 2.0.0 version string")
         prerelease_text = match.group("prerelease")
         build_text = match.group("build")
         try:
@@ -240,9 +236,7 @@ class ModelVersion:
         return len(self.prerelease) < len(other.prerelease)
 
 
-def in_range(
-    version: ModelVersion, since: ModelVersion | None, until: ModelVersion | None
-) -> bool:
+def in_range(version: ModelVersion, since: ModelVersion | None, until: ModelVersion | None) -> bool:
     """Half-open range check: ``[since, until)``. ``since is None`` means no
     lower bound; ``until is None`` means no upper bound. An entry is
     retired starting exactly AT ``until`` (excluded), and included starting

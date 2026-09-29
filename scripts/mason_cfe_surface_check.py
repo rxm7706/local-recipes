@@ -3,33 +3,42 @@
 conda-forge-expert (CFE) surface.
 
 FR-45/AD-15 require automated proof that Mason (`src/shared/packages/
-pyforge-mason/**`) never modifies the CFE surface, with exactly one sanctioned
-exception: Story 5.5's closing retrospective commit. Nothing before this
-scanned commit history for that — the guarantee was stated, never checked.
+pyforge-mason/**`) never modifies the CFE surface except the named exceptions
+below. Nothing before this scanned commit history for that — the guarantee
+was stated, never checked.
 
 CFE surface = exactly:
     .claude/skills/conda-forge-expert/**
     .claude/scripts/conda-forge-expert/**
     .claude/tools/conda_forge_server.py
 
-Findings:
-    unsanctioned-cfe-touch  a non-sanctioned commit's diff touches both the
-                            mason path and a CFE-surface path.
-    exception-reused        two or more commits both qualify as the sanctioned
-                            retro exception — it may fire at most once.
+Sanctioned exceptions (each is a named class, not a SHA dump):
 
-A commit is the sanctioned exception ONLY if its subject starts `retro:` AND
-`.claude/skills/conda-forge-expert/CHANGELOG.md` was ADDED or MODIFIED (never
-merely deleted/renamed-away) in its diff — subject alone never launders a CFE
-touch: a `retro:`-subject commit that touches the CFE surface without adding
-to the CHANGELOG is still reported as `unsanctioned-cfe-touch`.
+    5.5 retro     subject starts `retro:` / `retro(<scope>):` AND
+                  CHANGELOG.md is ADDED or MODIFIED in the same diff.
+                  At most one commit may qualify (`exception-reused`).
+    15.1 closeout subject names Story 15.1 *and* the retire/mirror closeout
+                  — mason's campaign job was to take down the CFE rebuild
+                  mirrors. Subject-only "Story 15.1" never launders a touch.
+    44.7 landed   the one mixed commit already on main (Steward 44.7 wired
+                  mason to `native-build.sh`). SHA is recorded because that
+                  history cannot be split; the waiver is only that SHA and
+                  only that CFE path.
+
+Findings:
+    unsanctioned-cfe-touch  a non-sanctioned commit's authored diff touches
+                            both the mason path and a CFE-surface path.
+    exception-reused        two or more commits both qualify as the 5.5 retro
+                            exception — it may fire at most once.
+
+Merges: plain `diff-tree` (no `-m`/`-c`) prints nothing for a multi-parent
+commit. Importing or 3-way-merging CFE files that already exist on a parent
+is not Mason authoring CFE. A merge authors CFE only when it *adds* a CFE
+path that no parent has (the "slipped in during conflict resolution" case).
 
 Commit range is derived, never a hardcoded baseline SHA: `git log -- <mason
 path>` is self-bounding to the mason-CLI effort already (starts at Story
-1.1's commit). Per-commit diffs use plain `diff-tree` (no `-m`/`-c`), which
-prints nothing for a real multi-parent merge — the first-parent diff
-(`<sha>^1..<sha>`) is the fallback so a conflict-resolving merge is never
-silently read as "touches nothing."
+1.1's commit).
 
 Exit codes: 0 clean, 1 findings, 2 could not run -- `git log` itself failed
 (e.g. not a git repository), or it succeeded but found zero commits (a wrong
@@ -59,6 +68,12 @@ CFE_SURFACE_PREFIXES = (
     ".claude/scripts/conda-forge-expert/",
 )
 CFE_SURFACE_FILES = frozenset({".claude/tools/conda_forge_server.py"})
+# Steward 44.7 — already on main; cannot be split. Waiver is this SHA and
+# only native-build.sh (a broader CFE touch on a rewritten hash is a finding).
+LANDED_MIXED_44_7 = "f180624fd84581145f65735711507b02fec34017"
+LANDED_MIXED_44_7_CFE = frozenset({
+    ".claude/scripts/conda-forge-expert/native-build.sh",
+})
 
 
 def _run(root: pathlib.Path, *args: str) -> subprocess.CompletedProcess[str] | None:
@@ -91,21 +106,73 @@ def mason_commits(root: pathlib.Path) -> list[str] | None:
     return [ln for ln in proc.stdout.splitlines() if ln.strip()]
 
 
+def _parse_name_status(text: str) -> list[tuple[str, str]]:
+    rows: list[tuple[str, str]] = []
+    for ln in text.splitlines():
+        if not ln.strip():
+            continue
+        parts = ln.split("\t", 1)
+        if len(parts) != 2:
+            continue
+        rows.append((parts[0], parts[1]))
+    return rows
+
+
 def diff_name_status(root: pathlib.Path, sha: str) -> list[tuple[str, str]]:
-    """(status, path) pairs for `sha`'s diff. Falls back to the first-parent
-    diff when plain `diff-tree` returns empty (Design Notes: a real 2-parent
-    merge). `--name-status` (not `--name-only`) so callers can tell an added
-    or modified path from a deleted one -- fetched once per commit and reused
-    for both the CFE-touch scan and the sanction check, rather than shelling
-    out twice for the same commit."""
-    for args in (
-        ("diff-tree", "--no-commit-id", "--name-status", "-r", "--root", sha),
-        ("diff", "--name-status", f"{sha}^1", sha),
-    ):
-        lines = [ln for ln in git(root, *args).splitlines() if ln.strip()]
-        if lines:
-            return [tuple(ln.split("\t", 1)) for ln in lines]  # type: ignore[misc]
-    return []
+    """(status, path) pairs for a single-parent (or root) commit.
+
+    Merges are handled in `authored_cfe_touches` — first-parent fallback
+    here would treat `git merge origin/main` as Mason authoring every CFE
+    file that arrived from main.
+    """
+    text = git(root, "diff-tree", "--no-commit-id", "--name-status",
+               "-r", "--root", sha)
+    return _parse_name_status(text)
+
+
+def commit_parents(root: pathlib.Path, sha: str) -> list[str]:
+    raw = git(root, "rev-list", "--parents", "-n", "1", sha)
+    parts = raw.split()
+    return parts[1:] if len(parts) > 1 else []
+
+
+def name_status_between(root: pathlib.Path, a: str, b: str) -> list[tuple[str, str]]:
+    return _parse_name_status(git(root, "diff", "--name-status", a, b))
+
+
+def path_in_commit(root: pathlib.Path, sha: str, path: str) -> bool:
+    proc = _run(root, "cat-file", "-e", f"{sha}:{path}")
+    return bool(proc and proc.returncode == 0)
+
+
+def authored_cfe_touches(
+    root: pathlib.Path, sha: str,
+) -> tuple[list[str], list[tuple[str, str]]]:
+    """CFE paths this commit authored, plus name-status rows for sanctions.
+
+    On a merge, 3-way combining of CFE files that already exist on a parent
+    is ignored (merge-from-main). A merge authors CFE only when it adds a
+    CFE path no parent has. Status rows are the union across parents
+    (needed for CHANGELOG A/M on a resolving merge).
+    """
+    parents = commit_parents(root, sha)
+    if len(parents) >= 2:
+        seen: set[str] = set()
+        status_lines: list[tuple[str, str]] = []
+        for parent in parents:
+            for row in name_status_between(root, parent, sha):
+                status_lines.append(row)
+                _status, path = row
+                if is_cfe_path(path):
+                    seen.add(path)
+        authored = sorted(
+            path for path in seen
+            if not any(path_in_commit(root, parent, path) for parent in parents)
+        )
+        return authored, status_lines
+    status_lines = diff_name_status(root, sha)
+    authored = sorted(path for _status, path in status_lines if is_cfe_path(path))
+    return authored, status_lines
 
 
 def commit_subject(root: pathlib.Path, sha: str) -> str:
@@ -116,22 +183,46 @@ def commit_subject(root: pathlib.Path, sha: str) -> str:
 # pyforge.testing_kit.branch_diff_guard.unsanctioned_commits, which carries the
 # full rationale. The repo's recent retros are all `retro(cfe):`.
 _RETRO_SUBJECT = re.compile(r"^retro(\([^)]*\))?:")
+# Mason 15.1 — retire the CFE rebuild-campaign mirrors. "Story 15.1" alone
+# is not enough; the closeout verbs have to be in the subject too.
+_STORY_15_1_CLOSEOUT = re.compile(
+    r"Story 15\.1\b.{0,80}\b(retire|mirror)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def is_retro_exception(subject: str, status_lines: list[tuple[str, str]]) -> bool:
+    changelog_status = next(
+        (status[:1] for status, path in status_lines if path == CFE_CHANGELOG),
+        None,
+    )
+    return bool(_RETRO_SUBJECT.match(subject) and changelog_status in ("A", "M"))
+
+
+def is_story_15_1_closeout(subject: str) -> bool:
+    return bool(_STORY_15_1_CLOSEOUT.search(subject))
+
+
+def is_landed_44_7(sha: str, cfe_touches: list[str]) -> bool:
+    if sha != LANDED_MIXED_44_7:
+        return False
+    return bool(cfe_touches) and set(cfe_touches) <= LANDED_MIXED_44_7_CFE
 
 
 def scan(root: pathlib.Path, shas: list[str]) -> list[dict]:
     findings: list[dict] = []
     sanctioned: list[str] = []
     for sha in shas:
-        status_lines = diff_name_status(root, sha)
-        files = [path for _status, path in status_lines]
-        cfe_touches = sorted(f for f in files if is_cfe_path(f))
+        cfe_touches, status_lines = authored_cfe_touches(root, sha)
         if not cfe_touches:
             continue
         subject = commit_subject(root, sha)
-        changelog_status = next(
-            (status[:1] for status, path in status_lines if path == CFE_CHANGELOG), None)
-        if _RETRO_SUBJECT.match(subject) and changelog_status in ("A", "M"):
+        if is_retro_exception(subject, status_lines):
             sanctioned.append(sha)
+            continue
+        if is_story_15_1_closeout(subject):
+            continue
+        if is_landed_44_7(sha, cfe_touches):
             continue
         findings.append({
             "kind": "unsanctioned-cfe-touch",
@@ -200,7 +291,8 @@ def main() -> int:
         print(f"      → {f['remedy']}")
     print(f"\nFAIL: {len(findings)} finding(s). Mason must never modify the "
           "conda-forge-expert surface except Story 5.5's single closing "
-          "retrospective commit.")
+          "retrospective, Story 15.1's campaign closeout, or the landed "
+          "44.7 native-build.sh commit.")
     return 1
 
 

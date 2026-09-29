@@ -71,11 +71,8 @@ def test_pyforge_mason_dependencies_floor_pins_are_ranges_not_exact():
     deps = _pyforge_mason_dependencies()
     for distribution in _CANONICAL_FLOOR_SOURCES:
         specifiers = SpecifierSet(str(deps[distribution]))
-        assert any(
-            specifier.operator in (">=", ">") for specifier in specifiers
-        ), (
-            f"{distribution!r} must use a minimum floor (>= or >), got "
-            f"{deps[distribution]!r}"
+        assert any(specifier.operator in (">=", ">") for specifier in specifiers), (
+            f"{distribution!r} must use a minimum floor (>= or >), got {deps[distribution]!r}"
         )
 
 
@@ -88,5 +85,5 @@ def test_pyforge_mason_env_imports_every_cfe_import_floor_module():
     assert result.missing == (), (
         "CFE_IMPORT_FLOOR modules missing from the pyforge-mason env: "
         f"{result.missing!r} (distribution names; import names are "
-        f"{ {k: CFE_IMPORT_FLOOR[k] for k in result.missing} !r})"
+        f"{ {k: CFE_IMPORT_FLOOR[k] for k in result.missing}!r})"
     )

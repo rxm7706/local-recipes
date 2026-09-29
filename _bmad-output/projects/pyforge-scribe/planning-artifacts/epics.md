@@ -11,14 +11,21 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-09-09"
-currency_review: "Reviewed 2026-09-09 (Epic 8 added: 'Scribe in effect — the compile runs on a schedule the estate owns', the station's one built-but-not-in-effect capability under the realization gate; fleet-readiness decision batch 2026-09-09 row C6. Story 8.1 mints no new capability — Story 3.3 already shipped the bounds, the lock and the unattended mode; what is missing is a trigger, and the runbook's standing 'never a GitHub Actions workflow' reason is carried into the epic's boundaries). Reviewed 2026-09-06 (Epic 7 added: spec-bmad-suite-lifecycle scribe relay — three utility skills routed, Story 7.1). Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
+currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
 ---
 
 # pyforge-scribe - Epic Breakdown
+
+## Fold provenance (2026-09-17)
+
+Station Spec spec-pyforge-scribe reminted absorbed capabilities as CAP-1..26. Historical stories keep their sequential epic numbers (already 1..N with no gaps). This heading is the INV-A citation window: `spec-pyforge-scribe` CAP-1..26.
+
+**2026-09-17 arch→epics validation.** Re-read ARCHITECTURE-SPINE.md after the 2026-09-17 prd→arch cascade. No AD added or changed. Story headings still map 1:1 to `sprint-status-ledger.yaml` keys. No blocked ledger keys flipped.
+
 
 ## Overview
 
@@ -326,14 +333,14 @@ the same date.
 
 ## Canopy obligations (2026-08-24)
 
-Phase 5 correct-course (`sprint-change-proposal-2026-08-24-canopy.md`, **approved**). CAP-14 graph
+Phase 5 correct-course (`sprint-change-proposal-2026-08-24-canopy.md`, **approved**). canopy:CAP-14 graph
 backend and semantic recall stay **steward Epic 28** — not a scribe-local graph epic.
 **Epic 4** (later 2026-08-24) is CAP-18 `GraphStore` plugin *registration* only.
 
 | Obligation | Owner | Notes |
 |---|---|---|
-| **CAP-14 / FR-35** — durable PostgreSQL/pgvector graph driver behind the existing `GraphStore` port, with the local flat-file path retained | **steward Epic 28** (S-28.1) | Scribe cooperates only: keep `compile.py` / `recall.py` caller-agnostic (scribe AD-5); schema isolation is **parent AD-1** / **parent AD-5** (`scribe_schema`). **Do not** add SQLite-over-RWX. Today's shipped backend is **`FlatFileGraphStore`** only — the unifying-strategy Dream's "already dual-driver" premise was false. |
-| **CAP-14 / FR-36** — semantic recall (meaning, not only lexical overlap) | **steward Epic 28** (S-28.2) | Additive to shipped lexical recall; not a scribe-local epic. |
+| **canopy:CAP-14 / FR-35** — durable PostgreSQL/pgvector graph driver behind the existing `GraphStore` port, with the local flat-file path retained | **steward Epic 28** (S-28.1) | Scribe cooperates only: keep `compile.py` / `recall.py` caller-agnostic (scribe AD-5); schema isolation is **parent AD-1** / **parent AD-5** (`scribe_schema`). **Do not** add SQLite-over-RWX. Today's shipped backend is **`FlatFileGraphStore`** only — the unifying-strategy Dream's "already dual-driver" premise was false. |
+| **canopy:CAP-14 / FR-36** — semantic recall (meaning, not only lexical overlap) | **steward Epic 28** (S-28.2) | Additive to shipped lexical recall; not a scribe-local epic. |
 | **Five-tier symmetry** — portal `/stations/scribe/`, MCP service face, SKF domain skill, station persona | **steward Epics 19, 21, 29** | CLI tier exists (`scribe`; unified `pyforge scribe` via steward Epic 22). No second chrome, no extra port. |
 | Scribe tracker | *This section only* | Thin cooperation note — implementation stories live in steward planning artifacts, not here. |
 
@@ -359,7 +366,7 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 - **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
 - Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
 
-**Scribe-local:** Graph-store / recall-backend plugins are station hooks (Story **4.1**). Memory completeness is not a PR quality gate. CAP-14 backing-store work remains steward Epic 28.
+**Scribe-local:** Graph-store / recall-backend plugins are station hooks (Story **4.1**). Memory completeness is not a PR quality gate. canopy:CAP-14 backing-store work remains steward Epic 28.
 
 **Pointers:** `change-history/sprint-change-proposal-2026-08-24-operating-model.md`;
 `change-history/sprint-change-proposal-2026-08-24-hook-specs.md`;
@@ -382,7 +389,7 @@ So that swapping a recall store does not fork scribe.
 
 ## Epic 5: Scribe owns remaining skill/persona and one portal job
 
-Steward 29.1 compiled the SKF *shape* from scribe. This epic **owns** any remaining skill/persona gaps and the first portal job. Does **not** copy Canopy 18–30. CAP-14 PG driver stays steward Epic 28.
+Steward 29.1 compiled the SKF *shape* from scribe. This epic **owns** any remaining skill/persona gaps and the first portal job. Does **not** copy Canopy 18–30. canopy:CAP-14 PG driver stays steward Epic 28.
 
 ### Story 5.1: SKF skill ownership and BMAD persona for scribe
 
@@ -414,7 +421,7 @@ shipped plugin contract. Extras are **off by default** (air-gap). Two consumers 
 waiting: the foundry-cutover move-list (`docs/dreams/pyforge-unifying-strategy.md` § One working tree / phases 0–6) and
 marshal Epic 28's token-economy Layers 3–4 (marshal Stories 28.8/28.9 consume by scribe
 grammar only). **Never, epic-wide:** a second graph/vector store or store-of-record; a
-`cocoindex.serve` MCP product; `@coco.fn` as the lineage religion (OpenLineage rides CAP-8);
+`cocoindex.serve` MCP product; `@coco.fn` as the lineage religion (OpenLineage rides canopy:CAP-8);
 a foundry-root `graphify-out/` product dir; `mem0.add` / `mem0 init --agent` in place of
 `scribe capture` — the `recall_ranker` mem0 extra is deliberately **not** in this epic.
 
@@ -440,7 +447,7 @@ So that derived artifacts (the move list, marshal's epic-context distills) stay 
 **Given** the extra off (default) **When** a compile runs **Then** behavior is unchanged
 **And** with the extra on, unchanged sources across two consecutive runs yield zero recompute, and one changed source yields exactly one refresh touching only the affected derived rows
 **And** outputs write through the persist port or land as derived gitignored artifacts — cocoindex is the freshness engine, never a GraphStore engine and never a store of record
-**And** no `cocoindex.serve` MCP product and no `@coco.fn` lineage surface is introduced (OpenLineage rides CAP-8)
+**And** no `cocoindex.serve` MCP product and no `@coco.fn` lineage surface is introduced (OpenLineage rides canopy:CAP-8)
 
 ### Story 6.3: The graph-node staleness flag
 
@@ -448,7 +455,7 @@ As a scribe operator,
 I want compile_graph to flag a node `stale: true` when its source has moved since compile with no declared supersession,
 So that consumers like marshal's planning-graph retrieval (Story 28.9) never silently serve outdated planning context as if it were current.
 
-**Type:** feature • **Effort:** M • **Deps:** S-2.3 • **FR/AD:** spec-marshal-token-economy CAP-13
+**Type:** feature • **Effort:** M • **Deps:** S-2.3 • **FR/AD:** spec-marshal-token-economy token-economy:CAP-13
 **Given** a node whose source file's latest git commit postdates the node's own `valid_from` and no `supersedes:` edge points at it **When** compile runs **Then** the node is flagged `stale: true`
 **And** given an unchanged source, or a node with a declared `supersedes:` edge pointing at it **When** compile runs **Then** the node is never flagged stale
 **And** given a retrieval that resolves to a stale-flagged node **When** the answer is served **Then** the consumer falls back to its non-graph path rather than serving the stale node silently
@@ -499,6 +506,338 @@ night and prove nothing); the graph stays a derived artifact, never a source of 
 **And** the boundary is honoured explicitly: the story records **why** this is not a GitHub Actions workflow (runbook § *Scope note*), so the next pass does not re-propose one
 **And** the durable-driver path is not silently required — the default `FlatFileGraphStore` needs no service; if a scheduled run is ever pointed at the PostgreSQL driver it needs the local cluster up (`scribe-pg-up`), which the trigger must either start or refuse cleanly, never fail red on a machine without it
 
+### Story 8.2: The nightly compile keeps the graphify code surface
+**Type:** feature • **Effort:** S • **Deps:** S-6.1 • S-8.1 • **FR/AD:** `spec-scribe-graphify-nightly-currency` CAP-1 • CAP-2 • AD-6
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py`, `scripts/scribe_nightly_trigger.py`, `pixi.toml` `[feature.pyforge-scribe.dependencies]`
+**Given** live graphifyy exposes `extract` as a package submodule after `collect_files` **When** `scribe index build` or a compile with the extra on calls `ingest_repo` **Then** ingest uses the callable (`graphify.extract.extract` when the attribute is a module) and writes `code:` nodes through `open_graph_store`
+**And** the nightly trigger sets `SCRIBE_GRAPHIFY_EXTRA=1` when the operator has not set the variable, so the 02:30 full rebuild keeps those nodes; an explicit `0` stays off
+**And** the `pyforge-scribe` pixi feature declares `graphifyy` so that env can import `graphify` (lazy, adapter-only); a missing or failing extra still degrades on compile and never fails the scheduled run red
+**And** an interactive `scribe graph compile` with the extra unset is unchanged — zero code nodes from graphify
+
+### Story 8.3: Herald fact ledgers join the compile
+**Type:** feature • **Effort:** S • **Deps:** S-2.2 • S-8.2 • **FR/AD:** `spec-scribe-graphify-nightly-currency` CAP-3 • `spec-deck-family-currency` CAP-2
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`
+**Given** `presentations/<slug>/facts.yaml` files exist (Herald's derived fact ledgers) **When** `scribe graph compile` runs **Then** each file is one `kind=doc` `GraphNode` written through `open_graph_store`, citation `presentations/<slug>/facts.yaml`
+**And** a repo with no `presentations/` directory compiles with zero fact-ledger nodes and no warning
+**And** `project/*.dc.html`, `src/slides/fragments/`, dated Marp sources, and copied `src/deck/` engines are not compile sources
+**And** the ingest is the existing text-file `doc` path (`_node_from_text_file`), not the graphify extra
+
+### Story 8.4: The compile keeps knowledge layers honest
+**Type:** feature • **Effort:** M • **Deps:** S-6.3 • S-8.3 • **FR/AD:** `spec-scribe-knowledge-layers` CAP-1 • CAP-2 • CAP-3
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`
+**Given** a full rebuild **When** a source file's working-tree mtime is older than its latest git commit **Then** that node is not flagged stale; stale requires the commit author date after this compile's `compiled_at`
+**And** memlog/changelog/retro walks skip `archive/`, `implementation-artifacts/`, and any `tests/` path segment
+**And** retros are only `_bmad-output/projects/*/planning-artifacts/retros/*.md`
+**And** `docs/dreams/*.md` with status `dreamt`|`pitched`|`specified`, folder `SPEC.md` with status `ready`|`in-progress`, and `presentations/*/facts.yaml` each become one `kind=doc` node
+
+### Story 8.5: Default recall omits the code surface
+**Type:** feature • **Effort:** S • **Deps:** S-2.4 • S-8.4 • **FR/AD:** `spec-scribe-knowledge-layers` CAP-4
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py`
+**Given** an unscoped `scribe recall` **When** the only token overlap is a `kind=code` node **Then** the result is `no grounded answer found`
+**And** `scribe recall --kind code` (or `answer(..., kinds={"code"})`) may return that node
+**And** Marshal `--scope` behavior is unchanged
+
+### Story 8.6: Session path names scribe recall
+**Type:** docs • **Effort:** XS • **Deps:** S-8.5 • **FR/AD:** `spec-scribe-knowledge-layers` CAP-5
+**Surface:** `AGENTS.md` (outside `bmad:context`)
+**Given** any coding agent reading `AGENTS.md` **When** it needs a team decision or contract fact **Then** it is instructed to run `scribe recall` (default omits `code:`)
+**And** graphify AST and Marshal `codegraph` are named as different products, not the default recall bag
+
+## Epic 9: Scoped retrieve can cite the poster’s numbers
+
+**Spec binding.** `spec-scribe-marshal-fact-visibility` CAP-1 (hoisted
+parked later-caps:CAP-10). Compile already writes `presentations/<slug>/facts.yaml`
+(`Story 8.3`). Marshal planning-graph retrieve already passes `--scope`.
+The gap is the citation rule in `recall.py`.
+
+### Story 9.1: Scoped recall admits the project's own fact ledger
+**Type:** feature • **Effort:** S • **Deps:** S-8.3 • S-8.5 • **FR/AD:** `spec-scribe-marshal-fact-visibility` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py`
+**Given** a compiled `doc:` node cited `presentations/pyforge-scribe/facts.yaml` **When** `answer(..., scope="pyforge-scribe")` runs **Then** that node is a legal candidate (same as that project's planning tree)
+**And** `--scope pyforge-scribe` still excludes `presentations/pyforge-warden/facts.yaml`, nested `facts.yaml`, and the rest of `presentations/`
+**And** unscoped recall is unchanged
+**And** Marshal argv stays `--scope` only — no `--facts` flag
+
+## Epic 10: The story you are on compiles; the ones you finished do not
+
+**Spec binding.** `spec-scribe-in-flight-story-specs` CAP-1 (hoisted
+parked later-caps:CAP-6). Folder `SPEC.md` already compiles (Story 8.4). Per-story
+files must not join as a glob.
+
+### Story 10.1: In-flight story specs join the compile
+**Type:** feature • **Effort:** S • **Deps:** S-8.4 • **FR/AD:** `spec-scribe-in-flight-story-specs` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`
+**Given** `spec-10-1-….md` and a ledger row `10-1-…: in-progress` **When** `scribe graph compile` runs **Then** that file is one `kind=doc` node
+**And** the same file with ledger `done` is omitted even if frontmatter says `ready-for-dev`
+**And** `backlog` rows, a missing ledger, and folder `SPEC.md` are not this surface
+**And** a missing tree is zero nodes and no warning
+
+## Epic 11: Recall withholds what landed after last night's compile
+
+**Spec binding.** `spec-scribe-recall-stale-between-nightlies` CAP-1
+(hoisted parked later-caps:CAP-9). Compile-time stale (Story 8.4) is unchanged.
+
+### Story 11.1: Recall withholds sources committed after compile
+**Type:** feature • **Effort:** S • **Deps:** S-8.4 • S-2.4 • **FR/AD:** `spec-scribe-recall-stale-between-nightlies` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store.py`, `compile.py`, `recall.py`
+**Given** a compiled flat-file store **When** a cited source file is committed after `compiled_at` **Then** `answer()` skips that node
+**And** reloading `graph.json` still exposes `compiled_at`
+**And** commit/transcript nodes stay eligible
+**And** a store with no `compiled_at` uses only the stored `stale` bit
+
+## Epic 12: Every recall door uses the same default bag
+
+**Spec binding.** `spec-scribe-portal-recall-defaults` CAP-1 (hoisted
+parked later-caps:CAP-12). CAP-5 stays `AGENTS.md`.
+
+### Story 12.1: Portal and Marshal inherit default recall
+**Type:** feature • **Effort:** S • **Deps:** S-8.5 • S-8.6 • **FR/AD:** `spec-scribe-portal-recall-defaults` CAP-1
+**Surface:** `django-pyforge` `_grammar_recall`, `planning_graph.render_scribe_recall_argv`, `.cursor/rules/scribe-recall.mdc`
+**Given** the portal job or Marshal retrieve **When** they build `scribe recall` argv **Then** they do not pass `--kind`
+**And** Marshal may still pass `--scope`
+**And** `.cursor/rules/scribe-recall.mdc` names the AGENTS session path
+**And** django-scribe is not redesigned and does not import `pyforge.scribe`
+
+## Epic 13: Planning novels stay files; the graph holds pointers
+
+**Spec binding.** `spec-scribe-planning-pointers` CAP-1 (hoisted
+parked later-caps:CAP-7). Folder `SPEC.md` and in-flight story specs stay on
+their own surfaces.
+
+### Story 13.1: Planning pointers join the compile
+**Type:** feature • **Effort:** S • **Deps:** S-8.4 • S-10.1 • **FR/AD:** `spec-scribe-planning-pointers` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`
+**Given** named `brief.md` / `prd.md` / `ARCHITECTURE-SPINE.md` / `epics.md` **When** `scribe graph compile` runs **Then** each is one `kind=doc` pointer
+**And** pointer text has title, path, status, and FR/AD or Epic/Story headings
+**And** a unique sentence that exists only in the source body is absent from the node
+**And** `epics-*.md`, architecture novels, addenda, research, and `specs/` are omitted
+**And** a missing tree is zero nodes and no warning
+
+## Epic 14: Named docs extras, never the docs tree
+
+**Spec binding.** `spec-scribe-named-docs` CAP-1 (hoisted parked
+later-caps:CAP-13). Dreams stay on the existing CAP-3 surface.
+
+### Story 14.1: Named docs join the compile
+**Type:** feature • **Effort:** S • **Deps:** S-8.4 • S-13.1 • **FR/AD:** `spec-scribe-named-docs` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`
+**Given** `docs/how-to/<guide>.md` **When** `scribe graph compile` runs **Then** it is one ordinary `kind=doc` node
+**And** `docs/reference/library-llms-full.md` is one heading-extract `doc` node
+**And** `docs/how-to/README.md`, tutorials, and explanation files are omitted
+**And** a unique sentence that exists only in the catalog body is absent from that node
+**And** a missing how-to tree or missing catalog is zero extra nodes and no warning
+
+## Epic 15: Graphify walks the named code trees, not the warehouse
+
+**Spec binding.** `spec-scribe-graphify-target-list` CAP-1 (hoisted
+parked later-caps:CAP-8). Extra remains off by default.
+
+### Story 15.1: Graphify target list joins the compile
+**Type:** feature • **Effort:** S • **Deps:** S-8.2 • **FR/AD:** `spec-scribe-graphify-target-list` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py`
+**Given** extra-on compile and no explicit target **When** `ingest_repo` runs **Then** it walks `src/shared/packages`, `src/platform`, and `scripts` when they exist
+**And** a present `recipes/` tree is not ingested
+**And** missing optional list entries produce no warning
+**And** extra-off compile is unchanged
+**And** an explicit `--target` stays one path
+
+## Epic 16: Recall names the surface, not a kind bag
+
+**Spec binding.** `spec-scribe-recall-modes` CAP-1 (hoisted parked
+later-caps:CAP-11). Internal lexical/semantic ranking is unchanged.
+
+### Story 16.1: Recall modes join the CLI
+**Type:** feature • **Effort:** S • **Deps:** S-8.5 • **FR/AD:** `spec-scribe-recall-modes` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py`, `cli.py`
+**Given** `scribe recall` **When** `--mode planning` **Then** candidates are `doc` and `memlog` only
+**And** `--mode memory` is `memory` only; `--mode code` is `code` only
+**And** `--mode` with `--kind` exits 2
+**And** neither flag keeps the CAP-4 default bag
+**And** portal argv is unchanged
+
+## Epic 17: One owner for “where is this symbol?”
+
+**Spec binding.** `spec-scribe-code-navigation-owner` CAP-1 (hoisted parked
+later-caps:CAP-14 from `spec-scribe-knowledge-layers/later-caps.md`). Reserved hole
+between 16 and 18 — do not renumber Epic 18.
+
+### Story 17.1: Marshal codegraph owns symbol navigation
+**Type:** docs • **Effort:** S • **Deps:** S-8.6 • S-16.1 • **FR/AD:** `spec-scribe-code-navigation-owner` CAP-1
+**Surface:** `AGENTS.md` (outside `bmad:context`), `src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_navigation_owner.py`, `.cursor/rules/scribe-recall.mdc`
+**Given** graphify `code:` and Marshal `codegraph.db` both answer “where is this symbol?”
+**When** this story lands
+**Then** `AGENTS.md` outside `bmad:context` names Marshal `codegraph.db` as symbol nav owner and forbids `scribe recall --mode code` for symbols
+**And** the graphify extra module docstring says it is not the nav API
+**And** a unit test fails if those AGENTS sentences are removed
+**And** `.cursor/rules/scribe-recall.mdc` stays consistent (force-add if `.cursor/` is gitignored)
+**And** default recall still omits `code:`; graphify is not deleted; `codegraph install --target claude` is not run; recipes/ and repo root are not nightly-graphified
+**Status:** done
+
+## Epic 18: Planning retrieve names the planning surface
+
+**Spec binding.** `spec-scribe-recall-mode-wiring` CAP-1..3. Story 16.1
+shipped `--mode`; this epic wires the callers.
+
+### Story 18.1: Retrieve and sessions pass mode planning
+**Type:** feature • **Effort:** S • **Deps:** S-16.1 • **FR/AD:** `spec-scribe-recall-mode-wiring` CAP-1, CAP-2, CAP-3
+**difficulty:** easy
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py`, `src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py`, `AGENTS.md`, `.cursor/rules/scribe-recall.mdc`
+**Given** Story 16.1 shipped `--mode` and Marshal retrieve still inherits the default bag
+**When** this story lands
+**Then** `render_scribe_recall_argv` appends `--mode planning`, may still append `--scope`, never appends `--kind`, and does not default to `--mode code`
+**And** `recall_cli_argv` with no mode has neither `--mode` nor `--kind`; `mode=planning|memory|code` appends that `--mode`
+**And** `AGENTS.md` session path and `.cursor/rules/scribe-recall.mdc` show `--mode planning` on the decision command
+
+## Epic 19: The session contract reaches every harness
+
+**Spec binding.** `spec-pyforge-scribe` CAP-27. Minted 2026-09-19 at the review of PR #1513 (a
+parallel session's AGENTS.md / GEMINI.md governance PR) from the Dream entry "Scribe serves every
+harness"; the research that fixed the shape is
+`planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md`. Operator rulings the
+same day: point, don't copy; `@AGENTS.md` import + no attribution trailers; direct-capture the
+team-relevant notes; full chain. **HARD boundaries:** the `bmad:context` block is
+`bmad-project-context`'s, never hand-edited; no instruction content that belongs in `AGENTS.md` is
+authored into a per-tool file; Dream items (4)–(10) are seeded, not this epic's scope.
+
+### Story 19.1: One AGENTS.md, reached natively or by a one-line pointer from every harness
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** `spec-pyforge-scribe` CAP-27
+**difficulty:** medium
+**Surface:** `AGENTS.md` (team-memory section with real `.claude/memory/` paths; behavioural guidelines; "how each harness loads this file"; pre-PR checklist items 9–12 corrected and folded), `CLAUDE.md` (`@AGENTS.md` import), `GEMINI.md` (thin Gemini addendum), `.gemini/settings.json` (new: `context.fileName` with `AGENTS.md` first), `.github/copilot-instructions.md` (thin addendum), `.vscode/settings.json` (`chat.useAgentsMdFile`), `.claude/memory/feedback/*.md` + `MEMORY.md` (three direct captures), `scripts/spec_surface_allowlist.txt` (GEMINI.md moves to the scribe surface), `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` (new).
+**Given** `CLAUDE.md` exists and never imports `AGENTS.md`, Gemini has no `context.fileName`, and PR #1513 pointed every harness at memory files that live in one operator's home directory
+**When** this story lands
+**Then** Claude Code loads the verified `bmad:context` block through `@AGENTS.md`; Gemini CLI / Antigravity load `AGENTS.md` first through the checked-in `.gemini/settings.json`; VS Code chat loads it through `chat.useAgentsMdFile`; Cursor, Codex, the Copilot cloud agent, Devin and Jules keep loading it natively
+**And** `AGENTS.md` names `.claude/memory/MEMORY.md` as the session-boot read and `scribe capture` as the way in; every memory path it cites exists in the repo; the three lessons PR #1513 cited from auto-memory exist as team entries
+**And** `GEMINI.md`, `.github/copilot-instructions.md` and the `.cursor/rules` pointers carry no section that also exists in `AGENTS.md`, and a scribe meta-test reds the import, the Gemini setting, the VS Code setting, any duplicated H2, a per-tool file over 60 lines, or a dangling memory path
+**And** `governance-currency` stays green on `AGENTS.md` and `CLAUDE.md`; the pre-PR checklist's items 9–12 read as the repo's real invariants (the `dashboard/` extra boundary, `pr-preflight`'s known gaps) with no duplicates
+**Status:** done
+**Outcome (2026-09-19):** landed as PR #1513 after review + rebuild (three review layers over the parallel session's diff; the research doc; chain minted the same day); tracked spec `specs/spec-19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness.md` carries the triage log and Auto Run Result.
+
+### Story 19.2: scribe capture and recall run from the session default environment
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** `spec-pyforge-scribe` CAP-28 (Dream item (7), pixi-env half)
+**difficulty:** easy
+**Surface:** `pixi.toml` (`[feature.pyforge-guild.dependencies]` + the `pyforge-scribe` path dep; comment at `feature.pyforge-guild`), `pixi.lock`, `AGENTS.md` / `CLAUDE.md` / `.cursor/rules/scribe-recall.mdc` (capture/recall invocations on `-e pyforge-guild`), `src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py` (new).
+**Given** `pyforge-guild` is the default environment for every harness but the scribe CLI lived only in `-e pyforge-scribe`, so a sandbox that installs the Guild default could neither capture nor recall
+**When** this story lands
+**Then** `pixi run -e pyforge-guild scribe --help` lists `capture` / `recall` / `graph`; the core package's run-deps (`typer`, `pydantic`, `pyforge-core`) are the only additions; `graphifyy`, `cocoindex` and `psycopg` stay in `-e pyforge-scribe`
+**And** every governance doc routes `scribe capture` / `scribe recall` to `-e pyforge-guild`; `environment.yaml` is unchanged; `llms-full-check` is green; a scribe meta-test pins the membership and the doc routing
+**Status:** done
+**Outcome (2026-09-19):** landed with Story 19.1 in PR #1513 (operator: "shouldn't we fix this" — yes, one path dependency); tracked spec `specs/spec-19-2-scribe-capture-and-recall-run-from-the-session-default-environment.md`.
+
+### Story 19.3: The instruction surface is version-aware — Claude Code's built-in agents-md mod
+
+**Type:** feature • **Effort:** S • **Deps:** S-19.1 • **FR/AD:** `spec-pyforge-scribe` CAP-29 (operator ask 2026-09-20 09:35Z) • sits beneath the closed Epic 19 (the epic key stays `done` — `ledger-regression`)
+**difficulty:** easy
+**Surface:** `AGENTS.md` (§ How each harness loads this file — the Claude Code row: ≥2.1.277 built-in `agents-md` mod, pinned mode `claude-md-and-agents-md`, nested `AGENTS.md` honoured; below / Bedrock / Vertex / Foundry: the `@AGENTS.md` import), `CLAUDE.md` (the duplicated "Behavioral Guidelines" section collapses to a one-line pointer), `.claude/settings.json` (`customInstructions` → `AGENTS.md`), `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` (H2s compared after spelling normalisation; the Claude Code row's facts asserted), `scripts/claude_instruction_mode_check.py` + `scripts/detectors.py` (runtime-scope currency warn: `claude --version` < 2.1.277 or `instructionFiles` ≠ the pinned mode; silent when `claude` is absent), `planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md` (dated addendum). Hand-driven 2026-09-20.
+**Given** Claude Code 2.1.277 (2026-09-18) ships a built-in `agents-md` mod whose default mode stays out of any project with a `CLAUDE.md`, so `AGENTS.md` still reaches Claude Code only through the import and the atlas child `AGENTS.md` never does; the harness table says "only through that import" unconditionally; `CLAUDE.md` and `AGENTS.md` both carry the five guidelines under differently-spelled H2s
+**When** the table states version + pinned mode, the duplicate collapses, the parity test normalises spelling, the operator's settings carry the mode and a runtime check reports drift
+**Then** every parity meta-test passes; the check warns on a runtime below 2.1.277 or a non-pinned mode and is silent without `claude`; `governance-currency` is green on both files
+**And** the import stays the floor — nothing here depends on the mod being present
+**Status:** done
+**Outcome (2026-09-20):** hand-driven in the fleet PR with marshal 46.11; see the tracked spec's Auto Run Result.
+
+## Epic 20: The managed instruction block carries no aspiration (spec-pyforge-scribe CAP-30)
+
+Minted 2026-09-20 (evening) from the Dream entry of the same name. Epic 19 is `done`, so the guard is a new epic (a fix on
+a done epic gets a new epic). **HARD boundaries:** scope is the text between the `bmad:context` markers only; the
+guard is a scribe meta-test, never a doctor detector or a PR gate of its own; it lands with steward Story 66.2,
+which retires the two lines it would red today.
+
+### Story 20.1: The parity meta-test reds a TODO inside the managed block
+
+As the maintainer of the instruction surface,
+I want `test_instruction_surface_parity.py` to fail on a `TODO:` / `FIXME:` / "not yet landed" line between the `bmad:context` markers,
+So that a decision without a Story cannot sit in the block as a line every session pays for.
+
+**Type:** feature • **Effort:** S • **Deps:** cross-project: steward 66.2 (the two lines standing on 2026-09-20) • **FR/AD:** spec-pyforge-scribe CAP-30 • Dream 2026-09-20 (evening)
+**Surface:** `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` (one test + a planted-fixture self-test), `AGENTS.md` (nothing — the block is read, not written).
+**Given** two `TODO:` lines have stood in the managed block since 2026-09-04 with no Story behind them
+**When** this story lands
+**Then** a planted `TODO:` between the markers fails the meta-test naming the line; the live block passes; TODO text outside the markers is ignored
+**And** `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green
+
+**Outcome (2026-09-20):** done, hand-driven in PR #1553 with steward 66.2 — see the tracked spec's Auto Run Result.
+
+## Epic 21: The instruction surface names the estate first (spec-python-foundry-cutover fnd:CAP-15)
+
+Minted 2026-09-25 from steward's `docs/dreams/pyforge-unifying-strategy.md` § *Consolidation —
+2026-09-25* (Input 3, folded from PR #1563). A new epic because Epic 20 is `done`. The capability
+is steward's (`spec-python-foundry-cutover` fnd:CAP-15); the surface is scribe's (CAP-27, the
+instruction-surface parity contract), so the story lives here and steward carries index row 67.7.
+**HARD boundaries:** PR #1563's hand-written `AGENTS.md` is reference only, never merged; the
+managed `bmad:context` block changes only through `bmad-project-context`; nothing edits
+`python-foundry`'s instruction surface (its PR #19 is B's under the writer lock).
+
+### Story 21.1: `AGENTS.md` opens with what this repository is
+
+As an agent in any harness opening this repository cold,
+I want `AGENTS.md` to tell me first that this is A — the PyForge control plane and BMAD Agentic-SDLC host, with the recipe factory as one cell — and how A and B divide work, then a short behavioural core,
+So that I place a task on the right root and in the right mode before I read a single incident note.
+
+**Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** fnd:CAP-15 • spec-pyforge-scribe CAP-27 • cross-station: steward index 67.7 flips `done` when this closes; reference payload PR #1563 (branch `docs/agents-pyforge-bmad`)
+**Surface:** `AGENTS.md` (managed block through `bmad-project-context`; sections outside it by hand), `CLAUDE.md` (pointer + Claude-only notes), the pointer targets each removed note moves to (`.claude/memory/`, `docs/reference/`), the per-tool addenda `GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/*.mdc` and `.vscode/settings.json` only where a moved section changes a pointer they carry, `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` only if a parity rule must follow a moved section.
+**Given** `AGENTS.md` opens with the recipe factory and carries ~500 lines of accumulated notes, while the estate is two roots under a writer lock
+**When** this story lands
+**Then** the file opens with A's identity, the A/B roles, the modes (never `move`) and the writer lock, stating that A is never archived; the behavioural core adds heal-the-tissue, state over action, read-only harness ledgers and implement / review separation, using the worker's real status vocabulary (`draft → ready-for-dev → in-progress → in-review → done`); every incident note removed from the file has a named pointer target that exists
+**And** the story's run result records the removed → target map (one row per removed note, the target file and anchor), and a one-shot check at landing confirms every target exists; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; `governance-currency` (in `detectors-ci`) green; `CLAUDE.md` still imports `@AGENTS.md` bare; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
+**Status:** done
+
+### Story 21.2: `AGENTS.md` says what runs `governance-currency`
+
+As an agent reading the instruction-file checklist before a PR,
+I want the line about `governance-currency` to say which lanes run it,
+So that I neither skip a gate that runs nor hand-run one out of a false belief that nothing does.
+
+**Type:** docs • **Effort:** S • **Deps:** 21.1 • **FR/AD:** spec-pyforge-scribe CAP-27 • minted 2026-09-26 from the station Dream's entry of the same date (a defect in 21.1's own output)
+**Surface:** `AGENTS.md` (Pre-PR checklist item 10, outside the managed block); `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-21-1-agents-md-opens-with-what-this-repository-is.md` (a dated correction appended to its triage log).
+**Given** 21.1 wrote that neither `detectors-ci` nor `pr-preflight` runs `governance-currency`, while `scripts/detectors.py --scope repo` discovers `scripts/governance_currency_check.py` by its `*_check.py` glob
+**When** this story lands
+**Then** checklist item 10 says `detectors-ci` (and so `pr-preflight`) runs `governance-currency` as a repo-scope detector, and 21.1's triage log carries a dated correction; the claim is proven against `python scripts/detectors.py --scope repo --list`, not a name grep
+**And** `pixi run -e pyforge-guild governance-currency` exits 0; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec
+**Status:** done
+
+## Epic 22: The local Postgres cluster starts from any checkout (spec-pyforge-scribe CAP-31)
+
+Minted 2026-09-25 from the station Dream's entry of the same date (found landing PR #1605). A
+new epic because Epic 21 carries a different capability (`fnd:CAP-15`). One story. **HARD
+boundaries:** the data directory stays under the checkout's `var/scribe-pg/`; port 5433 and the
+DSN `tests/unit/conftest.py` hard-codes do not change; no container.
+
+### Story 22.1: `scribe-pg-up` succeeds from a long-path worktree
+
+As a contributor running scribe's suite from a worktree the estate named,
+I want the cluster's Unix socket to live in a short per-user directory,
+So that `pr-preflight` is red only for my change, never for the length of my worktree's path.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-31 • Dream 2026-09-25
+**Surface:** `scripts/scribe_pg.py` (socket dir: `SCRIBE_PG_SOCKET_DIR` → `$XDG_RUNTIME_DIR/scribe-pg` → `/tmp/scribe-pg-<uid>`, created 0700; `-k` and `status` follow it), `tests/scripts/test_scribe_pg.py` (new), `pixi.toml` (`scribe-pg-up` / `scribe-pg-status` descriptions name the socket dir).
+**Given** `scripts/scribe_pg.py` passes `-k <checkout>/var/scribe-pg` and a worktree such as `local-recipes-wt-unifying-strategy-dream-seeds-2026-09-25` pushes that socket path past PostgreSQL's ~107-byte limit, so `pg_ctl start` fails with "could not create any Unix-domain sockets" (found 2026-09-25)
+**When** this story lands
+**Then** `pixi run -e pyforge-scribe-pg scribe-pg-up` exits 0 from such a worktree and `scribe-pg-status` reports the cluster listening on 127.0.0.1:5433 with the socket directory it used; the data directory is unchanged (`var/scribe-pg/data`); a cluster already listening is reused, not re-initialised
+**And** `tests/scripts/test_scribe_pg.py` covers the directory choice, the override and the length guard without starting a server; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green with the cluster up; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
+**Status:** done
+
+## Epic 23: The instruction surface loads once (spec-pyforge-scribe CAP-27)
+
+Minted 2026-09-26 from the station Dream's entry of the same date (found landing Story 21.1). A
+new epic because Epic 21 carries `fnd:CAP-15` and Epic 22 CAP-31. One story. **HARD
+boundaries:** the SKF block's content is `skf-export-skill`'s, never hand-edited in `AGENTS.md`;
+`skills_output_folder` and `snippet_skill_root_override` stay `.claude/skills`; `CLAUDE.md` keeps
+its bare `@AGENTS.md` import.
+
+### Story 23.1: The SKF managed block lives in `AGENTS.md` only
+
+As an agent session that loads both `AGENTS.md` and `CLAUDE.md`,
+I want the SKF skills block written into one of them,
+So that every session stops paying for the same 54 lines twice.
+
+**Type:** config • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-27
+**Surface:** `_bmad/skf/config.yaml` (`ides`, and its comment); `CLAUDE.md` (the SKF block removed); `docs/reference/agent-instruction-notes.md` (the one line only `CLAUDE.md`'s copy carried, moved verbatim).
+**Given** `_bmad/skf/config.yaml` lists `ides: [claude-code, other]`, which `skf-export-skill` maps to `CLAUDE.md` and `AGENTS.md`, and Claude Code loads both files every session under `instructionFiles=claude-md-and-agents-md`
+**When** this story lands
+**Then** `ides` is `[other]`, so the export targets `AGENTS.md` only; `CLAUDE.md` has no `<!-- SKF:BEGIN` / `<!-- SKF:END -->` markers, so the export's orphan check has nothing to ask about; `AGENTS.md`'s SKF block is unchanged; the line only `CLAUDE.md`'s copy carried (Mason has no SKF skill) lands in the notes file, its rule already in `AGENTS.md` § Policy
+**And** `skf-rebuild-managed-sections.py <file> check` reports `CLAUDE.md` without a managed section and `AGENTS.md` with valid markers; the seven station SKF meta-tests and scribe's parity tests pass; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec
+**Status:** done
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.
@@ -506,3 +845,29 @@ Every story in this epic set builds and tests against **Python 3.14 only**.
 (`spec-fleet-consistency-standard` CAP-5) to match the interpreter the workspace actually
 installs. No story's acceptance criteria change; recorded here so a future story is not
 written against a 3.12 assumption the estate cannot produce.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-25
+
+`arch→epics` edge after the spine re-stamp of 2026-09-25. Epic 21 / Story 21.1 minted from
+steward's 2026-09-25 consolidation (`spec-python-foundry-cutover` fnd:CAP-15 — `AGENTS.md` opens
+with what this repository is; steward index row 67.7). Every Story heading still maps 1:1 to a
+`sprint-status-ledger.yaml` key; the Tier-3 feed was repaired from the tracked twin first.
+`updated:` bumped.
+
+## Currency reconciliation — 2026-09-28
+
+`arch→epics` edge after the spine re-stamp of 2026-09-28. No story is added or changed: the 2026-09-28 motion is a
+surface reconcile for `AGENTS.md` made by mason's chain (`spec-pyforge-mason:CAP-29`), and the 2026-09-26 landings
+(21.1, 21.2, 22.1, 23.1) already carry their own headings and ledger keys. Every Story heading still maps 1:1 to a
+`sprint-status-ledger.yaml` key. `updated:` bumped.

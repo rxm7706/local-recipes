@@ -75,11 +75,7 @@ def _seed_claims(claims_path, count):
         claim = claims.create(
             claims_path,
             project_name=f"project-{i}",
-            evidence=[
-                claims.Evidence(
-                    type="test_results", url=f"https://ci.example/{i}", label="tests"
-                )
-            ],
+            evidence=[claims.Evidence(type="test_results", url=f"https://ci.example/{i}", label="tests")],
         )
         claims.publish(claims_path, claim.id, thesis=f"Shipped project {i}")
 
@@ -164,6 +160,4 @@ def test_herald_success_list_filtered_by_status_under_one_second(tmp_path, capsy
     assert rc == 0
     lines = [line for line in capsys.readouterr().out.splitlines() if line]
     assert len(lines) == RECORD_COUNT
-    assert elapsed < TIME_BUDGET_SECONDS, (
-        f"herald success list --status took {elapsed:.3f}s"
-    )
+    assert elapsed < TIME_BUDGET_SECONDS, f"herald success list --status took {elapsed:.3f}s"

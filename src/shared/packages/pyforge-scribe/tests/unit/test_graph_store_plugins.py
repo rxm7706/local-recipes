@@ -17,7 +17,6 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-
 from pyforge.core.hooks import (
     ENTRY_POINT_GROUP,
     HookSpec,
@@ -26,6 +25,7 @@ from pyforge.core.hooks import (
     SecondVerdictError,
     publish_verdict,
 )
+
 from pyforge.scribe.capture import capture
 from pyforge.scribe.compile import compile_graph
 from pyforge.scribe.graph_store import (
@@ -80,9 +80,7 @@ class _RecordingStore:
 
     def invalidate_edge(self, node_id: str, *, ended_at: datetime, superseded_by: str) -> None:
         existing = self._nodes[node_id]
-        self._nodes[node_id] = existing.model_copy(
-            update={"valid_until": ended_at, "superseded_by": superseded_by}
-        )
+        self._nodes[node_id] = existing.model_copy(update={"valid_until": ended_at, "superseded_by": superseded_by})
 
     def query_by_citation(self, citation: str) -> list[GraphNode]:
         return [n for n in self._nodes.values() if n.citation == citation]
@@ -207,13 +205,7 @@ def test_unknown_owner_raises_plugin_error(tmp_path: Path) -> None:
 
 
 def test_factory_source_has_no_engine_client_imports() -> None:
-    path = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "pyforge"
-        / "scribe"
-        / "graph_store_plugins.py"
-    )
+    path = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "scribe" / "graph_store_plugins.py"
     tree = ast.parse(path.read_text(encoding="utf-8"))
     imported: set[str] = set()
     for node in ast.walk(tree):
@@ -229,9 +221,7 @@ def test_factory_source_has_no_engine_client_imports() -> None:
 # --- Injected store ----------------------------------------------------------
 
 
-def test_compile_without_store_calls_open_graph_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_compile_without_store_calls_open_graph_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     memory_root = _scaffold_memory(tmp_path)
     store_path = tmp_path / "graph.json"
     calls: list[Path] = []
@@ -251,9 +241,7 @@ def test_compile_without_store_calls_open_graph_store(
     assert calls == [store_path]
 
 
-def test_recall_cmd_calls_open_graph_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_recall_cmd_calls_open_graph_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from typer.testing import CliRunner
 
     from pyforge.scribe.cli import app
@@ -277,18 +265,14 @@ def test_plugin_around_without_store_path_raises_plugin_error() -> None:
         FlatFileGraphStorePlugin().call("around", {})
 
 
-def test_injected_store_skips_plugin_factory(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_injected_store_skips_plugin_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     memory_root = _scaffold_memory(tmp_path)
     store = FlatFileGraphStore(tmp_path / "injected.json")
 
     def _must_not_run(*_args: object, **_kwargs: object) -> GraphStore:
         raise AssertionError("open_graph_store must not run when store= is injected")
 
-    monkeypatch.setattr(
-        "pyforge.scribe.graph_store_plugins.open_graph_store", _must_not_run
-    )
+    monkeypatch.setattr("pyforge.scribe.graph_store_plugins.open_graph_store", _must_not_run)
     result = compile_graph(
         memory_root=memory_root,
         repo_root=tmp_path,
@@ -332,36 +316,20 @@ def test_factory_and_recall_do_not_publish_verdict_as_pr_gate(tmp_path: Path) ->
 
 def test_factory_and_recall_source_never_call_publish_verdict() -> None:
     factory_src = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "pyforge"
-        / "scribe"
-        / "graph_store_plugins.py"
+        Path(__file__).resolve().parents[2] / "src" / "pyforge" / "scribe" / "graph_store_plugins.py"
     ).read_text(encoding="utf-8")
-    recall_src = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "pyforge"
-        / "scribe"
-        / "recall.py"
-    ).read_text(encoding="utf-8")
-    cli_src = (
-        Path(__file__).resolve().parents[2] / "src" / "pyforge" / "scribe" / "cli.py"
-    ).read_text(encoding="utf-8")
-    compile_src = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "pyforge"
-        / "scribe"
-        / "compile.py"
-    ).read_text(encoding="utf-8")
-    graph_store_src = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "pyforge"
-        / "scribe"
-        / "graph_store.py"
-    ).read_text(encoding="utf-8")
+    recall_src = (Path(__file__).resolve().parents[2] / "src" / "pyforge" / "scribe" / "recall.py").read_text(
+        encoding="utf-8"
+    )
+    cli_src = (Path(__file__).resolve().parents[2] / "src" / "pyforge" / "scribe" / "cli.py").read_text(
+        encoding="utf-8"
+    )
+    compile_src = (Path(__file__).resolve().parents[2] / "src" / "pyforge" / "scribe" / "compile.py").read_text(
+        encoding="utf-8"
+    )
+    graph_store_src = (Path(__file__).resolve().parents[2] / "src" / "pyforge" / "scribe" / "graph_store.py").read_text(
+        encoding="utf-8"
+    )
     assert "publish_verdict" not in factory_src
     assert "publish_verdict" not in recall_src
     assert "publish_verdict" not in cli_src

@@ -1,10 +1,23 @@
 ---
 id: SPEC-pyforge-mason
-status: shipped
-updated: "2026-09-11"
+spec: pyforge-mason
+status: ready
+updated: "2026-09-29"
 owner-dream: docs/dreams/pyforge-mason.md
 covers-dreams:
-  - docs/dreams/presenton-pixi-image.md   # folded in 2026-08-02 as CAP-8..CAP-13 (see § Satellite below); satisfies INV-1 for this Dream
+  - docs/dreams/pyforge-mason.md
+  - docs/dreams/packaging-factory.md
+  - docs/dreams/conda-forge-expert-rebuild.md
+  - docs/dreams/copilot-cli-packaging.md
+  - docs/dreams/db-gpt-packaging.md
+  - docs/dreams/django-accelerator-framework.md
+  - docs/dreams/fleet-stewardship.md
+  - docs/dreams/machine-checked-recipe-knowledge.md
+  - docs/dreams/miniforge-installer.md
+  - docs/dreams/pixi-container-image.md
+  - docs/dreams/presenton-pixi-image.md
+  - docs/dreams/pyforge-mason-recipe-validator.md
+  - docs/dreams/reusable-cicd-workflows.md
 surface:
   - src/shared/packages/pyforge-mason/**    # the CLI this Spec builds — as-built and shipped (fleet ledger: complete 2026-08-21)
 companions:
@@ -20,6 +33,7 @@ sources:
   - ../../prds/prd-pyforge-mason-2026-07-25/review-adversarial.md   # absorbed: findings applied in PRD revision 2 (FR-47..FR-50, D-10..D-13)
 ---
 
+
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
 
 # mason CLI — the packaging factory, made portable
@@ -30,40 +44,264 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
 
 ## Capabilities
 
-- **CAP-1 — the CFE seam**
+- **CAP-1 — the CFE seam** ← spec-pyforge-mason CAP-1 (shipped 2026-09-11)
   - **intent:** A single module is the entire boundary between Mason and the packaging machinery it wraps, so the wrap decision is enforceable rather than aspirational.
   - **success:** A static check finds no wrapped-script path or filename anywhere outside the adapter, and every recipe subcommand's call graph reaches the machinery through exactly one adapter function; the root-resolution chain (explicit flag → environment variable → upward walk → structured degradation) and the interpreter chain (flag → environment → the running interpreter, with the wrapped machinery's import floor probed before first use) are each independently unit-testable against a synthetic filesystem and always record which step matched; every invocation carries a mandatory timeout whose expiry produces a distinct typed error and leaves no orphaned process; output parsing tolerates a leading non-JSON progress line before the JSON body; and Mason's own code reads no credential variable at all.
   - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD 9d882c3ea0d: `pytest tests/meta/test_adapter_sole_caller.py tests/unit/test_resolve.py tests/unit/test_cfe.py tests/meta/test_credential_isolation.py` — 425 passed. Read `cfe.py` directly: every subprocess path (`_invoke_captured`/`run_streamed`) validates `timeout` finite+positive before spawning, catches `subprocess.TimeoutExpired` and raises typed `CfeTimeoutError`, and `kill()`+`wait()`s the child on every exit from `run_streamed` (not only the timeout path) — no orphan. JSON parsing (`cfe.py:721-764`) explicitly skips a leading non-JSON progress line before `json.loads`. Live-confirmed both resolution chains record which step matched: `mason doctor --format json` reports `"cfe_root_step": "cwd-walk"` and `"cfe_interpreter_step": "running-interpreter"`. `recipe.py` imports only `from . import cfe` and each verb calls exactly one `cfe.*` adapter (`validate` → `cfe.validate_recipe`, `build` → `cfe.build_native`/`build_docker`, `diagnose` → `cfe.diagnose_failure`, etc.), confirmed by grep. Credential blindness: `test_credential_isolation.py`'s real-tree scan (JFrog/enterprise-credential-variable, banned-HTTP-import, and process-environment-mutation detectors) runs clean across the whole `src/pyforge/mason` tree, not just `cfe.py` — `package.py`'s `PREFIX_API_KEY`/`TWINE_*` **presence** checks (never a value read, never logged) are CAP-3's ship-credential precondition, a distinct claim this CAP does not cover.
 
-- **CAP-2 — `mason recipe`: the lifecycle, as a product face**
+- **CAP-2 — `mason recipe`: the lifecycle, as a product face** ← spec-pyforge-mason CAP-2 (shipped 2026-09-11)
   - **intent:** A user carries a package through the whole conda-forge recipe lifecycle — generate, validate, build, diagnose, optimize, scan, submit, update — through Mason's verbs, with every piece of packaging judgement supplied by the machinery Mason delegates to and none of it living in Mason.
   - **success:** Generation from each supported upstream source produces a v1 recipe at a user-specified path with Mason asserting no field defaults of its own; validation exits non-zero on any reported failure with the machinery's finding identifiers and check codes preserved **verbatim** — never renumbered or reworded; native build is the default with any CI-parity build behind an explicit flag that is never implicit, streaming child output as it is produced rather than leaving a silent terminal for a multi-minute build; diagnosis names cause and fix, and says so plainly when the machinery returns none rather than inventing one; update shows the change before writing it; submission defaults to dry-run, requires an explicit confirming flag, preserves the two-phase prepare-then-open flow as separately addressable, and returns a ship receipt carrying the pull-request reference.
   - **verified:** 2026-09-11 — PARTIAL (one claim does not hold as written) — mechanical re-verification at HEAD 9d882c3ea0d: `pytest tests/unit/test_recipe.py` — 87 passed. Live `mason recipe --help` confirms exactly the eight verbs (`new,validate,build,diagnose,optimize,scan,submit,update`). `validate()` returns `cfe.validate_recipe`'s `CfeResult` unmodified (no reinterpretation); only `cli.py`'s own dispatch projects it onto the process exit code. `build`'s CLI registers `--docker`/`--config` as opt-in (native is the unconditional default), and `cfe.build_native`/`build_docker` are STREAM-mode (`run_streamed`), confirmed by grep — real streaming, not buffered. `diagnose_failure`/`optimize_recipe` pass the wrapped script's own JSON body through verbatim, including its `error`/`hint` no-match shape — no local invention. `submit`'s CLI defaults to dry-run (`--yes` required to confirm), `--prepare-only` is a separate flag, and `_ship_target_result_from_cfe_result` sets `reference=json_body["pr_url"]` on success. **Finding:** "update shows the change before writing it" does not hold for the default path. `update_parser`'s own help text says `--dry-run` is "default: writes the field-scoped update for real" — with no `--dry-run`, `recipe.py::update()` calls `cfe.update_recipe(["recipe_path"])` (confirmed by `test_update_default_apply_calls_update_recipe_with_recipe_path_only`, no `--dry-run` appended) and the wrapped script's own real-write JSON body is `{"success","updated","new_version","message"}` only (`cfe.py:1088-1108`; confirmed against the fake-CFE-root fixture's canned real-write payload) — no diff/plan field. The `actions` list showing what would change exists only under the opt-in `--dry-run` flag, as an ALTERNATIVE to writing, not a preview gate ahead of it. The memlog's own S-2.10 landing entry calls this "the recipe noun's diff-before-apply upstream version bump" in one clause and "the default performs a real, field-scoped write" in the next — an internal contradiction that predates this pass. Not fixed here (a behavior change, out of scope for a verification pass); flagged for the next CFE-adjacent retro or a dedicated story.
 
-- **CAP-3 — `mason package`: the dual-ship motion**
+- **CAP-3 — `mason package`: the dual-ship motion** ← spec-pyforge-mason CAP-3 (shipped 2026-09-11)
   - **intent:** A user builds a library's artifacts and ships them to PyPI, a conda channel, and conda-forge in one motion — with a receipt that tells the truth about which targets are done and which are merely queued.
   - **success:** A build produces wheel, sdist and conda artifact from one project manifest, reports their paths, uploads nothing, and runs with the wrapped machinery absent; ship accepts exactly the four defined targets and rejects anything else while listing the valid set, honours multiple targets independently, and builds first if artifacts are absent by reusing the build implementation rather than duplicating it; a version disagreement between the wheel and the conda package aborts before any upload with both values shown; a missing credential is detected **before** any artifact is built or uploaded; one target's failure never prevents the others being attempted; a repeat ship to conda-forge for an already-open pull request reports `pending` with the existing reference and opens **no** second pull request; and Mason ships Mason — a rehearsal publish to the test index must pass before the irreversible one runs.
   - **verified:** 2026-09-11 — PASS (1 real environment bug found and fixed this pass) — mechanical re-verification at HEAD 9d882c3ea0d: `ShipTargetKind` is exactly `{PYPI, PYPI_TEST, CHANNEL, CONDA_FORGE}` (4, confirmed by grep); `_versions_disagree`/`PackageVersionMismatchError` abort before upload with both versions in the message; `ship_channel`/`ship_pypi` check `PREFIX_API_KEY`/`TWINE_*` presence in `environ` before calling `build()` (AD-14); `ship()`'s `_ship_one` closure wraps every target in `try/except MasonError`, so one target's failure is independent of the others; `ship()`'s own docstring plus code (`package.py:917-936`) confirm the rehearsal gate — the first `PYPI_TEST` target runs once ahead of the loop and every `PYPI` target in the same invocation is gated on its cached `state`, only running for real when that state is `TERMINAL`. The "repeat ship to an already-open PR reports pending, no second PR" behavior is CFE's own `submit_pr.py` idempotence (Mason passes `pr_url`/`success` through verbatim via `_ship_target_result_from_cfe_result`, confirmed by reading `recipe.py:661-717` — no reinterpretation); not independently re-provable from Mason's own code alone. **"Mason ships Mason" self-hosting proof, live re-run this pass** (normally slow-marked, excluded from the default task): `test_package_build_self_hosting_produces_real_versioned_artifacts`, `test_package_ship_self_hosting_dry_run_names_real_artifacts`, and all 3 `test_delegation_fidelity.py` tests — 5/5 passed, but only after fixing a real, currently-live bug this pass found: mason's own `pixi.toml` `[package.run-dependencies]` pixi pin was stuck at `>=0.77.0,<0.78` while the root workspace's `requires-pixi` floor had already moved to `>=0.80.0` (recurrence of the 2026-08-21 incident the pin's own comment named) — the `pyforge-mason` pixi environment therefore installed pixi 0.77.1 internally and both self-hosting tests failed with `"this project requires pixi >=0.80.0, but you have pixi 0.77.1"`. `pixi-version-check` reported clean throughout because this package-level run-dependency is not one of its 17 registered sites. Fixed in this same PR: bumped the pin to `>=0.80.0,<0.81`, the mirrored `PIXI_VERSION_RANGE` constant in `engines/__init__.py`, and the two asserted-evidence values in `test_engine_version_range_sync.py`, then `pixi install -e pyforge-mason` to regenerate `pixi.lock`; re-confirmed the fast suite (1582 passed) and the combined `pyforge-container` environment (which also composes the `pyforge-mason` feature) still resolve cleanly.
 
-- **CAP-4 — `mason environment`: dependency binding**
+- **CAP-4 — `mason environment`: dependency binding** ← spec-pyforge-mason CAP-4 (shipped 2026-09-11)
   - **intent:** A user resolves a project's mixed conda and pip dependency sets into a single lockfile, and can ask in CI whether that lockfile has gone stale.
   - **success:** Solving is delegated entirely to an engine with Mason implementing no resolution logic; discovered manifests are listed before solving and explicit paths override discovery; platform targeting is repeatable and the engine's default is reported when none is given; the check verb exits non-zero on a stale lockfile and emits machine-readable output suitable for CI; the producing engine's name and version appear in output and in the lockfile's provenance where the format allows; and the whole capability runs with the wrapped machinery absent.
   - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD 9d882c3ea0d: `pytest tests/unit/test_environment.py tests/unit/test_engines_condalock.py` — 65 passed. `discover_manifests()` (Story 4.2) is built and wired into `cli.py`'s `lock`/`check` dispatch (`cli.py:1392`/`1441`), called only when the caller supplies no explicit `manifest_path` — confirmed by reading the call sites: explicit paths bypass discovery entirely. conda-lock is the sole lock engine (no pixi-lock adapter exists), matching the Spec's own recorded OQ-5 resolution. `environment.py::lock`/`check` never import `cfe` — `environment lock`/`check` are CFE-independent by construction, structurally satisfying "runs with the wrapped machinery absent" without needing CAP-3's allow-list mechanism. Engine name/version and machine-readable JSON/exit-code behavior for `check` were not independently re-exercised live this pass beyond the green unit suite; re-confirmed by that suite's assertions rather than a fresh live invocation.
 
-- **CAP-5 — the CLI shell and output contract**
+- **CAP-5 — the CLI shell and output contract** ← spec-pyforge-mason CAP-5 (shipped 2026-09-11)
   - **intent:** Mason presents one coherent public surface — a noun-verb command tree with both human and machine output, a stable exit-code contract, structured errors, and the ability to diagnose its own installation truthfully, including what it cannot do.
   - **success:** Three nouns plus top-level self-diagnosis and version; a bare noun prints that noun's verbs and exits non-zero, with exactly one documented alias exception that a test asserts is the only one; under machine output stdout carries exactly one JSON document or nothing while every diagnostic goes to stderr; exit codes originate from one module and no command computes its own; every anticipated failure produces a typed error with a stable identifier and an actionable message, and none surfaces as a raw traceback; self-diagnosis reports Mason's version, the resolved root and which step found it, the selected interpreter and whether the import floor is satisfied, and each engine's presence and version — **exiting 0 when Mason is usable for the non-wrapping verbs even with the machinery missing**, reporting the gap rather than failing; and no global flag is required for any command to run.
   - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD 9d882c3ea0d: `pytest tests/unit/test_cli.py tests/meta/test_exit_code_ownership.py tests/unit/test_doctor.py tests/meta/test_render_ownership.py tests/unit/test_exit_codes.py` — 348 passed. Live-invoked this pass: `mason --version` → `mason 0.1.0`, exit 0; `mason recipe` (bare noun, no `--format`) → the full verb listing printed via argparse usage, exit 2 (non-zero); `mason doctor --format json` → a single JSON document on stdout, empty stderr, exit 0, body containing `mason_version`, `cfe_root`+`cfe_root_step` ("cwd-walk"), `cfe_interpreter`+`cfe_interpreter_step` ("running-interpreter"), `cfe_import_floor_satisfied`/`cfe_import_floor_missing`, `unavailable_verbs`, and each of the 5 engines with `name`+`version`. `exit_codes.py` alone defines all five exit codes (`0/1/2/3/130`, confirmed by grep — no `EXIT_*` constant exists anywhere else in the tree). `test_recipe_and_environment_bare_nouns_still_usage_errors_after_ship_lands` + `test_package_ship_bare_noun_alias_dispatches_identically` together demonstrate `package --ship` is the exactly-one documented alias and `recipe`/`environment` carry none. **Currency note:** this live doctor run shows `cfe_import_floor_satisfied: true` and `unavailable_verbs: []` — both 2026-09-09 "Realization-gate re-read" gaps are now resolved (Story 16.1 / Story 16.2 landed since that note was written); see the dated addendum appended below.
 
-- **CAP-6 — distribution**
+- **CAP-6 — distribution** ← spec-pyforge-mason CAP-6 (shipped 2026-09-11)
   - **intent:** Mason ships the way its siblings ship, so the capability finally leaves the repository it was invented in.
   - **success:** One project manifest drives both a conda artifact and a wheel plus sdist, all building green through the three-task build triad; the console entry point resolves and reports the installed distribution version; the root workspace carries a path dependency and a lean environment for the member; engines are conda run-dependencies with declared version ranges mirrored by in-code constants and kept in sync by a meta-test, and nothing is fetched at runtime; and the wheel's dependencies contain only what the module imports, with any dependency on a sibling package an optional extra rather than a hard requirement.
   - **verified:** 2026-09-11 — PARTIAL (one claim does not hold as written, reconciled below) — mechanical re-verification at HEAD 9d882c3ea0d: live re-ran the full three-task build triad this pass (`pixi run -e pyforge-mason pyforge-mason-build`) — `pyforge-mason-build-conda` (`pixi build`) and `pyforge-mason-build-dist` (`python -m build`) both green from the one `pyproject.toml`/`pixi.toml` pair, producing `pyforge-mason-0.1.0-pyh4616a5c_0.conda` + `pyforge_mason-0.1.0-py3-none-any.whl` + `.tar.gz`. The `mason` console entry point (`pyproject.toml`'s `[project.scripts]`) live-confirmed: `mason --version` → `mason 0.1.0`. Root `pixi.toml` carries the path dependency (`pyforge-mason = { path = "src/shared/packages/pyforge-mason" }`) plus a lean `[feature.pyforge-mason.dependencies]` block. All 5 engines are conda run-dependencies with ranges mirrored 1:1 in `engines/__init__.py`, kept in sync by `test_engine_version_range_sync.py` — this pass found and fixed a real, live drift in that sync (see CAP-3's verified line for the same fix: mason's own pixi run-dependency pin lagged the root `requires-pixi` floor, breaking the self-hosting build/ship proof until fixed). **Finding:** "any dependency on a sibling package [is] an optional extra rather than a hard requirement" does not hold as written — `pyproject.toml`'s `dependencies = ["packaging", "pyforge-core", "PyYAML>=6.0.3"]` lists `pyforge-core` as a plain hard dependency, not a `[project.optional-dependencies]` extra. This is a real, deliberate, already-reconciled divergence, not a defect: the memlog's 2026-08-13 "SURFACE DRIFT RECONCILED" entry records that `pyforge-marshal/spec-pyforge-core`'s "one lattice, one envelope, one exception root" mandated `pyforge-core` as a hard run-dependency fleet-wide (`MasonError` re-parents to `PyforgeError`) — a cross-spec authority overriding this CAP's original text, never reflected back into it or into this Spec's own "Divergences and scope growth" list; added as item 6 there in this pass.
 
-- **CAP-7 — proving the seam holds, and closing the loop**
+- **CAP-7 — proving the seam holds, and closing the loop** ← spec-pyforge-mason CAP-7 (shipped 2026-09-11)
   - **intent:** The product's central guarantee — that Mason wraps the packaging capability and never forks it — is verified by tests rather than asserted by documentation, and the effort closes by improving the very skill it wraps.
   - **success:** The knowledge deny-list is declared in one reviewable module where every entry cites the artifact it derives from, **and ships positive fixtures planting a violation of each category so that a deny-list matching nothing is a failing test, not a passing one**; weakening or removing an entry requires a rationale a companion test asserts is present; the sole-caller test finds no reference to the wrapped machinery outside the adapter; the independence test runs every `package` and `environment` verb with the root guaranteed unresolvable behind a **named one-entry allow-list**, asserting positively that the excepted target fails for the *right* reason; the governance check stays green with zero implementation commits touching the governed surface and exactly one sanctioned retrospective commit that does; the fidelity test proves Mason transforms presentation rather than semantics, is slow-marked, excluded from the default task, and **skips cleanly** when no root resolves; and the effort is not done until the retrospective lands skill edits plus a dated changelog entry with a semver bump.
   - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD 9d882c3ea0d: `pytest tests/meta/test_no_recipe_knowledge.py tests/meta/test_cfe_independence.py tests/meta/test_capability_tiers.py` — 86 passed, including `test_deny_list_entries_all_carry_a_citation_and_rationale` (every entry cites its source plus a non-empty rationale) and `test_detector_fires_on_a_planted_gotcha_identifier`/`test_detector_fires_on_a_planted_check_code` (non-vacuous by construction) and `test_cfe_dependent_ship_targets_allow_list_has_exactly_one_entry` (the named one-entry allow-list, structurally asserted, not just a comment). `test_delegation_fidelity.py`'s 3 tests (slow-marked, excluded from the default `pyforge-mason-test` task) explicitly re-run this pass: the fidelity test itself passes, and `test_delegation_fidelity_test_skips_when_no_real_cfe_root_resolves` confirms the clean-skip contract. Governance check, git-verified directly against `origin/main`'s real merged history (not `--all`, which pulls in unmerged worktree-agent branches — 3 false positives were found and excluded that way): searched every commit touching `src/shared/packages/pyforge-mason/**` in `origin/main`'s ancestry for one that ALSO touches the governed CFE surface (`.claude/skills/conda-forge-expert/**`, `.claude/scripts/conda-forge-expert/**`, `.claude/tools/conda_forge_server.py`) in the same commit — **zero found**. Every `retro(cfe):`/`retro:` commit on `main` lands as its own dedicated, CFE-surface-only commit, never bundled with a mason src change — a cleaner invariant than the constraint's literal "one sanctioned exception" phrasing implies (CLAUDE.md Rule 2 retros run once per story, each its own standalone commit, not once ever across the whole project). Note: `scripts/cfe_rebuild_guard_check.py` (the Epic 6 CFE-rebuild-campaign's own governance script, belonging to the separate `spec-conda-forge-expert-rebuild`, explicitly named outside this kernel's CAP-1..7 scope by this Spec's own Currency reconciliation item 1) currently reports 2 "unmirrored-retro" findings for its own slice briefs — checked and confirmed out of this CAP's scope, not a CAP-7 finding.
+
+### CAP-14 — the slice map, derived not guessed
+
+- **intent:** Before any brief is written, `skf-analyze-source` runs against the live skill so the slice map is derived, not guessed.
+- **success:** A tracked slice-map artifact under this Spec's directory lists every slice.
+
+### CAP-15 — first slice: recipe generation, built and parallel-validated in one epic
+
+- **intent:** The recipe-generation slice is rebuilt and parallel-validated in one epic.
+- **success:** `skf-brief-skill` produces the slice brief with the relevant gotchas.
+
+### CAP-16 — the anti-atlas guard, parallel-run form
+
+- **intent:** Parallel-run killers — silent divergence and a skipped endgame — are detector-enforced.
+- **success:** A detector registered in `scripts/detectors.py` reads the slice map and fails on divergence.
+
+### CAP-17 — campaign state: the sequence survives sessions
+
+- **intent:** The multi-slice sequence is tracked by `skf-campaign` file-based state.
+- **success:** Campaign state records per-slice status from mapped through compiled.
+
+### CAP-18 — the local mirror as source of truth
+
+- **intent:** Every `recipes/<name>/` is a faithful, buildable mirror edited first, built locally, then pushed.
+- **success:** The local-mirror-first rule holds; the repo-wide recipe.yaml parse audit stays green.
+
+### CAP-19 — per-recipe internal metadata
+
+- **intent:** Every local recipe carries the `cfe-*` block, stripped on push.
+- **success:** The cfe meta-tests stay green; strip is verified on pushed artifacts.
+
+### CAP-20 — the recurring campaigns
+
+- **intent:** Refresh, platform expansion, and failure remediation run as parameterized waves.
+- **success:** Each wave's evidence lands in the owning workflow spec's Worked Examples / Current State.
+
+### CAP-21 — the generated catalog
+
+- **intent:** `failure-catalog.yaml` derives from SKILL.md gotchas with greppable signatures and `enforced_by:` pointers.
+- **success:** Regeneration is deterministic; hand-editing the catalog is detectably wrong.
+
+### CAP-22 — the lint + drift gate
+
+- **intent:** Every non-null pointer resolves against the live check surface; catalog↔SKILL.md drift fails CI.
+- **success:** Planting a bogus pointer or editing a gotcha without regenerating reds the suite.
+
+### CAP-23 — recipe lifecycle machinery
+
+- **intent:** The autonomous recipe lifecycle loop specified in conda-forge-expert SKILL.md.
+- **success:** The skill's own meta-test suite is green; gates are enforced per SKILL.md.
+
+### CAP-24 — atlas intelligence
+
+- **intent:** `cf_atlas.db` answers what to work on, whether it is safe, and what depends on it.
+- **success:** Ground-truth facts match BMAD artifacts; read CLIs answer offline.
+
+### CAP-25 — MCP surface
+
+- **intent:** `conda_forge_server.py` exposes recipe-authoring, atlas, and scanning tools to agent sessions.
+- **success:** Tool count and schemas match `reference/mcp-tools.md`.
+
+### CAP-26 — the self-improvement loop
+
+- **intent:** Every conda-forge effort ends with a Rule-2 retro that lands skill edits plus a CHANGELOG semver entry.
+- **success:** A governed edit without a CHANGELOG move is a checker finding.
+
+### CAP-27 — the standardized discipline
+
+- **intent:** One pixi base-layer convention across the estate Containerfiles.
+- **success:** The convention is written and guarded; shipped Containerfiles follow it.
+
+### CAP-28 — the recipe CI picks changed recipes from the remote-tracking ref
+
+- **intent:** The four recipe build workflows (`.github/workflows/test-{all,linux,macos,windows}.yml`)
+  diff from `refs/remotes/origin/${{ github.base_ref }}`, never the short `origin/<base>` a pushed tag
+  of that name shadows (their checkout fetches tags, so the changed-recipe set would come out empty). The
+  pull_request branch is dormant today — no recipe workflow runs on `pull_request` — so this hardens it for
+  when a trigger returns.
+- **success:** All four name the full ref; `pyforge-core:CAP-10`'s workflow test covers them; the
+  manual `recipes` input path is unchanged. (Minted 2026-09-27.)
+
+### CAP-29 — Mason has its own skills, and `conda-forge-expert` is one of them
+
+- **intent:** Mason's skill tier is five skills. `pyforge-mason`, the station skill, is SKF-compiled from
+  `src/shared/packages/pyforge-mason/` like the other seven stations' (`skf-brief-skill`, `skf-create-skill`,
+  `skf-export-skill`; canopy:AD-17) and documents the `mason` grammar — `recipe {new, validate, build, diagnose,
+  optimize, scan, submit, update}`, `package {build, ship}`, `environment {lock, check}`, `doctor` — as
+  `pyforge mason …` and `POST /stations/mason/mcp`, sending every recipe question to `conda-forge-expert`; it is
+  the eighth entry in `AGENTS.md`'s SKF block. Two hand-authored craft skills teach the crafts Mason builds
+  natively: `mason-package` (`mason package build|ship`) and `mason-environment` (`mason environment lock|check`).
+  The two feedstock campaigns written as how-tos become the campaign skills `mason-feedstock-platform-expansion`
+  and `mason-feedstock-failure-remediation`: each how-to's parameterized body and worked examples move in
+  verbatim, the how-to and its `docs/specs/` stub point at the skill, and the timeless workflow stays in CFE's own
+  guides, linked, never copied. `conda-forge-expert` stays the recipe skill — never replaced, forked or demoted;
+  no Mason skill restates a CFE gotcha or recipe workflow; every conda-forge effort still closes with the CFE
+  retro and its `CHANGELOG.md` semver bump, and this one closes with a retro that teaches CFE it is one of
+  Mason's skills. The Mason persona consults `pyforge-mason` for the grammar and CFE for recipe work. Mode
+  `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds the skills under `skills/stations/`. The
+  five-tier check counts Mason's skill cell only when both `pyforge-mason` and CFE are present
+  (`spec-pyforge-steward:CAP-160`). (Operator rulings 2026-09-28.)
+- **success:** `.claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md` exists with a `skill-brief.yaml`, a
+  `metadata.json` (`generated_by: create-skill`) and a `provenance-map.json` whose entries resolve to lines under
+  `src/shared/packages/pyforge-mason/`; `skf-validate-frontmatter.py` and `skf-validate-output.py` report no high
+  finding; `AGENTS.md`'s SKF block reads `8 skills` with a `[pyforge-mason v0.1.0]` entry written by
+  `skf-export-skill`; the four hand-authored skills exist, each names the `mason` verbs or the campaign it teaches
+  and links `.claude/skills/conda-forge-expert/`; a mason meta-test reds a Mason skill carrying a CFE gotcha
+  heading (`### G<n>.`) and a CFE that became version-nested SKF; the persona's golden transcript consults
+  `pyforge-mason` and CFE and uses only `pyforge mason …` and `POST /stations/mason/mcp`;
+  `docs/reference/agent-instruction-notes.md` no longer says Mason has no SKF skill; the closing Rule-2 retro
+  lands a CFE `CHANGELOG.md` semver entry; `pyforge-mason-test` green. (Minted 2026-09-28.)
+
+### CAP-30 — no station or environment caps pixi
+
+- **intent:** Pixi is never capped. Every pixi dependency spec in the workspace — the root `pixi.toml` (every
+  feature, target and package table) and each `src/shared/packages/*/pixi.toml` and `pyproject.toml` — is a floor
+  with no upper bound: no `<`, `<=`, `==`, `~=`, and no bare or wildcard pin. Mason's `[package.run-dependencies]`
+  pin is `pixi >=0.80.0`, a floor that tracks the root `requires-pixi` as a registered site of
+  `scripts/pixi_version_registry.py`, so `bump-pixi-version` moves it with the others; `engines/__init__.py`'s
+  `PIXI_VERSION_RANGE` mirrors it. `pixi-version-check` enforces the rule, so an environment that carries
+  `pyforge-mason` resolves the same pixi as the rest of the workspace. Supersedes the 2026-09-20 carve-out that kept
+  pixi's `<0.81` window. (Operator ruling 2026-09-28.)
+- **success:** `src/shared/packages/pyforge-mason/pixi.toml` pins `pixi >=0.80.0` and `PIXI_VERSION_RANGE` is the
+  same floor (`tests/meta/test_engine_version_range_sync.py`); `pixi-version-check` exits 0 on the tree and 1 on a
+  planted capped pixi spec in a root feature, a package `pixi.toml` and a package `pyproject.toml`
+  (`tests/scripts/test_pixi_version_check.py`); `pixi.lock` resolves pixi 0.81.x in every environment that carries
+  `pyforge-mason`; `pyforge-mason-test` green. (Minted 2026-09-28.)
+
+### CAP-31 — Mason packages the intake toolchain: `git-pkgs`, `forge`, `gitgres`, `opengrep` and `pptxgenjs-plus-jsx`
+
+- **intent:** Mason packages the five tools the 2026-09-28 intake triage named, as local `recipe.yaml` (v1) recipes
+  under `recipes/`. Each is authored through `conda-forge-expert` (Rule 1) and ends at a green local build on linux-64
+  with a test that runs the binary or loads the extension. A green local build ends each story, and no staged-recipes,
+  feedstock or upstream PR is opened without an explicit ask. Packaging is not adopting: Warden adopts `git-pkgs`,
+  `forge` and `opengrep`; Atlas adopts `git-pkgs`; Herald adopts `pptxgenjs-plus-jsx`; `gitgres` stays a design
+  reference that nothing in the platform loads. `git-pkgs` (v0.20.0) and `forge` (v0.10.0) build from their tag archives
+  as pure-Go CLIs (`go-nocgo`, CGO off, no toolchain download), with the version injected through upstream's ldflags.
+  `gitgres` builds its PGXS extension and libgit2 backend from a pinned commit, because upstream has no tag. It builds
+  against host `postgresql >=17.11,<18` and `libpq >=17.11,<18` and never against 18 (fnd:CAP-12), which overrides
+  conda-forge's global pin of 18. `opengrep` (v1.30.0, `LGPL-2.1-only`) is repackaged from its per-platform release
+  binaries. A source build is not feasible on conda-forge today (OCaml 5.5, `dune`, 69 opam dependencies and 40 git
+  submodules), so the recipe stays local and records that reason in its CFE block. `pptxgenjs-plus-jsx` (4.3.4) follows
+  the repo's canonical npm pattern for a bin-less library, and its sibling `recipes/pptxgenjs-plus` moves to 4.3.4, the
+  version the JSX package pins exactly. Each story closes with a CFE Rule-2 retro in its own `retro(cfe):` commit. No
+  Mason source changes. (Operator ruling 2026-09-28.)
+- **success:** `recipes/{git-pkgs,forge,gitgres,opengrep,pptxgenjs-plus-jsx}/recipe.yaml` exist with the schema header
+  and a CFE block whose `cfe-local-build-*` fields record the real build. Each passes `validate_recipe`,
+  `optimize_recipe` and the CI-parity lint (`conda-smithy recipe-lint --conda-forge` through `pixi exec`).
+  `pixi run -e local-recipes recipe-build recipes/<name>` exits 0 on linux-64 with its tests passing:
+  `git-pkgs --version` reports 0.20.0; `forge version` prints `forge 0.10.0`; a throwaway PostgreSQL 17 cluster runs
+  `CREATE EXTENSION gitgres CASCADE`, and `gitgres-backend` prints its usage; `opengrep --version` reports 1.30.0, a
+  local rule finds its planted match with no network, and the packaged binary is byte-identical to the release asset;
+  the `.`, `./render` and `./jsx-runtime` exports of `pptxgenjs-plus-jsx` load under Node 24. `recipes/pptxgenjs-plus`
+  reads 4.3.4 and builds green. Each story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry. No
+  staged-recipes PR is opened. `pyforge-mason-test` green. (Minted 2026-09-28.)
+
+### CAP-32 — Twelve recipes lose conda-recipe-manager's leaked sentinel key, and CFE's validation refuses the next one
+
+- **intent:** 12 `recipes/*/recipe.yaml` files carry a mapping key written as
+  `<conda_recipe_manager.types.SentinelType object at 0x…>`: `semgrep`, `boost`, `pyautogui`,
+  `pyobjc-framework-systemconfiguration`, `psycopg2-yugabytedb`, `vc`, `django-pygwalker`, `ctng-compilers`,
+  `StringZilla`, `lerc`, `amundsen-databuilder` and `shodan`, all from the 2026-08-16 bulk v0→v1 conversion
+  (`20b2f459fa`). They are repaired through `conda-forge-expert`, and each sentinel is replaced by the v1 form of the
+  `meta.yaml` construct it stood for: a commented-out key goes back to a comment; a test element with nothing left to
+  run is removed; a split `imports:` list is rejoined; orphaned `test.requires` move into the test element's
+  `requirements.run`; jinja control flow in test commands becomes v1 `if:`/`then:` or a shell loop over the context
+  lists. The conversion defects found beside each sentinel are fixed until the file renders. `meta.yaml` stays beside
+  each, because the feedstocks are still v0. CFE's `validate_recipe` reports an error, naming the path, for any
+  `recipe.yaml` whose parsed tree has a non-string mapping key, or a key or a whole scalar that is a Python object repr
+  (`<… object at 0x…>`), so the next converter leak fails at the first gate. A CFE meta-test holds the corpus at zero.
+  Each story closes with a CFE Rule-2 retro. No Mason source changes, and no feedstock or staged-recipes PR.
+  (Operator ruling 2026-09-28.)
+- **success:** `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` finds nothing. Each of the 12 renders with
+  `rattler-build build --render-only` on a platform it builds and passes `validate_recipe` and the CI-parity lint.
+  `shodan`, `django-pygwalker`, `amundsen-databuilder`, `lerc`, `StringZilla`, `psycopg2-yugabytedb` and `pyautogui`
+  build on linux-64, and a test env that cannot solve is recorded per G95. `semgrep`,
+  `pyobjc-framework-systemconfiguration`, `boost`, `ctng-compilers` and `vc` are render, validate and lint only.
+  `validate_recipe` exits non-zero on fixtures with a sentinel key, an int key and a whole-scalar object repr, and exits
+  0 on a fixture whose prose only mentions an object repr. Each story's `retro(cfe):` commit lands a CFE `CHANGELOG.md`
+  semver entry. `pyforge-mason-test` green. (Minted 2026-09-28.)
+
+### CAP-33 — CFE's generator asks instead of guessing, a mismatched copyleft licence is refused, and a negative corpus keeps each check honest
+
+- **intent:** Mason takes the three things `OpenTeams-WFT-CDO/auto-recipe` had that Mason and CFE lacked, and
+  auto-recipe retires. `recipe-generator.py` stops choosing silently at its six guess points: the `setuptools` backend
+  default, the import-name fallback, the classifier-only noarch call, the licence (the first matching classifier, or
+  `REPLACE_LICENSE`), `license_file: LICENSE`, and the `python_min` floor used when `python_requires` does not parse.
+  Each becomes a decided value or a question with its options and default. The questions go to stdout and to the
+  recipe's bottom CFE block; the default run still writes the recipe and exits 0, and `--strict` exits non-zero with
+  the questions and writes nothing. `license-checker.py --check-source` reds a GPL, LGPL, AGPL or GFDL `-only`
+  identifier whose LICENSE grants "any later version", names the `-or-later` identifier to use, and skips permissive
+  licences. A negative corpus under the CFE tests holds recipes that must stay rejected, each asserted against the
+  specific rule that rejects it, and a fixture that passes every check fails the suite. Code is ported from
+  `auto-recipe@8b53eda` with a provenance line; the operator owns that GitHub org. CFE code only: `mason recipe new`
+  and `mason recipe validate` reach it by subprocess (AD-1). Each story closes with a CFE Rule-2 retro in its own
+  `retro(cfe):` commit. The unattended trigger layer (issue to draft PR, PR watcher, LLM fix loop) and the MCP
+  `generate_recipe_from_pypi` grayskull path are out of scope. (Operator ruling 2026-09-29.)
+- **success:** A generator run on a fixture sdist with no `[build-system]` table, two top-level packages, no licence
+  metadata and an unparseable `python_requires` lists one question per unsettled point, writes them into the recipe's
+  CFE comments block, and exits 0; with `--strict` it exits non-zero and writes no recipe. A run on a fully resolvable
+  fixture lists no questions and writes the same recipe as before. `license-checker.py --check-source` exits non-zero
+  on a `GPL-3.0-only` fixture whose LICENSE says "any later version", exits 0 on the matching `-or-later` fixture, and
+  skips an MIT fixture. The negative corpus asserts a named rule for each fixture (the scalar test matrix, skip under
+  noarch, the licence mismatch and the conda-recipe-manager sentinel key), and removing any one check makes its
+  fixture's test fail. Each story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry.
+  `pyforge-mason-test` green. (Minted 2026-09-29.)
+
+### CAP-34 — The CFE host-gate tests give the same verdict in any developer shell
+
+- **intent:** The tests of the credential host gate stop depending on the shell that runs them.
+  `_http._configured_enterprise_hosts()`, `inventory_channel._fallback_configured_enterprise_hosts()` and
+  `dependency-checker.py`'s `_auth_headers` derive their allowlist from every set `*_BASE_URL` env var plus npm's
+  registry vars, so a var that a developer or agent shell exports joins the set a test asserts. A Claude Code shell
+  exports `ANTHROPIC_BASE_URL`; on 2026-09-29 it put `api.anthropic.com` into an exact-set assertion, a local
+  `pr-preflight` failed 1 of 9152 tests while CI stayed green, and the pre-push hook blocked the push. A shared, opt-in
+  `clean_mirror_env` fixture in the CFE `tests/conftest.py` removes every `*_BASE_URL` and each name in
+  `_http._EXTRA_MIRROR_ENV_VARS` (read from `_http`, not restated) before each host-gate test. `network`-marked tests
+  do not use it and keep an operator's real mirror routing. Tests only: `_http.py` and `inventory_channel.py` keep
+  their behaviour, and Mason reaches none of it (AD-1). The change lands in one `retro(cfe):` commit (AD-15).
+  (Operator ruling 2026-09-29.)
+- **success:** `pytest` over the seven host-gate test modules exits 0 both with `ANTHROPIC_BASE_URL` set and under
+  `env -u ANTHROPIC_BASE_URL`. A regression test plants a stray `*_BASE_URL` and npm registry var before the fixture
+  runs and asserts they are gone and the inventory-channel fallback allowlist is empty; with the fixture disabled, it
+  fails along with the originally failing test. `pr-preflight` exits 0 from a shell that exports `ANTHROPIC_BASE_URL`.
+  The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry. `pyforge-mason-test` green. (Minted 2026-09-29.)
 
 ## Constraints
 
@@ -323,22 +561,22 @@ headed those two directly.)*
 
 ### Presenton Capabilities
 
-- **CAP-8**
+- **CAP-8 — Air-gapped browser rendering** ← spec-presenton-pixi-image CAP-1 (shipped 2026-08-02)
   - **intent:** The image renders decks using a bundled, air-gap-buildable Chromium, with zero reachable public CDN at build or runtime.
   - **success:** `playwright-with-chromium` builds, validates, is scanned, and is optimized; AD-17's zero-external-CDN build routing holds; AD-20's Chromium sandbox defaults to a documented `--no-sandbox` posture compatible with OpenShift `restricted-v2`/`restricted-v3`.
-- **CAP-9**
+- **CAP-9 — Clean-room deck export pipeline** ← spec-presenton-pixi-image CAP-2 (shipped 2026-08-02)
   - **intent:** The image renders AI-generated slide content into an editable `.pptx` (image-overlay + extracted-text-shapes fidelity — Decisions Log Q1) carrying a real `docProps/thumbnail.jpeg`, replacing the opaque upstream export bundle and `convert-linux-x64` binary with clean-room, source-available components wired in via Presenton patches.
   - **success:** `presenton-export-node`, `pptx-assembler`, and `pptx-thumbnail-inject` each build+validate+scan+optimize and pass Fixture Set 1 — `AC-FX-AUTHOR-01` (byte/structural equivalence) and `AC-FX-AUTHOR-02` (image SSIM ≥ 0.99).
-- **CAP-10**
+- **CAP-10 — LLM provider abstraction and tiering** ← spec-presenton-pixi-image CAP-3 (shipped 2026-08-02)
   - **intent:** The deployed app selects among three OpenAI-compatible LLM tiers (Tier 1 external corporate proxy, Tier 2 in-cluster `llama.cpp` sidecar, Tier 3 init-container GGUF fetch) purely via one env-var contract, with the `copilot-bridge` VSIX covering the VS Code developer inner loop.
   - **success:** `llmai` lands on conda-forge; Helm `values.llmProvider.tier` selects a sub-block with no per-tier code fork (AD-18); per-refinement latency ≤10s P95 on Tier-1 (measurable outcomes table).
-- **CAP-11**
+- **CAP-11 — Signed air-gapped image assembly** ← spec-presenton-pixi-image CAP-4 (shipped 2026-08-02)
   - **intent:** The five confirmed recipes assemble into one pixi-locked, reproducibly-buildable OCI image, carrying a pre-wired, default-off memory-subsystem feature flag, with SBOM generation and signed attestation as the final build stage.
   - **success:** image builds reproducibly with zero external CDN access; CycloneDX (primary) + SPDX (secondary) SBOM plus a cosign attestation ship with every build (AD-21); the `presenton-memory` pixi feature + `values.memory.enabled` (default `false`) are wired end to end (AD-23).
-- **CAP-12**
+- **CAP-12 — OCP deployment and operations** ← spec-presenton-pixi-image CAP-5 (shipped 2026-08-02)
   - **intent:** The image deploys via a standard Helm chart on OpenShift with Restricted-SCC-compatible defaults, ships a versioned `/metrics` schema artifact, and gives day-0/day-2 operators preflight, smoke, credential-rotation, and mark-broken-response fixtures.
   - **success:** AD-24's `restricted-v2` defaults hold (capabilities dropped, `seccompProfile: runtime/default`, no privilege escalation, non-root arbitrary UID, no hardcoded UID/GID); `AC-FX-INSTALL-*` and `AC-FX-DAY2-01..03` pass; the `/metrics` schema is versioned and shipped with the chart.
-- **CAP-13**
+- **CAP-13 — Upstream drift defense** ← spec-presenton-pixi-image CAP-6 (shipped 2026-08-02)
   - **intent:** Recipe-maintainers get a weekly, non-build-blocking drift-detection harness comparing current upstream Presenton against the captured Fixture Set 1 baseline, filing an auto-issue on breaking drift, in a CI workflow whose network egress is strictly separated from the air-gapped build pipeline.
   - **success:** `AC-FX-MAINT-01..03` and `AC-FX-DRIFT-01..04` all pass; the online-capture workflow never shares a runner or environment with the air-gapped build workflow, enforced at the network-policy level (AD-22), not by convention.
 
@@ -378,3 +616,66 @@ A two-gate JTBD that must both hold, because either collapsing kills the product
 - **Phase-0 exit 6(a), Redmond-contingency check:** does Microsoft's disconnected stack (Azure Local disconnected operations + Microsoft 365 Local + Foundry Local, GA worldwide 2026-02-24) already include, or roadmap, a Copilot-for-PowerPoint-equivalent deck-generation capability? Unconfirmed — directly determines whether Risk R3 (existential, JTBD-collapsing) is materialized, partially materialized, or infrastructure-only. Must resolve before further v1 build investment.
 - **Phase-0 exit 6(b), memory-subsystem scope:** does `mem0ai` + `fastembed-vectorstore` (unconditional Presenton dependencies, neither on conda-forge) become two additional v1 recipes (5→7 total), or is the memory/chat-history subsystem documented as dropped for v1? Architecture (AD-23) pre-wires both branches, but the no-op-without-a-Presenton-source-patch path is not yet verified — if a patch is required, the maintenance-burden model changes.
 - **`psycopg` license flag (Risk R7 replacement):** LGPL-3.0-only, a different obligation class than the Apache/MIT-dominated rest of the stack — flagged for buyer legal/compliance review alongside the JFrog allowlist gap analysis (Phase 0 exit 4); likely-but-not-confirmed acceptable.
+
+## Fold provenance — 2026-09-17
+
+One-chain mason fold. Station Spec is `ready`. CAPs sequential from 1 with no gaps. CAP-1..7 ← spec-pyforge-mason; CAP-8..13 ← presenton satellite (already folded 2026-08-02, titles restored); CAP-14.. ← absorbed mason Specs. INV-A window: `spec-pyforge-mason` CAP-1..27. Companions remain record. No `recipes/` edits. No `.claude/skills/pyforge-mason/`.
+
+### Absorbed capabilities reminted 2026-09-17
+
+- **CAP-14 — the slice map, derived not guessed** ← spec-conda-forge-expert-rebuild CAP-1 (shipped 2026-09-17)
+  - **intent:** Before any brief is written, `skf-analyze-source` runs against the live
+  - **success:** A tracked slice-map artifact under this Spec's directory lists every slice
+
+- **CAP-15 — first slice: recipe generation, built + parallel-validated in one epic** ← spec-conda-forge-expert-rebuild CAP-2 (shipped 2026-09-17)
+  - **intent:** The recipe-generation slice — `scripts/recipe-generator.py` and its
+  - **success:** `skf-brief-skill` produces the slice brief with the relevant gotchas and
+
+- **CAP-16 — the anti-atlas guard, parallel-run form: divergence and the endgame enforced by a detector, not by discipline** ← spec-conda-forge-expert-rebuild CAP-3 (shipped 2026-09-17)
+  - **intent:** Parallel-run's two killers — silent divergence between the live original and
+  - **success:** A detector (registered in `scripts/detectors.py`) reads the slice map and
+
+- **CAP-17 — campaign state: the sequence survives sessions** ← spec-conda-forge-expert-rebuild CAP-4 (shipped 2026-09-17)
+  - **intent:** The multi-slice sequence is tracked by `skf-campaign`'s file-based state
+  - **success:** Campaign state records per-slice status (mapped → briefed → compiled →
+
+- **CAP-18 — the local mirror as source of truth** ← spec-fleet-stewardship CAP-1 (shipped 2026-09-17)
+  - **intent:** Every `recipes/<name>/` is a faithful, buildable mirror edited first, built locally, then pushed.
+  - **success:** The local-mirror-first rule holds; the repo-wide recipe.yaml parse audit stays green.
+
+- **CAP-19 — per-recipe internal metadata** ← spec-fleet-stewardship CAP-2 (shipped 2026-09-17)
+  - **intent:** Every local recipe carries the `cfe-*` block, stripped on push.
+  - **success:** The cfe meta-tests stay green; strip is verified on pushed artifacts.
+
+- **CAP-20 — the recurring campaigns** ← spec-fleet-stewardship CAP-3 (shipped 2026-09-17)
+  - **intent:** Refresh, platform expansion, and failure remediation run as parameterized waves.
+  - **success:** Each wave's evidence lands in the owning workflow spec's Worked Examples / Current State.
+
+- **CAP-21 — the generated catalog** ← spec-machine-checked-recipe-knowledge CAP-1 (shipped 2026-09-17)
+  - **intent:** `failure-catalog.yaml` derives from SKILL.md gotchas with greppable signatures and `enforced_by:` pointers.
+  - **success:** Regeneration is deterministic; hand-editing the catalog is detectably wrong.
+
+- **CAP-22 — the lint + drift gate** ← spec-machine-checked-recipe-knowledge CAP-2 (shipped 2026-09-17)
+  - **intent:** Every non-null pointer resolves against the live check surface; catalog↔SKILL.md drift fails CI.
+  - **success:** Planting a bogus pointer or editing a gotcha without regenerating reds the suite.
+
+- **CAP-23 — recipe lifecycle machinery** ← spec-packaging-factory CAP-1 (shipped 2026-09-17)
+  - **intent:** The autonomous recipe lifecycle loop specified in conda-forge-expert SKILL.md.
+  - **success:** The skill's own meta-test suite is green; gates are enforced per SKILL.md.
+
+- **CAP-24 — atlas intelligence** ← spec-packaging-factory CAP-2 (shipped 2026-09-17)
+  - **intent:** `cf_atlas.db` answers what to work on, whether it is safe, and what depends on it.
+  - **success:** Ground-truth facts match BMAD artifacts; read CLIs answer offline.
+
+- **CAP-25 — MCP surface** ← spec-packaging-factory CAP-3 (shipped 2026-09-17)
+  - **intent:** `conda_forge_server.py` exposes recipe-authoring, atlas, and scanning tools to agent sessions.
+  - **success:** Tool count and schemas match `reference/mcp-tools.md`.
+
+- **CAP-26 — the self-improvement loop** ← spec-packaging-factory CAP-4 (shipped 2026-09-17)
+  - **intent:** Every conda-forge effort ends with a Rule-2 retro that lands skill edits plus a CHANGELOG semver entry.
+  - **success:** A governed edit without a CHANGELOG move is a checker finding.
+
+- **CAP-27 — the standardized discipline** ← spec-pixi-container-image CAP-1 (shipped 2026-09-17)
+  - **intent:** One pixi base-layer convention across the estate Containerfiles.
+  - **success:** The convention is written and guarded; shipped Containerfiles follow it.
+

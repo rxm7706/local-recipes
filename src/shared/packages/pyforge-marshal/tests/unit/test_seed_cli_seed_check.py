@@ -30,6 +30,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.cli import seed as seed_cli
 from pyforge.marshal.seed.errors import ConformanceFailure, InternalError, UsageError
 from pyforge.marshal.seed.model.manifest import (
@@ -59,9 +60,7 @@ def _whole_file(entry_id: str, path: str) -> ManifestEntry:
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -110,9 +109,7 @@ def test_check_parser_defaults(tmp_path):
 def test_check_parser_wires_the_expected_flags(tmp_path):
     parser = _build_parser()
 
-    args = parser.parse_args(
-        ["seed", "check", "--repo-root", str(tmp_path), "--strict", "--json", "--quiet"]
-    )
+    args = parser.parse_args(["seed", "check", "--repo-root", str(tmp_path), "--strict", "--json", "--quiet"])
 
     assert args.repo_root == str(tmp_path)
     assert args.strict is True

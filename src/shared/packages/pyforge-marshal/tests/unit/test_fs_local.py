@@ -577,9 +577,7 @@ def test_create_dir_exclusive_creates_a_fresh_directory(fs, tmp_path):
     assert target.is_dir()
 
 
-def test_create_dir_exclusive_raises_directory_already_exists_error_on_collision(
-    fs, tmp_path
-):
+def test_create_dir_exclusive_raises_directory_already_exists_error_on_collision(fs, tmp_path):
     target = tmp_path / "run-1"
     target.mkdir()
     (target / "keep-me.txt").write_text("x", encoding="utf-8")
@@ -636,15 +634,9 @@ def test_append_line_is_safe_under_concurrent_writers(fs, tmp_path):
             line = json.dumps({"writer_id": writer_id, "counter": counter})
             fs.append_line(target, line, fsync=False)
 
-    threads = [
-        threading.Thread(target=write_lines, args=("long-lived", long_lived_line_count))
-    ]
+    threads = [threading.Thread(target=write_lines, args=("long-lived", long_lived_line_count))]
     for index in range(short_lived_writer_count):
-        threads.append(
-            threading.Thread(
-                target=write_lines, args=(f"short-lived-{index}", short_lived_line_count)
-            )
-        )
+        threads.append(threading.Thread(target=write_lines, args=(f"short-lived-{index}", short_lived_line_count)))
 
     for thread in threads:
         thread.start()
@@ -663,9 +655,7 @@ def test_append_line_is_safe_under_concurrent_writers(fs, tmp_path):
     assert len(pairs) == len(set(pairs)) == total_expected
 
 
-def test_append_line_is_safe_under_concurrent_writers_near_the_sidecar_threshold(
-    fs, tmp_path
-):
+def test_append_line_is_safe_under_concurrent_writers_near_the_sidecar_threshold(fs, tmp_path):
     """Review finding: the test above only exercises very short lines --
     nothing proved the same atomicity/identity guarantee holds for lines
     near the 4 KiB sidecar boundary (core.journal.SIDECAR_THRESHOLD_BYTES),
@@ -678,9 +668,7 @@ def test_append_line_is_safe_under_concurrent_writers_near_the_sidecar_threshold
 
     def write_lines(writer_id: str, count: int) -> None:
         for counter in range(count):
-            line = json.dumps(
-                {"writer_id": writer_id, "counter": counter, "padding": padding}
-            )
+            line = json.dumps({"writer_id": writer_id, "counter": counter, "padding": padding})
             fs.append_line(target, line, fsync=False)
 
     threads = [

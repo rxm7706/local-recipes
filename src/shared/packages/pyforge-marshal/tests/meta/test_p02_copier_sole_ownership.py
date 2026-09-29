@@ -92,9 +92,7 @@ def _is_private_or_deprecated_copier_module(dotted: str) -> bool:
     sole-owner module (Story 12.4 / P-02).
     """
     parts = dotted.split(".")
-    return len(parts) >= 2 and parts[0] == "copier" and any(
-        part.startswith("_") for part in parts[1:]
-    )
+    return len(parts) >= 2 and parts[0] == "copier" and any(part.startswith("_") for part in parts[1:])
 
 
 def _private_copier_import_violations(tree: ast.Module) -> list[str]:
@@ -127,8 +125,7 @@ def test_package_scan_surface_is_not_empty():
 def test_no_copier_import_outside_engine_module(module_path: Path):
     violations = _copier_import_violations(_parse(module_path))
     assert not violations, (
-        f"{module_path.name} imports the `copier` library ({violations}) -- only "
-        "seed/engine/copier.py may (P-02)"
+        f"{module_path.name} imports the `copier` library ({violations}) -- only seed/engine/copier.py may (P-02)"
     )
 
 
@@ -152,9 +149,7 @@ def test_guard_is_alive_synthetic_violation_fires_and_copier_engine_module_impor
     assert _copier_import_violations(ast.parse("import copier as cp\n")) == ["cp"]
     assert _copier_import_violations(ast.parse("import copier.errors\n")) == ["copier.errors"]
     assert _copier_import_violations(ast.parse("from copier import run_copy\n")) == ["copier"]
-    assert _copier_import_violations(ast.parse("from copier.errors import CopierError\n")) == [
-        "copier.errors"
-    ]
+    assert _copier_import_violations(ast.parse("from copier.errors import CopierError\n")) == ["copier.errors"]
     # A same-prefixed but unrelated package must never fire.
     assert _copier_import_violations(ast.parse("import copier_reference\n")) == []
     assert _copier_import_violations(ast.parse("from copiersomething import x\n")) == []
@@ -177,15 +172,11 @@ def test_no_private_copier_imports_anywhere(module_path: Path):
 
 
 def test_private_copier_detector_is_alive():
-    assert _private_copier_import_violations(ast.parse("import copier._main\n")) == [
-        "copier._main"
+    assert _private_copier_import_violations(ast.parse("import copier._main\n")) == ["copier._main"]
+    assert _private_copier_import_violations(ast.parse("from copier._user_data import AnswersMap\n")) == [
+        "copier._user_data"
     ]
-    assert _private_copier_import_violations(
-        ast.parse("from copier._user_data import AnswersMap\n")
-    ) == ["copier._user_data"]
-    assert _private_copier_import_violations(ast.parse("from copier import _main\n")) == [
-        "copier._main"
-    ]
+    assert _private_copier_import_violations(ast.parse("from copier import _main\n")) == ["copier._main"]
     assert _private_copier_import_violations(ast.parse("import copier\n")) == []
     assert _private_copier_import_violations(ast.parse("from copier.errors import CopierError\n")) == []
     assert _private_copier_import_violations(ast.parse("import copier_private\n")) == []

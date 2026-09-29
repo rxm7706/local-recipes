@@ -37,9 +37,7 @@ _PEP503_RUNS = re.compile(r"[-_.]+")
 
 # Withhold reasons the FOLD resolves (they existed only because the bare
 # record had no concrete version); every other reason survives a fold.
-_VERSION_DRIVEN_REASONS = frozenset(
-    {WithholdReason.NO_VERSION, WithholdReason.RANGE_ONLY}
-)
+_VERSION_DRIVEN_REASONS = frozenset({WithholdReason.NO_VERSION, WithholdReason.RANGE_ONLY})
 
 
 @dataclass(frozen=True)
@@ -106,19 +104,13 @@ class Component:
         # coerced — an unknown future token must degrade downstream
         # (match_level_rung -> indeterminate), never raise here.
         object.__setattr__(self, "ecosystem", Ecosystem(self.ecosystem))
-        object.__setattr__(
-            self, "identity_source", IdentitySource(self.identity_source)
-        )
-        object.__setattr__(
-            self, "extraction_mode", ExtractionMode(self.extraction_mode)
-        )
+        object.__setattr__(self, "identity_source", IdentitySource(self.identity_source))
+        object.__setattr__(self, "extraction_mode", ExtractionMode(self.extraction_mode))
         if not self.name:
             raise ValueError("Component.name must be a non-empty string")
         if self.version == "":
             object.__setattr__(self, "version", None)
-        if self.vuln_matchable and (
-            self.pypi_identity is None or self.version is None
-        ):
+        if self.vuln_matchable and (self.pypi_identity is None or self.version is None):
             raise ValueError(
                 "vuln_matchable=True requires a resolved pypi_identity AND a "
                 "concrete version (the Gap-C predicate) — got "
@@ -131,10 +123,7 @@ class Component:
                 "was withheld from vuln matching)"
             )
         if self.cve_match_level == CveMatchLevel.EXACT and self.version is None:
-            raise ValueError(
-                "cve_match_level 'exact' claims an exact-version match but "
-                "version is None"
-            )
+            raise ValueError("cve_match_level 'exact' claims an exact-version match but version is None")
 
 
 def canonical_name(ecosystem: Ecosystem, name: str) -> str:
@@ -258,11 +247,7 @@ def merge_components(components: Iterable[Component]) -> tuple[Component, ...]:
     for key, component in merged.items():
         ecosystem, name, version = key
         if version is None:
-            concrete_keys = [
-                k
-                for k in merged
-                if k[0] is ecosystem and k[1] == name and k[2] is not None
-            ]
+            concrete_keys = [k for k in merged if k[0] is ecosystem and k[1] == name and k[2] is not None]
             if len(concrete_keys) == 1:
                 target = concrete_keys[0]
                 # Folded into the sole concrete version below (when reached).
@@ -338,23 +323,14 @@ def _merge_group(group: list[Component]) -> Component:
         mapping_confidence,
         identity_withheld,
     ) = _merge_group_pypi_identity(group)
-    reason_set = {
-        component.indeterminate_reason
-        for component in group
-        if component.indeterminate_reason is not None
-    }
+    reason_set = {component.indeterminate_reason for component in group if component.indeterminate_reason is not None}
     if identity_withheld:
         reason_set.add(WithholdReason.AMBIGUOUS_IDENTITY)
     reasons = sorted(reason_set, key=str)
     # Gap-C: no resolved identity, no vuln matching — a withheld identity can
     # never leave the merged record matchable.
-    vuln_matchable = (
-        all(component.vuln_matchable for component in group)
-        and pypi_identity is not None
-    )
-    provenance_union = {
-        entry for component in group for entry in component.provenance
-    }
+    vuln_matchable = all(component.vuln_matchable for component in group) and pypi_identity is not None
+    provenance_union = {entry for component in group for entry in component.provenance}
     return Component(
         name=name,
         version=version,
@@ -371,9 +347,7 @@ def _merge_group(group: list[Component]) -> Component:
             key=_EXTRACTION_DEGRADATION.__getitem__,
         ),
         purl=purl,
-        provenance=tuple(
-            sorted(provenance_union, key=lambda p: (p.manifest, p.section))
-        ),
+        provenance=tuple(sorted(provenance_union, key=lambda p: (p.manifest, p.section))),
         hygiene_covered=all(component.hygiene_covered for component in group),
         vuln_matchable=vuln_matchable,
         license_covered=all(component.license_covered for component in group),
@@ -460,16 +434,12 @@ def _fold_bare(concrete: Component, bare: Component) -> Component:
     reason_set: set[WithholdReason] = set()
     if concrete.indeterminate_reason is not None:
         reason_set.add(concrete.indeterminate_reason)
-    if (
-        bare.indeterminate_reason is not None
-        and bare.indeterminate_reason not in _VERSION_DRIVEN_REASONS
-    ):
+    if bare.indeterminate_reason is not None and bare.indeterminate_reason not in _VERSION_DRIVEN_REASONS:
         reason_set.add(bare.indeterminate_reason)
     if (
         bare.pypi_identity is not None
         and concrete.pypi_identity is not None
-        and _canonical_identity_key(bare.pypi_identity)[0]
-        != _canonical_identity_key(concrete.pypi_identity)[0]
+        and _canonical_identity_key(bare.pypi_identity)[0] != _canonical_identity_key(concrete.pypi_identity)[0]
     ):
         pypi_identity = None
         identity_source = IdentitySource.NONE
@@ -493,9 +463,7 @@ def _fold_bare(concrete: Component, bare: Component) -> Component:
     )
 
 
-def _union_provenance(
-    first: tuple[Provenance, ...], second: tuple[Provenance, ...]
-) -> tuple[Provenance, ...]:
+def _union_provenance(first: tuple[Provenance, ...], second: tuple[Provenance, ...]) -> tuple[Provenance, ...]:
     seen: list[Provenance] = []
     for entry in (*first, *second):
         if entry not in seen:

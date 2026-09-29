@@ -33,6 +33,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.errors import InternalError, PreconditionFailure
@@ -75,22 +76,32 @@ def _manifest(*entries: ManifestEntry, model_version: ModelVersion = _V1) -> Man
 
 def _copied_managed(entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
-        id=entry_id, artifact_class=ArtifactClass.COPIED_MANAGED, path=path,
-        applies_to=applies_to, rationale="test",
+        id=entry_id,
+        artifact_class=ArtifactClass.COPIED_MANAGED,
+        path=path,
+        applies_to=applies_to,
+        rationale="test",
     )
 
 
 def _generated_derived(entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
-        id=entry_id, artifact_class=ArtifactClass.GENERATED_DERIVED, path=path,
-        applies_to=applies_to, rationale="test",
+        id=entry_id,
+        artifact_class=ArtifactClass.GENERATED_DERIVED,
+        path=path,
+        applies_to=applies_to,
+        rationale="test",
     )
 
 
 def _hybrid(entry_id: str, path: str, *region_names: str, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
-        id=entry_id, artifact_class=ArtifactClass.HYBRID_MANAGED_REGION, path=path,
-        applies_to=applies_to, rationale="test", format=RegionFormat.HTML,
+        id=entry_id,
+        artifact_class=ArtifactClass.HYBRID_MANAGED_REGION,
+        path=path,
+        applies_to=applies_to,
+        rationale="test",
+        format=RegionFormat.HTML,
         regions=tuple(Region(name=name, anchor=("# anchor",)) for name in region_names),
     )
 
@@ -149,15 +160,27 @@ def _fake_commit(manifest: Manifest, repo_root: Path, calls: list[str] | None = 
                     existing = next((s for s in parse_regions(text, entry.format) if s.name == region_name), None)
                 if existing is None:
                     insert_region(
-                        text, target, region_name, region.anchor, f"body for {region_name}\n",
-                        model_version=manifest.model_version, fmt=entry.format,
-                        repo_root=repo_root, never_write=_NO_NEVER_WRITE,
+                        text,
+                        target,
+                        region_name,
+                        region.anchor,
+                        f"body for {region_name}\n",
+                        model_version=manifest.model_version,
+                        fmt=entry.format,
+                        repo_root=repo_root,
+                        never_write=_NO_NEVER_WRITE,
                     )
                 else:
                     substitute_region(
-                        text, target, existing, f"refreshed body for {region_name}\n",
-                        model_version=manifest.model_version, expected_sha=existing.sha,
-                        fmt=entry.format, repo_root=repo_root, never_write=_NO_NEVER_WRITE,
+                        text,
+                        target,
+                        existing,
+                        f"refreshed body for {region_name}\n",
+                        model_version=manifest.model_version,
+                        expected_sha=existing.sha,
+                        fmt=entry.format,
+                        repo_root=repo_root,
+                        never_write=_NO_NEVER_WRITE,
                     )
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -174,10 +197,17 @@ def _seed_state(
     mode: str = "adopt",
 ) -> SeedState:
     return SeedState(
-        model_version=model_version, seed_model_version="0.1.0",
-        adopted_at="2026-08-21T00:00:00Z", last_update="2026-08-21T00:00:00Z",
-        mode=mode, agents=(), managed=managed, skips=(), legacy=(),
-        migrations_applied=migrations_applied, opted_out=(),
+        model_version=model_version,
+        seed_model_version="0.1.0",
+        adopted_at="2026-08-21T00:00:00Z",
+        last_update="2026-08-21T00:00:00Z",
+        mode=mode,
+        agents=(),
+        managed=managed,
+        skips=(),
+        legacy=(),
+        migrations_applied=migrations_applied,
+        opted_out=(),
     )
 
 
@@ -211,13 +241,16 @@ def test_wholesale_regenerate_action_produced_for_a_conformant_hybrid_entry(clea
         _seed_state(
             managed=(
                 ManagedArtifact(
-                    id="whole", path="WHOLE.md", artifact_class="hybrid-managed-region",
+                    id="whole",
+                    path="WHOLE.md",
+                    artifact_class="hybrid-managed-region",
                     body_sha=hash_content("old body\n"),
                     inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=0),
                 ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
@@ -254,7 +287,9 @@ def test_multi_region_hybrid_entry_does_not_refuse_a_plain_dry_run(clean_repo):
         _seed_state(
             managed=(
                 ManagedArtifact(
-                    id="whole", path="WHOLE.md", artifact_class="hybrid-managed-region",
+                    id="whole",
+                    path="WHOLE.md",
+                    artifact_class="hybrid-managed-region",
                     body_sha=hash_content("tiers body\n"),
                     # Only ONE region recorded, matching a real adopt's own
                     # `state/store.py` limitation -- "portability-contract"
@@ -263,7 +298,8 @@ def test_multi_region_hybrid_entry_does_not_refuse_a_plain_dry_run(clean_repo):
                 ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
@@ -288,19 +324,26 @@ def test_hybrid_wholesale_regenerate_replaces_only_the_marked_span_not_the_whole
         _seed_state(
             managed=(
                 ManagedArtifact(
-                    id="whole", path="WHOLE.md", artifact_class="hybrid-managed-region",
+                    id="whole",
+                    path="WHOLE.md",
+                    artifact_class="hybrid-managed-region",
                     body_sha=hash_content("old body\n"),
                     inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=0),
                 ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
     calls: list[str] = []
 
     result = run_update(
-        clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm,
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        confirm=_unreachable_confirm,
         commit=_fake_commit(manifest, clean_repo, calls),
     )
 
@@ -317,19 +360,28 @@ def test_hybrid_wholesale_regenerate_replaces_only_the_marked_span_not_the_whole
 def test_wholesale_regenerate_skips_copied_seeded_and_referenced_records(clean_repo):
     manifest = _manifest(
         ManifestEntry(
-            id="seeded", artifact_class=ArtifactClass.COPIED_SEEDED, path="SEEDED.md",
-            applies_to=AppliesTo.BOTH, rationale="test",
+            id="seeded",
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            path="SEEDED.md",
+            applies_to=AppliesTo.BOTH,
+            rationale="test",
         ),
     )
     (clean_repo / "SEEDED.md").write_text("hello\n", encoding="utf-8")
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="seeded", path="SEEDED.md", artifact_class="copied-seeded",
-                                 body_sha=hash_content("hello\n"), inserted_region_span=None),
+                ManagedArtifact(
+                    id="seeded",
+                    path="SEEDED.md",
+                    artifact_class="copied-seeded",
+                    body_sha=hash_content("hello\n"),
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
@@ -343,11 +395,17 @@ def test_wholesale_regenerate_skips_a_record_whose_entry_was_retired(clean_repo)
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="gone", path="GONE.md", artifact_class="copied-managed",
-                                 body_sha="abc12345", inserted_region_span=None),
+                ManagedArtifact(
+                    id="gone",
+                    path="GONE.md",
+                    artifact_class="copied-managed",
+                    body_sha="abc12345",
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
@@ -361,9 +419,13 @@ def test_wholesale_regenerate_skips_a_record_whose_entry_was_retired(clean_repo)
 
 def _absent_action(artifact_id: str, path: str) -> Action:
     return Action(
-        artifact_id=artifact_id, artifact_class=ArtifactClass.COPIED_MANAGED,
-        current_state=ArtifactState.ABSENT, target_state=ArtifactState.PRESENT_CONFORMANT,
-        target_path=path, chosen_anchor=(), rationale="migration action",
+        artifact_id=artifact_id,
+        artifact_class=ArtifactClass.COPIED_MANAGED,
+        current_state=ArtifactState.ABSENT,
+        target_state=ArtifactState.PRESENT_CONFORMANT,
+        target_path=path,
+        chosen_anchor=(),
+        rationale="migration action",
     )
 
 
@@ -376,12 +438,17 @@ def test_three_source_merge_appears_correctly_merged_and_sorted(clean_repo, monk
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="a-wholesale", path="A_WHOLESALE.md",
-                                 artifact_class="copied-managed", body_sha=hash_content("current\n"),
-                                 inserted_region_span=None),
+                ManagedArtifact(
+                    id="a-wholesale",
+                    path="A_WHOLESALE.md",
+                    artifact_class="copied-managed",
+                    body_sha=hash_content("current\n"),
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
@@ -451,7 +518,11 @@ def test_run_with_yes_applies_and_writes_state(clean_repo):
     calls: list[str] = []
 
     result = run_update(
-        clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm,
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        confirm=_unreachable_confirm,
         commit=_fake_commit(manifest, clean_repo, calls),
     )
 
@@ -470,17 +541,27 @@ def test_run_with_yes_against_an_already_adopted_repo_updates_state(clean_repo):
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="whole", path="WHOLE.md", artifact_class="copied-managed",
-                                 body_sha=hash_content("current\n"), inserted_region_span=None),
+                ManagedArtifact(
+                    id="whole",
+                    path="WHOLE.md",
+                    artifact_class="copied-managed",
+                    body_sha=hash_content("current\n"),
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
     before = read_state(clean_repo)
 
     result = run_update(
-        clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm,
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        confirm=_unreachable_confirm,
         commit=_fake_commit(manifest, clean_repo),
     )
 
@@ -502,17 +583,27 @@ def test_hand_edited_managed_content_refuses_apply_without_force(clean_repo):
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="whole", path="WHOLE.md", artifact_class="copied-managed",
-                                 body_sha="abc12345", inserted_region_span=None),
+                ManagedArtifact(
+                    id="whole",
+                    path="WHOLE.md",
+                    artifact_class="copied-managed",
+                    body_sha="abc12345",
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):
         run_update(
-            clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm,
+            clean_repo,
+            manifest,
+            run=True,
+            yes=True,
+            confirm=_unreachable_confirm,
             commit=_fake_commit(manifest, clean_repo),
         )
 
@@ -523,16 +614,27 @@ def test_force_bypasses_the_hand_edited_managed_content_precondition(clean_repo)
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="whole", path="WHOLE.md", artifact_class="copied-managed",
-                                 body_sha="abc12345", inserted_region_span=None),
+                ManagedArtifact(
+                    id="whole",
+                    path="WHOLE.md",
+                    artifact_class="copied-managed",
+                    body_sha="abc12345",
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
     result = run_update(
-        clean_repo, manifest, run=True, yes=True, force=True, confirm=_unreachable_confirm,
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        force=True,
+        confirm=_unreachable_confirm,
         commit=_fake_commit(manifest, clean_repo),
     )
 
@@ -545,11 +647,17 @@ def test_force_without_run_is_still_a_dry_run(clean_repo):
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="whole", path="WHOLE.md", artifact_class="copied-managed",
-                                 body_sha="abc12345", inserted_region_span=None),
+                ManagedArtifact(
+                    id="whole",
+                    path="WHOLE.md",
+                    artifact_class="copied-managed",
+                    body_sha="abc12345",
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
@@ -579,13 +687,22 @@ def test_default_commit_selects_recopy_and_confirm_true_when_force(clean_repo, m
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
     entries_by_id = {entry.id: entry for entry in manifest.entries}
     commit = update_module._update_commit(
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE, entries_by_id=entries_by_id,
-        model_version=_V1, answers={}, template_path=None, force=True,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+        entries_by_id=entries_by_id,
+        model_version=_V1,
+        answers={},
+        template_path=None,
+        force=True,
     )
     action = Action(
-        artifact_id="whole", artifact_class=ArtifactClass.COPIED_MANAGED,
-        current_state=None, target_state=None, target_path="WHOLE.md",
-        chosen_anchor=(), rationale="test",
+        artifact_id="whole",
+        artifact_class=ArtifactClass.COPIED_MANAGED,
+        current_state=None,
+        target_state=None,
+        target_path="WHOLE.md",
+        chosen_anchor=(),
+        rationale="test",
     )
 
     with pytest.raises(InternalError, match="no staged content"):
@@ -612,13 +729,22 @@ def test_default_commit_selects_copy_and_confirm_false_when_not_force(clean_repo
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
     entries_by_id = {entry.id: entry for entry in manifest.entries}
     commit = update_module._update_commit(
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE, entries_by_id=entries_by_id,
-        model_version=_V1, answers={}, template_path=None, force=False,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+        entries_by_id=entries_by_id,
+        model_version=_V1,
+        answers={},
+        template_path=None,
+        force=False,
     )
     action = Action(
-        artifact_id="whole", artifact_class=ArtifactClass.COPIED_MANAGED,
-        current_state=None, target_state=None, target_path="WHOLE.md",
-        chosen_anchor=(), rationale="test",
+        artifact_id="whole",
+        artifact_class=ArtifactClass.COPIED_MANAGED,
+        current_state=None,
+        target_state=None,
+        target_path="WHOLE.md",
+        chosen_anchor=(),
+        rationale="test",
     )
 
     with pytest.raises(InternalError, match="no staged content"):
@@ -635,9 +761,13 @@ def test_default_commit_selects_copy_and_confirm_false_when_not_force(clean_repo
 
 def _seeded_action(artifact_id: str, path: str) -> Action:
     return Action(
-        artifact_id=artifact_id, artifact_class=ArtifactClass.COPIED_SEEDED,
-        current_state=ArtifactState.ABSENT, target_state=ArtifactState.PRESENT_CONFORMANT,
-        target_path=path, chosen_anchor=(), rationale="migration offer",
+        artifact_id=artifact_id,
+        artifact_class=ArtifactClass.COPIED_SEEDED,
+        current_state=ArtifactState.ABSENT,
+        target_state=ArtifactState.PRESENT_CONFORMANT,
+        target_path=path,
+        chosen_anchor=(),
+        rationale="migration offer",
     )
 
 
@@ -710,11 +840,17 @@ def test_never_write_target_from_wholesale_regenerate_refused_at_plan_time(clean
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="protected", path="PROTECTED.md", artifact_class="generated-derived",
-                                 body_sha=hash_content("current\n"), inserted_region_span=None),
+                ManagedArtifact(
+                    id="protected",
+                    path="PROTECTED.md",
+                    artifact_class="generated-derived",
+                    body_sha=hash_content("current\n"),
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
@@ -744,11 +880,17 @@ def test_sc01_check_update_run_check_end_to_end(clean_repo, monkeypatch):
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="renamed", path="old-name.txt", artifact_class="copied-managed",
-                                 body_sha=hash_content("v1 content\n"), inserted_region_span=None),
+                ManagedArtifact(
+                    id="renamed",
+                    path="old-name.txt",
+                    artifact_class="copied-managed",
+                    body_sha=hash_content("v1 content\n"),
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
@@ -771,7 +913,11 @@ def test_sc01_check_update_run_check_end_to_end(clean_repo, monkeypatch):
     _commit_all(clean_repo)
 
     apply_result = run_update(
-        clean_repo, v2_manifest, run=True, yes=True, confirm=_unreachable_confirm,
+        clean_repo,
+        v2_manifest,
+        run=True,
+        yes=True,
+        confirm=_unreachable_confirm,
         commit=_fake_commit(v2_manifest, clean_repo),
     )
     assert apply_result.applied == ("renamed",)
@@ -797,17 +943,26 @@ def test_default_commit_materializes_a_whole_file_entry_via_a_custom_template(cl
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="cfg", path=".bmad-config.user.toml", artifact_class="copied-managed",
-                                 body_sha=hash_content('[project]\nname = "v1"\n'),
-                                 inserted_region_span=None),
+                ManagedArtifact(
+                    id="cfg",
+                    path=".bmad-config.user.toml",
+                    artifact_class="copied-managed",
+                    body_sha=hash_content('[project]\nname = "v1"\n'),
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
     result = run_update(
-        clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm,
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        confirm=_unreachable_confirm,
         template_path=template_root,
     )
 
@@ -830,20 +985,29 @@ def test_default_commit_substitutes_a_hybrid_region_via_the_real_packaged_fragme
     )
     manifest = _manifest(
         ManifestEntry(
-            id="claude-md-test", artifact_class=ArtifactClass.HYBRID_MANAGED_REGION, path="CLAUDE.md",
-            applies_to=AppliesTo.BOTH, rationale="test", format=RegionFormat.HTML,
+            id="claude-md-test",
+            artifact_class=ArtifactClass.HYBRID_MANAGED_REGION,
+            path="CLAUDE.md",
+            applies_to=AppliesTo.BOTH,
+            rationale="test",
+            format=RegionFormat.HTML,
             regions=(Region(name="tiers", anchor=("### Spec-driven, framework-neutral layout",)),),
         )
     )
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="claude-md-test", path="CLAUDE.md", artifact_class="hybrid-managed-region",
-                                 body_sha=hash_content("stale tiers content\n"),
-                                 inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=0)),
+                ManagedArtifact(
+                    id="claude-md-test",
+                    path="CLAUDE.md",
+                    artifact_class="hybrid-managed-region",
+                    body_sha=hash_content("stale tiers content\n"),
+                    inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=0),
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
 
@@ -873,12 +1037,17 @@ def test_default_commit_wholesale_regenerates_an_adapter_composition_entry(clean
     write_state(
         _seed_state(
             managed=(
-                ManagedArtifact(id="gemini-md", path="GEMINI.md", artifact_class="generated-derived",
-                                 body_sha=hash_content("stale, pre-refresh content\n"),
-                                 inserted_region_span=None),
+                ManagedArtifact(
+                    id="gemini-md",
+                    path="GEMINI.md",
+                    artifact_class="generated-derived",
+                    body_sha=hash_content("stale, pre-refresh content\n"),
+                    inserted_region_span=None,
+                ),
             ),
         ),
-        repo_root=clean_repo, never_write=_NO_NEVER_WRITE,
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
     expected = derive_adapters.render_adapter("gemini-md", template_path=None)

@@ -138,10 +138,7 @@ def test_compute_verdict_returns_the_strongest_finding(synthetic_registry):
 
 def test_compute_verdict_floor_wins_when_stronger_than_findings(synthetic_registry):
     findings_list = [Finding(code=_CODE_CLEAN, severity=Severity.INFO, message="m")]
-    assert (
-        verdict.compute_verdict(findings_list, floor=Verdict.GATE_FAILED)
-        == Verdict.GATE_FAILED
-    )
+    assert verdict.compute_verdict(findings_list, floor=Verdict.GATE_FAILED) == Verdict.GATE_FAILED
 
 
 def test_compute_verdict_coerces_a_raw_string_floor():
@@ -200,19 +197,12 @@ def test_ad8_no_combination_of_the_full_lattice_produces_clean_when_any_finding_
             "codes tuple is shorter than the tested length -- zip(active_codes, "
             "combo) would silently truncate and drop tested combinations"
         )
-        monkeypatch.setattr(
-            findings, "REGISTERED_CODES", frozenset(active_codes)
-        )
+        monkeypatch.setattr(findings, "REGISTERED_CODES", frozenset(active_codes))
         for combo in itertools.product(Verdict, repeat=length):
             if Verdict.UNEVALUABLE not in combo:
                 continue
-            monkeypatch.setattr(
-                verdict, "_CLASSIFY_TABLE", dict(zip(active_codes, combo))
-            )
-            findings_list = [
-                Finding(code=code, severity=Severity.INFO, message="m")
-                for code in active_codes
-            ]
+            monkeypatch.setattr(verdict, "_CLASSIFY_TABLE", dict(zip(active_codes, combo)))
+            findings_list = [Finding(code=code, severity=Severity.INFO, message="m") for code in active_codes]
             for floor in Verdict:
                 result = verdict.compute_verdict(findings_list, floor=floor)
                 assert result is not Verdict.CLEAN
@@ -234,18 +224,12 @@ def test_ad8_real_unevaluable_code_list_is_non_empty():
     fail -- so if a future story ever reclassified every currently
     ``unevaluable`` code away, that regression test would quietly stop
     running instead of loudly failing. This test fails loud instead."""
-    assert any(
-        member is Verdict.UNEVALUABLE for member in verdict._CLASSIFY_TABLE.values()
-    )
+    assert any(member is Verdict.UNEVALUABLE for member in verdict._CLASSIFY_TABLE.values())
 
 
 @pytest.mark.parametrize(
     "code",
-    [
-        code
-        for code, member in verdict._CLASSIFY_TABLE.items()
-        if member is Verdict.UNEVALUABLE
-    ],
+    [code for code, member in verdict._CLASSIFY_TABLE.items() if member is Verdict.UNEVALUABLE],
 )
 def test_ad8_every_real_unevaluable_code_never_projects_to_clean(code):
     """AD-8 against the ACTUAL registry, not only synthetic codes -- the

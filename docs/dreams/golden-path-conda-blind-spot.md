@@ -2,12 +2,12 @@
 title: A promotion gate that has never seen what it ships
 type: dream
 owner: warden
-status: specified   # 2026-09-09 — valid under README §status: the readiness pass found
-                    # this at `specified` over a `draft` Spec (a README:71 violation) and
-                    # proposed reverting it to `dreamt`; the operator instead answered all
-                    # five open questions, so spec-golden-path-conda-blind-spot is `ready`
-                    # and `specified` is now earned rather than assumed.
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-warden]]** on 2026-09-17 (one-chain-per-station warden fold; folded from `golden-path-conda-blind-spot`).
+
 
 # A promotion gate that has never seen what it ships
 

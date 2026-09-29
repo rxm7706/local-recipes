@@ -90,7 +90,8 @@ conditions clear; at that point the "Execution" checklist above is the entire re
 
 ## Auto Run Result
 
-Status: `blocked`
+Status: done
+Reconciled 2026-09-20: the `blocked` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `7a05d20034 2026-08-21 mason: Story 5.4 free-inheritance verification — SM-4 recorded, Epic 5 closed` — that promotion is the ruling this record now reflects.
 Blocking condition: **unmet external dependency -- Mason v1 has not shipped**
 
 **Summary:** Story 5.4 requires observing a real conda-forge-expert MINOR version bump landing
@@ -120,3 +121,7 @@ status.yaml` was left unmodified -- 5.4 remains `backlog`, matching reality.
 **Recommendation:** re-invoke `bmad-dev-auto 5-4-free-inheritance-verification` after Story 5.5
 lands and Mason v1 is declared done, and periodically thereafter until a CFE MINOR bump is observed
 in `CHANGELOG.md` above `8.81.0`.
+
+## Status reconcile 2026-09-20
+
+- Auto Run Result `Status: blocked` → `done` (see the reconcile line under it).

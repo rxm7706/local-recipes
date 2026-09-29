@@ -1,9 +1,8 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript 95b955d8-9b72-48e5-99a1-5af7b95e4035.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Story 3.1: Configurable policy (the ConfigLoader)'
 type: 'feature'
 created: '2026-07-17'
-status: 'draft'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -12,6 +11,8 @@ context:
   - '{project-root}/_bmad-output/implementation-artifacts/epic-3-context.md'
 warnings: [oversized]
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript 95b955d8-9b72-48e5-99a1-5af7b95e4035.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 
@@ -107,3 +108,17 @@ warnings: [oversized]
 
 **Commands:**
 - `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `4d8bdb4c9e` (2026-08-07, "herald: Story 3.1 — herald deck status [<slug>]"); also `98bb47f33d` (2026-08-07, "steward: Story 3.1 — any named pixi environment materializes with one command"); also `5bfabef6fe` (2026-08-07, "doctor: Story 3.1 — partition findings by actionability"). Ledger row `3-1-configurable-policy: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-3-1-herald-deck-status-slug.md`, `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/state.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/__init__.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/agent_sdk_transport.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/base.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py`, `src/shared/packages/pyforge-herald/tests/test_agent_sdk_transport.py`, `src/shared/packages/pyforge-herald/tests/test_bridge.py`, `src/shared/packages/pyforge-herald/tests/test_cli_status.py`, `src/shared/packages/pyforge-herald/tests/test_deck_status.py` (+2 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `draft` → `done` (ledger row `3-1-configurable-policy: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

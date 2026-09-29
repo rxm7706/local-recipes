@@ -159,7 +159,23 @@ def test_doctor_source_tasks_include_general_docs_beside_pixi_currency():
     assert names.index("general-docs-consistency") == names.index("pixi-currency-ledger") + 1
 
 
-def test_main_scope_repo_reports_ten_unknown_rows_and_never_exits_zero_when_unimportable(
+def test_doctor_source_tasks_include_capability_ledger_beside_general_docs():
+    """Story 55.2: capability-ledger must stay in the detectors sweep
+    immediately after general-docs-consistency."""
+    tasks = dict(detectors._DOCTOR_SOURCE_TASKS)
+    assert tasks["capability-ledger"] == "capability-ledger-check"
+    names = [name for name, _task in detectors._DOCTOR_SOURCE_TASKS]
+    assert names.index("capability-ledger") == names.index("general-docs-consistency") + 1
+
+
+def test_doctor_source_tasks_include_docs_shelf_occupancy():
+    """Story 23.7: docs-shelf-occupancy must be in the detectors sweep,
+    beside its repo-scope, offline, deterministic siblings."""
+    tasks = dict(detectors._DOCTOR_SOURCE_TASKS)
+    assert tasks["docs-shelf-occupancy"] == "docs-shelf-occupancy-check"
+
+
+def test_main_scope_repo_reports_unknown_rows_and_never_exits_zero_when_unimportable(
     monkeypatch, tmp_path: Path, capsys,
 ):
     """The regression this story's own precondition names: with

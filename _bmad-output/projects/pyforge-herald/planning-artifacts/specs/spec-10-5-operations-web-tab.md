@@ -120,3 +120,16 @@ exactly this kind of cross-panel regression.
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `db2b1cc895` (2026-08-21, "steward: mark Story 10.5 done in sprint-status-ledger"); also `a54ae35fdd` (2026-08-21, "steward: Story 10.5 -- DB-GPT sidecar image + docker-compose wiring"); also `f2f257545d` (2026-08-21, "steward: fix circular dependency on Story 10.5"). Ledger row `10-5-operations-web-tab: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -3,10 +3,10 @@ title: Presenton, conda-native — AI decks inside the regulated enterprise
 type: dream
 owner: mason
 status: archived
-archived-reason: blocked
-blocked-on: Phase-0 decision gate (Epic 1)
+archived-reason: folded-into-station-dream
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `presenton-pixi-image`).
 > **Archived, blocked — the Dream-level narrative stays separate; the
 > planning-chain documents were consolidated 2026-08-02.** The full BMAD
 > planning chain (research → brief → PRD → architecture → 7 epics / 30

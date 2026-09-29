@@ -2,7 +2,7 @@
 title: Herald — capture the dream, illustrate the telemetry, proclaim the release
 type: dream
 owner: herald
-status: realized
+status: specified
 ---
 
 # Herald — the outward voice and design surface
@@ -116,6 +116,168 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-09-28 (night) — Proposed: a deck can be read inside the airgap, from the portal and from
+  an internal Pages site, and each current export is also kept in object storage.**
+  Source: the intake `archive/docs/intake/airgapped_pptx_architecture_specification.md`, triaged
+  2026-09-28 under operator rulings. The intake describes an implementation: python-pptx writes
+  into a PostgreSQL `BYTEA` column, a Django view streams it with a hard-coded CORS origin, and
+  PPTXjs renders it in a Wagtail template and on a GitHub Enterprise Pages page. The need behind it
+  is smaller. People inside the enterprise airgap read a deck in the browser without PowerPoint,
+  from the django-herald portal and from an internal GHE Pages site, and git stops being the only
+  place the exports live.
+  **Measured 2026-09-28** on `306d7563fd`:
+  - 57 tracked `.pptx` hold 121,976,204 bytes.
+  - Every standard `.pptx` export comes from `marp --pptx` (`scripts/deck_export.py`), which
+    writes image-only slides, needs Chrome, and runs in `-e local-recipes`.
+  - 14 decks carry React/JSX sources. Their `dist/` bundle is gitignored.
+  - `src/platform/config/object_storage.py` says "No existing feature is wired to consume this
+    seam yet".
+  - No in-browser `.pptx` viewer exists. Deck visual QA screenshots the React bundle, not the
+    `.pptx`.
+  - `pptxgenjs-plus >=4.2.1` is packaged (`recipes/pptxgenjs-plus`) but sits only in the
+    `local-recipes` environment. `django-cors-headers` is in no environment.
+  **Operator rulings 2026-09-28:**
+  1. Decks stay tracked. CAP-53 still prunes superseded exports, and AD-4 does not change. Each
+     current export is *also* published to the object store with a metadata row.
+  2. The viewer shows Herald's own decks through their HTML twins, meaning the Marp HTML and the
+     React bundle. No browser-side `.pptx` parser.
+  3. `pptxgenjs-plus` becomes an *additional* export kind, native and editable `.pptx`, beside
+     `marp --pptx` and the python-pptx fill. Neither of those retires.
+  **Rejected, with reasons:**
+  - Bytes in PostgreSQL: the platform's blobs go to consumed S3 (the dated 2026-09-10 exception
+    in `spec-pyforge-unifying-strategy` AD-1; `spec-pyforge-steward` CAP-94..97), and the
+    database belongs to the enterprise DB team.
+  - PPTXjs: its last release was 2022-03-26, it bundles jQuery 1.11.3, and it needs JSZip v2.
+  - `pptxgenjs-plus` as the viewer: it generates decks and does not render them.
+  - An unauthenticated stream with a fixed CORS origin: the portals require OIDC and a station
+    role, and station routes live under `/stations/herald/api/v1/`.
+  - A second Pages *artifact*: AD-21 keeps one.
+  **What it looks like when real:**
+  - `herald deck publish <slug>` puts each current export's bytes in the object store under a
+    sha256 key. It records topic, kind, date, size, content type and source commit.
+  - The django-herald portal lists a deck and shows it in the browser from its HTML twin. The twin
+    is served from the store with vendored assets and zero CDN references.
+  - The same docsite artifact deploys to a second host, an internal GHE Pages site. It is built
+    statically, so no browser calls the platform cross-origin.
+  - A `pptxgenjs-plus` export kind writes a native `.pptx` from the Guild environment.
+  **Constraints:**
+  - Git stays the archive of record ([[design-sync-loop]]), and CAP-35's downloads still build
+    from tracked files.
+  - `src/platform/` never imports `pyforge.*`.
+  - There is no new package path.
+  - Every new capability here carries a flag block, under the Guild Dream
+    [[feature-flag-governance]] seeded the same day.
+  **Kinships:**
+  - steward: the object-storage seam's first consumer ([[pyforge-steward]], same day).
+  - This station: CAP-35, CAP-52 (the docsite and its `/herald/` mount), CAP-53 (Epic 28), AD-4
+    and AD-21.
+  - mason: the `pptxgenjs-plus-jsx` recipe ([[pyforge-mason]], same day).
+  - warden: vendored JavaScript is scanned like any other dependency.
+  Owner: herald. → CAP-54 / Epic 29 / Stories 29.1–29.2 (FR-10.1–FR-10.2); CAP-55 / Epic 30 /
+  Stories 30.1–30.2 (FR-10.3–FR-10.4); CAP-56 / Epic 31 / Stories 31.1–31.2 (FR-10.5); CAP-57 /
+  Epic 32 / Story 32.1 (FR-10.6), specced 2026-09-28. Stories 29.1 and 29.2 are minted `blocked`
+  until steward Story 74.1 (the seam's first-consumer contract) lands.
+- **2026-09-28 — Each deck keeps one current version of each export; git keeps the rest.**
+  Source: the steward Dream's 2026-09-25 seed, [[pyforge-unifying-strategy]] § Realization log,
+  "`local-recipes` repo-size measurement". It proposed "latest deck per topic" and deferred the
+  idea to the cutover's parked Story 44.5. Operator ruling 2026-09-28: spec it now, independent
+  of the cutover. Keep the latest deck per topic in `presentations/`, and prune or move the older
+  dated versions, because git history keeps them.
+  **Measured 2026-09-28** on `c660efec81`:
+  - `presentations/` holds 944 tracked files, 134.69 MB, which is 47.0% of the 286.5 MB tracked
+    tree.
+  - Dated exports live under `presentations/<topic>/src/{pptx,marp}/` and are named
+    `<stem>-YYYY-MM-DD.<ext>`. They form 118 kinds, where a kind is a directory plus a stem plus
+    an extension. 62 kinds carry more than one date.
+  - That leaves 74 superseded files (26 `.pptx`, 36 `.md`, 12 `.html`), 54.14 MB in all, across 11
+    topics:
+    - `agentic-sdlc`: 2 files, 12.74 MB
+    - `pyforge-atlas`: 12 files, 11.36 MB
+    - `pyforge-unifying-strategy`: 6 files, 10.46 MB
+    - `pyforge-marshal`: 11 files, 5.18 MB
+    - `pyforge-genesis`: 6 files, 3.87 MB
+    - `steward`, `mason`, `scribe`, `herald` and `doctor`: 6 files each, 1.75–1.83 MB each
+    - `pyforge-warden`: 7 files, 1.56 MB
+  - Pruning them leaves 870 files and 80.55 MB, and the tracked tree drops to about 232 MB.
+  - Command: `python3 -c "import re,pathlib,collections as c;g=c.defaultdict(list);[g[(p.parent,m[1],m[3])].append((m[2],p.stat().st_size)) for p in pathlib.Path('presentations').rglob('*') if p.is_file() and (m:=re.match(r'(.+)-(\d{4}-\d{2}-\d{2})(\.\w+)$',p.name))];o=[s for v in g.values() for d,s in sorted(v)[:-1]];print(len(g),sum(len(v)>1 for v in g.values()),len(o),sum(o)/2**20)"`.
+  - "Latest" already has one meaning in the repo: `docsite/build.py` `_listed_files`,
+    `deck_pipeline._newest_dated_match`, `deck_export.find_source` and `deck_facts._marp_source`
+    each pick the newest date per kind. So the 69 family-page downloads and every Design push
+    are already the files that would be kept.
+  - Every writer adds a new dated file and none removes the old one (`pull_marp_source`,
+    `pull_standalone_bundle`, `PptxTemplateExporter.export`, `deck_export.stamp_marp_kinds`). A
+    one-time prune would therefore regrow.
+  - The prune shrinks the working tree and anything that copies it. It does not shrink `.git`.
+
+  **Kinships:**
+  - steward: `spec-python-foundry-cutover` Story 44.5 (parked) inherits a minimal deck tree.
+    Story 59.4's `deck-drift` duty fingerprints the one pulled Design artifact passed as `--path`,
+    and so far that is only ever a `project/*.dc.html`. Its baseline is gitignored and exists on
+    neither checkout, so it has nothing to re-stamp.
+  - core: `spec-pyforge-core:CAP-8`, the station-tests lane. Herald's suite starts running on
+    `presentations/**` changes.
+  - doctor: `docs/how-to/presentation-deck.md`, which holds the naming convention.
+  - This station's docsite: CAP-35's family pages. Their downloads do not change.
+  - Story 19.4's pptx-fill exemplar. Its tests regenerate the deck instead of reading the
+    superseded file.
+
+  Status: **specified** (2026-09-28). → CAP-53 / Epic 28 / Stories 28.1–28.2. Epic 28 is new,
+  because Epic 27 belongs to CAP-52.
+- **2026-09-20 (later) — Herald's deck pipeline runs from the Guild env, not the recipe factory.**
+  `deck_pipeline.py` and `sync_all.py` shell `pixi run -e local-recipes deck-export | deck-facts |
+  deck-trio`; only `pyforge-guild` exists at runtime (operator ruling, steward Dream 2026-09-20
+  later). The three tasks move into `guild-tasks` with their deps in `pyforge-guild` (steward
+  63.6 owns the env side) and herald's shell-outs name `-e pyforge-guild`. → CAP-51 / Story 25.1
+  (Epic 25, new — 24 is `done`).
+- **2026-09-20 — Proposed: the docs site matches BMAD-METHOD's pattern, so their skills and
+  workflows apply unchanged.** Operator ask 09:55Z: *"design our docs and docs deployment to
+  GitHub Pages to match what BMAD-METHOD itself does, so that we can reuse their patterns,
+  skills and workflows."* What upstream does (verified, MIT): content stays in `docs/` (Diátaxis
+  quadrants + `index.md`), `docs-site/` is Astro + Starlight reading `docs/` through a symlink,
+  `sidebar.order` frontmatter with `validate-links` / `validate-sidebar` / `fix-links` scripts,
+  hand-authored inlined SVG diagrams, and one `.github/workflows/docs.yaml` that builds with
+  `npm ci` + `npm run build` and ships `build/site` through `upload-pages-artifact` →
+  `deploy-pages`. What we have: this station's `docsite/` (dossier + infographics, Jinja2) and
+  the Kedro-Viz dashboard sharing one Pages artifact via `dashboard.yml`; doctor's `docs/MAP.md`
+  and, since 30.2, `docs/map.yaml`; no site for the shelf itself. Done ahead, because the
+  `bmad-os-diataxis` skill reads it: `docs/_STYLE_GUIDE.md` vendored verbatim with provenance.
+  Research: `planning-artifacts/research/docs-site-bmad-method-pattern-2026-09-20.md` — six
+  decisions for `bmad-spec` (owner: herald for site + deploy, doctor's `map.yaml` as the sidebar
+  source; one Pages artifact with the dossier and dashboard mounted beneath the Starlight site;
+  Node via pixi; content moves nothing; validators become detectors; re-vendor never fork).
+  **Kinships:** doctor 30.x (`map.yaml` ↔ `sidebar.order`), scribe 19.3 (instruction docs),
+  `dashboard.yml`'s deploy-pages race note. Status: **specified** (2026-09-27) — `bmad-spec`
+  adopted all six decisions as D1–D6 on the Spec memlog. Four were refined against the repo: the
+  sidebar is generated from `map.yaml` at build time, not written into pages; the deploy workflow
+  keeps its `dashboard.yml` path, reshaped to upstream's build and deploy jobs; `nodejs` joins the
+  existing `site` feature; titles and quadrant indexes are resolved at build time. The operator's
+  2026-09-27 rulings added two more. D7: the dossier site mounts under `/herald/`, and every old
+  root HTML URL redirects there. D8: `pr-preflight` builds the site only when the docs change,
+  selected from the workflow file itself. → CAP-52 / Epic 27 / Stories 27.1–27.5 (Epic 27, new —
+  26 is `done`; 27.5 is `blocked` until steward Story 71.2 lands).
+- **2026-09-18** — **Epic 23 drained to zero; what its four landings deferred.**
+  The Design sync loop is real: 23.1 (`deck status` enumerates the whole account,
+  PR #1459), 23.2 (every presentation twinned, three design systems mirrored
+  byte-exact, #1461), 23.5 (family pages on Pages, #1463) and 23.6
+  (`herald deck sync-all`, #1465) all landed today by `marshal factory dispatch`
+  on the Claude harness — verified, merged and ledger-flipped without a human in
+  the loop, 46–66 min each. Each dispatched session deferred exactly one thing it
+  could not settle from inside its worktree, now twinned in the tracked ledger:
+  **DW-FU-23-2** — `deck_pipeline._windowed_read` has no guard against a server
+  that returns a non-advancing `last_line` (a real pagination-loop hazard; every
+  live call paged forward, so reachability is unproven); **DW-FU-23-5** — no
+  PR-gating CI lane runs `docsite/build.py` or `site-check`, and the station's
+  verify command covers none of `docsite/`, so the family-page code (and the
+  dossier/gallery/artifact code before it) can regress with every gate green;
+  **DW-FU-23-6** — `sync-all`'s idempotency AC is proven over fakes and one live
+  smoke of the skipped path only, never a seeded deck's unchanged path, because
+  no dispatch environment has live Claude Design credentials. Those three are the
+  residue of the Dream, not new dreams — a loop that can hang, a site that can
+  regress unseen, and a "second run writes nothing" promise proven only on paper.
+  Seeded as CAP-48..50 and decomposed the same day as Epic 24 (24.1..24.3);
+  Epic 23 flips `done`. DW-FU-23-6's live half is an operator-run proof (it needs
+  the credentials only a person has), so 24.3 is minted to make that proof a
+  one-command, recorded act rather than a memory.
 - **2026-08-02 (second pass)** — Folded [[herald-pitch]] (Moment 1 complete
   orchestration, 7 capabilities) into this Dream's narrative. Dream-level
   consolidation only — `spec-herald-pitch` and its 4 companions stay fully
@@ -169,3 +331,7 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   and the Spec's "the Guildhall is Marshal's ([[factory-console]])" cites a `superseded` Spec
   and a retired console — the referent is a Charter amendment (batch row C12), raised on
   `docs/governance/spec-pyforge-charter/.memlog.md` this date.
+
+## One-chain fold (2026-09-17)
+
+Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folded topic Dreams are archived in place with `Consolidated into [[pyforge-herald]]` banners. Station Spec `spec-pyforge-herald` is `ready`; this Dream is `specified`.

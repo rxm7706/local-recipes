@@ -20,9 +20,7 @@ from pyforge.marshal.core.landing import LandingRule, rule_applies
 
 
 def test_landing_rule_is_frozen():
-    rule = LandingRule(
-        name="x", trigger_path_glob="a/**", trigger_mode="exclude", label="maintenance"
-    )
+    rule = LandingRule(name="x", trigger_path_glob="a/**", trigger_mode="exclude", label="maintenance")
     assert rule.name == "x"
     assert rule.trigger_path_glob == "a/**"
     assert rule.trigger_mode == "exclude"
@@ -41,12 +39,8 @@ def test_landing_rule_defaults():
 
 
 def test_landing_rule_equality_is_by_value():
-    a = LandingRule(
-        name="x", trigger_path_glob="a/**", trigger_mode="exclude", label="maintenance"
-    )
-    b = LandingRule(
-        name="x", trigger_path_glob="a/**", trigger_mode="exclude", label="maintenance"
-    )
+    a = LandingRule(name="x", trigger_path_glob="a/**", trigger_mode="exclude", label="maintenance")
+    b = LandingRule(name="x", trigger_path_glob="a/**", trigger_mode="exclude", label="maintenance")
     assert a == b
 
 
@@ -78,9 +72,7 @@ def test_rule_does_not_apply_when_every_path_matches_the_glob():
 
 
 def test_rule_never_applies_to_an_empty_changed_paths_exclude_mode():
-    rule = LandingRule(
-        name="x", trigger_path_glob="recipes/**", trigger_mode="exclude", label="maintenance"
-    )
+    rule = LandingRule(name="x", trigger_path_glob="recipes/**", trigger_mode="exclude", label="maintenance")
     assert rule_applies(rule, ()) is False
 
 
@@ -116,9 +108,7 @@ def test_rule_never_applies_to_an_empty_changed_paths_include_mode():
 
 
 def test_rule_applies_include_mode_does_not_fire_on_a_non_matching_path_only():
-    rule = LandingRule(
-        name="x", trigger_path_glob="pixi.toml", trigger_mode="include", label="l"
-    )
+    rule = LandingRule(name="x", trigger_path_glob="pixi.toml", trigger_mode="include", label="l")
     assert rule_applies(rule, ("docs/foo.md", "recipes/x/recipe.yaml")) is False
 
 
@@ -131,15 +121,11 @@ def test_rule_applies_matches_case_sensitively_regardless_of_host_os():
     `os.path.normcase`, which would make the same policy match differently
     on Linux CI versus a case-insensitive filesystem. `rule_applies` must
     use `fnmatch.fnmatchcase` instead."""
-    include_rule = LandingRule(
-        name="x", trigger_path_glob="PIXI.TOML", trigger_mode="include", label="l"
-    )
+    include_rule = LandingRule(name="x", trigger_path_glob="PIXI.TOML", trigger_mode="include", label="l")
     assert rule_applies(include_rule, ("pixi.toml",)) is False
     assert rule_applies(include_rule, ("PIXI.TOML",)) is True
 
-    exclude_rule = LandingRule(
-        name="y", trigger_path_glob="RECIPES/**", trigger_mode="exclude", label="l"
-    )
+    exclude_rule = LandingRule(name="y", trigger_path_glob="RECIPES/**", trigger_mode="exclude", label="l")
     # "recipes/x/recipe.yaml" does NOT case-sensitively match "RECIPES/**",
     # so it counts as "outside" the glob and the exclude rule fires.
     assert rule_applies(exclude_rule, ("recipes/x/recipe.yaml",)) is True

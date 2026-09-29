@@ -53,9 +53,7 @@ def test_kedro_mcp_import_is_actually_poisoned(kedro_mcp_unimportable):
         import kedro_mcp  # noqa: F401
 
 
-def test_surface_imports_and_triggers_with_kedro_mcp_absent(
-    kedro_mcp_unimportable, monkeypatch
-):
+def test_surface_imports_and_triggers_with_kedro_mcp_absent(kedro_mcp_unimportable, monkeypatch):
     mcp_pkg, tools, session_mod = kedro_mcp_unimportable
     assert mcp_pkg.PIPELINE_NAMES == tools.PIPELINE_NAMES
 
@@ -80,9 +78,7 @@ def test_surface_imports_and_triggers_with_kedro_mcp_absent(
 def test_surface_reads_with_kedro_mcp_absent(kedro_mcp_unimportable, monkeypatch):
     _, tools, session_mod = kedro_mcp_unimportable
     sentinel = object()
-    catalog = DataCatalog(
-        datasets={"demo_ds": MemoryDataset(sentinel, copy_mode="assign")}
-    )
+    catalog = DataCatalog(datasets={"demo_ds": MemoryDataset(sentinel, copy_mode="assign")})
 
     class FakeContext:
         pass

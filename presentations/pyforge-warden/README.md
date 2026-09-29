@@ -71,11 +71,13 @@ Reskin the palette in `src/index.css` (`--navy`/`--paper`/`--gold`/`--blue`/`--s
 if PyForge-Warden gets its own colors.
 
 ## Design project (the bridge's far end)
+Prototype lives in Claude Design project **"PyForge Warden deck"** (`100ca8cc-8daa-409a-8564-1f8d79c579d2`):
+https://claude.ai/design/p/100ca8cc-8daa-409a-8564-1f8d79c579d2?file=Warden%20Deck.dc.html
 
-Prototype lives in Claude Design project **"PyForge Warden deck"**
-(`100ca8cc-8daa-409a-8564-1f8d79c579d2`) — renamed 2026-07-24 from
-"Python deptry OSV scanner" (it was the original warden deck workspace all
-along, mislabeled). Pull with the MCP bridge ("pull warden").
+### Provenance
+
+Renamed 2026-07-24 from "Python deptry OSV scanner" — it was the original warden deck
+workspace all along, mislabeled.
 
 ### Artifact map + sync ledger (2026-07-24)
 
@@ -120,3 +122,128 @@ Deck.dc.html`): `render_preview` → `curl` the serve URL to disk → strip the
 contiguous `data-omelette-injected` `<style>/<script>` block after `<head>`
 (fixed-size harness; splice with a single newline). Both directions are now
 mechanized; the herald CLI formalizes them but no longer gates them.
+
+## Ledger — 2026-09-13 standard rebuild (Story 20.10)
+
+Rebuilt repo-side to `infographic-standard.md` (spec-deck-family-currency CAP-3) from
+`facts.yaml` re-derived at tree `fbefe6eea6`. Every count, version, status and date the
+poster prints is a `data-fact` mark resolving to a ledger row; `deck-facts pyforge-warden
+--check` → `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 91/91` (the one
+`unshown` row is `poster_last_commit_date`, deliberately not printed — dates come only from
+the `dream_log_*` and `tree_commit_date` rows).
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `Warden Infographic standalone.html` | 295,079 B · 33 sections (32 numbered + creed) · 6 acts · 26 SVG · 11 tables · facts 91/91 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789300517654592` · 295,079 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git; refreshed and re-pushed the same day by the first currency sweep (`deck-facts <slug> --refresh`)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 34715 px; head + Infographic Deck derived 2026-09-15 via `deck-trio --head --deck` (Story 21.4 local sweep; Design push/read-back still pending) |
+
+Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
+tables ≥ 3 ✓ · cast cards full for all eight stations with ledger chips ✓ · facts all resolved ✓ ·
+headless full-page PNG at 1240 px reviewed by eye in 2500 px tiles
+(`.herald/deck-qa/pyforge-warden/`, gitignored) ✓ · offline apart from the Google Fonts `<link>` ✓ ·
+no `<script>`, no `<x-dc>`, no `support.js`, no raster image ✓. No section of the standard's set
+was dropped; the "sub-agent team" slot is filled by Warden's engines and feeds (§07).
+
+**This file remains the family's density and visual-form reference.** The 411,764 B measured on
+2026-09-13 was a Claude Design *bundle*: 192,472 B of page content JSON-encoded inside a
+`__bundler/template` script tag plus ~205 KB of base64 assets (three Archivo woff2 faces and three
+Design runtime scripts) and an `<x-dc>` wrapper — none of which the standard permits. The rebuild
+is plain standalone HTML, so the honest before/after is **192,472 B → 295,079 B of page content**,
+18 → 32 numbered sections, every div-built diagram kept (the six-axis grid, the five-step
+pipeline, the three path columns, the lattice ladder, the three rings, the roadmap and leader
+cards, the 70-row integration matrix), the 14 icon glyphs kept with their `viewBox` restored
+(Design had mangled them to `sc-camel-view-box`, so they never scaled outside Design), Design's
+`sc-raw-table` pseudo-elements converted to real `<table>` markup, and four genuine 1128-wide
+SVG diagrams added (the spine topology, the seven-rungs-to-four-exits ladder, the autonomy
+gradient, the relay).
+
+Left out for lack of a fact row (never guessed): the two-ecosystem population figures
+(`~850K packages`, `~30K feedstocks`, the `20% / 80%` footprint split), the `20k+` repo-fleet
+scale target, the waiver default expiry (`14 days`), the old `5 epics · 20 stories` scope cell,
+`Python 3.12+` and every other two-part or third-party version (CycloneDX spec, report schema,
+deptry / osv-scanner ranges), story counts such as `31/31` / `43/43`, the corpus size
+(`~1,950`), the test count (`--with-tests` not run), and the retired duplicate Dream's date.
+Exit codes appear only as separate code literals or in their own table cells, never
+slash-adjacent.
+## Ledger — 2026-09-14 currency sweep (spec-deck-family-currency CAP-6)
+
+The poster had gone stale on the fleet's own merges since the 2026-09-13 rebuild — 16 ledger
+rows drifted (`doctor_epics_done_total`, `doctor_stories_done_total`, `fleet_epics_done_total`, `fleet_stories_done_total`, `groundtruth_pixi_envs`, `herald_epics_done_total`, `herald_stories_done_total`, `marshal_epics_done_total`, `marshal_stories_done_total`, `mason_epics_done_total`, `mason_stories_done_total`, `scribe_epics_done_total`, `scribe_stories_done_total`, `steward_epics_done_total`, `steward_stories_done_total`, `tree_commit_date`). Swept repo-side first, per CAP-6:
+`pixi run -e local-recipes deck-facts pyforge-warden --refresh --check` at tree `168bbedb13` re-derived
+`facts.yaml` and rewrote **33** stale `data-fact` literals in place, keeping their shape; the
+re-check reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 91/91`. Then the mirror (CAP-4): pushed via DesignSync `finalize_plan` →
+`write_files` (`localPath`, no context relay) to project `100ca8cc-8daa-409a-8564-1f8d79c579d2`, and read back through the
+serve URL with the injected harness stripped — **byte-identical to disk**.
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `Warden Infographic standalone.html` | 295,085 | `1789417256155906` | identical ✓ |
+
+Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
+still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
+(Stories 21.1–21.4), not a refresh.
+
+## Ledger — 2026-09-15 infographic trio re-derived (Story 21.4)
+
+`pixi run -e local-recipes deck-trio pyforge-warden --head --deck` at tree `a407cd03f6`
+mechanically re-derived both files from the standalone (x-dc/helmet wrap, verbatim
+`<style>`/`<link>` relocation, a measured `$preview` height for the head; masthead/act-band/
+numbered-section/closing-band slides for the deck): `Warden - Infographic.dc.html` now
+295,218 B, `Warden - Infographic Deck.dc.html` now 305,123 B. A second `--head --deck` run
+changed nothing on disk (verified).
+
+`pixi run -e local-recipes deck-facts pyforge-warden --refresh` then `--check` at the same tree
+brought poster, head and Infographic Deck current: **33** stale `data-fact` literals rewritten
+(`fleet_epics_done_total`, `fleet_stories_done_total`, `herald_epics_done_total`,
+`herald_stories_done_total`, `tree_commit_date` — drift since the 2026-09-14 sweep); re-check
+reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 273/273`.
+
+**Design push/read-back: not performed this session — no working credential.**
+`~/.claude/.credentials.json` has no `designOauth` block, and the `claude-design` MCP connector
+independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-probed live via
+`pixi run -e pyforge-herald herald deck push pyforge-warden` (this deck itself) →
+`AuthError: ... has no 'designOauth' block -- run /design-login in Claude Code to refresh it`.
+No push attempted, no etag fabricated. The pre-push gap narrowed to: head + Infographic Deck
+are now re-derived and facts-current on disk, not yet mirrored to Design.
+
+## Ledger — 2026-09-17 push + read-back (Story 21.4)
+
+`pyforge-herald`'s `mcp` 2.2.0 transport symbol drift (Story 21.12) is fixed and merged, so the
+credential blocker above is resolved: `resolve_design_credential()` succeeds this session. Pushed
+via `pyforge.herald.transport.mcp_transport.McpTransport` directly (`finalize_plan` →
+`write_files`, inline `data` — `write_files`'s `local_path` field is not implemented
+server-side today, so `herald deck push`'s own CLI verb, which covers only the CAP-5
+marp-regenerated export, doesn't reach these `project/` trio files) to project
+`100ca8cc-8daa-409a-8564-1f8d79c579d2`:
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `Warden - Infographic.dc.html` | 295,218 | `1789635799882197` | identical ✓ |
+| `Warden - Infographic Deck.dc.html` | 305,123 | `1789635802707366` | identical ✓ |
+
+**Both files exceed the 256 KiB `read_file` cap**, so a single call can't return the whole body.
+A first attempt paged with `offset`/`limit` and reconstructed the file by concatenating page
+bodies — this broke: `read_file`'s truncation response embeds a self-documenting sentinel line at
+the cap boundary (`…[+N bytes truncated at read_file's 256 KiB cap — the body ends at a complete
+line; continue with offset=<n>]`), and a script that doesn't recognize and strip that sentinel
+bakes it into the reconstructed text as if it were real file content (caught only via a SHA-256
+mismatch — a byte-count-only check would have missed the ~119 B delta). **This was a bug in this
+session's own throwaway paging script, not a `read_file` defect** — re-verified live: a plain
+`read_file` call with no offset returns the sentinel as a clean, well-formed, standalone line
+("the body ends at a complete line"), not spliced into content. Rather than fix the paging
+script, used the documented `render_preview` → curl the `serve_url` → strip the
+`data-omelette-injected` `<style>`/`<script>` harness block after `<head>` procedure
+(`docs/specs/presentation-deck.md` § *The MCP bridge*, "Large-file uploads" / pull mechanics),
+which is exempt from the cap entirely: both files came back byte-identical to disk. Noted here
+so a future session paging `read_file` past the cap knows to recognize and strip that sentinel
+rather than treat it as content — or just use the curl-based route instead, as this session did.
+
+`deck-facts pyforge-warden --check` still reads 0 mismatch. Head and Infographic Deck now match
+Design as well as disk — no surface here is standalone-ahead any more.
+
+## Ledger — 2026-09-19 push-and-prove (spec-design-sync-loop CAP-6)
+
+| Artifact | Bytes | Read-back |
+|---|---|---|
+| pyforge-warden-deck-2026-09-15.pptx | 4,405,706 | identical ✓ (both proof runs) |
+| pyforge-warden_infographic_deck-2026-09-15.pptx | 5,886,053 | identical ✓ (both proof runs) |
+| pyforge-warden-infographic-standalone-2026-09-15.html | — | **did not match** — refused rather than record an unproven push (both runs; herald DW-FU-23-6-1) |

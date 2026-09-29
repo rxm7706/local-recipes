@@ -133,3 +133,16 @@ absence of any prompt at all (a link is opt-in, not merely optional-with-a-defau
 pyforge-herald-test` -- 599 passed, 2 skipped.
 
 **Follow-up review recommendation:** none outstanding for this story.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `a8577c09f4` (2026-08-21, "doctor: split CAP-8 out of Epic 11; fix stale Story 10.2 text"); also `f1a3c28ba8` (2026-08-15, "doctor: correct 4 false-done ledger entries; resolve Story 10.2's CAP-2 data source"); also `3fbf29750a` (2026-08-08, "herald: Story 10.2/10.4 — notice authoring workflow & CLI"). Ledger row `10-2-notice-authoring-workflow-cli: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-resolution-sweep/SPEC.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

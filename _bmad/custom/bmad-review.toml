@@ -41,10 +41,14 @@ Run, from the repository root, with a hard wall-clock budget of 30 minutes
 (matching `tea-test-review`'s own `--timeout-ms` default) and using a
 uniquely-named temp file for `--json` that you delete after reading it
 (success or failure): `pixi run -e local-recipes tea-test-review --
---base <the content's base ref, or origin/main if none is stated> --min-score
-<the resolved value> --json <that temp file>` (the pixi task already
-supplies `--base origin/main` as its own default -- override it only when
-the content under review states a different base). Treat ANY of the
+--base <the content's base ref, or refs/remotes/origin/main if none is
+stated> --min-score <the resolved value> --json <that temp file>` (the pixi
+task already supplies `--base refs/remotes/origin/main` as its own default,
+and a repeated `--base` replaces it -- override it only when the content
+under review states a different base, and write a stated `origin/<branch>`
+as `refs/remotes/origin/<branch>`: TEA diffs `<base>...HEAD`, and a short
+name resolves to a local branch or tag of that name first -- steward Story
+70.1). Treat ANY of the
 following as an environment failure, not a verdict: the command cannot run
 at all (`tea-test-review` not installed, the pixi environment missing, a
 non-git-repo target); it exits with any code other than 0 or 1 (2/3 are the

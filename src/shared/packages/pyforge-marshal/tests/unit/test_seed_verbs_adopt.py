@@ -59,6 +59,7 @@ from importlib import resources
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed.errors import PreconditionFailure, StateInvalid
 from pyforge.marshal.seed.fs import NeverWrite
 from pyforge.marshal.seed.model.manifest import (
@@ -93,9 +94,7 @@ def _manifest(*entries: ManifestEntry, model_version: ModelVersion = _VERSION) -
     return Manifest(model_version=model_version, never_write=(), entries=tuple(entries))
 
 
-def _copied_managed(
-    entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH
-) -> ManifestEntry:
+def _copied_managed(entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.COPIED_MANAGED,
@@ -105,9 +104,7 @@ def _copied_managed(
     )
 
 
-def _generated_derived(
-    entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH
-) -> ManifestEntry:
+def _generated_derived(entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.GENERATED_DERIVED,
@@ -117,9 +114,7 @@ def _generated_derived(
     )
 
 
-def _copied_seeded(
-    entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH
-) -> ManifestEntry:
+def _copied_seeded(entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.COPIED_SEEDED,
@@ -129,9 +124,7 @@ def _copied_seeded(
     )
 
 
-def _hybrid(
-    entry_id: str, path: str, *region_names: str, applies_to: AppliesTo = AppliesTo.BOTH
-) -> ManifestEntry:
+def _hybrid(entry_id: str, path: str, *region_names: str, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.HYBRID_MANAGED_REGION,
@@ -158,9 +151,7 @@ def _legacy(entry_id: str, path: str, *, legacy_of: str) -> ManifestEntry:
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -302,9 +293,7 @@ def test_state_is_not_written_when_apply_fails_mid_run(clean_repo):
         (clean_repo / action.target_path).write_text("materialized\n", encoding="utf-8")
 
     with pytest.raises(RuntimeError, match="boom"):
-        run_adopt(
-            clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=boom_commit
-        )
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=boom_commit)
 
     assert not (clean_repo / ".marshal" / "seed-state.yml").exists()
 
@@ -481,9 +470,7 @@ def test_first_claim_never_fires_for_hybrid_or_copied_seeded_classes(clean_repo)
 def test_apply_without_yes_confirmation_declined_writes_nothing_beyond_plan_json(clean_repo):
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
 
-    result = run_adopt(
-        clean_repo, manifest, apply=True, yes=False, confirm=lambda: False, commit=_unreachable_commit
-    )
+    result = run_adopt(clean_repo, manifest, apply=True, yes=False, confirm=lambda: False, commit=_unreachable_commit)
 
     assert result.declined is True
     assert result.applied is None
@@ -537,9 +524,7 @@ def test_dirty_worktree_with_apply_is_refused(clean_repo):
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
 
     with pytest.raises(PreconditionFailure, match="dirty-worktree"):
-        run_adopt(
-            clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
-        )
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
 
 
 def test_dirty_worktree_with_dry_run_still_succeeds_and_writes_plan_json(clean_repo):
@@ -598,8 +583,9 @@ def test_repo_is_dirty_now_wraps_a_launch_failure_as_precondition_failure(clean_
     ``_repo_is_dirty_now`` let that ``ProcessError`` escape uncaught,
     landing on the generic, non-actionable CLI backstop instead of a
     targeted, remedied ``PreconditionFailure``."""
-    import pyforge.marshal.seed.verbs.adopt as adopt_module
     from pyforge.core.process import ProcessError
+
+    import pyforge.marshal.seed.verbs.adopt as adopt_module
 
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
 
@@ -624,9 +610,7 @@ def test_repo_is_dirty_now_wraps_a_launch_failure_as_precondition_failure(clean_
 
 
 def _adopt_hybrid_once(repo: Path, manifest: Manifest) -> None:
-    run_adopt(
-        repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(manifest, repo)
-    )
+    run_adopt(repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(manifest, repo))
     _commit_all(repo)
 
 
@@ -639,9 +623,7 @@ def test_hand_edited_managed_content_on_reapply_is_refused_without_force(clean_r
     _commit_all(clean_repo)
 
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):
-        run_adopt(
-            clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
-        )
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
 
 
 def test_force_on_hand_edited_content_reinserts_the_managed_region(clean_repo):
@@ -671,9 +653,7 @@ def test_force_on_hand_edited_content_reinserts_the_managed_region(clean_repo):
 def test_present_legacy_artifact_is_recorded_and_never_touched(clean_repo):
     (clean_repo / "LEGACY.md").write_text("legacy content, unmanaged\n", encoding="utf-8")
     _commit_all(clean_repo)
-    manifest = _manifest(
-        _legacy("legacy", "LEGACY.md", legacy_of="successor"), _copied_managed("whole", "WHOLE.md")
-    )
+    manifest = _manifest(_legacy("legacy", "LEGACY.md", legacy_of="successor"), _copied_managed("whole", "WHOLE.md"))
     before_legacy_text = (clean_repo / "LEGACY.md").read_text(encoding="utf-8")
 
     result = run_adopt(
@@ -761,9 +741,7 @@ def test_skip_protects_a_hand_edited_artifact_from_rung_6_refusal(clean_repo):
 
     # Without --skip, this run refuses at rung 6.
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):
-        run_adopt(
-            clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
-        )
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
 
     # With --skip protecting it, the run proceeds -- there is nothing else
     # pending, so the plan is empty and nothing is applied, but critically
@@ -839,9 +817,7 @@ def test_git_timeout_agrees_with_plan_build(clean_repo):
 
 def test_default_commit_materializes_a_whole_file_entry_via_a_custom_template(clean_repo):
     template_root = Path(tempfile.mkdtemp())
-    (template_root / ".bmad-config.user.toml").write_text(
-        '[project]\nname = "test"\n', encoding="utf-8"
-    )
+    (template_root / ".bmad-config.user.toml").write_text('[project]\nname = "test"\n', encoding="utf-8")
     manifest = _manifest(_copied_managed("cfg", ".bmad-config.user.toml"))
 
     result = run_adopt(
@@ -854,9 +830,7 @@ def test_default_commit_materializes_a_whole_file_entry_via_a_custom_template(cl
     )
 
     assert result.applied == ("cfg",)
-    assert (clean_repo / ".bmad-config.user.toml").read_text(encoding="utf-8") == (
-        '[project]\nname = "test"\n'
-    )
+    assert (clean_repo / ".bmad-config.user.toml").read_text(encoding="utf-8") == ('[project]\nname = "test"\n')
 
 
 def test_default_commit_materializes_a_hybrid_region_via_the_real_packaged_fragments(clean_repo):
@@ -865,9 +839,7 @@ def test_default_commit_materializes_a_hybrid_region_via_the_real_packaged_fragm
     tiers.md.j2`` fragment is read directly, never routed through
     ``engine.copier.materialize`` at all (see ``verbs/adopt.py``'s own
     module docstring)."""
-    (clean_repo / "CLAUDE.md").write_text(
-        "# My project\n\nSome existing repo-specific guidance.\n", encoding="utf-8"
-    )
+    (clean_repo / "CLAUDE.md").write_text("# My project\n\nSome existing repo-specific guidance.\n", encoding="utf-8")
     _commit_all(clean_repo)
     manifest = _manifest(
         ManifestEntry(
@@ -890,9 +862,7 @@ def test_default_commit_materializes_a_hybrid_region_via_the_real_packaged_fragm
     assert "Build More Architect Dreams" in content  # real fragment content, not a fake body
 
 
-def test_projects_table_region_is_derived_from_real_bmad_config_toml_files_via_run_adopt(
-    clean_repo, real_manifest
-):
+def test_projects_table_region_is_derived_from_real_bmad_config_toml_files_via_run_adopt(clean_repo, real_manifest):
     """The bad_spec loopback's own root-cause regression (spec's own Spec
     Change Log): the prior implementation pass shipped a static
     ``templates/files/projects-table.md.j2`` placeholder that would have
@@ -910,9 +880,7 @@ def test_projects_table_region_is_derived_from_real_bmad_config_toml_files_via_r
     elsewhere in ``PROJECTS.md`` survives untouched."""
     (clean_repo / "_bmad-output").mkdir()
     (clean_repo / "_bmad-output" / "PROJECTS.md").write_text(
-        "# BMAD Projects in this Repository\n\n"
-        "Some hand-written prose that must survive untouched.\n\n"
-        "## Projects\n",
+        "# BMAD Projects in this Repository\n\nSome hand-written prose that must survive untouched.\n\n## Projects\n",
         encoding="utf-8",
     )
     for slug, description in (
@@ -962,9 +930,7 @@ def test_a_region_named_projects_table_on_a_different_entry_id_is_not_hijacked(c
     index."""
     template_root = Path(tempfile.mkdtemp())
     (template_root / "files").mkdir(parents=True)
-    (template_root / "files" / "projects-table.md.j2").write_text(
-        "STATIC-FRAGMENT-NOT-DERIVED\n", encoding="utf-8"
-    )
+    (template_root / "files" / "projects-table.md.j2").write_text("STATIC-FRAGMENT-NOT-DERIVED\n", encoding="utf-8")
     (clean_repo / "OTHER.md").write_text("# anchor\n\nExisting prose.\n", encoding="utf-8")
     _commit_all(clean_repo)
     manifest = _manifest(_hybrid("other-entry", "OTHER.md", "projects-table"))

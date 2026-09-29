@@ -952,7 +952,7 @@ deployment.
 
 ### DW-FU-18-1: Never-caught false-done risk: the ledger-direction detector that would flag a done-but-unmerged sprint-ledger flip is not wired into detectors/detectors-ci.
 
-- source_spec: `planning-artifacts/specs/spec-18-1-the-first-station-video-renders-from-herald-s-studio.md`
+- source_spec: `planning-artifacts/specs/spec-18-1-the-first-station-video-renders-from-heralds-studio.md`
   summary: Never-caught false-done risk: the ledger-direction detector that would flag a done-but-unmerged sprint-ledger flip is not wired into detectors/detectors-ci.
   evidence: pyforge.doctor.sources.ledger::gather_direction exists and is unit-tested for exactly this shape (a tracked ledger done key with no matching merge subject and no Tier-3 feed), but scripts/detectors.py's _DOCTOR_SOURCE_TASKS omits it and no pixi task exposes it, so neither detectors nor detectors-ci ever runs it. Pre-existing gap, not introduced by this story; wiring it in is a repo-wide fix beyond this story's scope.
   location: scripts/detectors.py (_DOCTOR_SOURCE_TASKS)
@@ -975,3 +975,158 @@ deployment.
   status: open
 
   verified: 2026-09-08 — resolved — The merge hazard was navigated; both branches landed and the section re-threaded correctly. `.claude/skills/bmad-agent-herald/SKILL.md:12-39` now carries Story 18.2's rewritten '## Utility skill routing (AD-2)' as a 4-step numbered procedure (the one-line 'Herald wields `bmad-os-changelog`...' sentence this entry warned would be replaced is gone), and 18.3's `slides-generator` paragraph sits intact at `SKILL.md:40`, AFTER that procedure rather than orphaned against a deleted anchor. Nothing was lost in the merge, so the manual re-threading this entry called for is complete and no longer owed.
+
+### DW-FU-20-2: Real `pytest --collect-only -q` output is never parsed under test; only the plumbing around the stubbed `tests_collected` seam is verified.
+
+- source_spec: `planning-artifacts/specs/spec-20-2-deck-facts-derives-a-per-deck-fact-ledger-and-checks-a-poster-against-it.md`
+  summary: Real `pytest --collect-only -q` output is never parsed under test; only the plumbing around the stubbed `tests_collected` seam is verified.
+  evidence: The suite stubs `tests_collected` wholesale, so the regex `(\d+)(?:/\d+)? tests? collected` and the reversed-line scan run only against synthetic strings. The row is opt-in (`--with-tests`) and present in none of the ten committed ledgers. Settle with a stubbed-`subprocess.run` test over captured real tails (plural, singular `1 test collected`, rc≠0 "N errors") when the first `--with-tests` ledger is committed (Wave A).
+  location: scripts/deck_facts.py:tests_collected
+  origin: spec-deferred 0b8723ed0e18 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-14 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: closed
+
+### DW-21-7-1: `wasm-analytics-stack`'s standalone infographic poster is corrupted at the source and the corruption was already pushed to the live Claude Design project before it was discovered
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-21-7-wasm-analytics-stack-rebuilt-to-the-standard.md`
+  summary: `presentations/wasm-analytics-stack/project/Wasm Analytics Stack Infographic standalone.html` (145188 B, committed `e483288d5` "Rebuild the four chain-deck posters from their fact ledgers", 2026-09-15) has, from character offset 6344 through ~142980 of 145174, a boilerplate paragraph ("The factory already runs a tracked fleet: stories 930 of 998...") repeated 72 times with every character space-separated ("T h e   f a c t o r y..."), replacing real distinct section content across most of the poster. `deck-facts wasm-analytics-stack --check` reports 0 unmarked / 0 mismatch throughout — it validates only `data-fact` span presence/values, never prose sanity, so it cannot catch this class of defect. Story 21.7's push task ran before the corruption was known: the file was compared against Design (stale, an old 18713 B July stub), pushed via `McpTransport.finalize_plan`/`write_files`, and read back byte-identical — proving the corrupted bytes now live on the shared Design project too (etag `1789639734959225`), not merely at risk of it. Sibling Story 21.9 (`presenton-pixi-image`, PR #1405) independently found the identical pattern at the identical byte offset from the same root commit and withheld its own push before propagating it — this story's push had already completed by the time the pattern was recognized.
+  evidence: Live measurement 2026-09-17: `text.count("T h e   f a c t o r y   a l r e a d y   r u n s") == 72` on both the local file and the Design-side `read_file` body at etag `1789639734959225`; first occurrence at char offset 6344 in both. The other 4 `project/` files (prototype, exec summary, infographic head, infographic deck) were checked for the same pattern and are clean. `git log --oneline -- <path>` confirms the corrupted content predates this story's session (introduced by `e483288d5`, before any push work started).
+  location: `presentations/wasm-analytics-stack/project/Wasm Analytics Stack Infographic standalone.html`; live Design project `45c841c6-e807-4fee-a92a-f8e89cb890b4` (same file, etag `1789639734959225`)
+  origin: found live during Story 21.7's push+read-back task, 2026-09-17
+  severity: high — a real (if non-recipe) content-authoring defect now live in a shared external system, not just the repo
+  promoted: 2026-09-17
+  status: open
+
+  Follow-up needed (not done here — the fix is content-authoring work, out of a push-only story's scope, and per repo convention needs its own Dream/Spec/Story, not a freelance fix): (1) regenerate the standalone's corrupted sections from `facts.yaml` without the duplication-and-space-injection bug; (2) re-push the corrected file to Design to overwrite the contaminated copy at project `45c841c6-e807-4fee-a92a-f8e89cb890b4`; (3) check `deckcraft` (21.8) and `unity-data-stack` (21.6) standalone posters for the same root-commit damage before their own push stories complete; (4) consider whether `deck-facts --check` needs a prose-sanity/repeated-block detector so this class of defect cannot recur silently.
+
+### DW-21-7-2: `McpTransport.list_files` cannot parse the live `claude-design` server's current `list_files` answer shape
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-21-7-wasm-analytics-stack-rebuilt-to-the-standard.md`
+  summary: The live `claude-design` MCP server's `list_files` tool answers with a bare JSON array of `{"path", "type"[, "size", "etag"]}` entries (directories included), not the `{"files": [...]}` object `McpTransport.list_files` (`mcp_transport.py:488`, via `_call_json`) expects, so `transport.list_files(...)` raises `TransportCallError("... returned list, expected an object")` on every live call today.
+  evidence: Confirmed live against Design project `45c841c6-e807-4fee-a92a-f8e89cb890b4`, 2026-09-17: `transport._raw_text("list_files", {"project_id": ...})` returns `[{"path":"_ds","type":"directory"},...,{"path":"Wasm Analytics Stack.dc.html","type":"file","size":40573,"etag":"1785023174376282"},...]` — a bare array, `json.loads` of which is a `list`, not a `Mapping`, so `_call_json`'s `isinstance(payload, Mapping)` guard (`mcp_transport.py:572`) raises. The package's own unit tests (`test_mcp_transport.py:428-465`) assert the `{"files": [...]}` shape, so this is a real drift between the tests' assumed wire contract and the live server, not a test gap. Worked around in this story by parsing `_raw_text` directly and filtering `type == "file"`.
+  location: `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py:488` (`McpTransport.list_files`); same shape presumably affects `AgentSdkTransport.list_files` too (not verified live this story)
+  origin: found live during Story 21.7's push+read-back task, 2026-09-17
+  severity: medium — blocks `herald deck status`/CAP-3 and any push workflow that pre-checks via `list_files` (Story 21.4's own precedent), across every deck, but every affected workflow has a working fallback (`read_file`-based compare, as used here)
+  promoted: 2026-09-17
+  status: open
+
+  closed: 2026-09-14 — Closed with three tests that run a **real** `pytest --collect-only -q` over a throwaway package and parse its actual stdout, rather than the synthetic strings the suite had been asserting against: the plain `N tests collected` form, the `N/M tests collected` deselected form (pinning that `(?:/\d+)?` captures the SELECTED count, not the total), and the reversed-line scan, which matters because real stdout lists every node id before the summary and a forward scan could match a digit in an id. Deliberately NOT routed through `tests_command()`'s `pixi run -e pyforge-<station>`: that needs a provisioned station env and would make the tests skip on most machines — which is the same "only the plumbing is verified" hole this entry names. Mutation-verified rather than assumed: swapping the regex to `(\d+) items? collected` fails all three, and restoring passes all three, so they bite on the thing they claim to. `scripts/deck_facts.py` is byte-unchanged; this is pure verification of shipped behaviour, which is why it needed no Dream. Suite 45 -> 48 passed.
+
+### DW-FU-21-10: presentations/presenton-pixi-image/README.md carries a garbled, truncated sentence fragment under its Provenance section, pre-existing and unrelated to the registry fix.
+
+- source_spec: `planning-artifacts/specs/spec-21-10-the-registry-sees-all-fourteen-decks.md`
+  summary: presentations/presenton-pixi-image/README.md carries a garbled, truncated sentence fragment under its Provenance section, pre-existing and unrelated to the registry fix.
+  evidence: The line reads "**seeded 2026-07-25 via DesignSync (byte-exact localPath upload).dc.html`, `Infographic standalone.html`, - Infographic Deck.dc.html`). The `DesignSync` tool was not exposed..." -- a mangled sentence, present before this story touched the file and preserved verbatim under `### Provenance` per this story's own out-of-scope note (registry.read() never parses this span, so it does not block the registry fix). Confirmed unchanged by diffing against the pre-story revision.
+  location: presentations/presenton-pixi-image/README.md:71
+  origin: spec-deferred 2d5a465da45e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2: `deck-trio --deck` refuses four of the ten PyForge posters (atlas, marshal, unifying-strategy, herald) because they do not carry the `<div class="act">`/`.lbl` vocabulary the intent-contract expects
+
+- source_spec: `planning-artifacts/specs/spec-21-2-deck-trio-derives-the-infographic-deck-from-the-standalone.md`
+  summary: `deck-trio --deck`, as the intent-contract specifies it, refuses four of the ten PyForge posters (atlas, marshal, unifying-strategy, herald) because they do not carry the `<div class="act">`/`.lbl` vocabulary the intent expects.
+  evidence: Verified in the 2026-09-15 follow-up review pass by running the diff's own `_DeckStructure` plus `main()`'s refusal checks (read-only) over every `presentations/pyforge-*/project/*Infographic standalone.html`: doctor, genesis, mason, scribe, steward and warden derive cleanly (6 acts each, 22/27/22/22/22/31 sections, one-div wrapper chain); atlas parses 6 acts / 21 sections but every act label lives in `<span class="n">`/`<span class="t">` (all six `.lbl` empty, exit 2); marshal has 6 acts (`.n`/`.t`) and 0 `<section class="sec">` (its 19 sections are inline-styled); unifying-strategy has 7 acts (`.act-num`/`.act-title`) and 0 `.sec`; herald has 0 `.act` and 0 `.sec`. The refusals are the intent's own specified behavior (I/O rows "No act bands or no numbered sections" and "Empty act/section label" -> exit 2), so this is not a defect of the diff; it is pre-existing poster non-conformance relative to the vocabulary the intent chose. Note the standard's own tension: `infographic-standard.md`'s Authoring template instructs copying the reference markup, but these four posters predate that template's `.act`/`.lbl` convention.
+  location: `scripts/deck_trio.py:_DeckStructure.handle_starttag` (cls == "act" / "sec" / "lbl") and `main()`'s four `--deck` refusals; `presentations/pyforge-{atlas,marshal,unifying-strategy,herald}/project/*Infographic standalone.html`
+  origin: spec-deferred 73b1c596619a — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md` (`tier3-only-deferral` finding; original Tier-3 id `DW-4` renamed on promotion per `deferred_work_promote.py`'s own generic-id collision warning)
+  severity: medium
+  promoted: 2026-09-18 — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md`
+  status: open
+
+### DW-FU-21-3: `check()`'s discovery-notes stderr print (an ambiguous-suffix-match warning) is only exercised through `--refresh`'s notes-printing loop, never through a plain `--check`-only invocation
+
+- source_spec: `planning-artifacts/specs/spec-21-3-deck-facts-refreshes-every-marked-surface-not-just-the-poster.md`
+  summary: `check()`'s new discovery-notes stderr print (an ambiguous-suffix-match warning) is only exercised through `--refresh`'s own notes-printing loop in `main()`, never through a plain `--check`-only invocation.
+  evidence: Verified by the Verification Gap review pass: replacing the `for note in notes: print(note, file=sys.stderr)` block inside `check()` (`scripts/deck_facts.py`) with `pass` and running the full suite left all 60 tests (at review time) passing — every `--check`-only test captures stdout only (`_check_lines`), never stderr, and no test combines an ambiguous multi-file surface with a `--check`-only invocation. The underlying ambiguity condition (two files matching one suffix glob) does not occur anywhere in the live fleet today, and the note is diagnostic-only (exit code is unaffected either way).
+  location: `scripts/deck_facts.py:check()` (the `for note in notes: print(..., file=sys.stderr)` block) and `tests/scripts/test_deck_facts.py`
+  origin: spec-deferred 7e7e91007646 — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md` (`tier3-only-deferral` finding; original Tier-3 id `DW-5` renamed on promotion per `deferred_work_promote.py`'s own generic-id collision warning)
+  severity: low
+  promoted: 2026-09-18 — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md`
+  status: open
+
+### DW-FU-23-1: sprint-status-ledger.yaml still reads `backlog` for this story's key even though implementation, verification and review are complete.
+
+- source_spec: `planning-artifacts/specs/spec-23-1-the-account-is-enumerated-and-reconciled-against-the-registry.md`
+  summary: sprint-status-ledger.yaml still reads `backlog` for this story's key even though implementation, verification and review are complete.
+  evidence: This workflow's own step files never touch sprint-status-ledger.yaml -- that sync is owned by dedicated ledger-sync tooling run separately, not a hand-edit inside bmad-build-auto. A stale `backlog` row left against a story whose spec already reads `done` has previously caused indefinite redispatch in this repo (auto-memory: "Merged story + backlog ledger row respawns forever").
+  location: _bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml (key 23-1-the-account-is-enumerated-and-reconciled-against-the-registry)
+  origin: spec-deferred 410df0b002cb — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done 2026-09-18
+
+  verified: 2026-09-18 — RESOLVED by the landing itself. `marshal factory dispatch`'s land-finalize promoted the row (`7fd7a6f944 marshal: promote sprint-status ledger for 'pyforge-herald' (1 key(s) -> done)`, on origin/main 44 s after PR #1459 merged as `1dd017bc21 Merge pyforge-herald/23-1 into main`); the tracked ledger reads `done` for `23-1-the-account-is-enumerated-and-reconciled-against-the-registry`. The respawn the deferral feared did fire once inside that 44 s window (run pyforge-herald-20260918T151511146Z-3f6a3426, which correctly refused as already-merged) — a dispatch-supervisor race, not a ledger gap, and no work was duplicated.
+
+### DW-FU-23-2: _windowed_read has no guard against a server that repeatedly returns a non-advancing last_line, which would loop forever.
+
+- source_spec: `planning-artifacts/specs/spec-23-2-every-presentation-has-a-local-twin-design-systems-are-mirrored-as-libraries.md`
+  summary: _windowed_read has no guard against a server that repeatedly returns a non-advancing last_line, which would loop forever.
+  evidence: Edge Case Hunter review pass (2026-09-18): traced the pagination loop in src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py's _windowed_read -- it breaks only when window.last_line >= window.total_lines, with no check that last_line actually advanced between calls. Could not verify reachability: every live call against the real Design read_file MCP tool during this story paged forward correctly (confirmed pulling a 3377-line file and a 136293-byte file). What would settle it: observing the real API return a stalled/non-advancing window pair, which has never been seen.
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py:_windowed_read
+  origin: spec-deferred dd34204da6b7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done 2026-09-18
+
+  verified: 2026-09-18 — RESOLVED by Story 24.1 (spec-pyforge-herald CAP-48). `_windowed_read` (`deck_pipeline.py`) now tracks the previous window's `last_line` and raises the new `errors.PaginationStalledError` -- naming the file and the stalled line -- the moment a paged-for window's own `last_line` fails to advance past it, instead of looping forever. Evidence: `test_windowed_read_raises_pagination_stalled_error_on_a_non_advancing_window` (`tests/unit/test_deck_pipeline.py`) — a fake transport returning the same `(last_line=2773, total_lines=6000)` pair twice raises `PaginationStalledError` on the second window, matching on `big.dc.html` and both occurrences of the stalled line, after exactly 2 transport calls (never a third, never a loop). Both pre-existing live-shaped fixtures still pass unchanged: `test_windowed_read_reassembles_across_multiple_windows` / `test_windowed_read_strips_the_truncation_trailer_from_a_non_final_window` (the 3377-line pull) and `test_windowed_read_single_call_when_the_server_answers_whole` (the under-cap single-call shape the 136293-byte pull took) — full suite green via `pixi run --frozen -e pyforge-herald pyforge-herald-test`.
+
+### DW-FU-23-5: No PR-gating CI lane runs docsite/build.py or site-check before merge, and this story's own mandated Verification command (pyforge-herald-test) has zero coverage of docsite/, so a regression in the family-page code (or the pre-existing dossier/gallery/artifact code) can merge to main with every gate green.
+
+- source_spec: `planning-artifacts/specs/spec-23-5-the-family-is-browsable-and-downloadable-on-pages.md`
+  summary: No PR-gating CI lane runs docsite/build.py or site-check before merge, and this story's own mandated Verification command (pyforge-herald-test) has zero coverage of docsite/, so a regression in the family-page code (or the pre-existing dossier/gallery/artifact code) can merge to main with every gate green.
+  evidence: Verified 2026-09-18: grepped every `pull_request`-triggered workflow and `pr-preflight`'s dependency list in pixi.toml — none reference `docsite` or `site-check`. `dashboard.yml`, the only workflow that runs the build, triggers on `push: branches: [main]` only. No `docsite/tests/` directory or any test file anywhere imports `docsite/build.py`. This is pre-existing for the whole docsite pipeline (dossier/gallery/artifact already had zero PR-gating CI and zero unit tests before this story) — not introduced by this diff, so it is out of this story's scope to fix.
+  location: pixi.toml (pr-preflight, feature.site.tasks.site-check), .github/workflows/dashboard.yml
+  origin: spec-deferred 44bbdb936a4d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done 2026-09-18
+
+  verified: 2026-09-18 — RESOLVED by Story 24.2 (spec-pyforge-herald CAP-49). A new `pull_request`-triggered workflow, `.github/workflows/docsite-check.yml`, path-filtered to `docsite/**`, `docs/dashboard/**`, `presentations/**`, `pixi.toml` and its own workflow file, now runs two independent checks before merge: `docsite/build.py --check` with the same pip-installed deps `dashboard.yml` itself uses, and `pixi run -e site site-check` (the existing, reused task). `pixi.toml`'s `pr-preflight` gained the same `site-check` leg (`{ task = "site-check", environment = "site" }`) so a local run predicts the lane. Fixture-regression proof (2026-09-18, reverted after): inserting `{% raw %}{{ this_stays_unrendered }}{% endraw %}` into `docsite/templates/page_family.html.j2`'s rendered body made `docsite/build.py --check` fail with "unrendered Jinja delimiters in decks/<slug>/index.html" for all 10 registered deck families (exit 1); reverting made both `python docsite/build.py --check` and `pixi run -e site site-check` pass clean again (`checks passed — 7 required outputs, 10 infographics, 10 deck families`). `dashboard.yml` is unchanged and remains the only `deploy-pages` caller; `docs/how-to/presentation-deck.md`'s Acceptance criteria checklist names the new lane. The lane's first live GitHub Actions run: PR #1472, job `check` in workflow "Docsite check", https://github.com/rxm7706/local-recipes/actions/runs/35389603779 — SUCCESS in 26s. Full PR rollup also green: 22 SUCCESS / 4 SKIPPED (the gated platform-smoke lanes), `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`, `maintenance` label applied (every file this PR touches is outside `recipes/`).
+
+  SCOPE OF THIS CLOSURE — read before relying on it: this entry's own `summary` names TWO problems — (1) no PR-gating CI lane runs `docsite/build.py`/`site-check`, and (2) this story's own mandated Verification command (`pyforge-herald-test`) has zero coverage of `docsite/`. Only (1) is resolved above. (2) is still true after Story 24.2: `docsite-check.yml` runs `docsite/build.py --check` and `site-check` as separate CI steps, neither of which is `pyforge-herald-test` (the `pytest src/shared/packages/pyforge-herald/tests` suite), and no test file anywhere imports `docsite/build.py` — confirmed unchanged by this story. Tracked separately, not silently folded into this `done`: see DW-FU-24-2-1 below.
+
+### DW-FU-24-2-1: `pyforge-herald-test` still has zero unit-test coverage of `docsite/build.py` — the new `docsite-check.yml` CI lane catches a broken build (unrendered Jinja, missing/shrunk assets) but nothing exercises `docsite/`'s own logic (e.g. `collect_families`, `collect_infographics`, the `check()` predicates themselves) under `pytest`.
+
+- source_spec: `planning-artifacts/specs/spec-24-2-the-docsite-has-a-pr-gate.md`
+  summary: `pyforge-herald-test` still has zero unit-test coverage of `docsite/build.py` — the new `docsite-check.yml` CI lane catches a broken build (unrendered Jinja, missing/shrunk assets) but nothing exercises `docsite/`'s own logic (e.g. `collect_families`, `collect_infographics`, the `check()` predicates themselves) under `pytest`.
+  evidence: Split off DW-FU-23-5 2026-09-18 (review pass on Story 24.2): that entry's own `summary` named this as a second, distinct problem which Story 24.2's CI-lane fix does not touch — `docsite/` has no `tests/` directory, and `pyforge-herald-test` (`pytest src/shared/packages/pyforge-herald/tests`) never imports `docsite/build.py`. Out of Story 24.2's own Surface (`.github/workflows/`, `pixi.toml`, `docs/how-to/presentation-deck.md`, this ledger) — a real test suite for `docsite/build.py` is a separate, larger scoping question (unit-test-only vs. also exercising the Jinja render pipeline) that this story did not decompose.
+  location: docsite/build.py; src/shared/packages/pyforge-herald/tests/
+  origin: split from DW-FU-23-5, 2026-09-18
+  severity: medium
+  status: open
+
+### DW-FU-23-6: The idempotency AC is proven over hand-written fakes and one live smoke test that only exercised the skipped path, never a real seeded deck's unchanged path.
+
+- source_spec: `planning-artifacts/specs/spec-23-6-one-command-idempotent-reported.md`
+  summary: The idempotency AC is proven over hand-written fakes and one live smoke test that only exercised the skipped path, never a real seeded deck's unchanged path.
+  evidence: No live Claude Design credentials are available in this or any other automated dispatch environment. If the gap is real it would be medium: a verification-depth gap, not a code defect. It would be settled by running `herald deck sync-all` twice against a deck with live Design credentials and real tracked state.
+  note: The proof command now exists (`HERALD_LIVE_SYNC_PROOF=1 pixi run -e pyforge-herald deck-sync-proof -- --slug <slug>`, Story 24.3). Still open -- no operator has run it and recorded the two reports yet; close this entry only when they have, citing the recorded run.
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
+  origin: spec-deferred 9aa35103a2ee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done
+  verified: 2026-09-19 — resolved with a finding. The live proof ran twice on `pyforge-warden` (the only deck with pull etags; `pyforge-herald` has never been pulled and only reaches the skipped path). Record: `planning-artifacts/specs/spec-pyforge-herald/sync-proof-2026-09-19.md`. Both runs re-derived the stale deck, pushed both PPTX artifacts with identical read-back, and refused on the standalone HTML read-back — deterministically. The idempotent no-op path therefore stays unproven until DW-FU-23-6-1 is fixed; this entry's own gap (never run live) is closed.
+
+### DW-FU-23-6-1: `deck sync-all` never publishes the standalone infographic HTML — the post-push read-back mismatches every time, so the push is refused (2/2 live runs, 2026-09-19)
+
+- source_spec: `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/sync-proof-2026-09-19.md`
+  summary: On `pyforge-warden` (the one deck with pull state) two consecutive live `deck sync-all` runs pushed both PPTX artifacts with byte-identical read-back but refused `pyforge-warden-infographic-standalone-2026-09-15.html` with "read-back after push did not match … refused rather than record an unproven push". Deterministic, so not a race: Claude Design most likely normalises HTML on write (whitespace, attribute order, injected support script), which a byte-equality read-back can never satisfy while `.pptx` does. Until fixed, sync-all can never reach the `unchanged` state for a deck with a standalone poster, and the poster is never re-published. Remedy candidates: a normalised comparison for HTML artifacts, or the Design-side content hash the API returns.
+  evidence: `.herald/sync-proof/pyforge-warden/report-20260919T201122485002Z-8ae6ca61.json` and `…201203451643Z-6b319b4d.json` (`labels: ['failed']`, same `error`); `presentations/pyforge-warden/README.md` push-and-prove ledger 2026-09-19.
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
+  severity: medium
+  status: open
+  raised: 2026-09-19 — Owner: herald. Found by the DW-FU-23-6 live proof.
+
+### DW-herald-59-6: `chain_currency_sweep_check` reds pyforge-herald's `spec→prd` feeds edge — a direct, unavoidable side effect of steward Story 59.6's mandated spec-surface memlog reconcile, not a real staleness
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-59-6-shape-hygiene-roster-s-n-n-commits-status-comments.md`
+  summary: `pixi run -e pyforge-guild detectors-ci` now reports `chain_currency_sweep_check` FAIL for pyforge-herald (`chain-audit-checkpoint-staleness`, `feeds` edge `spec→prd`, `staleBy: [{"stage":"spec","than":"prd","at":"2026-09-25T04:02","other":"2026-09-20"}]`). Cause: Story 59.6's own verification instructions required every co-governor `spec-surface` names for a governed-path edit to get a `.memlog.md` entry naming the path — `src/shared/packages/pyforge-herald/src/pyforge/herald/progress.py` (STATIONS re-export from `pyforge.core.roster`) is one such co-governed file, so `spec-pyforge-herald/.memlog.md` got a routine reconcile entry, which bumped its frontmatter `updated:` past the 2-day grace window against the PRD's `2026-09-20` date. Layers, coherence and orphan checkpoints all still pass; only staleness fails.
+  evidence: doctor-sources output — `pixi run -e pyforge-guild python -m pyforge.doctor.sources chain-completeness --layers --project pyforge-herald --json` — the single `feeds`/`spec`/`prd` entry under `staleBy`; `pr-preflight` re-run after the fix confirmed this was the only new finding beyond the two findings already present on `main` before this branch (a `pixi_version_check` `ModuleNotFoundError`, and an `ad_citation_check` bare-capability citation in pyforge-doctor's memlog).
+  location: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/.memlog.md; _bmad-output/projects/pyforge-herald/planning-artifacts/prd.md
+  origin: caused by steward Story 59.6's own mandatory spec-surface reconcile step, 2026-09-25
+  severity: low
+  status: open
+  note: The proper remedy per `_bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md` is a full per-station cascade (brief→PRD→arch→epics, one commit) — explicitly its own separate, event-driven workflow with its own dispatch discipline ("one agent per station cascade"), not a Story 59.6 concern ("Scoped to Story 59.6 ONLY, not sibling stories in Epic 59"). Left open for a dedicated chain-currency-sweep dispatch against pyforge-herald rather than faked/stamped here — the runbook itself forbids a stamp without a genuine reconcile.

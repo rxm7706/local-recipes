@@ -1,9 +1,12 @@
----
-title: The estate gets an S3-compatible object store, without becoming its operator
+---title: The estate gets an S3-compatible object store, without becoming its operator
 type: dream
 owner: steward
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `platform-object-storage-kind`).
+
 
 # The estate gets an S3-compatible object store, without becoming its operator
 

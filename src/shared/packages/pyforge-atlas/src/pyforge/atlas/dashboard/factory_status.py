@@ -136,9 +136,7 @@ def build_factory_status_frame(
     the tracked repo locations but are injectable for the gate's fixtures.
     """
     defaults = _default_paths()
-    sprint_status_path = (
-        sprint_status_path if sprint_status_path is not None else defaults["sprint_status_path"]
-    )
+    sprint_status_path = sprint_status_path if sprint_status_path is not None else defaults["sprint_status_path"]
     epics_path = epics_path if epics_path is not None else defaults["epics_path"]
     specs_dir = specs_dir if specs_dir is not None else defaults["specs_dir"]
 
@@ -156,9 +154,7 @@ def build_factory_status_frame(
     # (Reviewer-B S1: appending str(None) rendered a literal "None" status an agent could
     # not distinguish from a real None; the "never fabricated status" contract wins.)
     if epics_status is not None:
-        rows.append(
-            {"source": "epics.md", "artifact": "frontmatter", "key": "status", "status": str(epics_status)}
-        )
+        rows.append({"source": "epics.md", "artifact": "frontmatter", "key": "status", "status": str(epics_status)})
     for name, status in read_spec_statuses(specs_dir).items():
         rows.append({"source": "docs/specs", "artifact": name, "key": "status", "status": status})
 

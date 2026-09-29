@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
 from pyforge.herald import webhook, webhook_host
 from pyforge.herald.errors import HeraldError
 
@@ -29,9 +30,7 @@ from pyforge.herald.errors import HeraldError
 
 
 def _sign(secret: bytes, timestamp: str, body: bytes) -> str:
-    return "sha256=" + hmac.new(
-        secret, timestamp.encode("ascii") + b"." + body, hashlib.sha256
-    ).hexdigest()
+    return "sha256=" + hmac.new(secret, timestamp.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
 
 
 def _timestamp() -> str:
@@ -72,15 +71,11 @@ class _Recorder:
 
     @property
     def status(self) -> int:
-        return next(
-            m["status"] for m in self.messages if m["type"] == "http.response.start"
-        )
+        return next(m["status"] for m in self.messages if m["type"] == "http.response.start")
 
     @property
     def json_body(self) -> Any:
-        body = b"".join(
-            m["body"] for m in self.messages if m["type"] == "http.response.body"
-        )
+        body = b"".join(m["body"] for m in self.messages if m["type"] == "http.response.body")
         return json.loads(body)
 
 
@@ -142,9 +137,7 @@ def test_application_attribute_builds_once_and_caches(monkeypatch, tmp_path):
     assert calls == 1
 
 
-def test_application_attribute_is_a_working_asgi_callable_end_to_end(
-    monkeypatch, tmp_path
-):
+def test_application_attribute_is_a_working_asgi_callable_end_to_end(monkeypatch, tmp_path):
     """Proves the whole env-var-driven wiring, not just `build_application`
     in isolation: a real signed request through `webhook_host.application`
     creates a Progress record in the env-configured repo root."""
@@ -169,9 +162,7 @@ def test_getattr_raises_attribute_error_for_any_other_name():
 
 
 def test_resolve_repo_root_reads_the_injected_env():
-    assert webhook_host._resolve_repo_root({"HERALD_REPO_ROOT": "/tmp/x"}) == Path(
-        "/tmp/x"
-    )
+    assert webhook_host._resolve_repo_root({"HERALD_REPO_ROOT": "/tmp/x"}) == Path("/tmp/x")
 
 
 def test_resolve_repo_root_raises_when_unset():
@@ -258,9 +249,7 @@ def test_wrap_never_double_sends_when_a_response_already_started_before_a_timeou
         await asyncio.sleep(1000)
 
     executor = ThreadPoolExecutor(max_workers=1)
-    app = webhook_host._wrap(
-        partially_sent_then_hangs, executor=executor, timeout_seconds=0.05
-    )
+    app = webhook_host._wrap(partially_sent_then_hangs, executor=executor, timeout_seconds=0.05)
     recorder = _Recorder()
     asyncio.run(app(_scope(webhook.ON_SHIP_PATH), _receive_once(b"{}"), recorder))
     starts = [m for m in recorder.messages if m["type"] == "http.response.start"]
@@ -297,9 +286,7 @@ def test_wrap_points_asyncio_to_thread_at_the_dedicated_executor():
         await send({"type": "http.response.start", "status": 201, "headers": []})
         await send({"type": "http.response.body", "body": b"{}"})
 
-    executor = ThreadPoolExecutor(
-        max_workers=webhook_host.EXECUTOR_MAX_WORKERS, thread_name_prefix="herald-webhook"
-    )
+    executor = ThreadPoolExecutor(max_workers=webhook_host.EXECUTOR_MAX_WORKERS, thread_name_prefix="herald-webhook")
     app = webhook_host._wrap(inner_using_to_thread, executor=executor)
     recorder = _Recorder()
     asyncio.run(app(_scope(webhook.ON_SHIP_PATH), _receive_once(b"{}"), recorder))

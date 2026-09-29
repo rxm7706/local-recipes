@@ -13,7 +13,7 @@ from enum import StrEnum
 
 from .gate import _matches_any
 from .model import Finding, Severity, Status, status_for
-from .verdict import compute_verdict, classify
+from .verdict import classify, compute_verdict
 
 PRE_EXISTING_GATE_CODE = "MRS-GATE-014"
 
@@ -78,9 +78,7 @@ def _normalize_repo_path(path: str) -> str:
     return path.lstrip("./").replace("\\", "/")
 
 
-def extract_failure_paths_from_verify_output(
-    stdout: str, stderr: str
-) -> tuple[str, ...]:
+def extract_failure_paths_from_verify_output(stdout: str, stderr: str) -> tuple[str, ...]:
     """Best-effort repo-relative ``.py`` paths from verify command output."""
     text = f"{stdout}\n{stderr}"
     found: set[str] = set()
@@ -142,9 +140,7 @@ def _command_from_gate_001_message(message: str) -> str | None:
     return rest[1:end]
 
 
-def _report_for_command(
-    command: str, command_reports: tuple[dict[str, object], ...]
-) -> dict[str, object] | None:
+def _report_for_command(command: str, command_reports: tuple[dict[str, object], ...]) -> dict[str, object] | None:
     for report in command_reports:
         if report.get("command") == command:
             return report
@@ -219,9 +215,7 @@ def reclassify_pre_existing_gate_findings(
         ):
             reclassified.append(finding)
             continue
-        reclassified.append(
-            pre_existing_gate_finding(command=command, failure_paths=failure_paths)
-        )
+        reclassified.append(pre_existing_gate_finding(command=command, failure_paths=failure_paths))
     return tuple(reclassified)
 
 

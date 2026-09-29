@@ -198,9 +198,7 @@ def test_degrade_on_exception_passes_through_a_successful_gather_unchanged():
         ),
     )
 
-    result = degrade_on_exception(
-        Source.MARSHAL_DURABILITY, "ledger-regression", lambda: findings
-    )
+    result = degrade_on_exception(Source.MARSHAL_DURABILITY, "ledger-regression", lambda: findings)
 
     assert result == findings
 
@@ -209,9 +207,7 @@ def test_degrade_on_exception_converts_a_raised_exception_into_one_warn_finding(
     def _boom() -> tuple[Finding, ...]:
         raise RuntimeError("tmux socket unreachable")
 
-    result = degrade_on_exception(
-        Source.MARSHAL_DURABILITY, "dashboard-drift", _boom
-    )
+    result = degrade_on_exception(Source.MARSHAL_DURABILITY, "dashboard-drift", _boom)
 
     assert len(result) == 1
     finding = result[0]

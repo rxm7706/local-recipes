@@ -70,15 +70,17 @@ path, conflict or CAS failure included."""
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import tempfile
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
+from ..core.refs import ORIGIN_MAIN, local_branch_ref, remote_tracking_ref
 from ..ports.vcs import WorktreeEntry
 
 
@@ -117,6 +119,11 @@ _GIT_CHECKOUT_TIMEOUT_S = 600.0
 # plenty of headroom without leaving a hung push indefinitely blocking the
 # tick loop's durability watcher.
 _GIT_PUSH_TIMEOUT_S = 120.0
+#: The full refname of origin/main -- never the short name, which git resolves to a local
+#: branch or tag called `origin/main` first (Story 57.1 review 2).
+_ORIGIN_MAIN_REF = ORIGIN_MAIN
+#: A tree/object id as git prints it: 40 hex (SHA-1) or 64 hex (SHA-256 repositories).
+_TREE_OID = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 # `git fetch` is likewise a network round-trip, not a local query -- mirrors
 # `_GIT_PUSH_TIMEOUT_S`'s own reasoning exactly (Story 4.12, FR-173).
 _GIT_FETCH_TIMEOUT_S = 120.0
@@ -143,9 +150,7 @@ def _run(args: list[str], *, timeout_s: float = _GIT_TIMEOUT_S) -> ProcessResult
         if isinstance(cause, FileNotFoundError):
             raise VcsCommandError(f"git executable not found: {cause}") from cause
         if isinstance(cause, subprocess.TimeoutExpired):
-            raise VcsCommandError(
-                f"git command timed out after {timeout_s}s: {' '.join(args)}"
-            ) from cause
+            raise VcsCommandError(f"git command timed out after {timeout_s}s: {' '.join(args)}") from cause
         # Launching git can fail with more than absence: EACCES on a
         # non-executable shim, ENOEXEC on a corrupt binary, an embedded NUL
         # byte -- all must land in the envelope, not escape raw (review
@@ -154,6 +159,28 @@ def _run(args: list[str], *, timeout_s: float = _GIT_TIMEOUT_S) -> ProcessResult
         # already carries that message, so fall back to it rather than
         # stringifying/chaining from a bare `None` (Story 14.4 review finding).
         raise VcsCommandError(f"cannot launch git: {cause or exc}") from (cause or exc)
+
+
+def _is_planning_artifact_path(rel: str) -> bool:
+    """Story 68.1 (CAP-277): is ``rel`` a normalized repo-relative POSIX path of the form
+    ``_bmad-output/projects/<slug>/planning-artifacts/<...>`` -- the only place a landing's
+    bookkeeping publish may write under the preflight opt-out? Normalized means it is its own
+    ``posixpath.normpath``: no leading slash, no empty, ``.`` or ``..`` segment, no backslash, no
+    control character (the hook's skip journal is tab-separated), no ``.git`` segment."""
+    if not rel or any(not ch.isprintable() or ch == "\\" for ch in rel):
+        return False
+    parts = rel.split("/")
+    if len(parts) < 5 or parts[0] != "_bmad-output" or parts[1] != "projects" or parts[3] != "planning-artifacts":
+        return False
+    return all(part not in ("", ".", "..") and part.lower() != ".git" for part in parts[2:])
+
+
+def _preflight_skip_reason_text(new_sha: str, written: frozenset[str], reason: str) -> str:
+    """The ``PYFORGE_PREFLIGHT_SKIP_REASON`` a checked ledger publish carries (Story 68.1): the
+    full new sha, the sorted written paths and the caller's reason, on one line -- the hook's
+    journal writes it as the last tab-separated field, so no tab or newline may survive."""
+    text = f"marshal landing publish {new_sha} [{', '.join(sorted(written))}]: {reason}"
+    return " ".join("".join(ch if ch.isprintable() else " " for ch in text).split())
 
 
 def _iter_worktree_blocks(stdout: str) -> Iterator[dict[str, str]]:
@@ -201,9 +228,7 @@ class GitVcs:
             ]
         )
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"not inside a git repository: {start} ({result.stderr.strip()})"
-            )
+            raise VcsCommandError(f"not inside a git repository: {start} ({result.stderr.strip()})")
         return Path(result.stdout.strip()).parent
 
     def branch_exists(self, repo_root: Path, branch: str) -> bool:
@@ -233,8 +258,7 @@ class GitVcs:
         if result.returncode == 1:
             return False
         raise VcsCommandError(
-            f"git rev-parse --verify failed for refs/heads/{branch} "
-            f"(exit {result.returncode}): {result.stderr.strip()}"
+            f"git rev-parse --verify failed for refs/heads/{branch} (exit {result.returncode}): {result.stderr.strip()}"
         )
 
     def worktree_path_for_branch(self, repo_root: Path, branch: str) -> Path | None:
@@ -243,9 +267,7 @@ class GitVcs:
         the block whose ``branch`` line is exactly ``refs/heads/<branch>``."""
         result = _run(["git", "-C", str(repo_root), "worktree", "list", "--porcelain"])
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git worktree list failed: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git worktree list failed: {result.stderr.strip()}")
         wanted = f"refs/heads/{branch}"
         for lines in _iter_worktree_blocks(result.stdout):
             if lines.get("branch") == wanted:
@@ -256,8 +278,7 @@ class GitVcs:
                     # surface as the port's error, not a raw KeyError
                     # (review finding).
                     raise VcsCommandError(
-                        f"unparseable 'git worktree list --porcelain' block "
-                        f"for {wanted}: no worktree line"
+                        f"unparseable 'git worktree list --porcelain' block for {wanted}: no worktree line"
                     )
                 return Path(worktree)
         return None
@@ -273,9 +294,7 @@ class GitVcs:
         block, which carries no ``branch`` line at all."""
         result = _run(["git", "-C", str(repo_root), "worktree", "list", "--porcelain"])
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git worktree list failed: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git worktree list failed: {result.stderr.strip()}")
         entries: list[WorktreeEntry] = []
         for lines in _iter_worktree_blocks(result.stdout):
             worktree = lines.get("worktree")
@@ -283,10 +302,7 @@ class GitVcs:
                 # Same "no worktree line" defect class as
                 # worktree_path_for_branch above -- surfaced here without a
                 # specific wanted branch to name, since this method has none.
-                raise VcsCommandError(
-                    "unparseable 'git worktree list --porcelain' block: "
-                    "no worktree line"
-                )
+                raise VcsCommandError("unparseable 'git worktree list --porcelain' block: no worktree line")
             branch_ref = lines.get("branch")
             branch = branch_ref.removeprefix("refs/heads/") if branch_ref is not None else None
             entries.append(WorktreeEntry(path=Path(worktree), branch=branch))
@@ -311,7 +327,7 @@ class GitVcs:
         The mint-new-branch form always passes ``--no-track``: git's own
         ``branch.autoSetupMerge`` default auto-configures the new branch's
         upstream to ``base`` whenever ``base`` is a remote-tracking ref
-        (every dispatch/loop-home caller passes ``origin/main`` or similar).
+        (every dispatch/loop-home caller passes ``refs/remotes/origin/main`` or similar).
         Left alone, that silently makes ``push()``'s already-has-upstream
         path push ``<branch>:main`` instead of ``<branch>:<branch>`` --
         rejected by the remote as non-fast-forward, and indistinguishable
@@ -372,9 +388,7 @@ class GitVcs:
             ]
         )
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git status --porcelain failed in {worktree_path}: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git status --porcelain failed in {worktree_path}: {result.stderr.strip()}")
         return bool(result.stdout.strip())
 
     def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
@@ -393,9 +407,7 @@ class GitVcs:
         branch_ref = f"refs/heads/{branch}"
         into_ref = f"refs/heads/{into}"
 
-        ancestry = _run(
-            ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", branch_ref, into_ref]
-        )
+        ancestry = _run(["git", "-C", str(repo_root), "merge-base", "--is-ancestor", branch_ref, into_ref])
         if ancestry.returncode == 0:
             return True
         if ancestry.returncode != 1:
@@ -404,32 +416,22 @@ class GitVcs:
                 f"(exit {ancestry.returncode}): {ancestry.stderr.strip()}"
             )
 
-        merge_base_result = _run(
-            ["git", "-C", str(repo_root), "merge-base", branch_ref, into_ref]
-        )
+        merge_base_result = _run(["git", "-C", str(repo_root), "merge-base", branch_ref, into_ref])
         if merge_base_result.returncode != 0:
             raise VcsCommandError(
-                f"cannot find a merge base for {branch_ref} and {into_ref}: "
-                f"{merge_base_result.stderr.strip()}"
+                f"cannot find a merge base for {branch_ref} and {into_ref}: {merge_base_result.stderr.strip()}"
             )
         merge_base = merge_base_result.stdout.strip()
 
-        tree_result = _run(
-            ["git", "-C", str(repo_root), "rev-parse", f"{branch_ref}^{{tree}}"]
-        )
+        tree_result = _run(["git", "-C", str(repo_root), "rev-parse", f"{branch_ref}^{{tree}}"])
         if tree_result.returncode != 0:
-            raise VcsCommandError(
-                f"cannot resolve the tree of {branch_ref}: {tree_result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"cannot resolve the tree of {branch_ref}: {tree_result.stderr.strip()}")
         tree = tree_result.stdout.strip()
 
-        base_tree_result = _run(
-            ["git", "-C", str(repo_root), "rev-parse", f"{merge_base}^{{tree}}"]
-        )
+        base_tree_result = _run(["git", "-C", str(repo_root), "rev-parse", f"{merge_base}^{{tree}}"])
         if base_tree_result.returncode != 0:
             raise VcsCommandError(
-                f"cannot resolve the tree of the merge base {merge_base}: "
-                f"{base_tree_result.stderr.strip()}"
+                f"cannot resolve the tree of the merge base {merge_base}: {base_tree_result.stderr.strip()}"
             )
         if tree == base_tree_result.stdout.strip():
             # A net-zero branch (e.g. a change and its revert): the branch's
@@ -468,8 +470,7 @@ class GitVcs:
         )
         if commit_tree_result.returncode != 0:
             raise VcsCommandError(
-                f"cannot build the virtual merged-check commit for {branch_ref}: "
-                f"{commit_tree_result.stderr.strip()}"
+                f"cannot build the virtual merged-check commit for {branch_ref}: {commit_tree_result.stderr.strip()}"
             )
         virtual_commit = commit_tree_result.stdout.strip()
 
@@ -486,8 +487,7 @@ class GitVcs:
         )
         if cherry_result.returncode != 0:
             raise VcsCommandError(
-                f"git cherry failed comparing {branch_ref} against {into_ref}: "
-                f"{cherry_result.stderr.strip()}"
+                f"git cherry failed comparing {branch_ref} against {into_ref}: {cherry_result.stderr.strip()}"
             )
         # "-" = a commit on `into` already carries an equivalent patch
         # (merged); "+" = no equivalent found on `into` (genuinely
@@ -523,9 +523,16 @@ class GitVcs:
         args.append(str(home))
         result = _run(args, timeout_s=_GIT_CHECKOUT_TIMEOUT_S)
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git worktree remove failed for {home}: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git worktree remove failed for {home}: {result.stderr.strip()}")
+
+    def prune_worktrees(self, repo_root: Path) -> None:
+        """``git worktree prune`` -- clears stale worktree registrations
+        left behind when a worktree's directory was removed by some means
+        other than ``remove_worktree`` (Story 51.1's best-effort cleanup
+        fallback, mirroring ``merge_branch``'s own two-stage cleanup)."""
+        result = _run(["git", "-C", str(repo_root), "worktree", "prune"])
+        if result.returncode != 0:
+            raise VcsCommandError(f"git worktree prune failed for {repo_root}: {result.stderr.strip()}")
 
     def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
         """``git branch -d``/``-D``, selected by ``force``. See the port's
@@ -535,9 +542,7 @@ class GitVcs:
         flag = "-D" if force else "-d"
         result = _run(["git", "-C", str(repo_root), "branch", flag, branch])
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git branch {flag} failed for {branch}: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git branch {flag} failed for {branch}: {result.stderr.strip()}")
 
     def tracked_paths_matching(self, repo_root: Path, pathspec: str) -> tuple[str, ...]:
         """Story 1.11 (FR-178): ``git ls-files -- <pathspec>``, read-only.
@@ -554,17 +559,22 @@ class GitVcs:
             return ()
         return tuple(line for line in result.stdout.splitlines() if line.strip())
 
-    def push(self, repo_root: Path, branch: str) -> None:
+    def push(self, repo_root: Path, branch: str, *, proven_on_main_sha: str | None = None) -> None:
         """Story 3.8 (AD-46): resolves whether ``branch`` already has a
-        configured upstream via ``git rev-parse --abbrev-ref
-        <branch>@{upstream}`` -- exit 0 means one exists (``origin/x``-shaped
-        output, split on the first ``/`` into the remote name and the
-        remote-side branch name, then pushed EXPLICITLY,
-        ``git push <remote> <branch>:<remote_branch>``); a non-zero exit
-        whose stderr carries git's own "no upstream configured for branch"
-        wording (128, the ordinary case for a brand-new station/per-story
-        branch) falls back to ``git push origin <branch>``, the branch's
-        first push. Any OTHER non-zero exit (an ambiguous ref, "no such
+        configured upstream via ``git rev-parse --symbolic-full-name
+        <branch>@{upstream}`` -- exit 0 means one exists, and the branch's
+        own config then names the remote and the remote-side branch
+        (``for-each-ref`` ``%(upstream:remotename)`` /
+        ``%(upstream:remoteref)``), pushed EXPLICITLY,
+        ``git push <remote> refs/heads/<branch>:refs/heads/<remote_branch>``);
+        a non-zero exit whose stderr carries git's own "no upstream configured
+        for branch" wording (128, the ordinary case for a brand-new
+        station/per-story branch) falls back to ``git push origin
+        refs/heads/<branch>:refs/heads/<branch>``, the branch's first push
+        (Story 61.1: full refnames on both sides, so a tag named like the
+        branch -- local or remote -- never makes the push ambiguous, and the
+        target from config, so a local ``origin/<branch>`` cannot bend it).
+        Any OTHER non-zero exit (an ambiguous ref, "no such
         branch" because ``branch`` itself does not exist locally, a
         corrupted repo) is NOT treated as "no upstream" -- silently falling
         back there would push to a remote/branch the caller never intended
@@ -584,36 +594,83 @@ class GitVcs:
         ``_GIT_PUSH_TIMEOUT_S``, not ``_GIT_TIMEOUT_S``/
         ``_GIT_CHECKOUT_TIMEOUT_S`` -- a push is a network round-trip, not a
         local query or tree-populating checkout (review finding)."""
+        # Story 61.1 (reviews 2 and 3): whether an upstream exists is read from
+        # `<branch>@{upstream}`; WHERE it points is read from the branch's own config
+        # (`%(upstream:remotename)` / `%(upstream:remoteref)`), never parsed out of the tracking
+        # ref's name -- `--abbrev-ref` answered `remotes/origin/<b>` beside a local `origin/<b>`
+        # shadow (a push to a remote called `remotes`), and a tracking namespace outside
+        # `refs/remotes/` or a remote named with a `/` has no parseable name at all.
         upstream_check = _run(
-            ["git", "-C", str(repo_root), "rev-parse", "--abbrev-ref", f"{branch}@{{upstream}}"]
+            ["git", "-C", str(repo_root), "rev-parse", "--symbolic-full-name", f"{branch}@{{upstream}}"]
         )
         if upstream_check.returncode == 0:
             upstream = upstream_check.stdout.strip()
-            remote, _, remote_branch = upstream.partition("/")
-            if not remote or not remote_branch:
-                # An upstream ref with no `/` (or an empty remote-side name)
-                # is not a shape a real `@{upstream}` resolution produces --
-                # refuse to guess rather than push to a malformed target.
-                raise VcsCommandError(
-                    f"cannot parse upstream {upstream!r} for {branch} into "
-                    "<remote>/<remote_branch>"
-                )
-            args = ["git", "-C", str(repo_root), "push", remote, f"{branch}:{remote_branch}"]
+            head = local_branch_ref(branch)
+            target = _run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_root),
+                    "for-each-ref",
+                    "--format=%(refname)%00%(upstream:remotename)%00%(upstream:remoteref)",
+                    head,
+                ]
+            )
+            fields = next((line.split("\0") for line in target.stdout.splitlines() if line.startswith(f"{head}\0")), [])
+            remote, remote_ref = (fields[1], fields[2]) if len(fields) == 3 else ("", "")
+            remote_branch = remote_ref.removeprefix("refs/heads/")
+            if target.returncode != 0 or remote in ("", ".") or remote_branch in ("", remote_ref):
+                # An upstream on a local branch (remote `.`) or with no remote-side
+                # branch is not something to push to -- refuse to guess rather than
+                # push to a malformed target.
+                raise VcsCommandError(f"cannot parse upstream {upstream!r} for {branch} into <remote>/<remote_branch>")
         elif "no upstream configured for branch" in upstream_check.stderr:
-            args = ["git", "-C", str(repo_root), "push", "origin", branch]
+            remote, remote_branch = "origin", branch
         else:
             raise VcsCommandError(
-                f"git rev-parse --abbrev-ref {branch}@{{upstream}} failed "
+                f"git rev-parse --symbolic-full-name {branch}@{{upstream}} failed "
                 f"(exit {upstream_check.returncode}), and it is not the "
                 f"ordinary no-upstream case: {upstream_check.stderr.strip()}"
             )
+        # Story 61.1 (CAP-271): both sides by their full refname -- with a tag named like the
+        # branch, locally or on the remote, a bare `<branch>:` source or `:<branch>` destination
+        # is ambiguous and git refuses the push. The `<branch>@{upstream}` read above stays
+        # bare: git takes it as a branch name, and `refs/heads/<branch>@{upstream}` fails.
+        args = [
+            "git",
+            "-C",
+            str(repo_root),
+            "push",
+            remote,
+            f"{local_branch_ref(branch)}:{local_branch_ref(remote_branch)}",
+        ]
+        if proven_on_main_sha is not None:
+            # Story 57.1 (CAP-267, review 2): re-check the proof here, against the full
+            # refname (a local branch or tag named `origin/main` must not stand in), and
+            # push exactly that commit -- never whatever `branch` points at by now.
+            on_main = _run(
+                ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", proven_on_main_sha, _ORIGIN_MAIN_REF]
+            )
+            if on_main.returncode != 0:
+                raise VcsCommandError(
+                    f"refusing the preflight opt-out for {branch}: {proven_on_main_sha[:12]} is not on {_ORIGIN_MAIN_REF}"
+                )
+            args = ["git", "-C", str(repo_root), "push", remote, f"{proven_on_main_sha}:refs/heads/{remote_branch}"]
+            # The pre-push hook's journaled opt-out, set for this one git process only:
+            # the process port takes no environment, so the POSIX `env` utility carries
+            # it. Where `env` does not exist (win-64), the push goes through the
+            # preflight instead -- slower, never unchecked.
+            if shutil.which("env") is not None:
+                reason = (
+                    f"marshal refresh: {branch} at {proven_on_main_sha[:12]} is a fast-forward to origin/main; "
+                    "every pushed commit is already on origin/main"
+                )
+                args = ["env", "PYFORGE_PREFLIGHT_SKIP=1", f"PYFORGE_PREFLIGHT_SKIP_REASON={reason}", *args]
         result = _run(args, timeout_s=_GIT_PUSH_TIMEOUT_S)
         if result.returncode != 0:
             raise VcsCommandError(f"git push failed for {branch}: {result.stderr.strip()}")
 
-    def changed_files(
-        self, repo_root: Path, worktree_path: Path, *, base: str
-    ) -> tuple[str, ...]:
+    def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
         """Story 2.3 (AD-27): the union of a committed diff and the
         working-tree's own dirty/untracked state, both run against
         ``worktree_path`` -- see the port's own docstring for why ``HEAD``
@@ -656,8 +713,7 @@ class GitVcs:
         )
         if diff_result.returncode != 0:
             raise VcsCommandError(
-                f"git diff --name-status -M {base}...HEAD failed in "
-                f"{worktree_path}: {diff_result.stderr.strip()}"
+                f"git diff --name-status -M {base}...HEAD failed in {worktree_path}: {diff_result.stderr.strip()}"
             )
         committed: set[str] = set()
         for line in diff_result.stdout.splitlines():
@@ -702,10 +758,7 @@ class GitVcs:
             ]
         )
         if status_result.returncode != 0:
-            raise VcsCommandError(
-                f"git status --porcelain failed in {worktree_path}: "
-                f"{status_result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git status --porcelain failed in {worktree_path}: {status_result.stderr.strip()}")
         dirty: set[str] = set()
         for line in status_result.stdout.splitlines():
             if not line.strip():
@@ -720,9 +773,7 @@ class GitVcs:
 
         return tuple(sorted(committed | dirty))
 
-    def worktree_unified_patch(
-        self, worktree_path: Path, *, baseline_sha: str
-    ) -> str:
+    def worktree_unified_patch(self, worktree_path: Path, *, baseline_sha: str) -> str:
         """Story 22.6: ``git diff baseline..HEAD`` plus dirty overlay vs baseline."""
         diff_result = _run(
             [
@@ -737,8 +788,7 @@ class GitVcs:
         )
         if diff_result.returncode != 0:
             raise VcsCommandError(
-                f"git diff {baseline_sha}..HEAD failed in {worktree_path}: "
-                f"{diff_result.stderr.strip()}"
+                f"git diff {baseline_sha}..HEAD failed in {worktree_path}: {diff_result.stderr.strip()}"
             )
         parts: list[str] = []
         if diff_result.stdout:
@@ -755,10 +805,7 @@ class GitVcs:
             ]
         )
         if dirty_result.returncode != 0:
-            raise VcsCommandError(
-                f"git diff {baseline_sha} failed in {worktree_path}: "
-                f"{dirty_result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git diff {baseline_sha} failed in {worktree_path}: {dirty_result.stderr.strip()}")
         if dirty_result.stdout:
             parts.append(dirty_result.stdout)
         return "".join(parts)
@@ -766,16 +813,14 @@ class GitVcs:
     def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
         """Story 4.1 (AD-33): ``git log <ref> --format=%s``, read-only.
         ``ref`` is never resolved/validated ahead of time -- an unresolvable
-        ref (no ``origin`` remote for ``"origin/main"``, a corrupted repo
-        missing ``"main"``) surfaces as an ordinary ``VcsCommandError``,
+        ref (no ``origin`` remote for ``"refs/remotes/origin/main"``, a
+        corrupted repo missing ``"refs/heads/main"``) surfaces as an ordinary ``VcsCommandError``,
         which the caller (``cli/deploy.py``) treats differently per route:
         best-effort for the push route, a hard failure for the merge
         route -- a distinction this method itself has no opinion about."""
         result = _run(["git", "-C", str(repo_root), "log", ref, "--format=%s"])
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git log {ref} --format=%s failed: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git log {ref} --format=%s failed: {result.stderr.strip()}")
         return tuple(result.stdout.splitlines())
 
     def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
@@ -795,9 +840,7 @@ class GitVcs:
         for path in paths:
             add_result = _run(["git", "-C", str(repo_root), "add", "--", str(path)])
             if add_result.returncode != 0:
-                raise VcsCommandError(
-                    f"git add -- {path} failed: {add_result.stderr.strip()}"
-                )
+                raise VcsCommandError(f"git add -- {path} failed: {add_result.stderr.strip()}")
         commit_args = [
             "git",
             "-C",
@@ -811,15 +854,11 @@ class GitVcs:
         commit_result = _run(commit_args)
         if commit_result.returncode != 0:
             raise VcsCommandError(
-                f"git commit -- {' '.join(str(p) for p in paths)} failed: "
-                f"{commit_result.stderr.strip()}"
+                f"git commit -- {' '.join(str(p) for p in paths)} failed: {commit_result.stderr.strip()}"
             )
         rev_result = _run(["git", "-C", str(repo_root), "rev-parse", "HEAD"])
         if rev_result.returncode != 0:
-            raise VcsCommandError(
-                f"git rev-parse HEAD failed after committing {paths}: "
-                f"{rev_result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git rev-parse HEAD failed after committing {paths}: {rev_result.stderr.strip()}")
         return rev_result.stdout.strip()
 
     def path_has_uncommitted_changes(self, repo_root: Path, path: Path) -> bool:
@@ -845,9 +884,7 @@ class GitVcs:
             ]
         )
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git status --porcelain -- {path} failed: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git status --porcelain -- {path} failed: {result.stderr.strip()}")
         return bool(result.stdout.strip())
 
     def merge_base(self, repo_root: Path, a: str, b: str) -> str:
@@ -858,9 +895,7 @@ class GitVcs:
         default), not just a boolean derived from it."""
         result = _run(["git", "-C", str(repo_root), "merge-base", a, b])
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"cannot find a merge base for {a} and {b}: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"cannot find a merge base for {a} and {b}: {result.stderr.strip()}")
         return result.stdout.strip()
 
     def resolve_ref(self, repo_root: Path, ref: str) -> str:
@@ -873,13 +908,9 @@ class GitVcs:
         mid-gate-run would otherwise be merged as if the now-stale gate
         result still applied to it). Raises ``VcsCommandError`` if ``ref``
         does not resolve to a local branch."""
-        result = _run(
-            ["git", "-C", str(repo_root), "rev-parse", "--verify", f"refs/heads/{ref}"]
-        )
+        result = _run(["git", "-C", str(repo_root), "rev-parse", "--verify", f"refs/heads/{ref}"])
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"cannot resolve refs/heads/{ref} to a commit: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"cannot resolve refs/heads/{ref} to a commit: {result.stderr.strip()}")
         return result.stdout.strip()
 
     def merge_branch(self, repo_root: Path, branch: str, *, into: str, subject: str) -> str:
@@ -959,8 +990,7 @@ class GitVcs:
             )
             if add_result.returncode != 0:
                 raise VcsCommandError(
-                    f"git worktree add --detach {tmp_path} {old_sha} failed: "
-                    f"{add_result.stderr.strip()}"
+                    f"git worktree add --detach {tmp_path} {old_sha} failed: {add_result.stderr.strip()}"
                 )
 
             merge_result = _run(
@@ -1043,9 +1073,7 @@ class GitVcs:
         the two can legitimately differ, e.g. a detached HEAD)."""
         result = _run(["git", "-C", str(worktree_path), "rev-parse", "HEAD"])
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git rev-parse HEAD failed in {worktree_path}: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git rev-parse HEAD failed in {worktree_path}: {result.stderr.strip()}")
         return result.stdout.strip()
 
     def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
@@ -1053,15 +1081,20 @@ class GitVcs:
         ``repo_root`` -- updates ONLY ``refs/remotes/<remote>/<ref>``, never
         any local branch. Uses ``_GIT_FETCH_TIMEOUT_S``, not
         ``_GIT_TIMEOUT_S``/``_GIT_CHECKOUT_TIMEOUT_S`` -- a network
-        round-trip, mirroring ``push``'s own identical reasoning."""
+        round-trip, mirroring ``push``'s own identical reasoning.
+
+        ``ref`` is the remote's branch NAME; the fetch names it
+        ``refs/heads/<ref>`` (Story 61.1 review 2). The remote resolves a
+        short source like ``main`` to its tag ``main`` first, which lands in
+        ``FETCH_HEAD`` only: the fetch exits 0 and ``refs/remotes/<remote>/<ref>``
+        stays stale -- a false "0 behind", a heal probing an old tip, a
+        publish rejected as non-fast-forward."""
         result = _run(
-            ["git", "-C", str(repo_root), "fetch", remote, ref],
+            ["git", "-C", str(repo_root), "fetch", remote, local_branch_ref(ref)],
             timeout_s=_GIT_FETCH_TIMEOUT_S,
         )
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git fetch {remote} {ref} failed: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git fetch {remote} {local_branch_ref(ref)} failed: {result.stderr.strip()}")
 
     def fast_forward(self, worktree_path: Path, ref: str) -> str:
         """Story 4.12 (FR-173): ``git merge --ff-only <ref>`` run inside
@@ -1080,10 +1113,7 @@ class GitVcs:
             timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
         )
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git merge --ff-only {ref} failed in {worktree_path}: "
-                f"{result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git merge --ff-only {ref} failed in {worktree_path}: {result.stderr.strip()}")
         rev_result = _run(["git", "-C", str(worktree_path), "rev-parse", "HEAD"])
         if rev_result.returncode != 0:
             raise VcsCommandError(
@@ -1095,52 +1125,129 @@ class GitVcs:
     def commits_behind(self, worktree_path: Path, tip_ref: str) -> int:
         """Story 15.1 (FR-133): ``git rev-list --count HEAD..<tip_ref>``
         inside ``worktree_path`` -- the home's behind-count vs ``tip_ref``
-        (typically ``origin/main`` after ``fetch``). Read-only."""
+        (typically ``refs/remotes/origin/main`` after ``fetch``). Read-only."""
         result = _run(
             ["git", "-C", str(worktree_path), "rev-list", "--count", f"HEAD..{tip_ref}"],
         )
         if result.returncode != 0:
             raise VcsCommandError(
-                f"git rev-list --count HEAD..{tip_ref} failed in "
-                f"{worktree_path}: {result.stderr.strip()}"
+                f"git rev-list --count HEAD..{tip_ref} failed in {worktree_path}: {result.stderr.strip()}"
             )
         raw = result.stdout.strip()
         try:
             return int(raw)
         except ValueError as exc:
-            raise VcsCommandError(
-                f"git rev-list --count returned non-integer {raw!r} in "
-                f"{worktree_path}"
-            ) from exc
+            raise VcsCommandError(f"git rev-list --count returned non-integer {raw!r} in {worktree_path}") from exc
 
-    def merge_tree_conflict_paths(
-        self, repo_root: Path, base: str, branch: str
-    ) -> tuple[str, ...]:
-        """Story 28.20: parse ``git merge-tree`` for conflict paths."""
-        merge_base = self.merge_base(repo_root, base, branch)
-        result = _run(
-            [
-                "git",
-                "-C",
-                str(repo_root),
-                "merge-tree",
-                merge_base,
-                base,
-                branch,
-            ],
-            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
-        )
-        if result.returncode != 0 and "CONFLICT" not in result.stdout:
+    def merge_tree_conflict_paths(self, repo_root: Path, base: str, branch: str) -> tuple[str, ...]:
+        """Story 28.20 / 58.1 (CAP-268): git's own conflicted-file list for merging ``branch``
+        into ``base``. ``--write-tree --name-only -z --no-messages`` prints the merged tree's oid
+        then one NUL-separated path per conflicted file -- content, modify/delete and add/add
+        alike. Exit 0 is a clean merge; exit 1 with a tree oid first is a conflicted one; any
+        other outcome (an unknown ref also exits 1, with no tree) is an error, never an empty
+        list. A conflict that names no file (git's manual: "do NOT interpret an empty
+        Conflicted file info list as a clean merge" -- some directory-rename splits) is an
+        error too, so it can never read as clean (Story 58.1 review). The legacy three-arg
+        form this replaced never prints a ``Merge conflict in`` line, so it read every real
+        conflict as clean (found 2026-09-27)."""
+        cmd = ["git", "-C", str(repo_root), "merge-tree", "--write-tree", "--name-only", "-z", "--no-messages"]
+        result = _run([*cmd, base, branch], timeout_s=_GIT_CHECKOUT_TIMEOUT_S)
+        fields = result.stdout.split("\0")
+        if result.returncode in (0, 1) and _TREE_OID.fullmatch(fields[0]):
+            if result.returncode == 0:
+                return ()
+            paths = tuple(sorted({path for path in fields[1:] if path}))
+            if paths:
+                return paths
             raise VcsCommandError(
-                f"git merge-tree {merge_base} {base} {branch} failed: "
-                f"{result.stderr.strip() or result.stdout.strip()}"
+                f"git merge-tree --write-tree {base} {branch}: a conflicted merge that names no file "
+                "(a directory-rename conflict) -- not clean, and no path to heal or escalate"
             )
-        paths: set[str] = set()
-        marker = "Merge conflict in "
-        for line in result.stdout.splitlines():
-            if marker in line:
-                paths.add(line.split(marker, 1)[1].strip())
-        return tuple(sorted(paths))
+        raise VcsCommandError(
+            f"git merge-tree --write-tree {base} {branch} failed (exit {result.returncode}): "
+            f"{result.stderr.strip() or result.stdout.strip()}"
+        )
+
+    def merge_ref_resolving(
+        self,
+        worktree_path: Path,
+        ref: str,
+        *,
+        resolutions: Mapping[str, str],
+        message: str,
+    ) -> str:
+        """Story 59.1 (CAP-269): ``git merge --no-ff --no-commit <ref>`` in ``worktree_path``, so
+        git stops before committing whether or not it conflicts; the conflicted set is read from
+        the index (``diff --name-only --diff-filter=U -z``), never parsed from merge's output.
+        A conflicted path with no resolution -- or any failure or interrupt once the merge has
+        started -- aborts the merge, leaving the worktree at its previous HEAD. An already-merged
+        ``ref`` is a no-op that returns HEAD. Commits with ``-m <message>`` (hooks run, as in
+        ``commit_paths``). A merge already in progress is someone else's: refused, never adopted
+        or aborted; and the merge started must be exactly ``ref``'s commit (Story 59.1 review)."""
+        wt = str(worktree_path)
+
+        def merge_head() -> str | None:
+            probe = _run(["git", "-C", wt, "rev-parse", "-q", "--verify", "MERGE_HEAD"])
+            return probe.stdout.strip() if probe.returncode == 0 else None
+
+        if merge_head() is not None:
+            raise VcsCommandError(f"a merge is already in progress in {worktree_path}; refusing to merge {ref} over it")
+        target = _run(["git", "-C", wt, "rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}"])
+        if target.returncode != 0:
+            raise VcsCommandError(f"git merge --no-commit {ref} failed in {worktree_path}: {target.stderr.strip()}")
+        target_sha = target.stdout.strip()
+        try:
+            # --no-rerere-autoupdate: a recorded rerere resolution must not stage itself and slip
+            # past `resolutions` (Story 59.1 review 2).
+            merge = _run(
+                ["git", "-C", wt, "merge", "--no-ff", "--no-commit", "--no-rerere-autoupdate", target_sha],
+                timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+            )
+            started = merge_head()
+            if started is None:
+                if merge.returncode == 0:  # "Already up to date." -- nothing to merge
+                    return self.worktree_head_sha(worktree_path)
+                raise VcsCommandError(
+                    f"git merge --no-commit {ref} failed in {worktree_path}: "
+                    f"{merge.stderr.strip() or merge.stdout.strip()}"
+                )
+            if started != target_sha:
+                raise VcsCommandError(f"the merge in progress in {worktree_path} is {started[:12]}, not {ref}")
+            listed = _run(
+                ["git", "-C", wt, "-c", "core.quotePath=false", "diff", "--name-only", "--diff-filter=U", "-z"]
+            )
+            if listed.returncode != 0:
+                raise VcsCommandError(f"cannot list the conflicted paths in {worktree_path}: {listed.stderr.strip()}")
+            conflicted = sorted({p for p in listed.stdout.split("\0") if p})
+            unresolved = [p for p in conflicted if p not in resolutions]
+            if unresolved:
+                raise VcsCommandError(
+                    f"merge of {ref} into {worktree_path} conflicts outside the resolvable paths: {', '.join(unresolved)}"
+                )
+            for rel in conflicted:
+                try:
+                    (worktree_path / rel).parent.mkdir(parents=True, exist_ok=True)
+                    (worktree_path / rel).write_text(resolutions[rel], encoding="utf-8")
+                except OSError as exc:
+                    raise VcsCommandError(f"cannot write the resolution of {rel} in {worktree_path}: {exc}") from exc
+                added = _run(["git", "-C", wt, "add", "--", rel])
+                if added.returncode != 0:
+                    raise VcsCommandError(f"git add -- {rel} failed in {worktree_path}: {added.stderr.strip()}")
+            committed = _run(["git", "-C", wt, "commit", "-m", message])
+            if committed.returncode != 0:
+                raise VcsCommandError(
+                    f"git commit of the merge of {ref} failed in {worktree_path}: {committed.stderr.strip()}"
+                )
+        except BaseException:
+            # Abort only our own merge: one of another commit (someone else's, started in the
+            # window after the pre-check) is theirs to finish (Story 59.1 review 2).
+            try:
+                if merge_head() == target_sha:
+                    _run(["git", "-C", wt, "merge", "--abort"])
+            except VcsCommandError:
+                pass  # best effort -- the original failure is the one to report
+            raise
+        return self.worktree_head_sha(worktree_path)
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
         """Story 28.20: ``git show ref:path`` read-only."""
@@ -1148,10 +1255,87 @@ class GitVcs:
         if result.returncode != 0:
             if "exists on disk, but not in" in result.stderr or "does not exist" in result.stderr:
                 return None
-            raise VcsCommandError(
-                f"git show {ref}:{path} failed: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git show {ref}:{path} failed: {result.stderr.strip()}")
         return result.stdout
+
+    def merge_tree_write(self, repo_root: Path, base: str, branch: str) -> str | None:
+        """Story 51.1: the modern two-arg ``--write-tree`` form (git computes
+        the merge base itself), with the messages section left on so a
+        ``"CONFLICT"`` line tells a conflicted merge from a failed one; it
+        returns the resulting tree's oid, where ``merge_tree_conflict_paths``
+        (the same form with ``--name-only -z --no-messages``, Story 58.1)
+        returns the conflicted paths. On a real conflict
+        git still exits with the toplevel tree's oid as its first output
+        line (a tree carrying literal conflict markers) followed by
+        ``"CONFLICT"`` sections -- that oid is not a clean merge result, so
+        it is discarded in favor of ``None`` rather than returned."""
+        result = _run(
+            ["git", "-C", str(repo_root), "merge-tree", "--write-tree", base, branch],
+            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+        )
+        if result.returncode != 0 and "CONFLICT" not in result.stdout:
+            raise VcsCommandError(
+                f"git merge-tree --write-tree {base} {branch} failed: {result.stderr.strip() or result.stdout.strip()}"
+            )
+        if "CONFLICT" in result.stdout:
+            return None
+        tree_oid = result.stdout.strip().splitlines()[0] if result.stdout.strip() else ""
+        if not tree_oid:
+            raise VcsCommandError(f"git merge-tree --write-tree {base} {branch} produced no tree oid")
+        return tree_oid
+
+    def add_worktree_for_tree(self, repo_root: Path, home: Path, tree_oid: str, *, parent: str) -> None:
+        """Story 51.1: wraps ``tree_oid`` in a throwaway commit -- pinned
+        ``user.name``/``user.email``/``commit.gpgsign=false`` via ``-c``
+        flags, mirroring ``is_branch_merged``'s own ``commit-tree``
+        discipline exactly -- with ``parent`` as its sole parent, then
+        checks it out DETACHED at ``home`` (``git worktree add --detach``,
+        mirroring ``add_worktree``'s own invocation style). The synthetic
+        commit is never referenced by any branch or tag; it exists solely
+        so ``home`` has a commit-ish to check out."""
+        commit_result = _run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "-c",
+                "user.name=marshal-land-verify",
+                "-c",
+                "user.email=marshal-land-verify@localhost",
+                "-c",
+                "commit.gpgsign=false",
+                "commit-tree",
+                tree_oid,
+                "-p",
+                parent,
+                "-m",
+                "marshal merge-tree preview (not a real commit)",
+            ]
+        )
+        if commit_result.returncode != 0:
+            raise VcsCommandError(
+                f"cannot build the merge-tree preview commit for tree "
+                f"{tree_oid} onto {parent}: {commit_result.stderr.strip()}"
+            )
+        synthetic_sha = commit_result.stdout.strip()
+
+        add_result = _run(
+            ["git", "-C", str(repo_root), "worktree", "add", "--detach", str(home), synthetic_sha],
+            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+        )
+        if add_result.returncode != 0:
+            raise VcsCommandError(
+                f"git worktree add --detach {home} {synthetic_sha} failed: {add_result.stderr.strip()}"
+            )
+
+    def _paths_changed_between(self, repo_root: Path, old_sha: str, new_sha: str) -> frozenset[str]:
+        """Every path ``git diff`` names between two commits (Story 68.1). ``--no-renames`` so a
+        rename reports BOTH ends -- the default would list only the new name and hide a deletion
+        outside the written set -- and ``-z`` so no path is ever quoted or split."""
+        result = _run(["git", "-C", str(repo_root), "diff", "--name-only", "--no-renames", "-z", old_sha, new_sha])
+        if result.returncode != 0:
+            raise VcsCommandError(f"git diff --name-only {old_sha} {new_sha} failed: {result.stderr.strip()}")
+        return frozenset(name for name in result.stdout.split("\0") if name)
 
     def commit_paths_onto_remote_tip(
         self,
@@ -1161,25 +1345,49 @@ class GitVcs:
         ref: str,
         writes: tuple[tuple[str, str], ...],
         message: str,
+        preflight_skip_reason: str | None = None,
     ) -> str:
-        """CAP-5: publish path writes onto ``origin/<ref>`` from a throwaway
-        detached worktree. Never checks out or commits in ``repo_root``."""
+        """CAP-5: publish path writes onto ``refs/remotes/<remote>/<ref>`` from a throwaway
+        detached worktree. Never checks out or commits in ``repo_root``. The tip is read by
+        its full refname (Story 60.1 review): the short ``<remote>/<ref>`` resolves to a local
+        branch or tag of that name first, and this path PUSHES -- it published a shadow's
+        unverified commit onto the remote's branch in review.
+
+        Story 68.1 (CAP-277): with ``preflight_skip_reason`` set, the push carries the
+        ``pre-push`` hook's journaled opt-out (the way ``push`` does for Story 57.1) -- but
+        only for a commit this method has checked: every written path is a normalized
+        ``planning-artifacts/`` path (refused before any write or fetch otherwise), and
+        ``git diff --name-only <tip> <new>`` names nothing outside the written set (refused
+        before any push otherwise). The opt-out is set for that one ``git push`` through the
+        POSIX ``env`` utility, never process-wide; where ``env`` is absent the push runs the
+        preflight. Without a reason the push is byte-identical to what it always was."""
         if not writes:
-            raise VcsCommandError(
-                "commit_paths_onto_remote_tip requires at least one write, got none"
-            )
+            raise VcsCommandError("commit_paths_onto_remote_tip requires at least one write, got none")
+        if preflight_skip_reason is not None:
+            if not preflight_skip_reason.strip():
+                raise VcsCommandError(
+                    "refusing the preflight opt-out: the reason is empty, and every opt-out names its story"
+                )
+            outside = sorted(rel for rel, _text in writes if not _is_planning_artifact_path(rel))
+            if outside:
+                raise VcsCommandError(
+                    "refusing the preflight opt-out: written path(s) "
+                    f"{outside!r} are not normalized _bmad-output/projects/<slug>/planning-artifacts/ paths"
+                )
         self.fetch(repo_root, remote, ref)
-        tip_result = _run(
-            ["git", "-C", str(repo_root), "rev-parse", "--verify", f"{remote}/{ref}"]
-        )
+        tip_ref = f"{remote_tracking_ref(ref, remote)}^{{commit}}"
+        tip_result = _run(["git", "-C", str(repo_root), "rev-parse", "--verify", "--end-of-options", tip_ref])
         if tip_result.returncode != 0:
-            raise VcsCommandError(
-                f"cannot resolve {remote}/{ref} after fetch: {tip_result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"cannot resolve {remote}/{ref} after fetch: {tip_result.stderr.strip()}")
         old_sha = tip_result.stdout.strip()
 
-        tmp_path = Path(tempfile.mkdtemp(prefix="marshal-promote-"))
-        tmp_path.rmdir()
+        try:
+            tmp_path = Path(tempfile.mkdtemp(prefix="marshal-promote-"))
+            tmp_path.rmdir()
+        except OSError as exc:
+            # Story 68.1 review: a full disk or a bad TMPDIR is a publish failure the caller journals
+            # (AD-6), never a raw OSError that leaves its INTENT unpaired.
+            raise VcsCommandError(f"cannot create the scratch directory for the publish worktree: {exc}") from exc
         try:
             add_result = _run(
                 [
@@ -1196,14 +1404,16 @@ class GitVcs:
             )
             if add_result.returncode != 0:
                 raise VcsCommandError(
-                    f"git worktree add --detach {tmp_path} {old_sha} failed: "
-                    f"{add_result.stderr.strip()}"
+                    f"git worktree add --detach {tmp_path} {old_sha} failed: {add_result.stderr.strip()}"
                 )
             paths: list[Path] = []
             for rel, content in writes:
                 dest = tmp_path / rel
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_text(content, encoding="utf-8")
+                try:
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_text(content, encoding="utf-8")
+                except OSError as exc:
+                    raise VcsCommandError(f"cannot write {dest} in the publish worktree: {exc}") from exc
                 paths.append(dest)
             new_sha = self.commit_paths(tmp_path, tuple(paths), message)
             ancestor = _run(
@@ -1219,24 +1429,40 @@ class GitVcs:
             )
             if ancestor.returncode != 0:
                 raise VcsCommandError(
-                    f"{new_sha} is not a descendant of {remote}/{ref} "
-                    f"({old_sha}); refusing to push a non-fast-forward"
+                    f"{new_sha} is not a descendant of {remote}/{ref} ({old_sha}); refusing to push a non-fast-forward"
                 )
-            push_result = _run(
-                [
-                    "git",
-                    "-C",
-                    str(repo_root),
-                    "push",
-                    remote,
-                    f"{new_sha}:refs/heads/{ref}",
-                ],
-                timeout_s=_GIT_FETCH_TIMEOUT_S,
-            )
+            push_args = [
+                "git",
+                "-C",
+                str(repo_root),
+                "push",
+                remote,
+                f"{new_sha}:refs/heads/{ref}",
+            ]
+            if preflight_skip_reason is not None:
+                written = frozenset(rel for rel, _text in writes)
+                stray = sorted(self._paths_changed_between(repo_root, old_sha, new_sha) - written)
+                if stray:
+                    raise VcsCommandError(
+                        f"refusing the preflight opt-out: {new_sha} names path(s) {stray!r} outside "
+                        f"the written set {sorted(written)!r}; nothing was pushed"
+                    )
+                # The pre-push hook's journaled opt-out, set for this one git process only
+                # (the process port takes no environment, so the POSIX `env` utility carries
+                # it -- see `push`, Story 57.1). Where `env` does not exist (win-64), the push
+                # goes through the preflight instead -- slower, never unchecked.
+                if shutil.which("env") is not None:
+                    reason = _preflight_skip_reason_text(new_sha, written, preflight_skip_reason)
+                    push_args = [
+                        "env",
+                        "PYFORGE_PREFLIGHT_SKIP=1",
+                        f"PYFORGE_PREFLIGHT_SKIP_REASON={reason}",
+                        *push_args,
+                    ]
+            push_result = _run(push_args, timeout_s=_GIT_FETCH_TIMEOUT_S)
             if push_result.returncode != 0:
                 raise VcsCommandError(
-                    f"git push {remote} {new_sha}:refs/heads/{ref} failed: "
-                    f"{push_result.stderr.strip()}"
+                    f"git push {remote} {new_sha}:refs/heads/{ref} failed: {push_result.stderr.strip()}"
                 )
             return new_sha
         finally:

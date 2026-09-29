@@ -70,11 +70,7 @@ def _render_text(data: dict[str, object], findings: tuple[Finding, ...]) -> str:
     ``--format json`` path prints (AD-14)."""
     lines = ["upstream contribution register"]
     entries = data.get("entries")
-    flagged_ids = {
-        entry.get("id")
-        for entry in data.get("flagged_for_removal", [])
-        if isinstance(entry, dict)
-    }
+    flagged_ids = {entry.get("id") for entry in data.get("flagged_for_removal", []) if isinstance(entry, dict)}
     if isinstance(entries, list):
         for entry in entries:
             if not isinstance(entry, dict):
@@ -172,10 +168,7 @@ def run_upstream(
                 Finding(
                     code="MRS-UPSTREAM-001",
                     severity=Severity.WARN,
-                    message=(
-                        f"upstream contribution register {str(register_path)!r} is absent -- "
-                        "treated as empty"
-                    ),
+                    message=(f"upstream contribution register {str(register_path)!r} is absent -- treated as empty"),
                     path=str(register_path),
                 )
             )

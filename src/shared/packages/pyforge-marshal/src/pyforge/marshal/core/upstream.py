@@ -64,7 +64,9 @@ def parse_register(raw: object) -> tuple[tuple[UpstreamGapEntry, ...], tuple[str
         if not isinstance(item, Mapping):
             errors.append(f"entry[{index}] is not an object")
             continue
-        missing = [field for field in _REQUIRED_STRING_FIELDS if not isinstance(item.get(field), str) or not item[field]]
+        missing = [
+            field for field in _REQUIRED_STRING_FIELDS if not isinstance(item.get(field), str) or not item[field]
+        ]
         if missing:
             entry_id = item.get("id") if isinstance(item.get("id"), str) else f"index {index}"
             errors.append(f"entry {entry_id!r} is missing/blank required field(s): {', '.join(missing)}")

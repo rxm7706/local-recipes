@@ -2,7 +2,7 @@
 title: The operator answer is one documented command
 type: docs+feature
 created: '2026-08-24'
-status: shipped
+status: done
 updated: '2026-08-24'
 context: []
 warnings: []
@@ -44,8 +44,14 @@ baseline_revision: 6e2d536f3f
 
 ## Auto Run Result
 
-Status: shipped
+Status: done
+Reconciled 2026-09-20: `shipped` is the Spec-level word; a story's terminal state is `done` (ledger row `24-2-the-operator-answer-is-one-documented-command: done`).
 PR: https://github.com/rxm7706/local-recipes/pull/719 (admin merge — GitHub Actions billing blocker; local tests green: meta 6 passed, pyforge-marshal 6291 passed)
 Merge SHA: `6e2d536f3ffced7a82b5249305cd37eccc3030d9`
 Implementation: `.claude/memory/reference/fleet-landing-pass-liveness.md` (STEP 2 primary check); team-memory carrier updates; `test_operator_liveness_instructions.py` meta gate.
 Finalize SHA: `ff1c82c5fa5deed3d06c5045306f19a86c25e40d`
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `24-2-the-operator-answer-is-one-documented-command: done`).
+- Auto Run Result `Status: shipped` → `done` (see the reconcile line under it).

@@ -45,10 +45,7 @@ _NOW = datetime(2026, 7, 18, 12, 0, 0, tzinfo=UTC)
 
 
 def test_resolve_cache_dir_reads_the_env_var():
-    assert (
-        resolve_cache_dir(env={FEED_CACHE_DIR_ENV_VAR: "/some/cache"})
-        == "/some/cache"
-    )
+    assert resolve_cache_dir(env={FEED_CACHE_DIR_ENV_VAR: "/some/cache"}) == "/some/cache"
 
 
 def test_resolve_cache_dir_is_none_when_unset():
@@ -63,9 +60,7 @@ def test_resolve_cache_dir_is_none_when_empty_string():
 
 
 def test_kev_cache_path_layout(tmp_path):
-    assert kev_cache_path(tmp_path) == (
-        tmp_path / "kev" / "known_exploited_vulnerabilities.json"
-    )
+    assert kev_cache_path(tmp_path) == (tmp_path / "kev" / "known_exploited_vulnerabilities.json")
 
 
 # --- feed_snapshot_at ----------------------------------------------------------
@@ -88,9 +83,7 @@ def test_is_feed_stale_exactly_at_the_boundary_is_not_stale():
 
 
 def test_is_feed_stale_one_second_past_the_boundary_is_stale():
-    snapshot_at = (
-        _NOW - timedelta(days=DEFAULT_FEED_MAX_AGE_DAYS, seconds=1)
-    ).isoformat()
+    snapshot_at = (_NOW - timedelta(days=DEFAULT_FEED_MAX_AGE_DAYS, seconds=1)).isoformat()
     assert is_feed_stale(snapshot_at, DEFAULT_FEED_MAX_AGE_DAYS, now=_NOW) is True
 
 
@@ -117,10 +110,7 @@ def test_is_feed_stale_unparsable_snapshot_is_stale_never_raises(snapshot_at):
 
 
 def test_is_feed_stale_naive_snapshot_is_stale():
-    assert (
-        is_feed_stale("2026-07-16T00:00:00", DEFAULT_FEED_MAX_AGE_DAYS, now=_NOW)
-        is True
-    )
+    assert is_feed_stale("2026-07-16T00:00:00", DEFAULT_FEED_MAX_AGE_DAYS, now=_NOW) is True
 
 
 # --- feed_provenance -----------------------------------------------------------
@@ -274,18 +264,14 @@ def test_write_kev_cache_is_atomic_replace_on_a_second_write(tmp_path):
         tmp_path,
         {"vulnerabilities": [{"cveID": "CVE-1970-00006", "dateAdded": "2026-06-06"}]},
     )
-    assert load_kev_catalog(kev_cache_path(tmp_path)) == {
-        "CVE-1970-00006": "2026-06-06"
-    }
+    assert load_kev_catalog(kev_cache_path(tmp_path)) == {"CVE-1970-00006": "2026-06-06"}
 
 
 # --- endoflife_cache_path (Story 6.3) -----------------------------------------
 
 
 def test_endoflife_cache_path_layout(tmp_path):
-    assert endoflife_cache_path(tmp_path) == (
-        tmp_path / "endoflife" / "endoflife_snapshot.json"
-    )
+    assert endoflife_cache_path(tmp_path) == (tmp_path / "endoflife" / "endoflife_snapshot.json")
 
 
 # --- load_endoflife_snapshot ---------------------------------------------------
@@ -355,9 +341,7 @@ def test_load_endoflife_snapshot_drops_non_array_slug_values_without_aborting(
         ),
         encoding="utf-8",
     )
-    assert load_endoflife_snapshot(path) == {
-        "python": [{"cycle": "3.12", "eol": "2028-10-31"}]
-    }
+    assert load_endoflife_snapshot(path) == {"python": [{"cycle": "3.12", "eol": "2028-10-31"}]}
 
 
 # --- write_endoflife_cache ------------------------------------------------------
@@ -385,9 +369,7 @@ def test_write_endoflife_cache_leaves_no_temp_file_behind(tmp_path):
 def test_write_endoflife_cache_is_atomic_replace_on_a_second_write(tmp_path):
     write_endoflife_cache(tmp_path, {"python": [{"cycle": "3.11"}]})
     write_endoflife_cache(tmp_path, {"python": [{"cycle": "3.12"}]})
-    assert load_endoflife_snapshot(endoflife_cache_path(tmp_path)) == {
-        "python": [{"cycle": "3.12"}]
-    }
+    assert load_endoflife_snapshot(endoflife_cache_path(tmp_path)) == {"python": [{"cycle": "3.12"}]}
 
 
 # --- epss_cache_path (Story 6.7) -----------------------------------------------
@@ -538,6 +520,4 @@ def test_write_epss_cache_is_atomic_replace_on_a_second_write(tmp_path):
         tmp_path,
         {"scores": [{"cve": "CVE-1970-00008", "epss": 0.3, "percentile": 0.4}]},
     )
-    assert load_epss_scores(epss_cache_path(tmp_path)) == {
-        "CVE-1970-00008": (0.3, 0.4)
-    }
+    assert load_epss_scores(epss_cache_path(tmp_path)) == {"CVE-1970-00008": (0.3, 0.4)}

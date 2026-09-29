@@ -27,9 +27,7 @@ _CANONICAL_GROUP = "pyforge.core.hooks"
 _PARALLEL_GROUP = re.compile(r"^pyforge\.[^.]+\.(hooks|plugins)$")
 
 
-def _flatten_entry_point_groups(
-    table: dict[str, Any], prefix: str = ""
-) -> dict[str, dict[str, Any]]:
+def _flatten_entry_point_groups(table: dict[str, Any], prefix: str = "") -> dict[str, dict[str, Any]]:
     """Walk a PEP 621 ``[project.entry-points]`` table into dotted group
     names. Quoted groups (``"pyforge.warden.hooks"``) stay one key; unquoted
     nested tables (``[project.entry-points.pyforge.warden.hooks]``) are
@@ -90,17 +88,11 @@ def pluggy_import_violations(source: str) -> list[str]:
 
 
 def _station_pyprojects() -> list[Path]:
-    return [
-        station / "pyproject.toml"
-        for station in sibling_station_dirs()
-        if (station / "pyproject.toml").is_file()
-    ]
+    return [station / "pyproject.toml" for station in sibling_station_dirs() if (station / "pyproject.toml").is_file()]
 
 
 def test_scan_surface_is_not_empty():
-    assert sibling_station_dirs(), (
-        f"no sibling pyforge-* stations under {PACKAGES_ROOT}"
-    )
+    assert sibling_station_dirs(), f"no sibling pyforge-* stations under {PACKAGES_ROOT}"
     assert _station_pyprojects(), "no sibling station pyproject.toml files to scan"
 
 

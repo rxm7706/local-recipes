@@ -100,6 +100,18 @@ from .sbom_intake import (
     parse_pip_list_text,
     parse_requirements_txt,
 )
+from .tier3_sources import (
+    DebianPackagesDataset,
+    FedoraPackagesDataset,
+    HomebrewPackagesDataset,
+    NixpkgsPackagesDataset,
+    SpackPackagesDataset,
+    parse_debian_packages_control,
+    parse_fedora_packages,
+    parse_homebrew_formulae_json,
+    parse_nixpkgs_packages_json,
+    parse_spack_packages,
+)
 from .upstream_discovery import (
     AboutMaintainersDataset,
     AnacondaDist2026Dataset,
@@ -113,18 +125,6 @@ from .upstream_discovery import (
     parse_search_api_response,
     parse_trending_html,
     read_tracked_seed,
-)
-from .tier3_sources import (
-    DebianPackagesDataset,
-    FedoraPackagesDataset,
-    HomebrewPackagesDataset,
-    NixpkgsPackagesDataset,
-    SpackPackagesDataset,
-    parse_debian_packages_control,
-    parse_fedora_packages,
-    parse_homebrew_formulae_json,
-    parse_nixpkgs_packages_json,
-    parse_spack_packages,
 )
 from .vcs_sources import (
     RegistryUpstreamDataset,

@@ -101,3 +101,16 @@ warnings: []
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `2221e12892` (2026-09-18, "Rename scribe Story 2.1 spec to match the ledger key"); also `a0ef150159` (2026-08-07, "herald: Story 2.1 — herald deck pull <slug> with etag short-circuit"); also `2ad677d0de` (2026-08-07, "scribe: Story 2.1 — GraphStore port + flat-file v1 adapter"). Ledger row `2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-scribe/planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-2-1-graphstore-port-flat-file-v1-adapter.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

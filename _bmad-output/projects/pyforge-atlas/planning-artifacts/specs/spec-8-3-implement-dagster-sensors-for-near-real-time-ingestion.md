@@ -1,7 +1,7 @@
 ---
 title: 'Story G3 (8.3): Implement Dagster Sensors for near-real-time ingestion'
 type: 'feature'
-status: shipped
+status: done
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'NEVER AUTHORED as a file — wave B9-H4 ran through the in-session agent loop, not bmad-create-story (which wrote files only for waves 0/A/B1-B8), confirmed by the migration session itself. Nothing was lost; there is no original to recover. Intent+ACs below are the real epics.md contract.'
@@ -231,3 +231,17 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `f71a381c3c` (2026-08-15, "doctor: land Story 8.3 -- sprint ledger, dashboard, epics outcome, spec promotion"); also `d2617c4036` (2026-08-15, "doctor: Story 8.3 -- deferred_work_promote.py, the --fix mode"). Ledger row `8-3-implement-dagster-sensors-for-near-real-time-ingestion: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `docs/dashboard/data.js`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `8-3-implement-dagster-sensors-for-near-real-time-ingestion: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

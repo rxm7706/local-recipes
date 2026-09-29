@@ -57,7 +57,6 @@ from ..inventory import (
     canonical_name,
     derive_purl,
 )
-from . import UnparsableManifestError
 from ..models import (
     CveMatchLevel,
     Ecosystem,
@@ -66,6 +65,7 @@ from ..models import (
     ScannedManifest,
     WithholdReason,
 )
+from . import UnparsableManifestError
 
 # The 1.2 section token for [project].dependencies (routing keys on it).
 PROJECT_DEPENDENCIES_SECTION = "project.dependencies"
@@ -77,9 +77,7 @@ class PyprojectExtractor:
     def __init__(self, router: Router) -> None:
         self._router = router
 
-    def extract(
-        self, manifest_path: Path, manifest: ScannedManifest
-    ) -> tuple[Component, ...]:
+    def extract(self, manifest_path: Path, manifest: ScannedManifest) -> tuple[Component, ...]:
         try:
             with manifest_path.open("rb") as handle:
                 data = tomllib.load(handle)
@@ -95,32 +93,21 @@ class PyprojectExtractor:
             # arrays/inline tables) overflows tomllib's recursive parser —
             # a structurally-broken manifest, not a tool bug; without this
             # clause it would skip report emission entirely.
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: {exc}"
-            ) from exc
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {exc}") from exc
         project = data.get("project", {})
         if not isinstance(project, dict):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: [project] is not a table"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: [project] is not a table")
         raw_dependencies = project.get("dependencies", [])
-        if not isinstance(raw_dependencies, list) or not all(
-            isinstance(entry, str) for entry in raw_dependencies
-        ):
+        if not isinstance(raw_dependencies, list) or not all(isinstance(entry, str) for entry in raw_dependencies):
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: [project].dependencies "
-                "must be an array of strings"
+                f"unparsable manifest {manifest.path}: [project].dependencies must be an array of strings"
             )
         ecosystem = self._router.route(manifest.kind, PROJECT_DEPENDENCIES_SECTION)
-        provenance = (
-            Provenance(manifest=manifest.path, section=PROJECT_DEPENDENCIES_SECTION),
-        )
+        provenance = (Provenance(manifest=manifest.path, section=PROJECT_DEPENDENCIES_SECTION),)
         components: list[Component] = []
         for entry in raw_dependencies:
             if not entry.strip():
-                raise UnparsableManifestError(
-                    f"unparsable manifest {manifest.path}: empty dependency entry"
-                )
+                raise UnparsableManifestError(f"unparsable manifest {manifest.path}: empty dependency entry")
             components.append(self._component(entry, ecosystem, provenance))
         return tuple(components)
 
@@ -156,11 +143,7 @@ class PyprojectExtractor:
         identity_name = canonical_name(Ecosystem.PYPI, requirement.name)
         # Marker-conditional deps are extracted under union semantics and
         # honestly labeled with the frozen enum's slot for exactly that.
-        extraction_mode = (
-            ExtractionMode.UNION_MARKED
-            if requirement.marker is not None
-            else ExtractionMode.PARSED
-        )
+        extraction_mode = ExtractionMode.UNION_MARKED if requirement.marker is not None else ExtractionMode.PARSED
         version = _exact_pin(requirement)
         if version is not None:
             return Component(
@@ -180,11 +163,7 @@ class PyprojectExtractor:
                 currency_covered=True,
                 indeterminate_reason=None,
             )
-        reason = (
-            WithholdReason.RANGE_ONLY
-            if len(requirement.specifier) > 0
-            else WithholdReason.NO_VERSION
-        )
+        reason = WithholdReason.RANGE_ONLY if len(requirement.specifier) > 0 else WithholdReason.NO_VERSION
         return Component(
             name=requirement.name,
             version=None,

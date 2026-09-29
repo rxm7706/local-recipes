@@ -1,5 +1,5 @@
 ---
-status: shipped
+status: done
 frontmatter_added: 2026-07-28
 frontmatter_note: |
   This YAML block was ADDED post-recovery (operator decision 2026-07-27, AUD-ATLAS-045) so all
@@ -210,3 +210,17 @@ claude-fable-5 (remote Claude Code session, 2026-07-17), attended by rxm7706; fo
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `8a90d7025c` (2026-07-25, "mason + steward: record Story 1.1 in the spec memlogs; re-baseline surfaces"); also `c9c5b33930` (2026-07-25, "mason + steward: Story 1.1 — two stations reach code, chain 8/9 -> 9/9"). Ledger row `1-1-generate-legacy-contextual-skill: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `docs/dashboard/data.js`, `scripts/.spec-surface-baseline.json`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `1-1-generate-legacy-contextual-skill: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

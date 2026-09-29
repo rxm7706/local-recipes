@@ -6,7 +6,6 @@ plain string or value.
 from __future__ import annotations
 
 from pyforge.marshal.core import gate
-from pyforge.marshal.core.identity import StoryKey
 from pyforge.marshal.core.deferred_work import (
     DeferralCandidate,
     deferrals_to_promote,
@@ -14,6 +13,7 @@ from pyforge.marshal.core.deferred_work import (
     promoted_id,
     render_ledger_entry,
 )
+from pyforge.marshal.core.identity import StoryKey
 
 # --- parse_followup_deferrals -------------------------------------------
 
@@ -108,9 +108,7 @@ def test_parses_dw6_shaped_block_with_interleaved_anonymous_bullets():
 
     dw7 = candidates[1]
     assert dw7.story_key == StoryKey(3, 5)
-    assert dw7.reason == (
-        "A second, unrelated block that must not be swallowed by DW-6's own scan."
-    )
+    assert dw7.reason == ("A second, unrelated block that must not be swallowed by DW-6's own scan.")
 
 
 def test_non_review_budget_followup_origin_is_ignored():
@@ -248,9 +246,7 @@ def test_deferrals_to_promote_is_not_fooled_by_a_prefix_collision():
     ledger that carries ONLY ``DW-FU-1-10`` (story 1.10's own promotion)
     must NOT be read as story 1.1 already having a twin -- 1.1's own
     candidate must still come back as pending."""
-    candidate_1_1 = _candidate(
-        tier3_id="DW-8", story_key=StoryKey(1, 1), source_spec="spec-1-1-x.md"
-    )
+    candidate_1_1 = _candidate(tier3_id="DW-8", story_key=StoryKey(1, 1), source_spec="spec-1-1-x.md")
     landing_keys = frozenset({StoryKey(1, 1)})
     tracked_text = "### DW-FU-1-10: some other, unrelated story's own promoted entry\n"
 
@@ -266,9 +262,7 @@ def test_deferrals_to_promote_still_recognizes_an_exact_match_alongside_a_longer
     already-promoted."""
     candidate_1_1 = _candidate(tier3_id="DW-8", story_key=StoryKey(1, 1))
     landing_keys = frozenset({StoryKey(1, 1)})
-    tracked_text = (
-        "### DW-FU-1-10: some other story\n\n### DW-FU-1-1: the exact match\n"
-    )
+    tracked_text = "### DW-FU-1-10: some other story\n\n### DW-FU-1-1: the exact match\n"
 
     assert deferrals_to_promote((candidate_1_1,), landing_keys, tracked_text) == ()
 
@@ -301,9 +295,7 @@ def test_deferrals_to_promote_dedupes_two_candidates_for_the_same_story_in_one_b
 # and proves both are captured -- and promoted -- identically regardless.
 
 
-def _review_budget_followup_block(
-    *, tier3_id: str, story: str, story_key: StoryKey, report: dict[str, object]
-) -> str:
+def _review_budget_followup_block(*, tier3_id: str, story: str, story_key: StoryKey, report: dict[str, object]) -> str:
     return (
         f"### {tier3_id}: Follow-up review still recommended for {story} "
         "after the damping cap was spent\n"
@@ -320,9 +312,7 @@ def _review_budget_followup_block(
 
 
 def test_review_budget_followup_capture_is_identical_regardless_of_review_tier():
-    low_tier_report = gate.classify_review_tier(
-        declared_low_risk=True, changed_files=("a.py", "b.py")
-    )
+    low_tier_report = gate.classify_review_tier(declared_low_risk=True, changed_files=("a.py", "b.py"))
     standard_tier_report = gate.classify_review_tier(
         declared_low_risk=False, changed_files=("a.py", "b.py", "c.py", "d.py")
     )
@@ -353,20 +343,12 @@ def test_review_budget_followup_capture_is_identical_regardless_of_review_tier()
     assert len(standard_candidates) == 1
     assert low_candidates[0].tier3_id == "DW-30"
     assert low_candidates[0].story_key == StoryKey(9, 1)
-    assert (
-        f"classified into the {low_tier_report['tier']!r} review tier"
-        in low_candidates[0].reason
-    )
+    assert f"classified into the {low_tier_report['tier']!r} review tier" in low_candidates[0].reason
     assert standard_candidates[0].tier3_id == "DW-31"
     assert standard_candidates[0].story_key == StoryKey(9, 2)
-    assert (
-        f"classified into the {standard_tier_report['tier']!r} review tier"
-        in standard_candidates[0].reason
-    )
+    assert f"classified into the {standard_tier_report['tier']!r} review tier" in standard_candidates[0].reason
 
-    low_promoted = deferrals_to_promote(
-        low_candidates, frozenset({low_candidates[0].story_key}), tracked_text=""
-    )
+    low_promoted = deferrals_to_promote(low_candidates, frozenset({low_candidates[0].story_key}), tracked_text="")
     standard_promoted = deferrals_to_promote(
         standard_candidates,
         frozenset({standard_candidates[0].story_key}),

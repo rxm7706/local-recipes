@@ -17,9 +17,7 @@ from pyforge.marshal.core.worktree_checkpoint import (
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     return result
 

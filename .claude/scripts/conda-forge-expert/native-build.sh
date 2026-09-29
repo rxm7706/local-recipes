@@ -24,7 +24,20 @@
 set -euo pipefail
 
 RECIPE="${1:?Usage: $0 <path-to-recipe.yaml or recipe directory>}"
+
+# Factory island mode (Story 44.7): Mason sets MASON_FACTORY_ROOT to
+# python-foundry/factory/ so variant configs, pinning overlay, and
+# build_artifacts/ resolve under the island — not the local-recipes root.
+if [[ -n "${MASON_FACTORY_ROOT:-}" ]]; then
+  ISLAND_ROOT="${MASON_FACTORY_ROOT}"
+else
+  ISLAND_ROOT=""
+fi
+
 REPO_ROOT="${PIXI_PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+if [[ -n "${ISLAND_ROOT}" ]]; then
+  REPO_ROOT="${ISLAND_ROOT}"
+fi
 
 # Auto-detect host platform → .ci_support/<config>.yaml stem
 case "$(uname -s)/$(uname -m)" in
@@ -41,7 +54,11 @@ case "$(uname -s)/$(uname -m)" in
 esac
 
 VARIANT_PLATFORM="${REPO_ROOT}/.ci_support/${CONFIG}.yaml"
-VARIANT_PINNING="${REPO_ROOT}/.pixi/envs/local-recipes/conda_build_config.yaml"
+if [[ -n "${ISLAND_ROOT}" ]]; then
+  VARIANT_PINNING="${REPO_ROOT}/.pixi/envs/default/conda_build_config.yaml"
+else
+  VARIANT_PINNING="${REPO_ROOT}/.pixi/envs/local-recipes/conda_build_config.yaml"
+fi
 
 if [[ ! -f "${VARIANT_PLATFORM}" ]]; then
   echo "Platform variant config not found: ${VARIANT_PLATFORM}" >&2

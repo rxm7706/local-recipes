@@ -2,9 +2,10 @@
 title: Herald Moments 2-4 run on a real live backend, not local-storage/CLI-triggered
 type: dream
 owner: herald
-status: specified
+status: archived
+archived-reason: absorbed
 ---
-
+> **Consolidated into [[pyforge-herald]]** on 2026-09-17 (one-chain-per-station herald fold; folded from `herald-moments-2-4-live-backend`).
 # Herald Moments 2-4 run on a real live backend, not local-storage/CLI-triggered
 
 ## The Dream

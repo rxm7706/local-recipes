@@ -27,6 +27,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.cli import seed as seed_cli
 from pyforge.marshal.seed.errors import InternalError, PreconditionFailure, UsageError
 from pyforge.marshal.seed.model.manifest import (
@@ -80,9 +81,7 @@ def _hybrid(entry_id: str, path: str, region_name: str) -> ManifestEntry:
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -111,9 +110,7 @@ def _args(
     skip: list[str] | None = None,
     force: bool = False,
 ) -> argparse.Namespace:
-    return argparse.Namespace(
-        repo_root=repo_root, apply=apply, yes=yes, agents=agents, skip=skip, force=force
-    )
+    return argparse.Namespace(repo_root=repo_root, apply=apply, yes=yes, agents=agents, skip=skip, force=force)
 
 
 # --- argparse wiring ---------------------------------------------------
@@ -230,9 +227,7 @@ def test_exit_code_0_on_an_applied_run(clean_repo, capsys):
 def test_exit_code_0_on_a_declined_confirmation(clean_repo, capsys):
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
 
-    code = seed_cli.run_adopt(
-        _args(repo_root=str(clean_repo), apply=True), manifest=manifest, confirm=lambda: False
-    )
+    code = seed_cli.run_adopt(_args(repo_root=str(clean_repo), apply=True), manifest=manifest, confirm=lambda: False)
 
     out = capsys.readouterr().out
     assert code == 0
@@ -243,9 +238,7 @@ def test_exit_code_0_on_a_declined_confirmation(clean_repo, capsys):
 def test_exit_code_0_on_an_empty_plan_apply(clean_repo, capsys):
     manifest = _manifest()
 
-    code = seed_cli.run_adopt(
-        _args(repo_root=str(clean_repo), apply=True, yes=True), manifest=manifest
-    )
+    code = seed_cli.run_adopt(_args(repo_root=str(clean_repo), apply=True, yes=True), manifest=manifest)
 
     out = capsys.readouterr().out
     assert code == 0

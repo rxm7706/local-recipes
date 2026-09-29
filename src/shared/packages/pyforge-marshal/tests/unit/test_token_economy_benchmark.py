@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import pytest
 
 from pyforge.marshal.core import policy
@@ -13,17 +10,11 @@ from pyforge.marshal.ports.harness import LayerSavings
 
 
 def _all_off_layers() -> dict[str, dict[str, object]]:
-    return {
-        name: {"enabled": False, "aggressiveness": "medium"}
-        for name in policy.CONTEXT_LAYER_NAMES
-    }
+    return {name: {"enabled": False, "aggressiveness": "medium"} for name in policy.CONTEXT_LAYER_NAMES}
 
 
 def _all_on_layers() -> dict[str, dict[str, object]]:
-    return {
-        name: {"enabled": True, "aggressiveness": "medium"}
-        for name in policy.CONTEXT_LAYER_NAMES
-    }
+    return {name: {"enabled": True, "aggressiveness": "medium"} for name in policy.CONTEXT_LAYER_NAMES}
 
 
 def _leg(
@@ -160,4 +151,12 @@ def test_digest_context_layers_is_stable():
 
 def test_leg_from_mapping_rejects_invalid_layers_mode():
     with pytest.raises(ValueError, match="layers_mode"):
-        bench.leg_from_mapping({"layers_mode": "maybe", "story_key": "x", "task_phase": "done", "reviewer_ran": True, "run_weighted_tokens": 0})
+        bench.leg_from_mapping(
+            {
+                "layers_mode": "maybe",
+                "story_key": "x",
+                "task_phase": "done",
+                "reviewer_ran": True,
+                "run_weighted_tokens": 0,
+            }
+        )

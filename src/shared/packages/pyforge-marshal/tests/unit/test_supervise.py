@@ -12,6 +12,7 @@ import dataclasses
 from datetime import datetime, timedelta, timezone
 
 import pytest
+
 from pyforge.marshal.core.supervise import (
     ACTION_PRECEDENCE,
     CeilingStatus,
@@ -280,9 +281,7 @@ def test_sample_is_a_plain_frozen_dataclass():
 # --- the monotonic elapsed basis (review finding) ----------------------------
 
 
-def _mono_sample(
-    *, wall_ms: int, mono_s: float | None, pane: str | None = "same"
-) -> Sample:
+def _mono_sample(*, wall_ms: int, mono_s: float | None, pane: str | None = "same") -> Sample:
     return Sample(
         moment=_T0 + timedelta(milliseconds=wall_ms),
         pane_content=pane,
@@ -435,10 +434,7 @@ def test_paused_at_a_different_stage_is_none():
     epic-boundary, story-gate, plan/story-checkpoint, or an unrecognized
     future value -- is simply not this kind of pause."""
     for stage in ("spec-approval", "epic-boundary", "story-gate", "plan-checkpoint", "bogus"):
-        assert (
-            evaluate_escalation(stage, "3-7-escalation-deferral-and-resume", "escalated")
-            == EscalationStatus.NONE
-        )
+        assert evaluate_escalation(stage, "3-7-escalation-deferral-and-resume", "escalated") == EscalationStatus.NONE
 
 
 def test_escalation_paused_with_the_task_still_escalated_is_unresolved():
@@ -463,8 +459,7 @@ def test_escalation_paused_with_the_task_no_longer_escalated_is_resolved():
     run separately. This is the one window `RESOLVED` describes: a human
     has re-armed the story, but the run has not yet been resumed."""
     assert (
-        evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", "pending")
-        == EscalationStatus.RESOLVED
+        evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", "pending") == EscalationStatus.RESOLVED
     )
 
 
@@ -473,10 +468,7 @@ def test_escalation_paused_with_no_task_phase_at_all_is_resolved():
     the task disappeared from `state.json`'s own ``tasks`` map) --
     `task_phase=None` can never equal `"escalated"`, so this is `RESOLVED`,
     never `UNRESOLVED`: the classification is never permissive by default."""
-    assert (
-        evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", None)
-        == EscalationStatus.RESOLVED
-    )
+    assert evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", None) == EscalationStatus.RESOLVED
 
 
 def test_evaluate_escalation_never_raises_on_unexpected_string_values():
@@ -557,18 +549,11 @@ def test_mixed_deferred_stories_false_when_none_cross_their_own_ceiling():
 
 
 def test_evaluate_compression_ladder_is_none_below_threshold():
-    assert (
-        evaluate_compression_ladder(
-            39_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="medium"
-        )
-        is None
-    )
+    assert evaluate_compression_ladder(39_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="medium") is None
 
 
 def test_evaluate_compression_ladder_escalates_at_threshold():
-    decision = evaluate_compression_ladder(
-        40_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="low"
-    )
+    decision = evaluate_compression_ladder(40_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="low")
     assert decision is not None
     assert decision.declared == "low"
     assert decision.target == "medium"
@@ -576,20 +561,13 @@ def test_evaluate_compression_ladder_escalates_at_threshold():
 
 
 def test_evaluate_compression_ladder_reaches_high_before_breach():
-    decision = evaluate_compression_ladder(
-        49_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="low"
-    )
+    decision = evaluate_compression_ladder(49_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="low")
     assert decision is not None
     assert decision.target == "high"
 
 
 def test_evaluate_compression_ladder_already_high_returns_none():
-    assert (
-        evaluate_compression_ladder(
-            45_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="high"
-        )
-        is None
-    )
+    assert evaluate_compression_ladder(45_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="high") is None
 
 
 def test_compression_escalation_precedes_budget_stop_and_idle_ladder():
@@ -601,9 +579,7 @@ def test_compression_escalation_precedes_budget_stop_and_idle_ladder():
 
 
 def test_evaluate_compression_ladder_journals_threshold_facts():
-    decision = evaluate_compression_ladder(
-        41_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="medium"
-    )
+    decision = evaluate_compression_ladder(41_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="medium")
     assert decision is not None
     assert decision.observed == 41_000_000
     assert decision.limit == 50_000_000
@@ -614,9 +590,7 @@ def test_compression_escalation_decision_names_wire_aggressiveness_only():
     """CAP-8 AC: escalation raises wire-layer compression only -- the pure
     decision carries threshold facts and aggressiveness rungs, never a model
     tier or any gate/review skip signal."""
-    decision = evaluate_compression_ladder(
-        41_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="low"
-    )
+    decision = evaluate_compression_ladder(41_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="low")
     assert decision is not None
     field_names = {f.name for f in dataclasses.fields(decision)}
     assert field_names == {"observed", "limit", "threshold", "declared", "target"}

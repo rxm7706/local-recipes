@@ -25,7 +25,6 @@ from __future__ import annotations
 import copy
 
 import pandas as pd
-import pandera.pandas as pa
 import pytest
 from kedro.framework.hooks.manager import _create_hook_manager, _register_hooks
 from kedro.io import DataCatalog, MemoryDataset
@@ -212,7 +211,7 @@ def test_validator_agnostic_stub_second_validator_no_node_change():
     hooks = DataValidationHooks(
         [
             PanderaValidator({"pypi_current_versions": PYPI_SCHEMA}),  # would PASS this frame
-            _StubValidator(forbidden="version"),                       # but the stub flags it
+            _StubValidator(forbidden="version"),  # but the stub flags it
         ],
         alert_sink=sink,
         build_stamp=STAMP,
@@ -245,11 +244,12 @@ def test_hostile_backend_evidence_still_halts_with_contract_violation_and_alerts
     hooks = DataValidationHooks([_HostileEvidenceValidator()], alert_sink=sink, build_stamp=STAMP)
     raised, saves = _run(hooks, GOOD)
     assert isinstance(raised, DataContractViolation)  # NOT a pydantic ValueError
-    assert saves == []                                 # still halted before persist
-    assert len(alerts) == 1                            # alert still delivered
+    assert saves == []  # still halted before persist
+    assert len(alerts) == 1  # alert still delivered
     assert alerts[0].rule == "data-contract-violation"  # empty rule → safe fallback
     # the set/NaN were coerced to strings, so the alert round-trips through the a2a channel:
-    from pyforge.atlas.a2a import to_message, from_message
+    from pyforge.atlas.a2a import from_message, to_message
+
     assert from_message(to_message(alerts[0])) == alerts[0]
 
 
@@ -299,7 +299,9 @@ def test_shipped_validation_module_imports_no_great_expectations():
 def test_no_registered_contract_is_passthrough():
     # a dataset the pandera validator has NO contract for must pass through, not fail.
     alerts, sink = _capturing_sink()
-    hooks = DataValidationHooks([PanderaValidator({"some_other_dataset": PYPI_SCHEMA})], alert_sink=sink, build_stamp=STAMP)
+    hooks = DataValidationHooks(
+        [PanderaValidator({"some_other_dataset": PYPI_SCHEMA})], alert_sink=sink, build_stamp=STAMP
+    )
     raised, saves = _run(hooks, MISSING_VERSION)  # malformed, but no contract for this name
     assert raised is None
     assert saves == ["pypi_current_versions"]
@@ -316,7 +318,9 @@ def test_non_dataframe_output_skips_gracefully():
         {"raw_in": MemoryDataset("seed"), "pypi_current_versions": _TrackingDataset(saves, "pypi_current_versions")}
     )
     hm = _create_hook_manager()
-    _register_hooks(hm, (DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP),))
+    _register_hooks(
+        hm, (DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP),)
+    )
     SequentialRunner().run(pipe, catalog, hook_manager=hm)  # must NOT raise
     assert saves == ["pypi_current_versions"]  # persisted (skipped, not halted)
 
@@ -418,7 +422,9 @@ def test_multi_output_node_halts_before_any_output_persists():
         }
     )
     hm = _create_hook_manager()
-    _register_hooks(hm, (DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP),))
+    _register_hooks(
+        hm, (DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP),)
+    )
     with pytest.raises(DataContractViolation):
         SequentialRunner().run(pipe, catalog, hook_manager=hm)
     assert saves == []  # NEITHER output persisted
@@ -452,7 +458,10 @@ def test_co_registered_with_observability_still_halts_order_independent():
     saves: list[str] = []
     pipe = Pipeline([node(_identity, inputs="raw_in", outputs="pypi_current_versions", name="emit")])
     catalog = DataCatalog(
-        {"raw_in": MemoryDataset(MISSING_VERSION), "pypi_current_versions": _TrackingDataset(saves, "pypi_current_versions")}
+        {
+            "raw_in": MemoryDataset(MISSING_VERSION),
+            "pypi_current_versions": _TrackingDataset(saves, "pypi_current_versions"),
+        }
     )
     hm = _create_hook_manager()
     _register_hooks(

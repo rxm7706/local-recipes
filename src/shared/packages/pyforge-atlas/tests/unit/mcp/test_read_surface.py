@@ -38,9 +38,7 @@ class FakeSession:
 def real_catalog_session(monkeypatch):
     # copy_mode="assign": MemoryDataset deep-copies dicts by default; the
     # passthrough proof wants the EXACT object identity back.
-    catalog = DataCatalog(
-        datasets={"demo_ds": MemoryDataset(SENTINEL, copy_mode="assign")}
-    )
+    catalog = DataCatalog(datasets={"demo_ds": MemoryDataset(SENTINEL, copy_mode="assign")})
     fake = FakeSession(catalog)
 
     @contextlib.contextmanager
@@ -111,7 +109,11 @@ def test_query_trending_candidates_delegates_to_trending_seam(monkeypatch):
     monkeypatch.setattr(_trending_mod, "query_trending_candidates", fake_query)
 
     result = tools.query_trending_candidates(
-        period="daily", tier="2", top=10, not_on_cf=False, min_stars=100,
+        period="daily",
+        tier="2",
+        top=10,
+        not_on_cf=False,
+        min_stars=100,
     )
 
     assert result is sentinel_envelope  # byte-for-byte: the exact object came back
@@ -134,9 +136,8 @@ def test_read_dataset_coerces_a_dataframe_to_json_serializable(monkeypatch):
     to a JSON-native shape (list[row-dict]) WITHOUT importing pandas in the
     tool body (AD-7). Proven end-to-end: real catalog.load of a real
     DataFrame, then json.dumps of the tool's return."""
-    import json
-
     import contextlib
+    import json
 
     import pandas as pd
     from kedro.io import DataCatalog, MemoryDataset
@@ -163,8 +164,8 @@ def test_read_dataset_coerces_a_dataframe_to_json_serializable(monkeypatch):
 
 def test_read_dataset_coerces_series_ndarray_set(monkeypatch):
     """The other non-JSON-native shapes coerce too (Series/ndarray/set)."""
-    import json
     import contextlib
+    import json
 
     import numpy as np
     import pandas as pd
@@ -232,9 +233,7 @@ def test_read_dataset_api_dataset_reports_live_fetch(monkeypatch):
     assert envelope["value"] == {"ok": True}
 
 
-def test_read_dataset_incremental_parquet_reports_fetched_at_not_read_time(
-    tmp_path, monkeypatch
-):
+def test_read_dataset_incremental_parquet_reports_fetched_at_not_read_time(tmp_path, monkeypatch):
     """``IncrementalParquetDataset`` -> ``row-fetched-at``: ``build_stamp`` is the
     OLDEST recorded ``fetched_at``, ``build_stamp_newest`` the newest — the
     dataset's OWN recorded time, proven by a deliberately-old fixture value, not
@@ -244,6 +243,7 @@ def test_read_dataset_incremental_parquet_reports_fetched_at_not_read_time(
 
     import pandas as pd
     from kedro.io import DataCatalog
+
     from pyforge.atlas.datasets import IncrementalParquetDataset
 
     path = tmp_path / "core_downloads" / "core_downloads.parquet"
@@ -263,17 +263,11 @@ def test_read_dataset_incremental_parquet_reports_fetched_at_not_read_time(
 
     envelope = tools.read_dataset("incr_ds")
     assert envelope["provenance_kind"] == "row-fetched-at"
-    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(
-        111, tz=datetime.UTC
-    ).isoformat()
-    assert envelope["build_stamp_newest"] == datetime.datetime.fromtimestamp(
-        222, tz=datetime.UTC
-    ).isoformat()
+    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(111, tz=datetime.UTC).isoformat()
+    assert envelope["build_stamp_newest"] == datetime.datetime.fromtimestamp(222, tz=datetime.UTC).isoformat()
 
 
-def test_read_dataset_incremental_parquet_normalizes_millisecond_fetched_at(
-    tmp_path, monkeypatch
-):
+def test_read_dataset_incremental_parquet_normalizes_millisecond_fetched_at(tmp_path, monkeypatch):
     """Review pass 1 regression: a ``fetched_at`` column that reached the
     Parquet file at MILLISECOND magnitude (bypassing ``save()``'s own ms-guard —
     e.g. a future writer, or a frame constructed directly) must NOT crash
@@ -284,6 +278,7 @@ def test_read_dataset_incremental_parquet_normalizes_millisecond_fetched_at(
 
     import pandas as pd
     from kedro.io import DataCatalog
+
     from pyforge.atlas.datasets import IncrementalParquetDataset
 
     # Write the Parquet DIRECTLY (bypassing IncrementalParquetDataset.save(),
@@ -312,9 +307,7 @@ def test_read_dataset_incremental_parquet_normalizes_millisecond_fetched_at(
     assert envelope["build_stamp_newest"] == expected
 
 
-def test_read_dataset_pandas_parquet_reports_file_mtime_not_read_time(
-    tmp_path, monkeypatch
-):
+def test_read_dataset_pandas_parquet_reports_file_mtime_not_read_time(tmp_path, monkeypatch):
     """``pandas.ParquetDataset`` -> ``file-mtime``: ``build_stamp`` is the
     materialized file's own mtime, proven via ``os.utime`` to a deliberately-old
     value — equality against that value, not merely "a stamp is present"."""
@@ -344,15 +337,11 @@ def test_read_dataset_pandas_parquet_reports_file_mtime_not_read_time(
 
     envelope = tools.read_dataset("pq_ds")
     assert envelope["provenance_kind"] == "file-mtime"
-    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(
-        old_ts, tz=datetime.UTC
-    ).isoformat()
+    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(old_ts, tz=datetime.UTC).isoformat()
     assert envelope["build_stamp_newest"] is None
 
 
-def test_read_dataset_datetime_typed_fetched_at_reports_genuine_stamp(
-    tmp_path, monkeypatch
-):
+def test_read_dataset_datetime_typed_fetched_at_reports_genuine_stamp(tmp_path, monkeypatch):
     """Review pass 3: a ``fetched_at`` column persisted as a DATETIME dtype
     (a bypass writer storing ``pd.Timestamp``s, not epoch numerics) is genuine
     recorded provenance and must convert unit-independently to the correct
@@ -364,6 +353,7 @@ def test_read_dataset_datetime_typed_fetched_at_reports_genuine_stamp(
 
     import pandas as pd
     from kedro.io import DataCatalog
+
     from pyforge.atlas.datasets import IncrementalParquetDataset
 
     path = tmp_path / "dt_ds" / "dt_ds.parquet"
@@ -371,9 +361,7 @@ def test_read_dataset_datetime_typed_fetched_at_reports_genuine_stamp(
     pd.DataFrame(
         {
             "conda_name": ["a", "b"],
-            "fetched_at": pd.to_datetime(
-                ["2020-01-02T00:00:00Z", "2020-01-01T00:00:00Z"]
-            ),
+            "fetched_at": pd.to_datetime(["2020-01-02T00:00:00Z", "2020-01-01T00:00:00Z"]),
         }
     ).to_parquet(path)
 
@@ -389,17 +377,23 @@ def test_read_dataset_datetime_typed_fetched_at_reports_genuine_stamp(
 
     envelope = tools.read_dataset("dt_ds")  # must NOT raise ValueError
     assert envelope["provenance_kind"] == "row-fetched-at"
-    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(
-        1_577_836_800, tz=datetime.UTC  # 2020-01-01T00:00:00Z (the OLDEST)
-    ).isoformat()
-    assert envelope["build_stamp_newest"] == datetime.datetime.fromtimestamp(
-        1_577_923_200, tz=datetime.UTC  # 2020-01-02T00:00:00Z
-    ).isoformat()
+    assert (
+        envelope["build_stamp"]
+        == datetime.datetime.fromtimestamp(
+            1_577_836_800,
+            tz=datetime.UTC,  # 2020-01-01T00:00:00Z (the OLDEST)
+        ).isoformat()
+    )
+    assert (
+        envelope["build_stamp_newest"]
+        == datetime.datetime.fromtimestamp(
+            1_577_923_200,
+            tz=datetime.UTC,  # 2020-01-02T00:00:00Z
+        ).isoformat()
+    )
 
 
-def test_read_dataset_out_of_range_fetched_at_degrades_to_unavailable(
-    tmp_path, monkeypatch
-):
+def test_read_dataset_out_of_range_fetched_at_degrades_to_unavailable(tmp_path, monkeypatch):
     """Review pass 3: raw integer epoch-NANOSECOND magnitude (one class beyond
     the ms-guard's single division) must degrade to an honest ``unavailable``
     — never abort a read whose data already loaded successfully."""
@@ -407,6 +401,7 @@ def test_read_dataset_out_of_range_fetched_at_degrades_to_unavailable(
 
     import pandas as pd
     from kedro.io import DataCatalog
+
     from pyforge.atlas.datasets import IncrementalParquetDataset
 
     ns_value = 1_700_000_000_000_000_000  # epoch-ns; // 1000 leaves µs-range
@@ -431,9 +426,7 @@ def test_read_dataset_out_of_range_fetched_at_degrades_to_unavailable(
     assert envelope["value"]  # the read itself still succeeded
 
 
-def test_read_dataset_provenance_failure_never_aborts_a_successful_read(
-    real_catalog_session, monkeypatch
-):
+def test_read_dataset_provenance_failure_never_aborts_a_successful_read(real_catalog_session, monkeypatch):
     """Review pass 3: provenance is ADVISORY (C4) — if the kind dispatch
     itself blows up AFTER ``catalog.load`` succeeded, the envelope degrades to
     ``unavailable`` naming the failure; the read must not error and the loaded
@@ -491,12 +484,20 @@ def test_resolve_row_fetched_at_reads_object_dtype_timestamp_strings():
 
     info = _provenance_mod._resolve_row_fetched_at(frame, "fetched_at")
     assert info.kind == "row-fetched-at"
-    assert info.build_stamp == datetime.datetime.fromtimestamp(
-        1_577_836_800, tz=datetime.UTC  # 2020-01-01T00:00:00Z (the OLDEST)
-    ).isoformat()
-    assert info.build_stamp_newest == datetime.datetime.fromtimestamp(
-        1_577_923_200, tz=datetime.UTC  # 2020-01-02T00:00:00Z
-    ).isoformat()
+    assert (
+        info.build_stamp
+        == datetime.datetime.fromtimestamp(
+            1_577_836_800,
+            tz=datetime.UTC,  # 2020-01-01T00:00:00Z (the OLDEST)
+        ).isoformat()
+    )
+    assert (
+        info.build_stamp_newest
+        == datetime.datetime.fromtimestamp(
+            1_577_923_200,
+            tz=datetime.UTC,  # 2020-01-02T00:00:00Z
+        ).isoformat()
+    )
 
 
 def test_resolve_row_fetched_at_unparseable_column_states_an_honest_reason():

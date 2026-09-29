@@ -2,7 +2,7 @@
 title: 'mason recipe new'
 type: 'feature'
 created: '2026-08-11'
-status: 'blocked'
+status: 'done'
 baseline_revision: '257094dcc2cf99a95c8553b6c05ae3cc09fe876f'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -267,7 +267,8 @@ judgment about what any of those words mean.
 
 ## Auto Run Result
 
-**Status:** blocked
+**Status:** done
+Reconciled 2026-09-20: the `blocked` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `10caebb31d 2026-08-13 mason: sync ledger + dashboard + spec-surface for story 2-4` — that promotion is the ruling this record now reflects.
 
 **Blocking condition:** intent gap in intent contract
 
@@ -337,3 +338,8 @@ original lost commit remains tagged at `rescue/mason-2-4-attempt-snapshot`.
 - The sprint-status ledger (`_bmad-output/projects/pyforge-mason/planning-artifacts/
   sprint-status-ledger.yaml`) was not touched this pass; it still correctly reads
   `2-4-mason-recipe-new: backlog` (unchanged, since no code landed).
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `blocked` → `done` (ledger row `2-4-mason-recipe-new: done`).
+- Auto Run Result `Status: blocked` → `done` (see the reconcile line under it).

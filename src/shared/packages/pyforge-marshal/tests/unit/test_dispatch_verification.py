@@ -4,18 +4,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from pyforge.core.process import ProcessResult
-from pyforge.marshal.dispatch_verify import (
-    compose_dispatch_policy,
-    evaluate_dispatch_verification,
-)
+
+from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from pyforge.marshal.core import gate, policy
+from pyforge.marshal.core.dispatch_retry import (
+    DispatchBlockKind,
+    classify_dispatch_block,
+)
 from pyforge.marshal.core.dispatch_verification import (
+    PRE_EXISTING_GATE_CODE,
     DispatchVerificationInput,
     DispatchVerificationVerdict,
-    PRE_EXISTING_GATE_CODE,
     extract_failure_paths_from_verify_output,
     gate_verdict_is_clean,
     judge_dispatch_verification,
@@ -24,13 +24,13 @@ from pyforge.marshal.core.dispatch_verification import (
     reclassify_pre_existing_gate_findings,
     would_land_on_self_report_only,
 )
-from pyforge.marshal.core.dispatch_retry import (
-    DispatchBlockKind,
-    classify_dispatch_block,
-)
 from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
+from pyforge.marshal.dispatch_verify import (
+    compose_dispatch_policy,
+    evaluate_dispatch_verification,
+)
 
 
 def test_compose_dispatch_policy_reads_a_real_project_toml(tmp_path: Path) -> None:
@@ -40,9 +40,7 @@ def test_compose_dispatch_policy_reads_a_real_project_toml(tmp_path: Path) -> No
     dispatch)."""
     project_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
     project_dir.mkdir(parents=True)
-    (project_dir / "marshal-policy.toml").write_text(
-        'gate_mode = "none"\n', encoding="utf-8"
-    )
+    (project_dir / "marshal-policy.toml").write_text('gate_mode = "none"\n', encoding="utf-8")
     effective = compose_dispatch_policy("acme", tmp_path)
     assert effective.seed_view()["gate_mode"].value == "none"
     assert effective.seed_view()["gate_mode"].layer.value == "project"
@@ -81,9 +79,7 @@ def test_self_report_alone_never_produces_verified_on_failing_gates() -> None:
             message="verify command 'pytest' exited 1",
         ),
     )
-    inp = DispatchVerificationInput(
-        findings=findings, harness_self_report_shipped=True
-    )
+    inp = DispatchVerificationInput(findings=findings, harness_self_report_shipped=True)
     assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
     assert would_land_on_self_report_only(inp) is True
 
@@ -103,9 +99,7 @@ def test_doctor_12_3_fixture_two_live_reproducible_leaks() -> None:
             path="src/leak.py",
         ),
     )
-    inp = DispatchVerificationInput(
-        findings=findings, harness_self_report_shipped=True
-    )
+    inp = DispatchVerificationInput(findings=findings, harness_self_report_shipped=True)
     assert gate_verdict_is_clean(inp.findings) is False
     assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
     assert would_land_on_self_report_only(inp) is True
@@ -184,6 +178,49 @@ def test_build_fleet_row_omits_scope_advisories_key_when_empty() -> None:
     assert "dispatch_verification_scope_advisories" not in row
 
 
+def test_build_fleet_row_surfaces_landing_findings() -> None:
+    """Story 53.2 review (I1): `execute_dispatch_land`'s envelope findings
+    (MRS-DISP-047/048) must render, not just journal -- same AC4 rationale
+    as the scope-advisories precedent above."""
+    facts = FleetHomeFacts(
+        slug="pyforge-marshal",
+        branch="loop/pyforge-marshal",
+        has_run=False,
+        dispatch_story="53-2-example",
+        dispatch_engine_alive=False,
+        dispatch_completion_verdict="live",
+        dispatch_landing_findings=(
+            {
+                "code": "MRS-DISP-048",
+                "severity": "error",
+                "message": "cannot commit/push spec-surface reconcile",
+            },
+        ),
+    )
+    row, finding = build_fleet_row(facts)
+    assert finding is None
+    assert row["dispatch_landing_findings"] == [
+        {
+            "code": "MRS-DISP-048",
+            "severity": "error",
+            "message": "cannot commit/push spec-surface reconcile",
+        }
+    ]
+
+
+def test_build_fleet_row_omits_landing_findings_key_when_empty() -> None:
+    facts = FleetHomeFacts(
+        slug="pyforge-marshal",
+        branch="loop/pyforge-marshal",
+        has_run=False,
+        dispatch_story="53-2-example",
+        dispatch_engine_alive=False,
+        dispatch_completion_verdict="live",
+    )
+    row, _finding = build_fleet_row(facts)
+    assert "dispatch_landing_findings" not in row
+
+
 class FakeProcess:
     def run(self, tokens, *, cwd: Path):
         if tokens and tokens[0] == "false":
@@ -194,9 +231,7 @@ class FakeProcess:
 class FakeVcs:
     def __init__(
         self,
-        changed: tuple[str, ...] = (
-            "src/shared/packages/pyforge-marshal/src/leak.py",
-        ),
+        changed: tuple[str, ...] = ("src/shared/packages/pyforge-marshal/src/leak.py",),
     ) -> None:
         self._changed = changed
 
@@ -234,10 +269,182 @@ def test_evaluate_dispatch_verification_runs_gates_not_self_report(
     # cli/gate.py's own copy of this fallback.
     assert not any(f.code == "MRS-GATE-007" for f in envelope.findings)
     assert would_land_on_self_report_only(
-        DispatchVerificationInput(
-            findings=envelope.findings, harness_self_report_shipped=True
-        )
+        DispatchVerificationInput(findings=envelope.findings, harness_self_report_shipped=True)
     )
+
+
+def test_evaluate_dispatch_verification_appends_surface_guard_after_declared_commands(
+    tmp_path: Path,
+) -> None:
+    """Story 53.1 (spec-53-1, CAP-261a): a dispatch session's own declared
+    ``verify_commands`` run first, then the S-13.7 guard -- the SAME order
+    ``harness_bmadloop.render_policy_toml`` appends it in for a loop home,
+    via the SAME constant (``_SURFACE_RECONCILE_COMMAND``)."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+    )
+    reports = envelope.data["commands"]
+    assert [report["command"] for report in reports] == [
+        "true",
+        _SURFACE_RECONCILE_COMMAND,
+    ]
+
+
+class FakeProcessGuardFails:
+    """Every command succeeds EXCEPT the S-13.7 guard itself -- isolates a
+    guard failure from the station's own declared commands, which the
+    existing ``FakeProcess`` (fails on ``false``) cannot express since the
+    guard is a fixed ``python ...`` invocation, never a station's choice."""
+
+    def run(self, tokens, *, cwd: Path):
+        if tokens and tokens[0] == "python":
+            return ProcessResult(returncode=1, stdout="", stderr="found drift")
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+def test_evaluate_dispatch_verification_surface_guard_failure_refuses(
+    tmp_path: Path,
+) -> None:
+    """Story 53.1: a session that lands green on its own declared commands
+    but leaves the S-13.7 guard's findings unaddressed is REFUSED exactly
+    like a failure in any other verify command -- the guard is not merely
+    advisory."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcessGuardFails(),
+        vcs=FakeVcs(),
+    )
+    inp = DispatchVerificationInput(findings=envelope.findings)
+    assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
+    guard_findings = [
+        f for f in envelope.findings if f.code == "MRS-GATE-001" and _SURFACE_RECONCILE_COMMAND in f.message
+    ]
+    assert guard_findings, envelope.findings
+
+
+def test_evaluate_dispatch_verification_spec_binding_stays_clean_with_derived_guard(
+    tmp_path: Path,
+) -> None:
+    """Story 53.1, Edge-Case Matrix row 4: a tracked spec's own
+    ``## Verification`` declares only the station's own commands -- it never
+    names the S-13.7 guard, and the end-to-end ``spec_binding`` result must
+    stay clean anyway, not just the isolated ``core/gate.py`` unit
+    (``test_gate.py::test_check_spec_binding_derived_surface_guard_stays_implicit``
+    covers that unit; this proves the wiring through
+    ``evaluate_dispatch_verification`` too)."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["false", "true"]},
+        flags={},
+    )
+    spec_text = "## Verification\n\n**Commands:**\n- `false` -- expected: exit 0\n- `true` -- expected: exit 0\n"
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=spec_text,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+    )
+    assert envelope.data["spec_binding"]["violations"] == 0
+
+
+def test_evaluate_dispatch_verification_dedupes_an_already_declared_guard(
+    tmp_path: Path,
+) -> None:
+    """Story 53.1: an operator who already (wrongly -- see the guard
+    constant's own "derive, don't declare" docstring) declared the guard in
+    a station's ``verify_commands`` must not see it run, or bind, twice."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true", _SURFACE_RECONCILE_COMMAND]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+    )
+    reports = envelope.data["commands"]
+    assert [report["command"] for report in reports] == [
+        "true",
+        _SURFACE_RECONCILE_COMMAND,
+    ]
+
+
+def test_evaluate_dispatch_verification_dedupes_a_guard_declared_with_different_spacing(
+    tmp_path: Path,
+) -> None:
+    """Story 53.1 review finding: the dedup collapses whitespace the same
+    way ``gate.check_spec_binding`` does, so a station that declared the
+    guard with different internal spacing still runs it exactly once,
+    matching ``check_spec_binding``'s own normalization instead of an exact
+    string comparison that would miss this case."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    respaced_guard = _SURFACE_RECONCILE_COMMAND.replace(" ", "  ", 1)
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true", respaced_guard]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+    )
+    reports = envelope.data["commands"]
+    assert [report["command"] for report in reports] == [
+        "true",
+        _SURFACE_RECONCILE_COMMAND,
+    ]
 
 
 def test_evaluate_dispatch_verification_unconfigured_epic_still_denies_outside_default(
@@ -338,9 +545,10 @@ def test_evaluate_dispatch_verification_no_declared_mode_defaults_to_warn_and_ve
     codes = [f.code for f in envelope.findings]
     assert "MRS-GATE-007" not in codes
     assert "MRS-GATE-012" in codes
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=envelope.findings)
-    ) == DispatchVerificationVerdict.VERIFIED
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
+        == DispatchVerificationVerdict.VERIFIED
+    )
 
 
 def test_evaluate_dispatch_verification_off_mode_reports_zero_findings(
@@ -412,12 +620,14 @@ def test_evaluate_dispatch_verification_two_stations_apply_their_own_mode_indepe
         process=FakeProcess(),
         vcs=FakeVcs(changed=("recipes/anything/recipe.yaml",)),
     )
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=hard_envelope.findings)
-    ) == DispatchVerificationVerdict.REFUSED
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=warn_envelope.findings)
-    ) == DispatchVerificationVerdict.VERIFIED
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=hard_envelope.findings))
+        == DispatchVerificationVerdict.REFUSED
+    )
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=warn_envelope.findings))
+        == DispatchVerificationVerdict.VERIFIED
+    )
 
 
 def test_evaluate_dispatch_verification_threads_the_real_project_slug_into_the_resolver(
@@ -474,9 +684,7 @@ def test_extract_failure_paths_from_pytest_collection_output() -> None:
 
 def test_path_in_story_blast_radius_matches_changed_or_surface() -> None:
     surface = ("src/shared/packages/pyforge-marshal/**",)
-    changed = (
-        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/foo.py",
-    )
+    changed = ("src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/foo.py",)
     assert path_in_story_blast_radius(
         "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/foo.py",
         changed_files=changed,
@@ -513,15 +721,12 @@ def test_reclassify_pre_existing_gate_downgrades_unrelated_verify_failure() -> N
             "command": "pixi run pyforge-deps-test",
             "stdout": "",
             "stderr": (
-                "ERROR collecting tests/packaging/test_deps_atlas.py\n"
-                "ModuleNotFoundError: No module named 'pandas'\n"
+                "ERROR collecting tests/packaging/test_deps_atlas.py\nModuleNotFoundError: No module named 'pandas'\n"
             ),
         },
     )
     surface = ("src/shared/packages/pyforge-marshal/**",)
-    changed = (
-        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",
-    )
+    changed = ("src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",)
     findings = reclassify_pre_existing_gate_findings(
         (gate_001,),
         command_reports=reports,
@@ -532,9 +737,10 @@ def test_reclassify_pre_existing_gate_downgrades_unrelated_verify_failure() -> N
     assert len(findings) == 1
     assert findings[0].code == PRE_EXISTING_GATE_CODE
     assert findings[0].severity is Severity.WARN
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=findings)
-    ) == DispatchVerificationVerdict.VERIFIED
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=findings))
+        == DispatchVerificationVerdict.VERIFIED
+    )
 
 
 def test_reclassify_keeps_marshal_package_failure_as_gate_001() -> None:
@@ -554,9 +760,7 @@ def test_reclassify_keeps_marshal_package_failure_as_gate_001() -> None:
         },
     )
     surface = ("src/shared/packages/pyforge-marshal/**",)
-    changed = (
-        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",
-    )
+    changed = ("src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",)
     findings = reclassify_pre_existing_gate_findings(
         (gate_001,),
         command_reports=reports,
@@ -565,9 +769,9 @@ def test_reclassify_keeps_marshal_package_failure_as_gate_001() -> None:
         project_slug="pyforge-marshal",
     )
     assert findings == (gate_001,)
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=findings)
-    ) == DispatchVerificationVerdict.REFUSED
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=findings)) == DispatchVerificationVerdict.REFUSED
+    )
 
 
 def test_reclassify_pre_existing_gate_with_empty_changed_files() -> None:
@@ -582,8 +786,7 @@ def test_reclassify_pre_existing_gate_with_empty_changed_files() -> None:
             "command": "pixi run pyforge-deps-test",
             "stdout": "",
             "stderr": (
-                "ERROR collecting tests/packaging/test_deps_atlas.py\n"
-                "ModuleNotFoundError: No module named 'pandas'\n"
+                "ERROR collecting tests/packaging/test_deps_atlas.py\nModuleNotFoundError: No module named 'pandas'\n"
             ),
         },
     )
@@ -597,9 +800,10 @@ def test_reclassify_pre_existing_gate_with_empty_changed_files() -> None:
     )
     assert len(findings) == 1
     assert findings[0].code == PRE_EXISTING_GATE_CODE
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=findings)
-    ) == DispatchVerificationVerdict.VERIFIED
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=findings))
+        == DispatchVerificationVerdict.VERIFIED
+    )
 
 
 def test_reclassify_pre_existing_gate_with_empty_effective_surface() -> None:
@@ -614,14 +818,11 @@ def test_reclassify_pre_existing_gate_with_empty_effective_surface() -> None:
             "command": "pixi run pyforge-deps-test",
             "stdout": "",
             "stderr": (
-                "ERROR collecting tests/packaging/test_deps_atlas.py\n"
-                "ModuleNotFoundError: No module named 'pandas'\n"
+                "ERROR collecting tests/packaging/test_deps_atlas.py\nModuleNotFoundError: No module named 'pandas'\n"
             ),
         },
     )
-    changed = (
-        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",
-    )
+    changed = ("src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",)
     findings = reclassify_pre_existing_gate_findings(
         (gate_001,),
         command_reports=reports,
@@ -632,9 +833,10 @@ def test_reclassify_pre_existing_gate_with_empty_effective_surface() -> None:
     assert len(findings) == 1
     assert findings[0].code == PRE_EXISTING_GATE_CODE
     assert findings[0].severity is Severity.WARN
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=findings)
-    ) == DispatchVerificationVerdict.VERIFIED
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=findings))
+        == DispatchVerificationVerdict.VERIFIED
+    )
 
 
 def test_pre_existing_gate_is_terminal_for_dispatch_retry() -> None:
@@ -662,9 +864,7 @@ class PackagingFailProcess:
             return ProcessResult(
                 returncode=1,
                 stdout="",
-                stderr=(
-                    "tests/unit/test_dispatch_retry.py:10: AssertionError\n"
-                ),
+                stderr=("tests/unit/test_dispatch_retry.py:10: AssertionError\n"),
             )
         return ProcessResult(returncode=0, stdout="ok", stderr="")
 
@@ -693,18 +893,15 @@ def test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns(
         effective=effective,
         spec_text=None,
         process=PackagingFailProcess(),
-        vcs=FakeVcs(
-            changed=(
-                "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",
-            )
-        ),
+        vcs=FakeVcs(changed=("src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",)),
     )
     codes = [finding.code for finding in envelope.findings]
     assert "MRS-GATE-001" not in codes
     assert PRE_EXISTING_GATE_CODE in codes
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=envelope.findings)
-    ) == DispatchVerificationVerdict.VERIFIED
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
+        == DispatchVerificationVerdict.VERIFIED
+    )
 
 
 def test_evaluate_dispatch_verification_marshal_test_failure_still_refuses(
@@ -726,16 +923,13 @@ def test_evaluate_dispatch_verification_marshal_test_failure_still_refuses(
         effective=effective,
         spec_text=None,
         process=PackagingFailProcess(),
-        vcs=FakeVcs(
-            changed=(
-                "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",
-            )
-        ),
+        vcs=FakeVcs(changed=("src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",)),
     )
     assert any(finding.code == "MRS-GATE-001" for finding in envelope.findings)
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=envelope.findings)
-    ) == DispatchVerificationVerdict.REFUSED
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
+        == DispatchVerificationVerdict.REFUSED
+    )
 
 
 # --- Story 22.12: shared-surface cross-suite gate (CAP-12) -------------------
@@ -763,12 +957,8 @@ class CrossSurfaceProcess:
 
 
 def test_changed_files_touch_shared_surface_prefix() -> None:
-    assert gate.changed_files_touch_shared_surface(
-        ("src/platform/settings.py",)
-    )
-    assert not gate.changed_files_touch_shared_surface(
-        ("src/shared/packages/pyforge-marshal/leak.py",)
-    )
+    assert gate.changed_files_touch_shared_surface(("src/platform/settings.py",))
+    assert not gate.changed_files_touch_shared_surface(("src/shared/packages/pyforge-marshal/leak.py",))
 
 
 def test_evaluate_dispatch_verification_station_only_diff_skips_cross_surface(
@@ -793,11 +983,7 @@ def test_evaluate_dispatch_verification_station_only_diff_skips_cross_surface(
         effective=effective,
         spec_text=None,
         process=process,
-        vcs=FakeVcs(
-            changed=(
-                "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py",
-            )
-        ),
+        vcs=FakeVcs(changed=("src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py",)),
     )
     assert envelope.data["cross_surface_check"]["checked"] is False
     assert process.platform_invocations == 0
@@ -831,9 +1017,10 @@ def test_evaluate_dispatch_verification_platform_diff_runs_cross_surface_pass(
     assert envelope.data["cross_surface_check"]["checked"] is True
     assert process.platform_invocations == 1
     assert "MRS-GATE-015" not in [f.code for f in envelope.findings]
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=envelope.findings)
-    ) == DispatchVerificationVerdict.VERIFIED
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
+        == DispatchVerificationVerdict.VERIFIED
+    )
 
 
 def test_evaluate_dispatch_verification_49_14_fixture_bound_green_platform_red(
@@ -863,9 +1050,10 @@ def test_evaluate_dispatch_verification_49_14_fixture_bound_green_platform_red(
     )
     assert process.platform_invocations == 1
     assert any(f.code == "MRS-GATE-015" for f in envelope.findings)
-    assert judge_dispatch_verification(
-        DispatchVerificationInput(findings=envelope.findings)
-    ) == DispatchVerificationVerdict.REFUSED
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
+        == DispatchVerificationVerdict.REFUSED
+    )
 
 
 def test_evaluate_dispatch_verification_cross_station_same_cross_surface_bar(
@@ -894,7 +1082,5 @@ def test_evaluate_dispatch_verification_cross_station_same_cross_surface_bar(
             process=process,
             vcs=FakeVcs(changed=changed),
         )
-        assert envelope.data["cross_surface_check"]["command"] == (
-            gate.shared_surface_verify_command()
-        )
+        assert envelope.data["cross_surface_check"]["command"] == (gate.shared_surface_verify_command())
         assert any(f.code == "MRS-GATE-015" for f in envelope.findings)

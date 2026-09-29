@@ -95,21 +95,18 @@ def _find_rogue_exit_code_owners(root: Path, owner: Path) -> list[Path]:
             # permissions) is a file it cannot prove clean -- same rationale
             # as test_dependency_direction.py's unreadable-file handling.
             raise AssertionError(
-                f"{path}: unreadable ({exc}); the AD-7 exit-code-ownership "
-                "guard cannot AST-scan this file"
+                f"{path}: unreadable ({exc}); the AD-7 exit-code-ownership guard cannot AST-scan this file"
             ) from exc
         except UnicodeDecodeError as exc:
             raise AssertionError(
-                f"{path}: not valid UTF-8; the AD-7 exit-code-ownership "
-                "guard cannot AST-scan this file"
+                f"{path}: not valid UTF-8; the AD-7 exit-code-ownership guard cannot AST-scan this file"
             ) from exc
 
         try:
             tree = ast.parse(source, filename=str(path))
         except SyntaxError as exc:
             raise AssertionError(
-                f"{path}: invalid Python syntax; the AD-7 exit-code-ownership "
-                "guard cannot AST-scan this file"
+                f"{path}: invalid Python syntax; the AD-7 exit-code-ownership guard cannot AST-scan this file"
             ) from exc
 
         if _module_level_exit_names(tree):
@@ -120,14 +117,9 @@ def _find_rogue_exit_code_owners(root: Path, owner: Path) -> list[Path]:
 def test_no_rogue_exit_code_owner_outside_exit_codes_py():
     # Guard the guard: if the package layout ever moves, rglob over a stale
     # path would yield zero files and this test would pass vacuously forever.
-    assert PKG_ROOT.is_dir(), (
-        f"AD-7 guard is scanning nothing — package root moved? {PKG_ROOT}"
-    )
+    assert PKG_ROOT.is_dir(), f"AD-7 guard is scanning nothing — package root moved? {PKG_ROOT}"
     violators = _find_rogue_exit_code_owners(PKG_ROOT, _owner_path(PKG_ROOT))
-    assert not violators, (
-        "AD-7: only exit_codes.py may define a module-level EXIT_* name; "
-        f"found one in: {violators}"
-    )
+    assert not violators, f"AD-7: only exit_codes.py may define a module-level EXIT_* name; found one in: {violators}"
 
 
 def test_exit_codes_py_itself_defines_the_contract():
@@ -136,7 +128,11 @@ def test_exit_codes_py_itself_defines_the_contract():
     # EXIT_* names, so the exclusion above is excluding something real.
     tree = ast.parse((PKG_ROOT / "exit_codes.py").read_text(encoding="utf-8"))
     assert set(_module_level_exit_names(tree)) == {
-        "EXIT_OK", "EXIT_FAILED", "EXIT_USAGE", "EXIT_CFE_UNAVAILABLE", "EXIT_INTERRUPTED",
+        "EXIT_OK",
+        "EXIT_FAILED",
+        "EXIT_USAGE",
+        "EXIT_CFE_UNAVAILABLE",
+        "EXIT_INTERRUPTED",
     }
 
 
@@ -144,6 +140,7 @@ def test_exit_codes_py_itself_defines_the_contract():
 # test_dependency_direction.py's rigor: synthetic trees, not the real
 # package, so these assert the scanner's behavior independent of what
 # src/pyforge/mason/ currently contains. -------------------------------------
+
 
 def test_detection_fires_on_a_violation_and_permits_the_owner_file(tmp_path):
     root = tmp_path / "mason"
@@ -154,7 +151,8 @@ def test_detection_fires_on_a_violation_and_permits_the_owner_file(tmp_path):
     # A same-spelled local inside a function body is not module-level and
     # must NOT be flagged.
     (root / "clean.py").write_text(
-        "def f():\n    EXIT_LOCAL = 5\n    return EXIT_LOCAL\n", encoding="utf-8",
+        "def f():\n    EXIT_LOCAL = 5\n    return EXIT_LOCAL\n",
+        encoding="utf-8",
     )
     nested = root / "nested"
     nested.mkdir()
@@ -187,21 +185,24 @@ def test_tuple_unpacking_assignment_does_not_hide_a_rogue_exit_name(tmp_path):
     assert (root / "sneaky.py").resolve() in violators
 
 
-@pytest.mark.parametrize("source", [
-    pytest.param('if True:\n    EXIT_WIN = 75\n', id="conditional"),
-    pytest.param('(EXIT_W := 9)\n', id="walrus"),
-    pytest.param('try:\n    EXIT_T = 1\nexcept Exception:\n    pass\n', id="try-block"),
-    pytest.param('for EXIT_I in [1]:\n    pass\n', id="for-target"),
-    pytest.param('with open("x") as EXIT_F:\n    pass\n', id="with-as"),
-    pytest.param('while False:\n    EXIT_LOOP = 4\n', id="while-body"),
-    pytest.param('try:\n    pass\nexcept OSError as EXIT_E:\n    pass\n', id="except-as"),
-    pytest.param('EXIT_AUG = 0\nEXIT_AUG += 1\n', id="aug-assign"),
-    pytest.param('import os as EXIT_OS\n', id="import-as"),
-    pytest.param('from os.path import sep as EXIT_SEP\n', id="from-import-as"),
-    pytest.param('from other_module import EXIT_FOREIGN\n', id="foreign-exit-import"),
-    pytest.param('from exit_codes import EXIT_OK as EXIT_YES\n', id="renamed-canonical-import"),
-    pytest.param('def EXIT_helper():\n    pass\n', id="def-name"),
-])
+@pytest.mark.parametrize(
+    "source",
+    [
+        pytest.param("if True:\n    EXIT_WIN = 75\n", id="conditional"),
+        pytest.param("(EXIT_W := 9)\n", id="walrus"),
+        pytest.param("try:\n    EXIT_T = 1\nexcept Exception:\n    pass\n", id="try-block"),
+        pytest.param("for EXIT_I in [1]:\n    pass\n", id="for-target"),
+        pytest.param('with open("x") as EXIT_F:\n    pass\n', id="with-as"),
+        pytest.param("while False:\n    EXIT_LOOP = 4\n", id="while-body"),
+        pytest.param("try:\n    pass\nexcept OSError as EXIT_E:\n    pass\n", id="except-as"),
+        pytest.param("EXIT_AUG = 0\nEXIT_AUG += 1\n", id="aug-assign"),
+        pytest.param("import os as EXIT_OS\n", id="import-as"),
+        pytest.param("from os.path import sep as EXIT_SEP\n", id="from-import-as"),
+        pytest.param("from other_module import EXIT_FOREIGN\n", id="foreign-exit-import"),
+        pytest.param("from exit_codes import EXIT_OK as EXIT_YES\n", id="renamed-canonical-import"),
+        pytest.param("def EXIT_helper():\n    pass\n", id="def-name"),
+    ],
+)
 def test_nested_and_indirect_module_level_bindings_are_not_hidden(tmp_path, source):
     """Every module-level binding form must be visible to the scanner — a
     shallow `tree.body`-only walk missed all the nested/indirect ones (the
@@ -224,7 +225,8 @@ def test_canonical_unrenamed_exit_codes_import_is_not_flagged(tmp_path):
     root.mkdir()
     (root / "exit_codes.py").write_text("EXIT_OK = 0\nEXIT_FAILED = 1\n", encoding="utf-8")
     (root / "cli.py").write_text(
-        "from .exit_codes import EXIT_FAILED, EXIT_OK\n", encoding="utf-8",
+        "from .exit_codes import EXIT_FAILED, EXIT_OK\n",
+        encoding="utf-8",
     )
 
     violators = _find_rogue_exit_code_owners(root, _owner_path(root))

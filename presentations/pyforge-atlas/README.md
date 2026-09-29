@@ -89,11 +89,13 @@ Palette is Modernist — light `#f3f2f2`, dark `#201e1d`, red `#ec3013` / `#c22a
 — matching the `pyforge-warden` deck so the two sit next to each other.
 
 ## Design project (the bridge's far end)
+Prototype lives in Claude Design project **"PyForge Atlas deck"** (`2acb0575-9997-442b-bb0e-6207d78f6648`):
+https://claude.ai/design/p/2acb0575-9997-442b-bb0e-6207d78f6648?file=PyForge%20Atlas.dc.html
 
-Claude Design project **"PyForge Atlas deck"**
-(`2acb0575-9997-442b-bb0e-6207d78f6648`) — created + seeded 2026-07-24 (the
-deck predates the pilot, so it had no Design project until now). Bound to the
-Modernist design system.
+### Provenance
+
+Created and seeded 2026-07-24 — the deck predates the bridge pilot, so it had no Design
+project until then. Bound to the Modernist design system.
 
 ### Artifact map + sync ledger (2026-07-24, disk → Design seed)
 
@@ -109,3 +111,93 @@ Modernist design system.
 
 Disk-side only (stay git-side): `src/pptx/*.pptx`, the infographic standalone,
 the built React deck. Convention: Design project name ↔ this folder.
+
+## Ledger — 2026-09-13 standard rebuild (Story 20.3)
+
+Rebuilt repo-side to `infographic-standard.md` (spec-deck-family-currency CAP-1/CAP-3) from
+`facts.yaml` re-derived at tree `b5fe5e46fc` (`pixi run -e local-recipes deck-facts pyforge-atlas`).
+Every count, version, status and date on the poster is a `data-fact` mark resolving to a ledger
+row; `deck-facts pyforge-atlas --check` → `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced,
+1 unshown; facts 77/77` (the one unshown row is `poster_last_commit_date`, left off on purpose —
+it goes stale on the very commit that lands the poster).
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `PyForge Atlas Infographic standalone.html` | 132,410 B · 23 `<section` (22 numbered + creed) · 6 acts · 4 SVG · 8 tables · facts 77/77 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789296808981454` · 132,410 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git; refreshed and re-pushed the same day by the first currency sweep (`deck-facts <slug> --refresh`)` | rendered 2026-09-13, page 20835 px (1240 px wide, headless Chromium, no clipped/blank region, 0 overflowing elements); head + Infographic Deck derived 2026-09-15 via `deck-trio --head --deck` (Story 21.4 local sweep; Design push/read-back still pending) |
+
+Against the floors: acts 6/6 · sections 22 ≥ 18 · inline SVG 4 ≥ 3 · bytes 132,410 ≥ 90,000 ·
+tables 8 ≥ 3 · cast: eight full station cards (role, motto, paragraph, CLI verbs, ledger chips) ·
+offline: only the Google Fonts `<link>` is remote; no `<x-dc>`, no `support.js`, no scripts, no
+raster images. No section of the standard's set was dropped (the contract-at-a-glance and
+workforce sections are additions, numbered in sequence). Ledger correction recorded here:
+`recipes_count` derives to 7864 on the clean tree (an earlier derivation on an unclean checkout
+read 7872 — untracked local recipe dirs). Full-page PNG: `.herald/deck-qa/pyforge-atlas/standalone.png`
+(gitignored). Mirror push (CAP-4) is the operator's step: after review, `DesignSync finalize_plan →
+write_files (localPath)` to project `2acb0575-9997-442b-bb0e-6207d78f6648`, then record the etag here.
+## Ledger — 2026-09-14 currency sweep (spec-deck-family-currency CAP-6)
+
+The poster had gone stale on the fleet's own merges since the 2026-09-13 rebuild — 16 ledger
+rows drifted (`doctor_epics_done_total`, `doctor_stories_done_total`, `fleet_epics_done_total`, `fleet_stories_done_total`, `groundtruth_pixi_envs`, `herald_epics_done_total`, `herald_stories_done_total`, `marshal_epics_done_total`, `marshal_stories_done_total`, `mason_epics_done_total`, `mason_stories_done_total`, `scribe_epics_done_total`, `scribe_stories_done_total`, `steward_epics_done_total`, `steward_stories_done_total`, `tree_commit_date`). Swept repo-side first, per CAP-6:
+`pixi run -e local-recipes deck-facts pyforge-atlas --refresh --check` at tree `168bbedb13` re-derived
+`facts.yaml` and rewrote **20** stale `data-fact` literals in place, keeping their shape; the
+re-check reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 77/77`. Then the mirror (CAP-4): pushed via DesignSync `finalize_plan` →
+`write_files` (`localPath`, no context relay) to project `2acb0575-9997-442b-bb0e-6207d78f6648`, and read back through the
+serve URL with the injected harness stripped — **byte-identical to disk**.
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Atlas Infographic standalone.html` | 132,413 | `1789417170414785` | identical ✓ |
+
+Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
+still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
+(Stories 21.1–21.4), not a refresh.
+
+## Ledger — 2026-09-15 infographic head re-derived; deck blocked (Story 21.4)
+
+`pixi run -e local-recipes deck-trio pyforge-atlas --head` at tree `a407cd03f6` mechanically
+re-derived the head from the standalone (x-dc/helmet wrap, verbatim `<style>`/`<link>`
+relocation, a measured `$preview` height): `PyForge Atlas - Infographic.dc.html` now 132,538 B.
+A second `--head` run changed nothing on disk (verified). `--deck` refuses per **DW-4** (open,
+`_bmad-output/implementation-artifacts/deferred-work.md:522`): `act band 1 has an empty or
+missing .lbl label` — this poster's act labels live only in `<span class="n">`/`<span class="t">`,
+not the `.lbl` shape `--deck` requires; the pre-existing `- Infographic Deck.dc.html` on disk is
+untouched (not re-derived, not regressed). Widening the selector or re-authoring the poster is out
+of this story's Code Map.
+
+`pixi run -e local-recipes deck-facts pyforge-atlas --refresh` then `--check` at the same tree
+brought poster and head current: **18** stale `data-fact` literals rewritten
+(`fleet_epics_done_total`, `fleet_stories_done_total`, `herald_epics_done_total`,
+`herald_stories_done_total`, `tree_commit_date` — drift since the 2026-09-14 sweep); re-check
+reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 154/154`.
+
+**Design push/read-back: not performed this session — no working credential.**
+`~/.claude/.credentials.json` has no `designOauth` block, and the `claude-design` MCP connector
+independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-probed live via
+`pixi run -e pyforge-herald herald deck push pyforge-warden` → `AuthError: ... has no
+'designOauth' block -- run /design-login in Claude Code to refresh it` (one shared credential
+file, so this applies identically to every deck — not re-probed per deck). No push attempted, no
+etag fabricated. The pre-push gap narrowed to: the head is now re-derived and facts-current on
+disk, not yet mirrored to Design; the Infographic Deck remains blocked on DW-4, unrelated to the
+credential.
+
+## Ledger — 2026-09-17 head pushed + read back; deck still blocked on DW-4 (Story 21.4)
+
+`pyforge-herald`'s `mcp` 2.2.0 transport symbol drift (Story 21.12) is fixed and merged, so the
+credential blocker above is resolved: `resolve_design_credential()` succeeds this session. Pushed
+via `pyforge.herald.transport.mcp_transport.McpTransport` directly (`finalize_plan` →
+`write_files`, inline `data` — `write_files`'s `local_path` field is not implemented
+server-side today, so `herald deck push`'s own CLI verb, which covers only the CAP-5
+marp-regenerated export, doesn't reach these `project/` trio files) to project
+`2acb0575-9997-442b-bb0e-6207d78f6648`, then read back and SHA-256-compared against disk:
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Atlas - Infographic.dc.html` | 132,538 | `1789635941699583` | identical ✓ |
+
+Under the 256 KiB `read_file` cap, so a single call plus entity-decoded SHA-256 comparison is the
+read-back proof. `deck-facts pyforge-atlas --check` still reads 0 mismatch. **DW-4 re-verified
+live today** (`deck-trio pyforge-atlas --deck` still exits 2 with `act band 1 has an empty or
+missing .lbl label` — unchanged, pre-existing, out of this story's Code Map): the pre-existing
+`- Infographic Deck.dc.html` on disk was never re-derived, so there is nothing new to push for it
+and it stays unmirrored. The head is fully synced (disk = Design, byte-identical); the deck's gap
+is DW-4, not a push gap.

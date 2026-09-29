@@ -26,7 +26,18 @@ SKIP_DISTRIBUTIONS = frozenset({"pyforge-core", "pyforge-testing-kit"})
 # spec stems under each owning station's planning-artifacts/specs/. A station
 # with neither verbs nor an entry here is a silent skip -- CI must fail.
 PREPARATORY_UNINTROSPECTABLE: dict[str, str] = {
-    "atlas": "spec-25-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate",
+    # Atlas story 24.3 (ledger key 24-3-…); was mistyped as 25-3 and broke
+    # pip-install's parity-matrix gate when the prep-spec path 404'd.
+    "atlas": "spec-24-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate",
+}
+
+# Bare-noun aliases (marshal Story 46.1, spec-pyforge-marshal CAP-192): a
+# token that is NOT a station but names a noun one station owns. The noun is
+# forwarded, not consumed, so ``pyforge context bootstrap`` runs
+# ``marshal context bootstrap``. Consulted only after the token failed to
+# resolve as a real station -- a station of the same name always wins.
+NOUN_ALIASES: dict[str, str] = {
+    "context": "marshal",
 }
 
 
@@ -41,9 +52,7 @@ def station_token_from_dist_name(dist_name: str) -> str:
     return name
 
 
-def primary_console_script(
-    dist_name: str, scripts: Mapping[str, str]
-) -> str | None:
+def primary_console_script(dist_name: str, scripts: Mapping[str, str]) -> str | None:
     """Pick the station console script, never a sibling ``*-mcp`` extra."""
     token = station_token_from_dist_name(dist_name)
     if token in scripts:
@@ -88,11 +97,7 @@ def script_map_from_installed() -> dict[str, str]:
         name = (dist.metadata["Name"] or "").lower()
         if not name.startswith("pyforge-") or name in SKIP_DISTRIBUTIONS:
             continue
-        scripts = {
-            ep.name: ep.value
-            for ep in dist.entry_points
-            if ep.group == "console_scripts"
-        }
+        scripts = {ep.name: ep.value for ep in dist.entry_points if ep.group == "console_scripts"}
         primary = primary_console_script(name, scripts)
         if primary is None:
             continue
@@ -130,34 +135,35 @@ def dispatch_argv(
     mapping = resolve_script_map(script_map, packages_root=packages_root)
     if len(argv) < 2 or argv[1] in {"-h", "--help"}:
         known = ", ".join(sorted(mapping)) or "(none installed)"
-        raise DispatchError(
-            f"usage: pyforge <station> <noun> <verb> [args...]\n"
-            f"stations: {known}"
-        )
+        raise DispatchError(f"usage: pyforge <station> <noun> <verb> [args...]\nstations: {known}")
     station = argv[1]
     if station.startswith("-"):
-        raise DispatchError(
-            f"unknown option {station!r}; usage: pyforge <station> <noun> <verb>"
-        )
+        raise DispatchError(f"unknown option {station!r}; usage: pyforge <station> <noun> <verb>")
+    primary = _resolve_primary(station, mapping)
+    if primary is not None:
+        return [primary, *list(argv[2:])]
+    owner = NOUN_ALIASES.get(station)
+    if owner is not None:
+        aliased = _resolve_primary(owner, mapping)
+        if aliased is not None:
+            return [aliased, *list(argv[1:])]
+    known = ", ".join(sorted(mapping)) or "(none installed)"
+    raise DispatchError(f"unknown station {station!r}; known: {known}")
+
+
+def _resolve_primary(station: str, mapping: Mapping[str, str]) -> str | None:
+    """The station's primary console script, or ``None`` when it is unknown."""
     primary = mapping.get(station)
-    if primary is None:
-        # Installed metadata can miss a checkout-only station; try the
-        # named dist before declaring unknown.
-        try:
-            dist = distribution(f"pyforge-{station}")
-        except PackageNotFoundError:
-            dist = None
-        if dist is not None:
-            scripts = {
-                ep.name: ep.value
-                for ep in dist.entry_points
-                if ep.group == "console_scripts"
-            }
-            primary = primary_console_script(f"pyforge-{station}", scripts)
-        if primary is None:
-            known = ", ".join(sorted(mapping)) or "(none installed)"
-            raise DispatchError(f"unknown station {station!r}; known: {known}")
-    return [primary, *list(argv[2:])]
+    if primary is not None:
+        return primary
+    # Installed metadata can miss a checkout-only station; try the named dist
+    # before declaring unknown.
+    try:
+        dist = distribution(f"pyforge-{station}")
+    except PackageNotFoundError:
+        return None
+    scripts = {ep.name: ep.value for ep in dist.entry_points if ep.group == "console_scripts"}
+    return primary_console_script(f"pyforge-{station}", scripts)
 
 
 def main(
@@ -172,9 +178,7 @@ def main(
     runner = process if process is not None else PosixProcess()
     workdir = cwd if cwd is not None else Path.cwd()
     try:
-        child = dispatch_argv(
-            args, script_map=script_map, packages_root=packages_root
-        )
+        child = dispatch_argv(args, script_map=script_map, packages_root=packages_root)
     except DispatchError as exc:
         print(str(exc), file=sys.stderr)
         return EXIT_USAGE

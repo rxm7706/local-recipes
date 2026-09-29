@@ -129,11 +129,7 @@ def _module_int_constants(tree: ast.Module) -> dict[str, int]:
             value, targets = stmt.value, [stmt.target]
         else:
             continue
-        if (
-            isinstance(value, ast.Constant)
-            and isinstance(value.value, int)
-            and not isinstance(value.value, bool)
-        ):
+        if isinstance(value, ast.Constant) and isinstance(value.value, int) and not isinstance(value.value, bool):
             for target in targets:
                 if isinstance(target, ast.Name):
                     constants[target.id] = value.value
@@ -155,9 +151,7 @@ def _exit_literal_violations(tree: ast.Module) -> list[int]:
     constants = _module_int_constants(tree)
     violations: list[int] = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or not _is_exit_callable(
-            node.func, exit_aliases
-        ):
+        if not isinstance(node, ast.Call) or not _is_exit_callable(node.func, exit_aliases):
             continue
         arguments = [*node.args, *(keyword.value for keyword in node.keywords)]
         for arg in arguments:
@@ -172,10 +166,7 @@ def _exit_literal_violations(tree: ast.Module) -> list[int]:
                 # sys.exit("message") exits with code 1 -- a guarded value
                 # smuggled through a string arg. Only verdict.py projects.
                 violations.append(node.lineno)
-            elif (
-                isinstance(arg, ast.Name)
-                and constants.get(arg.id) in GUARDED_EXIT_LITERALS
-            ):
+            elif isinstance(arg, ast.Name) and constants.get(arg.id) in GUARDED_EXIT_LITERALS:
                 violations.append(node.lineno)
     return violations
 
@@ -205,18 +196,13 @@ def _private_verdict_references(tree: ast.Module) -> list[str]:
         if isinstance(node, ast.ImportFrom):
             module_tail = (node.module or "").split(".")[-1]
             if module_tail == "verdict":
-                references.extend(
-                    alias.name for alias in node.names if alias.name.startswith("_")
-                )
+                references.extend(alias.name for alias in node.names if alias.name.startswith("_"))
         elif isinstance(node, ast.Attribute) and node.attr.startswith("_"):
             # x._priv where x is any name bound to the verdict module ...
             if isinstance(node.value, ast.Name) and node.value.id in verdict_names:
                 references.append(node.attr)
             # ... or pkg.verdict._priv via a plain `import pkg...verdict`.
-            elif (
-                isinstance(node.value, ast.Attribute)
-                and node.value.attr == "verdict"
-            ):
+            elif isinstance(node.value, ast.Attribute) and node.value.attr == "verdict":
                 references.append(node.attr)
     return references
 
@@ -224,11 +210,7 @@ def _private_verdict_references(tree: ast.Module) -> list[str]:
 def _sequence_element_token(element: ast.expr) -> str | None:
     if isinstance(element, ast.Constant) and isinstance(element.value, str):
         return element.value if element.value in VERDICT_TOKENS else None
-    if (
-        isinstance(element, ast.Attribute)
-        and isinstance(element.value, ast.Name)
-        and element.value.id == "Verdict"
-    ):
+    if isinstance(element, ast.Attribute) and isinstance(element.value, ast.Name) and element.value.id == "Verdict":
         return VERDICT_VALUE_BY_MEMBER.get(element.attr)
     return None
 
@@ -250,10 +232,7 @@ def _ordered_verdict_tokens(node: ast.expr) -> list[str | None] | None:
 def _contains_run(sequence: list[str | None], run: tuple[str, ...]) -> bool:
     if len(sequence) < len(run):
         return False
-    return any(
-        tuple(sequence[i : i + len(run)]) == run
-        for i in range(len(sequence) - len(run) + 1)
-    )
+    return any(tuple(sequence[i : i + len(run)]) == run for i in range(len(sequence) - len(run) + 1))
 
 
 def _lattice_ordering_literals(tree: ast.Module) -> list[int]:
@@ -264,9 +243,7 @@ def _lattice_ordering_literals(tree: ast.Module) -> list[int]:
         tokens = _ordered_verdict_tokens(node)
         if tokens is None:
             continue
-        if _contains_run(tokens, LATTICE_ORDER) or _contains_run(
-            tokens, LATTICE_REVERSED
-        ):
+        if _contains_run(tokens, LATTICE_ORDER) or _contains_run(tokens, LATTICE_REVERSED):
             violations.append(node.lineno)
     return violations
 
@@ -278,9 +255,7 @@ def test_package_scan_surface_is_not_empty():
     assert "verdict.py" in names, "verdict.py missing from the installed package"
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=_module_id
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=_module_id)
 def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     violations = _exit_literal_violations(_parse(module_path))
     assert not violations, (
@@ -290,19 +265,13 @@ def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     )
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=_module_id
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=_module_id)
 def test_no_private_verdict_import_outside_verdict(module_path: Path):
     references = _private_verdict_references(_parse(module_path))
-    assert not references, (
-        f"{module_path.name} references private verdict name(s) {references}"
-    )
+    assert not references, f"{module_path.name} references private verdict name(s) {references}"
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=_module_id
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=_module_id)
 def test_no_lattice_ordering_outside_verdict(module_path: Path):
     violations = _lattice_ordering_literals(_parse(module_path))
     assert not violations, (
@@ -315,24 +284,14 @@ def test_no_lattice_ordering_outside_verdict(module_path: Path):
 def test_unordered_enumeration_of_all_tokens_does_not_fire():
     """Regression for the guard's own false positive: enumerating all 6
     tokens WITHOUT the lattice order is legal and must not fire."""
-    shuffled = (
-        'ALL = ["warn", "clean", "error", "unevaluable", "scope-violation", '
-        '"gate-failed"]\n'
-    )
+    shuffled = 'ALL = ["warn", "clean", "error", "unevaluable", "scope-violation", "gate-failed"]\n'
     assert _lattice_ordering_literals(ast.parse(shuffled)) == []
-    ordered = (
-        'ORDER = ["error", "gate-failed", "scope-violation", "unevaluable", '
-        '"warn", "clean"]\n'
-    )
+    ordered = 'ORDER = ["error", "gate-failed", "scope-violation", "unevaluable", "warn", "clean"]\n'
     assert _lattice_ordering_literals(ast.parse(ordered)) == [1]
-    reverse = (
-        'ORDER = ["clean", "warn", "unevaluable", "scope-violation", '
-        '"gate-failed", "error"]\n'
-    )
+    reverse = 'ORDER = ["clean", "warn", "unevaluable", "scope-violation", "gate-failed", "error"]\n'
     assert _lattice_ordering_literals(ast.parse(reverse)) == [1]
     as_dict_keys = (
-        'TABLE = {"error": 4, "gate-failed": 3, "scope-violation": 2, '
-        '"unevaluable": 1, "warn": 0, "clean": 0}\n'
+        'TABLE = {"error": 4, "gate-failed": 3, "scope-violation": 2, "unevaluable": 1, "warn": 0, "clean": 0}\n'
     )
     assert _lattice_ordering_literals(ast.parse(as_dict_keys)) == [1]
 
@@ -394,15 +353,10 @@ def test_exit_detector_sees_attribute_exit_calls_like_parser_exit():
 def test_private_detector_sees_verdict_module_aliases():
     aliased = "from pyforge.marshal.core import verdict as v\nx = v._RANK\n"
     assert _private_verdict_references(ast.parse(aliased)) == ["_RANK"]
-    plain_import = (
-        "import pyforge.marshal.core.verdict\n"
-        "x = pyforge.marshal.core.verdict._RANK\n"
-    )
+    plain_import = "import pyforge.marshal.core.verdict\nx = pyforge.marshal.core.verdict._RANK\n"
     assert _private_verdict_references(ast.parse(plain_import)) == ["_RANK"]
     public_only = (
-        "from pyforge.marshal.core import verdict\n"
-        "order = verdict.LATTICE_ORDER\n"
-        "code = verdict.exit_code_for\n"
+        "from pyforge.marshal.core import verdict\norder = verdict.LATTICE_ORDER\ncode = verdict.exit_code_for\n"
     )
     assert _private_verdict_references(ast.parse(public_only)) == []
 
@@ -422,9 +376,7 @@ def test_guard_is_alive_synthetic_violation_fires_and_verdict_defines_projection
     functions: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
-            assigned.update(
-                target.id for target in node.targets if isinstance(target, ast.Name)
-            )
+            assigned.update(target.id for target in node.targets if isinstance(target, ast.Name))
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             assigned.add(node.target.id)
         elif isinstance(node, ast.FunctionDef):
@@ -432,6 +384,5 @@ def test_guard_is_alive_synthetic_violation_fires_and_verdict_defines_projection
     assert "LATTICE_ORDER" in assigned
     assert "exit_code_for" in functions
     assert _lattice_ordering_literals(tree), (
-        "the lattice-order detector failed to fire on verdict.py itself -- "
-        "the guard would be vacuous"
+        "the lattice-order detector failed to fire on verdict.py itself -- the guard would be vacuous"
     )

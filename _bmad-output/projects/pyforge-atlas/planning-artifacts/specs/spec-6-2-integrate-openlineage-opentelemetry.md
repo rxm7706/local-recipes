@@ -1,7 +1,7 @@
 ---
 title: 'Story E2 (6.2): Integrate OpenLineage + OpenTelemetry'
 type: 'feature'
-status: shipped
+status: done
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'NEVER AUTHORED as a file — wave B9-H4 ran through the in-session agent loop, not bmad-create-story (which wrote files only for waves 0/A/B1-B8), confirmed by the migration session itself. Nothing was lost; there is no original to recover. Intent+ACs below are the real epics.md contract.'
@@ -216,3 +216,17 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `15c117129d` (2026-08-30, "scribe: bind cocoindex as incremental-refresh compile_surface extra (Story 6.2)"); also `8f97a29efa` (2026-08-21, "mason: promote Story 6.2 spec to tracked, mark 6-2 done in the sprint ledger"); also `1510a022e6` (2026-08-21, "mason: the divergence-and-endgame guard, proven red first (Story 6.2)"). Ledger row `6-2-integrate-openlineage-opentelemetry: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-2-the-cocoindex-incremental-ingest-extra.md`, `src/shared/packages/pyforge-scribe/pyproject.toml`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/cocoindex_flow.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/move_list.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_cli.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_compile.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_extras_cocoindex_flow.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `6-2-integrate-openlineage-opentelemetry: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

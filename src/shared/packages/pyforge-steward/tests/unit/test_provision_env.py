@@ -89,9 +89,7 @@ def test_provision_env_via_cli_round_trips(tmp_path, monkeypatch):
     assert rc == EXIT_OK
 
 
-def test_provision_env_unknown_name_reports_a_clear_error_not_a_raw_pixi_failure(
-    tmp_path, monkeypatch
-):
+def test_provision_env_unknown_name_reports_a_clear_error_not_a_raw_pixi_failure(tmp_path, monkeypatch):
     _write_pixi_toml(tmp_path)
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
 

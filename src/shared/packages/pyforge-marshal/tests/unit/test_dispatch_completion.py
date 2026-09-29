@@ -8,7 +8,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.core.process import ProcessResult
 
+from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.cli.dispatch import live_dispatch_conflict, run_dispatch
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import (
@@ -47,9 +49,7 @@ def test_judge_live_when_session_process_alive() -> None:
         branch_merged=False,
         story_merged_on_main=False,
     )
-    verdict = judge_dispatch_completion(
-        DispatchCompletionInput(session_alive=True, git=git)
-    )
+    verdict = judge_dispatch_completion(DispatchCompletionInput(session_alive=True, git=git))
     assert verdict == DispatchSessionVerdict.LIVE
 
 
@@ -61,9 +61,7 @@ def test_judge_completed_when_story_merged_on_main() -> None:
         branch_merged=False,
         story_merged_on_main=True,
     )
-    verdict = judge_dispatch_completion(
-        DispatchCompletionInput(session_alive=False, git=git)
-    )
+    verdict = judge_dispatch_completion(DispatchCompletionInput(session_alive=False, git=git))
     assert verdict == DispatchSessionVerdict.COMPLETED
 
 
@@ -105,9 +103,7 @@ def test_resolve_verdict_completed_when_land_journal_succeeded() -> None:
         def is_alive(self, _pid: int) -> bool:
             return False
 
-    effective = SimpleNamespace(
-        merge_subject_template=SimpleNamespace(value="Merge {key} into main")
-    )
+    effective = SimpleNamespace(merge_subject_template=SimpleNamespace(value="Merge {key} into main"))
 
     verdict = resolve_dispatch_session_verdict(
         fs=object(),
@@ -119,6 +115,44 @@ def test_resolve_verdict_completed_when_land_journal_succeeded() -> None:
         effective_policy=effective,
     )
     assert verdict == DispatchSessionVerdict.COMPLETED
+
+
+def test_resolve_verdict_blocked_short_circuits_before_git_facts() -> None:
+    """Story 51.11 (CAP-258): an already-committed ``blocked`` verdict must
+    not be re-derived from fresh git facts -- doing so would re-introduce
+    the exact bug this story fixes (stale facts reading
+    ``stopped_externally``). ``fs``/``vcs``/``process`` are never touched
+    when this short-circuit fires."""
+    from pyforge.marshal.cli.dispatch import resolve_dispatch_session_verdict
+
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="51.11",
+        session_pid=999999,
+        model=None,
+        launched_at=None,
+        worktree_path="/tmp/wt",
+        baseline_head_sha="aaa",
+        completion_verdict="blocked",
+    )
+
+    class ExplodingProcess:
+        def is_alive(self, _pid: int) -> bool:
+            raise AssertionError("must not consult process facts")
+
+    from types import SimpleNamespace
+
+    effective = SimpleNamespace(merge_subject_template=SimpleNamespace(value="Merge {key} into main"))
+
+    verdict = resolve_dispatch_session_verdict(
+        fs=object(),
+        vcs=object(),
+        process=ExplodingProcess(),
+        repo_root=Path("/tmp"),
+        slug="pyforge-marshal",
+        journal=journal,
+        effective_policy=effective,
+    )
+    assert verdict == DispatchSessionVerdict.BLOCKED
 
 
 def test_zombie_redispatch_evidence_names_git_progress() -> None:
@@ -173,9 +207,7 @@ def test_run_dispatch_has_no_foreground_busy_wait() -> None:
             for child in ast.walk(node):
                 if isinstance(child, ast.Call) and isinstance(child.func, ast.Attribute):
                     if child.func.attr == "is_alive":
-                        pytest.fail(
-                            "run_dispatch must not busy-wait on is_alive (CAP-2 watchdog trap)"
-                        )
+                        pytest.fail("run_dispatch must not busy-wait on is_alive (CAP-2 watchdog trap)")
 
 
 class FakeFs:
@@ -199,9 +231,32 @@ class FakeFs:
 
     def write_text_atomic(self, path: Path, content: str) -> None:
         self.files[path] = content
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
 
     def read_text(self, path: Path) -> str | None:
-        return self.files.get(path)
+        if path in self.files:
+            return self.files[path]
+        try:
+            return path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+
+    def read_symlink_target(self, path: Path) -> Path | None:
+        if not path.is_symlink():
+            return None
+        return path.readlink()
+
+    def repoint_symlink_atomic(self, path: Path, target: Path) -> None:
+        if not path.is_symlink() and path.exists():
+            raise FsError(f"{path} is a real file/directory, not a symlink -- refusing to replace it")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.is_symlink() or path.exists():
+            path.unlink()
+        path.symlink_to(target)
+
+    def exists(self, path: Path) -> bool:
+        return path.exists()
 
 
 class FakeVcs:
@@ -219,18 +274,14 @@ class FakeVcs:
     def worktree_path_for_branch(self, _repo_root: Path, _branch: str) -> Path | None:
         return None
 
-    def add_worktree(
-        self, repo_root: Path, home: Path, branch: str, *, base: str
-    ) -> None:
+    def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
         self.added.append((repo_root, home, branch, base))
         home.mkdir(parents=True, exist_ok=True)
 
     def worktree_head_sha(self, _worktree: Path) -> str:
         return self.head_sha
 
-    def changed_files(
-        self, _repo_root: Path, _worktree_path: Path, *, base: str
-    ) -> tuple[str, ...]:
+    def changed_files(self, _repo_root: Path, _worktree_path: Path, *, base: str) -> tuple[str, ...]:
         return ()
 
     def worktree_unified_patch(self, _worktree_path: Path, *, baseline_sha: str) -> str:
@@ -257,9 +308,15 @@ class FakeBuildHarness:
 
 
 class FakeProcess:
-    def __init__(self, *, alive: bool = True) -> None:
+    def __init__(self, *, alive: bool = True, session_check_returncode: int = 0) -> None:
         self.alive = alive
         self.spawned: list[list[str]] = []
+        # Story 63.4: dispatch_once shells `steward session check --json`
+        # right after repo_root resolves. Default 0 ("ok") keeps every
+        # pre-existing fixture behaviour byte-identical -- no unexpected
+        # MRS-DISP-049 finding unless a test opts in.
+        self.session_check_returncode = session_check_returncode
+        self.run_calls: list[list[str]] = []
 
     def is_alive(self, _pid: int) -> bool:
         return self.alive
@@ -267,6 +324,10 @@ class FakeProcess:
     def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
         self.spawned.append(list(argv))
         return 9001
+
+    def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+        self.run_calls.append(list(argv))
+        return ProcessResult(returncode=self.session_check_returncode, stdout="", stderr="")
 
 
 def test_run_dispatch_spawns_completion_supervisor_without_waiting(
@@ -288,10 +349,11 @@ def test_run_dispatch_spawns_completion_supervisor_without_waiting(
     args = argparse.Namespace(slug=slug, story=story, format="json")
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    # Story 33.9's scope guard (`_dispatch_scope_refusal`) fires unconditionally on every
-    # dispatch and refuses when no real `_bmad` marker/symlink triangle matches `slug` --
-    # this test's bare `_init_git_repo` fixture has none, and scope verification is not
-    # this test's concern (it verifies completion-supervisor spawning). Patched at the
+    # Story 64.1's worktree-side scope guard (`_seed_dispatch_worktree_scope`) calls
+    # `verify_scope` against the dispatch worktree's own triangle before launch, and
+    # refuses when it disagrees with `slug` -- this test's bare `_init_git_repo`
+    # fixture leaves the worktree without one, and scope verification is not this
+    # test's concern (it verifies completion-supervisor spawning). Patched at the
     # dispatch module's own imported binding, not the `scope` module's source, since
     # `from ..scope import verify_scope` binds a local name `dispatch.py` reads directly.
     import pyforge.marshal.cli.dispatch as dispatch_module

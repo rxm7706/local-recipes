@@ -11,6 +11,7 @@ from django.http import HttpRequest
 
 from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.roles import roles_from_request
+from django_pyforge.sidecars import mybmad_sidecar
 
 _SWITCHER_HIDDEN_WORK_CLASSES = frozenset({"01", "02"})
 
@@ -30,4 +31,6 @@ def chrome(request: HttpRequest) -> dict[str, object]:
             for portal in iter_portal_configs()
             if is_switcher_tile(portal, roles)
         ],
+        # Same OIDC session as station tiles. Not a portal; process stays sidecar.
+        "pyforge_sidecars": [mybmad_sidecar()] if roles else [],
     }

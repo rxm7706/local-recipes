@@ -59,9 +59,7 @@ class TierLaunchResolution:
     resolved_models: dict[str, str]
 
     @classmethod
-    def from_preference_only(
-        cls, preference: Sequence[str]
-    ) -> TierLaunchResolution:
+    def from_preference_only(cls, preference: Sequence[str]) -> TierLaunchResolution:
         adapter = bmadloop_adapter_for_preference(preference)
         return cls(
             stages={},
@@ -131,9 +129,7 @@ def sort_candidates_by_pool_preference(
     def _is_subscription(candidate: StageCandidate) -> bool:
         if candidate.pool is not None:
             return True
-        pool = candidate_pool_from_catalog(
-            catalog, harness=candidate.harness, model=candidate.model
-        )
+        pool = candidate_pool_from_catalog(catalog, harness=candidate.harness, model=candidate.model)
         return pool is not None
 
     indexed = list(enumerate(candidates))
@@ -149,7 +145,20 @@ def resolve_stage_candidate(
     availability_fn: Callable[[StageCandidate], bool],
     catalog: object,
 ) -> ResolvedStage | None:
-    """Pick the first available candidate; review never drops below floor model."""
+    """Pick the first available candidate; review prefers the floor model.
+
+    Returns ``None`` when nothing declared for this stage is genuinely
+    available -- the caller (``resolve_tier_launch``) already treats that
+    identically to "no candidates for this stage": the difficulty override
+    is dropped and the stage falls back to whatever the base, un-tiered
+    policy already declares. This function used to fabricate an answer
+    anyway ("never block — fall back to the first declared candidate"),
+    which is exactly how a Cursor-only model (``composer-2.5-fast``, no
+    ``harness`` key) could be resolved and then written into the launched
+    adapter's own stage config even though nothing about it was ever
+    confirmed available (2026-09-12, dispatch-tier-routing-fails-safe). A
+    stage silently missing its override is always safer than one silently
+    carrying an unverified one."""
     if not candidates:
         return None
     floor = review_floor_model if is_review else None
@@ -162,15 +171,7 @@ def resolve_stage_candidate(
             continue
         if availability_fn(candidate):
             return _resolved_from_candidate(candidate, catalog)
-
-    # Never block — fall back to the first declared candidate.
-    first = ordered[0]
-    if is_review and floor is not None and first.model != floor:
-        for candidate in ordered:
-            if candidate.model == floor:
-                first = candidate
-                break
-    return _resolved_from_candidate(first, catalog)
+    return None
 
 
 def resolve_tier_difficulty(
@@ -209,9 +210,7 @@ def resolve_tier_launch(
 ) -> TierLaunchResolution:
     """Resolve difficulty -> (harness, model) pairs for launch."""
     preference = tuple(policy.harness_preference.value)
-    chosen = resolve_tier_difficulty(
-        policy, difficulty, allow_unmapped_fallback=allow_unmapped_fallback
-    )
+    chosen = resolve_tier_difficulty(policy, difficulty, allow_unmapped_fallback=allow_unmapped_fallback)
     if chosen is None:
         return TierLaunchResolution.from_preference_only(preference)
 
@@ -221,9 +220,7 @@ def resolve_tier_launch(
         return TierLaunchResolution.from_preference_only(preference)
 
     excluded = set(excluded_harnesses or ())
-    if session_log and is_transient_harness_session_outcome(
-        classify_session_log(session_log)
-    ):
+    if session_log and is_transient_harness_session_outcome(classify_session_log(session_log)):
         if preference:
             excluded.add(preference[0])
 
@@ -303,12 +300,8 @@ def _provider_for_harness(harness: str | None) -> str | None:
     return PROFILE_TO_PROVIDER.get(harness)
 
 
-def _resolved_from_candidate(
-    candidate: StageCandidate, catalog: object
-) -> ResolvedStage:
-    pool = candidate.pool or candidate_pool_from_catalog(
-        catalog, harness=candidate.harness, model=candidate.model
-    )
+def _resolved_from_candidate(candidate: StageCandidate, catalog: object) -> ResolvedStage:
+    pool = candidate.pool or candidate_pool_from_catalog(catalog, harness=candidate.harness, model=candidate.model)
     adapter_name = None
     if candidate.harness is not None:
         adapter_name = bmadloop_adapter_for_preference([candidate.harness])

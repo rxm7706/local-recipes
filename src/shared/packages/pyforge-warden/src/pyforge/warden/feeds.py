@@ -177,9 +177,7 @@ def is_feed_stale(snapshot_at: str | None, max_age_days: int, *, now: datetime) 
     return age > timedelta(days=max_age_days)
 
 
-def feed_provenance(
-    *, source: str, path: Path, max_age_days: int, now: datetime
-) -> FeedProvenance:
+def feed_provenance(*, source: str, path: Path, max_age_days: int, now: datetime) -> FeedProvenance:
     """Build one ``FeedProvenance`` for a feed that WAS actually consulted
     (the file exists and was read) — ``snapshot_at``/``max_age_ok`` derived
     from ``path``'s own mtime via ``is_feed_stale``. A caller that never
@@ -204,11 +202,11 @@ def load_kev_catalog(path: Path) -> dict[str, str] | None:
     one malformed entry never aborts the load of the rest)."""
     try:
         raw = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return None
     try:
         document = json.loads(raw)
-    except (json.JSONDecodeError, ValueError):
+    except json.JSONDecodeError, ValueError:
         return None
     if not isinstance(document, dict):
         return None
@@ -221,12 +219,7 @@ def load_kev_catalog(path: Path) -> dict[str, str] | None:
             continue
         cve_id = entry.get("cveID")
         date_added = entry.get("dateAdded")
-        if (
-            isinstance(cve_id, str)
-            and cve_id
-            and isinstance(date_added, str)
-            and date_added
-        ):
+        if isinstance(cve_id, str) and cve_id and isinstance(date_added, str) and date_added:
             catalog[cve_id] = date_added
     return catalog
 
@@ -266,11 +259,11 @@ def load_endoflife_snapshot(path: Path) -> dict[str, list[object]] | None:
     CVSS-shape."""
     try:
         raw = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return None
     try:
         document = json.loads(raw)
-    except (json.JSONDecodeError, ValueError):
+    except json.JSONDecodeError, ValueError:
         return None
     if not isinstance(document, dict):
         return None
@@ -320,11 +313,11 @@ def load_epss_scores(path: Path) -> dict[str, tuple[float, float]] | None:
     like ``load_kev_catalog`` skipping a malformed ``cveID`` entry."""
     try:
         raw = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return None
     try:
         document = json.loads(raw)
-    except (json.JSONDecodeError, ValueError):
+    except json.JSONDecodeError, ValueError:
         return None
     if not isinstance(document, dict):
         return None

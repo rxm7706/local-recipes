@@ -14,6 +14,7 @@ import dataclasses
 from datetime import UTC, datetime
 
 import pytest
+
 from pyforge.warden.eligibility import (
     EligibilityResult,
     EligibilityStatus,
@@ -26,9 +27,7 @@ from pyforge.warden.sources import SourceEvidence, resolve_identity
 _NOW = datetime(2026, 8, 22, 12, 0, 0, tzinfo=UTC)
 
 
-def _evidence(
-    *, source_name: str, locator: str, name: str = "requests", version: str = "2.31.0"
-) -> SourceEvidence:
+def _evidence(*, source_name: str, locator: str, name: str = "requests", version: str = "2.31.0") -> SourceEvidence:
     return SourceEvidence(
         identity=resolve_identity(Ecosystem.PYPI, name, version),
         source_name=source_name,
@@ -73,9 +72,7 @@ def test_partial_consensus_yields_flagged_for_review():
 def test_non_required_source_only_yields_observed_in_use():
     evidence = (_evidence(source_name="manifest", locator="/proj"),)
 
-    results = compute_eligibility_union(
-        evidence, required_authority_sources=frozenset({"cyclonedx"}), now=_NOW
-    )
+    results = compute_eligibility_union(evidence, required_authority_sources=frozenset({"cyclonedx"}), now=_NOW)
 
     assert len(results) == 1
     assert results[0].status is EligibilityStatus.OBSERVED_IN_USE
@@ -88,9 +85,7 @@ def test_explicit_empty_required_set_yields_observed_in_use_for_everything():
         _evidence(source_name="manifest", locator="/proj", name="packaging"),
     )
 
-    results = compute_eligibility_union(
-        evidence, required_authority_sources=frozenset(), now=_NOW
-    )
+    results = compute_eligibility_union(evidence, required_authority_sources=frozenset(), now=_NOW)
 
     assert len(results) == 2
     assert all(r.status is EligibilityStatus.OBSERVED_IN_USE for r in results)
@@ -105,9 +100,7 @@ def test_duplicate_observation_same_source_and_locator_collapses_to_one_entry():
     results = compute_eligibility_union(evidence, now=_NOW)
 
     assert len(results) == 1
-    assert results[0].provenance == (
-        ProvenanceEntry(source="cyclonedx", locator="a.json", timestamp=_NOW.isoformat()),
-    )
+    assert results[0].provenance == (ProvenanceEntry(source="cyclonedx", locator="a.json", timestamp=_NOW.isoformat()),)
 
 
 def test_same_source_different_locator_yields_two_entries():
@@ -184,9 +177,7 @@ def test_ac_each_calls_default_reflects_only_its_own_evidence_set():
     # default and wrongly classify as OBSERVED_IN_USE instead of
     # ELIGIBLE_UNION.
     first_evidence = (_evidence(source_name="cyclonedx", locator="a.json", name="requests"),)
-    second_evidence = (
-        _evidence(source_name="manifest", locator="/proj", name="packaging"),
-    )
+    second_evidence = (_evidence(source_name="manifest", locator="/proj", name="packaging"),)
 
     first_results = compute_eligibility_union(first_evidence, now=_NOW)
     second_results = compute_eligibility_union(second_evidence, now=_NOW)
@@ -198,9 +189,7 @@ def test_ac_each_calls_default_reflects_only_its_own_evidence_set():
 def test_eligibility_result_and_provenance_entry_are_frozen():
     identity = resolve_identity(Ecosystem.PYPI, "requests", "2.31.0")
     entry = ProvenanceEntry(source="cyclonedx", locator="a.json", timestamp=_NOW.isoformat())
-    result = EligibilityResult(
-        identity=identity, status=EligibilityStatus.ELIGIBLE_UNION, provenance=(entry,)
-    )
+    result = EligibilityResult(identity=identity, status=EligibilityStatus.ELIGIBLE_UNION, provenance=(entry,))
 
     with pytest.raises(dataclasses.FrozenInstanceError):
         entry.source = "other"  # type: ignore[misc]
@@ -298,9 +287,7 @@ def test_different_now_values_change_only_timestamps():
     assert len(first) == len(second) == 1
     assert first[0].identity == second[0].identity
     assert first[0].status == second[0].status
-    assert [(p.source, p.locator) for p in first[0].provenance] == [
-        (p.source, p.locator) for p in second[0].provenance
-    ]
+    assert [(p.source, p.locator) for p in first[0].provenance] == [(p.source, p.locator) for p in second[0].provenance]
     assert all(p.timestamp == _NOW.isoformat() for p in first[0].provenance)
     assert all(p.timestamp == later.isoformat() for p in second[0].provenance)
     assert first != second  # timestamps differ -- full-tuple equality fails

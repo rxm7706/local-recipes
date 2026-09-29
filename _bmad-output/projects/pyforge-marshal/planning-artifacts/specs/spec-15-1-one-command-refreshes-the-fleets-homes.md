@@ -45,9 +45,14 @@ baseline_revision: 53b166c161848e65a7acc8c0aed96223b81d99f4
 
 ## Auto Run Result
 
-Status: in-review
+Status: done
+Reconciled 2026-09-20: the `in-review` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `10baa3dccf 2026-08-23 chore(marshal): finalize Story 15-1 ledger after PR #655` — that promotion is the ruling this record now reflects.
 Verification: `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 5743 passed, 12 deselected.
 Changed: `marshal refresh` CLI; `VcsPort.commits_behind`; `core/refresh` step types; `slug_from_loop_branch`; MRS-REFRESH-001..007.
 Note: a peer agent briefly collided on this worktree then HALTed; this run completed implementation + verification.
 
 Merged as 2894da04f4ced7544128a67f53af1571443d7402 (PR #655).
+
+## Status reconcile 2026-09-20
+
+- Auto Run Result `Status: in-review` → `done` (see the reconcile line under it).

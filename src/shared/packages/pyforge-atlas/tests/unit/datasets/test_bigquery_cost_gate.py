@@ -72,6 +72,7 @@ def _dataset(client, **over):
 
 # -- D1: literal TIMESTAMP bounds, NOT _PARTITIONDATE ------------------------
 
+
 def test_build_query_uses_literal_timestamp_bounds():
     ds = _dataset(None)
     sql = ds.build_query("2026-01-01 00:00:00 UTC", "2026-04-01 00:00:00 UTC")
@@ -89,6 +90,7 @@ def test_build_query_rejects_partitiondate_template():
 
 
 # -- Layer 1: free dry-run preflight + cap abort -----------------------------
+
 
 def test_preflight_estimate_comes_from_dry_run_bytes():
     # 1 TiB scanned -> $6.25 at 6.25 $/TiB
@@ -113,6 +115,7 @@ def test_run_gated_aborts_above_cap(monkeypatch):
 
 
 # -- Layer 2: server-side maximum_bytes_billed + job_timeout_ms --------------
+
 
 def test_run_gated_within_cap_sets_hard_cap_and_timeout():
     monkeypatch_env("PHASE_P_ENABLED", "1")
@@ -148,6 +151,7 @@ def test_first_pull_uses_the_higher_cap():
 
 # -- AD-6: admin-opt-in, never a default schedule ----------------------------
 
+
 def test_disabled_load_no_ops():
     monkeypatch_env("PHASE_P_ENABLED", None)
     ds = _dataset(_StubBQClient(1, pd.DataFrame()))
@@ -172,6 +176,7 @@ def test_is_enabled_only_literal_one():
 
 
 # -- review-hardening: construction + preflight guards -----------------------
+
 
 def test_malformed_env_does_not_crash_construction(monkeypatch):
     # a typo'd PHASE_P_* env must fall back to the default, not raise at construction.

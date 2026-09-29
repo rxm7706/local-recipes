@@ -32,6 +32,8 @@ from django_pyforge.assertion.exceptions import WrongAudienceError
 from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
 from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
 from django_pyforge.assertion.identity import verify_idp_bearer
+from django_pyforge.assertion.jwks import is_incluster_service_url
+from django_pyforge.assertion.jwks import jwks_url_scheme_is_allowed
 from django_pyforge.assertion.jwks import reset_jwks_cache
 from django_pyforge.assertion.middleware import AssertionMiddleware
 from django_pyforge.assertion.schema import DELEGATED_BY
@@ -733,6 +735,46 @@ def test_unconfigured_verifier_returns_503() -> None:
     reset_jwks_cache()
     response = _mint_request(_unsigned_idp_bearer(_SUB, _ROLES))
     assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("https://issuer.example.com/certs", True),
+        ("file:///etc/pyforge/jwks.json", True),
+        ("http://issuer.example.com/certs", False),
+        ("http://platform-keycloak.platform.svc.cluster.local:8080/certs", True),
+        ("http://platform-keycloak.platform.svc:8080/certs", True),
+        ("http://platform-keycloak:8080/certs", False),
+        ("", False),
+    ],
+)
+def test_jwks_url_scheme_is_allowed(url: str, expected: bool) -> None:  # noqa: FBT001
+    """Recovery finding (2026-09-12, attended CRC exercise): the bundled OIDC
+    profile's in-cluster Keycloak call is legitimately http:// (same-namespace
+    Service, no TLS configured) but the verifier categorically rejected any
+    non-https/file scheme, so the bundled profile has never actually been
+    able to verify a token. http:// is now allowed ONLY for a hostname ending
+    in .svc or .svc.cluster.local -- suffixes only the cluster's own CoreDNS
+    can serve, so this never widens what a BYO/external issuer can get away
+    with. A bare Service short name (no .svc suffix) stays refused: it is
+    genuinely ambiguous outside the pod's own search-domain context.
+    """
+    assert jwks_url_scheme_is_allowed(url) is expected
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("http://svc.namespace.svc.cluster.local:8080/x", True),
+        ("http://svc.namespace.svc:8080/x", True),
+        ("http://svc:8080/x", False),
+        ("http://external.example.com/x", False),
+        ("https://svc.namespace.svc.cluster.local/x", True),
+    ],
+)
+def test_is_incluster_service_url(url: str, expected: bool) -> None:  # noqa: FBT001
+    assert is_incluster_service_url(url) is expected
 
 
 def test_idp_bearer_is_never_base64_decoded_outside_verifier() -> None:

@@ -22,13 +22,7 @@ from pyforge.warden.extract.lockfiles import PixiLockExtractor
 from pyforge.warden.models import Ecosystem, ScannedManifest
 from pyforge.warden.routing import DefaultRouter
 
-FIXTURE = (
-    Path(__file__).resolve().parent.parent
-    / "fixtures"
-    / "projects"
-    / "pixi_lock_basic"
-    / "pixi.lock"
-)
+FIXTURE = Path(__file__).resolve().parent.parent / "fixtures" / "projects" / "pixi_lock_basic" / "pixi.lock"
 MANIFEST = ScannedManifest(path="pixi.lock", kind=PIXI_LOCK_KIND)
 
 
@@ -54,10 +48,7 @@ def _require_py_rattler() -> None:
 def test_pixi_lock_extractor_matches_py_rattler_lockfile():
     rattler = _rattler_module()
     components = PixiLockExtractor(DefaultRouter()).extract(FIXTURE, MANIFEST)
-    ours = {
-        (component.ecosystem, component.name, component.version)
-        for component in components
-    }
+    ours = {(component.ecosystem, component.name, component.version) for component in components}
     assert ours, "the fixture must contribute at least one component"
 
     lock_file = rattler.LockFile.from_path(FIXTURE)

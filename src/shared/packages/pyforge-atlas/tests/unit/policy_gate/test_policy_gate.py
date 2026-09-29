@@ -125,8 +125,11 @@ def test_policy_breach_halts_with_frozen_exit_1_and_alerts():
 
     with pytest.raises(DataContractViolation) as excinfo:
         assemble_and_gate(
-            hygiene, _MATCH_REPORT, params,
-            alert_sink=lambda a: hand_off(a, inbox), build_stamp=STAMP,
+            hygiene,
+            _MATCH_REPORT,
+            params,
+            alert_sink=lambda a: hand_off(a, inbox),
+            build_stamp=STAMP,
         )
 
     raised = excinfo.value
@@ -282,14 +285,17 @@ def test_real_pipeline_breach_halts_before_report_persists():
     params = _critical_security()
 
     def _gate_node(hyg, match, parameters):
-        return assemble_and_gate(
-            hyg, match, parameters, alert_sink=lambda a: hand_off(a, inbox), build_stamp=STAMP
-        )
+        return assemble_and_gate(hyg, match, parameters, alert_sink=lambda a: hand_off(a, inbox), build_stamp=STAMP)
 
     pipe = Pipeline(
         [
             node(run_dependency_hygiene, ["sbom_intake_entry", "parameters"], "sbom_hygiene_entry", name="hyg"),
-            node(_gate_node, ["sbom_hygiene_entry", "sbom_match_report_entry", "parameters"], "sbom_compliance_report_entry", name="gate"),
+            node(
+                _gate_node,
+                ["sbom_hygiene_entry", "sbom_match_report_entry", "parameters"],
+                "sbom_compliance_report_entry",
+                name="gate",
+            ),
         ]
     )
     catalog = DataCatalog(
@@ -322,8 +328,12 @@ def test_all_indeterminate_security_axis_is_indeterminate_not_a_min_crash():
                 "source": "atlas-cve",
                 "snapshot_at": "2026-07-18",
                 "findings": [
-                    {"id": "indeterminate:offline-db-unavailable:numpy@1.0", "severity": "unknown",
-                     "subject": "numpy", "message": "db offline"},
+                    {
+                        "id": "indeterminate:offline-db-unavailable:numpy@1.0",
+                        "severity": "unknown",
+                        "subject": "numpy",
+                        "message": "db offline",
+                    },
                 ],
             }
         }
@@ -340,10 +350,15 @@ def test_out_of_vocab_severity_tier_degrades_to_unknown_not_a_crash():
     params = {
         "gate": {
             "security": {
-                "source": "atlas-cve", "snapshot_at": "2026-07-18",
+                "source": "atlas-cve",
+                "snapshot_at": "2026-07-18",
                 "findings": [
-                    {"id": "vuln:RHSA-2026-1:openssl@3.0", "severity": "important",  # RedHat tier
-                     "subject": "openssl", "message": "rh vuln"},
+                    {
+                        "id": "vuln:RHSA-2026-1:openssl@3.0",
+                        "severity": "important",  # RedHat tier
+                        "subject": "openssl",
+                        "message": "rh vuln",
+                    },
                 ],
             }
         }
@@ -360,5 +375,5 @@ def test_whitespace_only_build_stamp_falls_back_not_a_masking_error():
     params = _critical_security()  # one critical → breach → exit 1 + alert
     with pytest.raises(DataContractViolation) as excinfo:
         assemble_and_gate({"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, params, build_stamp="   ")
-    assert excinfo.value.alert.evidence["exit_code"] == 1        # the real breach, not a stamp error
-    assert excinfo.value.alert.build_stamp == "unknown-build"     # whitespace → safe fallback
+    assert excinfo.value.alert.evidence["exit_code"] == 1  # the real breach, not a stamp error
+    assert excinfo.value.alert.build_stamp == "unknown-build"  # whitespace → safe fallback

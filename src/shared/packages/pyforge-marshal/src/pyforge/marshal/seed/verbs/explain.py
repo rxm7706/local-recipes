@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import difflib
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from ..model.artifact import describe
@@ -97,9 +96,7 @@ class ExplainReport:
 def _regions_payload(entry: ManifestEntry) -> tuple[dict[str, Any], ...]:
     if entry.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION:
         return ()
-    return tuple(
-        {"name": region.name, "anchor": list(region.anchor)} for region in entry.regions
-    )
+    return tuple({"name": region.name, "anchor": list(region.anchor)} for region in entry.regions)
 
 
 def run_explain(manifest: Manifest, query: str) -> ExplainReport:

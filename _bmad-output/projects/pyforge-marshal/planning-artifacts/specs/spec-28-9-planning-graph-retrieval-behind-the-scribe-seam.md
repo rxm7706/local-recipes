@@ -13,13 +13,7 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-3-the-graph-node-staleness-flag.md
 warnings:
-  - The seam is Scribe's CAP-18 port set (unifying-strategy Grounding 2026-08-30):
-    `graph_store` (persist; CAP-18 plugins shipped as scribe Story 4.1), `compile_surface`
-    (ingest; the graphify extra is scribe Story 6.1), `recall_ranker`. "Behind GraphStore"
-    means ingest writes GraphNodes *through* the persist port. If the graphify extra is not
-    yet shipped when this story dispatches, implement the marshal-consumer side against the
-    declared grammar with the fallback proven, and record the dependency in the story
-    record — do not build a marshal-internal graph to route around it.
+  - "The seam is Scribe's CAP-18 port set (unifying-strategy Grounding 2026-08-30): `graph_store` (persist; CAP-18 plugins shipped as scribe Story 4.1), `compile_surface` (ingest; the graphify extra is scribe Story 6.1), `recall_ranker`. \"Behind GraphStore\" means ingest writes GraphNodes *through* the persist port. If the graphify extra is not yet shipped when this story dispatches, implement the marshal-consumer side against the declared grammar with the fallback proven, and record the dependency in the story record — do not build a marshal-internal graph to route around it."
 ---
 
 <intent-contract>

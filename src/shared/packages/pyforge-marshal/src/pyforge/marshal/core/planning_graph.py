@@ -79,9 +79,7 @@ class ParsedRecallAnswer:
     citation: str | None = None
 
 
-def build_routing_query(
-    *, project_slug: str, epic: str, story: str | None = None
-) -> str:
+def build_routing_query(*, project_slug: str, epic: str, story: str | None = None) -> str:
     """Natural-language query for scoped epic planning context.
 
     Deliberately names the project and epic (and story when known) so a
@@ -93,9 +91,7 @@ def build_routing_query(
     return base
 
 
-def render_scribe_recall_argv(
-    binary_path: str, query: str, *, scope: str | None = None
-) -> tuple[str, ...]:
+def render_scribe_recall_argv(binary_path: str, query: str, *, scope: str | None = None) -> tuple[str, ...]:
     """The one place the recall grammar's argv is spelled.
 
     ``scope`` (Story 28.27, live incident 2026-09-10): binds ``--scope
@@ -105,8 +101,11 @@ def render_scribe_recall_argv(
     by another project's more lexically-dense document (``pyforge`` alone
     matches every project; the slug's own discriminating suffix is one
     token among several). Always passed when the caller has a resolved
-    project slug -- ``run_context_retrieve`` never calls this unscoped."""
-    argv = (binary_path, *SCRIBE_RECALL_ARGV, query)
+    project slug -- ``run_context_retrieve`` never calls this unscoped.
+    Story 12.1: never pass ``--kind``; inherit scribe's default bag.
+    Story 18.1: always name ``--mode planning`` so retrieve does not
+    compete with memory and commits."""
+    argv = (binary_path, *SCRIBE_RECALL_ARGV, query, "--mode", "planning")
     if scope:
         argv = (*argv, "--scope", scope)
     return argv
@@ -117,20 +116,14 @@ def parse_recall_output(text: str) -> ParsedRecallAnswer:
     line, or the explicit miss string -- ``None``-safe on empty input."""
     stripped = text.strip()
     if not stripped:
-        return ParsedRecallAnswer(
-            grounded=False, text=NO_GROUNDED_ANSWER, citation=None
-        )
+        return ParsedRecallAnswer(grounded=False, text=NO_GROUNDED_ANSWER, citation=None)
     lines = [line.rstrip() for line in stripped.splitlines()]
     while lines and not lines[-1].strip():
         lines.pop()
     if not lines:
-        return ParsedRecallAnswer(
-            grounded=False, text=NO_GROUNDED_ANSWER, citation=None
-        )
+        return ParsedRecallAnswer(grounded=False, text=NO_GROUNDED_ANSWER, citation=None)
     if len(lines) == 1 and lines[0].strip() == NO_GROUNDED_ANSWER:
-        return ParsedRecallAnswer(
-            grounded=False, text=NO_GROUNDED_ANSWER, citation=None
-        )
+        return ParsedRecallAnswer(grounded=False, text=NO_GROUNDED_ANSWER, citation=None)
     citation: str | None = None
     body_lines = lines
     source_match = _SOURCE_LINE.match(lines[-1].strip())
@@ -139,9 +132,7 @@ def parse_recall_output(text: str) -> ParsedRecallAnswer:
         body_lines = lines[:-1]
     body = "\n".join(body_lines).strip()
     if not body:
-        return ParsedRecallAnswer(
-            grounded=False, text=NO_GROUNDED_ANSWER, citation=citation
-        )
+        return ParsedRecallAnswer(grounded=False, text=NO_GROUNDED_ANSWER, citation=citation)
     return ParsedRecallAnswer(grounded=True, text=body, citation=citation)
 
 
@@ -151,10 +142,7 @@ def is_wholesale_planning_doc(path: str) -> bool:
     Used by tests and telemetry to assert step-01 never touched these when
     graph mode succeeded."""
     basename = path.rsplit("/", 1)[-1].lower()
-    return any(
-        fnmatchcase(basename, pattern.lower())
-        for pattern in WHOLESALE_PLANNING_DOC_PATTERNS
-    )
+    return any(fnmatchcase(basename, pattern.lower()) for pattern in WHOLESALE_PLANNING_DOC_PATTERNS)
 
 
 def resolve_retrieval_mode(

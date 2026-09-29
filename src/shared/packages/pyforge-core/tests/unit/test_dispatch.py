@@ -6,6 +6,8 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
+
+import pyforge.core.dispatch as dispatch_module
 from pyforge.core.dispatch import (
     EXIT_NOT_FOUND,
     EXIT_USAGE,
@@ -45,14 +47,53 @@ MAP = {
 
 
 def test_dispatch_argv_forwards_noun_and_verb():
-    assert dispatch_argv(
-        ["pyforge", "steward", "keys", "list"], script_map=MAP
-    ) == ["steward", "keys", "list"]
+    assert dispatch_argv(["pyforge", "steward", "keys", "list"], script_map=MAP) == ["steward", "keys", "list"]
 
 
 def test_dispatch_argv_unknown_station_raises():
     with pytest.raises(DispatchError, match="unknown station"):
         dispatch_argv(["pyforge", "nope", "verb", "x"], script_map=MAP)
+
+
+def test_context_noun_alias_dispatches_to_marshal():
+    # marshal Story 46.1 AC4: `pyforge context bootstrap` -> `marshal context bootstrap`.
+    assert dispatch_argv(["pyforge", "context", "bootstrap"], script_map=MAP) == [
+        "marshal",
+        "context",
+        "bootstrap",
+    ]
+    assert dispatch_argv(["pyforge", "context", "bootstrap", "--offline"], script_map=MAP) == [
+        "marshal",
+        "context",
+        "bootstrap",
+        "--offline",
+    ]
+
+
+def test_real_station_named_like_an_alias_wins():
+    shadowing = {**MAP, "context": "context-station"}
+    assert dispatch_argv(["pyforge", "context", "bootstrap"], script_map=shadowing) == [
+        "context-station",
+        "bootstrap",
+    ]
+
+
+def test_noun_alias_with_owner_absent_is_unknown_station(monkeypatch):
+    def _no_dist(name: str):
+        raise dispatch_module.PackageNotFoundError(name)
+
+    # An env that happens to have pyforge-marshal installed must not rescue it.
+    monkeypatch.setattr(dispatch_module, "distribution", _no_dist)
+    without_marshal = {k: v for k, v in MAP.items() if k != "marshal"}
+    with pytest.raises(DispatchError, match="unknown station 'context'"):
+        dispatch_argv(["pyforge", "context", "bootstrap"], script_map=without_marshal)
+
+
+def test_main_runs_the_aliased_argv(tmp_path):
+    proc = _FakeProcess()
+    code = main(["pyforge", "context", "bootstrap"], process=proc, script_map=MAP, cwd=tmp_path)
+    assert code == 0
+    assert proc.calls == [(["marshal", "context", "bootstrap"], tmp_path)]
 
 
 def test_main_forwards_child_exit_code(tmp_path, capsys):
@@ -101,9 +142,4 @@ def test_primary_console_script_skips_mcp_extra():
 
 
 def test_primary_console_script_prefers_dist_name_for_atlas():
-    assert (
-        primary_console_script(
-            "pyforge-atlas", {"pyforge-atlas": "pyforge.atlas.__main__:main"}
-        )
-        == "pyforge-atlas"
-    )
+    assert primary_console_script("pyforge-atlas", {"pyforge-atlas": "pyforge.atlas.__main__:main"}) == "pyforge-atlas"

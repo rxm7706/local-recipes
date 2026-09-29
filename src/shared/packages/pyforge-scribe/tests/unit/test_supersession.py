@@ -5,6 +5,7 @@ written alongside Stories 2.1/2.2; this file proves the full contract.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -64,9 +65,7 @@ def test_superseded_record_stays_present_and_marked_ended(tmp_path: Path, memory
     assert new.path.stem == "plan-y"
 
 
-def test_query_by_citation_resolves_superseded_record_distinguishing_current(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_query_by_citation_resolves_superseded_record_distinguishing_current(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "project", "Original plan.", slug="plan-x")
     capture(memory_root, "project", "Revised plan.", slug="plan-y", supersedes="project/plan-x")
 
@@ -111,12 +110,14 @@ def test_recompile_after_supersession_is_still_idempotent(tmp_path: Path, memory
     capture(memory_root, "project", "Revised plan.", slug="plan-y", supersedes="project/plan-x")
     store_path = tmp_path / "graph.json"
     no_transcripts = tmp_path / "no-transcripts"
+    pinned = datetime(2026, 9, 13, tzinfo=timezone.utc)
 
     compile_graph(
         memory_root=memory_root,
         repo_root=tmp_path,
         store=FlatFileGraphStore(store_path),
         transcript_root=no_transcripts,
+        compiled_at=pinned,
     )
     first_bytes = store_path.read_bytes()
 
@@ -125,15 +126,14 @@ def test_recompile_after_supersession_is_still_idempotent(tmp_path: Path, memory
         repo_root=tmp_path,
         store=FlatFileGraphStore(store_path),
         transcript_root=no_transcripts,
+        compiled_at=pinned,
     )
     second_bytes = store_path.read_bytes()
 
     assert first_bytes == second_bytes
 
 
-def test_chained_supersession_each_hop_has_its_own_distinct_pointer(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_chained_supersession_each_hop_has_its_own_distinct_pointer(tmp_path: Path, memory_root: Path) -> None:
     capture(memory_root, "project", "Plan A.", slug="plan-a")
     capture(memory_root, "project", "Plan B.", slug="plan-b", supersedes="project/plan-a")
     capture(memory_root, "project", "Plan C.", slug="plan-c", supersedes="project/plan-b")

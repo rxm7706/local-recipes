@@ -226,9 +226,7 @@ def test_preflight_tolerates_one_bad_entry_beside_a_good_one(tmp_path):
     zip_path = db_dir / "all.zip"
     good = {
         "id": "GHSA-good",
-        "affected": [
-            {"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": ["1.0"]}
-        ],
+        "affected": [{"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": ["1.0"]}],
     }
     with zipfile.ZipFile(zip_path, "w") as zf:
         zf.writestr("GHSA-bad.json", b"{ not json ]")
@@ -245,9 +243,7 @@ def test_preflight_ignores_non_json_entries(tmp_path):
     zip_path = db_dir / "all.zip"
     good = {
         "id": "GHSA-good",
-        "affected": [
-            {"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": ["1.0"]}
-        ],
+        "affected": [{"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": ["1.0"]}],
     }
     with zipfile.ZipFile(zip_path, "w") as zf:
         zf.writestr("README.txt", b"not json at all, and not even .json-named")
@@ -401,9 +397,7 @@ def test_synthesize_requirements_excludes_leading_dash_version(component_factory
     "unsafe_version",
     ["1.0; rm -rf /", "1.0 ", "1.0\n", "1.0/../", "1.0@evil", "1.0 && echo hi"],
 )
-def test_synthesize_requirements_excludes_unsafe_token_chars(
-    component_factory, unsafe_version
-):
+def test_synthesize_requirements_excludes_unsafe_token_chars(component_factory, unsafe_version):
     component = component_factory(
         name="foo",
         version="1.0",
@@ -714,9 +708,7 @@ def test_parse_osv_output_extracts_the_fixed_version_from_ranges_events():
             "1.0.0",
             ids=["PDOS-FIXTURE-0003"],
             max_severity="5.4",
-            vulnerabilities=[
-                {"id": "PDOS-FIXTURE-0003", "affected": _fixture_0003_affected()}
-            ],
+            vulnerabilities=[{"id": "PDOS-FIXTURE-0003", "affected": _fixture_0003_affected()}],
         )
     )
     parse = parse_osv_output(raw)
@@ -757,9 +749,7 @@ def test_parse_osv_output_no_fixed_version_when_no_vulnerability_record():
     no sibling raw record — mirrors test_parse_osv_output_attributes_
     group_max_severity_to_every_aliased_id) has no fixed version to
     extract."""
-    raw = _doc(
-        _package("foo", "1.0", ids=["GHSA-primary", "CVE-alias"], max_severity="5.0")
-    )
+    raw = _doc(_package("foo", "1.0", ids=["GHSA-primary", "CVE-alias"], max_severity="5.0"))
     parse = parse_osv_output(raw)
     assert parse.fixed_versions == {}
 
@@ -782,9 +772,7 @@ _MATCHING_PACKAGE = {"ecosystem": "PyPI", "name": "foo"}
         [
             {
                 "package": _MATCHING_PACKAGE,
-                "ranges": [
-                    {"type": "ECOSYSTEM", "events": [{"introduced": "1.0.0"}]}
-                ],
+                "ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "1.0.0"}]}],
             }
         ],
         [
@@ -883,7 +871,7 @@ def test_parse_osv_output_first_well_formed_fixed_event_wins():
                                         {"fixed": "9.9.9"},
                                     ],
                                 },
-                            ]
+                            ],
                         }
                     ],
                 }
@@ -918,12 +906,7 @@ def test_parse_osv_output_skips_git_range_commit_hashes_for_fixed_version():
                                     "repo": "https://example.invalid/foo.git",
                                     "events": [
                                         {"introduced": "0"},
-                                        {
-                                            "fixed": (
-                                                "0123456789abcdef0123456789"
-                                                "abcdef01234567"
-                                            )
-                                        },
+                                        {"fixed": ("0123456789abcdef0123456789abcdef01234567")},
                                     ],
                                 },
                                 {
@@ -1101,9 +1084,7 @@ def test_vuln_rung_for_each_severity_tier(tier, expected_status):
     )
     status, driver = vuln_rung(finding)
     assert status is expected_status
-    assert driver == StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:foo@1.0.0"
-    )
+    assert driver == StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:foo@1.0.0")
 
 
 def test_default_vuln_severity_policy_is_immutable():
@@ -1116,23 +1097,14 @@ def test_default_vuln_severity_policy_is_immutable():
 
 def test_status_for_severity_tier_with_a_custom_policy_overrides_the_default():
     custom_policy = {SeverityTier.HIGH: Status.POLICY_VIOLATION}
-    assert (
-        status_for_severity_tier(SeverityTier.HIGH, policy=custom_policy)
-        is Status.POLICY_VIOLATION
-    )
+    assert status_for_severity_tier(SeverityTier.HIGH, policy=custom_policy) is Status.POLICY_VIOLATION
     # A tier absent from the custom policy still degrades to indeterminate
     # (the same .get(tier, Status.INDETERMINATE) fallback as the default).
-    assert (
-        status_for_severity_tier(SeverityTier.CRITICAL, policy=custom_policy)
-        is Status.INDETERMINATE
-    )
+    assert status_for_severity_tier(SeverityTier.CRITICAL, policy=custom_policy) is Status.INDETERMINATE
 
 
 def test_status_for_severity_tier_policy_none_falls_back_to_the_default_table():
-    assert (
-        status_for_severity_tier(SeverityTier.CRITICAL, policy=None)
-        is Status.POLICY_VIOLATION
-    )
+    assert status_for_severity_tier(SeverityTier.CRITICAL, policy=None) is Status.POLICY_VIOLATION
 
 
 def test_vuln_rung_with_a_custom_policy_overrides_the_default():
@@ -1146,9 +1118,7 @@ def test_vuln_rung_with_a_custom_policy_overrides_the_default():
     custom_policy = {SeverityTier.HIGH: Status.POLICY_VIOLATION}
     status, driver = vuln_rung(finding, policy=custom_policy)
     assert status is Status.POLICY_VIOLATION
-    assert driver == StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:foo@1.0.0"
-    )
+    assert driver == StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:foo@1.0.0")
 
 
 def test_vuln_rung_with_no_severity_ignores_policy_and_stays_indeterminate():
@@ -1181,9 +1151,7 @@ def test_vuln_rung_with_no_severity_is_indeterminate():
     )
     status, driver = vuln_rung(finding)
     assert status is Status.INDETERMINATE
-    assert driver == StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:leftpad"
-    )
+    assert driver == StatusDriver(axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:leftpad")
 
 
 # --- Story 6.4 (FR36): vuln_rung's fail_on_kev param --------------------------
@@ -1250,18 +1218,12 @@ def test_vuln_rung_fail_on_kev_with_kev_none_does_not_force():
 
 def test_kev_match_finds_the_advisory_id_itself():
     catalog = {"PDOS-KEV-FIXTURE-0001": "2026-01-01"}
-    assert (
-        kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog)
-        == "2026-01-01"
-    )
+    assert kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog) == "2026-01-01"
 
 
 def test_kev_match_finds_an_alias():
     catalog = {"CVE-1970-00001": "2026-01-01"}
-    assert (
-        kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog)
-        == "2026-01-01"
-    )
+    assert kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog) == "2026-01-01"
 
 
 def test_kev_match_no_match_is_none():
@@ -1296,9 +1258,7 @@ def test_kev_stale_finding_stale():
 # --- Story 6.7 (--min-epss): vuln_rung's min_epss param -----------------------
 
 
-def _epss_finding(
-    *, epss: Epss | None, tier: SeverityTier = SeverityTier.MEDIUM
-) -> Finding:
+def _epss_finding(*, epss: Epss | None, tier: SeverityTier = SeverityTier.MEDIUM) -> Finding:
     return Finding(
         id="vuln:PDOS-KEV-FIXTURE-0001:pdos-kev-fixture@1.0.0",
         axis=AXIS_VULNERABILITY,
@@ -1331,9 +1291,7 @@ def test_vuln_rung_min_epss_below_threshold_leaves_cvss_only_gating():
 
 
 def test_vuln_rung_min_epss_never_downgrades_an_already_critical_status():
-    finding = _epss_finding(
-        epss=Epss(score=0.7, percentile=0.9), tier=SeverityTier.CRITICAL
-    )
+    finding = _epss_finding(epss=Epss(score=0.7, percentile=0.9), tier=SeverityTier.CRITICAL)
     status, _ = vuln_rung(finding, min_epss=0.5)
     assert status is Status.POLICY_VIOLATION
 
@@ -1535,9 +1493,7 @@ def test_name_level_critical_advisory_ids_finds_the_critical_fixture(tmp_path):
     builder = _load_builder()
     cache_root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
     zip_path = db_zip_path(cache_root, Ecosystem.PYPI)
-    assert name_level_critical_advisory_ids(zip_path, FIXTURE_PACKAGE) == (
-        FIXTURE_ADVISORY_ID,
-    )
+    assert name_level_critical_advisory_ids(zip_path, FIXTURE_PACKAGE) == (FIXTURE_ADVISORY_ID,)
 
 
 def test_name_level_critical_advisory_ids_is_empty_for_a_high_severity_advisory(
@@ -1563,9 +1519,7 @@ def test_name_level_critical_advisory_ids_canonicalizes_the_target_name(tmp_path
     builder = _load_builder()
     cache_root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
     zip_path = db_zip_path(cache_root, Ecosystem.PYPI)
-    assert name_level_critical_advisory_ids(zip_path, "Pdos_Vuln_Fixture") == (
-        FIXTURE_ADVISORY_ID,
-    )
+    assert name_level_critical_advisory_ids(zip_path, "Pdos_Vuln_Fixture") == (FIXTURE_ADVISORY_ID,)
 
 
 def test_name_level_critical_advisory_ids_empty_on_an_absent_zip(tmp_path):
@@ -1577,10 +1531,7 @@ def test_name_level_critical_advisory_ids_empty_on_an_unmapped_ecosystem(tmp_pat
     builder = _load_builder()
     cache_root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
     zip_path = db_zip_path(cache_root, Ecosystem.PYPI)
-    assert (
-        name_level_critical_advisory_ids(zip_path, FIXTURE_PACKAGE, Ecosystem.CONDA)
-        == ()
-    )
+    assert name_level_critical_advisory_ids(zip_path, FIXTURE_PACKAGE, Ecosystem.CONDA) == ()
 
 
 def test_name_level_critical_advisory_ids_tolerates_one_bad_entry(tmp_path):
@@ -1597,9 +1548,7 @@ def test_name_level_critical_advisory_ids_tolerates_one_bad_entry(tmp_path):
                 "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
             }
         ],
-        "affected": [
-            {"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": ["1.0"]}
-        ],
+        "affected": [{"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": ["1.0"]}],
     }
     with zipfile.ZipFile(zip_path, "w") as zf:
         zf.writestr("GHSA-bad.json", b"{ not json ]")
@@ -1614,9 +1563,7 @@ def test_name_level_critical_advisory_ids_never_counts_an_unparsable_vector(tmp_
     record = {
         "id": "GHSA-bad-vector",
         "severity": [{"type": "CVSS_V3", "score": "not-a-real-vector"}],
-        "affected": [
-            {"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": ["1.0"]}
-        ],
+        "affected": [{"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": ["1.0"]}],
     }
     with zipfile.ZipFile(zip_path, "w") as zf:
         zf.writestr("GHSA-bad-vector.json", json.dumps(record))
@@ -1631,9 +1578,7 @@ def test_name_level_critical_cve_finding_id_grammar(component_factory):
         indeterminate_reason=WithholdReason.NO_VERSION,
     )
     finding = name_level_critical_cve_finding(component, (FIXTURE_ADVISORY_ID,))
-    assert finding.id == (
-        "indeterminate:name-level-critical-cve:pdos-vuln-fixture@unspecified"
-    )
+    assert finding.id == ("indeterminate:name-level-critical-cve:pdos-vuln-fixture@unspecified")
     assert finding.axis == AXIS_VULNERABILITY
     assert finding.subject == "pdos-vuln-fixture"
     assert finding.severity is None

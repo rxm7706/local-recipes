@@ -2,7 +2,7 @@
 title: SKF domain skills from station packages
 type: feature
 created: '2026-08-25'
-status: ready
+status: done
 updated: '2026-08-25'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -93,3 +93,17 @@ Personas (CAP-16) consult this content skill later; they are BMAD launcher skill
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `ddafd7c6d8` (2026-08-25, "Merge pull request #796 from rxm7706/steward/29-1-ledger-finalize"); also `3069aed1ea` (2026-08-25, "Merge pull request #795 from rxm7706/steward/29-1-skf-domain-skills-from-station-packages"). Ledger row `29-1-skf-domain-skills-from-station-packages: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.cursor/pyforge-fleet-drain/queues.yaml`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready` → `done` (ledger row `29-1-skf-domain-skills-from-station-packages: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

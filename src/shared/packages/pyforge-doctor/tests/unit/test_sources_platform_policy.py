@@ -43,9 +43,7 @@ def test_interpreter_absent_warns_with_install_hint(tmp_path: Path):
 def test_clean_run_returns_no_findings(tmp_path: Path, monkeypatch):
     _make_platform_root(tmp_path)
     _make_interpreter(tmp_path)
-    monkeypatch.setattr(
-        cli_bridge, "run_pytest", lambda interpreter, cwd, args, timeout=120.0: (0, "")
-    )
+    monkeypatch.setattr(cli_bridge, "run_pytest", lambda interpreter, cwd, args, timeout=120.0: (0, ""))
 
     assert gather(tmp_path) == ()
 

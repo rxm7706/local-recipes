@@ -46,9 +46,7 @@ def _validate_period(period: str) -> str:
     # `--tier " all "` succeeded — the same padding, two different outcomes.
     period = str(period).strip()
     if period not in _VALID_PERIODS:
-        raise ValueError(
-            f"invalid --period {period!r}: must be one of {sorted(_VALID_PERIODS)}"
-        )
+        raise ValueError(f"invalid --period {period!r}: must be one of {sorted(_VALID_PERIODS)}")
     return period
 
 
@@ -211,18 +209,10 @@ def query_trending_candidates(
         df = df[df["period"] == period] if "period" in df.columns else df.iloc[0:0]
 
     if not df.empty and tier != "all":
-        df = (
-            df[df["tier"].isin(_tier_tokens(tier))]
-            if "tier" in df.columns
-            else df.iloc[0:0]
-        )
+        df = df[df["tier"].isin(_tier_tokens(tier))] if "tier" in df.columns else df.iloc[0:0]
 
     if not df.empty and not_on_cf:
-        df = (
-            df[df["reason"] != REASON_ALREADY_ON_CF]
-            if "reason" in df.columns
-            else df.iloc[0:0]
-        )
+        df = df[df["reason"] != REASON_ALREADY_ON_CF] if "reason" in df.columns else df.iloc[0:0]
 
     if not df.empty:
         if "stars_total" in df.columns:
@@ -265,9 +255,7 @@ def query_trending_candidates(
         # `--period all --top 3` (verified live), contradicting this function's own
         # "a deterministic tie-break for --top's cap". A repo has at most one row per
         # period, so this makes the ordering total.
-        sort_cols = [
-            c for c in ("stars_total", "repo_full_name", "period") if c in df.columns
-        ]
+        sort_cols = [c for c in ("stars_total", "repo_full_name", "period") if c in df.columns]
         if sort_cols:
             df = df.sort_values(
                 by=sort_cols,

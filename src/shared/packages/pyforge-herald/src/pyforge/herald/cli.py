@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from collections.abc import Callable
@@ -70,6 +71,7 @@ from . import (
     pptx_pipeline,
     progress,
     scheduler,
+    sync_all,
 )
 from . import watch as watch_module
 from .claims import CLAIM_STATUSES
@@ -217,19 +219,11 @@ def _build_parser() -> _HeraldArgumentParser:
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}"
-    )
-    subparsers = parser.add_subparsers(
-        dest="command", required=False, metavar="command"
-    )
-    deck = subparsers.add_parser(
-        "deck", help="manage Claude Design decks (seed/pull/status/watch)"
-    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    subparsers = parser.add_subparsers(dest="command", required=False, metavar="command")
+    deck = subparsers.add_parser("deck", help="manage Claude Design decks (seed/pull/status/watch)")
     deck_subparsers = deck.add_subparsers(dest="deck_command", required=True)
-    seed = deck_subparsers.add_parser(
-        "seed", help="seed a deck slug into Claude Design (CAP-1)"
-    )
+    seed = deck_subparsers.add_parser("seed", help="seed a deck slug into Claude Design (CAP-1)")
     seed.add_argument("slug", help="deck slug, e.g. pyforge-warden")
     seed.add_argument(
         "--repo-root",
@@ -241,13 +235,10 @@ def _build_parser() -> _HeraldArgumentParser:
         "--support-source-project",
         default=deck_pipeline.PILOT_SUPPORT_SOURCE_PROJECT_ID,
         help=(
-            "Design project id to copy deck-stage.js from (default: the "
-            "already-seeded pyforge-marshal pilot project)"
+            "Design project id to copy deck-stage.js from (default: the already-seeded pyforge-marshal pilot project)"
         ),
     )
-    pull = deck_subparsers.add_parser(
-        "pull", help="pull a deck's prototype from Claude Design into the repo (CAP-2)"
-    )
+    pull = deck_subparsers.add_parser("pull", help="pull a deck's prototype from Claude Design into the repo (CAP-2)")
     pull.add_argument("slug", help="deck slug, e.g. pyforge-warden")
     pull.add_argument(
         "--repo-root",
@@ -291,16 +282,21 @@ def _build_parser() -> _HeraldArgumentParser:
         default=None,
         help="repo root containing presentations/<slug>/ (default: cwd)",
     )
-    watch = deck_subparsers.add_parser(
-        "watch",
+    status.add_argument(
+        "--account",
+        action="store_true",
         help=(
-            "poll one or more decks for Design-side edits and pull "
-            "automatically once settled (CAP-4)"
+            "report every Design project the signed-in account can see, "
+            "reconciled against the registry (linked/mirrored/excluded/"
+            "untwinned) instead of one or all known decks' bridge state "
+            "(CAP-1); cannot be combined with a slug argument"
         ),
     )
-    watch.add_argument(
-        "slugs", nargs="+", metavar="slug", help="deck slug(s), e.g. pyforge-warden"
+    watch = deck_subparsers.add_parser(
+        "watch",
+        help=("poll one or more decks for Design-side edits and pull automatically once settled (CAP-4)"),
     )
+    watch.add_argument("slugs", nargs="+", metavar="slug", help="deck slug(s), e.g. pyforge-warden")
     watch.add_argument(
         "--repo-root",
         type=Path,
@@ -328,6 +324,52 @@ def _build_parser() -> _HeraldArgumentParser:
         default=None,
         help="repo root containing presentations/<slug>/ (default: cwd)",
     )
+    push.add_argument(
+        "--prove",
+        action="store_true",
+        help=(
+            "read every file pushed this run back through Design and assert "
+            "byte-identity, appending a Ledger row per proven file (CAP-6)"
+        ),
+    )
+    sync_all_parser = deck_subparsers.add_parser(
+        "sync-all",
+        help=(
+            "enumerate -> pull -> refresh -> derive -> push -> prove -> "
+            "publish, in order, for every registered deck or one --slug "
+            "(Story 23.6, CAP-8)"
+        ),
+    )
+    sync_all_parser.add_argument(
+        "--slug",
+        default=None,
+        help="sync only this deck, e.g. pyforge-warden (default: every registered deck)",
+    )
+    sync_all_parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
+    sync_all_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help=(
+            "preview the pull step read-only (per deck: unchanged / "
+            "would-sync) without writing to git, Design, or the dossier site"
+        ),
+    )
+    sync_all_parser.add_argument(
+        "--proof-dir",
+        type=Path,
+        default=None,
+        help=(
+            "opt-in idempotency-proof dir, gated on HERALD_LIVE_SYNC_PROOF=1: "
+            "write this run's per-deck report plus its tree/etag stamp under "
+            "<proof-dir>/<slug>/ (Story 24.3, CAP-50); never required for a "
+            "normal sync"
+        ),
+    )
     qa = deck_subparsers.add_parser(
         "qa",
         help="run visual-QA gates against a deck and print the report, JSON (Story 14.1)",
@@ -341,10 +383,7 @@ def _build_parser() -> _HeraldArgumentParser:
     )
     pptx_spec = deck_subparsers.add_parser(
         "pptx-spec",
-        help=(
-            "parse a .pptx/.potx template into spec.json -- layouts + "
-            "placeholders (Story 15.1, CAP-1)"
-        ),
+        help=("parse a .pptx/.potx template into spec.json -- layouts + placeholders (Story 15.1, CAP-1)"),
     )
     pptx_spec.add_argument(
         "--template",
@@ -436,9 +475,7 @@ def _build_parser() -> _HeraldArgumentParser:
         default=None,
         help="compute hours (--update only)",
     )
-    progress_parser.add_argument(
-        "--token-spend", type=int, default=None, help="token spend (--update only)"
-    )
+    progress_parser.add_argument("--token-spend", type=int, default=None, help="token spend (--update only)")
     progress_parser.add_argument(
         "--wall-clock-hours",
         type=float,
@@ -478,9 +515,7 @@ def _build_parser() -> _HeraldArgumentParser:
         default=None,
         help="repo root containing .herald/herald.db (default: cwd)",
     )
-    success_subparsers = success.add_subparsers(
-        dest="success_command", required=False, metavar="success_command"
-    )
+    success_subparsers = success.add_subparsers(dest="success_command", required=False, metavar="success_command")
     success_create = success_subparsers.add_parser(
         "create",
         help=(
@@ -488,9 +523,7 @@ def _build_parser() -> _HeraldArgumentParser:
             "scaled down from a CI webhook to an operator-run command)"
         ),
     )
-    success_create.add_argument(
-        "project_name", help="the project name, e.g. 'Marshal S-1.10'"
-    )
+    success_create.add_argument("project_name", help="the project name, e.g. 'Marshal S-1.10'")
     success_create.add_argument(
         "--shipped-date",
         metavar="YYYY-MM-DD",
@@ -524,13 +557,9 @@ def _build_parser() -> _HeraldArgumentParser:
             "(Story 11.3 cross-Moment backlink; must already exist)"
         ),
     )
-    success_review = success_subparsers.add_parser(
-        "review", help="show a draft claim's evidence before publishing"
-    )
+    success_review = success_subparsers.add_parser("review", help="show a draft claim's evidence before publishing")
     success_review.add_argument("claim_id", help="the claim id to review")
-    publish = success_subparsers.add_parser(
-        "publish", help="publish a success claim (requires operator role)"
-    )
+    publish = success_subparsers.add_parser("publish", help="publish a success claim (requires operator role)")
     publish.add_argument("claim_id", help="the claim id to publish")
     publish.add_argument(
         "--thesis",
@@ -546,9 +575,7 @@ def _build_parser() -> _HeraldArgumentParser:
         default=None,
         help="filter to one status (default: every status)",
     )
-    success_get = success_subparsers.add_parser(
-        "get", help="show full detail for one claim"
-    )
+    success_get = success_subparsers.add_parser("get", help="show full detail for one claim")
     success_get.add_argument("claim_id", help="the claim id")
     success_validate = success_subparsers.add_parser(
         "validate",
@@ -557,12 +584,8 @@ def _build_parser() -> _HeraldArgumentParser:
             "9.5 -- scaled down from a weekly cron to an operator-run check)"
         ),
     )
-    success_validate.add_argument(
-        "claim_id", nargs="?", default=None, help="the claim id (omit with --all)"
-    )
-    success_validate.add_argument(
-        "--all", action="store_true", help="re-validate every claim's evidence links"
-    )
+    success_validate.add_argument("claim_id", nargs="?", default=None, help="the claim id (omit with --all)")
+    success_validate.add_argument("--all", action="store_true", help="re-validate every claim's evidence links")
 
     notice = subparsers.add_parser(
         "notice",
@@ -586,9 +609,7 @@ def _build_parser() -> _HeraldArgumentParser:
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    notice_subparsers = notice.add_subparsers(
-        dest="notice_command", required=False, metavar="notice_command"
-    )
+    notice_subparsers = notice.add_subparsers(dest="notice_command", required=False, metavar="notice_command")
 
     notice_list = notice_subparsers.add_parser(
         "list",
@@ -611,9 +632,7 @@ def _build_parser() -> _HeraldArgumentParser:
     author = notice_subparsers.add_parser(
         "author", help="author (or re-author a draft) notice (requires operator role)"
     )
-    author.add_argument(
-        "--type", dest="notice_type", choices=notices.NOTICE_TYPES, default=None
-    )
+    author.add_argument("--type", dest="notice_type", choices=notices.NOTICE_TYPES, default=None)
     author.add_argument("--component", default=None, help="the notice's component name")
     author.add_argument("--what", default=None)
     author.add_argument("--why", default=None)
@@ -631,9 +650,7 @@ def _build_parser() -> _HeraldArgumentParser:
         help="publish immediately instead of leaving it a draft",
     )
 
-    notice_publish = notice_subparsers.add_parser(
-        "publish", help="publish a draft notice (requires operator role)"
-    )
+    notice_publish = notice_subparsers.add_parser("publish", help="publish a draft notice (requires operator role)")
     notice_publish.add_argument("component", help="the notice's component name")
 
     notice_get = notice_subparsers.add_parser(
@@ -641,13 +658,9 @@ def _build_parser() -> _HeraldArgumentParser:
     )
     notice_get.add_argument("component", help="the notice's component name")
 
-    notice_close = notice_subparsers.add_parser(
-        "close", help="close a published notice (requires operator role)"
-    )
+    notice_close = notice_subparsers.add_parser("close", help="close a published notice (requires operator role)")
     notice_close.add_argument("component", help="the notice's component name")
-    notice_close.add_argument(
-        "--reason", default=None, help="why it was closed (optional)"
-    )
+    notice_close.add_argument("--reason", default=None, help="why it was closed (optional)")
 
     notice_archive = notice_subparsers.add_parser(
         "archive",
@@ -674,22 +687,13 @@ def _build_parser() -> _HeraldArgumentParser:
             "creates or modifies claim/progress content, only refreshes "
             "derived state."
         ),
-        epilog=(
-            "examples:\n"
-            "  herald scheduler run\n"
-            "  herald scheduler run --repo-root . --json\n"
-        ),
+        epilog=("examples:\n  herald scheduler run\n  herald scheduler run --repo-root . --json\n"),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    scheduler_subparsers = scheduler_parser.add_subparsers(
-        dest="scheduler_command", required=True
-    )
+    scheduler_subparsers = scheduler_parser.add_subparsers(dest="scheduler_command", required=True)
     scheduler_run = scheduler_subparsers.add_parser(
         "run",
-        help=(
-            "run both scheduled jobs once: revalidate every claim's "
-            "evidence, then rewrite the progress snapshot"
-        ),
+        help=("run both scheduled jobs once: revalidate every claim's evidence, then rewrite the progress snapshot"),
     )
     scheduler_run.add_argument(
         "--repo-root",
@@ -701,10 +705,7 @@ def _build_parser() -> _HeraldArgumentParser:
         "--out-dir",
         type=Path,
         default=None,
-        help=(
-            "directory to write progress.json into "
-            "(default: <repo-root>/web/public)"
-        ),
+        help=("directory to write progress.json into (default: <repo-root>/web/public)"),
     )
     scheduler_run.add_argument(
         "--json",
@@ -739,8 +740,7 @@ def main(argv: list[str] | None = None) -> int:
         # group) -- Story 6.1's AC calls for exit 1 here, not argparse's 2.
         parser.print_usage(sys.stderr)
         print(
-            f"{TOOL_NAME}: error: no command given; valid subcommands: "
-            f"{', '.join(TOP_LEVEL_COMMANDS)}",
+            f"{TOOL_NAME}: error: no command given; valid subcommands: {', '.join(TOP_LEVEL_COMMANDS)}",
             file=sys.stderr,
         )
         return 1
@@ -761,6 +761,8 @@ def _route(args: argparse.Namespace) -> int:
         return _run_deck_watch(args)
     if args.command == "deck" and args.deck_command == "push":
         return _run_deck_push(args)
+    if args.command == "deck" and args.deck_command == "sync-all":
+        return _run_deck_sync_all(args)
     if args.command == "deck" and args.deck_command == "qa":
         return _run_deck_qa(args)
     if args.command == "deck" and args.deck_command == "pptx-spec":
@@ -827,21 +829,15 @@ def _run_deck_seed(args: argparse.Namespace) -> int:
     return dispatch(operation)
 
 
-def _pull_operation(
-    args: argparse.Namespace, repo_root: Path, transport: McpTransport
-) -> deck_pipeline.PullResult:
+def _pull_operation(args: argparse.Namespace, repo_root: Path, transport: McpTransport) -> deck_pipeline.PullResult:
     """Compose the right ``deck_pipeline.pull_*`` call for ``args.target``.
     ``prototype`` (the default) dispatches to ``pull_prototype`` (Story 2.1);
     every ``marp-*`` choice dispatches to ``pull_marp_source`` with the
     ``marp-`` prefix stripped back to its ``kind`` (Story 2.3)."""
     if args.target == "prototype":
-        return deck_pipeline.pull_prototype(
-            transport, slug=args.slug, repo_root=repo_root, commit=args.commit
-        )
+        return deck_pipeline.pull_prototype(transport, slug=args.slug, repo_root=repo_root, commit=args.commit)
     if args.target == "standalone":
-        return deck_pipeline.pull_standalone_bundle(
-            transport, slug=args.slug, repo_root=repo_root, commit=args.commit
-        )
+        return deck_pipeline.pull_standalone_bundle(transport, slug=args.slug, repo_root=repo_root, commit=args.commit)
     kind = args.target.removeprefix("marp-")
     return deck_pipeline.pull_marp_source(
         transport,
@@ -867,9 +863,7 @@ def _run_deck_pull(args: argparse.Namespace) -> int:
             print(f"pull {args.slug} ({result.artifact}): unchanged")
         else:
             suffix = " (committed)" if result.committed else ""
-            print(
-                f"pulled {args.slug} ({result.artifact}) -> {result.local_path}{suffix}"
-            )
+            print(f"pulled {args.slug} ({result.artifact}) -> {result.local_path}{suffix}")
 
     return dispatch(operation)
 
@@ -884,11 +878,44 @@ def _run_deck_status(args: argparse.Namespace) -> int:
     Always prints one JSON array to stdout (FR-11's "machine-readable" AC)
     -- unlike ``seed``/``pull``, there is no separate human-prose success
     line: the report itself is the whole output, for one deck or every
-    known one alike."""
+    known one alike.
+
+    ``--account`` (Story 23.1, CAP-1) reports a different shape entirely --
+    every Design project the signed-in account can see, reconciled against
+    the registry, rather than the per-known-deck bridge state above -- so
+    it is refused together with an explicit ``slug`` (``errors.HeraldError``,
+    AD-6) instead of silently picking one view over the other."""
     repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
 
     def operation() -> None:
         transport = McpTransport()
+        if args.account:
+            if args.slug is not None:
+                raise errors.HeraldError(
+                    "deck status --account reports the whole Design account "
+                    "and takes no slug; drop --account or drop the slug "
+                    f"argument ({args.slug!r})"
+                )
+            account_results = bridge.run(
+                transport,
+                lambda t: deck_pipeline.account_status(t, repo_root=repo_root),
+            )
+            print(
+                json.dumps(
+                    [
+                        {
+                            "name": result.name,
+                            "project_id": result.project_id,
+                            "url": result.url,
+                            "status": result.status,
+                            "slug": result.slug,
+                            "reason": result.reason,
+                        }
+                        for result in account_results
+                    ]
+                )
+            )
+            return
         results = bridge.run(
             transport,
             lambda t: deck_pipeline.status(t, slug=args.slug, repo_root=repo_root),
@@ -957,24 +984,85 @@ def _run_deck_push(args: argparse.Namespace) -> int:
     story conditional on ``deck push``'s too. Keeping them as separate
     subcommands mirrors ``deck seed``/``deck pull``'s own separation and
     lets an operator re-run just the push after fixing a conflict without
-    re-pulling anything."""
+    re-pulling anything.
+
+    ``--prove`` (Story 23.4, CAP-6) passes straight through to
+    ``push_exports``'s own ``prove`` parameter; a proven file gets its own
+    printed line, and a ``ReadBackMismatchError`` reaches ``dispatch``
+    exactly like any other ``HeraldError`` -- no special handling here."""
     repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
 
     def operation() -> None:
         transport = McpTransport()
         result = bridge.run(
             transport,
-            lambda t: deck_pipeline.push_exports(
-                t, slug=args.slug, repo_root=repo_root
-            ),
+            lambda t: deck_pipeline.push_exports(t, slug=args.slug, repo_root=repo_root, prove=args.prove),
         )
         if not result.pushed and not result.skipped:
             print(f"push {args.slug}: nothing to push")
         else:
-            print(
-                f"pushed {args.slug}: {len(result.pushed)} file(s) pushed, "
-                f"{len(result.skipped)} unchanged"
+            print(f"pushed {args.slug}: {len(result.pushed)} file(s) pushed, {len(result.skipped)} unchanged")
+        for filename in result.proven:
+            print(f"proved {args.slug}: {filename} read back byte-identical")
+
+    return dispatch(operation)
+
+
+def _run_deck_sync_all(args: argparse.Namespace) -> int:
+    """``herald deck sync-all [--slug SLUG] [--dry-run] [--proof-dir DIR]``
+    (Story 23.6, CAP-8 + CAP-3's sweep half): composes enumerate -> pull ->
+    refresh -> derive -> push -> prove -> publish, in order, for every
+    registered deck (or just ``--slug``), and prints one report line per
+    deck. Mirrors ``_run_deck_seed``/``_run_deck_pull``'s composition shape
+    exactly: ``McpTransport()`` is constructed inside ``operation``, never
+    before ``dispatch`` is called.
+
+    A single deck's own failure (a broken subprocess call, a push
+    conflict, a read-back mismatch, ...) is isolated into that deck's own
+    report line rather than aborting the run (``sync_all``'s own module
+    docstring) -- this command reports the fleet, it does not gate it,
+    mirroring ``deck status``'s per-deck conflict downgrade and ``scheduler
+    run``'s advisory exit-0 convention. Only a structural problem outside
+    any one deck's own sync (an unknown ``--slug``, an auth failure
+    reaching Design at all) raises and reaches ``dispatch``'s usual
+    non-zero exit.
+
+    ``--proof-dir`` (Story 24.3, CAP-50) is refused outright unless
+    ``HERALD_LIVE_SYNC_PROOF=1`` is set -- an opt-in live idempotency
+    proof, never run unattended -- before any transport is constructed."""
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        if args.proof_dir is not None and os.environ.get("HERALD_LIVE_SYNC_PROOF") != "1":
+            raise errors.HeraldError(
+                "--proof-dir requires HERALD_LIVE_SYNC_PROOF=1 -- this is an "
+                "opt-in live idempotency proof, never run by default (Story "
+                "24.3, CAP-50); set the env var to run it deliberately"
             )
+        transport = McpTransport()
+        report = bridge.run(
+            transport,
+            lambda t: sync_all.sync_all(
+                t,
+                slug=args.slug,
+                repo_root=repo_root,
+                dry_run=args.dry_run,
+                proof_dir=args.proof_dir,
+            ),
+        )
+        if not report.decks:
+            print("no registered decks found")
+            return
+        for deck in report.decks:
+            print(f"{deck.slug}: {', '.join(deck.labels())}")
+            if deck.error is not None:
+                print(f"  error: {deck.error}")
+        if report.published:
+            print("published: dossier site rebuilt")
+        elif report.publish_error is not None:
+            print(f"publish failed: {report.publish_error}")
+        if args.proof_dir is not None:
+            print(f"proof reports written under {args.proof_dir}")
 
     return dispatch(operation)
 
@@ -1004,9 +1092,7 @@ def _run_deck_pptx_spec(args: argparse.Namespace) -> int:
     ``_run_deck_qa`` -- no ``McpTransport``, no ``bridge.run``: there is
     nothing to reach Claude Design for when reading a template already on
     disk."""
-    template_path = (
-        args.template if args.template is not None else pptx_pipeline.default_template_path()
-    )
+    template_path = args.template if args.template is not None else pptx_pipeline.default_template_path()
 
     def operation() -> None:
         spec = pptx_pipeline.run_spec(template_path, out_path=args.out_path)
@@ -1024,9 +1110,7 @@ def _run_deck_pptx_fill(args: argparse.Namespace) -> int:
     template, producing a genuinely editable ``.pptx`` (Design Notes: real
     ``text_frame``/``add_paragraph`` calls, never hand-written OOXML).
     Fully local/offline, same rationale as ``_run_deck_pptx_spec``."""
-    template_path = (
-        args.template if args.template is not None else pptx_pipeline.default_template_path()
-    )
+    template_path = args.template if args.template is not None else pptx_pipeline.default_template_path()
 
     def operation() -> None:
         pptx_pipeline.run_fill(template_path, args.content_plan, args.out_path)
@@ -1047,10 +1131,7 @@ def _parse_date_range(raw: str) -> tuple[date, date]:
     a date range, so there is no naive-datetime footgun to construct
     around."""
     parts = raw.split("..")
-    problem = (
-        f"Invalid date format: {raw!r}; expected <start>..<end> as "
-        f"YYYY-MM-DD..YYYY-MM-DD"
-    )
+    problem = f"Invalid date format: {raw!r}; expected <start>..<end> as YYYY-MM-DD..YYYY-MM-DD"
     if len(parts) != 2:
         raise errors.InvalidDateRangeError(problem)
     start_raw, end_raw = parts
@@ -1060,9 +1141,7 @@ def _parse_date_range(raw: str) -> tuple[date, date]:
     except ValueError as exc:
         raise errors.InvalidDateRangeError(f"{problem} ({exc})") from exc
     if start > end:
-        raise errors.InvalidDateRangeError(
-            f"Invalid date range: {raw!r}; start ({start}) is after end ({end})"
-        )
+        raise errors.InvalidDateRangeError(f"Invalid date range: {raw!r}; start ({start}) is after end ({end})")
     return start, end
 
 
@@ -1086,9 +1165,7 @@ def _validate_station(station: str) -> None:
         )
 
 
-def _prompt_unblock_narrative(
-    station: str, on_date: str, *, reader: Callable[[str], str] = input
-) -> str:
+def _prompt_unblock_narrative(station: str, on_date: str, *, reader: Callable[[str], str] = input) -> str:
     """Story 8.2's scaled-down "operator prompted for the unblock
     narrative" AC: a plain text prompt (rather than the original webhook
     flow's draft-then-fill-in-later shape), reusing ``auth.confirm``'s
@@ -1097,9 +1174,7 @@ def _prompt_unblock_narrative(
     aborting the whole update -- an operator without a narrative yet should
     still be able to record the rest of the ship."""
     try:
-        answer = reader(
-            f"Unblock narrative for {station} on {on_date} (blank for none): "
-        )
+        answer = reader(f"Unblock narrative for {station} on {on_date} (blank for none): ")
     except EOFError:
         return ""
     return answer.strip()
@@ -1125,15 +1200,11 @@ def _run_progress_update(args: argparse.Namespace, station: str) -> None:
     progress from explicit flags -- the scoped-down interpretation of the
     original AC's "extracted from bmad-loop journal / CI webhook payload"
     (see ``docs/dreams/herald-moments-2-4-live-backend.md``)."""
-    auth.require_operator_role(
-        auth.resolve_auth_context(), action="herald progress --update"
-    )
+    auth.require_operator_role(auth.resolve_auth_context(), action="herald progress --update")
     _validate_station(station)
     on_date = datetime.now(UTC).date().isoformat()
     narrative = (
-        args.unblock_narrative
-        if args.unblock_narrative is not None
-        else _prompt_unblock_narrative(station, on_date)
+        args.unblock_narrative if args.unblock_narrative is not None else _prompt_unblock_narrative(station, on_date)
     )
     record = progress.upsert(
         _progress_path(),
@@ -1142,9 +1213,7 @@ def _run_progress_update(args: argparse.Namespace, station: str) -> None:
         shipped_capabilities=list(args.shipped) if args.shipped else [],
         compute_hours=args.compute_hours if args.compute_hours is not None else 0.0,
         token_spend=args.token_spend if args.token_spend is not None else 0,
-        wall_clock_hours=(
-            args.wall_clock_hours if args.wall_clock_hours is not None else 0.0
-        ),
+        wall_clock_hours=(args.wall_clock_hours if args.wall_clock_hours is not None else 0.0),
         unblock_narrative=narrative,
     )
     if args.json:
@@ -1176,12 +1245,8 @@ def _run_progress_list(args: argparse.Namespace) -> None:
     summary per record otherwise."""
     if args.station is not None:
         _validate_station(args.station)
-    date_range = (
-        _parse_date_range(args.date_range) if args.date_range is not None else None
-    )
-    records = progress.list_records(
-        _progress_path(), station=args.station, date_range=date_range
-    )
+    date_range = _parse_date_range(args.date_range) if args.date_range is not None else None
+    records = progress.list_records(_progress_path(), station=args.station, date_range=date_range)
     if args.json:
         for record in records:
             print(json.dumps(asdict(record)))
@@ -1246,17 +1311,9 @@ def _run_success_create(args: argparse.Namespace) -> int:
                 )
             )
         if args.evidence_metrics:
-            evidence.append(
-                claims.Evidence(
-                    type="metrics", url=args.evidence_metrics, label="metrics"
-                )
-            )
+            evidence.append(claims.Evidence(type="metrics", url=args.evidence_metrics, label="metrics"))
         if args.evidence_adoption:
-            evidence.append(
-                claims.Evidence(
-                    type="adoption", url=args.evidence_adoption, label="adoption"
-                )
-            )
+            evidence.append(claims.Evidence(type="adoption", url=args.evidence_adoption, label="adoption"))
         if args.evidence_notice:
             # Verify the referenced notice actually exists before citing it
             # -- `notices.get_notice` raises `errors.HeraldError` (caught by
@@ -1323,17 +1380,12 @@ def _run_success_publish(args: argparse.Namespace) -> int:
     claims_path = _success_claims_path(args)
 
     def operation() -> None:
-        auth.require_operator_role(
-            auth.resolve_auth_context(), action="herald success publish"
-        )
+        auth.require_operator_role(auth.resolve_auth_context(), action="herald success publish")
         if not auth.confirm("Continue? [Y/n] "):
             print("aborted: publish not confirmed")
             return
         claim = claims.publish(claims_path, args.claim_id, thesis=args.thesis)
-        print(
-            f"published claim {claim.id} for {claim.project_name} "
-            f"on {claim.shipped_date}"
-        )
+        print(f"published claim {claim.id} for {claim.project_name} on {claim.shipped_date}")
 
     return dispatch(operation)
 
@@ -1346,9 +1398,7 @@ def _run_success_list(args: argparse.Namespace) -> int:
     claims_path = _success_claims_path(args)
 
     def operation() -> None:
-        date_range = (
-            _parse_date_range(args.date_range) if args.date_range is not None else None
-        )
+        date_range = _parse_date_range(args.date_range) if args.date_range is not None else None
         status = getattr(args, "status", None)
         results = claims.list_claims(claims_path, status=status, date_range=date_range)
         if args.json:
@@ -1407,9 +1457,7 @@ def _run_success_validate(args: argparse.Namespace) -> int:
 
     def operation() -> None:
         if bool(args.claim_id) == bool(args.all):
-            raise errors.HeraldError(
-                "herald success validate: supply exactly one of <claim-id> or --all"
-            )
+            raise errors.HeraldError("herald success validate: supply exactly one of <claim-id> or --all")
         if args.all:
             updated = claims.revalidate_all(claims_path)
             print(f"revalidated evidence for {len(updated)} claim(s)")
@@ -1417,10 +1465,7 @@ def _run_success_validate(args: argparse.Namespace) -> int:
             claim = claims.revalidate(claims_path, args.claim_id)
             broken = sum(1 for item in claim.evidence if not item.validated)
             total = len(claim.evidence)
-            print(
-                f"revalidated claim {claim.id}: {total - broken}/{total} "
-                f"evidence link(s) valid"
-            )
+            print(f"revalidated claim {claim.id}: {total - broken}/{total} evidence link(s) valid")
 
     return dispatch(operation)
 
@@ -1430,9 +1475,7 @@ def _notice_summary_line(notice: notices.Notice) -> str:
     return f"[{notice.status}] {notice.type}/{notice.component}{deadline}"
 
 
-def _notice_to_json(
-    notice: notices.Notice, *, referenced_by: list[claims.Claim] = ()
-) -> dict:
+def _notice_to_json(notice: notices.Notice, *, referenced_by: list[claims.Claim] = ()) -> dict:
     return {
         "type": notice.type,
         "component": notice.component,
@@ -1450,8 +1493,7 @@ def _notice_to_json(
         "close_reason": notice.close_reason,
         "revisions": list(notice.revisions),
         "referenced_by_claims": [
-            {"id": c.id, "project_name": c.project_name, "status": c.status}
-            for c in referenced_by
+            {"id": c.id, "project_name": c.project_name, "status": c.status} for c in referenced_by
         ],
     }
 
@@ -1466,17 +1508,9 @@ def _run_notice_list(args: argparse.Namespace) -> int:
     status = getattr(args, "status", None)
 
     def operation() -> None:
-        date_range = (
-            _parse_date_range(args.date_range) if args.date_range is not None else None
-        )
-        str_date_range = (
-            (date_range[0].isoformat(), date_range[1].isoformat())
-            if date_range is not None
-            else None
-        )
-        results = notices.list_notices(
-            Path.cwd(), category=category, date_range=str_date_range, status=status
-        )
+        date_range = _parse_date_range(args.date_range) if args.date_range is not None else None
+        str_date_range = (date_range[0].isoformat(), date_range[1].isoformat()) if date_range is not None else None
+        results = notices.list_notices(Path.cwd(), category=category, date_range=str_date_range, status=status)
         if args.json:
             print(json.dumps([_notice_to_json(n) for n in results]))
         elif not results:
@@ -1495,9 +1529,7 @@ def _run_notice_author(args: argparse.Namespace) -> int:
     usual ``Continue? [Y/n]`` confirmation before anything is written."""
 
     def operation() -> None:
-        auth.require_operator_role(
-            auth.resolve_auth_context(), action="herald notice author"
-        )
+        auth.require_operator_role(auth.resolve_auth_context(), action="herald notice author")
         notice_type = args.notice_type or _prompt(
             f"type ({'/'.join(notices.NOTICE_TYPES)})",
             validate=lambda v: v in notices.NOTICE_TYPES,
@@ -1506,11 +1538,7 @@ def _run_notice_author(args: argparse.Namespace) -> int:
         what = args.what or _prompt("what")
         why = args.why or _prompt("why")
         migration = args.migration or _prompt("migration")
-        deadline = (
-            args.deadline
-            if args.deadline
-            else _prompt("deadline (YYYY-MM-DD, optional)", required=False)
-        )
+        deadline = args.deadline if args.deadline else _prompt("deadline (YYYY-MM-DD, optional)", required=False)
         reason_link = args.reason_link
 
         if not auth.confirm("Continue? [Y/n] "):
@@ -1527,9 +1555,7 @@ def _run_notice_author(args: argparse.Namespace) -> int:
             reason_link=reason_link,
             publish=args.publish,
         )
-        print(
-            f"authored notice {notice.component!r} ({notice.status}) -> {notice.path}"
-        )
+        print(f"authored notice {notice.component!r} ({notice.status}) -> {notice.path}")
 
     return dispatch(operation)
 
@@ -1539,9 +1565,7 @@ def _run_notice_publish(args: argparse.Namespace) -> int:
     published, gated the same as ``notice author``."""
 
     def operation() -> None:
-        auth.require_operator_role(
-            auth.resolve_auth_context(), action="herald notice publish"
-        )
+        auth.require_operator_role(auth.resolve_auth_context(), action="herald notice publish")
         if not auth.confirm("Continue? [Y/n] "):
             print("aborted: notice not published")
             return
@@ -1596,9 +1620,7 @@ def _run_notice_close(args: argparse.Namespace) -> int:
     is available, else ``notices.UNKNOWN_OPERATOR``."""
 
     def operation() -> None:
-        context = auth.require_operator_role(
-            auth.resolve_auth_context(), action="herald notice close"
-        )
+        context = auth.require_operator_role(auth.resolve_auth_context(), action="herald notice close")
         if not auth.confirm("Continue? [Y/n] "):
             print("aborted: notice not closed")
             return
@@ -1619,9 +1641,7 @@ def _run_notice_archive(args: argparse.Namespace) -> int:
     one), gated the same as ``notice author``."""
 
     def operation() -> None:
-        auth.require_operator_role(
-            auth.resolve_auth_context(), action="herald notice archive"
-        )
+        auth.require_operator_role(auth.resolve_auth_context(), action="herald notice archive")
         old_component, new_component = args.rename
         if not auth.confirm(f"Redirect {old_component!r} -> {new_component!r}? [Y/n] "):
             print("aborted: redirect not recorded")
@@ -1659,9 +1679,7 @@ def _run_scheduler_run(args: argparse.Namespace) -> int:
 
     def operation() -> None:
         try:
-            result = scheduler.run_scheduled_jobs(
-                claims_path=claims_path, progress_path=progress_path, out_dir=out_dir
-            )
+            result = scheduler.run_scheduled_jobs(claims_path=claims_path, progress_path=progress_path, out_dir=out_dir)
         except OSError as exc:
             raise errors.HeraldError(f"scheduler run failed: {exc}") from exc
         if args.json:
@@ -1669,19 +1687,14 @@ def _run_scheduler_run(args: argparse.Namespace) -> int:
                 json.dumps(
                     {
                         "claims_checked": result.claims_checked,
-                        "broken_evidence_claim_ids": list(
-                            result.broken_evidence_claim_ids
-                        ),
+                        "broken_evidence_claim_ids": list(result.broken_evidence_claim_ids),
                         "records_aggregated": result.records_aggregated,
                         "snapshot_path": str(result.snapshot_path),
                     }
                 )
             )
             return
-        print(
-            f"progress: {result.records_aggregated} record(s) aggregated -> "
-            f"{result.snapshot_path}"
-        )
+        print(f"progress: {result.records_aggregated} record(s) aggregated -> {result.snapshot_path}")
         if result.broken_evidence_claim_ids:
             broken = ", ".join(result.broken_evidence_claim_ids)
             print(
@@ -1753,9 +1766,7 @@ def dispatch(operation: Callable[[], None], *, json_output: bool = False) -> int
         message = "".join(ch if ch.isprintable() else " " for ch in flat)
         if json_output:
             print(
-                json.dumps(
-                    {"tool": TOOL_NAME, "error": type(exc).__name__, "message": message}
-                ),
+                json.dumps({"tool": TOOL_NAME, "error": type(exc).__name__, "message": message}),
                 file=sys.stderr,
             )
         else:

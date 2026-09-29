@@ -6,10 +6,10 @@ import subprocess
 from pathlib import Path
 
 from pyforge.steward.upgrade import (
-    NATIVE_PATH_SPOT_CHECK_CATALOG,
     _BMAD_LOOP_UV_GIT_SPEC,
     _INSTALL_MATRIX_REL,
     _MANTICORE_CUSTOM_SOURCE_URL,
+    NATIVE_PATH_SPOT_CHECK_CATALOG,
     GateResult,
     build_prove_landed_report,
     format_prove_landed,
@@ -47,21 +47,15 @@ def _seed_matrix(repo: Path) -> Path:
     return matrix
 
 
-def _ok_runner(
-    argv: list[str] | tuple[str, ...], cwd: Path
-) -> subprocess.CompletedProcess[str]:
+def _ok_runner(argv: list[str] | tuple[str, ...], cwd: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(list(argv), 0, stdout="ok\n", stderr="")
 
 
 def _fail_one_runner(bad_token: str):
-    def runner(
-        argv: list[str] | tuple[str, ...], cwd: Path
-    ) -> subprocess.CompletedProcess[str]:
+    def runner(argv: list[str] | tuple[str, ...], cwd: Path) -> subprocess.CompletedProcess[str]:
         joined = " ".join(argv)
         code = 1 if bad_token in joined else 0
-        return subprocess.CompletedProcess(
-            list(argv), code, stdout="", stderr="boom" if code else ""
-        )
+        return subprocess.CompletedProcess(list(argv), code, stdout="", stderr="boom" if code else "")
 
     return runner
 
@@ -102,9 +96,7 @@ def test_catalog_covers_seven_matrix_classes_with_cited_argv():
         _MANTICORE_CUSTOM_SOURCE_URL,
         "--help",
     )
-    assert _MANTICORE_CUSTOM_SOURCE_URL == (
-        "https://github.com/bmad-code-org/bmad-manticore"
-    )
+    assert _MANTICORE_CUSTOM_SOURCE_URL == ("https://github.com/bmad-code-org/bmad-manticore")
     assert by_id["plugin-marketplace"].argv == ("npx", "skills", "add", "--help")
     assert by_id["uv-from-git"].argv == ("uv", "tool", "install", "--help")
     assert _BMAD_LOOP_UV_GIT_SPEC in by_id["uv-from-git"].citation
@@ -171,10 +163,7 @@ def test_advisory_fail_does_not_flip_cap5_verdict(tmp_path: Path):
     )
     assert report.verdict == "pass"
     assert all(g.ok for g in report.gates)
-    assert any(
-        s.class_id == "own-npx" and not s.ok and s.advisory
-        for s in report.native_spot_checks
-    )
+    assert any(s.class_id == "own-npx" and not s.ok and s.advisory for s in report.native_spot_checks)
     assert any("advisory" in n for n in report.notes)
     text = format_prove_landed(report, as_json=False)
     assert "Native path spot-checks (advisory)" in text
@@ -238,9 +227,7 @@ def test_catalog_argv_cited_in_tracked_install_matrix():
         elif entry.class_id == "installer-selection":
             assert "bmad-tea-install" in compact
         elif entry.class_id == "custom-source":
-            assert (
-                _MANTICORE_CUSTOM_SOURCE_URL in compact or "bmad-manticore" in compact
-            )
+            assert _MANTICORE_CUSTOM_SOURCE_URL in compact or "bmad-manticore" in compact
         elif entry.class_id == "plugin-marketplace":
             assert "skills add" in compact
         elif entry.class_id == "uv-from-git":
@@ -249,8 +236,8 @@ def test_catalog_argv_cited_in_tracked_install_matrix():
 
 def test_advisory_fail_keeps_cli_exit_ok(tmp_path: Path, monkeypatch, capsys):
     """DutyResult.ok / CLI exit must follow Epic 14 gates, not native spot-checks."""
-    from pyforge.steward.cli import EXIT_OK, main
     import pyforge.steward.upgrade as upgrade_mod
+    from pyforge.steward.cli import EXIT_OK, main
 
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -288,10 +275,7 @@ def test_advisory_fail_keeps_cli_exit_ok(tmp_path: Path, monkeypatch, capsys):
     payload = __import__("json").loads(capsys.readouterr().out)
     assert payload["verdict"] == "pass"
     assert "native_spot_checks" in payload
-    assert any(
-        s["class_id"] == "own-npx" and s["ok"] is False
-        for s in payload["native_spot_checks"]
-    )
+    assert any(s["class_id"] == "own-npx" and s["ok"] is False for s in payload["native_spot_checks"])
 
 
 def test_to_dict_includes_native_spot_checks(tmp_path: Path):

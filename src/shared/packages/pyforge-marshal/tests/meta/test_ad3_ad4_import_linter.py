@@ -18,6 +18,7 @@ pass the live check.
 
 from __future__ import annotations
 
+import importlib
 import re
 import shutil
 import subprocess
@@ -72,7 +73,9 @@ def test_ad3_harness_seam_contract_shape():
     assert set(contract["source_modules"]) == {
         "pyforge.marshal.cli",
         "pyforge.marshal.core",
-        "pyforge.marshal.coverage_gate",  # Story 19.3 / FR-131
+        # pyforge.marshal.coverage_gate (Story 19.3 / FR-131) removed
+        # 2026-09-20 (doctor Story 24.1, spec-coverage-gate-independence
+        # CAP-1): the evaluator moved to scripts/coverage_gate.py.
         "pyforge.marshal.dispatch_supervisor",
         "pyforge.marshal.dispatch_verify",  # Story 22.3 / FR-193 CAP-3
         "pyforge.marshal.dispatch_land",  # Story 22.4 / FR-193 CAP-4
@@ -121,14 +124,10 @@ def test_ad3_source_modules_cover_every_submodule_except_adapters():
         if entry.is_dir() and any(entry.rglob("*.py"))
     }
     top_level_modules = {
-        f"pyforge.marshal.{path.stem}"
-        for path in package_dir.glob("*.py")
-        if path.name != "__init__.py"
+        f"pyforge.marshal.{path.stem}" for path in package_dir.glob("*.py") if path.name != "__init__.py"
     }
     contract = _contract_forbidding("bmad_loop")
-    assert set(contract["source_modules"]) == (
-        subpackages | top_level_modules
-    ) - {"pyforge.marshal.adapters"}
+    assert set(contract["source_modules"]) == (subpackages | top_level_modules) - {"pyforge.marshal.adapters"}
 
 
 def test_root_package_init_carries_no_imports():
@@ -143,11 +142,7 @@ def test_root_package_init_carries_no_imports():
 
     init_path = _installed_package_dir() / "__init__.py"
     tree = ast.parse(init_path.read_text(encoding="utf-8"), filename=str(init_path))
-    imports = [
-        node.lineno
-        for node in ast.walk(tree)
-        if isinstance(node, (ast.Import, ast.ImportFrom))
-    ]
+    imports = [node.lineno for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom))]
     assert not imports, (
         f"pyforge/marshal/__init__.py imports at line(s) {imports} -- the "
         "root __init__ sits outside the AD-3 contract's source_modules and "
@@ -212,9 +207,19 @@ def test_engine_liveness_never_reads_engine_pid():
         body = body[1:]
     for node in ast.walk(ast.Module(body=body, type_ignores=[])):
         if isinstance(node, ast.Constant) and node.value == "engine.pid":
-            raise AssertionError(
-                f"engine_liveness reads engine.pid at line {node.lineno}"
-            )
+            raise AssertionError(f"engine_liveness reads engine.pid at line {node.lineno}")
+
+
+def test_old_coverage_gate_module_path_resolves_nowhere():
+    """Doctor Story 24.1 (spec-coverage-gate-independence CAP-1/CAP-2): the
+    evaluator and its thresholds moved to scripts/coverage_gate.py and
+    docs/governance/coverage-thresholds.toml, outside every
+    pyforge.<station> package. The old in-package import path must not
+    resolve -- a stale installed wheel silently re-exposing it would let a
+    station's own package quietly resume evaluating its own CI gate, the
+    exact defect this story exists to close."""
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("pyforge.marshal.coverage_gate")
 
 
 def test_lint_imports_passes_against_the_installed_package():
@@ -232,8 +237,7 @@ def test_lint_imports_passes_against_the_installed_package():
     )
     stdout = _strip_ansi(result.stdout)
     assert result.returncode == 0, (
-        f"lint-imports failed (exit {result.returncode}):\n"
-        f"stdout:\n{stdout}\nstderr:\n{_strip_ansi(result.stderr)}"
+        f"lint-imports failed (exit {result.returncode}):\nstdout:\n{stdout}\nstderr:\n{_strip_ansi(result.stderr)}"
     )
     # A loose regex, not an exact-substring match on the whole summary line:
     # a future import-linter release reformatting its report (spacing,
@@ -242,6 +246,4 @@ def test_lint_imports_passes_against_the_installed_package():
     # enforced by test_pyproject_declares_exactly_four_contracts (which
     # reads the config, not lint-imports' stdout) -- this only needs to
     # confirm nothing broke.
-    assert re.search(r"\b0\s+broken\b", stdout), (
-        f"expected a '0 broken' summary in lint-imports output:\n{stdout}"
-    )
+    assert re.search(r"\b0\s+broken\b", stdout), f"expected a '0 broken' summary in lint-imports output:\n{stdout}"

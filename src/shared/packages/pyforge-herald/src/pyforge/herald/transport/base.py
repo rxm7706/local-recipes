@@ -1,13 +1,32 @@
 """The ``DesignTransport`` port and the invariants every adapter upholds
-(Story 1.2, AD-3; widened to 9 tools by Story 3.1/3.2 -- see below).
+(Story 1.2, AD-3; widened to 9 tools by Story 3.1/3.2, to a 10th port
+method -- not a 10th remote tool -- by Story 23.4, and to an 11th tool,
+``list_projects``, by Story 23.1; see below).
 
 ``DesignTransport`` is the whole surface Herald is allowed to use against
 the ``claude-design`` server: the 8 tools the proven bridge loop needs
 (``bridge-protocol.md``) plus ``list_files``, added for CAP-3 (``herald
-deck status``). It is a ``@runtime_checkable typing.Protocol`` -- never an
-ABC -- mirroring ``pyforge.warden.interfaces``: adapters conform
+deck status``), plus ``fetch_rendered_bytes`` (Story 23.4), a port-only
+method that calls no new remote tool, plus ``list_projects`` (Story 23.1,
+CAP-1) -- see below. It is a ``@runtime_checkable typing.Protocol`` --
+never an ABC -- mirroring ``pyforge.warden.interfaces``: adapters conform
 structurally and are substituted by injection, so a test can pass a
 hand-written fake with no inheritance and no network.
+
+**An 11th port method, for a whole-account listing (Story 23.1, CAP-1).**
+``list_projects`` enumerates every Design project the signed-in account can
+see -- nothing in the other 10 methods can do that: ``list_files``
+enumerates one *already-known* project's own files, never the account's
+own project list, and every other method takes a ``project_id`` its caller
+must already have. CAP-1's account-wide reconciliation
+(``deck_pipeline.account_status``) needs the account's whole project set
+before it can classify any of it. Verified live 2026-09-18: the deployed
+tool takes no arguments and answers with a plain JSON array (a 20-project
+account returned all 20 in one call, with no wrapper object and no
+continuation field of any kind) -- so this port method calls it exactly
+once and returns whatever it says, with no artificial slicing of its own.
+If a future server version pages a larger account past some size, that is
+a wire-shape change this port has not yet been asked to handle.
 
 **Spine amendment (Story 1.2's own review, finding F10).** AD-3 originally
 fixed the port at exactly 8 tools, and widening it was explicitly out of
@@ -20,6 +39,15 @@ entirely, so no local record (``state.py``'s etags, the README registry)
 ever names its files. Story 3.1/3.2 is that "before Epic 3" amendment:
 ``list_files`` is the 9th port method, added here (the spine) rather than
 as an adapter-local addition, per F10's own recommendation.
+
+**A 10th port method with no 10th remote tool (Story 23.4, CAP-6).**
+``fetch_rendered_bytes`` exists to mechanize ``herald deck push --prove``'s
+read-back check. It calls the *same* remote tool ``render_preview`` already
+calls -- the port is widened because ``render_preview``'s own answer
+(``PreviewRef``) is structurally incapable of carrying the ``serve_url`` a
+byte-for-byte read-back needs (NFR-04; see this method's own docstring and
+the story spec's Design Notes for why widening the port beats widening
+``render_preview``), not because the server grew a new capability.
 
 Port method names are Herald's, not the server's. They coincide with the
 MCP tool names everywhere except one: the port's ``get_design_prompt`` maps
@@ -37,7 +65,12 @@ Three invariants live here rather than in any one adapter, because Story
   drops any ``serve_url`` key at any depth and replaces any string value
   containing the tokenized host with ``REDACTED``. The whole string is
   replaced, not the matching substring -- fail closed, and loudly, rather
-  than emit a plausible-looking half-scrubbed URL.
+  than emit a plausible-looking half-scrubbed URL. The port's own
+  ``render_preview`` method still never surfaces one -- ``fetch_rendered_bytes``
+  (Story 23.4) is the sole, narrow exception: it reads the raw answer
+  ``render_preview`` itself never sees (bypassing the ``_call_json`` step
+  that strips ``serve_url`` first), and uses the URL for exactly one GET
+  inside its own method body -- never returning, logging, or persisting it.
 * ``parse_read_response`` -- the ``read_file`` wire format. The server
   wraps the body in an ``untrusted-project-content`` tag carrying ``path``
   and ``etag`` attributes, HTML-entity-escapes the body so it cannot close
@@ -186,6 +219,24 @@ class ListedFile:
 
 
 @dataclass(frozen=True)
+class ProjectSummary:
+    """One project entry from ``list_projects`` (Story 23.1's 11th port
+    method): its id, display name, and durable ``claude.ai/design`` editor
+    url -- the whole shape CAP-1's account enumeration needs to classify a
+    live Design project and reconcile it against the registry.
+
+    Distinct from ``create_project``'s ``ProjectRef``: that dataclass has
+    no ``name`` field, and reusing it here would silently drop the one
+    field classification depends on -- ``deck_pipeline.account_status``
+    matches a project against the registry's exclusion table and the known
+    design-system names by exact ``name``, never a heuristic."""
+
+    project_id: str
+    name: str
+    url: str
+
+
+@dataclass(frozen=True)
 class PreviewRef:
     """A preview answer with **no ``serve_url`` field at all** (NFR-04).
 
@@ -216,16 +267,20 @@ class DesignTransport(Protocol):
     internally. All arguments are keyword-only, so an adapter can add a
     parameter without breaking positional call sites."""
 
-    def get_design_prompt(
-        self, *, design_system_id: str | None = None, project_id: str | None = None
-    ) -> str:
+    def get_design_prompt(self, *, design_system_id: str | None = None, project_id: str | None = None) -> str:
         """The mandatory pre-write design-system prompt (tool
         ``get_claude_design_prompt``)."""
         ...
 
-    def create_project(
-        self, *, name: str, design_system_id: str | None = None
-    ) -> ProjectRef: ...
+    def create_project(self, *, name: str, design_system_id: str | None = None) -> ProjectRef: ...
+
+    def list_projects(self) -> Sequence[ProjectSummary]:
+        """Enumerate every Design project the signed-in account can see
+        (tool ``list_projects``, Story 23.1's 11th port method -- see the
+        module docstring). ``deck_pipeline.account_status`` (CAP-1) is the
+        sole caller; no other capability in this port needs the whole
+        account's project list."""
+        ...
 
     def finalize_plan(
         self,
@@ -295,6 +350,20 @@ class DesignTransport(Protocol):
         it yet."""
         ...
 
+    def fetch_rendered_bytes(self, *, project_id: str, path: str) -> bytes:
+        """The currently-rendered bytes of ``path``, fetched via
+        ``render_preview``'s ``serve_url`` (Story 23.4's 10th port method --
+        see the module docstring's "10th port method, not a 10th remote
+        tool" note). The sanctioned, narrow exception to NFR-04: an adapter
+        reads ``serve_url`` from ``render_preview``'s raw answer (never from
+        the port's own ``render_preview`` method, whose ``PreviewRef`` has
+        no field for one) and uses it for exactly one GET inside this
+        method's own implementation -- the URL itself must never be
+        returned, logged, or persisted anywhere else. Used only by
+        ``deck_pipeline.push_exports``'s ``--prove`` read-back (CAP-6);
+        no other capability in this port needs it."""
+        ...
+
 
 def sanitize_payload(payload: Any) -> Any:
     """Recursively strip tokenized-preview material from a tool answer.
@@ -321,9 +390,7 @@ def sanitize_payload(payload: Any) -> Any:
     see ``McpTransport.read_file``."""
     if isinstance(payload, Mapping):
         return {
-            (sanitize_payload(key) if isinstance(key, str) else key): sanitize_payload(
-                value
-            )
+            (sanitize_payload(key) if isinstance(key, str) else key): sanitize_payload(value)
             for key, value in payload.items()
             if key != SERVE_URL_KEY
         }
@@ -394,14 +461,9 @@ def parse_read_response(text: str) -> FileRead:
         try:
             payload = json.loads(stripped)
         except json.JSONDecodeError as exc:
-            raise TransportCallError(
-                "read_file returned an unparseable JSON answer"
-            ) from exc
+            raise TransportCallError("read_file returned an unparseable JSON answer") from exc
         if not isinstance(payload, Mapping) or not payload.get("unchanged"):
-            raise TransportCallError(
-                "read_file returned a JSON answer that is not an "
-                "if_none_match short-circuit"
-            )
+            raise TransportCallError("read_file returned a JSON answer that is not an if_none_match short-circuit")
         etag = as_text(payload.get("etag"))
         if not etag:
             # The etag is the whole point of the short-circuit: the caller
@@ -409,8 +471,7 @@ def parse_read_response(text: str) -> FileRead:
             # would silently turn `herald deck watch`'s cheap etag poll
             # into a full download every cycle, with nothing to see.
             raise TransportCallError(
-                "read_file answered an if_none_match short-circuit carrying "
-                "no etag; the wire contract moved"
+                "read_file answered an if_none_match short-circuit carrying no etag; the wire contract moved"
             )
         return FileRead(
             path=as_text(payload.get("path")),
@@ -421,18 +482,14 @@ def parse_read_response(text: str) -> FileRead:
 
     opening = _READ_OPEN_RE.search(text)
     if opening is None:
-        raise TransportCallError(
-            f"read_file returned no <{_READ_TAG}> wrapper to parse"
-        )
+        raise TransportCallError(f"read_file returned no <{_READ_TAG}> wrapper to parse")
     # The FIRST close tag after the opening is always the right one: the
     # server entity-escapes the body, so the body cannot contain a literal
     # close tag. Searching from the end instead would swallow a trailer
     # that merely mentions the tag into the file content.
     close_at = text.find(_READ_CLOSE, opening.end())
     if close_at < 0:
-        raise TransportCallError(
-            f"read_file returned no <{_READ_TAG}> wrapper to parse"
-        )
+        raise TransportCallError(f"read_file returned no <{_READ_TAG}> wrapper to parse")
     attributes = dict(_ATTR_RE.findall(opening.group(1)))
     first_line, last_line, total_lines = _parse_window(attributes)
     body = text[opening.end() : close_at]
@@ -466,16 +523,10 @@ def _is_leaf_etag_map(value: Any) -> bool:
     """``leaf_if_match`` maps every leaf under a folder destination to its
     own etag, so an empty map preconditions nothing and a non-string value
     preconditions the wrong thing."""
-    return (
-        isinstance(value, Mapping)
-        and bool(value)
-        and all(_is_etag(item) for item in value.values())
-    )
+    return isinstance(value, Mapping) and bool(value) and all(_is_etag(item) for item in value.values())
 
 
-def require_conditional(
-    tool: str, files: Sequence[Mapping[str, Any]], *, allow_leaf: bool
-) -> None:
+def require_conditional(tool: str, files: Sequence[Mapping[str, Any]], *, allow_leaf: bool) -> None:
     """FR-24: refuse an unconditional write before any network call.
 
     Lives here, not in one adapter, because Story 1.3's
@@ -491,8 +542,7 @@ def require_conditional(
     ``AttributeError``."""
     if not files:
         raise UnconditionalWriteError(
-            f"{tool}: no file entries to write (FR-24); an empty write "
-            f"would report success without writing anything"
+            f"{tool}: no file entries to write (FR-24); an empty write would report success without writing anything"
         )
     keys = ("if_match", "leaf_if_match") if allow_leaf else ("if_match",)
     for index, entry in enumerate(files):
@@ -501,9 +551,7 @@ def require_conditional(
                 f"{tool}: entry {index} is a {type(entry).__name__}, not a "
                 f"mapping, so it declares no etag precondition (FR-24)"
             )
-        if _is_etag(entry.get("if_match")) or (
-            allow_leaf and _is_leaf_etag_map(entry.get("leaf_if_match"))
-        ):
+        if _is_etag(entry.get("if_match")) or (allow_leaf and _is_leaf_etag_map(entry.get("leaf_if_match"))):
             continue
         subject = entry.get("dest") or entry.get("path") or f"entry {index}"
         wanted = " or ".join(repr(key) for key in keys)

@@ -31,9 +31,7 @@ from pyforge.core.hooks import (
 
 DEPLOY_PROFILE_HOOK_SPEC_NAME = "pyforge.steward.deploy_profile"
 DEPLOY_PROFILE_OWNER = "steward"
-DEPLOY_PROFILE_HOOK_SPEC = HookSpec(
-    name=DEPLOY_PROFILE_HOOK_SPEC_NAME, owner=DEPLOY_PROFILE_OWNER
-)
+DEPLOY_PROFILE_HOOK_SPEC = HookSpec(name=DEPLOY_PROFILE_HOOK_SPEC_NAME, owner=DEPLOY_PROFILE_OWNER)
 
 PLUGIN_HARNESS = "harness"
 PLUGIN_SPLUNK = "splunk"
@@ -100,10 +98,7 @@ class DeployProfilePlugin:
         if self.plugin_id in backends:
             backend = backends[self.plugin_id]
             if not callable(backend):
-                raise PluginError(
-                    f"backends[{self.plugin_id!r}] must be callable, "
-                    f"got {type(backend).__name__}"
-                )
+                raise PluginError(f"backends[{self.plugin_id!r}] must be callable, got {type(backend).__name__}")
             backend(context)
         _record_plugin(context, self.plugin_id)
         return _continue_around(context)
@@ -168,9 +163,7 @@ def select_deploy_profile_plugin(
     same spec and a distinct ``plugin_id`` is selected without a steward
     fork.
     """
-    registry = (
-        registry if registry is not None else default_deploy_profile_registry()
-    )
+    registry = registry if registry is not None else default_deploy_profile_registry()
     for plugin in registry.plugins:
         if plugin.hook_spec != DEPLOY_PROFILE_HOOK_SPEC_NAME:
             continue
@@ -205,19 +198,13 @@ def run_golden_path(
     }
     unknown = enabled_ids - known
     if unknown:
-        raise PluginError(
-            f"unknown deploy-profile plugin: {sorted(unknown)!r}"
-        )
+        raise PluginError(f"unknown deploy-profile plugin: {sorted(unknown)!r}")
     for plugin_id in DEFAULT_DEPLOY_PROFILE_IDS:
         if plugin_id not in enabled_ids:
             continue
         plugin = select_deploy_profile_plugin(plugin_id, registry=reg)
         plugin.call("around", ctx)
-    extra_enabled = sorted(
-        plugin_id
-        for plugin_id in enabled_ids
-        if plugin_id not in DEFAULT_DEPLOY_PROFILE_IDS
-    )
+    extra_enabled = sorted(plugin_id for plugin_id in enabled_ids if plugin_id not in DEFAULT_DEPLOY_PROFILE_IDS)
     for plugin_id in extra_enabled:
         plugin = select_deploy_profile_plugin(plugin_id, registry=reg)
         plugin.call("around", ctx)

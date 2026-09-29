@@ -5,7 +5,10 @@ from __future__ import annotations
 import pytest
 
 from pyforge.steward.dashboard.declarations import (
-    _MAX_RETENTION_DAYS, AccessDeclaration, AuditRetention, TrustedIngress,
+    _MAX_RETENTION_DAYS,
+    AccessDeclaration,
+    AuditRetention,
+    TrustedIngress,
 )
 
 
@@ -68,9 +71,7 @@ def test_trusted_ingress_rejects_a_bare_string_for_addresses():
     type at construction time, not discovered as a live trust-boundary leak.
     """
     with pytest.raises(TypeError, match="addresses"):
-        TrustedIngress(
-            addresses="10.0.0.1", identity_header="X-Forwarded-User", role_header="X-Forwarded-Role"
-        )
+        TrustedIngress(addresses="10.0.0.1", identity_header="X-Forwarded-User", role_header="X-Forwarded-Role")
 
 
 def test_trusted_ingress_rejects_a_non_latin1_header_name():
@@ -90,16 +91,12 @@ def test_trusted_ingress_rejects_a_non_string_address():
     became "refuse every request", with no diagnostic anywhere.
     """
     with pytest.raises(TypeError, match=r"addresses\[0\]"):
-        TrustedIngress(
-            addresses=(b"10.0.0.1",), identity_header="X-Forwarded-User", role_header="X-Forwarded-Role"
-        )
+        TrustedIngress(addresses=(b"10.0.0.1",), identity_header="X-Forwarded-User", role_header="X-Forwarded-Role")
 
 
 def test_trusted_ingress_rejects_an_empty_address_element():
     with pytest.raises(ValueError, match=r"addresses\[1\]"):
-        TrustedIngress(
-            addresses=("10.0.0.1", ""), identity_header="X-Forwarded-User", role_header="X-Forwarded-Role"
-        )
+        TrustedIngress(addresses=("10.0.0.1", ""), identity_header="X-Forwarded-User", role_header="X-Forwarded-Role")
 
 
 def test_trusted_ingress_rejects_a_non_string_header_name():
@@ -133,12 +130,12 @@ def test_access_declaration_rejects_a_non_string_access_column():
 @pytest.mark.parametrize(
     "bad_header",
     [
-        "X-Forwarded-User ",     # trailing space out of a config file / env var
-        " X-Forwarded-User",     # leading space
-        "X-Forwarded-User:",     # the colon, pasted along with the name
-        "X-Forwarded\nUser",     # embedded newline
-        "X Forwarded User",      # spaces instead of hyphens
-        "X-Forwarded-User-🚀",   # non-ASCII (the pass-2 latin-1 case, subsumed)
+        "X-Forwarded-User ",  # trailing space out of a config file / env var
+        " X-Forwarded-User",  # leading space
+        "X-Forwarded-User:",  # the colon, pasted along with the name
+        "X-Forwarded\nUser",  # embedded newline
+        "X Forwarded User",  # spaces instead of hyphens
+        "X-Forwarded-User-🚀",  # non-ASCII (the pass-2 latin-1 case, subsumed)
     ],
 )
 def test_trusted_ingress_rejects_a_header_name_that_is_not_an_http_token(bad_header):
@@ -154,9 +151,7 @@ def test_trusted_ingress_rejects_a_header_name_that_is_not_an_http_token(bad_hea
     from config files and environment variables.
     """
     with pytest.raises(ValueError, match="identity_header"):
-        TrustedIngress(
-            addresses=("10.0.0.1",), identity_header=bad_header, role_header="X-Forwarded-Role"
-        )
+        TrustedIngress(addresses=("10.0.0.1",), identity_header=bad_header, role_header="X-Forwarded-Role")
 
 
 def test_trusted_ingress_rejects_the_same_name_for_both_headers():

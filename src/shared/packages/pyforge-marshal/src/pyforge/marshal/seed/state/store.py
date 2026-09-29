@@ -241,8 +241,7 @@ class _StrictLoader(yaml.SafeLoader):
                 raise yaml.constructor.ConstructorError(
                     "while constructing a mapping",
                     node.start_mark,
-                    "found a YAML merge key '<<' -- this file is tool-written and"
-                    " never contains anchors or merges",
+                    "found a YAML merge key '<<' -- this file is tool-written and never contains anchors or merges",
                     key_node.start_mark,
                 )
             authored_key_nodes.append(key_node)
@@ -320,9 +319,7 @@ def _require_str_tuple(value: Any, *, context: str) -> tuple[str, ...]:
 
 def _require_object_list(value: Any, *, context: str) -> list[dict[str, Any]]:
     if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
-        raise ValueError(
-            f"{context}: expected a list of JSON objects, got {_abbreviate(value)}"
-        )
+        raise ValueError(f"{context}: expected a list of JSON objects, got {_abbreviate(value)}")
     return value
 
 
@@ -374,8 +371,7 @@ class RegionSpanRecord:
         that turns it into ``StateInvalid``."""
         if not (0 <= self.start <= self.end):
             raise ValueError(
-                "RegionSpanRecord: requires 0 <= start <= end, got"
-                f" start={self.start!r}, end={self.end!r}"
+                f"RegionSpanRecord: requires 0 <= start <= end, got start={self.start!r}, end={self.end!r}"
             )
 
     def to_json_dict(self) -> dict[str, Any]:
@@ -465,9 +461,7 @@ class ManagedArtifact:
             "class": self.artifact_class,
             "body_sha": self.body_sha,
             "inserted_region_span": (
-                None
-                if self.inserted_region_span is None
-                else self.inserted_region_span.to_json_dict()
+                None if self.inserted_region_span is None else self.inserted_region_span.to_json_dict()
             ),
         }
 
@@ -493,9 +487,7 @@ class ManagedArtifact:
                 _require_key(data, "body_sha", context="ManagedArtifact"),
                 context="ManagedArtifact.body_sha",
             ),
-            inserted_region_span=(
-                None if raw_span is None else RegionSpanRecord.from_json_dict(raw_span)
-            ),
+            inserted_region_span=(None if raw_span is None else RegionSpanRecord.from_json_dict(raw_span)),
         )
 
 
@@ -614,16 +606,12 @@ class SeedState:
                 " ModelVersion.parse() so the value round-trips equal"
             )
 
-        _reject_duplicates(
-            tuple(artifact.id for artifact in self.managed), context="SeedState.managed[].id"
-        )
+        _reject_duplicates(tuple(artifact.id for artifact in self.managed), context="SeedState.managed[].id")
         _reject_duplicates(
             tuple(artifact.path for artifact in self.managed),
             context="SeedState.managed[].path",
         )
-        _reject_duplicates(
-            tuple(artifact.id for artifact in self.legacy), context="SeedState.legacy[].id"
-        )
+        _reject_duplicates(tuple(artifact.id for artifact in self.legacy), context="SeedState.legacy[].id")
 
         # `ModelVersion.parse` raises `InvalidVersionError`, itself a
         # `ValueError` -- the same class every other check here raises.
@@ -648,13 +636,8 @@ class SeedState:
         ``tuple("claude")`` would silently become six one-character
         "agents"."""
         value = getattr(self, name)
-        if not isinstance(value, (list, tuple)) or not all(
-            isinstance(item, item_type) for item in value
-        ):
-            raise ValueError(
-                f"SeedState.{name}: expected a sequence of {item_type.__name__}, got"
-                f" {_abbreviate(value)}"
-            )
+        if not isinstance(value, (list, tuple)) or not all(isinstance(item, item_type) for item in value):
+            raise ValueError(f"SeedState.{name}: expected a sequence of {item_type.__name__}, got {_abbreviate(value)}")
         object.__setattr__(self, name, tuple(value))
 
     def to_json_dict(self) -> dict[str, Any]:
@@ -689,9 +672,7 @@ class SeedState:
         raw_managed = _require_object_list(
             _require_key(data, "managed", context="SeedState"), context="SeedState.managed"
         )
-        raw_legacy = _require_object_list(
-            _require_key(data, "legacy", context="SeedState"), context="SeedState.legacy"
-        )
+        raw_legacy = _require_object_list(_require_key(data, "legacy", context="SeedState"), context="SeedState.legacy")
         raw_model_version = _require_str(
             _require_key(data, "model_version", context="SeedState"),
             context="SeedState.model_version",
@@ -713,16 +694,10 @@ class SeedState:
                 _require_key(data, "last_update", context="SeedState"),
                 context="SeedState.last_update",
             ),
-            mode=_require_str(
-                _require_key(data, "mode", context="SeedState"), context="SeedState.mode"
-            ),
-            agents=_require_str_tuple(
-                _require_key(data, "agents", context="SeedState"), context="SeedState.agents"
-            ),
+            mode=_require_str(_require_key(data, "mode", context="SeedState"), context="SeedState.mode"),
+            agents=_require_str_tuple(_require_key(data, "agents", context="SeedState"), context="SeedState.agents"),
             managed=tuple(ManagedArtifact.from_json_dict(item) for item in raw_managed),
-            skips=_require_str_tuple(
-                _require_key(data, "skips", context="SeedState"), context="SeedState.skips"
-            ),
+            skips=_require_str_tuple(_require_key(data, "skips", context="SeedState"), context="SeedState.skips"),
             legacy=tuple(LegacyArtifact.from_json_dict(item) for item in raw_legacy),
             migrations_applied=_require_str_tuple(
                 _require_key(data, "migrations_applied", context="SeedState"),
@@ -785,8 +760,7 @@ def _opt_out_pattern() -> re.Pattern[str]:
         return re.compile(pattern)
     except (KeyError, TypeError, re.error) as exc:
         raise InternalError(
-            "the packaged seed-state schema has no usable "
-            "properties.opted_out.items.pattern",
+            "the packaged seed-state schema has no usable properties.opted_out.items.pattern",
             remedy="reinstall pyforge-marshal; the packaged schema.json is corrupt",
         ) from exc
 
@@ -922,9 +896,7 @@ def _require_state(state: SeedState | None, *, context: str) -> SeedState:
     return state
 
 
-def _without_region_claim(
-    state: SeedState, artifact_id: str, region: str
-) -> tuple[ManagedArtifact, ...]:
+def _without_region_claim(state: SeedState, artifact_id: str, region: str) -> tuple[ManagedArtifact, ...]:
     """``state.managed`` minus the entry whose ``id`` is ``artifact_id`` AND
     whose ``inserted_region_span.name`` is ``region`` -- both conditions,
     never either alone.
@@ -1212,10 +1184,7 @@ def read_state(repo_root: Path) -> SeedState | None:
     except OSError as exc:
         raise StateInvalid(
             f"could not read {path}: {exc}",
-            remedy=(
-                "check the file's permissions and that .marshal/seed-state.yml is a"
-                " regular file, then re-run"
-            ),
+            remedy=("check the file's permissions and that .marshal/seed-state.yml is a regular file, then re-run"),
         ) from exc
 
     try:
@@ -1318,10 +1287,7 @@ def write_state(state: SeedState, *, repo_root: Path, never_write: fs.NeverWrite
     except ValidationError as exc:
         raise StateInvalid(
             f"refusing to write invalid seed state -- {_validation_detail(exc)}",
-            remedy=(
-                "correct the SeedState field the message names before calling"
-                " write_state (nothing was written)"
-            ),
+            remedy=("correct the SeedState field the message names before calling write_state (nothing was written)"),
         ) from exc
 
     body = yaml.safe_dump(
@@ -1351,8 +1317,7 @@ def seed_model_version() -> str:
         return metadata.version("pyforge-marshal")
     except metadata.PackageNotFoundError as exc:
         raise InternalError(
-            "the pyforge-marshal distribution is not installed, so its version"
-            " cannot be recorded in seed state",
+            "the pyforge-marshal distribution is not installed, so its version cannot be recorded in seed state",
             remedy=(
                 "install pyforge-marshal into the running environment (e.g."
                 " `pixi run -e pyforge-marshal ...`) rather than importing it from a"
@@ -1376,9 +1341,7 @@ def utc_timestamp(moment: datetime | None = None) -> str:
     if moment is None:
         return datetime.now(UTC).strftime(_TIMESTAMP_FORMAT)
     if moment.tzinfo is None or moment.tzinfo.utcoffset(moment) is None:
-        raise ValueError(
-            f"utc_timestamp requires a timezone-aware datetime, got naive {moment!r}"
-        )
+        raise ValueError(f"utc_timestamp requires a timezone-aware datetime, got naive {moment!r}")
     return moment.astimezone(UTC).strftime(_TIMESTAMP_FORMAT)
 
 

@@ -24,7 +24,7 @@ argv = [
   "{prompt}",
   "--allow-all-tools",
 ]
-fallback_bin_dirs = [".pixi/envs/local-recipes/bin"]
+fallback_bin_dirs = [".pixi/envs/pyforge-guild/bin"]  # Story 46.12 (spec-pyforge-marshal CAP-263): only pyforge-guild exists at runtime (headroom-ai / the wire wrapper are Guild-feature deps)
 authcheck_note ="No cheap non-interactive auth probe in CLI 1.0.80 (no auth subcommand); auth rides GitHub credentials and a failure surfaces at session start in session.log."
 verified = true
 notes = "Verified 2026-08-27: authenticated via GitHub credentials, smoke-tested -p --allow-all-tools shape (COPILOT-OK, exit 0). Same-day later re-probe reached the service but failed rc=1 'You have no quota' -- an account-quota condition, not an argv defect; nothing non-interactive pre-detects it (see authcheck_note), it surfaces in session.log."

@@ -54,9 +54,7 @@ def test_duplicate_long_form_rows_do_not_double_count(parquet_table):
     packages = models.build_packages_model(parquet_table(_packages_df(), "pkg"), now_unix=NOW)
     pm = models.build_package_maintainers_model(parquet_table(pm_dupe, "pm"))
     join = models.join_packages_by_maintainer(packages, pm)
-    res = join.query(
-        dimensions=["maintainer"], measures=["packages.downloads_total"]
-    ).execute()
+    res = join.query(dimensions=["maintainer"], measures=["packages.downloads_total"]).execute()
     downloads = {r["maintainer"]: r["packages.downloads_total"] for _, r in res.iterrows()}
     # alice ⋈ {a(100), b(200)} — a is duplicated in the long form but must sum to 300,
     # NOT 400 (no double-count from the dupe row).
@@ -91,9 +89,7 @@ def test_maintainer_scoped_downloads_is_a_declared_join(parquet_table):
 
     got = {
         r["maintainer"]: int(r["packages.downloads_total"])
-        for _, r in join.query(
-            dimensions=["maintainer"], measures=["packages.downloads_total"]
-        ).execute().iterrows()
+        for _, r in join.query(dimensions=["maintainer"], measures=["packages.downloads_total"]).execute().iterrows()
     }
 
     # INDEPENDENT anchor: the raw-SQL JOIN consumers write today, in pandas.
@@ -131,9 +127,7 @@ def test_maintainer_with_no_packages_and_package_with_no_maintainer(parquet_tabl
     downloads land under it are asserted below (Reviewer-B NIT: the earlier "asserted by
     absence" claim was inaccurate — the group is present with a NULL value).
     """
-    pm_df = pd.DataFrame(
-        {"conda_name": ["a", "orphanpkg_has_no_maint"], "maintainer": ["alice", None]}
-    )
+    pm_df = pd.DataFrame({"conda_name": ["a", "orphanpkg_has_no_maint"], "maintainer": ["alice", None]})
     # 'zzz' maintains nothing that exists in packages.
     pm_df = pd.concat(
         [pm_df, pd.DataFrame({"conda_name": ["ghost"], "maintainer": ["zzz"]})],
@@ -145,9 +139,7 @@ def test_maintainer_with_no_packages_and_package_with_no_maintainer(parquet_tabl
 
     # a maintainer (zzz) whose only package is absent from `packages` yields NULL
     # downloads on a left join — never a fabricated 0 attributed to a real package.
-    res = join.query(
-        dimensions=["maintainer"], measures=["packages.downloads_total"]
-    ).execute()
+    res = join.query(dimensions=["maintainer"], measures=["packages.downloads_total"]).execute()
     downloads = {r["maintainer"]: r["packages.downloads_total"] for _, r in res.iterrows()}
     assert int(downloads["alice"]) == 100  # alice ⋈ a(100) only, in this frame
     # zzz's package 'ghost' is not in packages → its downloads sum is NULL, not 100.

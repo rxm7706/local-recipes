@@ -2,7 +2,8 @@
 
 This module is the FR-21 prove-or-kill spike made permanent. It talks to
 ``https://api.anthropic.com/v1/design/mcp`` with the ``mcp`` SDK's
-``streamablehttp_client``, authenticating with the OAuth access token the
+``streamable_http_client`` (renamed from ``streamablehttp_client`` in mcp
+2.x -- Story 21.12), authenticating with the OAuth access token the
 Claude Code CLI already stored for ``/design-login``. Proven live on
 2026-07-25 from a plain, non-interactive Python process: ``initialize``
 answered, ``list_tools`` listed all 8 port tools, and
@@ -26,7 +27,7 @@ keeps no session-scoped state Herald depends on. ``plan_token`` and the
 ``if_match`` / ``if_none_match`` etags are explicit parameters on every
 later call. A persistent session would need a background event loop plus a
 single owning task (anyio cancel scopes forbid entering and exiting
-``streamablehttp_client`` from different tasks) -- real concurrency
+``streamable_http_client`` from different tasks) -- real concurrency
 machinery and a new dependency -- to save one initialize round-trip on
 commands that make a handful of calls. Recorded in ``deferred-work.md`` as
 an available optimization if ``herald deck watch`` ever needs it.
@@ -59,7 +60,9 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
+
+import httpx2
 
 from ..errors import (
     AuthError,
@@ -73,6 +76,7 @@ from .base import (
     PlanHandle,
     PreviewRef,
     ProjectRef,
+    ProjectSummary,
     ToolCaller,
     ToolResult,
     as_optional_text,
@@ -119,6 +123,23 @@ _PLAN_SCOPES = ("paths", "project")
 # named constant so the divergence is greppable rather than a literal
 # buried in one method body.
 GET_DESIGN_PROMPT_TOOL = "get_claude_design_prompt"
+
+_FETCH_TIMEOUT_SECONDS = 30.0
+"""``fetch_rendered_bytes``'s bounded-GET timeout (Story 23.4, CAP-6) --
+generous enough for the largest export (an infographic-deck PPTX) without
+hanging indefinitely on a stalled connection."""
+
+
+@runtime_checkable
+class _RenderedBytesFetcher(Protocol):
+    """The injectable low-level GET seam for ``fetch_rendered_bytes`` --
+    mirrors ``evidence.py``'s ``_HttpClient`` convention (duck-typed, not an
+    ABC) so a test never has to reach the network: the package's own
+    ``deny_network`` autouse fixture would fail any test that forgot to
+    inject one. The real default is the ``httpx2`` module itself, which
+    already exposes a module-level ``get`` with this exact shape."""
+
+    def get(self, url: str, *, timeout: float, follow_redirects: bool) -> Any: ...
 
 
 @dataclass(frozen=True)
@@ -167,15 +188,12 @@ def resolve_design_credential(
         path = Path(override) if override else _default_credentials_path()
 
     if not path.is_file():
-        raise AuthError(
-            f"no stored Claude Design credential at {path} -- {_REMEDIATION}"
-        )
+        raise AuthError(f"no stored Claude Design credential at {path} -- {_REMEDIATION}")
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise AuthError(
-            f"could not read the stored Claude Design credential at {path} "
-            f"({type(exc).__name__}) -- {_REMEDIATION}"
+            f"could not read the stored Claude Design credential at {path} ({type(exc).__name__}) -- {_REMEDIATION}"
         ) from exc
 
     block = payload.get(DESIGN_OAUTH_KEY) if isinstance(payload, Mapping) else None
@@ -183,9 +201,7 @@ def resolve_design_credential(
         raise AuthError(f"{path} has no {DESIGN_OAUTH_KEY!r} block -- {_REMEDIATION}")
     token = block.get("accessToken")
     if not isinstance(token, str) or not token:
-        raise AuthError(
-            f"{path} has no {DESIGN_OAUTH_KEY}.accessToken -- {_REMEDIATION}"
-        )
+        raise AuthError(f"{path} has no {DESIGN_OAUTH_KEY}.accessToken -- {_REMEDIATION}")
 
     # Anything that is not a finite number is treated as "no declared
     # expiry" rather than a hard failure: the server is the real authority
@@ -199,13 +215,11 @@ def resolve_design_credential(
     if isinstance(raw_expiry, (int, float)) and not isinstance(raw_expiry, bool):
         try:
             expires_at = int(raw_expiry)
-        except (ValueError, OverflowError):
+        except ValueError, OverflowError:
             expires_at = None
     credential = DesignCredential(access_token=token, expires_at_ms=expires_at)
     if credential.is_expired():
-        raise AuthError(
-            f"the stored Claude Design credential in {path} expired -- {_REMEDIATION}"
-        )
+        raise AuthError(f"the stored Claude Design credential in {path} expired -- {_REMEDIATION}")
     return credential
 
 
@@ -282,7 +296,11 @@ class McpTransport:
     ``caller`` is the injectable low-level seam -- omit it for the real SDK
     session, pass a fake to exercise marshalling with no network.
     ``credential`` is resolved lazily on first real call, so constructing a
-    transport never touches the filesystem."""
+    transport never touches the filesystem. ``http_client`` (Story 23.4) is
+    the same injectable-seam convention applied to
+    ``fetch_rendered_bytes``'s one bounded GET -- omit it for the real
+    ``httpx2`` module, pass a fake to exercise that method with no
+    network."""
 
     def __init__(
         self,
@@ -290,6 +308,7 @@ class McpTransport:
         caller: ToolCaller | None = None,
         credential: DesignCredential | None = None,
         url: str = DESIGN_MCP_URL,
+        http_client: _RenderedBytesFetcher | None = None,
     ) -> None:
         # The endpoint is the one place the bearer token leaves this
         # process, so it may not be downgraded to cleartext by a caller
@@ -304,12 +323,11 @@ class McpTransport:
         self._caller = caller
         self._credential = credential
         self._url = url
+        self._http_client = http_client
 
-    # --- the 9 port methods -------------------------------------------
+    # --- the 11 port methods --------------------------------------------
 
-    def get_design_prompt(
-        self, *, design_system_id: str | None = None, project_id: str | None = None
-    ) -> str:
+    def get_design_prompt(self, *, design_system_id: str | None = None, project_id: str | None = None) -> str:
         arguments: dict[str, Any] = {}
         if design_system_id is not None:
             arguments["design_system_id"] = design_system_id
@@ -317,9 +335,7 @@ class McpTransport:
             arguments["project_id"] = project_id
         return self._call_text(GET_DESIGN_PROMPT_TOOL, arguments)
 
-    def create_project(
-        self, *, name: str, design_system_id: str | None = None
-    ) -> ProjectRef:
+    def create_project(self, *, name: str, design_system_id: str | None = None) -> ProjectRef:
         arguments: dict[str, Any] = {"name": name}
         if design_system_id is not None:
             arguments["design_system_id"] = design_system_id
@@ -342,8 +358,7 @@ class McpTransport:
             # writes empty that authorizes nothing, and every later write
             # fails at the server with no hint that the typo was the cause.
             raise TransportCallError(
-                f"finalize_plan: unknown scope {scope!r}; expected "
-                f"{' or '.join(repr(name) for name in _PLAN_SCOPES)}"
+                f"finalize_plan: unknown scope {scope!r}; expected {' or '.join(repr(name) for name in _PLAN_SCOPES)}"
             )
         arguments: dict[str, Any] = {"project_id": project_id}
         if scope == "project":
@@ -374,8 +389,7 @@ class McpTransport:
             raw_etags = {}
         if not isinstance(raw_etags, Mapping):
             raise TransportCallError(
-                f"claude-design finalize_plan returned base_etags as "
-                f"{type(raw_etags).__name__}, expected an object"
+                f"claude-design finalize_plan returned base_etags as {type(raw_etags).__name__}, expected an object"
             )
         etags = {str(key): as_text(value) for key, value in raw_etags.items()}
         plan_token = as_text(payload.get("plan_token"))
@@ -384,9 +398,7 @@ class McpTransport:
             # explicit `plan_token: ""` on every later write rather than
             # omitted, so the grant fails at the server instead of falling
             # back to the interactive path.
-            raise TransportCallError(
-                "claude-design finalize_plan returned no plan_token"
-            )
+            raise TransportCallError("claude-design finalize_plan returned no plan_token")
         return PlanHandle(
             plan_token=plan_token,
             base_etags=MappingProxyType(etags),
@@ -476,9 +488,7 @@ class McpTransport:
         return parse_read_response(self._raw_text("read_file", arguments))
 
     def render_preview(self, *, project_id: str, path: str) -> PreviewRef:
-        payload = self._call_json(
-            "render_preview", {"project_id": project_id, "path": path}
-        )
+        payload = self._call_json("render_preview", {"project_id": project_id, "path": path})
         return PreviewRef(
             open_url=as_text(payload.get("open_url")),
             expires_at=as_optional_text(payload.get("expires_at")),
@@ -491,22 +501,16 @@ class McpTransport:
             raw_files = []
         if not isinstance(raw_files, Sequence) or isinstance(raw_files, (str, bytes)):
             raise TransportCallError(
-                f"claude-design list_files returned files as "
-                f"{type(raw_files).__name__}, expected a list"
+                f"claude-design list_files returned files as {type(raw_files).__name__}, expected a list"
             )
         files: list[ListedFile] = []
         for entry in raw_files:
             if not isinstance(entry, Mapping):
                 raise TransportCallError(
-                    f"claude-design list_files returned a non-object file "
-                    f"entry ({type(entry).__name__})"
+                    f"claude-design list_files returned a non-object file entry ({type(entry).__name__})"
                 )
             raw_size = entry.get("size")
-            size = (
-                raw_size
-                if isinstance(raw_size, int) and not isinstance(raw_size, bool)
-                else None
-            )
+            size = raw_size if isinstance(raw_size, int) and not isinstance(raw_size, bool) else None
             files.append(
                 ListedFile(
                     path=as_text(entry.get("path")),
@@ -515,6 +519,76 @@ class McpTransport:
                 )
             )
         return files
+
+    def list_projects(self) -> Sequence[ProjectSummary]:
+        """Story 23.1's 11th port method (CAP-1). Verified live 2026-09-18:
+        the deployed tool takes no arguments and answers with a plain JSON
+        array, never the ``{"key": [...]}`` wrapper ``list_files`` uses --
+        so this cannot go through ``_call_json`` (it requires a ``Mapping``
+        top level, which a bare array is not). ``sanitize_payload`` still
+        runs over the parsed answer, the same defence in depth every other
+        JSON-shaped answer in this class gets."""
+        text = self._raw_text("list_projects", {})
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise TransportCallError("claude-design list_projects returned an unparseable answer") from exc
+        payload = sanitize_payload(payload)
+        if not isinstance(payload, Sequence) or isinstance(payload, (str, bytes)):
+            raise TransportCallError(f"claude-design list_projects returned {type(payload).__name__}, expected a list")
+        projects: list[ProjectSummary] = []
+        for entry in payload:
+            if not isinstance(entry, Mapping):
+                raise TransportCallError(
+                    f"claude-design list_projects returned a non-object project entry ({type(entry).__name__})"
+                )
+            projects.append(
+                ProjectSummary(
+                    project_id=as_text(entry.get("id")),
+                    name=as_text(entry.get("name")),
+                    url=as_text(entry.get("url")),
+                )
+            )
+        return projects
+
+    def fetch_rendered_bytes(self, *, project_id: str, path: str) -> bytes:
+        """Story 23.4's narrow NFR-04 exception: parse ``render_preview``'s
+        raw answer directly (via ``_raw_text``, never ``_call_json``, which
+        already strips ``serve_url`` before ``render_preview``'s own body
+        ever sees it), issue exactly one bounded GET against the URL it
+        names, and return the fetched bytes unmodified -- the URL itself
+        never leaves this method's own frame.
+
+        Raises ``TransportCallError`` naming ``path`` -- but never the URL
+        -- on an unparseable ``render_preview`` answer, a missing
+        ``serve_url``, or a failed GET (mirrors ``_raw_text``'s sanitized
+        error path)."""
+        text = self._raw_text("render_preview", {"project_id": project_id, "path": path})
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise TransportCallError(
+                "claude-design render_preview returned an unparseable answer for its raw read-back"
+            ) from exc
+        if not isinstance(payload, Mapping):
+            raise TransportCallError(
+                f"claude-design render_preview returned {type(payload).__name__}, expected an object"
+            )
+        serve_url = payload.get("serve_url")
+        if not isinstance(serve_url, str) or not serve_url:
+            raise TransportCallError(f"claude-design render_preview returned no serve_url to read back {path!r}")
+        client = self._http_client if self._http_client is not None else httpx2
+        try:
+            response = client.get(serve_url, timeout=_FETCH_TIMEOUT_SECONDS, follow_redirects=True)
+            response.raise_for_status()
+            return response.content
+        except Exception as exc:  # any GET failure maps here
+            # `from None` (not `from exc`): the original exception's own
+            # message typically embeds the request URL (an httpx-style
+            # error), and keeping it as __cause__ would let a full
+            # traceback or `logger.exception` surface the serve_url despite
+            # this method's own "never logged ... anywhere else" guarantee.
+            raise TransportCallError(f"could not fetch rendered bytes for {path!r} ({type(exc).__name__})") from None
 
     # --- the call pipeline ---------------------------------------------
 
@@ -528,15 +602,9 @@ class McpTransport:
         quoting a ``serve_url`` back at us would otherwise reach stderr
         intact (NFR-04)."""
         caller = self._caller
-        result = (
-            caller.call_tool(tool, arguments)
-            if caller is not None
-            else self._call_via_mcp_sdk(tool, arguments)
-        )
+        result = caller.call_tool(tool, arguments) if caller is not None else self._call_via_mcp_sdk(tool, arguments)
         if result.is_error:
-            raise TransportCallError(
-                f"claude-design {tool} failed: {sanitize_payload(result.text)}"
-            )
+            raise TransportCallError(f"claude-design {tool} failed: {sanitize_payload(result.text)}")
         return result.text
 
     def _call_text(self, tool: str, arguments: Mapping[str, Any]) -> str:
@@ -565,14 +633,9 @@ class McpTransport:
         try:
             payload = json.loads(text)
         except json.JSONDecodeError as exc:
-            raise TransportCallError(
-                f"claude-design {tool} returned an unparseable answer"
-            ) from exc
+            raise TransportCallError(f"claude-design {tool} returned an unparseable answer") from exc
         if not isinstance(payload, Mapping):
-            raise TransportCallError(
-                f"claude-design {tool} returned {type(payload).__name__}, "
-                f"expected an object"
-            )
+            raise TransportCallError(f"claude-design {tool} returned {type(payload).__name__}, expected an object")
         return sanitize_payload(payload)
 
     def _call_via_mcp_sdk(self, tool: str, arguments: Mapping[str, Any]) -> ToolResult:
@@ -604,52 +667,54 @@ class McpTransport:
             credential = resolve_design_credential()
             self._credential = credential
         try:
-            return asyncio.run(
-                _call_tool_async(self._url, credential, tool, dict(arguments))
-            )
+            return asyncio.run(_call_tool_async(self._url, credential, tool, dict(arguments)))
         except ImportError as exc:
             # A broken install, not an outage. `mcp` is a declared runtime
             # dependency, so reporting this as "endpoint unreachable" would
             # send the operator to look at the network.
             raise TransportError(
                 f"the mcp SDK is not importable ({exc}); pyforge-herald "
-                f"declares mcp>=1.28.1 as a runtime dependency -- reinstall "
+                f"declares mcp>=2.2.0 as a runtime dependency -- reinstall "
                 f"the environment"
             ) from None
         except Exception as exc:  # noqa: BLE001 - every SDK failure maps here
             detail = _scrub_token(_describe(exc), credential.access_token)
             if _indicates_auth_failure(_flatten(exc), detail):
                 raise AuthError(
-                    f"claude-design rejected the stored credential calling "
-                    f"{tool}: {detail} -- {_REMEDIATION}"
+                    f"claude-design rejected the stored credential calling {tool}: {detail} -- {_REMEDIATION}"
                 ) from None
             raise TransportUnreachableError(
-                f"could not reach the claude-design MCP endpoint at "
-                f"{self._url} calling {tool}: {detail}"
+                f"could not reach the claude-design MCP endpoint at {self._url} calling {tool}: {detail}"
             ) from None
 
 
-async def _call_tool_async(
-    url: str, credential: DesignCredential, tool: str, arguments: dict[str, Any]
-) -> ToolResult:
+async def _call_tool_async(url: str, credential: DesignCredential, tool: str, arguments: dict[str, Any]) -> ToolResult:
     """Open a streamable-HTTP session, run one tool, close.
 
     The ``mcp`` import is lazy so importing this module costs nothing and a
     fake-caller test never needs the SDK installed. The SDK supplies
-    ``Accept`` and ``Mcp-Session-Id``; these three headers are ours."""
+    ``Accept`` and ``Mcp-Session-Id``; these three headers are ours.
+
+    Story 21.12: mcp 2.x dropped ``streamablehttp_client(url, headers=...)``
+    (a 3-tuple yield) for ``streamable_http_client(url, http_client=...)`` (a
+    2-tuple yield) -- headers now travel on a pre-configured ``httpx2``
+    client rather than as a kwarg, and passing one means we own its
+    lifecycle, hence the extra ``async with``."""
     from mcp import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
+    from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 
     headers = {
         "Authorization": f"Bearer {credential.access_token}",
         "anthropic-version": ANTHROPIC_VERSION,
         "X-Anthropic-Client": DESIGN_CLIENT_HEADER,
     }
-    async with streamablehttp_client(url, headers=headers) as (read_end, write_end, _):
-        async with ClientSession(read_end, write_end) as session:
-            await session.initialize()
-            result = await session.call_tool(tool, arguments)
-    text = "".join(
-        block.text for block in result.content if getattr(block, "type", "") == "text"
-    )
-    return ToolResult(text=text, is_error=bool(result.isError))
+    async with create_mcp_http_client(headers=headers) as http_client:
+        async with streamable_http_client(url, http_client=http_client) as (
+            read_end,
+            write_end,
+        ):
+            async with ClientSession(read_end, write_end) as session:
+                await session.initialize()
+                result = await session.call_tool(tool, arguments)
+    text = "".join(block.text for block in result.content if getattr(block, "type", "") == "text")
+    return ToolResult(text=text, is_error=bool(result.is_error))

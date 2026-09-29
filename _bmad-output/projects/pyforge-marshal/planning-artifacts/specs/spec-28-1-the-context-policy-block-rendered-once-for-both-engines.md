@@ -84,3 +84,16 @@ like any other, not a side channel. Layer names should match the companion's lay
 ## Spec Change Log
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `92043c0a29` (2026-09-01, "Merge pull request #1002 from rxm7706/dispatch/pyforge-marshal/28.19"); also `eb1dbd6632` (2026-09-01, "Merge pull request #1000 from rxm7706/dispatch/pyforge-marshal/28.18"); also `7b919d63c3` (2026-08-31, "Merge pull request #971 from rxm7706/dispatch/pyforge-marshal/28.15"). Ledger row `28-1-the-context-policy-block-rendered-once-for-both-engines: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-19-missing-spec-escalates-never-idle-with-backlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `scripts/fleet_picture.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_fleet_picture_missing_spec.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_hotfix.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_status.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -36,9 +36,7 @@ def _member_run_dependencies() -> dict[str, object]:
 def test_member_pixi_run_dependencies_contain_no_pip_prefixes():
     run_deps = _member_run_dependencies()
     pip_like = [
-        name
-        for name in run_deps
-        if isinstance(name, str) and (name.startswith("pip:") or name.startswith("pypi:"))
+        name for name in run_deps if isinstance(name, str) and (name.startswith("pip:") or name.startswith("pypi:"))
     ]
     assert not pip_like, f"pip/pypi run-dependencies forbidden for air-gap lean env: {pip_like}"
 

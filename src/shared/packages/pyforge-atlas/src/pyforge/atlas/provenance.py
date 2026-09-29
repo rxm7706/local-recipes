@@ -112,7 +112,7 @@ def resolve_for_file(path: str | os.PathLike[str]) -> ProvenanceInfo:
         )
     try:
         return ProvenanceInfo(kind="file-mtime", build_stamp=_iso(st.st_mtime))
-    except (ValueError, OverflowError, OSError):
+    except ValueError, OverflowError, OSError:
         # Same backstop `_resolve_row_fetched_at` already applies to its own
         # `_iso` calls. It matters MORE here: `build_dashboard` calls this
         # outside `load_with_provenance`'s advisory-failure guard, so an
@@ -129,9 +129,7 @@ def _datetime_to_epoch_seconds(col: Any) -> Any:
     (datetime64[ns]/[us]/[s], tz-aware or naive-as-UTC all collapse
     correctly). NOT ``to_numeric``, which on datetime64 yields raw µs/ns
     integers the ms-guard's single division cannot bring into range."""
-    return (
-        pd.to_datetime(col, utc=True) - pd.Timestamp("1970-01-01", tz="UTC")
-    ).dt.total_seconds()
+    return (pd.to_datetime(col, utc=True) - pd.Timestamp("1970-01-01", tz="UTC")).dt.total_seconds()
 
 
 def _resolve_row_fetched_at(loaded_value: Any, column: str) -> ProvenanceInfo:
@@ -190,14 +188,11 @@ def _resolve_row_fetched_at(loaded_value: Any, column: str) -> ProvenanceInfo:
             build_stamp=_iso(float(seconds.min())),
             build_stamp_newest=_iso(float(seconds.max())),
         )
-    except (ValueError, OverflowError, OSError):
+    except ValueError, OverflowError, OSError:
         return ProvenanceInfo(
             kind="unavailable",
             build_stamp=None,
-            reason=(
-                f"{column!r} values out of convertible range "
-                f"(min {seconds.min()!r}, max {seconds.max()!r})"
-            ),
+            reason=(f"{column!r} values out of convertible range (min {seconds.min()!r}, max {seconds.max()!r})"),
         )
 
 

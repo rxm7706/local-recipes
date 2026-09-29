@@ -1,4 +1,5 @@
 """Story A1 `kedro-test` gate: scaffold-layout invariants (AC-5/AC-6/AC-7)."""
+
 import tomllib
 from pathlib import Path
 
@@ -29,6 +30,4 @@ def test_pyproject_declares_hatchling_and_gate_extra():
     # AC-7: Kedro resolves the dotted namespace package.
     assert pyproject["tool"]["kedro"]["package_name"] == "pyforge.atlas"
     # AC-6: wheel target ships the shared pyforge namespace root.
-    assert pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == [
-        "src/pyforge"
-    ]
+    assert pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == ["src/pyforge"]

@@ -23,6 +23,7 @@ from pyforge.core.hooks import (
     SecondVerdictError,
     publish_verdict,
 )
+
 from pyforge.warden.engines import registered_engines
 from pyforge.warden.hooks import (
     ENTRY_POINT_GROUP,
@@ -121,9 +122,7 @@ def test_core_dummy_does_not_run_on_the_pr_gate():
         (p for p in registry.plugins if isinstance(p, DummyPlugin)),
         None,
     )
-    assert dummy is not None, (
-        "core dummy must actually load so [] is not a vacuous empty registry"
-    )
+    assert dummy is not None, "core dummy must actually load so [] is not a vacuous empty registry"
     before = list(dummy.calls)
     invoke_pr_gate(PR_GATE_SCAN, "before", {}, registry=registry)
     assert dummy.calls == before

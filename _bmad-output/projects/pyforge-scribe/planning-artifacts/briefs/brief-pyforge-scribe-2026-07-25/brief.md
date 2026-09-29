@@ -2,7 +2,7 @@
 title: "Product Brief: pyforge-scribe"
 status: "complete"
 created: "2026-07-25"
-updated: "2026-08-26"
+updated: "2026-09-19"   # RE-STAMPED 2026-09-19: research→brief edge (multi-harness-instruction-surface-2026-09-19.md); § Currency reconciliation — 2026-09-19 appended, scope folded in.
 inputs:
   - "docs/dreams/pyforge-scribe.md"
   - "docs/dreams/team-memory.md"
@@ -129,3 +129,34 @@ Grounding: the three 2026-08-08 research refreshes in `../research/` (market, do
 **The Vision section's guild integration became real.** Scribe now holds all five station tiers on the Canopy host: CLI (`scribe`, plus unified `pyforge scribe`), portal (`/stations/scribe/` submits one recall query via `PortalClient` only), MCP service face (`POST /stations/scribe/mcp`), SKF domain skill (`.claude/skills/pyforge-scribe/`), and the `bmad-agent-scribe` persona — the eight-station five-tier roster was declared complete 2026-08-26 (strategy Epic 37.1, 40/40).
 
 **Still open, unchanged since the 2026-08-08 technical report:** the "nightly" compile has no scheduler (a capability, not yet a behavior), and `promote.py`'s retroactive adversarial review (RISK-1) remains unpaid.
+
+## Currency reconciliation — 2026-09-19
+
+*Chain-currency sweep: `research/multi-harness-instruction-surface-2026-09-19.md` (new that day)
+fired the `research→brief` edge against this brief's 2026-08-26 stamp.*
+
+**What the research changes about the problem.** "What the team knows, every agent and every
+session knows" was delivered to one harness: Claude Code imports `.claude/memory/MEMORY.md`; no
+other harness reached it, and Claude Code itself never loaded `AGENTS.md` (a `CLAUDE.md` exists and
+did not import it). The live docs of every harness the estate runs (Claude Code, Cursor, Gemini
+CLI / Antigravity, Copilot cloud agent + CLI, Devin, Codex, BMAD-METHOD) converge on one shape:
+**one canonical `AGENTS.md`, discovered natively or through a one-line per-harness pointer**, never
+copied per tool — the Copilot agent and Devin's Knowledge ingest every instruction file together, so
+copies multiply and contradict.
+
+**Scope folded in (Wave 3 — the instruction surface):**
+- `AGENTS.md` carries the cross-tool contract; `CLAUDE.md` `@AGENTS.md`; `.gemini/settings.json`;
+  `.vscode/settings.json`; per-tool files are addenda; a scribe meta-test is the gate
+  (`spec-pyforge-scribe` CAP-27, Story 19.1).
+- Team memory is reached through `AGENTS.md` and filled with `scribe capture`; the scribe core
+  package joins the `pyforge-guild` default so every sandbox can capture and recall (CAP-28,
+  Story 19.2).
+- Seeded for later (Dream entry 2026-09-19, items 4–10): root-file size discipline with nested
+  `AGENTS.md` per station; skills on the Agent Skills neutral path; transcript ingestion for
+  non-Claude harness logs; recall over the station MCP; pointer files in `governance-currency`;
+  per-spec surface baselines; Devin Playbooks / Copilot custom agents as dispatch and persona
+  analogues.
+
+**"Who this serves" widens accordingly:** the operator running concurrent BMAD projects now runs
+them across harnesses (three dispatch lanes on 2026-09-19 alone), and a hosted agent with a
+59-minute sandbox is a first-class reader of team memory.

@@ -1,0 +1,41 @@
+# PyForge's Frame conformance profile (steward Story 64.2, spec-pyforge-steward
+# CAP-6 (d)). Working draft Section 7: an implementation that conforms MUST publish
+# a profile stating its choice for every optional behavior. This is the profile of
+# the in-repo reader -- `python -m pyforge.steward.frames` (the preflight) -- which is
+# today the ONLY PyForge code that reads a Frame. Shape: frame-spec#29
+# spec/profiles/*.yaml, checked by `tools/validate_frame.py --check-profile` via
+# `pixi run -e pyforge-steward frame-upstream-check`.
+#
+# When a loader that puts a Frame into an agent's context lands (marshal-token-economy
+# `[context.wire]`), THIS FILE CHANGES FIRST: Section 9 requires the trust posture to
+# be declared here, never inferred (spec-pyforge-steward Constraint CAP-6).
+implementation: PyForge in-repo Frame preflight (pyforge.steward.frames)
+version: "2026.9.16"
+specification: draft-mcandrew-frame-spec-00
+encodings_read: [markdown]
+encodings_written: []
+resolves_composition: none
+version_selection: not applicable; resolves no composition, so no reference is ever selected among versions
+resolver_context: not applicable; the preflight checks that each station Frame's `inherits` names the Company Frame's identifier (`pyforge/company`) or a path-ref to it, but never loads the composed set
+reference_forms: []
+rule6_narrowings: {}
+non_repeatable: []
+additionally_required: [title, description, visibility, maintainer]
+identifier_minting: never; a Frame without an `identifier` is reported by the preflight and no identifier is derived for it. The nine tracked Frames are hand-minted as qualified-refs `pyforge/company` and `pyforge/<station>` (Section 5.3)
+visibility: declared intent only; not an access control. The preflight requires the element to be present and does not act on its value
+notes: >-
+  Rule 7 requires an implementation that resolves no composition to declare so,
+  and this profile is that declaration. Section 9 (Security Considerations): no
+  trust configuration exists yet -- the preflight reads only the nine tracked
+  files under docs/foundry/frames/ in this repository's git checkout, so the
+  source of every loaded Frame is the repository itself and git is its record.
+  Stated plainly because Section 9.1 requires it: this implementation trusts
+  every source it can reach, which is exactly one. No PyForge component loads a
+  Frame into a model's context today; the first one that does must revise this
+  profile before it lands (record the source beside the content; refuse sources
+  not configured as trusted; surface the composed set before loading).
+  `additionally_required` names model elements (`title` is spelled `name` in
+  the Markdown encoding; `identifier` is already mandatory; `type` is the
+  encoding's sentinel, not an element, and the encoding itself requires it):
+  the estate keeps every v0.2 reader accepting these documents, where the
+  draft alone would require only `type`.

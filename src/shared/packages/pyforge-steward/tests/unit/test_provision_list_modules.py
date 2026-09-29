@@ -26,9 +26,9 @@ import yaml
 
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.provision import (
-    ProvisionDuty,
     _SKIPPED_MODULES,
     _SUPPORTED_MODULES,
+    ProvisionDuty,
     format_module_states,
     module_install_states,
 )
@@ -250,9 +250,7 @@ def test_format_module_states_empty_json_is_an_empty_object():
 # ── ProvisionDuty / CLI dispatch ─────────────────────────────────────────
 
 
-def test_provision_list_modules_via_cli_reports_available_with_no_config_yaml(
-    tmp_path, monkeypatch, capsys
-):
+def test_provision_list_modules_via_cli_reports_available_with_no_config_yaml(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
 
     rc = main(["provision", "--list-modules"])
@@ -265,9 +263,7 @@ def test_provision_list_modules_via_cli_reports_available_with_no_config_yaml(
     assert "wds" not in out
 
 
-def test_provision_list_modules_via_cli_reports_installed_when_bmb_key_present(
-    tmp_path, monkeypatch, capsys
-):
+def test_provision_list_modules_via_cli_reports_installed_when_bmb_key_present(tmp_path, monkeypatch, capsys):
     _write_bmad_config(tmp_path, "bmb:\n  output_folder: skills\n")
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
 
@@ -289,9 +285,7 @@ def test_provision_list_modules_json_via_cli_emits_valid_json(tmp_path, monkeypa
     assert "wds" not in payload
 
 
-def test_provision_list_modules_json_on_malformed_config_yaml_still_emits_valid_json(
-    tmp_path, monkeypatch, capsys
-):
+def test_provision_list_modules_json_on_malformed_config_yaml_still_emits_valid_json(tmp_path, monkeypatch, capsys):
     """An error raised on `--list-modules`'s own path must honor `--json`."""
     _write_bmad_config(tmp_path, "bmb: [unterminated\n")
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
@@ -315,9 +309,7 @@ def test_provision_list_modules_non_mapping_config_yaml_via_cli_degrades_to_all_
     assert json.loads(capsys.readouterr().out) == _ALL_AVAILABLE
 
 
-def test_provision_list_modules_json_on_unreadable_encoding_still_emits_valid_json(
-    tmp_path, monkeypatch, capsys
-):
+def test_provision_list_modules_json_on_unreadable_encoding_still_emits_valid_json(tmp_path, monkeypatch, capsys):
     bmad_dir = tmp_path / "_bmad"
     bmad_dir.mkdir(parents=True)
     (bmad_dir / "config.yaml").write_bytes(b"bmb: \xff\xfe invalid utf8\n")

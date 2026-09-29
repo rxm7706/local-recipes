@@ -244,7 +244,7 @@ def _purl_ecosystem(purl: str) -> str:
     """Map a purl ``pkg:<type>/...`` to the matcher ecosystem (mirrors the shipped
     ``inventory_match.annotate_sbom`` classification)."""
     m = re.match(r"^pkg:([A-Za-z0-9.+-]+)/", purl or "")
-    t = (m.group(1).lower() if m else "")
+    t = m.group(1).lower() if m else ""
     return {"pypi": "pypi", "conda": "conda"}.get(t, "npm" if t == "npm" else t or "generic")
 
 
@@ -355,7 +355,11 @@ def parse_intake(
         if not isinstance(doc, dict):
             return {"format": detected, "deps": [], "passthrough": True}
         if detected == "cyclonedx":
-            return {"format": "cyclonedx", "deps": parse_cyclonedx(doc, filename or "sbom.cdx.json"), "passthrough": True}
+            return {
+                "format": "cyclonedx",
+                "deps": parse_cyclonedx(doc, filename or "sbom.cdx.json"),
+                "passthrough": True,
+            }
         return {"format": "spdx", "deps": parse_spdx(doc, filename or "sbom.spdx.json"), "passthrough": True}
     text = raw if isinstance(raw, str) else json.dumps(raw)
     parser = _TEXT_PARSERS.get(detected)

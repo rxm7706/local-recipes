@@ -192,3 +192,16 @@ worktree = 6491 passed / 1 failed, the failure being the pre-existing
 `test_skf_domain_skill::test_context_files_not_hand_edited` red on origin/main itself
 (outside this story's surface); scoped drain/dispatch subset 203/203. Landed by the
 dispatcher, marshal-native.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `741603efd8` (2026-08-27, "docs(marshal): 22.7 spec done + ledger -- dispatcher verification (review interrupted by spend limit)"); also `02d7f0bb1e` (2026-08-27, "feat(marshal): fleet-wide drain is a marshal-orchestrated mode (Story 22.7)"); also `5569f79b90` (2026-08-27, "docs(marshal): mint story 22.9 -- dispatch branch names its station (cross-station worktre"). Ledger row `22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

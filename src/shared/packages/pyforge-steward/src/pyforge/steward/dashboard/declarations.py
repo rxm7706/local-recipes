@@ -73,8 +73,7 @@ class AccessDeclaration:
     def __post_init__(self) -> None:
         if not isinstance(self.access_column, str):
             raise TypeError(
-                f"AccessDeclaration.access_column must be a string, got "
-                f"{type(self.access_column).__name__}"
+                f"AccessDeclaration.access_column must be a string, got {type(self.access_column).__name__}"
             )
         if not self.access_column.strip():
             raise ValueError(
@@ -206,10 +205,7 @@ class TrustedIngress:
             ("role_header", self.role_header),
         ):
             if not isinstance(header, str):
-                raise TypeError(
-                    f"TrustedIngress.{field_name} must be a string, got "
-                    f"{type(header).__name__}"
-                )
+                raise TypeError(f"TrustedIngress.{field_name} must be a string, got {type(header).__name__}")
         if not self.identity_header:
             raise ValueError(
                 "TrustedIngress.identity_header must not be empty — the "
@@ -217,8 +213,7 @@ class TrustedIngress:
             )
         if not self.role_header:
             raise ValueError(
-                "TrustedIngress.role_header must not be empty — the "
-                "middleware has no header to extract role from"
+                "TrustedIngress.role_header must not be empty — the middleware has no header to extract role from"
             )
         # Header NAME form, not just encodability (review pass 3). The
         # latin-1 check this replaces caught only non-latin-1 names; a name

@@ -151,9 +151,7 @@ class PixiTomlExtractor:
     def __init__(self, router: Router) -> None:
         self._router = router
 
-    def extract(
-        self, manifest_path: Path, manifest: ScannedManifest
-    ) -> tuple[Component, ...]:
+    def extract(self, manifest_path: Path, manifest: ScannedManifest) -> tuple[Component, ...]:
         text = read_bounded_text(
             manifest_path,
             manifest,
@@ -163,9 +161,7 @@ class PixiTomlExtractor:
         try:
             document = tomllib.loads(text)
         except tomllib.TOMLDecodeError as exc:
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: {exc}"
-            ) from exc
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {exc}") from exc
         components: list[Component] = []
         components += self._walk_conda_table(
             document.get("dependencies"),
@@ -206,17 +202,11 @@ class PixiTomlExtractor:
         if tables is None:
             return []
         if not isinstance(tables, dict):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: {prefix!r} must be "
-                "a table"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {prefix!r} must be a table")
         components: list[Component] = []
         for name, table in sorted(tables.items()):
             if not isinstance(table, dict):
-                raise UnparsableManifestError(
-                    f"unparsable manifest {manifest.path}: {prefix}.{name} "
-                    "must be a table"
-                )
+                raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {prefix}.{name} must be a table")
             components += self._walk_conda_table(
                 table.get("dependencies"),
                 generic_conda_section,
@@ -241,10 +231,7 @@ class PixiTomlExtractor:
         if table is None:
             return []
         if not isinstance(table, dict):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: {concrete_section} "
-                "must be a table"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {concrete_section} must be a table")
         # fail-loud gate: `route()`'s return is asserted, not just called for
         # its side effect, so a future `_ROUTES` edit that stops mapping this
         # (kind, section) to CONDA is caught HERE rather than silently
@@ -278,10 +265,7 @@ class PixiTomlExtractor:
         if table is None:
             return []
         if not isinstance(table, dict):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: {concrete_section} "
-                "must be a table"
-            )
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {concrete_section} must be a table")
         # fail-loud gate: see `_walk_conda_table`'s identical comment.
         ecosystem = self._router.route(manifest.kind, generic_section)
         assert ecosystem is Ecosystem.PYPI

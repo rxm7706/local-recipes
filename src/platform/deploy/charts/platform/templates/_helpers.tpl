@@ -318,6 +318,50 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
     secretKeyRef:
       name: {{ include "platform.existingSecretName" . | quote }}
       key: {{ required "redis.passwordSecretKey is required" .Values.redis.passwordSecretKey | quote }}
+{{- /* CAP-18 host assertion signing keypair -- optional: true so a pod
+       without them still boots; mint_assertion()/verify_assertion() raise
+       AssertionRefusedError until they're present (found running the CAP-3
+       attended CRC exercise, 2026-09-12: values.yaml's existingSecret
+       comment above has the full story). */}}
+- name: PYFORGE_ASSERTION_PRIVATE_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: PYFORGE_ASSERTION_PRIVATE_KEY
+      optional: true
+- name: PYFORGE_ASSERTION_PUBLIC_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: PYFORGE_ASSERTION_PUBLIC_KEY
+      optional: true
+{{- /* Story 50.3 / pap:AD-1's 2026-09-10 dated exception: object storage is
+       CONSUMED only, never self-hosted -- these three point at whatever
+       S3-compatible endpoint ops provisioned (production target: NetApp
+       StorageGRID), never a server this chart deploys itself. optional:
+       true for the same reason as the assertion keypair above: no feature
+       calls config.object_storage.object_storage_client() yet (that
+       module's own docstring calls this "future, story-by-story work"), so
+       a pod without them must still boot -- ImproperlyConfigured only
+       fires if/when something actually calls that function. */}}
+- name: OBJECT_STORAGE_ENDPOINT_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: OBJECT_STORAGE_ENDPOINT_URL
+      optional: true
+- name: OBJECT_STORAGE_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: OBJECT_STORAGE_ACCESS_KEY
+      optional: true
+- name: OBJECT_STORAGE_SECRET_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: OBJECT_STORAGE_SECRET_KEY
+      optional: true
 {{- if .Values.redis.external.enabled }}
 - name: REDIS_BROKER_URL
   value: {{ required "redis.external.brokerUrl is required when redis.external.enabled is true" .Values.redis.external.brokerUrl | quote }}
@@ -335,8 +379,10 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
 {{- end }}
 - name: MEDIA_ROOT
   value: {{ .Values.media.mountPath | quote }}
+{{- if .Values.sidecar.enabled }}
 - name: DBGPT_SIDECAR_BASE_URL
   value: {{ printf "http://%s:5670" (include "platform.dbgpt.fullname" .) | quote }}
+{{- end }}
 - name: MCP_HOST_SIDECAR_BASE_URL
   value: {{ printf "http://%s:8090" (include "platform.mcpHost.fullname" .) | quote }}
 - name: PYFORGE_FLAGS_PATH
@@ -361,7 +407,14 @@ profile computes issuer/JWKS from in-cluster Keycloak; BYO reads values.
 {{- if eq .Values.oidc.profile "bundled" }}
 {{- $issuerHost := required "keycloak.ingress.host is required when oidc.profile=bundled" .Values.keycloak.ingress.host }}
 {{- $issuer := printf "https://%s/realms/%s" $issuerHost .Values.keycloak.realm }}
-{{- $jwks := printf "http://%s:8080/realms/%s/protocol/openid-connect/certs" (include "platform.keycloak.fullname" .) .Values.keycloak.realm }}
+{{/*
+The full in-cluster Service FQDN (not the bare short name) so
+django_pyforge's JWKS verifier can recognize this as a same-cluster
+Service DNS name and allow the scheme to stay http:// -- Kubernetes'
+own CoreDNS is the sole authority for the .svc.cluster.local zone, so
+this is not a spoofable trust signal (see jwks.py's own comment).
+*/}}
+{{- $jwks := printf "http://%s.%s.svc.cluster.local:8080/realms/%s/protocol/openid-connect/certs" (include "platform.keycloak.fullname" .) .Release.Namespace .Values.keycloak.realm }}
 - name: COMPONENT_IDENTITY_CLAIM
   value: {{ .Values.oidc.identityClaim | quote }}
 - name: COMPONENT_GROUP_CLAIM
@@ -435,6 +488,34 @@ db/liquibase_update.py, not by composing the URL here (AD-12).
 {{- end }}
 
 {{/*
+spec-mcp-host-real-station-tools CAP-1: a station's real in-process MCP app
+(currently marshal only) needs django_pyforge's ORM against the SAME
+Postgres the web pod uses -- the app-role DML URL (never MIGRATION_DATABASE_URL;
+this sidecar only reads/writes RunState/McpHandle rows, it never migrates).
+DJANGO_SECRET_KEY is required by Django itself even though this sidecar
+serves no Django views; PYFORGE_ASSERTION_PUBLIC_KEY is optional (absent
+means every publish call is refused, matching the web pod's own posture).
+*/}}
+{{- define "platform.mcpHostEnv" -}}
+- name: DJANGO_SECRET_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: DJANGO_SECRET_KEY
+- name: DATABASE_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: DATABASE_URL
+- name: PYFORGE_ASSERTION_PUBLIC_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: PYFORGE_ASSERTION_PUBLIC_KEY
+      optional: true
+{{- end }}
+
+{{/*
 Story 26.4: directory mount (not subPath) so ConfigMap updates are visible
 to the FILE provider poll without a new process.
 */}}
@@ -462,12 +543,12 @@ in-cluster Services.
           kubernetes.io/metadata.name: {{ .Values.networkPolicy.dns.namespace | quote }}
       podSelector:
         matchLabels:
-          {{- toYaml .Values.networkPolicy.dns.podLabels | nindent 10 }}
+          {{ .Values.networkPolicy.dns.podLabelKey }}: {{ .Values.networkPolicy.dns.podLabelValue | quote }}
   ports:
     - protocol: UDP
-      port: 53
+      port: {{ .Values.networkPolicy.dns.port }}
     - protocol: TCP
-      port: 53
+      port: {{ .Values.networkPolicy.dns.port }}
 {{- end }}
 
 {{- define "platform.networkPolicy.egressToPostgres" -}}

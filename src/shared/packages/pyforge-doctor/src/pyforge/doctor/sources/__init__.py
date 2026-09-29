@@ -105,24 +105,17 @@ class SourceRegistration:
 
     def __post_init__(self) -> None:
         if not isinstance(self.source, Source):
-            raise ValueError(
-                f"source must be a models.Source member, got {self.source!r}"
-            )
+            raise ValueError(f"source must be a models.Source member, got {self.source!r}")
         if not self.subject_station or not self.subject_station.strip():
             raise ValueError(
-                f"{self.source!r}: subject_station must be a non-empty "
-                f"station name, got {self.subject_station!r}"
+                f"{self.source!r}: subject_station must be a non-empty station name, got {self.subject_station!r}"
             )
         if not self.owning_station or not self.owning_station.strip():
             raise ValueError(
-                f"{self.source!r}: owning_station must be a non-empty "
-                f"station name, got {self.owning_station!r}"
+                f"{self.source!r}: owning_station must be a non-empty station name, got {self.owning_station!r}"
             )
         if self.scope not in _VALID_SCOPES:
-            raise ValueError(
-                f"{self.source!r}: scope must be one of "
-                f"{sorted(_VALID_SCOPES)}, got {self.scope!r}"
-            )
+            raise ValueError(f"{self.source!r}: scope must be one of {sorted(_VALID_SCOPES)}, got {self.scope!r}")
 
     def to_json_dict(self) -> dict[str, str]:
         """Serialize to the plain-dict shape ``scripts/detectors.py`` and any
@@ -220,8 +213,10 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         owning_station="doctor",
     ),  # Story 6.4 -- ported from scripts/story_status_check.py; scope stays
     # "repo" per the original script's own DETECTOR declaration even though
-    # gather_story_status reads host state (~/.bmad-loops) -- preserve, don't
-    # redesign (see the story spec's Design Notes).
+    # gather_story_status reads the published plane FIRST (marshal Story 33.12
+    # re-pointed sources/marshal.py _harness_tasks/gather_story_status) and
+    # falls back to ~/.bmad-loops only when the plane is unreachable -- the
+    # CAP-17 retirement is landed, not merely scheduled.
     SourceRegistration(
         source=Source.CHAIN_COMPLETENESS,
         scope="repo",
@@ -472,6 +467,69 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 22.3 -- sources/general_docs_consistency.py. Human-facing
     # documentation identity (README vs skill-brief, AGENTS.md vs Dream);
     # WARN-only; fleet subject (general docs layer, not one station).
+    SourceRegistration(
+        source=Source.CAPABILITY_LEDGER,
+        scope="repo",
+        subject_station="steward",
+        owning_station="doctor",
+    ),  # Story 55.2 -- sources/capability_ledger.py. subject_station=
+    # "steward": A authors the tracked capability ledger; doctor judges it.
+    # A DISPATCH member; CAN FAIL (unclassified / undated A-only).
+    SourceRegistration(
+        source=Source.DOCS_SHELF_OCCUPANCY,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 23.7 -- sources/docs_shelf.py. Leftover-shelf path occupancy
+    # vs the docs/MAP.md allow-list (`_bmad-output/` root, air-gap cluster);
+    # fleet subject (the general docs layer, same rationale as
+    # GENERAL_DOCS_CONSISTENCY/PIXI_CURRENCY_LEDGER above), never FAIL.
+    SourceRegistration(
+        source=Source.CHAIN_SPRAWL,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 25.1 -- sources/one_chain.py. Dream-append-first enforced:
+    # new Dream file / Spec folder vs docs/governance/chain-sprawl-baseline.json
+    # (dated snapshot, only ever pruned); exemption list read from
+    # guild-roster.json `fold_exemptions`. Fleet subject: it grades every
+    # station's planning tree. CAN FAIL.
+    SourceRegistration(
+        source=Source.FR_WITHOUT_CAP,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 25.2 -- sources/one_chain.py. A PRD FR minted after the rule
+    # date cites a CAP that an open Spec under its station declares;
+    # docs/governance/fr-baseline.json is the pre-rule population. CAN FAIL.
+    SourceRegistration(
+        source=Source.DOCS_MAP_HYGIENE,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 30.1 (spec-pyforge-doctor CAP-83) -- sources/docs_map_hygiene.py.
+    # docs/MAP.md vs the four Diátaxis quadrants (docs/tutorials, how-to,
+    # reference, explanation) only. A MAP link to a missing page under docs/
+    # is FAIL; an unmapped quadrant page is WARN (warn-first). CAN FAIL.
+    SourceRegistration(
+        source=Source.LIVE_PROOF_SURFACE,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 26.1 (spec-pyforge-doctor CAP-77) -- sources/live_proof_surfaces.py.
+    # A touched surface catalogued in live-proof-surfaces.md (herald, scribe,
+    # atlas, warden, guild-cross-station) gets an advisory finding naming it;
+    # fleet subject (the catalog spans multiple stations, same rationale as
+    # GENERAL_DOCS_CONSISTENCY/DOCS_SHELF_OCCUPANCY above). Never FAIL.
+    SourceRegistration(
+        source=Source.DOCS_CURRENCY,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 30.2 (spec-pyforge-doctor CAP-84) -- sources/docs_currency.py.
+    # map-render / authored-page-stale / skill-dir-hygiene, beside
+    # DOCS_MAP_HYGIENE above; fleet subject (the general docs layer, same
+    # rationale as GENERAL_DOCS_CONSISTENCY/DOCS_SHELF_OCCUPANCY). Never FAIL.
 )
 
 
@@ -545,10 +603,7 @@ def degrade_on_exception(
                 source=source,
                 check=check,
                 status=DoctorStatus.WARN,
-                message=(
-                    f"{check} could not be evaluated here — "
-                    f"{exc.__class__.__name__}: {exc}"
-                ),
+                message=(f"{check} could not be evaluated here — {exc.__class__.__name__}: {exc}"),
                 evidence={"exception": exc.__class__.__name__},
             ),
         )

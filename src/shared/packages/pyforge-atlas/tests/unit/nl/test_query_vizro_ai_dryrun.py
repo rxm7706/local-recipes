@@ -28,8 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.atlas import nl
-from pyforge.atlas import semantic
+from pyforge.atlas import nl, semantic
 from pyforge.atlas.mcp import audit, server, tools
 from pyforge.atlas.nl import backend as nl_backend
 
@@ -64,15 +63,11 @@ def _mcp_tool_registrations(server_src: str) -> dict[str, str]:
     extra AND is immune to the ``tests/mcp`` package shadowing the real ``mcp`` SDK when
     pytest puts ``tests/`` on sys.path (building the live server would import the SDK)."""
     tree = ast.parse(server_src)
-    build = next(
-        n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "build_server"
-    )
+    build = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "build_server")
     reg: dict[str, str] = {}
     for fn in [n for n in ast.walk(build) if isinstance(n, ast.FunctionDef)]:
         decorated = any(
-            isinstance(d, ast.Call)
-            and isinstance(d.func, ast.Attribute)
-            and d.func.attr == "tool"
+            isinstance(d, ast.Call) and isinstance(d.func, ast.Attribute) and d.func.attr == "tool"
             for d in fn.decorator_list
         )
         if not decorated:
@@ -160,9 +155,7 @@ def test_resolver_reads_openai_base_url_from_env():
 
 
 def test_resolver_reads_anthropic_base_url_from_env():
-    cfg = nl_backend.resolve_backend(
-        {"ANTHROPIC_BASE_URL": "http://localhost:4141", "ANTHROPIC_API_KEY": "k"}
-    )
+    cfg = nl_backend.resolve_backend({"ANTHROPIC_BASE_URL": "http://localhost:4141", "ANTHROPIC_API_KEY": "k"})
     assert cfg is not None and cfg.provider == "anthropic"
     assert cfg.base_url == "http://localhost:4141"
 
@@ -193,9 +186,7 @@ def test_nl_source_has_no_url_literal_with_a_host(label, src):
     offending = [
         node.value
         for node in ast.walk(tree)
-        if isinstance(node, ast.Constant)
-        and isinstance(node.value, str)
-        and _URL_WITH_HOST.search(node.value)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and _URL_WITH_HOST.search(node.value)
     ]
     assert not offending, f"{label} contains hardcoded URL(s) with a host: {offending}"
 
@@ -219,13 +210,8 @@ def _call_root(func: ast.expr) -> str | None:
 
 
 def test_query_vizro_ai_tool_body_is_ad7_thin():
-    src = (
-        Path(tools.__file__).resolve().parent / "tools.py"
-    ).read_text(encoding="utf-8")
-    fn = next(
-        n for n in ast.parse(src).body
-        if isinstance(n, ast.FunctionDef) and n.name == "query_vizro_ai"
-    )
+    src = (Path(tools.__file__).resolve().parent / "tools.py").read_text(encoding="utf-8")
+    fn = next(n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name == "query_vizro_ai")
     roots = {_call_root(c.func) for c in ast.walk(fn) if isinstance(c, ast.Call)}
     # the ONLY call the body makes is into the nl seam (AD-7: no business logic inline)
     assert roots == {"_nl"}, f"query_vizro_ai body calls beyond the _nl seam: {roots}"
@@ -328,9 +314,5 @@ def test_configured_path_makes_no_live_llm_call_even_with_a_backend(monkeypatch)
 
 def test_unconfigured_reason_distinguishes_the_cases():
     assert "no model backend configured" in nl_backend.unconfigured_reason({})
-    assert "OPENAI_API_KEY is missing" in nl_backend.unconfigured_reason(
-        {"OPENAI_BASE_URL": "http://x.y/v1"}
-    )
-    assert "not a valid http(s) URL" in nl_backend.unconfigured_reason(
-        {"OPENAI_BASE_URL": "garbage"}
-    )
+    assert "OPENAI_API_KEY is missing" in nl_backend.unconfigured_reason({"OPENAI_BASE_URL": "http://x.y/v1"})
+    assert "not a valid http(s) URL" in nl_backend.unconfigured_reason({"OPENAI_BASE_URL": "garbage"})

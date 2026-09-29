@@ -260,7 +260,7 @@ def scan_transcripts(
         if matches is None:
             try:
                 matches, timed_out_line = _scan_one_file(fs.path, per_file_timeout_s)
-            except (OSError, UnicodeDecodeError):
+            except OSError, UnicodeDecodeError:
                 continue
             if timed_out_line is not None:
                 warnings.append(
@@ -272,10 +272,7 @@ def scan_transcripts(
                 new_cache[key] = {
                     "mtime_ns": fs.mtime_ns,
                     "size": fs.size,
-                    "matches": [
-                        {"line": m.line_number, "timestamp": m.timestamp, "text": m.text}
-                        for m in matches
-                    ],
+                    "matches": [{"line": m.line_number, "timestamp": m.timestamp, "text": m.text} for m in matches],
                 }
         raw_by_file[fs.path] = matches
 
@@ -344,9 +341,7 @@ def _select_within_caps(
     return sorted(kept, key=lambda fs: fs.path.name)
 
 
-def _scan_one_file(
-    jsonl_path: Path, per_file_timeout_s: float | None
-) -> tuple[list[_RawMatch], int | None]:
+def _scan_one_file(jsonl_path: Path, per_file_timeout_s: float | None) -> tuple[list[_RawMatch], int | None]:
     """Mine one transcript file for ALL marker-matched sentences (pre-dedup).
 
     Returns ``(matches, timed_out_at_line)`` -- the second element is
@@ -375,7 +370,7 @@ def _scan_one_file(
             continue
         try:
             entry = json.loads(stripped)
-        except (json.JSONDecodeError, ValueError):
+        except json.JSONDecodeError, ValueError:
             continue
         if not isinstance(entry, dict) or entry.get("type") != "assistant":
             continue
@@ -396,9 +391,7 @@ def _scan_one_file(
             for sentence in _split_sentences(block_text):
                 if not _matches_marker(sentence):
                     continue
-                matches.append(
-                    _RawMatch(line_number=line_number, timestamp=timestamp, text=sentence)
-                )
+                matches.append(_RawMatch(line_number=line_number, timestamp=timestamp, text=sentence))
 
     return matches, None
 
@@ -411,7 +404,7 @@ def _read_scan_cache(cache_path: Path | None) -> dict[str, dict]:
         return {}
     try:
         raw = json.loads(cache_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return {}
     if not isinstance(raw, dict) or raw.get("version") != _SCAN_CACHE_VERSION:
         return {}
@@ -440,7 +433,7 @@ def _matches_from_cache(entry: object, fs: _FileStat) -> list[_RawMatch] | None:
                     text=str(m["text"]),
                 )
             )
-    except (KeyError, TypeError, ValueError):
+    except KeyError, TypeError, ValueError:
         return None
     return out
 
@@ -452,9 +445,7 @@ def _write_scan_cache(cache_path: Path, files: dict[str, dict], warnings: list[s
     payload = {"version": _SCAN_CACHE_VERSION, "files": files}
     try:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
-        cache_path.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        cache_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     except (OSError, TypeError, ValueError) as exc:
         warnings.append(f"transcript scan cache not writable ({cache_path}): {exc}")
 
@@ -480,7 +471,7 @@ def _curated_sentences(memory_root: Path) -> list[str]:
         for md_path in md_paths:
             try:
                 record = parse_capture_file(md_path)
-            except (ValueError, OSError):
+            except ValueError, OSError:
                 continue
             sentences.extend(_normalize(s) for s in _split_sentences(record.text))
     return sentences

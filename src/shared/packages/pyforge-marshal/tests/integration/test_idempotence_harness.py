@@ -9,7 +9,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-import pytest
+from pyforge.marshal.seed.detect.inventory import classify
 from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
     ArtifactClass,
@@ -18,7 +18,6 @@ from pyforge.marshal.seed.model.manifest import (
 )
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.plan.build import build_plan
-from pyforge.marshal.seed.detect.inventory import classify
 from pyforge.marshal.seed.verbs.adopt import run_adopt
 from pyforge.marshal.seed.verbs.init import run_init
 from pyforge.marshal.seed.verbs.update import run_update
@@ -27,9 +26,7 @@ _VERSION = ModelVersion.parse("1.0.0")
 
 
 def _git(repo: Path, *args: str) -> None:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -70,10 +67,7 @@ def _fake_commit(repo: Path):
             body = target.read_text(encoding="utf-8") if target.is_file() else ""
             # Minimal marker wrap so a second detect sees the region present.
             region = "region"
-            content = (
-                f"{body}"
-                f"<!-- marshal-seed:{region} -->\nbody\n<!-- /marshal-seed:{region} -->\n"
-            )
+            content = f"{body}<!-- marshal-seed:{region} -->\nbody\n<!-- /marshal-seed:{region} -->\n"
             target.write_text(content, encoding="utf-8")
         else:
             target.write_text(f"# {action.artifact_id}\n", encoding="utf-8")
@@ -142,8 +136,8 @@ def test_update_idempotence_harness(tmp_path: Path):
     actions, twice.
     """
     from pyforge.marshal.seed.fs import NeverWrite
-    from pyforge.marshal.seed.state.store import SeedState, write_state
     from pyforge.marshal.seed.state import seed_model_version, utc_timestamp
+    from pyforge.marshal.seed.state.store import SeedState, write_state
 
     repo = _init_git_repo(tmp_path / "repo")
     manifest = _manifest()

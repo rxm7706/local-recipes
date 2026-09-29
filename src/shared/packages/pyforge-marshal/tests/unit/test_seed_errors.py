@@ -13,6 +13,7 @@ import pickle
 
 import pytest
 from pyforge.core.errors import PyforgeError
+
 from pyforge.marshal.seed.errors import (
     ConformanceFailure,
     InternalError,
@@ -41,9 +42,8 @@ def _taxonomy_leaves() -> list[type[SeedError]]:
     the closed-hierarchy count for the rest of the session. Filtering by
     ``__module__`` keeps this check local to what this story actually
     owns."""
-    return [
-        cls for cls in SeedError.__subclasses__() if cls.__module__ == SeedError.__module__
-    ]
+    return [cls for cls in SeedError.__subclasses__() if cls.__module__ == SeedError.__module__]
+
 
 # --- SeedError shape ---------------------------------------------------
 

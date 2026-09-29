@@ -12,13 +12,13 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 95
+# stories: 197
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
-  1-2-wrap-wardens-engine-availability-self-check: done
-  1-3-tri-state-individually-addressable-checks: done
-  1-4-credential-environment-hygiene-check: done
-  1-5-doctor-check-cli-wiring-json-and-the-speed-budget: done
+  1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
+  1-3-tri-state-individually-addressable-checks-fr-2: done
+  1-4-credential-environment-hygiene-check-fr-3: done
+  1-5-doctor-check-cli-wiring-json-and-the-speed-budget-fr-9-nfr-4: done
   10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported: done
   10-2-the-installed-core-is-compared-against-the-latest-upstream-release: done
   10-3-the-drift-surfaces-ambiently-never-gates: done
@@ -40,12 +40,12 @@ development_status:
   15-2-channel-and-recipe-staleness-are-ambient-findings: done
   16-1-the-shared-title-diff-is-an-ambient-finding: done
   17-1-extract-gather-prescribe-source-plugins: done
-  18-1-skf-skill-and-persona-for-doctor: done
-  18-2-first-portal-slice-fleet-pulse: done
+  18-1-skf-domain-skill-and-bmad-persona-for-doctor: done
+  18-2-first-portal-slice-last-fleet-pulse: done
   19-1-the-suite-watched-set-matches-the-channel-catalog-and-upstream-follows-recipe-registry: done
-  2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
-  2-2-cve-and-abandonment-watch-axes: done
-  2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: done
+  2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback-fr-5-ad-6: done
+  2-2-cve-and-abandonment-watch-axes-fr-4: done
+  2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json-fr-9: done
   20-1-suite-drift-maps-every-active-member-derived-from-the-roster: done
   20-2-the-render-halt-class-has-a-detector: done
   20-3-frozen-path-changed-exists: done
@@ -73,14 +73,46 @@ development_status:
   22-4-a-diátaxis-adapted-information-architecture-is-designed-for-the-general-facing-docs-layer: done
   22-5-the-tutorials-getting-started-and-how-to-guides-quadrants-are-populated: done
   22-6-readme-md-claude-md-and-agents-md-point-cleanly-into-the-reorganized-structure: done
-  3-1-partition-findings-by-actionability: done
-  3-2-rank-the-actionable-partition: done
-  3-3-root-cause-naming: done
-  3-4-doctor-diagnose-target-prescribe-cli-wiring-json: done
-  4-1-health-scoring: done
-  4-2-persistent-fleet-health-surface: done
-  4-3-adoption-tracking-watch-axis: done
-  4-4-safe-upgrade-path-recommendation: done
+  23-1-entry-points-are-indexes-one-owner-per-fact: done
+  23-2-fold-the-getting-started-and-air-gap-cluster-stub-the-binders: done
+  23-3-sunset-docs-specs-by-frontmatter-status: done
+  23-4-empty-the-intake-inbox-per-its-own-readme: done
+  23-5-archive-citations-for-the-five-already-moved-_bmad-output-files: done
+  23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree: done
+  23-7-a-new-doctor-source-flags-leftover-shelf-occupancy: done
+  24-1-the-evaluator-and-the-thresholds-move-out-of-marshal-s-package-together: done
+  24-2-an-import-linter-contract-catches-the-class-structurally: done
+  24-3-the-surfaces-are-reconciled-so-no-file-is-governed-twice-or-not-at-all: done
+  25-1-a-new-dream-or-spec-folder-without-a-declared-exemption-is-a-finding: done
+  25-2-a-product-requirement-minted-after-the-rule-date-names-its-source-capability: done
+  25-3-the-ledger-regression-verdict-reads-a-re-key-map-so-a-rebase-moves-done-rows-as-done: done
+  26-1-a-touched-live-proof-only-surface-gets-an-advisory-doctor-finding-naming-it: done
+  27-1-a-pr-is-judged-at-its-merge-base-and-a-merge-subject-names-its-station: done
+  27-2-ledger-direction-reads-the-stations-rekey-map: done
+  27-3-a-stations-legacy-template-history-stays-attributed: done
+  27-5-a-bare-form-merge-is-attributed-by-the-paths-its-diff-touches: done
+  28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes: done
+  29-1-a-per-dream-acknowledgement-silences-exactly-one-sibling-hash-and-the-sibling-coordinates-are-current: done
+  3-1-partition-findings-by-actionability-fr-6-ad-4: done
+  3-2-rank-the-actionable-partition-fr-7-ad-4: done
+  3-3-root-cause-naming-fr-8: done
+  3-4-doctor-diagnose-target-prescribe-cli-wiring-json-fr-9: done
+  30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true: done
+  30-2-docs-map-yaml-is-the-registry-map-md-is-its-render-and-docs-currency-reds-a-stale-page: done
+  30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped: done
+  31-1-every-doctor-source-names-the-branch-it-reads-by-its-full-refname: done
+  32-1-the-gates-base-normalizer-names-the-remote-tracking-ref: done
+  33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries: blocked
+  34-1-the-flag-rule-has-a-closed-exemption-list-a-rule-date-baseline-and-one-block-shape: done
+  34-2-the-flag-gate-ships-in-scripts-outside-every-station-and-runs-in-detectors-ci: backlog
+  34-3-the-flag-gate-reads-the-tree-metadata-per-environment-defaults-and-the-90-day-clock: blocked
+  34-4-each-station-has-a-checked-in-flag-inventory-of-its-runtime-capabilities: backlog
+  34-5-the-flag-gate-reds-a-landed-flagged-story-whose-test-does-not-run-both-states: blocked
+  35-1-capability-ledger-s-post-pin-check-reads-only-live-specs: backlog
+  4-1-health-scoring-fr-10: done
+  4-2-persistent-fleet-health-surface-fr-11: done
+  4-3-adoption-tracking-watch-axis-fr-12: done
+  4-4-safe-upgrade-path-recommendation-fr-13: done
   5-1-marshal-durability-source-independent-by-construction: done
   5-2-render-the-verdict-through-a-doctor-verb: done
   6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
@@ -91,8 +123,8 @@ development_status:
   6-4-the-ledger-verdicts-come-home: done
   6-5-the-board-verdicts-come-home: done
   6-6-the-chain-verdicts-come-home: done
-  6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided: done
-  6-8-bmad-drift-comes-home-without-breaking-the-board: done
+  6-7-forward_dependency-comes-home-and-the-harness-coupling-is-decided: done
+  6-8-bmad_drift-comes-home-without-breaking-the-board: done
   6-9-the-scripts-shims-retire: done
   7-1-the-emitter-mints-identity-at-defer-time: done
   7-2-grandfather-the-470-at-a-dated-cut-off: done
@@ -137,10 +169,36 @@ development_status:
   epic-20-retrospective: optional
   epic-21: done
   epic-21-retrospective: optional
-  epic-22: in-progress
+  epic-22: done
   epic-22-retrospective: optional
+  epic-23: done
+  epic-23-retrospective: optional
+  epic-24: done
+  epic-24-retrospective: optional
+  epic-25: done
+  epic-25-retrospective: optional
+  epic-26: done
+  epic-26-retrospective: optional
+  epic-27: done
+  epic-27-retrospective: optional
+  epic-28: done
+  epic-28-retrospective: optional
+  epic-29: done
+  epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
+  epic-30: done
+  epic-30-retrospective: optional
+  epic-31: done
+  epic-31-retrospective: optional
+  epic-32: done
+  epic-32-retrospective: optional
+  epic-33: backlog
+  epic-33-retrospective: optional
+  epic-34: backlog
+  epic-34-retrospective: optional
+  epic-35: backlog
+  epic-35-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

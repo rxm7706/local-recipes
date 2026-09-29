@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 
 import pytest
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.deploy import (
     DeployDuty,

@@ -1,40 +1,45 @@
 ---
 id: SPEC-pyforge-warden
 spec: pyforge-warden
-status: shipped
+status: ready
+updated: "2026-09-28"
 owner-dream: docs/dreams/pyforge-warden.md
+covers-dreams:
+  - docs/dreams/pyforge-warden.md
+  - docs/dreams/package-inventory-eligibility.md
+  - docs/dreams/compliance-factory-web-face.md
+  - docs/dreams/golden-path-conda-blind-spot.md
+  - docs/dreams/pyforge-warden-compliance-gates.md
 surface:
   - src/shared/packages/pyforge-warden/**
+surface-drift-exclude:
+  # 2026-09-12: also governed by the spec(s) named below, which already
+  # reconciles each of these files cleanly -- this kernel spec's own
+  # memlog does not move for routine story work anymore, so double-
+  # claiming them only produced permanent drift-presumed noise here.
+  # Coverage is unchanged (still listed under `surface:` above); only
+  # this spec's own drift tracking for these specific files is off.
+  - src/shared/packages/pyforge-warden/src/pyforge/warden/extract/__init__.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-warden/src/pyforge/warden/extract/lockfiles.py   # also governed by pyforge-marshal/spec-pyforge-core
 companions:
   - verdict-contract.md
   - axes.md
   - extraction-contract.md
 sources:
   - ../../../../../../docs/dreams/pyforge-warden.md
-  - ../../../../../../docs/specs/pyforge-warden.md   # LEGACY Tier-1 intake spec (status: in-progress, FR1–FR40, D1–D12, release map, vision catalog) — superseded by this Tier-2 Spec; absorbed, not adopted
+  - ../../../../../../docs/specs/pyforge-warden.md   # LEGACY Tier-1 intake spec — superseded by this Tier-2 Spec; absorbed, not adopted
   - ../../prds/prd-pyforge-warden-2026-07-14/prd.md
   - ../../architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md
   - ../../epics.md
-open_questions:
-  - "The legacy spec's v1 Definition of Done still carries unchecked release-level items
-     even though all 31 stories merged (the CFE Rule-2 closeout retro; the internal
-     JFrog PyPI+conda publish behind the engine version-range gate). Is v1 'released'
-     or 'story-complete'?"
-  - "The legacy Tier-1 spec docs/specs/pyforge-warden.md still reads status: in-progress
-     and its Goals block still describes the pre-D12 tiering (license/currency gates as
-     v1.x). Does it get re-stamped shipped and marked superseded by this Spec, or frozen
-     as-is as a historical record?"
-  - "Two axes of the Charter's six-axis Warden identity (provenance, maintenance) are
-     unbuilt and sit in the vision bucket with no owner or trigger. What promotes them
-     out of vision -- and until then, does the product describe itself as four-axis or
-     six-axis?"
+open_questions: []   # all three answered 2026-09-14 by operator ruling — see § Open Questions.
 ---
 
-> **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
+> **Canonical contract.** Derived from `.memlog.md` and the folded Specs on 2026-09-17 (one-chain-per-station CAP-3 / warden fold). Companions stay record. Do not hand-edit — append the memlog and re-derive.
 
 # Warden — the compliance gate that never false-greens
 
 ## Why
+
 
 A pain, already paid daily, and a promise stated in the negative. Dependency **hygiene**
 and dependency **security** are two disjointed tools and two disjointed pipelines, stitched
@@ -55,56 +60,123 @@ catastrophic, a blocked build is merely expensive — an honest "not verified" b
 feature among many; it is the acceptance property every other decision in this contract
 serves.
 
-## Capabilities
 
-- **CAP-1**
+## Capabilities
+- **CAP-1 — one command, one exit** ← spec-pyforge-warden CAP-1 (shipped 2026-09-11)
   - **intent:** A pipeline — or a developer at a terminal — can run the whole multi-axis check as one non-interactive command and gate on a single exit code.
   - **success:** `warden scan <path>` reduces N per-finding outcomes to one status and one exit code from the frozen enum; the gate decides on report **content + severity**, never on a subprocess return code; there are zero prompts in any mode, including local workstation mode, where `--bypass` still takes its reason inline.
-  - **verified:** 2026-09-11 — code-level + live: `verdict.py`'s module docstring and `_EXIT_BY_STATUS` table are the sole projection from the 7-rung lattice to `{0,1,2,130}` (enforced by `tests/meta/test_verdict_sole_ownership.py`); `cli.py:769` `scan_parser.error("--bypass requires --reason")` is the one usage error, no `input()`/`getpass()` prompt path in the scan flow; live full-suite run this pass (`pyforge-warden-test`, 2121 passed / 0 failed / 11 slow-deselected) exercises `tests/unit/test_cli_bypass.py` (`main(["scan", ...])` single-command invocation, `--bypass`/`--reason` behavior) end to end.
-- **CAP-2**
+- **CAP-2 — source-manifest extraction** ← spec-pyforge-warden CAP-2 (shipped 2026-09-11)
   - **intent:** A project's declared dependency set can be resolved from its **source** manifests — pre-build, with no resolved or installed environment — whether those dependencies come from PyPI or conda-forge.
   - **success:** Six formats plus lockfiles are supported; PyPI inputs delegate to the engines' native parsers rather than re-implementing that parsing; corpus conformance over ~1,950 real conda recipes yields **0 uncaught exceptions** with a ratcheted unparseable rate CI holds monotonic; and a differential oracle asserts the extracted dependency set is a superset of the authoritative renderer's, modulo name-only-marked.
-  - **verified:** 2026-09-11 — code-level + live: `discovery.py`'s `_DISCOVERED_KINDS` lists exactly 6 non-lock manifest tokens (`pyproject.toml`, `recipe.yaml`, `meta.yaml`, `environment.yml`, `environment.yaml`, `pixi.toml`) plus `pixi.lock`/`conda-lock.yml` via `lockfiles.py` ("plus lockfiles"); `pyproject.py` parses via stdlib `tomllib` + `packaging.requirements` only (no hand-rolled PEP 508 parser). Live this pass: `test_corpus_extraction_never_raises_uncaught_and_holds_the_unparseable_rate_baseline` (`_MINIMUM_EXPECTED_CORPUS_SIZE = 1900`, matches "~1,950") passed as part of the full 2121-test run, 0 uncaught exceptions. `test_extraction_oracle.py`'s superset-vs-`rattler-build`/`conda-build` differential tests are whole-module `@pytest.mark.slow` and not re-run live in this pass (disproportionate to a doc-hygiene sweep); code-level: the module implements exactly the claimed superset comparison against both external renderers.
-- **CAP-3**
+- **CAP-3 — assessed versus present** ← spec-pyforge-warden CAP-3 (shipped 2026-09-11)
   - **intent:** A consumer can tell what was actually **assessed** from what was merely **present**.
   - **success:** The resolved scan set is the denominator — every discovered manifest is scanned and reported per manifest (**union coverage**, not a precedence winner); coverage is reported per axis, each with its own denominators and a stated `resolution_depth` (`direct-only` vs `locked-closure`); a manifest may be 100% hygiene-covered and 0% vulnerability-covered, and the two are asserted as distinct fields on the fixture set; every withheld component states its reason and stays visible, never silently dropped.
-  - **verified:** 2026-09-11 — code-level + live: `report.py`'s `by_axis` coverage rows carry a `resolution_depth` field taking exactly `"direct-only"`/`"locked-closure"`/`None` (`test_default_omitted_preserves_the_pre_2_4_coverage_shape`, `test_hygiene_not_applicable_...` live-passed this pass as part of the 2121-test run); `models.py` carries a growable, additive withhold-reason enum (never a silent drop); `test_coverage_claim_for_unregistered_axis_is_a_hard_error` (live-passed) proves the hard-error claim; `test_hygiene_not_applicable_leaves_the_vulnerability_axis_untouched` proves the two axes' coverage fields are independently 100%/0%-capable on the same component set.
-- **CAP-4**
+- **CAP-4 — per-axis verdict** ← spec-pyforge-warden CAP-4 (shipped 2026-09-11)
   - **intent:** Every resolved component is assessed on each registered axis of trust, and the verdict says which axis spoke.
   - **success:** Hygiene, security, license, and currency each produce a verdict for 100% of resolved components, with per-axis coverage and provenance; each non-`clean` status carries a driver naming its axis and finding; a coverage claim for an unregistered axis is a hard error. Catalog: `axes.md`.
-  - **verified:** 2026-09-11 — code-level + live: `models.py::StatusDriver` is the typed (axis, finding) pair attached to every non-clean status; `test_compose_winner_driver_propagates` + `test_compose_equal_rank_driver_beats_none_driver` (both live-passed this pass) prove the driver survives composition. `axes.md` catalogs exactly hygiene/security/license/currency as the four live registered producers, matching this Spec's own Constraints section ("Six axes of trust, four live"). Same `test_coverage_claim_for_unregistered_axis_is_a_hard_error` from CAP-3 covers the hard-error half.
-- **CAP-5**
+- **CAP-5 — tunable policy** ← spec-pyforge-warden CAP-5 (shipped 2026-09-11)
   - **intent:** A team can tune what blocks without editing the tool.
   - **success:** Per-repo configuration lives in a `[tool.pyforge-warden]` table in `pyproject.toml` and/or `pixi.toml` with deterministic per-key precedence, CLI flags overriding, and conflicts surfaced by name-and-value to stderr while never changing the exit code; a project's existing `[tool.deptry]` ignore configuration is honored; hygiene and security gate by default; license and currency gate when their policy flags are configured and, unconfigured, feed a visible `warn` — never a silent clean; and a minimum-coverage floor gate exists but **defaults off**, so first contact is never gated on coverage.
-  - **verified:** 2026-09-11 — code-level + live: `config.py:1027` "`pyproject.toml` wins a same-key conflict against `pixi.toml`" + `config.py:1034`'s `f"config key {key!r} conflicts: pyproject.toml={value!r}, ..."` stderr message match the precedence/conflict claim exactly; `engines.py:931` "honoring `[tool.deptry]`" confirms deptry-ignore passthrough; `license_gating`/`currency_gating` properties derive from whether policy flags are configured (default `False` → warn, never silent clean — `test_license_policy_stays_all_warn_when_the_axis_is_unconfigured` / `test_currency_policy_stays_all_warn_when_the_axis_is_unconfigured`, both live-passed this pass); `fail_under_coverage: float = 0.0` is the coverage-floor default (0 = off). `test_config_precedence_pyproject_wins_with_conflict_warning` live-passed this pass.
-- **CAP-6**
+- **CAP-6 — waivers and baselines** ← spec-pyforge-warden CAP-6 (shipped 2026-09-11)
   - **intent:** A team can accept a risk in the open and on a clock, rather than muting it.
   - **success:** Waivers and baselines are committed files the tool **reads and never writes**; suppression keys on the stable finding-ID grammar; every applied entry is echoed in the report; an expired entry re-blocks; wildcards are rejected as over-broad; and a bypassed run still carries `bypassed` + `review_required` in the audit record even though its residual exit is 0.
-  - **verified:** 2026-09-11 — live: `tests/unit/test_cli_bypass.py` (live-passed this pass as part of the 2121-test run) exercises most of this CAP directly by name — `test_committed_valid_waiver_bypasses_the_matching_finding`, `test_committed_waiver_is_echoed_in_text_format`, `test_expired_waiver_leaves_the_original_finding_status` + `test_expired_waiver_shows_a_waiver_expired_notice_not_a_waiver_notice`, `test_wildcard_id_waiver_file_rejects_the_whole_file`, and `test_bypass_with_blocking_findings_prints_stanza_and_exits_bypassed` (asserts `status=bypassed` + `exit_code=0`). Code-level: `waiver.py` has no write/open-for-write path to the scanned tree (read-only, matches "reads and never writes"). **Genuine gap found:** a repo-wide grep (`src/`, `tests/`, and this Spec's own companion `verdict-contract.md`) finds `review_required` used only in the two Spec documents themselves — zero occurrences in shipped code or tests. The bypassed-run audit trail that exists is `status=bypassed` (exit 0) plus the emitted waiver stanza's `authorized_by`/`reason`/timestamps fields printed to stdout/stderr — real and tested — but there is no literal `review_required` field/flag anywhere in `models.py`, `report.py`, or `waiver.py`. This is a genuine spec-vs-implementation mismatch, not a wording nuance; flagging rather than papering over per this pass's real-verification-only rule.
-- **CAP-7**
+- **CAP-7 — report and SBOM as data** ← spec-pyforge-warden CAP-7 (shipped 2026-09-11)
   - **intent:** A pipeline or a downstream estate can consume the run as data, not prose.
   - **success:** Each run emits a schema-validated, versioned `ComplianceReport` on stdout as a **single valid document or empty** — never partial, never diagnostics-contaminated — and a CycloneDX 1.6 SBOM with source-registry-correct purls and self-declared partiality when coverage is incomplete, whose component count equals the resolved-inventory count post-merge with the root project excluded.
-  - **verified:** 2026-09-11 — code-level + live: `report.py:192` `REPORT_SCHEMA_VERSION = "1.1.0"`; `sbom.py` renders via `cyclonedx.output.json.JsonV1Dot6` and self-validates with `JsonStrictValidator(SchemaVersion.V1_6)`, raising if the rendered document fails its own schema (not aspirational — an enforced round-trip); the scanned root becomes `metadata.component`, never a member of `document["components"]`, and `tests/unit/test_sbom.py::test_happy_path_mixed_ecosystems_full_coverage` asserts `len(document["components"]) == inventory.count == 2` exactly — live-passed this pass as part of the 2121-test run. `test_partial_coverage_sets_cfe_partial_inventory_true` (live-passed) covers the self-declared-partiality claim.
-- **CAP-8**
+- **CAP-8 — typed failure routing** ← spec-pyforge-warden CAP-8 (shipped 2026-09-11)
   - **intent:** A fleet operator can route every failure to its owner without reading a log.
   - **success:** Each failure carries a typed error kind — unparsable-manifest → developer; engine-unavailable → platform; engine output unrecognized, unparseable, crashed, or timed out, plus config-parse, config-validation, and internal-error → the tool's maintainers — and a missing, incompatible, crashed, timed-out, or output-drifted engine is exit 2 and never a silent pass. The same detection is re-exposed as a `--doctor` self-check on the one verb, which exits 0 when healthy or 2 with a typed kind, and **never 1**: it reports operability, not policy.
-  - **verified:** 2026-09-11 — code-level + live: `models.py::ErrorKind` is a closed `StrEnum` with exactly the 9 named kinds (`unparsable-manifest`, `engine-unavailable`, `engine-output-unrecognized`, `engine-output-unparseable`, `engine-execution-failed`, `engine-timeout`, `config-parse`, `config-validation`, `internal-error`). Live this pass: `warden scan . --doctor` against this repo's own `pyforge-warden` env (no local OSV DB configured) printed a typed per-check breakdown (`[doctor] osv-db problem -- OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY is unset...`) and exited **2**, never 1 — matching "reports operability, not policy" exactly. `cli.py:781-782` routes `--doctor` through the SAME `scan` verb (`if args.doctor: return _run_doctor(args)`), not a parallel entrypoint.
-- **CAP-9**
+- **CAP-9 — adoption on-ramp** ← spec-pyforge-warden CAP-9 (shipped 2026-09-11)
   - **intent:** A repository carrying accumulated debt can turn the gate on without a day-one red wall that gets it ripped out.
   - **success:** `--warn-only` reports everything at exit 0; a committed baseline grandfathers existing findings so the gate blocks **new findings only**, with expiring entries that re-block; and every non-zero exit names the offending package, the finding (advisory ID + severity + fixed version, or the hygiene rule), the source manifest and location, and a remediation path.
-  - **verified:** 2026-09-11 — live: `tests/integration/test_baseline_grandfathering.py` (live-passed this pass as part of the 2121-test run) covers this CAP by name — `test_baseline_suppresses_the_matching_finding_and_exits_bypassed`, `test_baseline_unlisted_finding_gates_normally` (new findings still block), `test_expired_baseline_entry_reblocks_the_finding`. `cli.py:648` `--warn-only` downgrades every blocking rung's exit to 0 without altering status. Code-level: `report.py::_remediation_line` templates a remediation string per id-family/axis from `manifest_locations`/`fixed_versions`, "never fabricates a location" per its own docstring, matching the "package + finding + manifest/location + remediation path" claim.
-- **CAP-10**
+- **CAP-10 — determinism and no residue** ← spec-pyforge-warden CAP-10 (shipped 2026-09-11)
   - **intent:** A run can be trusted to reproduce, and to leave nothing behind.
   - **success:** Decision-determinism by default (identical inputs plus an identical database snapshot yield an identical exit code and findings set) and **byte-identical** output under `--deterministic` over a documented volatile-field set; a scan never mutates the scanned tree or host state and cleans up on success *and* failure; per-invocation cost is O(project), independent of fleet size, with the live axes running in parallel and no shared mutable state; the tool's *own* overhead on top of the engines is bounded at p95 over a pinned reference corpus with the engines stubbed (engine scan time scales with dependency count and is not ours to promise), and first-run database provisioning is a one-time, cacheable cost so later runs are warm.
-  - **verified:** 2026-09-11 — live: `test_corpus_determinism.py` is whole-module `@pytest.mark.slow` (excluded from the default fast loop) — run explicitly this pass (`pytest ... -m slow`), both tests passed in 17.65s, including `test_full_corpus_deterministic_twice_run_is_byte_identical`. `test_perf_overhead.py::test_stubbed_engine_overhead_holds_the_p95_budget` (not slow-marked) live-passed as part of the 2121-test run — the p95-over-stubbed-engines claim is real and CI-enforced, not just documented. Code-level: `engines.py` uses `tempfile.mkstemp`/`finally: os.unlink` uniformly for all engine I/O (system temp, never the scanned tree; cleaned up on success and failure).
-- **CAP-11**
+- **CAP-11 — air-gapped operation** ← spec-pyforge-warden CAP-11 (shipped 2026-09-11)
   - **intent:** An air-gapped or firewalled fleet can run the gate with no network at all, and know how fresh its data was.
   - **success:** The orchestrator's own process opens no socket, asserted by a socket-guard test, with all network confined to named engine subprocesses; the vulnerability database and the KEV, EPSS, and end-of-life feeds are provisioned or cached, offline by default and opt-in online but never silent; every verdict records its data source and snapshot timestamp; and stale, empty, swapped, or unverifiable data routes to `indeterminate` rather than a confident clean.
-  - **verified:** 2026-09-11 — live: `test_corpus_egress_counter.py::test_corpus_scan_makes_zero_network_syscalls_under_strace` (whole-module `@pytest.mark.slow`) run explicitly this pass — `strace -f -e trace=network` wrapping the FULL `warden scan` process tree (CLI + every forked engine subprocess) over the real corpus, asserting zero internet-family connect/send syscalls anywhere in the trace: **passed live, 8.36s**. This is the strongest form of the claim — an outside-the-process observation, not just an in-process guard. Also live this pass: `warden scan . --doctor` (CAP-8 evidence) reported `kev-feed`/`epss-feed`/`endoflife-feed` as "operating air-gapped: feed not present" rather than silently proceeding, matching "never silent." Code-level: `models.py`'s `snapshot_at`/`max_age_ok`/`source` fields are co-required by a `__post_init__` guard (a concrete `max_age_ok` verdict cannot exist without `source` + `snapshot_at` stated).
-- **CAP-12**
+- **CAP-12 — fix-PR actuator** ← spec-pyforge-warden CAP-12 (shipped 2026-09-11)
   - **intent:** A team can turn findings into pull requests without the tool ever writing to their working tree.
   - **success:** `--open-fix-prs` runs strictly post-verdict with environment-supplied credentials, opening upgrade and removal pull requests through the forge API only; a failed PR-open never alters the verdict or exit code — it lands in the report's `actuation` section, outside status and exit composition; and `--fix-prs-dry-run` shares the real code path up to the egress seam while opening no sockets.
-  - **verified:** 2026-09-11 — code-level + live: `cli.py:1672` gates the whole actuator block strictly after `rungs`/`findings` are final and strictly before `assemble_report`, with its own comment confirming "the verdict is a pure projection of the frozen rungs the actuator never touches"; `actuator.py::GitHubForgeClient.from_env` resolves credentials from `env: Mapping[str, str]` (`cli.py:1689` passes `env=os.environ`); `cli.py:1672-1689`'s docstring states dry-run "shares the real path up to the egress seam and opens no socket (dry-run wins if both flags are set)" and a failed open is "captured in the payload" only. Live this pass: `tests/integration/test_fix_pr_actuator.py` (part of the 2121-test run) covers every clause by name — `test_dry_run_populates_actuation_without_changing_the_verdict`, `test_dry_run_wins_when_both_flags_are_set`, `test_forge_failure_leaves_exit_unchanged_with_a_stderr_line`, `test_baselined_finding_is_not_actuated` — all passed live.
+- **CAP-13 — SourceContract + identity API** ← spec-package-inventory-eligibility CAP-1 (shipped 2026-08-22)
+- **CAP-14 — eligibility-union + provenance** ← spec-package-inventory-eligibility CAP-2 (shipped 2026-08-22)
+  - **success:** an answer is reproducible from its own provenance alone.
+- **CAP-15 — CycloneDX out + the corpus in** ← spec-package-inventory-eligibility CAP-3 (shipped 2026-08-22)
+- **CAP-16 — the service skeleton** ← spec-compliance-factory-web-face CAP-1 (shipped 2026-08-22)
+- **CAP-17 — results + derived progress** ← spec-compliance-factory-web-face CAP-2 (shipped 2026-08-22)
+- **CAP-18 — environment-scoped lockfile extraction** ← spec-golden-path-conda-blind-spot CAP-1 (shipped 2026-09-09)
+  - **intent:** Warden extracts exactly the packages one named pixi environment
+  - **success:** scanning this repo's root `pixi.lock` scoped to
+- **CAP-19 — the promotion scans the shipped closure** ← spec-golden-path-conda-blind-spot CAP-2 (shipped 2026-09-09)
+  - **intent:** `golden-path-promotion` scans the resolved
+  - **success:** the promotion record's components equal the CAP-1 set, every
+- **CAP-20 — the offline OSV database is provisioned in CI** ← spec-golden-path-conda-blind-spot CAP-3 (shipped 2026-09-09)
+  - **intent:** the promotion job runs with a real, provenance-bearing offline
+  - **success:** `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` points at a populated
+- **CAP-21 — the verdict is honest and specific** ← spec-golden-path-conda-blind-spot CAP-4 (shipped 2026-09-09)
+  - **intent:** `warden_status` is `clean` only when the shipped closure's
+  - **success:** on a not-clean verdict the record names the unassessed
+- **CAP-22 — deploy gates on the verdict (already true on main — preserve)** ← spec-golden-path-conda-blind-spot CAP-5 (shipped 2026-09-09)
+  - **intent:** `platform-deploy` promotes a digest only when its recorded
+  - **success:** the verifier refuses `indeterminate` / `warn` / `fail` and a
+- **CAP-23 — the TEA advisory reviews the diff from the remote-tracking ref** ← spec-pyforge-warden CAP-23 (ready 2026-09-27)
+  - **intent:** `tea_advisory` passes `--base refs/remotes/origin/main` to TEA's `tea-test-review`,
+    whose CLI diffs `<base>...HEAD`; a local branch or tag named `origin/main` at HEAD no longer
+    empties the changed-test set. Advisory only: never a finding, a rung or the exit code.
+  - **success:** the argv the default runner builds carries `--base refs/remotes/origin/main`; the
+    advisory's fail-open and fail-closed paths are unchanged.
+- **CAP-24 — the fix-PR actuator finishes the fix on the estate's repos** ← spec-pyforge-warden CAP-24 (ready 2026-09-28)
+  - **intent:** For a `vuln:` finding, the fix-PR actuator (CAP-12) resolves a target version and delivers the fix,
+    not a pointer to it. The target is the lowest release the finding's OSV advisory names as fixed — every
+    `ECOSYSTEM`/`SEMVER` `fixed` event of the matching `affected[]` entry at or above the current version, ascending —
+    that the estate's own solver accepts: pixi re-solves the repo's lock with that floor in a throwaway copy, and the
+    first candidate that solves wins. The actuator then edits the manifest that declares the dependency (`pixi.toml`,
+    `pyproject.toml` or a recipe) in that copy, re-solves the lock there when the repo has one, and opens the result
+    as a **draft** pull request through the forge API's Git Data endpoints, on the estate's own repos only
+    (`rxm7706/local-recipes`, `rxm7706/python-foundry`). The scanned tree is never written: the copy is a `mkdtemp`
+    (`0700`) directory, removed on success and on failure. `--fix-prs-dry-run` opens no socket and reports the lowest
+    OSV-fixed candidate with the solver marked not-run; pixi runs only on the real `--open-fix-prs` path, through the
+    single subprocess helper, under a tested version range. A failed resolve, edit, solve or PR-open is captured in the
+    report's `actuation` section and never changes a rung, the status or the exit code. (Operator ruling 2026-09-28.)
+  - **success:** a fixture advisory with `fixed` events 1.2.3 and 1.3.0, where the fixture solver refuses 1.2.3,
+    yields target 1.3.0; the dry-run payload names 1.2.3 with the solver not-run and the socket-guard stays green;
+    after a real-path run against a fixture forge the scanned tree is byte-identical and the throwaway copy is gone;
+    the edited manifest and the re-solved lock arrive as one commit on a `warden/fix/` branch behind a draft PR; a repo
+    outside the estate allowlist gets no manifest-edit PR; `pyforge-warden-test` green.
+- **CAP-25 — SAST joins as an optional plugin: opengrep with estate-owned rules** ← spec-pyforge-warden CAP-25 (ready 2026-09-28)
+  - **intent:** Opengrep (LGPL-2.1) takes the SAST slot on the PR-gate hook book as an optional scanner beside the
+    `ghas` stub in `scanner_plugins.py`, enabled like the others through `WARDEN_OPTIONAL_SCANNERS`. It runs the
+    estate's own rules, shipped in the package's data and never fetched from a registry, offline, through the single
+    subprocess helper, under a tested version range. Each result becomes a non-`Finding` advisory note (tool, rule id,
+    path, line, severity) in the report's `advisory` section — the TEA advisory's shape (suite:AD-4) — so SAST informs
+    the reader but never adds a finding family, a rung, a status or an exit code, and never publishes a verdict:
+    `warden scan` stays the sole PR verdict and the `ComplianceReport` stays at 1.1.0. An absent binary is
+    omit-not-error (Story 9.3). CodeQL is rejected on its licence. Opengrep arrives as a conda package (mason
+    Story 21.4). (Operator ruling 2026-09-28.)
+  - **success:** with `opengrep` enabled and a fixture repo that trips an estate rule, the report's `advisory` carries
+    a note naming the rule, path and line while the status and exit code equal the same run with the scanner
+    disabled; no rule is fetched over the network (socket-guard green, the invocation names only the local rules
+    path); an absent binary leaves a default run green (the Story 9.3 test); `pyforge-warden-test` green.
+- **CAP-26 — Warden scans the enterprise fleet on GitHub Enterprise** ← spec-pyforge-warden CAP-26 (ready 2026-09-28)
+  - **intent:** A fleet run inventories a GitHub Enterprise organisation's repos and scans each one with
+    `warden scan` — one verdict per repo, exactly as today, and no fleet-level pass/fail. The run lives in
+    `django-warden`'s Celery layer on the `ComplianceJob` pattern: keys-not-blobs, and a job status (pending, running,
+    succeeded, failed) that is never a verdict — no CLEAN or VULNERABLE second verdict. Each repo is cloned into a
+    throwaway directory, removed on success and on failure. GHE credentials come from Steward (steward Story 75.1).
+    The inventory is published as data that other stations read (Atlas's dependency history,
+    `spec-pyforge-atlas:CAP-61`), never through an import. On a fleet repo the actuator only plans: each fix is queued
+    as a proposal, and it opens — through the CAP-24 path, as a draft PR — only after the operator approves it, one
+    proposal at a time, through a portal approve action or its management command (one code path); nothing ever
+    auto-opens on a fleet repo. Repos in ecosystems osv-scanner parses natively (npm, Go, Cargo, …) get the security
+    axis through osv-scanner's own lockfile parsers, the other axes honestly `not-applicable`. Lifts two Non-goals,
+    "Fleet aggregation" and "Non-Python osv-scanner ecosystems" (operator ruling 2026-09-28).
+  - **success:** a fixture GHE organisation of three repos yields three inventory rows and a JSON inventory export; a
+    fleet run over them persists one run row and three per-repo rows, each carrying that repo's own `warden scan`
+    report and exit code, and no status outside the job vocabulary and the frozen verdict lattice; the throwaway
+    clones are gone after a success and after a forced failure; a planned fix lands as a queued proposal and no forge
+    call is made until an approve action, after which exactly that proposal opens as a draft PR on its repo; a fixture
+    npm `package-lock.json` pinning a known-vulnerable version yields a `vuln:` finding with `hygiene`
+    `not-applicable`; `pyforge-warden-test` green and the platform suite green.
 
 ## Constraints
 
@@ -132,20 +204,20 @@ serves.
 - **Engine-input purity and output neutralization:** the synthesized requirements projection is a **pure data projection** — any line beginning with `-`, or carrying a URL, VCS ref, path, or environment marker we did not author, is rejected or neutralized; manifest-derived values are never passed as CLI flags; `shell=True` is banned. Every input-derived string is emitted only through a schema-aware encoder, never string concatenation; purls are canonically percent-encoded; control and escape characters are stripped — so a malicious component string cannot make the tool a confused-deputy injection vector against a downstream SBOM or dashboard consumer.
 - **Scope is the consumption edge — the first of three rings.** Ring 1 (edge) scans what applications actually pull, precisely per project, seeing only what is scanned; ring 2 (registry perimeter) and ring 3 (public upstream) are roadmap and direction. Within the edge there are **two modes, one identity**: *edge mode* — no data estate at runtime, bundled tiers carrying build-time age provenance — is the shipped differentiator; *fleet mode*, estate-backed, is roadmap. Both compose to the same lattice and the same exit codes.
 - **Naming is a contract, and the mismatch is intentional.** *Warden* is the product/brand (display only), `pyforge-warden` the distribution name and project slug, `pyforge.warden` the import package, `warden` the CLI entry point. Product name ≠ distribution name because the bare names are taken upstream and this ships internal-first.
-- **Runtime shape:** Python ≥ 3.12; `argparse`, not Click or Typer; stdlib-lean with a small set of targeted, conda-provisioned, safe-API-only runtime dependencies — "lightweight" means runtime footprint, not total cost, and the fixture-maintenance tax on conda selectors and Jinja grammars is real. pixi ≥ 0.72.2 is a **build/dev-environment floor**: the tool never invokes pixi at runtime. Scope is **Python only** — PyPI plus conda-forge.
+- **Runtime shape:** Python ≥ 3.12; `argparse`, not Click or Typer; stdlib-lean with a small set of targeted, conda-provisioned, safe-API-only runtime dependencies — "lightweight" means runtime footprint, not total cost, and the fixture-maintenance tax on conda selectors and Jinja grammars is real. pixi ≥ 0.72.2 is a **build/dev-environment floor**: the tool never invokes pixi at runtime, except the fix-PR actuator's real `--open-fix-prs` path (CAP-24), which runs the estate's solver as a named engine subprocess in a throwaway copy of the repo, never the scanned tree. Scope is **Python only** — PyPI plus conda-forge — except the security axis over the lockfile ecosystems osv-scanner parses natively (npm, Go, Cargo, …), opened by CAP-26 on 2026-09-28.
 
 ## Non-goals
 
 - **Auto-fixing or removing dependencies in the scanned tree** — the actuator opens pull requests; nothing edits the working tree, ever.
 - **Resolving or pinning transitive version trees** — the engines do that; Warden reads what resolves and states its resolution depth when it cannot.
 - **Source-code license scanning** — license comes from declared metadata (conda `about:` plus installed-distribution metadata) only.
-- **Fleet aggregation** — a fleet run is N invocations, with cross-repo aggregation delegated to the CI system. This is a by-design non-capability, not a missing feature.
+- **A fleet-level verdict** — a fleet run (CAP-26) is N `warden scan` verdicts, one per repo; no fleet-wide pass/fail, score or roll-up verdict is ever composed. *(The former Non-goal "Fleet aggregation" — a fleet run is N invocations with cross-repo aggregation delegated to the CI system — was lifted by operator ruling 2026-09-28: Warden now runs the fleet on GitHub Enterprise.)*
 - **Retention and retrieval of evidence** — the tool emits self-describing artifacts; storage, indexing, and query-over-time belong to the CI system, precisely because the tool never writes the repository.
 - **Telemetry** — the gate-disabled anti-metric is not measurable in-tool; it is defended by proxies (false-green = 0, a warn-only on-ramp, an auditable expiring bypass).
 - **Verifying waiver authorship** — delegated to code review and CODEOWNERS; a runtime forge-control check is outside the process boundary.
 - **Interactivity** — no prompts, ever, in any mode. Local workstation mode softens nothing.
 - **Replacing this repository's existing project-scanning intelligence layer.**
-- **Non-Python osv-scanner ecosystems** (npm, Go, Rust, …) and its container/artifact scanning.
+- **osv-scanner's container and artifact scanning.** *(Its non-Python lockfile ecosystems — npm, Go, Rust, … — were a Non-goal until operator ruling 2026-09-28 lifted it for the security axis: CAP-26.)*
 - **SPDX SBOM output** — CycloneDX only, locked.
 - **SARIF output** — v1.x; the `--format` value space is reserved so it lands additively rather than as a breaking widening.
 - **Full conda↔PyPI name reconciliation** and **per-section (dev/test) severity policy** — deferred; the contract marks uncertainty and tags each dependency with its source environment under one uniform policy instead.
@@ -169,6 +241,10 @@ CycloneDX 1.6 with component count equal to the resolved inventory. A `--determi
 run is byte-identical twice over. And every one of those verdicts is readable from exit
 codes and produced files alone.
 
+## Fold provenance (2026-09-17)
+
+One-chain fold (spec-one-chain-per-station CAP-3 / CHAIN-STANDARD §7). This heading is the INV-A citation window: `spec-pyforge-warden` CAP-1..22. Absorbed folders keep pointer + memlog + companions. Satellite Dreams archived in place into [[pyforge-warden]].
+
 ## Assumptions
 
 - The story set is **complete**, and has grown past v1: v1 was 31 stories across 6 epics, merged 2026-07-25; the station now carries **43 story keys, all `done`, across eleven epics** — epics 7–11 post-date the v1 scope (the eligibility union, the web face, the PR-gate hook book + scanner plugins, the skill/persona/portal slice, and the two advisory lenses) — plus a twelfth epic minted 2026-09-09 for `spec-golden-path-conda-blind-spot`. This contract is therefore written in the present tense as a standing description, not a plan. The legacy Tier-1 spec's `status: in-progress` predates that completion, and the Dream's former "23/31 in-build" line was corrected to 43/43 in the same 2026-09-09 pass.
@@ -177,6 +253,28 @@ codes and produced files alone.
 
 ## Open Questions
 
-- **Is v1 released, or story-complete?** All 31 stories merged, but the legacy spec's v1 Definition of Done still carries unchecked release-level items: the CFE Rule-2 closeout retro (the engine mirror recipes lack CHANGELOG entries) and the internal JFrog publish behind the engine version-range gate.
-- **What becomes of the legacy Tier-1 spec?** `docs/specs/pyforge-warden.md` still reads `status: in-progress`, and its Goals block still describes the pre-D12 tiering in which the license and currency gates were v1.x. Does it get re-stamped and marked superseded by this Spec, or frozen as a historical record?
-- **What promotes provenance and maintenance out of vision?** Two of the Charter's six axes are unbuilt with no owner and no trigger — and until they have one, does the product describe itself as four-axis or six-axis?
+**All three answered by operator ruling 2026-09-14.** None remain. They had blocked
+`chain_currency_sweep_check`'s coherence checkpoint for warden, whose `overtaken` remedy is
+explicitly *"resolve with the operator"* — so they could not be closed by inference.
+
+- **Is v1 released, or story-complete?** → **Story-complete, not released.** All 31 stories are
+  merged; the release-level Definition-of-Done items are genuinely unticked — the CFE Rule-2
+  closeout retro (the engine mirror recipes lack CHANGELOG entries) and the internal JFrog
+  PyPI+conda publish behind the engine version-range gate. The build is finished; the release is
+  not. Recorded this way deliberately rather than ticking the residue: retroactively redefining
+  "done" to match what shipped is the exact move `docs/dreams/README.md:90-98` warns against, and
+  it would hide two real pieces of work.
+- **What becomes of the legacy Tier-1 spec?** → **Re-stamped shipped and marked superseded**,
+  matching what `claude-team-memory`, `copilot-bridge-vscode-extension` and
+  `bmad-copilot-adapter-upstream` already did in the same phasing-out tier. *The question's premise
+  was stale:* `docs/specs/pyforge-warden.md` was corrected to `status: shipped` on 2026-09-03, so
+  only the `superseded_by:` pointer was ever missing. Its Goals prose is kept as written — its own
+  § *Release buckets* already records D12's move of the former v1.1 content into v1, making the
+  text dated rather than wrong, and historical prose keeps its original wording.
+- **What promotes provenance and maintenance out of vision?** → **The product stays six-axis, with
+  the two annotated unbuilt.** The Charter's six-axis Warden identity is constitutional and is not
+  narrowed to match today's build; provenance and maintenance are described as unbuilt wherever the
+  six are enumerated, so the gap is visible rather than erased. *(The alternative — describing the
+  product as four-axis until they land — was declined: it would have made the docs and the Charter
+  disagree about what Warden is.)* What promotes them out of vision remains unset, and is a
+  scoping question for whoever picks them up, not a blocker on this Spec.

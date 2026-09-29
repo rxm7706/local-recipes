@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 from pyforge.steward.cli import DUTIES, build_parser, resolve_duty
 from pyforge.steward.interfaces import DutyResult
 from pyforge.steward.restore import RestoreDuty
@@ -15,7 +14,7 @@ from pyforge.steward.restore import RestoreDuty
 def test_restore_is_fourteenth_duty():
     assert "restore" in DUTIES
     assert DUTIES.index("restore") == 13  # noqa: PLR2004 -- the fourteenth slot
-    assert len(DUTIES) == 15  # noqa: PLR2004 -- + `revoke` (Story 42.2)
+    assert len(DUTIES) == 25  # noqa: PLR2004 -- + `cutover` (Story 44.12) + `ledger-query` (Story 65.1) + `catalog` (Story 60.1) + `load` (Story 61.1) + passport (Story 61.2) + glass (Story 61.3) + session (Story 63.4) + deck-drift (Story 59.4)
 
 
 def test_restore_resolves_to_restore_duty():

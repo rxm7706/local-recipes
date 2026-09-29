@@ -19,6 +19,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import board
 from pyforge.doctor.verdict import exit_code_for
@@ -26,9 +27,7 @@ from pyforge.doctor.verdict import exit_code_for
 # --- fixture helpers ---------------------------------------------------------
 
 
-def _write_spec(
-    path: Path, status: str, *, capabilities: list[int] | None = None
-) -> None:
+def _write_spec(path: Path, status: str, *, capabilities: list[int] | None = None) -> None:
     """``capabilities``, when given, appends a real ``## Capabilities``
     section declaring one ``- **CAP-<n> — ...**`` bullet per id -- the CAP-id
     coverage path fires only when this is non-empty. Byte-identical to the
@@ -43,7 +42,15 @@ def _write_spec(
     path.write_text(text, encoding="utf-8")
 
 
-def _write_epics_md(path: Path, story_ids: list[str], *, canonical: bool = True) -> None:
+def _write_epics_md(
+    path: Path,
+    story_ids: list[str],
+    *,
+    canonical: bool = True,
+    extra_epics: list[int] | None = None,
+) -> None:
+    """``extra_epics`` appends bare ``## Epic N`` headings after the stories,
+    so a test can drive INV-B's epic arm without disturbing its story arm."""
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = ["---"]
     if canonical:
@@ -52,11 +59,24 @@ def _write_epics_md(path: Path, story_ids: list[str], *, canonical: bool = True)
     lines.append("")
     lines.append("## Epic 1: Test Epic")
     lines.extend(f"### Story {sid}: title" for sid in story_ids)
+    lines.extend(f"## Epic {n}: Test Epic {n}" for n in extra_epics or [])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _write_ledger(path: Path, rows: dict[str, str]) -> None:
+    """Writes ``rows``, plus a default ``epic-1: done`` when the caller
+    supplied no ``epic-*`` key at all.
+
+    ``_write_epics_md`` always emits exactly one ``## Epic 1`` heading, and
+    INV-B's epic arm (2026-09-14) compares those headings against ``epic-N``
+    keys. A real ledger always pairs them — every one of the fleet's eight
+    does — so a fixture that omits the key is the unfaithful artifact, not
+    the detector. Defaulting it here keeps all eighteen call sites honest
+    without restating the pairing in each. A test exercising epic-arm drift
+    passes its own ``epic-*`` key and opts out of the default."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    if not any(k.startswith("epic-") for k in rows):
+        rows = {**rows, "epic-1": "done"}
     lines = ["development_status:"]
     lines.extend(f"  {k}: {v}" for k, v in rows.items())
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -70,6 +90,83 @@ def _write_data_js(path: Path, projects: dict) -> None:
 
 def _pa(target: Path, project: str) -> Path:
     return target / "_bmad-output" / "projects" / project / "planning-artifacts"
+
+
+def _write_roster(target: Path) -> None:
+    """A valid ``guild-roster.json`` whose declared values equal ``board``'s
+    own fallback constants (``OPEN_SPEC_STATUSES``/``DELIVERED_SPEC_STATUSES``)
+    -- Story 59.2 sources INV-A's Spec-status vocabulary from this file, read
+    fresh per call rather than a hardcoded module constant."""
+    path = target / "docs" / "governance" / "guild-roster.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "spec_statuses": [
+                    "draft",
+                    "ready",
+                    "in-progress",
+                    "shipped",
+                    "archived",
+                    "absorbed",
+                    "superseded",
+                    "extension-point",
+                ],
+                "spec_statuses_terminal": [
+                    "shipped",
+                    "archived",
+                    "absorbed",
+                    "superseded",
+                ],
+                "spec_statuses_ended_acts": [
+                    "archived",
+                    "absorbed",
+                    "superseded",
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+@pytest.fixture(autouse=True)
+def _seed_guild_roster(tmp_path: Path) -> None:
+    """Every test below exercises ``gather_chain_completeness``, whose INV-A
+    Spec-status vocabulary is sourced from ``guild-roster.json`` (Story 59.2)
+    rather than a hardcoded module constant. Seed a valid roster at
+    ``tmp_path`` automatically so every pre-existing test here keeps
+    exercising the LIVE-DERIVED path -- which yields byte-identical
+    open/delivered sets to ``board``'s own fallback constants -- rather than
+    the degrade-to-fallback path, preserving each test's existing assertions
+    unchanged. A test exercising the degrade path itself writes its own
+    (missing/malformed) roster under a target that is NOT bare ``tmp_path``,
+    or overwrites this file directly."""
+    _write_roster(tmp_path)
+
+
+# --- Story 59.2: guild-roster.json degrade-to-fallback ----------------------
+
+
+def test_missing_roster_degrades_to_fallback_and_warns(tmp_path: Path) -> None:
+    """A target with no ``docs/governance/guild-roster.json`` at all (a
+    subdirectory of the autouse-seeded ``tmp_path``, so the seeded roster
+    above does not leak in) still classifies Spec statuses correctly -- via
+    ``OPEN_SPEC_STATUSES``/``DELIVERED_SPEC_STATUSES``, the module's own
+    fallback -- and surfaces a ``spec-status-roster-degraded`` WARN rather
+    than crashing or degrading silently (Story 59.2)."""
+    root = tmp_path / "no-roster"
+    pa = _pa(root, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft")
+
+    findings = board.gather_chain_completeness(root)
+
+    by_check = {f.check: f for f in findings}
+    assert "spec-not-decomposed" in by_check, f"fallback classification failed: {[f.check for f in findings]}"
+    assert by_check["spec-not-decomposed"].status is DoctorStatus.FAIL
+    assert "spec-status-roster-degraded" in by_check
+    degraded = by_check["spec-status-roster-degraded"]
+    assert degraded.status is DoctorStatus.WARN
+    assert degraded.evidence["project"] == "pyforge-testproj"
 
 
 # --- INV-A: every open Spec is decomposed ------------------------------------
@@ -111,7 +208,7 @@ def test_deferred_spec_reports_no_finding(tmp_path: Path) -> None:
     """A slug registered in DEFERRED_SPECS is a recorded decision, not a
     silent gap -- INV-A must not fire for it even though it is undecomposed."""
     pa = _pa(tmp_path, "pyforge-testproj")
-    _write_spec(pa / "specs" / "spec-agentic-sdlc-autonomy" / "SPEC.md", "draft")
+    _write_spec(pa / "specs" / "spec-pyforge-charter" / "SPEC.md", "draft")
 
     findings = board.gather_chain_completeness(tmp_path)
 
@@ -119,14 +216,80 @@ def test_deferred_spec_reports_no_finding(tmp_path: Path) -> None:
     assert findings[0].status is DoctorStatus.OK
 
 
-def test_shipped_spec_is_not_open_and_reports_no_finding(tmp_path: Path) -> None:
+def test_shipped_spec_with_no_epic_reference_reports_delivered_not_decomposed(
+    tmp_path: Path,
+) -> None:
+    """Replaces ``test_shipped_spec_is_not_open_and_reports_no_finding``
+    (2026-09-14). That test asserted the original design — every non-open
+    status skipped INV-A entirely — which is right for ``absorbed`` /
+    ``archived`` / ``superseded`` / ``extension-point`` and wrong for
+    ``shipped``: work really delivered, with no epic and no ledger row, leaves
+    the station under-reporting what it shipped. Ten such Specs were live
+    fleet-wide when this was found."""
     pa = _pa(tmp_path, "pyforge-testproj")
     _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "shipped")
 
     findings = board.gather_chain_completeness(tmp_path)
 
-    assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.OK
+    delivered = [f for f in findings if f.check == "delivered-spec-not-decomposed"]
+    assert len(delivered) == 1
+    assert delivered[0].status is DoctorStatus.FAIL
+    assert "spec-foo" in delivered[0].message
+    # The remedy must NOT point at DEFERRED_SPECS: that is the escape hatch for
+    # work deliberately not done, and this is work already delivered.
+    assert "DEFERRED_SPECS" not in delivered[0].evidence.get("remedy", "").split("never")[0]
+
+
+def test_shipped_spec_referenced_by_an_epic_reports_no_finding(tmp_path: Path) -> None:
+    """The delivered branch is held to the WHOLE-SPEC standard, never INV-A's
+    per-CAP citation test: an epic that names the Spec at all clears it, even
+    without enumerating every ``CAP-n``. Running per-CAP here flagged 34 Specs
+    against 12 real ones, because epics written before the cite-every-CAP-id
+    convention name the Spec or its Dream and stop."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "shipped")
+    (pa / "epics.md").write_text(
+        "## Epic 1: Foo\n\nDecomposes spec-foo.\n\n### Story 1.1: Bar\n**Status:** done\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert not [f for f in findings if f.check == "delivered-spec-not-decomposed"]
+
+
+def test_shipped_spec_claimed_by_its_dream_path_reports_no_finding(tmp_path: Path) -> None:
+    """An epic may claim a Spec by its ``owner-dream`` path instead of its slug
+    (steward Epic 51 claims spec-platform-datastores-consumed-not-self-hosted
+    that way). Matching only ``spec-<slug>`` reported it as a false positive."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "shipped")
+    (pa / "epics.md").write_text(
+        "## Epic 1: Foo\n\nSeeded from docs/dreams/x.md.\n\n### Story 1.1: Bar\n**Status:** done\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert not [f for f in findings if f.check == "delivered-spec-not-decomposed"]
+
+
+def test_absorbed_and_archived_specs_stay_exempt_from_decomposition(
+    tmp_path: Path,
+) -> None:
+    """The guard-removed companion: only ``shipped`` joined the checked set.
+    ``absorbed`` CAPs live in the absorbing chain's epic, ``archived`` and
+    ``superseded`` were abandoned rather than delivered, and
+    ``extension-point`` is a standing seam — none owes a story trail."""
+    for status in ("absorbed", "archived", "superseded", "extension-point"):
+        root = tmp_path / status
+        _write_roster(root)
+        pa = _pa(root, "pyforge-testproj")
+        _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", status)
+
+        findings = board.gather_chain_completeness(root)
+
+        assert not [f for f in findings if f.check == "delivered-spec-not-decomposed"], f"{status} must stay exempt"
 
 
 def test_spec_without_status_key_reports_spec_status_missing(tmp_path: Path) -> None:
@@ -158,7 +321,7 @@ def test_deferred_spec_without_status_key_reports_no_finding(tmp_path: Path) -> 
     """``DEFERRED_SPECS`` remains a whole-Spec escape hatch even when the
     ``status:`` key is absent."""
     pa = _pa(tmp_path, "pyforge-testproj")
-    spec_path = pa / "specs" / "spec-agentic-sdlc-autonomy" / "SPEC.md"
+    spec_path = pa / "specs" / "spec-pyforge-charter" / "SPEC.md"
     spec_path.parent.mkdir(parents=True, exist_ok=True)
     spec_path.write_text(
         "---\nowner-dream: docs/dreams/x.md\n---\n\nbody\n",
@@ -184,15 +347,11 @@ def test_multi_cap_spec_partial_coverage_names_uncovered_ids(tmp_path: Path) -> 
     stories decompose them, and the check must name the specific gap, never
     read `ok` just because SOME of the Spec's ids are cited somewhere."""
     pa = _pa(tmp_path, "pyforge-testproj")
-    _write_spec(
-        pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=list(range(1, 11))
-    )
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=list(range(1, 11)))
     epics = pa / "epics.md"
     epics.parent.mkdir(parents=True, exist_ok=True)
     epics.write_text(
-        "---\nepics_role: canonical\n---\n\n"
-        "## Epic 1: Test\n\n"
-        "Decomposes `spec-foo` CAP-1..3.\n",
+        "---\nepics_role: canonical\n---\n\n## Epic 1: Test\n\nDecomposes `spec-foo` CAP-1..3.\n",
         encoding="utf-8",
     )
 
@@ -218,9 +377,7 @@ def test_multi_cap_spec_full_coverage_via_mixed_citation_shapes_reports_ok(
     epics = pa / "epics.md"
     epics.parent.mkdir(parents=True, exist_ok=True)
     epics.write_text(
-        "---\nepics_role: canonical\n---\n\n"
-        "## Epic 1: Test\n\n"
-        "Decomposes `spec-foo` CAP-1, CAP-2/3, CAP-4..5.\n",
+        "---\nepics_role: canonical\n---\n\n## Epic 1: Test\n\nDecomposes `spec-foo` CAP-1, CAP-2/3, CAP-4..5.\n",
         encoding="utf-8",
     )
 
@@ -238,9 +395,7 @@ def test_prefixed_range_citation_shape_covers_the_inclusive_range(tmp_path: Path
     epics = pa / "epics.md"
     epics.parent.mkdir(parents=True, exist_ok=True)
     epics.write_text(
-        "---\nepics_role: canonical\n---\n\n"
-        "## Epic 1: Test\n\n"
-        "Decomposes `spec-foo` CAP-1..CAP-5.\n",
+        "---\nepics_role: canonical\n---\n\n## Epic 1: Test\n\nDecomposes `spec-foo` CAP-1..CAP-5.\n",
         encoding="utf-8",
     )
 
@@ -276,15 +431,14 @@ def test_reversed_range_citation_contributes_no_ids(tmp_path: Path) -> None:
     own start value -- and must not crash."""
     pa = _pa(tmp_path, "pyforge-testproj")
     _write_spec(
-        pa / "specs" / "spec-foo" / "SPEC.md", "draft",
+        pa / "specs" / "spec-foo" / "SPEC.md",
+        "draft",
         capabilities=list(range(1, 11)),
     )
     epics = pa / "epics.md"
     epics.parent.mkdir(parents=True, exist_ok=True)
     epics.write_text(
-        "---\nepics_role: canonical\n---\n\n"
-        "## Epic 1: Test\n\n"
-        "Decomposes `spec-foo` CAP-10..4.\n",
+        "---\nepics_role: canonical\n---\n\n## Epic 1: Test\n\nDecomposes `spec-foo` CAP-10..4.\n",
         encoding="utf-8",
     )
 
@@ -306,9 +460,7 @@ def test_two_specs_overlapping_cap_ids_only_the_cited_one_is_covered(tmp_path: P
     epics = pa / "epics.md"
     epics.parent.mkdir(parents=True, exist_ok=True)
     epics.write_text(
-        "---\nepics_role: canonical\n---\n\n"
-        "## Epic 1: Test\n\n"
-        "Decomposes `spec-bar` CAP-1..3.\n",
+        "---\nepics_role: canonical\n---\n\n## Epic 1: Test\n\nDecomposes `spec-bar` CAP-1..3.\n",
         encoding="utf-8",
     )
 
@@ -394,9 +546,7 @@ def test_two_file_preamble_leak_is_excluded_while_real_citation_still_found(
     test (a whole-blob "before the first heading" exclusion, which only ever
     protected whichever file sorted first)."""
     pa = _pa(tmp_path, "pyforge-testproj")
-    _write_spec(
-        pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=[1, 2, 3, 9]
-    )
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=[1, 2, 3, 9])
 
     prd = pa / "prds" / "prd-x" / "prd.md"
     prd.parent.mkdir(parents=True, exist_ok=True)
@@ -409,9 +559,7 @@ def test_two_file_preamble_leak_is_excluded_while_real_citation_still_found(
     epics = pa / "epics.md"
     epics.parent.mkdir(parents=True, exist_ok=True)
     epics.write_text(
-        "---\nepics_role: canonical\n---\n\n"
-        "## Epic 1: Test\n\n"
-        "Decomposes `spec-foo` CAP-1..3.\n",
+        "---\nepics_role: canonical\n---\n\n## Epic 1: Test\n\nDecomposes `spec-foo` CAP-1..3.\n",
         encoding="utf-8",
     )
 
@@ -441,9 +589,7 @@ def test_end_to_end_multi_file_prose_via_gather_chain_completeness(tmp_path: Pat
     epics_a = pa / "epics-a.md"
     epics_a.parent.mkdir(parents=True, exist_ok=True)
     epics_a.write_text(
-        "---\nepics_role: canonical\n---\n\n"
-        "## Epic 1: Test\n\n"
-        "Decomposes `spec-foo` CAP-1..2.\n",
+        "---\nepics_role: canonical\n---\n\n## Epic 1: Test\n\nDecomposes `spec-foo` CAP-1..2.\n",
         encoding="utf-8",
     )
 
@@ -497,10 +643,13 @@ def test_expand_cap_token_handles_every_citation_shape() -> None:
 def test_ledger_key_without_epics_story_reports_fail(tmp_path: Path) -> None:
     pa = _pa(tmp_path, "pyforge-testproj")
     _write_epics_md(pa / "epics.md", ["1.1"])
-    _write_ledger(pa / "sprint-status-ledger.yaml", {
-        "1-1-foo": "done",
-        "9-9-orphan": "done",
-    })
+    _write_ledger(
+        pa / "sprint-status-ledger.yaml",
+        {
+            "1-1-foo": "done",
+            "9-9-orphan": "done",
+        },
+    )
 
     findings = board.gather_chain_completeness(tmp_path)
 
@@ -532,10 +681,13 @@ def test_unparseable_ledger_key_reports_fail(tmp_path: Path) -> None:
     dropped from the comparison (the original script's own rationale)."""
     pa = _pa(tmp_path, "pyforge-testproj")
     _write_epics_md(pa / "epics.md", ["1.1"])
-    _write_ledger(pa / "sprint-status-ledger.yaml", {
-        "1-1-foo": "done",
-        "not_a_recognisable_key": "done",
-    })
+    _write_ledger(
+        pa / "sprint-status-ledger.yaml",
+        {
+            "1-1-foo": "done",
+            "not_a_recognisable_key": "done",
+        },
+    )
 
     findings = board.gather_chain_completeness(tmp_path)
 
@@ -549,10 +701,110 @@ def test_unparseable_ledger_key_reports_fail(tmp_path: Path) -> None:
 def test_epics_and_ledger_in_full_agreement_reports_no_finding(tmp_path: Path) -> None:
     pa = _pa(tmp_path, "pyforge-testproj")
     _write_epics_md(pa / "epics.md", ["1.1", "1.2"])
-    _write_ledger(pa / "sprint-status-ledger.yaml", {
-        "1-1-foo": "done",
-        "1-2-bar": "in-progress",
-    })
+    _write_ledger(
+        pa / "sprint-status-ledger.yaml",
+        {
+            "1-1-foo": "done",
+            "1-2-bar": "in-progress",
+        },
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+# --- INV-B: epic headings == ledger epic keys (2026-09-14) -------------------
+#
+# The story arm above compares STORIES. Until 2026-09-14 nothing compared
+# EPICS, because `_ledger_story_ids` discarded every `epic-*` key as
+# "not a story id" — so an epic could exist on one side alone indefinitely.
+# It did, twice: steward Epic 18 sat at H3 (never promoted to a `##` heading)
+# and marshal Epic 29 had no heading at any level, a gap marshal's own
+# frontmatter had admitted in prose — "183 (181 + Epic 29's two, never
+# counted)" — without any detector ever reading it.
+
+
+def test_epic_heading_without_ledger_key_reports_fail(tmp_path: Path) -> None:
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_epics_md(pa / "epics.md", ["1.1"], extra_epics=[7])
+    _write_ledger(
+        pa / "sprint-status-ledger.yaml",
+        {
+            "epic-1": "done",
+            "1-1-foo": "done",
+        },
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "epic-heading-without-ledger-key"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["inv"] == "INV-B"
+    assert "7" in finding.evidence["status"]
+
+
+def test_ledger_epic_key_without_heading_reports_fail(tmp_path: Path) -> None:
+    """marshal Epic 29's live shape: the ledger tracks it, no heading declares
+    it. The story arm cannot see this — `epic-29` parses as no story id."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_epics_md(pa / "epics.md", ["1.1"])
+    _write_ledger(
+        pa / "sprint-status-ledger.yaml",
+        {
+            "epic-1": "done",
+            "epic-9": "done",
+            "1-1-foo": "done",
+        },
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "ledger-epic-key-without-heading"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["inv"] == "INV-B"
+    assert "9" in finding.evidence["status"]
+
+
+def test_epic_headings_and_ledger_keys_in_agreement_reports_no_finding(
+    tmp_path: Path,
+) -> None:
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_epics_md(pa / "epics.md", ["1.1"], extra_epics=[2])
+    _write_ledger(
+        pa / "sprint-status-ledger.yaml",
+        {
+            "epic-1": "done",
+            "epic-2": "backlog",
+            "1-1-foo": "done",
+        },
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_a_retrospective_key_is_not_a_second_epic(tmp_path: Path) -> None:
+    """Guard-removed companion: every station pairs `epic-N` with
+    `epic-N-retrospective`, so matching the epic key loosely would demand a
+    heading per retrospective and red the whole fleet at once."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_epics_md(pa / "epics.md", ["1.1"])
+    _write_ledger(
+        pa / "sprint-status-ledger.yaml",
+        {
+            "epic-1": "done",
+            "epic-1-retrospective": "optional",
+            "1-1-foo": "done",
+        },
+    )
 
     findings = board.gather_chain_completeness(tmp_path)
 
@@ -585,12 +837,20 @@ def test_board_diverging_from_ledger_reports_fail(tmp_path: Path) -> None:
     """Herald's own 2026-08-08 incident, shrunk to a fixture: the board
     renders a smaller/different story set than the durable ledger record."""
     pa = _pa(tmp_path, "pyforge-herald")
-    _write_ledger(pa / "sprint-status-ledger.yaml", {
-        "1-1-a": "done", "1-2-b": "done", "1-3-c": "in-progress",
-    })
-    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {
-        "herald": {"epics": [{"stories": [["1.1", "done", "a"], ["1.2", "pending", "b"]]}]},
-    })
+    _write_ledger(
+        pa / "sprint-status-ledger.yaml",
+        {
+            "1-1-a": "done",
+            "1-2-b": "done",
+            "1-3-c": "in-progress",
+        },
+    )
+    _write_data_js(
+        tmp_path / "docs" / "dashboard" / "data.js",
+        {
+            "herald": {"epics": [{"stories": [["1.1", "done", "a"], ["1.2", "pending", "b"]]}]},
+        },
+    )
 
     findings = board.gather_chain_completeness(tmp_path)
 
@@ -606,9 +866,12 @@ def test_board_diverging_from_ledger_reports_fail(tmp_path: Path) -> None:
 def test_board_matching_ledger_reports_no_finding(tmp_path: Path) -> None:
     pa = _pa(tmp_path, "pyforge-herald")
     _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done", "1-2-b": "in-progress"})
-    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {
-        "herald": {"epics": [{"stories": [["1.1", "done", "a"], ["1.2", "pending", "b"]]}]},
-    })
+    _write_data_js(
+        tmp_path / "docs" / "dashboard" / "data.js",
+        {
+            "herald": {"epics": [{"stories": [["1.1", "done", "a"], ["1.2", "pending", "b"]]}]},
+        },
+    )
 
     findings = board.gather_chain_completeness(tmp_path)
 
@@ -727,10 +990,13 @@ def test_non_dict_data_js_project_entry_does_not_crash_or_hide_other_findings(
     take down INV-C for a different, well-formed station."""
     pa_herald = _pa(tmp_path, "pyforge-herald")
     _write_ledger(pa_herald / "sprint-status-ledger.yaml", {"1-1-a": "done"})
-    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {
-        "alpha": None,
-        "herald": {"epics": [{"stories": [["1.1", "pending", "a"]]}]},
-    })
+    _write_data_js(
+        tmp_path / "docs" / "dashboard" / "data.js",
+        {
+            "alpha": None,
+            "herald": {"epics": [{"stories": [["1.1", "pending", "a"]]}]},
+        },
+    )
 
     findings = board.gather_chain_completeness(tmp_path)
 
@@ -996,15 +1262,12 @@ def test_non_utf8_ledger_does_not_discard_the_same_projects_own_finding(
     """
     pa = _pa(tmp_path, "pyforge-alpha")
     _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft")  # real INV-A FAIL
-    (pa / "sprint-status-ledger.yaml").write_bytes(
-        b"development_status:\n  1-1-a: done\n  \xe9bad: todo\n"
-    )
+    (pa / "sprint-status-ledger.yaml").write_bytes(b"development_status:\n  1-1-a: done\n  \xe9bad: todo\n")
 
     findings = board.gather_chain_completeness(tmp_path)
 
     assert "spec-not-decomposed" in {f.check for f in findings}, (
-        f"the project's own real FAIL was discarded: "
-        f"{[(f.check, f.status.value) for f in findings]}"
+        f"the project's own real FAIL was discarded: {[(f.check, f.status.value) for f in findings]}"
     )
     assert exit_code_for(findings) == 2
 
@@ -1153,8 +1416,7 @@ def test_a_status_written_on_the_next_line_is_still_an_open_spec(tmp_path: Path)
     `_scalar` was added to close, through a different bit of YAML syntax."""
     path = _pa(tmp_path, "pyforge-alpha") / "specs" / "spec-foo" / "SPEC.md"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("---\nstatus:\n  draft\nowner-dream: docs/dreams/x.md\n---\n\nbody\n",
-                     encoding="utf-8")
+    path.write_text("---\nstatus:\n  draft\nowner-dream: docs/dreams/x.md\n---\n\nbody\n", encoding="utf-8")
 
     _assert_alpha_fail_survives(tmp_path)
 

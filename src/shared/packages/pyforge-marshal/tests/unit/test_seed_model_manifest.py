@@ -12,6 +12,7 @@ from textwrap import dedent
 
 import pytest
 import yaml
+
 from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
     ArtifactClass,
@@ -236,9 +237,7 @@ def test_referenced_missing_pin_raises_manifest_error(tmp_path):
         ("rationale", r"^foo: rationale must be a non-empty, non-blank str, got None"),
     ],
 )
-def test_missing_required_field_raises_manifest_error(
-    tmp_path, missing_field, expected_message
-):
+def test_missing_required_field_raises_manifest_error(tmp_path, missing_field, expected_message):
     entry = {
         "id": "foo",
         "class": "copied-seeded",
@@ -267,9 +266,7 @@ def test_missing_required_field_raises_manifest_error(
         ("rationale", r"^foo: rationale must be a non-empty, non-blank str"),
     ],
 )
-def test_wrong_type_required_field_raises_manifest_error(
-    tmp_path, bad_type_field, expected_message
-):
+def test_wrong_type_required_field_raises_manifest_error(tmp_path, bad_type_field, expected_message):
     entry = {
         "id": "foo",
         "class": "copied-seeded",
@@ -334,9 +331,7 @@ def test_malformed_top_level_model_version_wraps_invalid_version_error(tmp_path)
         model_version: "not-a-version"
         artifacts: []
     """
-    with pytest.raises(
-        ManifestError, match=r"^manifest: model_version: .*not a valid SemVer"
-    ) as excinfo:
+    with pytest.raises(ManifestError, match=r"^manifest: model_version: .*not a valid SemVer") as excinfo:
         load_manifest(_write(tmp_path, text))
     assert excinfo.value.__cause__ is not None
 
@@ -369,9 +364,7 @@ def test_until_less_than_since_raises_manifest_error(tmp_path):
             since: "2.0.0"
             until: "1.0.0"
     """
-    with pytest.raises(
-        ManifestError, match=r"^foo: until \(1\.0\.0\) must be strictly greater than since \(2\.0\.0\)"
-    ):
+    with pytest.raises(ManifestError, match=r"^foo: until \(1\.0\.0\) must be strictly greater than since \(2\.0\.0\)"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -541,8 +534,12 @@ def test_manifest_entry_regions_wrong_type_raises_value_error_not_type_error():
     guarded pattern in the same file)."""
     with pytest.raises(ValueError):
         ManifestEntry(
-            id="x", artifact_class="copied-seeded", path="p", applies_to="init",
-            rationale="r", regions=5,
+            id="x",
+            artifact_class="copied-seeded",
+            path="p",
+            applies_to="init",
+            rationale="r",
+            regions=5,
         )
 
 
@@ -568,9 +565,7 @@ def test_falsy_non_list_never_write_raises_manifest_error(tmp_path):
         never_write: 0
         artifacts: []
     """
-    with pytest.raises(
-        ManifestError, match=r"^manifest: never_write must be a list of non-blank str"
-    ):
+    with pytest.raises(ManifestError, match=r"^manifest: never_write must be a list of non-blank str"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -632,9 +627,7 @@ def test_non_mapping_region_raises_manifest_error(tmp_path):
 
 
 def test_missing_file_raises_manifest_error(tmp_path):
-    with pytest.raises(
-        ManifestError, match=r"^manifest: could not read .*does-not-exist\.yaml: "
-    ):
+    with pytest.raises(ManifestError, match=r"^manifest: could not read .*does-not-exist\.yaml: "):
         load_manifest(tmp_path / "does-not-exist.yaml")
 
 
@@ -651,9 +644,7 @@ def test_deeply_nested_yaml_raises_manifest_error(tmp_path):
     class as UnicodeDecodeError, on the very input (malformed YAML) the
     ManifestError-only contract names."""
     text = 'model_version: "1.0.0"\nartifacts: ' + "[" * 500 + "]" * 500 + "\n"
-    with pytest.raises(
-        ManifestError, match=r"^manifest: .* is nested too deeply to parse$"
-    ):
+    with pytest.raises(ManifestError, match=r"^manifest: .* is nested too deeply to parse$"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -710,9 +701,7 @@ def test_duplicate_key_within_entry_raises_manifest_error(tmp_path):
     # `manifest: `, not `foo: ` -- a YAML-level failure is composed before
     # any entry structure exists to address, which is what ManifestError's
     # docstring promises.
-    with pytest.raises(
-        ManifestError, match=r"(?s)^manifest: invalid YAML in .*found duplicate key 'path'"
-    ):
+    with pytest.raises(ManifestError, match=r"(?s)^manifest: invalid YAML in .*found duplicate key 'path'"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -860,9 +849,7 @@ def test_non_utf8_file_raises_manifest_error(tmp_path):
     the `OSError`/`YAMLError` handlers."""
     path = tmp_path / "manifest.yaml"
     path.write_bytes(b'model_version: "\xff\xfe1.0.0"\n')
-    with pytest.raises(
-        ManifestError, match=r"^manifest: .*manifest\.yaml is not valid UTF-8: "
-    ):
+    with pytest.raises(ManifestError, match=r"^manifest: .*manifest\.yaml is not valid UTF-8: "):
         load_manifest(path)
 
 
@@ -870,9 +857,7 @@ def test_unusable_model_version_component_raises_manifest_error(tmp_path):
     """A grammatically valid but absurd component (CPython refuses int()
     past 4300 digits) must not escape as a raw ValueError."""
     text = f'model_version: "{"1" * 5000}.0.0"\nartifacts: []\n'
-    with pytest.raises(
-        ManifestError, match=r"^manifest: model_version: .*has an unusable numeric component: "
-    ):
+    with pytest.raises(ManifestError, match=r"^manifest: model_version: .*has an unusable numeric component: "):
         load_manifest(_write(tmp_path, text))
 
 
@@ -965,9 +950,7 @@ def test_authored_duplicate_key_inside_a_merged_entry_still_rejected(tmp_path):
         ("rationale", r"^foo: rationale must be a non-empty, non-blank str"),
     ],
 )
-def test_whitespace_only_required_field_raises_manifest_error(
-    tmp_path, blank_field, expected_message
-):
+def test_whitespace_only_required_field_raises_manifest_error(tmp_path, blank_field, expected_message):
     entry = {
         "id": "foo",
         "class": "copied-seeded",
@@ -994,9 +977,7 @@ def test_whitespace_only_optional_field_raises_manifest_error(tmp_path):
             rationale: r
             pin: "   "
     """
-    with pytest.raises(
-        ManifestError, match=r"^foo: pin must be a non-empty, non-blank str or None"
-    ):
+    with pytest.raises(ManifestError, match=r"^foo: pin must be a non-empty, non-blank str or None"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -1014,9 +995,7 @@ def test_whitespace_only_region_name_raises_manifest_error(tmp_path):
               - name: "  "
                 anchor: ["## Tiers"]
     """
-    with pytest.raises(
-        ManifestError, match=r"^foo: regions\[0\]: region name must be a non-empty, non-blank str"
-    ):
+    with pytest.raises(ManifestError, match=r"^foo: regions\[0\]: region name must be a non-empty, non-blank str"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -1074,9 +1053,7 @@ def test_region_error_names_the_offending_region(tmp_path):
               - name: three
                 anchor: ["## Three"]
     """
-    with pytest.raises(
-        ManifestError, match=r"^foo: regions\[1\] \(two\): anchor must be a non-empty list of str"
-    ):
+    with pytest.raises(ManifestError, match=r"^foo: regions\[1\] \(two\): anchor must be a non-empty list of str"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -1134,9 +1111,7 @@ def test_missing_model_version_key_raises_manifest_error(tmp_path):
 
 def test_unquoted_model_version_parses_as_a_float_and_is_rejected(tmp_path):
     """`model_version: 1.0` is a YAML float, not a version string."""
-    with pytest.raises(
-        ManifestError, match=r"^manifest: model_version: version must be a str, got 1.0$"
-    ):
+    with pytest.raises(ManifestError, match=r"^manifest: model_version: version must be a str, got 1.0$"):
         load_manifest(_write(tmp_path, "model_version: 1.0\nartifacts: []\n"))
 
 
@@ -1292,9 +1267,7 @@ def test_wrong_typed_pin_on_a_non_referenced_class_reports_the_class_rule(tmp_pa
             rationale: r
             pin: 5
     """
-    with pytest.raises(
-        ManifestError, match=r"^foo: pin is only valid on referenced entries, got 5$"
-    ):
+    with pytest.raises(ManifestError, match=r"^foo: pin is only valid on referenced entries, got 5$"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -1326,9 +1299,7 @@ def test_repeated_merge_key_raises_manifest_error(tmp_path):
             <<: *b
             id: merged
     """
-    with pytest.raises(
-        ManifestError, match=r"(?s)^manifest: invalid YAML in .*found duplicate merge key '<<'"
-    ):
+    with pytest.raises(ManifestError, match=r"(?s)^manifest: invalid YAML in .*found duplicate merge key '<<'"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -1452,7 +1423,5 @@ def test_marker_unsafe_region_name_raises_manifest_error_naming_id_and_name(tmp_
               - name: "my region"
                 anchor: ["## Tiers"]
     """
-    with pytest.raises(
-        ManifestError, match=r"^foo: regions\[0\] \(my region\): region name must match .*my region"
-    ):
+    with pytest.raises(ManifestError, match=r"^foo: regions\[0\] \(my region\): region name must match .*my region"):
         load_manifest(_write(tmp_path, text))

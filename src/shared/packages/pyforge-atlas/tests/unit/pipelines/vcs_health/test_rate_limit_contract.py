@@ -37,6 +37,7 @@ class _FakeClock:
 
 # -- single-worker 3-RPS default -------------------------------------------
 
+
 def test_default_rps_is_3_and_single_worker():
     assert DEFAULT_RPS == 3.0
     assert resolve_worker_count(None) == SINGLE_WORKER == 1
@@ -66,9 +67,7 @@ def test_acquire_frozen_clock_no_op_sleep_raises_not_spins():
     # B2 review-hardening (DW-B1-2 code ceiling): a frozen clock + no-op sleep never
     # refills tokens, so acquire() would spin forever once the bucket drains. The code
     # ceiling RAISES instead of hanging.
-    sched = RateLimitedScheduler(
-        rps=3.0, bucket_capacity=1, clock=lambda: 0.0, sleep=lambda s: None
-    )
+    sched = RateLimitedScheduler(rps=3.0, bucket_capacity=1, clock=lambda: 0.0, sleep=lambda s: None)
     sched.acquire()  # first token is free (bucket starts full)
     with pytest.raises(RuntimeError, match="did not advance"):
         sched.acquire()  # bucket empty + clock frozen -> ceiling raises, no hang
@@ -87,6 +86,7 @@ def test_refill_is_continuous():
 
 # -- PHASE_K_AGGRESSIVE opt-out (only literal "1" re-arms burst) ------------
 
+
 def test_aggressive_only_literal_one_re_arms_burst():
     assert resolve_worker_count("1") == AGGRESSIVE_WORKERS == 8
     # non-"1" values do NOT re-arm burst (CFA:5114-5115)
@@ -95,6 +95,7 @@ def test_aggressive_only_literal_one_re_arms_burst():
 
 
 # -- Retry-After parsing (hard-capped, both RFC 7231 forms) -----------------
+
 
 def test_parse_retry_after_delta_seconds_capped():
     assert parse_retry_after("5") == 5.0
@@ -120,12 +121,13 @@ def test_parse_retry_after_http_date_form():
 
 # -- stubbed fetcher acquires a token per fetch + 403 -> last_error ---------
 
+
 def test_stub_fetcher_acquires_a_token_per_call():
     clk = _FakeClock()
     sched = RateLimitedScheduler(rps=3.0, bucket_capacity=1, clock=clk.now, sleep=clk.sleep)
     client = StubFetcherClient({"numpy": {"v": "2.0"}}, scheduler=sched)
-    assert client.fetch("numpy") == {"v": "2.0"}   # first: free
-    client.fetch("numpy")                           # second: throttled -> time advanced
+    assert client.fetch("numpy") == {"v": "2.0"}  # first: free
+    client.fetch("numpy")  # second: throttled -> time advanced
     assert clk.t > 0.0
     assert len(client.calls) == 2
 

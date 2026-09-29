@@ -80,3 +80,80 @@ class AuditEntry(models.Model):
 
     class Meta:
         ordering = ["-occurred_at", "-id"]
+
+
+class WorkPassport(models.Model):
+    """Work Passport identity model (Story 65.1; spec-pyforge-steward CAP-140, fully
+    realized as of Story 61.2, which added `vendor_id` and the always-fresh vendor
+    mint path, `dashboard/passport_mint.py`).
+
+    Primary identity is a minted UUID (`passport_id`). External system keys
+    (Jira key, GitHub item ID) are stored as external aliases. `vendor_id`
+    names which vendor an inbound row belongs to (v1 operates exactly one
+    vendor) and is null/blank on internal-mint rows, which carry no vendor.
+    """
+
+    passport_id = models.CharField(max_length=64, primary_key=True)
+    story_id = models.CharField(max_length=64, db_index=True)
+    station = models.CharField(max_length=64, db_index=True)
+    epic_id = models.CharField(max_length=64, blank=True, default="")
+    title = models.CharField(max_length=512)
+    status = models.CharField(max_length=32, db_index=True, default="backlog")
+    jira_key = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    github_item_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    vendor_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    effort = models.CharField(max_length=32, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["station", "story_id"]
+        verbose_name = "Work Passport"
+        verbose_name_plural = "Work Passports"
+
+    def __str__(self) -> str:
+        return f"{self.station}:{self.story_id} ({self.passport_id[:8]})"
+
+
+class CorridorDirection(models.TextChoices):
+    INBOUND = "inbound", "Inbound"
+    OUTBOUND = "outbound", "Outbound"
+
+
+class CorridorLoad(models.Model):
+    """CAP-139 (spec-work-passports-dated-extracts CAP-1 / spec-pyforge-steward
+    CAP-139): one durable record of a corridor drop. Idempotent on
+    (direction, batch_sha, waybill) -- see dashboard/corridor_load.py.
+
+    ``slice_name``/``signer`` (Story 61.4, spec-work-passports-dated-extracts
+    CAP-4 / spec-pyforge-steward CAP-142 -- the signed-outbound-slice gate)
+    are the durable record of what was named and who signed it. Both are
+    blank (``""``) on every ``inbound`` row: the gate applies to
+    ``direction="outbound"`` only. Like ``transport``, they are set ONCE at
+    create time and never overwritten by a later idempotent repeat of the
+    same ``(direction, batch_sha, waybill)`` -- see
+    ``corridor.py``/``corridor_load.py`` for the gate and the idempotency
+    rule.
+    """
+
+    direction = models.CharField(max_length=8, choices=CorridorDirection.choices, db_index=True)
+    batch_sha = models.CharField(max_length=64, db_index=True)
+    waybill = models.CharField(max_length=128, db_index=True)
+    transport = models.CharField(max_length=32)
+    slice_name = models.CharField(max_length=128, blank=True, default="")
+    signer = models.CharField(max_length=255, blank=True, default="")
+    loaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-loaded_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["direction", "batch_sha", "waybill"],
+                name="corridorload_unique_direction_batch_sha_waybill",
+            )
+        ]
+        verbose_name = "Corridor Load"
+        verbose_name_plural = "Corridor Loads"
+
+    def __str__(self) -> str:
+        return f"{self.direction}:{self.waybill} ({self.batch_sha[:8]})"

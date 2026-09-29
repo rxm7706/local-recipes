@@ -56,3 +56,46 @@ def test_multiline_block_raises():
 
 def test_no_frontmatter_returns_false():
     assert parse_declared_low_risk("no frontmatter\n") is False
+
+
+def test_blank_line_before_banner_reads_true():
+    """Story 51.8 (DW-FU-50-5/CAP-256): a promoted, banner-topped tracked
+    spec's ``declared_low_risk: true`` must not be misread as ``False`` --
+    a leading blank line before the banner's opening marker must not fall
+    through to "no frontmatter" either."""
+    text = "\n<!-- Promoted ... -->\n" + _frontmatter(_HEADER + "declared_low_risk: true\n")
+    assert parse_declared_low_risk(text) is True
+
+
+def test_spaces_before_banner_reads_true():
+    text = "  <!-- Promoted ... -->\n" + _frontmatter(_HEADER + "declared_low_risk: true\n")
+    assert parse_declared_low_risk(text) is True
+
+
+def test_bom_before_banner_reads_true():
+    text = "\ufeff<!-- Promoted ... -->\n" + _frontmatter(_HEADER + "declared_low_risk: true\n")
+    assert parse_declared_low_risk(text) is True
+
+
+def test_banner_below_frontmatter_unaffected():
+    """The banner-BELOW-frontmatter shape never starts with ``<!--``, so it
+    is untouched by the banner-skip and must keep parsing exactly as
+    before."""
+    text = _frontmatter(_HEADER + "declared_low_risk: true\n") + "<!-- Promoted ... -->\n"
+    assert parse_declared_low_risk(text) is True
+
+
+def test_unclosed_banner_above_frontmatter_reads_false():
+    """An unclosed ``<!--`` is not a banner this parser recognizes -- the
+    text still doesn't start with ``---``, so it stays absent, not
+    declared."""
+    text = "<!-- never closed\n" + _frontmatter(_HEADER + "declared_low_risk: true\n")
+    assert parse_declared_low_risk(text) is False
+
+
+def test_blank_line_with_no_banner_still_returns_false():
+    """A leading blank line/BOM tolerance must not widen into reading
+    frontmatter that isn't at the start once the (non-existent) banner is
+    skipped."""
+    text = "\n" + _frontmatter(_HEADER + "declared_low_risk: true\n")
+    assert parse_declared_low_risk(text) is False

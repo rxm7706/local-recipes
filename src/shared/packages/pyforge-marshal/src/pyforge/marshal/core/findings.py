@@ -509,7 +509,9 @@ back to ``DEFAULT_POLICY``'s empty rule set) HARD REFUSES the entire
 forge is ever touched: proceeding on a malformed ``landing_rules`` layer
 would silently evaluate against ZERO rules instead of the project's declared
 ones, letting a config typo -- not a deliberate decision -- bypass the
-hygiene gate entirely. Classifies ``Verdict.ERROR``, the same tier as
+hygiene gate entirely. Story 61.1 (CAP-271) widens it to a malformed
+``landing_base_branch`` layer, whose fallback is ``main``: proceeding would
+open the PR against a base nobody declared. Classifies ``Verdict.ERROR``, the same tier as
 ``MRS-TEARDOWN-005``'s identical "this refusal must be at least as strict as
 a real violation, never a softer UNEVALUABLE" reasoning. ``MRS-DEPLOY-016``
 (P4: the head branch moved between the hygiene preflight's own read of its
@@ -580,7 +582,8 @@ Story 4.8's ``cli/land.py::run_land`` adds the twelfth real caller's own NEW
 area, ``MRS-LAND-*`` (FR-60/AD-40, "marshal land -- the last mile lands
 itself"): seven codes. ``MRS-LAND-001`` (the loop-home station branch
 ``loop/<slug>`` could not be resolved or does not exist -- refused before
-any forge call) and ``MRS-LAND-002`` (a malformed ``landing_rules`` policy
+any forge call) and ``MRS-LAND-002`` (a malformed ``landing_rules`` or,
+since Story 61.1, ``landing_base_branch`` policy
 layer -- the SAME hard-refuse-before-any-forge-call precondition
 ``MRS-DEPLOY-015`` already established for ``batch-pr``, copied verbatim
 for ``land``) both classify ``Verdict.ERROR`` -- a precondition failure,
@@ -830,6 +833,51 @@ closing step, not a precondition of the write it follows), and the next
 ``sprint-ledger-sync --repair-feed`` run or ``dashboard-drift-check``'s
 own twin-ahead-of-feed detector still catches the gap.
 
+Story 53.2 ("the landing reconciles from git facts and runs intake",
+spec-pyforge-marshal CAP-261b) adds two more codes to ``dispatch_land.py``'s
+existing ``MRS-DISP-*`` area, closing the gap 53.1 left open: even a
+gated, told producer can still exit with drift on its OWN files, which
+today lands green and leaves ``main`` red until a human hand-writes the
+memlog entry, stamps the Spec, and runs ``deferred_work_intake`` -- the
+four fallout PRs of 2026-09-20 (#1533, #1537, #1544, #1546) were nothing
+but that ritual. Between verification and ``forge.merge_pr``, the landing
+now runs the doctor spec-surface verdict (``pyforge.doctor.sources.chain.
+gather_spec_surface``, read-only, never modified) over the branch's own
+``git diff``-derived changed governed paths. ``MRS-DISP-047`` names a
+Spec whose drift consists ENTIRELY of this branch's own changed paths: the
+landing appended one memlog event (via ``_bmad/scripts/memlog.py append``)
+naming the story key, run id, and every path, scoped-stamped exactly that
+Spec (``scripts/spec_surface_check.py --write-baseline --spec``, never a
+bare ``--write-baseline``), committed the reconcile onto the dispatch
+branch, and pushed again before merging. It classifies ``Verdict.WARN``,
+the same tier as ``MRS-DISP-046``: the reconcile succeeded and the merge
+proceeds, so this is visibility only (surfaced in ``marshal watch`` and
+``fleet-picture``'s ATTENTION rows), never a refusal. The same code also
+names a landing that could not even EVALUATE drift (the doctor source
+tree unreachable from the worktree, or the verdict crashing -- both
+should be unreachable from a real dispatch worktree, always a full
+checkout, but blocking every landing on an environment gap this story is
+not scoped to fix would be a worse outage than the ritual it closes), and
+a post-merge ``dispatch_land_finalize`` run of
+``scripts/deferred_work_intake.py --fix`` refusing a deferral (e.g. no
+resolvable ``location:``) -- three triggering shapes, one non-blocking
+tier (AD-31's "same code, several triggering shapes, same tier"
+precedent, e.g. ``MRS-DEPLOY-003``/``MRS-DEPLOY-024``). ``MRS-DISP-048``
+names a Spec whose drift includes AT LEAST ONE path this branch did NOT
+change -- foreign drift a scoped stamp would silently launder alongside
+the branch's own, since a stamp accepts that Spec's ENTIRE current
+file-hash snapshot. It also covers the surrounding reconcile machinery
+failing to safely APPLY a reconcile once drift is already known
+(``VcsPort.changed_files`` failing to tell own from foreign, a memlog
+append erroring on a locked/missing-frontmatter file, the scoped-stamp
+subprocess exiting non-zero, or the post-reconcile push failing).
+``MRS-DISP-048`` classifies ``Verdict.ERROR``, the same tier as
+``MRS-DISP-044``: both fire immediately before ``forge.merge_pr`` and both
+stop the land attempt cold, naming every foreign path (or the failure)
+rather than absorbing it. Neither code changes what a self-reconciled
+session does: a branch whose own memlog already names every changed path
+produces no entry, no stamp, and neither finding.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -934,7 +982,8 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # `marshal deploy batch-pr`: MRS-DEPLOY-013 (an unsatisfied blocking
 # hygiene rule) and MRS-DEPLOY-014 (a ForgePort/gh command failure).
 # Code review (2026-08-06) adds four more MRS-DEPLOY-* codes for
-# `marshal deploy batch-pr`: MRS-DEPLOY-015 (P1: a malformed landing_rules
+# `marshal deploy batch-pr`: MRS-DEPLOY-015 (P1: a malformed landing_rules --
+# or, since Story 61.1, landing_base_branch --
 # policy layer hard-refuses the whole invocation), MRS-DEPLOY-016 (P4: the
 # head branch moved between hygiene evaluation and the PR write),
 # MRS-DEPLOY-017 (P5: the loop-home worktree's checkout does not match the
@@ -956,7 +1005,8 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # silent empty FoldResult).
 # Story 4.8's cli/land.py adds the twelfth real caller's own NEW area,
 # MRS-LAND-* (seven codes): MRS-LAND-001 (the station branch could not be
-# resolved/does not exist), MRS-LAND-002 (a malformed landing_rules policy
+# resolved/does not exist), MRS-LAND-002 (a malformed landing_rules or, since
+# Story 61.1, landing_base_branch policy
 # layer), MRS-LAND-003 (an already-landed wave's own branch retirement
 # could not be confirmed), MRS-LAND-004 (a fired required_check resolved to
 # a real failure or could not be read), MRS-LAND-005 (a fired
@@ -1222,6 +1272,11 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # advances the tracked `sprint-status-ledger.yaml` under the same AD-42
 # advisory lock. Names lock contention, refused feed downgrade, or
 # write/commit failure — WARN, never blocking (wave already landed).
+# Story 68.1 (CAP-277) gives the same code a second triggering shape, at the same
+# WARN tier (AD-31: same code, several triggering shapes): the dispatch
+# supervisor's `_promote_blocked_twin` publish of a blocked story-spec twin onto
+# `origin/main` that could not land, journaled as a `dispatch-blocked-twin-publish`
+# observation naming the story and the error.
 #
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to `cli/status.py`'s own `MRS-STATUS-*` area, both sourced from a
@@ -1393,6 +1448,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SPIN-012",
         "MRS-SUPV-008",
         "MRS-SUPV-009",
+        "MRS-SUPV-010",
         "MRS-GATE-007",
         "MRS-GATE-008",
         "MRS-GATE-009",
@@ -1700,14 +1756,71 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # land failed or is not yet eligible — park, never another session.
         "MRS-DISP-040",
         # Story 33.9 (spec-bmad-switch-scope-enforcement CAP-1 third call
-        # site): `verify_scope` at `factory dispatch` — marker/symlink
-        # triangle or parent BMAD_ACTIVE_PROJECT disagrees with dispatch slug.
+        # site), narrowed by Story 64.1 (CAP-273, FR-219): `verify_scope`
+        # against the dispatch WORKTREE's own triangle, or the parent
+        # BMAD_ACTIVE_PROJECT disagreeing with the dispatch slug — the
+        # primary checkout's marker/links are never read here.
         "MRS-DISP-041",
         # Story 28.30 (CAP-3, dispatch half of the `output` layer): the
         # caveman skill's instrument is unavailable, or deploying it into
         # the dispatch worktree failed — the layer is off for this
         # iteration and the session runs unwrapped.
         "MRS-DISP-042",
+        # 2026-09-12 (dispatch-tier-routing-fails-safe): a tier-mapped
+        # model's declared cost-catalog provider disagrees with the
+        # live-verified harness profile the binary+authcheck walk actually
+        # landed on — the model override is dropped, the harness's own
+        # default applies. The dispatch engine's own counterpart to
+        # adapters/harness_bmadloop.py::render_policy_toml's same guard on
+        # the spin engine. Widened by Story 51.5 (CAP-253): also fires when
+        # the model is catalogued under NO provider at all and is not one
+        # of the harness's own default/alias ids (`sonnet`/`opus`/`haiku`)
+        # — a genuinely foreign or mistyped model id must not reach a live
+        # launch uncaught.
+        "MRS-DISP-043",
+        # Story 51.1 (verification sees the merge result, CAP-4): the tree
+        # `git merge-tree --write-tree origin/main <head>` would actually
+        # produce fails the station's own `verify_commands` (or the
+        # `commits_behind`/merge-tree-preview check itself could not be
+        # evaluated) -- a break the branch's own tree never exposed, caught
+        # immediately before `forge.merge_pr` (the 2026-09-18 50.4/27.5
+        # incident this closes).
+        "MRS-DISP-044",
+        # Story 51.4 (spec-pyforge-marshal CAP-252): the pre-launch guard's
+        # worktree spec is `status: blocked` -- refuse to relaunch
+        # bmad-build-auto without an operator decision. The sibling of
+        # MRS-DISP-040's `done`-status CAP-4-only refusal above.
+        "MRS-DISP-045",
+        # Story 51.11 (CAP-258): a worktree spec reads status: blocked but
+        # its baseline_revision does not match this run's own baseline --
+        # advisory only, the exit still classifies as stopped_externally.
+        "MRS-DISP-046",
+        # Story 53.2 (spec-pyforge-marshal CAP-261b): the landing reconciled
+        # spec-surface drift on this branch's own changed governed paths --
+        # memlog entries appended, exactly those Specs scoped-stamped, a
+        # commit pushed before merge. Visibility only, never a refusal.
+        "MRS-DISP-047",
+        # Story 53.2 (spec-pyforge-marshal CAP-261b): a Spec this branch's
+        # own changed paths co-govern also carries drift on a path the
+        # branch did not change -- foreign drift the landing refuses rather
+        # than silently launder into a scoped stamp.
+        "MRS-DISP-048",
+        # Story 63.4 (spec-pyforge-steward CAP-5): a pre-launch shell-out to
+        # `steward session check --json` reported a non-ok session-precondition
+        # verdict (pixi/pyforge-guild, bmad-method drift, the token-economy
+        # kit + codegraph index, gh auth/rate-limit, the Tier-3 sprint-status
+        # feed) -- WARN, non-blocking, mirroring MRS-DISP-036's worktree-WIP
+        # surfacing shape. Never escalated to ERROR: a session precondition
+        # gap is worth flagging before a dispatch launches, not worth
+        # refusing the launch over.
+        "MRS-DISP-049",
+        # Story 68.1 (spec-pyforge-marshal CAP-277): after its ledger promotion,
+        # `dispatch_land_finalize` read `origin/main`'s tracked
+        # `sprint-status-ledger.yaml` and the landed story's key does not read
+        # `done` there (absent, another status, or the ledger unreadable) --
+        # the promotion's publish failed, and the landing is not a clean one.
+        # ERROR: finalize exits 1, `dispatch land` refuses (MRS-DISP-020).
+        "MRS-DISP-051",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
@@ -1767,6 +1880,32 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # today's compile-on-hunch behavior with a named reason).
         "MRS-CTX-001",
         "MRS-CTX-002",
+        # Story 46.1 (a bare clone bootstraps the substrate, spec-pyforge-
+        # marshal CAP-192): `marshal context bootstrap` / `context pack`.
+        # 003 WARN (a member was rebuilt locally -- names the command run
+        # and why the fetch did not serve it); 004 UNEVALUABLE (a member
+        # was neither fetched nor rebuilt); 005 WARN (a fetched pack was
+        # refused -- digest mismatch, malformed manifest or unsafe entry --
+        # and installed nothing); 006 WARN (`context pack` wrote the pair
+        # without an absent member); 007 UNEVALUABLE (nothing packable).
+        "MRS-CTX-003",
+        "MRS-CTX-004",
+        "MRS-CTX-005",
+        "MRS-CTX-006",
+        "MRS-CTX-007",
+        # Story 46.2 (the canonical context bundle is digest-pinned,
+        # spec-pyforge-marshal CAP-192): `marshal context bundle`'s own
+        # code. 008 WARN -- a second harness's `--expect-digest` does not
+        # match the freshly assembled bundle's digest; never blocks.
+        "MRS-CTX-008",
+        # Story 46.6 (2026-09-25, spec-pyforge-marshal CAP-193, fold-remint
+        # of spec-marshal-token-economy CAP-20): `marshal context advisory`'s
+        # own code. 009 WARN -- a declared-active `[context]` layer's
+        # instrument/binary no longer resolves at session-close (a kit item
+        # gone MISSING/STALE -- UNAVAILABLE is deliberately excluded -- or
+        # an enabled derived-context/planning-graph layer whose `scribe`
+        # binary does not resolve on PATH); never blocks.
+        "MRS-CTX-009",
         # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
         # `marshal context retrieve`'s degradation code -- WARN, never
         # blocking; falls back to Story 28.8's epic-context file.
@@ -1798,6 +1937,14 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-BENCH-002",
         "MRS-BENCH-003",
         "MRS-BENCH-004",
+        # Story 44.1 (marshal watch ports the operator ritual): 001 ERROR
+        # (bmad-loop status/list failed -- no delta fabricated); 002 ERROR
+        # (no active run / invalid scope); 003 WARN (git probe failed);
+        # 004 WARN (gh probe failed).
+        "MRS-WATCH-001",
+        "MRS-WATCH-002",
+        "MRS-WATCH-003",
+        "MRS-WATCH-004",
     }
 )
 
@@ -1815,11 +1962,7 @@ def require_registered(code: str) -> str:
     ``UnregisteredFindingCodeError`` otherwise. Format is checked first -- a
     malformed code fails before the membership check ever runs."""
     if not CODE_PATTERN.fullmatch(code):
-        raise UnregisteredFindingCodeError(
-            f"malformed finding code {code!r} -- expected MRS-<AREA>-<NNN>"
-        )
+        raise UnregisteredFindingCodeError(f"malformed finding code {code!r} -- expected MRS-<AREA>-<NNN>")
     if code not in REGISTERED_CODES:
-        raise UnregisteredFindingCodeError(
-            f"unregistered finding code {code!r} -- not in REGISTERED_CODES"
-        )
+        raise UnregisteredFindingCodeError(f"unregistered finding code {code!r} -- not in REGISTERED_CODES")
     return code

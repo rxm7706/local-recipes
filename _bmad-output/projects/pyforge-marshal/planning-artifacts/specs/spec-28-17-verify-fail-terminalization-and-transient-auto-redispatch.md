@@ -2,7 +2,7 @@
 title: 'Verify-fail terminalization and transient auto-redispatch (Story 28.17, Epic 28)'
 type: 'feature'
 created: '2026-09-01'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: medium
@@ -90,3 +90,17 @@ verify-fail zombie 2026-09-01.
 ## Spec Change Log
 
 - 2026-09-01: drafted via bmad-spec; CAP-1 implemented same session (P0)
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `9541dc6f80` (2026-09-01, "feat(marshal): Story 28.17 verify-fail terminalization (P0)"). Ledger row `28-17-verify-fail-terminalization-and-transient-auto-redispatch: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/fleet-drain-queue.yaml`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-17-verify-fail-terminalization-and-transient-auto-redispatch.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-verify-fail-terminalization/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-verify-fail-terminalization/SPEC.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `docs/dreams/marshal-dependency-aware-dispatch.md`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_supervisor_state.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_hotfix.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready-for-dev` → `done` (ledger row `28-17-verify-fail-terminalization-and-transient-auto-redispatch: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -203,9 +203,7 @@ def collect_leg_from_harness(
     usage = harness.usage_snapshot(home, run_id)
     snapshot = harness.run_status_snapshot(home, run_id)
     if usage is None or snapshot is None:
-        raise ValueError(
-            f"could not read usage/status snapshot for run {run_id!r} under {home}"
-        )
+        raise ValueError(f"could not read usage/status snapshot for run {run_id!r} under {home}")
     task_phase, reviewer_ran = _task_facts(home, run_id, snapshot, story_key)
     gate_fingerprint = tuple(sorted(snapshot.sweeps_refused.keys()))
     return bench.BenchmarkLegRecord(
@@ -226,9 +224,7 @@ def collect_leg_from_harness(
     )
 
 
-def _task_facts(
-    home: Path, run_id: str, snapshot: RunStatusSnapshot, story_key: str
-) -> tuple[str, bool]:
+def _task_facts(home: Path, run_id: str, snapshot: RunStatusSnapshot, story_key: str) -> tuple[str, bool]:
     review_cycle = _review_cycle_from_state(home, run_id, story_key)
     for task in snapshot.tasks:
         if task.story_key == story_key:
@@ -241,7 +237,7 @@ def _review_cycle_from_state(home: Path, run_id: str, story_key: str) -> int:
     state_path = home / ".bmad-loop" / "runs" / run_id / "state.json"
     try:
         payload = json.loads(state_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+    except OSError, json.JSONDecodeError, TypeError, ValueError:
         return 0
     tasks = payload.get("tasks")
     if not isinstance(tasks, Mapping):
@@ -252,7 +248,7 @@ def _review_cycle_from_state(home: Path, run_id: str, story_key: str) -> int:
         if task.get("story_key") == story_key:
             try:
                 return int(task.get("review_cycle") or 0)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 return 0
     return 0
 
@@ -276,9 +272,7 @@ def _load_leg(
         payload = json.loads(path.read_text(encoding="utf-8"))
         leg = bench.leg_from_mapping(payload)
         if leg.layers_mode != layers_mode:
-            raise ValueError(
-                f"{path}: layers_mode={leg.layers_mode!r} expected {layers_mode!r}"
-            )
+            raise ValueError(f"{path}: layers_mode={leg.layers_mode!r} expected {layers_mode!r}")
         return leg
     return collect_leg_from_harness(
         home=home,
@@ -317,9 +311,7 @@ def run_structure_graph_dispatch_measure(args: argparse.Namespace) -> int:
     )
     navigation = sg_bench.measure_navigation_without_graph(root)
     sync_from_base = (
-        sg_bench.SyncMeasurement(wall_clock_seconds=float(args.sync_seconds))
-        if args.sync_seconds is not None
-        else None
+        sg_bench.SyncMeasurement(wall_clock_seconds=float(args.sync_seconds)) if args.sync_seconds is not None else None
     )
     environment: dict[str, object] = {
         "repo_root": str(root),
@@ -342,11 +334,7 @@ def run_structure_graph_dispatch_measure(args: argparse.Namespace) -> int:
         environment=environment,
         loop_home_reference=loop_home_reference,
     )
-    output = (
-        Path(args.output).resolve()
-        if args.output
-        else sg_bench.default_artifact_path(root, slug)
-    )
+    output = Path(args.output).resolve() if args.output else sg_bench.default_artifact_path(root, slug)
     try:
         output.parent.mkdir(parents=True, exist_ok=True)
         atomic_write_text(
@@ -388,10 +376,7 @@ def _emit_sg(args: argparse.Namespace, findings: list[Finding], data: dict[str, 
                 flush=True,
             )
         else:
-            print(
-                f"structure-graph-dispatch recommendation={data.get('recommendation')} "
-                f"verdict={envelope.verdict}"
-            )
+            print(f"structure-graph-dispatch recommendation={data.get('recommendation')} verdict={envelope.verdict}")
             if data.get("artifact_path"):
                 print(f"artifact: {data['artifact_path']}")
             if data.get("recommendation_rationale"):
@@ -470,11 +455,7 @@ def run_benchmark_compare(
         environment=environment,
         policy_digest=policy_digest,
     )
-    output = (
-        Path(args.output).resolve()
-        if args.output
-        else default_artifact_path(root, slug)
-    )
+    output = Path(args.output).resolve() if args.output else default_artifact_path(root, slug)
     try:
         output.parent.mkdir(parents=True, exist_ok=True)
         atomic_write_text(output, json.dumps(artifact.to_json_dict(), indent=2, sort_keys=True))
@@ -538,10 +519,7 @@ def _print_text(
     *,
     void: bool,
 ) -> None:
-    print(
-        f"benchmark compare void={void} equivalence_passed={data.get('equivalence_passed')} "
-        f"verdict={verdict}"
-    )
+    print(f"benchmark compare void={void} equivalence_passed={data.get('equivalence_passed')} verdict={verdict}")
     if data.get("artifact_path"):
         print(f"artifact: {data['artifact_path']}")
     totals = data.get("totals")
@@ -559,8 +537,7 @@ def _print_text(
             if not isinstance(row, Mapping):
                 continue
             print(
-                f"  - {row.get('layer')}: savings before={row.get('savings_before')} "
-                f"after={row.get('savings_after')}"
+                f"  - {row.get('layer')}: savings before={row.get('savings_before')} after={row.get('savings_after')}"
             )
     for finding in findings:
         print(f"{finding.code} {finding.severity.value}: {finding.message}")

@@ -103,13 +103,9 @@ def _build_parser() -> tuple[
 ]:
     parser = argparse.ArgumentParser(
         prog="doctor",
-        description=(
-            "Pre-flight + fleet-watch diagnostics for the pyforge factory."
-        ),
+        description=("Pre-flight + fleet-watch diagnostics for the pyforge factory."),
     )
-    parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}"
-    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
     check = subparsers.add_parser(
         "check",
@@ -139,8 +135,7 @@ def _build_parser() -> tuple[
         default=None,
         metavar="NAME",
         help=(
-            "run the 'env' category (credential-hygiene scan); an optional "
-            "NAME runs just that named check (see --list)"
+            "run the 'env' category (credential-hygiene scan); an optional NAME runs just that named check (see --list)"
         ),
     )
     check.add_argument(
@@ -298,17 +293,11 @@ def _build_parser() -> tuple[
 
     backlog_intake_parser = subparsers.add_parser(
         "backlog-intake",
-        help=(
-            "scan every station's tracked deferred-work-ledger.md for "
-            "entries naming an epic/story, fleet wide"
-        ),
+        help=("scan every station's tracked deferred-work-ledger.md for entries naming an epic/story, fleet wide"),
     )
     backlog_intake_parser.add_argument(
         "identifier",
-        help=(
-            "an epic ('13') or story ('13.1'/'13-1') id, optionally "
-            "prefixed 'Epic '/'Story ' (case-insensitive)"
-        ),
+        help=("an epic ('13') or story ('13.1'/'13-1') id, optionally prefixed 'Epic '/'Story ' (case-insensitive)"),
     )
     backlog_intake_parser.add_argument(
         "path",
@@ -350,9 +339,7 @@ def _build_parser() -> tuple[
     return parser, check, monitor, diagnose, backlog_intake_parser, flags_parser
 
 
-def _validate_check_names(
-    args: argparse.Namespace, check_parser: argparse.ArgumentParser
-) -> None:
+def _validate_check_names(args: argparse.Namespace, check_parser: argparse.ArgumentParser) -> None:
     """A NAME given to ``--engines``/``--env`` must be a cataloged check for
     that category -- an unknown name is an argparse usage error (``.error()``,
     exit 2) raised HERE, before ``gather_one`` is ever called (resolves both
@@ -379,9 +366,7 @@ def _validate_check_names(
     for category, value in (("engines", args.engines), ("env", args.env)):
         if value is None or value is _WHOLE_CATEGORY:
             continue
-        known_names = sorted(
-            spec.name for spec in registry.list_checks(category=category)
-        )
+        known_names = sorted(spec.name for spec in registry.list_checks(category=category))
         if value not in known_names:
             hint = ""
             # `value and`: an empty NAME (`--engines=`) must not hint --
@@ -397,8 +382,7 @@ def _validate_check_names(
                     f"`doctor check {shlex.quote(value)} --{category}`"
                 )
             check_parser.error(
-                f"argument --{category}: unknown check name {value!r} "
-                f"(known: {', '.join(known_names)}){hint}"
+                f"argument --{category}: unknown check name {value!r} (known: {', '.join(known_names)}){hint}"
             )
 
 
@@ -479,37 +463,28 @@ def _split_watch_axes(raw: str | None) -> tuple[str, ...]:
     return tuple(dict.fromkeys(token for token in tokens if token))
 
 
-def _validate_monitor_args(
-    args: argparse.Namespace, monitor_parser: argparse.ArgumentParser
-) -> None:
+def _validate_monitor_args(args: argparse.Namespace, monitor_parser: argparse.ArgumentParser) -> None:
     """An unknown axis or an unrecognized ``--source`` is a usage error
     (``.error()``, exit 2) raised HERE, before any ``atlas.gather`` call --
     mirrors ``_validate_check_names``'s own "validate at the call boundary,
     not inside the gather" discipline."""
     axes = _split_watch_axes(args.watch)
     if not axes:
-        monitor_parser.error(
-            "argument --watch: expected at least one axis, got an empty "
-            f"value ({args.watch!r})"
-        )
+        monitor_parser.error(f"argument --watch: expected at least one axis, got an empty value ({args.watch!r})")
     unknown_axes = [axis for axis in axes if axis not in atlas.VALID_WATCH_AXES]
     if unknown_axes:
         monitor_parser.error(
-            f"argument --watch: unknown axis(es) {unknown_axes!r} "
-            f"(known: {', '.join(sorted(atlas.VALID_WATCH_AXES))})"
+            f"argument --watch: unknown axis(es) {unknown_axes!r} (known: {', '.join(sorted(atlas.VALID_WATCH_AXES))})"
         )
     if args.source is not None:
         known_sources = sorted(source.value for source in Source)
         if args.source not in known_sources:
             monitor_parser.error(
-                f"argument --source: unknown source {args.source!r} "
-                f"(known: {', '.join(known_sources)})"
+                f"argument --source: unknown source {args.source!r} (known: {', '.join(known_sources)})"
             )
 
 
-def _validate_backlog_intake_args(
-    args: argparse.Namespace, backlog_intake_parser: argparse.ArgumentParser
-) -> None:
+def _validate_backlog_intake_args(args: argparse.Namespace, backlog_intake_parser: argparse.ArgumentParser) -> None:
     """An ``identifier`` that ``backlog_intake.parse_identifier`` cannot
     parse is a usage error (``.error()``, exit 2) raised HERE, before
     ``backlog_intake.gather`` is ever called -- mirrors
@@ -735,13 +710,7 @@ def _run_check(args: argparse.Namespace) -> int:
     run_bmad_core = args.bmad_core
     # Story 16.1: same opt-in / narrowing discipline as `--bmad-core`.
     run_sibling_dreams = args.sibling_dreams
-    if (
-        not run_engines
-        and not run_env
-        and not run_durability
-        and not run_bmad_core
-        and not run_sibling_dreams
-    ):
+    if not run_engines and not run_env and not run_durability and not run_bmad_core and not run_sibling_dreams:
         # Neither flag given -> both categories run (FR-2), each as the
         # WHOLE category -- args.engines/args.env are still None here (the
         # "flag absent" default, distinct from _WHOLE_CATEGORY, the "flag
@@ -764,9 +733,7 @@ def _run_check(args: argparse.Namespace) -> int:
     run_env = run_env and _category_in_scope("env", args.scope)
     run_durability = run_durability and _category_in_scope("durability", args.scope)
     run_bmad_core = run_bmad_core and _category_in_scope("bmad-core", args.scope)
-    run_sibling_dreams = run_sibling_dreams and _category_in_scope(
-        "sibling-dreams", args.scope
-    )
+    run_sibling_dreams = run_sibling_dreams and _category_in_scope("sibling-dreams", args.scope)
 
     findings: tuple[Finding, ...] = ()
     if run_engines:
@@ -824,11 +791,7 @@ def _run_monitor(args: argparse.Namespace) -> int:
         # surface's own "exactly which axes the triggering run covered"
         # claim honest even when `--source` drops an entire axis.
         remaining_sources = {f.source for f in findings}
-        axes = tuple(
-            axis
-            for axis in axes
-            if atlas.AXIS_SOURCES.get(axis, frozenset()) & remaining_sources
-        )
+        axes = tuple(axis for axis in axes if atlas.AXIS_SOURCES.get(axis, frozenset()) & remaining_sources)
 
     if args.surface:
         fleet_surface.write_surface(Path(args.surface), findings, axes=axes)
@@ -885,7 +848,9 @@ def _run_diagnose(args: argparse.Namespace) -> int:
         # unlike the text render below, this is never conditioned on
         # `--prescribe`.
         _emit_json(
-            findings, verb="diagnose", prescriptions=prescriptions,
+            findings,
+            verb="diagnose",
+            prescriptions=prescriptions,
             grade_result=grade_result,
         )
     else:
@@ -916,10 +881,7 @@ def _run_flags(args: argparse.Namespace) -> int:
         try:
             from django_pyforge.flags import resolve_flags_path
         except ImportError:
-            _stderr(
-                "doctor flags kill-switch: --flags-path is required when "
-                "django_pyforge is not importable"
-            )
+            _stderr("doctor flags kill-switch: --flags-path is required when django_pyforge is not importable")
             return 2
         resolved = resolve_flags_path()
         if resolved is None:
@@ -934,10 +896,7 @@ def _run_flags(args: argparse.Namespace) -> int:
     except KeyError as exc:
         _stderr(f"doctor flags kill-switch: {exc}")
         return 2
-    _write_stdout(
-        f"disabled {result.flag} in {result.path} "
-        f"({result.previous_state} -> {result.new_state})\n"
-    )
+    _write_stdout(f"disabled {result.flag} in {result.path} ({result.previous_state} -> {result.new_state})\n")
     return 0
 
 
@@ -965,11 +924,7 @@ def _render_list() -> int:
 
 
 def _report_schema() -> dict:
-    schema_text = (
-        resources.files("pyforge.doctor")
-        .joinpath("data", "report-schema.json")
-        .read_text(encoding="utf-8")
-    )
+    schema_text = resources.files("pyforge.doctor").joinpath("data", "report-schema.json").read_text(encoding="utf-8")
     return json.loads(schema_text)
 
 
@@ -988,9 +943,7 @@ def _emit_json(
         prescriptions=prescriptions,
         grade=grade_result.grade.value if grade_result is not None else None,
         axis_scores=(
-            tuple(axis.to_json_dict() for axis in grade_result.axis_scores)
-            if grade_result is not None
-            else None
+            tuple(axis.to_json_dict() for axis in grade_result.axis_scores) if grade_result is not None else None
         ),
     )
     document = report.to_json_dict()
@@ -1006,9 +959,7 @@ def _emit_json(
     # has no `$schema` key (only the nested base branch does), so a bare
     # `jsonschema.validate` would rely on the library's default-draft
     # auto-detection instead of the pin every station's own schema declares.
-    jsonschema.Draft202012Validator(compose(BASE_ENVELOPE_SCHEMA, _report_schema())).validate(
-        document
-    )
+    jsonschema.Draft202012Validator(compose(BASE_ENVELOPE_SCHEMA, _report_schema())).validate(document)
     _write_stdout(json.dumps(document, sort_keys=True, indent=2) + "\n")
 
 
@@ -1034,25 +985,16 @@ def _emit_text(
     ok = sum(1 for f in findings if f.status is DoctorStatus.OK)
     warn = sum(1 for f in findings if f.status is DoctorStatus.WARN)
     fail = sum(1 for f in findings if f.status is DoctorStatus.FAIL)
-    lines = [
-        f"doctor {verb}: {len(findings)} finding(s) -- "
-        f"{ok} ok, {warn} warn, {fail} fail"
-    ]
+    lines = [f"doctor {verb}: {len(findings)} finding(s) -- {ok} ok, {warn} warn, {fail} fail"]
     if grade_result is not None:
         # Story 4.1 FR-9 parity: whatever --json's `grade`/`axis_scores`
         # show must also be visible in the human-readable render.
-        lines.append(
-            f"  grade: {grade_result.grade.value} -- {_single_line(grade_result.reason)}"
-        )
+        lines.append(f"  grade: {grade_result.grade.value} -- {_single_line(grade_result.reason)}")
         for axis in grade_result.axis_scores:
-            lines.append(
-                f"    [{axis.axis}] {axis.grade.value} "
-                f"({axis.ok} ok, {axis.warn} warn, {axis.fail} fail)"
-            )
+            lines.append(f"    [{axis.axis}] {axis.grade.value} ({axis.ok} ok, {axis.warn} warn, {axis.fail} fail)")
     for finding in findings:
         lines.append(
-            f"  [{finding.source.value}] {finding.check}: "
-            f"{finding.status.value} -- {_single_line(finding.message)}"
+            f"  [{finding.source.value}] {finding.check}: {finding.status.value} -- {_single_line(finding.message)}"
         )
     # Story 3.4 FR-9 parity: whatever --json shows under "prescriptions"
     # must also be visible in the human-readable render -- otherwise
@@ -1061,9 +1003,7 @@ def _emit_text(
     if prescriptions is not None:
         lines.append(f"  {len(prescriptions)} prescription(s):")
         for prescription in prescriptions:
-            rank_text = (
-                f"rank {prescription.rank}" if prescription.rank is not None else "unranked"
-            )
+            rank_text = f"rank {prescription.rank}" if prescription.rank is not None else "unranked"
             lines.append(
                 f"    [{prescription.partition.value}, {rank_text}] "
                 f"{prescription.finding_ref}: {_single_line(prescription.action)}"
@@ -1077,10 +1017,7 @@ def _emit_text(
                     f"({_single_line(prescription.safe_upgrade_reason or '')})"
                 )
             else:
-                lines.append(
-                    "      safe upgrade: none -- "
-                    f"{_single_line(prescription.safe_upgrade_reason or '')}"
-                )
+                lines.append(f"      safe upgrade: none -- {_single_line(prescription.safe_upgrade_reason or '')}")
     _write_stdout("\n".join(lines) + "\n")
 
 
@@ -1111,10 +1048,7 @@ def _write_stdout(text: str) -> None:
     except BrokenPipeError:
         _absorb_broken_pipe()
     except (OSError, ValueError) as exc:
-        _stderr(
-            f"doctor: stdout emission failed ({exc.__class__.__name__}); "
-            "any partial stdout must not be consumed"
-        )
+        _stderr(f"doctor: stdout emission failed ({exc.__class__.__name__}); any partial stdout must not be consumed")
 
 
 def _absorb_broken_pipe() -> None:
@@ -1132,7 +1066,7 @@ def _absorb_broken_pipe() -> None:
                 os.dup2(devnull, stream.fileno())
             finally:
                 os.close(devnull)
-        except (OSError, ValueError, AttributeError):
+        except OSError, ValueError, AttributeError:
             pass
         return
     try:

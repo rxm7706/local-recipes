@@ -1,9 +1,12 @@
----
-title: One workspace opens every repo a story touches
+---title: One workspace opens every repo a story touches
 type: dream
 owner: steward
-status: specified   # 2026-08-22 — spec-multi-repo-workspaces, decomposed into the station backlog same day
+status: archived   # 2026-08-22 — spec-multi-repo-workspaces, decomposed into the station backlog same day
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `multi-repo-workspaces`).
+
 
 # One workspace opens every repo a story touches
 

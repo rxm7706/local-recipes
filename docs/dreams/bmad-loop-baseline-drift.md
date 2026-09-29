@@ -2,8 +2,11 @@
 title: A story's orchestrator-recorded baseline can never drift out from under its own worktree
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `bmad-loop-baseline-drift`).
 
 # A story's orchestrator-recorded baseline can never drift out from under its own worktree
 

@@ -151,9 +151,7 @@ def compare_frames(
                 ok=False,
                 row_count_actual=row_a,
                 row_count_expected=row_e,
-                detail=(
-                    f"row-count mismatch: expected empty frame, actual has {row_a} row(s)"
-                ),
+                detail=(f"row-count mismatch: expected empty frame, actual has {row_a} row(s)"),
             )
         return FrameDiffResult(ok=True, row_count_actual=0, row_count_expected=0)
 
@@ -169,10 +167,7 @@ def compare_frames(
             for c in cols
             if c in a_norm.columns
             and c in e_norm.columns
-            and (
-                a_norm[c].dtype != e_norm[c].dtype
-                or not a_norm[c].equals(e_norm[c])
-            )
+            and (a_norm[c].dtype != e_norm[c].dtype or not a_norm[c].equals(e_norm[c]))
         )
         # Fallback: if the raised diff was a shape/row-count mismatch (no
         # per-column value diff derivable), still report the compared columns

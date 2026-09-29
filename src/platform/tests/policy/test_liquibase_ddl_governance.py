@@ -29,7 +29,14 @@ DB_README = DB_ROOT / "README.md"
 ALLOWED_SCHEMAS = frozenset(
     # Story 41.3 added scribe_schema: scribe's graph relations are governed
     # DDL now, not something its runtime driver creates for itself.
-    {"public", "langflow_schema", "dbgpt_schema", "liquibase", "scribe_schema"},
+    {
+        "public",
+        "langflow_schema",
+        "dbgpt_schema",
+        "liquibase",
+        "scribe_schema",
+        "mybmad",
+    },
 )
 CHANGESET_ID = re.compile(r"^[a-z0-9][a-z0-9.-]*:[1-9][0-9]*$")
 CREATE_SCHEMA = re.compile(
@@ -51,6 +58,11 @@ WIDENING_GRANT = re.compile(
     r"\bGRANT\s+((?:(?!\bON\b)[A-Z, ])*\b(?:CREATE|ALL)\b(?:(?!\bON\b)[A-Z, ])*)\bON\b"
 )
 RUN_IN_TRANSACTION_FALSE = re.compile(r"runInTransaction:\s*false", re.IGNORECASE)
+CREATE_TABLE = re.compile(
+    r"\bCREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+([^\s(;]+)",
+    re.IGNORECASE,
+)
+REFERENCES = re.compile(r"\bREFERENCES\s+([^\s(;]+)", re.IGNORECASE)
 SCRIBE_CHANGESETS = (
     "pyforge-scribe:1",
     "pyforge-scribe:2",
@@ -123,6 +135,35 @@ def _master_includes() -> list[str]:
         for entry in document.get("databaseChangeLog", [])
         if isinstance(entry, dict) and "include" in entry
     ]
+
+
+def _table_name(token: str) -> str:
+    return token.replace('"', "").lower()
+
+
+def _foreign_keys_ahead_of_their_table(
+    includes: list[str], bodies: dict[str, str]
+) -> list[str]:
+    """Foreign keys whose target table a LATER include creates (Story 27.6).
+
+    Liquibase applies includes in document order, so on an empty database such
+    a changeset fails with ``relation ... does not exist``. Targets the changelog
+    never creates (e.g. Prisma-owned tables) are out of scope.
+    """
+    created_at: dict[str, int] = {}
+    for index, name in enumerate(includes):
+        for match in CREATE_TABLE.finditer(bodies[name]):
+            created_at.setdefault(_table_name(match.group(1)), index)
+    found: list[str] = []
+    for index, name in enumerate(includes):
+        for match in REFERENCES.finditer(bodies[name]):
+            target = _table_name(match.group(1))
+            creator = created_at.get(target)
+            if creator is not None and creator > index:
+                found.append(
+                    f"{name} references {target}, created later by {includes[creator]}"
+                )
+    return found
 
 
 def _changelog_sql() -> str:
@@ -291,6 +332,26 @@ def test_every_changeset_file_is_included_in_the_master_changelog() -> None:
     assert not duplicated, f"included more than once: {duplicated}"
 
 
+def test_every_foreign_key_target_is_created_by_an_earlier_include() -> None:
+    """Story 27.6: the changelog applies to an empty database in include order."""
+    bodies = {f"changes/{path.name}": body for path, _id, body in _changeset_entries()}
+    found = _foreign_keys_ahead_of_their_table(_master_includes(), bodies)
+    assert not found, "foreign keys ahead of their table's include: " + "; ".join(found)
+
+
+def test_foreign_key_to_a_later_include_reds() -> None:
+    """Drift: a reference to a table a later include creates must be reported."""
+    includes = ["changes/a.sql", "changes/b.sql"]
+    bodies = {
+        "changes/a.sql": 'ALTER TABLE "t" ADD FOREIGN KEY ("s") REFERENCES "site";\n',
+        "changes/b.sql": 'CREATE TABLE "site" ("id" integer);\n',
+    }
+    assert _foreign_keys_ahead_of_their_table(includes, bodies) == [
+        "changes/a.sql references site, created later by changes/b.sql"
+    ]
+    assert not _foreign_keys_ahead_of_their_table(includes[::-1], bodies)
+
+
 def test_rollback_grandfather_list_still_names_live_changesets() -> None:
     """The exemption cannot rot into a blanket pass for ids that are gone."""
     present = set(_changeset_files())
@@ -323,6 +384,10 @@ def test_scribe_owns_its_own_distribution_sequence() -> None:
     bodies = _changeset_files()
     for changeset_id in SCRIBE_CHANGESETS:
         assert changeset_id in bodies, f"{changeset_id} missing from the changelog"
+
+    mybmad_sql = bodies["pyforge-mybmad:1"].upper()
+    assert "CREATE SCHEMA IF NOT EXISTS MYBMAD" in mybmad_sql
+    assert "CREATE TABLE" not in mybmad_sql
 
     scribe_sql = "\n".join(bodies[cid] for cid in SCRIBE_CHANGESETS).upper()
     assert "CREATE EXTENSION IF NOT EXISTS VECTOR" in scribe_sql

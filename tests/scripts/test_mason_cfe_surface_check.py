@@ -258,7 +258,8 @@ def test_multi_parent_merge_falls_back_to_first_parent_diff(tmp_path: Path) -> N
     """A real 2-parent merge that resolves a conflict on the mason path and
     slips in a CFE-surface change during resolution must not be silently
     waved through just because plain `diff-tree` (no -m/-c) reports nothing
-    for merge commits (Design Notes)."""
+    for merge commits. The sneaky CFE file exists on no parent, so it
+    counts as authored."""
     _init_repo(tmp_path)
     _write(tmp_path, f"{MASON_PATH}/foo.py", "base")
     _commit_all(tmp_path, "feat: base mason commit")
@@ -295,6 +296,97 @@ def test_multi_parent_merge_falls_back_to_first_parent_diff(tmp_path: Path) -> N
     matching = [f for f in findings if f["ref"] == merge_sha[:10]]
     assert len(matching) == 1
     assert matching[0]["kind"] == "unsanctioned-cfe-touch"
+
+
+def test_merge_from_main_importing_cfe_is_not_a_finding(tmp_path: Path) -> None:
+    """CFE files that arrived from main onto a mason branch are not Mason
+    authoring the CFE surface — first-parent would false-positive."""
+    _init_repo(tmp_path)
+    _write(tmp_path, f"{MASON_PATH}/foo.py", "base")
+    _commit_all(tmp_path, "feat: mason baseline")
+
+    _git(tmp_path, "checkout", "-q", "-b", "mason-work")
+    _write(tmp_path, f"{MASON_PATH}/foo.py", "mason-work")
+    _commit_all(tmp_path, "feat: mason work")
+
+    _git(tmp_path, "checkout", "-q", "main")
+    _write(tmp_path, ".claude/skills/conda-forge-expert/SKILL.md", "from main")
+    _commit_all(tmp_path, "feat: main moves CFE only")
+    _write(tmp_path, f"{MASON_PATH}/from_main.py", "also mason, from main")
+    _commit_all(tmp_path, "feat: main also moves a mason file")
+
+    _git(tmp_path, "checkout", "-q", "mason-work")
+    merge = subprocess.run(
+        ["git", "merge", "main", "-m",
+         "Merge remote-tracking branch 'origin/main' into mason-work"],
+        cwd=tmp_path, capture_output=True, text=True,
+    )
+    assert merge.returncode == 0, merge.stderr
+    merge_sha = _git(tmp_path, "rev-parse", "HEAD").strip()
+
+    shas = m.mason_commits(tmp_path)
+    assert shas is not None
+    assert merge_sha in shas
+    assert m.git(tmp_path, "diff-tree", "--no-commit-id", "--name-only", "-r",
+                 "--root", merge_sha) == ""
+    findings = m.scan(tmp_path, shas)
+    assert findings == []
+
+
+def test_story_15_1_closeout_is_sanctioned(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, f"{MASON_PATH}/foo.py", "one")
+    _commit_all(tmp_path, "feat: mason baseline")
+
+    _write(tmp_path, f"{MASON_PATH}/foo.py", "two")
+    _write(tmp_path, ".claude/skills/conda-forge-expert/SKILL.md", "mirrors retired")
+    _commit_all(
+        tmp_path,
+        "feat(mason): Story 15.1 -- retire both CFE rebuild-campaign mirrors",
+    )
+
+    findings = m.scan(tmp_path, m.mason_commits(tmp_path) or [])
+    assert findings == []
+
+
+def test_story_15_1_subject_without_closeout_verbs_is_unsanctioned(
+        tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, f"{MASON_PATH}/foo.py", "one")
+    _commit_all(tmp_path, "feat: mason baseline")
+
+    _write(tmp_path, f"{MASON_PATH}/foo.py", "two")
+    _write(tmp_path, ".claude/skills/conda-forge-expert/SKILL.md", "launder")
+    sha = _commit_all(tmp_path, "feat(mason): Story 15.1 -- unrelated CFE edit")
+
+    findings = m.scan(tmp_path, m.mason_commits(tmp_path) or [])
+    assert len(findings) == 1
+    assert findings[0]["kind"] == "unsanctioned-cfe-touch"
+    assert findings[0]["ref"] == sha[:10]
+
+
+def test_landed_44_7_waiver_is_that_sha_and_native_build_only(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, f"{MASON_PATH}/foo.py", "one")
+    _commit_all(tmp_path, "feat: mason baseline")
+
+    _write(tmp_path, f"{MASON_PATH}/foo.py", "two")
+    _write(tmp_path, ".claude/scripts/conda-forge-expert/native-build.sh", "hook")
+    sha = _commit_all(tmp_path, "Wire mason to the foundry factory island (Story 44.7).")
+    monkeypatch.setattr(m, "LANDED_MIXED_44_7", sha)
+
+    findings = m.scan(tmp_path, m.mason_commits(tmp_path) or [])
+    assert findings == []
+
+    _write(tmp_path, f"{MASON_PATH}/foo.py", "three")
+    _write(tmp_path, ".claude/scripts/conda-forge-expert/native-build.sh", "hook2")
+    _write(tmp_path, ".claude/skills/conda-forge-expert/SKILL.md", "extra")
+    extra = _commit_all(tmp_path, "Wire mason to the foundry factory island (Story 44.7).")
+    monkeypatch.setattr(m, "LANDED_MIXED_44_7", extra)
+    findings = m.scan(tmp_path, [extra])
+    assert len(findings) == 1
+    assert findings[0]["kind"] == "unsanctioned-cfe-touch"
 
 
 def test_root_commit_touching_cfe_surface_is_detected(tmp_path: Path) -> None:

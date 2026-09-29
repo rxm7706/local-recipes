@@ -148,25 +148,19 @@ def park_preserve_artifact(
         # path parks both halves).
         patch_ref: str | None = None
         if snapshot.dirty_patch:
-            patch_ref = _write_failed_patch(
-                bmad_run_dir, snapshot.story_key, snapshot.dirty_patch
-            )
+            patch_ref = _write_failed_patch(bmad_run_dir, snapshot.story_key, snapshot.dirty_patch)
         if parked is not None:
             return parked
         return patch_ref
     if snapshot.dirty_patch:
-        return _write_failed_patch(
-            bmad_run_dir, snapshot.story_key, snapshot.dirty_patch
-        )
+        return _write_failed_patch(bmad_run_dir, snapshot.story_key, snapshot.dirty_patch)
     return None
 
 
 def _write_failed_patch(bmad_run_dir: Path, story_key: str, patch_body: str) -> str | None:
     if not patch_body:
         return None
-    patch_path = (
-        bmad_run_dir / "failed" / _safe_segment(story_key) / "changes.patch"
-    )
+    patch_path = bmad_run_dir / "failed" / _safe_segment(story_key) / "changes.patch"
     try:
         patch_path.parent.mkdir(parents=True, exist_ok=True)
         patch_path.write_text(patch_body, encoding="utf-8")
@@ -192,21 +186,16 @@ def append_preserve_notice(
         return False
     try:
         text = spec_path.read_bytes().decode("utf-8")
-    except (UnicodeDecodeError, OSError):
+    except UnicodeDecodeError, OSError:
         return False
     nl = "\r\n" if "\r\n" in text else "\n"
     detail_line = f"preserve_ref={preserve_ref}"
     if detail_line in text:
         return False
     recovery = (
-        f"Recovery: checkout the named ref, or run "
-        f"`bmad-loop resolve --restore-patch` when the ref is a patch path."
+        "Recovery: checkout the named ref, or run `bmad-loop resolve --restore-patch` when the ref is a patch path."
     )
-    notice = (
-        f"{nl}{_PRESERVE_SYNTH_NOTE}{nl}{nl}"
-        f"{detail_line}{nl}"
-        f"{recovery}{nl}"
-    )
+    notice = f"{nl}{_PRESERVE_SYNTH_NOTE}{nl}{nl}{detail_line}{nl}{recovery}{nl}"
     match = _AUTO_RUN_HEADING_RE.search(text)
     if match:
         # Insert immediately after the ARR heading line (+ its newline).
@@ -226,11 +215,7 @@ def append_preserve_notice(
         text += "\n"
     elif text and not text.endswith("\n"):
         text += nl
-    section = (
-        f"## Auto Run Result{nl}{nl}"
-        f"Status: {status}{nl}"
-        f"{notice}"
-    )
+    section = f"## Auto Run Result{nl}{nl}Status: {status}{nl}{notice}"
     try:
         atomic_write_text(spec_path, text + section)
     except OSError:
@@ -254,18 +239,14 @@ def resolve_spec_path(home: Path, spec_file: str | None) -> Path | None:
             home_resolved = home.resolve()
             if not candidate.is_relative_to(home_resolved):
                 return None
-    except (OSError, RuntimeError, ValueError):
+    except OSError, RuntimeError, ValueError:
         return None
     return candidate if candidate.is_file() else None
 
 
-def _git(
-    repo: Path, *args: str, timeout_s: float = _GIT_TIMEOUT_S
-) -> tuple[int, str, str]:
+def _git(repo: Path, *args: str, timeout_s: float = _GIT_TIMEOUT_S) -> tuple[int, str, str]:
     try:
-        result = PosixProcess().run(
-            ["git", "-C", str(repo), *args], cwd=Path.cwd(), timeout_s=timeout_s
-        )
+        result = PosixProcess().run(["git", "-C", str(repo), *args], cwd=Path.cwd(), timeout_s=timeout_s)
     except ProcessError as exc:
         raise GitPreserveError(str(exc.__cause__ or exc)) from exc
     stdout = result.stdout if result.stdout else ""
@@ -300,13 +281,9 @@ def _capture_diff(repo: Path, baseline: str) -> str:
         rel = rel.strip()
         if not rel:
             continue
-        u_rc, u_out, u_detail = _git(
-            repo, "diff", "--no-index", "--", os.devnull, rel
-        )
+        u_rc, u_out, u_detail = _git(repo, "diff", "--no-index", "--", os.devnull, rel)
         if u_rc not in (0, 1):
-            raise GitPreserveError(
-                f"git diff --no-index for untracked {rel!r} failed: {u_detail}"
-            )
+            raise GitPreserveError(f"git diff --no-index for untracked {rel!r} failed: {u_detail}")
         parts.append(u_out)
     return "".join(parts)
 
@@ -314,9 +291,7 @@ def _capture_diff(repo: Path, baseline: str) -> str:
 def _preserve_commits(repo: Path, ref_name: str, tip_sha: str) -> str | None:
     rc, out, detail = _git(repo, "branch", "-f", ref_name, tip_sha)
     if rc != 0:
-        raise GitPreserveError(
-            f"git branch -f {ref_name} {tip_sha} failed: {detail or out}"
-        )
+        raise GitPreserveError(f"git branch -f {ref_name} {tip_sha} failed: {detail or out}")
     return ref_name
 
 

@@ -23,9 +23,7 @@ from pyforge.marshal.supervisor.intent_gap_preserve import (
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -136,9 +134,7 @@ def test_park_creates_attempt_preserve_branch_for_commits(tmp_path):
     # Simulate intent-gap revert: HEAD back at baseline before park.
     _git(repo, "reset", "--hard", baseline)
     run_dir = tmp_path / "bmad-run"
-    ref = park_preserve_artifact(
-        snap, harness_run_id="acme-run-1", bmad_run_dir=run_dir
-    )
+    ref = park_preserve_artifact(snap, harness_run_id="acme-run-1", bmad_run_dir=run_dir)
     assert ref == f"attempt-preserve/acme-run-1-{head[:8]}"
     branches = _git(repo, "branch", "--list", "attempt-preserve/*").stdout
     assert ref in branches
@@ -160,9 +156,7 @@ def test_park_writes_changes_patch_for_dirty_only(tmp_path):
         dirty_patch=patch_body,
     )
     run_dir = tmp_path / "bmad-run"
-    ref = park_preserve_artifact(
-        snap, harness_run_id="acme-run-1", bmad_run_dir=run_dir
-    )
+    ref = park_preserve_artifact(snap, harness_run_id="acme-run-1", bmad_run_dir=run_dir)
     patch_path = run_dir / "failed" / "20-4-intent-gap" / "changes.patch"
     assert ref == patch_path.as_posix()
     assert patch_path.read_text(encoding="utf-8") == patch_body
@@ -180,12 +174,7 @@ def test_park_returns_none_for_empty_patch(tmp_path):
         commits_above_baseline=(),
         dirty_patch="",
     )
-    assert (
-        park_preserve_artifact(
-            snap, harness_run_id="acme-run-1", bmad_run_dir=tmp_path / "run"
-        )
-        is None
-    )
+    assert park_preserve_artifact(snap, harness_run_id="acme-run-1", bmad_run_dir=tmp_path / "run") is None
 
 
 # --- append_preserve_notice ------------------------------------------------------
@@ -240,9 +229,7 @@ def test_park_also_writes_dirty_overlay_when_commits_exist(tmp_path):
     )
     _git(repo, "reset", "--hard", baseline)
     run_dir = tmp_path / "bmad-run"
-    ref = park_preserve_artifact(
-        snap, harness_run_id="acme-run-1", bmad_run_dir=run_dir
-    )
+    ref = park_preserve_artifact(snap, harness_run_id="acme-run-1", bmad_run_dir=run_dir)
     assert ref == f"attempt-preserve/acme-run-1-{head[:8]}"
     patch_path = run_dir / "failed" / "20-4-intent-gap" / "changes.patch"
     assert patch_path.read_text(encoding="utf-8").startswith("diff --git")

@@ -27,9 +27,7 @@ except IndexError:
     _REPO_ROOT = None
 _SCAN = (_REPO_ROOT / "scripts" / "fleet_scan.py") if _REPO_ROOT else None
 
-pytestmark = pytest.mark.skipif(
-    not (_SCAN and _SCAN.is_file()), reason="scripts/fleet_scan.py required"
-)
+pytestmark = pytest.mark.skipif(not (_SCAN and _SCAN.is_file()), reason="scripts/fleet_scan.py required")
 
 
 @pytest.fixture(scope="module")

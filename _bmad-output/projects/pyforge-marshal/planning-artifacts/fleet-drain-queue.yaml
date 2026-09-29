@@ -1,96 +1,31 @@
 # Optional, hand-maintained order overrides + declared skips for `marshal factory drain`
-# (pyforge.marshal.core.dispatch_fleet.QUEUE_CONFIG_FILENAME). Absent = tracked-ledger
-# order (story-key order) with no skips. Keys named here run first, in this order; any
-# backlog key not listed follows in story-key order. A key that is `done` or absent from
-# the station's tracked ledger is ignored (never a crash). Marshal does NOT read `Deps:`
-# from epics.md -- this file is where dependency order is made explicit.
+# (pyforge.marshal.core.dispatch_fleet.QUEUE_CONFIG_FILENAME). Absent = the station's
+# backlog in topological `Deps:` order read from its epics.md (Story 28.12), ledger order
+# breaking ties. A NON-EMPTY `order_overrides` list for a station replaces that: its keys
+# run first, in list order, and every other backlog key follows in plain story-key order
+# with `Deps:` ignored -- even when every listed key is already `done` or renamed, because
+# the list itself is what switches the Deps sort off (dispatch_fleet.station_backlog). So
+# prune a station's list once its keys have landed. A key that is `done` or absent from the
+# station's tracked ledger is otherwise ignored (never a crash).
 #
-# pyforge-atlas (2026-08-30 course correction, change-history/sprint-change-proposal-2026-08-30.md):
-# workbook-retirement critical path first, every epics.md `Deps:` edge respected.
-#   23.8 needs 21.4+21.5 | 21.7 needs 21.6 | 21.8 needs 21.7 | 23.1 needs 21.4
-#   23.2 needs 21.5 | 23.3 needs 21.6+23.2 | 23.4 needs 21.3+23.3+23.8 | 22.1 needs 21.7+21.8
-#   23.5 needs 23.3+23.4 | 23.6 needs 23.5 | 23.9 needs 23.4+23.5+23.6+23.8+22.1
-#   22.2/22.3/22.4 need 22.1 | 22.5 needs 22.2+22.3 | 23.7 needs 23.5+23.6+23.8+23.9 (+22.1-22.5)
-#   22.6 needs 22.5 | 21.9/21.10 need 21.8
-# Optional stories (22.2-22.6, 21.9, 21.10) sit last; cut them with a skip_policies entry
-# if the operator decides to scope them out -- that is a scope decision, not made here.
-# pyforge-marshal (2026-09-01, addendum F): drain self-resolution 28.18–28.24.
-# See change-history/sprint-change-proposal-2026-09-01-drain-self-resolution.md.
-order_overrides:
-  pyforge-marshal:
-    - 28-18-re-preflight-when-the-refuse-predicate-can-change
-    - 28-19-missing-spec-escalates-never-idle-with-backlog
-    - 28-21-push-the-dispatch-branch-before-verify-can-strand-it
-    - 28-20-cap-4-land-heals-mechanical-and-dirty-prs
-    - 28-22-verify-blast-radius-pre-existing-gate
-    - 28-23-stranded-work-signal-after-terminal-verify-fail
-    - 28-24-supervisor-finalizes-when-harness-cannot-run-shell
-    - 29-1-done-spec-halts-unless-followup-is-true
-    - 29-2-harness-done-is-cap-4-only-never-another-session
-    # 2026-09-06 (spec-bmad-suite-lifecycle planning PR): Epic 30 era tail first in dependency
-    # order (30.1 → 30.4 → 30.2 → 30.3 → 30.5; 30.5 precedes steward 14.9's --no-shims apply),
-    # then Epic 31 (31.4/31.5 have no deps; 31.1 needs steward 46.3; 31.2 needs 31.1; 31.3 needs
-    # steward 46.3; 31.6 needs steward 46.2 + 46.5).
-    - 30-1-the-retired-id-guard-follows-the-6-12-shim-roster
-    - 30-4-bmad-loop-s-repo-skills-match-the-installed-package-by-test
-    - 30-2-the-project-context-surface-follows-6-12-d1
-    - 30-3-documentation-pointers-follow-6-12
-    - 30-5-the-harness-and-every-live-caller-follow-the-shim-retirement
-    - 31-4-every-in-place-edited-installer-owned-file-is-governed-by-a-marshal-spec-surface
-    - 31-5-loop-home-readiness-is-defined-for-the-cutover-flip
-    - 31-1-tea-s-workflows-produce-every-station-s-test-architecture
-    - 31-2-the-generator-its-meta-tests-and-its-pixi-tasks-retire-behind-the-equivalence-check
-    - 31-3-tea-test-review-is-a-marshal-review-lens
-    - 31-6-bmad-os-gh-triage-and-multi-repo-git-ops-are-marshal-wielded
-  # pyforge-steward (2026-09-06, spec-bmad-suite-lifecycle planning PR): 14.9 needs 14.6 (done) +
-  # marshal 30.5; 46.7/46.8 are XS chores; 46.2–46.6/46.9/46.10 need 46.1 (46.10 also 14.9);
-  # 47.x are independent except 47.5 (needs 14.9 + marshal 30.5/30.2); 45.2 last (spends budget;
-  # operator flip recorded 2026-09-06). Epic 44 stays untouched (blocked, operator-gated).
-  pyforge-steward:
-    - 14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims
-    - 46-7-skf-is-pinned-to-v2-1-0-and-cap-7-is-exercised-live
-    - 46-8-cis-is-re-provisioned-to-the-packaged-revision
-    - 46-1-the-adoption-register-governs-wiring
-    - 46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders
-    - 46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task
-    - 46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven
-    - 46-5-labs-skills-arrive-by-name-and-by-consent
-    - 46-6-herald-s-manticore-studio-has-a-root-and-a-proven-native-path
-    - 46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env
-    - 46-10-the-release-cadence-is-one-runbook-and-the-next-rehearsal-has-run-once
-    - 47-1-the-readiness-checklist-is-live-and-the-pre-flight-is-its-p7-signal
-    - 47-2-skf-export-is-proven-to-accept-the-foundry-skills-root
-    - 47-3-_bmad-joins-epic-44-s-surface-and-projects-md-carries-the-cutover-layout
-    - 47-4-the-foundry-stack-carries-a-bmad-floor-row
-    - 47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines
-    - 45-2-the-reviewer-is-measured-against-a-planted-defect
-  # pyforge-scribe: complete (18/18). Re-add only if new backlog appears.
-  pyforge-atlas:
-    - 21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss
-    - 21-5-tier-2-sources-about-curated-orgs-artifactory-names
-    - 21-6-upstream_discovery-identity-join-and-export-parquet
-    - 23-8-workbook-free-metrics-universe
-    - 21-7-quartet-thin-out-and-gist-wrapper
-    - 21-8-end-to-end-verification-gate
-    - 23-1-tier-3-bulk-os-indexes
-    - 23-2-enterprise-jfrog-consumption-parquet
-    - 23-3-priority-rules-in-kedro-inventory_priority_assignments
-    - 23-4-deliverable-a-packaging_candidate_status
-    - 22-1-ranked-export-bridge-quartet-vizro-feed
-    - 23-5-identity_complete_export-parquet-canonical
-    - 23-6-bsl-gist-aggregates-cap-8d
-    - 23-9-quartet-workbook-retirement
-    - 22-2-vizro-identity-catalog-page
-    - 22-3-vizro-identity-ops-page
-    - 22-4-vizro-identity-workbook-page
-    - 22-5-canvas-vs-vizro-parity-gate
-    - 23-7-zero-deferred-e2e-gate
-    - 22-6-canvas-deprecation-switch
-    - 21-9-vizro-bootstrap-health-pages-optional-cap-5
-    - 21-10-kedro-viz-ci-path-sync-optional-cap-6
+# 2026-09-27: every override list was pruned. Each of the 59 keys was `done` or no longer
+# in its station's ledger, yet the lists still switched the Deps sort off for atlas,
+# marshal and steward. History of the retired orderings: git log -p on this file (atlas
+# 2026-08-30 course correction; marshal 2026-09-01 addendum F and the 2026-09-06
+# spec-bmad-suite-lifecycle planning PR; steward the same PR).
+order_overrides: {}
 
-# skip_policies:
-#   - station: pyforge-atlas
-#     story: 21-10-kedro-viz-ci-path-sync-optional-cap-6
-#     reason: "optional CAP-6; scoped out by operator on <date>"
-skip_policies: []
+# Declared skips: honoured under every campaign mode (drain only -- a single
+# `marshal factory dispatch` never reads this file). This is the one place a story whose
+# ledger row must stay `backlog` is kept out of a drain; a "Parked ... do not dispatch"
+# line in epics.md is prose that no code reads.
+skip_policies:
+  - station: pyforge-steward
+    story: 44-4-fold-the-packages
+    reason: "Parked 2026-09-13 (regenerate-not-fold), epics.md Story 44.4: file-move story superseded by Epic 54 / fnd:CAP-11; ledger stays backlog. Deps 44.3 + 44.12 are done, so without this a steward drain dispatches it first."
+  - station: pyforge-steward
+    story: 44-5-move-the-estate
+    reason: "Parked 2026-09-13 (regenerate-not-fold), epics.md Story 44.5: not dispatched as a tree copy; suite/skills appear by re-provision from the register. Ledger stays backlog."
+  - station: pyforge-steward
+    story: 44-6-cfe-comes-home
+    reason: "Parked 2026-09-13 (regenerate-not-fold), epics.md Story 44.6: not dispatched as a cell move; foundry CFE is rebuilt from Specs. Ledger stays backlog."

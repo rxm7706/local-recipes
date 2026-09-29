@@ -57,9 +57,7 @@ from pyforge.warden.models import (
 )
 
 MANIFEST = ScannedManifest(path="pyproject.toml", kind="pyproject.toml")
-EMPTY_RESULT = EngineResult(
-    findings=(), errors=(), coverage=(), axis=AXIS_VULNERABILITY
-)
+EMPTY_RESULT = EngineResult(findings=(), errors=(), coverage=(), axis=AXIS_VULNERABILITY)
 
 
 def make_inventory(*components) -> ResolvedInventory:
@@ -95,9 +93,7 @@ def test_registered_engines_returns_fresh_instances():
 
 
 def test_register_engine_appends_in_deterministic_order(monkeypatch):
-    monkeypatch.setattr(
-        engines_module, "_ENGINE_FACTORIES", [*engines_module._ENGINE_FACTORIES]
-    )
+    monkeypatch.setattr(engines_module, "_ENGINE_FACTORIES", [*engines_module._ENGINE_FACTORIES])
 
     class DummyEngine:
         name = "dummy"
@@ -121,9 +117,7 @@ def test_register_engine_appends_in_deterministic_order(monkeypatch):
 def test_register_engine_is_idempotent_for_the_same_factory(monkeypatch):
     """Re-registering the SAME factory (module re-import/reload) must not
     make the engine run twice."""
-    monkeypatch.setattr(
-        engines_module, "_ENGINE_FACTORIES", [*engines_module._ENGINE_FACTORIES]
-    )
+    monkeypatch.setattr(engines_module, "_ENGINE_FACTORIES", [*engines_module._ENGINE_FACTORIES])
     before = len(registered_engines())
     register_engine(NullEngine)
     assert len(registered_engines()) == before
@@ -333,9 +327,7 @@ def test_default_policy_no_config_arg_is_unchanged(component_factory):
         subject="foo",
         severity=Severity(tier=SeverityTier.HIGH, raw=None),
     )
-    result = EngineResult(
-        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
-    )
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY)
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     _, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert (
@@ -356,9 +348,7 @@ def test_default_policy_with_fail_on_high_escalates_a_high_severity_finding(
         subject="foo",
         severity=Severity(tier=SeverityTier.HIGH, raw=None),
     )
-    result = EngineResult(
-        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
-    )
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY)
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     config = EffectiveConfig(fail_on=SeverityTier.HIGH)
     _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
@@ -378,13 +368,9 @@ def _license_denied_result():
         message="foo: license 'GPL-3.0-only' is denied",
         subject="foo",
         severity=None,
-        license=LicenseInfo(
-            expression="GPL-3.0-only", family="GPL3", verdict=LicenseVerdict.DENIED
-        ),
+        license=LicenseInfo(expression="GPL-3.0-only", family="GPL3", verdict=LicenseVerdict.DENIED),
     )
-    return finding, EngineResult(
-        findings=(finding,), errors=(), coverage=(), axis=AXIS_LICENSE
-    )
+    return finding, EngineResult(findings=(finding,), errors=(), coverage=(), axis=AXIS_LICENSE)
 
 
 def test_default_policy_with_deny_licenses_escalates_a_denied_finding(
@@ -430,9 +416,7 @@ def _currency_eol_result():
             tier="endoflife-date",
         ),
     )
-    return finding, EngineResult(
-        findings=(finding,), errors=(), coverage=(), axis=AXIS_CURRENCY
-    )
+    return finding, EngineResult(findings=(finding,), errors=(), coverage=(), axis=AXIS_CURRENCY)
 
 
 def test_default_policy_with_fail_on_eol_escalates_an_eol_finding(component_factory):
@@ -474,9 +458,7 @@ def _currency_over_lag_result():
             tier="endoflife-date",
         ),
     )
-    return finding, EngineResult(
-        findings=(finding,), errors=(), coverage=(), axis=AXIS_CURRENCY
-    )
+    return finding, EngineResult(findings=(finding,), errors=(), coverage=(), axis=AXIS_CURRENCY)
 
 
 def test_default_policy_with_max_lag_escalates_an_over_threshold_over_lag(
@@ -521,9 +503,7 @@ def _vuln_epss_result(score: float) -> tuple[Finding, EngineResult]:
         severity=Severity(tier=SeverityTier.MEDIUM, raw=None),
         epss=Epss(score=score, percentile=0.9),
     )
-    return finding, EngineResult(
-        findings=(finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
-    )
+    return finding, EngineResult(findings=(finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY)
 
 
 def test_default_policy_with_min_epss_escalates_an_at_or_above_threshold_finding(
@@ -583,12 +563,8 @@ def test_default_policy_with_dep001_block_confidence_likely_keeps_dep001_blockin
         subject="leftpad",
         severity=None,
     )
-    result = EngineResult(
-        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
-    )
-    inventory = make_inventory(
-        component_factory(name="pytorch", version="2.1.0", mapping_confidence="likely")
-    )
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE)
+    inventory = make_inventory(component_factory(name="pytorch", version="2.1.0", mapping_confidence="likely"))
     config = EffectiveConfig(dep001_block_confidence="likely")
     _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
     assert (
@@ -610,12 +586,8 @@ def test_default_policy_default_confidence_threshold_downgrades_on_a_likely_comp
         subject="leftpad",
         severity=None,
     )
-    result = EngineResult(
-        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
-    )
-    inventory = make_inventory(
-        component_factory(name="pytorch", version="2.1.0", mapping_confidence="likely")
-    )
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE)
+    inventory = make_inventory(component_factory(name="pytorch", version="2.1.0", mapping_confidence="likely"))
     _, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert (
         Status.WARN,
@@ -667,14 +639,10 @@ def test_findings_only_engine_result_never_feeds_only_clean(component_factory):
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
-    non_clean = [
-        (status, driver) for status, driver in rungs if status is not Status.CLEAN
-    ]
+    non_clean = [(status, driver) for status, driver in rungs if status is not Status.CLEAN]
     assert non_clean, "findings-only engine result fed only clean rungs"
     assert all(driver is not None for _, driver in non_clean)
-    assert any(
-        driver.finding_id == engine_finding.id for _, driver in non_clean
-    )
+    assert any(driver.finding_id == engine_finding.id for _, driver in non_clean)
 
 
 def test_assessable_exact_component_feeds_a_clean_rung(component_factory):
@@ -713,9 +681,7 @@ def test_every_non_clean_rung_carries_a_driver(component_factory):
             version=None,
             indeterminate_reason=WithholdReason.NO_VERSION,
         ),
-        component_factory(
-            name="weak", version="1.0", cve_match_level=CveMatchLevel.NAME_ONLY
-        ),
+        component_factory(name="weak", version="1.0", cve_match_level=CveMatchLevel.NAME_ONLY),
     )
     _, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     assert len(rungs) == 3
@@ -766,12 +732,8 @@ def test_engine_error_records_feed_error_rungs():
     driver's axis is the PRODUCING engine's own axis (Story 1.7) — not a
     blanket vulnerability default (this result's owner is "deptry", a
     hygiene-axis engine)."""
-    record = ErrorRecord(
-        kind=ErrorKind.ENGINE_EXECUTION_FAILED, owner="deptry", message="boom"
-    )
-    result = EngineResult(
-        findings=(), errors=(record,), coverage=(), axis=AXIS_HYGIENE
-    )
+    record = ErrorRecord(kind=ErrorKind.ENGINE_EXECUTION_FAILED, owner="deptry", message="boom")
+    result = EngineResult(findings=(), errors=(record,), coverage=(), axis=AXIS_HYGIENE)
     findings, rungs = DefaultPolicy().evaluate(make_inventory(), [result])
     assert findings == ()
     ((status, driver),) = rungs
@@ -786,12 +748,8 @@ def test_engine_error_rungs_ride_alongside_component_rungs(component_factory):
     """The error rung's driver carries the producing engine's own axis
     (this result's owner is "osv", a vulnerability-axis engine) — not a
     blanket vulnerability default asserted merely by coincidence."""
-    record = ErrorRecord(
-        kind=ErrorKind.ENGINE_TIMEOUT, owner="osv", message="timed out"
-    )
-    result = EngineResult(
-        findings=(), errors=(record,), coverage=(), axis=AXIS_VULNERABILITY
-    )
+    record = ErrorRecord(kind=ErrorKind.ENGINE_TIMEOUT, owner="osv", message="timed out")
+    result = EngineResult(findings=(), errors=(record,), coverage=(), axis=AXIS_VULNERABILITY)
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     _, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert (Status.CLEAN, None) in rungs
@@ -839,33 +797,25 @@ def test_unmatchable_component_without_reason_never_feeds_clean(
 ):
     """vuln_matchable=False with indeterminate_reason=None is constructible
     by future producers — it must derive indeterminate, never clean."""
-    inventory = make_inventory(
-        component_factory(name="oddball", version="1.0.0", vuln_matchable=False)
-    )
+    inventory = make_inventory(component_factory(name="oddball", version="1.0.0", vuln_matchable=False))
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     assert [f.id for f in findings] == ["indeterminate:unmatchable:oddball"]
     assert findings[0].axis == AXIS_VULNERABILITY
     ((status, driver),) = rungs
     assert status is Status.INDETERMINATE
-    assert driver == StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="indeterminate:unmatchable:oddball"
-    )
+    assert driver == StatusDriver(axis=AXIS_VULNERABILITY, finding_id="indeterminate:unmatchable:oddball")
 
 
 def test_uncovered_component_without_reason_never_feeds_clean(
     component_factory,
 ):
-    inventory = make_inventory(
-        component_factory(name="oddball", version="1.0.0", hygiene_covered=False)
-    )
+    inventory = make_inventory(component_factory(name="oddball", version="1.0.0", hygiene_covered=False))
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     assert [f.id for f in findings] == ["indeterminate:uncovered:oddball"]
     assert findings[0].axis == AXIS_HYGIENE
     ((status, driver),) = rungs
     assert status is Status.INDETERMINATE
-    assert driver == StatusDriver(
-        axis=AXIS_HYGIENE, finding_id="indeterminate:uncovered:oddball"
-    )
+    assert driver == StatusDriver(axis=AXIS_HYGIENE, finding_id="indeterminate:uncovered:oddball")
 
 
 def test_doubly_deficient_component_derives_both_axis_findings(
@@ -898,33 +848,25 @@ def test_license_uncovered_component_derives_axis_qualified_finding(
     """A license_covered=False component (producer path; inert in 6.1's own
     fixtures where it defaults True) derives an axis-qualified
     ``uncovered-license`` finding on AXIS_LICENSE."""
-    inventory = make_inventory(
-        component_factory(name="oddball", version="1.0.0", license_covered=False)
-    )
+    inventory = make_inventory(component_factory(name="oddball", version="1.0.0", license_covered=False))
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     assert [f.id for f in findings] == ["indeterminate:uncovered-license:oddball"]
     assert findings[0].axis == AXIS_LICENSE
     ((status, driver),) = rungs
     assert status is Status.INDETERMINATE
-    assert driver == StatusDriver(
-        axis=AXIS_LICENSE, finding_id="indeterminate:uncovered-license:oddball"
-    )
+    assert driver == StatusDriver(axis=AXIS_LICENSE, finding_id="indeterminate:uncovered-license:oddball")
 
 
 def test_currency_uncovered_component_derives_axis_qualified_finding(
     component_factory,
 ):
-    inventory = make_inventory(
-        component_factory(name="oddball", version="1.0.0", currency_covered=False)
-    )
+    inventory = make_inventory(component_factory(name="oddball", version="1.0.0", currency_covered=False))
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     assert [f.id for f in findings] == ["indeterminate:uncovered-currency:oddball"]
     assert findings[0].axis == AXIS_CURRENCY
     ((status, driver),) = rungs
     assert status is Status.INDETERMINATE
-    assert driver == StatusDriver(
-        axis=AXIS_CURRENCY, finding_id="indeterminate:uncovered-currency:oddball"
-    )
+    assert driver == StatusDriver(axis=AXIS_CURRENCY, finding_id="indeterminate:uncovered-currency:oddball")
 
 
 def test_triple_uncovered_component_keeps_three_distinct_axis_ids(
@@ -1135,14 +1077,10 @@ def test_engine_error_owner_segment_is_sanitized():
         owner="dep\ntry:x",
         message="boom",
     )
-    result = EngineResult(
-        findings=(), errors=(record,), coverage=(), axis=AXIS_HYGIENE
-    )
+    result = EngineResult(findings=(), errors=(record,), coverage=(), axis=AXIS_HYGIENE)
     _, rungs = DefaultPolicy().evaluate(make_inventory(), [result])
     ((_, driver),) = rungs
     assert driver is not None
     assert driver.axis == AXIS_HYGIENE
-    assert driver.finding_id == (
-        "error:engine-execution-failed:dep%0Atry%3Ax"
-    )
+    assert driver.finding_id == ("error:engine-execution-failed:dep%0Atry%3Ax")
     assert "\n" not in driver.finding_id

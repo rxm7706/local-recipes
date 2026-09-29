@@ -2,9 +2,11 @@
 title: Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice
 type: dream
 owner: mason
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `conda-forge-expert-rebuild`).
 # Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice
 
 ## The Dream

@@ -2,8 +2,11 @@
 title: Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `dashboard-velocity-captures-hand-driven-work`).
 
 # Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones
 

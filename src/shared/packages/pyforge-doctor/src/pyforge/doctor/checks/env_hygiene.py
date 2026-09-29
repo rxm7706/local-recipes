@@ -234,9 +234,7 @@ def _discover_python_files(target: Path) -> tuple[list[Path], bool]:
         incomplete = True
 
     for dirpath, dirnames, filenames in os.walk(target, onerror=_on_error):
-        dirnames[:] = sorted(
-            name for name in dirnames if name not in _PRUNED_DIR_NAMES
-        )
+        dirnames[:] = sorted(name for name in dirnames if name not in _PRUNED_DIR_NAMES)
         entries_visited += len(dirnames)
         if entries_visited >= _DISCOVERY_ENTRY_CAP:
             incomplete = True
@@ -326,21 +324,21 @@ def _env_read_match(
     False)`` when it is not."""
     if isinstance(node, ast.Call):
         func = node.func
-        is_environ_get = isinstance(func, ast.Attribute) and func.attr == "get" and (
-            _is_os_environ_attribute(func.value, os_names)
-            or (isinstance(func.value, ast.Name) and func.value.id in environ_names)
+        is_environ_get = (
+            isinstance(func, ast.Attribute)
+            and func.attr == "get"
+            and (
+                _is_os_environ_attribute(func.value, os_names)
+                or (isinstance(func.value, ast.Name) and func.value.id in environ_names)
+            )
         )
-        is_getenv_call = _is_os_getenv_name(func, os_names) or (
-            isinstance(func, ast.Name) and func.id in getenv_names
-        )
+        is_getenv_call = _is_os_getenv_name(func, os_names) or (isinstance(func, ast.Name) and func.id in getenv_names)
         if is_environ_get or is_getenv_call:
             arg = node.args[0] if node.args else None
             return _literal_str(arg), True
     elif isinstance(node, ast.Subscript):
         base = node.value
-        if _is_os_environ_attribute(base, os_names) or (
-            isinstance(base, ast.Name) and base.id in environ_names
-        ):
+        if _is_os_environ_attribute(base, os_names) or (isinstance(base, ast.Name) and base.id in environ_names):
             return _literal_str(node.slice), True
     return None, False
 
@@ -459,26 +457,19 @@ def _iter_assign_checks(assign: ast.Assign) -> Iterator[tuple[str, ast.expr]]:
             continue
         value = assign.value
         positional = (
-            value.elts
-            if isinstance(value, (ast.Tuple, ast.List))
-            and len(value.elts) == len(target.elts)
-            else None
+            value.elts if isinstance(value, (ast.Tuple, ast.List)) and len(value.elts) == len(target.elts) else None
         )
         for index, elt in enumerate(target.elts):
             elt_name = _header_subscript_name(elt)
             if elt_name is not None:
-                yield elt_name, (
-                    positional[index] if positional is not None else value
-                )
+                yield elt_name, (positional[index] if positional is not None else value)
 
 
 # Token boundaries for host-like matching: "_" plus camelCase transitions
 # (lower/digit->Upper, and acronym->Word like "APIHost" -> "API"/"Host") --
 # splitting on "_" alone missed camelCase guards like `serverHost` (review
 # finding).
-_NAME_TOKEN_SPLIT = re.compile(
-    r"_|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])"
-)
+_NAME_TOKEN_SPLIT = re.compile(r"_|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
 
 
 def _references_host_like(test: ast.expr) -> bool:
@@ -509,9 +500,7 @@ def _is_pure_negation(test: ast.expr) -> bool:
     silently suppressed). ``not x`` / ``BoolOp`` negation forms are
     deliberately excluded: resolving them requires knowing whether the
     compared set is an allowlist or a denylist (see module docstring)."""
-    return isinstance(test, ast.Compare) and all(
-        isinstance(op, (ast.NotEq, ast.NotIn, ast.IsNot)) for op in test.ops
-    )
+    return isinstance(test, ast.Compare) and all(isinstance(op, (ast.NotEq, ast.NotIn, ast.IsNot)) for op in test.ops)
 
 
 class _CredentialInjectionVisitor(ast.NodeVisitor):
@@ -592,9 +581,7 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
         for stmt in unguarded:
             self.visit(stmt)
 
-    def _visit_function_scope(
-        self, node: ast.FunctionDef | ast.AsyncFunctionDef
-    ) -> None:
+    def _visit_function_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
         saved_guards, self._guards = self._guards, []
         saved_vars, self._credential_vars = self._credential_vars, {}
         self.generic_visit(node)
@@ -617,9 +604,7 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
             self._getenv_names,
             self._credential_vars,
         )
-        if found and not any(
-            _references_host_like(guard) for guard in self._guards
-        ):
+        if found and not any(_references_host_like(guard) for guard in self._guards):
             self.matches.append((lineno, header_var, env_var_name))
 
     def _track_credential_var(self, node: ast.Assign) -> None:
@@ -659,9 +644,7 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
-        self._check(
-            _header_subscript_name(node.target), node.value, node.lineno
-        )
+        self._check(_header_subscript_name(node.target), node.value, node.lineno)
         self.generic_visit(node)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
@@ -670,9 +653,7 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
         # (review finding). A bare annotation (node.value is None) assigns
         # nothing.
         if node.value is not None:
-            self._check(
-                _header_subscript_name(node.target), node.value, node.lineno
-            )
+            self._check(_header_subscript_name(node.target), node.value, node.lineno)
         self.generic_visit(node)
 
 
@@ -691,11 +672,9 @@ def _scan_file(file_path: Path) -> list[Finding]:
             return []
         tree = ast.parse(source, filename=str(file_path))
         os_names, environ_names, getenv_names = _resolve_os_aliases(tree)
-        visitor = _CredentialInjectionVisitor(
-            os_names, environ_names, getenv_names
-        )
+        visitor = _CredentialInjectionVisitor(os_names, environ_names, getenv_names)
         visitor.visit(tree)
-    except (SyntaxError, UnicodeDecodeError, OSError, RecursionError):
+    except SyntaxError, UnicodeDecodeError, OSError, RecursionError:
         # A file that fails to parse or analyze -- a syntax error, an
         # undecodable encoding, a filesystem race, or a parseable-but-
         # pathologically-deep expression tree blowing the recursion limit
@@ -710,9 +689,7 @@ def _scan_file(file_path: Path) -> list[Finding]:
     # str): visit_If's polarity swap visits a negated test's else-branch
     # before its body, so raw match order is no longer guaranteed to be
     # source order; the stable sort keeps visit order within a line.
-    for lineno, header_var, env_var_name in sorted(
-        visitor.matches, key=lambda match: match[0]
-    ):
+    for lineno, header_var, env_var_name in sorted(visitor.matches, key=lambda match: match[0]):
         env_label = env_var_name or "an env-var"
         message = (
             f"{file_path}:{lineno}: {env_label} is read directly "

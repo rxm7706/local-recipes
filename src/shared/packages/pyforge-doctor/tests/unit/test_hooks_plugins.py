@@ -45,9 +45,7 @@ _DOCTOR_PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
 
 
 def _finding(source, check, status=DoctorStatus.WARN, evidence=None):
-    return Finding(
-        source=source, check=check, status=status, message="stub", evidence=evidence or {}
-    )
+    return Finding(source=source, check=check, status=status, message="stub", evidence=evidence or {})
 
 
 def _stub_atlas(monkeypatch, by_axis: dict[str, tuple[Finding, ...]]):
@@ -58,9 +56,7 @@ def _stub_atlas(monkeypatch, by_axis: dict[str, tuple[Finding, ...]]):
 
 
 def _forbidden_directory_gather(target):
-    raise AssertionError(
-        "must not gather engine/env checks when directory_checks is False"
-    )
+    raise AssertionError("must not gather engine/env checks when directory_checks is False")
 
 
 def _action_text(pf: prescribe.PartitionedFinding) -> str:
@@ -81,9 +77,7 @@ def _expected_prescriptions(findings: tuple[Finding, ...]) -> tuple[Prescription
     out: list[Prescription] = []
     for pf in partitioned:
         rank_value, rank_factors = rank_by_finding.get(id(pf.finding), (None, None))
-        safe_upgrade_target, safe_upgrade_reason = prescribe.recommend_safe_upgrade(
-            pf.finding
-        )
+        safe_upgrade_target, safe_upgrade_reason = prescribe.recommend_safe_upgrade(pf.finding)
         out.append(
             Prescription(
                 finding_ref=f"{pf.finding.source.value}:{pf.finding.check}",
@@ -102,9 +96,7 @@ def _expected_prescriptions(findings: tuple[Finding, ...]) -> tuple[Prescription
 def test_default_registry_registers_doctor_owned_gather_and_prescribe_plugins():
     registry = default_registry()
     gather_plugins = [p for p in registry.plugins if p.hook_spec == GATHER_HOOK_SPEC.name]
-    prescribe_plugins = [
-        p for p in registry.plugins if p.hook_spec == PRESCRIBE_HOOK_SPEC.name
-    ]
+    prescribe_plugins = [p for p in registry.plugins if p.hook_spec == PRESCRIBE_HOOK_SPEC.name]
     assert len(gather_plugins) == 1
     assert len(prescribe_plugins) == 1
     assert gather_plugins[0].owner == "doctor"
@@ -142,15 +134,11 @@ def test_gather_for_diagnose_matches_atlas_loop_when_directory_checks_are_off(
     for axis in ("staleness", "cve"):
         expected += atlas.gather(axis, target=target)
 
-    actual = gather_for_diagnose(
-        target, directory_checks=False, axes=("staleness", "cve")
-    )
+    actual = gather_for_diagnose(target, directory_checks=False, axes=("staleness", "cve"))
     assert actual == expected == atlas_findings
 
 
-def test_gather_for_diagnose_includes_warden_and_env_when_directory_checks_are_on(
-    monkeypatch, tmp_path
-):
+def test_gather_for_diagnose_includes_warden_and_env_when_directory_checks_are_on(monkeypatch, tmp_path):
     atlas_findings = (_finding(Source.STALENESS_REPORT, "pkg-a"),)
     _stub_atlas(monkeypatch, {"staleness": atlas_findings})
     engine_finding = (_finding(Source.WARDEN_DOCTOR, "deptry", status=DoctorStatus.OK),)
@@ -158,9 +146,7 @@ def test_gather_for_diagnose_includes_warden_and_env_when_directory_checks_are_o
     monkeypatch.setattr(warden_source, "gather", lambda target: engine_finding)
     monkeypatch.setattr(env_hygiene, "gather", lambda target: env_finding)
 
-    findings = gather_for_diagnose(
-        str(tmp_path), directory_checks=True, axes=("staleness", "cve")
-    )
+    findings = gather_for_diagnose(str(tmp_path), directory_checks=True, axes=("staleness", "cve"))
     sources = {f.source for f in findings}
     assert Source.STALENESS_REPORT in sources
     assert Source.WARDEN_DOCTOR in sources

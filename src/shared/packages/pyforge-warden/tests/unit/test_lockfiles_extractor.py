@@ -9,8 +9,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.warden.discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND
-from pyforge.warden.extract import UnparsableManifestError
-from pyforge.warden.extract import _identity, lockfiles
+from pyforge.warden.extract import UnparsableManifestError, _identity, lockfiles
 from pyforge.warden.extract.lockfiles import (
     CONDA_LOCK_CONDA_SECTION,
     CONDA_LOCK_PYPI_SECTION,
@@ -77,9 +76,7 @@ def test_pixi_lock_conda_row_ordinary_url_is_unmapped_ecosystem(monkeypatch):
     assert numpy.vuln_matchable is False
     assert numpy.indeterminate_reason is WithholdReason.UNMAPPED_ECOSYSTEM
     assert numpy.extraction_mode is ExtractionMode.PARSED
-    assert [(p.manifest, p.section) for p in numpy.provenance] == [
-        ("pixi.lock", PIXI_LOCK_CONDA_SECTION)
-    ]
+    assert [(p.manifest, p.section) for p in numpy.provenance] == [("pixi.lock", PIXI_LOCK_CONDA_SECTION)]
 
 
 def test_pixi_lock_conda_row_verified_map_hit_resolves_pypi_identity(monkeypatch):
@@ -172,18 +169,11 @@ def test_pixi_lock_pypi_row_explicit_name_version():
     assert bsl.vuln_matchable is True
     assert bsl.cve_match_level is CveMatchLevel.EXACT
     assert bsl.indeterminate_reason is None
-    assert [(p.manifest, p.section) for p in bsl.provenance] == [
-        ("pixi.lock", PIXI_LOCK_PYPI_SECTION)
-    ]
+    assert [(p.manifest, p.section) for p in bsl.provenance] == [("pixi.lock", PIXI_LOCK_PYPI_SECTION)]
 
 
 def test_pixi_lock_pypi_row_missing_both_fields_is_raw_malformed(tmp_path):
-    body = (
-        "version: 6\n"
-        "packages:\n"
-        "- pypi: https://files.pythonhosted.org/packages/aa/bb/"
-        "mystery-1.0-py3-none-any.whl\n"
-    )
+    body = "version: 6\npackages:\n- pypi: https://files.pythonhosted.org/packages/aa/bb/mystery-1.0-py3-none-any.whl\n"
     path = write_pixi_lock(tmp_path, body)
     (component,) = _pixi_lock_extractor().extract(path, PIXI_LOCK_MANIFEST)
     assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
@@ -243,9 +233,7 @@ def test_oversized_lockfile_raises_unparsable(tmp_path, monkeypatch):
 
 def test_oversized_line_raises_unparsable(tmp_path, monkeypatch):
     monkeypatch.setattr(lockfiles, "_MAX_LINE_BYTES", 16)
-    path = write_pixi_lock(
-        tmp_path, "version: 6\n# " + ("x" * 32) + "\npackages: []\n"
-    )
+    path = write_pixi_lock(tmp_path, "version: 6\n# " + ("x" * 32) + "\npackages: []\n")
     with pytest.raises(UnparsableManifestError, match="length cap"):
         _pixi_lock_extractor().extract(path, PIXI_LOCK_MANIFEST)
 
@@ -278,9 +266,7 @@ def test_conda_lock_manager_conda_row_is_unmapped_ecosystem(monkeypatch):
     assert numpy.cve_match_level is CveMatchLevel.NONE
     assert numpy.vuln_matchable is False
     assert numpy.indeterminate_reason is WithholdReason.UNMAPPED_ECOSYSTEM
-    assert [(p.manifest, p.section) for p in numpy.provenance] == [
-        ("conda-lock.yml", CONDA_LOCK_CONDA_SECTION)
-    ]
+    assert [(p.manifest, p.section) for p in numpy.provenance] == [("conda-lock.yml", CONDA_LOCK_CONDA_SECTION)]
 
 
 def test_conda_lock_manager_pip_row_is_vuln_matchable():
@@ -299,13 +285,7 @@ def test_conda_lock_manager_pip_row_is_vuln_matchable():
 
 
 def test_conda_lock_unrecognized_manager_raises_unparsable(tmp_path):
-    body = (
-        "version: 1\n"
-        "package:\n"
-        "- name: mystery\n"
-        "  version: '1.0'\n"
-        "  manager: rpm\n"
-    )
+    body = "version: 1\npackage:\n- name: mystery\n  version: '1.0'\n  manager: rpm\n"
     path = write_conda_lock(tmp_path, body)
     with pytest.raises(UnparsableManifestError):
         _conda_lock_extractor().extract(path, CONDA_LOCK_MANIFEST)
@@ -339,16 +319,11 @@ def test_lockfile_exact_version_folds_over_pyproject_range(tmp_path):
     Design Notes)."""
     pyproject_path = tmp_path / "pyproject.toml"
     pyproject_path.write_text(
-        '[project]\nname = "demo"\nversion = "0.0.1"\n'
-        'dependencies = ["numpy>=1"]\n',
+        '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = ["numpy>=1"]\n',
         encoding="utf-8",
     )
-    pyproject_manifest = ScannedManifest(
-        path="pyproject.toml", kind="pyproject.toml"
-    )
-    (range_component,) = PyprojectExtractor(DefaultRouter()).extract(
-        pyproject_path, pyproject_manifest
-    )
+    pyproject_manifest = ScannedManifest(path="pyproject.toml", kind="pyproject.toml")
+    (range_component,) = PyprojectExtractor(DefaultRouter()).extract(pyproject_path, pyproject_manifest)
     assert range_component.version is None  # the range-only pyproject entry
 
     lock_body = (
@@ -380,9 +355,7 @@ def _identity_set(components) -> set[tuple[str, str | None]]:
 
 
 def test_pixi_lock_scoped_environment_excludes_other_env_packages():
-    extractor = PixiLockExtractor(
-        DefaultRouter(), environment="env-a", platform="linux-64"
-    )
+    extractor = PixiLockExtractor(DefaultRouter(), environment="env-a", platform="linux-64")
     components = extractor.extract(MULTI_ENV_FIXTURE, PIXI_LOCK_MANIFEST)
     names = {c.name for c in components}
     assert "alpha-only" in names
@@ -400,25 +373,19 @@ def test_pixi_lock_unscoped_union_keeps_both_environments_packages():
 
 
 def test_pixi_lock_scoped_unknown_environment_raises():
-    extractor = PixiLockExtractor(
-        DefaultRouter(), environment="missing-env", platform="linux-64"
-    )
+    extractor = PixiLockExtractor(DefaultRouter(), environment="missing-env", platform="linux-64")
     with pytest.raises(UnparsableManifestError, match="unknown pixi environment"):
         extractor.extract(MULTI_ENV_FIXTURE, PIXI_LOCK_MANIFEST)
 
 
 def test_pixi_lock_scoped_unknown_platform_raises():
-    extractor = PixiLockExtractor(
-        DefaultRouter(), environment="env-a", platform="noarch-404"
-    )
+    extractor = PixiLockExtractor(DefaultRouter(), environment="env-a", platform="noarch-404")
     with pytest.raises(UnparsableManifestError, match="has no platform"):
         extractor.extract(MULTI_ENV_FIXTURE, PIXI_LOCK_MANIFEST)
 
 
 def test_pixi_lock_conda_source_row_parses_name_and_revision():
-    extractor = PixiLockExtractor(
-        DefaultRouter(), environment="env-a", platform="linux-64"
-    )
+    extractor = PixiLockExtractor(DefaultRouter(), environment="env-a", platform="linux-64")
     components = extractor.extract(MULTI_ENV_FIXTURE, PIXI_LOCK_MANIFEST)
     core = next(c for c in components if c.name == "pyforge-core")
     assert core.version == "abc123"

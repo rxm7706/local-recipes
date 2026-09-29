@@ -165,7 +165,7 @@ def _suppress_close(close: Callable[[], None]) -> None:
     "swallowing anything it raises" promise must hold for that case too."""
     try:
         close()
-    except (Exception, SystemExit):  # noqa: BLE001, S110 -- see the
+    except Exception, SystemExit:  # noqa: BLE001, S110 -- see the
         # docstring above; a failed teardown must never be able to change
         # what this gate reports.
         pass
@@ -273,9 +273,7 @@ def render_gate(context: GateContext) -> GateResult:
     manifest_path = deck_dir / "src" / "slides" / "manifest.json"
 
     if not dist_dir.is_dir():
-        raise RuntimeError(
-            f"{dist_dir} does not exist -- build the deck first (npm run build)"
-        )
+        raise RuntimeError(f"{dist_dir} does not exist -- build the deck first (npm run build)")
     if not manifest_path.is_file():
         raise RuntimeError(f"{manifest_path} does not exist")
     try:
@@ -299,10 +297,8 @@ def render_gate(context: GateContext) -> GateResult:
     try:
         with sync_playwright() as p:
             try:
-                browser = p.chromium.launch(
-                    channel="chrome", timeout=_RENDER_LAUNCH_TIMEOUT_MS
-                )
-            except (Exception, SystemExit):  # noqa: BLE001 -- fall back to
+                browser = p.chromium.launch(channel="chrome", timeout=_RENDER_LAUNCH_TIMEOUT_MS)
+            except Exception, SystemExit:  # noqa: BLE001 -- fall back to
                 # bundled chromium, matching board.py's own fallback order
                 # verbatim. SystemExit included for the same reason the
                 # per-slide loop below catches it: playwright's own
@@ -311,9 +307,7 @@ def render_gate(context: GateContext) -> GateResult:
                     browser = p.chromium.launch(timeout=_RENDER_LAUNCH_TIMEOUT_MS)
                 except (Exception, SystemExit) as exc:  # noqa: BLE001 -- no
                     # usable browser at all
-                    raise RuntimeError(
-                        f"no usable chromium ({type(exc).__name__}): {exc}"
-                    ) from exc
+                    raise RuntimeError(f"no usable chromium ({type(exc).__name__}): {exc}") from exc
             # Only now that Chromium is known launchable is it safe to wipe
             # the previous run's evidence (Review pass, second round):
             # wiping render_dir any earlier meant a "no usable chromium"
@@ -446,10 +440,7 @@ def image_slot_gate(context: GateContext) -> GateResult:
     if not isinstance(manifest, list):
         raise RuntimeError(f"{manifest_path} must contain a JSON array")
     if not fragments_dir.is_dir():
-        raise RuntimeError(
-            f"{fragments_dir} does not exist -- run the extractor first "
-            "(npm run extract)"
-        )
+        raise RuntimeError(f"{fragments_dir} does not exist -- run the extractor first (npm run extract)")
 
     findings: list[Finding] = []
     for index, entry in enumerate(manifest):
@@ -488,9 +479,7 @@ production change this story makes to ``DEFAULT_GATES``'s contents; its
 shape, and ``run()``'s own signature, are untouched (module docstring)."""
 
 
-def run(
-    slug: str, repo_root: Path, gates: Mapping[str, GateFn] | None = None
-) -> DeckQaReport:
+def run(slug: str, repo_root: Path, gates: Mapping[str, GateFn] | None = None) -> DeckQaReport:
     """Run every gate in ``gates`` against ``slug``/``repo_root`` and
     assemble the report. Pure computation over the supplied mapping: never
     writes to disk, never mutates deck sources, never triggers a rebuild.
@@ -558,20 +547,14 @@ def _finding_from_dict(gate_id: str, index: int, entry: object) -> Finding:
         raise errors.HeraldError(f"{malformed}: entry is not a JSON object")
     unknown = sorted(set(entry) - _FINDING_FIELDS)
     if unknown:
-        raise errors.HeraldError(
-            f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}"
-        )
+        raise errors.HeraldError(f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}")
     missing = sorted(_FINDING_FIELDS - set(entry))
     if missing:
-        raise errors.HeraldError(
-            f"{malformed}: missing field(s) {', '.join(map(repr, missing))}"
-        )
+        raise errors.HeraldError(f"{malformed}: missing field(s) {', '.join(map(repr, missing))}")
     slide_id = entry["slide_id"]
     message = entry["message"]
     if not isinstance(slide_id, str) or not isinstance(message, str):
-        raise errors.HeraldError(
-            f"{malformed}: 'slide_id' and 'message' must both be strings"
-        )
+        raise errors.HeraldError(f"{malformed}: 'slide_id' and 'message' must both be strings")
     return Finding(slide_id=slide_id, message=message)
 
 
@@ -581,30 +564,19 @@ def _gate_result_from_dict(gate_id: str, entry: object) -> GateResult:
         raise errors.HeraldError(f"{malformed}: entry is not a JSON object")
     unknown = sorted(set(entry) - _GATE_RESULT_FIELDS)
     if unknown:
-        raise errors.HeraldError(
-            f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}"
-        )
+        raise errors.HeraldError(f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}")
     missing = sorted(_GATE_RESULT_FIELDS - set(entry))
     if missing:
-        raise errors.HeraldError(
-            f"{malformed}: missing field(s) {', '.join(map(repr, missing))}"
-        )
+        raise errors.HeraldError(f"{malformed}: missing field(s) {', '.join(map(repr, missing))}")
     status = entry["status"]
     if status not in _GATE_STATUSES:
-        raise errors.HeraldError(
-            f"{malformed}: 'status' must be one of {sorted(_GATE_STATUSES)}, "
-            f"got {status!r}"
-        )
+        raise errors.HeraldError(f"{malformed}: 'status' must be one of {sorted(_GATE_STATUSES)}, got {status!r}")
     findings = entry["findings"]
     if not isinstance(findings, list):
         raise errors.HeraldError(f"{malformed}: 'findings' must be a list")
     artifacts = entry["artifacts"]
-    if not isinstance(artifacts, list) or not all(
-        isinstance(a, str) for a in artifacts
-    ):
-        raise errors.HeraldError(
-            f"{malformed}: 'artifacts' must be a list of strings"
-        )
+    if not isinstance(artifacts, list) or not all(isinstance(a, str) for a in artifacts):
+        raise errors.HeraldError(f"{malformed}: 'artifacts' must be a list of strings")
     error = entry["error"]
     if error is not None and not isinstance(error, str):
         raise errors.HeraldError(f"{malformed}: 'error' must be a string or null")
@@ -615,9 +587,7 @@ def _gate_result_from_dict(gate_id: str, entry: object) -> GateResult:
         )
     return GateResult(
         status=status,
-        findings=[
-            _finding_from_dict(gate_id, i, item) for i, item in enumerate(findings)
-        ],
+        findings=[_finding_from_dict(gate_id, i, item) for i, item in enumerate(findings)],
         artifacts=list(artifacts),
         error=error,
     )
@@ -630,36 +600,20 @@ def parse_report(data: object) -> DeckQaReport:
     type, or a ``status`` value other than ``"ok"``/``"error"`` -- a typoed
     field or a corrupt hand-edit is never silently dropped or coerced."""
     if not isinstance(data, dict):
-        raise errors.HeraldError(
-            "deck QA report is malformed: top level is not a JSON object"
-        )
+        raise errors.HeraldError("deck QA report is malformed: top level is not a JSON object")
     unknown = sorted(set(data) - _REPORT_FIELDS)
     if unknown:
-        raise errors.HeraldError(
-            f"deck QA report is malformed: unknown field(s) "
-            f"{', '.join(map(repr, unknown))}"
-        )
+        raise errors.HeraldError(f"deck QA report is malformed: unknown field(s) {', '.join(map(repr, unknown))}")
     missing = sorted(_REPORT_FIELDS - set(data))
     if missing:
-        raise errors.HeraldError(
-            f"deck QA report is malformed: missing field(s) "
-            f"{', '.join(map(repr, missing))}"
-        )
+        raise errors.HeraldError(f"deck QA report is malformed: missing field(s) {', '.join(map(repr, missing))}")
     slug = data["slug"]
     if not isinstance(slug, str):
-        raise errors.HeraldError(
-            "deck QA report is malformed: 'slug' must be a string"
-        )
+        raise errors.HeraldError("deck QA report is malformed: 'slug' must be a string")
     gates = data["gates"]
     if not isinstance(gates, dict) or not all(isinstance(k, str) for k in gates):
-        raise errors.HeraldError(
-            "deck QA report is malformed: 'gates' must be an object with "
-            "string keys"
-        )
+        raise errors.HeraldError("deck QA report is malformed: 'gates' must be an object with string keys")
     return DeckQaReport(
         slug=slug,
-        gates={
-            gate_id: _gate_result_from_dict(gate_id, entry)
-            for gate_id, entry in gates.items()
-        },
+        gates={gate_id: _gate_result_from_dict(gate_id, entry) for gate_id, entry in gates.items()},
     )

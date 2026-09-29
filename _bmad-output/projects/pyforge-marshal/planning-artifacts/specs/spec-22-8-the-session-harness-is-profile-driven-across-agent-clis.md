@@ -246,3 +246,16 @@ Decomposed for traceability:
   (`-m gemini-3-flash-preview` via the tier map); **copilot** argv verified live earlier
   the same day (`COPILOT-OK`, exit 0), final re-probe quota-blocked (frontmatter warning);
   **devin** absent-binary skip path exercised with fakes.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `5dfe5826c3` (2026-08-27, "feat(marshal): story 22.8 -- session harness profile-driven across agent CLIs (claude/cursor/gemini/copilot ve"). Ledger row `22-8-the-session-harness-is-profile-driven-across-agent-clis: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/policy-defaults.toml`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-22-8-the-session-harness-is-profile-driven-across-agent-clis.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/pyproject.toml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py` (+18 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

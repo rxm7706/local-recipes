@@ -38,10 +38,7 @@ def build_navigation_view(pages: Sequence[Page]) -> Callable:
     entry, silently, on every request that role makes.
     """
     if not isinstance(pages, Sequence):
-        raise TypeError(
-            f"build_navigation_view requires pages to be a Sequence[Page], "
-            f"got {type(pages).__name__}"
-        )
+        raise TypeError(f"build_navigation_view requires pages to be a Sequence[Page], got {type(pages).__name__}")
     # Materialized once, before validation: the closure below reuses `pages`
     # on every request it serves, so a one-shot iterator passed in here must
     # not be exhausted by this wiring-time loop alone -- that would silently
@@ -50,9 +47,7 @@ def build_navigation_view(pages: Sequence[Page]) -> Callable:
     seen_paths: dict[str, Page] = {}
     for index, page in enumerate(pages):
         if not isinstance(page, Page):
-            raise TypeError(
-                f"pages[{index}] must be a Page, got {type(page).__name__}"
-            )
+            raise TypeError(f"pages[{index}] must be a Page, got {type(page).__name__}")
         if page.path in seen_paths:
             raise ValueError(
                 f"pages declares {page.path!r} more than once "
@@ -64,9 +59,7 @@ def build_navigation_view(pages: Sequence[Page]) -> Callable:
     def navigation_view(request) -> JsonResponse:
         role = getattr(request, "scope", {}).get("dashboard_role")
         visible = build_navigation(role, pages)
-        response = JsonResponse(
-            {"pages": [{"path": page.path, "label": page.label} for page in visible]}
-        )
+        response = JsonResponse({"pages": [{"path": page.path, "label": page.label} for page in visible]})
         # This payload is role-scoped -- the entire point of CAP-3 is that a
         # restricted page must not reach an unauthorized caller. A shared
         # HTTP cache or reverse proxy caching one role's response and

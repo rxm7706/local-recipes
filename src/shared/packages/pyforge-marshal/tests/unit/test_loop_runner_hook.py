@@ -34,14 +34,7 @@ from pyforge.marshal.adapters.harness_bmadloop import (
 )
 
 _MARSHAL_ROOT = Path(__file__).resolve().parents[2]
-_HARNESS_SOURCE = (
-    _MARSHAL_ROOT
-    / "src"
-    / "pyforge"
-    / "marshal"
-    / "adapters"
-    / "harness_bmadloop.py"
-)
+_HARNESS_SOURCE = _MARSHAL_ROOT / "src" / "pyforge" / "marshal" / "adapters" / "harness_bmadloop.py"
 _PYPROJECT = _MARSHAL_ROOT / "pyproject.toml"
 
 
@@ -116,9 +109,7 @@ def test_pyproject_declares_bmad_loop_only_on_core_hooks_group():
     data = tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))
     groups = data.get("project", {}).get("entry-points", {})
     assert ENTRY_POINT_GROUP in groups
-    assert groups[ENTRY_POINT_GROUP]["bmad-loop"] == (
-        "pyforge.marshal.adapters.harness_bmadloop:BmadLoopHarness"
-    )
+    assert groups[ENTRY_POINT_GROUP]["bmad-loop"] == ("pyforge.marshal.adapters.harness_bmadloop:BmadLoopHarness")
     assert "pyforge.marshal.hooks" not in groups
 
 
@@ -145,6 +136,4 @@ def test_harness_sources_never_call_publish_verdict():
             if name == "publish_verdict":
                 hits.append(f"line {node.lineno}")
     assert not hits, f"harness_bmadloop.py must not call publish_verdict: {hits}"
-    assert "publish_verdict" not in inspect.getsource(
-        BmadLoopHarness.call
-    )
+    assert "publish_verdict" not in inspect.getsource(BmadLoopHarness.call)

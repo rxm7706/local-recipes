@@ -78,6 +78,8 @@ wrap a bullet across multiple lines):
 One bullet per command in the table, same order, verbatim strings. Add story-specific
 `expected:` text — that part isn't gated, only the backtick-quoted command itself is.
 
+A story spec of `type: feature` also carries a `flag:` block or a `flag-exempt:` value in its frontmatter — its one shape is `docs/reference/story-spec-flag-block.md`.
+
 ## Keeping this from going stale again
 
 `marshal-policy.toml`'s `verify_commands` should be treated as a genuine interface: a

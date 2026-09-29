@@ -139,26 +139,52 @@ from unittest.mock import patch
 import pytest
 
 from pyforge.mason import __version__
+from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.cli import (
-    _ENV_CFE_PYTHON, _ENV_CFE_ROOT, _ENV_CFE_TIMEOUT, _ENV_FORMAT, _ENV_QUIET,
-    _ENV_VERBOSE, _configure_logging, _resolve_bool, _resolve_optional_float,
-    _resolve_str, build_parser, main,
+    _ENV_CFE_PYTHON,
+    _ENV_CFE_ROOT,
+    _ENV_CFE_TIMEOUT,
+    _ENV_FORMAT,
+    _ENV_QUIET,
+    _ENV_VERBOSE,
+    _configure_logging,
+    _resolve_bool,
+    _resolve_optional_float,
+    _resolve_str,
+    build_parser,
+    main,
 )
 from pyforge.mason.doctor import DoctorReport
 from pyforge.mason.engines import EngineStatus
-from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.errors import (
-    CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError, EngineAbsentError,
-    EnvironmentCheckTimeoutError, EnvironmentLockfileMalformedError,
-    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError,
-    EnvironmentManifestsNotFoundError, InvalidShipTargetError,
-    MasonError, PackageVersionMismatchError, RecipeGenerationError,
+    CfeImportFloorError,
+    CfeTimeoutError,
+    CfeUnresolvedError,
+    EngineAbsentError,
+    EnvironmentCheckTimeoutError,
+    EnvironmentLockfileMalformedError,
+    EnvironmentLockfileMissingError,
+    EnvironmentLockTimeoutError,
+    EnvironmentManifestsNotFoundError,
+    InvalidShipTargetError,
+    MasonError,
+    PackageVersionMismatchError,
+    RecipeGenerationError,
 )
 from pyforge.mason.exit_codes import (
-    EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
+    EXIT_CFE_UNAVAILABLE,
+    EXIT_FAILED,
+    EXIT_INTERRUPTED,
+    EXIT_OK,
+    EXIT_USAGE,
 )
 from pyforge.mason.models import (
-    BuildResult, CfeResult, CheckResult, LockResult, PackageBuildResult, ShipState,
+    BuildResult,
+    CfeResult,
+    CheckResult,
+    LockResult,
+    PackageBuildResult,
+    ShipState,
     ShipTargetResult,
 )
 
@@ -315,12 +341,19 @@ def test_doctor_calls_build_report_with_flags_environ_and_cwd():
     `--cfe-python`'s own pass-through path was unproven), and `args[2]` is
     now actually asserted against `os.environ` -- this test's own docstring
     already claimed that, but the assertion was missing."""
-    with patch(
-        "pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT
-    ) as mock_build_report:
-        assert main([
-            "doctor", "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
-        ]) == EXIT_OK
+    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT) as mock_build_report:
+        assert (
+            main(
+                [
+                    "doctor",
+                    "--cfe-root",
+                    "/explicit/root",
+                    "--cfe-python",
+                    "/explicit/python",
+                ]
+            )
+            == EXIT_OK
+        )
 
     mock_build_report.assert_called_once()
     args = mock_build_report.call_args.args
@@ -334,9 +367,7 @@ def test_doctor_calls_build_report_with_cfe_python_unresolved_when_absent():
     """Symmetric with the flags-given case above: when `--cfe-python` is
     never supplied, `cli.py` must pass `None` through -- `doctor.build_report`
     does its own flag -> environment -> running-interpreter resolution."""
-    with patch(
-        "pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT
-    ) as mock_build_report:
+    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT) as mock_build_report:
         assert main(["doctor", "--cfe-root", "/explicit/root"]) == EXIT_OK
 
     args = mock_build_report.call_args.args
@@ -361,7 +392,10 @@ def test_recipe_help_works(capsys):
 # --- Story 2.4: `recipe new` -- verb dispatch (FR-7) ------------------------
 
 _FIXED_RECIPE_RESULT = CfeResult(
-    returncode=0, stdout="Generated: recipes/requests/recipe.yaml\n", stderr="", json_body=None,
+    returncode=0,
+    stdout="Generated: recipes/requests/recipe.yaml\n",
+    stderr="",
+    json_body=None,
 )
 
 
@@ -391,9 +425,21 @@ def test_recipe_new_text_mode_happy_path_calls_recipe_new_with_the_resolved_flag
 
 def test_recipe_new_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
     with patch("pyforge.mason.cli.recipe.new", return_value=_FIXED_RECIPE_RESULT):
-        assert main([
-            "recipe", "new", "--from-github", "owner/repo", "--output", "x", "--format", "json",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "new",
+                    "--from-github",
+                    "owner/repo",
+                    "--output",
+                    "x",
+                    "--format",
+                    "json",
+                ]
+            )
+            == EXIT_OK
+        )
 
     out = capsys.readouterr()
     assert out.err == ""
@@ -405,12 +451,15 @@ def test_recipe_new_json_mode_data_matches_dataclasses_asdict_of_the_result(caps
     assert doc["data"] == dataclasses.asdict(_FIXED_RECIPE_RESULT)
 
 
-@pytest.mark.parametrize("flag,expected_source", [
-    ("--from-pypi", "pypi"),
-    ("--from-github", "github"),
-    ("--from-cran", "cran"),
-    ("--from-npm", "npm"),
-])
+@pytest.mark.parametrize(
+    "flag,expected_source",
+    [
+        ("--from-pypi", "pypi"),
+        ("--from-github", "github"),
+        ("--from-cran", "cran"),
+        ("--from-npm", "npm"),
+    ],
+)
 def test_recipe_new_maps_each_from_flag_to_its_own_cfe_subcommand(flag, expected_source):
     """The `--from-*` -> subcommand mapping is `cli.py`'s own job (spec
     Design Notes): `recipe.py::new` merely forwards whatever `source` string
@@ -431,9 +480,21 @@ def test_recipe_new_with_no_source_flag_is_a_usage_error(capsys):
 
 
 def test_recipe_new_with_two_source_flags_is_a_usage_error(capsys):
-    assert main([
-        "recipe", "new", "--from-pypi", "a", "--from-github", "b", "--output", "x",
-    ]) == EXIT_USAGE
+    assert (
+        main(
+            [
+                "recipe",
+                "new",
+                "--from-pypi",
+                "a",
+                "--from-github",
+                "b",
+                "--output",
+                "x",
+            ]
+        )
+        == EXIT_USAGE
+    )
     out = capsys.readouterr()
     assert out.out == ""
     assert out.err != ""
@@ -465,21 +526,26 @@ def test_recipe_new_generation_failure_projects_to_exit_failed_with_message_on_s
 
 _FIXED_VALIDATE_PASSING_RESULT = CfeResult(
     returncode=0,
-    stdout='{"passed": true, "errors": [], "warnings": [], "info": [], '
-           '"rattler_lint_ran": true}',
+    stdout='{"passed": true, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": true}',
     stderr="",
     json_body={
-        "passed": True, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": True,
+        "passed": True,
+        "errors": [],
+        "warnings": [],
+        "info": [],
+        "rattler_lint_ran": True,
     },
 )
 
 _FIXED_VALIDATE_FAILING_RESULT = CfeResult(
     returncode=1,
-    stdout='{"passed": false, "errors": ["missing license"], "warnings": [], "info": [], '
-           '"rattler_lint_ran": true}',
+    stdout='{"passed": false, "errors": ["missing license"], "warnings": [], "info": [], "rattler_lint_ran": true}',
     stderr="",
     json_body={
-        "passed": False, "errors": ["missing license"], "warnings": [], "info": [],
+        "passed": False,
+        "errors": ["missing license"],
+        "warnings": [],
+        "info": [],
         "rattler_lint_ran": True,
     },
 )
@@ -508,7 +574,8 @@ def test_recipe_validate_parses_the_recipe_path_positional():
 
 def test_recipe_validate_text_mode_renders_the_cfe_result_fields(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+        "pyforge.mason.cli.recipe.validate",
+        return_value=_FIXED_VALIDATE_PASSING_RESULT,
     ) as mock_validate:
         assert main(["recipe", "validate", "recipes/foo"]) == EXIT_OK
 
@@ -522,7 +589,8 @@ def test_recipe_validate_text_mode_renders_the_cfe_result_fields(capsys):
 
 def test_recipe_validate_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+        "pyforge.mason.cli.recipe.validate",
+        return_value=_FIXED_VALIDATE_PASSING_RESULT,
     ):
         assert main(["recipe", "validate", "recipes/foo", "--format", "json"]) == EXIT_OK
     doc = json.loads(capsys.readouterr().out)
@@ -539,12 +607,23 @@ def test_recipe_validate_passes_recipe_path_and_resolved_flags_through(monkeypat
     `os.environ`, and `Path.cwd()` -- `recipe.validate` does its own
     resolution, mirroring `recipe diagnose`'s established contract."""
     with patch(
-        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+        "pyforge.mason.cli.recipe.validate",
+        return_value=_FIXED_VALIDATE_PASSING_RESULT,
     ) as mock_validate:
-        assert main([
-            "recipe", "validate", "recipes/foo",
-            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "validate",
+                    "recipes/foo",
+                    "--cfe-root",
+                    "/explicit/root",
+                    "--cfe-python",
+                    "/explicit/python",
+                ]
+            )
+            == EXIT_OK
+        )
 
     mock_validate.assert_called_once()
     args, kwargs = mock_validate.call_args
@@ -557,11 +636,21 @@ def test_recipe_validate_passes_recipe_path_and_resolved_flags_through(monkeypat
 
 def test_recipe_validate_resolves_cfe_timeout_flag_via_the_shared_resolver():
     with patch(
-        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+        "pyforge.mason.cli.recipe.validate",
+        return_value=_FIXED_VALIDATE_PASSING_RESULT,
     ) as mock_validate:
-        assert main([
-            "recipe", "validate", "recipes/foo", "--cfe-timeout", "30",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "validate",
+                    "recipes/foo",
+                    "--cfe-timeout",
+                    "30",
+                ]
+            )
+            == EXIT_OK
+        )
 
     assert mock_validate.call_args.kwargs["cfe_timeout_arg"] == 30.0
 
@@ -569,7 +658,8 @@ def test_recipe_validate_resolves_cfe_timeout_flag_via_the_shared_resolver():
 def test_recipe_validate_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
     monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
     with patch(
-        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+        "pyforge.mason.cli.recipe.validate",
+        return_value=_FIXED_VALIDATE_PASSING_RESULT,
     ) as mock_validate:
         assert main(["recipe", "validate", "recipes/foo"]) == EXIT_OK
 
@@ -579,7 +669,8 @@ def test_recipe_validate_cfe_timeout_env_var_applies_without_the_flag(monkeypatc
 def test_recipe_validate_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
     monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
     with patch(
-        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+        "pyforge.mason.cli.recipe.validate",
+        return_value=_FIXED_VALIDATE_PASSING_RESULT,
     ) as mock_validate:
         assert main(["recipe", "validate", "recipes/foo"]) == EXIT_OK
 
@@ -617,9 +708,11 @@ def test_recipe_validate_cfe_timeout_error_returns_exit_failed(capsys):
 # a blanket EXIT_OK -- proven in both text and --format json modes, and
 # that the JSON envelope's own "status" field stays "ok" regardless. -------
 
+
 def test_recipe_validate_passing_canned_result_returns_exit_ok_text_mode(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+        "pyforge.mason.cli.recipe.validate",
+        return_value=_FIXED_VALIDATE_PASSING_RESULT,
     ):
         rc = main(["recipe", "validate", "recipes/foo"])
 
@@ -629,7 +722,8 @@ def test_recipe_validate_passing_canned_result_returns_exit_ok_text_mode(capsys)
 
 def test_recipe_validate_passing_canned_result_returns_exit_ok_json_mode(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+        "pyforge.mason.cli.recipe.validate",
+        return_value=_FIXED_VALIDATE_PASSING_RESULT,
     ):
         rc = main(["recipe", "validate", "recipes/foo", "--format", "json"])
 
@@ -641,7 +735,8 @@ def test_recipe_validate_passing_canned_result_returns_exit_ok_json_mode(capsys)
 
 def test_recipe_validate_failing_canned_result_returns_exit_failed_text_mode(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_FAILING_RESULT,
+        "pyforge.mason.cli.recipe.validate",
+        return_value=_FIXED_VALIDATE_FAILING_RESULT,
     ):
         rc = main(["recipe", "validate", "recipes/foo"])
 
@@ -656,7 +751,8 @@ def test_recipe_validate_failing_canned_result_returns_exit_failed_json_mode(cap
     recipe's pass/fail outcome (spec I/O matrix) -- only the process exit
     code carries the validation signal."""
     with patch(
-        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_FAILING_RESULT,
+        "pyforge.mason.cli.recipe.validate",
+        return_value=_FIXED_VALIDATE_FAILING_RESULT,
     ):
         rc = main(["recipe", "validate", "recipes/foo", "--format", "json"])
 
@@ -674,11 +770,19 @@ def test_recipe_validate_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeyp
     for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
         monkeypatch.delenv(var, raising=False)
 
-    rc = main([
-        "recipe", "validate", "recipes/example",
-        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
-        "--format", "json",
-    ])
+    rc = main(
+        [
+            "recipe",
+            "validate",
+            "recipes/example",
+            "--cfe-root",
+            str(fake_cfe_root),
+            "--cfe-python",
+            sys.executable,
+            "--format",
+            "json",
+        ]
+    )
 
     assert rc == EXIT_OK
     doc = json.loads(capsys.readouterr().out)
@@ -731,7 +835,8 @@ def test_recipe_bare_noun_still_a_usage_error_after_diagnose_is_registered(capsy
 
 def test_recipe_diagnose_text_mode_renders_the_cfe_result_fields(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT,
+        "pyforge.mason.cli.recipe.diagnose",
+        return_value=_FIXED_DIAGNOSE_RESULT,
     ) as mock_diagnose:
         assert main(["recipe", "diagnose", "build.log"]) == EXIT_OK
 
@@ -761,12 +866,23 @@ def test_recipe_diagnose_passes_log_path_and_resolved_flags_through(monkeypatch)
     `doctor`'s established contract (`test_doctor_calls_build_report_with_
     flags_environ_and_cwd` above)."""
     with patch(
-        "pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT,
+        "pyforge.mason.cli.recipe.diagnose",
+        return_value=_FIXED_DIAGNOSE_RESULT,
     ) as mock_diagnose:
-        assert main([
-            "recipe", "diagnose", "build.log",
-            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "diagnose",
+                    "build.log",
+                    "--cfe-root",
+                    "/explicit/root",
+                    "--cfe-python",
+                    "/explicit/python",
+                ]
+            )
+            == EXIT_OK
+        )
 
     mock_diagnose.assert_called_once()
     args, kwargs = mock_diagnose.call_args
@@ -782,11 +898,21 @@ def test_recipe_diagnose_resolves_cfe_timeout_flag_via_the_shared_resolver():
     own claim: "first real caller of that helper") and passed through as
     `cfe_timeout_arg`."""
     with patch(
-        "pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT,
+        "pyforge.mason.cli.recipe.diagnose",
+        return_value=_FIXED_DIAGNOSE_RESULT,
     ) as mock_diagnose:
-        assert main([
-            "recipe", "diagnose", "build.log", "--cfe-timeout", "30",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "diagnose",
+                    "build.log",
+                    "--cfe-timeout",
+                    "30",
+                ]
+            )
+            == EXIT_OK
+        )
 
     assert mock_diagnose.call_args.kwargs["cfe_timeout_arg"] == 30.0
 
@@ -794,7 +920,8 @@ def test_recipe_diagnose_resolves_cfe_timeout_flag_via_the_shared_resolver():
 def test_recipe_diagnose_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
     monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
     with patch(
-        "pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT,
+        "pyforge.mason.cli.recipe.diagnose",
+        return_value=_FIXED_DIAGNOSE_RESULT,
     ) as mock_diagnose:
         assert main(["recipe", "diagnose", "build.log"]) == EXIT_OK
 
@@ -804,7 +931,8 @@ def test_recipe_diagnose_cfe_timeout_env_var_applies_without_the_flag(monkeypatc
 def test_recipe_diagnose_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
     monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
     with patch(
-        "pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT,
+        "pyforge.mason.cli.recipe.diagnose",
+        return_value=_FIXED_DIAGNOSE_RESULT,
     ) as mock_diagnose:
         assert main(["recipe", "diagnose", "build.log"]) == EXIT_OK
 
@@ -881,11 +1009,19 @@ def test_recipe_diagnose_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeyp
     for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
         monkeypatch.delenv(var, raising=False)
 
-    rc = main([
-        "recipe", "diagnose", "build.log",
-        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
-        "--format", "json",
-    ])
+    rc = main(
+        [
+            "recipe",
+            "diagnose",
+            "build.log",
+            "--cfe-root",
+            str(fake_cfe_root),
+            "--cfe-python",
+            sys.executable,
+            "--format",
+            "json",
+        ]
+    )
 
     assert rc == EXIT_OK
     doc = json.loads(capsys.readouterr().out)
@@ -904,11 +1040,16 @@ _FIXED_OPTIMIZE_RESULT = CfeResult(
     '"suggestion": "Add license_file.", "confidence": 0.95}]}',
     stderr="",
     json_body={
-        "success": True, "suggestions_found": 1,
-        "suggestions": [{
-            "code": "ABT-001", "message": "Missing license_file.",
-            "suggestion": "Add license_file.", "confidence": 0.95,
-        }],
+        "success": True,
+        "suggestions_found": 1,
+        "suggestions": [
+            {
+                "code": "ABT-001",
+                "message": "Missing license_file.",
+                "suggestion": "Add license_file.",
+                "confidence": 0.95,
+            }
+        ],
     },
 )
 
@@ -936,7 +1077,8 @@ def test_recipe_optimize_parses_the_recipe_path_positional():
 
 def test_recipe_optimize_text_mode_renders_the_cfe_result_fields(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+        "pyforge.mason.cli.recipe.optimize",
+        return_value=_FIXED_OPTIMIZE_RESULT,
     ) as mock_optimize:
         assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
 
@@ -966,12 +1108,23 @@ def test_recipe_optimize_passes_recipe_path_and_resolved_flags_through(monkeypat
     `os.environ`, and `Path.cwd()` -- `recipe.optimize` does its own
     resolution."""
     with patch(
-        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+        "pyforge.mason.cli.recipe.optimize",
+        return_value=_FIXED_OPTIMIZE_RESULT,
     ) as mock_optimize:
-        assert main([
-            "recipe", "optimize", "recipes/foo",
-            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "optimize",
+                    "recipes/foo",
+                    "--cfe-root",
+                    "/explicit/root",
+                    "--cfe-python",
+                    "/explicit/python",
+                ]
+            )
+            == EXIT_OK
+        )
 
     mock_optimize.assert_called_once()
     args, kwargs = mock_optimize.call_args
@@ -984,11 +1137,21 @@ def test_recipe_optimize_passes_recipe_path_and_resolved_flags_through(monkeypat
 
 def test_recipe_optimize_resolves_cfe_timeout_flag_via_the_shared_resolver():
     with patch(
-        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+        "pyforge.mason.cli.recipe.optimize",
+        return_value=_FIXED_OPTIMIZE_RESULT,
     ) as mock_optimize:
-        assert main([
-            "recipe", "optimize", "recipes/foo", "--cfe-timeout", "30",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "optimize",
+                    "recipes/foo",
+                    "--cfe-timeout",
+                    "30",
+                ]
+            )
+            == EXIT_OK
+        )
 
     assert mock_optimize.call_args.kwargs["cfe_timeout_arg"] == 30.0
 
@@ -996,7 +1159,8 @@ def test_recipe_optimize_resolves_cfe_timeout_flag_via_the_shared_resolver():
 def test_recipe_optimize_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
     monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
     with patch(
-        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+        "pyforge.mason.cli.recipe.optimize",
+        return_value=_FIXED_OPTIMIZE_RESULT,
     ) as mock_optimize:
         assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
 
@@ -1006,7 +1170,8 @@ def test_recipe_optimize_cfe_timeout_env_var_applies_without_the_flag(monkeypatc
 def test_recipe_optimize_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
     monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
     with patch(
-        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+        "pyforge.mason.cli.recipe.optimize",
+        return_value=_FIXED_OPTIMIZE_RESULT,
     ) as mock_optimize:
         assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
 
@@ -1053,9 +1218,7 @@ def test_recipe_optimize_cfe_import_floor_error_returns_exit_failed(capsys):
 
     assert rc == EXIT_FAILED
     err = capsys.readouterr().err
-    assert err.strip() == str(
-        CfeImportFloorError(missing=["ruamel.yaml"], interpreter="/fake/python")
-    )
+    assert err.strip() == str(CfeImportFloorError(missing=["ruamel.yaml"], interpreter="/fake/python"))
     assert "Traceback" not in err
 
 
@@ -1072,11 +1235,19 @@ def test_recipe_optimize_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeyp
         lambda interpreter: ImportFloorResult(interpreter=interpreter, missing=()),
     )
 
-    rc = main([
-        "recipe", "optimize", "recipes/example",
-        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
-        "--format", "json",
-    ])
+    rc = main(
+        [
+            "recipe",
+            "optimize",
+            "recipes/example",
+            "--cfe-root",
+            str(fake_cfe_root),
+            "--cfe-python",
+            sys.executable,
+            "--format",
+            "json",
+        ]
+    )
 
     assert rc == EXIT_OK
     doc = json.loads(capsys.readouterr().out)
@@ -1119,7 +1290,8 @@ def test_recipe_scan_parses_the_recipe_path_positional():
 
 def test_recipe_scan_text_mode_renders_the_cfe_result_fields(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+        "pyforge.mason.cli.recipe.scan",
+        return_value=_FIXED_SCAN_RESULT,
     ) as mock_scan:
         assert main(["recipe", "scan", "recipes/foo"]) == EXIT_OK
 
@@ -1144,12 +1316,23 @@ def test_recipe_scan_json_mode_data_matches_dataclasses_asdict_of_the_result(cap
 
 def test_recipe_scan_passes_recipe_path_and_resolved_flags_through(monkeypatch):
     with patch(
-        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+        "pyforge.mason.cli.recipe.scan",
+        return_value=_FIXED_SCAN_RESULT,
     ) as mock_scan:
-        assert main([
-            "recipe", "scan", "recipes/foo",
-            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "scan",
+                    "recipes/foo",
+                    "--cfe-root",
+                    "/explicit/root",
+                    "--cfe-python",
+                    "/explicit/python",
+                ]
+            )
+            == EXIT_OK
+        )
 
     mock_scan.assert_called_once()
     args, kwargs = mock_scan.call_args
@@ -1162,11 +1345,21 @@ def test_recipe_scan_passes_recipe_path_and_resolved_flags_through(monkeypatch):
 
 def test_recipe_scan_resolves_cfe_timeout_flag_via_the_shared_resolver():
     with patch(
-        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+        "pyforge.mason.cli.recipe.scan",
+        return_value=_FIXED_SCAN_RESULT,
     ) as mock_scan:
-        assert main([
-            "recipe", "scan", "recipes/foo", "--cfe-timeout", "30",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "scan",
+                    "recipes/foo",
+                    "--cfe-timeout",
+                    "30",
+                ]
+            )
+            == EXIT_OK
+        )
 
     assert mock_scan.call_args.kwargs["cfe_timeout_arg"] == 30.0
 
@@ -1174,7 +1367,8 @@ def test_recipe_scan_resolves_cfe_timeout_flag_via_the_shared_resolver():
 def test_recipe_scan_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
     monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
     with patch(
-        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+        "pyforge.mason.cli.recipe.scan",
+        return_value=_FIXED_SCAN_RESULT,
     ) as mock_scan:
         assert main(["recipe", "scan", "recipes/foo"]) == EXIT_OK
 
@@ -1184,7 +1378,8 @@ def test_recipe_scan_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
 def test_recipe_scan_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
     monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
     with patch(
-        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+        "pyforge.mason.cli.recipe.scan",
+        return_value=_FIXED_SCAN_RESULT,
     ) as mock_scan:
         assert main(["recipe", "scan", "recipes/foo"]) == EXIT_OK
 
@@ -1224,16 +1419,15 @@ def test_recipe_scan_cfe_import_floor_error_returns_exit_failed(capsys):
     with patch(
         "pyforge.mason.cli.recipe.scan",
         side_effect=CfeImportFloorError(
-            missing=["requests", "pyyaml"], interpreter="/fake/python",
+            missing=["requests", "pyyaml"],
+            interpreter="/fake/python",
         ),
     ):
         rc = main(["recipe", "scan", "recipes/foo"])
 
     assert rc == EXIT_FAILED
     err = capsys.readouterr().err
-    assert err.strip() == str(
-        CfeImportFloorError(missing=["requests", "pyyaml"], interpreter="/fake/python")
-    )
+    assert err.strip() == str(CfeImportFloorError(missing=["requests", "pyyaml"], interpreter="/fake/python"))
     assert "Traceback" not in err
 
 
@@ -1248,11 +1442,19 @@ def test_recipe_scan_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch
         lambda interpreter: ImportFloorResult(interpreter=interpreter, missing=()),
     )
 
-    rc = main([
-        "recipe", "scan", "recipes/example",
-        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
-        "--format", "json",
-    ])
+    rc = main(
+        [
+            "recipe",
+            "scan",
+            "recipes/example",
+            "--cfe-root",
+            str(fake_cfe_root),
+            "--cfe-python",
+            sys.executable,
+            "--format",
+            "json",
+        ]
+    )
 
     assert rc == EXIT_OK
     doc = json.loads(capsys.readouterr().out)
@@ -1308,7 +1510,8 @@ def test_recipe_submit_parses_yes_and_prepare_only_flags():
 
 def test_recipe_submit_text_mode_renders_the_ship_target_result_fields(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+        "pyforge.mason.cli.recipe.submit",
+        return_value=_FIXED_SUBMIT_RESULT,
     ) as mock_submit:
         assert main(["recipe", "submit", "recipes/foo", "--yes"]) == EXIT_OK
 
@@ -1329,9 +1532,12 @@ def test_recipe_submit_text_mode_renders_the_ship_target_result_fields(capsys):
 
 def test_recipe_submit_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
     with patch("pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT):
-        assert main(
-            ["recipe", "submit", "recipes/foo", "--yes", "--format", "json"],
-        ) == EXIT_OK
+        assert (
+            main(
+                ["recipe", "submit", "recipes/foo", "--yes", "--format", "json"],
+            )
+            == EXIT_OK
+        )
     doc = json.loads(capsys.readouterr().out)
     assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
     assert doc["command"] == "recipe submit"
@@ -1352,12 +1558,24 @@ def test_recipe_submit_passes_recipe_path_and_resolved_flags_through(monkeypatch
     `os.environ`, and `Path.cwd()` -- `recipe.submit` does its own
     resolution."""
     with patch(
-        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+        "pyforge.mason.cli.recipe.submit",
+        return_value=_FIXED_SUBMIT_RESULT,
     ) as mock_submit:
-        assert main([
-            "recipe", "submit", "recipes/foo", "--yes",
-            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "submit",
+                    "recipes/foo",
+                    "--yes",
+                    "--cfe-root",
+                    "/explicit/root",
+                    "--cfe-python",
+                    "/explicit/python",
+                ]
+            )
+            == EXIT_OK
+        )
 
     mock_submit.assert_called_once()
     args, kwargs = mock_submit.call_args
@@ -1373,7 +1591,8 @@ def test_recipe_submit_no_yes_flag_passes_confirm_false():
     default"): `confirm=False` reaches `recipe.submit` when `--yes` is
     absent."""
     with patch(
-        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+        "pyforge.mason.cli.recipe.submit",
+        return_value=_FIXED_SUBMIT_RESULT,
     ) as mock_submit:
         assert main(["recipe", "submit", "recipes/foo"]) == EXIT_OK
 
@@ -1382,7 +1601,8 @@ def test_recipe_submit_no_yes_flag_passes_confirm_false():
 
 def test_recipe_submit_yes_flag_passes_confirm_true():
     with patch(
-        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+        "pyforge.mason.cli.recipe.submit",
+        return_value=_FIXED_SUBMIT_RESULT,
     ) as mock_submit:
         assert main(["recipe", "submit", "recipes/foo", "--yes"]) == EXIT_OK
 
@@ -1391,22 +1611,37 @@ def test_recipe_submit_yes_flag_passes_confirm_true():
 
 def test_recipe_submit_prepare_only_flag_passes_through():
     with patch(
-        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+        "pyforge.mason.cli.recipe.submit",
+        return_value=_FIXED_SUBMIT_RESULT,
     ) as mock_submit:
-        assert main(
-            ["recipe", "submit", "recipes/foo", "--yes", "--prepare-only"],
-        ) == EXIT_OK
+        assert (
+            main(
+                ["recipe", "submit", "recipes/foo", "--yes", "--prepare-only"],
+            )
+            == EXIT_OK
+        )
 
     assert mock_submit.call_args.kwargs["prepare_only"] is True
 
 
 def test_recipe_submit_resolves_cfe_timeout_flag_via_the_shared_resolver():
     with patch(
-        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+        "pyforge.mason.cli.recipe.submit",
+        return_value=_FIXED_SUBMIT_RESULT,
     ) as mock_submit:
-        assert main([
-            "recipe", "submit", "recipes/foo", "--yes", "--cfe-timeout", "30",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "submit",
+                    "recipes/foo",
+                    "--yes",
+                    "--cfe-timeout",
+                    "30",
+                ]
+            )
+            == EXIT_OK
+        )
 
     assert mock_submit.call_args.kwargs["cfe_timeout_arg"] == 30.0
 
@@ -1414,7 +1649,8 @@ def test_recipe_submit_resolves_cfe_timeout_flag_via_the_shared_resolver():
 def test_recipe_submit_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
     monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
     with patch(
-        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+        "pyforge.mason.cli.recipe.submit",
+        return_value=_FIXED_SUBMIT_RESULT,
     ) as mock_submit:
         assert main(["recipe", "submit", "recipes/foo"]) == EXIT_OK
 
@@ -1424,7 +1660,8 @@ def test_recipe_submit_cfe_timeout_env_var_applies_without_the_flag(monkeypatch)
 def test_recipe_submit_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
     monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
     with patch(
-        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+        "pyforge.mason.cli.recipe.submit",
+        return_value=_FIXED_SUBMIT_RESULT,
     ) as mock_submit:
         assert main(["recipe", "submit", "recipes/foo"]) == EXIT_OK
 
@@ -1467,11 +1704,20 @@ def test_recipe_submit_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypat
     for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
         monkeypatch.delenv(var, raising=False)
 
-    rc = main([
-        "recipe", "submit", str(fake_cfe_root / "recipes" / "example"), "--yes",
-        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
-        "--format", "json",
-    ])
+    rc = main(
+        [
+            "recipe",
+            "submit",
+            str(fake_cfe_root / "recipes" / "example"),
+            "--yes",
+            "--cfe-root",
+            str(fake_cfe_root),
+            "--cfe-python",
+            sys.executable,
+            "--format",
+            "json",
+        ]
+    )
 
     assert rc == EXIT_OK
     doc = json.loads(capsys.readouterr().out)
@@ -1486,11 +1732,12 @@ def test_recipe_submit_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypat
 
 _FIXED_UPDATE_RESULT = CfeResult(
     returncode=0,
-    stdout='{"success": true, "updated": true, "new_version": "9.9.9", '
-    '"message": "Recipe updated successfully."}',
+    stdout='{"success": true, "updated": true, "new_version": "9.9.9", "message": "Recipe updated successfully."}',
     stderr="",
     json_body={
-        "success": True, "updated": True, "new_version": "9.9.9",
+        "success": True,
+        "updated": True,
+        "new_version": "9.9.9",
         "message": "Recipe updated successfully.",
     },
 )
@@ -1525,10 +1772,18 @@ def test_recipe_update_parses_the_recipe_path_positional_and_defaults():
 
 
 def test_recipe_update_parses_dry_run_github_repo_and_pre_flags():
-    ns = build_parser().parse_args([
-        "recipe", "update", "recipes/foo",
-        "--dry-run", "--github", "--repo", "owner/repo", "--pre",
-    ])
+    ns = build_parser().parse_args(
+        [
+            "recipe",
+            "update",
+            "recipes/foo",
+            "--dry-run",
+            "--github",
+            "--repo",
+            "owner/repo",
+            "--pre",
+        ]
+    )
     assert ns.dry_run is True
     assert ns.github is True
     assert ns.repo == "owner/repo"
@@ -1537,7 +1792,8 @@ def test_recipe_update_parses_dry_run_github_repo_and_pre_flags():
 
 def test_recipe_update_text_mode_renders_the_cfe_result_fields(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+        "pyforge.mason.cli.recipe.update",
+        return_value=_FIXED_UPDATE_RESULT,
     ) as mock_update:
         assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
 
@@ -1551,9 +1807,12 @@ def test_recipe_update_text_mode_renders_the_cfe_result_fields(capsys):
 
 def test_recipe_update_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
     with patch("pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT):
-        assert main(
-            ["recipe", "update", "recipes/foo", "--format", "json"],
-        ) == EXIT_OK
+        assert (
+            main(
+                ["recipe", "update", "recipes/foo", "--format", "json"],
+            )
+            == EXIT_OK
+        )
     doc = json.loads(capsys.readouterr().out)
     assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
     assert doc["command"] == "recipe update"
@@ -1568,12 +1827,23 @@ def test_recipe_update_passes_recipe_path_and_resolved_flags_through(monkeypatch
     `os.environ`, and `Path.cwd()` -- `recipe.update` does its own
     resolution, mirroring `diagnose`'s established contract."""
     with patch(
-        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+        "pyforge.mason.cli.recipe.update",
+        return_value=_FIXED_UPDATE_RESULT,
     ) as mock_update:
-        assert main([
-            "recipe", "update", "recipes/foo",
-            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "update",
+                    "recipes/foo",
+                    "--cfe-root",
+                    "/explicit/root",
+                    "--cfe-python",
+                    "/explicit/python",
+                ]
+            )
+            == EXIT_OK
+        )
 
     mock_update.assert_called_once()
     args, kwargs = mock_update.call_args
@@ -1586,7 +1856,8 @@ def test_recipe_update_passes_recipe_path_and_resolved_flags_through(monkeypatch
 
 def test_recipe_update_no_dry_run_flag_passes_dry_run_false():
     with patch(
-        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+        "pyforge.mason.cli.recipe.update",
+        return_value=_FIXED_UPDATE_RESULT,
     ) as mock_update:
         assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
 
@@ -1595,7 +1866,8 @@ def test_recipe_update_no_dry_run_flag_passes_dry_run_false():
 
 def test_recipe_update_dry_run_flag_passes_dry_run_true():
     with patch(
-        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+        "pyforge.mason.cli.recipe.update",
+        return_value=_FIXED_UPDATE_RESULT,
     ) as mock_update:
         assert main(["recipe", "update", "recipes/foo", "--dry-run"]) == EXIT_OK
 
@@ -1604,12 +1876,23 @@ def test_recipe_update_dry_run_flag_passes_dry_run_true():
 
 def test_recipe_update_github_repo_and_pre_flags_pass_straight_through():
     with patch(
-        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+        "pyforge.mason.cli.recipe.update",
+        return_value=_FIXED_UPDATE_RESULT,
     ) as mock_update:
-        assert main([
-            "recipe", "update", "recipes/foo",
-            "--github", "--repo", "owner/repo", "--pre",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "update",
+                    "recipes/foo",
+                    "--github",
+                    "--repo",
+                    "owner/repo",
+                    "--pre",
+                ]
+            )
+            == EXIT_OK
+        )
 
     kwargs = mock_update.call_args.kwargs
     assert kwargs["github"] is True
@@ -1619,7 +1902,8 @@ def test_recipe_update_github_repo_and_pre_flags_pass_straight_through():
 
 def test_recipe_update_repo_and_pre_default_to_inert_values_without_github():
     with patch(
-        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+        "pyforge.mason.cli.recipe.update",
+        return_value=_FIXED_UPDATE_RESULT,
     ) as mock_update:
         assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
 
@@ -1650,9 +1934,20 @@ def test_recipe_update_warns_on_stderr_when_pre_given_without_github(capsys):
 
 def test_recipe_update_does_not_warn_when_repo_and_pre_given_with_github(capsys):
     with patch("pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT):
-        assert main([
-            "recipe", "update", "recipes/foo", "--github", "--repo", "owner/repo", "--pre",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "update",
+                    "recipes/foo",
+                    "--github",
+                    "--repo",
+                    "owner/repo",
+                    "--pre",
+                ]
+            )
+            == EXIT_OK
+        )
 
     err = capsys.readouterr().err
     assert "have no effect" not in err
@@ -1660,11 +1955,21 @@ def test_recipe_update_does_not_warn_when_repo_and_pre_given_with_github(capsys)
 
 def test_recipe_update_resolves_cfe_timeout_flag_via_the_shared_resolver():
     with patch(
-        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+        "pyforge.mason.cli.recipe.update",
+        return_value=_FIXED_UPDATE_RESULT,
     ) as mock_update:
-        assert main([
-            "recipe", "update", "recipes/foo", "--cfe-timeout", "30",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "update",
+                    "recipes/foo",
+                    "--cfe-timeout",
+                    "30",
+                ]
+            )
+            == EXIT_OK
+        )
 
     assert mock_update.call_args.kwargs["cfe_timeout_arg"] == 30.0
 
@@ -1672,7 +1977,8 @@ def test_recipe_update_resolves_cfe_timeout_flag_via_the_shared_resolver():
 def test_recipe_update_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
     monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
     with patch(
-        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+        "pyforge.mason.cli.recipe.update",
+        return_value=_FIXED_UPDATE_RESULT,
     ) as mock_update:
         assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
 
@@ -1682,7 +1988,8 @@ def test_recipe_update_cfe_timeout_env_var_applies_without_the_flag(monkeypatch)
 def test_recipe_update_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
     monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
     with patch(
-        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+        "pyforge.mason.cli.recipe.update",
+        return_value=_FIXED_UPDATE_RESULT,
     ) as mock_update:
         assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
 
@@ -1722,11 +2029,19 @@ def test_recipe_update_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypat
     for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
         monkeypatch.delenv(var, raising=False)
 
-    rc = main([
-        "recipe", "update", "recipes/example",
-        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
-        "--format", "json",
-    ])
+    rc = main(
+        [
+            "recipe",
+            "update",
+            "recipes/example",
+            "--cfe-root",
+            str(fake_cfe_root),
+            "--cfe-python",
+            sys.executable,
+            "--format",
+            "json",
+        ]
+    )
 
     assert rc == EXIT_OK
     doc = json.loads(capsys.readouterr().out)
@@ -1742,11 +2057,23 @@ def test_recipe_update_github_against_fake_cfe_root_end_to_end(fake_cfe_root, mo
     for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
         monkeypatch.delenv(var, raising=False)
 
-    rc = main([
-        "recipe", "update", "recipes/example", "--github", "--repo", "owner/repo", "--pre",
-        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
-        "--format", "json",
-    ])
+    rc = main(
+        [
+            "recipe",
+            "update",
+            "recipes/example",
+            "--github",
+            "--repo",
+            "owner/repo",
+            "--pre",
+            "--cfe-root",
+            str(fake_cfe_root),
+            "--cfe-python",
+            sys.executable,
+            "--format",
+            "json",
+        ]
+    )
 
     assert rc == EXIT_OK
     doc = json.loads(capsys.readouterr().out)
@@ -1756,20 +2083,26 @@ def test_recipe_update_github_against_fake_cfe_root_end_to_end(fake_cfe_root, mo
     assert doc["data"]["json_body"]["latest_tag"] == "v9.9.9"
 
 
-@pytest.mark.parametrize("argv", [
-    ["--format", "json", "recipe"],
-    ["recipe", "--format", "json"],
-])
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--format", "json", "recipe"],
+        ["recipe", "--format", "json"],
+    ],
+)
 def test_global_flag_parses_before_or_after_the_noun(argv):
     ns = build_parser().parse_args(argv)
     assert ns.format == "json"
     assert ns.noun == "recipe"
 
 
-@pytest.mark.parametrize("flag,attr", [
-    ("--cfe-root", "cfe_root"),
-    ("--cfe-python", "cfe_python"),
-])
+@pytest.mark.parametrize(
+    "flag,attr",
+    [
+        ("--cfe-root", "cfe_root"),
+        ("--cfe-python", "cfe_python"),
+    ],
+)
 def test_global_string_flags_accepted_at_either_position(flag, attr):
     before = build_parser().parse_args([flag, "/tmp/x", "package"])
     after = build_parser().parse_args(["package", flag, "/tmp/x"])
@@ -1778,10 +2111,13 @@ def test_global_string_flags_accepted_at_either_position(flag, attr):
     assert getattr(after, attr) == "/tmp/x"
 
 
-@pytest.mark.parametrize("flag,attr", [
-    ("--verbose", "verbose"),
-    ("--quiet", "quiet"),
-])
+@pytest.mark.parametrize(
+    "flag,attr",
+    [
+        ("--verbose", "verbose"),
+        ("--quiet", "quiet"),
+    ],
+)
 def test_global_boolean_flags_accepted_at_either_position(flag, attr):
     before = build_parser().parse_args([flag, "environment"])
     after = build_parser().parse_args(["environment", flag])
@@ -1892,21 +2228,36 @@ def test_all_six_v1_knobs_have_both_a_flag_and_an_environment_form(monkeypatch):
     """
     knobs = (
         {
-            "flag": "--cfe-root", "env_var": _ENV_CFE_ROOT, "dest": "cfe_root",
-            "argv": ["--cfe-root", "/from/flag"], "flag_wins": "/from/flag",
-            "env_raw": "/from/env", "env_wins": "/from/env", "default": "auto",
+            "flag": "--cfe-root",
+            "env_var": _ENV_CFE_ROOT,
+            "dest": "cfe_root",
+            "argv": ["--cfe-root", "/from/flag"],
+            "flag_wins": "/from/flag",
+            "env_raw": "/from/env",
+            "env_wins": "/from/env",
+            "default": "auto",
             "resolve": lambda v: _resolve_str(v, _ENV_CFE_ROOT, "auto"),
         },
         {
-            "flag": "--cfe-python", "env_var": _ENV_CFE_PYTHON, "dest": "cfe_python",
-            "argv": ["--cfe-python", "/from/flag/python"], "flag_wins": "/from/flag/python",
-            "env_raw": "/from/env/python", "env_wins": "/from/env/python", "default": "auto",
+            "flag": "--cfe-python",
+            "env_var": _ENV_CFE_PYTHON,
+            "dest": "cfe_python",
+            "argv": ["--cfe-python", "/from/flag/python"],
+            "flag_wins": "/from/flag/python",
+            "env_raw": "/from/env/python",
+            "env_wins": "/from/env/python",
+            "default": "auto",
             "resolve": lambda v: _resolve_str(v, _ENV_CFE_PYTHON, "auto"),
         },
         {
-            "flag": "--cfe-timeout", "env_var": _ENV_CFE_TIMEOUT, "dest": "cfe_timeout",
-            "argv": ["--cfe-timeout", "30"], "flag_wins": 30.0,
-            "env_raw": "45", "env_wins": 45.0, "default": None,
+            "flag": "--cfe-timeout",
+            "env_var": _ENV_CFE_TIMEOUT,
+            "dest": "cfe_timeout",
+            "argv": ["--cfe-timeout", "30"],
+            "flag_wins": 30.0,
+            "env_raw": "45",
+            "env_wins": 45.0,
+            "default": None,
             "resolve": lambda v: _resolve_optional_float(v, _ENV_CFE_TIMEOUT),
         },
         {
@@ -1914,9 +2265,14 @@ def test_all_six_v1_knobs_have_both_a_flag_and_an_environment_form(monkeypatch):
             # form deliberately asks for the default value while the
             # environment asks for the other one: if the flag were ignored,
             # the flag-wins case would come back "json".
-            "flag": "--format", "env_var": _ENV_FORMAT, "dest": "format",
-            "argv": ["--format", "text"], "flag_wins": "text",
-            "env_raw": "json", "env_wins": "json", "default": "text",
+            "flag": "--format",
+            "env_var": _ENV_FORMAT,
+            "dest": "format",
+            "argv": ["--format", "text"],
+            "flag_wins": "text",
+            "env_raw": "json",
+            "env_wins": "json",
+            "default": "text",
             "resolve": lambda v: _resolve_str(v, _ENV_FORMAT, "text"),
         },
         {
@@ -1924,16 +2280,26 @@ def test_all_six_v1_knobs_have_both_a_flag_and_an_environment_form(monkeypatch):
             # only two possible values: the flag-wins case pairs `--verbose`
             # with a falsy environment value, the environment case with a
             # truthy one.
-            "flag": "--verbose", "env_var": _ENV_VERBOSE, "dest": "verbose",
-            "argv": ["--verbose"], "flag_wins": True,
-            "env_raw": "1", "env_wins": True, "default": False,
+            "flag": "--verbose",
+            "env_var": _ENV_VERBOSE,
+            "dest": "verbose",
+            "argv": ["--verbose"],
+            "flag_wins": True,
+            "env_raw": "1",
+            "env_wins": True,
+            "default": False,
             "conflict_env_raw": "0",
             "resolve": lambda v: _resolve_bool(v, _ENV_VERBOSE, False),
         },
         {
-            "flag": "--quiet", "env_var": _ENV_QUIET, "dest": "quiet",
-            "argv": ["--quiet"], "flag_wins": True,
-            "env_raw": "1", "env_wins": True, "default": False,
+            "flag": "--quiet",
+            "env_var": _ENV_QUIET,
+            "dest": "quiet",
+            "argv": ["--quiet"],
+            "flag_wins": True,
+            "env_raw": "1",
+            "env_wins": True,
+            "default": False,
             "conflict_env_raw": "0",
             "resolve": lambda v: _resolve_bool(v, _ENV_QUIET, False),
         },
@@ -1963,8 +2329,7 @@ def test_all_six_v1_knobs_have_both_a_flag_and_an_environment_form(monkeypatch):
 
 
 def test_keyboard_interrupt_projects_to_130(monkeypatch):
-    monkeypatch.setattr("pyforge.mason.cli.build_parser",
-                        lambda: (_ for _ in ()).throw(KeyboardInterrupt()))
+    monkeypatch.setattr("pyforge.mason.cli.build_parser", lambda: (_ for _ in ()).throw(KeyboardInterrupt()))
     assert main([]) == EXIT_INTERRUPTED
 
 
@@ -1972,8 +2337,7 @@ def test_unanticipated_exception_projects_to_exit_failed_with_traceback(monkeypa
     """A crash must project to the documented EXIT_FAILED (AD-7), with the
     full traceback on stderr -- not the interpreter's bare default and not a
     silent failure."""
-    monkeypatch.setattr("pyforge.mason.cli.build_parser",
-                        lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr("pyforge.mason.cli.build_parser", lambda: (_ for _ in ()).throw(RuntimeError("boom")))
     rc = main([])
     assert rc == EXIT_FAILED
     err = capsys.readouterr().err
@@ -1993,9 +2357,7 @@ def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(monke
     CFE-unavailable to EXIT_CFE_UNAVAILABLE (3)."""
     monkeypatch.setattr(
         "pyforge.mason.cli.build_parser",
-        lambda: (_ for _ in ()).throw(
-            MasonError("test:injected-failure", "synthetic anticipated failure")
-        ),
+        lambda: (_ for _ in ()).throw(MasonError("test:injected-failure", "synthetic anticipated failure")),
     )
     rc = main([])
     assert rc == EXIT_FAILED
@@ -2005,6 +2367,7 @@ def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(monke
 
 
 # --- Story 1.7: CfeUnresolvedError degrades to EXIT_CFE_UNAVAILABLE --------
+
 
 def test_cfe_unresolved_error_raised_in_main_returns_exit_cfe_unavailable(monkeypatch, capsys):
     """A `CfeUnresolvedError` raised inside main()'s try block must be caught
@@ -2033,6 +2396,7 @@ def test_cfe_unresolved_error_raised_in_main_returns_exit_cfe_unavailable(monkey
 # render.py in Story 1.4, --cfe-root/--cfe-python feed the resolution chain
 # in Stories 1.5-1.6, --verbose/--quiet feed logging in Story 1.10), so the
 # precedence contract is proven against the helpers directly.
+
 
 class TestResolveStr:
     def test_flag_wins_over_env(self, monkeypatch):
@@ -2109,7 +2473,8 @@ class TestResolveOptionalFloat:
         assert _resolve_optional_float(0.001, "MASON_CFE_TIMEOUT") == 0.001
 
     @pytest.mark.parametrize(
-        "unusable", [0.0, -5.0, float("nan"), float("inf"), float("-inf")],
+        "unusable",
+        [0.0, -5.0, float("nan"), float("inf"), float("-inf")],
     )
     def test_unusable_flag_value_falls_through_to_env(self, monkeypatch, unusable):
         """Review pass (2026-08-10): this resolver used to validate only its
@@ -2124,7 +2489,8 @@ class TestResolveOptionalFloat:
         assert _resolve_optional_float(unusable, "MASON_CFE_TIMEOUT") == 45.0
 
     @pytest.mark.parametrize(
-        "unusable", [0.0, -5.0, float("nan"), float("inf"), float("-inf")],
+        "unusable",
+        [0.0, -5.0, float("nan"), float("inf"), float("-inf")],
     )
     def test_unusable_flag_value_with_no_env_resolves_to_none(self, monkeypatch, unusable):
         """...and with nothing to fall through to, the resolver returns
@@ -2145,7 +2511,9 @@ class TestResolveOptionalFloat:
 
     @pytest.mark.parametrize("not_a_number", ["30", "", Decimal("30"), object()])
     def test_non_numeric_flag_value_falls_through_instead_of_raising(
-        self, monkeypatch, not_a_number,
+        self,
+        monkeypatch,
+        not_a_number,
     ):
         """A flag value that is not a real number at all reached
         `math.isfinite` and raised its bare "must be real number, not str" --
@@ -2202,6 +2570,7 @@ class TestResolveOptionalFloat:
 
 # --- Story 1.10: `_configure_logging` -- verbosity -> root logger level, ---
 # ------------------------------------- always stderr, never stdout --------
+
 
 class TestConfigureLogging:
     def test_default_level_is_warning_and_info_is_swallowed(self, capsys):
@@ -2322,8 +2691,7 @@ def test_jfrog_credential_sentinel_never_appears_in_doctor_output(monkeypatch, c
     The POSITIVE control is what keeps the sentinel assertions from passing
     vacuously: an absence assertion over empty output proves nothing, so the
     report must first be shown to have actually rendered."""
-    for name in ("MASON_QUIET", "MASON_VERBOSE", "MASON_FORMAT", "MASON_CFE_ROOT",
-                 "MASON_CFE_PYTHON"):
+    for name in ("MASON_QUIET", "MASON_VERBOSE", "MASON_FORMAT", "MASON_CFE_ROOT", "MASON_CFE_PYTHON"):
         monkeypatch.delenv(name, raising=False)
     empty_path_dir = tmp_path / "empty-path"
     empty_path_dir.mkdir()
@@ -2350,7 +2718,10 @@ def test_jfrog_credential_sentinel_never_appears_in_doctor_output(monkeypatch, c
 # --- Story 2.6: `recipe build` verb dispatch --------------------------------
 
 _FIXED_BUILD_RESULT = BuildResult(
-    mode="native", config="linux64", returncode=0, stdout="built ok",
+    mode="native",
+    config="linux64",
+    returncode=0,
+    stdout="built ok",
     artifact_dir="build_artifacts/linux64",
 )
 
@@ -2364,7 +2735,8 @@ def test_recipe_build_help_works(capsys):
 
 def test_recipe_build_happy_path_text_mode(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+        "pyforge.mason.cli.recipe.build",
+        return_value=_FIXED_BUILD_RESULT,
     ) as mock_build:
         assert main(["recipe", "build", "recipes/foo"]) == EXIT_OK
 
@@ -2396,11 +2768,15 @@ def test_recipe_build_happy_path_json_mode(capsys):
 
 def test_recipe_build_docker_flag_dispatches_with_config(capsys):
     with patch(
-        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+        "pyforge.mason.cli.recipe.build",
+        return_value=_FIXED_BUILD_RESULT,
     ) as mock_build:
-        assert main(
-            ["recipe", "build", "recipes/foo", "--docker", "--config", "linux64"],
-        ) == EXIT_OK
+        assert (
+            main(
+                ["recipe", "build", "recipes/foo", "--docker", "--config", "linux64"],
+            )
+            == EXIT_OK
+        )
 
     kwargs = mock_build.call_args.kwargs
     assert kwargs["docker"] is True
@@ -2454,7 +2830,10 @@ def test_recipe_build_failed_child_still_renders_ok(capsys):
     `recipe build` itself still reports EXIT_OK, mirroring `doctor`'s
     established "the gap is data" precedent."""
     failed_result = BuildResult(
-        mode="native", config="linux64", returncode=1, stdout="build failed",
+        mode="native",
+        config="linux64",
+        returncode=1,
+        stdout="build failed",
         artifact_dir="build_artifacts/linux64",
     )
     with patch("pyforge.mason.cli.recipe.build", return_value=failed_result):
@@ -2468,13 +2847,25 @@ def test_recipe_build_failed_child_still_renders_ok(capsys):
 
 def test_recipe_build_passes_cfe_flags_environ_and_cwd_through():
     with patch(
-        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+        "pyforge.mason.cli.recipe.build",
+        return_value=_FIXED_BUILD_RESULT,
     ) as mock_build:
-        assert main([
-            "recipe", "build", "recipes/foo",
-            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
-            "--cfe-timeout", "30",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "recipe",
+                    "build",
+                    "recipes/foo",
+                    "--cfe-root",
+                    "/explicit/root",
+                    "--cfe-python",
+                    "/explicit/python",
+                    "--cfe-timeout",
+                    "30",
+                ]
+            )
+            == EXIT_OK
+        )
 
     kwargs = mock_build.call_args.kwargs
     assert kwargs["cfe_root_arg"] == "/explicit/root"
@@ -2486,7 +2877,8 @@ def test_recipe_build_passes_cfe_flags_environ_and_cwd_through():
 
 def test_recipe_build_cfe_timeout_and_flags_absent_pass_none_through():
     with patch(
-        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+        "pyforge.mason.cli.recipe.build",
+        return_value=_FIXED_BUILD_RESULT,
     ) as mock_build:
         assert main(["recipe", "build", "recipes/foo"]) == EXIT_OK
 
@@ -2542,7 +2934,8 @@ def test_package_build_help_works(capsys):
 
 def test_package_build_happy_path_text_mode(capsys):
     with patch(
-        "pyforge.mason.cli.package.build", return_value=_FIXED_PACKAGE_BUILD_RESULT,
+        "pyforge.mason.cli.package.build",
+        return_value=_FIXED_PACKAGE_BUILD_RESULT,
     ) as mock_build:
         assert main(["package", "build", "myproj"]) == EXIT_OK
 
@@ -2560,7 +2953,8 @@ def test_package_build_happy_path_text_mode(capsys):
 
 def test_package_build_happy_path_json_mode(capsys):
     with patch(
-        "pyforge.mason.cli.package.build", return_value=_FIXED_PACKAGE_BUILD_RESULT,
+        "pyforge.mason.cli.package.build",
+        return_value=_FIXED_PACKAGE_BUILD_RESULT,
     ):
         assert main(["package", "build", "myproj", "--format", "json"]) == EXIT_OK
 
@@ -2632,7 +3026,8 @@ def test_package_build_version_mismatch_error_projects_to_exit_failed(capsys):
 
 def test_package_build_engine_absent_error_projects_to_exit_failed(capsys):
     with patch(
-        "pyforge.mason.cli.package.build", side_effect=EngineAbsentError("pixi", "pixi"),
+        "pyforge.mason.cli.package.build",
+        side_effect=EngineAbsentError("pixi", "pixi"),
     ):
         rc = main(["package", "build", "myproj"])
 
@@ -2643,7 +3038,8 @@ def test_package_build_engine_absent_error_projects_to_exit_failed(capsys):
 
 def test_package_build_default_target_is_library():
     with patch(
-        "pyforge.mason.cli.package.build", return_value=_FIXED_PACKAGE_BUILD_RESULT,
+        "pyforge.mason.cli.package.build",
+        return_value=_FIXED_PACKAGE_BUILD_RESULT,
     ) as mock_build:
         assert main(["package", "build", "myproj"]) == EXIT_OK
 
@@ -2657,12 +3053,23 @@ def test_package_build_never_reads_cfe_flags():
     parse (they are on `global_flags`, shared by every noun) but never
     reach `package.build`'s call."""
     with patch(
-        "pyforge.mason.cli.package.build", return_value=_FIXED_PACKAGE_BUILD_RESULT,
+        "pyforge.mason.cli.package.build",
+        return_value=_FIXED_PACKAGE_BUILD_RESULT,
     ) as mock_build:
-        assert main([
-            "package", "build", "myproj",
-            "--cfe-root", "/explicit/root", "--cfe-timeout", "30",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "package",
+                    "build",
+                    "myproj",
+                    "--cfe-root",
+                    "/explicit/root",
+                    "--cfe-timeout",
+                    "30",
+                ]
+            )
+            == EXIT_OK
+        )
 
     kwargs = mock_build.call_args.kwargs
     assert "cfe_root_arg" not in kwargs
@@ -2696,11 +3103,14 @@ def test_package_noun_metavar_reflects_the_registered_verbs(capsys):
 
 _FIXED_SHIP_RESULTS = (
     ShipTargetResult(
-        target="pypi", state=ShipState.TERMINAL,
-        reference="https://pypi.org/project/pkg/0.1.0/", message="View at:\n...\n",
+        target="pypi",
+        state=ShipState.TERMINAL,
+        reference="https://pypi.org/project/pkg/0.1.0/",
+        message="View at:\n...\n",
     ),
     ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING,
+        target="conda-forge",
+        state=ShipState.PENDING,
         reference="https://github.com/example/example/pull/1",
         message="PR created: https://github.com/example/example/pull/1",
     ),
@@ -2748,7 +3158,8 @@ def test_package_ship_parses_to_and_defaults():
 
 def test_package_ship_canonical_form_dispatches_to_package_ship(capsys):
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
         assert main(["package", "ship", "--to", "pypi,conda-forge", "--yes"]) == EXIT_OK
 
@@ -2769,7 +3180,8 @@ def test_package_ship_bare_noun_alias_dispatches_identically(capsys):
     """spec I/O matrix: 'Alias happy path... identical dispatch/result to
     the canonical form above.'"""
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
         assert main(["package", "--ship", "pypi,conda-forge", "--yes"]) == EXIT_OK
 
@@ -2790,14 +3202,16 @@ def test_package_ship_canonical_and_alias_forms_call_package_ship_with_equivalen
     """Task list: 'both dispatch to pyforge.mason.cli.package.ship with
     equivalent kwargs.'"""
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
         assert main(["package", "ship", "--to", "pypi", "--yes"]) == EXIT_OK
     canonical_args = mock_ship.call_args.args
     canonical_kwargs = dict(mock_ship.call_args.kwargs)
 
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
         assert main(["package", "--ship", "pypi", "--yes"]) == EXIT_OK
     alias_args = mock_ship.call_args.args
@@ -2835,17 +3249,18 @@ def test_recipe_and_environment_bare_nouns_still_usage_errors_after_ship_lands(c
 
 def test_package_ship_json_mode_data_targets_is_a_list_of_ship_target_result_dicts(capsys):
     with patch("pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS):
-        assert main(
-            ["package", "ship", "--to", "pypi,conda-forge", "--yes", "--format", "json"],
-        ) == EXIT_OK
+        assert (
+            main(
+                ["package", "ship", "--to", "pypi,conda-forge", "--yes", "--format", "json"],
+            )
+            == EXIT_OK
+        )
     doc = json.loads(capsys.readouterr().out)
     assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
     assert doc["command"] == "package ship"
     assert doc["status"] == "ok"
     assert doc["errors"] == []
-    assert doc["data"]["targets"] == [
-        json.loads(json.dumps(dataclasses.asdict(r))) for r in _FIXED_SHIP_RESULTS
-    ]
+    assert doc["data"]["targets"] == [json.loads(json.dumps(dataclasses.asdict(r))) for r in _FIXED_SHIP_RESULTS]
 
 
 def test_package_ship_text_mode_never_leaks_the_raw_shipstate_repr(capsys):
@@ -2872,7 +3287,8 @@ def test_package_ship_text_mode_never_leaks_the_raw_shipstate_repr(capsys):
 
 def test_package_ship_no_yes_flag_passes_confirm_false():
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
         assert main(["package", "ship", "--to", "pypi"]) == EXIT_OK
 
@@ -2881,7 +3297,8 @@ def test_package_ship_no_yes_flag_passes_confirm_false():
 
 def test_package_ship_yes_flag_passes_confirm_true():
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
         assert main(["package", "ship", "--to", "pypi", "--yes"]) == EXIT_OK
 
@@ -2890,12 +3307,23 @@ def test_package_ship_yes_flag_passes_confirm_true():
 
 def test_package_ship_recipe_path_flag_forwards_through():
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
-        assert main([
-            "package", "ship", "--to", "conda-forge", "--yes",
-            "--recipe-path", "/some/recipe",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "package",
+                    "ship",
+                    "--to",
+                    "conda-forge",
+                    "--yes",
+                    "--recipe-path",
+                    "/some/recipe",
+                ]
+            )
+            == EXIT_OK
+        )
 
     assert mock_ship.call_args.kwargs["recipe_path"] == "/some/recipe"
 
@@ -2916,7 +3344,10 @@ def test_package_ship_aggregate_exit_code_is_failed_when_any_target_failed():
     mixed_results = (
         ShipTargetResult(target="pypi", state=ShipState.TERMINAL, reference="u", message="ok"),
         ShipTargetResult(
-            target="conda-forge", state=ShipState.FAILED, reference=None, message="bad",
+            target="conda-forge",
+            state=ShipState.FAILED,
+            reference=None,
+            message="bad",
         ),
     )
     with patch("pyforge.mason.cli.package.ship", return_value=mixed_results):
@@ -2932,7 +3363,10 @@ def test_package_ship_aggregate_exit_code_is_ok_when_no_target_failed():
     all_ok_results = (
         ShipTargetResult(target="pypi", state=ShipState.TERMINAL, reference="u", message="ok"),
         ShipTargetResult(
-            target="pypi", state=ShipState.NOT_ATTEMPTED, reference=None, message="gated",
+            target="pypi",
+            state=ShipState.NOT_ATTEMPTED,
+            reference=None,
+            message="gated",
         ),
     )
     with patch("pyforge.mason.cli.package.ship", return_value=all_ok_results):
@@ -2946,12 +3380,25 @@ def test_package_ship_cfe_root_and_timeout_flags_reach_package_ship():
     precedent, `ship` DOES need `--cfe-root`/`--cfe-timeout` for its
     `conda-forge` target."""
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
-        assert main([
-            "package", "ship", "--to", "conda-forge", "--yes",
-            "--cfe-root", "/explicit/root", "--cfe-timeout", "30",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "package",
+                    "ship",
+                    "--to",
+                    "conda-forge",
+                    "--yes",
+                    "--cfe-root",
+                    "/explicit/root",
+                    "--cfe-timeout",
+                    "30",
+                ]
+            )
+            == EXIT_OK
+        )
 
     kwargs = mock_ship.call_args.kwargs
     assert kwargs["cfe_root_arg"] == "/explicit/root"
@@ -2960,12 +3407,23 @@ def test_package_ship_cfe_root_and_timeout_flags_reach_package_ship():
 
 def test_package_ship_cfe_python_flag_reaches_package_ship():
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
-        assert main([
-            "package", "ship", "--to", "conda-forge", "--yes",
-            "--cfe-python", "/explicit/python",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "package",
+                    "ship",
+                    "--to",
+                    "conda-forge",
+                    "--yes",
+                    "--cfe-python",
+                    "/explicit/python",
+                ]
+            )
+            == EXIT_OK
+        )
 
     assert mock_ship.call_args.kwargs["cfe_python_arg"] == "/explicit/python"
 
@@ -2973,7 +3431,8 @@ def test_package_ship_cfe_python_flag_reaches_package_ship():
 def test_package_ship_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
     monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
         assert main(["package", "ship", "--to", "pypi", "--yes"]) == EXIT_OK
 
@@ -2986,7 +3445,8 @@ def test_package_ship_mason_error_projects_to_exit_failed(capsys):
     branch to `EXIT_FAILED` -- no dedicated branch, spec I/O matrix:
     'Invalid token... Raises InvalidShipTargetError, EXIT_FAILED.'"""
     with patch(
-        "pyforge.mason.cli.package.ship", side_effect=InvalidShipTargetError("bogus"),
+        "pyforge.mason.cli.package.ship",
+        side_effect=InvalidShipTargetError("bogus"),
     ):
         rc = main(["package", "ship", "--to", "pypi", "--yes"])
 
@@ -3051,13 +3511,15 @@ def test_package_ship_yes_before_verb_reaches_package_ship_via_main():
     ship` rather than just `parse_args` -- `package.ship`'s own `confirm`
     kwarg must be `True` regardless of where `--yes` was typed."""
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
         assert main(["package", "--yes", "ship", "--to", "pypi"]) == EXIT_OK
     before_kwargs = dict(mock_ship.call_args.kwargs)
 
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
         assert main(["package", "ship", "--to", "pypi", "--yes"]) == EXIT_OK
     after_kwargs = dict(mock_ship.call_args.kwargs)
@@ -3068,19 +3530,43 @@ def test_package_ship_yes_before_verb_reaches_package_ship_via_main():
 
 def test_package_ship_recipe_path_before_verb_reaches_package_ship_via_main():
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
-        assert main([
-            "package", "--recipe-path", "X", "ship", "--to", "conda-forge", "--yes",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "package",
+                    "--recipe-path",
+                    "X",
+                    "ship",
+                    "--to",
+                    "conda-forge",
+                    "--yes",
+                ]
+            )
+            == EXIT_OK
+        )
     before_kwargs = dict(mock_ship.call_args.kwargs)
 
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
-        assert main([
-            "package", "ship", "--to", "conda-forge", "--yes", "--recipe-path", "X",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "package",
+                    "ship",
+                    "--to",
+                    "conda-forge",
+                    "--yes",
+                    "--recipe-path",
+                    "X",
+                ]
+            )
+            == EXIT_OK
+        )
     after_kwargs = dict(mock_ship.call_args.kwargs)
 
     assert before_kwargs["recipe_path"] == "X"
@@ -3089,19 +3575,43 @@ def test_package_ship_recipe_path_before_verb_reaches_package_ship_via_main():
 
 def test_package_ship_target_before_verb_reaches_package_ship_via_main():
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
-        assert main([
-            "package", "--target", "library", "ship", "--to", "pypi", "--yes",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "package",
+                    "--target",
+                    "library",
+                    "ship",
+                    "--to",
+                    "pypi",
+                    "--yes",
+                ]
+            )
+            == EXIT_OK
+        )
     before_kwargs = dict(mock_ship.call_args.kwargs)
 
     with patch(
-        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+        "pyforge.mason.cli.package.ship",
+        return_value=_FIXED_SHIP_RESULTS,
     ) as mock_ship:
-        assert main([
-            "package", "ship", "--to", "pypi", "--yes", "--target", "library",
-        ]) == EXIT_OK
+        assert (
+            main(
+                [
+                    "package",
+                    "ship",
+                    "--to",
+                    "pypi",
+                    "--yes",
+                    "--target",
+                    "library",
+                ]
+            )
+            == EXIT_OK
+        )
     after_kwargs = dict(mock_ship.call_args.kwargs)
 
     assert before_kwargs["target"] == "library"
@@ -3140,8 +3650,7 @@ def test_package_ship_combined_with_an_explicit_verb_is_a_usage_error(argv, caps
     real trigger (editing a previous `--ship ...` invocation to add an
     explicit verb, leaving the stale `--ship` in place); rejected as a
     usage error now instead of silently ignored."""
-    with patch("pyforge.mason.cli.package.ship") as mock_ship, \
-            patch("pyforge.mason.cli.package.build") as mock_build:
+    with patch("pyforge.mason.cli.package.ship") as mock_ship, patch("pyforge.mason.cli.package.build") as mock_build:
         rc = main(argv)
 
     assert rc == EXIT_USAGE
@@ -3183,7 +3692,8 @@ def test_environment_lock_help_works(capsys):
 
 def test_environment_lock_happy_path_text_mode(capsys):
     with patch(
-        "pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT,
+        "pyforge.mason.cli.environment.lock",
+        return_value=_FIXED_LOCK_RESULT,
     ) as mock_lock:
         assert main(["environment", "lock", "environment.yml", "-o", "lock.yml"]) == EXIT_OK
 
@@ -3217,11 +3727,11 @@ def test_environment_lock_happy_path_json_mode(capsys):
 
 def test_environment_lock_passes_platform_flag_through_unparsed(capsys):
     with patch(
-        "pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT,
+        "pyforge.mason.cli.environment.lock",
+        return_value=_FIXED_LOCK_RESULT,
     ) as mock_lock:
         main(
-            ["environment", "lock", "environment.yml", "-o", "lock.yml",
-             "--platform", "linux-64,osx-arm64"],
+            ["environment", "lock", "environment.yml", "-o", "lock.yml", "--platform", "linux-64,osx-arm64"],
         )
 
     assert mock_lock.call_args.kwargs["platforms"] == "linux-64,osx-arm64"
@@ -3229,16 +3739,21 @@ def test_environment_lock_passes_platform_flag_through_unparsed(capsys):
 
 # --- Story 4.2: `environment lock` manifest-discovery dispatch --------------
 
+
 def test_environment_lock_missing_manifest_path_triggers_discovery(capsys):
     """Omitting `manifest_path` (`nargs="*"`) is no longer a usage error --
     it triggers discovery against `Path.cwd()`, and the discovered tuple
     (not an empty one) is what `environment.lock()` receives."""
-    with patch(
-        "pyforge.mason.cli.environment.discover_manifests",
-        return_value=("environment.yml", "pixi.toml"),
-    ) as mock_discover, patch(
-        "pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT,
-    ) as mock_lock:
+    with (
+        patch(
+            "pyforge.mason.cli.environment.discover_manifests",
+            return_value=("environment.yml", "pixi.toml"),
+        ) as mock_discover,
+        patch(
+            "pyforge.mason.cli.environment.lock",
+            return_value=_FIXED_LOCK_RESULT,
+        ) as mock_lock,
+    ):
         rc = main(["environment", "lock", "-o", "lock.yml"])
 
     assert rc == EXIT_OK
@@ -3256,10 +3771,13 @@ def test_environment_lock_missing_manifest_path_triggers_discovery(capsys):
 def test_environment_lock_discovery_line_is_not_gated_by_quiet(capsys):
     """The discovery notice is never gated behind `--verbose`/`--quiet`
     (spec Never boundary) -- confirm `--quiet` still shows it."""
-    with patch(
-        "pyforge.mason.cli.environment.discover_manifests",
-        return_value=("environment.yml", "pixi.toml"),
-    ), patch("pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT):
+    with (
+        patch(
+            "pyforge.mason.cli.environment.discover_manifests",
+            return_value=("environment.yml", "pixi.toml"),
+        ),
+        patch("pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT),
+    ):
         rc = main(["environment", "lock", "-o", "lock.yml", "--quiet"])
 
     assert rc == EXIT_OK
@@ -3271,12 +3789,16 @@ def test_environment_lock_missing_manifest_path_discovery_raises(capsys):
     propagates to `main()`'s `except MasonError` handler -- `EXIT_FAILED`, the
     message on stderr, no stderr discovery line (it is printed only AFTER a
     successful discovery call), and no traceback."""
-    with patch(
-        "pyforge.mason.cli.environment.discover_manifests",
-        side_effect=EnvironmentManifestsNotFoundError(
-            "/proj", ("pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml"),
-        ),
-    ) as mock_discover, patch("pyforge.mason.cli.environment.lock") as mock_lock:
+    with (
+        patch(
+            "pyforge.mason.cli.environment.discover_manifests",
+            side_effect=EnvironmentManifestsNotFoundError(
+                "/proj",
+                ("pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml"),
+            ),
+        ) as mock_discover,
+        patch("pyforge.mason.cli.environment.lock") as mock_lock,
+    ):
         rc = main(["environment", "lock", "-o", "lock.yml"])
 
     assert rc == EXIT_FAILED
@@ -3291,9 +3813,13 @@ def test_environment_lock_missing_manifest_path_discovery_raises(capsys):
 def test_environment_lock_explicit_manifest_path_bypasses_discovery(capsys):
     """An explicit `manifest_path` never triggers discovery and never prints
     the discovery line -- unchanged from pre-4.2 behavior."""
-    with patch("pyforge.mason.cli.environment.discover_manifests") as mock_discover, patch(
-        "pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT,
-    ) as mock_lock:
+    with (
+        patch("pyforge.mason.cli.environment.discover_manifests") as mock_discover,
+        patch(
+            "pyforge.mason.cli.environment.lock",
+            return_value=_FIXED_LOCK_RESULT,
+        ) as mock_lock,
+    ):
         rc = main(["environment", "lock", "environment.yml", "-o", "lock.yml"])
 
     assert rc == EXIT_OK
@@ -3306,7 +3832,8 @@ def test_environment_lock_explicit_manifest_path_bypasses_discovery(capsys):
 
 def test_environment_lock_renders_populated_platforms(capsys):
     with patch(
-        "pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT_WITH_PLATFORMS,
+        "pyforge.mason.cli.environment.lock",
+        return_value=_FIXED_LOCK_RESULT_WITH_PLATFORMS,
     ):
         rc = main(
             ["environment", "lock", "environment.yml", "-o", "lock.yml", "--format", "json"],
@@ -3420,7 +3947,8 @@ def test_environment_check_help_works(capsys):
 
 def test_environment_check_happy_path_current_text_mode_returns_exit_ok(capsys):
     with patch(
-        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_CURRENT,
+        "pyforge.mason.cli.environment.check",
+        return_value=_FIXED_CHECK_RESULT_CURRENT,
     ) as mock_check:
         rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
 
@@ -3439,7 +3967,8 @@ def test_environment_check_happy_path_current_text_mode_returns_exit_ok(capsys):
 
 def test_environment_check_happy_path_current_json_mode(capsys):
     with patch(
-        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_CURRENT,
+        "pyforge.mason.cli.environment.check",
+        return_value=_FIXED_CHECK_RESULT_CURRENT,
     ):
         rc = main(
             ["environment", "check", "environment.yml", "-l", "lock.yml", "--format", "json"],
@@ -3460,7 +3989,8 @@ def test_environment_check_stale_result_returns_exit_failed_text_mode(capsys):
     projects it (spec Intent, mirrors `recipe validate`'s own pass/fail ->
     exit code precedent), but the JSON envelope's own `status` stays "ok"."""
     with patch(
-        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_STALE,
+        "pyforge.mason.cli.environment.check",
+        return_value=_FIXED_CHECK_RESULT_STALE,
     ):
         rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
 
@@ -3473,7 +4003,8 @@ def test_environment_check_stale_result_returns_exit_failed_text_mode(capsys):
 
 def test_environment_check_stale_result_returns_exit_failed_json_mode(capsys):
     with patch(
-        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_STALE,
+        "pyforge.mason.cli.environment.check",
+        return_value=_FIXED_CHECK_RESULT_STALE,
     ):
         rc = main(
             ["environment", "check", "environment.yml", "-l", "lock.yml", "--format", "json"],
@@ -3487,11 +4018,11 @@ def test_environment_check_stale_result_returns_exit_failed_json_mode(capsys):
 
 def test_environment_check_passes_platform_flag_through_unparsed(capsys):
     with patch(
-        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_CURRENT,
+        "pyforge.mason.cli.environment.check",
+        return_value=_FIXED_CHECK_RESULT_CURRENT,
     ) as mock_check:
         main(
-            ["environment", "check", "environment.yml", "-l", "lock.yml",
-             "--platform", "linux-64,osx-arm64"],
+            ["environment", "check", "environment.yml", "-l", "lock.yml", "--platform", "linux-64,osx-arm64"],
         )
 
     assert mock_check.call_args.kwargs["platforms"] == "linux-64,osx-arm64"
@@ -3514,16 +4045,21 @@ def test_environment_check_renders_populated_platforms(capsys):
 
 # --- Story 4.2: `environment check` manifest-discovery dispatch -------------
 
+
 def test_environment_check_missing_manifest_path_triggers_discovery(capsys):
     """Omitting `manifest_path` (`nargs="*"`) is no longer a usage error --
     it triggers discovery against `Path.cwd()`, and the discovered tuple
     (not an empty one) is what `environment.check()` receives."""
-    with patch(
-        "pyforge.mason.cli.environment.discover_manifests",
-        return_value=("environment.yml", "pixi.toml"),
-    ) as mock_discover, patch(
-        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_CURRENT,
-    ) as mock_check:
+    with (
+        patch(
+            "pyforge.mason.cli.environment.discover_manifests",
+            return_value=("environment.yml", "pixi.toml"),
+        ) as mock_discover,
+        patch(
+            "pyforge.mason.cli.environment.check",
+            return_value=_FIXED_CHECK_RESULT_CURRENT,
+        ) as mock_check,
+    ):
         rc = main(["environment", "check", "-l", "lock.yml"])
 
     assert rc == EXIT_OK
@@ -3542,12 +4078,16 @@ def test_environment_check_missing_manifest_path_discovery_raises(capsys):
     """When discovery itself finds nothing, `EnvironmentManifestsNotFoundError`
     propagates to `main()`'s `except MasonError` handler -- `EXIT_FAILED`, the
     message on stderr, no stderr discovery line, and no traceback."""
-    with patch(
-        "pyforge.mason.cli.environment.discover_manifests",
-        side_effect=EnvironmentManifestsNotFoundError(
-            "/proj", ("pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml"),
-        ),
-    ) as mock_discover, patch("pyforge.mason.cli.environment.check") as mock_check:
+    with (
+        patch(
+            "pyforge.mason.cli.environment.discover_manifests",
+            side_effect=EnvironmentManifestsNotFoundError(
+                "/proj",
+                ("pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml"),
+            ),
+        ) as mock_discover,
+        patch("pyforge.mason.cli.environment.check") as mock_check,
+    ):
         rc = main(["environment", "check", "-l", "lock.yml"])
 
     assert rc == EXIT_FAILED
@@ -3562,9 +4102,13 @@ def test_environment_check_missing_manifest_path_discovery_raises(capsys):
 def test_environment_check_explicit_manifest_path_bypasses_discovery(capsys):
     """An explicit `manifest_path` never triggers discovery and never prints
     the discovery line -- unchanged from pre-4.2 behavior."""
-    with patch("pyforge.mason.cli.environment.discover_manifests") as mock_discover, patch(
-        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_CURRENT,
-    ) as mock_check:
+    with (
+        patch("pyforge.mason.cli.environment.discover_manifests") as mock_discover,
+        patch(
+            "pyforge.mason.cli.environment.check",
+            return_value=_FIXED_CHECK_RESULT_CURRENT,
+        ) as mock_check,
+    ):
         rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
 
     assert rc == EXIT_OK
@@ -3653,7 +4197,8 @@ def test_environment_check_nonzero_returncode_projects_to_exit_failed_even_when_
         stdout="solver crashed\n",
     )
     with patch(
-        "pyforge.mason.cli.environment.check", return_value=failed_but_not_stale,
+        "pyforge.mason.cli.environment.check",
+        return_value=failed_but_not_stale,
     ):
         rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
 
@@ -3686,7 +4231,8 @@ def test_environment_check_stale_and_nonzero_returncode_together_still_exit_fail
         stdout="solver crashed\n",
     )
     with patch(
-        "pyforge.mason.cli.environment.check", return_value=stale_and_failed,
+        "pyforge.mason.cli.environment.check",
+        return_value=stale_and_failed,
     ):
         rc = main(
             ["environment", "check", "environment.yml", "-l", "lock.yml", "--format", "json"],

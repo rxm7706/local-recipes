@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli.dispatch import (
     _policy_flags_from_harness_arg,
     _surface_worktree_wip_before_dispatch,
@@ -12,7 +13,6 @@ from pyforge.marshal.cli.dispatch import (
     station_in_flight_conflict,
     station_story_blocked_evidence,
 )
-from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import (
     DispatchGitFacts,
@@ -192,12 +192,12 @@ class FakeVcs:
     def worktree_unified_patch(self, worktree_path: Path, *, baseline_sha: str) -> str:
         return "--- a/x\n+++ b/x\n+line1\n-line0\n"
 
-
     def branch_exists(self, repo_root: Path, branch: str) -> bool:
         return False
 
     def worktree_path_for_branch(self, repo_root: Path, branch: str) -> Path | None:
         return None
+
 
 class FakeProcess:
     def __init__(self, *, alive: bool = False) -> None:
@@ -397,9 +397,7 @@ def test_policy_flags_from_harness_arg_blank_returns_empty() -> None:
 
 
 def test_policy_flags_from_harness_arg_single_profile() -> None:
-    assert _policy_flags_from_harness_arg("claude") == {
-        "harness_preference": ("claude",)
-    }
+    assert _policy_flags_from_harness_arg("claude") == {"harness_preference": ("claude",)}
 
 
 def test_policy_flags_from_harness_arg_multiple_profiles_trims_whitespace() -> None:
@@ -409,23 +407,14 @@ def test_policy_flags_from_harness_arg_multiple_profiles_trims_whitespace() -> N
 
 
 def test_policy_flags_from_harness_arg_ignores_empty_segments() -> None:
-    assert _policy_flags_from_harness_arg("claude,,gemini") == {
-        "harness_preference": ("claude", "gemini")
-    }
+    assert _policy_flags_from_harness_arg("claude,,gemini") == {"harness_preference": ("claude", "gemini")}
 
 
 def test_epics_path_lands_under_planning_artifacts(tmp_path: Path) -> None:
     from pyforge.marshal.cli.dispatch import _epics_path
 
     path = _epics_path(tmp_path, "pyforge-marshal")
-    assert path == (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-marshal"
-        / "planning-artifacts"
-        / "epics.md"
-    )
+    assert path == (tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "epics.md")
 
 
 def test_load_station_deps_graph_returns_empty_when_epics_missing(tmp_path: Path) -> None:
@@ -441,8 +430,7 @@ def test_load_station_deps_graph_parses_real_epics_file(tmp_path: Path) -> None:
     epics = _epics_path(tmp_path, "pyforge-marshal")
     epics.parent.mkdir(parents=True)
     epics.write_text(
-        "### Story 1.1: Foo\n**Deps:** —\n\n"
-        "### Story 1.2: Bar\n**Deps:** S-1.1\n",
+        "### Story 1.1: Foo\n**Deps:** —\n\n### Story 1.2: Bar\n**Deps:** S-1.1\n",
         encoding="utf-8",
     )
     graph = _load_station_deps_graph(tmp_path, "pyforge-marshal")
@@ -466,9 +454,7 @@ def test_resolve_max_parallel_cli_override_floors_at_one() -> None:
 def test_resolve_max_parallel_policy_flag_wins_over_default() -> None:
     from pyforge.marshal.cli.dispatch import _compose_policy, resolve_max_parallel
 
-    effective = _compose_policy(
-        "pyforge-marshal", flags={"dispatch": {"max_parallel": 4}}
-    )
+    effective = _compose_policy("pyforge-marshal", flags={"dispatch": {"max_parallel": 4}})
     assert resolve_max_parallel(effective) == 4
 
 
@@ -476,6 +462,4 @@ def test_resolve_max_parallel_defaults_from_effective_policy() -> None:
     from pyforge.marshal.cli.dispatch import _compose_policy, resolve_max_parallel
 
     effective = _compose_policy("pyforge-marshal")
-    assert resolve_max_parallel(effective) == int(
-        effective.dispatch.value["max_parallel"]
-    )
+    assert resolve_max_parallel(effective) == int(effective.dispatch.value["max_parallel"])

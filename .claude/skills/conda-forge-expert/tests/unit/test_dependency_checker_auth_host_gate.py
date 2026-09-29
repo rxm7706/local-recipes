@@ -9,7 +9,6 @@ did not close this sibling copy of the identical cross-resolver leak.
 """
 from __future__ import annotations
 
-import os
 import sys
 
 import pytest
@@ -24,8 +23,9 @@ _CRED_VARS = (
 
 
 @pytest.fixture(autouse=True)
-def _clean_cred_env(monkeypatch):
-    """Start from no credentials and no mirror vars.
+def _clean_cred_env(monkeypatch, clean_mirror_env):
+    """Start from no credentials and no mirror vars (the shared
+    `clean_mirror_env` clears the mirror vars, npm's included).
 
     Without this, a developer or CI shell that already exports (say)
     `JFROG_API_KEY` makes the `api_key` branch win before the branch a test
@@ -33,16 +33,11 @@ def _clean_cred_env(monkeypatch):
     """
     for key in _CRED_VARS:
         monkeypatch.delenv(key, raising=False)
-    for key in list(os.environ):
-        if key.endswith("_BASE_URL"):
-            monkeypatch.delenv(key, raising=False)
 
 
 class TestDependencyCheckerAuthHostGate:
     def test_jfrog_api_key_not_sent_to_unconfigured_host(self, load_module, monkeypatch):
         monkeypatch.setenv("JFROG_API_KEY", "secret-key")
-        for key in ("CONDA_FORGE_BASE_URL", "PYPI_BASE_URL"):
-            monkeypatch.delenv(key, raising=False)
         checker = load_module("dependency-checker.py")
         headers = checker._auth_headers("https://conda.anaconda.org/conda-forge/linux-64/repodata.json")
         assert "X-JFrog-Art-Api" not in headers
@@ -63,8 +58,6 @@ class TestDependencyCheckerAuthHostGate:
         """Covers the broader alias vocabulary `_http.py` doesn't have —
         the whole reason this file couldn't just delegate to it."""
         monkeypatch.setenv("ARTIFACTORY_TOKEN", "bearer-secret")
-        for key in ("CONDA_FORGE_BASE_URL", "PYPI_BASE_URL"):
-            monkeypatch.delenv(key, raising=False)
         checker = load_module("dependency-checker.py")
         headers = checker._auth_headers("https://conda.anaconda.org/conda-forge/linux-64/repodata.json")
         assert "Authorization" not in headers

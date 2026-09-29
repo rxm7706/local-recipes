@@ -1,5 +1,7 @@
 # pyforge-atlas
 
+General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
+
 [![Powered by Kedro](https://img.shields.io/badge/powered_by-kedro-ffc900?logo=kedro)](https://kedro.org)
 
 Kedro/Dagster/DuckDB data-pipeline migration of the `cf_atlas` orchestrator — the

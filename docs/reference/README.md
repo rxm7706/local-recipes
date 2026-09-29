@@ -17,11 +17,11 @@ contracts (`_bmad-output/*/planning-artifacts/`; legacy: `docs/specs/`).
 - `conda-forge-packaging-inventory-operations_replay.md` — replay / sync contract for that runner + prompt + curated config.
 - `developer-guide.md` — recipe format examples, platform matrix, configuration reference (operational content split to tutorials/how-to in Story 22.5).
 - `pixi-config-jfrog.example.toml` — JFrog pixi config example.
-- `library-llms-full.md` — generated library catalog (detector: `pixi run -e local-recipes llms-full-check`). **Refresh needed** — regenerate via catalog header prompt.
+- `library-llms-full.md` — generated library catalog (detector: `pixi run -e pyforge-guild llms-full-check`). **Refresh needed** — regenerate via catalog header prompt.
 - `github-workflows.md` — inventory of `.github/workflows/*.yml`. **Refresh needed as of 2026-08-15**: still lists 4 retired workflows and omits 4 that now exist — self-dated "Audited 2026-07-26."
 - `test-charter.md` — testing charter backing `docs/dreams/pyforge-testing-charter.md` / `spec-pyforge-testing-charter`.
 - `station-verify-commands.md` — derived verify-command lookup for PyForge stations. **Refresh needed** — keep in sync with `marshal-policy.toml` files.
-- `sync-jira-github-workflow-templates/` — reusable GitHub Actions workflow templates for the (still-open) Jira↔GitHub Projects sync effort; see `docs/intake/jira-github-projects-sync/`.
+- `sync-jira-github-workflow-templates/` — reusable GitHub Actions workflow templates for the (still-open) Jira↔GitHub Projects sync effort; see `archive/docs/intake/jira-github-projects-sync/` (archived 2026-09-19, doctor 23.4).
 
 ## Relocated to How-to (redirect stubs remain here)
 
@@ -31,9 +31,12 @@ contracts (`_bmad-output/*/planning-artifacts/`; legacy: `docs/specs/`).
 ## Relocated to Explanation (redirect stubs remain here)
 
 - `mcp-server-architecture.md` → [`docs/explanation/mcp-server-architecture.md`](../explanation/mcp-server-architecture.md)
+
+## Relocated to Explanation (redirect stubs deleted, Story 23.2)
+
 - `enterprise-deployment.md` → [`docs/explanation/enterprise-deployment.md`](../explanation/enterprise-deployment.md)
 - `airgap-distribution-contract.md` → [`docs/explanation/airgap-distribution-contract.md`](../explanation/airgap-distribution-contract.md)
 
 ## Archived (superseded, kept at `archive/docs/reference/`)
 
-- ~~`GuildHall_Fleet_Status.md`~~ — static fleet-status snapshot superseded by the live dashboard and `pixi run -e local-recipes fleet-picture`. Archived 2026-08-15.
+- ~~`GuildHall_Fleet_Status.md`~~ — static fleet-status snapshot superseded by the live dashboard and `pixi run -e pyforge-guild fleet-picture`. Archived 2026-08-15.

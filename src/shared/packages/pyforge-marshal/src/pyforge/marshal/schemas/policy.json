@@ -80,7 +80,7 @@
     },
     "landing_base_branch": {
       "$ref": "#/$defs/policyField",
-      "description": "STATIC (Story 4.4, AD-40). A non-empty str; default 'main'. The target base branch for `marshal deploy batch-pr` -- never the forge's own 'default branch' concept, which for a fork defaults to the upstream's default, not this repo's own main."
+      "description": "STATIC (Story 4.4, AD-40). A plain local branch name (Story 61.1: git's branch-name rules, and never a full refname, a ref namespace such as heads/ or tags/, or a remote's branch such as origin/main -- every git read names refs/heads/<value>); default 'main'. The target base branch for `marshal deploy batch-pr` -- never the forge's own 'default branch' concept, which for a fork defaults to the upstream's default, not this repo's own main."
     },
     "landing_resync_commands": {
       "$ref": "#/$defs/policyField",

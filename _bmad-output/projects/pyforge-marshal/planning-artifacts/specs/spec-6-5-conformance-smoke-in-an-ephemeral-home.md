@@ -469,3 +469,16 @@ A parallel adversarial review was run against this story's diff after all, dispa
 **Follow-up review recommendation (updated): false** -- all three findings are narrow, each covered by a dedicated regression test, and the full suite (including slow/integration tests) is green.
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `384728f8cc` (2026-08-07, "Merge pull request #298 from rxm7706/marshal/6-5-conformance-smoke"). Ledger row `6-5-conformance-smoke-in-an-ephemeral-home: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/adapters.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/conformance.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/harness.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_adapters_cli.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_conformance.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_smoke.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

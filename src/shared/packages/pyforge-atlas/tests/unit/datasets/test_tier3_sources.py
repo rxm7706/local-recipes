@@ -23,9 +23,7 @@ from pyforge.atlas.datasets.tier3_sources import (
 )
 
 _HOMEBREW_FIXTURE = json.dumps([{"name": "python"}, {"name": "numpy"}])
-_NIXPKGS_FIXTURE = json.dumps(
-    {"python3Packages.requests": {}, "python3Packages.numpy": {}}
-)
+_NIXPKGS_FIXTURE = json.dumps({"python3Packages.requests": {}, "python3Packages.numpy": {}})
 _SPACK_FIXTURE = json.dumps(["py-numpy", "py-pandas"])
 _DEBIAN_FIXTURE = "Package: python3-numpy\n\nPackage: python3-requests\n"
 _FEDORA_JSON_FIXTURE = json.dumps({"projects": [{"name": "python-requests"}, {"name": "python-numpy"}]})

@@ -249,6 +249,29 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # Story 22.3 (Epic 22 / spec-general-docs-consistency CAP-3): human-facing
     # documentation identity contradictions beside the other repo-scope sources.
     ("general-docs-consistency", "general-docs-consistency-check"),
+    # Story 55.2 (fcl:CAP-2): CAP extract vs capability-ledger.yaml.
+    ("capability-ledger", "capability-ledger-check"),
+    # Doctor Epic 25 (spec-one-chain-per-station CAP-2 / CAP-5, guild outcome
+    # / doctor mechanism): the sprawl gate and the FR<-CAP check. Both
+    # offline, deterministic, baselined from a dated snapshot so a folded and
+    # an unfolded station both pass (eventual consistency).
+    ("chain-sprawl", "chain-sprawl-check"),
+    ("fr-without-cap", "fr-without-cap-check"),
+    # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md vs the four
+    # Diátaxis quadrants -- missing link FAIL, unmapped page WARN.
+    ("docs-map-hygiene", "docs-map-hygiene-check"),
+    # Story 23.7 (Epic 23 / spec-pyforge-doctor CAP-54): leftover-shelf
+    # occupancy vs the docs/MAP.md allow-list, beside its sibling repo-scope
+    # sources -- offline, deterministic, no budget concerns.
+    ("docs-shelf-occupancy", "docs-shelf-occupancy-check"),
+    # Story 26.1 (spec-pyforge-doctor CAP-77): a touched surface catalogued
+    # in live-proof-surfaces.md gets an advisory finding naming it -- reads
+    # only the tracked catalog + a git diff, offline, deterministic.
+    ("live-proof-surface", "live-proof-surface-check"),
+    # Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml vs its render
+    # (docs/MAP.md), authored-page staleness, skill-dir hygiene -- offline,
+    # deterministic, beside docs-map-hygiene above.
+    ("docs-currency", "docs-currency-check"),
 )
 
 

@@ -10,8 +10,8 @@ from collections.abc import MutableMapping
 from typing import Any
 
 import pytest
-from pyforge.core.hooks import ENTRY_POINT_GROUP, PluginError, PluginRegistry
-from pyforge.core.hooks import publish_verdict
+from pyforge.core.hooks import ENTRY_POINT_GROUP, PluginError, PluginRegistry, publish_verdict
+
 from pyforge.warden.engines import DeptryEngine, engine_factories, registered_engines
 from pyforge.warden.hooks import (
     PR_GATE_SCAN,
@@ -94,9 +94,7 @@ def test_missing_enabled_optional_is_omitted_not_an_error():
         if getattr(plugin, "scanner_id", None) == "checkmarx":
             continue
         registry.register(plugin)
-    selected = select_scanner_plugins(
-        enabled_optional=("checkmarx",), registry=registry
-    )
+    selected = select_scanner_plugins(enabled_optional=("checkmarx",), registry=registry)
     ids = {getattr(plugin, "scanner_id", plugin.owner) for plugin in selected}
     assert "checkmarx" not in ids
     assert all(getattr(plugin, "is_default", False) for plugin in selected)
@@ -123,9 +121,7 @@ def test_optional_around_success_is_not_a_competing_pr_gate():
 
 def test_enabled_optional_from_environ_parses_comma_separated_ids():
     assert enabled_optional_from_environ({}) == ()
-    assert enabled_optional_from_environ(
-        {"WARDEN_OPTIONAL_SCANNERS": "checkmarx, sonar"}
-    ) == ("checkmarx", "sonar")
+    assert enabled_optional_from_environ({"WARDEN_OPTIONAL_SCANNERS": "checkmarx, sonar"}) == ("checkmarx", "sonar")
 
 
 def test_coerce_plugin_finding_missing_keys_is_plugin_error():
@@ -186,9 +182,7 @@ def test_pyproject_declares_default_and_optional_plugins_on_core_hooks():
     pyproject = None
     for candidate in (package_dir, *package_dir.parents):
         path = candidate / "pyproject.toml"
-        if path.is_file() and 'name = "pyforge-warden"' in path.read_text(
-            encoding="utf-8"
-        ):
+        if path.is_file() and 'name = "pyforge-warden"' in path.read_text(encoding="utf-8"):
             pyproject = path
             break
     assert pyproject is not None
@@ -196,9 +190,5 @@ def test_pyproject_declares_default_and_optional_plugins_on_core_hooks():
     group = data["project"]["entry-points"][ENTRY_POINT_GROUP]
     assert "pyforge.warden.hooks" not in data["project"]["entry-points"]
     assert group["warden-null"] == "pyforge.warden.scanner_plugins:NullScanPlugin"
-    assert group["warden-checkmarx"] == (
-        "pyforge.warden.scanner_plugins:CheckmarxScanPlugin"
-    )
-    assert group["warden-profile-local"] == (
-        "pyforge.warden.scanner_plugins:ProfileLocalScanPlugin"
-    )
+    assert group["warden-checkmarx"] == ("pyforge.warden.scanner_plugins:CheckmarxScanPlugin")
+    assert group["warden-profile-local"] == ("pyforge.warden.scanner_plugins:ProfileLocalScanPlugin")

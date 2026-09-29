@@ -15,6 +15,7 @@ from __future__ import annotations
 import dataclasses
 
 import pytest
+
 from pyforge.marshal.seed.detect.findings import (
     REMEDIES,
     Finding,
@@ -168,9 +169,7 @@ def test_finding_new_and_direct_construction_raise_identically_for_a_type_missin
     # ValueError rather than Finding.new leaking a bare KeyError.
     import pyforge.marshal.seed.detect.findings as findings_module
 
-    incomplete_remedies = {
-        k: v for k, v in REMEDIES.items() if k is not FindingType.UNCOVERED
-    }
+    incomplete_remedies = {k: v for k, v in REMEDIES.items() if k is not FindingType.UNCOVERED}
     monkeypatch.setattr(findings_module, "REMEDIES", incomplete_remedies)
 
     with pytest.raises(ValueError, match=r"^uncovered: no REMEDIES entry"):

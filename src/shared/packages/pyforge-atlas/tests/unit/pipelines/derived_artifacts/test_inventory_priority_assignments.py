@@ -217,7 +217,9 @@ def corpus():
         _identity_row("heavy-dl"),
         _identity_row("mod-dl"),
         _identity_row("create-leftover", OpenTeams_Cohort="JFROG_NEW"),
-        _identity_row("issue-on-cf", conda_purl="pkg:conda/issue-on-cf?channel=conda-forge", OpenTeams_Cohort="JFROG_ON_CF"),
+        _identity_row(
+            "issue-on-cf", conda_purl="pkg:conda/issue-on-cf?channel=conda-forge", OpenTeams_Cohort="JFROG_ON_CF"
+        ),
         _identity_row(
             "issue-conda-only",
             OpenTeams_Cohort="CONDA_ONLY",

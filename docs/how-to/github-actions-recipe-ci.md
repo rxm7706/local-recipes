@@ -15,7 +15,7 @@ These run on `pull_request` events (several also re-run on push to `main`):
 | `detectors.yml` | `pull_request`, push to `main` | Repo health detectors (`detectors-ci` subset) |
 | `staged-recipes-linter.yml` | `pull_request` | Recipe lint (staged-recipes parity) |
 | `coverage-gates.yml` | `pull_request`, push to `main` | PyForge station coverage gates |
-| `pyforge-station-tests.yml` | `pull_request`, push to `main` (path-filtered) | PyForge station test matrix |
+| `pyforge-station-tests.yml` | `pull_request`, push to `main` (path-filtered) | PyForge station test matrix + the `core-test` conformance job (pyforge-core's whole suite, sole-ownership meta-tests included; fires on shared-surface OR any station change) |
 | `platform-ci.yml` | `pull_request`, push to `main` (path-filtered) | Django platform CI |
 | `pyforge-pip-install.yml` | `pull_request` (path-filtered) | Pip-install smoke for PyForge packages |
 | `cfe-regression-net.yml` | `pull_request`, push to `main` (path-filtered) | CFE network regression tests |

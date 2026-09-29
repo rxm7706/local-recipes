@@ -186,9 +186,7 @@ def reconcile_station_re_preflight(
             kept[story] = detail
             continue
         # Predicate changed but refuse still applies.
-        if gate.startswith("MRS-GATE-") and verify_rerun_needed(
-            prior=previous, current=current
-        ):
+        if gate.startswith("MRS-GATE-") and verify_rerun_needed(prior=previous, current=current):
             # Verify config changed — clear so the next tick re-dispatches.
             results.append(
                 RePreflightResult(

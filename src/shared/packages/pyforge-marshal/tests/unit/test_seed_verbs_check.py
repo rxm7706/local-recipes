@@ -36,6 +36,7 @@ from importlib import resources
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.detect.findings import FindingType, Severity
 from pyforge.marshal.seed.detect.hashes import hash_content
@@ -86,9 +87,7 @@ def _referenced(entry_id: str, path: str = "unused", pin: str = ">=1.0") -> Mani
     )
 
 
-def _whole_file(
-    entry_id: str, path: str, *, legacy_of: str | None = None
-) -> ManifestEntry:
+def _whole_file(entry_id: str, path: str, *, legacy_of: str | None = None) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.COPIED_MANAGED,
@@ -128,9 +127,7 @@ def _hybrid_text(name: str, body: str, fmt: RegionFormat = RegionFormat.HTML) ->
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -197,9 +194,7 @@ def test_never_adopted_repo_reports_every_materializable_entry_absent(clean_repo
     report = run_check(clean_repo, manifest)
 
     missing_paths = {
-        finding.path
-        for finding in report.by_severity(Severity.HARD)
-        if finding.type is FindingType.ARTIFACT_MISSING
+        finding.path for finding in report.by_severity(Severity.HARD) if finding.type is FindingType.ARTIFACT_MISSING
     }
     assert missing_paths == {"WHOLE.md", "HYBRID.md"}
     assert report.model_version_status is ModelVersionStatus.BEHIND
@@ -424,9 +419,7 @@ def test_drift_only_findings_do_not_fail_without_strict(clean_repo):
 
     report = run_check(clean_repo, manifest, strict=False)
 
-    assert [f.type for f in report.by_severity(Severity.DRIFT)] == [
-        FindingType.MANAGED_REGION_MISSING
-    ]
+    assert [f.type for f in report.by_severity(Severity.DRIFT)] == [FindingType.MANAGED_REGION_MISSING]
     assert report.by_severity(Severity.HARD) == ()
     assert report.failing is False
 
@@ -729,9 +722,7 @@ def test_run_check_never_writes(clean_repo, monkeypatch):
     (clean_repo / "WHOLE.md").write_text("hello\n", encoding="utf-8")
     (clean_repo / "HYBRID.md").write_text(_hybrid_text("tiers", "body\n"), encoding="utf-8")
     _commit_all(clean_repo)
-    before = sorted(
-        path.relative_to(clean_repo).as_posix() for path in clean_repo.rglob("*") if path.is_file()
-    )
+    before = sorted(path.relative_to(clean_repo).as_posix() for path in clean_repo.rglob("*") if path.is_file())
 
     manifest = _manifest(
         _whole_file("whole", "WHOLE.md"),
@@ -742,9 +733,7 @@ def test_run_check_never_writes(clean_repo, monkeypatch):
 
     assert report.findings  # the guard above was actually exercised
     assert not (clean_repo / ".marshal").exists()
-    after = sorted(
-        path.relative_to(clean_repo).as_posix() for path in clean_repo.rglob("*") if path.is_file()
-    )
+    after = sorted(path.relative_to(clean_repo).as_posix() for path in clean_repo.rglob("*") if path.is_file())
     assert after == before
     assert _git(clean_repo, "status", "--porcelain").stdout == ""
 
@@ -818,9 +807,7 @@ def test_by_severity_partitions_findings_correctly(clean_repo):
 
     report = run_check(clean_repo, manifest)
 
-    assert report.by_severity(Severity.HARD) == tuple(
-        f for f in report.findings if f.severity is Severity.HARD
-    )
+    assert report.by_severity(Severity.HARD) == tuple(f for f in report.findings if f.severity is Severity.HARD)
     assert report.by_severity(Severity.INFO) == ()
 
 

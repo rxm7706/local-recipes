@@ -7,8 +7,12 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-09-08'
-currency_review: "Reviewed 2026-09-08 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-08 re-stamp reconciled spec-pyforge-steward's 2026-09-08 memlog motion (the `_persona_mentions` test-helper precision + scan-breadth fix in tests/meta/test_adoption_register.py) and the sibling Story 43.7 authoring (re-homing mason DW-13-2-2's dbgpt-sidecar Celery REST round-trip and SQLite metadata-store validation on Python 3.14, orphaned when Story 43.6 closed done without doing it). Neither touches this spine: the first hardens how an existing obligation is verified in a test, the second decomposes pap:CAP-5/CAP-6 on the platform-image surface, which sits outside this spine's FR-1..18 CLI-package scope — the same boundary Epics 9-38 sit outside. No AD added or altered; no duty module, port or adapter changed. Reviewed 2026-09-05 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-05 re-stamp reconciled spec-pyforge-steward's two 2026-09-05 memlog motions (post-merge follow-up-review landing PR #1056; bmad-suite 2026.9.5 roster change) and the new spec-bmad-eval-quality / Epic 45 — all either inside an existing adapter (suite.py gains the `cli` install class + one probe branch, no new duty module) or outside this spine's FR-1..18 CLI-package scope (recipes, suite manifest); no AD changed. Reviewed 2026-09-02 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-02 re-stamp reconciled spec-pyforge-steward's 2026-09-01 sharded-path landing (no CAP/AD change) and the same-day red-team correct-courses on the unifying chain (Epics 40–43, which bind the unifying spine's AD-7/8/10/15 and add one interpreter AD via Story 43.5 — none of AD-1..9 here change). No AD added or altered. Reviewed 2026-08-29 — cascade pass after the re-cut PRD (spec-surface drift catch-up + retroactive Epic 38); no AD altered, package scope unchanged (FR-1..18); deltas in § Currency reconciliation — 2026-08-29 (prior: 2026-08-26)."
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+# 2026-09-28  # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> spine) for FR-35 / CAP-162 (Epic 73). No AD added, amended or removed; lands on AD-1 and AD-8. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
+# 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> spine) for FR-33 / CAP-160 and FR-34 / CAP-161 (Epic 72). No AD added, amended or removed; lands on canopy:AD-14, canopy:AD-17 and AD-5; the CAP-15 row's mason note updated in place. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
+# 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD -> spine) for FR-32 / CAP-159 (Epic 71). No AD added, amended or removed; lands on AD-1, AD-5 and AD-8. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
+# 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); § Currency reconciliation — 2026-09-25 appended; one AD amendment owed, carried by Story 67.8. Prior 2026-09-24
+currency_review: "Reviewed 2026-09-24 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-24 re-stamp reconciled Story 63.4 (`steward session check`, spec-pyforge-steward CAP-5, Epic 63 `environment pyforge-guild`) — a new `session.py` module/duty consolidating seven pre-existing session-precondition findings into one verdict, wired into four existing entry points (`cli.py`, `.claude/hooks/session-start.sh`, `.cursor/environment.json`, `.github/workflows/copilot-setup-steps.yml`) plus `pyforge-marshal`'s `dispatch.py`. Checked against every AD: this adds one new duty adapter inside the existing CLI-package boundary (a thin adapter over pre-existing checks, matching the paradigm this spine already declares) and returns `DutyResult` frozen evidence per AD-8 — no new port, no new external dependency, no change to the hexagonal boundary. **No AD added, changed or removed.** Reconciled in § Currency reconciliation — 2026-09-24. Reviewed 2026-09-17 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-17 re-stamp reconciled the one-chain fold remint (spec-pyforge-steward CAP-1..145). Kernel AD-1..9 and the four-duty CLI package boundary are unchanged; absorbed architecture stays on pointer-folder companion spines. No AD added or altered. Reviewed 2026-09-08 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-08 re-stamp reconciled spec-pyforge-steward's 2026-09-08 memlog motion (the `_persona_mentions` test-helper precision + scan-breadth fix in tests/meta/test_adoption_register.py) and the sibling Story 43.7 authoring (re-homing mason DW-13-2-2's dbgpt-sidecar Celery REST round-trip and SQLite metadata-store validation on Python 3.14, orphaned when Story 43.6 closed done without doing it). Neither touches this spine: the first hardens how an existing obligation is verified in a test, the second decomposes pap:CAP-5/CAP-6 on the platform-image surface, which sits outside this spine's FR-1..18 CLI-package scope — the same boundary Epics 9-38 sit outside. No AD added or altered; no duty module, port or adapter changed. Reviewed 2026-09-05 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-05 re-stamp reconciled spec-pyforge-steward's two 2026-09-05 memlog motions (post-merge follow-up-review landing PR #1056; bmad-suite 2026.9.5 roster change) and the new spec-bmad-eval-quality / Epic 45 — all either inside an existing adapter (suite.py gains the `cli` install class + one probe branch, no new duty module) or outside this spine's FR-1..18 CLI-package scope (recipes, suite manifest); no AD changed. Reviewed 2026-09-02 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-02 re-stamp reconciled spec-pyforge-steward's 2026-09-01 sharded-path landing (no CAP/AD change) and the same-day red-team correct-courses on the unifying chain (Epics 40–43, which bind the unifying spine's AD-7/8/10/15 and add one interpreter AD via Story 43.5 — none of AD-1..9 here change). No AD added or altered. Reviewed 2026-08-29 — cascade pass after the re-cut PRD (spec-surface drift catch-up + retroactive Epic 38); no AD altered, package scope unchanged (FR-1..18); deltas in § Currency reconciliation — 2026-08-29 (prior: 2026-08-26)."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18]
 sources:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md (binding contract — the PRD's Decisions D1-D6 are read-only inputs here, not re-derived)"
@@ -64,6 +68,7 @@ graph TD
 - **Binds:** keys
 - **Prevents:** a second, divergent credential-attachment chokepoint alongside `_http.py`'s existing `skip_auth`-guarded `auth_headers_for` — the exact shape of failure that produced the `JFROG_API_KEY` cross-host leak
 - **Rule:** `steward.keys`'s host-scoping resolver imports and delegates to `_http.py`'s existing `auth_headers_for(url, skip_auth=...)` pattern for anything HTTP-shaped. A credential Steward issues that is HTTP-attachable is registered through this one resolver; no duty module constructs its own `requests`/`urllib` call carrying ambient auth headers.
+- **AMENDED 2026-09-28 (CAP-164, FR-37).** An inventory-issued, host-scoped identity — today the two GitHub Enterprise identities `ghe-fleet-read` and `ghe-fleet-pr-draft` — is attached by `steward.keys` itself, only when a URL's host is the host its scope names, and only through the same `HostScopedCredential` gate. That host is read from `_http.py`'s existing `GITHUB_API_BASE_URL` row (AD-9 holds). Every ambient credential (`JFROG_*`, `GITHUB_TOKEN` / `GH_TOKEN`, netrc) still goes through `auth_headers_for`, and `_http.py` does not change. Why: `auth_headers_for` attaches a GitHub token only to github.com, and teaching it the GHES host would send one ambient token on every CFE caller's GHES request instead of a scoped identity to one consumer, through a CFE change. A token leaves `keys` only in a child process's environment (`steward keys exec`), never on argv, stdout or a log. `keys` stays the one chokepoint.
 
 ### AD-3 — At-rest secrets are `age`-encrypted files in Git; no standing service (FR-2, PRD D2)
 
@@ -373,6 +378,7 @@ Unifying ADs in this file are **canopy AD-n**. Bare `AD-n` in epics is a review-
 - **Binds:** CAP-13, FR-33, FR-34
 - **Prevents:** a flagd daemon, WASM (`wasmtime` absent), per-surface flag code, or a Reloader sidecar to fake "no redeploy"
 - **Rule:** one JSON tree. In-cluster that file is a ConfigMap mounted read-only. The in-process FILE provider **observes the mounted file** (watch or equivalent) so a ConfigMap update becomes live **without a new process** and without rolling the Deployment. Reloader, flagd, or any sidecar for flags is parent canopy:AD-14 and a review-blocking finding. The CLI evaluates **the same bytes** — fetched from the host (authenticated) or, in local-dev only, the file at `src/platform/config/flags.json` that the ConfigMap is built from. Two trees is a review-blocking finding. No egress. Stories that import these packages are blocked until the operator-owned feedstocks exist.
+- **AMENDED 2026-09-28 (`spec-feature-flag-governance` CAP-5, Story 76.1; the Deferred row *FILE flag env promotion overlays*).** Per-environment values are one value-only overlay document beside the tree, `src/platform/config/flag-overlays.json`, keyed `dev` / `staging` / `production`; each entry maps a key the tree defines to one of that flag's variants. The tree stays the only definition of every flag. The rendered tree for an environment — the tree with each overlaid `defaultVariant` replaced — is what the ConfigMap mounts and what every evaluator reads, the host's FILE provider and the CLI alike; a flag whose `state` in the tree is `DISABLED` is off in every environment (the kill switch wins). An overlay that defines a flag, or names a key, variant or environment the tree or this rule lacks, is a second tree and a review-blocking finding. Each flag also carries flagd `metadata` (`owner`, `story`, `created`, `on_everywhere`, `cleanup_by`) that the Guild's flag gate reads (Story 76.2).
 
 #### canopy:AD-12 — Run state is published into PostgreSQL by a supervisor `[ADOPTED]`
 
@@ -548,7 +554,7 @@ flowchart LR
 | CAP-12 IdP roles + secrets | allauth + parent canopy:AD-12 mounts | canopy:AD-19, canopy:AD-15 |
 | CAP-13 flags | OpenFeature FILE | canopy:AD-11, canopy:AD-16 |
 | CAP-14 Scribe graph | Port + lexical path; semantic recall on CAP-19 plane driver (34.5). `scribe_schema` pgvector retirement is OQ | parent canopy:AD-1, parent canopy:AD-5 isolation; canopy:AD-22 |
-| CAP-15 skills | SKF compile from `pyforge-<station>` → `.claude/skills/`; **mason = `conda-forge-expert`** | canopy:AD-14, canopy:AD-17 |
+| CAP-15 skills | SKF compile from `pyforge-<station>` → `.claude/skills/`; **mason = `pyforge-mason` + `conda-forge-expert`** (both required, FR-33, 2026-09-28; was CFE alone) | canopy:AD-14, canopy:AD-17 |
 | CAP-16 personas | BMAD launcher/agent; consults CAP-15 | canopy:AD-14, canopy:AD-17 |
 | CAP-17 run state | supervisor → PostgreSQL `public.run_state` | canopy:AD-12, canopy:AD-6 |
 | CAP-18 hooks | `pyforge-core` + Warden / station plugins | canopy:AD-21 |
@@ -570,7 +576,7 @@ flowchart LR
 | Keycloak Token Exchange / `RESOURCE_INDICATORS` | RFC-8707 flag is experimental; audience mapper is the documented interim | First CAP-6 client story that mints delegated tokens (BS-3) |
 | Additional CloudEvents extension attributes beyond `pyforgeloopdepth`, `spec_id`, git sha, SBOM purl, optional work-item id | Stream, DLQ, ceiling, `dataschema`, and Q4 identity fields are bound (canopy:AD-8 + operating-model Q4) | First producer that needs a *further* extension |
 | Supervisor ingest wire from bmad-loop | Topology is bound; Marshal hook details are station-local | Marshal + CAP-17 story |
-| FILE flag env promotion overlays | canopy:AD-11 binds one JSON schema, ConfigMap mount, and in-process watch; overlay *values* per env are ops | First CAP-13 import story |
+| FILE flag env promotion overlays | canopy:AD-11 binds one JSON schema, ConfigMap mount, and in-process watch; overlay *values* per env are ops | First CAP-13 import story — **taken up 2026-09-28 by Story 76.1** (`spec-feature-flag-governance` CAP-5; canopy:AD-11 amended) |
 | Liquibase `DATABASECHANGELOGLOCK` stuck-lock runbook | Companion already names the need; owner is ops not a second DDL path | Before first production CAP-9 Job |
 | BS-5 single DuckDB writer / `read_only=True` | Mechanism is atlas-local; absence-test still required (canopy:AD-15) | First CAP-10 story that opens `atlas.duckdb` |
 | BS-7 `PydanticFormErrorBridge` | Lands in `django-pyforge`; not a cross-station fork if chrome owns it | First CAP-10 / CAP-1 HTMX form story |
@@ -2034,3 +2040,188 @@ stories inside their existing adapters (`django_pyforge/tasks.py`, MCP transport
 tests). Epic 45's recipe + suite-manifest work lives under `recipes/`, outside this spine's
 package boundary — same treatment as Epics 9–38, folded into the scope note above. No AD
 text altered.
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14 after reconciling against
+`spec-pyforge-steward`'s 2026-09-12 SPEC.md and 2026-09-14 memlog, which fires the
+`prd→arch` edge. This section is the as-built check.*
+
+**No structural divergence; five landed stories, all inside existing module homes.** The
+2026-09-14 bulk surface reconcile named `cutover.py`, `track.py`, `guards.py`,
+`frames.py` and their tests plus `data/track.schema.json` and the `track-run` fixtures.
+Each is a module in this package's own namespace under the duty-group structure this
+spine already draws; none reaches around a port, none introduces a second writer, and
+none adds an external service — the four v1 non-goals (no standing secrets-manager, no
+IDP, no GitOps controller, no cloud-cost SDK) are all still true, and the Spec's
+2026-09-11 CAP-4 verification re-proved the last one with a repo-wide grep.
+
+**Story 53.6's identity re-key is an architectural correction worth stating as one.**
+`frames.py` moved the in-repo Frame preflight from keying on `name` to keying on
+`identifier` (verified live: `COMPANY_IDENTIFIER = "pyforge/company"`, `PUBLISHER =
+"pyforge"`, `identifier` in `REQUIRED_FIELDS`, documents indexed by identifier). The
+defect it fixes is a **conflated-identity** defect, not a spelling one: `name` aliases
+the Frame `title`, which the element profile explicitly marks MUST NOT be
+slug-constrained, and the same string was simultaneously serving as the Frame key and
+as the Python distribution name. One string carrying three jobs is exactly the failure
+this spine's duty separation exists to prevent, and it is recorded here so the next
+identity-bearing surface is keyed on an identifier from the start. The decomposition
+lives on `spec-intelligence-hub` CAP-2; no AD here changes.
+
+**The outage lesson, at architecture altitude.** Five days of `spec-surface` drift
+accumulated invisibly because a GitHub Actions billing outage meant the detector never
+ran — and a detector that does not run reports *nothing*, not `unknown`. This spine
+already encodes the inverse rule for the credential path (a check that cannot reach its
+source must not read as clean). The gap is that the rule is stated per-duty rather than
+as a property of the station's own CI surface. **Not resolved here** — making
+"detector-did-not-run" an observable state is a behaviour change with its own owner
+(doctor holds detector verdicts; the `exit 2 = could-not-run, never a false green`
+convention already exists in the fleet's detector contract). Recorded as an
+architectural observation so it is not re-derived from scratch after the next outage.
+
+**No AD added, changed or removed.** `updated:` bumped to record that the cascade ran.
+
+## Currency reconciliation — 2026-09-17
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-17 after reconciling the
+one-chain steward fold remint (`spec-pyforge-steward` CAP-1..145), which fires the
+`prd→arch` edge. This section is the as-built check.*
+
+**No structural divergence.** The fold remints capabilities onto the station Spec
+and leaves pointer-folder companion spines as record. This spine's AD-1..9 still
+describe the four-duty CLI package (`keys`, `deploy`, `provision`, `budget`) and
+the hexagonal ports-and-adapters cut. Absorbed platform / suite / foundry
+architecture was never this spine's FR-1..18 package boundary — it stays on the
+companion documents the pointer SPECs still name.
+
+**No AD added, changed or removed.** `updated:` bumped to record that the cascade ran.
+
+## Currency reconciliation — 2026-09-20
+
+`prd→arch` edge: the PRD re-stamped 2026-09-20 (§ Currency reconciliation — 2026-09-20: Stories
+61.1–61.3 landed, no FR delta) while this spine sat at 2026-09-17. Checked against every AD: the
+corridor transports (61.1), the work passport + core schema (61.2) and the as-of glass / mailed
+query (61.3) are decompositions of `spec-work-passports-dated-extracts` (CAP-141..145) inside the
+`dashboard/` extra boundary this spine already fixes (the `[dashboard]` split, `importlib`-reach
+rule, `DutyResult` evidence). **No AD added, changed or removed.** `updated:` bumped to record the
+cascade.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
+check ran.*
+
+## Currency reconciliation — 2026-09-24
+
+`prd→arch` edge: the PRD re-stamped 2026-09-24 (§ Currency reconciliation — 2026-09-24: Story 63.4
+`steward session check` landed, no FR delta) while this spine sat at 2026-09-20. Checked against
+every AD: the new `session.py` duty is a single adapter inside the existing CLI-package boundary,
+returning `DutyResult` frozen evidence (AD-8) and never calling `sys.exit` from within a duty; it
+wires into four pre-existing entry points without adding a port or changing the hexagonal
+CLI-as-driving-adapter paradigm this spine already declares. **No AD added, changed or removed.**
+`updated:` bumped to record the cascade.
+
+## Currency reconciliation — 2026-09-25
+
+`prd→arch` edge after the PRD re-stamp of 2026-09-25 (the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md)).
+
+**One AD change is owed and is not made here.** The operator's no-archive ruling retires
+`fnd:CAP-7`; this spine still describes `local-recipes` as a read-only archive after Phase 6
+(fnd:AD-1, the three-roles table's Archive row, the Phase 6 diagram node, the `fnd:CAP-7` trace
+row, fnd:AD-21's wording of the oracle). That amendment runs through `bmad-architecture` from a
+memlog entry as steward **Story 67.8**, not as a hand edit in this reconcile. `fnd:CAP-12..15`
+need no new AD: they bind to existing decisions (the pixi workspace, the dossier surface,
+the instruction-surface parity contract). `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-09-27
+
+`prd→arch` edge after the PRD's 2026-09-27 re-stamp (§ Currency reconciliation — 2026-09-27: FR-32
+← CAP-159, the preflight answers in under a minute; Epic 71). Checked against every AD; FR-32 lands
+on three as written:
+
+- **AD-1 (wrap, never reimplement).** The new `pyforge.steward.preflight` runner wraps `pixi run` and
+  `git diff`; it re-declares nothing it reads. The lane list stays the `depends-on` aggregate in
+  `pixi.toml`, which lanes a diff selects stays the workflows' own path rules and `changes` jobs, the
+  coverage-floor verdict stays `scripts/coverage_gates_ci.py`'s, and the detector verdict stays
+  `scripts/detectors.py`'s — a steward-side copy of any of them would be the review-blocking finding
+  this AD names.
+- **AD-5 (steward reads `pixi.toml`, never writes it).** The runner reads the task tables the same
+  way `provision --list` reads `[environments]`; the `pixi.toml` edits Epic 71 needs (the lane
+  aggregate's new name, `pytest-xdist` in the features that run large suites) are made by the story's
+  author, with `pixi.lock` and `environment.yaml` regenerated in the same change, never by steward code.
+- **AD-8 (exit-code sole ownership).** The runner is a `python -m` entry point beside `frames.py`, not
+  a new `steward` duty: its own `main()` owns its exit code — 0 every selected lane green, 1 a lane
+  red, 2 could not decide which lanes exist — and a lane's verdict is that lane's exit code, never
+  its parsed output. The budget check (Story 71.7) is a separate read of the journal, 0 / 1 / 2 the
+  same way, and never changes `pr-preflight`'s verdict.
+
+No port or adapter boundary moves: `pr-preflight`'s command line, the `pre-push` hook (CAP-154) and
+its skip journal (CAP-156) are unchanged; the diff base is the full ref CAP-158 fixed.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28
+
+`prd→arch` edge after the PRD's 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28: FR-33 ← CAP-160, FR-34 ←
+CAP-161; Epic 72). Checked against every AD; both land as written:
+
+- **FR-33 on canopy:AD-14 and canopy:AD-17.** AD-17's rule is that station skills are SKF content skills, with
+  `conda-forge-expert` the hand-authored exception SKF never replaces. Mason's cell now follows the rule
+  (`pyforge-mason`, SKF-compiled — mason Story 19.1) and keeps the exception as its other required half, so the five-tier
+  check (AD-14) reads the cell present only with both. The CAP-15 row above is updated in place to say so; the
+  2026-08-26 realization note ("mason skill cell is `conda-forge-expert` (canopy:AD-17 exception), not
+  `.claude/skills/pyforge-mason/`") is history.
+- **FR-34 on AD-5 (steward reads `pixi.toml`, never writes it).** The Guild feature gains `pyforge-mason` by the story
+  author's edit, with `pixi.lock` and `environment.yaml` regenerated in the same change — never by steward code. The front
+  door stays `pyforge-core`'s and is unchanged: it already maps every installed station.
+
+No port or adapter boundary moves.
+
+**Content changed:** this section, and the CAP-15 row's mason note. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28 (later)
+
+`prd→arch` edge after the PRD's later 2026-09-28 re-stamp (FR-35 ← CAP-162, Epic 73; FR-34's dated note). Checked
+against every AD; both land as written:
+
+- **FR-35 on AD-1 (wrap, never reimplement) and AD-8 (exit-code sole ownership).** The session check keeps shelling
+  `marshal seed check --json` and reads marshal's published envelope (FR-123) instead of guessing its shape; it never
+  imports marshal and never re-derives the kit. The seed check's exit code stays data the duty reads, never its own
+  verdict — `main()` still owns `steward session check`'s exit code (0 ok, 1 findings, 70 crash).
+- **FR-34's note on AD-5.** Atlas's exclusion from the Guild is a comment beside warden's in `pixi.toml`, written by
+  Story 72.1's author; steward code still reads `pixi.toml` and never writes it.
+
+No port or adapter boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+`prd→arch` edge after the PRD's night re-stamp (FR-36 ← CAP-163, Epic 74; FR-37 ← CAP-164, Epic 75), plus the Guild's
+`spec-feature-flag-governance` CAP-5, which lands on this station as Epic 76. Checked against every AD; two are amended,
+the rest hold as written:
+
+- **FR-36 on AD-1 (wrap, never reimplement), canopy:AD-9, canopy:AD-19, and CAP-94's dated exception.** The consumer
+  contract (`django_pyforge.object_store`) wraps CAP-97's one client factory, named by a setting, and never builds a second
+  S3 client; `src/platform/` still imports no `pyforge.*`, and the chrome imports nothing from the host's `config`
+  package. Credentials stay secret references; the bucket and prefix are plain values per release. A consumer's metadata
+  table is its own, in `public`, under a namespaced changeset (canopy:AD-9). The store stays consumed, never a workload the
+  chart renders — canopy:AD-13's "fourth infra kind" clause is satisfied by CAP-94's exception, not reopened.
+- **FR-37 on AD-2 (amended in place), AD-3 and AD-9.** The enterprise host is read from `_http.py`'s existing
+  `GITHUB_API_BASE_URL` row (AD-9 holds: no Steward-owned URL config). The two identities are `age` payloads (AD-3 holds).
+  `auth_headers_for` never sends a GitHub token to a GHES host, so AD-2's "delegates for anything HTTP-shaped" cannot hold
+  for an inventory-issued enterprise identity without a CFE change; AD-2 is amended so `keys` attaches that one kind itself,
+  through the same `HostScopedCredential` gate, and stays the one chokepoint. `main()` keeps the exit domain: a flag-off
+  `keys exec` exits 2, the usage code it already owns (AD-8).
+- **Epic 76 on canopy:AD-11 (amended in place).** The Deferred row *FILE flag env promotion overlays* reached its trigger:
+  the Guild's rule needs "off in production" to be a value, not an ops convention. It is taken up by Story 76.1 and
+  resolved by the amendment, which keeps one tree: overlays hold values, never definitions.
+
+**Content changed:** this section; AD-2 and canopy:AD-11 each gain one dated amendment; the Deferred row *FILE flag env
+promotion overlays* names the story that takes it up. `updated:` bumped. No AD added or removed.

@@ -1,0 +1,21 @@
+# conda-forge.yml — staged-recipes per-recipe file.
+# INERT in this staged-recipes PR (build_all.py reads only conda_build_tool) —
+# forwarded into the feedstock on merge, pre-seeding its build matrix.
+conda_build_tool: rattler-build
+conda_install_tool: pixi
+bot:
+  automerge: true
+  check_solvable: true
+  inspection: hint-all
+  run_deps_from_wheel: false   # not a Python wheel
+
+# Deliberately NATIVE, not cross-compiled: omitting build_platform leaves the
+# identity default, which conda-smithy renders as a native osx-arm64/
+# linux-aarch64 runner (macOS-15-arm64 on Azure; native ARM on GHA) rather
+# than build-on-x86_64-skip-tests. For a binary-repackage recipe the whole
+# risk is "does the shipped binary actually run", so native + real test
+# execution is strictly better here than the cross-compile default.
+provider:
+  linux_aarch64: azure
+  osx_arm64: azure
+test: native_and_emulated

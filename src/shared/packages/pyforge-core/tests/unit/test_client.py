@@ -5,17 +5,15 @@ from __future__ import annotations
 import json
 
 import pytest
-from pyforge.core.client import API_VERSION_HEADER
-from pyforge.core.client import PyForgeStationClient
+
+from pyforge.core.client import API_VERSION_HEADER, PyForgeStationClient
 
 pytestmark = pytest.mark.unit
 
 
 def test_build_url_prefixes_station_api_root() -> None:
     client = PyForgeStationClient(station="warden", version=1, base_url="http://host")
-    assert client.build_url("/compliance/check") == (
-        "http://host/stations/warden/api/v1/compliance/check"
-    )
+    assert client.build_url("/compliance/check") == ("http://host/stations/warden/api/v1/compliance/check")
 
 
 def test_build_headers_carry_version_and_assertion() -> None:

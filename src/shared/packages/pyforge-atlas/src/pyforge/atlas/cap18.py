@@ -18,11 +18,12 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass
 from typing import Any
 
+from pyforge.core.hooks import HOOK_POINTS, HookSpec, PluginError
+
 from pyforge.atlas.admission import RunAdmissionHooks
 from pyforge.atlas.hooks import ProjectHooks
 from pyforge.atlas.observability import AtlasObservabilityHooks
 from pyforge.atlas.validation import DataValidationHooks
-from pyforge.core.hooks import HOOK_POINTS, HookSpec, PluginError
 
 ATLAS_OWNER = "atlas"
 
@@ -36,18 +37,14 @@ ATLAS_HOOK_SPECS: tuple[HookSpec, ...] = (
     NODE_HOOK_SPEC,
 )
 
-AROUND_NA_REASON = (
-    "Kedro has no around hook; wrapping the Kedro hook manager would rebuild Kedro"
-)
+AROUND_NA_REASON = "Kedro has no around hook; wrapping the Kedro hook manager would rebuild Kedro"
 
 _NA_UNUSED_DATASET = (
     "DatasetSpecs load/save hooks are unused in atlas: TTL injects on "
     "after_catalog_created and validation/observability run on node hooks, "
     "not before/after_dataset_loaded or *_saved"
 )
-_NA_UNUSED_CONTEXT = (
-    "after_context_created is unused in atlas (TTL injection uses after_catalog_created)"
-)
+_NA_UNUSED_CONTEXT = "after_context_created is unused in atlas (TTL injection uses after_catalog_created)"
 _NA_ERROR_NOT_FR43 = (
     "on_*_error is a Kedro lifecycle hook, not an FR-43 point (HOOK_POINTS is "
     "before/after/around only); it stays on the existing Kedro backend"

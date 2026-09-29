@@ -50,11 +50,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from packaging.utils import (
-    InvalidSdistFilename, InvalidWheelFilename, parse_sdist_filename, parse_wheel_filename,
+    InvalidSdistFilename,
+    InvalidWheelFilename,
+    parse_sdist_filename,
+    parse_wheel_filename,
 )
 
-from . import probe_engine, require_engine
 from ..errors import PackageBuildTimeoutError, PackageProjectPathError
+from . import probe_engine, require_engine
 
 name = "build"
 """`EngineAdapter.name` -- an `engines/__init__.py::_KNOWN_ENGINES` key."""

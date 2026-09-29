@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
 from pyforge.atlas.factory.lasuite import (
     LaSuiteClient,
     LaSuiteConfig,
@@ -210,9 +211,7 @@ def wagtail_stub(monkeypatch):
             raise RuntimeError("wagtail stub thread did not stop within 5s")
 
     try:
-        yield _StubHandle(
-            base_url=f"http://127.0.0.1:{server.server_port}", state=state, shutdown=_shutdown
-        )
+        yield _StubHandle(base_url=f"http://127.0.0.1:{server.server_port}", state=state, shutdown=_shutdown)
     finally:
         _shutdown()
 
@@ -251,9 +250,7 @@ def test_live_round_trip_push_update_idempotent_resume(tmp_path: Path, wagtail_s
     assert wagtail_stub.state.requests == requests_before
 
     # 3) change one page -> exactly one UPDATE, no duplicate create.
-    layout.stage_path("outputs", "a.md").write_text(
-        "---\ntitle: A\n---\nalpha revised\n", encoding="utf-8"
-    )
+    layout.stage_path("outputs", "a.md").write_text("---\ntitle: A\n---\nalpha revised\n", encoding="utf-8")
     r3 = syncer.sync_all()
     assert r3.updated == ["a.md"] and r3.skipped == ["b.md"] and r3.created == []
     assert wagtail_stub.state.creates == 2 and wagtail_stub.state.updates == 1
@@ -331,9 +328,7 @@ def test_main_exit_2_when_an_all_skipped_run_never_reaches_the_cms(
     assert bringup.main() == 2
 
 
-def test_main_refuses_to_report_success_when_nothing_was_synced(
-    tmp_path: Path, wagtail_stub: _StubHandle, monkeypatch
-):
+def test_main_refuses_to_report_success_when_nothing_was_synced(tmp_path: Path, wagtail_stub: _StubHandle, monkeypatch):
     """A bring-up that pushed ZERO pages must never exit 0 -- the attended checklist's step 8
     closes DW-H3 on this script's word. Both guards: a wiki root with no `outputs/` (must exit 3
     WITHOUT creating anything -- a typo'd `ATLAS_WIKI_ROOT` fails loudly rather than silently
@@ -358,9 +353,7 @@ def test_main_refuses_to_report_success_when_nothing_was_synced(
     assert wagtail_stub.state.requests == 0
 
 
-def test_main_exits_2_on_a_transport_failure(
-    tmp_path: Path, wagtail_stub: _StubHandle, monkeypatch
-):
+def test_main_exits_2_on_a_transport_failure(tmp_path: Path, wagtail_stub: _StubHandle, monkeypatch):
     """With pages to push but the server gone, the httpx transport error must surface as a clean
     `LaSuiteError` -> exit 2, never a raw `httpx` traceback (which would exit 1 and collide with
     the documented "unconfigured" code)."""
@@ -399,9 +392,7 @@ def test_main_exits_1_when_unconfigured(tmp_path: Path, monkeypatch):
     assert bringup.main() == 1
 
 
-def test_main_exits_4_on_an_unreadable_wiki_page(
-    tmp_path: Path, wagtail_stub: _StubHandle, monkeypatch
-):
+def test_main_exits_4_on_an_unreadable_wiki_page(tmp_path: Path, wagtail_stub: _StubHandle, monkeypatch):
     """A non-UTF-8 `.md` raises `UnicodeDecodeError` out of `sync_all()` -- neither a
     `LaSuiteError` nor anything the exit-2 path should claim. It must exit 4, and (since
     `UnicodeDecodeError` IS a `ValueError` subclass) must not be captured by the exit-2

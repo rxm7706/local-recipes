@@ -70,9 +70,8 @@ def _forbidden_import_violations(tree: ast.Module) -> list[str]:
 @pytest.mark.parametrize("path", _package_modules(), ids=_module_id)
 def test_no_forbidden_network_stack_imports(path: Path):
     violations = _forbidden_import_violations(_parse(path))
-    assert not violations, (
-        f"{_module_id(path)} imports forbidden network stack module(s): "
-        + ", ".join(sorted(set(violations)))
+    assert not violations, f"{_module_id(path)} imports forbidden network stack module(s): " + ", ".join(
+        sorted(set(violations))
     )
 
 

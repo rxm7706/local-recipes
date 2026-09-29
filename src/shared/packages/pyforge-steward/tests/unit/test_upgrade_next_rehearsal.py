@@ -59,15 +59,9 @@ _SKILL_NEW = "ROUTE = new\nMID = x\nTAIL = same\n"
 
 _SKF_CONFIG_REL = "_bmad/skf/config.yaml"
 _SKF_CONFIG_TEXT = (
-    "# SKF Module Configuration\n"
-    "user_name: Test\n"
-    "ides:\n"
-    "  - claude-code\n"
-    "skills_output_folder: .claude/skills\n"
+    "# SKF Module Configuration\nuser_name: Test\nides:\n  - claude-code\nskills_output_folder: .claude/skills\n"
 )
-_PACKAGED_SOURCE_REL = (
-    ".pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src"
-)
+_PACKAGED_SOURCE_REL = ".pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src"
 _PACKAGED_FILES = {
     "skf-alpha/SKILL.md": "# skf-alpha\n",
     "skf-campaign/SKILL.md": "# skf-campaign\n",
@@ -76,9 +70,7 @@ _PACKAGED_FILES = {
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args], cwd=repo, check=True, capture_output=True, text=True
-    )
+    return subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True, text=True)
 
 
 def _manifest_text() -> str:
@@ -112,17 +104,14 @@ def _write_rehearsal_repo(root: Path) -> Path:
     manifest_dir = root / "_bmad" / "_config"
     manifest_dir.mkdir(parents=True)
     (manifest_dir / "manifest.yaml").write_text(_manifest_text(), encoding="utf-8")
-    (manifest_dir / "skill-manifest.csv").write_text(
-        f'canonicalId,name\n"{_SKILL}","{_SKILL}"\n', encoding="utf-8"
-    )
+    (manifest_dir / "skill-manifest.csv").write_text(f'canonicalId,name\n"{_SKILL}","{_SKILL}"\n', encoding="utf-8")
 
     for sub in ("bmm", "core", "scripts"):
         (root / "_bmad" / sub).mkdir(parents=True, exist_ok=True)
     (root / "_bmad" / "custom" / "config.toml").parent.mkdir(parents=True, exist_ok=True)
     (root / "_bmad" / "custom" / "config.toml").write_text("team = true\n", encoding="utf-8")
     (root / "_bmad" / "config.toml").write_text(
-        "[modules.skf]\n"
-        'sidecar_path = "{project-root}/_bmad/_memory/forger-sidecar"\n',
+        '[modules.skf]\nsidecar_path = "{project-root}/_bmad/_memory/forger-sidecar"\n',
         encoding="utf-8",
     )
 
@@ -145,7 +134,7 @@ def _write_rehearsal_repo(root: Path) -> Path:
     skill_dir.mkdir(parents=True)
     (skill_dir / _SKILL_FILE).write_text(_SKILL_OURS, encoding="utf-8")
 
-    pixi_bin = root / ".pixi" / "envs" / "local-recipes" / "bin"
+    pixi_bin = root / ".pixi" / "envs" / "pyforge-guild" / "bin"
     pixi_bin.mkdir(parents=True)
     (pixi_bin / "node").write_text("#!/bin/sh\n", encoding="utf-8")
     (pixi_bin / "node").chmod(0o755)
@@ -256,7 +245,7 @@ def _no_real_home(monkeypatch, tmp_path):
 def test_next_rehearsal_cap6_cap8_cap7_report_only(tmp_path, monkeypatch):
     paths = _rehearsal_fixture(tmp_path)
     repo = paths["repo"]
-    pixi_bin = repo / ".pixi" / "envs" / "local-recipes" / "bin"
+    pixi_bin = repo / ".pixi" / "envs" / "pyforge-guild" / "bin"
 
     real_which = shutil.which
 

@@ -42,9 +42,7 @@ def test_scan_import_pyforge_matches_plain_and_from_import(tmp_path: Path) -> No
 
 
 def test_scan_sys_path_insert_matches_both_insert_and_append(tmp_path: Path) -> None:
-    (tmp_path / "a.py").write_text(
-        "sys.path.insert(0, 'x')\nsys.path.append('y')\n", encoding="utf-8"
-    )
+    (tmp_path / "a.py").write_text("sys.path.insert(0, 'x')\nsys.path.append('y')\n", encoding="utf-8")
 
     findings = [f for f in scan_move_list(tmp_path) if f.category == "sys_path_insert"]
 
