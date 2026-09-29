@@ -1381,8 +1381,13 @@ class GitVcs:
             raise VcsCommandError(f"cannot resolve {remote}/{ref} after fetch: {tip_result.stderr.strip()}")
         old_sha = tip_result.stdout.strip()
 
-        tmp_path = Path(tempfile.mkdtemp(prefix="marshal-promote-"))
-        tmp_path.rmdir()
+        try:
+            tmp_path = Path(tempfile.mkdtemp(prefix="marshal-promote-"))
+            tmp_path.rmdir()
+        except OSError as exc:
+            # Story 68.1 review: a full disk or a bad TMPDIR is a publish failure the caller journals
+            # (AD-6), never a raw OSError that leaves its INTENT unpaired.
+            raise VcsCommandError(f"cannot create the scratch directory for the publish worktree: {exc}") from exc
         try:
             add_result = _run(
                 [
@@ -1404,8 +1409,11 @@ class GitVcs:
             paths: list[Path] = []
             for rel, content in writes:
                 dest = tmp_path / rel
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_text(content, encoding="utf-8")
+                try:
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_text(content, encoding="utf-8")
+                except OSError as exc:
+                    raise VcsCommandError(f"cannot write {dest} in the publish worktree: {exc}") from exc
                 paths.append(dest)
             new_sha = self.commit_paths(tmp_path, tuple(paths), message)
             ancestor = _run(

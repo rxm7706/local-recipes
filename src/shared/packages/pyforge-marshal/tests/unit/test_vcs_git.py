@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import errno
 import os
 import shutil
 import subprocess
@@ -1973,6 +1974,14 @@ def test_commit_paths_onto_remote_tip_refuses_empty_writes(vcs, repo):
 # unless `PYFORGE_PREFLIGHT_SKIP=1`, and then logs `PYFORGE_PREFLIGHT_SKIP_REASON` -- so the
 # adapter's opt-out is proven against git's own hook machinery, not a fake.
 
+@pytest.fixture(autouse=True)
+def _no_ambient_preflight_opt_out(monkeypatch):
+    """An operator (or a harness) with the pre-push opt-out exported would leak it into every hook the
+    tests below observe and fail their `unset` / not-in-`os.environ` assertions (Story 68.1 review)."""
+    monkeypatch.delenv("PYFORGE_PREFLIGHT_SKIP", raising=False)
+    monkeypatch.delenv("PYFORGE_PREFLIGHT_SKIP_REASON", raising=False)
+
+
 _LEDGER_REL = "_bmad-output/projects/acme/planning-artifacts/sprint-status-ledger.yaml"
 _LEDGER_TEXT = "development_status:\n  64-1-a-landing: done\n"
 _SKIP_REASON = "marshal ledger promotion for 'acme', story 64-1-a-landing"
@@ -2136,6 +2145,44 @@ def test_a_reason_refuses_a_written_path_outside_planning_artifacts_before_any_f
     assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
 
 
+@pytest.mark.parametrize("failing_step", ["mkdtemp", "write_text"])
+def test_an_oserror_building_the_publish_worktree_is_a_vcs_command_error(vcs, repo, remote, monkeypatch, failing_step):
+    """Story 68.1 review (AD-6): a full disk or a bad TMPDIR while the adapter makes its scratch directory or
+    writes the files is a publish failure the caller journals as `MRS-LAND-011` -- never a raw `OSError` that
+    crashes `_promote_sprint_ledger` with its INTENT unpaired. Nothing is pushed and no scratch worktree
+    or directory is left behind."""
+    _publish_setup(repo, remote)
+    before = _remote_main(remote)
+    written: list[Path] = []
+    if failing_step == "mkdtemp":
+
+        def failing_mkdtemp(*args, **kwargs):
+            raise OSError(errno.ENOSPC, "No space left on device")
+
+        monkeypatch.setattr(vcs_git_module.tempfile, "mkdtemp", failing_mkdtemp)
+    else:
+        real_write_text = Path.write_text
+
+        def failing_write_text(self, *args, **kwargs):
+            if "marshal-promote-" in str(self):
+                written.append(self)
+                raise OSError(errno.ENOSPC, "No space left on device")
+            return real_write_text(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "write_text", failing_write_text)
+
+    with pytest.raises(VcsCommandError, match="No space left on device") as excinfo:
+        _publish(vcs, repo)
+
+    assert isinstance(excinfo.value.__cause__, OSError)
+    assert _remote_main(remote) == before
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+    if failing_step == "write_text":
+        [attempted] = written
+        scratch = next(parent for parent in attempted.parents if parent.name.startswith("marshal-promote-"))
+        assert not scratch.exists()
+
+
 @pytest.mark.parametrize("empty", ["", "   ", "\n\t"])
 def test_an_empty_reason_is_refused_never_a_blanket_skip(vcs, repo, remote, empty):
     _publish_setup(repo, remote)
@@ -2178,6 +2225,35 @@ def test_a_commit_naming_a_path_outside_the_written_set_is_refused_before_any_pu
     with pytest.raises(VcsCommandError, match="outside the written set"):
         _publish(vcs, repo, preflight_skip_reason=_SKIP_REASON)
 
+    assert _remote_main(remote) == before
+    assert not seen_log.exists()
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+
+
+def test_a_rename_pairing_cannot_hide_a_deleted_unwritten_file_behind_a_written_path(vcs, repo, remote, monkeypatch):
+    """`git diff --name-only` pairs a deleted file with an added one of identical content as a rename and
+    lists only the NEW name -- so without `--no-renames` a commit that deletes an unwritten tracked file
+    while adding the written ledger path with the same bytes would pass the path proof. Both ends must be
+    named: the deletion is refused and the remote's main is unchanged."""
+    unwritten = "notes/old-ledger.yaml"
+    (repo / "notes").mkdir()
+    (repo / unwritten).write_text(_LEDGER_TEXT, encoding="utf-8")
+    _git(repo, "add", unwritten)
+    _git(repo, "commit", "-m", "an unrelated tracked file whose bytes equal the ledger's")
+    _publish_setup(repo, remote)
+    _skip_log, seen_log = _install_pre_push_hook(repo, sleeps=False)
+    before = _remote_main(remote)
+
+    def rename_shaped_commit(self, repo_root, paths, message):
+        _git(repo_root, "rm", "-q", unwritten)
+        return _commit_everything(self, repo_root, paths, message)
+
+    monkeypatch.setattr(GitVcs, "commit_paths", rename_shaped_commit)
+
+    with pytest.raises(VcsCommandError, match="outside the written set") as excinfo:
+        _publish(vcs, repo, preflight_skip_reason=_SKIP_REASON)
+
+    assert unwritten in str(excinfo.value)
     assert _remote_main(remote) == before
     assert not seen_log.exists()
     assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
