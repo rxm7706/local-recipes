@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-28'   # RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
   the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
   epic, story or AD content changed — Story 30.3''s own text already matches its
@@ -2527,6 +2527,156 @@ the PRD, citing CAP-86).
 and the spec; a `dispatch-followup-review` or `review-budget-followup` row naming it clears it; a row under another
 `origin:`, or in another project's ledger, does not; flag `false` / absent / `no` and status `in-review` report nothing;
 `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
+**Status:** blocked
+
+## Epic 34: Every capability ships behind a flag — the rule, the gate outside every station, and the retrofit inventory (spec-feature-flag-governance CAP-1, CAP-2, CAP-7; CAP-4's gate clause)
+
+Minted 2026-09-28 (night) from `docs/governance/spec-feature-flag-governance/SPEC.md` (owner Dream
+`docs/dreams/feature-flag-governance.md`, **`owner: guild`** — the third instance of the Charter §5 shape, after
+coverage-gate-independence and one-chain-per-station). The **outcome** is the Guild's; the **mechanism** is Doctor's under
+§5's outcome/mechanism rule — Epic 24's relay, which Epics 25 and 32 followed. Every story below binds to a CAP id on a
+Spec that lives in `docs/governance/`, not in this project's `specs/` tree; INV-A does not scan that directory, so these
+citations and the Spec's own `.memlog.md` are the only places its stories are enumerated. Doctor mints no CAP and no FR
+for them (the Epic 24/25/32 precedent). **Ruled and closed before minting** (Spec memlog 3 and 23; do not re-open): every
+capability, blocking; a closed exemption list — `flag-infrastructure`, `docs-only`, `recipe-build`,
+`planning-ledger-only`, `detector-or-gate` — plus a retrofit; a post-rule-date `type: feature` story spec is refused and a
+pre-rule one warns; `fix`, `chore` and `docs` stories need no flag; a CLI verb whose flag is OFF stays listed and refuses
+with its station's usage code; a flag lives 90 days after it is ON everywhere; global flags only; one retrofit flag per
+CAP; `detectors-ci` reds and Marshal refuses from the same rule date (2026-09-28). **HARD boundaries:** Charter §6 — the
+evaluator and its data ship in `scripts/` and `docs/governance/`, outside every `pyforge.<station>` package, Doctor's
+included: Doctor is constitutionally advisory, so a blocking gate cannot live in `pyforge-doctor` either (the
+coverage-gate-independence resolution, Story 24.1); one tree, `src/platform/config/flags.json` (canopy:AD-11), never a
+second; a flag-OFF check is never a silent green, and gates are exempt (`detector-or-gate`); the gate is one detector
+inside `detectors-ci`, never a second PR verdict. **Cross-station relays** (each minted `blocked`; the operator flips it,
+because marshal's `Deps:` parser is station-local — the Story 33.1 precedent): Story 34.3 waits on steward Stories 76.1
+and 76.2 (Guild CAP-5: per-environment overlays and the flag metadata); Story 34.5 waits on marshal Story 74.1 (Guild
+CAP-4: the testing kit's flag fixture). Marshal Story 74.2 (Guild CAP-3, the dispatch refusal) waits on Story 34.2 here.
+CAP-7's retrofit stories are each Smith's, minted after Story 34.4's inventory lands. Every story here is itself
+`flag-exempt:` (`flag-infrastructure`, or `detector-or-gate` for a gate).
+
+### Story 34.1: The flag rule has a closed exemption list, a rule-date baseline and one block shape
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-feature-flag-governance CAP-1 (`SPEC.md` success: the
+roster carries `flag_exemptions` with a governance-act `$comment`; the block's shape is documented where `bmad-build` and
+Marshal read story specs; a machine can identify a post-rule-date `type: feature` spec that carries neither) • marshal
+Story 74.3 (Kinship: bmad-build's copy of the shape, a `_bmad/custom/` persistent fact that points here) •
+`flag-exempt: flag-infrastructure`
+**difficulty:** low
+**Surface:** `docs/governance/guild-roster.json` (`flag_exemptions`, exactly the five values, and a
+`$comment_flag_exemptions` naming a change a governance act — the `fold_exemptions` shape), `docs/governance/flag-rule-baseline.json`
+(the pre-rule population: every tracked `_bmad-output/projects/*/planning-artifacts/specs/spec-<E>-<S>-*.md` at the merge
+SHA of the PR that took the Spec to `ready`, PR #1654 — the `chain-sprawl-baseline.json` shape; it only ever shrinks),
+`scripts/flag_rule_baseline.py` (mutation-only stamper, `--snapshot` once and `--prune` only removes — the
+`scripts/chain_sprawl_baseline.py` shape), `scripts/flag_rule.py` (pure: classify one story spec's frontmatter as `flag`,
+`exempt` or `neither`, with a reason per missing field or unknown value; stdlib and PyYAML only, no `pyforge.<station>`
+import), `scripts/spec_surface_allowlist.txt` (one reason-tagged line per new script, the `scripts/coverage_gate.py`
+shape), `docs/reference/story-spec-flag-block.md` (the block's one written shape: its six fields, the rule date, the
+exemption values by pointer to the roster, one flagged and one exempt example) and its `docs/map.yaml` row,
+`docs/reference/station-verify-commands.md` (one pointer line — the page a story author reads for Marshal's spec gates),
+`tests/scripts/test_flag_rule.py`.
+**Given** the Spec reached `ready` on 2026-09-28 and no roster key, story spec or document names a flag
+**When** the roster gains `flag_exemptions`, the baseline is snapshotted at the rule SHA, and `scripts/flag_rule.py`
+classifies a story spec
+**Then** a spec whose frontmatter carries a `flag:` block with `key`, `provider`, `default`, `scope`, `fallback` and
+`cleanup` is `flag`; one whose `flag-exempt:` value is on the roster's list is `exempt`; any other is `neither`, naming each
+missing field and each unknown value as its own reason
+**And** a spec is post-rule exactly when it is absent from `docs/governance/flag-rule-baseline.json`; a `type:` other than
+`feature` is out of scope (Q1); the five values live in the roster, never in code (a value hard-coded in
+`scripts/flag_rule.py` fails a test — the Story 25.1 rule)
+**And** `docs/reference/story-spec-flag-block.md` states the block and the list as the Spec's CAP-1 does, `docs-currency`
+stays green with its `docs/map.yaml` row, and `station-verify-commands.md` points to it; `pixi run --frozen -e
+pyforge-doctor pyforge-doctor-test` green
+**Status:** backlog
+
+### Story 34.2: The flag gate ships in scripts, outside every station, and runs in detectors-ci
+
+**Type:** feature • **Effort:** M • **Deps:** S-34.1 • **FR/AD:** spec-feature-flag-governance CAP-2 (`SPEC.md` success:
+`detectors-ci` runs the gate from the rule date; no `pyforge.<station>` module hosts it, and a meta-test or import-linter
+contract pins that) • marshal Story 74.2 (Kinship: consults this gate's `--spec` interface at dispatch) •
+`flag-exempt: detector-or-gate`
+**difficulty:** medium
+**Surface:** `scripts/flag_gate_check.py` (new; `DETECTOR = {"scope": "repo"}`, so `scripts/detectors.py` discovers it and
+`detectors-ci` runs it), `pixi.toml` (the `flag-gate-check` task; `environment.yaml` regenerated in the same change),
+`scripts/spec_surface_allowlist.txt` (its line), `tests/scripts/test_flag_gate_check.py`,
+`src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py` (the Story 24.2 contract,
+for this gate) and its companion copy under `src/shared/packages/pyforge-core/tests/meta/` (Story 24.2's reason: the
+core suite runs on any single-station change).
+**Given** `scripts/flag_rule.py` and the rule-date baseline (Story 34.1), and the one tree `src/platform/config/flags.json`
+**When** `pixi run -e pyforge-guild flag-gate-check` walks every tracked story spec and the tree
+**Then** it FAILs (exit 1) on each of: a post-rule `type: feature` spec that is `neither`; a `flag-exempt:` value not on
+the roster; a `done` spec whose `flag.key` is not a key of the tree (a story still in backlog has not added its key, so
+only a landed one is judged); a tree key that no tracked source file under `src/` or `scripts/` reads (the tree itself,
+story specs, docs and tests excluded)
+**And** it WARNs, never FAILs, on a pre-rule `type: feature` spec that is `neither` (Ruling 3), listing each such spec per
+station — the list Story 34.4's inventory counts
+**And** `--spec <path>` judges one story spec and prints one JSON object (the verdict `pass`, `warn` or `red`, the
+findings, the rule date), exiting 0 on `pass` or `warn` and 1 on `red`; a gate that cannot read the tree or the roster
+exits 2 (unknown, never green)
+**And** no `pyforge.<station>` module defines or imports the gate, and the meta-test fails on a planted
+`pyforge.<station>.flag_gate` shim; the tree has zero FAIL at the landing SHA, so `detectors-ci` reports no new finding
+against `main`; `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
+**Status:** backlog
+
+### Story 34.3: The flag gate reads the tree metadata — per-environment defaults and the 90-day clock
+
+**Type:** feature • **Effort:** S • **Deps:** S-34.2 • **FR/AD:** spec-feature-flag-governance CAP-2 (its fifth red: a
+flag still in the tree 90 days after it went ON in every environment), with CAP-5 as its prerequisite (Constraint *"Off in
+production" waits for CAP-5*) • cross-project gate: steward Stories 76.1 (per-environment overlays) and 76.2 (the flag
+metadata) must have landed first — the ledger key is minted `blocked` and the operator flips it (marshal's `Deps:` parser
+is station-local) • `flag-exempt: detector-or-gate`
+**difficulty:** low
+**Surface:** `scripts/flag_gate_check.py`, `scripts/flag_rule.py` (the metadata and overlay readers),
+`tests/scripts/test_flag_gate_check.py`.
+**Given** steward Story 76.1 has made a flag's value per environment expressible and Story 76.2 records each flag's owner,
+story key, created date, ON-everywhere date and cleanup date in flagd `metadata`
+**When** the gate runs
+**Then** it FAILs on a tree flag whose ON-everywhere date is more than 90 days before the run date (Q4), naming the flag,
+its owner and its story; on a tree flag with no owner or story metadata; and on a `done` flagged spec whose declared
+per-environment `default` disagrees with the tree's value for that environment
+**And** a flag not yet ON everywhere is never red on the clock; the run date is injectable, so the 90-day boundary is tested
+on both sides; the metadata field names are the ones steward 76.2 lands, never guessed
+**And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
+**Status:** blocked
+
+### Story 34.4: Each station has a checked-in flag inventory of its runtime capabilities
+
+**Type:** feature • **Effort:** M • **Deps:** S-34.2 • **FR/AD:** spec-feature-flag-governance CAP-7 (`SPEC.md` success:
+the inventory is a checked-in report per station; the CAP-2 warnings reach zero once each Smith's retrofit lands) •
+`flag-exempt: flag-infrastructure`
+**difficulty:** medium
+**Surface:** `scripts/flag_inventory.py` (new; a report, never a gate — it exits 0 unless it cannot run),
+`pixi.toml` (the `flag-inventory` task; `environment.yaml` regenerated), `scripts/spec_surface_allowlist.txt` (its line),
+`docs/governance/flag-inventory/pyforge-<station>.md` (eight generated reports), `tests/scripts/test_flag_inventory.py`.
+**Given** each station's Spec folders declare CAPs, a CAP's code is named by its citing story's `Surface:` line (the join
+`pyforge.doctor.sources.capability_effect` already makes), and code is reachable at runtime through a CLI verb, an MCP
+tool, a REST route or a portal view
+**When** `pixi run -e pyforge-guild flag-inventory` runs
+**Then** each station's report lists every CAP whose code is reachable at runtime, the surface that reaches it, and the
+flag key that gates it or `none`; and every pre-rule `type: feature` story spec the gate warns on, with its key and status
+**And** each report's header names the SHA it read and two counts — CAPs with no flag, warned specs — the numbers each
+Smith's retrofit stories (one flag per CAP, defaulting ON as a kill switch, Q6) are minted against after this lands
+**And** a second run on the same tree is byte-identical; a planted CAP with a CLI verb and no flag reads `none`; the
+inventory reuses the CAP-to-code join rather than inventing a second one; `pixi run --frozen -e pyforge-doctor
+pyforge-doctor-test` green
+**Status:** backlog
+
+### Story 34.5: The flag gate reds a landed flagged story whose test does not run both states
+
+**Type:** feature • **Effort:** S • **Deps:** S-34.2 • **FR/AD:** spec-feature-flag-governance CAP-4 (`SPEC.md` success:
+"the CAP-2 gate can tell when a story's Verification names no two-state test") — the gate clause of a Marshal CAP: the kit
+is Marshal's (Story 74.1), the gate that judges it is Doctor's (Charter §6) • cross-project gate: marshal Story 74.1 (the
+testing kit's flag fixture and ON/OFF helper) must have landed first — the ledger key is minted `blocked` and the operator
+flips it • `flag-exempt: detector-or-gate`
+**difficulty:** low
+**Surface:** `scripts/flag_gate_check.py`, `scripts/flag_rule.py`, `tests/scripts/test_flag_gate_check.py`.
+**Given** marshal Story 74.1 has shipped `pyforge.testing_kit.flags` and a `done` post-rule story spec carries a `flag:`
+block
+**When** the gate runs
+**Then** it FAILs when that spec's `## Verification` names no test file, or names only test files that neither reference the
+spec's `flag.key` through the kit's ON/OFF helper nor write two flagd trees for it (the pre-kit shape of
+`src/platform/tests/test_openfeature_file_flags.py`) — read statically, never by running the test
+**And** a spec still in backlog is never judged on this (its test does not exist yet), nor is an exempt one
+**And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
 **Status:** blocked
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)

@@ -2,9 +2,9 @@
 title: Every capability ships behind a flag, and a gate no station owns checks that it does
 type: dream
 owner: guild
-status: specified   # 2026-09-28 — seeded `dreamt` from the intake triage and ruled the same
-                    # session: all seven open questions answered, so the Spec
-                    # (docs/governance/spec-feature-flag-governance/) is `ready`.
+status: specified
+# status: 2026-09-28 — seeded `dreamt` from the intake triage and ruled the same session: all seven
+# open questions answered, so the Spec (docs/governance/spec-feature-flag-governance/) is `ready`.
 fold-exemption: governance   # a gate over every Smith's stories: Charter §5 as amended 2026-09-14
                              # (the coverage-gate-independence shape, third instance). No Smith can
                              # own a rule that refuses its own stories.
@@ -183,3 +183,15 @@ These parts do not transfer to this estate:
   chosen. The mechanism stories go to Doctor (CAP-1, CAP-2, the CAP-7 inventory), Marshal (CAP-3,
   CAP-4, CAP-6) and Steward (CAP-5). The retrofit stories are minted by each Smith after the
   inventory lands. Status: **next, mint the mechanism stories**.
+- **2026-09-28 (night)** — The mechanism stories are minted (Spec memlog 26–27).
+  - **Doctor Epic 34:** 34.1 (CAP-1: the roster's closed list, the rule-date baseline, the block's
+    one shape), 34.2 (CAP-2: the gate in `scripts/`, run by `detectors-ci`), 34.3 (CAP-2's
+    metadata checks, `blocked` on steward 76.1 and 76.2), 34.4 (CAP-7's inventory) and 34.5
+    (CAP-4's gate clause, `blocked` on marshal 74.1).
+  - **Marshal Epic 74:** 74.1 (CAP-4: the testing kit's flag fixture), 74.2 (CAP-3: dispatch refuses
+    before the session, `blocked` on doctor 34.2) and 74.3 (CAP-6: the `_bmad/custom/` mandate).
+  - **Steward Epic 76** (CAP-5): 76.1 per-environment overlays, 76.2 the flag metadata, 76.3 the
+    `.steward/flags.json` fold.
+
+  Every mechanism story is itself `flag-exempt`. CAP-7's retrofit stories are each Smith's, minted
+  after 34.4's inventory lands. Next: dispatch 34.1 and 74.1.

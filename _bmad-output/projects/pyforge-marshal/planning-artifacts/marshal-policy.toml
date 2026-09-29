@@ -381,6 +381,29 @@ verify_commands = [
   "src/shared/packages/pyforge-core/tests/unit/test_dispatch.py",
 ]
 
+"74" = [  # every capability ships behind a flag -- the fixture, the dispatch refusal, the mandate
+          # (spec-feature-flag-governance CAP-4, CAP-3, CAP-6), added 2026-09-28. The default surface, restated
+          # because a declared entry replaces it outright, plus the testing kit (the cross-station seam Marshal
+          # owns, governed by spec-pyforge-testing-charter) and the four _bmad/custom/ overrides 74.3 writes.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  # 74.1: the kit's flags family, its manifests and its tests
+  "src/shared/packages/pyforge-testing-kit/**",
+  # 74.3: the mandate, carried as overrides (never an installer-owned SKILL.md)
+  "_bmad/custom/bmad-spec.toml",
+  "_bmad/custom/bmad-build.toml",
+  "_bmad/custom/bmad-build-auto.toml",
+  "_bmad/custom/bmad-tea.toml",
+  # co-governor reconciles (spec-pyforge-testing-charter governs the kit)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
 # verbatim from CLAUDE.md's "PR CI gates" section -- now governed, machine-
 # readable policy instead of a paragraph a human has to remember.
