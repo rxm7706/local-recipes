@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night, later): arch→epics cascade for FR-20 / CAP-87; Epic 35 / Story 35.1 minted (capability-ledger's post-PIN check reads only live Specs); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
   the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
   epic, story or AD content changed — Story 30.3''s own text already matches its
@@ -2679,6 +2679,34 @@ spec's `flag.key` through the kit's ON/OFF helper nor write two flagd trees for 
 **And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
 **Status:** blocked
 
+
+## Epic 35: Capability-ledger's post-PIN check reads only live Specs (spec-pyforge-doctor CAP-87)
+
+Minted 2026-09-28 (night) from the station Dream's entry of the same name and the operator's ruling of that night. The
+capability-ledger source (`fcl:CAP-2`, Story 55.2) inventories only `ready` and `in-progress` Specs, but its post-PIN check
+warned for every `SPEC.md` added after the ledger's PIN, whatever its status: eight permanent WARNs on `main`, seven
+`absorbed` and one `draft`. A new epic, because Epic 33's only story is `blocked` and Epic 34 is the Guild's relay.
+**HARD boundaries:** the HARD findings and the per-CAP post-PIN `--append` WARN do not change; the finding keeps its
+message and `kind: append`; the source stays read-only and writes no ledger row; `docs/foundry/capability-ledger.yaml` is
+not edited to silence it; no station's internals are imported. **FRs covered:** FR-20 (minted 2026-09-28 (night) on the
+PRD, citing CAP-87). The story is `flag-exempt: detector-or-gate`.
+
+### Story 35.1: capability-ledger's post-PIN check reads only live Specs
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** FR-20, spec-pyforge-doctor CAP-87 (narrows `fcl:CAP-2`'s `--append`
+clause; extends CAP-36); AD-2 • `flag-exempt: detector-or-gate`
+**difficulty:** low
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py` (`_gather`'s post-PIN
+Spec loop reads the added `SPEC.md`'s frontmatter `status` with `_frontmatter` and skips one outside `_LIVE_STATUSES`),
+`src/shared/packages/pyforge-doctor/tests/unit/test_capability_ledger.py` (the absorbed, draft and live-without-CAP cases).
+**Given** a post-PIN `SPEC.md` whose frontmatter reads `status: absorbed` or `status: draft` and that no ledger row names
+**When** `pixi run -e pyforge-guild capability-ledger-check` runs
+**Then** it reports nothing for that Spec
+**And** a post-PIN `status: ready` Spec with no CAP heading and no row still reports one `--append` WARN naming its path; the
+HARD checks and the per-CAP post-PIN WARN are unchanged; on `main` the source reports OK and exits 0; restoring the
+status-blind loop makes the absorbed and draft tests fail (mutation); `pixi run --frozen -e pyforge-doctor
+pyforge-doctor-test` green
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
@@ -2700,3 +2728,12 @@ generated-page check) with no gap found on validation; no epic, story or AD cont
 required. Story 30.3's `**Status:**` line and the tracked `sprint-status-ledger.yaml` row stay
 `backlog` here on purpose — story-status/ledger promotion is a separate post-review landing
 step, not this currency cascade's job. `updated:` bumped to record the cascade.*
+
+## Currency reconciliation — 2026-09-28 (night)
+
+*`arch→epics` edge after the spine's night re-stamp (§ Currency reconciliation — 2026-09-28 (night): FR-20 / CAP-87 sits
+inside the existing `capability-ledger` source; no AD added or changed). Epic 35 (Story 35.1) decomposes CAP-87 and keeps to
+it: one status test in an existing loop, read with the frontmatter reader the extract already uses, and still a WARN (AD-2).
+Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key (`35-1` and `epic-35` added at `backlog`,
+`epic-35-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`). No key is minted `blocked`, and no
+blocked key flipped. `updated:` bumped.*

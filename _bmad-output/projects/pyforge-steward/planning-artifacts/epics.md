@@ -18,7 +18,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): Epics 74-76 minted -- Stories 74.1-74.2 (spec-pyforge-steward CAP-163, FR-36), 75.1 (CAP-164, FR-37), 76.1-76.3 (spec-feature-flag-governance CAP-5); § Currency reconciliation — 2026-09-28 (night) appended. Earlier: AMENDED 2026-09-28 (operator rulings): Story 72.1 amended -- CAP-5's size bound restated 1 GB -> 2 GB, the pixi stop replaced by a Kinship to spec-pyforge-mason:CAP-30 (mason Story 20.1) and an AC that the Guild's pixi does not move, virtualenv 21 -> 20 and filelock 4 -> 3 accepted on evidence; FR-34 amended in place; key, status and counts unchanged. Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-35 / CAP-162; Epic 73 / Story 73.1 minted; Story 72.1 amended (atlas's exclusion documented beside warden's, the Guild's measured size and pins); § Currency reconciliation — 2026-09-28 (later) appended. Earlier 2026-09-28: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-33 / CAP-160 and FR-34 / CAP-161; Epic 72 / Stories 72.1-72.2 minted (72.2 blocked on mason Story 19.1); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night, later): Story 76.4 added to Epic 76 (operator ruling: the demo flag pyforge.three_surfaces is removed; Deps S-76.2) and Story 76.2's text amended to name it; § Currency reconciliation — 2026-09-28 (night, Story 76.4) appended. Earlier: RE-STAMPED 2026-09-28 (night): Epics 74-76 minted -- Stories 74.1-74.2 (spec-pyforge-steward CAP-163, FR-36), 75.1 (CAP-164, FR-37), 76.1-76.3 (spec-feature-flag-governance CAP-5); § Currency reconciliation — 2026-09-28 (night) appended. Earlier: AMENDED 2026-09-28 (operator rulings): Story 72.1 amended -- CAP-5's size bound restated 1 GB -> 2 GB, the pixi stop replaced by a Kinship to spec-pyforge-mason:CAP-30 (mason Story 20.1) and an AC that the Guild's pixi does not move, virtualenv 21 -> 20 and filelock 4 -> 3 accepted on evidence; FR-34 amended in place; key, status and counts unchanged. Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-35 / CAP-162; Epic 73 / Story 73.1 minted; Story 72.1 amended (atlas's exclusion documented beside warden's, the Guild's measured size and pins); § Currency reconciliation — 2026-09-28 (later) appended. Earlier 2026-09-28: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-33 / CAP-160 and FR-34 / CAP-161; Epic 72 / Stories 72.1-72.2 minted (72.2 blocked on mason Story 19.1); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
 currency_review: "Reviewed 2026-09-24 (arch→epics cascade after the spec→prd→arch re-stamps for Story 63.4, `steward session check`) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-24): no AD added or changed. Story 63.4 already carries its own `### Story 63.4` heading (line 4179, Epic 63) with ledger key `63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point`; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-17 (arch→epics cascade after the spec→prd→arch re-stamps for the one-chain steward fold) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-17): no AD added or changed. Fold provenance heading already cites spec-pyforge-steward CAP-1..145; historical stories keep sequential epic numbers 1..64. Every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-14 (fleet-picture follow-up audit, undecomposed-Spec sweep) — spec-platform-image-one-pixi-env (status `shipped`, verified 2026-09-11) had zero Epic/Story despite all three CAPs being real, tested, and running (`59083b8391`, 2026-08-25): retroactive Epic 57 added, mirroring the Epic 38/39 precedent — no new implementation, ledger keys 57-1/57-2/57-3 added at `done`, every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Same sweep corrected spec-intelligence-hub's stale frontmatter (Dream `dreamt`→`realized`, Spec `ready`→`shipped` — Epic 53 was already 5/5 done, decomposition was NOT missing, no epics.md change needed there) and confirmed spec-build-league-scorecard's `draft` status is correctly parked (operator-owned measure set, not overdue). Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the sidecar runtime validation mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it. Its ACs were CORRECTED the same day before implementation: the Celery half is not achievable against this sidecar (no celery/redis package in the env, no broker in container-dbgpt, and the Containerfile assigns that wiring to Stories 11.2/11.3), so 43.7 owns the SQLite metadata-store proof and a real API round-trip instead; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (canopy:AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (canopy:FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -4974,8 +4974,9 @@ the prerequisite of its "default per environment" check. A station CLI's flag re
 arrives with Story 75.1, its home by coordinator ruling (2026-09-28), as the fleet-wide contract. It takes the
 `pyforge.core.cutover_root` shape (Story 44.12's precedent); `spec-pyforge-core` co-governs the path and is reconciled,
 not blocked. Story 76.1 makes it read the per-environment rendered tree (hence `Deps: S-75.1`), and Story 76.3 routes it
-through OpenFeature; neither changes its signature or OFF/absent semantics. All three stories are
-`flag-exempt: flag-infrastructure`.
+through OpenFeature; neither changes its signature or OFF/absent semantics. Story 76.4 (added 2026-09-28, night, by
+operator ruling) is Q4's removal story for the demo flag `pyforge.three_surfaces`; it runs after 76.2 (`Deps: S-76.2`).
+All four stories are `flag-exempt: flag-infrastructure`.
 **HARD boundaries:** one tree, one provider, no egress (canopy:AD-11, amended 2026-09-28 for value-only overlays); no flagd
 daemon, no hosted flag service, no environment variable as a provider; no targeting rules (Q5); the Guild Spec and its
 memlog are not edited here; `src/platform/` never imports `pyforge.*`, and station code reads flags only through
@@ -5028,10 +5029,10 @@ provider loads the tree with metadata and evaluates as before).
 while any environment's rendered value is not ON (or empty while every one is), and `cleanup_by` other than
 `on_everywhere` + 90 days
 **And** `pyforge.three_surfaces` and `pyforge.cutover_root` carry dates read from the tree's history —
-`pyforge.three_surfaces` ON everywhere since 2026-08-25, so `cleanup_by` 2026-11-23, and a removal story or an explicit
-keep-as-kill-switch decision must land before doctor Story 34.3's metadata check goes live, or it reds `main` that day; the
-story's result names it, and any flag whose `cleanup_by` has passed at landing, as owing one (Q4); the FILE provider
-evaluates the same values as before; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+`pyforge.three_surfaces` ON everywhere since 2026-08-25, so `cleanup_by` 2026-11-23; the operator ruled (2026-09-28, night)
+to remove it, and Story 76.4 does so after this story, so the result names it as owed to 76.4, and any other flag whose
+`cleanup_by` has passed at landing as owing a removal story or a keep decision (Q4); the FILE provider evaluates the same
+values as before; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
 
 ### Story 76.3: The ledger query's flags fold into the one tree and evaluate through OpenFeature
@@ -5065,6 +5066,34 @@ override that persists nothing, accepting the tree keys (the old short names map
 **And** each gated formatter's OFF path refuses as today, naming the tree key; exit codes are unchanged; the meta-test reds
 a module that reads `.steward/flags.json` or a `FLAGS_` variable; the Guild stays under CAP-5's 2 GB bound, re-measured and
 recorded; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
+### Story 76.4: The pyforge.three_surfaces demo flag leaves the tree
+
+As the operator who ruled (2026-09-28, night) that the demo flag goes rather than stays as a kill switch,
+I want `pyforge.three_surfaces` removed from the one tree, and the host's FILE provider made ready without naming it,
+So that the tree holds only flags that ship a capability, and no 90-day clock runs on a flag nothing reads.
+
+**Type:** chore • **Effort:** S • **Deps:** S-76.2 • **FR/AD:** spec-feature-flag-governance CAP-5, Q4 (the owner files the
+removal story); canopy:AD-11 • `flag-exempt: flag-infrastructure`
+**Surface:** `src/platform/config/flags.json` (the entry and any 76.2 metadata), `src/platform/config/flag-overlays.json`
+(its entry, if 76.1 put one there), `src/shared/packages/django-pyforge/src/django_pyforge/flags.py` (`FLAG_KEY` removed; the
+key becomes required for `evaluate_boolean`, `evaluate_from_source`, `get_flag` and `python -m django_pyforge.flags`;
+`wait_until_ready` waits on the provider's status, not on a named flag),
+`src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py` (the `flags kill-switch --flag` help example becomes the
+neutral `pyforge.<station>.<capability>`; folded in 2026-09-29), tests: `src/platform/tests/test_openfeature_file_flags.py`
+(re-keyed to a test-local fixture key; a real-tree readiness test added).
+**Given** the tree carries the Story 26.4 demo flag, which no production code reads, and `django_pyforge.flags` probes it
+at every `configure_file_provider` call, the host startup included
+**When** the entry leaves the tree and readiness waits on `client.get_provider_status()` reading `READY` (or, if the FILE
+provider reports that before the tree is readable, on the tree's own first key)
+**Then** the host starts against the real tree, `evaluate_cutover_root()` reads `local-recipes`, an unloadable tree still
+raises the named `RuntimeError`, and nothing in `src/platform`, `django-pyforge` or `pyforge-core` names
+`pyforge.three_surfaces`
+**And** a call with no key is refused rather than reading a key the tree lacks; the re-keyed FILE-machinery tests pass as
+before; `pyforge.cutover_root`, the chart's flags ConfigMap and the `flags` MCP face are unchanged; doctor's kill-switch
+`--flag` help example names no tree key, while its tests keep their arbitrary temp-tree key;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
@@ -5147,3 +5176,14 @@ Every new story of `type: feature` in Epics 74 and 75 carries a `flag:` block; E
 `epic-<n>-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`). Herald's 29.1 / 29.2 and
 warden's 16.1 wait on 74.1 and 75.1 as `blocked` rows in their own ledgers; no steward key is minted `blocked`, and no
 blocked key flipped. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (night, Story 76.4)
+
+Story 76.4 joins Epic 76 by operator ruling (2026-09-28, night): the demo flag `pyforge.three_surfaces` is removed, not kept
+as a kill switch. It is the removal story `spec-feature-flag-governance` Q4 asks the flag's owner to file, so it cites the
+Guild's CAP-5 and Q4 like 76.1–76.3, and no steward CAP or station FR is minted; the PRD and the spine do not move. It lands
+on canopy:AD-11 as written: the tree, the provider and the no-egress rule all stay; only a flag leaves, and the host's
+FILE-provider readiness stops probing it. `Deps: S-76.2`, so no story depends on a later one. Story 76.2's text now names
+76.4 where it promised an unnamed removal story before doctor Story 34.3. Every Story heading still maps 1:1 to a
+`sprint-status-ledger.yaml` key (`76-4-the-pyforge-three-surfaces-demo-flag-leaves-the-tree` added at `backlog`, through the
+Tier-3 feed and `sprint-ledger-sync`); no key is minted `blocked` and no blocked key flipped. `updated:` bumped.

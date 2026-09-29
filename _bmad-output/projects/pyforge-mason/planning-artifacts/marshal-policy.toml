@@ -281,6 +281,31 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"22" = [  # Twelve recipes lose conda-recipe-manager's leaked sentinel key; CFE's validation refuses the next one (spec-pyforge-mason CAP-32), added 2026-09-28 (night)
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  # 22.1: the twelve recipe.yaml files (meta.yaml stays untouched beside each)
+  "recipes/semgrep/recipe.yaml",
+  "recipes/boost/recipe.yaml",
+  "recipes/pyautogui/recipe.yaml",
+  "recipes/pyobjc-framework-systemconfiguration/recipe.yaml",
+  "recipes/psycopg2-yugabytedb/recipe.yaml",
+  "recipes/vc/recipe.yaml",
+  "recipes/django-pygwalker/recipe.yaml",
+  "recipes/ctng-compilers/recipe.yaml",
+  "recipes/StringZilla/recipe.yaml",
+  "recipes/lerc/recipe.yaml",
+  "recipes/amundsen-databuilder/recipe.yaml",
+  "recipes/shodan/recipe.yaml",
+  # 22.1's retro (gotcha + corpus meta-test) and 22.2's check, each in its own retro(cfe): commit
+  ".claude/skills/conda-forge-expert/**",
+  # co-governor reconciles (spec-fleet-stewardship governs recipes/**, spec-packaging-factory the CFE surface)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO
