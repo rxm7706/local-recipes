@@ -27,9 +27,9 @@ spec.loader.exec_module(_http)
 
 
 @pytest.fixture(autouse=True)
-def _clean_enterprise_env(monkeypatch):
+def _clean_enterprise_env(monkeypatch, clean_mirror_env):
     """Every test starts with no JFrog / mirror env vars AND an empty pixi
-    config.
+    config. The mirror vars are cleared by the shared `clean_mirror_env`.
 
     Stubbing `read_pixi_config` is not optional hygiene: without it the
     allowlist reads the DEVELOPER'S real pixi config chain (`./.pixi/
@@ -39,10 +39,8 @@ def _clean_enterprise_env(monkeypatch):
     operator. Tests that need pixi hosts re-stub it themselves.
     """
     for key in list(os.environ):
-        if key.endswith("_BASE_URL") or key.startswith("JFROG_"):
+        if key.startswith("JFROG_"):
             monkeypatch.delenv(key, raising=False)
-    for key in _http._EXTRA_MIRROR_ENV_VARS:
-        monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(_http, "read_pixi_config", lambda: {})
 
 

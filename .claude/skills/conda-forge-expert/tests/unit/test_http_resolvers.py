@@ -919,6 +919,7 @@ class TestReadPixiConfig:
 # auth_headers_for — shared with make_request, used by requests-based callers
 # ═══════════════════════════════════════════════════════════════════════════
 
+@pytest.mark.usefixtures("clean_mirror_env")  # the gate scans every `*_BASE_URL`, not just `_clean_env`'s list
 class TestAuthHeadersFor:
     def test_unauthenticated_returns_empty(self, monkeypatch):
         _clean_env(monkeypatch)

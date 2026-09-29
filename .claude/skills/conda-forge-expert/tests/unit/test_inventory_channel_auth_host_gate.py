@@ -10,11 +10,15 @@ not be imported ("offline / external clones", per the module's own comment).
 """
 from __future__ import annotations
 
+import pytest
+
+# The fallback allowlist scans every `*_BASE_URL`, so an ambient one (e.g.
+# `ANTHROPIC_BASE_URL` in a Claude Code shell) would join the sets asserted here.
+pytestmark = pytest.mark.usefixtures("clean_mirror_env")
+
 
 class TestInventoryChannelFallbackAuthHostGate:
     def test_jfrog_api_key_not_sent_to_unconfigured_host(self, load_module, monkeypatch):
-        for key in ("CONDA_FORGE_BASE_URL", "PYPI_BASE_URL"):
-            monkeypatch.delenv(key, raising=False)
         monkeypatch.setenv("JFROG_API_KEY", "secret-key")
         mod = load_module("inventory_channel.py")
         monkeypatch.setattr(mod, "_HTTP_AVAILABLE", False)
