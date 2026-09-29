@@ -1272,6 +1272,11 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # advances the tracked `sprint-status-ledger.yaml` under the same AD-42
 # advisory lock. Names lock contention, refused feed downgrade, or
 # write/commit failure — WARN, never blocking (wave already landed).
+# Story 68.1 (CAP-277) gives the same code a second triggering shape, at the same
+# WARN tier (AD-31: same code, several triggering shapes): the dispatch
+# supervisor's `_promote_blocked_twin` publish of a blocked story-spec twin onto
+# `origin/main` that could not land, journaled as a `dispatch-blocked-twin-publish`
+# observation naming the story and the error.
 #
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to `cli/status.py`'s own `MRS-STATUS-*` area, both sourced from a
@@ -1809,6 +1814,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # gap is worth flagging before a dispatch launches, not worth
         # refusing the launch over.
         "MRS-DISP-049",
+        # Story 68.1 (spec-pyforge-marshal CAP-277): after its ledger promotion,
+        # `dispatch_land_finalize` read `origin/main`'s tracked
+        # `sprint-status-ledger.yaml` and the landed story's key does not read
+        # `done` there (absent, another status, or the ledger unreadable) --
+        # the promotion's publish failed, and the landing is not a clean one.
+        # ERROR: finalize exits 1, `dispatch land` refuses (MRS-DISP-020).
+        "MRS-DISP-051",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

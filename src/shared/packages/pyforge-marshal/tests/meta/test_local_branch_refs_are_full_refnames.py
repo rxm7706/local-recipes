@@ -85,6 +85,7 @@ _NOT_A_REF = {
     ("commit_paths", "message"),
     ("commit_paths_onto_remote_tip", "remote"),
     ("commit_paths_onto_remote_tip", "message"),
+    ("commit_paths_onto_remote_tip", "preflight_skip_reason"),  # prose the hook's skip journal records
     ("push", "proven_on_main_sha"),  # a sha the adapter re-proves against the full origin/main ref
     ("spec_text_at_ref", "slug"),
     ("spec_text_at_ref", "story"),

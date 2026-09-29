@@ -355,6 +355,11 @@ def test_registered_codes_contains_the_real_codes():
             # finding -- non-blocking, mirroring MRS-DISP-036's worktree-WIP
             # surfacing shape.
             "MRS-DISP-049",
+            # Story 68.1 (spec-pyforge-marshal CAP-277): after its ledger promotion,
+            # finalize read `origin/main`'s tracked ledger and the landed story's
+            # key does not read `done` there (absent, another status, unreadable) --
+            # ERROR: finalize exits 1 and `dispatch land` refuses (MRS-DISP-020).
+            "MRS-DISP-051",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",
@@ -506,3 +511,19 @@ def test_require_registered_still_rejects_other_codes_after_monkeypatch(monkeypa
 
 def test_unregistered_finding_code_error_is_a_value_error():
     assert issubclass(findings.UnregisteredFindingCodeError, ValueError)
+
+
+def test_mrs_disp_051_is_registered_at_the_error_tier():
+    """Story 68.1 (CAP-277): the landed story's ledger key does not read `done` on `origin/main` -- a code
+    finalize's exit rule (ERROR only) must be able to act on, so it is registered AND classified ERROR."""
+    from pyforge.marshal.core import verdict
+    from pyforge.marshal.core.model import Finding, Severity
+
+    assert "MRS-DISP-051" in findings.REGISTERED_CODES
+    assert verdict.classify("MRS-DISP-051") is verdict.Verdict.ERROR
+    assert (
+        verdict.compute_verdict(
+            (Finding(code="MRS-DISP-051", severity=Severity.ERROR, message="not done on origin/main"),)
+        )
+        is verdict.Verdict.ERROR
+    )

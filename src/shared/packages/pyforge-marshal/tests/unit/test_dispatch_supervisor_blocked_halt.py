@@ -32,6 +32,7 @@ from pyforge.marshal.dispatch_supervisor.__main__ import (
 
 _SLUG = "pyforge-marshal"
 _STORY_KEY = "51.11"
+_RUN_ID = "run-51-11"
 _BASELINE = "c8277c03c117ff4779d54a2ff9d900f519415971"
 
 
@@ -79,6 +80,7 @@ class FakeVcs:
         self.commit_paths_onto_remote_tip_raises = commit_paths_onto_remote_tip_raises
         self.commit_paths_calls: list[tuple[Path, tuple[Path, ...], str]] = []
         self.isolated_promote_calls: list[tuple] = []
+        self.isolated_promote_reasons: list[str | None] = []
 
     def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
         if self.changed_files_raises:
@@ -91,8 +93,9 @@ class FakeVcs:
         self.commit_paths_calls.append((repo_root, paths, message))
         return "committed-sha"
 
-    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message):
+    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
         self.isolated_promote_calls.append((repo_root, remote, ref, tuple(writes), message))
+        self.isolated_promote_reasons.append(preflight_skip_reason)
         if self.commit_paths_onto_remote_tip_raises:
             raise VcsCommandError("git push failed: non-fast-forward (test double)")
         return "isolated-promote-sha"
@@ -463,6 +466,10 @@ def test_promote_blocked_twin_pushes_worktree_text_onto_primary(
     _promote_blocked_twin(
         fs=fs,
         vcs=vcs,
+        run_dir=tmp_path / "run",
+        run_id=_RUN_ID,
+        writer_id="test-writer",
+        counter=0,
         repo_root=tmp_path,
         slug=_SLUG,
         story_key=_STORY_KEY,
@@ -474,6 +481,10 @@ def test_promote_blocked_twin_pushes_worktree_text_onto_primary(
     assert remote == "origin"
     assert ref == "main"
     assert writes[0][1] == _BLOCKED_SPEC_TEXT
+    # Story 68.1 (CAP-277): the publish names its story in the preflight opt-out's reason, and a
+    # publish that lands journals nothing.
+    assert vcs.isolated_promote_reasons == [f"marshal blocked-twin promotion for story {_STORY_KEY}"]
+    assert fs.appended == []
 
 
 def test_promote_blocked_twin_noop_when_already_matching(tmp_path: Path) -> None:
@@ -491,6 +502,10 @@ def test_promote_blocked_twin_noop_when_already_matching(tmp_path: Path) -> None
     _promote_blocked_twin(
         fs=fs,
         vcs=vcs,
+        run_dir=tmp_path / "run",
+        run_id=_RUN_ID,
+        writer_id="test-writer",
+        counter=0,
         repo_root=tmp_path,
         slug=_SLUG,
         story_key=_STORY_KEY,
@@ -515,9 +530,13 @@ def test_promote_blocked_twin_never_raises_on_push_failure(tmp_path: Path) -> No
     (worktree / relative).write_text(_BLOCKED_SPEC_TEXT, encoding="utf-8")
     vcs = FakeVcs(commit_paths_onto_remote_tip_raises=True)
 
-    _promote_blocked_twin(
+    counter = _promote_blocked_twin(
         fs=fs,
         vcs=vcs,
+        run_dir=tmp_path / "run",
+        run_id=_RUN_ID,
+        writer_id="test-writer",
+        counter=0,
         repo_root=tmp_path,
         slug=_SLUG,
         story_key=_STORY_KEY,
@@ -525,6 +544,21 @@ def test_promote_blocked_twin_never_raises_on_push_failure(tmp_path: Path) -> No
     )  # must not raise
 
     assert len(vcs.isolated_promote_calls) == 1
+    # Story 68.1 (CAP-277): never silent -- the failed publish is journaled as a WARN observation
+    # naming the story and the error, and the counter advances by the one entry written.
+    assert counter == 1
+    [(journal_path, line, _fsync)] = fs.appended
+    assert journal_path == tmp_path / "run" / "journal.jsonl"
+    entry = json.loads(line)
+    assert entry["kind"] == "dispatch-blocked-twin-publish"
+    assert entry["phase"] == Phase.OBSERVATION.value
+    assert entry["run_id"] == _RUN_ID
+    assert entry["payload"]["story_key"] == _STORY_KEY
+    finding = entry["payload"]["finding"]
+    assert finding["code"] == "MRS-LAND-011"
+    assert finding["severity"] == Severity.WARN.value
+    assert _STORY_KEY in finding["message"]
+    assert "non-fast-forward (test double)" in finding["message"]
 
 
 def test_promote_blocked_twin_noop_when_no_spec_resolves(tmp_path: Path) -> None:
@@ -535,6 +569,10 @@ def test_promote_blocked_twin_noop_when_no_spec_resolves(tmp_path: Path) -> None
     _promote_blocked_twin(
         fs=fs,
         vcs=vcs,
+        run_dir=tmp_path / "run",
+        run_id=_RUN_ID,
+        writer_id="test-writer",
+        counter=0,
         repo_root=tmp_path,
         slug=_SLUG,
         story_key="99.9",
@@ -564,6 +602,10 @@ def test_promote_blocked_twin_never_raises_on_worktree_read_fs_error(
     _promote_blocked_twin(
         fs=fs,
         vcs=vcs,
+        run_dir=tmp_path / "run",
+        run_id=_RUN_ID,
+        writer_id="test-writer",
+        counter=0,
         repo_root=tmp_path,
         slug=_SLUG,
         story_key=_STORY_KEY,
@@ -593,6 +635,10 @@ def test_promote_blocked_twin_never_raises_on_primary_read_fs_error(
     _promote_blocked_twin(
         fs=fs,
         vcs=vcs,
+        run_dir=tmp_path / "run",
+        run_id=_RUN_ID,
+        writer_id="test-writer",
+        counter=0,
         repo_root=tmp_path,
         slug=_SLUG,
         story_key=_STORY_KEY,
@@ -600,3 +646,62 @@ def test_promote_blocked_twin_never_raises_on_primary_read_fs_error(
     )  # must not raise
 
     assert vcs.isolated_promote_calls == []
+
+
+def test_promote_blocked_twin_never_raises_when_the_warn_cannot_be_journaled(tmp_path: Path, capsys) -> None:
+    """The WARN is journaled best-effort like every other supervisor journal write: an ``FsError``
+    from the append is reported on stderr and never unwinds the already-committed blocked verdict."""
+
+    class _AppendFailsFs(FakeFs):
+        def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+            raise FsError(f"cannot append to {path} (test double)")
+
+    fs = _AppendFailsFs()
+    worktree = _worktree(tmp_path)
+    relative = _seed_spec(
+        repo_root=tmp_path,
+        worktree=worktree,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        text="---\nstatus: in-progress\n---\n",
+    )
+    (worktree / relative).write_text(_BLOCKED_SPEC_TEXT, encoding="utf-8")
+    vcs = FakeVcs(commit_paths_onto_remote_tip_raises=True)
+
+    counter = _promote_blocked_twin(
+        fs=fs,
+        vcs=vcs,
+        run_dir=tmp_path / "run",
+        run_id=_RUN_ID,
+        writer_id="test-writer",
+        counter=4,
+        repo_root=tmp_path,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        worktree=worktree,
+    )
+
+    assert counter == 5
+    assert "cannot journal blocked-twin publish failure" in capsys.readouterr().err
+
+
+def test_promote_blocked_twin_returns_the_counter_unchanged_when_nothing_was_journaled(tmp_path: Path) -> None:
+    """No spec resolves -> no publish, no entry: the counter comes back as it went in."""
+    fs = FakeFs()
+    worktree = _worktree(tmp_path)
+
+    counter = _promote_blocked_twin(
+        fs=fs,
+        vcs=FakeVcs(),
+        run_dir=tmp_path / "run",
+        run_id=_RUN_ID,
+        writer_id="test-writer",
+        counter=7,
+        repo_root=tmp_path,
+        slug=_SLUG,
+        story_key="99.9",
+        worktree=worktree,
+    )
+
+    assert counter == 7
+    assert fs.appended == []

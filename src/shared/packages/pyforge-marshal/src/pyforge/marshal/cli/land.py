@@ -1346,7 +1346,11 @@ def _promote_sprint_ledger(
     Returns the raw ledger keys newly moved to ``done`` this run (empty
     when already converged). Lock contention / write / commit failures
     fire ``MRS-LAND-011`` WARN and return ``()`` -- never blocking
-    ``land``'s exit (the wave already landed).
+    ``land``'s exit (the wave already landed). A failed publish also
+    writes its INTENT's OUTCOME ``ok: false`` with the error (Story 68.1,
+    CAP-277, AD-6); the caller that must not report a clean landing over
+    an unpromoted ledger reads ``origin/main``'s ledger itself (finalize's
+    ``MRS-DISP-051``), never this return value alone.
 
     CAP-5: the commit is published onto ``origin/<base>`` via
     ``commit_paths_onto_remote_tip``. This function must not
@@ -1493,6 +1497,11 @@ def _promote_sprint_ledger(
                 "base": base,
             },
         )
+        # Story 68.1 (CAP-277): the promotion publish is a ledger-only commit the pre-push
+        # preflight would judge against the primary checkout, never the pushed commit, and
+        # outlast the push's git timeout -- so it names its story(ies) and takes the adapter's
+        # checked, journaled opt-out (the adapter proves the commit touches only the ledger).
+        skip_stories = ", ".join(promoted_keys or sorted(str(key) for key in wave_keys))
         try:
             vcs.commit_paths_onto_remote_tip(
                 root,
@@ -1500,8 +1509,26 @@ def _promote_sprint_ledger(
                 ref=base,
                 writes=((ledger_rel, new_text),),
                 message=message,
+                preflight_skip_reason=f"marshal ledger promotion for {slug!r}, story {skip_stories}",
             )
         except VcsCommandError as exc:
+            # AD-6: an INTENT never stands without its OUTCOME -- a failed publish is journaled
+            # `ok: false` with the error, not left as an unpaired intent (Story 68.1).
+            if intent_id is not None:
+                deploy_run.write(
+                    findings,
+                    kind=_LAND_SPRINT_LEDGER_KIND,
+                    phase=Phase.OUTCOME,
+                    payload={
+                        "action": "commit_paths_onto_remote_tip",
+                        "promoted": list(promoted_keys),
+                        "feed_synced": feed_synced,
+                        "base": base,
+                        "ok": False,
+                        "error": str(exc),
+                    },
+                    intent_id=intent_id,
+                )
             findings.append(
                 Finding(
                     code=_MRS_LAND_011,
@@ -1527,6 +1554,7 @@ def _promote_sprint_ledger(
                     "feed_synced": feed_synced,
                     "commit_message": message,
                     "base": base,
+                    "ok": True,
                 },
                 intent_id=intent_id,
             )

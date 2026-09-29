@@ -22,12 +22,18 @@ from pyforge.marshal.cli.deploy import (
     _execute_promotion_plan,
     _scan_promotions,
 )
-from pyforge.marshal.cli.land import _promote_sprint_ledger, _resync_home_branch
+from pyforge.marshal.cli.land import (
+    _LEDGER_DONE_STATUS,
+    _parse_sprint_ledger_statuses,
+    _promote_sprint_ledger,
+    _resync_home_branch,
+)
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import promotion
 from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
+from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT
 from pyforge.marshal.ports.fs import FsPort
 from pyforge.marshal.ports.vcs import VcsPort
 
@@ -48,7 +54,7 @@ _PROJECT_SLUG_PREFIX = "pyforge-"
 
 
 def _run_deferred_work_intake(
-    process: ProcessPort, fs: FsPort, vcs: VcsPort, root: Path, project_slug: str
+    process: ProcessPort, fs: FsPort, vcs: VcsPort, root: Path, project_slug: str, story_key: str
 ) -> Finding | None:
     """Story 53.2 (spec-pyforge-marshal CAP-261b): promote this landing's
     story spec's own frontmatter ``deferred:`` entries into the project's
@@ -131,6 +137,9 @@ def _run_deferred_work_intake(
                 ref="main",
                 writes=((tracked_rel, new_text or ""),),
                 message=f"marshal: promote deferred-work intake for {short_slug!r}",
+                # Story 68.1 (CAP-277): a planning-artifacts-only publish, named by its story;
+                # the adapter proves the commit's paths before it sets the journaled opt-out.
+                preflight_skip_reason=f"marshal deferred-work intake for {short_slug!r}, story {story_key}",
             )
         except VcsCommandError as exc:
             commit_finding = Finding(
@@ -150,6 +159,55 @@ def _run_deferred_work_intake(
         return commit_finding
     finally:
         fs.release_advisory_lock(lock)
+
+
+def _landed_key_not_done_finding(vcs: VcsPort, root: Path, project_slug: str, key: StoryKey) -> Finding | None:
+    """Story 68.1 (spec-pyforge-marshal CAP-277): read ``origin/main``'s tracked
+    ``sprint-status-ledger.yaml`` -- the ref ``_promote_sprint_ledger`` writes, fetched now, by its
+    full refname -- and return ``MRS-DISP-051`` (ERROR) unless every row for the landed ``key``
+    reads ``done``. "Reached ``done``" is judged here from the remote's own bytes, never from
+    ``_promote_sprint_ledger``'s return value: that function reports a failed publish as a WARN
+    and an empty tuple, exactly as it reports an already-converged ledger. An absent key, another
+    status, an absent ledger and an unreadable one all fail the same way -- a landing that
+    cannot prove its bookkeeping reached ``origin/main`` is never a clean one."""
+    ledger_rel = f"_bmad-output/projects/{project_slug}/planning-artifacts/sprint-status-ledger.yaml"
+    prefix = f"the landed story's ledger key does not read done on {ORIGIN_MAIN_SHORT}"
+    try:
+        vcs.fetch(root, "origin", "main")
+        text = vcs.file_text_at_ref(root, ORIGIN_MAIN, ledger_rel)
+    except VcsCommandError as exc:
+        return Finding(
+            code="MRS-DISP-051",
+            severity=Severity.ERROR,
+            message=f"{prefix}: cannot read {ledger_rel} at {ORIGIN_MAIN_SHORT} for {key}: {exc}",
+        )
+    if text is None:
+        return Finding(
+            code="MRS-DISP-051",
+            severity=Severity.ERROR,
+            message=f"{prefix}: {ledger_rel} does not exist at {ORIGIN_MAIN_SHORT} (story {key})",
+        )
+    rows: list[tuple[str, str]] = []
+    for raw_key, status in _parse_sprint_ledger_statuses(text).items():
+        try:
+            if normalize(raw_key) == key:
+                rows.append((raw_key, status))
+        except MalformedStoryKeyError:
+            continue
+    if not rows:
+        return Finding(
+            code="MRS-DISP-051",
+            severity=Severity.ERROR,
+            message=f"{prefix}: {ledger_rel} has no row for story {key}",
+        )
+    not_done = [f"{raw_key} reads {status!r}" for raw_key, status in rows if status != _LEDGER_DONE_STATUS]
+    if not_done:
+        return Finding(
+            code="MRS-DISP-051",
+            severity=Severity.ERROR,
+            message=f"{prefix}: {'; '.join(not_done)} -- the promote + ledger is still owed",
+        )
+    return None
 
 
 def finalize_dispatch_land(
@@ -224,6 +282,13 @@ def finalize_dispatch_land(
     # after a green merge, so the tracked ledger stayed backlog/review
     # and drain re-implemented the landed story (42.2 / 42.3).
     _promote_sprint_ledger(fs, vcs, root, project_slug, [key], deploy_run, findings, base="main")
+    # Story 68.1 (CAP-277): the promotion above reports a failed publish as a WARN and an empty
+    # tuple -- the same as an already-converged ledger -- so what it returned says nothing about
+    # whether the key reached `done`. Read `origin/main`'s ledger for that; a key that does not
+    # read `done` there is an ERROR finding, which the exit rule below turns into exit 1.
+    not_done = _landed_key_not_done_finding(vcs, root, project_slug, key)
+    if not_done is not None:
+        findings.append(not_done)
     # Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger` deliberately
     # never touches the primary checkout's own working tree (CAP-5) -- so
     # nothing else picked up that promotion either, and the fleet
@@ -245,7 +310,7 @@ def finalize_dispatch_land(
         resynced = False
     else:
         resynced = _resync_home_branch(vcs, True, "merge", root, root, "main", "main", findings)
-    intake_finding = _run_deferred_work_intake(process, fs, vcs, root, project_slug)
+    intake_finding = _run_deferred_work_intake(process, fs, vcs, root, project_slug, str(key))
     if intake_finding is not None:
         findings.append(intake_finding)
     deploy_run.write(
@@ -256,6 +321,10 @@ def finalize_dispatch_land(
             "story_key": str(key),
             "resynced": resynced,
             "deferred_work_intake_finding": (intake_finding.to_json_dict() if intake_finding is not None else None),
+            # Story 68.1 (CAP-277): every finding this run collected, all severities -- the
+            # promotion's MRS-LAND-011, the resync's MRS-LAND-009, MRS-DISP-051 -- so a failed
+            # step is on the journal, not only in a stderr nobody reads.
+            "findings": [finding.to_json_dict() for finding in findings],
         },
     )
     blocking = [f for f in findings if f.severity.name == "ERROR"]

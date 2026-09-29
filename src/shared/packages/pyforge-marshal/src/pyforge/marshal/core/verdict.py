@@ -748,6 +748,10 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # contention on the tracked sprint-status-ledger, a refused downgrade sync,
 # or a write/commit failure). Classifies WARN, the same tier as
 # MRS-LAND-010: reported, never blocking -- the wave already landed.
+# Story 68.1 (CAP-277): MRS-LAND-011 also names a second triggering shape, same
+# WARN tier (AD-31: same code, several triggering shapes) -- the dispatch
+# supervisor's blocked-spec-twin publish onto origin/main that could not land
+# (`_promote_blocked_twin`), journaled as a WARN observation.
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to cli/status.py's own MRS-STATUS-* area, both WARN.
 # MRS-STATUS-010: a failed-story patch found via a bare Path.glob over
@@ -1175,6 +1179,11 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # a session-precondition gap is worth flagging before a dispatch
     # launches, not worth refusing the launch over.
     "MRS-DISP-049": Verdict.WARN,
+    # Story 68.1 (spec-pyforge-marshal CAP-277): the landed story's ledger key does
+    # not read `done` on `origin/main` after finalize's promotion step. ERROR, the
+    # tier of MRS-DISP-048 above: it stops a landing being reported clean while the
+    # bookkeeping never reached main (the 64.1 landing, 2026-09-28).
+    "MRS-DISP-051": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

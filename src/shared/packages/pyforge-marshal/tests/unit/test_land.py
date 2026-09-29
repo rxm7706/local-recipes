@@ -81,6 +81,8 @@ class _FakeVcs:
         self.commit_paths_raises = commit_paths_raises
         self.commit_paths_calls: list[tuple[object, tuple[Path, ...], str]] = []
         self.isolated_promote_calls: list[tuple[object, str, str, tuple[tuple[str, str], ...], str]] = []
+        # Story 68.1: the `preflight_skip_reason` each publish carried, parallel to the calls above.
+        self.isolated_promote_reasons: list[str | None] = []
 
     def repo_common_root(self, start):
         return Path("/fake-repo-root")
@@ -145,8 +147,9 @@ class _FakeVcs:
             return candidate.read_text(encoding="utf-8")
         return None
 
-    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message):
+    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
         self.isolated_promote_calls.append((repo_root, remote, ref, tuple(writes), message))
+        self.isolated_promote_reasons.append(preflight_skip_reason)
         if self.commit_paths_raises:
             raise VcsCommandError("git push failed: non-fast-forward (test double)")
         for rel, content in writes:
@@ -2289,6 +2292,138 @@ def test_sprint_ledger_promote_uses_isolated_remote_tip(tmp_path, capsys, monkey
     assert writes[0][0].endswith("sprint-status-ledger.yaml")
     assert "4-4-batch: done" in writes[0][1]
     assert "sprint-status ledger" in message
+
+
+def test_sprint_ledger_publish_names_its_story_in_the_preflight_reason(tmp_path, capsys, monkeypatch):
+    """Story 68.1 (CAP-277): the promotion publish asks for the adapter's checked pre-push opt-out and
+    names the promoted story in its reason (the hook journals it)."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "in-progress"})
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=_FakeForge(existing=None))
+
+    assert exit_code == 0
+    [reason] = [
+        r
+        for (_root, _rm, _ref, writes, _msg), r in zip(vcs.isolated_promote_calls, vcs.isolated_promote_reasons)
+        if writes[0][0].endswith("sprint-status-ledger.yaml")
+    ]
+    assert reason is not None
+    assert "acme" in reason
+    assert "story 4-4-batch" in reason
+
+
+def _journal_entries(deploy_run) -> list[dict]:
+    text = (deploy_run.run_dir / "journal.jsonl").read_text(encoding="utf-8")
+    return [json.loads(line) for line in text.splitlines() if line]
+
+
+class _TimingOutPublishVcs(_FakeVcs):
+    """64.1's failure shape: the promotion publish is killed at the git timeout."""
+
+    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
+        self.isolated_promote_calls.append((repo_root, remote, ref, tuple(writes), message))
+        self.isolated_promote_reasons.append(preflight_skip_reason)
+        raise VcsCommandError(
+            f"git command timed out after 120.0s: git -C {repo_root} push origin abc123:refs/heads/main"
+        )
+
+
+def test_a_failed_ledger_publish_pairs_its_intent_with_an_outcome_ok_false(tmp_path):
+    """Story 68.1 AC 4 (AD-6): INTENT, then OUTCOME `ok: false` naming the error, then MRS-LAND-011 and
+    `()` -- never an INTENT left open while the run reports success."""
+    _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "in-progress"})
+    fs = LocalFs()
+    vcs = _TimingOutPublishVcs()
+    deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-1")
+    findings: list = []
+
+    promoted = land_module._promote_sprint_ledger(
+        fs, vcs, tmp_path, "acme", [StoryKey(4, 4)], deploy_run, findings, base="main"
+    )
+
+    assert promoted == ()
+    ledger_entries = [e for e in _journal_entries(deploy_run) if e["kind"] == "land-sprint-ledger-promotion"]
+    assert [e["phase"] for e in ledger_entries] == ["intent", "outcome"]
+    intent, outcome = ledger_entries
+    assert outcome["intent_id"] == intent["id"]
+    assert outcome["payload"]["ok"] is False
+    assert "timed out after 120.0s" in outcome["payload"]["error"]
+    assert outcome["payload"]["promoted"] == ["4-4-batch"]
+    [finding] = [f for f in findings if f.code == "MRS-LAND-011"]
+    assert finding.severity.name == "WARN"
+    assert "timed out after 120.0s" in finding.message
+
+
+def test_a_landed_ledger_publish_journals_an_outcome_ok_true(tmp_path):
+    _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "in-progress"})
+    fs = LocalFs()
+    vcs = _FakeVcs()
+    deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-1")
+    findings: list = []
+
+    promoted = land_module._promote_sprint_ledger(
+        fs, vcs, tmp_path, "acme", [StoryKey(4, 4)], deploy_run, findings, base="main"
+    )
+
+    assert promoted == ("4-4-batch",)
+    outcomes = [
+        e
+        for e in _journal_entries(deploy_run)
+        if e["kind"] == "land-sprint-ledger-promotion" and e["phase"] == "outcome"
+    ]
+    assert [e["payload"]["ok"] for e in outcomes] == [True]
+    assert not [f for f in findings if f.code == "MRS-LAND-011"]
+
+
+def test_a_feed_only_ledger_sync_names_the_wave_keys_in_its_preflight_reason(tmp_path):
+    """Story 68.1: when the Tier-3 feed advances rows but every wave key is already `done`, nothing was
+    `promoted` -- the reason falls back to the wave's own story keys, so the hook's journal still names one."""
+    ledger_path = _write_sprint_ledger(tmp_path, "acme", {"epic-4": "in-progress", "4-4-batch": "done"})
+    feed_path = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "sprint-status.yaml"
+    feed_path.parent.mkdir(parents=True)
+    feed_path.write_text(
+        "development_status:\n  epic-4: in-progress\n  4-4-batch: done\n  4-5-follow-up: backlog\n",
+        encoding="utf-8",
+    )
+    fs = LocalFs()
+    vcs = _FakeVcs()
+    deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-1")
+
+    promoted = land_module._promote_sprint_ledger(
+        fs, vcs, tmp_path, "acme", [StoryKey(4, 4)], deploy_run, [], base="main"
+    )
+
+    assert promoted == ("acme",)
+    assert "4-5-follow-up" in ledger_path.read_text(encoding="utf-8")
+    [reason] = vcs.isolated_promote_reasons
+    assert reason is not None
+    assert "story 4.4" in reason
+
+
+def test_land_stays_exit_zero_with_a_warn_when_the_ledger_publish_times_out(tmp_path, capsys, monkeypatch):
+    """`marshal land`'s own exit is unchanged (the wave already landed): the failure is a WARN finding."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "in-progress"})
+    vcs = _TimingOutPublishVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=_FakeForge(existing=None))
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert "MRS-LAND-011" in [f["code"] for f in payload["findings"]]
+    assert "sprint_ledger_promoted" not in payload["data"]
 
 
 class _FakePromoteModForRefusal:

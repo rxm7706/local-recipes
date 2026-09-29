@@ -23,7 +23,7 @@ from pyforge.marshal.core.dispatch_landing import (
 )
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.identity import normalize, render_merge_subject
-from pyforge.marshal.core.model import Severity
+from pyforge.marshal.core.model import Severity, Status, status_for
 from pyforge.marshal.dispatch_land import (
     _SPEC_SURFACE_NAME_RE,
     _reconcile_spec_surface_drift,
@@ -1254,6 +1254,108 @@ def test_execute_dispatch_land_refused_result_keeps_pr_facts_after_merge(
     assert result.marshal_native is True
     assert any(f.code == "MRS-DISP-020" for f in envelope.findings)
     assert envelope.data.get("merged") is True
+
+
+class ExitingProcess:
+    """Story 68.1: a ``ProcessPort`` whose ``.run()`` returns a finalize that EXITED non-zero -- the
+    real ``PosixProcess.run`` does not raise on a non-zero exit, it returns the ``ProcessResult``."""
+
+    def __init__(self, *, returncode: int = 1, stdout: str = "", stderr: str = "") -> None:
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+        self.calls: list[list[str]] = []
+
+    def run(self, tokens, *, cwd):
+        self.calls.append(list(tokens))
+        return ProcessResult(returncode=self.returncode, stdout=self.stdout, stderr=self.stderr)
+
+
+_FINALIZE_STDERR = (
+    "finding MRS-DISP-051: the landed story's ledger key does not read done on origin/main: "
+    "64-1-a-landing reads 'backlog' -- the promote + ledger is still owed"
+)
+
+
+def _land_with(tmp_path: Path, process):
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    return execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=FakeForge(),
+        process=process,
+    )
+
+
+def test_execute_dispatch_land_refuses_when_finalize_exits_non_zero(tmp_path: Path) -> None:
+    """Story 68.1 AC 7 (CAP-277): finalize exiting 1 (its `MRS-DISP-051`: the landed key does not read `done`
+    on `origin/main`) is REFUSED with the PR facts and `MRS-DISP-020` naming the exit code and finalize's
+    stderr -- the result a finalize launch failure already produces, which `marshal status` and
+    `fleet-picture` render as the promote + ledger still owed. Removing the exit-code read lands it
+    `landed` and fails this test (mutation)."""
+    process = ExitingProcess(returncode=1, stderr=_FINALIZE_STDERR)
+
+    result, envelope = _land_with(tmp_path, process)
+
+    assert len(process.calls) == 1
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert result.pr_number == 42
+    assert result.marshal_native is True
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+    assert result.subject == render_merge_subject(
+        normalize("22-4-example"), effective.merge_subject_template.value, "pyforge-marshal"
+    )
+    assert envelope.data.get("merged") is True
+    [finding] = [f for f in envelope.findings if f.code == "MRS-DISP-020"]
+    assert finding.severity.name == "ERROR"
+    assert "exited with code 1" in finding.message
+    assert _FINALIZE_STDERR in finding.message
+    assert "22.4" in finding.message
+    assert status_for(envelope.verdict) is not Status.OK
+
+
+def test_execute_dispatch_land_names_finalize_stdout_when_it_wrote_no_stderr(tmp_path: Path) -> None:
+    _result, envelope = _land_with(tmp_path, ExitingProcess(returncode=3, stdout="promotion refused"))
+
+    [finding] = [f for f in envelope.findings if f.code == "MRS-DISP-020"]
+    assert "exited with code 3" in finding.message
+    assert "promotion refused" in finding.message
+
+
+def test_execute_dispatch_land_names_only_the_exit_code_when_finalize_wrote_nothing(tmp_path: Path) -> None:
+    _result, envelope = _land_with(tmp_path, ExitingProcess(returncode=70))
+
+    [finding] = [f for f in envelope.findings if f.code == "MRS-DISP-020"]
+    assert finding.message.endswith("finalize exited with code 70")
+
+
+def test_execute_dispatch_land_keeps_the_tail_of_a_crashed_finalizes_traceback(tmp_path: Path) -> None:
+    """A crashed finalize's traceback can run to kilobytes; the finding keeps its tail (the exception)."""
+    traceback = "Traceback (most recent call last):\n" + ('  File "x.py", line 1, in f\n' * 400) + "ValueError: boom"
+    _result, envelope = _land_with(tmp_path, ExitingProcess(returncode=1, stderr=traceback))
+
+    [finding] = [f for f in envelope.findings if f.code == "MRS-DISP-020"]
+    assert finding.message.endswith("ValueError: boom")
+    assert "..." in finding.message
+    assert len(finding.message) < 2_000
+
+
+def test_execute_dispatch_land_is_landed_and_clean_when_finalize_exits_zero(tmp_path: Path) -> None:
+    """Story 68.1 AC 9: a promotion that reaches `origin/main` leaves finalize at exit 0 and the landing
+    `landed`, with no ERROR finding."""
+    result, envelope = _land_with(tmp_path, ExitingProcess(returncode=0))
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert result.merge_sha == "abc123"
+    # (A WARN such as MRS-DISP-047 -- no doctor source tree in this env -- never refuses a landing.)
+    assert [f for f in envelope.findings if f.severity is Severity.ERROR] == []
+    assert not any(f.code == "MRS-DISP-020" for f in envelope.findings)
+    assert status_for(envelope.verdict) is Status.OK
 
 
 def test_execute_dispatch_land_refused_result_keeps_pr_facts_before_merge_native_check(

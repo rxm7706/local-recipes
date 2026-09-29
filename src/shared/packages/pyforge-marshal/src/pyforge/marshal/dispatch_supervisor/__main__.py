@@ -88,6 +88,8 @@ from ..ports.publisher import RunPublisherPort
 from ..ports.vcs import VcsPort
 
 _JOURNAL_FILENAME = "journal.jsonl"
+#: Story 68.1 (CAP-277): the observation a failed blocked-twin publish is journaled under.
+_BLOCKED_TWIN_PUBLISH_KIND = "dispatch-blocked-twin-publish"
 _SESSION_LOG_FILENAME = "session.log"
 _TICK_SECONDS = 60
 _FETCH_EVERY_N_TICKS = 5
@@ -743,11 +745,15 @@ def _promote_blocked_twin(
     *,
     fs: FsPort,
     vcs: VcsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
     repo_root: Path,
     slug: str,
     story_key: str,
     worktree: Path,
-) -> None:
+) -> int:
     """Best-effort: push the primary's tracked twin of the story spec to
     ``blocked`` so the fleet picture shows it (Story 51.11).
 
@@ -756,33 +762,37 @@ def _promote_blocked_twin(
     visibility promotion and must not unwind an already-committed blocked
     verdict on failure. Pushes via a throwaway detached worktree onto
     ``origin/main`` (AGENTS.md: never commit on the shared checkout) --
-    exactly like ``cli/land.py``'s sprint-status-ledger promotion.
-    """
+    exactly like ``cli/land.py``'s sprint-status-ledger promotion, and like
+    it under the adapter's checked, journaled preflight opt-out naming the
+    story (Story 68.1, CAP-277). A publish that fails is journaled as a
+    WARN observation naming the story and the error (never silent); the
+    verdict is untouched. Returns the journal counter, advanced by the
+    entry written (unchanged when nothing was)."""
     spec_path = dispatch_core.resolve_story_spec_path(repo_root, slug, story_key)
     if spec_path is None:
-        return
+        return counter
     try:
         worktree_spec_path = dispatch_core.relocated_spec_path(spec_path, repo_root, worktree)
     except ValueError:
-        return
+        return counter
     try:
         worktree_text = fs.read_text(worktree_spec_path)
     except FsError:
-        return
+        return counter
     if worktree_text is None:
-        return
+        return counter
     try:
         primary_text = fs.read_text(spec_path)
     except FsError:
-        return
+        return counter
     promoted = blocked_twin_promotion_text(primary_text=primary_text, worktree_text=worktree_text)
     if promoted is None:
-        return
+        return counter
     try:
         canonical_root = dispatch_core.canonical_repo_root(repo_root)
         relative = spec_path.resolve().relative_to(canonical_root)
     except ValueError, OSError:
-        return
+        return counter
     try:
         vcs.commit_paths_onto_remote_tip(
             canonical_root,
@@ -790,9 +800,34 @@ def _promote_blocked_twin(
             ref="main",
             writes=((relative.as_posix(), promoted),),
             message="marshal: promote blocked spec twin (Story 51.11)",
+            preflight_skip_reason=f"marshal blocked-twin promotion for story {story_key}",
         )
-    except VcsCommandError:
-        return
+    except VcsCommandError as exc:
+        finding = Finding(
+            code="MRS-LAND-011",
+            severity=Severity.WARN,
+            message=(
+                f"blocked spec twin for story {story_key!r} could not be published to origin/main; "
+                f"the fleet picture will not show it blocked until it is: {exc}"
+            ),
+        )
+        entry = build_entry(
+            id=JournalEntryId(writer_id, counter),
+            ts=_format_entry_ts(_now_utc()),
+            run_id=run_id,
+            kind=_BLOCKED_TWIN_PUBLISH_KIND,
+            phase=Phase.OBSERVATION,
+            payload={"story_key": story_key, "finding": finding.to_json_dict()},
+        )
+        try:
+            _append_entry(fs, run_dir, entry, fsync=False)
+        except FsError as fs_exc:
+            print(
+                f"dispatch supervisor: cannot journal blocked-twin publish failure for {run_id!r}: {fs_exc}",
+                file=sys.stderr,
+            )
+        return counter + 1
+    return counter
 
 
 def _run_supervisor_finalize_sequence(
@@ -1744,9 +1779,13 @@ def run_dispatch_supervisor(
                         )
                     except VcsCommandError, ValueError:
                         pass
-                    _promote_blocked_twin(
+                    counter = _promote_blocked_twin(
                         fs=fs,
                         vcs=vcs,
+                        run_dir=run_dir,
+                        run_id=run_id,
+                        writer_id=writer_id,
+                        counter=counter,
                         repo_root=repo_root,
                         slug=slug,
                         story_key=story_key,

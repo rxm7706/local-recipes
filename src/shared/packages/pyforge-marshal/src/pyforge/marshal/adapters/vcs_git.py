@@ -161,6 +161,28 @@ def _run(args: list[str], *, timeout_s: float = _GIT_TIMEOUT_S) -> ProcessResult
         raise VcsCommandError(f"cannot launch git: {cause or exc}") from (cause or exc)
 
 
+def _is_planning_artifact_path(rel: str) -> bool:
+    """Story 68.1 (CAP-277): is ``rel`` a normalized repo-relative POSIX path of the form
+    ``_bmad-output/projects/<slug>/planning-artifacts/<...>`` -- the only place a landing's
+    bookkeeping publish may write under the preflight opt-out? Normalized means it is its own
+    ``posixpath.normpath``: no leading slash, no empty, ``.`` or ``..`` segment, no backslash, no
+    control character (the hook's skip journal is tab-separated), no ``.git`` segment."""
+    if not rel or any(not ch.isprintable() or ch == "\\" for ch in rel):
+        return False
+    parts = rel.split("/")
+    if len(parts) < 5 or parts[0] != "_bmad-output" or parts[1] != "projects" or parts[3] != "planning-artifacts":
+        return False
+    return all(part not in ("", ".", "..") and part.lower() != ".git" for part in parts[2:])
+
+
+def _preflight_skip_reason_text(new_sha: str, written: frozenset[str], reason: str) -> str:
+    """The ``PYFORGE_PREFLIGHT_SKIP_REASON`` a checked ledger publish carries (Story 68.1): the
+    full new sha, the sorted written paths and the caller's reason, on one line -- the hook's
+    journal writes it as the last tab-separated field, so no tab or newline may survive."""
+    text = f"marshal landing publish {new_sha} [{', '.join(sorted(written))}]: {reason}"
+    return " ".join("".join(ch if ch.isprintable() else " " for ch in text).split())
+
+
 def _iter_worktree_blocks(stdout: str) -> Iterator[dict[str, str]]:
     """Parses ``git worktree list --porcelain``'s blank-line-delimited
     blocks of ``key value`` lines into per-worktree dicts. A valueless
@@ -1306,6 +1328,15 @@ class GitVcs:
                 f"git worktree add --detach {home} {synthetic_sha} failed: {add_result.stderr.strip()}"
             )
 
+    def _paths_changed_between(self, repo_root: Path, old_sha: str, new_sha: str) -> frozenset[str]:
+        """Every path ``git diff`` names between two commits (Story 68.1). ``--no-renames`` so a
+        rename reports BOTH ends -- the default would list only the new name and hide a deletion
+        outside the written set -- and ``-z`` so no path is ever quoted or split."""
+        result = _run(["git", "-C", str(repo_root), "diff", "--name-only", "--no-renames", "-z", old_sha, new_sha])
+        if result.returncode != 0:
+            raise VcsCommandError(f"git diff --name-only {old_sha} {new_sha} failed: {result.stderr.strip()}")
+        return frozenset(name for name in result.stdout.split("\0") if name)
+
     def commit_paths_onto_remote_tip(
         self,
         repo_root: Path,
@@ -1314,14 +1345,35 @@ class GitVcs:
         ref: str,
         writes: tuple[tuple[str, str], ...],
         message: str,
+        preflight_skip_reason: str | None = None,
     ) -> str:
         """CAP-5: publish path writes onto ``refs/remotes/<remote>/<ref>`` from a throwaway
         detached worktree. Never checks out or commits in ``repo_root``. The tip is read by
         its full refname (Story 60.1 review): the short ``<remote>/<ref>`` resolves to a local
         branch or tag of that name first, and this path PUSHES -- it published a shadow's
-        unverified commit onto the remote's branch in review."""
+        unverified commit onto the remote's branch in review.
+
+        Story 68.1 (CAP-277): with ``preflight_skip_reason`` set, the push carries the
+        ``pre-push`` hook's journaled opt-out (the way ``push`` does for Story 57.1) -- but
+        only for a commit this method has checked: every written path is a normalized
+        ``planning-artifacts/`` path (refused before any write or fetch otherwise), and
+        ``git diff --name-only <tip> <new>`` names nothing outside the written set (refused
+        before any push otherwise). The opt-out is set for that one ``git push`` through the
+        POSIX ``env`` utility, never process-wide; where ``env`` is absent the push runs the
+        preflight. Without a reason the push is byte-identical to what it always was."""
         if not writes:
             raise VcsCommandError("commit_paths_onto_remote_tip requires at least one write, got none")
+        if preflight_skip_reason is not None:
+            if not preflight_skip_reason.strip():
+                raise VcsCommandError(
+                    "refusing the preflight opt-out: the reason is empty, and every opt-out names its story"
+                )
+            outside = sorted(rel for rel, _text in writes if not _is_planning_artifact_path(rel))
+            if outside:
+                raise VcsCommandError(
+                    "refusing the preflight opt-out: written path(s) "
+                    f"{outside!r} are not normalized _bmad-output/projects/<slug>/planning-artifacts/ paths"
+                )
         self.fetch(repo_root, remote, ref)
         tip_ref = f"{remote_tracking_ref(ref, remote)}^{{commit}}"
         tip_result = _run(["git", "-C", str(repo_root), "rev-parse", "--verify", "--end-of-options", tip_ref])
@@ -1329,8 +1381,13 @@ class GitVcs:
             raise VcsCommandError(f"cannot resolve {remote}/{ref} after fetch: {tip_result.stderr.strip()}")
         old_sha = tip_result.stdout.strip()
 
-        tmp_path = Path(tempfile.mkdtemp(prefix="marshal-promote-"))
-        tmp_path.rmdir()
+        try:
+            tmp_path = Path(tempfile.mkdtemp(prefix="marshal-promote-"))
+            tmp_path.rmdir()
+        except OSError as exc:
+            # Story 68.1 review: a full disk or a bad TMPDIR is a publish failure the caller journals
+            # (AD-6), never a raw OSError that leaves its INTENT unpaired.
+            raise VcsCommandError(f"cannot create the scratch directory for the publish worktree: {exc}") from exc
         try:
             add_result = _run(
                 [
@@ -1352,8 +1409,11 @@ class GitVcs:
             paths: list[Path] = []
             for rel, content in writes:
                 dest = tmp_path / rel
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_text(content, encoding="utf-8")
+                try:
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_text(content, encoding="utf-8")
+                except OSError as exc:
+                    raise VcsCommandError(f"cannot write {dest} in the publish worktree: {exc}") from exc
                 paths.append(dest)
             new_sha = self.commit_paths(tmp_path, tuple(paths), message)
             ancestor = _run(
@@ -1371,17 +1431,35 @@ class GitVcs:
                 raise VcsCommandError(
                     f"{new_sha} is not a descendant of {remote}/{ref} ({old_sha}); refusing to push a non-fast-forward"
                 )
-            push_result = _run(
-                [
-                    "git",
-                    "-C",
-                    str(repo_root),
-                    "push",
-                    remote,
-                    f"{new_sha}:refs/heads/{ref}",
-                ],
-                timeout_s=_GIT_FETCH_TIMEOUT_S,
-            )
+            push_args = [
+                "git",
+                "-C",
+                str(repo_root),
+                "push",
+                remote,
+                f"{new_sha}:refs/heads/{ref}",
+            ]
+            if preflight_skip_reason is not None:
+                written = frozenset(rel for rel, _text in writes)
+                stray = sorted(self._paths_changed_between(repo_root, old_sha, new_sha) - written)
+                if stray:
+                    raise VcsCommandError(
+                        f"refusing the preflight opt-out: {new_sha} names path(s) {stray!r} outside "
+                        f"the written set {sorted(written)!r}; nothing was pushed"
+                    )
+                # The pre-push hook's journaled opt-out, set for this one git process only
+                # (the process port takes no environment, so the POSIX `env` utility carries
+                # it -- see `push`, Story 57.1). Where `env` does not exist (win-64), the push
+                # goes through the preflight instead -- slower, never unchecked.
+                if shutil.which("env") is not None:
+                    reason = _preflight_skip_reason_text(new_sha, written, preflight_skip_reason)
+                    push_args = [
+                        "env",
+                        "PYFORGE_PREFLIGHT_SKIP=1",
+                        f"PYFORGE_PREFLIGHT_SKIP_REASON={reason}",
+                        *push_args,
+                    ]
+            push_result = _run(push_args, timeout_s=_GIT_FETCH_TIMEOUT_S)
             if push_result.returncode != 0:
                 raise VcsCommandError(
                     f"git push {remote} {new_sha}:refs/heads/{ref} failed: {push_result.stderr.strip()}"
