@@ -1809,6 +1809,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # gap is worth flagging before a dispatch launches, not worth
         # refusing the launch over.
         "MRS-DISP-049",
+        # Story 68.1 (spec-pyforge-marshal CAP-277): after its ledger promotion,
+        # `dispatch_land_finalize` read `origin/main`'s tracked
+        # `sprint-status-ledger.yaml` and the landed story's key does not read
+        # `done` there (absent, another status, or the ledger unreadable) --
+        # the promotion's publish failed, and the landing is not a clean one.
+        # ERROR: finalize exits 1, `dispatch land` refuses (MRS-DISP-020).
+        "MRS-DISP-051",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

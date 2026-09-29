@@ -1175,6 +1175,11 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # a session-precondition gap is worth flagging before a dispatch
     # launches, not worth refusing the launch over.
     "MRS-DISP-049": Verdict.WARN,
+    # Story 68.1 (spec-pyforge-marshal CAP-277): the landed story's ledger key does
+    # not read `done` on `origin/main` after finalize's promotion step. ERROR, the
+    # tier of MRS-DISP-048 above: it stops a landing being reported clean while the
+    # bookkeeping never reached main (the 64.1 landing, 2026-09-28).
+    "MRS-DISP-051": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight
