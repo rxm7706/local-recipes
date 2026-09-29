@@ -488,6 +488,18 @@ PublishScripts/
 # NOT .NET/NuGet package caches. Re-include the member dirs + their contents.
 !src/**/packages/*/
 !src/**/packages/*/**
+# ...but never the tool caches inside them. The negation above re-includes them,
+# and only a later rule can re-ignore (a lower-precedence info/exclude cannot).
+# In a fresh worktree the nested .gitignore mypy/ruff/pytest write for themselves
+# may not exist yet: on 2026-09-29 a dispatch auto-checkpoint committed 38
+# .mypy_cache files (42.5 MB) from src/shared/packages/pyforge-doctor/.
+src/**/packages/*/**/.mypy_cache/
+src/**/packages/*/**/.ruff_cache/
+src/**/packages/*/**/.pytest_cache/
+src/**/packages/*/**/__pycache__/
+src/**/packages/*/**/.hypothesis/
+src/**/packages/*/**/.coverage
+src/**/packages/*/**/.coverage.*
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
