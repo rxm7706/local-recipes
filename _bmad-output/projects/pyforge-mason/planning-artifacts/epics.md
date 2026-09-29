@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -2372,6 +2372,98 @@ object repr
 green
 **Status:** backlog
 
+## Epic 23: CFE's generator asks instead of guessing, a mismatched copyleft licence is refused, and a negative corpus keeps each check honest (spec-pyforge-mason CAP-33)
+
+Minted 2026-09-29 from the station Dream's entry of the same name and the operator's ruling of that day. A
+capability-by-capability comparison found that Mason and CFE already do almost everything `OpenTeams-WFT-CDO/auto-recipe`
+does, so auto-recipe retires, and the three things they lack come into CFE: a Decided/Ambiguous contract, a
+licence-semantics check and a negative corpus. The operator owns that GitHub org, so code may be ported from
+`auto-recipe@8b53eda`, with a provenance line in each file that carries ported code. The stories run in order: 23.2 uses
+23.1's check, and 23.3 pins 23.1's and 22.2's refusals. **HARD boundaries:**
+- Each story goes through `conda-forge-expert` (Rule 1).
+- Each story's code, tests, fixtures, `CHANGELOG.md` entry and version carriers land in its own `retro(cfe):` commit
+  (Rule 2; the Story 16.3 and 22.2 path).
+- No story touches `src/shared/packages/pyforge-mason/`, `pixi.toml` or `pixi.lock`, and none edits `recipes/**`.
+- No staged-recipes, feedstock or upstream PR is opened.
+- The unattended trigger layer (issue to draft PR, PR watcher, LLM fix loop) and the MCP `generate_recipe_from_pypi`
+  grayskull path are out of scope.
+- 23.1 and 23.3 are `flag-exempt: detector-or-gate`; 23.2 is a fix and carries no flag (`spec-feature-flag-governance`
+  CAP-1, Q1/Q2).
+
+### Story 23.1: CFE refuses a copyleft -only licence whose LICENSE grants any later version
+
+As a recipe author declaring a GPL-family licence,
+I want CFE to catch an `-only` identifier whose LICENSE text grants "any later version",
+So that a valid but wrong SPDX identifier does not ship as package metadata.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-33 (FR-55); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `.claude/skills/conda-forge-expert/scripts/license-checker.py` (a pure `check_license_semantics(declared,
+source_dir)` function, called from the existing `--check-source` path), `tests/unit/` for it, fixtures under
+`tests/fixtures/`, and the CFE version carriers, all in one `retro(cfe): …` commit.
+**Given** `license-checker.py --check-source` today checks only that the licence file exists, and both `GPL-3.0-only` and
+`GPL-3.0-or-later` are valid SPDX, so no CFE check can tell a wrong one from a right one
+**When** the check reads every `LICENSE*`, `LICENCE*` and `COPYING*` file in the source directory for "any later
+version" and compares it with a GPL, LGPL, AGPL or GFDL declared identifier
+**Then** `--check-source` exits non-zero on a `GPL-3.0-only` fixture whose LICENSE says "any later version" and names
+`GPL-3.0-or-later`; exits 0 on the matching `-or-later` fixture; reports a skip, not a pass, for a GPL `-only` fixture
+whose LICENSE says neither; skips an MIT fixture; and exits non-zero when `license_file` is missing from the source
+directory (today it prints `[ERROR]` and exits 0)
+**And** the function carries a provenance line naming `auto-recipe@8b53eda` `verify/checks.py`; removing the comparison
+makes the mismatch fixture's test fail; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 23.2: CFE's recipe generator asks instead of guessing
+
+As a recipe author generating a recipe from PyPI,
+I want `recipe-generator.py` to tell me which choices it could not settle, with the options and the default it took,
+So that a guess becomes a question I answer, instead of a plausible wrong value in a recipe.
+
+**Type:** fix • **Effort:** M • **Deps:** S-23.1 • **FR/AD:** spec-pyforge-mason CAP-33 (FR-55); AD-1; AD-15; CFE Rule 1 + Rule 2; CFE Operating Principle 1
+**Surface:** `.claude/skills/conda-forge-expert/scripts/recipe-generator.py` (a small Decided/Ambiguous type and the six
+decision points on the v1 PyPI path, including the maturin route), `tests/unit/test_recipe_generator.py`, fixture sdists
+under `tests/fixtures/`, and the CFE version carriers, all in one `retro(cfe): …` commit.
+**Given** the generator chooses silently at six points: `determine_build_backend` returns `setuptools` when nothing
+matches; `_extract_import_name_from_sdist` returns an empty string when ambiguous and the caller falls back to the
+distribution name; `_can_noarch_python` decides from classifiers when the sdist is unavailable; `_resolve_license` takes
+the first matching classifier or ends at `REPLACE_LICENSE`; `license_file` defaults to `LICENSE`; and
+`_resolve_python_min` uses the floor when `python_requires` does not parse
+**When** each point returns a decided value or a question carrying its options and default, the licence decision also
+calls 23.1's check on the cached sdist, and the run prints the questions and writes them into the recipe's bottom
+`# CFE comments` block
+**Then** a fixture with no `[build-system]` table, two top-level packages, no licence metadata and an unparseable
+`python_requires` lists one question per point, writes them into the CFE block, and exits 0; with `--strict` it exits
+non-zero and writes no recipe; a fully resolvable fixture lists no questions and writes the same recipe as before
+**And** the Decided/Ambiguous type carries a provenance line naming `auto-recipe@8b53eda` `decisions/base.py`; the
+default run keeps exit 0, so `mason recipe new` and `cfe.generate_recipe` need no change (AD-1); the story's
+`retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test`
+green
+**Status:** backlog
+
+### Story 23.3: A negative corpus proves each CFE check keeps rejecting its defect
+
+As the maintainer of CFE's checks,
+I want a corpus of recipes that must stay rejected, each tied to the rule that rejects it,
+So that a check which stops firing turns a test red instead of passing silently.
+
+**Type:** feature • **Effort:** S • **Deps:** S-23.1, S-22.2 • **FR/AD:** spec-pyforge-mason CAP-33 (FR-55); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** fixtures under `.claude/skills/conda-forge-expert/tests/fixtures/negative/` with a `README`,
+`tests/unit/test_negative_corpus.py`, a native `recipe_optimizer.py` check (next free code, `SEL-005`) only if nothing
+offline rejects skip under noarch, and the CFE version carriers, all in one `retro(cfe): …` commit.
+**Given** CFE has one negative fixture (`tests/fixtures/recipes/v1-broken`), and auto-recipe's `tests/negative/` holds
+two grayskull outputs carrying three defects that passed conda-forge's linter: skip under `noarch: python`, a scalar
+`python_version` test matrix, and `GPL-3.0-only` for an or-later LICENSE
+**When** the two fixtures are ported, CFE's own known-bad shapes are added (the conda-recipe-manager sentinel key from
+22.2, a compiler without `stdlib`), and each fixture's test asserts the specific rule that rejects it (for example
+`TEST-002`, `STD-001`, 23.1's licence check, 22.2's repr check)
+**Then** every fixture is rejected by its named rule, and a parametrized test fails for any fixture that passes every
+check; if only conda-smithy's external lint rejects skip under noarch, a native `SEL-005` check is added so the corpus
+runs offline
+**And** the README says the fixtures must never be "fixed" and names `auto-recipe@8b53eda` `tests/negative` as the source
+of the ported two; removing any one check makes its fixture's test fail; the story's `retro(cfe):` commit lands a CFE
+`CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
 Validated against the architecture spine as re-stamped today (its § Currency
@@ -2456,3 +2548,13 @@ decomposes CAP-32 and keeps to those decisions. The recipes live under `recipes/
 Story 22.2's code lands in its own `retro(cfe):` commit, as Story 16.3's did (AD-15, FR-47). Every Story heading still
 maps 1:1 to a `sprint-status-ledger.yaml` key. `22-1`, `22-2` and `epic-22` were added at `backlog` and
 `epic-22-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-29
+
+`arch→epics` edge after the spine's 2026-09-29 re-stamp (§ Currency reconciliation — 2026-09-29: FR-55 / CAP-33 lands on
+AD-1 and AD-15 as written; no AD added, amended or removed). Epic 23 (Stories 23.1–23.3) decomposes CAP-33 and keeps to
+those decisions. All three change CFE code only, and no story touches Mason's code (AD-1). Each story's code lands in its
+own `retro(cfe):` commit, as Stories 16.3 and 22.2 set (AD-15, FR-47). The stories are numbered in the order they run,
+so no story depends on a later sibling. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key. `23-1`
+to `23-3` and `epic-23` were added at `backlog` and `epic-23-retrospective` at `optional`, through the Tier-3 feed and
+`sprint-ledger-sync`. `updated:` bumped.

@@ -341,6 +341,37 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   corrupts recipes), G93 (conda-recipe-manager crashes on column-0 comments), G84 (`migrate_to_v1` is a remote tool),
   and `spec-fleet-stewardship` (governs `recipes/**`). Owner: mason. → `spec-pyforge-mason` CAP-32 / Epic 22 / Stories
   22.1–22.2 (FR-54), specced 2026-09-28.
+- **2026-09-29 — Proposed: CFE takes the three checks auto-recipe had and Mason lacked, and auto-recipe retires.**
+  Operator ruling, 2026-09-29, after a capability-by-capability comparison of `OpenTeams-WFT-CDO/auto-recipe`
+  (`8b53eda`; its last commit, 2026-08-13, made both workflows manual-only) against the `pyforge-mason` package and CFE.
+  The operator owns that GitHub org, so its code may be ported, with a provenance line. Most of what auto-recipe does
+  is already here: preflight and source resolution, the dependency audit against repodata rather than the package
+  API, scaffolding, the eight recipe decisions, the hard rules (the optimizer's 20 check codes), the verify loop, the
+  staged-recipes branch, and the failure catalog with `enforced_by` pointers (Epic 7, taken from auto-recipe in
+  August). Three things are not:
+  - **A Decided/Ambiguous contract.** `recipe-generator.py` guesses at six points: the `setuptools` backend default,
+    the import-name fallback, the classifier-only noarch call, the licence (the first matching classifier, or
+    `REPLACE_LICENSE`), `license_file: LICENSE`, and the `python_min` floor used when `python_requires` does not parse.
+    auto-recipe returns a question at each of them instead of a guess.
+  - **A licence-semantics check.** A GPL-family `-only` identifier whose LICENSE grants "any later version" passes
+    every SPDX check, because both identifiers are valid. `license-checker.py` never reads the LICENSE text.
+  - **A negative corpus.** Recipes that must stay rejected, each pinned to the rule that rejects it. CFE has one
+    `v1-broken` fixture; auto-recipe keeps two grayskull outputs carrying three defects that passed conda-forge's
+    linter.
+  **What it looks like when real:**
+  - The generator records every choice it could not settle as a question, on stdout and in the recipe's bottom CFE
+    block, and `--strict` exits non-zero with the questions instead of writing the recipe.
+  - `license-checker.py --check-source` reds a GPL-family `-only` licence whose LICENSE grants any later version, and
+    names the `-or-later` identifier to use.
+  - A fixture that passes every check fails the suite.
+  **Constraints:** CFE code only, and no Mason source change: `mason recipe new` and `mason recipe validate` reach the
+  checks by subprocess (AD-1). Each story closes with a `retro(cfe):` commit and a CHANGELOG bump. The unattended half
+  of auto-recipe (issue to draft staged-recipes PR, the PR watcher, the LLM fix loop and its five-attempt cap) is a
+  non-goal, because this repo opens no staged-recipes PR without an explicit ask. The MCP `generate_recipe_from_pypi`
+  tool runs grayskull, not `recipe-generator.py`, and is out of scope. Archiving the auto-recipe repo is the
+  operator's act. Kinships: CFE Operating Principle 1 (present the interpretations, don't pick silently), G7 (import
+  names), G55 (build backends), G90 (generator emission gaps), and `machine-checked-recipe-knowledge` (Epic 7).
+  Owner: mason. → `spec-pyforge-mason` CAP-33 / Epic 23 / Stories 23.1–23.3 (FR-55), specced 2026-09-29.
 
 ## One-chain fold — 2026-09-17
 
