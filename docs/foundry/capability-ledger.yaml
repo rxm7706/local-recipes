@@ -5052,6 +5052,12 @@ capabilities:
     heading: "Mason packages the intake toolchain: git-pkgs, forge, gitgres, opengrep and pptxgenjs-plus-jsx"
     mode: rebuild
     path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-32
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "Twelve recipes lose conda-recipe-manager's leaked sentinel key, and CFE's validation refuses the next one"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
 
   # doctor one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-doctor:CAP-1

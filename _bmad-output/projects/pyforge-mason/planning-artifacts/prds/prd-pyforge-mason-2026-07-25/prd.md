@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD) for CAP-32 (Epic 22); FR-54 registered. See § Currency reconciliation — 2026-09-28 (night, later). Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 project: pyforge-mason
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: docs/dreams/packaging-factory.md
@@ -1981,3 +1981,41 @@ a download.
 **ONE FR space now FR-1..FR-53** (FR-54 = next free id).
 
 **Content changed:** this section added (FR-53 registered). No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (night, later)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-mason` gained CAP-32 on 2026-09-28 (night), after this PRD's
+re-stamp for CAP-31. The FR is derived from the CAP (`one-chain-per-station`).*
+
+### The FR space: FR-54 registered
+
+On 2026-09-28 (night) the session coordinator found, and the operator ruled to repair, 12 `recipes/*/recipe.yaml` files
+that carry a YAML mapping key written as `<conda_recipe_manager.types.SentinelType object at 0x…>`. That is the repr of
+conda-recipe-manager's internal sentinel, leaked by the 2026-08-16 bulk v0→v1 conversion (`20b2f459fa`) wherever a
+`meta.yaml` construct had no translation. All 12 fail rattler-build's parse, and CFE's `validate_recipe` passes six of
+them. FR-54 decomposes into **Epic 22**: Story 22.1 repairs the files, and Story 22.2 makes CFE's validation refuse the
+next one. The recipes live under `recipes/`, which `spec-fleet-stewardship` governs coverage-only; no FR about the `mason`
+CLI changes. FR-47's rule (every conda-forge effort closes with a Rule-2 retro) applies to both stories.
+
+#### FR-54: No recipe carries a converter's leaked Python object, and CFE's validation refuses one ← CAP-32
+
+The recipe corpus holds no `recipe.yaml` with a non-string mapping key or a Python object repr, and the first gate
+catches the next one.
+
+**Consequences (testable):**
+- `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` finds nothing. Each of the 12 renders with
+  `rattler-build build --render-only` on a platform it builds, and passes `validate_recipe` and the CI-parity lint.
+- Each sentinel is replaced by the v1 form of the `meta.yaml` construct it stood for, and `meta.yaml` stays (the
+  feedstocks are still v0).
+- The cheap recipes build on linux-64 (`shodan`, `django-pygwalker`, `amundsen-databuilder`, `lerc`, `StringZilla`,
+  `psycopg2-yugabytedb`, `pyautogui`). `semgrep`, `pyobjc-framework-systemconfiguration`, `boost`, `ctng-compilers` and
+  `vc` are render, validate and lint only.
+- CFE's `validate_recipe` exits non-zero on a `recipe.yaml` whose parsed tree has a non-string mapping key, or a key or
+  a whole scalar that is a Python object repr, and names the path. A fixture test proves both directions, and a CFE
+  meta-test holds the corpus at zero.
+- No feedstock or staged-recipes PR is opened. Each story lands a `retro(cfe):` commit with a CFE `CHANGELOG.md` semver
+  entry.
+
+**ONE FR space now FR-1..FR-54** (FR-55 = next free id).
+
+**Content changed:** this section added (FR-54 registered). No FR renumbered or removed. `updated:` bumped.

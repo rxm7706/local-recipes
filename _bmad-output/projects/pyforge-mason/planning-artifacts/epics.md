@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -2303,6 +2303,75 @@ only (G103)
 lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
 **Status:** backlog
 
+
+## Epic 22: Twelve recipes lose conda-recipe-manager's leaked sentinel key, and CFE's validation refuses the next one (spec-pyforge-mason CAP-32)
+
+Minted 2026-09-28 (night) from the station Dream's entry of the same name and the operator's ruling of that night.
+12 `recipes/*/recipe.yaml` files carry a YAML mapping key written as `<conda_recipe_manager.types.SentinelType object at
+0x…>`, leaked by the 2026-08-16 bulk v0→v1 conversion (`20b2f459fa`) wherever a `meta.yaml` construct had no
+translation. All 12 fail rattler-build's parse, and CFE's `validate_recipe` passes six of them. The two stories are
+independent. **HARD boundaries:**
+- Each recipe judgement goes through `conda-forge-expert` (Rule 1).
+- `meta.yaml` stays beside each recipe: the feedstocks are still v0 (the local-mirror rule).
+- A green render, validate and lint, and a local build where it is cheap, end Story 22.1. No feedstock, staged-recipes
+  or upstream PR is opened without an explicit ask.
+- Each story closes with its own `retro(cfe):` commit carrying a CFE `CHANGELOG.md` semver entry (Rule 2). Story 22.2's
+  code lands in that commit, as Story 16.3's did.
+- No story touches `src/shared/packages/pyforge-mason/`, `pixi.toml` or `pixi.lock`.
+- 22.1 is `flag-exempt: recipe-build`; 22.2 is `flag-exempt: detector-or-gate` (`spec-feature-flag-governance` CAP-1, Q2).
+
+### Story 22.1: The twelve recipes carrying conda-recipe-manager's sentinel key are repaired
+
+As the fleet steward who reads `recipes/` as the local mirror of each feedstock,
+I want each of the twelve `recipe.yaml` files to say in v1 what its `meta.yaml` says,
+So that every one renders, validates and, where cheap, builds, instead of failing rattler-build's parse on a Python
+object's repr.
+
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-32 (FR-54); AD-1; AD-15; CFE G20, G47, G92,
+G93, G95; CFE Rule 1 + Rule 2
+**Surface:** `recipes/{semgrep,boost,pyautogui,pyobjc-framework-systemconfiguration,psycopg2-yugabytedb,vc,django-pygwalker,ctng-compilers,StringZilla,lerc,amundsen-databuilder,shodan}/recipe.yaml`;
+the CFE retro surface (`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml,config/failure-catalog.yaml,tests/meta/test_recipe_yaml_parse_audit.py}`),
+committed alone as `retro(cfe): …`.
+**Given** each sentinel stands for one of five `meta.yaml` constructs: a commented-out key (StringZilla, pyobjc-framework-systemconfiguration,
+lerc); a test with only `requires:` left (semgrep, django-pygwalker, amundsen-databuilder); an `imports:` list split from
+its key (psycopg2-yugabytedb); `test.requires` orphaned at the top level (pyautogui, shodan); or jinja control flow in
+test commands (boost, ctng-compilers, vc)
+**When** each sentinel is replaced by that construct's v1 form, and the conversion defects found beside it are fixed
+(the bare `python ${{ python_min }}` host specs, pyobjc's `name.replace(...)`, boost's loops and context lists,
+ctng-compilers' output-level `run_exports`, vc's `run_exports` shape)
+**Then** `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` finds nothing, and each file renders with
+`rattler-build build --render-only` on a platform it builds and passes `validate_recipe` and the CI-parity lint
+**And** shodan, django-pygwalker, amundsen-databuilder, lerc, StringZilla, psycopg2-yugabytedb and pyautogui build on
+linux-64, with a test env that cannot solve recorded per G95; semgrep, pyobjc-framework-systemconfiguration, boost,
+ctng-compilers and vc are render, validate and lint only; `meta.yaml` stays; the story's `retro(cfe):` commit adds the
+gotcha and a corpus meta-test that reds any `recipes/*/recipe.yaml` carrying a non-string key or an object repr;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 22.2: CFE's validation reds a recipe with a non-string key or a Python object repr
+
+As a recipe author whose next v0→v1 conversion might leak the same way,
+I want `validate_recipe` to refuse a `recipe.yaml` whose parsed tree holds a non-string mapping key or a Python object's
+repr,
+So that the leak fails at the first gate, instead of passing CFE's validation and failing rattler-build's parse.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-32 (FR-54); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `.claude/skills/conda-forge-expert/scripts/validate_recipe.py` (a tree walk in `validate_recipe_yaml`),
+`.claude/skills/conda-forge-expert/tests/unit/test_validate_recipe.py`, fixtures under
+`.claude/skills/conda-forge-expert/tests/fixtures/recipes/`, and the CFE version carriers, all in one `retro(cfe): …`
+commit.
+**Given** `validate_recipe` today passes a `recipe.yaml` whose key is `<conda_recipe_manager.types.SentinelType object at
+0x…>` everywhere but the top level, because PyYAML reads it as a plain string
+**When** `validate_recipe_yaml` walks the parsed tree and reports an error for every non-string mapping key, and for every
+key or whole scalar that matches a Python object repr (`<dotted.Name object at 0x…>`), naming its path
+**Then** `validate_recipe` exits non-zero on fixtures with a sentinel key (nested, not top-level), an int key and a
+whole-scalar repr value, and exits 0 on a clean fixture and on one whose `about.description` prose only mentions an
+object repr
+**And** `mason recipe validate` gains the check with no Mason change (it runs CFE's script by subprocess); the story's
+`retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test`
+green
+**Status:** backlog
+
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
 Validated against the architecture spine as re-stamped today (its § Currency
@@ -2377,3 +2446,13 @@ Mason's code (AD-1). No implementation commit writes the CFE surface, and each s
 `retro(cfe):` commit (AD-15, FR-47). Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key. `21-1` to
 `21-5` and `epic-21` were added at `backlog` and `epic-21-retrospective` at `optional`, through the Tier-3 feed and
 `sprint-ledger-sync`. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (night, later)
+
+`arch→epics` edge after the spine's fourth 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28 (night, later):
+FR-54 / CAP-32 lands on AD-1 and AD-15 as written; no AD added, amended or removed). Epic 22 (Stories 22.1 and 22.2)
+decomposes CAP-32 and keeps to those decisions. The recipes live under `recipes/` and the check in CFE's
+`validate_recipe.py`, and no story touches Mason's code (AD-1). Story 22.1's CFE edit is its `retro(cfe):` commit, and
+Story 22.2's code lands in its own `retro(cfe):` commit, as Story 16.3's did (AD-15, FR-47). Every Story heading still
+maps 1:1 to a `sprint-status-ledger.yaml` key. `22-1`, `22-2` and `epic-22` were added at `backlog` and
+`epic-22-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`. `updated:` bumped.
