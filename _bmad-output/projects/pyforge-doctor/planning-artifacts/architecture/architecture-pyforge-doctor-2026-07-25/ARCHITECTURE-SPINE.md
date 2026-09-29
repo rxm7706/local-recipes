@@ -9,7 +9,7 @@ scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an
   pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-09-28'   # RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — prd→arch cascade (doctor Story 30.3 landing;
   the PRD re-dated 2026-09-24 reconciling against spec-pyforge-doctor''s 2026-09-24T06:55
   memlog move). No AD added or changed — the five reference-page generators are
@@ -588,3 +588,12 @@ tracked ledger text it already reads, and emits a `Finding` like its siblings. I
 reimplemented in Doctor — Doctor imports no station's internals — and pinned by fixtures. No new component, port or
 station boundary; AD-2's exit domain is unchanged (a FAIL is `2`, as for every other deferred-work violation). No AD added
 or changed. `updated:` bumped.*
+
+## Currency reconciliation — 2026-09-28 (night)
+
+*`prd→arch` cascade for FR-20 / CAP-87 (Epic 35, capability-ledger's post-PIN check reads only live Specs). The change
+sits inside the existing `capability-ledger` source (`sources/capability_ledger.py`), in the same gather pipeline: the
+post-PIN loop reads each added `SPEC.md`'s frontmatter `status` with the reader `iter_live_specs` already uses and skips a
+non-live Spec. No new component, port, finding kind or station boundary. AD-2's exit domain is unchanged (the finding is
+still a WARN, which never changes the exit code), and the source stays read-only. No AD added or changed. `updated:`
+bumped.*

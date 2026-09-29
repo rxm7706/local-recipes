@@ -64,7 +64,8 @@ Type / Effort / Deps: feature / M / S-34.1.
 - Given the same spec listed in the baseline When the gate runs Then it exits 0 with one WARN naming it under its station
 - Given `flag-exempt: someday` on any spec When the gate runs Then one FAIL names the unknown value
 - Given a `done` flagged spec whose key the tree lacks When the gate runs Then one FAIL names the key; given the same spec at `backlog` Then no finding
-- Given a tree key no file under `src/` or `scripts/` mentions When the gate runs Then one FAIL names the key; given `pyforge.three_surfaces` and `pyforge.cutover_root` on the live tree Then no finding (both are read in `src/`)
+- Given a fixture tree holding a test-local key (for example `pyforge.test.orphan`) that no file under the fixture's `src/` or `scripts/` mentions When the gate runs Then one FAIL names the key; given the same fixture with a fixture `src/` file that reads the key Then no finding
+- Given the live tree at the landing SHA When the gate runs Then no orphan-key finding: every key it holds is read in `src/` (`pyforge.cutover_root` through `pyforge.core.cutover_root.CUTOVER_FLAG`; any other key the tree holds by then through its own reader). *(Amended 2026-09-29: this criterion named `pyforge.three_surfaces` on the live tree, and steward Story 76.4 removes that demo flag from the tree and from `src/` together, by operator ruling of 2026-09-28 (night). The orphan-key behaviour is now proven on a test-local fixture key, so the criterion holds whether 34.2 lands before or after 76.4.)*
 - Given `--spec <path>` on each fixture When it runs Then it prints one JSON object with `verdict` `red`, `warn` or `pass` and exits 1, 0 or 0
 - Given an unreadable tree, roster or baseline When the gate runs Then it exits 2 and reports what it could not read
 - Given a planted `pyforge.<station>.flag_gate` module in a temporary tree When the meta-test runs Then it fails; on the real tree it passes

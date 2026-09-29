@@ -233,6 +233,31 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   reads 4.3.4 and builds green. Each story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry. No
   staged-recipes PR is opened. `pyforge-mason-test` green. (Minted 2026-09-28.)
 
+### CAP-32 — Twelve recipes lose conda-recipe-manager's leaked sentinel key, and CFE's validation refuses the next one
+
+- **intent:** 12 `recipes/*/recipe.yaml` files carry a mapping key written as
+  `<conda_recipe_manager.types.SentinelType object at 0x…>`: `semgrep`, `boost`, `pyautogui`,
+  `pyobjc-framework-systemconfiguration`, `psycopg2-yugabytedb`, `vc`, `django-pygwalker`, `ctng-compilers`,
+  `StringZilla`, `lerc`, `amundsen-databuilder` and `shodan`, all from the 2026-08-16 bulk v0→v1 conversion
+  (`20b2f459fa`). They are repaired through `conda-forge-expert`, and each sentinel is replaced by the v1 form of the
+  `meta.yaml` construct it stood for: a commented-out key goes back to a comment; a test element with nothing left to
+  run is removed; a split `imports:` list is rejoined; orphaned `test.requires` move into the test element's
+  `requirements.run`; jinja control flow in test commands becomes v1 `if:`/`then:` or a shell loop over the context
+  lists. The conversion defects found beside each sentinel are fixed until the file renders. `meta.yaml` stays beside
+  each, because the feedstocks are still v0. CFE's `validate_recipe` reports an error, naming the path, for any
+  `recipe.yaml` whose parsed tree has a non-string mapping key, or a key or a whole scalar that is a Python object repr
+  (`<… object at 0x…>`), so the next converter leak fails at the first gate. A CFE meta-test holds the corpus at zero.
+  Each story closes with a CFE Rule-2 retro. No Mason source changes, and no feedstock or staged-recipes PR.
+  (Operator ruling 2026-09-28.)
+- **success:** `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` finds nothing. Each of the 12 renders with
+  `rattler-build build --render-only` on a platform it builds and passes `validate_recipe` and the CI-parity lint.
+  `shodan`, `django-pygwalker`, `amundsen-databuilder`, `lerc`, `StringZilla`, `psycopg2-yugabytedb` and `pyautogui`
+  build on linux-64, and a test env that cannot solve is recorded per G95. `semgrep`,
+  `pyobjc-framework-systemconfiguration`, `boost`, `ctng-compilers` and `vc` are render, validate and lint only.
+  `validate_recipe` exits non-zero on fixtures with a sentinel key, an int key and a whole-scalar object repr, and exits
+  0 on a fixture whose prose only mentions an object repr. Each story's `retro(cfe):` commit lands a CFE `CHANGELOG.md`
+  semver entry. `pyforge-mason-test` green. (Minted 2026-09-28.)
+
 ## Constraints
 
 - **The central decision — wrap by capability, not by product.** Mason **wraps** the packaging machinery by subprocess for all recipe operations and **builds** natively for `package` and `environment`. The boundary is drawn by *capability*. Pure porcelain was rejected because two of the three charter verb families have **nothing to wrap** — no wheel build, no upload path and no lock orchestration exists anywhere in the wrapped machinery's 41,410 lines, so a pure wrapper is not a smaller Mason but a Mason missing its reason to exist. Extraction/reimplementation was rejected on three independently sufficient grounds: **governance makes a fork structurally adversarial** (Rule 1 makes the skill authoritative over any conflicting story, and Rule 2 mandates that every conda-forge effort *edits the skill* — so a fork is continuously invalidated by the loop that governs the domain); **the in-repo precedent failed** (a sibling project rebuilt ~29,000 lines across 32 merged stories and the 8,902-line original is still the live runtime — nothing routes to the rebuild); and **it forks the moat**, converting 106 gotchas and 10 constraints from an appreciating asset into a depreciating one. The accepted cost, paid deliberately: **Mason is not standalone** — `mason recipe` requires a discoverable installation and is inert without one.

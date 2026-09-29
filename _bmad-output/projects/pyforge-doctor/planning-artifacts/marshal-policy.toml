@@ -298,6 +298,17 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"35" = [  # capability-ledger's post-PIN check reads only live Specs (spec-pyforge-doctor CAP-87), added 2026-09-28 (night)
+  # 35.1: sources/capability_ledger.py and tests/unit/test_capability_ledger.py, inside the default surface
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+  # co-governor reconciles (spec-pyforge-core governs every station's src)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO

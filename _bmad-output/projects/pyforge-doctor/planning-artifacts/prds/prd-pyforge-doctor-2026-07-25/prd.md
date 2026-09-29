@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-09-28'   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -670,6 +670,23 @@ after 66.2's backfill the source reports none and `deferred-work-check` exits 0;
 *Decomposed as Epic 33 — Story 33.1, minted `blocked` until marshal Story 66.2 has landed (cross-station gate; marshal's
 `Deps:` parser is station-local).*
 
+
+## FR-20 — Capability-ledger's post-PIN check reads only live Specs (spec-pyforge-doctor CAP-87)
+
+Added 2026-09-28 (night, operator ruling). The capability-ledger source (`fcl:CAP-2`, Story 55.2) inventories only live
+Specs: its CAP extract reads `ready` and `in-progress` `SPEC.md` files, as steward's `spec-foundry-capability-ledger`
+extract contract says. Its post-PIN check, though, warned `post-PIN Spec without a ledger row --append` for every `SPEC.md`
+added after the ledger's `source_sha`, whatever its status. A Spec that is absorbed or still a draft has no extract, so it
+can never be classified. On `main` that was eight permanent WARNs (seven `absorbed`, one `draft`). Doctor warns only for a
+post-PIN Spec that is live and that no row names.
+
+**Consequences (testable):** a post-PIN Spec whose frontmatter `status` is `ready` or `in-progress` and that no row names
+is one `--append` WARN, as today; an `absorbed`, `draft` or `shipped` post-PIN Spec, or one with no status, reports
+nothing until it goes live; the HARD findings and the per-CAP `--append` WARN do not change; on `main` the source reports
+OK and `capability-ledger-check` exits 0; the source writes no ledger row.
+
+*Decomposed as Epic 35 — Story 35.1, a new epic because Epic 33's only story is `blocked` and Epic 34 is the Guild's relay.*
+
 ## 9. Assumptions Index
 
 - §1/Brief carry-over — Doctor adds no new detection capability beyond credential
@@ -946,3 +963,9 @@ follow-up-review orphan invariant, `spec-pyforge-marshal:CAP-275`'s, runs on eve
 source). FR-19 registered above to cite it; decomposed as **Epic 33** (Story 33.1), a new epic because Epic 31 is `done`;
 the story is minted `blocked` behind marshal Story 66.2's backfill. No AD amended: one more finding kind inside an existing
 source, over files that source already reads. `updated:` bumped.*
+
+## Currency reconciliation — 2026-09-28 (night)
+
+*Chain-currency cascade (spec → PRD): `spec-pyforge-doctor` minted CAP-87 on 2026-09-28 (night, operator ruling: the
+capability-ledger source's post-PIN WARN reads only live Specs). FR-20 registered above to cite it; decomposed as **Epic 35**
+(Story 35.1). No AD amended: one status test inside an existing source's existing loop. `updated:` bumped.*

@@ -318,6 +318,29 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   at 4.2.1, so its story moves the sibling too. conda-forge pins PostgreSQL 18 globally, so the
   `gitgres` recipe pins 17 explicitly.
   → `spec-pyforge-mason` CAP-31 / Epic 21 / Stories 21.1–21.5 (FR-53), specced 2026-09-28.
+- **2026-09-28 (night) — Proposed: twelve recipes lose a converter's leaked sentinel key, and CFE refuses the next
+  one.** Found by the session coordinator and verified the same night on `main` (`0c8c07e6fc`). Twelve `recipe.yaml`
+  files carry a YAML mapping key that is literally `<conda_recipe_manager.types.SentinelType object at 0x…>`: `semgrep`,
+  `boost`, `pyautogui`, `pyobjc-framework-systemconfiguration`, `psycopg2-yugabytedb`, `vc`, `django-pygwalker`,
+  `ctng-compilers`, `StringZilla`, `lerc`, `amundsen-databuilder` and `shodan`. All came in with `20b2f459fa`
+  (2026-08-16), a bulk conda-recipe-manager v0→v1 conversion of feedstock mirrors whose `meta.yaml` stays beside them.
+  Wherever the `meta.yaml` had a construct crm could not translate, it wrote its sentinel's repr as a key. There are
+  five shapes: a commented-out key (`#patches:`, `#host:`); a test with only `requires:` left once its commands were
+  commented out; an `imports:` list split from its key by comments; `test.requires` orphaned at the top level after
+  commented `pytest` lines; and jinja `{% for %}` / `{% if %}` blocks inside test commands. All twelve fail
+  rattler-build's parse, and several hide more conversion defects behind the first. CFE's `validate_recipe` passes six
+  of them: the key reads as a plain string, and conda-smithy flags it only at the top level. The current crm (0.10.6)
+  still writes the sentinel and exits 100 ("warnings"), so re-converting does not repair them.
+  **What it looks like when real:**
+  - Each file says in v1 what its `meta.yaml` says and renders, validates and lints clean, with the cheap ones built on
+    linux-64.
+  - CFE's `validate_recipe` reds any `recipe.yaml` whose parsed tree has a non-string mapping key or a Python object's
+    repr, so the next converter leak fails at the first gate.
+  **Constraints:** `meta.yaml` stays, because the feedstocks are still v0. No feedstock or staged-recipes PR is opened.
+  Both stories close with a CFE retro and a CHANGELOG bump. No Mason code changes. Kinships: CFE G92 (a re-serialization
+  corrupts recipes), G93 (conda-recipe-manager crashes on column-0 comments), G84 (`migrate_to_v1` is a remote tool),
+  and `spec-fleet-stewardship` (governs `recipes/**`). Owner: mason. → `spec-pyforge-mason` CAP-32 / Epic 22 / Stories
+  22.1–22.2 (FR-54), specced 2026-09-28.
 
 ## One-chain fold — 2026-09-17
 

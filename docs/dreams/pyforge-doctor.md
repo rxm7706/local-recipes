@@ -86,6 +86,25 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-09-28 (night)** — **Proposed: capability-ledger's post-PIN check reads only live Specs.** Found by the
+  session coordinator and verified the same night on `main` (`0c8c07e6fc`). `capability-ledger-check` (Story 55.2,
+  `fcl:CAP-2`, `sources/capability_ledger.py`) prints eight WARNs of the form `post-PIN Spec without a ledger row
+  --append`, and all eight are noise. The ledger inventories only `ready` and `in-progress` Specs (`_LIVE_STATUSES`,
+  the extract contract in steward's `spec-foundry-capability-ledger/extract.md`). The post-PIN loop, though, warns for
+  every `SPEC.md` added after the ledger's `source_sha` without reading its status. Seven of the eight are
+  `status: absorbed` folds (`spec-docs-shelf-alignment`, `spec-design-sync-loop`, `spec-marshal-run-watch`,
+  `spec-token-economy-claude-session-path`, `spec-self-hosted-bmad-marketplace`, `spec-vocabulary-one-name-one-job`,
+  `spec-work-passports-dated-extracts`), and one is a `draft` (`spec-marshal-recall-in-the-loop`). None of them can
+  ever gain a row, because their CAPs are never extracted, so there is nothing to classify. A warning nobody can clear
+  teaches readers to skip the source, and it buries the one warning that matters: a live Spec added after the PIN with
+  no row. **What it looks like when real:** the post-PIN check warns only for a Spec whose frontmatter `status` is live
+  (the same `_LIVE_STATUSES` the extract reads) and that has no row. An absorbed or draft Spec added after the PIN
+  stays silent until it goes live, and then warns until it is classified. On `main` the source reports OK.
+  **Constraints:** the HARD checks do not change (an unclassified live CAP, `A-only` without an expiry, a
+  `verified-in-foundry` claim without a case id); the `--append` WARN keeps its message and its `kind: append`; the
+  source writes no ledger row. Kinships: `fcl:CAP-2` (the `--append` clause this narrows to the extract's own scope),
+  CAP-36 (the detector sees what it claims to check). Owner: `spec-pyforge-doctor`. → CAP-87 / Epic 35 / Story 35.1
+  (FR-20), specced 2026-09-28.
 - **2026-09-28** — **Proposed: a recommended follow-up review is carried, and Doctor checks it on every
   PR.** Operator ruling 2026-09-28. `spec-pyforge-marshal:CAP-275` makes a landing carry it: `dispatch_land_finalize`
   files a `DW-FRR-<story>` row (`origin: dispatch-followup-review`) for a story whose tracked spec reads
