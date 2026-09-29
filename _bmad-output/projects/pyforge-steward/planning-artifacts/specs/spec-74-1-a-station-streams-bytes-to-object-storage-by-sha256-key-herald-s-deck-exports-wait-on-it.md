@@ -2,7 +2,7 @@
 title: "74.1: A station streams bytes to object storage by sha256 key — herald's deck exports wait on it"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'draft'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -19,7 +19,19 @@ context:
   - src/platform/config/object_storage.py
   - src/platform/tests/test_object_storage_client.py
   - src/shared/packages/django-pyforge/src/django_pyforge/flags.py
-deferred: []
+warnings: []
+deferred:
+  - summary: >-
+      src/platform/ingest/github_projects still imports pyforge.steward.keys and .sync, a live breach of "src/platform
+      never imports pyforge.*"; the new meta-test enforces the rule tree-wide with a closed, exact allowlist of those four files.
+    evidence: |-
+      pixi.toml [feature.platform-ci-test.dependencies] already names it "the live pap:AD-2 breach". Relocating the Story 12.8 dlt
+      lane out of the host is its own effort (its pixi tasks, ruff per-file ignores and Postgres sink move with it), not this
+      story's Surface. The allowlist is exact: a listed file that stops importing pyforge.* fails the test until it is removed
+      from the list, so the list can only shrink, and any new importer reds.
+    location: >-
+      src/platform/ingest/github_projects/pipeline.py
+    severity: medium
 declared_low_risk: false
 ---
 
