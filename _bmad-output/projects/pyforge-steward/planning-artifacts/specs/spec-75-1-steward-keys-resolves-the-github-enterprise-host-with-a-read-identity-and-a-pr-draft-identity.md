@@ -62,15 +62,37 @@ ledger.
   never the token — to `.steward/keys-exec.log` (gitignored by `*.log`). `--scope ghe-fleet-read` never yields the draft
   payload.
 - **The flag.** `pyforge.steward.ghe_fleet_credentials` enters `src/platform/config/flags.json` with variants `on` / `off`
-  and `defaultVariant: off`. No station CLI can read a boolean flag today (`pyforge.core` holds only the `cutover_root`
-  string reader; `django_pyforge.flags` is reachable only inside the host), so this story adds
-  `pyforge.core.flags.read_boolean(key, default=False)` in `pyforge.core.cutover_root`'s shape (Story 44.12's precedent: a
-  steward-authored CLI reader in `pyforge-core`, co-governed by `spec-pyforge-core`): it resolves the tree as
-  `cutover_root.resolve_flags_path` does, returns False for `state: DISABLED`, returns the `defaultVariant`'s value when it
-  is a bool, and reads False with a named WARN on stderr for a missing tree, a missing key or a non-bool value — never True.
-  Story 76.1 later makes it read the per-environment rendered tree and Story 76.3 routes it through OpenFeature; this story
-  adds no OpenFeature dependency. OFF: `keys exec` stays in `--help`, marked disabled, and exits 2 with a flag-off message;
-  the resolver resolves no enterprise host.
+  and `defaultVariant: off`. OFF: `keys exec` stays in `--help`, marked disabled, and exits 2 (steward's usage code) with
+  a flag-off message; the resolver resolves no enterprise host.
+- **The fleet-wide CLI flag contract** (coordinator ruling 2026-09-28: this story is the home of
+  `pyforge.core.flags.read_boolean`). No station CLI can read a boolean flag today — `pyforge.core` holds only the
+  `cutover_root` string reader, and `django_pyforge.flags` is reachable only inside the host. This story adds
+  `src/shared/packages/pyforge-core/src/pyforge/core/flags.py` in `pyforge.core.cutover_root`'s shape (Story 44.12's
+  precedent: a steward-authored CLI reader in `pyforge-core`, co-governed by `spec-pyforge-core`). **Every other station's
+  flagged CLI story reuses these names and never re-implements them**, so the shape below is a fleet contract; after this
+  story lands it changes only additively:
+  - **Signature:** `read_boolean(key: str, default: bool = False, *, flags_path: Path | str | None = None) -> bool`.
+  - **Tree resolution:** exactly `pyforge.core.cutover_root.resolve_flags_path` — reused, not copied: the explicit
+    `flags_path`, else `PYFORGE_FLAGS_PATH`, else the nearest `src/platform/config/flags.json` walking up from the working
+    directory.
+  - **OFF and absent semantics:** `state: DISABLED` reads False whatever else is set (the kill switch wins). A present key
+    reads its `defaultVariant`'s value when that value is a bool. A missing tree, an unreadable tree, a missing key or a
+    non-bool value reads `default`, with one named WARN on stderr naming the key and the reason. A new capability passes
+    `default=False`, so it never reads ON by accident; only a retrofit kill switch (`spec-feature-flag-governance` CAP-7)
+    may pass `default=True`.
+  - **The Q3 helpers:**
+    - `FlagOff(Exception)` carries the key and the message `flag <key> is off`.
+    - `require(key, default=False, *, flags_path=None) -> None` raises `FlagOff` when `read_boolean` is False.
+    - `disabled_help(help_text, key, default=False, *, flags_path=None) -> str` returns the help text with
+      ` [disabled: flag <key> is off]` appended when the flag is off, and the text unchanged when it is on, so the verb
+      stays listed in `--help`.
+    - The helpers never choose an exit code. Each station's `main()` catches `FlagOff` and returns its own usage code: 2
+      for steward, which `main()` already owns under AD-8. No station's frozen exit-code domain changes.
+  - **Later changes keep the contract:** Story 76.1 makes `read_boolean` read the per-environment rendered tree, and
+    Story 76.3 routes its evaluation through OpenFeature. Neither changes the signature, the resolution order or the
+    OFF/absent semantics.
+  - **Dispatch this story first,** before any other station's flagged CLI story. It is ready now (Deps none).
+  - This story adds no OpenFeature dependency.
 - **The record.** A how-to section (beside `docs/how-to/ocp-cluster-bringup.md` § 5's recording procedure) says how the
   operator issues the two tokens, encrypts each with `steward keys encrypt`, and records the two rows. The real rows land
   when the operator issues the tokens; the tests use fixture inventories.
@@ -85,8 +107,12 @@ Type / Effort / Deps: feature / M / —.
 
 - `spec-pyforge-steward` CAP-164 (FR-37; extends FR-5, FR-7); AD-2 (amended 2026-09-28), AD-3 (age), AD-8 (exit codes),
   AD-9 (the host from `_http.py`'s existing row); canopy:AD-19.
-- `spec-feature-flag-governance` CAP-1 (the flag block), Q3 (a flag-off verb stays listed and exits with the usage code);
-  CAP-5, whose Stories 76.1 and 76.3 extend the reader this story adds.
+- `spec-feature-flag-governance` CAP-1 (the flag block), Q3 (a flag-off verb stays listed and exits with the usage code,
+  the helpers' contract); CAP-5, whose Stories 76.1 and 76.3 extend the reader this story adds without changing its shape;
+  CAP-7 (a retrofit kill switch may pass `default=True`); the Guild constraint that station code reads flags only through
+  `pyforge.core` or `django_pyforge.flags`.
+- Coordinator ruling 2026-09-28: steward 75.1 is the home of `pyforge.core.flags.read_boolean`; its shape is the
+  fleet-wide contract other stations' flagged CLI stories reuse, and it dispatches first.
 - Kinship: warden Story 16.1 (warden's chain, `blocked` on this story); `docs/dreams/work-passports-dated-extracts.md` (no
   PAT that opens their org or writes ours on their behalf).
 
@@ -101,7 +127,10 @@ Type / Effort / Deps: feature / M / —.
 - Given an inventory whose two scopes point at one payload When `steward keys audit` runs Then it reports that finding and exits 1
 - Given `steward keys list` and `steward keys audit` When they run over the two rows Then neither prints a secret value, and `steward keys rotate --scope` re-encrypts each row's payload
 - Given two flagd trees, the flag on and off When `keys exec` and `resolve_headers` run Then OFF exits 2 with a flag-off message, `--help` lists `exec` as disabled, and no enterprise host resolves; ON behaves as above
-- Given a tree with a boolean key `on`, the same key `off`, the key `state: DISABLED`, a missing key, a string-valued key and no tree at all When `pyforge.core.flags.read_boolean` reads each Then it returns True, False, False, and False with a named WARN for the last three, never True
+- Given a tree with a boolean key `on`, the same key `off`, the key `state: DISABLED` with an `on` default, a missing key, a string-valued key, a malformed tree and no tree at all When `pyforge.core.flags.read_boolean` reads each with `default=False` Then it returns True, False, False, and False with one named WARN for each of the last four; with `default=True` the last four read True (with the WARN) and `state: DISABLED` still reads False
+- Given `flags_path` unset When `read_boolean` resolves the tree Then it calls `pyforge.core.cutover_root.resolve_flags_path` (explicit path, `PYFORGE_FLAGS_PATH`, then the walk-up), and a test pins that no second resolver exists in `pyforge.core`
+- Given the key off When `require` runs Then it raises `FlagOff` naming the key; and `disabled_help("run a child", key)` returns the text with ` [disabled: flag <key> is off]`; on, `require` returns and `disabled_help` returns the text unchanged
+- Given `FlagOff` raised inside a steward duty When `main()` handles it Then steward exits 2 with the flag-off message on stderr, and `pyforge.core.flags` itself defines no exit code
 - Given the change When `test_keys_host_scoping.py`'s `JFROG_API_KEY` regression and `pixi run --frozen -e pyforge-steward pyforge-steward-test` run Then both pass
 
 ## Boundaries & Constraints
@@ -113,8 +142,13 @@ Type / Effort / Deps: feature / M / —.
   joins `keys`.
 - Reconcile every Spec `spec-surface-check` names (`spec-pyforge-steward`; `spec-pyforge-core` co-governs every station's
   `src/`), then stamp each scoped with `--spec`.
+- Keep `pyforge.core.flags` stdlib-only and importable by every station, with a module docstring stating that it is the
+  fleet-wide CLI flag contract. The signature, the resolution order, the OFF/absent semantics and the Q3 helpers change
+  only additively from here.
 
 **Never:**
+- Do not give `pyforge.core.flags` an exit code, a second tree resolver, an environment-variable provider or any
+  station-specific logic.
 - Do not edit `.claude/skills/conda-forge-expert/scripts/_http.py` or any CFE surface.
 - Do not accept a secret through a CLI flag, print one, or write one to a log or journal.
 - Do not add a webhook, a listener, a scheduler or a GitHub API call (no provider API integration, no calendar rotation).
@@ -134,7 +168,8 @@ Type / Effort / Deps: feature / M / —.
 | draft exec, approved | `--approval PROP-7` | child runs; journal line without the token | — |
 | shared payload | both scopes, one `.age` file | audit finding | exit 1 |
 | flag OFF | any `exec` | listed as disabled | exit 2, flag-off message |
-| reader cannot read | no tree, no key, non-bool value | treated as OFF | named WARN on stderr, exit 2 |
+| reader cannot read | no tree, unreadable tree, no key, non-bool value | reads `default` (False for this flag), so OFF | named WARN on stderr, exit 2 |
+| kill switch | `state: DISABLED` | OFF, whatever `default` says | exit 2 |
 | no age identity | decrypt fails | child never starts | named error, exit 1 |
 
 </intent-contract>
@@ -151,8 +186,9 @@ Parent Spec capability: `spec-pyforge-steward` CAP-164 (FR-37).
 Dream: `docs/dreams/pyforge-steward.md` § Realization log → *2026-09-28 (night) — Proposed: Warden's fleet scan reaches GitHub Enterprise with host-scoped credentials the key inventory holds*.
 Ledger key: `75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity`.
 Ledger status at mint: `backlog`.
-Deps: —. Warden Story 16.1 waits on this story as a `blocked` row in warden's ledger; steward Story 76.1 extends the
-reader this story adds (`Deps: S-75.1` there).
+Deps: —. Dispatch first: this story is the home of `pyforge.core.flags.read_boolean` and its Q3 helpers, the fleet-wide
+contract every station's flagged CLI story reuses (coordinator ruling 2026-09-28). Warden Story 16.1 waits on this story
+as a `blocked` row in warden's ledger; steward Story 76.1 extends the reader (`Deps: S-75.1` there).
 
 ## Verification
 

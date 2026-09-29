@@ -83,6 +83,8 @@ Type / Effort / Deps: feature / M / S-75.1 (the reader this story extends).
   `pyforge.core`, as it already does for `cutover_root`.
 - Reconcile every Spec `spec-surface-check` names (`spec-pyforge-core` for `pyforge-core`, `spec-pyforge-steward` and
   `spec-pyforge-unifying-strategy` for `django-pyforge` and `src/platform`), then stamp each scoped.
+- Keep `read_boolean`'s fleet-wide contract (Story 75.1: signature, resolution order, OFF/absent semantics, the Q3
+  helpers) unchanged; the environment is an additive input, never a new required argument.
 - If a `flags-render` task is added, `pixi.toml` changes: regenerate `environment.yaml` and run
   `pixi run -e pyforge-guild pyforge-station-tests` before pushing.
 

@@ -90,6 +90,8 @@ Type / Effort / Deps: feature / M / S-76.1, S-76.2.
 
 **Always:**
 - Read flags only through `pyforge.core.flags`; keep stdout payload-only and diagnostics on stderr (CAP-146..149).
+- Keep `read_boolean`'s fleet-wide contract (Story 75.1: signature, resolution order, OFF/absent semantics, the Q3
+  helpers) unchanged: OpenFeature replaces how a present key is evaluated, never what an absent or disabled one reads.
 - Keep every gated formatter's exit code and refusal shape; only the source of truth changes.
 - Reconcile every Spec `spec-surface-check` names (`spec-pyforge-core` for `pyforge-core`; the Specs that govern
   `pixi.toml` and `pixi.lock`), then stamp each scoped with `--spec`.

@@ -4936,8 +4936,12 @@ So that the scan never holds a token that writes to a fleet repo, and warden's S
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-164 (FR-37; extends FR-5, FR-7); AD-2
 (amended 2026-09-28), AD-3, AD-8, AD-9 • flag `pyforge.steward.ghe_fleet_credentials`, read on the CLI by
 `pyforge.core.flags.read_boolean`, which this story adds in the `pyforge.core.cutover_root` shape (Story 44.12's
-precedent; Stories 76.1 and 76.3 later make it per-environment and route it through OpenFeature) • unblocks warden Story
-16.1 (its ledger row is `blocked` on this story; the operator flips it)
+precedent). **Coordinator ruling 2026-09-28: this story is the home of `read_boolean`.** Its shape is the fleet-wide
+contract every station's flagged CLI story reuses: the signature, the tree resolution, the OFF/absent semantics, and the
+Q3 helpers `FlagOff`, `require` and `disabled_help` (a verb stays listed as disabled, and each station's `main()` returns
+its own usage code). **Dispatch this story first.** Stories 76.1 and 76.3 later make it per-environment and route it
+through OpenFeature without changing that shape • unblocks warden Story 16.1 (its ledger row is `blocked` on this story;
+the operator flips it)
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py` (the enterprise host from
 `_http.resolve_github_api_urls`, the issued-identity attachment, the two scopes, `exec`, the audit finding),
 `src/shared/packages/pyforge-core/src/pyforge/core/flags.py` (new: `read_boolean`) and
@@ -4967,9 +4971,11 @@ in `docs/governance/`, not in this project's `specs/` tree, so these citations a
 enumerated — the same relay doctor Epic 24 uses for `spec-coverage-gate-independence` CAP-1..3, with no station CAP and no
 station FR minted. The Guild's gate (CAP-2, doctor's) reads what these stories put in the tree; per-environment values are
 the prerequisite of its "default per environment" check. A station CLI's flag reader, `pyforge.core.flags.read_boolean`,
-arrives with Story 75.1 in the `pyforge.core.cutover_root` shape (Story 44.12's precedent; `spec-pyforge-core` co-governs
-the path and is reconciled, not blocked); Story 76.1 makes it read the per-environment rendered tree (hence `Deps: S-75.1`)
-and Story 76.3 routes it through OpenFeature. All three stories are `flag-exempt: flag-infrastructure`.
+arrives with Story 75.1, its home by coordinator ruling (2026-09-28), as the fleet-wide contract. It takes the
+`pyforge.core.cutover_root` shape (Story 44.12's precedent); `spec-pyforge-core` co-governs the path and is reconciled,
+not blocked. Story 76.1 makes it read the per-environment rendered tree (hence `Deps: S-75.1`), and Story 76.3 routes it
+through OpenFeature; neither changes its signature or OFF/absent semantics. All three stories are
+`flag-exempt: flag-infrastructure`.
 **HARD boundaries:** one tree, one provider, no egress (canopy:AD-11, amended 2026-09-28 for value-only overlays); no flagd
 daemon, no hosted flag service, no environment variable as a provider; no targeting rules (Q5); the Guild Spec and its
 memlog are not edited here; `src/platform/` never imports `pyforge.*`, and station code reads flags only through
@@ -5021,9 +5027,11 @@ provider loads the tree with metadata and evaluates as before).
 **Then** the metadata check refuses a flag missing a field or carrying a malformed date, and refuses `on_everywhere` set
 while any environment's rendered value is not ON (or empty while every one is), and `cleanup_by` other than
 `on_everywhere` + 90 days
-**And** `pyforge.three_surfaces` and `pyforge.cutover_root` carry dates read from the tree's history; a flag whose
-`cleanup_by` has already passed is named in the story's result as owing a removal story (Q4); the FILE provider evaluates
-the same values as before; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**And** `pyforge.three_surfaces` and `pyforge.cutover_root` carry dates read from the tree's history —
+`pyforge.three_surfaces` ON everywhere since 2026-08-25, so `cleanup_by` 2026-11-23, and a removal story or an explicit
+keep-as-kill-switch decision must land before doctor Story 34.3's metadata check goes live, or it reds `main` that day; the
+story's result names it, and any flag whose `cleanup_by` has passed at landing, as owing one (Q4); the FILE provider
+evaluates the same values as before; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
 
 ### Story 76.3: The ledger query's flags fold into the one tree and evaluate through OpenFeature

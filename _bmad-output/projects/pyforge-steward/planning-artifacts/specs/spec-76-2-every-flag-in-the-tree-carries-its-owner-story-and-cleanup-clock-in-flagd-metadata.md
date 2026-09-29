@@ -37,10 +37,12 @@ The tree records none of that: `pyforge.three_surfaces` and `pyforge.cutover_roo
 `pyforge.core.flags` gains the check, run wherever the tree is composed, each failure a named error: a missing field, a
 malformed date, `on_everywhere` set while some environment's rendered value is not ON (or empty while every one is ON), and
 `cleanup_by` other than `on_everywhere` + 90 days. The two existing flags get their real dates from the tree's history
-(`git log --follow src/platform/config/flags.json`: `pyforge.three_surfaces` entered with Story 26.4 on 2026-08-25 and has
-read `on` everywhere since, so its clock has already run; `pyforge.cutover_root` entered with Story 44.12 on 2026-09-13).
-The story's result names every flag whose `cleanup_by` has passed at landing as owing a removal story from its owner (Q4);
-filing that story is the owner's act, not this story's.
+(`git log --follow src/platform/config/flags.json`: `pyforge.three_surfaces` entered with Story 26.4 on 2026-08-25,
+`7a194d3f57`, reading `on` everywhere, so its `cleanup_by` is 2026-11-23; `pyforge.cutover_root` entered with Story 44.12
+on 2026-09-13). `pyforge.three_surfaces`'s clock runs out on 2026-11-23: a removal story, or an explicit decision to keep it
+as a kill switch, must land before doctor's CAP-2 metadata check (doctor Story 34.3) goes live, or that check reds `main`
+the day it does. The story's result names that flag and date, and every flag whose `cleanup_by` has passed at landing, as
+owing a removal story or a keep decision from its owner (Q4); filing either is the owner's act, not this story's.
 
 Ledger key: `76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata`.
 Ledger status (do not edit the ledger): `backlog`.
@@ -60,7 +62,8 @@ Type / Effort / Deps: feature / S / S-76.1.
 - Given `cleanup_by` not equal to `on_everywhere` + 90 days When the tree is composed Then a named error names both dates
 - Given `pyforge.cutover_root` (string variants) When the tree is composed Then its `on_everywhere` and `cleanup_by` are empty and no error is raised
 - Given the tree with metadata When the host's FILE provider and `pyforge.core.flags.evaluate_boolean` evaluate every key in every environment Then the values equal those before the story
-- Given the landing When a flag's `cleanup_by` is before the landing date Then the story's result names it and its owner as owing a removal story (Q4)
+- Given `pyforge.three_surfaces` When its metadata is written Then `on_everywhere` is 2026-08-25 and `cleanup_by` is 2026-11-23, and the story's result names it as owing a removal story or a keep-as-kill-switch decision before doctor Story 34.3's metadata check goes live
+- Given the landing When a flag's `cleanup_by` is before the landing date Then the story's result names it and its owner as owing a removal story or a keep decision (Q4)
 - Given the change When `pixi run --frozen -e pyforge-steward pyforge-steward-test` runs Then it passes
 
 ## Boundaries & Constraints
@@ -86,7 +89,8 @@ Type / Effort / Deps: feature / S / S-76.1.
 | ON without clock | ON everywhere, `on_everywhere` empty | — | named error |
 | wrong cleanup | `cleanup_by` ≠ +90 days | — | named error |
 | string flag | `pyforge.cutover_root` | empty clock | — |
-| expired clock | `cleanup_by` before landing | named in the result as owing removal | — |
+| running clock | `pyforge.three_surfaces`, `cleanup_by` 2026-11-23 | named in the result with its date | — |
+| expired clock | `cleanup_by` before landing | named in the result as owing removal or a keep decision | — |
 
 </intent-contract>
 
