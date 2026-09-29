@@ -860,7 +860,7 @@ So that I never act on a retired skill name, a stale version, or a table hand-ca
 **When** `pixi run -e pyforge-guild scribe catalog bmad-estate --write` runs
 **Then** `docs/reference/bmad-estate-llms-full.md` is rendered with a header (generation date, the regeneration command, the detector name), then: installed core/modules/`installShims`; the skill catalog by family (`bmad-*` core and BMM, `bmad-agent-*`, `bmad-os-*`, `bmad-cis-*`, `bmad-testarch-*`, `skf-*`, `bmad-loop-*`, labs consent, `pyforge-*`) with counts and one-line descriptions; the 13-member roster with install class, verdict, wielding station, provisioning path and hazards as read from the register; the `bmad-*` pins; the harness range; the cadence steps — every fact followed by its source path; a disagreement between the register, a Spec header and `pixi.toml` is rendered as such, never resolved
 **And** the generator makes no network call and imports no `pyforge.<station>` internals (steward's `pipeline-truth --json` is an optional `--pipeline-truth` input); `test_catalog_bmad_estate.py` renders from fixtures and asserts the header, one row per family, one row per member and the disagreement rendering; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; the first render is committed in the same PR; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec
-**Status:** backlog
+**Status:** done
 
 ### Story 24.2: The catalog cannot drift silently
 
@@ -874,7 +874,7 @@ So that the estate picture stays current by a gate, not by someone remembering t
 **When** a source moves (a manifest version, a skill description, a member row, a pin, the harness range) and the catalog is not re-rendered
 **Then** `pixi run -e pyforge-guild bmad-estate-check` exits 1 naming the drifted section and its source path; on `main` with a fresh render it exits 0; an unreadable source exits 2, never a false green; `detectors-ci` picks the detector up with no registry edit; OQ-CAP-32-1 is decided in this story's spec (structured diff of derived facts with prose exempt is the recommended default — the library catalog's byte-level check is the one operators keep re-syncing) and the decision is a memlog entry
 **And** `governance-currency` resolves every path the catalog names; the reconcile is the regeneration command in the catalog header, stated once; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile as in 24.1
-**Status:** backlog
+**Status:** done
 
 ### Story 24.3: Every harness is pointed at the catalog once
 
@@ -888,7 +888,7 @@ So that the picture is one read away without `AGENTS.md` restating a version, a 
 **When** this story lands
 **Then** `AGENTS.md` § *Read on trigger* gains one row ("Before invoking a BMAD skill, provisioning or upgrading a suite member, or driving bmad-loop → `docs/reference/bmad-estate-llms-full.md`"), § *Where things are* gains one line naming the catalog as the derived estate picture, § *Running and verifying* names the three detectors; no version, count or verdict is typed into `AGENTS.md`; the `bmad:context` block is changed only by the skill and its provenance line is re-stamped; `docs/reference/README.md` and `docs/MAP.md` classify the file; the research record gains a dated addendum
 **And** scribe's parity meta-test, `governance-currency`, `general-docs-consistency` and `spec-surface-check` green; co-governor reconcile as in 24.1
-**Status:** backlog
+**Status:** done
 
 ## Platform floor addendum — 2026-09-07
 

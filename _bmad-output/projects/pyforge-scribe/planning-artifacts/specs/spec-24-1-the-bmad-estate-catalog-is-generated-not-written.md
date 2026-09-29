@@ -2,7 +2,7 @@
 title: '24.1: The BMAD estate catalog is generated, not written'
 type: 'feature'
 created: '2026-09-29'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -56,10 +56,14 @@ declared_low_risk: false
 Parent Spec capability: `spec-pyforge-scribe CAP-32`.
 Dream: `docs/dreams/pyforge-scribe.md` § *2026-09-29 — Every session knows the BMAD estate it stands on*.
 Ledger key: `24-1-the-bmad-estate-catalog-is-generated-not-written`.
-Ledger status at mint: `backlog`.
+Ledger status at mint: `backlog`; `done` 2026-09-29 after the review below.
 
 ## Epic excerpt
 
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-32 • Dream 2026-09-29
 **Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py` (new), `cli.py` (`scribe catalog bmad-estate [--write|--check|--pipeline-truth <json>]`), `tests/unit/test_catalog_bmad_estate.py` (new), `docs/reference/bmad-estate-llms-full.md` (first committed render).
 See `epics.md` § Story 24.1 for the full Given / When / Then / And.
+
+## Review 2026-09-29 (adversarial, independent session) — passed after fixes
+
+Findings addressed before `done`: block-scalar `description:` values were read as their first line only and digested truncated (now every continuation line is joined and the full text digested; truncation happens only in the render); the register "Member (version)" cell lost its commit pin (now quoted verbatim, e.g. `0.2.0.dev0 @3172162f`); the four rendered disagreements had no deferred-work row (relayed as `DW-steward-suite-versions-disagree-2026-09-29`); `''` in single-quoted frontmatter was not unescaped; the pin walk accepted a string-valued task as a pin (now dependency tables only); `csv.DictReader` over `splitlines()` (now `io.StringIO`); a skill listed under two `bmad-help.csv` modules is Core when any row says so. Accepted as-is: `check()` compares header digests, so a hand-edit of a rendered fact is not caught (OQ-CAP-32-1's consequence); `--output` may target any path (operator flag).

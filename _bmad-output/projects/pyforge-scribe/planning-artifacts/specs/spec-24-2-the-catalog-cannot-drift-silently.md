@@ -2,7 +2,7 @@
 title: '24.2: The catalog cannot drift silently'
 type: 'feature'
 created: '2026-09-29'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -56,10 +56,14 @@ declared_low_risk: false
 Parent Spec capability: `spec-pyforge-scribe CAP-32`.
 Dream: `docs/dreams/pyforge-scribe.md` § *2026-09-29 — Every session knows the BMAD estate it stands on*.
 Ledger key: `24-2-the-catalog-cannot-drift-silently`.
-Ledger status at mint: `backlog`.
+Ledger status at mint: `backlog`; `done` 2026-09-29 after the review below.
 
 ## Epic excerpt
 
 **Type:** feature • **Effort:** S • **Deps:** S-24.1 • **FR/AD:** spec-pyforge-scribe CAP-32 • OQ-CAP-32-1
 **Surface:** `scripts/bmad_estate_check.py` (new), `pixi.toml` (`bmad-estate-check` under `guild-tasks`), `catalog.py` (`--check` mode), `docs/reference/bmad-estate-llms-full.md` (header names the detector), `tests/unit/test_catalog_bmad_estate.py` (drift cases).
 See `epics.md` § Story 24.2 for the full Given / When / Then / And.
+
+## Review 2026-09-29 (adversarial, independent session) — passed after fixes
+
+Blocking finding addressed: CI's `detectors` environment (`.github/workflows/detectors.yml`, `pixi.toml` `[feature.detectors.dependencies]`) carried no `pyforge-scribe`, and the wrapper mapped Python's exit 1 for a missing `-m` module to "findings" — a false drift on every CI run. Fixes: `pyforge-scribe` joins the `detectors` environment (lock re-solved), the wrapper returns 2 when `importlib.util.find_spec("pyforge.scribe")` is `None` or the child reports a missing module, and the scripts-lane test proves the could-not-run path in-process instead of skipping. `pixi run --frozen -e detectors python scripts/detectors.py --scope repo` now reports `bmad_estate_check pass`. OQ-CAP-32-1 stays decided as structured (prose exempt).

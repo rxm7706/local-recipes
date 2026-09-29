@@ -29,6 +29,7 @@ from __future__ import annotations
 DETECTOR = {"scope": "repo"}
 
 import argparse
+import importlib.util
 import json
 import subprocess
 import sys
@@ -40,17 +41,22 @@ PREFIX = "[bmad-estate]"
 
 def run_check(root: Path) -> tuple[int, list[str]]:
     """Return (exit_code, output_lines) from the scribe CLI's own check."""
+    if importlib.util.find_spec("pyforge.scribe") is None:
+        return 2, [f"{PREFIX} could-not-run: `pyforge.scribe` is not importable in this environment ({sys.executable})"]
     command = [sys.executable, "-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--check", "--root", str(root)]
     try:
         proc = subprocess.run(command, capture_output=True, text=True, check=False)
     except OSError as exc:
         return 2, [f"{PREFIX} could-not-run: {exc}"]
     lines = [line for line in (proc.stdout + proc.stderr).splitlines() if line.strip()]
+    joined = "\n".join(lines)
+    if "No module named" in joined or "Error while finding module specification" in joined:
+        # `python -m pyforge.scribe.cli` never started: a missing module is could-not-run, never drift.
+        return 2, [f"{PREFIX} could-not-run: the scribe CLI could not be imported", *lines]
     if proc.returncode not in (0, 1, 2):
         return 2, [f"{PREFIX} could-not-run: scribe exited {proc.returncode}", *lines]
     if proc.returncode == 2 and not any("could-not-run" in line for line in lines):
-        # `python -m pyforge.scribe.cli` itself failed to start (module missing, import error).
-        return 2, [f"{PREFIX} could-not-run: `pyforge.scribe` is not importable in this environment", *lines]
+        return 2, [f"{PREFIX} could-not-run: the scribe CLI did not run the check (usage or startup error)", *lines]
     return proc.returncode, lines
 
 

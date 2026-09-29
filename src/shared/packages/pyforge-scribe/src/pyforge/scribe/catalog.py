@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import io
 import json
 import re
 import tomllib
@@ -117,7 +118,7 @@ _DIGEST_RE = re.compile(r"^<!-- bmad-estate-digest: ([a-z_-]+)=([0-9a-f]{12}) --
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---", re.DOTALL)
 _HARNESS_RANGE_RE = re.compile(r'^HARNESS_VERSION_RANGE_TEXT\s*=\s*"([^"]+)"', re.MULTILINE)
 _CADENCE_STEP_RE = re.compile(r"^(\d+)\.\s+\*\*(.+?)\*\*", re.MULTILINE)
-_MEMBER_CELL_RE = re.compile(r"`([^`]+)`\s*([^\s|]*)")
+_MEMBER_CELL_RE = re.compile(r"`([^`]+)`\s*(.*)")
 _FLOOR_RE = re.compile(r">=\s*([0-9][^,\s]*)")
 
 
@@ -226,7 +227,8 @@ def _read_text(root: Path, rel: Path) -> str:
 def _unquote(value: str) -> str:
     value = value.strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-        return value[1:-1]
+        inner = value[1:-1]
+        return inner.replace("''", "'") if value[0] == "'" else inner
     return value
 
 
@@ -246,7 +248,14 @@ def _frontmatter(text: str) -> dict[str, str]:
             continue
         value = value.strip()
         if value in ("|", ">", "|-", ">-", "|+", ">+", ""):
-            value = next((cont.strip() for cont in lines[index + 1 :] if cont.strip()), "")
+            # A block scalar: every indented continuation line, joined with a space.
+            parts: list[str] = []
+            for cont in lines[index + 1 :]:
+                if cont and cont[0] not in " \t":
+                    break
+                if cont.strip():
+                    parts.append(cont.strip())
+            value = " ".join(parts)
         out[key.strip()] = _unquote(value)
     return out
 
@@ -327,7 +336,7 @@ def read_help(root: Path) -> tuple[list[dict[str, str]], dict[str, str]]:
     text = _read_text(root, HELP_CSV_RELPATH)
     rows: list[dict[str, str]] = []
     docs: dict[str, str] = {}
-    for record in csv.DictReader(text.splitlines()):
+    for record in csv.DictReader(io.StringIO(text)):
         skill = (record.get("skill") or "").strip()
         module = (record.get("module") or "").strip()
         if skill == "_meta":
@@ -371,7 +380,7 @@ def read_skills(root: Path, help_modules: dict[str, str]) -> tuple[list[Skill], 
             Skill(
                 name=name,
                 family=_family_for(name, help_modules),
-                description=description[:220],
+                description=description,
                 path=skill_md.relative_to(root).as_posix(),
             )
         )
@@ -437,7 +446,7 @@ def read_register(root: Path) -> tuple[dict[str, RegisterRow], list[RoutingRow]]
             continue
         register[match.group(1)] = RegisterRow(
             member=match.group(1),
-            version=match.group(2),
+            version=match.group(2).strip(),
             install_class=cells[2],
             wired=cells[3],
             verdict=cells[4],
@@ -460,7 +469,8 @@ def _walk_pins(node: object, path: tuple[str, ...], out: dict[str, dict[str, str
     if not isinstance(node, dict):
         return
     for key, value in node.items():
-        if isinstance(key, str) and (key.startswith("bmad-") or key.startswith("mybmad")):
+        in_dependency_table = bool(path) and path[-1].endswith("dependencies")
+        if in_dependency_table and isinstance(key, str) and (key.startswith("bmad-") or key.startswith("mybmad")):
             spec: str | None = None
             if isinstance(value, str):
                 spec = value
@@ -563,7 +573,11 @@ def derive(root: Path, *, pipeline_truth: Path | None = None) -> Estate:
     estate = Estate()
     estate.installed = read_installed(root)
     estate.help_rows, estate.module_docs = read_help(root)
-    help_modules = {row["skill"]: row["module"] for row in estate.help_rows}
+    # A skill listed under two modules (bmad-help.csv carries a few) is Core when any row says so.
+    help_modules: dict[str, str] = {}
+    for row in estate.help_rows:
+        if help_modules.get(row["skill"], "").lower() != "core":
+            help_modules[row["skill"]] = row["module"]
     estate.skills, estate.skill_dirs_without_skill_md = read_skills(root, help_modules)
     estate.members = read_members(root)
     estate.register, estate.routing = read_register(root)
@@ -664,7 +678,7 @@ def render(estate: Estate, *, today: date | None = None) -> str:
         add("| Skill | Description |")
         add("|---|---|")
         for skill in members:
-            add(f"| `{skill.name}` | {_cell(skill.description)} |")
+            add(f"| `{skill.name}` | {_cell(skill.description[:220])} |")
         add("")
     if estate.skill_dirs_without_skill_md:
         add(

@@ -40,9 +40,9 @@ development_status:
   21-2-agents-md-says-what-runs-governance-currency: done
   22-1-scribe-pg-up-succeeds-from-a-long-path-worktree: done
   23-1-the-skf-managed-block-lives-in-agents-md-only: done
-  24-1-the-bmad-estate-catalog-is-generated-not-written: backlog
-  24-2-the-catalog-cannot-drift-silently: backlog
-  24-3-every-harness-is-pointed-at-the-catalog-once: backlog
+  24-1-the-bmad-estate-catalog-is-generated-not-written: done
+  24-2-the-catalog-cannot-drift-silently: done
+  24-3-every-harness-is-pointed-at-the-catalog-once: done
   3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: done
   3-2-transcripts-join-the-compile-sources: done
   3-3-the-nightly-compile-gets-a-schedule-and-a-cost-ceiling: done
@@ -92,7 +92,7 @@ development_status:
   epic-22-retrospective: optional
   epic-23: done
   epic-23-retrospective: optional
-  epic-24: backlog
+  epic-24: done
   epic-24-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional

@@ -62,6 +62,10 @@ members:
     urls:
       - https://example.invalid/tea
     notes: tag-sourced
+  - name: bmad-loop
+    description: Deterministic ralph-loop orchestrator.
+    urls:
+      - https://example.invalid/loop
   - name: bmad-method-wds-expansion
     deprecated: true
     notes: upstream deprecated
@@ -74,6 +78,7 @@ _REGISTER = """# Adoption register
 | # | Member (version) | Install class | Wired 2026-09-06 | Verdict | Wielder | Provisioning path | Hazards | Status / story |
 |---|---|---|---|---|---|---|---|---|
 | 1 | `bmad-method` 6.12.0 | installer-tree | present | wield (substrate) | all stations | steward Epic 14 | installed-stage caveat | 30.1 |
+| 2 | `bmad-loop` 0.11.1 @abc1234 | runner-home | provisionable | wield | marshal (wrap, never absorb) | `steward provision --runner bmad-loop` | npm-invisible | 30.4 |
 | 6 | `bmad-method-test-architecture-enterprise` 1.24.0 | module | unwired | wield — full adoption | marshal, warden | `steward provision --module tea` | none | 46.3 |
 
 ## 2. Skill routing (CAP-3) — one wielding station per adopted skill
@@ -115,6 +120,9 @@ bmad-loop = { version = ">=0.12.0", channel = "conda-forge" }
 
 [feature.guild.tasks.bmad-drift-check]
 cmd = "python -m pyforge.doctor.sources bmad-drift"
+
+[feature.guild.tasks]
+bmad-oops = "echo not-a-pin"
 
 [environments]
 bmad-ui = { features = ["bmad-ui"], no-default-feature = true }
@@ -159,6 +167,7 @@ def estate_root(tmp_path: Path) -> Path:
     _skill(root, "mcp-builder", "Build an MCP server.")
     _skill(root, "conda-forge-expert", "|\n  Autonomous conda-forge packaging agent.\n  Second line.")
     _skill(root, "pyforge-steward", "Steward station skill.", nested=True)
+    _skill(root, "bmad-project-context", "'Set up a repository''s agent instructions.'")
     (root / catalog.SKILLS_RELPATH / "shared").mkdir()
     recipe = root / catalog.RECIPES_RELPATH / "bmad-method" / "recipe.yaml"
     recipe.parent.mkdir(parents=True)
@@ -170,7 +179,9 @@ def test_derive_reads_every_source(estate_root: Path) -> None:
     estate = catalog.derive(estate_root)
     assert estate.installed["core_version"] == "6.12.0"
     assert estate.installed["install_shims"] == "false"
-    assert [m["name"] for m in estate.installed["modules"]] == ["core", "skf"]  # type: ignore[index]
+    modules = estate.installed["modules"]
+    assert isinstance(modules, list)
+    assert [m["name"] for m in modules] == ["core", "skf"]
     assert estate.installed["skf_version"] == "2.1.0"
     families = {s.name: s.family for s in estate.skills}
     assert families["bmad-help"] == catalog.FAMILY_CORE
@@ -184,7 +195,8 @@ def test_derive_reads_every_source(estate_root: Path) -> None:
     assert families["conda-forge-expert"] == catalog.FAMILY_OTHER
     assert families["pyforge-steward"] == catalog.FAMILY_STATIONS
     described = {s.name: s.description for s in estate.skills}
-    assert described["conda-forge-expert"] == "Autonomous conda-forge packaging agent."
+    assert described["conda-forge-expert"] == "Autonomous conda-forge packaging agent. Second line."
+    assert described["bmad-project-context"] == "Set up a repository's agent instructions."
     assert described["bmad-spec"] == "Condense any input into a spec."
     assert estate.skill_dirs_without_skill_md == ["shared"]
     assert [r["skill"] for r in estate.help_rows] == ["bmad-spec", "bmad-help"]
@@ -192,15 +204,17 @@ def test_derive_reads_every_source(estate_root: Path) -> None:
     assert [(m.name, m.deprecated) for m in estate.members] == [
         ("bmad-method", False),
         ("bmad-method-test-architecture-enterprise", False),
+        ("bmad-loop", False),
         ("bmad-method-wds-expansion", True),
     ]
     assert estate.members[0].description == '"Build More Architect Dreams" - Agile Ai Driven Development.'
     assert estate.members[1].notes == "tag-sourced"
     assert estate.register["bmad-method"].wielder == "all stations"
     assert estate.register["bmad-method-test-architecture-enterprise"].version == "1.24.0"
+    assert estate.register["bmad-loop"].version == "0.11.1 @abc1234"
     assert estate.routing[0].station == "herald"
     assert estate.pins["bmad-loop"] == {"feature.guild.dependencies": ">=0.12.0"}
-    assert "bmad-drift-check" not in estate.pins and "bmad-ui" not in estate.pins
+    assert "bmad-drift-check" not in estate.pins and "bmad-ui" not in estate.pins and "bmad-oops" not in estate.pins
     assert estate.recipe_versions == {"bmad-method": "6.12.0"}
     assert estate.harness_range == ">=0.11.0,<0.13"
     assert estate.cadence_steps == ["1. Doctor — detect.", "2. Steward — catalog."]
@@ -208,7 +222,10 @@ def test_derive_reads_every_source(estate_root: Path) -> None:
 
 def test_disagreement_is_rendered_never_resolved(estate_root: Path) -> None:
     estate = catalog.derive(estate_root)
-    assert [d.member for d in estate.disagreements] == ["bmad-method-test-architecture-enterprise"]
+    assert [d.member for d in estate.disagreements] == ["bmad-method-test-architecture-enterprise", "bmad-loop"]
+    # a commit-pinned register cell is quoted verbatim, never trimmed to its first token
+    assert estate.disagreements[1].versions[catalog.REGISTER_RELPATH.as_posix()] == "0.11.1 @abc1234"
+    assert "0.11.1 @abc1234" in catalog.render(estate)
     versions = estate.disagreements[0].versions
     assert versions[catalog.REGISTER_RELPATH.as_posix()] == "1.24.0"
     assert versions["pixi.toml"] == "1.26.0"
@@ -274,6 +291,10 @@ def test_check_names_the_drifted_section_and_its_source(estate_root: Path) -> No
     _skill(estate_root, "bmad-walkthrough", "Walk the user through a change.")
     findings = catalog.check(estate_root)
     assert {f.split("`")[1] for f in findings} == {"installed", "skills"}
+    catalog.write(estate_root)
+    cfe = estate_root / catalog.SKILLS_RELPATH / "conda-forge-expert" / "SKILL.md"
+    cfe.write_text(cfe.read_text(encoding="utf-8").replace("Second line.", "Second line, edited."), encoding="utf-8")
+    assert [f.split("`")[1] for f in catalog.check(estate_root)] == ["skills"]
 
 
 def test_check_reports_a_missing_catalog_as_drift(estate_root: Path) -> None:

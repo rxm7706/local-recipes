@@ -15,9 +15,9 @@
 > its derived facts move, prose is exempt).
 
 <!-- bmad-estate-digest: installed=58220a6d9490 -->
-<!-- bmad-estate-digest: skills=f294d1b597fa -->
+<!-- bmad-estate-digest: skills=2036acf58e2b -->
 <!-- bmad-estate-digest: phases=b74a30513e46 -->
-<!-- bmad-estate-digest: suite=86d5a9fd5b83 -->
+<!-- bmad-estate-digest: suite=99320657c0ef -->
 <!-- bmad-estate-digest: pins=4c42a2caf3a4 -->
 <!-- bmad-estate-digest: harness=c35ae088e6fe -->
 <!-- bmad-estate-digest: cadence=bd38c415273d -->
@@ -66,12 +66,12 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 128 skills.
 | `bmad-prd` | Create, update, or validate a PRD. Use when the user wants help producing, editing, or validating a PRD |
 | `bmad-prfaq` | Test a product concept with Amazon's Working Backwards method: write the press release for the finished product first, then answer hard customer and stakeholder questions, ending in a complete PRFAQ document. Use when th |
 | `bmad-product-brief` | Create, update, or validate a product brief. Use when the user wants help producing, editing, or validating a brief |
-| `bmad-project-context` | Set up, adopt, refresh, or audit a repository''s agent instructions (the AGENTS.md block) so AI agents work well in that repo. Also records observed agent mistakes as pitfalls. Use when invoked by name |
+| `bmad-project-context` | Set up, adopt, refresh, or audit a repository's agent instructions (the AGENTS.md block) so AI agents work well in that repo. Also records observed agent mistakes as pitfalls. Use when invoked by name |
 | `bmad-qa-generate-e2e-tests` | Generate automated API and end-to-end tests for implemented features. Use when the user says "create qa automated tests for [feature]" |
 | `bmad-retrospective` | Review a completed epic against the evidence it left behind — spec, stories, diffs, commits, sprint status — and produce a retrospective with sourced findings, action items, and an acceptance decision. Use when the user |
 | `bmad-spec` | Condense any input — an idea, brief, PRD, transcript, or mixed notes — into a short spec: SPEC.md plus supporting files that downstream skills build from. Also updates and validates existing specs, and can break a spec i |
 | `bmad-sprint-planning` | Check that planning is complete enough to implement, then generate the sprint status file from the epics. Can also summarize sprint progress and validate or repair the tracking file. Use when the user says "run sprint pl |
-| `bmad-ux` | Capture the user''s UX vision in two documents: DESIGN.md for how the product looks and EXPERIENCE.md for how it behaves. Use when the user says "lets create UX design" or "create UX specifications" or "help me plan the |
+| `bmad-ux` | Capture the user's UX vision in two documents: DESIGN.md for how the product looks and EXPERIENCE.md for how it behaves. Use when the user says "lets create UX design" or "create UX specifications" or "help me plan the U |
 | `bmad-walkthrough` | Walk the user through reviewing a change: what it is for, what to look at closely, and how to test it. Use when the user says "walkthrough", "walk me through this change", or "human review" |
 
 ### Personas (bmad-agent-*) (13)
@@ -183,20 +183,20 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 128 skills.
 |---|---|
 | `mcp-builder` | Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. Use when building MCP servers to integrate external APIs or services, |
 | `multi-repo-git-ops` | Manages git operations (branching, committing, pushing) across multi-repo systems with git submodules. Use this skill whenever the user wants to create a feature branch, commit changes, push code, sync submodules, or man |
-| `release-please` | Set up and configure Google's release-please for automated versioning, changelog generation, |
+| `release-please` | Set up and configure Google's release-please for automated versioning, changelog generation, and publishing via GitHub Actions. Covers pipeline creation, Conventional Commits formatting, pre-release workflows, monorepo c |
 | `slides-generator` | Generate interactive presentation slides using React + Tailwind, and export to standalone single-file HTML. Triggers on keywords like "slides", "presentation", "PPT", "demo", "benchmark", or when user requests export. Us |
 
 ### PyForge station skills (pyforge-*) (7)
 
 | Skill | Description |
 |---|---|
-| `pyforge-atlas` | Kedro/Dagster/DuckDB factory intelligence for conda-forge (pyforge.atlas). |
-| `pyforge-doctor` | Pre-flight and fleet-watch diagnostics via the doctor CLI (check, |
-| `pyforge-herald` | Seeds, pulls, and reports Claude Design deck bridge state via the herald |
-| `pyforge-marshal` | Deterministic BMAD-loop supervisor: fleet status, loop homes, detector |
-| `pyforge-scribe` | Captures team-memory decisions into .claude/memory, compiles the scribe |
-| `pyforge-steward` | Provisioner's station CLI — keys, deploy, provision, budget, sync, |
-| `pyforge-warden` | Runs the warden dependency-hygiene and vulnerability gate via the warden |
+| `pyforge-atlas` | Kedro/Dagster/DuckDB factory intelligence for conda-forge (pyforge.atlas). Use when running atlas pipelines, listing catalog datasets, or reading the station MCP surface. Invoke via `pyforge atlas …` (FR-13) — do not imp |
+| `pyforge-doctor` | Pre-flight and fleet-watch diagnostics via the doctor CLI (check, monitor, diagnose, backlog-intake). Use when running pyforge doctor grammar, POST /stations/doctor/mcp, or working in src/shared/packages/pyforge-doctor/. |
+| `pyforge-herald` | Seeds, pulls, and reports Claude Design deck bridge state via the herald CLI. Use when running herald deck seed / pull / status, or working in src/shared/packages/pyforge-herald/. Do not import pyforge.herald internals; |
+| `pyforge-marshal` | Deterministic BMAD-loop supervisor: fleet status, loop homes, detector check, and Genesis seed via the marshal CLI. Use when running marshal status / homes / check / seed, or working in src/shared/packages/pyforge-marsha |
+| `pyforge-scribe` | Captures team-memory decisions into .claude/memory, compiles the scribe knowledge graph, and recalls cited answers via the scribe CLI. Use when writing or retrieving team memory, running scribe capture / graph compile / |
+| `pyforge-steward` | Provisioner's station CLI — keys, deploy, provision, budget, sync, workspace, upgrade, suite, and machine bootstrap. Use when running steward duties, pyforge steward grammar, or working in src/shared/packages/pyforge-ste |
+| `pyforge-warden` | Runs the warden dependency-hygiene and vulnerability gate via the warden CLI (scan / scan --doctor). Use when scanning Python/Conda/Pixi manifests, checking the scanner environment, or working in src/shared/packages/pyfo |
 
 ### Other bmad-* skills (2)
 
@@ -211,11 +211,11 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 128 skills.
 |---|---|
 | `api-and-interface-design` | Principles for creating stable, usable interfaces across REST APIs, GraphQL schemas, module boundaries, and component contracts. |
 | `browser-testing-with-devtools` | Use Chrome DevTools MCP to verify browser-based code through live inspection rather than static analysis. |
-| `cf-atlas-legacy` | Hallucination-free legacy provenance oracle for the cf_atlas-to-Kedro migration |
+| `cf-atlas-legacy` | Hallucination-free legacy provenance oracle for the cf_atlas-to-Kedro migration (BMAD project pyforge-atlas). Models the legacy conda_forge_atlas.py orchestrator (8,902 LOC, 23 cataloged phases, schema v29) plus bootstra |
 | `ci-cd-and-automation` | Automate CI/CD pipelines to enforce quality standards. Shift-left philosophy — catch problems early, not in production. |
 | `code-review-and-quality` | Multi-dimensional code review framework. Evaluate across correctness, readability, architecture, security, and performance before merging. |
 | `code-simplification` | Simplify code to enhance readability without altering functionality. Preserve behavior, follow conventions, prefer clarity. |
-| `conda-forge-expert` | Autonomous conda-forge packaging agent. Manages the entire recipe lifecycle, |
+| `conda-forge-expert` | Autonomous conda-forge packaging agent. Manages the entire recipe lifecycle, from generation, security scanning, and building to debugging, maintenance, and PR submission. USE THIS SKILL WHEN: creating or updating conda |
 | `context-engineering` | Feed agents the right information at the right time. Context is the single biggest lever for agent output quality. |
 | `debugging-and-error-recovery` | Systematic root-cause diagnosis. Six-step triage checklist. Stop-the-Line Rule when unexpected behavior occurs. |
 | `deprecation-and-migration` | Systematic approach to removing outdated code and safely transitioning to replacement systems. Code is a liability. |
@@ -302,11 +302,11 @@ never re-decided) and each member's `recipes/<member>/recipe.yaml`. 13 active me
 | `bmad-builder` | 2.2.2 | module | **wield — beside skf** | steward (module/agent authoring), mason | `steward provision --module bmb` | never `--legacy-dir` / `cleanup-legacy.py` (`rmtree` of `_bmad/core/config.yaml`); npm stale 1.1.0 | 2.2.2 |
 | `bmad-creative-intelligence-suite` | 0.3.2 | module | wield | herald, scribe | `steward provision --module cis` (idempotent re-provision) | npm stale 0.1.9 vs GitHub 0.3.2 | 0.3.2 |
 | `bmad-module-skill-forge` | 2.1.0 | own-installer (custom-module registration kept) | wield | all stations (domain skills) | `bmad-module-skill-forge install/update`; `--module skf` refused | never `uninstall` (deletes 121 skill dirs); marketplace.json omits `skf-campaign` | 2.2.0 |
-| `bmad-eval-quality` | 0.2.0.dev0 | cli | wield (pilot) | warden, marshal (reviewer measurement) | pixi pin; tasks `eval-quality-smoke` / `-review-twin-run` / `-review-replay` | npm 0.1.0 lacks `score`; exact commit pin load-bearing; `__win` variant missing | 4.3.0 |
-| `bmad-utility-skills` | 2.0.0 | module | **wield** | herald, doctor, warden, scribe, marshal, steward (§ 2) | `steward provision --module utility-skills` | no upstream tags; no LICENSE file upstream (recipe vendors MIT text; conda-forge submission held) | 2.0.0 |
-| `bmad-labs-skills` | 1.0.0.dev0 | plugin-path (consent) | **wield — skill-by-skill** | atlas (`mcp-builder`), herald (`slides-generator`), marshal (`multi-repo-git-ops`), steward (`release-please`) | `steward provision --plugin labs --skill <name>` (the one wrapped, pinned writer — AD-1; 46.5) | third-party (thuantan2060); `bmad-skills` on npm is unrelated (bacoco) | 1.0.0.dev0 |
-| `bmad-module-template` | 0.1.0 | scaffold | wield (authoring tool only) | steward / `bmad-builder` | none (never `steward provision --module` into `.claude/skills/`) | placeholder LICENSE is not a reason to copy it into the live skill tree | 0.1.0 |
-| `bmad-manticore` | 3.1.0.dev0 | module (`--custom-source`) | **wield — Herald studio** | herald | native: `npx bmad-method install --directory $PYFORGE_STUDIO_ROOT --custom-source https://github.com/bmad-code-org/bmad-manticore --yes --tools <full tool-id list>` in `$PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio/`, declared once per machine — AD-3); `--directory` and `--yes --tools <ids>` are REQUIRED for a non-interactive run (the bare command hangs on an unanswerable `Installation directory:` prompt, proven across 3 attempts) — full command in `docs/reference/manticore-studio.md` (this cell cites, never restates) | 3.0 upgrade wipes the studio's `_bmad/` + `_bmad-output/`; G109 renumber (tag 1.0.1 vs 3.1.0.dev0); needs uv, ffmpeg, node, git (ffmpeg confirmed absent on this machine, 46.6); the installed module tracks `main`/`next` (unpinned, floating) — unlike every other custom module in this register (skf pinned v2.1.0, this same package's OWN conda recipe pinned @c9bcf759) — so re-running the sanctioned command later can silently install a different Manticore version with no lockfile or version-check anywhere (review finding, 46.6, recorded as an open reproducibility risk, not resolved here) | 3.1.0.dev0 |
+| `bmad-eval-quality` | 0.2.0.dev0 @3172162f | cli | wield (pilot) | warden, marshal (reviewer measurement) | pixi pin; tasks `eval-quality-smoke` / `-review-twin-run` / `-review-replay` | npm 0.1.0 lacks `score`; exact commit pin load-bearing; `__win` variant missing | 4.3.0 |
+| `bmad-utility-skills` | 2.0.0 @HEAD | module | **wield** | herald, doctor, warden, scribe, marshal, steward (§ 2) | `steward provision --module utility-skills` | no upstream tags; no LICENSE file upstream (recipe vendors MIT text; conda-forge submission held) | 2.0.0 |
+| `bmad-labs-skills` | 1.0.0.dev0 @HEAD | plugin-path (consent) | **wield — skill-by-skill** | atlas (`mcp-builder`), herald (`slides-generator`), marshal (`multi-repo-git-ops`), steward (`release-please`) | `steward provision --plugin labs --skill <name>` (the one wrapped, pinned writer — AD-1; 46.5) | third-party (thuantan2060); `bmad-skills` on npm is unrelated (bacoco) | 1.0.0.dev0 |
+| `bmad-module-template` | 0.1.0 @HEAD | scaffold | wield (authoring tool only) | steward / `bmad-builder` | none (never `steward provision --module` into `.claude/skills/`) | placeholder LICENSE is not a reason to copy it into the live skill tree | 0.1.0 |
+| `bmad-manticore` | 3.1.0.dev0 @c9bcf759 | module (`--custom-source`) | **wield — Herald studio** | herald | native: `npx bmad-method install --directory $PYFORGE_STUDIO_ROOT --custom-source https://github.com/bmad-code-org/bmad-manticore --yes --tools <full tool-id list>` in `$PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio/`, declared once per machine — AD-3); `--directory` and `--yes --tools <ids>` are REQUIRED for a non-interactive run (the bare command hangs on an unanswerable `Installation directory:` prompt, proven across 3 attempts) — full command in `docs/reference/manticore-studio.md` (this cell cites, never restates) | 3.0 upgrade wipes the studio's `_bmad/` + `_bmad-output/`; G109 renumber (tag 1.0.1 vs 3.1.0.dev0); needs uv, ffmpeg, node, git (ffmpeg confirmed absent on this machine, 46.6); the installed module tracks `main`/`next` (unpinned, floating) — unlike every other custom module in this register (skf pinned v2.1.0, this same package's OWN conda recipe pinned @c9bcf759) — so re-running the sanctioned command later can silently install a different Manticore version with no lockfile or version-check anywhere (review finding, 46.6, recorded as an open reproducibility risk, not resolved here) | 3.1.0.dev0 |
 | `bmad-dashboard` | 1.2.2.dev0 | vscode-extension | wield (opt-in dev surface) | marshal | `bmad-dashboard-install` pixi task | npm `bmad-dashboard` is an unrelated collision; never the console (`retired-console-check`) | 1.2.2.dev0 |
 | `mybmad-dashboard` | 0.1.0.dev0 | vscode-extension (a Next.js app) | wield (sidecar: estate Postgres schema mybmad + estate OIDC) | steward (host chrome tile) | `mybmad` launcher; Prisma `?schema=mybmad` on estate `DATABASE_URL`; Keycloak `COMPONENT_OIDC_*` | consume sidecar — not `/console/`, not station nine, not Better Auth on the wielded path; launcher `pg_ctl` + Better Auth is DEV FALLBACK ONLY | 0.1.0.dev0 |
 
@@ -319,7 +319,11 @@ Deprecated catalog rows (kept for drift completeness, never a metapackage run-de
 | `bmad-loop` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 0.11.1 | `pixi.toml` → 0.12.0 | `recipes/bmad-loop/recipe.yaml` → 0.12.0 |
 | `bmad-method-test-architecture-enterprise` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 1.24.0 | `pixi.toml` → 1.27.2 | `recipes/bmad-method-test-architecture-enterprise/recipe.yaml` → 1.27.2 |
 | `bmad-module-skill-forge` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 2.1.0 | `pixi.toml` → 2.2.0 | `recipes/bmad-module-skill-forge/recipe.yaml` → 2.2.0 |
-| `bmad-eval-quality` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 0.2.0.dev0 | `pixi.toml` → 4.3.0 | `recipes/bmad-eval-quality/recipe.yaml` → 4.3.0 |
+| `bmad-eval-quality` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 0.2.0.dev0 @3172162f | `pixi.toml` → 4.3.0 | `recipes/bmad-eval-quality/recipe.yaml` → 4.3.0 |
+| `bmad-utility-skills` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 2.0.0 @HEAD | `pixi.toml` → 2.0.0 | `recipes/bmad-utility-skills/recipe.yaml` → 2.0.0 |
+| `bmad-labs-skills` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 1.0.0.dev0 @HEAD | `pixi.toml` → 1.0.0.dev0 | `recipes/bmad-labs-skills/recipe.yaml` → 1.0.0.dev0 |
+| `bmad-module-template` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 0.1.0 @HEAD | `pixi.toml` → 0.1.0 | `recipes/bmad-module-template/recipe.yaml` → 0.1.0 |
+| `bmad-manticore` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 3.1.0.dev0 @c9bcf759 | `pixi.toml` → 3.1.0.dev0 | `recipes/bmad-manticore/recipe.yaml` → 3.1.0.dev0 |
 
 Rendered as read; the reconcile is steward's (a deferred-work row), never this generator's.
 

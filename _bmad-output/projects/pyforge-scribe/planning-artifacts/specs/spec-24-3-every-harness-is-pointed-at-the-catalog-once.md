@@ -2,7 +2,7 @@
 title: '24.3: Every harness is pointed at the catalog once'
 type: 'config'
 created: '2026-09-29'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -52,10 +52,14 @@ declared_low_risk: false
 Parent Spec capability: `spec-pyforge-scribe CAP-32` (with CAP-27's rules).
 Dream: `docs/dreams/pyforge-scribe.md` § *2026-09-29 — Every session knows the BMAD estate it stands on*.
 Ledger key: `24-3-every-harness-is-pointed-at-the-catalog-once`.
-Ledger status at mint: `backlog`.
+Ledger status at mint: `backlog`; `done` 2026-09-29 after the review below.
 
 ## Epic excerpt
 
 **Type:** config • **Effort:** S • **Deps:** S-24.2 • **FR/AD:** spec-pyforge-scribe CAP-32, CAP-27
 **Surface:** `AGENTS.md`, `docs/reference/README.md`, `docs/MAP.md`, the 2026-09-12 research record (addendum).
 See `epics.md` § Story 24.3 for the full Given / When / Then / And.
+
+## Review 2026-09-29 (adversarial, independent session) — passed after fixes
+
+Findings addressed: the in-block Where-things-are line typed a count ("13-member"), against this story's Always; it now says "the suite roster" and the catalog states the count. The Running-and-verifying line implied `tea-test-review` runs from the Guild env; it is a `local-recipes` task and the line now says so. The block lines were shown to the operator and approved before the splice (bmad-project-context step 5); provenance re-stamped.
