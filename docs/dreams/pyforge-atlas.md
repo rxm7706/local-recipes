@@ -232,8 +232,12 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   - The capability carries a flag block ([[feature-flag-governance]], same day).
   - This station's PRD and spine are dated 2026-09-20, so the CAP mint reconciles both in the same
     PR.
-  **Kinships:** [[pyforge-warden]] and [[pyforge-mason]] (same day). Owner: atlas. Status: **seed**.
-  The next `bmad-spec` pass mints the CAP (CAP-61 onward).
+  **Kinships:** [[pyforge-warden]] and [[pyforge-mason]] (same day). Owner: atlas.
+  → `spec-pyforge-atlas` CAP-61 / Epic 25 / Stories 25.1–25.2 (FR-69; 25.1 `blocked` on mason
+  Story 21.1), specced 2026-09-28; the PRD and spine were reconciled in the same change.
+  **Amended 2026-09-28 (spec pass):** AD-4 grep-gates any `sqlite3` import and the no-inline-IO gate
+  any `subprocess` import under `src/pyforge/atlas`, so git-pkgs' SQLite is read through DuckDB (or
+  its JSON output) and deleted, and `git` / `git pkgs` run through `pyforge.core.process`.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

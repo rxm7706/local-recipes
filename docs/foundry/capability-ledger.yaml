@@ -4845,6 +4845,12 @@ capabilities:
     heading: "the round-trip + idempotency semantics `test_lasuite.py` already proves"
     mode: rebuild
     path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-61
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Atlas keeps each scanned repo's dependency history"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   # 2026-09-17 mason one-chain fold remints
   - id: pyforge-mason:CAP-1
     spec: pyforge-mason

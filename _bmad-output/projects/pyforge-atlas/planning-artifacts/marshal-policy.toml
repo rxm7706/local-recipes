@@ -161,6 +161,25 @@ harness_preference = ["cursor"]
   "AGENTS.md",
 ]
 
+"25" = [  # Atlas keeps each scanned repo's dependency history (spec-pyforge-atlas CAP-61), added 2026-09-28
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "scripts/.spec-surface-baseline.json",
+  # 25.1: the git-pkgs run-dependency range (member manifests are under the package glob above)
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  # the flag keys in the one tree (spec-feature-flag-governance:CAP-1)
+  "src/platform/config/flags.json",
+  # the boolean flag reader, if pyforge.core still ships only read_cutover_root (spec-pyforge-core co-governs)
+  "src/shared/packages/pyforge-core/src/pyforge/core/**",
+  "src/shared/packages/pyforge-core/tests/**",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # (`harness_preference` used to sit here, inside [epic_surfaces] — moved above
 #  the first table header on 2026-09-02; see its comment there for why.)
 

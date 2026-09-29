@@ -7,7 +7,7 @@ paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
 status: final
 created: '2026-07-17'
-updated: "2026-09-20"
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim. Reviewed again 2026-08-26 — AD-3 amended for the three governed pipeline additions; post-08-02 as-built deltas (CAP-19 query plane, host MCP face, CAP-18 hooks, vizro-ai deprecation, canopy AD-numbering disambiguation) reconciled in the appended section 'Currency reconciliation — 2026-08-26'. Reviewed again 2026-09-18 (fleet chain-currency sweep) — the 2026-09-17 PRD fold/rekey and 2026-09-10 code motion (Story 24.4 live Artifactory transport) reconciled in the appended section 'Currency reconciliation — 2026-09-18'; AD-3's Epic 13/15 citations corrected to post-rekey Epic 12/14."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
 sources:
@@ -1434,3 +1434,36 @@ consistency pass reconciled 56 tracked story specs' frontmatter against the spri
 reconstructed missing Auto Run Results from git), which post-dated this artifact through the
 `spec→prd→arch` cascade. It is bookkeeping, not a capability: no requirement, decision or
 story changes here. `updated:` bumped to record that the check ran.*
+
+## Currency reconciliation — 2026-09-28
+
+*Trigger: the PRD's re-stamp for FR-69 / CAP-61 (`prd→arch`) — Atlas keeps each scanned repo's dependency history
+(Epic 25).* Checked against every AD; FR-69 lands on the existing ones as written, with no AD added, amended or
+removed:
+
+- **AD-1 (the DAG is the source of truth; import ban).** The sensor's run/skip decision is a dagster-free function in
+  `orchestration/` beside `event_source.py`; only `orchestration/definitions.py` wraps it in a sensor. `pipelines/` and
+  `datasets/` import neither Dagster nor anything from `pyforge.warden` or `django_warden_fabric`.
+- **AD-2 (catalog-owned IO, per-host credentials).** The fleet inventory export and the per-repo history are catalog
+  datasets; a GitHub Enterprise clone credential attaches to its host's dataset entry only, and
+  `tests/unit/catalog/test_credential_scoping.py`'s allowlist names it. `git` and `git pkgs` run through
+  `pyforge.core.process` (`spec-pyforge-core:CAP-6`, the one sanctioned subprocess path) from a custom dataset, so the
+  atlas package still imports no `subprocess` and the no-inline-IO gate (`tests/unit/catalog/test_no_inline_io.py`)
+  holds as written.
+- **AD-3 (a new signal joins its assigned pipeline).** The history is a `vcs_health` output; no new pipeline package.
+- **AD-4 (Parquet + DuckDB singularity).** git-pkgs writes SQLite; that file is a transient raw input at a throwaway
+  path (`GIT_PKGS_DB`), read through DuckDB — the only engine — or through git-pkgs' JSON output, landed as partitioned
+  Parquet and deleted. No `sqlite3` import appears under `src/pyforge/atlas`, so the F1 grep gate holds, and no dual
+  SQLite/Parquet store lingers.
+- **AD-5 (incremental state is a dataset concern).** A repo whose head has not moved is not re-walked; the per-repo
+  cursor lives in the dataset's metadata, never in a node.
+- **AD-6 (Dagster orchestrates).** One sensor, poll-cursor shaped (the head SHA per repo), coalescing a tick's moved
+  heads into one run request; every git-pkgs and clone step carries its own timeout.
+- **AD-13 (skip-and-mark-stale).** An unreachable repo keeps its last-good partition with a `stale` marker.
+- **The Consistency Conventions.** Join keys are the repo's full name plus `pypi_name` / `conda_name` / the native
+  ecosystem name — never a purl; commit times are epoch seconds at ingest.
+
+"Atlas measures; Warden judges" (the Spec's first Constraint) holds: the dataset carries no verdict, score or threshold;
+Warden reads it as data.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
