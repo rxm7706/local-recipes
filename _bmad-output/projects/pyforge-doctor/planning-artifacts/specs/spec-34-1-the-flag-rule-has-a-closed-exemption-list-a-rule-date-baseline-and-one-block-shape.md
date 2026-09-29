@@ -2,7 +2,7 @@
 title: '34.1: The flag rule has a closed exemption list, a rule-date baseline and one block shape'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 flag-exempt: flag-infrastructure   # the rule's own infrastructure (spec-feature-flag-governance Q2)
 baseline_revision: '1b7ccfe5646529502d61f1952d241fdc09354f34'
 review_loop_iteration: 0
@@ -128,14 +128,14 @@ Type / Effort / Deps: feature / S / —.
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `docs/governance/guild-roster.json` -- add `flag_exemptions` (the five Q2 values, in Q2's order) and `$comment_flag_exemptions` -- one declared source
-- [ ] `scripts/flag_rule.py` -- pure classifier, exemptions read from the roster at call time -- the rule's machine form
-- [ ] `scripts/flag_rule_baseline.py` -- `--snapshot` (once, at the PR #1654 merge SHA) and `--prune` (only removes) -- the rule-date line
-- [ ] `docs/governance/flag-rule-baseline.json` -- stamp with the stamper, never by hand -- the pre-rule population
-- [ ] `tests/scripts/test_flag_rule.py` -- one test per AC row and per I/O row, plus the roster-is-the-source scan -- the oracle
-- [ ] `docs/reference/story-spec-flag-block.md`, `docs/map.yaml`, `docs/MAP.md`, `docs/reference/station-verify-commands.md` -- the block's one written shape and its pointer
-- [ ] `scripts/spec_surface_allowlist.txt` -- two reason-tagged lines -- the new scripts have no folder-spec surface
-- [ ] `docs/governance/spec-feature-flag-governance/.memlog.md` -- surface reconcile entry via `_bmad/scripts/memlog.py append`, plus each co-governor `spec-surface-check` names
+- [x] `docs/governance/guild-roster.json` -- add `flag_exemptions` (the five Q2 values, in Q2's order) and `$comment_flag_exemptions` -- one declared source
+- [x] `scripts/flag_rule.py` -- pure classifier, exemptions read from the roster at call time -- the rule's machine form
+- [x] `scripts/flag_rule_baseline.py` -- `--snapshot` (once, at the PR #1654 merge SHA) and `--prune` (only removes) -- the rule-date line
+- [x] `docs/governance/flag-rule-baseline.json` -- stamp with the stamper, never by hand -- the pre-rule population
+- [x] `tests/scripts/test_flag_rule.py` -- one test per AC row and per I/O row, plus the roster-is-the-source scan -- the oracle
+- [x] `docs/reference/story-spec-flag-block.md`, `docs/map.yaml`, `docs/MAP.md`, `docs/reference/station-verify-commands.md` -- the block's one written shape and its pointer
+- [x] `scripts/spec_surface_allowlist.txt` -- two reason-tagged lines -- the new scripts have no folder-spec surface
+- [x] `docs/governance/spec-feature-flag-governance/.memlog.md` -- surface reconcile entry via `_bmad/scripts/memlog.py append`, plus each co-governor `spec-surface-check` names
 
 **Acceptance Criteria:**
 - Given the intent contract's ten Given/When/Then rows, when `tests/scripts/test_flag_rule.py`, `docs-currency-check`, `spec-surface-check`, `python scripts/spec_surface_reconcile.py` and `pyforge-doctor-test` run, then each exits 0.
@@ -143,6 +143,7 @@ Type / Effort / Deps: feature / S / —.
 ## Spec Change Log
 
 - 2026-09-29 -- planned by bmad-build-auto: status `backlog` -> `draft` -> `ready-for-dev`; Code Map, Tasks and Design Notes added; the intent contract is unchanged.
+- 2026-09-29 -- implemented by bmad-build-auto: status `in-progress` -> `in-review`; all eight tasks done; the intent contract is unchanged.
 
 ## Source
 
