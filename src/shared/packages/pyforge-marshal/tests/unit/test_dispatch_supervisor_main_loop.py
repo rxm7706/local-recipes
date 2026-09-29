@@ -195,6 +195,7 @@ class FakeVcs:
         self.commits: list[tuple[Path, tuple[Path, ...], str]] = []
         self.pushes: list[tuple[Path, str]] = []
         self.remote_tip_writes: list[tuple[str, ...]] = []
+        self.remote_tip_reasons: list[str | None] = []
 
     # -- reads ------------------------------------------------------------
     def worktree_head_sha(self, worktree_path: Path) -> str:
@@ -262,7 +263,9 @@ class FakeVcs:
         ref: str,
         writes: tuple[tuple[str, str], ...],
         message: str,
+        preflight_skip_reason: str | None = None,
     ) -> str:
+        self.remote_tip_reasons.append(preflight_skip_reason)
         if self._remote_tip_raises:
             raise VcsCommandError("git commit-tree failed (test double)")
         self.remote_tip_writes.append(tuple(path for path, _ in writes))
