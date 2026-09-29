@@ -4,7 +4,8 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-28"   # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+# 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
 project: pyforge-herald
@@ -1184,3 +1185,88 @@ on 2026-09-28.
 (artifact tracking) gains a retention rule; see the spine's § Currency reconciliation — 2026-09-28.
 § Success Metrics is unchanged, because the working set is a size constraint, not an audience
 measure.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+*Chain-currency sweep: `spec-pyforge-herald` gained CAP-54..CAP-57 on 2026-09-28 (night), after
+this PRD's same-day re-stamp for CAP-53. Reconciled the same day. The FRs derive from the CAPs,
+following `one-chain-per-station`'s rule that the PRD is the Spec's decomposition, never an
+independent namespace.*
+
+**What moved in the Spec.** The Dream's 2026-09-28 (night) entry triaged an intake
+(`archive/docs/intake/airgapped_pptx_architecture_specification.md`) that proposed python-pptx
+bytes in a PostgreSQL `BYTEA` column, a CORS-open Django stream and a PPTXjs viewer. The need
+behind it is smaller: people inside the enterprise airgap read a deck in the browser without
+PowerPoint, from the django-herald portal and from an internal GitHub Enterprise Pages site, and
+git stops being the only place the exports live. The operator ruled three things on 2026-09-28:
+- Decks stay tracked, and each current export is *also* published to the object store with a
+  metadata row. AD-4 does not change.
+- The viewer shows the HTML twins (the Marp HTML and the React bundle), never a browser-side
+  `.pptx` parser.
+- `pptxgenjs-plus` is an *additional* export kind, native and editable, beside `marp --pptx` and
+  the python-pptx fill.
+
+The rejections (bytes in PostgreSQL, PPTXjs, `pptxgenjs-plus` as a viewer, an unauthenticated
+CORS stream, a second Pages artifact) and decisions D1–D7 are on the Spec memlog.
+
+### Feature Group 10: Decks inside the airgap (registered 2026-09-28)
+
+This group is new, not an amendment. Group 2 (Herald Web Surface) is the station portal's shell,
+and Group 8 is the public docs site. Neither said where a deck's bytes live outside git or how
+someone without PowerPoint reads one.
+
+**FR-10.1: Each current export is also kept in object storage** ← CAP-54
+- `herald deck publish <slug>` streams each current tracked export (the newest per kind, by
+  FR-9.1's rule) to the store under its sha256 key and never uploads an unchanged export twice.
+- The deck's manifest in the store records topic, kind, date, size, content type, sha256 and
+  source commit per export; `herald deck exports <slug> --json` reads it back.
+- The station package is the only writer. It reaches the store through configuration only, under
+  steward Story 74.1's seam contract, and imports neither Django nor the host. Story 29.1, whose
+  ledger key is `blocked` until 74.1 lands; the operator flips it.
+
+**FR-10.2: Published exports are listed and streamed behind the herald role** ← CAP-54
+- django-herald's `DeckExport` model is a projection of the publish records, refreshed from
+  `herald deck exports --json` and never written by a portal request. It has no binary field, and
+  its production DDL is a namespaced Liquibase changeset that the sqlmigrate extraction map
+  covers.
+- `GET /stations/herald/api/v1/deck-exports` lists the records; `GET …/deck-exports/{sha256}`
+  streams the bytes in bounded chunks.
+- Both routes require an identity carrying the herald station role (401 anonymous, 403 without
+  the role), and no response carries a CORS header. Story 29.2, `blocked` on steward 74.1 like
+  29.1.
+
+**FR-10.3: A deck's HTML twins are self-contained and published** ← CAP-55
+- A twin is the current standalone Marp HTML or the React/JSX deck's built `dist/` bundle.
+  Neither loads anything from another origin: fonts, scripts and images are vendored.
+- On 2026-09-28, 2 of the 15 current standalone twins and all 14 React decks load from another
+  origin (Google Fonts; twemoji SVGs from jsDelivr), so this is real work, not a check.
+- `herald deck publish` also publishes each twin, and refuses one that still names another origin,
+  naming the file and the origin. Story 30.1.
+
+**FR-10.4: The portal shows a deck in the browser** ← CAP-55
+- The django-herald portal lists decks from the projection and shows a twin in a sandboxed frame
+  served under the portal's own origin, with a Content-Security-Policy that allows no other one.
+- It is reachable only with the herald station role. No `.pptx` is parsed in the browser; the
+  `.pptx` stays a download. Story 30.2.
+
+**FR-10.5: The docs site deploys to a second host from the same artifact** ← CAP-56
+- The one Pages build takes the site URL and base path of the host that runs it
+  (`actions/configure-pages`), so the enterprise copy of the repository deploys the same artifact
+  to its own GitHub Enterprise Pages site through the same `dashboard.yml`.
+- Nothing in the artifact calls another origin at runtime, so no host needs CORS; `pages-check`
+  exits 1 on a violation. Story 31.1.
+- The enterprise-side steps are a how-to. Story 31.2.
+
+**FR-10.6: A deck exports as a native, editable `.pptx`** ← CAP-57
+- `herald deck pptx-native <slug>` renders the deck's current Marp source with `pptxgenjs-plus`
+  into native text boxes, tables and notes, with no slide images, as its own dated kind
+  (`<slug>-deck-native-<date>.pptx`).
+- `marp --pptx` and the python-pptx fill are unchanged.
+- It runs from the Guild env, where `pptxgenjs-plus >=4.2.1` joins the dependencies. Story 32.1.
+
+**ONE FR space now Feature Groups 1–10** (FR-11.1 is the next free id).
+
+**Content changed:** this section only; no FR renumbered or removed. The architecture gains AD-22
+(a current export's second home in object storage), and AD-3, AD-12 and AD-21 are amended; see the
+spine's § Currency reconciliation — 2026-09-28 (night). § Success Metrics is unchanged, because
+reading a deck inside the airgap is not yet a measured audience.

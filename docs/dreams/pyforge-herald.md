@@ -173,7 +173,10 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
     and AD-21.
   - mason: the `pptxgenjs-plus-jsx` recipe ([[pyforge-mason]], same day).
   - warden: vendored JavaScript is scanned like any other dependency.
-  Owner: herald. Status: **seed**. The next `bmad-spec` pass mints the CAPs (CAP-54 onward).
+  Owner: herald. → CAP-54 / Epic 29 / Stories 29.1–29.2 (FR-10.1–FR-10.2); CAP-55 / Epic 30 /
+  Stories 30.1–30.2 (FR-10.3–FR-10.4); CAP-56 / Epic 31 / Stories 31.1–31.2 (FR-10.5); CAP-57 /
+  Epic 32 / Story 32.1 (FR-10.6), specced 2026-09-28. Stories 29.1 and 29.2 are minted `blocked`
+  until steward Story 74.1 (the seam's first-consumer contract) lands.
 - **2026-09-28 — Each deck keeps one current version of each export; git keeps the rest.**
   Source: the steward Dream's 2026-09-25 seed, [[pyforge-unifying-strategy]] § Realization log,
   "`local-recipes` repo-size measurement". It proposed "latest deck per topic" and deferred the

@@ -3,7 +3,8 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-28"   # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28). AD-4 amended (one dated version per export kind); AD-21 untouched. Prior 2026-09-27
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
+# 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28). AD-4 amended (one dated version per export kind); AD-21 untouched. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
 altitude: feature
@@ -94,6 +95,13 @@ altitude: feature
 7. **Video scripts** (`.mp4` via manticore): Rendered downstream, gitignored, regenerable in <60s.
 
 **[ADOPTED]** — Workflow stages defined in spec companions; proven on deckcraft (PPTX) and existing deck engines (HTML).
+
+**Amended 2026-09-28 (night) (CAP-57; FR-10.6):** the PPTX format has three producers, each an
+export plugin on `DECK_EXPORT_HOOK_SPEC`, and none retires: `marp --pptx` (image slides), the
+python-pptx fill (Story 15.1, from a content plan) and `pptxgenjs-plus` (native text boxes, tables
+and notes, from the deck's current Marp source). The `pptxgenjs-plus` output is its own dated kind,
+`<slug>-deck-native-<date>.pptx`, so it never supersedes the Marp export under AD-4's one-version
+rule. See § Currency reconciliation — 2026-09-28 (night).
 
 ---
 
@@ -388,6 +396,11 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 **Prevents**: Separate web apps per Moment (fragmented UX, feature duplication); inconsistent tab naming or layout (user confusion).
 
 **[ADOPTED]** — Herald v0.1.0 web surface integrates existing Pitch tab; extend with Progress, Success, Operations tabs.
+
+**Amended 2026-09-28 (night) (CAP-55; FR-10.4):** on the Canopy portal, the Pitch tab lists the
+decks and shows one from its HTML twin inside the portal, instead of only linking out. The twin is
+served from object storage under the portal's own origin (AD-22) to a caller with the herald
+station role. See § Currency reconciliation — 2026-09-28 (night).
 
 ### AD-13 — Data Model — Moment-Owned Records with Evidence Links (was AD-3)
 
@@ -746,6 +759,23 @@ selected from the workflow's own paths by steward Story 71.2) lands on this AD w
 it. AD-12 (Herald's four-tab web surface) is untouched: that is the station portal on the Canopy
 host, not Pages.
 
+**Amended 2026-09-28 (night) (CAP-56; FR-10.5): one artifact, N hosts.** The same artifact may
+deploy to more than one Pages host, such as the public github.io site and an internal GitHub
+Enterprise Pages site. It stays one artifact:
+- One build definition, parameterized only by the site URL and base path of the host that runs
+  it, taken from `actions/configure-pages`. There is no second assembler, workflow or artifact.
+- One deploy caller per repository (rule 2): the enterprise copy of the repository runs the same
+  `dashboard.yml`.
+- No runtime cross-origin call: no script, stylesheet, font, image, fetch or XHR in the artifact
+  names an origin other than its own, so no host needs CORS and no page calls the platform. Plain
+  navigation links are allowed. `pages-check` exits 1 on a violation.
+
+*Why amend, not add a second artifact:* the intake asked for a second Pages page. The operator
+rejected a second artifact on 2026-09-28, and the need is only a second place to read the same
+content. A second artifact would bring back everything this AD prevents: a second deploy caller, a
+second copy of the shelf, and a second path owner. Parameterizing the host keeps one owner per
+prefix on every host.
+
 **Content changed:** this section only. `updated:` bumped. AD-21 is added; no existing AD is
 amended or removed. The one prior rule this supersedes is CAP-44's (the Pages root is the dossier
 landing page), a Spec-level clause that no AD carried.
@@ -783,3 +813,62 @@ date; a superseded version is deleted, never moved to an archive folder, and git
 
 **Content changed:** this section and AD-4's amendment line only. `updated:` bumped. No AD is added
 or removed.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57
+(Epics 29–32: decks inside the airgap). Three of the four CAPs change a decision, so they land as
+one new AD and three amendments. AD-4 is untouched: the operator ruled on 2026-09-28 that decks
+stay tracked, and CAP-53's one-version rule still holds.*
+
+### AD-22 — A current export has a second home in object storage; the station is its only writer
+
+**Binds**: `herald deck publish` (CAP-54, FR-10.1), django-herald's `DeckExport` projection and
+herald's v1 station routes (FR-10.2), and the portal viewer (CAP-55, FR-10.3, FR-10.4).
+
+**Rule**:
+1. **Git is the archive of record; the store is a second home.** Only the *current* export of each
+   kind (AD-4, the newest date) is published, under its sha256 key. An unchanged export is never
+   uploaded twice. The family downloads (CAP-35) still build from tracked files.
+2. **One writer** (canopy:AD-18). The station package writes the objects and the deck's manifest,
+   the metadata of record. django-herald's `DeckExport` row is a projection refreshed from
+   `herald deck exports --json`; no portal request writes it, and the portal never writes the
+   store. Production DDL is a Liquibase changeset with a namespaced id (canopy:AD-9), and no row
+   holds bytes.
+3. **Configuration, never an import.** One herald module, `pyforge.herald.deck_store`, touches the
+   store. It is a port with an S3 adapter configured from the environment: the settings the
+   platform seam reads, plus the bucket and prefix, arriving in a pod as secret references
+   (canopy:AD-19). The base package imports neither Django nor the host. `src/platform/` imports no
+   `pyforge.*` (pap:AD-2); the host keeps loading `pyforge.herald.station_api` by name. The
+   configuration names and the Helm values are steward Story 74.1's contract, and herald adopts it
+   rather than minting a second one.
+4. **Reads stream, same-origin, behind the herald role.** The list and stream routes live under
+   `/stations/herald/api/v1/` (canopy:AD-2). They stream in bounded chunks, require an identity
+   carrying the herald station role, and send no CORS header. AD-16's public-read clause does not
+   extend to them. A twin the viewer shows is self-contained, with no reference to another origin,
+   and is served under the portal's own origin with a Content-Security-Policy that allows no other.
+
+**Prevents**:
+- Bytes in PostgreSQL (the operator's rejection; the database belongs to the enterprise DB team).
+- A second writer or a second client for the store, and a portal table that becomes a write path.
+- A browser that fetches a deck cross-origin, and so a CORS allow-list to keep.
+- A viewer that parses `.pptx` in the browser (PPTXjs was rejected).
+
+**[PROPOSED 2026-09-28]** — realized by Stories 29.1–29.2 (both `blocked` until steward Story 74.1
+lands) and 30.1–30.2.
+
+**AD-21 amendment (in place above): one artifact, N hosts** (CAP-56, FR-10.5). The docs site
+deploys to an internal GitHub Enterprise Pages site as well as the public one. The build takes the
+host's own site URL and base path from `actions/configure-pages`. The enterprise copy of the
+repository runs the same `dashboard.yml`, so there is one deploy caller per repository, and nothing
+in the artifact calls another origin at runtime. Stories 31.1–31.2.
+
+**AD-3 amendment (in place above)** (CAP-57, FR-10.6). PPTX gains a third producer,
+`pptxgenjs-plus`: native and editable, from the deck's current Marp source, as its own dated kind.
+`marp --pptx` and the python-pptx fill do not retire. Story 32.1.
+
+**AD-12 amendment (in place above)** (CAP-55, FR-10.4). On the Canopy portal, the Pitch tab shows
+the deck list and the viewer instead of only linking out. Story 30.2.
+
+**Content changed:** this section, AD-22, and the amendment lines on AD-3, AD-12 and AD-21 only.
+`updated:` bumped. AD-4 is untouched. No AD is removed.
