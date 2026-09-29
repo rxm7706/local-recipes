@@ -205,9 +205,7 @@ _FINALIZE_EXITED_64_1 = [
 _LEDGER_64_1_BACKLOG = "development_status:\n  epic-64: in-progress\n  64-1-a-landing-s-ledger-promotion: backlog\n"
 
 
-def test_main_names_the_owed_promote_for_a_landing_whose_finalize_exited_non_zero(
-    fleet, monkeypatch, capsys, tmp_path
-):
+def test_main_names_the_owed_promote_for_a_landing_whose_finalize_exited_non_zero(fleet, monkeypatch, capsys, tmp_path):
     """Story 68.1 (CAP-277): `dispatch land` now turns a finalize exit code into `MRS-DISP-020` / REFUSED,
     and the refusal is journaled for a story that IS on `main` while its tracked ledger still reads
     `backlog` (64.1's landing, 2026-09-28) -- ATTENTION names the promote + ledger still owed (Story 56.1's

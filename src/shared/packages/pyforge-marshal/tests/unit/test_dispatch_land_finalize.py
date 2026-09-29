@@ -11,14 +11,13 @@ from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core.journal import Phase
-from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.core.model import Finding, Severity
+from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.dispatch_land_finalize.__main__ import (
     _FINALIZE_RESYNC_KIND,
     _run_deferred_work_intake,
     finalize_dispatch_land,
 )
-
 
 #: `origin/main`'s ledger with the landed stories done -- the converged state finalize's readback
 #: (Story 68.1, `MRS-DISP-051`) expects; tests that stub the promotion out land `42.5` / `53.2`.
@@ -917,7 +916,9 @@ def test_the_64_1_replay_a_publish_timeout_inside_finalize_is_a_failed_landing(
 
     class _TimingOutVcs(_StubVcs):
         def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
-            raise VcsCommandError(f"git command timed out after 120.0s: git -C {repo_root} push origin abc:refs/heads/main")
+            raise VcsCommandError(
+                f"git command timed out after 120.0s: git -C {repo_root} push origin abc:refs/heads/main"
+            )
 
     vcs = _TimingOutVcs(ledger_text=_BACKLOG_LEDGER_64_1)
     monkeypatch.setattr(mod, "repo_root", lambda: tmp_path)
@@ -930,7 +931,9 @@ def test_the_64_1_replay_a_publish_timeout_inside_finalize_is_a_failed_landing(
 
     runs_dir = tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "implementation-artifacts" / "runs"
     [run_dir] = list(runs_dir.iterdir())
-    entries = [json.loads(line) for line in (run_dir / "journal.jsonl").read_text(encoding="utf-8").splitlines() if line]
+    entries = [
+        json.loads(line) for line in (run_dir / "journal.jsonl").read_text(encoding="utf-8").splitlines() if line
+    ]
     ledger_entries = [e for e in entries if e["kind"] == "land-sprint-ledger-promotion"]
     assert [e["phase"] for e in ledger_entries] == ["intent", "outcome"]
     assert ledger_entries[1]["payload"]["ok"] is False

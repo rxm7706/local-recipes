@@ -2265,8 +2265,9 @@ def test_supervisor_commits_and_promotes_a_blocked_halt(tmp_path: Path, clock: _
     assert publisher.completions and publisher.completions[0][1] == DispatchSessionVerdict.BLOCKED.value
 
 
-
-def test_supervisor_journals_a_warn_when_the_blocked_twin_cannot_be_published(tmp_path: Path, clock: _FakeClock) -> None:
+def test_supervisor_journals_a_warn_when_the_blocked_twin_cannot_be_published(
+    tmp_path: Path, clock: _FakeClock
+) -> None:
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)

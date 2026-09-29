@@ -2309,8 +2309,11 @@ def test_sprint_ledger_publish_names_its_story_in_the_preflight_reason(tmp_path,
     exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=_FakeForge(existing=None))
 
     assert exit_code == 0
-    [reason] = [r for (_root, _rm, _ref, writes, _msg), r in zip(vcs.isolated_promote_calls, vcs.isolated_promote_reasons)
-                if writes[0][0].endswith("sprint-status-ledger.yaml")]
+    [reason] = [
+        r
+        for (_root, _rm, _ref, writes, _msg), r in zip(vcs.isolated_promote_calls, vcs.isolated_promote_reasons)
+        if writes[0][0].endswith("sprint-status-ledger.yaml")
+    ]
     assert reason is not None
     assert "acme" in reason
     assert "story 4-4-batch" in reason

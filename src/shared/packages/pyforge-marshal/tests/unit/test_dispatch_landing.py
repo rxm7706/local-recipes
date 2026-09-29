@@ -1336,7 +1336,7 @@ def test_execute_dispatch_land_names_only_the_exit_code_when_finalize_wrote_noth
 
 def test_execute_dispatch_land_keeps_the_tail_of_a_crashed_finalizes_traceback(tmp_path: Path) -> None:
     """A crashed finalize's traceback can run to kilobytes; the finding keeps its tail (the exception)."""
-    traceback = "Traceback (most recent call last):\n" + ("  File \"x.py\", line 1, in f\n" * 400) + "ValueError: boom"
+    traceback = "Traceback (most recent call last):\n" + ('  File "x.py", line 1, in f\n' * 400) + "ValueError: boom"
     _result, envelope = _land_with(tmp_path, ExitingProcess(returncode=1, stderr=traceback))
 
     [finding] = [f for f in envelope.findings if f.code == "MRS-DISP-020"]

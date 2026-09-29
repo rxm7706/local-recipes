@@ -1445,7 +1445,12 @@ class GitVcs:
                 # goes through the preflight instead -- slower, never unchecked.
                 if shutil.which("env") is not None:
                     reason = _preflight_skip_reason_text(new_sha, written, preflight_skip_reason)
-                    push_args = ["env", "PYFORGE_PREFLIGHT_SKIP=1", f"PYFORGE_PREFLIGHT_SKIP_REASON={reason}", *push_args]
+                    push_args = [
+                        "env",
+                        "PYFORGE_PREFLIGHT_SKIP=1",
+                        f"PYFORGE_PREFLIGHT_SKIP_REASON={reason}",
+                        *push_args,
+                    ]
             push_result = _run(push_args, timeout_s=_GIT_FETCH_TIMEOUT_S)
             if push_result.returncode != 0:
                 raise VcsCommandError(

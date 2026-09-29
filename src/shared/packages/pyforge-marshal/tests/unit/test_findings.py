@@ -521,6 +521,9 @@ def test_mrs_disp_051_is_registered_at_the_error_tier():
 
     assert "MRS-DISP-051" in findings.REGISTERED_CODES
     assert verdict.classify("MRS-DISP-051") is verdict.Verdict.ERROR
-    assert verdict.compute_verdict(
-        (Finding(code="MRS-DISP-051", severity=Severity.ERROR, message="not done on origin/main"),)
-    ) is verdict.Verdict.ERROR
+    assert (
+        verdict.compute_verdict(
+            (Finding(code="MRS-DISP-051", severity=Severity.ERROR, message="not done on origin/main"),)
+        )
+        is verdict.Verdict.ERROR
+    )
