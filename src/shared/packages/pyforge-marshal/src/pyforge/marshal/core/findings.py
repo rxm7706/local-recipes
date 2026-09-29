@@ -1272,6 +1272,11 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # advances the tracked `sprint-status-ledger.yaml` under the same AD-42
 # advisory lock. Names lock contention, refused feed downgrade, or
 # write/commit failure — WARN, never blocking (wave already landed).
+# Story 68.1 (CAP-277) gives the same code a second triggering shape, at the same
+# WARN tier (AD-31: same code, several triggering shapes): the dispatch
+# supervisor's `_promote_blocked_twin` publish of a blocked story-spec twin onto
+# `origin/main` that could not land, journaled as a `dispatch-blocked-twin-publish`
+# observation naming the story and the error.
 #
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to `cli/status.py`'s own `MRS-STATUS-*` area, both sourced from a

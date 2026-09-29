@@ -1974,6 +1974,7 @@ def test_commit_paths_onto_remote_tip_refuses_empty_writes(vcs, repo):
 # unless `PYFORGE_PREFLIGHT_SKIP=1`, and then logs `PYFORGE_PREFLIGHT_SKIP_REASON` -- so the
 # adapter's opt-out is proven against git's own hook machinery, not a fake.
 
+
 @pytest.fixture(autouse=True)
 def _no_ambient_preflight_opt_out(monkeypatch):
     """An operator (or a harness) with the pre-push opt-out exported would leak it into every hook the

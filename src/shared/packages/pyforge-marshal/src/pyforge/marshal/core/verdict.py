@@ -748,6 +748,10 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # contention on the tracked sprint-status-ledger, a refused downgrade sync,
 # or a write/commit failure). Classifies WARN, the same tier as
 # MRS-LAND-010: reported, never blocking -- the wave already landed.
+# Story 68.1 (CAP-277): MRS-LAND-011 also names a second triggering shape, same
+# WARN tier (AD-31: same code, several triggering shapes) -- the dispatch
+# supervisor's blocked-spec-twin publish onto origin/main that could not land
+# (`_promote_blocked_twin`), journaled as a WARN observation.
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to cli/status.py's own MRS-STATUS-* area, both WARN.
 # MRS-STATUS-010: a failed-story patch found via a bare Path.glob over
