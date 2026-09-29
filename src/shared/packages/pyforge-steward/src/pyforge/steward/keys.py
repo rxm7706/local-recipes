@@ -114,9 +114,22 @@ _HTTP_SCRIPTS_DIR = str(locate_http_module().parent)
 if _HTTP_SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _HTTP_SCRIPTS_DIR)
 
-from _http import auth_headers_for, resolve_github_api_urls  # noqa: E402  # the delegate target + host row (AD-1/AD-2/AD-9)
+from _http import (  # noqa: E402  # the delegate target + host row (AD-1/AD-2/AD-9)
+    auth_headers_for,
+    resolve_github_api_urls,
+)
 
 # ── Host-scoped credential resolver (FR-7) ──────────────────────────────────
+
+# A bearer token becomes an HTTP header value and an environment value: printable
+# ASCII with no whitespace (DEL and non-ASCII would later fail as a
+# UnicodeEncodeError when the header is encoded).
+_HEADER_TOKEN_RE = re.compile(r"[\x21-\x7e]+")
+
+
+def _is_header_token(value: str) -> bool:
+    """True for a non-empty run of printable ASCII without whitespace."""
+    return _HEADER_TOKEN_RE.fullmatch(value) is not None
 
 
 @dataclass(frozen=True)
@@ -156,10 +169,10 @@ class HostScopedCredential:
             # Never echo the value in a message: it is a secret.
             if not isinstance(self.bearer_token, str):
                 raise TypeError("HostScopedCredential.bearer_token must be a string or None")
-            if not self.bearer_token or any(c.isspace() or ord(c) < 0x20 for c in self.bearer_token):
+            if not _is_header_token(self.bearer_token):
                 raise ValueError(
-                    "HostScopedCredential.bearer_token must be a non-empty single token "
-                    "(no whitespace or control characters — it becomes a header value)"
+                    "HostScopedCredential.bearer_token must be a non-empty single token of printable "
+                    "ASCII (no whitespace, control or non-ASCII characters — it becomes a header value)"
                 )
         if isinstance(self.hosts, str) or not isinstance(self.hosts, tuple):
             raise TypeError(
@@ -1142,8 +1155,10 @@ def _read_payload_token(entry: KeyIdentityEntry) -> str:
             token = plaintext.read_text(encoding="utf-8").strip()
         except UnicodeDecodeError:
             raise InventoryError(f"the payload of scope {entry.scope!r} is not UTF-8 text") from None
-    if not token or any(c.isspace() or ord(c) < 0x20 for c in token):
-        raise InventoryError(f"the payload of scope {entry.scope!r} must hold exactly one token (one line, no spaces)")
+    if not _is_header_token(token):
+        raise InventoryError(
+            f"the payload of scope {entry.scope!r} must hold exactly one token (one line of printable ASCII, no spaces)"
+        )
     return token
 
 
@@ -1190,14 +1205,15 @@ def _redact(text: str, token: str) -> str:
 def _append_exec_log(path: Path, *, scope: str, approval: str, argv0: str) -> None:
     """Append one journal line: UTC time, scope, approval reference, the child's `argv[0]`.
 
-    Never the token. Approval and `argv0` are JSON-quoted so a reference
-    carrying a newline cannot forge a second line. Raises `OSError` when the
+    Never the token. Approval and `argv0` are JSON-quoted with ``ensure_ascii``
+    so a reference carrying a newline, U+2028, U+2029 or U+0085 (all of which
+    ``str.splitlines`` splits on) cannot forge a second line. Raises `OSError` when the
     line cannot be written — the caller then refuses to start the child.
     """
     stamp = datetime.now(timezone.utc).isoformat()
     line = (
-        f"{stamp} scope={scope} approval={json.dumps(approval, ensure_ascii=False)} "
-        f"argv0={json.dumps(argv0, ensure_ascii=False)}\n"
+        f"{stamp} scope={scope} approval={json.dumps(approval, ensure_ascii=True)} "
+        f"argv0={json.dumps(argv0, ensure_ascii=True)}\n"
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
@@ -1296,16 +1312,20 @@ def _run_audit(ns: argparse.Namespace) -> DutyResult:
     (AD-7). `ok=False` iff at least one scan that ran reported a finding.
 
     Story 75.1: every audit also reads the inventory (``--inventory``, default
-    the repo-root one) and reports one payload serving both GHE scopes as an
-    `[inventory]` finding. It prints `[inventory] clean` only when
+    the repo-root one) and reports one payload serving both GHE scopes, or an
+    inventory it cannot read, as an `[inventory]` finding (``ok=False``; the
+    requested scans still run). It prints `[inventory] clean` only when
     ``--inventory`` is given, so the flag-less and ``--drift``/``--secrets``
     output is otherwise unchanged; ``--inventory`` alone is a valid request.
     """
     inventory_path = Path(ns.inventory) if getattr(ns, "inventory", None) else default_inventory_path()
     try:
         inventory_findings = find_shared_payloads(load_inventory(inventory_path))
-    except InventoryError as exc:
-        return DutyResult(ok=False, summary=f"keys audit: [inventory] {exc}")
+    except (ValueError, yaml.YAMLError, OSError) as exc:
+        # InventoryError and UnicodeDecodeError are ValueErrors. A broken
+        # inventory is one finding, never an early return: every requested scan
+        # below still runs and reports.
+        inventory_findings = [" ".join(str(exc).split())]
 
     if not ns.drift and not ns.secrets and not getattr(ns, "inventory", None) and not inventory_findings:
         return DutyResult(ok=True, summary="keys audit: pass --drift and/or --secrets <path>")

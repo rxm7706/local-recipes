@@ -108,17 +108,125 @@ by this story; update `last_rotated` when you rotate):
 Verify without exposing values:
 
 ```sh
-pixi run -e local-recipes steward keys list
+pixi run -e pyforge-guild steward keys list
 ```
 
 Optional JSON for automation:
 
 ```sh
-pixi run -e local-recipes steward keys list --json
+pixi run -e pyforge-guild steward keys list --json
 ```
 
 When a credential rotates, update `last_rotated` in the inventory (ISO-8601) and
 replace the local secret file or env var — do not add secret values to the YAML.
+
+### 5.1 GitHub Enterprise fleet identities (`ghe-fleet-read`, `ghe-fleet-pr-draft`)
+
+Warden's fleet scan reaches the enterprise fleet on GitHub Enterprise, and a fix
+PR on a fleet repo opens only after you approve that proposal (Story 75.1,
+`spec-pyforge-steward` CAP-164). Steward holds the two tokens as **`issued`**
+inventory rows — each with its own `age`-encrypted payload — and hands one to a
+child process through `steward keys exec`, the only delivery path. The host is
+the one `GITHUB_API_BASE_URL` already names (`https://<ghe-host>/api`); Steward
+keeps no URL config of its own. The capability ships behind the flag
+`pyforge.steward.ghe_fleet_credentials`: while it reads OFF (the tree default,
+`src/platform/config/flags.json`), `keys exec` stays listed in
+`steward keys --help` as disabled and exits 2. Until the tree carries
+per-environment values (Guild CAP-5, steward Epic 76), turn it on for a session by
+pointing `PYFORGE_FLAGS_PATH` at a copy of the tree whose
+`pyforge.steward.ghe_fleet_credentials` `defaultVariant` is `on`; the tracked
+default stays `off`. `PYFORGE_FLAGS_PATH` also redirects the `pyforge.cutover_root`
+reader, so unset it when the session ends. Run everything below from the repo
+root; the real rows land when you issue the tokens, never before.
+
+**1. Issue two separate tokens in GitHub Enterprise** (never one token for both
+scopes — `steward keys audit` reds a payload that serves both):
+
+| Inventory `name` / `scope` | Permissions to set when issuing it | Used for |
+|---|---|---|
+| `ghe-fleet-read` | Repository permissions **Contents: Read-only** and **Metadata: Read-only**, on the fleet organisation's repositories; no write permission of any kind | The scan: clone and contents read |
+| `ghe-fleet-pr-draft` | **Pull requests: Read and write**, **Contents: Read and write** (only to push the proposal's branch) and **Metadata: Read-only**, on the fleet repositories the proposal touches; no Administration, Workflows or Actions permission | Opening a pull-request draft for a proposal you approved |
+
+Steward never calls GitHub: it cannot check these permissions, so set them
+exactly as above when you issue each token.
+
+**2. Encrypt each token to its own `age` identity.** The identity file is a secret
+key and stays outside git (`age-keygen` prints the public key it needs):
+
+```sh
+umask 077
+mkdir -p ~/.config/steward
+age-keygen -o ~/.config/steward/ghe-fleet-read.identity.txt        # note the "Public key: age1…"
+read -rs -p "ghe-fleet-read token: " GHE_TOKEN; echo
+PLAIN="${XDG_RUNTIME_DIR:?set XDG_RUNTIME_DIR to a tmpfs directory}/ghe-fleet-read.txt"
+printf '%s\n' "$GHE_TOKEN" > "$PLAIN"  # a tmpfs path
+unset GHE_TOKEN
+pixi run -e pyforge-guild steward keys encrypt "$PLAIN" \
+  --recipient <age1… public key> --output .steward/ghe-fleet-read.age
+shred -u "$PLAIN"
+```
+
+Repeat with `ghe-fleet-pr-draft` (its own identity, its own
+`.steward/ghe-fleet-pr-draft.age`). A payload holds exactly one line: the token.
+
+**3. Record the two rows** in `.steward/keys-inventory.yaml` — metadata only, one
+`.age` path per row, never a value:
+
+```yaml
+  - name: ghe-fleet-read
+    scope: ghe-fleet-read
+    provenance: issued
+    status: active
+    last_rotated: "<ISO-8601 UTC>"
+    identity_path: <home>/.config/steward/ghe-fleet-read.identity.txt
+    secrets: [.steward/ghe-fleet-read.age]
+  - name: ghe-fleet-pr-draft
+    scope: ghe-fleet-pr-draft
+    provenance: issued
+    status: active
+    last_rotated: "<ISO-8601 UTC>"
+    identity_path: <home>/.config/steward/ghe-fleet-pr-draft.identity.txt
+    secrets: [.steward/ghe-fleet-pr-draft.age]
+```
+
+Verify without exposing a value:
+
+```sh
+pixi run -e pyforge-guild steward keys list
+pixi run -e pyforge-guild steward keys audit --inventory .steward/keys-inventory.yaml
+```
+
+**4. Run a command with a token.** `--` separates Steward's flags from the
+command; the child's environment is yours minus `GITHUB_TOKEN`, `GH_TOKEN`,
+`GH_ENTERPRISE_TOKEN` and `GITHUB_ENTERPRISE_TOKEN`, plus `GH_HOST` (the
+enterprise host) and `GH_ENTERPRISE_TOKEN` (the scope's token):
+
+```sh
+export GITHUB_API_BASE_URL=https://<ghe-host>/api
+pixi run -e pyforge-guild steward keys exec --scope ghe-fleet-read -- gh repo list <org>
+pixi run -e pyforge-guild steward keys exec --scope ghe-fleet-pr-draft \
+  --approval <proposal-ref> -- gh pr create --draft --repo <org>/<repo> …
+```
+
+The draft scope refuses (exit 2, the command never starts) without a non-empty
+`--approval`, and appends one line — UTC time, scope, approval reference, the
+command's `argv[0]`, never the token — to `.steward/keys-exec.log` (gitignored by
+`*.log`; beside the inventory when `--inventory` names another). The command runs
+with stdin closed and its output is relayed after it exits, with the exact token
+string redacted (best effort: an encoded form the command prints is not caught);
+its exit code is `keys exec`'s exit code (a signal `-N` is `128 + N`).
+`keys exec` refuses while both scopes share a payload, and there is no
+`--token` flag: a secret is never accepted on the command line.
+
+**5. Rotate.** `steward keys rotate --scope ghe-fleet-read --new-identity
+~/.config/steward/ghe-fleet-read.identity-2.txt` re-encrypts that row's payload
+under a fresh identity. It does not change the token itself: to replace the token,
+issue a new one in GitHub Enterprise, re-run step 2 over the same `.age` path and
+revoke the old token in GitHub Enterprise; `steward keys revoke --scope <scope>`
+only marks the local row retired.
+
+Deployed pods carry secret **references** only (canopy:AD-19); the chart wiring
+belongs to the story that deploys the fleet scan.
 
 ---
 

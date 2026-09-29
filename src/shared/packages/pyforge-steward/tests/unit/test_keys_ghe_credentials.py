@@ -54,14 +54,14 @@ PROBE = "import json, os, sys; json.dump(dict(os.environ), open(sys.argv[1], 'w'
 # --- fixtures -----------------------------------------------------------------
 
 
-def _write_tree(tmp_path: Path, variant: str, name: str) -> Path:
+def _write_tree(tmp_path: Path, variant: str, name: str, *, state: str = "ENABLED") -> Path:
     path = tmp_path / name
     path.write_text(
         json.dumps(
             {
                 "flags": {
                     GHE_FLAG_KEY: {
-                        "state": "ENABLED",
+                        "state": state,
                         "variants": {"on": True, "off": False},
                         "defaultVariant": variant,
                     }
@@ -140,11 +140,18 @@ def test_bearer_token_is_never_in_the_repr_equality_or_hash():
     assert hash(with_token) == hash(without)
 
 
-@pytest.mark.parametrize("bad", ["", "two words", "line\nbreak", "tab\there", "\x00nul"])
+@pytest.mark.parametrize(
+    "bad",
+    ["", "two words", "line\nbreak", "tab\there", "\x00nul", "ghp_\x7fdel", "gh\u00e9p_non_ascii"],
+    ids=["empty", "space", "newline", "tab", "nul", "del", "non-ascii"],
+)
 def test_a_malformed_bearer_token_is_refused_without_echoing_it(bad):
     with pytest.raises(ValueError) as excinfo:
         HostScopedCredential(hosts=("ghe.example.test",), bearer_token=bad)
-    assert repr(bad) not in str(excinfo.value)
+    message = str(excinfo.value)
+    assert repr(bad) not in message
+    if bad:
+        assert bad not in message
 
 
 def test_a_non_string_bearer_token_is_refused():
@@ -288,23 +295,51 @@ def test_exec_returns_the_childs_exit_code(inventory, tmp_path):
 
 
 def test_exec_maps_a_signal_death_to_128_plus_n(inventory):
-    script = f"import os, signal; os.kill(os.getpid(), signal.SIGTERM)"  # noqa: F541
-    argv = ["keys", "exec", "--scope", GHE_READ_SCOPE, "--inventory", str(inventory), "--", sys.executable, "-c", script]
+    script = "import os, signal; os.kill(os.getpid(), signal.SIGTERM)"
+    argv = [
+        "keys",
+        "exec",
+        "--scope",
+        GHE_READ_SCOPE,
+        "--inventory",
+        str(inventory),
+        "--",
+        sys.executable,
+        "-c",
+        script,
+    ]
     assert main(argv) == 128 + signal.SIGTERM
 
 
 def test_exec_relays_the_childs_streams_with_the_token_redacted(inventory, capsys):
-    script = f"import os, sys; t = os.environ['GH_ENTERPRISE_TOKEN']; print('out:' + t); print('err:' + t, file=sys.stderr)"
-    argv = ["keys", "exec", "--scope", GHE_READ_SCOPE, "--inventory", str(inventory), "--", sys.executable, "-c", script]
+    script = (
+        "import os, sys; t = os.environ['GH_ENTERPRISE_TOKEN']; print('out:' + t); print('err:' + t, file=sys.stderr)"
+    )
+    argv = [
+        "keys",
+        "exec",
+        "--scope",
+        GHE_READ_SCOPE,
+        "--inventory",
+        str(inventory),
+        "--",
+        sys.executable,
+        "-c",
+        script,
+    ]
     assert main(argv) == EXIT_OK
     captured = capsys.readouterr()
     assert captured.out == "out:***\n"
     assert captured.err == "err:***\n"
 
 
-def test_exec_does_not_accept_the_dash_dash_separator_being_omitted_for_nothing(inventory):
+def test_exec_with_no_command_exits_2_and_starts_nothing(inventory, capsys):
+    """With or without a bare `--`, no command means exit 2 before any token is read."""
     assert main(["keys", "exec", "--scope", GHE_READ_SCOPE, "--inventory", str(inventory)]) == EXIT_USAGE
     assert main(["keys", "exec", "--scope", GHE_READ_SCOPE, "--inventory", str(inventory), "--"]) == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert err.count("no command given") == 2
+    assert READ_TOKEN not in err
 
 
 def test_exec_reports_a_child_that_cannot_launch(inventory, capsys):
@@ -373,11 +408,14 @@ def test_each_approved_draft_run_appends_one_line(inventory, tmp_path):
     assert len(lines) == 2 and "PROP-7" in lines[0] and "PROP-8" in lines[1]
 
 
-def test_an_approval_with_a_newline_cannot_forge_a_second_journal_line(inventory, tmp_path):
-    forged = "PROP-7\n2026-01-01T00:00:00+00:00 scope=ghe-fleet-pr-draft approval=\"FORGED\" argv0=\"x\""
+@pytest.mark.parametrize("separator", ["\n", "\r", "\u2028", "\u2029", "\u0085"], ids=repr)
+def test_an_approval_with_a_newline_cannot_forge_a_second_journal_line(inventory, tmp_path, separator):
+    """Every character `str.splitlines` splits on (not only `\\n`) is escaped in the journal."""
+    forged = f'PROP-7{separator}2026-01-01T00:00:00+00:00 scope=ghe-fleet-pr-draft approval="FORGED" argv0="x"'
     assert _exec(inventory, GHE_PR_DRAFT_SCOPE, tmp_path / "child-env.json", approval=forged) == EXIT_OK
-    lines = (inventory.parent / "keys-exec.log").read_text(encoding="utf-8").splitlines()
-    assert len(lines) == 1
+    journal = (inventory.parent / "keys-exec.log").read_bytes().decode("utf-8")
+    assert len(journal.splitlines()) == 1
+    assert journal.endswith("\n") and separator not in journal.removesuffix("\n")
 
 
 def test_a_journal_that_cannot_be_written_refuses_to_run(inventory, tmp_path, capsys):
@@ -442,8 +480,12 @@ def test_exec_refuses_while_both_scopes_share_a_payload(tmp_path, capsys):
     assert "share the payload" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("content", ["", "two words\n", "line1\nline2\n"])
-def test_exec_refuses_a_payload_that_is_not_one_token(tmp_path, content):
+@pytest.mark.parametrize(
+    "content",
+    ["", "two words\n", "line1\nline2\n", "ghp_\x7fdel\n", "gh\u00e9p_non_ascii\n"],
+    ids=["empty", "space", "two-lines", "del", "non-ascii"],
+)
+def test_exec_refuses_a_payload_that_is_not_one_token(tmp_path, capsys, content):
     identity = tmp_path / "id.txt"
     recipient = generate_identity(identity)
     plain = tmp_path / "plain.txt"
@@ -468,6 +510,10 @@ def test_exec_refuses_a_payload_that_is_not_one_token(tmp_path, content):
     out = tmp_path / "child-env.json"
     assert _exec(inventory, GHE_READ_SCOPE, out) == EXIT_FAILED
     assert not out.exists()
+    err = capsys.readouterr().err
+    assert "exactly one token" in err
+    if content.strip():
+        assert content.strip() not in err
 
 
 # --- the audit finding, list, rotate ------------------------------------------------
@@ -543,7 +589,12 @@ def test_rotate_re_encrypts_each_scopes_payload_and_exec_still_delivers(inventor
     old_identities = {e.scope: e.identity_path for e in load_inventory(inventory)}
     for scope in GHE_SCOPES:
         new_identity = tmp_path / f"{scope}-rotated-identity.txt"
-        assert main(["keys", "rotate", "--scope", scope, "--new-identity", str(new_identity), "--inventory", str(inventory)]) == EXIT_OK
+        assert (
+            main(
+                ["keys", "rotate", "--scope", scope, "--new-identity", str(new_identity), "--inventory", str(inventory)]
+            )
+            == EXIT_OK
+        )
 
     read_out, draft_out = tmp_path / "read.json", tmp_path / "draft.json"
     assert _exec(inventory, GHE_READ_SCOPE, read_out) == EXIT_OK
@@ -601,7 +652,11 @@ def test_state_disabled_is_the_kill_switch(inventory, tmp_path, monkeypatch):
     path = tmp_path / "killed.json"
     path.write_text(
         json.dumps(
-            {"flags": {GHE_FLAG_KEY: {"state": "DISABLED", "variants": {"on": True, "off": False}, "defaultVariant": "on"}}}
+            {
+                "flags": {
+                    GHE_FLAG_KEY: {"state": "DISABLED", "variants": {"on": True, "off": False}, "defaultVariant": "on"}
+                }
+            }
         ),
         encoding="utf-8",
     )
@@ -631,3 +686,163 @@ def test_exec_is_a_registered_keys_verb():
 
     assert _KEYS_VERBS == ("encrypt", "decrypt", "rotate", "list", "audit", "revoke", "exec")
     assert main(["keys"]) == EXIT_OK  # bare `keys` names the verbs and still succeeds
+
+
+# --- keys exec: rows that cannot name exactly one payload ------------------------------
+
+
+def _rewrite_read_row(inventory: Path, **changes: object) -> None:
+    entries = tuple(
+        KeyIdentityEntry(**{**vars(e), **changes}) if e.scope == GHE_READ_SCOPE else e
+        for e in load_inventory(inventory)
+    )
+    save_inventory(inventory, entries)
+
+
+def _duplicate_read_row(inventory: Path) -> None:
+    entries = load_inventory(inventory)
+    read = next(e for e in entries if e.scope == GHE_READ_SCOPE)
+    save_inventory(inventory, (*entries, KeyIdentityEntry(**{**vars(read), "name": "ghe-fleet-read-dup"})))
+
+
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        ({"identity_path": None}, "no identity_path"),
+        ({"secrets": ()}, "0 payloads"),
+        ({"secrets": ("one.age", "two.age")}, "2 payloads"),
+    ],
+    ids=["no-identity-path", "no-payload", "two-payloads"],
+)
+def test_exec_refuses_a_row_that_does_not_name_exactly_one_payload(inventory, tmp_path, capsys, changes, message):
+    _rewrite_read_row(inventory, **changes)
+    out = tmp_path / "child-env.json"
+    assert _exec(inventory, GHE_READ_SCOPE, out) == EXIT_FAILED
+    assert not out.exists(), "the child must never start"
+    err = capsys.readouterr().err
+    assert "keys exec:" in err and message in err
+    assert READ_TOKEN not in err
+
+
+def test_exec_refuses_two_issued_active_rows_for_one_scope(inventory, tmp_path, capsys):
+    _duplicate_read_row(inventory)
+    out = tmp_path / "child-env.json"
+    assert _exec(inventory, GHE_READ_SCOPE, out) == EXIT_FAILED
+    assert not out.exists(), "an ambiguous inventory is never resolved by picking the first row"
+    err = capsys.readouterr().err
+    assert "2 issued/active identities" in err and READ_TOKEN not in err
+
+
+def test_enterprise_credential_raises_for_two_issued_active_rows(inventory):
+    _duplicate_read_row(inventory)
+    with pytest.raises(InventoryError, match="2 issued/active identities"):
+        enterprise_credential(inventory)
+
+
+# --- keys exec: the default journal location ---------------------------------------------
+
+
+def test_the_default_journal_lands_beside_the_default_inventory(inventory, tmp_path, monkeypatch):
+    steward_dir = tmp_path / "default-root" / ".steward"
+    steward_dir.mkdir(parents=True)
+    default_inventory = steward_dir / "keys-inventory.yaml"
+    default_inventory.write_bytes(inventory.read_bytes())
+    monkeypatch.setattr("pyforge.steward.keys.default_inventory_path", lambda: default_inventory)
+
+    out = tmp_path / "child-env.json"
+    argv = [
+        "keys",
+        "exec",
+        "--scope",
+        GHE_PR_DRAFT_SCOPE,
+        "--approval",
+        "PROP-9",
+        "--",
+        sys.executable,
+        "-c",
+        PROBE,
+        str(out),
+    ]
+    assert main(argv) == EXIT_OK
+
+    assert _child_env(out)["GH_ENTERPRISE_TOKEN"] == DRAFT_TOKEN
+    journal = (steward_dir / "keys-exec.log").read_text(encoding="utf-8")
+    assert len(journal.splitlines()) == 1 and "PROP-9" in journal
+    assert DRAFT_TOKEN not in journal and READ_TOKEN not in journal
+    assert not (inventory.parent / "keys-exec.log").exists(), "only the default inventory's directory is written"
+
+
+# --- the resolver composed with the credential, across the states ------------------------
+
+
+def _enterprise_headers(inventory: Path, url: str) -> dict[str, str]:
+    """`enterprise_credential` composed with `resolve_headers`; no credential is no header."""
+    credential = enterprise_credential(inventory)
+    return {} if credential is None else resolve_headers(credential, url)
+
+
+def test_enterprise_credential_composed_with_resolve_headers_across_the_states(inventory, tmp_path, monkeypatch):
+    enterprise_url = "https://ghe.example.test/api/v3/repos/o/r"
+    urls = (enterprise_url, "https://other.test/x", "https://api.github.com/x")
+
+    # flag ON, GITHUB_API_BASE_URL set: a Bearer header for the enterprise URL, nothing elsewhere
+    assert _enterprise_headers(inventory, enterprise_url) == {"Authorization": f"Bearer {READ_TOKEN}"}
+    assert _enterprise_headers(inventory, "https://other.test/x") == {}
+
+    # GITHUB_API_BASE_URL unset
+    with monkeypatch.context() as unset:
+        unset.delenv("GITHUB_API_BASE_URL")
+        assert enterprise_credential(inventory) is None
+        assert [_enterprise_headers(inventory, url) for url in urls] == [{}, {}, {}]
+
+    # flag OFF, and the kill switch (state DISABLED wins over an `on` default)
+    for state, variant in (("ENABLED", "off"), ("DISABLED", "on")):
+        with monkeypatch.context() as patched:
+            tree = _write_tree(tmp_path, variant, f"flags-{state}-{variant}.json", state=state)
+            patched.setenv("PYFORGE_FLAGS_PATH", str(tree))
+            assert enterprise_credential(inventory) is None, state
+            assert [_enterprise_headers(inventory, url) for url in urls] == [{}, {}, {}], state
+
+
+# --- keys audit: a broken inventory is a finding, never an early return -------------------
+
+_PLANTED_SECRET = "AGE-SECRET-KEY-1" + "A" * 24
+
+
+@pytest.mark.parametrize(
+    "content",
+    ["- just\n- a list\n", "identities: [unclosed\n", "a: b: c\n"],
+    ids=["not-a-mapping", "yaml-parser-error", "yaml-scanner-error"],
+)
+def test_audit_with_a_broken_inventory_reports_it_and_still_scans_for_secrets(tmp_path, capsys, content):
+    bad = tmp_path / "bad.yaml"
+    bad.write_text(content, encoding="utf-8")
+    scan = tmp_path / "scan"
+    scan.mkdir()
+    (scan / "leak.txt").write_text(_PLANTED_SECRET + "\n", encoding="utf-8")
+
+    assert main(["keys", "audit", "--inventory", str(bad), "--secrets", str(scan)]) == EXIT_FAILED
+
+    err = capsys.readouterr().err
+    assert err.count("[inventory]") == 1
+    assert "[secrets]" in err and "leak.txt" in err
+    assert _PLANTED_SECRET not in err
+
+
+def test_audit_with_a_broken_inventory_still_runs_the_drift_scan(tmp_path, capsys):
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("identities: [unclosed\n", encoding="utf-8")
+    clean = tmp_path / "clean.py"
+    clean.write_text("x = 1\n", encoding="utf-8")
+    assert main(["keys", "audit", "--inventory", str(bad), "--drift", "--path", str(clean)]) == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "[inventory]" in err and f"[drift] clean: {clean}" in err
+
+
+def test_a_bare_audit_with_a_broken_default_inventory_reports_the_finding(tmp_path, monkeypatch, capsys):
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("identities: [unclosed\n", encoding="utf-8")
+    monkeypatch.setattr("pyforge.steward.keys.default_inventory_path", lambda: bad)
+    assert main(["keys", "audit"]) == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "[inventory]" in err and "pass --drift" not in err

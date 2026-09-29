@@ -295,9 +295,7 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     story adds. Flag names deliberately mirror `age`'s own (`--recipient`/
     `-r`, `--identity`/`-i`, `--output`/`-o`).
     """
-    keys_subs = keys_parser.add_subparsers(
-        dest="keys_verb", metavar="{encrypt,decrypt,rotate,list,audit,revoke,exec}"
-    )
+    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt,rotate,list,audit,revoke,exec}")
 
     encrypt = keys_subs.add_parser("encrypt", help="age-encrypt a file to a recipient")
     encrypt.add_argument("file", help="the plaintext file to encrypt")

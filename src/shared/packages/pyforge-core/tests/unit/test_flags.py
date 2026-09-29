@@ -219,13 +219,14 @@ def test_the_module_defines_no_exit_code():
     calls = {
         f"{node.func.value.id}.{node.func.attr}"
         for node in ast.walk(tree)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and isinstance(node.func.value, ast.Name)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name)
     }
     assert "sys.exit" not in calls and "os._exit" not in calls
     names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
     assert not {"SystemExit"} & names
-    assert not [n for n in ast.walk(tree) if isinstance(n, ast.Assign) and any(
-        isinstance(t, ast.Name) and t.id.upper().startswith("EXIT") for t in n.targets
-    )]
+    assert not [
+        n
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id.upper().startswith("EXIT") for t in n.targets)
+    ]

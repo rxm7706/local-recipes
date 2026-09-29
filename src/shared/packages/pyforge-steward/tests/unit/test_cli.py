@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from pyforge.core.flags import FlagOff
 
 from pyforge.steward import __version__
 from pyforge.steward.cli import (
@@ -17,7 +18,6 @@ from pyforge.steward.cli import (
     main,
 )
 from pyforge.steward.interfaces import DutyResult
-from pyforge.core.flags import FlagOff
 
 
 def test_version_exits_zero(capsys):
