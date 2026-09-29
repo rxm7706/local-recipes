@@ -312,7 +312,12 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
     CHANGELOG bump.
   - Where only a binary repack is possible (`opengrep`), the recipe stays local and records why.
   **Kinships:** [[pyforge-warden]], [[pyforge-atlas]] and [[pyforge-herald]] (same day). Owner:
-  mason. Status: **seed**. The next `bmad-spec` pass mints the CAP (CAP-31 onward).
+  mason.
+  **Amended 2026-09-28 (specced):** upstream was re-verified the same night, and two facts widen the
+  work. `pptxgenjs-plus-jsx` pins `pptxgenjs-plus` at exactly 4.3.4 while `recipes/pptxgenjs-plus` is
+  at 4.2.1, so its story moves the sibling too. conda-forge pins PostgreSQL 18 globally, so the
+  `gitgres` recipe pins 17 explicitly.
+  → `spec-pyforge-mason` CAP-31 / Epic 21 / Stories 21.1–21.5 (FR-53), specced 2026-09-28.
 
 ## One-chain fold — 2026-09-17
 

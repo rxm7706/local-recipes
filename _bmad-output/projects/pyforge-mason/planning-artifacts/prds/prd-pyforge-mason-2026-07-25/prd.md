@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 project: pyforge-mason
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: docs/dreams/packaging-factory.md
@@ -1943,3 +1943,41 @@ workspace resolves.
 **ONE FR space now FR-1..FR-52** (FR-53 = next free id).
 
 **Content changed:** this section added (FR-52 registered). No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-mason` gained CAP-31 on 2026-09-28, after this PRD's
+second re-stamp that day for CAP-30. The FR is derived from the CAP (`one-chain-per-station`).*
+
+### The FR space: FR-53 registered
+
+The 2026-09-28 intake triage asked Mason to package five tools, and the operator ruled the same day: package all
+five; packaging is not adopting; a green local build ends each story. FR-53 decomposes into **Epic 21** (Stories
+21.1–21.5, one recipe each). The recipes live under `recipes/`, which `spec-fleet-stewardship` governs coverage-only;
+no FR about the `mason` CLI changes. FR-47's rule (every conda-forge effort closes with a Rule-2 retro) applies to
+each story.
+
+#### FR-53: Mason packages the intake toolchain ← CAP-31
+
+`git-pkgs`, `forge`, `gitgres`, `opengrep` and `pptxgenjs-plus-jsx` each install from a local conda recipe that builds
+green on linux-64, so the stations that adopt them (Warden, Atlas, Herald) can take them from a channel instead of from
+a download.
+
+**Consequences (testable):**
+- Five `recipe.yaml` (v1) recipes exist under `recipes/`, authored through `conda-forge-expert`. Each passes
+  `validate_recipe`, `optimize_recipe` and the CI-parity lint, builds with
+  `pixi run -e local-recipes recipe-build recipes/<name>`, and carries a CFE block that records the real build.
+- Each recipe's test runs its binary or loads its extension: `git-pkgs --version` (0.20.0); `forge version`
+  (0.10.0); `CREATE EXTENSION gitgres CASCADE` on a throwaway PostgreSQL 17 cluster, plus `gitgres-backend`'s usage;
+  `opengrep --version` (1.30.0) and an offline scan with a local rule; the `pptxgenjs-plus-jsx` exports under Node 24.
+- `gitgres` builds from a pinned commit against `postgresql >=17.11,<18` and `libpq >=17.11,<18`, never 18
+  (fnd:CAP-12).
+- `opengrep` is a per-platform binary repack that stays local. Its CFE block records why a source build is not
+  feasible on conda-forge today.
+- `recipes/pptxgenjs-plus` moves to 4.3.4, the version `pptxgenjs-plus-jsx` pins exactly.
+- No staged-recipes, feedstock or upstream PR is opened without an explicit ask. Each story lands a `retro(cfe):`
+  commit with a CFE `CHANGELOG.md` semver entry.
+
+**ONE FR space now FR-1..FR-53** (FR-54 = next free id).
+
+**Content changed:** this section added (FR-53 registered). No FR renumbered or removed. `updated:` bumped.
