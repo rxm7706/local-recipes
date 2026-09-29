@@ -5,11 +5,14 @@
 
 from __future__ import annotations
 
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 
+from pyforge.marshal.adapters import vcs_git as vcs_git_module
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
@@ -1960,6 +1963,281 @@ def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(vcs, repo
 def test_commit_paths_onto_remote_tip_refuses_empty_writes(vcs, repo):
     with pytest.raises(VcsCommandError, match="at least one write"):
         vcs.commit_paths_onto_remote_tip(repo, remote="origin", ref="main", writes=(), message="nope")
+
+
+# --- commit_paths_onto_remote_tip: the proof-carrying pre-push opt-out (Story 68.1, CAP-277) ----
+#
+# 64.1's landing (2026-09-28): the promotion push ran the repository's `pre-push` preflight, which
+# outlasted the publish's git timeout, three times. These tests use a real repository with a real
+# bare remote and a real `pre-push` hook -- one that sleeps past the (shortened) push timeout
+# unless `PYFORGE_PREFLIGHT_SKIP=1`, and then logs `PYFORGE_PREFLIGHT_SKIP_REASON` -- so the
+# adapter's opt-out is proven against git's own hook machinery, not a fake.
+
+_LEDGER_REL = "_bmad-output/projects/acme/planning-artifacts/sprint-status-ledger.yaml"
+_LEDGER_TEXT = "development_status:\n  64-1-a-landing: done\n"
+_SKIP_REASON = "marshal ledger promotion for 'acme', story 64-1-a-landing"
+_PUSH_TIMEOUT_S = 2.5
+
+
+def _publish_setup(repo: Path, remote: Path) -> None:
+    """Point ``repo`` at ``remote`` and push ``main`` BEFORE any hook is installed."""
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "-u", "origin", "main")
+
+
+def _install_pre_push_hook(repo: Path, *, sleeps: bool) -> tuple[Path, Path]:
+    """A ``pre-push`` hook in ``repo`` that records the opt-out variables it saw in ``env.log``
+    and, when ``PYFORGE_PREFLIGHT_SKIP=1``, appends the reason to ``skips.log`` and lets the push
+    through (as ``scripts/pre_push_preflight.sh`` does). Without the opt-out it sleeps past the
+    push timeout (``sleeps=True``, the stand-in for ``pr-preflight``) or just exits 0.
+    Returns ``(skips.log, env.log)``."""
+    skip_log = repo.parent / "skips.log"
+    seen_log = repo.parent / "env.log"
+    hooks = repo / ".git" / "hooks"
+    hooks.mkdir(exist_ok=True)
+    # A global `core.hooksPath` would shadow `.git/hooks`; pin this repository's own.
+    _git(repo, "config", "core.hooksPath", str(hooks))
+    tail = "sleep 8\nexit 1\n" if sleeps else "exit 0\n"
+    hook = hooks / "pre-push"
+    hook.write_text(
+        "#!/bin/sh\n"
+        "printf 'SKIP=%s REASON=%s\\n' "
+        f'"${{PYFORGE_PREFLIGHT_SKIP-unset}}" "${{PYFORGE_PREFLIGHT_SKIP_REASON-unset}}" >> "{seen_log}"\n'
+        'if [ "$PYFORGE_PREFLIGHT_SKIP" = "1" ]; then\n'
+        f'  printf \'%s\\n\' "$PYFORGE_PREFLIGHT_SKIP_REASON" >> "{skip_log}"\n'
+        "  exit 0\n"
+        "fi\n" + tail,
+        encoding="utf-8",
+    )
+    hook.chmod(0o755)
+    return skip_log, seen_log
+
+
+def _remote_main(remote: Path) -> str:
+    return _git(remote, "rev-parse", "refs/heads/main").stdout.strip()
+
+
+def _publish(vcs: GitVcs, repo: Path, *, writes=((_LEDGER_REL, _LEDGER_TEXT),), **kwargs) -> str:
+    return vcs.commit_paths_onto_remote_tip(
+        repo,
+        remote="origin",
+        ref="main",
+        writes=writes,
+        message="marshal: promote sprint-status ledger for 'acme' (1 key(s) -> done)",
+        **kwargs,
+    )
+
+
+def test_a_publish_with_a_reason_outruns_a_preflight_that_would_time_out_the_push(vcs, repo, remote, monkeypatch):
+    """AC 1: the push completes past a hook that sleeps beyond the push timeout, the remote's main
+    holds the commit, and the hook logged a reason naming the sha, the ledger path and the story."""
+    _publish_setup(repo, remote)
+    skip_log, _seen = _install_pre_push_hook(repo, sleeps=True)
+    monkeypatch.setattr(vcs_git_module, "_GIT_FETCH_TIMEOUT_S", _PUSH_TIMEOUT_S)
+
+    sha = _publish(vcs, repo, preflight_skip_reason=_SKIP_REASON)
+
+    assert _remote_main(remote) == sha
+    [logged] = skip_log.read_text(encoding="utf-8").splitlines()
+    assert sha in logged
+    assert _LEDGER_REL in logged
+    assert "story 64-1-a-landing" in logged
+    # Never process-wide: the opt-out reached that one git process only.
+    assert "PYFORGE_PREFLIGHT_SKIP" not in os.environ
+    assert "PYFORGE_PREFLIGHT_SKIP_REASON" not in os.environ
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+
+
+def test_a_publish_without_a_reason_still_runs_the_preflight_and_times_out(vcs, repo, remote, monkeypatch):
+    """The 64.1 failure, reproduced: with no reason the push is what it always was -- the hook runs
+    with no opt-out variable in its environment, outlasts the timeout, and the remote is untouched."""
+    _publish_setup(repo, remote)
+    skip_log, seen_log = _install_pre_push_hook(repo, sleeps=True)
+    monkeypatch.setattr(vcs_git_module, "_GIT_FETCH_TIMEOUT_S", _PUSH_TIMEOUT_S)
+    before = _remote_main(remote)
+
+    with pytest.raises(VcsCommandError, match="timed out"):
+        _publish(vcs, repo)
+
+    assert _remote_main(remote) == before
+    assert seen_log.read_text(encoding="utf-8").splitlines() == ["SKIP=unset REASON=unset"]
+    assert not skip_log.exists()
+
+
+def test_a_publish_without_a_reason_reaches_the_hook_with_no_opt_out_variables(vcs, repo, remote):
+    """AC 3: no reason -> byte-identical push; neither opt-out variable reaches the hook."""
+    _publish_setup(repo, remote)
+    skip_log, seen_log = _install_pre_push_hook(repo, sleeps=False)
+
+    sha = _publish(vcs, repo)
+
+    assert _remote_main(remote) == sha
+    assert seen_log.read_text(encoding="utf-8").splitlines() == ["SKIP=unset REASON=unset"]
+    assert not skip_log.exists()
+
+
+def test_a_publish_with_a_reason_but_no_env_utility_runs_the_preflight(vcs, repo, remote, monkeypatch):
+    """I/O matrix, 'no env utility': the opt-out needs POSIX `env`; without it the push goes
+    through the preflight -- slower, never unchecked."""
+    _publish_setup(repo, remote)
+    skip_log, seen_log = _install_pre_push_hook(repo, sleeps=False)
+    real_which = shutil.which
+    monkeypatch.setattr(
+        vcs_git_module.shutil, "which", lambda name, *a, **k: None if name == "env" else real_which(name, *a, **k)
+    )
+
+    sha = _publish(vcs, repo, preflight_skip_reason=_SKIP_REASON)
+
+    assert _remote_main(remote) == sha
+    assert seen_log.read_text(encoding="utf-8").splitlines() == ["SKIP=unset REASON=unset"]
+    assert not skip_log.exists()
+
+
+@pytest.mark.parametrize(
+    "bad_path",
+    [
+        "src/pyforge/marshal/cli/land.py",
+        "_bmad-output/projects/acme/implementation-artifacts/sprint-status.yaml",
+        "_bmad-output/projects/acme/planning-artifacts/../../../../escape.txt",
+        "_bmad-output/projects/acme/planning-artifacts/./sprint-status-ledger.yaml",
+        "_bmad-output/projects//planning-artifacts/sprint-status-ledger.yaml",
+        "_bmad-output/projects/acme/planning-artifacts/",
+        "_bmad-output/projects/acme/planning-artifacts",
+        "/etc/planning-artifacts/x.yaml",
+        "_bmad-output\\projects\\acme\\planning-artifacts\\x.yaml",
+        "_bmad-output/projects/acme/planning-artifacts/tab\tname.yaml",
+        "_bmad-output/projects/acme/planning-artifacts/line\nbreak.yaml",
+        "_bmad-output/projects/acme/planning-artifacts/.git/config",
+        "",
+    ],
+)
+def test_a_reason_refuses_a_written_path_outside_planning_artifacts_before_any_fetch_or_write(
+    vcs, repo, remote, monkeypatch, bad_path
+):
+    """AC 2 / I/O matrix 'path outside planning-artifacts': refused before any fetch, write or push
+    -- a `../` path would otherwise be written before the post-commit check ever saw it."""
+    _publish_setup(repo, remote)
+    _skip_log, seen_log = _install_pre_push_hook(repo, sleeps=False)
+    fetches: list[tuple] = []
+    monkeypatch.setattr(GitVcs, "fetch", lambda self, *args: fetches.append(args))
+    before = _remote_main(remote)
+
+    with pytest.raises(VcsCommandError, match="planning-artifacts"):
+        _publish(
+            vcs,
+            repo,
+            writes=((_LEDGER_REL, _LEDGER_TEXT), (bad_path, "x\n")),
+            preflight_skip_reason=_SKIP_REASON,
+        )
+
+    assert fetches == []
+    assert _remote_main(remote) == before
+    assert not seen_log.exists()
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+
+
+@pytest.mark.parametrize("empty", ["", "   ", "\n\t"])
+def test_an_empty_reason_is_refused_never_a_blanket_skip(vcs, repo, remote, empty):
+    _publish_setup(repo, remote)
+    before = _remote_main(remote)
+
+    with pytest.raises(VcsCommandError, match="reason is empty"):
+        _publish(vcs, repo, preflight_skip_reason=empty)
+
+    assert _remote_main(remote) == before
+
+
+def _commit_everything(self, repo_root, paths, message):
+    """A stand-in `commit_paths` that sweeps in whatever else is in the worktree -- the shape the
+    adapter's post-commit path proof exists to catch (the real `commit_paths` commits only `paths`)."""
+    _git(repo_root, "add", "-A")
+    _git(repo_root, "commit", "-m", message)
+    return _git(repo_root, "rev-parse", "HEAD").stdout.strip()
+
+
+@pytest.mark.parametrize("stray", ["added", "deleted"])
+def test_a_commit_naming_a_path_outside_the_written_set_is_refused_before_any_push(
+    vcs, repo, remote, monkeypatch, stray
+):
+    """AC 2 / I/O matrix 'extra path in the commit': an added path and a deleted one both fail the
+    proof; the remote's main is unchanged and the hook never ran (no push was attempted)."""
+    _publish_setup(repo, remote)
+    _skip_log, seen_log = _install_pre_push_hook(repo, sleeps=False)
+    before = _remote_main(remote)
+
+    def sneaky_commit(self, repo_root, paths, message):
+        if stray == "added":
+            (repo_root / "src").mkdir()
+            (repo_root / "src" / "evil.py").write_text("print('evil')\n", encoding="utf-8")
+        else:
+            (repo_root / "README.md").unlink()
+        return _commit_everything(self, repo_root, paths, message)
+
+    monkeypatch.setattr(GitVcs, "commit_paths", sneaky_commit)
+
+    with pytest.raises(VcsCommandError, match="outside the written set"):
+        _publish(vcs, repo, preflight_skip_reason=_SKIP_REASON)
+
+    assert _remote_main(remote) == before
+    assert not seen_log.exists()
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+
+
+def test_the_same_extra_path_commit_is_not_judged_without_a_reason(vcs, repo, remote, monkeypatch):
+    """With no reason the adapter makes no claim about the commit's paths -- the proof belongs to the
+    opt-out, and the push is unchanged (the hook decides)."""
+    _publish_setup(repo, remote)
+    _install_pre_push_hook(repo, sleeps=False)
+
+    def sneaky_commit(self, repo_root, paths, message):
+        (repo_root / "extra.txt").write_text("extra\n", encoding="utf-8")
+        return _commit_everything(self, repo_root, paths, message)
+
+    monkeypatch.setattr(GitVcs, "commit_paths", sneaky_commit)
+
+    sha = _publish(vcs, repo)
+
+    assert _remote_main(remote) == sha
+
+
+def test_a_reason_is_one_line_however_the_caller_wrote_it(vcs, repo, remote):
+    """The hook's skip journal is tab-separated, one line per push -- no tab or newline survives."""
+    _publish_setup(repo, remote)
+    skip_log, _seen = _install_pre_push_hook(repo, sleeps=False)
+
+    sha = _publish(vcs, repo, preflight_skip_reason="story 64-1\tpromoted\nby marshal\r\n\x07")
+
+    text = skip_log.read_text(encoding="utf-8")
+    assert text.count("\n") == 1
+    assert "\t" not in text
+    assert "\r" not in text
+    assert sha in text
+    assert "story 64-1 promoted by marshal" in text
+
+
+@pytest.mark.parametrize(
+    ("rel", "expected"),
+    [
+        ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", True),
+        ("_bmad-output/projects/acme/planning-artifacts/specs/spec-1-1.md", True),
+        ("_bmad-output/projects/acme/planning-artifacts/deferred-work-ledger.md", True),
+        ("_bmad-output/projects/acme/planning-artifacts", False),
+        ("_bmad-output/projects/acme/planning-artifacts/", False),
+        ("_bmad-output/projects/acme/implementation-artifacts/x.md", False),
+        ("_bmad-output/projects/../planning-artifacts/x.md", False),
+        ("_bmad-output/projects/./planning-artifacts/x.md", False),
+        ("_bmad-output/planning-artifacts/x.md", False),
+        ("_bmad-output/projects/acme/planning-artifacts/../x.md", False),
+        ("./_bmad-output/projects/acme/planning-artifacts/x.md", False),
+        ("/_bmad-output/projects/acme/planning-artifacts/x.md", False),
+        ("_bmad-output/projects/acme/planning-artifacts/x.md\x00", False),
+        ("_bmad-output/projects/acme/planning-artifacts/.GIT/x", False),
+        ("src/planning-artifacts/x.md", False),
+        ("", False),
+    ],
+)
+def test_is_planning_artifact_path(rel, expected):
+    assert vcs_git_module._is_planning_artifact_path(rel) is expected
 
 
 # --- merge_tree_write / add_worktree_for_tree (Story 51.1) --------------------
