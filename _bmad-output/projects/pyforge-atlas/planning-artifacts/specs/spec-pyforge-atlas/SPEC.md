@@ -2,7 +2,7 @@
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
 status: ready
-updated: "2026-09-17"
+updated: "2026-09-28"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/pyforge-atlas.md
@@ -326,6 +326,26 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
 - **CAP-60 — the round-trip + idempotency semantics `test_lasuite.py` already proves** ← spec-wagtail-corporate-brain CAP-3 (shipped 2026-09-17)
   - **intent:** the round-trip + idempotency semantics `test_lasuite.py` already proves against
   - **success:** the attended session runs that four-step sequence against the real CMS and each
+- **CAP-61 — Atlas keeps each scanned repo's dependency history** ← spec-pyforge-atlas CAP-61 (ready 2026-09-28)
+  - **intent:** Atlas holds, for every repo Warden scans, the history of its declared dependencies across commits —
+    when each arrived, changed and left, and in which manifest — so Warden's actuator and fleet scan can see when a
+    vulnerable dependency arrived and which other repos carry it. A primary-layer Parquet dataset in the `vcs_health`
+    pipeline is built per repo from `git pkgs init --no-hooks`, with its database at a throwaway path outside the repo
+    and read through DuckDB or git-pkgs' JSON output (never an `sqlite3` import, AD-4), plus an Atlas-native estate
+    pixi parser for `pixi.toml` and `pixi.lock`, which git-pkgs does not parse (upstream issue #79). No hook or file is
+    ever written into a scanned repo. The repo list is Warden's fleet inventory export (`spec-pyforge-warden:CAP-26`),
+    read as a catalog dataset, never an import. A poll-cursor sensor in the `orchestration/event_source.py` pattern —
+    no webhook — triggers the refresh when a repo's head moves; the refresh is incremental (AD-5), and an unreachable
+    repo keeps its last-good partition marked `stale` (AD-13). Atlas measures and Warden judges: the dataset carries no
+    verdict, score or threshold. git-pkgs arrives as a conda package (mason Story 21.1) under a tested version range.
+    (Operator ruling 2026-09-28.)
+  - **success:** a fixture git repo whose commits add, bump and remove a dependency in `pyproject.toml` and add one in
+    `pixi.toml` yields one row per change, with the commit SHA, the epoch-second commit time, the manifest path, the
+    ecosystem, the name, the requirement before and after, and a source naming git-pkgs or the estate pixi parser;
+    after a build the fixture repo's file listing and `.git/hooks` are unchanged and no `pkgs.sqlite3` remains
+    anywhere; no `sqlite3` import exists under `src/pyforge/atlas` (the F1 grep gate); a sensor tick with unchanged
+    heads skips and one with a moved head yields one run request and advances the cursor; an unreachable inventory
+    repo keeps its last-good partition with a `stale` marker; `kedro-test` and `kedro-catalog-check` green.
 
 ## Constraints
 

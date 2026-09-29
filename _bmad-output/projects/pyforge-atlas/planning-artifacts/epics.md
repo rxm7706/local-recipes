@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-09-20"
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -1694,7 +1694,7 @@ not copy steward stories.
    is a **non-goal**. Vizro stays **outside** the host; Epic 14 query views follow their own
    ASGI contract and are not re-scoped here.
 
-4. **BS-5 DuckDB — cooperate, do not duplicate Story 25.2.** Single-writer discipline and
+4. **BS-5 DuckDB — cooperate, do not duplicate steward Story 25.2.** Single-writer discipline and
    `read_only=True` on atlas read paths are **atlas-local** (DuckDB consolidation, Epic 7).
    Steward Story **25.2** (*One DuckDB writer*) implements the **absence-test** gate on the estate.
    Atlas records cooperation with that gate; it does **not** add a duplicate steward story.
@@ -2068,13 +2068,46 @@ test file?*
 **Cross-station note** *(prose, deliberately NOT a cross-project `Deps:` token)*: C10's other half — the **46 conda-forge-expert MCP tools** — is **mason's**, not atlas's. This story does not widen to it, and nothing here changes the ruling that the HTTP station face (`POST /stations/atlas/mcp`) is the governed front door with stdio servers as local adapters.
 
 ### Story 24.4: A live Artifactory transport exists for the attended operator to plug in
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** unblocks Story 25.2's credentialed path • operator request 2026-09-10
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** unblocks Story 24.2's credentialed path • operator request 2026-09-10
 **Surface:** `src/shared/packages/pyforge-atlas/tools/live_artifactory_transport.py` (new — NOT inside `src/pyforge/atlas/`, which `tests/unit/catalog/test_no_inline_io.py`'s `IO_DENYLIST` bans `requests`/`urllib3`/`httpx` from anywhere in; `tools/` mirrors the existing `tools/bootstrap.py` sibling-location precedent for attended-operator scripts), `src/shared/packages/pyforge-atlas/tests/tools/test_live_artifactory_transport.py`
-**Given** `AqlTransport` (the sole HTTP seam `ArtifactoryAqlAdapter` takes) has only `_unconfigured_transport` wired anywhere in the package — Story 25.2 needs "an attended operator runs the pipelines end to end against live sources with the Artifactory credentials configured," but no live transport implementation exists for that operator to construct, only the injectable seam itself
+**Given** `AqlTransport` (the sole HTTP seam `ArtifactoryAqlAdapter` takes) has only `_unconfigured_transport` wired anywhere in the package — Story 24.2 needs "an attended operator runs the pipelines end to end against live sources with the Artifactory credentials configured," but no live transport implementation exists for that operator to construct, only the injectable seam itself
 **When** a new `live_transport(base_url, *, api_key=None, username=None, password=None)` factory is added, resolving auth the SAME way `.claude/skills/conda-forge-expert/scripts/_http.py` already does for JFrog elsewhere in this repo — `JFROG_API_KEY` → `X-JFrog-Art-Api` header, else `JFROG_USERNAME`/`JFROG_PASSWORD` → HTTP Basic — and performing exactly one HTTP round-trip per `AqlRequest`, matching the seam's own documented contract
 **Then** the concrete HTTP client stays constructed OUTSIDE package import time (no top-level `requests`/`urllib` call, no credential read at import) — the factory is called explicitly by the attended operator's own run, at run time only
 **And** a test suite exercises the factory with a mocked HTTP layer (no real network, no real credentials) covering: API-key auth header, username/password Basic auth, neither-configured raises a clear typed error naming which env var is missing, and one successful request/response round-trip shape
-**And** this story does NOT itself run Story 25.2's live pipeline or touch any credential value — it only makes the missing transport exist for that attended, credentialed run to use
+**And** this story does NOT itself run Story 24.2's live pipeline or touch any credential value — it only makes the missing transport exist for that attended, credentialed run to use
+
+---
+
+## Epic 25: Atlas keeps each scanned repo's dependency history (spec-pyforge-atlas CAP-61)
+
+**Spec binding.** Minted 2026-09-28 from the station Dream's entry *Atlas keeps each scanned repo's dependency history,
+so a fix knows when a dependency arrived and which other repos carry it* — carried from the Warden Dream's entry of the
+same day (the security-scanning intake, whose Phase 2 persisted a `dependency_graphs` table per repo and commit).
+Warden's actuator and fleet scan (`spec-pyforge-warden:CAP-24`, `spec-pyforge-warden:CAP-26`) read the history. **HARD boundaries:** Atlas
+measures, Warden judges — the dataset carries no verdict, score or threshold; no hook or file is ever written into a
+scanned repo; no `sqlite3` import and no `subprocess` import under `src/pyforge/atlas` (AD-4's F1 gate, the no-inline-IO
+gate — `git` and `git pkgs` run through `pyforge.core.process`); no webhook; no import of `pyforge.warden` or
+`django_warden_fabric`; every story ships behind its flag (`spec-feature-flag-governance:CAP-1`).
+
+### Story 25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser
+**Type:** feature • **Effort:** L • **Deps:** — (cross-station: mason Story 21.1 ships the git-pkgs conda package; ledger `blocked` until the operator flips it) • **FR/AD:** spec-pyforge-atlas CAP-61 (FR-69) • AD-2, AD-3, AD-4, AD-5, AD-13
+**Flag:** `pyforge.atlas.dependency_history` (OFF: the dataset is not built and the pipeline node skips as `not-applicable`)
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/` (a new `dependency_history.py` custom dataset: a clone in Atlas's cache, `git pkgs init --no-hooks` with `GIT_PKGS_DB` at a throwaway path, the DuckDB read, the estate pixi parser), `pipelines/vcs_health/` (the node that lands `repo_dependency_history`), `conf/base/catalog.yml`, `conf/base/parameters.yml` (TTL), `tests/unit/datasets/`, `tests/unit/catalog/test_credential_scoping.py` (the GHE host entry), the member `pixi.toml` / `pyproject.toml` and the root `pixi.toml` / `pixi.lock` / `environment.yaml` (the git-pkgs run-dependency range), `src/platform/config/flags.json`
+**Given** a fixture git repo whose commits add, bump and remove a dependency in `pyproject.toml` and add one in `pixi.toml`
+**When** the `vcs_health` pipeline builds `repo_dependency_history` for it
+**Then** there is one row per change — repo, commit SHA, epoch-second commit time, manifest path, ecosystem, name, requirement before and after, and a `source` of `git-pkgs` or `estate-pixi-parser` — in a Parquet partition for that repo
+**And** the fixture repo's file listing and `.git/hooks` are unchanged afterwards and no `pkgs.sqlite3` remains anywhere; `test_duckdb_sole_engine.py` and `test_no_inline_io.py` stay green
+**And** a repo whose head has not moved is not re-walked (AD-5), and an unreachable repo keeps its last-good partition marked `stale` (AD-13)
+
+### Story 25.2: A poll-cursor sensor refreshes the history over Warden's fleet inventory
+**Type:** feature • **Effort:** M • **Deps:** S-25.1 • **FR/AD:** spec-pyforge-atlas CAP-61 (FR-69) • AD-1, AD-6
+**Flag:** `pyforge.atlas.dependency_history_sensor` (OFF: the sensor skips every tick with a `flag off` reason)
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/` (a dagster-free decision module in `event_source.py`'s shape, wired only in `definitions.py`), `conf/base/catalog.yml` (`warden_fleet_inventory`, a raw JSON dataset over Warden's export path), `tests/unit/orchestration/` (`test_definitions_dryrun.py` and a new decision test), `src/platform/config/flags.json`
+**Given** Warden's fleet inventory export as a raw catalog dataset and the per-repo cursor (each repo's default-branch head SHA)
+**When** the sensor ticks
+**Then** unchanged heads skip with a reason, and moved heads coalesce into one run request for the Story 25.1 job and advance the cursor; the default production source is offline (`[]`) like `offline_event_source`, and no webhook exists
+**And** the decision half imports no Dagster (AD-1) and nothing from `pyforge.warden` or `django_warden_fabric`; only `orchestration/definitions.py` wraps it
+**Cross-station note** *(prose, deliberately NOT a `Deps:` token)*: the live inventory is Warden's Story 16.1 export (`spec-pyforge-warden:CAP-26`). This story is built and gated on a fixture export, so it does not wait for it; the attended live wiring follows 16.1.
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
@@ -2163,3 +2196,15 @@ consistency pass reconciled 56 tracked story specs' frontmatter against the spri
 reconstructed missing Auto Run Results from git), which post-dated this artifact through the
 `spec→prd→arch→epics` cascade. It is bookkeeping, not a capability: no requirement, decision or
 story changes here. `updated:` bumped to record that the check ran.*
+
+## Currency reconciliation — 2026-09-28
+
+`arch→epics` edge after the spine's 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28: FR-69 / CAP-61 lands on
+AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written; no AD added, amended or removed). Epic 25 (Stories 25.1–25.2)
+decomposes CAP-61. **25.1** is minted `blocked` on mason Story 21.1 (the git-pkgs conda package): the Deps parser is
+station-local, so the gate is prose on the `**Deps:**` line and the operator flips the row. Story 24.4's text named
+"Story 25.2" three times for what the 2026-09-17 rekey made Story 24.2 (`rekey-2026-09-17.md`); those citations now read
+24.2, and the BS-5 note's "do not duplicate Story 25.2" now names steward's Story 25.2, so neither can be taken for
+the new atlas Story 25.2. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml`
+key (`25-1`, `25-2` and `epic-25` added, `epic-25-retrospective` at `optional`, through the Tier-3 feed and
+`sprint-ledger-sync`). `updated:` bumped.

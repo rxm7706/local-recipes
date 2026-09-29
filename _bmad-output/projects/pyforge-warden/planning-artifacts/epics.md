@@ -14,7 +14,7 @@ replan:
   story: "0.1"
   note: "Story-0.1 replan executed: Epic 6 (multi-axis expansion) added from the spec's v1 tier; the spec (docs/specs/pyforge-warden.md) is upstream and wins conflicts."
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
-updated: '2026-09-27'   # RE-STAMPED 2026-09-27 (night): Epic 13 / Story 13.1 minted (spec-pyforge-warden CAP-23). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured
+updated: '2026-09-28'   # RE-STAMPED 2026-09-28: Epics 14-16 / Stories 14.1-14.3, 15.1, 16.1-16.4 minted (spec-pyforge-warden CAP-24..26, FR-41..FR-43); § Currency reconciliation — 2026-09-28 appended; Epic 9's canopy FR citations qualified. Prior 2026-09-27 (night): Epic 13 / Story 13.1 minted (spec-pyforge-warden CAP-23). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge, fired by the spine's 2026-09-14 re-stamp) — validation note appended at end of file (§ Currency validation — 2026-09-14): ledger re-measured with the real parser at 49/49 stories done across 12/12 epics, which supersedes the Spec's own dated 43-key/11-epic snapshot; the PRD's newly recorded `review_required` gap is deliberately NOT minted as a story here because it is a schema/behaviour change owing a Dream/Spec; the station's coherence checkpoint stays red on three operator-owned open questions. No epic or story restructured. Prior: Reviewed 2026-09-09 (Epic 12 added: spec-golden-path-conda-blind-spot CAP-1..5 decomposed after the operator answered its five open questions in the fleet readiness decision batch, plus Story 12.1 minted FIRST as the missing regression guard on the deploy verifier's clean-only refusal; gate verdict invariant unchanged — Warden stays the sole verdict). Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -689,7 +689,7 @@ steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`;
 ## Epic 9: PR-gate hook specs; scanners are plugins
 
 First concrete CAP-18 retrofit. **Depends on steward S-32.1** (`pyforge-core` registration).
-Does not reopen Epics 1–8 engines as a rewrite — wrap them as default plugins. **FR-44.**
+Does not reopen Epics 1–8 engines as a rewrite — wrap them as default plugins. **canopy:FR-44.**
 
 ### Story 9.1: Warden publishes the PR-gate hook book
 
@@ -697,8 +697,8 @@ As a scanner author,
 I want named PR-gate hook points on the shared registration API,
 So that I implement a plugin instead of forking Warden.
 
-**Type:** feature • **Effort:** L • **Deps:** steward S-32.1 • **FR/AD:** FR-44 • canopy:AD-21
-**Given** the FR-43 contract **When** this story completes **Then** Warden documents hook specs for scan / aggregate / verdict (or equivalent named points)
+**Type:** feature • **Effort:** L • **Deps:** steward S-32.1 • **FR/AD:** canopy:FR-44 • canopy:AD-21
+**Given** the canopy:FR-43 contract **When** this story completes **Then** Warden documents hook specs for scan / aggregate / verdict (or equivalent named points)
 **And** plugins register through `pyforge-core`, not a Warden-only second loader
 **And** the Warden verdict remains the only PR quality-gate pass/fail
 
@@ -708,7 +708,7 @@ As an operator,
 I want today's engines and commercial scanners as plugins,
 So that enabling Checkmarx is a profile choice, not a fork.
 
-**Type:** feature • **Effort:** L • **Deps:** S-9.1 • **FR/AD:** FR-44
+**Type:** feature • **Effort:** L • **Deps:** S-9.1 • **FR/AD:** canopy:FR-44
 **Given** shipped Warden scanners **When** they are extracted **Then** each registers as a plugin; today's set is the default plugin bundle
 **And** Checkmarx, Sonar, Black Duck, GHAS (and profile-local tools) are optional plugins, not required for a Warden run
 
@@ -718,7 +718,7 @@ As CI,
 I want a default Warden invocation to pass when no named commercial scanner is installed,
 So that a missing Checkmarx plugin is not a failed gate.
 
-**Type:** chore • **Effort:** S • **Deps:** S-9.2 • **FR/AD:** FR-44 • Q8
+**Type:** chore • **Effort:** S • **Deps:** S-9.2 • **FR/AD:** canopy:FR-44 • Q8
 **Given** a fixture with no Checkmarx (or other named commercial) plugin **When** default Warden runs **Then** the process is green unless Warden's own engines fail
 **And** a test **fails** if absence of a named optional plugin is treated as a Warden failure
 
@@ -848,6 +848,115 @@ TEA advisory stays advisory — a note, never a finding, a rung or the exit code
 **Then** it passes `--base refs/remotes/origin/main`, so TEA's `<base>...HEAD` diff reads the remote past a local branch or tag named `origin/main`
 **And** the fail-open (binary absent or erroring) and fail-closed (roster lacks `tea`) paths are unchanged, and `pixi run --frozen -e pyforge-warden pyforge-warden-test` is green
 
+## Epic 14: The fix-PR actuator finishes the fix on the estate's repos (spec-pyforge-warden CAP-24)
+
+Minted 2026-09-28 from the station Dream's entry *the fix-PR actuator finishes the fix, SAST joins as a plugin, and
+Warden scans the enterprise fleet* (the security-scanning intake, triaged under operator rulings of that date; ruling 1:
+"finish Phase 4 on the estate's own repos, `local-recipes` and `python-foundry`, as draft PRs"). `actuator.py:21-23`
+says the upgrade PR "does NOT compute a target version" and that "precise target resolution + manifest editing are
+deferred"; `open_pull_request` commits an empty tree. **HARD boundaries:** the actuator stays post-verdict and never
+moves a rung, the status or the exit code; the scanned tree is never written (a throwaway copy only); dry-run opens no
+socket; pixi runs only on the real `--open-fix-prs` path, through `_engine_env()`; the `ComplianceReport` stays 1.1.0;
+every story ships behind its flag (`spec-feature-flag-governance:CAP-1`).
+
+### Story 14.1: The actuator resolves the lowest OSV-fixed release the estate's solver accepts
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-24 (FR-41) • spine § Currency reconciliation — 2026-09-28 Decision 1
+**Flag:** `pyforge.warden.fix_target_resolution` (OFF: the upgrade proposal cites the advisory and the current version, as today)
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py` (every `fixed` candidate, not only the first), `interfaces.py` (`EngineResult` carries the candidates, additive and defaulted), `actuator.py` (target resolution; the solver seam), `engines.py` (pixi through `_engine_env()` with a tested version range), `cli.py` (threads the candidates to the actuator), `tests/unit/test_actuator.py`, `src/platform/config/flags.json` (the key, default off)
+**Given** a `vuln:` finding whose advisory lists `fixed` events 1.2.3 and 1.3.0 for the scanned package at 1.2.0
+**When** the actuator plans the upgrade
+**Then** the candidates are every `ECOSYSTEM`/`SEMVER` `fixed` event of the matching `affected[]` entry at or above the current version, ascending, and the target is the first the solver seam accepts (a fixture solver that refuses 1.2.3 yields 1.3.0)
+**And** under `--fix-prs-dry-run` no solver runs and no socket opens: the payload names 1.2.3 with `solver: not-run`, and the socket-guard stays green
+**And** a resolve that finds no acceptable candidate is a `failed` outcome in `actuation`, never a rung or an exit code; with the flag OFF the proposal is exactly today's
+
+### Story 14.2: The actuator edits the manifest and re-solves the lock in a throwaway copy
+**Type:** feature • **Effort:** L • **Deps:** S-14.1 • **FR/AD:** spec-pyforge-warden CAP-24 (FR-41) • spine § Currency reconciliation — 2026-09-28 Decision 1
+**Flag:** `pyforge.warden.fix_manifest_edit` (OFF: the PR carries no diff, as today)
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py` (the edit plan), a new `src/shared/packages/pyforge-warden/src/pyforge/warden/manifest_edit.py` (a field-scoped edit of `pixi.toml`, `pyproject.toml` and recipe requirement lines; no template rendering), `engines.py` (the `pixi lock` re-solve through `_engine_env()`), warden tests, `src/platform/config/flags.json`
+**Given** Story 14.1's target and the manifest that declares the dependency
+**When** the actuator prepares the fix
+**Then** it copies the repo into a `mkdtemp` (`0700`) directory, edits only the declaring requirement to the target floor, and re-solves the lock there when the repo has one
+**And** the scanned tree is byte-identical after the run and the copy is gone after success and after a forced failure
+**And** an edit that cannot be scoped to one requirement, or a re-solve that fails, is a `failed` outcome in `actuation`, never a rung or an exit code
+
+### Story 14.3: The actuator opens the fix as a draft PR on an estate repo
+**Type:** feature • **Effort:** M • **Deps:** S-14.2 • **FR/AD:** spec-pyforge-warden CAP-24 (FR-41)
+**Flag:** `pyforge.warden.fix_draft_pr_estate` (OFF: today's empty-tree PR)
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py` (`GitHubForgeClient.open_pull_request`: blobs and a tree from the Story 14.2 diff, `draft: true`; the estate allowlist), `tests/unit/test_actuator.py`, `src/platform/config/flags.json`
+**Given** Story 14.2's edited manifest and re-solved lock, and a forge repo of `rxm7706/local-recipes` or `rxm7706/python-foundry`
+**When** the actuator runs with `--open-fix-prs`
+**Then** the diff arrives as one commit on a `warden/fix/` branch behind a **draft** PR, through the Git Data endpoints only
+**And** a repo outside the estate allowlist gets no manifest-edit PR (recorded as `skipped` in `actuation`), and the existing dedup (`existing_open_pr`, the 422 branch-exists skip) is unchanged
+**And** a failed PR-open is captured in `actuation` and never changes the status or the exit code
+
+## Epic 15: SAST joins as an optional plugin: opengrep with estate-owned rules (spec-pyforge-warden CAP-25)
+
+Minted 2026-09-28 from the same Dream entry (ruling 3 and the rejections: CodeQL's CLI licence covers private code only
+with a GitHub Code Security licence, so opengrep, LGPL-2.1, takes the SAST slot with rules the estate owns). **HARD
+boundaries:** SAST results are advisory notes (suite:AD-4, the TEA lens's shape) — never a `Finding`, a rung, a status
+or an exit code, and never a published verdict; no rule is fetched from a registry; the `ComplianceReport` stays 1.1.0;
+an absent binary is omit-not-error (Story 9.3).
+
+### Story 15.1: Opengrep is an optional SAST scanner that informs, never publishes, the verdict
+**Type:** feature • **Effort:** M • **Deps:** — (cross-station: mason Story 21.4 ships the opengrep conda package; ledger `blocked` until the operator flips it) • **FR/AD:** spec-pyforge-warden CAP-25 (FR-42) • suite:AD-4
+**Flag:** `pyforge.warden.sast_opengrep` (OFF: `opengrep` is not a selectable optional scanner, as today)
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/scanner_plugins.py` (`opengrep` beside `ghas`), a new `src/shared/packages/pyforge-warden/src/pyforge/warden/sast.py` (argv, result-to-note mapping), `engines.py` (opengrep through `_engine_env()` with a tested version range), a new `src/shared/packages/pyforge-warden/src/pyforge/warden/data/sast-rules/` (the estate's rules), `src/shared/packages/pyforge-warden/pixi.toml` and `pyproject.toml` (the run-dependency range), `pixi.toml` / `pixi.lock` / `environment.yaml` (the warden feature), warden tests, `src/platform/config/flags.json`
+**Given** `WARDEN_OPTIONAL_SCANNERS=opengrep` and a fixture repo that trips an estate rule
+**When** `warden scan` runs
+**Then** the report's `advisory` carries a note naming the tool, rule id, path, line and severity, and the status and exit code equal the same run with the scanner disabled
+**And** the invocation names only the local rules path (no registry config, no metrics), so the socket-guard stays green
+**And** an absent binary leaves a default run green (Story 9.3's test), and CodeQL appears nowhere
+
+## Epic 16: Warden scans the enterprise fleet on GitHub Enterprise (spec-pyforge-warden CAP-26)
+
+Minted 2026-09-28 from the same Dream entry (ruling 2: "scan the enterprise fleet on GitHub Enterprise … every fleet
+fix is queued as a proposal, and it opens as a PR only after the operator approves it"). It lifts two Non-goals,
+*Fleet aggregation* and *Non-Python osv-scanner ecosystems* (the Spec's Non-goals are re-rendered). **HARD
+boundaries:** one `warden scan` verdict per repo and no fleet-level verdict — a job status (pending, running, succeeded,
+failed) is never a verdict, and nothing is ever CLEAN or VULNERABLE; the fleet lives in `django-warden` on the
+`ComplianceJob` pattern (spine § Currency reconciliation — 2026-09-28 Decision 2), never a FastAPI/SQLAlchemy service
+and never gitgres; no webhook; nothing auto-opens on a fleet repo; GHE credentials come from Steward.
+
+### Story 16.1: Warden inventories a GHE organisation's repos
+**Type:** feature • **Effort:** M • **Deps:** — (cross-station: steward Story 75.1 provides the GHE host credentials; ledger `blocked` until the operator flips it) • **FR/AD:** spec-pyforge-warden CAP-26 (FR-43) • spine Decision 2
+**Flag:** `pyforge.warden.fleet_inventory` (OFF: the inventory action is listed as disabled and refuses)
+**Surface:** `src/shared/packages/django-warden/src/django_warden_fabric/` (`models.py` a `FleetRepo` row, `fleet.py` the GHE listing over an injectable client, `tasks.py` a keys-not-blobs Celery task, `migrations/0002_*.py`, the JSON inventory export), `src/platform/db/changelog/changes/` and `src/platform/db/sqlmigrate-map.yaml` (the covering Liquibase changeset), `src/platform/tests/` (the warden fabric tests), `src/platform/config/flags.json`
+**Given** Steward's GHE credentials in the worker's environment and an organisation name
+**When** the operator starts an inventory
+**Then** every repo the organisation lists is one `FleetRepo` row (full name, default branch, clone URL, archived flag), refreshed idempotently
+**And** the inventory is exported as a JSON document at a configured path that other stations read as data (Atlas, `spec-pyforge-atlas:CAP-61`) — no station imports `django_warden_fabric` or `pyforge.warden` for it
+**And** a fixture organisation of three repos yields three rows and a three-entry export, with no real network in the suite
+
+### Story 16.2: A fleet run scans each inventoried repo, one verdict per repo
+**Type:** feature • **Effort:** L • **Deps:** S-16.1 • **FR/AD:** spec-pyforge-warden CAP-26 (FR-43) • spine Decision 2
+**Flag:** `pyforge.warden.fleet_scan` (OFF: the fleet-run action is listed as disabled and refuses)
+**Surface:** `src/shared/packages/django-warden/src/django_warden_fabric/` (`models.py` `FleetRun` and `FleetRepoScan` on the `ComplianceJob` shape, `tasks.py`, `fleet.py`, a migration), the covering Liquibase changeset under `src/platform/db/`, `src/platform/tests/`, `src/platform/config/flags.json`
+**Given** Story 16.1's inventory
+**When** the operator starts a fleet run
+**Then** one `FleetRun` row and one `FleetRepoScan` row per repo persist, each per-repo row carrying that repo's own `warden scan` report and exit code from the existing scan call — no fleet-level verdict, and no status outside the job vocabulary and the frozen lattice
+**And** each repo is cloned into a throwaway directory that is gone after a success and after a forced failure; the Celery message carries only ids (keys-not-blobs)
+**And** the actuator runs on fleet repos in dry-run only, so the run makes no forge write
+
+### Story 16.3: Each fleet fix waits in a proposal queue for operator approval
+**Type:** feature • **Effort:** M • **Deps:** S-16.2, S-14.3 • **FR/AD:** spec-pyforge-warden CAP-26 (FR-43), CAP-24 (FR-41)
+**Flag:** `pyforge.warden.fleet_fix_proposals` (OFF: no proposals are queued; the approve action is listed as disabled and refuses)
+**Surface:** `src/shared/packages/django-warden/src/django_warden_fabric/` (`models.py` a `FixProposal` row, `views.py` and a template for the approve action, `management/commands/warden_fleet_approve.py`, `tasks.py`), `src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py` (a per-call authorization that admits one approved fleet finding past the estate allowlist), a migration and its covering Liquibase changeset, `src/platform/tests/`, `src/platform/config/flags.json`
+**Given** a fleet run whose dry-run actuation planned fixes
+**When** the run completes
+**Then** each planned fix is one queued `FixProposal` (repo, finding id, target, planned diff summary) and no forge call has been made
+**And** an operator approve action — the portal's or the management command's, one code path — opens exactly that proposal through Story 14.3's draft-PR path on its repo, and records the PR URL or the captured failure
+**And** nothing auto-opens on a fleet repo: a test asserts zero forge writes until an approve action, and one per approval
+
+### Story 16.4: Non-Python lockfiles scan through osv-scanner's own parsers
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-warden CAP-26 (FR-43) — the lifted *Non-Python osv-scanner ecosystems* Non-goal
+**Flag:** `pyforge.warden.non_python_ecosystems` (OFF: non-Python lockfiles are not discovered, as today)
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/discovery.py` and `routing.py` (discover `package-lock.json`, `go.sum`, `Cargo.lock` and the other lockfiles osv-scanner parses natively), `engines.py` / `vuln.py` (hand them to osv-scanner's own parser, the way PyPI inputs are delegated), `inventory.py`, `sbom.py` (source-registry-correct purls), warden tests, `src/platform/config/flags.json`
+**Given** a fixture repo whose `package-lock.json` pins a known-vulnerable npm version, and the offline database for that ecosystem
+**When** `warden scan` runs with the flag ON
+**Then** the security axis reports a `vuln:` finding for it through osv-scanner's own lockfile parser, and hygiene, license and currency are honestly `not-applicable` for that component
+**And** the extractor imports no execution primitive (the AST-denylist meta-test stays green), the `ComplianceReport` validates at 1.1.0, and container and artifact scanning stay out of scope
+**And** a missing or stale database for the ecosystem routes to `indeterminate`, never `clean`
+
 ## Currency validation — 2026-08-26
 
 Validated against the architecture's 2026-08-26 reconciliation pass (chain-currency
@@ -907,3 +1016,17 @@ reconstructed missing Auto Run Results from `main`'s landing commits, fixed inva
 and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
 no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
 check ran.*
+
+## Currency reconciliation — 2026-09-28
+
+`arch→epics` edge after the spine's 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28: CAP-24..26 land on
+the existing decisions, plus two recorded boundary decisions — pixi at runtime only inside the actuator's real path, and
+the fleet's home in `django-warden`). Epics 14, 15 and 16 decompose CAP-24 (FR-41), CAP-25 (FR-42) and CAP-26 (FR-43).
+Two rows are minted `blocked` on another station's story — the Deps parser is station-local, so the gate is prose on
+the `**Deps:**` line and the operator flips the row: **15.1** waits for mason Story 21.4 (the opengrep conda package)
+and **16.1** for steward Story 75.1 (the GHE host credentials). **16.4** carries the lifted *Non-Python osv-scanner
+ecosystems* Non-goal, the one CAP-26 clause that is core-scan work rather than `django-warden` work. Epic 9's unqualified
+`FR-43` / `FR-44` citations are qualified as `canopy:FR-43` / `canopy:FR-44` in place, so they cannot be read as this
+station's new FR-43. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key (`14-1`..`14-3`, `15-1`,
+`16-1`..`16-4`, and `epic-14`..`epic-16` with their `-retrospective` rows at `optional`, through the Tier-3 feed and
+`sprint-ledger-sync`). `updated:` bumped.

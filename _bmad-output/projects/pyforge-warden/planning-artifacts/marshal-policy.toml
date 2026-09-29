@@ -162,6 +162,78 @@ verify_commands = [
   "AGENTS.md",
 ]
 
+"12" = [  # A promotion gate that has seen what it ships (spec-golden-path-conda-blind-spot, reminted CAP-18..22), added 2026-09-28:
+  # Epics 12 and 13 were minted without an entry, so MRS-GATE-007 would fire on every path a follow-up touches;
+  # both mirror the station-wide default of Epics 1-10
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]
+"13" = [  # The TEA advisory reviews the diff from the remote-tracking ref (spec-pyforge-warden CAP-23), added 2026-09-28
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]
+
+"14" = [  # The fix-PR actuator finishes the fix on the estate's repos (spec-pyforge-warden CAP-24), added 2026-09-28
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  # the flag key in the one tree (spec-feature-flag-governance:CAP-1)
+  "src/platform/config/flags.json",
+  # pyforge.core.flags.read_boolean, if steward Story 75.1 has not landed -- in exactly 75.1's shape (spec-pyforge-core co-governs)
+  "src/shared/packages/pyforge-core/src/pyforge/core/**",
+  "src/shared/packages/pyforge-core/tests/**",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
+"15" = [  # SAST joins as an optional plugin: opengrep (spec-pyforge-warden CAP-25), added 2026-09-28
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  # the opengrep run-dependency in the warden feature
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/platform/config/flags.json",
+  "src/shared/packages/pyforge-core/src/pyforge/core/**",
+  "src/shared/packages/pyforge-core/tests/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
+"16" = [  # Warden scans the enterprise fleet on GitHub Enterprise (spec-pyforge-warden CAP-26), added 2026-09-28
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  # 16.1-16.3: the fleet lives in django-warden (spine 2026-09-28 Decision 2); its tests live under src/platform/tests/
+  "src/shared/packages/django-warden/**",
+  "src/platform/tests/**",
+  # the covering Liquibase changesets for the new django-warden migrations
+  "src/platform/db/changelog/**",
+  "src/platform/db/sqlmigrate-map.yaml",
+  "src/platform/config/flags.json",
+  "src/shared/packages/pyforge-core/src/pyforge/core/**",
+  "src/shared/packages/pyforge-core/tests/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO

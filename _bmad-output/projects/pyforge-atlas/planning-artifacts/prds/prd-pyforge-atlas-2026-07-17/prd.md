@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-09-20"
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3092,3 +3092,42 @@ consistency pass reconciled 56 tracked story specs' frontmatter against the spri
 reconstructed missing Auto Run Results from git), which post-dated this artifact through the
 `spec→prd` cascade. It is bookkeeping, not a capability: no requirement, decision or
 story changes here. `updated:` bumped to record that the check ran.*
+
+## Currency reconciliation — 2026-09-28
+
+*Trigger: the chain-currency `spec→prd` edge — `spec-pyforge-atlas` gained CAP-61 on 2026-09-28 (the station Dream's
+entry *Atlas keeps each scanned repo's dependency history*, carried from the Warden Dream's entry of the same day and the
+security-scanning intake `archive/docs/intake/system_architecture_specification.md`) while this PRD sat at 2026-09-20.
+The FR is derived from the CAP (`one-chain-per-station`).*
+
+### The FR space: FR-69 registered
+
+This file's ids run FR-1..FR-68 across the primary PRD and the two satellite sections (the fr-without-cap baseline
+reads them as one space), so the next free id is FR-69.
+
+#### FR-69: Atlas keeps each scanned repo's dependency history ← CAP-61
+
+For every repo Warden scans, Atlas holds the history of its declared dependencies across commits — when each arrived,
+changed and left, and in which manifest — so Warden's actuator and fleet scan (`spec-pyforge-warden:CAP-24` and `spec-pyforge-warden:CAP-26`)
+can see when a vulnerable dependency arrived and which other repos carry it. Atlas measures; Warden judges.
+
+**Consequences (testable):**
+- A primary-layer Parquet dataset in `vcs_health`, one partition per repo, built from `git pkgs init --no-hooks` (git-pkgs
+  as a conda package from mason Story 21.1) plus an Atlas-native estate pixi parser for `pixi.toml` / `pixi.lock`, which
+  git-pkgs does not parse (upstream issue #79).
+- One row per dependency change: repo, commit SHA, epoch-second commit time, manifest path, ecosystem, name, requirement
+  before and after, and the source (git-pkgs or the estate pixi parser).
+- No hook or file is written into a scanned repo; git-pkgs' database lives at a throwaway path, is read through DuckDB
+  or git-pkgs' JSON output, and is gone after landing; no `sqlite3` import exists under `src/pyforge/atlas` (AD-4, F1).
+- The repo list is Warden's fleet inventory export, read as a catalog dataset (AD-2); no import of `pyforge.warden` or
+  `django_warden_fabric`.
+- A poll-cursor sensor (the `orchestration/event_source.py` pattern, no webhook) triggers the refresh when a repo's
+  head moves; the refresh is incremental (AD-5); an unreachable repo keeps its last-good partition marked `stale`
+  (AD-13).
+- The dataset carries no verdict, score or threshold.
+- Decomposes into **Epic 25** (Story 25.1, ledger `blocked` until mason Story 21.1 ships the git-pkgs package; Story
+  25.2).
+
+**ONE FR space now FR-1..FR-69** (FR-70 = next free id).
+
+**Content changed:** this section added (FR-69 registered). No FR renumbered or removed. `updated:` bumped.

@@ -15,7 +15,7 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
-updated: "2026-09-27"   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-24..26 (Epics 14-16); FR-41..FR-43 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-warden moved to 2026-09-12 (a 2-path surface-drift-exclude block; twelve dated verified: CAP lines from the 2026-09-11 sweep; three open_questions hoisted into frontmatter 2026-09-11; the story-set Assumption re-grounded from 31/6 to 43 keys/11 epics) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL GAP RECORDED, independently re-verified: `review_required` — named in FR9, in the acceptance matrix and in the bypass success criteria — occurs ZERO times in shipped src/ or tests/. Recorded, NOT repaired: adding the field is a behaviour + schema change needing its own Dream/Spec. The Spec's three open questions remain OPERATOR-OWNED and unanswered; the station's coherence checkpoint stays red by design until they are answered. Prior — Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it)."
 classification:
   projectType: cli_tool
@@ -717,7 +717,7 @@ retrofitted into the FR text above:**
    `/stations/warden/` with a permanent `/compliance/` redirect (steward S-19.1) —
    and a host MCP face (`POST /stations/warden/mcp`). Engines are called, never
    reimplemented; the portal is a projection with no second write path.
-3. **Epic 9 — PR-gate hook specs; scanners are plugins** (FR-44, CAP-18 retrofit;
+3. **Epic 9 — PR-gate hook specs; scanners are plugins** (canopy:FR-44, CAP-18 retrofit;
    landed 2026-08-24): `hooks.py` publishes the PR-gate hook book on
    `pyforge.core.hooks`; `scanner_plugins.py` wraps today's engines as the default
    plugin bundle; commercial scanners (Checkmarx, Sonar, Black Duck, GHAS) are
@@ -905,3 +905,78 @@ and git resolves a short name to a local branch or tag of that name first, so a 
 the review. The lens stays inside the FR20/J9 verdict contract as written — a note, never a finding, a rung or the
 exit code — and the DW-FU-11-2 fail-closed posture is untouched. No FR text requires correction and none is minted:
 the lens is post-v1 advisory surface, recorded in these sections rather than FR1–FR40; Epic 13 / Story 13.1 carries it.
+
+## Currency reconciliation — 2026-09-28
+
+*Trigger: the chain-currency `spec→prd` edge — `spec-pyforge-warden` gained CAP-24, CAP-25 and CAP-26 on 2026-09-28
+(the station Dream's entry *the fix-PR actuator finishes the fix, SAST joins as a plugin, and Warden scans the
+enterprise fleet*, triaged from `archive/docs/intake/system_architecture_specification.md` under operator rulings of
+that date) while this PRD sat at 2026-09-27. Each FR is derived from its CAP (`one-chain-per-station`).*
+
+### The FR space: FR-41..FR-43 registered
+
+The v1 space is FR1–FR40 (written `FR-1`..`FR-40` since the 2026-09-17 fold). FR-41, FR-42 and FR-43 are the next free
+ids. Two older citations in this PRD's and `epics.md`'s Epic 9 history read `FR-43` / `FR-44` unqualified; they are
+**canopy's** (`canopy:FR-43` shared hook-spec registration, `canopy:FR-44` Warden owns the PR-gate hooks, steward's PRD),
+never this PRD's. The one in § Currency reconciliation — 2026-08-26 item 3 is qualified in place today, and `epics.md`
+Epic 9 and the spine's matching line are qualified in the same change, so no reader can take them for the ids below.
+The tracked story specs 9.1 and 9.2 (done) still say `FR-43` unqualified in their prose; their Binding sections cite the
+canopy chain.
+
+#### FR-41: The fix-PR actuator finishes the fix on the estate's repos ← CAP-24
+
+FR-40's upgrade PR stops being a pointer. For a `vuln:` finding the actuator resolves the target version — the lowest
+release the finding's OSV advisory names as fixed that the estate's own solver accepts — edits the declaring manifest,
+re-solves the lock, and opens a **draft** PR carrying that diff, on the estate's own repos (`rxm7706/local-recipes`,
+`rxm7706/python-foundry`). FR-40's promises hold unchanged: forge egress only in the actuator, strictly post-verdict,
+inert without the flag, never writing the scanned working tree, a failed step recorded in `actuation` and never a
+rung or an exit code.
+
+**Consequences (testable):**
+- Candidates are every `ECOSYSTEM`/`SEMVER` `fixed` event of the matching `affected[]` entry at or above the current
+  version, ascending; the first the solver accepts is the target (a fixture solver that refuses 1.2.3 yields 1.3.0).
+- `--fix-prs-dry-run` still opens no socket: it names the lowest candidate with the solver marked not-run.
+- The edit and the re-solve happen in a `mkdtemp` (`0700`) copy that is gone after success and failure; the scanned
+  tree is byte-identical after the run.
+- The diff arrives as one commit on a `warden/fix/` branch behind a draft PR, through the forge API's Git Data
+  endpoints; a repo outside the estate allowlist gets no manifest-edit PR.
+- pixi runs only on the real `--open-fix-prs` path, as a named engine subprocess under a tested version range.
+- Decomposes into **Epic 14** (Stories 14.1–14.3).
+
+#### FR-42: SAST joins as an optional plugin, and informs without publishing ← CAP-25
+
+Opengrep takes the SAST slot on the PR-gate hook book (canopy:FR-44's optional-plugin shape) with rules the estate owns,
+run offline. Its results are advisory notes, the TEA lens's shape: they inform the report's reader and never publish a
+verdict. CodeQL is rejected on its licence.
+
+**Consequences (testable):**
+- With `opengrep` enabled and an estate rule tripped, the report's `advisory` names the rule, path and line, and the
+  status and exit code equal the same run with the scanner disabled.
+- No rule is fetched over the network; an absent binary is omit-not-error (Story 9.3's test stays green).
+- The `ComplianceReport` stays at 1.1.0 (the `advisory` slot is already an open array).
+- Decomposes into **Epic 15** (Story 15.1, ledger `blocked` until mason Story 21.4 ships the opengrep package).
+
+#### FR-43: Warden scans the enterprise fleet, one verdict per repo ← CAP-26
+
+A fleet run inventories a GitHub Enterprise organisation and scans each repo with `warden scan`. This lifts two
+Non-goals by operator ruling (2026-09-28): *Fleet aggregation* (a fleet run is now Warden's, still one verdict per repo
+and never a fleet-level pass/fail) and *Non-Python osv-scanner ecosystems* (the security axis over osv-scanner's native
+lockfile parsers; container and artifact scanning stay out). Fixes on fleet repos wait in a proposal queue and open only
+on the operator's approval.
+
+**Consequences (testable):**
+- The run persists on `django-warden`'s `ComplianceJob` pattern (keys-not-blobs; a job status that is never a verdict —
+  no CLEAN or VULNERABLE second verdict); each per-repo row carries that repo's own `warden scan` report and exit code.
+- The inventory is published as a JSON export other stations read as data (Atlas, `spec-pyforge-atlas:CAP-61`).
+- Throwaway clones are removed on success and on failure.
+- A planned fleet fix is a queued proposal; no forge call is made until an approve action, after which that one proposal
+  opens as a draft PR through FR-41's path.
+- A fixture npm `package-lock.json` pinning a known-vulnerable version yields a `vuln:` finding, `hygiene`
+  `not-applicable`.
+- GHE credentials come from Steward (steward Story 75.1). Decomposes into **Epic 16** (Stories 16.1–16.4; 16.1 ledger
+  `blocked` on steward Story 75.1).
+
+**ONE FR space now FR-1..FR-43** (FR-44 = next free id; `canopy:FR-44` is a different space).
+
+**Content changed:** this section added (FR-41..FR-43 registered); the canopy citation in § Currency reconciliation —
+2026-08-26 item 3 qualified. No FR renumbered or removed. `updated:` bumped.

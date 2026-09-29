@@ -41,7 +41,7 @@ completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'
 date: '2026-07-11'
-updated: "2026-09-27"   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
 currency_review: "Reviewed 2026-09-07 — cascade from the PRD's 2026-09-07 reconciliation (Epic 11 landed: two advisory lenses registered in the existing pyforge.core.hooks plugin bundle, no new architectural surface; DW-FU-11-2's fail-closed roster-missing posture resolved inside the existing plugin-error seam). v1 body and the 2026-08-26 entry below remain accurate. See § Currency reconciliation — 2026-09-07."
 ---
 
@@ -403,7 +403,7 @@ over; the v1 body above is otherwise confirmed accurate against the shipped code
 
 ### New architectural surfaces since the v1 close
 
-- **Hook specs + plugins (Epic 9, FR-44 / CAP-18, landed 2026-08-24).** Warden owns
+- **Hook specs + plugins (Epic 9, canopy:FR-44 / CAP-18, landed 2026-08-24).** Warden owns
   the PR-gate hook book, published on the shared `pyforge.core.hooks` registration
   API (never a Warden-only second loader). Today's engines are wrapped — not
   rewritten — as the default plugin bundle (`scanner_plugins.py`); commercial
@@ -539,3 +539,44 @@ the advisory hands TEA, now `refs/remotes/origin/main` — and a test pinning it
 suite:AD-4 (an advisory contributes a note, never a verdict) and suite:AD-10 (fail-closed when the roster lacks `tea`)
 hold as written. Housekeeping in the same pass: this spine's frontmatter carried two `updated:` keys; the first was
 dead under YAML last-wins and is removed, its history kept in the surviving key's comment.
+
+## Currency reconciliation — 2026-09-28
+
+*Trigger: the PRD's re-stamp for FR-41..FR-43 / CAP-24..26 (`prd→arch`) — the actuator finishes the fix (Epic 14),
+opengrep joins as an optional SAST plugin (Epic 15), and Warden scans the enterprise fleet (Epic 16).* Checked against
+every decision above. Most land as written; two boundary decisions are recorded here because the CAPs need them.
+
+**Lands as written:**
+
+- **The false-green triad, the seven-rung lattice and the frozen exit enum.** Nothing new feeds a rung: the actuator
+  still runs post-verdict and writes only the `actuation` slot, and the SAST notes ride the `advisory` slot (suite:AD-4,
+  the TEA lens's shape). Both slots are already open in `report-schema.json`, so the `ComplianceReport` stays at 1.1.0.
+- **`engines.py` is the only module that spawns subprocesses, always via `_engine_env()`** (§ Boundary contracts).
+  The two new subprocesses — pixi for the actuator's re-solve and opengrep for SAST — go through that helper too:
+  system-temp output, `NO_COLOR=1`, `stdin=DEVNULL`, argv lists, never `shell=True`, never manifest data as a flag.
+  Both join the engines' tested-version-range rule.
+- **Temp files via `mkstemp`/`mkdtemp`.** The actuator's edit-and-re-solve copy is a `mkdtemp` (`0700`) directory;
+  the scanned tree is never written, and the copy is removed on success and on failure.
+- **The actuator is the only forge egress in `pyforge.warden`.** The manifest edit and the re-solved lock reach the
+  forge through the Git Data endpoints `open_pull_request` already uses (blobs and a tree instead of today's empty
+  tree), with `draft: true`.
+- **The extractor stays a no-execution zone.** Non-Python lockfiles (Story 16.4) are handed to osv-scanner's own
+  parsers, the way PyPI inputs already are (CAP-2); `extract/` gains no parser that executes anything.
+
+**Decision 1 — pixi runs at runtime only inside the actuator's real path.** The spec's Runtime-shape constraint said
+the tool never invokes pixi at runtime. CAP-24's "the lowest OSV-fixed release the estate's solver accepts" needs the
+solver, so the constraint is narrowed, not dropped: pixi runs only on `--open-fix-prs` (never on
+`--fix-prs-dry-run`, which keeps its no-socket promise and reports the solver as not-run), only in the throwaway copy,
+and only as an `_engine_env()` subprocess under a tested version range.
+
+**Decision 2 — the fleet lives in `django-warden`, not in `pyforge.warden`.** CAP-26's inventory, clones, per-repo
+scans and proposal queue live in `django_warden_fabric` on the `ComplianceJob` pattern (keys-not-blobs Celery tasks,
+Django models with a covering Liquibase changeset, canopy:AD-10's one ASGI process plus workers). Each repo's scan is
+the existing `warden scan` call, so the verdict per repo is unchanged and there is no fleet verdict. The inventory
+listing and the clones are explicit, operator-started egress in the worker, outside `warden scan`'s own process, whose
+socket guard still holds. An approved proposal opens through the actuator (Decision 1's path). The inventory is
+published as a JSON export that Atlas reads as data (`spec-pyforge-atlas:CAP-61`) — Warden never imports
+`pyforge.atlas` and Atlas never imports `pyforge.warden` for it.
+
+**Content changed:** this section, the `canopy:FR-44` qualification on the Epic 9 line in § New architectural surfaces
+since the v1 close, and `updated:`. No prior decision reversed.
