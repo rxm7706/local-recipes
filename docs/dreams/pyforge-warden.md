@@ -67,6 +67,64 @@ the host or the source.
   reviews. **Constraints:** advisory only — never a finding, a rung or the exit code; TEA's own
   default (`origin/main`) is upstream's and not changed here. Kinships: `spec-pyforge-steward`
   CAP-158 (steward's `tea-test-review` task passes the same base). Owner: warden.
+- **2026-09-28 (night) — Proposed: the fix-PR actuator finishes the fix, SAST joins as a plugin,
+  and Warden scans the enterprise fleet.** Source: the intake
+  `archive/docs/intake/system_architecture_specification.md` ("Automated Security Scanning & PR
+  Generation Engine"), triaged 2026-09-28 under operator rulings. The intake designs a new engine:
+  git objects stored inside PostgreSQL by the `gitgres` extension, `git-pkgs` Go binaries for
+  manifests and PRs, CodeQL, a FastAPI/Celery orchestrator with SQLAlchemy, and a push webhook.
+  **Most of it already exists here:**
+  - `warden scan` covers four of six axes.
+  - The CycloneDX SBOM (CAP-7) and the offline OSV database (CAP-20).
+  - The scanner-plugin slots in `scanner_plugins.py`, where `ghas` is a stub.
+  - The fix-PR actuator (CAP-12).
+  - django-warden's Celery-driven `ComplianceJob`.
+  - CFE's `scan_project.py`, which clones a repo and parses many manifest kinds.
+
+  The real gap is the intake's Phase 4. The actuator "does NOT compute a target version" and says
+  "precise target resolution + manifest editing are deferred" (`actuator.py:21-23`).
+  **Operator rulings 2026-09-28** (the scope is all three):
+  1. Finish Phase 4 on the estate's own repos, `local-recipes` and `python-foundry`, as draft PRs.
+  2. Scan the enterprise fleet on GitHub Enterprise. This lifts two Non-goals, "Fleet
+     aggregation" and "Non-Python osv-scanner ecosystems". Every fleet fix is **queued as a
+     proposal**, and it opens as a PR only after the operator approves it.
+  3. Mason packages the tools ([[pyforge-mason]], same day).
+
+  **Rejected, with reasons:**
+  - CodeQL: its CLI licence covers private code only with a GitHub Code Security licence. Opengrep
+    (LGPL-2.1) takes the SAST slot instead, with rules the estate owns.
+  - `gitgres` as the engine's git store: it has no releases and its author calls it "a neat hack
+    right now". It has no delta compression, and a C extension needs a DBA grant on the
+    enterprise-managed PostgreSQL. Ephemeral clones stand in. Mason packages gitgres, but the
+    engine does not adopt it.
+  - A second verdict: a `scan_jobs.status` of CLEAN or VULNERABLE would compete with
+    `warden scan`'s exit code.
+  - Webhooks: Atlas rejected them as the default trigger (`orchestration/event_source.py:17-18`).
+  - A standalone FastAPI/SQLAlchemy service: the platform is one ASGI process, the Django ORM and
+    Liquibase (canopy:AD-10's process topology).
+
+  **What it looks like when real:**
+  - For a `vuln:` finding, the actuator picks the lowest OSV-fixed release the estate's solver
+    accepts. It edits the manifest (`pixi.toml`, `pyproject.toml` or a recipe), re-solves the
+    lock, and opens a draft PR on an estate repo.
+  - An opengrep plugin reports SAST findings that inform the verdict but never publish one.
+  - A fleet run inventories the GHE organisation's repos and scans each one, one verdict per repo
+    as today. It persists the run in a `ComplianceJob`-shaped row and queues each fix as a
+    proposal, which the operator opens one at a time.
+
+  **Constraints:**
+  - No silent egress: the actuator stays the sole carve-out, and a fleet PR opens only through
+    it.
+  - Engines are consumed, not authored: git-pkgs, forge and opengrep arrive as conda packages with
+    tested version ranges.
+  - `warden scan` stays the sole PR verdict.
+  - Credentials come from Steward ([[pyforge-steward]], same day).
+  - Every new capability carries a flag block ([[feature-flag-governance]], same day).
+
+  **Kinships:** [[pyforge-atlas]] (dependency history, same day), [[pyforge-mason]] (packaging,
+  same day), [[pyforge-steward]] (GHE credentials, same day), CAP-7, CAP-12 and CAP-20.
+  Owner: warden. Status: **seed**. The next `bmad-spec` pass mints the CAPs (CAP-24 onward) and
+  the Non-goals amendment.
 
 ## Folded Dreams (2026-09-17)
 

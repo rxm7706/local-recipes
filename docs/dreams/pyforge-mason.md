@@ -286,6 +286,33 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   (Story 72.1, the Guild environment that answers `pyforge mason`), `spec-pixi-candidate-currency`
   (governs `pixi.lock`). Owner: mason. → `spec-pyforge-mason` CAP-30 / Epic 20 / Story 20.1
   (FR-52), specced 2026-09-28.
+- **2026-09-28 (night) — Proposed: Mason packages the intake toolchain: `git-pkgs`, `forge`,
+  `gitgres`, `opengrep` and `pptxgenjs-plus-jsx`.** Operator ruling 2026-09-28, at the triage of
+  three intakes (archived under `archive/docs/intake/`): package all five. Packaging is not
+  adopting. Warden adopts `git-pkgs`, `forge` and `opengrep`, Atlas adopts `git-pkgs`, and Herald
+  adopts `pptxgenjs-plus-jsx`. `gitgres` stays a design reference that nothing in the platform
+  loads. None of the five is on conda-forge (checked 2026-09-28).
+  **Upstream facts** (checked 2026-09-28):
+  - `git-pkgs` CLI v0.20.0 and `forge` v0.10.0: MIT, Go, `github.com/git-pkgs`, pre-1.0, one
+    maintainer.
+  - `gitgres`: MIT, `github.com/andrew/gitgres`. It has no releases or tags. It is a PostgreSQL
+    extension plus a libgit2 ODB/refdb backend, built `FROM postgres:17`, and it needs pgcrypto,
+    libgit2 and libpq.
+  - `opengrep` v1.30.0: LGPL-2.1, published as GitHub binaries only.
+  - `pptxgenjs-plus-jsx`: the JSX companion that `recipes/pptxgenjs-plus` does not include.
+  **What it looks like when real:**
+  - Five `recipe.yaml` recipes under `recipes/`.
+  - Each is a green local build on linux-64. `gitgres` builds against host
+    `postgresql >=17.11,<18`, from a pinned commit until upstream tags a release.
+  - Each carries a test that runs the binary or loads the extension.
+  **Constraints:**
+  - A green local build ends each story. There is no staged-recipes PR without an explicit ask.
+  - `gitgres` builds against PostgreSQL 17 only (fnd:CAP-12).
+  - The `conda-forge-expert` skill is invoked, and the effort closes with its retro and a
+    CHANGELOG bump.
+  - Where only a binary repack is possible (`opengrep`), the recipe stays local and records why.
+  **Kinships:** [[pyforge-warden]], [[pyforge-atlas]] and [[pyforge-herald]] (same day). Owner:
+  mason. Status: **seed**. The next `bmad-spec` pass mints the CAP (CAP-31 onward).
 
 ## One-chain fold — 2026-09-17
 

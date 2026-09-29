@@ -205,6 +205,35 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   Cross-station residue for steward: `docs/dreams/README.md` still describes this Dream as
   "waves 0–H shipped, PRs #58–#105", accurate for the migration and roughly 99 stories and 14
   epics behind the station.
+- **2026-09-28 (night) — Proposed: Atlas keeps each scanned repo's dependency history, so a fix
+  knows when a dependency arrived and which other repos carry it.** Source: the Warden Dream's
+  entry of the same day. That is the security-scanning intake, archived at
+  `archive/docs/intake/system_architecture_specification.md`, whose Phase 2 persists a
+  `dependency_graphs` table per repo and commit.
+  **What exists:** Atlas's datasets cover all of conda-forge: `core_dependencies`, the `sbom_*`
+  entry pipeline and the OSV offline store. Nothing holds one repo's manifests across its
+  commits, and nothing holds a fleet of enterprise repos.
+  **The tool:** `git-pkgs` (MIT; v0.20.0, 2026-09-04) walks a repo's history into SQLite
+  (`git pkgs init`). Two caveats:
+  - It installs git hooks by default.
+  - Its `manifests` parser has no `pixi.toml` / `pixi.lock` support (upstream issue #79), and
+    pixi is the estate's main format.
+  **What it looks like when real:**
+  - A Kedro dataset per repo, built from `git pkgs init --no-hooks` output, or from an estate
+    pixi parser where git-pkgs has none.
+  - The datasets join to Warden's fleet inventory.
+  - A poll-cursor sensor drives the refresh, in the `orchestration/event_source.py` pattern, with
+    no webhook.
+  - Warden's actuator and fleet scan read the history. Atlas never publishes a verdict.
+  **Constraints:**
+  - The data belongs in Atlas and the verdict in Warden (atlas domain research, 2026-07-25).
+  - No hook is written into any scanned repo.
+  - `git-pkgs` arrives as a conda package ([[pyforge-mason]], same day).
+  - The capability carries a flag block ([[feature-flag-governance]], same day).
+  - This station's PRD and spine are dated 2026-09-20, so the CAP mint reconciles both in the same
+    PR.
+  **Kinships:** [[pyforge-warden]] and [[pyforge-mason]] (same day). Owner: atlas. Status: **seed**.
+  The next `bmad-spec` pass mints the CAP (CAP-61 onward).
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

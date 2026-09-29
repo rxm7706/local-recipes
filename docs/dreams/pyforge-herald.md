@@ -116,6 +116,64 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-09-28 (night) — Proposed: a deck can be read inside the airgap, from the portal and from
+  an internal Pages site, and each current export is also kept in object storage.**
+  Source: the intake `archive/docs/intake/airgapped_pptx_architecture_specification.md`, triaged
+  2026-09-28 under operator rulings. The intake describes an implementation: python-pptx writes
+  into a PostgreSQL `BYTEA` column, a Django view streams it with a hard-coded CORS origin, and
+  PPTXjs renders it in a Wagtail template and on a GitHub Enterprise Pages page. The need behind it
+  is smaller. People inside the enterprise airgap read a deck in the browser without PowerPoint,
+  from the django-herald portal and from an internal GHE Pages site, and git stops being the only
+  place the exports live.
+  **Measured 2026-09-28** on `306d7563fd`:
+  - 57 tracked `.pptx` hold 121,976,204 bytes.
+  - Every standard `.pptx` export comes from `marp --pptx` (`scripts/deck_export.py`), which
+    writes image-only slides, needs Chrome, and runs in `-e local-recipes`.
+  - 14 decks carry React/JSX sources. Their `dist/` bundle is gitignored.
+  - `src/platform/config/object_storage.py` says "No existing feature is wired to consume this
+    seam yet".
+  - No in-browser `.pptx` viewer exists. Deck visual QA screenshots the React bundle, not the
+    `.pptx`.
+  - `pptxgenjs-plus >=4.2.1` is packaged (`recipes/pptxgenjs-plus`) but sits only in the
+    `local-recipes` environment. `django-cors-headers` is in no environment.
+  **Operator rulings 2026-09-28:**
+  1. Decks stay tracked. CAP-53 still prunes superseded exports, and AD-4 does not change. Each
+     current export is *also* published to the object store with a metadata row.
+  2. The viewer shows Herald's own decks through their HTML twins, meaning the Marp HTML and the
+     React bundle. No browser-side `.pptx` parser.
+  3. `pptxgenjs-plus` becomes an *additional* export kind, native and editable `.pptx`, beside
+     `marp --pptx` and the python-pptx fill. Neither of those retires.
+  **Rejected, with reasons:**
+  - Bytes in PostgreSQL: the platform's blobs go to consumed S3 (the dated 2026-09-10 exception
+    in `spec-pyforge-unifying-strategy` AD-1; `spec-pyforge-steward` CAP-94..97), and the
+    database belongs to the enterprise DB team.
+  - PPTXjs: its last release was 2022-03-26, it bundles jQuery 1.11.3, and it needs JSZip v2.
+  - `pptxgenjs-plus` as the viewer: it generates decks and does not render them.
+  - An unauthenticated stream with a fixed CORS origin: the portals require OIDC and a station
+    role, and station routes live under `/stations/herald/api/v1/`.
+  - A second Pages *artifact*: AD-21 keeps one.
+  **What it looks like when real:**
+  - `herald deck publish <slug>` puts each current export's bytes in the object store under a
+    sha256 key. It records topic, kind, date, size, content type and source commit.
+  - The django-herald portal lists a deck and shows it in the browser from its HTML twin. The twin
+    is served from the store with vendored assets and zero CDN references.
+  - The same docsite artifact deploys to a second host, an internal GHE Pages site. It is built
+    statically, so no browser calls the platform cross-origin.
+  - A `pptxgenjs-plus` export kind writes a native `.pptx` from the Guild environment.
+  **Constraints:**
+  - Git stays the archive of record ([[design-sync-loop]]), and CAP-35's downloads still build
+    from tracked files.
+  - `src/platform/` never imports `pyforge.*`.
+  - There is no new package path.
+  - Every new capability here carries a flag block, under the Guild Dream
+    [[feature-flag-governance]] seeded the same day.
+  **Kinships:**
+  - steward: the object-storage seam's first consumer ([[pyforge-steward]], same day).
+  - This station: CAP-35, CAP-52 (the docsite and its `/herald/` mount), CAP-53 (Epic 28), AD-4
+    and AD-21.
+  - mason: the `pptxgenjs-plus-jsx` recipe ([[pyforge-mason]], same day).
+  - warden: vendored JavaScript is scanned like any other dependency.
+  Owner: herald. Status: **seed**. The next `bmad-spec` pass mints the CAPs (CAP-54 onward).
 - **2026-09-28 — Each deck keeps one current version of each export; git keeps the rest.**
   Source: the steward Dream's 2026-09-25 seed, [[pyforge-unifying-strategy]] § Realization log,
   "`local-recipes` repo-size measurement". It proposed "latest deck per topic" and deferred the
