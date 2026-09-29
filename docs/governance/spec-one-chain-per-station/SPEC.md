@@ -10,7 +10,7 @@ status: ready   # 2026-09-16 — seeded `draft` the morning the token-savings fo
                 # because its Dream is guild-owned (chain.py `_expected_spec_dir`: guild ->
                 # docs/governance/spec-<slug>/) — the second instance of the 09-14 §5 shape.
 created: "2026-09-16"
-updated: "2026-09-17"
+updated: "2026-09-29"
 owner-dream: docs/dreams/one-chain-per-station.md
 surface: []     # Deliberately empty until the mechanism stories land: chain-sprawl-check and
                 # fr-without-cap will be doctor sources (declared here when they exist, the way
@@ -189,6 +189,32 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     mop PR's §7 checklist is green; archived Dreams and absorbed Specs stay
     archived/absorbed; the ritual can be run from this Dream + this Spec +
     CHAIN-STANDARD with no harness-specific store or dispatch path.
+- **CAP-11 — One archive home, and a fold that is complete.**
+  - **intent:** Everything the fleet retires leaves the live tree for one
+    place, `archive/<original path>`, structure-preserving (the rule
+    `archive/docs/README.md` already states), and nothing is deleted. A
+    folded Dream leaves `docs/dreams/` only when its whole body sits,
+    verbatim, in a dated section of its station Dream, with its headings
+    demoted one level. It then moves with `git mv`, and every path
+    reference is repointed. No `Consolidated into` banner: a Dream is live
+    in `docs/dreams/` or archived under `archive/`. The order is: archived
+    Dreams first; then the absorbed and archived Spec folders, each moving
+    with its memlog and every companion; then `docs/intake/`, which keeps
+    only its README, and `docs/specs/`, whose legacy intake-spec tier
+    retires once its last files are carried into a station chain or
+    archived. `docs/dreams/archive/` and atlas's `spec-archive/` fold in. A
+    doctor check proves a fold complete before its file moves. Supersedes
+    CHAIN-STANDARD §7 item 4 and §10 lesson 44. (Operator ruling
+    2026-09-29.)
+  - **success:** CHAIN-STANDARD §7 item 4 requires the verbatim fold and
+    the move, and §11 states the one archive home. After the station fold
+    PRs, no file in `docs/dreams/` reads `status: archived`, and the doctor
+    check finds each archived Dream's paragraphs in its station Dream.
+    `docs/dreams/archive/` and atlas's `spec-archive/` are gone.
+    `docs/intake/` holds only its README. `docs/specs/` is gone, with
+    `CLAUDE.md`'s legacy index, `AGENTS.md`'s Tier 1 row and doctor's
+    `check_spec_indexed` retired in the same PR. The console's Archived
+    column still counts archived Dreams. Every move is a `git mv`.
 
 ## Constraints
 

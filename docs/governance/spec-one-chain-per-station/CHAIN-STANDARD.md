@@ -145,7 +145,11 @@ A planning artifact never waits on code to conform.
    derived bodies; one moves only with a memlog line naming its new path
    and is never deleted. (Marshal pilot, lesson 15: this line read
    "nothing else" and 24 companions were lost to it before review.)
-4. Every folded Dream: `status: archived`, `Consolidated into` banner.
+4. Every folded Dream's whole body is in a dated section of the station
+   Dream, verbatim, with its headings demoted one level. Only then does the
+   file move to `archive/docs/dreams/<slug>.md` (`git mv`, never a delete),
+   and every reference to its old path is repointed. No `Consolidated into`
+   banner (§11; CAP-11, 2026-09-29, superseding the banner rule).
 5. `epics.md`: `## Epic E` sequential from 1; `### Story E.S` sequential;
    ledger regenerated through the map — zero `done → not-done` transitions.
 6. Story spec files renamed to `spec-<key>.md`; zero spelling divergences.
@@ -212,6 +216,47 @@ parallel stations is one leftover PR. Extra checklist teeth from that wave:
 - Capability-ledger rows for every reminted CAP in the same pass as
   `ready` (lesson 39). Cascade spine `updated:`; never two `updated:`
   keys (lesson 40). Archive specified satellites; keep already-archived
-  banners (lesson 44).
+  banners (lesson 44). *(Superseded 2026-09-29 by §11 and CAP-11: a folded
+  Dream carries no banner and moves to `archive/docs/dreams/` once its body
+  is in the station Dream.)*
 - Shared `pixi.lock` / `pixi.toml` stay on their owning Specs, not the
   station Spec (lessons 25, 28, 43–44).
+
+## 11. One archive home (CAP-11, 2026-09-29)
+
+Everything the fleet retires goes to one place: `archive/<original path>`,
+structure-preserving, so `archive/docs/dreams/foo.md` was
+`docs/dreams/foo.md`. That is the rule `archive/docs/README.md` already
+states. Nothing is deleted; every move is a `git mv`. No other archive
+location is used: `docs/dreams/archive/` and atlas's `spec-archive/` fold
+into this one.
+
+**A Dream is live or archived, never both.** A live Dream sits in
+`docs/dreams/`. An archived one sits under `archive/docs/dreams/`, and
+nothing in `docs/dreams/` reads `status: archived`.
+
+**A fold is complete before the file moves.** The satellite's whole body
+goes, verbatim, into a dated section of its station Dream, with its headings
+demoted one level. A doctor check confirms that the satellite's paragraphs
+are there. Then the file moves and its references are repointed. Where the
+body is already in the station Dream (steward's 2026-09-17 fold), the move
+is all that is left to do.
+
+**The order.**
+
+1. Archived Dreams, one station per PR (§9's mop shape). Steward goes
+   first, because its bodies are already in its station Dream.
+2. Absorbed and archived Spec folders, each with its memlog and every
+   companion (§7 item 3 still holds; it now holds under `archive/`).
+   `owner-dream:` and `covers-dreams:` are repointed in the same PR.
+3. `docs/intake/`, which keeps only its README, because the inbox rule
+   stays. `docs/specs/`, whose legacy tier retires once its last files are
+   carried into a station chain or archived. `CLAUDE.md`'s legacy index,
+   `AGENTS.md`'s Tier 1 row and doctor's `check_spec_indexed` go in the same
+   PR that empties the directory.
+
+**Readers follow the move.** Anything that lists Dreams (the console's
+Archived column, the deck facts, scribe's compile, the sibling-drift check)
+reads `archive/docs/dreams/` wherever it needs archived Dreams. Those
+changes land as Stories before the first fold PR moves a file.
+
