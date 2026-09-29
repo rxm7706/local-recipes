@@ -2,7 +2,10 @@
 title: '68.1: A landing''s ledger promotion reaches origin/main, and a failed one is never silent'
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '0c8c07e6fc667f8442ab7c142a6a62bde074b228'
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -85,6 +88,46 @@ Type / Effort / Deps: fix / M / —.
 
 </intent-contract>
 
+## Code Map
+
+All paths under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` for code, `tests/` for tests).
+
+- `src/pyforge/marshal/ports/vcs.py` (`commit_paths_onto_remote_tip`, ~L526) -- port signature and docstring gain keyword-only `preflight_skip_reason`.
+- `src/pyforge/marshal/adapters/vcs_git.py` (`GitVcs.commit_paths_onto_remote_tip`, ~L1309; precedent `GitVcs.push` ~L625-647, Story 57.1) -- the check-then-`env` opt-out. Reuse `shutil.which("env")`, `_GIT_FETCH_TIMEOUT_S` (unchanged), `VcsCommandError`. `commit_paths` (~L804) commits only the named paths.
+- `src/pyforge/marshal/cli/land.py` (`_promote_sprint_ledger`, ~L1320-1539) -- INTENT at ~L1485, publish at ~L1497, `except VcsCommandError` at ~L1504 returns `()` with no OUTCOME today. `_parse_sprint_ledger_statuses` (~L1247) and `_LEDGER_DONE_STATUS` are reused by finalize. Two more callers (`run_land`, ~L613 and ~L1025) inherit the fix.
+- `src/pyforge/marshal/dispatch_land_finalize/__main__.py` (`_run_deferred_work_intake` ~L50-150, `finalize_dispatch_land` ~L155-266) -- intake publish names the story; new ledger read after `_promote_sprint_ledger`; the observation payload (~L251) carries every finding; exit rule (~L261) is ERROR-only and stays.
+- `src/pyforge/marshal/dispatch_land.py` (`execute_dispatch_land`, finalize `process.run` ~L1045-1079) -- keep the `ProcessResult`; non-zero -> `MRS-DISP-020` + REFUSED, the same return shape the `ProcessError` branch already has.
+- `src/pyforge/marshal/dispatch_supervisor/__main__.py` (`_promote_blocked_twin` ~L742-795, one call site ~L1747; journal idiom `_journal_dispatch_blocked` ~L575 and `_append_entry`) -- name the story; journal a WARN OBSERVATION on `VcsCommandError` and return the advanced counter.
+- `src/pyforge/marshal/core/findings.py` (MRS-DISP registry ~L1802-1811) and `core/verdict.py` (~L1170-1177) -- register `MRS-DISP-051` ERROR.
+- `scripts/pre_push_preflight.sh` -- READ ONLY. Its `journal_skip` writes `$PYFORGE_PREFLIGHT_SKIP_REASON` as the last tab-separated field, so a reason carries no tab or newline.
+- Tests: `tests/unit/test_vcs_git.py` (real git; `vcs`, `repo`, `remote` fixtures, ~L1931), `tests/unit/test_land.py` (fake at ~L148), `tests/unit/test_dispatch_land_finalize.py` (`_StubVcs` ~L21, `_FakeIntakeVcs` ~L338), `tests/unit/test_dispatch_landing.py` (`FakeProcess` ~L173, `BrokenProcess`), `tests/unit/test_dispatch_supervisor_blocked_halt.py` (`FakeVcs` ~L74, `_promote_blocked_twin` tests ~L443-600), `tests/unit/test_dispatch_supervisor_main_loop.py` (fake ~L257), `tests/unit/test_findings.py` (~L351), `tests/meta/test_fleet_picture_landing_findings.py`, `tests/meta/test_local_branch_refs_are_full_refnames.py` (`_NOT_A_REF` must classify the new `str` parameter).
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/pyforge/marshal/ports/vcs.py` -- add keyword-only `preflight_skip_reason: str | None = None`; document the proof and the no-`env` fallback -- the port is the contract.
+- `src/pyforge/marshal/adapters/vcs_git.py` -- with a reason set: refuse before any write or fetch when a written path is not `_bmad-output/projects/<slug>/planning-artifacts/...` in normalized form; after the commit, refuse when `git diff --name-only -z <tip> <new>` names a path outside the written set; then push through `env PYFORGE_PREFLIGHT_SKIP=1 PYFORGE_PREFLIGHT_SKIP_REASON=<new sha, paths, reason>` when `env` exists. No reason: byte-identical push -- the opt-out is proof-carrying, never blanket.
+- `src/pyforge/marshal/cli/land.py` -- pass the promoted keys (wave keys on a feed-only sync) as the reason; on `VcsCommandError` write OUTCOME `ok: false` + `error` before the `MRS-LAND-011` WARN and `return ()` -- AD-6, no INTENT without an OUTCOME.
+- `src/pyforge/marshal/dispatch_land_finalize/__main__.py` -- intake publish passes the story; after the promotion, fetch and read `origin/main`'s ledger and add `MRS-DISP-051` (ERROR) when the key is absent, not `done`, or unreadable; the observation carries every finding.
+- `src/pyforge/marshal/dispatch_land.py` -- read the finalize exit code; non-zero -> `MRS-DISP-020` (exit code + stderr) and REFUSED with the PR facts.
+- `src/pyforge/marshal/dispatch_supervisor/__main__.py` -- `_promote_blocked_twin` passes the story and journals a WARN naming story and error on a failed publish.
+- `src/pyforge/marshal/core/findings.py`, `core/verdict.py` -- register `MRS-DISP-051` at ERROR.
+- Tests (files under Code Map) -- one test per I/O-matrix row and per Acceptance Criterion above; update each fake `VcsPort` and `_StubVcs` for the new keyword and the two reads finalize now makes.
+
+**Acceptance Criteria:**
+- Given the Acceptance Criteria in the intent contract, when `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` runs, then every one has a passing test and the suite is green.
+
+## Spec Change Log
+
+## Review Triage Log
+
+## Design Notes
+
+- The reason is a plain string with the full new sha, the sorted written paths and the caller's reason, with no tab or newline (the hook's log is tab-separated).
+- The written-path check runs before any file is written: a `../` path would otherwise be written outside the throwaway worktree before the check saw it.
+- `MRS-DISP-051` reads `origin/main` with a fresh `vcs.fetch` and the full refname (`ORIGIN_MAIN`), never the short name (Stories 57.1 / 60.1).
+- The supervisor's twin WARN reuses `MRS-LAND-011` (a promotion publish that could not land); no code beyond `MRS-DISP-051` is minted.
+
 ## Source
 
 Contract authored from the operator's 2026-09-28 direction after marshal 64.1 landed with its ledger unpromoted, and `spec-pyforge-marshal` CAP-277 with its 2026-09-28 (later) direction entry in the Spec's `.memlog.md` (the journals, the file:line evidence and the measured loss), decomposed the same session as Epic 68's mint.
@@ -101,6 +144,9 @@ Deferred-work row filed with this story, closed elsewhere: `DW-marshal-git-timeo
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
+
+**Local run form (this dispatch worktree has no `.pixi/envs`; never delete `.pixi/`, its `config.toml` is tracked):** from the worktree root, run the primary checkout's marshal env against the worktree's sources:
+`PYTHONPATH="$PWD/src/shared/packages/pyforge-marshal/src:$PWD/src/shared/packages/pyforge-core/src" /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.pixi/envs/pyforge-marshal/bin/python -m pytest src/shared/packages/pyforge-marshal/tests -q -m "not slow" -p no:cacheprovider` -- expected: pass. Read the verdict from the exit code, never through a pipe. Do not `git commit` or push; the run commits.
 
 **Manual checks:**
 - After the first landing through this story's code, `origin/main`'s `sprint-status-ledger.yaml` reads that story `done` in a `marshal: promote sprint-status ledger` commit, and `.steward/preflight-skips.log` names that commit's sha and the story.
