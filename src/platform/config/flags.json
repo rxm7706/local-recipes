@@ -15,6 +15,14 @@
         "foundry": "foundry"
       },
       "defaultVariant": "local-recipes"
+    },
+    "pyforge.steward.ghe_fleet_credentials": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
     }
   }
 }

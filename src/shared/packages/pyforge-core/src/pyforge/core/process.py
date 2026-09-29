@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import os
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -74,7 +74,12 @@ class ProcessPort(Protocol):
         exceptional one. Raises ``ProcessError`` only when ``argv`` could
         not be launched or run to completion at all (the executable does
         not resolve, a permission/launch ``OSError``, or the process
-        exceeded ``timeout_s`` when one is given)."""
+        exceeded ``timeout_s`` when one is given).
+
+        The child inherits this process's own environment exactly: this
+        Protocol carries no environment parameter, so the shared fakes in
+        other stations keep conforming. A caller that must hand the child a
+        curated environment uses ``PosixProcess.run``'s optional ``env=``."""
         ...
 
     def is_alive(self, pid: int) -> bool:
@@ -132,18 +137,31 @@ class ProcessError(PyforgeError, Exception):
 class PosixProcess:
     """``ProcessPort``'s sole implementation.
 
-    No ``env=`` override to ``subprocess.run``: the child inherits this
-    process's own environment exactly -- a caller's own tooling (pixi, an
-    activated venv, PATH-resolved binaries) needs the invoking shell's
-    environment to resolve at all, and this leaf holds no policy field
-    standing in for a curated child environment.
+    ``run`` inherits this process's own environment by default -- a caller's
+    own tooling (pixi, an activated venv, PATH-resolved binaries) needs the
+    invoking shell's environment to resolve at all, and this leaf holds no
+    policy field standing in for a curated child environment. A caller that
+    must hand the child a *different* environment (steward's ``keys exec``
+    scrubs the ambient GitHub tokens and adds one scoped token) passes it as
+    the optional keyword-only ``env=``: it REPLACES the inherited environment
+    wholesale, so the caller builds it from ``os.environ`` itself. Leaving it
+    ``None`` keeps the inheriting behavior for every other caller. Only this
+    concrete class takes ``env=`` -- ``ProcessPort`` is unchanged, since other
+    stations' fakes implement it.
 
     No default ``timeout_s``: a caller's own command duration is entirely
     caller-defined, so ``run`` defaults to ``None`` (no timeout) rather than
     inventing an arbitrary ceiling.
     """
 
-    def run(self, argv: Sequence[str], *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+    def run(
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: Path,
+        timeout_s: float | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> ProcessResult:
         if not argv:
             # A whitespace-only command shlex.split()s to an empty list --
             # distinct from a shlex.split() ValueError (a caller's own
@@ -162,6 +180,9 @@ class PosixProcess:
                 encoding="utf-8",
                 errors="replace",
                 timeout=timeout_s,
+                # env=None inherits this process's environment (the default
+                # every caller but `keys exec` relies on); a mapping replaces it.
+                env=env,
                 # stdin=DEVNULL: a caller invoking this in an unattended
                 # context (an operator or CI with no terminal to answer a
                 # prompt) must not have a command that unexpectedly reads
