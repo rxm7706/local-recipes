@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 136
+# stories: 140
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -75,6 +75,8 @@ development_status:
   23-2-cfe-s-recipe-generator-asks-instead-of-guessing: backlog
   23-3-a-negative-corpus-proves-each-cfe-check-keeps-rejecting-its-defect: backlog
   24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell: done
+  25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed: backlog
+  25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: backlog
   3-1-engine-protocol-and-provisioning: done
   3-2-mason-package-build: done
   3-3-ship-target-vocabulary-and-dry-run-default: done
@@ -136,6 +138,8 @@ development_status:
   epic-23-retrospective: optional
   epic-24: done
   epic-24-retrospective: optional
+  epic-25: backlog
+  epic-25-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done

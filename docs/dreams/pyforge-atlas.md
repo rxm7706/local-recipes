@@ -238,6 +238,29 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   **Amended 2026-09-28 (spec pass):** AD-4 grep-gates any `sqlite3` import and the no-inline-IO gate
   any `subprocess` import under `src/pyforge/atlas`, so git-pkgs' SQLite is read through DuckDB (or
   its JSON output) and deleted, and `git` / `git pkgs` run through `pyforge.core.process`.
+- **2026-09-29 — Recorded, not specced: Atlas computes the definition-of-done verdict for the
+  PyPI-to-conda-forge campaign.** Source: a read of `OpenTeams-WFT-CDO/pypi-to-conda-forge`
+  (`0456572`, pushed 2026-09-24; the operator owns the org). This is the last unfolded item of
+  `docs/intake/external-repos-analysis-2026-08-22/report.md`. That repo files one tracking issue per
+  package (1,000 filed against `openteams-ai/mgmt-wf-python-modernization`, about 3,650 to go), and
+  `file_issues.py` ticks four definition-of-done boxes from live data:
+  1. the package is on conda-forge, and its PyPI-to-conda mapping is correct;
+  2. it is at the latest upstream version, with every required version and LTS branch present;
+  3. it is `noarch`, or built for linux-64, osx-arm64 and win-64;
+  4. its purl-associator mapping is correct.
+  **What exists:** Atlas already has every input: feedstock presence and the parselmouth mapping,
+  `latest_conda_version` from the `main` label's `current_repodata.json`, per-platform coverage, and
+  the purl exports. It already reads that project board (`datasets/identity_sources.py`,
+  `openteams_project_1_board_raw`). Two of the repo's heuristics are already here: builds marked
+  broken are skipped, because the `main` label excludes them, and `conda_source_registry` records
+  whether a feedstock builds from PyPI. What is missing is the combined per-package verdict, and the
+  check that every required version is present, which `current_repodata.json` cannot answer because
+  it holds only the latest.
+  **What it looks like when real:** Atlas computes the four boxes per package, so the campaign's issue
+  filer reads one verdict instead of recomputing it in a second repository.
+  **Operator ruling (2026-09-29):** keep it, and don't build it yet. No CAP is minted until the operator
+  wants it built. **Kinships:** [[pyforge-mason]] (the `auto-recipe` ruling of the same day). Owner:
+  atlas.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

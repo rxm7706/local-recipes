@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: "2026-09-29"   # RE-STAMPED 2026-09-29 (later): chain-currency cascade (spec -> PRD) for CAP-34 (Epic 24); FR-56 registered. See § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-33 (Epic 23); FR-55 registered. See § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD) for CAP-32 (Epic 22); FR-54 registered. See § Currency reconciliation — 2026-09-28 (night, later). Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29 (evening): chain-currency cascade (spec -> PRD) for CAP-35 (Epic 25); FR-57 registered. See § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): chain-currency cascade (spec -> PRD) for CAP-34 (Epic 24); FR-56 registered. See § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-33 (Epic 23); FR-55 registered. See § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD) for CAP-32 (Epic 22); FR-54 registered. See § Currency reconciliation — 2026-09-28 (night, later). Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 project: pyforge-mason
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: docs/dreams/packaging-factory.md
@@ -2088,3 +2088,34 @@ A host-gate test's verdict no longer depends on which mirror or tool env vars th
 **ONE FR space now FR-1..FR-56** (FR-57 = next free id).
 
 **Content changed:** this section added (FR-56 registered). No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-29 (evening)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-mason` gained CAP-35 on 2026-09-29 (evening), after this
+PRD's re-stamp for CAP-34. The FR is derived from the CAP (`one-chain-per-station`).*
+
+### The FR space: FR-57 registered
+
+`docs/specs/` retires (`spec-one-chain-per-station:CAP-11`, 2026-09-29), and the one unfinished effort there,
+`docs/specs/feedstock-refresh.md`, joins this Spec. It is a two-track campaign over every conda-forge feedstock `rxm7706`
+can modify. Track A (sole-maintainer) shipped Waves B to F in June and was reopened for Wave H. Track B (co-maintained) was
+scoped and never started. FR-57 decomposes into **Epic 25**: Story 25.1 runs Track A's Wave H, and Story 25.2 runs Track B.
+The recipes live under `recipes/`, which `spec-fleet-stewardship` governs coverage-only; no FR about the `mason` CLI
+changes. FR-47's rule (every conda-forge effort closes with a Rule-2 retro) applies to both stories.
+
+#### FR-57: Every feedstock `rxm7706` can modify has a local recipe at its published version ← CAP-35
+
+The feedstock refresh campaign runs as Mason stories, one per track, each against a scope counted live.
+
+**Consequences (testable):**
+- Each track's story records its scope, counted live from the atlas, before it starts.
+- Every recipe in scope reaches its feedstock's published version, with `validate_recipe`, `optimize_recipe` and the
+  CI-parity lint green and either a local build or a recorded G95 test block.
+- Track B drops no co-maintainer from any `recipe-maintainers` list (G53), and authors a local mirror where none exists.
+- No feedstock or staged-recipes PR is opened without an explicit ask. Each story lands a `retro(cfe):` commit with a CFE
+  `CHANGELOG.md` semver entry.
+- `docs/specs/feedstock-refresh.md` becomes a companion of `spec-pyforge-mason` in the PR that empties `docs/specs/`.
+
+**ONE FR space now FR-1..FR-57** (FR-58 = next free id).
+
+**Content changed:** this section added (FR-57 registered). No FR renumbered or removed. `updated:` bumped.

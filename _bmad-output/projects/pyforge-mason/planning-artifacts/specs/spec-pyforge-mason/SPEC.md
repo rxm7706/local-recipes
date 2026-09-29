@@ -303,6 +303,22 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   fails along with the originally failing test. `pr-preflight` exits 0 from a shell that exports `ANTHROPIC_BASE_URL`.
   The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry. `pyforge-mason-test` green. (Minted 2026-09-29.)
 
+### CAP-35 — The feedstock refresh campaign is Mason's: every feedstock `rxm7706` can modify has a local recipe at its published version
+
+- **intent:** The two-track campaign in `docs/specs/feedstock-refresh.md` joins this Spec, because `docs/specs/` retires
+  (`spec-one-chain-per-station:CAP-11`). Track A finishes the sole-maintainer campaign's Wave H, the recipes its
+  behind-only scope missed. Track B refreshes the co-maintained feedstocks and authors a local mirror where none exists,
+  preserving every other maintainer's work (G53). Each track re-counts its scope live from the atlas before it starts,
+  because the file's counts date from 2026-06-19. Each regenerates every recipe through `conda-forge-expert` with
+  diff-apply, folds in platform expansion where the recipe is compiled, and ends at a green local build. No feedstock
+  or staged-recipes PR opens without an explicit ask. The legacy file becomes a companion of this Spec, with its waves,
+  landmines and parameters, in the PR that empties `docs/specs/`. The two campaign skills Story 19.4 builds are its
+  tools, not its scope. (Operator ruling 2026-09-29.)
+- **success:** Each track's story records its live scope count before it starts. Every recipe in scope reaches its
+  feedstock's published version, with `validate_recipe`, `optimize_recipe` and the CI-parity lint green and either a
+  local build or a recorded G95 test block. No co-maintainer is dropped from any `recipe-maintainers` list. Each story
+  lands a `retro(cfe):` commit with a CFE `CHANGELOG.md` semver entry. `pyforge-mason-test` green. (Minted 2026-09-29.)
+
 ## Constraints
 
 - **The central decision — wrap by capability, not by product.** Mason **wraps** the packaging machinery by subprocess for all recipe operations and **builds** natively for `package` and `environment`. The boundary is drawn by *capability*. Pure porcelain was rejected because two of the three charter verb families have **nothing to wrap** — no wheel build, no upload path and no lock orchestration exists anywhere in the wrapped machinery's 41,410 lines, so a pure wrapper is not a smaller Mason but a Mason missing its reason to exist. Extraction/reimplementation was rejected on three independently sufficient grounds: **governance makes a fork structurally adversarial** (Rule 1 makes the skill authoritative over any conflicting story, and Rule 2 mandates that every conda-forge effort *edits the skill* — so a fork is continuously invalidated by the loop that governs the domain); **the in-repo precedent failed** (a sibling project rebuilt ~29,000 lines across 32 merged stories and the 8,902-line original is still the live runtime — nothing routes to the rebuild); and **it forks the moat**, converting 106 gotchas and 10 constraints from an appreciating asset into a depreciating one. The accepted cost, paid deliberately: **Mason is not standalone** — `mason recipe` requires a discoverable installation and is inert without one.

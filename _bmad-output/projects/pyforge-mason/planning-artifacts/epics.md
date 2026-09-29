@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-09-29"   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29 (evening): Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-mason CAP-35, FR-57); § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -2500,6 +2500,64 @@ disabled, it fails along with the originally failing test; the `retro(cfe):` com
 entry (v8.91.1); `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
 **Status:** done
 
+## Epic 25: The feedstock refresh campaign is Mason's: every feedstock rxm7706 can modify has a local recipe at its published version (spec-pyforge-mason CAP-35)
+
+Minted 2026-09-29 (evening) from the station Dream's entry of the same name and the operator's ruling of that day.
+`docs/specs/` retires (`spec-one-chain-per-station:CAP-11`), and its one unfinished effort, the two-track feedstock
+refresh in `docs/specs/feedstock-refresh.md`, joins this chain as one story per track. The two stories are independent.
+Their scope counts date from 2026-06-19, so each story re-counts live first. **HARD boundaries:**
+- Every recipe judgement goes through `conda-forge-expert` (Rule 1), including G53 (re-merge co-maintainers) and G96 (a
+  bump's dependency authority is the feedstock).
+- A green local build (or a recorded G95 test block) ends each recipe. No feedstock or staged-recipes PR is opened
+  without an explicit ask (Rule 3: submission is a separate story).
+- `meta.yaml` stays beside a recipe whose feedstock is still v0 (the local-mirror rule).
+- Each story closes with its own `retro(cfe):` commit carrying a CFE `CHANGELOG.md` semver entry (Rule 2).
+- No story touches `src/shared/packages/pyforge-mason/`, `pixi.toml` or `pixi.lock`.
+- Both stories are `flag-exempt: recipe-build`.
+
+### Story 25.1: Track A's Wave H refreshes the sole-maintainer recipes the first waves missed
+
+As the maintainer of the sole-maintainer feedstocks,
+I want every local recipe behind one of them at its feedstock's published version,
+So that the local mirror is a faithful, buildable copy of what conda-forge ships.
+
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57); AD-1; AD-15; CFE Rule 1 +
+Rule 2 + Rule 3 • `flag-exempt: recipe-build`
+**Surface:** `recipes/<name>/` for each sole-maintainer feedstock in the live scope; the CFE retro surface, committed alone
+as `retro(cfe): …`.
+**Given** Track A shipped Waves B to F on 2026-06-21 for the 252 recipes then behind, and was reopened for Wave H (179
+recipes the behind-only scope missed: v0-to-v1 migrations and missing mirrors), then paused
+**When** the story re-counts the sole-maintainer scope live from the atlas, and regenerates each recipe in it through CFE
+with diff-apply, folding in platform expansion where the recipe is compiled
+**Then** every recipe in the live scope is at its feedstock's published version, and passes `validate_recipe`,
+`optimize_recipe` and the CI-parity lint, with a local build on linux-64 or a recorded G95 test block
+**And** the live count and the per-bucket results are recorded in the story spec; commits go per bucket through the
+story's PR; the `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason
+pyforge-mason-test` green
+**Status:** backlog
+
+### Story 25.2: Track B refreshes the co-maintained recipes and keeps every other maintainer's work
+
+As a co-maintainer of 232 conda-forge feedstocks,
+I want each co-maintained local recipe at its feedstock's published version, with a mirror where none exists,
+So that the local tree covers every feedstock I can modify without overriding another maintainer's choices.
+
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57); AD-1; AD-15; CFE Rule 1 +
+Rule 2 + Rule 3; CFE G53 • `flag-exempt: recipe-build`
+**Surface:** `recipes/<name>/` for each co-maintained feedstock in the live scope, including new mirrors; the CFE retro
+surface, committed alone as `retro(cfe): …`.
+**Given** Track B was scoped on 2026-06-19 (232 co-maintained feedstocks, 190 with a local recipe and 42 without) and never
+started
+**When** the story re-counts the co-maintained scope live from the atlas, regenerates each existing recipe through CFE with
+diff-apply, and pulls and authors a local mirror for each feedstock without one
+**Then** every recipe in the live scope is at its feedstock's published version, passes `validate_recipe`,
+`optimize_recipe` and the CI-parity lint, and builds on linux-64 or records a G95 test block; every recipe's
+`recipe-maintainers` list is a superset of the deployed feedstock's (G53)
+**And** a deliberate maintainer choice (an intentional pin, a platform exclusion) is kept and noted in the recipe's CFE
+comments block rather than overridden; the live count and the per-bucket results are recorded in the story spec; the
+`retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
 Validated against the architecture spine as re-stamped today (its § Currency
@@ -2603,3 +2661,12 @@ keeps to those decisions. The change is in CFE's tests, and no story touches Mas
 in its own `retro(cfe):` commit (AD-15, FR-47). Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key.
 `24-1` and `epic-24` were added at `done`, and `epic-24-retrospective` at `optional`, through the Tier-3 feed and
 `sprint-ledger-sync`. `updated:` bumped.
+
+## Currency reconciliation — 2026-09-29 (evening)
+
+`arch→epics` edge after the spine's third 2026-09-29 re-stamp (§ Currency reconciliation — 2026-09-29 (evening): FR-57 /
+CAP-35 lands on AD-1 and AD-15 as written; no AD added, amended or removed). Epic 25 (Stories 25.1 and 25.2) decomposes
+CAP-35, one story per track, and keeps to those decisions. The recipes live under `recipes/`, and no story touches Mason's
+code (AD-1). Each story's one CFE edit is its own `retro(cfe):` commit (AD-15, FR-47). Every Story heading still maps 1:1
+to a `sprint-status-ledger.yaml` key. `25-1`, `25-2` and `epic-25` were added at `backlog` and `epic-25-retrospective` at
+`optional`, through the Tier-3 feed and `sprint-ledger-sync`. `updated:` bumped.
