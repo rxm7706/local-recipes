@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 459
+# stories: 460
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -307,6 +307,7 @@ development_status:
   76-1-the-one-flag-tree-carries-per-environment-values-so-off-in-production-is-a-value: backlog
   76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata: backlog
   76-3-the-ledger-query-s-flags-fold-into-the-one-tree-and-evaluate-through-openfeature: backlog
+  76-4-the-pyforge-three-surfaces-demo-flag-leaves-the-tree: backlog
   8-1-bidirectional-propagation: done
   8-2-zero-loop-guarantee: done
   8-3-idempotent-update-processing: done
