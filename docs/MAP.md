@@ -237,6 +237,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`reference/skills-catalog.md`](reference/skills-catalog.md) | steward | generated |
 | [`reference/station-cheat-sheet.md`](reference/station-cheat-sheet.md) | fleet | generated |
 | [`reference/station-verify-commands.md`](reference/station-verify-commands.md) | fleet | authored |
+| [`reference/story-spec-flag-block.md`](reference/story-spec-flag-block.md) | doctor | authored |
 | [`reference/sync-jira-github-workflow-templates/README.md`](reference/sync-jira-github-workflow-templates/README.md) | fleet | authored |
 | [`reference/test-charter.md`](reference/test-charter.md) | fleet | authored |
 

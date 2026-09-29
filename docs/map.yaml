@@ -220,6 +220,10 @@ pages:
     quadrant: reference
     owner: fleet
     kind: authored
+  - path: reference/story-spec-flag-block.md
+    quadrant: reference
+    owner: doctor
+    kind: authored
   - path: reference/sync-jira-github-workflow-templates/README.md
     quadrant: reference
     owner: fleet

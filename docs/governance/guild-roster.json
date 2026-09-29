@@ -108,6 +108,27 @@
     "cross-station-seam",
     "governance"
   ],
+  "$comment_flag_exemptions": [
+    "The CLOSED list of reasons a story spec of `type: feature` may carry a `flag-exempt:`",
+    "value instead of a `flag:` block (spec-feature-flag-governance CAP-1, operator ruling Q2",
+    "2026-09-28). scripts/flag_rule.py reads THIS list and nothing else -- the code holds no",
+    "copy (one declared source), and a unit test fails a hard-coded value there. Adding,",
+    "renaming or removing a value here is a governance act, never a code change; the five",
+    "are: flag-infrastructure (the flag rule's own machinery: the tree, its fixture, its",
+    "gate), docs-only (the story changes prose and no behaviour), recipe-build (a",
+    "conda-forge recipe build, which is not a runtime capability), planning-ledger-only (the",
+    "story moves planning artifacts or ledgers and nothing else), detector-or-gate (a check",
+    "that judges; a gated gate would report a silent green under fidelity-enforcement). The",
+    "block's shape and both spellings are written once in",
+    "docs/reference/story-spec-flag-block.md."
+  ],
+  "flag_exemptions": [
+    "flag-infrastructure",
+    "docs-only",
+    "recipe-build",
+    "planning-ledger-only",
+    "detector-or-gate"
+  ],
   "$comment_dream_statuses": [
     "The Dream lifecycle -- each state names the ACT THAT COMPLETED. There is",
     "deliberately no `building` state: status declares what EXISTS (stable,",
