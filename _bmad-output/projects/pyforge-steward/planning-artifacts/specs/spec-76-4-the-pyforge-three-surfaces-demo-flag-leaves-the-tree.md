@@ -12,6 +12,7 @@ context:
   - src/shared/packages/django-pyforge/src/django_pyforge/flags.py
   - src/shared/packages/django-pyforge/src/django_pyforge/apps.py
   - src/platform/tests/test_openfeature_file_flags.py
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata.md
 deferred: []
 declared_low_risk: false
@@ -57,6 +58,13 @@ The flag is not only an entry in the tree. `django_pyforge/flags.py` names it as
   forbidden anonymous views, one tree under `src/platform`) and they all stay. Add a test that configures the real
   tree after the removal: it holds `pyforge.cutover_root` and no boolean flag. `configure_file_provider` returns, and
   `evaluate_cutover_root` reads `local-recipes`.
+- Change the `--flag` help example of `doctor flags kill-switch` (`pyforge-doctor/src/pyforge/doctor/__main__.py`,
+  `help="OpenFeature flag key to disable (e.g. pyforge.three_surfaces)"`) to a neutral example that names no key in
+  the tree: `(e.g. pyforge.<station>.<capability>)`. After the removal, the old example would point an operator at a
+  key that no longer exists. *(Folded in 2026-09-29, coordinator ruling.)* `tests/unit/test_flag_kill_switch.py`
+  keeps `pyforge.three_surfaces` as its key: the test writes its own temporary flags file and reads no real tree, so
+  the name there is an arbitrary fixture string, not a consumer. `spec-pyforge-doctor` governs that path, so it is
+  reconciled and stamped with the rest.
 - Leave `pyforge.cutover_root` and the rest of the machinery as they are: the chart's flags ConfigMap,
   `tree_view`/`eval_view`, the `flags` MCP face, `evaluate_cutover_root`, and the 76.1 renderer and 76.2 metadata
   check.
@@ -75,7 +83,8 @@ Type / Effort / Deps: chore / S / S-76.2.
 ## Acceptance Criteria
 
 - Given `src/platform/config/flags.json` When it is read Then it has no `pyforge.three_surfaces` key and still defines `pyforge.cutover_root` unchanged; `flag-overlays.json`, if present, names no `pyforge.three_surfaces`
-- Given `rg -n 'pyforge\.three_surfaces' src/platform src/shared/packages/django-pyforge src/shared/packages/pyforge-core` When it runs Then it finds nothing, and `django_pyforge.flags` defines no `FLAG_KEY`
+- Given `rg -n 'pyforge\.three_surfaces' src/platform src/shared/packages/django-pyforge src/shared/packages/pyforge-core src/shared/packages/pyforge-doctor/src` When it runs Then it finds nothing, and `django_pyforge.flags` defines no `FLAG_KEY`
+- Given `pyforge doctor flags kill-switch --help` When it prints Then the `--flag` example reads `pyforge.<station>.<capability>`, and `tests/unit/test_flag_kill_switch.py` still passes with its own temp-tree key
 - Given a tree holding only the string flag `pyforge.cutover_root` When `configure_file_provider` configures it Then it returns within its timeout, raises nothing, and names no flag key while it waits
 - Given a tree the provider cannot load When `configure_file_provider` configures it Then it raises the named `RuntimeError` after `timeout_s`, as it does today
 - Given the host starting against the real tree When `DjangoPyforgeConfig.ready()` runs Then it completes and `evaluate_cutover_root()` returns `local-recipes`
@@ -90,16 +99,15 @@ Type / Effort / Deps: chore / S / S-76.2.
   nothing starts a daemon or makes a network call to decide it.
 - Read every verdict from the exit code, never through a pipe.
 - Reconcile every Spec `spec-surface-check` names: the platform and chrome Specs that govern `src/platform/` and
-  `django-pyforge`. Stamp each scoped with `--spec`.
+  `django-pyforge`, and `spec-pyforge-doctor` for `__main__.py`. Stamp each scoped with `--spec`.
 
 **Never:**
 - Do not remove or rename `pyforge.cutover_root`, the chart's flags ConfigMap, the `flags` MCP face or
   `evaluate_cutover_root`.
 - Do not start before Story 76.2 has landed (`Deps: S-76.2`). Removing the flag first would leave 76.2's metadata AC
   naming a key that is gone.
-- Do not edit `pyforge-doctor`. Its `flags kill-switch --flag` help example and `tests/unit/test_flag_kill_switch.py`
-  use the name as an arbitrary key in a temporary tree and read no real tree. They are doctor's to change, and
-  the mint reported them to the operator.
+- Do not edit `pyforge-doctor` beyond that one help string. Its kill-switch tests keep their temp-tree key, and the
+  actuator's behaviour does not change.
 - Do not edit the done story specs `spec-26-4-…` or `spec-48-5-…`, or the Guild Dream. They keep the name as
   history.
 - Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
@@ -141,8 +149,10 @@ new ships behind a flag).
 **Manual checks:**
 - `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: `test_openfeature_file_flags.py` passes,
   re-keyed, with the new real-tree and readiness tests.
-- `rg -n 'pyforge\.three_surfaces' src/platform src/shared/packages/django-pyforge src/shared/packages/pyforge-core`
+- `rg -n 'pyforge\.three_surfaces' src/platform src/shared/packages/django-pyforge src/shared/packages/pyforge-core src/shared/packages/pyforge-doctor/src`
   — expected: no match.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the help string changed; the kill-switch
+  tests keep their temp-tree key).
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new findings.
 
 ## Review Triage Log

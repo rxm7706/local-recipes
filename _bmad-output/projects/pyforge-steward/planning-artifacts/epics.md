@@ -5079,7 +5079,9 @@ removal story); canopy:AD-11 • `flag-exempt: flag-infrastructure`
 **Surface:** `src/platform/config/flags.json` (the entry and any 76.2 metadata), `src/platform/config/flag-overlays.json`
 (its entry, if 76.1 put one there), `src/shared/packages/django-pyforge/src/django_pyforge/flags.py` (`FLAG_KEY` removed; the
 key becomes required for `evaluate_boolean`, `evaluate_from_source`, `get_flag` and `python -m django_pyforge.flags`;
-`wait_until_ready` waits on the provider's status, not on a named flag), tests: `src/platform/tests/test_openfeature_file_flags.py`
+`wait_until_ready` waits on the provider's status, not on a named flag),
+`src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py` (the `flags kill-switch --flag` help example becomes the
+neutral `pyforge.<station>.<capability>`; folded in 2026-09-29), tests: `src/platform/tests/test_openfeature_file_flags.py`
 (re-keyed to a test-local fixture key; a real-tree readiness test added).
 **Given** the tree carries the Story 26.4 demo flag, which no production code reads, and `django_pyforge.flags` probes it
 at every `configure_file_provider` call, the host startup included
@@ -5089,9 +5091,9 @@ provider reports that before the tree is readable, on the tree's own first key)
 raises the named `RuntimeError`, and nothing in `src/platform`, `django-pyforge` or `pyforge-core` names
 `pyforge.three_surfaces`
 **And** a call with no key is refused rather than reading a key the tree lacks; the re-keyed FILE-machinery tests pass as
-before; `pyforge.cutover_root`, the chart's flags ConfigMap and the `flags` MCP face are unchanged; doctor's
-kill-switch help example and tests are left to doctor's chain; `pixi run --frozen -e pyforge-steward pyforge-steward-test`
-green
+before; `pyforge.cutover_root`, the chart's flags ConfigMap and the `flags` MCP face are unchanged; doctor's kill-switch
+`--flag` help example names no tree key, while its tests keep their arbitrary temp-tree key;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)

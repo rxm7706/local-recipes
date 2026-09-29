@@ -788,8 +788,9 @@ verify_commands = [
   # 76.3: the ledger-query skill and the generated task table
   ".claude/skills/bmad-sprint-ledger-query/**",
   "docs/how-to/pixi-tasks.md",
-  # 76.4 (added 2026-09-28, night): the demo flag's removal needs nothing beyond the paths above
-  # (src/platform/config, src/platform/tests, django-pyforge)
+  # 76.4 (added 2026-09-28, night): the demo flag's removal (src/platform/config, src/platform/tests, django-pyforge,
+  # all above) plus doctor's kill-switch --flag help example (folded in 2026-09-29)
+  "src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py",
   # co-governor reconciles (spec-pyforge-core governs every station's src; the platform Specs co-govern src/platform)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
