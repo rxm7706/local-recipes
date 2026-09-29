@@ -47,6 +47,17 @@ and `_remediation_for`, which prints provenance-appropriate (or, for a
 recognized provider like JFrog, scope-name-specific) manual remediation
 guidance alongside it. Epic 1 (Keys) is now complete: encrypt/decrypt
 (1.3), rotate (1.4), list (1.5), audit (1.6), revoke (1.7).
+
+Story 75.1 slice (CAP-164 / FR-37, AD-2 amended 2026-09-28): the GitHub
+Enterprise host. `HostScopedCredential.bearer_token` lets an inventory-issued
+enterprise identity be attached by this module itself, only for the enterprise
+host `_http.py`'s `GITHUB_API_BASE_URL` row names (`enterprise_host`,
+`enterprise_credential`); two `issued` scopes, `ghe-fleet-read` and
+`ghe-fleet-pr-draft`, each with its own age payload; `steward keys exec` is the
+only path that hands a token to another process (through the child's
+environment, never argv/stdout/stderr/a log); `keys audit` reports one payload
+serving both scopes. All of it ships behind the flag
+`pyforge.steward.ghe_fleet_credentials`, read through `pyforge.core.flags`.
 """
 
 from __future__ import annotations
@@ -63,13 +74,15 @@ import subprocess
 import sys
 import tempfile
 import tokenize
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
 import yaml
 from pyforge.core.atomic_write import atomic_write
+from pyforge.core.flags import read_boolean, require
+from pyforge.core.process import PosixProcess, ProcessError
 
 from .interfaces import DutyResult
 
@@ -101,7 +114,7 @@ _HTTP_SCRIPTS_DIR = str(locate_http_module().parent)
 if _HTTP_SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _HTTP_SCRIPTS_DIR)
 
-from _http import auth_headers_for  # noqa: E402  # the delegate target (AD-1/AD-2)
+from _http import auth_headers_for, resolve_github_api_urls  # noqa: E402  # the delegate target + host row (AD-1/AD-2/AD-9)
 
 # ── Host-scoped credential resolver (FR-7) ──────────────────────────────────
 
@@ -126,11 +139,28 @@ class HostScopedCredential:
 
     Matching is by exact canonical hostname — ports, brackets, and trailing
     root dots are normalized away, and subdomains of an entry do NOT match.
+
+    ``bearer_token`` (Story 75.1, AD-2 amended 2026-09-28) is set only for an
+    inventory-issued identity `keys` attaches itself — the GitHub Enterprise
+    host, to which `_http.py`'s `auth_headers_for` never sends a GitHub token.
+    It rides on the object (``repr=False``, ``compare=False``: never printed,
+    never part of equality or the hash) so `resolve_headers` stays a pure host
+    gate; unset, `resolve_headers` delegates to `auth_headers_for` unchanged.
     """
 
     hosts: tuple[str, ...]
+    bearer_token: str | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
+        if self.bearer_token is not None:
+            # Never echo the value in a message: it is a secret.
+            if not isinstance(self.bearer_token, str):
+                raise TypeError("HostScopedCredential.bearer_token must be a string or None")
+            if not self.bearer_token or any(c.isspace() or ord(c) < 0x20 for c in self.bearer_token):
+                raise ValueError(
+                    "HostScopedCredential.bearer_token must be a non-empty single token "
+                    "(no whitespace or control characters — it becomes a header value)"
+                )
         if isinstance(self.hosts, str) or not isinstance(self.hosts, tuple):
             raise TypeError(
                 f"HostScopedCredential.hosts must be a tuple of hostnames, "
@@ -215,6 +245,12 @@ def resolve_headers(credential: HostScopedCredential, url: str) -> dict[str, str
     `auth_headers_for` resolves for that host (including ``{}`` if no
     credential env var is set).
 
+    A credential that carries a `bearer_token` (an inventory-issued enterprise
+    identity, Story 75.1) is the one exception: it returns
+    ``{"Authorization": "Bearer <token>"}`` on an exact canonical-host match and
+    ``{}`` otherwise, and never consults `auth_headers_for` or any ambient
+    variable — a suffix or prefix look-alike of the host gets nothing.
+
     A `url` with no parseable hostname (e.g. a scheme-less string, which
     ``urlparse`` reads as all-path) fails closed to ``{}``; a malformed
     bracketed-IPv6 `url` raises ``ValueError`` from ``urlparse`` —
@@ -222,6 +258,8 @@ def resolve_headers(credential: HostScopedCredential, url: str) -> dict[str, str
     """
     host = _canonical_host(urlparse(url).hostname or "")
     in_allowlist = host in {_canonical_host(h) for h in credential.hosts}
+    if credential.bearer_token is not None:
+        return {"Authorization": f"Bearer {credential.bearer_token}"} if in_allowlist else {}
     return auth_headers_for(url, skip_auth=not in_allowlist)
 
 
@@ -991,13 +1029,263 @@ def revoke_identity(inventory_path: str | Path, *, scope: str) -> KeyIdentityEnt
         return retired
 
 
+# ── The GitHub Enterprise host: two issued scopes, one delivery path (Story 75.1) ──
+#
+# CAP-164 / FR-37, AD-2 amended 2026-09-28. `_http.py`'s `auth_headers_for`
+# never sends a GitHub token to a GHES host (it falls to the JFrog branch or
+# netrc), and `_http.py` does not change here (no CFE retro is owed) — `keys`
+# attaches its OWN inventory-issued identity, only for the one host the
+# `GITHUB_API_BASE_URL` row names (AD-9: no Steward-owned URL config).
+#
+# Two scopes, each an `issued` inventory row with its own age payload (one
+# token, one line, encrypted to that row's identity):
+#   * `ghe-fleet-read`     — clone and contents read, for the fleet scan.
+#   * `ghe-fleet-pr-draft` — pull-request drafts, ONLY for an approved proposal.
+# The token's permissions are set when the operator issues it in GitHub
+# Enterprise; nothing here calls GitHub (no provider API client).
+#
+# `steward keys exec` is the ONLY path that hands a token to another process,
+# through the child's environment. The token never rides argv, stdout, stderr or
+# a log; a secret is never accepted through a CLI flag.
+
+GHE_FLAG_KEY = "pyforge.steward.ghe_fleet_credentials"
+GHE_READ_SCOPE = "ghe-fleet-read"
+GHE_PR_DRAFT_SCOPE = "ghe-fleet-pr-draft"
+GHE_SCOPES: tuple[str, ...] = (GHE_READ_SCOPE, GHE_PR_DRAFT_SCOPE)
+
+_PUBLIC_GITHUB_HOSTS = frozenset({"github.com", "api.github.com"})
+# Ambient variables `gh` / git tooling read a GitHub token from — removed from a
+# child's environment before the one scoped token is added.
+_GHE_SCRUBBED_ENV: tuple[str, ...] = ("GITHUB_TOKEN", "GH_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN")
+_EXEC_LOG_NAME = "keys-exec.log"
+_REDACTED = "***"
+
+
+def enterprise_host() -> str | None:
+    """The GitHub Enterprise hostname, or ``None`` when no enterprise host resolves.
+
+    The hostname of ``_http.resolve_github_api_urls()[0]`` when
+    ``GITHUB_API_BASE_URL`` is set, that host is not ``github.com`` /
+    ``api.github.com``, and the flag ``pyforge.steward.ghe_fleet_credentials``
+    reads ON (`pyforge.core.flags`; OFF resolves no enterprise host, exactly
+    github.com-only as before). Unset, nothing resolves.
+    """
+    if not read_boolean(GHE_FLAG_KEY):
+        return None
+    if not os.environ.get("GITHUB_API_BASE_URL"):
+        return None
+    urls = resolve_github_api_urls()
+    if not urls:
+        return None
+    host = _canonical_host(urlparse(urls[0]).hostname or "")
+    if not host or host in _PUBLIC_GITHUB_HOSTS:
+        return None
+    return host
+
+
+def _active_issued(entries: tuple[KeyIdentityEntry, ...], scope: str) -> KeyIdentityEntry | None:
+    """The one `issued`/`active` row for `scope`, or ``None``; more than one is ambiguous."""
+    candidates = [e for e in entries if e.scope == scope and e.provenance == "issued" and e.status == "active"]
+    if len(candidates) > 1:
+        raise InventoryError(
+            f"{len(candidates)} issued/active identities found for scope {scope!r} "
+            "(expected exactly one) -- the inventory is ambiguous or corrupt; resolve by hand"
+        )
+    return candidates[0] if candidates else None
+
+
+def find_shared_payloads(entries: tuple[KeyIdentityEntry, ...]) -> list[str]:
+    """One finding per age payload that both GHE scopes' active `issued` rows list.
+
+    Compares RESOLVED paths, so a symlink or a differently-spelled path to one
+    file still counts. A shared payload means the read scope would hand a
+    consumer the draft-capable token — `keys audit` reports it and `keys exec`
+    refuses to run while it stands. Names paths only, never a value.
+    """
+
+    def paths(scope: str) -> set[Path]:
+        return {
+            Path(secret).resolve()
+            for e in entries
+            if e.scope == scope and e.provenance == "issued" and e.status == "active"
+            for secret in e.secrets
+        }
+
+    shared = sorted(paths(GHE_READ_SCOPE) & paths(GHE_PR_DRAFT_SCOPE))
+    return [
+        f"scopes {GHE_READ_SCOPE!r} and {GHE_PR_DRAFT_SCOPE!r} share the payload {path} "
+        "-- each scope needs its own age payload (issue two tokens)"
+        for path in shared
+    ]
+
+
+def _read_payload_token(entry: KeyIdentityEntry) -> str:
+    """Decrypt `entry`'s one age payload and return the token it holds.
+
+    Plaintext lands only in a private (``0700``) temporary directory that is
+    removed on return. Raises `InventoryError` for a row with no identity, not
+    exactly one payload, or a payload that is not one single-token text line
+    (the message never quotes the content), and propagates
+    `subprocess.CalledProcessError` from `age` (e.g. no identity matched).
+    """
+    if not entry.identity_path:
+        raise InventoryError(f"identity {entry.name!r} (scope {entry.scope!r}) has no identity_path recorded")
+    if len(entry.secrets) != 1:
+        raise InventoryError(
+            f"identity {entry.name!r} (scope {entry.scope!r}) lists {len(entry.secrets)} payloads "
+            "(expected exactly one age-encrypted token)"
+        )
+    with tempfile.TemporaryDirectory(prefix="steward-keys-exec-") as tmpdir:
+        plaintext = Path(tmpdir) / "token"
+        decrypt_file(entry.secrets[0], identity=entry.identity_path, output=plaintext)
+        try:
+            token = plaintext.read_text(encoding="utf-8").strip()
+        except UnicodeDecodeError:
+            raise InventoryError(f"the payload of scope {entry.scope!r} is not UTF-8 text") from None
+    if not token or any(c.isspace() or ord(c) < 0x20 for c in token):
+        raise InventoryError(f"the payload of scope {entry.scope!r} must hold exactly one token (one line, no spaces)")
+    return token
+
+
+def enterprise_credential(
+    inventory_path: str | Path | None = None, scope: str = GHE_READ_SCOPE
+) -> HostScopedCredential | None:
+    """An issued enterprise identity as a `HostScopedCredential`, or ``None``.
+
+    For in-process HTTP callers: ``resolve_headers(credential, url)`` then
+    attaches ``Authorization: Bearer <token>`` only when the URL's canonical
+    host is the enterprise host. ``None`` when no enterprise host resolves
+    (flag OFF, ``GITHUB_API_BASE_URL`` unset or github.com) or the scope has no
+    `issued`/`active` row. Only the read scope resolves here — the draft scope
+    is delivered by `keys exec --approval` alone, so a `ValueError` for any
+    other `scope`. Refuses (`InventoryError`) while both scopes share a payload.
+    """
+    if scope != GHE_READ_SCOPE:
+        raise ValueError(
+            f"enterprise_credential resolves only {GHE_READ_SCOPE!r}; "
+            f"{scope!r} is delivered through `steward keys exec --approval <ref>` alone"
+        )
+    host = enterprise_host()
+    if host is None:
+        return None
+    path = Path(inventory_path) if inventory_path else default_inventory_path()
+    entries = load_inventory(path)
+    entry = _active_issued(entries, scope)
+    if entry is None:
+        return None
+    _refuse_shared_payloads(entries)
+    return HostScopedCredential(hosts=(host,), bearer_token=_read_payload_token(entry))
+
+
+def _refuse_shared_payloads(entries: tuple[KeyIdentityEntry, ...]) -> None:
+    shared = find_shared_payloads(entries)
+    if shared:
+        raise InventoryError(f"{shared[0]} (run `steward keys audit --inventory <path>`)")
+
+
+def _redact(text: str, token: str) -> str:
+    return text.replace(token, _REDACTED)
+
+
+def _append_exec_log(path: Path, *, scope: str, approval: str, argv0: str) -> None:
+    """Append one journal line: UTC time, scope, approval reference, the child's `argv[0]`.
+
+    Never the token. Approval and `argv0` are JSON-quoted so a reference
+    carrying a newline cannot forge a second line. Raises `OSError` when the
+    line cannot be written — the caller then refuses to start the child.
+    """
+    stamp = datetime.now(timezone.utc).isoformat()
+    line = (
+        f"{stamp} scope={scope} approval={json.dumps(approval, ensure_ascii=False)} "
+        f"argv0={json.dumps(argv0, ensure_ascii=False)}\n"
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+    with os.fdopen(fd, "a", encoding="utf-8") as journal:
+        journal.write(line)
+
+
+def _run_exec(ns: argparse.Namespace) -> DutyResult:
+    """`keys exec --scope <scope> [--approval <ref>] [--inventory <path>] -- <argv>` (Story 75.1).
+
+    The only path that hands a token to another process. Flag OFF raises
+    `FlagOff` (main() returns steward's usage code 2). The draft scope refuses
+    (exit 2, the child never starts) without a non-empty `--approval`, and
+    journals one line beside the inventory (`.steward/keys-exec.log` by
+    default) before the child runs. The child's environment is the parent's
+    minus the four ambient GitHub token variables, plus `GH_HOST` (the
+    enterprise host) and `GH_ENTERPRISE_TOKEN` (the scope's token), run through
+    `pyforge.core.process`; its streams are relayed with the token redacted and
+    its exit code is returned through `details["exit_code"]` (a signal `-N`
+    becomes `128 + N`, so main() never returns a negative code).
+    """
+    from .cli import EXIT_USAGE  # local, as budget.py does: cli.py imports keys.py lazily
+
+    require(GHE_FLAG_KEY)
+
+    def usage(message: str) -> DutyResult:
+        return DutyResult(ok=False, summary=f"keys exec: {message}", details={"exit_code": EXIT_USAGE})
+
+    scope = ns.scope
+    if scope not in GHE_SCOPES:
+        return usage(f"unknown scope {scope!r}; expected one of {', '.join(GHE_SCOPES)}")
+    argv = list(ns.argv or ())
+    if argv and argv[0] == "--":
+        argv = argv[1:]
+    if not argv:
+        return usage("no command given (pass it after `--`)")
+    approval = (ns.approval or "").strip()
+    if scope == GHE_PR_DRAFT_SCOPE and not approval:
+        return usage(f"scope {GHE_PR_DRAFT_SCOPE!r} needs --approval <ref> naming the approved proposal")
+
+    host = enterprise_host()
+    if host is None:
+        return DutyResult(
+            ok=False,
+            summary="keys exec: GITHUB_API_BASE_URL names no GitHub Enterprise host (unset, or github.com)",
+        )
+    inventory_path = Path(ns.inventory) if ns.inventory else default_inventory_path()
+    entries = load_inventory(inventory_path)
+    entry = _active_issued(entries, scope)
+    if entry is None:
+        return DutyResult(
+            ok=False,
+            summary=f"keys exec: no issued/active identity found for scope {scope!r} in {inventory_path}",
+        )
+    _refuse_shared_payloads(entries)
+    try:
+        token = _read_payload_token(entry)
+    except OSError as exc:
+        return DutyResult(ok=False, summary=f"keys exec: cannot read the {scope!r} payload: {exc}")
+
+    if scope == GHE_PR_DRAFT_SCOPE:
+        try:
+            _append_exec_log(inventory_path.parent / _EXEC_LOG_NAME, scope=scope, approval=approval, argv0=argv[0])
+        except OSError as exc:
+            return DutyResult(ok=False, summary=f"keys exec: cannot journal the draft use, refusing to run: {exc}")
+
+    env = {k: v for k, v in os.environ.items() if k not in _GHE_SCRUBBED_ENV}
+    env["GH_HOST"] = host
+    env["GH_ENTERPRISE_TOKEN"] = token
+    try:
+        result = PosixProcess().run(argv, cwd=Path.cwd(), env=env)
+    except ProcessError as exc:
+        return DutyResult(ok=False, summary=f"keys exec: {_redact(str(exc), token)}")
+    sys.stdout.write(_redact(result.stdout, token))
+    sys.stdout.flush()
+    sys.stderr.write(_redact(result.stderr, token))
+    sys.stderr.flush()
+    code = result.returncode if result.returncode >= 0 else 128 - result.returncode
+    return DutyResult(ok=code == 0, summary="", details={"exit_code": code})
+
+
 # ── KeysDuty (Duty-protocol adapter) ────────────────────────────────────────
 
-_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate", "list", "audit", "revoke")
+_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate", "list", "audit", "revoke", "exec")
 
 
 def _run_audit(ns: argparse.Namespace) -> DutyResult:
-    """`keys audit --drift [--path] --secrets <path>` (Story 1.6).
+    """`keys audit --drift [--path] --secrets <path> [--inventory <path>]` (Story 1.6, 75.1).
 
     `--drift` always scans exactly one file (`--path`, defaulting to
     `locate_http_module()`'s delegate target) via `scan_file` — never a
@@ -1006,8 +1294,20 @@ def _run_audit(ns: argparse.Namespace) -> DutyResult:
     `scan_directory_for_secrets`/`scan_file_for_secrets` (Story 1.3).
     Neither flag given degrades to `ok=True` naming the available flags
     (AD-7). `ok=False` iff at least one scan that ran reported a finding.
+
+    Story 75.1: every audit also reads the inventory (``--inventory``, default
+    the repo-root one) and reports one payload serving both GHE scopes as an
+    `[inventory]` finding. It prints `[inventory] clean` only when
+    ``--inventory`` is given, so the flag-less and ``--drift``/``--secrets``
+    output is otherwise unchanged; ``--inventory`` alone is a valid request.
     """
-    if not ns.drift and not ns.secrets:
+    inventory_path = Path(ns.inventory) if getattr(ns, "inventory", None) else default_inventory_path()
+    try:
+        inventory_findings = find_shared_payloads(load_inventory(inventory_path))
+    except InventoryError as exc:
+        return DutyResult(ok=False, summary=f"keys audit: [inventory] {exc}")
+
+    if not ns.drift and not ns.secrets and not getattr(ns, "inventory", None) and not inventory_findings:
         return DutyResult(ok=True, summary="keys audit: pass --drift and/or --secrets <path>")
 
     ok = True
@@ -1042,12 +1342,21 @@ def _run_audit(ns: argparse.Namespace) -> DutyResult:
         else:
             lines.append(f"[secrets] clean: {secrets_target}")
 
+    if inventory_findings:
+        ok = False
+        lines.extend(f"[inventory] {message}" for message in inventory_findings)
+    elif getattr(ns, "inventory", None):
+        lines.append(f"[inventory] clean: {inventory_path}")
+
     return DutyResult(ok=ok, summary="\n".join(lines))
 
 
 class KeysDuty:
     """The real `keys` duty — dispatches `encrypt`/`decrypt` onto the `age`
-    subprocess primitives above.
+    subprocess primitives above (and, Story 75.1, `exec` — the one token
+    delivery path — behind the `pyforge.steward.ghe_fleet_credentials` flag:
+    OFF raises `pyforge.core.flags.FlagOff`, which `main()` projects to its
+    usage code 2; this adapter never chooses an exit code for it).
 
     Bare `steward keys` (no verb) reaches this adapter with no ``keys_verb``
     and degrades to `DutyResult(ok=True, ...)` naming the available verbs
@@ -1095,6 +1404,8 @@ class KeysDuty:
                 return DutyResult(ok=True, summary=format_inventory(entries, as_json=ns.json))
             elif verb == "audit":
                 return _run_audit(ns)
+            elif verb == "exec":
+                return _run_exec(ns)
             else:  # verb == "revoke"
                 inventory_path = ns.inventory or default_inventory_path()
                 entry = revoke_identity(inventory_path, scope=ns.scope)
