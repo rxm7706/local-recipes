@@ -67,7 +67,7 @@ Type / Effort / Deps: feature / M / —.
 - Delegate parsing to osv-scanner; keep `extract/` a no-execution zone.
 - Keep the `ComplianceReport` at 1.1.0 and the exit enum and lattice frozen.
 - Keep per-ecosystem attribution; never merge an npm name with a PyPI or conda name.
-- Read the flag only through `pyforge.core` over the one tree; add the key to `src/platform/config/flags.json` (default OFF).
+- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree (canopy:AD-11). If 75.1 has not landed when this story runs, add it in `pyforge.core` in exactly 75.1's shape (`read_boolean(key, default=False)`, `cutover_root.py`'s tree resolution, False with a named WARN for a missing tree, key or non-bool value; a `spec-pyforge-core` co-governor reconcile) — never a station-local reader or a second tree. Add the key to `src/platform/config/flags.json` (default OFF).
 - Reconcile `spec-pyforge-warden` (and, for `extract/`, `spec-pyforge-core`, which co-governs `extract/__init__.py` and `extract/lockfiles.py`) and every Spec `spec-surface-check` names; scoped stamps only.
 
 **Never:**

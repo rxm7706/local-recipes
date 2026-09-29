@@ -38,7 +38,7 @@ directory with a `git` subprocess (argv list, the Steward-provided credential th
 or a log), run the existing `warden scan` call (`tasks.py::_run_warden_engines`'s path, `--format json`, with
 `--fix-prs-dry-run` so the actuator only plans), persist, and remove the clone in a `finally`. The run's status says
 whether the job ran; each repo's verdict is its own report's `status` and exit code, and nothing composes them. Models
-ship a migration and its covering Liquibase changeset. The action reads the flag through `django_pyforge.flags`; OFF,
+ship a migration and its covering Liquibase changeset. The action reads the flag through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); OFF,
 it is listed as disabled and refuses.
 
 Ledger key: `16-2-a-fleet-run-scans-each-inventoried-repo-one-verdict-per-repo`.
@@ -66,7 +66,7 @@ Type / Effort / Deps: feature / L / S-16.1.
 - Clone into system temp at `0700`; remove on success and on failure; never write a scanned repo.
 - Keep the credential out of URLs, argv values that are logged, model fields and error text.
 - Ship the migration with its covering Liquibase changeset; `platform-ci-local -- --test` green.
-- Read the flag through `django_pyforge.flags`; add the key to `src/platform/config/flags.json` (default OFF).
+- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree (canopy:AD-11). If 75.1 has not landed when this story runs, add it in `pyforge.core` in exactly 75.1's shape (`read_boolean(key, default=False)`, `cutover_root.py`'s tree resolution, False with a named WARN for a missing tree, key or non-bool value; a `spec-pyforge-core` co-governor reconcile) — never a station-local reader or a second tree. Add the key to `src/platform/config/flags.json` (default OFF). The portal view runs inside the host, where `pyforge` may be absent; there, and only there, it evaluates the same key through `django_pyforge.flags`, the Guild's other sanctioned reader.
 - Reconcile every Spec `spec-surface-check` names for the touched paths; scoped stamps only.
 
 **Never:**

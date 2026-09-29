@@ -48,8 +48,7 @@ database; and walks the commits touching `pixi.toml` / `pixi.lock` with an Atlas
 epoch-second commit time, manifest path, ecosystem, name (`pypi_name` / `conda_name` / the native name; never a purl),
 requirement before and after, change kind, and `source` (`git-pkgs` or `estate-pixi-parser`). The per-repo head SHA
 lives in the dataset metadata, so an unmoved head is not re-walked (AD-5); an unreachable repo keeps its last-good
-partition with a `stale` marker (AD-13). No verdict, score or threshold. The flag is read through `pyforge.core` over the
-one tree; with it OFF the node skips as `not-applicable`.
+partition with a `stale` marker (AD-13). No verdict, score or threshold. The flag is read through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); with it OFF the node skips as `not-applicable`.
 
 Ledger key: `25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser`.
 Ledger status (do not edit the ledger): `blocked`.
@@ -76,7 +75,7 @@ Type / Effort / Deps: feature / L / — (cross-station: mason Story 21.1).
 - Point `GIT_PKGS_DB` outside the scanned repo; pass `--no-hooks`; delete the database after landing.
 - Keep IO in the dataset (AD-2); nodes stay pure `DataFrame→DataFrame`; add the GHE host entry to `test_credential_scoping.py`'s allowlist if a credentialed source is declared.
 - Declare git-pkgs's tested version range in the member `pixi.toml` / `pyproject.toml`; a `pixi.toml` change regenerates `environment.yaml` in the same PR, and `pyforge-station-tests` runs when `pixi.lock` moves.
-- Read the flag only through `pyforge.core` over the one tree; add the key to `src/platform/config/flags.json` (default OFF).
+- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree (canopy:AD-11). If 75.1 has not landed when this story runs, add it in `pyforge.core` in exactly 75.1's shape (`read_boolean(key, default=False)`, `cutover_root.py`'s tree resolution, False with a named WARN for a missing tree, key or non-bool value; a `spec-pyforge-core` co-governor reconcile) — never a station-local reader or a second tree. Add the key to `src/platform/config/flags.json` (default OFF).
 - Reconcile `spec-pyforge-atlas` and every co-governor `spec-surface-check` names; scoped stamps only.
 
 **Never:**

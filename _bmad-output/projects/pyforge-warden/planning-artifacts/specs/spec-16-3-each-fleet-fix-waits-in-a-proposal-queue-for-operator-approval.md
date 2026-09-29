@@ -38,8 +38,7 @@ portal's approve action (HTMX, warden role) and the `warden_fleet_approve` manag
 real path for exactly that finding through Story 14.3's draft-PR path (with the Steward-provided GHE credential for that
 repo), and records `opened` with the URL or `failed` with the captured error. Story 14.3's estate allowlist admits a
 fleet repo only for that one approved finding, through an explicit per-call authorization the approve task passes —
-never by widening the allowlist config. A dismiss action closes a proposal without a forge call. Models ship a migration and its covering Liquibase changeset. Both actions read the flag through
-`django_pyforge.flags`; OFF, they are listed as disabled and refuse.
+never by widening the allowlist config. A dismiss action closes a proposal without a forge call. Models ship a migration and its covering Liquibase changeset. Both actions read the flag through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); OFF, they are listed as disabled and refuse.
 
 Ledger key: `16-3-each-fleet-fix-waits-in-a-proposal-queue-for-operator-approval`.
 Ledger status (do not edit the ledger): `backlog`.
@@ -66,7 +65,7 @@ Type / Effort / Deps: feature / M / S-16.2, S-14.3.
 - Open at most one PR per approval, only through the actuator; the actuator stays the only forge writer.
 - Remove every throwaway clone on success and failure.
 - Ship the migration with its covering Liquibase changeset; `platform-ci-local -- --test` green.
-- Read the flag through `django_pyforge.flags`; add the key to `src/platform/config/flags.json` (default OFF).
+- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree (canopy:AD-11). If 75.1 has not landed when this story runs, add it in `pyforge.core` in exactly 75.1's shape (`read_boolean(key, default=False)`, `cutover_root.py`'s tree resolution, False with a named WARN for a missing tree, key or non-bool value; a `spec-pyforge-core` co-governor reconcile) — never a station-local reader or a second tree. Add the key to `src/platform/config/flags.json` (default OFF). The portal view runs inside the host, where `pyforge` may be absent; there, and only there, it evaluates the same key through `django_pyforge.flags`, the Guild's other sanctioned reader.
 - Reconcile every Spec `spec-surface-check` names for the touched paths; scoped stamps only.
 
 **Never:**

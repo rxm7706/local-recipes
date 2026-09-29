@@ -44,7 +44,7 @@ the GHE host), and a keys-not-blobs Celery task that upserts the rows idempotent
 document at a configured path (`WARDEN_FLEET_INVENTORY_PATH`, beside the fabric's blob root). The export is the only
 face other stations read; nobody imports `django_warden_fabric` or `pyforge.warden` for it. The model ships a Django
 migration and its covering Liquibase changeset (`src/platform/db/`, the `sqlmigrate-extraction` gate). The inventory
-action (portal button and management command, one code path) reads the flag through `django_pyforge.flags`; OFF, it is
+action (portal button and management command, one code path) reads the flag through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); OFF, it is
 listed as disabled and refuses.
 
 Ledger key: `16-1-warden-inventories-a-ghe-organisation-s-repos`.
@@ -71,7 +71,7 @@ Type / Effort / Deps: feature / M / — (cross-station: steward Story 75.1).
 - Live in `django-warden`; the `pyforge.warden` scan process gains no socket.
 - Take credentials from the environment Steward provisions, never from a model field, a flag or a log line.
 - Ship the migration with its covering Liquibase changeset; `platform-ci-local -- --test` green.
-- Read the flag through `django_pyforge.flags`; add the key to `src/platform/config/flags.json` (default OFF).
+- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree (canopy:AD-11). If 75.1 has not landed when this story runs, add it in `pyforge.core` in exactly 75.1's shape (`read_boolean(key, default=False)`, `cutover_root.py`'s tree resolution, False with a named WARN for a missing tree, key or non-bool value; a `spec-pyforge-core` co-governor reconcile) — never a station-local reader or a second tree. Add the key to `src/platform/config/flags.json` (default OFF). The portal view runs inside the host, where `pyforge` may be absent; there, and only there, it evaluates the same key through `django_pyforge.flags`, the Guild's other sanctioned reader.
 - Reconcile every Spec `spec-surface-check` names for the touched paths (`django-warden` and `src/platform/` are co-governed by steward's `spec-pyforge-unifying-strategy`); scoped stamps only.
 
 **Never:**

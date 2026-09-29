@@ -173,7 +173,7 @@ harness_preference = ["cursor"]
   "environment.yaml",
   # the flag keys in the one tree (spec-feature-flag-governance:CAP-1)
   "src/platform/config/flags.json",
-  # the boolean flag reader, if pyforge.core still ships only read_cutover_root (spec-pyforge-core co-governs)
+  # pyforge.core.flags.read_boolean, if steward Story 75.1 has not landed -- in exactly 75.1's shape (spec-pyforge-core co-governs)
   "src/shared/packages/pyforge-core/src/pyforge/core/**",
   "src/shared/packages/pyforge-core/tests/**",
   # co-governor reconciles

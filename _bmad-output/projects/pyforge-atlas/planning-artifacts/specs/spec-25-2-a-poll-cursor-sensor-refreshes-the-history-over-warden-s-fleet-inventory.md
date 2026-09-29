@@ -39,7 +39,7 @@ processed head), coalesces every moved head of one tick into one run decision fo
 `run_key`, and returns the advanced cursor; unchanged heads skip with a reason. The production source is injectable and
 defaults offline (`[]`), the way `offline_event_source` does; the attended live wiring reads the real export once
 Warden's Story 16.1 lands. Only `orchestration/definitions.py` wraps the decision in a Dagster sensor (AD-1), and
-`dagster-dryrun` still loads the definitions. The flag is read through `pyforge.core` over the one tree; OFF, every tick
+`dagster-dryrun` still loads the definitions. The flag is read through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); OFF, every tick
 skips with a `flag off` reason.
 
 Ledger key: `25-2-a-poll-cursor-sensor-refreshes-the-history-over-warden-s-fleet-inventory`.
@@ -65,7 +65,7 @@ Type / Effort / Deps: feature / M / S-25.1.
 **Always:**
 - Keep the decision a pure function over (inventory snapshot, cursor), testable offline with fixtures (AD-11).
 - Read the inventory as a catalog dataset (AD-2); the only cross-station contract is the export's JSON shape.
-- Read the flag only through `pyforge.core` over the one tree; add the key to `src/platform/config/flags.json` (default OFF).
+- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree (canopy:AD-11). If 75.1 has not landed when this story runs, add it in `pyforge.core` in exactly 75.1's shape (`read_boolean(key, default=False)`, `cutover_root.py`'s tree resolution, False with a named WARN for a missing tree, key or non-bool value; a `spec-pyforge-core` co-governor reconcile) — never a station-local reader or a second tree. Add the key to `src/platform/config/flags.json` (default OFF).
 - Reconcile `spec-pyforge-atlas` and every co-governor `spec-surface-check` names; scoped stamps only.
 
 **Never:**

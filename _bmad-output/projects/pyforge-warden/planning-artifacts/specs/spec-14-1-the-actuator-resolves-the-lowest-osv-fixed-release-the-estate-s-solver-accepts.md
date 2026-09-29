@@ -40,7 +40,7 @@ with `packaging.version`, and asks a solver seam, in order, whether the repo sol
 solves is the target. The default seam runs `pixi lock` in a throwaway copy through `engines.py`'s `_engine_env()`
 helper, under a tested pixi version range; it runs only on the real `--open-fix-prs` path. Under `--fix-prs-dry-run`
 the seam never runs: the payload names the lowest candidate and `solver: not-run`. The target, the candidates tried and
-the solver's verdict ride the open `actuation` object. The flag is read through `pyforge.core` over the one tree; with it
+the solver's verdict ride the open `actuation` object. The flag is read through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); with it
 OFF the proposal is exactly today's.
 
 Ledger key: `14-1-the-actuator-resolves-the-lowest-osv-fixed-release-the-estate-s-solver-accepts`.
@@ -66,7 +66,7 @@ Type / Effort / Deps: feature / M / —.
 - Keep the actuator post-verdict: nothing here feeds a rung, the status or the exit code (`test_verdict_sole_ownership.py` stays green).
 - Spawn pixi only through `_engine_env()`, only on the real path, with a declared tested version range that fails loud out of range.
 - Keep `EngineResult` changes additive and defaulted; keep the `ComplianceReport` at 1.1.0 (`actuation` is an open object).
-- Read the flag only through `pyforge.core` over the one tree (canopy:AD-11). If `pyforge.core` still ships only `read_cutover_root` when this story runs, add the boolean reader there beside it (a `spec-pyforge-core` co-governor reconcile), never a warden-local reader or a second tree.
+- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree (canopy:AD-11). If 75.1 has not landed when this story runs, add it in `pyforge.core` in exactly 75.1's shape (`read_boolean(key, default=False)`, `cutover_root.py`'s tree resolution, False with a named WARN for a missing tree, key or non-bool value; a `spec-pyforge-core` co-governor reconcile) — never a station-local reader or a second tree. Add the key to `src/platform/config/flags.json` (default OFF).
 - Add the key to `src/platform/config/flags.json` with the tree default OFF.
 - Reconcile `spec-pyforge-warden` and every co-governor `spec-surface-check` names, then stamp each scoped with `--spec`.
 

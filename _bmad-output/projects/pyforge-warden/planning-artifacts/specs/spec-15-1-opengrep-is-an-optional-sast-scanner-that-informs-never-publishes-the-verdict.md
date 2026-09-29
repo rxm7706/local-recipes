@@ -43,7 +43,7 @@ through `_engine_env()` under a declared tested version range. Each result becom
 (`tool: opengrep`, rule id, path, line, severity) appended to `context["advisory_notes"]`, the TEA lens's shape
 (suite:AD-4), so it lands in the report's open `advisory` array and never in `plugin_findings`. An absent binary is
 omit-not-error; an out-of-range version or unparseable output is an advisory note saying so, never a rung. The flag is
-read through `pyforge.core` over the one tree; with it OFF, `opengrep` is not selectable.
+read through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); with it OFF, `opengrep` is not selectable.
 
 Ledger key: `15-1-opengrep-is-an-optional-sast-scanner-that-informs-never-publishes-the-verdict`.
 Ledger status (do not edit the ledger): `blocked`.
@@ -69,7 +69,7 @@ Type / Effort / Deps: feature / M / — (cross-station: mason Story 21.4).
 - Spawn opengrep only through `_engine_env()`, with a tested version range declared in the member `pixi.toml` and mirrored in code.
 - Ship the rules in the package; keep them few, estate-authored and each with a fixture that trips it.
 - A `pixi.toml` change regenerates `environment.yaml` in the same PR; run `pyforge-station-tests` when `pixi.lock` moves.
-- Read the flag only through `pyforge.core` over the one tree; add the key to `src/platform/config/flags.json` (default OFF).
+- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree (canopy:AD-11). If 75.1 has not landed when this story runs, add it in `pyforge.core` in exactly 75.1's shape (`read_boolean(key, default=False)`, `cutover_root.py`'s tree resolution, False with a named WARN for a missing tree, key or non-bool value; a `spec-pyforge-core` co-governor reconcile) — never a station-local reader or a second tree. Add the key to `src/platform/config/flags.json` (default OFF).
 - Reconcile `spec-pyforge-warden` and every co-governor `spec-surface-check` names; scoped stamps only.
 
 **Never:**

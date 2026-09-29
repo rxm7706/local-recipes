@@ -61,7 +61,7 @@ Type / Effort / Deps: feature / M / S-14.2.
 **Always:**
 - Egress only inside `actuator.py` under `_EGRESS_ACTIVE` on the real path; `--fix-prs-dry-run` still opens no socket.
 - Credentials from the environment only (`GITHUB_TOKEN` / `GH_TOKEN`, `GITHUB_REPOSITORY`, `GITHUB_API_URL`), never a flag.
-- Read the flag only through `pyforge.core` over the one tree; add the key to `src/platform/config/flags.json` (default OFF).
+- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree (canopy:AD-11). If 75.1 has not landed when this story runs, add it in `pyforge.core` in exactly 75.1's shape (`read_boolean(key, default=False)`, `cutover_root.py`'s tree resolution, False with a named WARN for a missing tree, key or non-bool value; a `spec-pyforge-core` co-governor reconcile) — never a station-local reader or a second tree. Add the key to `src/platform/config/flags.json` (default OFF).
 - Reconcile `spec-pyforge-warden` and every co-governor `spec-surface-check` names; scoped stamps only.
 
 **Never:**
