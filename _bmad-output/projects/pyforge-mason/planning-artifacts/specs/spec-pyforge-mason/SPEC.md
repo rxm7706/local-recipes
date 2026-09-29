@@ -284,6 +284,25 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   fixture's test fail. Each story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry.
   `pyforge-mason-test` green. (Minted 2026-09-29.)
 
+### CAP-34 — The CFE host-gate tests give the same verdict in any developer shell
+
+- **intent:** The tests of the credential host gate stop depending on the shell that runs them.
+  `_http._configured_enterprise_hosts()`, `inventory_channel._fallback_configured_enterprise_hosts()` and
+  `dependency-checker.py`'s `_auth_headers` derive their allowlist from every set `*_BASE_URL` env var plus npm's
+  registry vars, so a var that a developer or agent shell exports joins the set a test asserts. A Claude Code shell
+  exports `ANTHROPIC_BASE_URL`; on 2026-09-29 it put `api.anthropic.com` into an exact-set assertion, a local
+  `pr-preflight` failed 1 of 9152 tests while CI stayed green, and the pre-push hook blocked the push. A shared, opt-in
+  `clean_mirror_env` fixture in the CFE `tests/conftest.py` removes every `*_BASE_URL` and each name in
+  `_http._EXTRA_MIRROR_ENV_VARS` (read from `_http`, not restated) before each host-gate test. `network`-marked tests
+  do not use it and keep an operator's real mirror routing. Tests only: `_http.py` and `inventory_channel.py` keep
+  their behaviour, and Mason reaches none of it (AD-1). The change lands in one `retro(cfe):` commit (AD-15).
+  (Operator ruling 2026-09-29.)
+- **success:** `pytest` over the seven host-gate test modules exits 0 both with `ANTHROPIC_BASE_URL` set and under
+  `env -u ANTHROPIC_BASE_URL`. A regression test plants a stray `*_BASE_URL` and npm registry var before the fixture
+  runs and asserts they are gone and the inventory-channel fallback allowlist is empty; with the fixture disabled, it
+  fails along with the originally failing test. `pr-preflight` exits 0 from a shell that exports `ANTHROPIC_BASE_URL`.
+  The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry. `pyforge-mason-test` green. (Minted 2026-09-29.)
+
 ## Constraints
 
 - **The central decision — wrap by capability, not by product.** Mason **wraps** the packaging machinery by subprocess for all recipe operations and **builds** natively for `package` and `environment`. The boundary is drawn by *capability*. Pure porcelain was rejected because two of the three charter verb families have **nothing to wrap** — no wheel build, no upload path and no lock orchestration exists anywhere in the wrapped machinery's 41,410 lines, so a pure wrapper is not a smaller Mason but a Mason missing its reason to exist. Extraction/reimplementation was rejected on three independently sufficient grounds: **governance makes a fork structurally adversarial** (Rule 1 makes the skill authoritative over any conflicting story, and Rule 2 mandates that every conda-forge effort *edits the skill* — so a fork is continuously invalidated by the loop that governs the domain); **the in-repo precedent failed** (a sibling project rebuilt ~29,000 lines across 32 merged stories and the 8,902-line original is still the live runtime — nothing routes to the rebuild); and **it forks the moat**, converting 106 gotchas and 10 constraints from an appreciating asset into a depreciating one. The accepted cost, paid deliberately: **Mason is not standalone** — `mason recipe` requires a discoverable installation and is inert without one.

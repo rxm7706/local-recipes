@@ -59,6 +59,7 @@ class TestResolveS3ParquetUrls:
 
 # ── JFrog header injection via make_request ─────────────────────────────────
 
+@pytest.mark.usefixtures("clean_mirror_env")  # the gate scans every `*_BASE_URL`, not just `_clean_env`'s list
 class TestJFrogHeaderInjection:
     """The S3 chain reuses `make_request`, so `JFROG_API_KEY` flows through."""
 

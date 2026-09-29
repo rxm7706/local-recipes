@@ -6,6 +6,7 @@ invocations (for hyphenated scripts and end-to-end smoke).
 """
 from __future__ import annotations
 
+import functools
 import importlib.util
 import json
 import os
@@ -146,6 +147,50 @@ def copy_recipe(tmp_path, monkeypatch):
         return dest
 
     return _copy
+
+
+@functools.cache
+def _extra_mirror_env_vars() -> tuple[str, ...]:
+    """The non-`*_BASE_URL` mirror vars the credential host gate also scans.
+
+    Read from `_http._EXTRA_MIRROR_ENV_VARS` rather than restated, so this
+    fixture cannot drift from the gate. Loaded under a private module name:
+    several test modules register their own `_http` copy in `sys.modules`,
+    and this lookup must not replace it.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "_cfe_conftest_http", SCRIPTS_DIR / "_http.py"
+    )
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return tuple(module._EXTRA_MIRROR_ENV_VARS)
+
+
+@pytest.fixture
+def clean_mirror_env(monkeypatch):
+    """Remove every ambient mirror-routing env var for one test.
+
+    The credential host gate derives its allowlist from EVERY set
+    `*_BASE_URL` var (`_http._configured_enterprise_hosts`,
+    `inventory_channel._fallback_configured_enterprise_hosts`,
+    `dependency-checker._auth_headers`), plus npm's own registry vars. So any
+    such var the developer's shell exports joins the set under test. Inside a
+    Claude Code session `ANTHROPIC_BASE_URL` adds `api.anthropic.com`, which
+    failed an exact-set assertion in a local `pr-preflight` (2026-09-29)
+    while CI, which has no such var, stayed green.
+
+    Opt in with `pytestmark = pytest.mark.usefixtures("clean_mirror_env")`,
+    or on a class. Deliberately not autouse suite-wide: the `network`-marked
+    tests should keep an operator's real mirror routing. Pixi config is the
+    gate's other source; a test asserting the whole allowlist must also stub
+    `read_pixi_config` (see `unit/test_http_jfrog_host_gate.py`).
+    """
+    for key in list(os.environ):
+        if key.endswith("_BASE_URL"):
+            monkeypatch.delenv(key)
+    for key in _extra_mirror_env_vars():
+        monkeypatch.delenv(key, raising=False)
 
 
 @pytest.fixture

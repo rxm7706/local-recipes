@@ -2,7 +2,19 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.91.0** (Sep 26, 2026, current) — **pgjdbc + Liquibase convergence Rule-2 retro: three new gotchas, G118 (same name, different artifact across channels), G119 (`pixi lock` keeps a locked record past a new `channel =` pin) and G120 (a Maven source build is not the shaded jar upstream publishes) (MINOR).** From steward Stories 27.5/27.6 and the recipe work beside them (PRs #1609, #1611, #1612, #1613; staged-recipes #34956; bmad-loop-feedstock #4).
+**v8.91.1** (Sep 29, 2026, current) — **Host-gate tests made hermetic: a shared `clean_mirror_env` fixture clears ambient `*_BASE_URL` and npm mirror vars (PATCH; tests only, no script behaviour change).**
+
+- **The failure.** A local `pixi run -e pyforge-guild pr-preflight` failed 1 of 9152 tests. `test_inventory_channel_auth_host_gate.py::TestInventoryChannelFallbackAuthHostGate::test_malformed_base_url_does_not_crash_the_allowlist_scan` asserted `_fallback_configured_enterprise_hosts() == {"good.example.com"}`, but the scan reads every `*_BASE_URL`. A Claude Code shell exports `ANTHROPIC_BASE_URL`, so the set also held `api.anthropic.com`. CI has no such var, so only local preflight runs from agent sessions failed, and the pre-push hook then blocked `git push`.
+- **The fix.** New `clean_mirror_env` fixture in `tests/conftest.py` removes every `*_BASE_URL` plus `_http._EXTRA_MIRROR_ENV_VARS`, read from `_http` rather than restated. It is opt-in, not suite-wide autouse, so `network`-marked tests keep an operator's real mirror routing.
+- **Opted in:**
+  - `test_inventory_channel_auth_host_gate.py` and `test_http_skip_auth.py`, module-level; neither cleared anything before.
+  - `test_http_jfrog_host_gate.py` and `test_dependency_checker_auth_host_gate.py`: their autouse fixtures now build on it. The latter had not cleared the npm vars.
+  - The gate classes of `test_http_resolvers.py` (`TestAuthHeadersFor`) and `test_s3_resolver.py` (`TestJFrogHeaderInjection`). Their hand-kept `_clean_env` lists each cover only part of the scan: the resolvers list omits `S3_PARQUET_BASE_URL`, and the S3 list names only that one.
+- **Regression guard.** New `tests/unit/test_clean_mirror_env.py` plants ambient vars before the fixture runs, then asserts they are gone and the fallback allowlist is empty. With the fixture disabled it fails, along with the original test (A/B verified), so CI now exercises the regression.
+- **Unchanged:** `inventory_channel.py` and `_http.py`. SKILL.md's host-gate constraint gains the testing rule.
+- **Files:** `tests/conftest.py`, `tests/unit/test_clean_mirror_env.py` (new), the six test modules above, `SKILL.md` (host-gate testing paragraph, version, history), `config/skill-config.yaml` (8.91.0 → 8.91.1), `MANIFEST.yaml`, `CHANGELOG.md`.
+
+**v8.91.0** (Sep 26, 2026) — **pgjdbc + Liquibase convergence Rule-2 retro: three new gotchas, G118 (same name, different artifact across channels), G119 (`pixi lock` keeps a locked record past a new `channel =` pin) and G120 (a Maven source build is not the shaded jar upstream publishes) (MINOR).** From steward Stories 27.5/27.6 and the recipe work beside them (PRs #1609, #1611, #1612, #1613; staged-recipes #34956; bmad-loop-feedstock #4).
 
 - **G118.** SelfExplainML's `liquibase-postgresql` 42.7.13 was the pgjdbc JDBC driver, while conda-forge's `liquibase-postgresql` 5.0.4 is Liquibase's dialect extension. The platform depended on the estate build, and any solve seeing both channels prefers 42.7.13. The estate's `liquibase` 5.0.4 also carried `Apache-2.0` against upstream's FSL-1.1-ALv2.
   - Fix: compare artifacts (summary, license, `info/paths.json`), not versions.

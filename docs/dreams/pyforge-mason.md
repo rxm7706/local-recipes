@@ -372,6 +372,26 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   operator's act. Kinships: CFE Operating Principle 1 (present the interpretations, don't pick silently), G7 (import
   names), G55 (build backends), G90 (generator emission gaps), and `machine-checked-recipe-knowledge` (Epic 7).
   Owner: mason. → `spec-pyforge-mason` CAP-33 / Epic 23 / Stories 23.1–23.3 (FR-55), specced 2026-09-29.
+- **2026-09-29 (later) — Proposed: the CFE host-gate tests give the same verdict in any developer shell.**
+  A local `pr-preflight` failed 1 of 9152 tests and the pre-push hook blocked the push, while CI stayed green. The
+  failing test asserts the exact host allowlist that `inventory_channel.py`'s fallback builds, and that allowlist, like
+  `_http.py`'s and `dependency-checker.py`'s, is derived from every `*_BASE_URL` env var the shell exports, plus npm's
+  registry vars. A Claude Code shell exports `ANTHROPIC_BASE_URL`, so `api.anthropic.com` joined the set. Only one of
+  the six test modules that exercise the gate cleared all of those vars; two cleared none, and three cleared a
+  subset. So any agent session, or any operator with a mirror var of their own, could red a test that CI
+  never sees.
+  **What it looks like when real:**
+  - Every host-gate test starts from no ambient `*_BASE_URL` or npm mirror var, through one shared fixture that reads
+    the npm names from `_http` rather than restating them.
+  - The same tests pass with `ANTHROPIC_BASE_URL` set and without it, and `pr-preflight` passes from an agent shell.
+  - A test that plants a stray var before the fixture runs keeps the fixture honest in CI, which has no such var.
+  **Constraints:** tests only. `_http.py` and `inventory_channel.py` keep their behaviour, and Mason reaches none of it
+  (AD-1). The fixture is opt-in, so `network`-marked tests keep an operator's real mirror routing. The change lands in
+  one `retro(cfe):` commit with a CHANGELOG bump (AD-15). The operator ruled on 2026-09-29 that this test-only fix
+  takes the whole chain before it merges, rather than landing as a bare `retro(cfe):` commit as PR #1091's
+  merge-guard fix did. Kinships: `_http.py`'s host gate (the SKILL.md constraint on JFrog credentials), CFE G99
+  (fixture-scale tests hide validator behaviour), and `spec-packaging-factory` (governs the CFE surface).
+  Owner: mason. → `spec-pyforge-mason` CAP-34 / Epic 24 / Story 24.1 (FR-56), specced 2026-09-29; landed in PR #1669.
 
 ## One-chain fold — 2026-09-17
 
