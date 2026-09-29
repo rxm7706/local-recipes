@@ -2,8 +2,9 @@
 title: '34.1: The flag rule has a closed exemption list, a rule-date baseline and one block shape'
 type: 'feature'
 created: '2026-09-28'
-status: 'draft'
+status: 'in-progress'
 flag-exempt: flag-infrastructure   # the rule's own infrastructure (spec-feature-flag-governance Q2)
+baseline_revision: '1b7ccfe5646529502d61f1952d241fdc09354f34'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
