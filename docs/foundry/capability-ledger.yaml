@@ -5070,6 +5070,12 @@ capabilities:
     heading: "The CFE host-gate tests give the same verdict in any developer shell"
     mode: rebuild
     path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-35
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "The feedstock refresh campaign is Mason's: every feedstock rxm7706 can modify has a local recipe at its published version"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
 
   # doctor one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-doctor:CAP-1

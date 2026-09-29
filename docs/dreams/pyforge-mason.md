@@ -392,6 +392,29 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   merge-guard fix did. Kinships: `_http.py`'s host gate (the SKILL.md constraint on JFrog credentials), CFE G99
   (fixture-scale tests hide validator behaviour), and `spec-packaging-factory` (governs the CFE surface).
   Owner: mason. → `spec-pyforge-mason` CAP-34 / Epic 24 / Story 24.1 (FR-56), specced 2026-09-29; landed in PR #1669.
+- **2026-09-29 (evening) — Proposed: the feedstock refresh campaign joins Mason's chain.** Operator ruling,
+  2026-09-29: `docs/specs/` retires (`spec-one-chain-per-station` CAP-11), and the one unfinished effort
+  there, `docs/specs/feedstock-refresh.md`, is carried into Mason's chain before its file moves. That
+  file is a legacy intake spec with two tracks, covering every conda-forge feedstock `rxm7706` can
+  modify (769 at its 2026-06-19 count):
+  - **Track A, sole-maintainer (537 feedstocks).** Waves B to F shipped on 2026-06-21 for the 252
+    recipes then behind (`363537dd43`, `1fe1848b43`). It was reopened the same day for Wave H, the
+    179 recipes the behind-only scope had missed, and paused at a weekly usage limit.
+  - **Track B, co-maintained (232 feedstocks; 190 with a local recipe and 42 without).** Scoped, and
+    never started. Its extra rule is to preserve every other maintainer's work.
+  Both tracks regenerate each recipe through CFE (diff-apply), fold in platform expansion where the
+  recipe is compiled, and never push without an explicit instruction. Its counts are from June;
+  the July punch-list and bump waves have changed many of them since.
+  **What it looks like when real:** each track is a Mason story that re-counts its scope live from
+  the atlas before it starts, refreshes each local recipe to its feedstock's published version, and
+  ends at a green local build. The legacy file becomes a companion of Mason's Spec, so its waves,
+  landmines and parameters stay live.
+  **Constraints:** recipe work goes through `conda-forge-expert` (Rule 1); no feedstock or
+  staged-recipes PR opens without an explicit ask; each story closes with a CFE Rule-2 retro. The two
+  campaign skills Story 19.4 builds (platform expansion, failure remediation) are its tools, not its
+  scope. Kinships: [[one-chain-per-station]] (CAP-11, the same day), CFE G53 (re-merge co-maintainers)
+  and G96 (a bump's dependency authority is the feedstock). Owner: mason. → `spec-pyforge-mason`
+  CAP-35 / Epic 25 / Stories 25.1–25.2 (FR-57), specced 2026-09-29.
 
 ## One-chain fold — 2026-09-17
 
