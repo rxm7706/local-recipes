@@ -2,7 +2,9 @@
 title: "75.1: `steward keys` resolves the GitHub Enterprise host with a read identity and a PR-draft identity"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '8ee966160da0ad699795a1381cd3c66bbf9f6ed4'
+warnings: [oversized]
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -173,6 +175,44 @@ Type / Effort / Deps: feature / M / —.
 | no age identity | decrypt fails | child never starts | named error, exit 1 |
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py` -- `HostScopedCredential` (l.109; frozen, `hosts` only), `_canonical_host` (l.179), `resolve_headers` (l.207; today delegates every header to `auth_headers_for`), `load_inventory`/`_locked_inventory`/`rotate_identity` (l.608-847; the age-payload + identity-row shape to reuse), `decrypt_file` (l.433), `_run_audit` (l.999), `_KEYS_VERBS` + `KeysDuty.run` (l.996, 1048). Import-time `_http` bridge (l.100-104) supplies `resolve_github_api_urls`.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` -- `_add_keys_subparsers` (l.281; verb metavar l.286), `main()` (l.1398; the only exit-code owner; `DutyResult.details["exit_code"]` override l.1417; `EXIT_USAGE = 2` l.21). `budget.py` l.300 is the precedent for a duty importing an `EXIT_*` from `.cli` inside the function.
+- `src/shared/packages/pyforge-core/src/pyforge/core/cutover_root.py` -- `resolve_flags_path` (the one tree resolver), `ENV_FLAGS_PATH`, `LOCAL_DEV_RELATIVE`; the shape `flags.py` follows. Read-only here.
+- `src/shared/packages/pyforge-core/src/pyforge/core/process.py` -- `PosixProcess.run` inherits `os.environ` and has no `env=`; `ProcessPort` Protocol is shared with fakes in other stations, so only the concrete class gains an optional `env`.
+- `.claude/skills/conda-forge-expert/scripts/_http.py` -- `resolve_github_api_urls` (l.964, `[0]` is `GITHUB_API_BASE_URL` when set), `auth_headers_for` (l.417). Read-only; no CFE retro owed.
+- `src/platform/config/flags.json` -- the one flagd tree (`{"flags": {key: {state, variants, defaultVariant}}}`); shape pinned by `src/platform/tests/test_openfeature_file_flags.py::_flagd_tree`.
+- `.steward/keys-inventory.yaml` -- three `observed` rows; unchanged (real rows land when the operator issues the tokens). `.gitignore` l.375 `*.log` already ignores `.steward/keys-exec.log`.
+- `docs/how-to/ocp-cluster-bringup.md` -- § 5 *Keys discipline* is the recording procedure the new § 5.1 sits beside.
+- `src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py` -- fixture style (real `age`/`age-keygen`, `generate_identity`, `save_inventory`); `test_keys_host_scoping.py` holds the `JFROG_API_KEY` regression that must stay green.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/shared/packages/pyforge-core/src/pyforge/core/flags.py` -- add `read_boolean`, `FlagOff`, `require`, `disabled_help` exactly as the contract states; stdlib-only, resolves the tree through `cutover_root.resolve_flags_path`, one stderr WARN per absent/unreadable/malformed/non-bool read, no exit code; module docstring names it the fleet-wide CLI flag contract -- Story 44.12 precedent, reused by every flagged CLI story.
+- `src/shared/packages/pyforge-core/src/pyforge/core/process.py` -- give `PosixProcess.run` an optional keyword-only `env: Mapping[str, str] | None = None` passed to `subprocess.run`; `ProcessPort` and the class docstring updated to say the default still inherits -- lets `keys exec` hand the child a scrubbed environment without touching any other caller.
+- `src/platform/config/flags.json` -- add `pyforge.steward.ghe_fleet_credentials` (`on`/`off`, `defaultVariant: off`) -- the flag block in the frontmatter.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py` -- (a) `HostScopedCredential.bearer_token` (`repr=False`, `compare=False`, default `None`) and a `resolve_headers` branch: token set gives `{"Authorization": "Bearer <token>"}` on an exact canonical-host match and `{}` otherwise; token unset delegates unchanged; (b) `enterprise_host()` (hostname of `resolve_github_api_urls()[0]` when `GITHUB_API_BASE_URL` is set, not `github.com`/`api.github.com`, and the flag is on; else `None`) and `enterprise_credential(inventory_path=None, scope="ghe-fleet-read")`; (c) `exec` verb: flag `require`, approval gate, journal line, payload decrypt into a private temp dir, scrubbed child env, `PosixProcess.run(env=...)`, token-redacted relay of the child's streams, exit code through `details["exit_code"]`; (d) `_run_audit` gains the shared-payload finding -- FR-37 delivery path and AD-2 amendment.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` -- `exec` subparser (`--scope` choices, `--approval`, `--inventory`, remainder argv after `--`), help built with `disabled_help`, metavar and audit `--inventory` added, `main()` catches `FlagOff` and returns `EXIT_USAGE` with the message on stderr -- AD-8 stays the one exit-code owner.
+- `docs/how-to/ocp-cluster-bringup.md` -- new § 5.1: issue the two GHE tokens with the permissions each scope needs, `steward keys encrypt` each, record the two `issued` rows, run `keys exec`; no real host or token -- the record.
+- `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `test_process.py` -- `read_boolean`/`FlagOff`/`require`/`disabled_help` cases, the one-resolver pin, and the `env=` pass-through.
+- `src/shared/packages/pyforge-steward/tests/unit/test_keys_ghe_credentials.py`, `tests/unit/test_cli.py` -- resolver matrix, exec matrix (probe child writes its env to a file), audit finding, ON/OFF trees, `FlagOff` in `main()`, `exec --help` (verb and count assertions updated).
+- Owning Spec memlogs -- one `Surface reconcile 2026-09-29` entry per governed path on `spec-pyforge-steward` and `spec-pyforge-core` (and any co-governor `spec-surface-check` names); then a scoped stamp for each.
+
+**Acceptance Criteria:**
+- Given the intent contract's fourteen Given/When/Then criteria above, when `pixi run --frozen -e pyforge-steward pyforge-steward-test` and the `pyforge-core` unit suite run, then every one passes and `test_keys_host_scoping.py`'s `JFROG_API_KEY` regression stays green.
+- Given the diff, when `python scripts/spec_surface_reconcile.py` runs, then it exits 0 with every changed governed path named on its Spec's `.memlog.md`.
+
+## Spec Change Log
+
+## Design Notes
+
+- The token rides on the credential object (`bearer_token`, `repr=False`) rather than being looked up inside `resolve_headers`, so the function stays a pure host gate; `enterprise_credential` is the only place that decrypts.
+- `keys exec` is the single reader of a payload for a child; `enterprise_credential` decrypts the read scope for in-process HTTP callers, never the draft scope.
+- The audit's shared-payload finding compares resolved paths of the two scopes' active `issued` payloads; it runs on every `keys audit`, and prints a `[inventory] clean` line only when `--inventory` is given, so the existing flag-less and `--drift`/`--secrets` output is unchanged.
+- A child killed by signal `-N` exits `128 + N`, so `main()` never returns a negative code.
 
 ## Source
 
