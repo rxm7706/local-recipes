@@ -262,6 +262,25 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"21" = [  # Mason packages the intake toolchain (spec-pyforge-mason CAP-31), added 2026-09-28
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  # 21.1-21.5: one new recipe each; 21.5 also moves its sibling pptxgenjs-plus to the version the JSX package pins
+  "recipes/git-pkgs/**",
+  "recipes/forge/**",
+  "recipes/gitgres/**",
+  "recipes/opengrep/**",
+  "recipes/pptxgenjs-plus-jsx/**",
+  "recipes/pptxgenjs-plus/**",
+  # each story's closing Rule-2 retro (its own retro(cfe): commit, CFE surface only)
+  ".claude/skills/conda-forge-expert/**",
+  # co-governor reconciles (spec-fleet-stewardship governs recipes/**, spec-packaging-factory the CFE surface)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO

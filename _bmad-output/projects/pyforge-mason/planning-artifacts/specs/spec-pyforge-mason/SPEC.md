@@ -205,6 +205,34 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   (`tests/scripts/test_pixi_version_check.py`); `pixi.lock` resolves pixi 0.81.x in every environment that carries
   `pyforge-mason`; `pyforge-mason-test` green. (Minted 2026-09-28.)
 
+### CAP-31 — Mason packages the intake toolchain: `git-pkgs`, `forge`, `gitgres`, `opengrep` and `pptxgenjs-plus-jsx`
+
+- **intent:** Mason packages the five tools the 2026-09-28 intake triage named, as local `recipe.yaml` (v1) recipes
+  under `recipes/`. Each is authored through `conda-forge-expert` (Rule 1) and ends at a green local build on linux-64
+  with a test that runs the binary or loads the extension. A green local build ends each story, and no staged-recipes,
+  feedstock or upstream PR is opened without an explicit ask. Packaging is not adopting: Warden adopts `git-pkgs`,
+  `forge` and `opengrep`; Atlas adopts `git-pkgs`; Herald adopts `pptxgenjs-plus-jsx`; `gitgres` stays a design
+  reference that nothing in the platform loads. `git-pkgs` (v0.20.0) and `forge` (v0.10.0) build from their tag archives
+  as pure-Go CLIs (`go-nocgo`, CGO off, no toolchain download), with the version injected through upstream's ldflags.
+  `gitgres` builds its PGXS extension and libgit2 backend from a pinned commit, because upstream has no tag. It builds
+  against host `postgresql >=17.11,<18` and `libpq >=17.11,<18` and never against 18 (fnd:CAP-12), which overrides
+  conda-forge's global pin of 18. `opengrep` (v1.30.0, `LGPL-2.1-only`) is repackaged from its per-platform release
+  binaries. A source build is not feasible on conda-forge today (OCaml 5.5, `dune`, 69 opam dependencies and 40 git
+  submodules), so the recipe stays local and records that reason in its CFE block. `pptxgenjs-plus-jsx` (4.3.4) follows
+  the repo's canonical npm pattern for a bin-less library, and its sibling `recipes/pptxgenjs-plus` moves to 4.3.4, the
+  version the JSX package pins exactly. Each story closes with a CFE Rule-2 retro in its own `retro(cfe):` commit. No
+  Mason source changes. (Operator ruling 2026-09-28.)
+- **success:** `recipes/{git-pkgs,forge,gitgres,opengrep,pptxgenjs-plus-jsx}/recipe.yaml` exist with the schema header
+  and a CFE block whose `cfe-local-build-*` fields record the real build. Each passes `validate_recipe`,
+  `optimize_recipe` and the CI-parity lint (`conda-smithy recipe-lint --conda-forge` through `pixi exec`).
+  `pixi run -e local-recipes recipe-build recipes/<name>` exits 0 on linux-64 with its tests passing:
+  `git-pkgs --version` reports 0.20.0; `forge version` prints `forge 0.10.0`; a throwaway PostgreSQL 17 cluster runs
+  `CREATE EXTENSION gitgres CASCADE`, and `gitgres-backend` prints its usage; `opengrep --version` reports 1.30.0, a
+  local rule finds its planted match with no network, and the packaged binary is byte-identical to the release asset;
+  the `.`, `./render` and `./jsx-runtime` exports of `pptxgenjs-plus-jsx` load under Node 24. `recipes/pptxgenjs-plus`
+  reads 4.3.4 and builds green. Each story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry. No
+  staged-recipes PR is opened. `pyforge-mason-test` green. (Minted 2026-09-28.)
+
 ## Constraints
 
 - **The central decision — wrap by capability, not by product.** Mason **wraps** the packaging machinery by subprocess for all recipe operations and **builds** natively for `package` and `environment`. The boundary is drawn by *capability*. Pure porcelain was rejected because two of the three charter verb families have **nothing to wrap** — no wheel build, no upload path and no lock orchestration exists anywhere in the wrapped machinery's 41,410 lines, so a pure wrapper is not a smaller Mason but a Mason missing its reason to exist. Extraction/reimplementation was rejected on three independently sufficient grounds: **governance makes a fork structurally adversarial** (Rule 1 makes the skill authoritative over any conflicting story, and Rule 2 mandates that every conda-forge effort *edits the skill* — so a fork is continuously invalidated by the loop that governs the domain); **the in-repo precedent failed** (a sibling project rebuilt ~29,000 lines across 32 merged stories and the 8,902-line original is still the live runtime — nothing routes to the rebuild); and **it forks the moat**, converting 106 gotchas and 10 constraints from an appreciating asset into a depreciating one. The accepted cost, paid deliberately: **Mason is not standalone** — `mason recipe` requires a discoverable installation and is inert without one.

@@ -5010,6 +5010,12 @@ capabilities:
     heading: "no station or environment caps pixi"
     mode: rebuild
     path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-31
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "Mason packages the intake toolchain: git-pkgs, forge, gitgres, opengrep and pptxgenjs-plus-jsx"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
 
   # doctor one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-doctor:CAP-1

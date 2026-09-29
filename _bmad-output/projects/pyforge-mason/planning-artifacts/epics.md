@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -2171,6 +2171,138 @@ So that no station or environment holds pixi below what the rest of the workspac
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
 **Status:** done
 
+## Epic 21: Mason packages the intake toolchain (spec-pyforge-mason CAP-31)
+
+Minted 2026-09-28 from the station Dream's entry *Mason packages the intake toolchain* and the operator's ruling of that
+date at the triage of three intakes: package all five tools. Packaging is not adopting. Warden adopts `git-pkgs`, `forge`
+and `opengrep`; Atlas adopts `git-pkgs`; Herald adopts `pptxgenjs-plus-jsx`; `gitgres` stays a design reference that
+nothing in the platform loads. Other stations mint rows blocked on mason 21.1 (atlas) and 21.4 (warden) and reference
+21.5 (herald). The five stories are independent. **HARD boundaries:**
+- Each recipe goes through `conda-forge-expert` (Rule 1).
+- A green local build on linux-64 ends each story. No staged-recipes, feedstock or upstream PR is opened without an
+  explicit ask.
+- Each story closes with its own `retro(cfe):` commit carrying a CFE `CHANGELOG.md` semver entry (Rule 2). No other
+  commit touches the CFE surface.
+- No story touches `src/shared/packages/pyforge-mason/`, `pixi.toml` or `pixi.lock`: packaging is not adopting.
+- `gitgres` never builds against PostgreSQL 18 (fnd:CAP-12).
+- Every story is `flag-exempt: recipe-build` (`spec-feature-flag-governance` CAP-1, Q2).
+
+### Story 21.1: git-pkgs builds green from source as a local recipe
+
+As the Warden and Atlas stations, which will adopt `git-pkgs`,
+I want a local conda recipe that builds the `git-pkgs` CLI from source,
+So that adopting it is a channel install, not a download.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-31 (FR-53); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `recipes/git-pkgs/**` (new: `recipe.yaml`, `build.sh`, `build.bat`); the CFE retro surface
+(`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml}`, plus
+`config/failure-catalog.yaml` if a new gotcha regenerates it), committed alone as `retro(cfe): …`.
+**Given** `git-pkgs/git-pkgs` v0.20.0 (2026-09-04, MIT, Go; `go.mod` needs Go 1.26.7; upstream builds with
+`CGO_ENABLED=0` on pure-Go SQLite)
+**When** the recipe builds the tag archive with `compiler("go-nocgo")`, `CGO_ENABLED=0` and `GOTOOLCHAIN=local`, injects
+`-X github.com/git-pkgs/git-pkgs/cmd.version=${PKG_VERSION}`, and bundles the dependency licenses with `go-licenses`
+**Then** `pixi run -e local-recipes recipe-build recipes/git-pkgs` exits 0 on linux-64, and its test sees
+`git-pkgs --version` report 0.20.0
+**And** the recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; its CFE block records the real
+build; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 21.2: forge builds green from source as a local recipe
+
+As the Warden station, which will adopt `forge`,
+I want a local conda recipe that builds the `forge` CLI from source,
+So that one binary answers for GitHub, GitLab, Gitea/Forgejo and Bitbucket from a channel install.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-31 (FR-53); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `recipes/forge/**` (new: `recipe.yaml`, `build.sh`, `build.bat`); the CFE retro surface, committed alone as
+`retro(cfe): …`.
+**Given** `git-pkgs/forge` v0.10.0 (2026-09-02, MIT, Go; `go 1.26.0` with `toolchain go1.26.7`; the CLI's `main` is
+`./cmd/forge`, and `internal/cli.Version` defaults to `dev`)
+**When** the recipe builds `./cmd/forge` from the tag archive with `compiler("go-nocgo")`, `CGO_ENABLED=0` and
+`GOTOOLCHAIN=local`, and injects `-X github.com/git-pkgs/forge/internal/cli.Version=${PKG_VERSION}`
+**Then** `pixi run -e local-recipes recipe-build recipes/forge` exits 0 on linux-64, and its test sees `forge version`
+print `forge 0.10.0`, not `forge dev`
+**And** the name `forge` is re-checked against live conda-forge `channeldata.json` before the build (CFE G74, G118); the
+recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's `retro(cfe):` commit lands a CFE
+`CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 21.3: gitgres builds green against PostgreSQL 17 from a pinned commit
+
+As the maintainer keeping `gitgres` as a design reference,
+I want a local conda recipe that builds its PostgreSQL extension and libgit2 backend against PostgreSQL 17,
+So that the design can be tried in a conda environment without Docker, while nothing in the platform loads it.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-31 (FR-53); fnd:CAP-12; AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `recipes/gitgres/**` (new: `recipe.yaml`, `build.sh`, and a recipe-local `conda_build_config.yaml` only if
+the explicit host pins do not hold 17); the CFE retro surface, committed alone as `retro(cfe): …`.
+**Given** `andrew/gitgres` (MIT) has no tag or release. Its HEAD is `eaf8743f2c137d61a75432e44e13467cad7eceaa`
+(2026-03-08). `ext/` is a PGXS extension (`default_version` 0.1, requires `pgcrypto`, links OpenSSL). `backend/`
+builds `gitgres-backend` and `git-remote-gitgres` against libgit2 and libpq, hard-codes `CC = cc` and has no install
+target. conda-forge-pinning pins `postgresql` and `libpq` at 18.
+**When** the recipe pins that commit as a dev snapshot and builds against host `postgresql >=17.11,<18`,
+`libpq >=17.11,<18`, `libgit2` and `openssl`. It uses `compiler("c")` and `stdlib("c")`, builds `ext` with
+`PG_CONFIG=${PREFIX}/bin/pg_config` and `make -C ext install`, and builds `backend` with `CC="${CC}"`, copying both
+binaries into `${PREFIX}/bin`
+**Then** `pixi run -e local-recipes recipe-build recipes/gitgres` exits 0 on linux-64. Its test initdbs a throwaway
+PostgreSQL 17 cluster on a Unix socket, runs `CREATE EXTENSION gitgres CASCADE` and a query against the extension, and
+sees `gitgres-backend` print its usage
+**And** the rendered build and test environments resolve PostgreSQL 17, never 18; Windows is skipped
+(`build.skip: win`, CFE G102); the recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's
+`retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 21.4: opengrep is repackaged from its release binaries as a local-only recipe
+
+As the Warden station, which will adopt `opengrep`,
+I want a local conda recipe that installs the `opengrep` release binary for each platform,
+So that the scanner is a channel install, with the reason it cannot be built from source written down.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-31 (FR-53); AD-1; AD-15; CFE G44, G101; CFE Rule 1 + Rule 2
+**Surface:** `recipes/opengrep/**` (new: `recipe.yaml`, the tag's `LICENSE` shipped in-recipe, and a test fixture rule
+and file); the CFE retro surface, committed alone as `retro(cfe): …`.
+**Given** `opengrep/opengrep` v1.30.0 (2026-09-07). Its COPYRIGHT grants LGPL version 2.1, so the license is
+`LGPL-2.1-only`. The release ships self-contained binaries (`opengrep_manylinux_x86` and `_aarch64`,
+`opengrep_osx_x86` and `_arm64`, `opengrep_windows_x86.exe`) with cosign signatures and no checksum file. A source build
+is not feasible on conda-forge today: it needs OCaml 5.5.0, while conda-forge's `ocaml` tops out at 5.4.0; `dune` is not
+on conda-forge; there are 69 opam dependencies and a git-URL pin to a gitlab fork branch; and 40 git submodules are
+missing from GitHub archives
+**When** the recipe takes one source per conda subdir (`file_name: opengrep`), per-platform and not noarch, with a
+streamed sha256 per asset and no compiler, and sets `build.dynamic_linking.binary_relocation: false`
+**Then** `pixi run -e local-recipes recipe-build recipes/opengrep` exits 0 on linux-64. Its test sees
+`opengrep --version` report 1.30.0 and a local rule find its planted match with no network access, and the packaged
+binary is byte-identical to the release asset
+**And** the CFE block records `cfe-source-kind: github-release-binary`,
+`cfe-on-conda-forge-status: blocked-pending-prerequisites`, and the source-build blockers in `cfe-forge-blocker-list`, so
+the recipe stays local; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 21.5: pptxgenjs-plus-jsx builds green beside its pptxgenjs-plus sibling
+
+As the Herald station, which will adopt `pptxgenjs-plus-jsx` for decks,
+I want a local conda recipe for the JSX companion, next to a `pptxgenjs-plus` at the version it pins,
+So that Herald gets the JSX authoring layer and its engine from one channel.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-31 (FR-53); AD-1; AD-15; CFE G69, G100, G103, G110; CFE Rule 1 + Rule 2
+**Surface:** `recipes/pptxgenjs-plus-jsx/**` (new: `recipe.yaml`); `recipes/pptxgenjs-plus/recipe.yaml` (4.2.1 → 4.3.4);
+the CFE retro surface, committed alone as `retro(cfe): …`.
+**Given** `pptxgenjs-plus-jsx` 4.3.4 on npm (2026-09-24, MIT, ESM, no bin, `engines.node >=24`). It depends on
+`markdown-it`, `@lofcz/mathlive` and `mathml2omml-plus`, and on `pptxgenjs-plus` at exactly 4.3.4, while
+`recipes/pptxgenjs-plus` sits at 4.2.1
+**When** `recipes/pptxgenjs-plus` moves to 4.3.4 (sha256 recomputed, `build.number` 0, `bin`/`engines`/`dependencies`
+re-read per G110) and the JSX recipe follows the repo's canonical npm pattern for a bin-less library (the
+`recipes/pptxgenjs-plus` shape: `noarch: generic`, `pnpm install --ignore-scripts`, `npm pack`, `npm install --global`,
+`pnpm-licenses`, `node_modules/.bin` stripped, a Windows branch that `call`s every shim), with `nodejs >=24` as a floor
+only (G103)
+**Then** `pixi run -e local-recipes recipe-build recipes/pptxgenjs-plus` and
+`pixi run -e local-recipes recipe-build recipes/pptxgenjs-plus-jsx` both exit 0 on linux-64, and the JSX test loads the
+`.`, `./render` and `./jsx-runtime` exports under Node 24
+**And** both recipes pass `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's `retro(cfe):` commit
+lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
 Validated against the architecture spine as re-stamped today (its § Currency
@@ -2235,3 +2367,13 @@ AD-12: pixi's range stays declared in the member `pixi.toml` and mirrored by `PI
 meta-test, and only its shape changes, to a floor. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key
 (`20-1` and `epic-20` added, `epic-20-retrospective` at `optional`, through the Tier-3 feed and `sprint-ledger-sync`).
 `updated:` bumped.
+
+## Currency reconciliation — 2026-09-28 (night)
+
+`arch→epics` edge after the spine's third 2026-09-28 re-stamp (§ Currency reconciliation — 2026-09-28 (night): FR-53 /
+CAP-31 lands on AD-1 and AD-15 as written; no AD added, amended or removed). Epic 21 (Stories 21.1–21.5) decomposes
+CAP-31, one recipe per story, and keeps to those decisions. The recipes live under `recipes/`, and no story touches
+Mason's code (AD-1). No implementation commit writes the CFE surface, and each story's one CFE edit is its own
+`retro(cfe):` commit (AD-15, FR-47). Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key. `21-1` to
+`21-5` and `epic-21` were added at `backlog` and `epic-21-retrospective` at `optional`, through the Tier-3 feed and
+`sprint-ledger-sync`. `updated:` bumped.

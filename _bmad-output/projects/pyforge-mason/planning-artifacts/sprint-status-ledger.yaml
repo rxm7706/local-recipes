@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 117
+# stories: 124
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -64,6 +64,11 @@ development_status:
   2-8-mason-recipe-optimize-and-mason-recipe-scan: done
   2-9-mason-recipe-submit: done
   20-1-mason-s-pixi-run-dependency-is-a-floor-and-a-guard-reds-any-pixi-ceiling: done
+  21-1-git-pkgs-builds-green-from-source-as-a-local-recipe: backlog
+  21-2-forge-builds-green-from-source-as-a-local-recipe: backlog
+  21-3-gitgres-builds-green-against-postgresql-17-from-a-pinned-commit: backlog
+  21-4-opengrep-is-repackaged-from-its-release-binaries-as-a-local-only-recipe: backlog
+  21-5-pptxgenjs-plus-jsx-builds-green-beside-its-pptxgenjs-plus-sibling: backlog
   3-1-engine-protocol-and-provisioning: done
   3-2-mason-package-build: done
   3-3-ship-target-vocabulary-and-dry-run-default: done
@@ -117,6 +122,8 @@ development_status:
   epic-2-retrospective: optional
   epic-20: done
   epic-20-retrospective: optional
+  epic-21: backlog
+  epic-21-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done
