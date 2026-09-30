@@ -104,7 +104,10 @@ turns a verdict into a finding. It is a repo-scope detector, so `detectors-ci` r
 `pixi run -e pyforge-guild flag-gate-check` runs it alone (exit 0 clean, 1 findings, 2 when the
 roster, baseline or tree cannot be read). `python scripts/flag_gate_check.py --spec <path>` judges
 one story spec and prints one JSON object: `verdict` (`pass`, `warn` or `red`), `findings` and
-`rule_date`, exiting 0, 0 or 1 (2 when it cannot judge).
+`rule_date`, exiting 0, 0 or 1 (2 when it cannot judge). The gate also reds a `done` flagged spec whose
+`## Verification` names no test that runs both states: it reads each named test file (a backticked path or a
+`pytest` target) statically, and wants the spec's key beside the testing kit's `flag_states`
+(`pyforge.testing_kit.flags`) or beside two flagd trees, one `"on"` and one `"off"`.
 
 `bmad-build` does not carry its own copy of the shape: marshal Story 74.3 adds a persistent fact
 under `_bmad/custom/` that points here.
