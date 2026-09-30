@@ -563,3 +563,323 @@ def test_the_shipped_overlay_composes_against_the_shipped_tree_in_every_environm
         composed = flags.compose(payload, document, environment)
         assert set(composed["flags"]) == set(payload["flags"])  # an overlay defines nothing
         assert json.loads(flags.render(environment, flags_path=tree)) == composed
+
+
+# --- Story 76.2: every flag carries its owner, story and cleanup clock -------------------------
+
+
+def _flag(default: str = "on", *, state: str = "ENABLED", **metadata: object) -> dict[str, object]:
+    """A boolean flag carrying ``_metadata(...)`` (the clock is dated only via ``on_everywhere=``)."""
+    on_everywhere = str(metadata.pop("on_everywhere", ""))
+    return {**_bool_entry(default, state=state), "metadata": _metadata(on_everywhere, **metadata)}
+
+
+def _string_flag(**metadata: object) -> dict[str, object]:
+    return {
+        "state": "ENABLED",
+        "variants": {"local-recipes": "local-recipes", "foundry": "foundry"},
+        "defaultVariant": "local-recipes",
+        "metadata": _metadata(**metadata),
+    }
+
+
+def _compose_all(flag_map: dict, overlays: dict | None = None) -> None:
+    """Compose ``dev`` (which validates every environment's metadata in the one call)."""
+    flags.compose({"flags": flag_map}, overlays or {}, "dev")
+
+
+def test_a_flag_on_in_no_environment_composes_with_an_empty_clock():
+    _compose_all({KEY: _flag("off")})
+
+
+def test_the_metadata_fields_are_the_five_the_gate_reads():
+    assert flags.METADATA_FIELDS == ("owner", "story", "created", "on_everywhere", "cleanup_by")
+    assert flags.CLEANUP_DAYS == 90
+
+
+def test_every_metadata_error_is_a_named_flag_config_error():
+    for name in (
+        "FlagMetadataMissingError",
+        "FlagMetadataNotAStringError",
+        "FlagMetadataDateError",
+        "FlagClockMismatchError",
+        "FlagCleanupDateError",
+    ):
+        error = getattr(flags, name)
+        assert issubclass(error, flags.FlagMetadataError)
+        assert issubclass(error, flags.FlagConfigError) and issubclass(error, ValueError)
+
+
+def test_a_flag_with_no_metadata_object_is_a_named_error_naming_the_flag():
+    for entry in (_bool_entry("off"), {**_bool_entry("off"), "metadata": []}, {**_bool_entry("off"), "metadata": None}, 7):
+        with pytest.raises(flags.FlagMetadataMissingError) as caught:
+            _compose_all({KEY: entry})
+        assert KEY in str(caught.value) and "metadata" in str(caught.value)
+
+
+@pytest.mark.parametrize("field", flags.METADATA_FIELDS)
+def test_a_missing_field_is_a_named_error_naming_the_flag_and_the_field(field):
+    entry = _flag("off")
+    del entry["metadata"][field]
+    with pytest.raises(flags.FlagMetadataMissingError) as caught:
+        _compose_all({OTHER: _flag("off"), KEY: entry})
+    assert KEY in str(caught.value) and f"metadata.{field}" in str(caught.value)
+    assert OTHER not in str(caught.value)
+
+
+@pytest.mark.parametrize("field", ["owner", "story"])
+@pytest.mark.parametrize("value", ["", "  "])
+def test_an_empty_owner_or_story_is_a_named_error(field, value):
+    with pytest.raises(flags.FlagMetadataMissingError) as caught:
+        _compose_all({KEY: _flag("off", **{field: value})})
+    assert KEY in str(caught.value) and f"metadata.{field}" in str(caught.value)
+
+
+@pytest.mark.parametrize("field", flags.METADATA_FIELDS)
+@pytest.mark.parametrize("value", [None, 7, True, ["2026-09-01"], {"date": "2026-09-01"}])
+def test_a_field_that_is_not_a_string_is_a_named_error(field, value):
+    entry = _flag("off")
+    entry["metadata"][field] = value
+    with pytest.raises(flags.FlagMetadataNotAStringError) as caught:
+        _compose_all({KEY: entry})
+    assert KEY in str(caught.value) and f"metadata.{field}" in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "bad", ["2026-9-1", "2026-09-1", "26-09-01", "20260901", "2026-13-01", "2026-02-30", "2026-09-01T00:00", " 2026-09-01", "", "soon"]
+)
+def test_a_malformed_created_date_is_a_named_error_naming_the_flag_and_the_field(bad):
+    with pytest.raises(flags.FlagMetadataDateError) as caught:
+        _compose_all({KEY: _flag("off", created=bad)})
+    assert KEY in str(caught.value) and "metadata.created" in str(caught.value) and repr(bad) in str(caught.value)
+
+
+@pytest.mark.parametrize("bad", ["2026-9-1", "2026-02-30", "20260901", "never"])
+@pytest.mark.parametrize("field", ["on_everywhere", "cleanup_by"])
+def test_a_malformed_clock_date_is_a_named_error(field, bad):
+    entry = _flag("off")
+    entry["metadata"][field] = bad
+    with pytest.raises(flags.FlagMetadataDateError) as caught:
+        _compose_all({KEY: entry})
+    assert KEY in str(caught.value) and f"metadata.{field}" in str(caught.value)
+
+
+def test_a_clock_at_the_last_representable_day_is_a_named_error_not_an_overflow():
+    entry = _flag("on", on_everywhere="2026-09-01")
+    entry["metadata"]["on_everywhere"] = "9999-12-31"
+    with pytest.raises(flags.FlagMetadataDateError):
+        _compose_all({KEY: entry})
+
+
+def test_on_everywhere_set_where_an_overlay_renders_production_off_is_a_named_error():
+    entry = _flag("on", on_everywhere="2026-08-25")
+    with pytest.raises(flags.FlagClockMismatchError) as caught:
+        _compose_all({KEY: entry}, {"production": {KEY: "off"}})
+    message = str(caught.value)
+    assert KEY in message and "on_everywhere" in message and "2026-08-25" in message and "production" in message
+    assert "dev" not in message and "staging" not in message
+
+
+def test_on_everywhere_set_where_the_tree_itself_is_off_names_every_environment_that_is_not_on():
+    with pytest.raises(flags.FlagClockMismatchError) as caught:
+        _compose_all({KEY: _flag("off", on_everywhere="2026-08-25")}, {"staging": {KEY: "on"}})
+    assert "dev" in str(caught.value) and "production" in str(caught.value)
+
+
+def test_on_everywhere_empty_where_every_environment_renders_on_is_a_named_error():
+    with pytest.raises(flags.FlagClockMismatchError) as caught:
+        _compose_all({KEY: _flag("on")})
+    assert KEY in str(caught.value) and "on_everywhere" in str(caught.value) and "every environment" in str(caught.value)
+
+
+def test_an_overlay_that_turns_a_flag_on_everywhere_starts_the_clock_requirement():
+    """Off in the tree, ON in all three by overlay: the empty clock is now the mismatch."""
+    overlays = {name: {KEY: "on"} for name in flags.ENVIRONMENTS}
+    with pytest.raises(flags.FlagClockMismatchError):
+        _compose_all({KEY: _flag("off")}, overlays)
+    _compose_all({KEY: _flag("off", on_everywhere="2026-09-01")}, overlays)
+
+
+def test_a_dated_clock_composes_where_every_environment_renders_on():
+    _compose_all({KEY: _flag("on", on_everywhere="2026-08-25")})
+    _compose_all({KEY: _flag("off", on_everywhere="2026-08-25")}, {name: {KEY: "on"} for name in flags.ENVIRONMENTS})
+
+
+@pytest.mark.parametrize("cleanup_by", ["2026-11-22", "2026-11-24", "2026-08-25", ""])
+def test_a_cleanup_date_other_than_on_everywhere_plus_90_days_names_both_dates(cleanup_by):
+    entry = _flag("on", on_everywhere="2026-08-25")
+    entry["metadata"]["cleanup_by"] = cleanup_by
+    with pytest.raises(flags.FlagCleanupDateError) as caught:
+        _compose_all({KEY: entry})
+    message = str(caught.value)
+    assert KEY in message and "cleanup_by" in message and repr(cleanup_by) in message
+    assert "2026-08-25" in message and "2026-11-23" in message
+
+
+def test_a_cleanup_date_without_an_on_everywhere_date_is_a_named_error():
+    entry = _flag("off")
+    entry["metadata"]["cleanup_by"] = "2026-11-23"
+    with pytest.raises(flags.FlagCleanupDateError) as caught:
+        _compose_all({KEY: entry})
+    assert KEY in str(caught.value) and "2026-11-23" in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    ("on_everywhere", "cleanup_by"),
+    [("2026-08-25", "2026-11-23"), ("2026-12-15", "2027-03-15"), ("2027-12-01", "2028-02-29"), ("2028-01-01", "2028-03-31")],
+)
+def test_the_clock_is_calendar_days_across_month_year_and_leap_boundaries(on_everywhere, cleanup_by):
+    _compose_all({KEY: _flag("on", on_everywhere=on_everywhere)})
+    assert _metadata(on_everywhere)["cleanup_by"] == cleanup_by  # the fixture's own arithmetic
+    entry = _flag("on", on_everywhere=on_everywhere)
+    entry["metadata"]["cleanup_by"] = cleanup_by
+    _compose_all({KEY: entry})
+
+
+def test_a_string_flag_composes_with_an_empty_clock_and_no_error():
+    _compose_all({"pyforge.cutover_root": _string_flag()}, {"production": {"pyforge.cutover_root": "foundry"}})
+
+
+def test_a_string_flag_never_runs_a_clock():
+    with pytest.raises(flags.FlagClockMismatchError) as caught:
+        _compose_all({"pyforge.cutover_root": _string_flag(on_everywhere="2026-09-13")})
+    assert "pyforge.cutover_root" in str(caught.value)
+
+
+def test_a_disabled_flag_is_never_on_so_its_clock_stays_empty():
+    _compose_all({KEY: _flag("on", state="DISABLED")}, {name: {KEY: "on"} for name in flags.ENVIRONMENTS})
+    with pytest.raises(flags.FlagClockMismatchError):
+        _compose_all({KEY: _flag("on", state="DISABLED", on_everywhere="2026-08-25")})
+
+
+def test_the_first_offending_flag_in_tree_order_is_the_one_named():
+    with pytest.raises(flags.FlagMetadataMissingError) as caught:
+        _compose_all({KEY: _flag("off"), OTHER: _bool_entry("off"), "pyforge.test.third": _bool_entry("off")})
+    assert OTHER in str(caught.value) and "pyforge.test.third" not in str(caught.value)
+
+
+def test_the_check_reads_every_environment_whichever_one_is_composed():
+    """A bad clock on production is refused by a dev composition."""
+    tree = {"flags": {KEY: _flag("on", on_everywhere="2026-08-25")}}
+    with pytest.raises(flags.FlagClockMismatchError):
+        flags.compose(tree, {"production": {KEY: "off"}}, "dev")
+
+
+def test_check_metadata_standalone_needs_no_overlays_and_modifies_nothing():
+    flag_map = {KEY: _flag("on", on_everywhere="2026-08-25")}
+    before = json.loads(json.dumps(flag_map))
+    assert flags.check_metadata(flag_map) is None
+    assert flags.check_metadata(flag_map, {}) is None
+    assert flag_map == before
+    with pytest.raises(flags.FlagClockMismatchError):
+        flags.check_metadata(flag_map, {"production": {KEY: "off"}})
+
+
+def test_overlay_errors_are_still_named_before_a_metadata_error(tmp_path):
+    """Stories 76.1's refusals keep their place: a metadata-less tree with a bad overlay names the overlay."""
+    tree = _overlay_tree(tmp_path, {"production": {"pyforge.test.missing": "off"}})
+    document = json.loads(tree.read_text(encoding="utf-8"))
+    del document["flags"][KEY]["metadata"]
+    tree.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(flags.OverlayUnknownKeyError):
+        flags.render("dev", flags_path=tree)
+
+
+@pytest.mark.parametrize("default", [False, True])
+def test_read_boolean_refuses_a_broken_clock_and_never_reads_default(tmp_path, monkeypatch, default):
+    """A WARN plus a ``default`` could read ON, so the tree that fails the check raises."""
+    tree = _overlay_tree(tmp_path, {}, tree={"flags": {KEY: _flag("on")}})  # ON everywhere, clock empty
+    monkeypatch.setenv(flags.ENV_ENVIRONMENT, "dev")
+    with pytest.raises(flags.FlagClockMismatchError):
+        read_boolean(KEY, default, flags_path=tree)
+    with pytest.raises(flags.FlagClockMismatchError):
+        flags.render("production", flags_path=tree)
+    with pytest.raises(flags.FlagClockMismatchError):
+        require(KEY, default, flags_path=tree)
+
+
+def test_a_tree_read_as_it_is_is_not_composed_so_the_check_does_not_run(tmp_path, monkeypatch):
+    """No sibling overlay (the in-cluster mount holds the rendered tree): unchanged from Story 76.1."""
+    tree = _tree(tmp_path, _bool_entry("on"))
+    for environment in flags.ENVIRONMENTS:
+        monkeypatch.setenv(flags.ENV_ENVIRONMENT, environment)
+        assert read_boolean(KEY, flags_path=tree) is True
+
+
+def test_a_rendered_tree_carries_the_metadata_through_unchanged(tmp_path):
+    tree = _overlay_tree(
+        tmp_path,
+        {"production": {KEY: "off"}},
+        tree={"flags": {KEY: _flag("on"), OTHER: _flag("on", on_everywhere="2026-08-25")}},
+    )
+    for environment in flags.ENVIRONMENTS:
+        rendered = json.loads(flags.render(environment, flags_path=tree))
+        assert rendered["flags"][KEY]["metadata"] == _metadata()
+        assert rendered["flags"][OTHER]["metadata"] == _metadata("2026-08-25")
+
+
+# The shipped tree: what every flag in src/platform/config/flags.json must say (Story 76.2).
+_SHIPPED_CLOCKS = {
+    "pyforge.three_surfaces": ("steward", "26-4-", "2026-08-25", "2026-08-25", "2026-11-23"),
+    "pyforge.cutover_root": ("steward", "44-12-", "2026-09-13", "", ""),
+    "pyforge.steward.ghe_fleet_credentials": ("steward", "75-1-", "2026-09-29", "", ""),
+    "pyforge.steward.object_store_consumer": ("steward", "74-1-", "2026-09-29", "", ""),
+}
+
+
+def _shipped() -> tuple[dict, dict]:
+    config = Path(__file__).resolve().parents[6] / "src" / "platform" / "config"
+    tree = config / "flags.json"
+    if not tree.is_file():
+        pytest.skip("src/platform/config/flags.json is not in this checkout")
+    return json.loads(tree.read_text(encoding="utf-8")), flags.load_overlays(config / flags.OVERLAYS_FILE_NAME)
+
+
+def test_every_flag_in_the_shipped_tree_carries_the_five_string_fields():
+    payload, overlays = _shipped()
+    assert set(payload["flags"]) == set(_SHIPPED_CLOCKS), "a flag joined or left the tree: date it here"
+    for key, entry in payload["flags"].items():
+        metadata = entry["metadata"]
+        assert tuple(metadata) == flags.METADATA_FIELDS, key  # exactly the five, in the documented order
+        assert all(isinstance(value, str) for value in metadata.values()), key
+    flags.check_metadata(payload["flags"], overlays)
+
+
+def test_the_shipped_tree_records_each_flags_owner_story_and_dates():
+    payload, _ = _shipped()
+    for key, (owner, story_prefix, created, on_everywhere, cleanup_by) in _SHIPPED_CLOCKS.items():
+        metadata = payload["flags"][key]["metadata"]
+        assert metadata["owner"] == owner, key
+        assert metadata["story"].startswith(story_prefix), key
+        assert (metadata["created"], metadata["on_everywhere"], metadata["cleanup_by"]) == (
+            created,
+            on_everywhere,
+            cleanup_by,
+        ), key
+
+
+def test_the_only_running_clock_in_the_shipped_tree_is_three_surfaces_owed_to_story_76_4():
+    payload, _ = _shipped()
+    running = {k: e["metadata"]["cleanup_by"] for k, e in payload["flags"].items() if e["metadata"]["cleanup_by"]}
+    assert running == {"pyforge.three_surfaces": "2026-11-23"}
+
+
+def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_the_metadata(monkeypatch):
+    """Metadata is inert to evaluation: the values Story 76.1 shipped, per environment."""
+    payload, _ = _shipped()
+    config = Path(__file__).resolve().parents[6] / "src" / "platform" / "config" / "flags.json"
+    expected = {
+        "pyforge.three_surfaces": True,
+        "pyforge.steward.ghe_fleet_credentials": False,
+        "pyforge.steward.object_store_consumer": False,
+    }
+    assert {k for k, e in payload["flags"].items() if all(isinstance(v, bool) for v in e["variants"].values())} == set(expected)
+    for environment in flags.ENVIRONMENTS:
+        monkeypatch.setenv(flags.ENV_ENVIRONMENT, environment)
+        for key, value in expected.items():
+            assert read_boolean(key, not value, flags_path=config) is value, (environment, key)
+        assert cutover_root.read_cutover_root(config) == "local-recipes", environment
+        rendered = json.loads(flags.render(environment, flags_path=config))
+        assert {k: e["defaultVariant"] for k, e in rendered["flags"].items()} == {
+            k: e["defaultVariant"] for k, e in payload["flags"].items()
+        }
