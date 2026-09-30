@@ -319,6 +319,7 @@ _KIT_CALL = re.compile(rf"\b{_KIT_HELPER}\(")
 # The pre-kit shape: a `*flagd_tree*` writer called once with "on" and once with "off".
 _TREE_CALL = re.compile(r"\b\w*flagd_tree\w*[ \t]*\(")
 _VARIANT = re.compile(r"""["'](on|off)["']""")
+_DEF_KEYWORD = re.compile(r"\bdef$")  # the keyword itself, never an identifier that merely ends in "def"
 _TEST_NAME = re.compile(r"^(?:test_.*\.py|.*_test\.py|.*\.(?:test|spec)\.\w+)$")
 _VERIFICATION_HEADING = re.compile(r"^##[ \t]+Verification[ \t]*$", re.MULTILINE)
 _LEVEL_TWO_HEADING = re.compile(r"^##[ \t]", re.MULTILINE)
@@ -390,7 +391,7 @@ def _writes_both_trees(text: str) -> bool:
     variants = [
         set(_VARIANT.findall(_call_arguments(text, call.end() - 1)))
         for call in _TREE_CALL.finditer(text)
-        if not text[: call.start()].rstrip().endswith("def")
+        if not _DEF_KEYWORD.search(text[: call.start()].rstrip())
     ]
     on = {i for i, seen in enumerate(variants) if "on" in seen}
     off = {i for i, seen in enumerate(variants) if "off" in seen}
@@ -411,7 +412,7 @@ def judge_two_state(
 
     Only a ``done`` spec with a complete ``flag:`` block is judged; a backlog spec has no test yet and an
     exempt one carries no flag. At most one finding, in this order: the Verification names no test file; a
-    named file does not exist; no named file runs the spec's key in both states.
+    named path is not a readable file under the repo root; no named file runs the spec's key in both states.
     """
     if str(frontmatter.get("status", "")).strip().lower() != "done":
         return []
@@ -442,8 +443,8 @@ def judge_two_state(
     if missing:
         return finding(
             K_TEST_MISSING,
-            f"the `## Verification` of a `done` spec that declares flag `{key}` names test file(s) that do not "
-            f"exist: {', '.join(missing)}",
+            f"the `## Verification` of a `done` spec that declares flag `{key}` names test file(s) that are not a "
+            f"readable file under the repo root: {', '.join(missing)}",
         )
     if not any(runs_both_states(text or "", key) for text in texts.values()):
         return finding(
