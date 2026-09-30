@@ -9,6 +9,8 @@ without touching the live tree or the network.
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from datetime import date
 from pathlib import Path
 
@@ -17,6 +19,8 @@ from typer.testing import CliRunner
 
 from pyforge.scribe import catalog
 from pyforge.scribe.cli import app
+
+_GIT_MISSING = shutil.which("git") is None
 
 runner = CliRunner()
 
