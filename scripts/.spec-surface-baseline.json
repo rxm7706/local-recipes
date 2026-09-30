@@ -2741,8 +2741,11 @@
   "memlog": "82255cd6a44500d15e1b933106e866c75e2255c0"
  },
  "pyforge-marshal/spec-dream-to-code-model-self-verification": {
-  "files": {},
-  "memlog": "17994e9c26bda1f247c2c3c2a6879d383f1f7be1"
+  "files": {
+   "scripts/bmad_drift_check.py": "bc173a7b0ac925dc93831f00ec2a81d9a067cef9",
+   "scripts/dream_chain_check.py": "8a4c64bcad2cf4bd49a179f5bd2cf5acacd84579"
+  },
+  "memlog": "e1723eb60dd8173b6d1b8d251aff3d31be419904"
  },
  "pyforge-marshal/spec-durable-runs": {
   "files": {},
