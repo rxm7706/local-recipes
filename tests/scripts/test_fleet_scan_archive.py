@@ -144,12 +144,14 @@ def test_todays_tree_keeps_every_live_row_and_adds_the_archive_as_archived(
     fs = _load(_SCAN, monkeypatch)
     assert fs.ARCHIVE_DREAMS_DIR == _REPO_ROOT / "archive" / "docs" / "dreams"
     live_stems = {f.stem for f in (_REPO_ROOT / "docs" / "dreams").glob("*.md")}
-    archive_only = sorted(
+    # _dream_files() order: sorted by path, not by stem (`foo.md` vs `foo-bar.md` differ).
+    archive_only = [
         f.stem
-        for f in fs.ARCHIVE_DREAMS_DIR.glob("*.md")
+        for f in sorted(fs.ARCHIVE_DREAMS_DIR.glob("*.md"))
         if f.name != "README.md" and f.stem not in live_stems
-    )
+    ]
     assert _ARCHIVED_AT_75_1 <= set(archive_only)
+    stems = set(archive_only)
 
     dreams, chains = fs.scan_dreams(), fs._fleet_chains()
     monkeypatch.setattr(fs, "ARCHIVE_DREAMS_DIR", tmp_path / "no-archive")
@@ -160,10 +162,15 @@ def test_todays_tree_keeps_every_live_row_and_adds_the_archive_as_archived(
     assert [d["slug"] for d in added] == archive_only
     assert all(d["status"] == "archived" for d in added)
 
-    assert set(live_chains) <= set(chains)
-    new_chains = {c[0]: c for c in set(chains) - set(live_chains)}
-    assert sorted(new_chains) == archive_only
-    assert all(c[3] == "archived" for c in new_chains.values())
+    # A chain named for an archive Dream, or whose `owner-dream:` (c[4]) points at one,
+    # reads differently once the archive is read; every other chain is unchanged.
+    def untouched(cs: list[tuple[str, ...]]) -> list[tuple[str, ...]]:
+        return [c for c in cs if c[0] not in stems and c[4] not in stems]
+
+    assert untouched(chains) == untouched(live_chains)
+    new_chains = [c for c in chains if c[0] in stems]
+    assert sorted(c[0] for c in new_chains) == sorted(archive_only)
+    assert all(c[3] == "archived" for c in new_chains)
 
 
 def test_a_moved_archived_dream_keeps_its_row(
