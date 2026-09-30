@@ -2,7 +2,7 @@
 title: '34.4: Each station has a checked-in flag inventory of its runtime capabilities'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '6b7d586b33fdf7edf7b54b81c9cacc8f33efffa7'
 flag-exempt: flag-infrastructure   # the retrofit's own infrastructure (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
@@ -119,6 +119,17 @@ Type / Effort / Deps: feature / M / S-34.2.
 - Given a fixture where the gate WARNs on N specs of one station, when the inventory runs, then that station's warned list holds the same N paths
 
 ## Spec Change Log
+
+- 2026-09-29 -- implemented: status `in-progress` -> `in-review`; every task done; the intent contract is unchanged.
+  Two readings the contract left open, both taken from the Design Notes and recorded here: (1) a resolved path that is
+  itself a document (a `:line` suffix such as `specs/spec-x/SPEC.md:5` hides the suffix from the join's fragment test) is
+  dropped after resolution, so a surface of documents only reads `planning`, not `module`; (2) `routing.py` and `api*.py`
+  count as REST only under `dashboard/**` (steward's `dashboard/routing.py` is a route table, warden's top-level
+  `routing.py` is an ecosystem classifier), while `station_api.py` counts at the package top level. The join resolves few
+  CAPs on today's tree (its `_story_surface_by_cap` needs the Spec slug and the CAP on one `epics.md` line), so most rows
+  read `unresolved` by design; that is the number each Smith mints against, not a defect of the report. Beyond the Tasks
+  list: `docs/how-to/pixi-tasks.md` and `docs/map.yaml` re-rendered (`docs-pixi-tasks`); `environment.yaml` re-exported,
+  byte-identical.
 
 ## Source
 
