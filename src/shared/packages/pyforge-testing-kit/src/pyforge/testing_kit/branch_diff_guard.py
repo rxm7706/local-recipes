@@ -20,13 +20,21 @@ branch or tag of that name before ``refs/remotes/<name>``, so a stray local
 ``origin/main`` at HEAD emptied every guard, which then passed having checked
 nothing.
 
+Every ``git`` call goes through ``pyforge.core.process.PosixProcess.run``, the
+one sanctioned subprocess seam (``spec-pyforge-core`` CAP-6). The kit declares
+``pyforge-core`` as a runtime dependency (marshal Story 74.1, the operator
+ruling of 2026-09-30 that retired Q-26's stdlib-leaf premise), so this module
+no longer opts out of ``pyforge-core``'s subprocess sole-ownership scan.
+``PosixProcess.run`` never raises for a non-zero exit; ``_git_out`` restores
+the ``CalledProcessError`` the old ``check_output`` calls raised, so a failing
+``git`` is still loud.
+
 ``pytest`` is needed for skip-on-missing-base-ref (the whole point of this
 module), but it is imported INSIDE ``_require_ref`` rather than at module
-scope, so this package keeps the empty ``[project.dependencies]`` it declares.
-Every consumer is itself a pytest test file, so nothing is added that isn't
-already present -- but a module-level import would still make it an undeclared
-runtime dependency, which `tests/packaging/test_dependency_completeness.py`
-correctly fails on. See the comment at the import for the full reasoning.
+scope: the kit does not declare it (every consumer is itself a pytest test
+file), and a module-level import would make it an undeclared runtime
+dependency, which `tests/packaging/test_dependency_completeness.py` correctly
+fails on. See the comment at the import for the full reasoning.
 """
 
 from __future__ import annotations
@@ -36,8 +44,25 @@ import re
 import subprocess
 from pathlib import Path
 
+from pyforge.core.process import PosixProcess, ProcessResult
+
 #: The remote's ``main`` by its full refname -- every guard's default base.
 ORIGIN_MAIN = "refs/remotes/origin/main"
+
+_PROCESS = PosixProcess()
+
+
+def _git(root: Path, *args: str) -> ProcessResult:
+    """Run ``git <args>`` in ``root``; a non-zero exit is returned, never raised."""
+    return _PROCESS.run(["git", *args], cwd=root)
+
+
+def _git_out(root: Path, *args: str) -> str:
+    """``git <args>`` stdout; a non-zero exit raises ``CalledProcessError`` (the old ``check_output`` contract)."""
+    result = _git(root, *args)
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(result.returncode, ["git", *args], output=result.stdout, stderr=result.stderr)
+    return result.stdout
 
 
 def _full(ref: str) -> str:
@@ -47,22 +72,16 @@ def _full(ref: str) -> str:
 
 
 def _require_ref(root: Path, ref: str) -> None:
-    # Imported HERE, not at module scope: `pytest` is the one non-stdlib name
-    # this module touches, and it is reachable from exactly this one call. A
-    # module-level import would make it a real, undeclared dependency of a
-    # package whose `[project.dependencies]` is deliberately empty -- which is
-    # precisely what `tests/packaging/test_dependency_completeness.py` fails on
-    # (it inspects module-level imports only). Keeping it function-local lets
-    # the package stay the stdlib leaf it claims to be while `pytest.skip`
-    # still works for every consumer, all of which are pytest test files.
+    # Imported HERE, not at module scope: `pytest` is the one name this module
+    # touches that the kit does not declare, and it is reachable from exactly
+    # this one call. A module-level import would make it a real, undeclared
+    # dependency of the package -- which is precisely what
+    # `tests/packaging/test_dependency_completeness.py` fails on (it inspects
+    # module-level imports only). Keeping it function-local lets `pytest.skip`
+    # still work for every consumer, all of which are pytest test files.
     import pytest
 
-    resolved = subprocess.run(
-        ["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
-        cwd=root,
-        capture_output=True,
-        check=False,
-    )
+    resolved = _git(root, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
     if resolved.returncode != 0:
         pytest.skip(f"{ref} is not available in this checkout; the diff guard needs the base ref")
 
@@ -86,8 +105,7 @@ def diff_text_since(
     in this checkout -- never raises ``CalledProcessError``."""
     base = _full(base)
     _require_ref(root, _full(require) if require else base)
-    cmd = ["git", "diff", base, *_pathspec_args(pathspec)]
-    return subprocess.check_output(cmd, cwd=root, text=True)
+    return _git_out(root, "diff", base, *_pathspec_args(pathspec))
 
 
 def changed_paths_since(
@@ -104,18 +122,10 @@ def changed_paths_since(
     when the base ref is not resolvable in this checkout."""
     base = _full(base)
     _require_ref(root, _full(require) if require else base)
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", base, *_pathspec_args(pathspec)],
-        cwd=root,
-        text=True,
-    )
+    named = _git_out(root, "diff", "--name-only", base, *_pathspec_args(pathspec))
     changed = {line for line in named.splitlines() if line.strip()}
     if include_untracked:
-        untracked = subprocess.check_output(
-            ["git", "ls-files", "--others", "--exclude-standard", *_pathspec_args(pathspec)],
-            cwd=root,
-            text=True,
-        )
+        untracked = _git_out(root, "ls-files", "--others", "--exclude-standard", *_pathspec_args(pathspec))
         changed |= {line for line in untracked.splitlines() if line.strip()}
     changed |= set(always_include)
     return sorted(changed)
@@ -124,13 +134,7 @@ def changed_paths_since(
 def existed_at_ref(root: Path, path: str, *, ref: str = ORIGIN_MAIN) -> bool:
     """True if ``path`` was already present in ``ref``'s tree -- i.e. a diff
     against it MODIFIES an existing file rather than ADDING a new one."""
-    result = subprocess.run(
-        ["git", "cat-file", "-e", f"{_full(ref)}:{path}"],
-        cwd=root,
-        capture_output=True,
-        check=False,
-    )
-    return result.returncode == 0
+    return _git(root, "cat-file", "-e", f"{_full(ref)}:{path}").returncode == 0
 
 
 def pyforge_import_offenders(paths: list[str], root: Path) -> list[str]:
@@ -165,19 +169,19 @@ def commits_since(
     ``None``). Skips the calling test when ``base`` is not resolvable."""
     base = _full(base)
     _require_ref(root, base)
-    cmd = ["git", "log"]
+    args = ["log"]
     if no_merges:
-        cmd.append("--no-merges")
-    cmd += ["--format=%H", f"{base}..HEAD", *_pathspec_args(pathspec)]
-    return subprocess.check_output(cmd, cwd=root, text=True).split()
+        args.append("--no-merges")
+    args += ["--format=%H", f"{base}..HEAD", *_pathspec_args(pathspec)]
+    return _git_out(root, *args).split()
 
 
 def commit_subject(root: Path, sha: str) -> str:
-    return subprocess.check_output(["git", "log", "-1", "--format=%s", sha], cwd=root, text=True).strip()
+    return _git_out(root, "log", "-1", "--format=%s", sha).strip()
 
 
 def commit_files(root: Path, sha: str) -> list[str]:
-    return subprocess.check_output(["git", "show", "--format=", "--name-only", sha], cwd=root, text=True).split()
+    return _git_out(root, "show", "--format=", "--name-only", sha).split()
 
 
 # `retro:` or `retro(<scope>):` -- see unsanctioned_commits.__doc__.
@@ -214,7 +218,7 @@ def unsanctioned_commits(
         files = commit_files(root, sha)
         if not (_RETRO_SUBJECT.match(subject) and changelog_path in files):
             bad.append(f"{sha[:10]} {subject}")
-    dirty = subprocess.check_output(["git", "diff", "--name-only", "HEAD", "--", pathspec], cwd=root, text=True).split()
+    dirty = _git_out(root, "diff", "--name-only", "HEAD", "--", pathspec).split()
     if dirty:
         bad.append("uncommitted: " + ", ".join(dirty))
     return bad

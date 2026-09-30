@@ -14,8 +14,11 @@ and a fifth, the feature-flag family (`spec-feature-flag-governance` CAP-4):
 | auth/HTTP/time | `pyforge.testing_kit.auth_http_time` | `mock_github_api.py` + supervisor timing |
 | feature-flag | `pyforge.testing_kit.flags` | `src/platform/tests/test_openfeature_file_flags.py`'s hand-written flagd tree |
 
-**Q-26 decision:** own leaf package (not `pyforge.core.testing`) — keeps
-test-only fixtures out of every station's runtime `pyforge-core` install.
+**Q-26 decision:** own package (not `pyforge.core.testing`) — keeps
+test-only fixtures out of every station's runtime `pyforge-core` install. The
+kit itself depends on `pyforge-core` (its git calls run through
+`pyforge.core.process`) and on `openfeature-sdk` (the flag family); `pyforge-core`
+does not depend on the kit.
 
 ## Develop
 

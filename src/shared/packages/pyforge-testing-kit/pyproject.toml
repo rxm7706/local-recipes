@@ -10,13 +10,15 @@ readme = "README.md"
 requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
-# Test-support only — a leaf: no station, no pyforge-core. Never a station runtime dependency.
-# Q-26 (Story 19.2): own leaf, not pyforge.core.testing, so test fixtures
+# Test-support only — imports no station. Never a station runtime dependency.
+# Q-26 (Story 19.2): own package, not pyforge.core.testing, so test fixtures
 # do not couple into every station's runtime install of pyforge-core.
-# openfeature-sdk (marshal Story 74.1, spec-feature-flag-governance CAP-4) is the one
-# third-party run-dep: pyforge.testing_kit.flags installs OpenFeature's InMemoryProvider.
-# It is imported inside the function that needs it, never at module level.
-dependencies = ["openfeature-sdk>=0.10.0"]
+# Marshal Story 74.1 (operator ruling 2026-09-30) retired Q-26's stdlib-leaf premise:
+# - pyforge-core: branch_diff_guard.py runs its git calls through pyforge.core.process.PosixProcess
+#   (pyforge-core does not depend on the kit, so no cycle).
+# - openfeature-sdk (spec-feature-flag-governance CAP-4): pyforge.testing_kit.flags installs
+#   OpenFeature's InMemoryProvider. Imported inside the function that needs it, never at module level.
+dependencies = ["openfeature-sdk>=0.10.0", "pyforge-core"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
