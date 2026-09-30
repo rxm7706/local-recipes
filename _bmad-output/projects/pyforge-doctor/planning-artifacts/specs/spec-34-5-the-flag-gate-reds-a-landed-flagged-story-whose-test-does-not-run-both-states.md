@@ -2,8 +2,7 @@
 title: '34.5: The flag gate reds a landed flagged story whose test does not run both states'
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
-blocking_condition: 'blocked until marshal Story 74.1 (spec-feature-flag-governance CAP-4, "The testing kit runs a story in both flag states through one fixture") has landed on main -- the check recognises a two-state test by the kit''s ON/OFF helper, which does not exist before it. The operator flips the ledger key, never a session (marshal''s Deps: parser is station-local).'
+status: 'backlog'
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -41,7 +40,7 @@ ships; the ledger key is minted `blocked` because marshal's `Deps:` parser is st
 Do not start this story while 74.1 is unlanded.
 
 Ledger key: `34-5-the-flag-gate-reds-a-landed-flagged-story-whose-test-does-not-run-both-states`.
-Ledger status (do not edit the ledger): `blocked`.
+Ledger status (do not edit the ledger): `backlog` -- flipped 2026-09-30 by the operator after marshal Story 74.1 landed on main (1c3e4ba113).
 Type / Effort / Deps: feature / S / S-34.2 (cross-project gate: marshal Story 74.1).
 
 ### Living CAP citations
@@ -92,6 +91,10 @@ Type / Effort / Deps: feature / S / S-34.2 (cross-project gate: marshal Story 74
 
 Contract authored from `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-4 (success: the gate can tell a
 Verification that names no two-state test) and Charter §6, decomposed 2026-09-28 (night) as Epic 34's mint.
+
+## Spec Change Log
+
+- 2026-09-30 -- operator flip, `blocked` -> `backlog`: the cross-station gate cleared when marshal Story 74.1 landed on main (1c3e4ba113). Nothing else in the contract changed. A resumed worktree brings `origin/main` into its branch first (merge, never rebase).
 
 ## Binding
 
