@@ -2,7 +2,7 @@
 title: "76.2: Every flag in the tree carries its owner, story and cleanup clock in flagd metadata"
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: flag-infrastructure
@@ -99,6 +99,10 @@ Type / Effort / Deps: feature / S / S-76.1.
 
 Contract authored from `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-5 and Q4, and the `spec-pyforge-steward`
 memlog note of 2026-09-28 (night) recording Epic 76's shape.
+
+## Spec Change Log
+
+- 2026-09-30 -- operator decision, unblocked (contract unchanged): the blocking condition below is cleared. Story 76.1 landed on `main` as `177f67e991` (PR #1683), so the Deps gate S-76.1 is met, and `src/platform/config/flag-overlays.json` and `pyforge.core.flags.evaluate_boolean` are on `main`. First bring `origin/main` into this branch (merge, never rebase). The re-plan notes under Auto Run Result still apply: `flags.json` holds three flags (`pyforge.steward.ghe_fleet_credentials` gets `owner`/`story`/`created` with an empty clock), and `pyforge.three_surfaces` stays owed to Story 76.4.
 
 ## Binding
 
