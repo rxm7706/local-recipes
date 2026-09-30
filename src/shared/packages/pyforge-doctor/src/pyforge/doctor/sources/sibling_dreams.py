@@ -1,12 +1,19 @@
 """Sibling-dreams drift gather (Story 16.1 / CAP-1; re-key Story 21.3; Story 29.1).
 
-Diffs shared Dream filenames between this repo's ``docs/dreams/`` and the one
-named sibling PyForge tree (``openteams-ai/mgmt-wf-python-modernization`` —
-formerly ``OpenTeams-WFT-CDO/mgmt-wf-python-modernization``, which GitHub now
-only 301-redirects) on status, owner, content-hash, and title. Warn-only,
+Diffs shared Dream filenames between this repo's ``docs/dreams/`` and
+``archive/docs/dreams/`` and the one named sibling PyForge tree
+(``openteams-ai/mgmt-wf-python-modernization`` — formerly
+``OpenTeams-WFT-CDO/mgmt-wf-python-modernization``, which GitHub now only
+301-redirects) on status, owner, content-hash, and title. Warn-only,
 fail-open without a token or when the sibling is unreachable — but unreachable
 paths emit an explicit ``sibling-dreams-unreachable`` finding rather than
 silence. Never stores sibling prose — fingerprints only.
+
+The local side reads both Dream homes (``spec-one-chain-per-station`` CAP-11,
+CHAIN-STANDARD §11: a retired Dream moves, structure-preserving, to
+``archive/docs/dreams/``) so a ``sibling-acknowledged:`` line keeps suppressing
+its drift after the move. A slug present in both places resolves to the
+``docs/dreams/`` copy.
 
 A local Dream may carry a ``sibling-acknowledged: <hash>`` frontmatter line
 (Story 29.1 / CAP-82) recording the sibling ``content_hash`` an operator has
@@ -37,6 +44,8 @@ __all__ = ("gather",)
 _SIBLING_OWNER = "openteams-ai"
 _SIBLING_REPO = "mgmt-wf-python-modernization"
 _SIBLING_DREAMS_PATH = "docs/dreams"
+# Local Dream homes, in precedence order (CAP-11: live first, archive second).
+_LOCAL_DREAM_DIRS = (("docs", "dreams"), ("archive", "docs", "dreams"))
 _SIBLING_FETCH_TOTAL_BUDGET_SECONDS = 10.0
 _API_BASE = f"https://api.github.com/repos/{_SIBLING_OWNER}/{_SIBLING_REPO}/contents"
 _COMPARED_AXES = ("status", "owner", "content_hash", "title")
@@ -152,23 +161,30 @@ def _parse_dream_fingerprint(text: str) -> dict[str, str] | None:
 
 
 def _local_fingerprints(target: Path) -> dict[str, dict[str, str]]:
-    dreams_dir = target / "docs" / "dreams"
-    if not dreams_dir.is_dir():
-        return {}
+    """Fingerprint local Dreams from both homes; ``docs/dreams/`` wins a tie.
+
+    The live tree is read first and each slug keeps its first fingerprint, so
+    a stray archive copy never overrides a live Dream. A missing directory, a
+    directory whose listing raises ``OSError`` and an unreadable file are each
+    skipped (fail-open), as before the archive was read.
+    """
     out: dict[str, dict[str, str]] = {}
-    try:
-        paths = sorted(dreams_dir.glob("*.md"))
-    except OSError:
-        return {}
-    for path in paths:
+    for dreams_dir in (target.joinpath(*parts) for parts in _LOCAL_DREAM_DIRS):
+        if not dreams_dir.is_dir():
+            continue
         try:
-            text = path.read_text(encoding="utf-8")
+            paths = sorted(dreams_dir.glob("*.md"))
         except OSError:
             continue
-        fp = _parse_dream_fingerprint(text)
-        if fp is None:
-            continue
-        out[path.stem] = fp
+        for path in paths:
+            try:
+                text = path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            fp = _parse_dream_fingerprint(text)
+            if fp is None:
+                continue
+            out.setdefault(path.stem, fp)
     return out
 
 
