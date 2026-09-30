@@ -1957,6 +1957,23 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-WATCH-002",
         "MRS-WATCH-003",
         "MRS-WATCH-004",
+        # Story 65.1 (spec-pyforge-marshal CAP-274): `marshal factory drain
+        # --plan`'s own area (`MRS-PLAN` is planning-graph retrieval's, and
+        # CODE_PATTERN admits one token). 001 ERROR: a station's next story
+        # would not dispatch cleanly -- one finding per reason, naming the
+        # would-be code (MRS-DISP-041/005/045/030/036/039/019, MRS-GATE-010/
+        # 011/003), `already-landed` or `prose-park`; 002 WARN: the same for a
+        # queued story beyond the next, and every prose park in a backlog that
+        # no `skip_policies` entry mirrors; 003 WARN: an `order_overrides`
+        # list whose keys are all done or absent (it only switches the Deps
+        # sort off); 004 WARN: the next story's declared Deps are not all
+        # done (serial mode dispatches it anyway, parallel mode holds it);
+        # 005 UNEVALUABLE: the station's plan could not be computed.
+        "MRS-DRAINPLAN-001",
+        "MRS-DRAINPLAN-002",
+        "MRS-DRAINPLAN-003",
+        "MRS-DRAINPLAN-004",
+        "MRS-DRAINPLAN-005",
     }
 )
 

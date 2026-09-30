@@ -1278,6 +1278,18 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-WATCH-002": Verdict.ERROR,
     "MRS-WATCH-003": Verdict.WARN,
     "MRS-WATCH-004": Verdict.WARN,
+    # Story 65.1 (spec-pyforge-marshal CAP-274): `marshal factory drain
+    # --plan`. 001 is the one hard rung -- a station's next story would be
+    # refused (or is parked in prose, or already landed), so the plan exits
+    # like the refusal it foresees. 002-004 report what a drain would do
+    # anyway or what only reorders it: WARN, exit 0. 005 is UNEVALUABLE for
+    # the reason MRS-DRAIN-003's ledger read is not an ERROR: the station's
+    # plan could not be computed, which is never a clean plan.
+    "MRS-DRAINPLAN-001": Verdict.ERROR,
+    "MRS-DRAINPLAN-002": Verdict.WARN,
+    "MRS-DRAINPLAN-003": Verdict.WARN,
+    "MRS-DRAINPLAN-004": Verdict.WARN,
+    "MRS-DRAINPLAN-005": Verdict.UNEVALUABLE,
 }
 
 
