@@ -425,6 +425,14 @@ REDIS_SSL = is_tls_broker(REDIS_BROKER_URL)
 OBJECT_STORAGE_ENDPOINT_URL = env("OBJECT_STORAGE_ENDPOINT_URL", default=None)
 OBJECT_STORAGE_ACCESS_KEY = env("OBJECT_STORAGE_ACCESS_KEY", default=None)
 OBJECT_STORAGE_SECRET_KEY = env("OBJECT_STORAGE_SECRET_KEY", default=None)
+# Story 74.1 (steward CAP-163): where a station's objects live. The bucket and prefix
+# carry the same no-default rule -- an unset one makes django_pyforge.object_store
+# raise ImproperlyConfigured naming it. The client factory is a dotted path the chrome
+# resolves with import_string (django_pyforge never imports this host's `config`
+# package); it stays CAP-97's factory unless a test or a future backend names another.
+OBJECT_STORAGE_BUCKET = env("OBJECT_STORAGE_BUCKET", default=None)
+OBJECT_STORAGE_PREFIX = env("OBJECT_STORAGE_PREFIX", default=None)
+OBJECT_STORAGE_CLIENT_FACTORY = "config.object_storage.object_storage_client"
 
 from platformapp.front_door.lane1_runtime import locmem_cache_aliases  # noqa: E402
 
