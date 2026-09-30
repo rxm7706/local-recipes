@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -30,12 +31,17 @@ from pyforge.marshal.cli.dispatch import (
     execute_fleet_cycle,
     run_fleet_drain,
 )
+from pyforge.marshal.cli import drain_plan
 from pyforge.marshal.core import dispatch as dispatch_core
-from pyforge.marshal.core import dispatch_fleet, verdict
+from pyforge.marshal.core import dispatch_fleet, policy, verdict
 from pyforge.marshal.core.dispatch_fleet import FleetCampaignMode
 from pyforge.marshal.core.identity import normalize, render_feed_key
 
 _STEWARD = "pyforge-steward"
+
+#: The autouse fixture replaces `_journal_dispatch_wave` with a tripwire; the
+#: cycle-side wave tests need the real writer back.
+_REAL_JOURNAL_DISPATCH_WAVE = dispatch_cli._journal_dispatch_wave
 
 _K_KERNEL = "44-3-kernel"
 _K_FOLD = "44-4-fold-the-packages"
@@ -181,9 +187,11 @@ class ProbeBuildHarness(FakeBuildHarness):
     def __init__(self, *, present: bool = True) -> None:
         super().__init__(present=present)
         self.walks = 0
+        self.preferences: list[tuple[str, ...]] = []  # what each walk was handed, in order
 
     def binary_present(self, preference=(), repo_root=None):
         self.walks += 1
+        self.preferences.append(tuple(preference))
         return super().binary_present(preference, repo_root)
 
 
