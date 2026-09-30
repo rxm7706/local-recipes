@@ -35,11 +35,13 @@ flag_provider = make_flag_provider_fixture()
 # a test module
 from pyforge.testing_kit import assert_flag_off_verb, flag_states
 
-@flag_states("pyforge.example.thing")   # runs twice: ids `on` and `off`
+
+@flag_states("pyforge.example.thing")  # runs twice: ids `on` and `off`
 def test_the_capability(): ...
 
+
 def test_the_verb_when_its_flag_is_off():
-    assert_flag_off_verb(main, "thing", usage_code)   # listed in --help as disabled; exits with usage_code
+    assert_flag_off_verb(main, "thing", usage_code)  # listed in --help as disabled; exits with usage_code
 ```
 
 For integration tests, and for Playwright against a server started on it,

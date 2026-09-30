@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 from pyforge.core.process import PosixProcess, ProcessResult
+
 from pyforge.testing_kit import (
     changed_paths_since,
     commit_files,
