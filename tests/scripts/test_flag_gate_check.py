@@ -559,7 +559,10 @@ def test_a_test_that_writes_two_flagd_trees_for_the_key_has_no_finding(
 @pytest.mark.parametrize(
     ("label", "content"),
     [
-        ("kit helper, another key", 'from pyforge.testing_kit.flags import flag_states\n@flag_states("pyforge.other.key")\n'),
+        (
+            "kit helper, another key",
+            'from pyforge.testing_kit.flags import flag_states\n@flag_states("pyforge.other.key")\n',
+        ),
         ("kit helper, no key at all", "from pyforge.testing_kit.flags import flag_states\n@flag_states(KEY)\n"),
         ("kit helper, a longer key", f'from pyforge.testing_kit.flags import flag_states\n@flag_states("{KEY}_v2")\n'),
         ("kit helper, a sub-key", f'from pyforge.testing_kit.flags import flag_states\n@flag_states("{KEY}.sub")\n'),

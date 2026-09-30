@@ -450,7 +450,7 @@ def judge_two_state(
             K_NOT_TWO_STATE,
             f"no test file the `## Verification` names runs flag `{key}` in both states ({', '.join(named)}): each "
             f"must name the key together with the testing kit's `{_KIT_HELPER}` "
-            "(`pyforge.testing_kit.flags`) or with two flagd trees, one `\"on\"` and one `\"off\"`",
+            '(`pyforge.testing_kit.flags`) or with two flagd trees, one `"on"` and one `"off"`',
         )
     return []
 
