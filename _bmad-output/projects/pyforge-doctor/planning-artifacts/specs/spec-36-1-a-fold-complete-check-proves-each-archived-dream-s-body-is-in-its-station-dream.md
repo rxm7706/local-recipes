@@ -191,16 +191,27 @@ Flag: `flag-exempt: detector-or-gate` (a detector; flagging it OFF would be a si
   there. It lives in `sources/one_chain.py`, which is the one-chain family module (`chain-sprawl`, `fr-without-cap`) and
   already imports `_frontmatter_parse` from `.chain`; `Source` is declared in `models.py`, not `sources/__init__.py`. The
   contract's intent is "Story 25.1's shape", so the gatherer goes to `one_chain.py` and reuses the `.chain` reader. Nothing
-  observable changes: the CLI name, task name, findings and exit codes are the contract's. `chain.py` (5.5k lines) is
-  not grown.
+  observable changes: the CLI name, task name and findings are the contract's (the exit code is the one difference; see
+  *Exit codes*). `chain.py` (5.5k lines) is not grown.
+- **Exit codes.** The I/O matrix says a FAIL "exit 1". Doctor's own exit domain is {0, 2, 130} (`verdict.py`,
+  `_EXIT_FAIL = 2`), so `python -m pyforge.doctor.sources fold-complete` exits 2 on a FAIL and 0 otherwise, and a test
+  pins that. `scripts/detectors.py` folds any non-zero verdict to its own rc 1, so the `detectors-ci` row reads as the
+  matrix says. The contract block is read-only; this note is where the difference is recorded.
 - **Paragraph rule.** Body via `_dream_body_after_frontmatter`; a heading line (`#{1,6}` then a space) is dropped and also
   ends the paragraph, exactly as a blank line does. That keeps a paragraph that abuts a heading with no blank line
   matching the station Dream, where the same text sits beside a differently-demoted heading. Whitespace runs collapse
   to one space on both sides; only paragraphs longer than 80 characters count; the station Dream is
   collapsed whole and searched with `in`.
 - **Findings.** One FAIL per failing archived Dream (check `fold-complete-incomplete`, `-no-owner`, `-no-station-dream`);
-  one OK per passing or baselined Dream is unnecessary noise, so a single OK summary carries the counts; one WARN
-  (`fold-complete-archived-in-live-tree`) carries the per-station count, sorted by station name.
+  one OK per complete Dream (`fold-complete-ok`) and one per baselined Dream (`fold-complete-baselined`), each naming its
+  path, mirroring `chain-sprawl-exempt`, so "reports OK for `foo.md`" is a line that names `foo.md`; a `fold-complete` OK
+  summary carries the counts; one WARN (`fold-complete-archived-in-live-tree`) carries the per-station count, sorted by
+  station name. (Planning first wrote a single summary OK; review pass 1 found that under-read the two "reports OK for
+  that file" criteria, and the code was patched to match them.)
+- **Countdown and unreadable frontmatter.** A `docs/dreams/*.md` whose frontmatter the reader marks unparseable (a glued
+  `---title:` opener, 34 today) has no readable `status:` or `owner:`, and the Always clause forbids a second parser, so
+  it cannot be attributed to a station. The WARN reports that count beside the per-station counts and stays alive while
+  any such file remains, so the countdown never reads finished early.
 - **Baseline.** A listed path is skipped before any read (the "reads nothing" AC): its file is never opened. A missing
   or unreadable baseline file is a WARN `fold-complete-no-baseline`, like `chain-sprawl-no-baseline`, never a crash.
 - **No banner allowance.** CHAIN-STANDARD §7 item 4 says a moved Dream carries no `Consolidated into` banner, so a
