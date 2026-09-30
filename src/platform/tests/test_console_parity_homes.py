@@ -193,12 +193,16 @@ def test_catalog_pages_scan_tracked_files(client: Client) -> None:
     body = dreams.content.decode()
     assert 'data-console-home="dreams"' in body
     assert "pyforge-steward" in body or "pyforge" in body
-    assert client.get("/console/specs/").status_code == HTTPStatus.OK
+    specs = client.get("/console/specs/")
+    assert specs.status_code == HTTPStatus.OK
+    assert "<li>spec-one-chain-per-station</li>" in specs.content.decode()
     assert client.get("/console/story-specs/").status_code == HTTPStatus.OK
     assert client.get("/console/guild/").status_code == HTTPStatus.OK
     assert client.get("/console/backlog/").status_code == HTTPStatus.OK
     assert client.get("/console/open-work/").status_code == HTTPStatus.OK
-    assert client.get("/console/archived/").status_code == HTTPStatus.OK
+    archived = client.get("/console/archived/")
+    assert archived.status_code == HTTPStatus.OK
+    assert "<li>deckcraft</li>" in archived.content.decode()
     programs = client.get("/console/programs/")
     assert programs.status_code == HTTPStatus.OK
     assert "pyforge-steward" in programs.content.decode()
