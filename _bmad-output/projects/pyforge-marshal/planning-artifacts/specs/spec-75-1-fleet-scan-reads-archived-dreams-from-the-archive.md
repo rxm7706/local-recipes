@@ -2,7 +2,7 @@
 title: "75.1: fleet_scan reads archived Dreams from the archive"
 type: 'chore'
 created: '2026-09-29'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'c8f74d5657bc67459115281f75afbbd577401c09'
@@ -239,7 +239,9 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 ## Auto Run Result
 
-Status: in-review (implemented under the 2026-09-30 operator ruling; no independent review has run yet).
+Status: done. The story was implemented under the 2026-09-30 operator ruling, reviewed in one independent four-layer pass, and patched with three fixes (P1 to P3). Five findings are deferred in frontmatter `deferred:`.
+
+Summary: `scripts/fleet_scan.py` now reads `archive/docs/dreams/*.md` after `docs/dreams/*.md` in both named read sites, `scan_dreams()` and `_fleet_chains()`, through one helper, `_dream_files()`. The first copy of each slug wins. A Dream read from the archive reads `archived` whatever its frontmatter says. The row shape does not change.
 
 Changed:
 
@@ -247,7 +249,10 @@ Changed:
   - Adds `ARCHIVE_DREAMS_DIR` (`archive/docs/dreams/`) beside the unchanged `DREAMS_DIR`, and one helper, `_dream_files()`. The helper reads `docs/dreams/*.md` and then `archive/docs/dreams/*.md`, skips `README.md`, keeps the first copy of each slug, and returns `(path, in_archive)` pairs.
   - `scan_dreams()` and `_fleet_chains()` both iterate `_dream_files()`. A Dream read from the archive reads `status: archived` whatever its frontmatter says. The row shape does not change.
   - Two dead locals are removed from code this story reads: `proj` in `_stage_globs` and `total_h` in the velocity block.
+  - Review patch P1: the docstrings, comments and return annotation of `scan_dreams()`, `_fleet_chains()` (now `list[tuple[str, str, str, str, str]]`) and `build_archived` match the new rule.
 - `tests/scripts/test_fleet_scan_archive.py` (new, allowlisted under `tests/**`). It loads the real script by `importlib` into temporary trees and has one test per acceptance criterion, plus a frontmatter-override test.
+  - Review patch P2: the live-tree test compares only the chains that no archive Dream touches (by slug or by `owner-dream` parent), so it survives a fold PR.
+  - Review patch P3: `archive_only` is built in path order, which is the order `_dream_files()` uses.
 - `spec-pyforge-marshal/.memlog.md`: a surface-reconcile event for `scripts/fleet_scan.py`.
 - `origin/main` is merged into the branch twice, never rebased: `c8f74d5657` (the ruling's precondition), then `14434a231e` (scribe 25.1, #1686).
 
@@ -269,11 +274,52 @@ Evidence:
 
 Spec surface: `spec-surface-check` names no Spec. `scripts/fleet_scan.py` is governed by `spec-pyforge-marshal` alone, and its memlog moved in this change. The memlog entry is written, and the scoped `--write-baseline --spec pyforge-marshal/spec-pyforge-marshal` stamp is left to the landing, because a dispatch never stamps its own baseline.
 
-Left open (outside this story's two read sites; each still builds a `docs/dreams/<slug>.md` path and needs the same treatment before the first fold PR moves a Dream):
+Left open at implementation. Review resolved each item into a deferred item or a rejection:
 
-- `scan_specs()` sets a Spec row's `dream` from `DREAMS_DIR`.
-- The per-chain Dream-stage glob in `_stage_globs` and the Dream path in `_last_touched`.
-- `_GIT_SCOPES` does not include `archive/`.
-- `build_archived` links every archived row to `docs/dreams/<slug>.md`, which is wrong for the six archive Dreams. None of the six has an `archived_reason`, so each shows as "retired".
-- `board._load_dashboard_generate` repoints `REPO_ROOT` and `DREAMS_DIR` but not `ARCHIVE_DREAMS_DIR`. This is harmless while the script resolves its repo root to the same tree.
-- `pyforge-genesis` (`owner: guild`, not in `GUILD_DREAMS`) now raises a `[dreams] WARN` and a `[fleet] WARN` (no spec directory and no station owner). Both are advisory.
+- `scan_specs()` sets a Spec row's `dream` from `DREAMS_DIR`. This is deferred (the first item), and it is reached only from the uncalled `_generate()` (the second item).
+- The per-chain Dream-stage glob in `_stage_globs` and the Dream path in `_last_touched` are deferred (the first item).
+- `_GIT_SCOPES` does not include `archive/`. This is deferred (the first item).
+- `build_archived` links every archived row to `docs/dreams/<slug>.md`. It has no live caller, so this is deferred with the dead generator (the second item).
+- `board._load_dashboard_generate` repoints `REPO_ROOT` and `DREAMS_DIR` but not `ARCHIVE_DREAMS_DIR`. Review refuted this as a defect (IA-7): the loaded copy derives its root from the target tree.
+- `pyforge-genesis` raises a `[fleet] WARN`, which is a true statement. Its `[dreams] WARN` is on the uncalled path (BH-9).
+
+Review findings breakdown (full rows in the Review Triage Log, 2026-09-30):
+
+- Patched (3 entries):
+  - P1 (low; BH-10 and VG-6): stale docstrings, comments and the 4-tuple return annotation in `scripts/fleet_scan.py`.
+  - P2 (medium; BH-5 and EC-7): the live-tree test's chain comparison was not robust to a fold PR.
+  - P3 (low; EC-6): the test's `archive_only` order.
+- Deferred (5 items in frontmatter `deferred:`):
+  - The first item (medium): per-chain Dream lookups read only `docs/dreams/`. This groups BH-3, IA-3, IA-8, BH-2, EC-1, EC-8 and VG-3; location `scripts/fleet_scan.py:1971`.
+  - The second item (low): `_generate()` has no caller (VG-1); location `scripts/fleet_scan.py:3568`.
+  - The third item (medium): doctor's `--layers --json` stdout carries `[fleet]` lines (VG-4); location `board.py:1274`.
+  - The fourth item (low): stale `board.py` comments (VG-5); location `board.py:1499`.
+  - The fifth item (low): `scan_dreams` keeps inline YAML comments (VG-7); location `scripts/fleet_scan.py:1087`.
+- Rejected as false (10 findings), each on its refutation:
+  - IA-2, BH-1, EC-3 and VG-2: `build_archived`, `scan_guild` and `scan_backlog` are reached only from the uncalled `_generate()`.
+  - IA-4: the same, for the Guild and Backlog views.
+  - IA-5 and BH-9: the `[dreams]` warnings and summaries are on the uncalled path, and the live `[fleet]` warning is true.
+  - IA-7, BH-4 and EC-4: the loaded script derives `ARCHIVE_DREAMS_DIR` from the target tree's own `REPO_ROOT`.
+- Rejected as low (9 findings), each as unlikely in everyday use with a fix beyond a direct correction:
+  - IA-1 and BH-11: tests for readers with no live caller.
+  - IA-6 and BH-6: the test "before" points; the direct comparison with `main` is recorded above.
+  - BH-7 and EC-5: a slug in both places; `git mv` moves make it unlikely, and a warning adds a branch.
+  - BH-8: the status-conflict warning; the ruling makes location authoritative.
+  - BH-12: rewriting an appended memlog event.
+  - EC-2: pyforge-genesis's `updated` date; it is archived, no live consumer reads it, and the fix needs a guard.
+
+Follow-up review recommendation: `false`. This first pass patched 0 high entries and 1 medium entry (P2, whose two findings share one root cause), plus 2 low entries (P1 and P3). No specific unverified risk remains in the patched code: P1 changes only docstrings, comments and an annotation, and P2 and P3 change only the test, which passes.
+
+Verification after the review patches:
+
+- `pixi run -e pyforge-guild python -m pytest tests/scripts/test_fleet_scan_archive.py -q`: exit 0, 7 passed.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0, with 8939 passed, 1 skipped and 12 deselected.
+- `pixi run -e pyforge-guild spec-surface-check`: exit 0 ("every tracked file governed or allowlisted; no drift").
+- `python scripts/spec_surface_reconcile.py`: exit 0 ("every tracked file governed or allowlisted; no drift").
+- `--write-baseline` was not run. The `spec-pyforge-marshal` memlog event names `scripts/fleet_scan.py`, and no co-governor is named.
+
+Residual risks:
+
+- `fleet-picture` cannot show this change, because it does not read `fleet_scan.py`. The six archive Dreams are visible only in `fleet_scan.py`'s own data and in doctor's chain-layers audit.
+- The per-chain lookups (the first deferred item) must land as a Story before the first CAP-11 fold PR moves a Dream. Until then, a moved live Dream's chain loses its dream stage and date.
+- Doctor's `--layers --json` stdout carries one more `[fleet]` line (the third deferred item).
