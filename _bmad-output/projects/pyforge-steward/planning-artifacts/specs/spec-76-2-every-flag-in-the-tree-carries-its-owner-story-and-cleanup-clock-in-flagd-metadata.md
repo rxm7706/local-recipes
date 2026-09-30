@@ -3,6 +3,7 @@ title: "76.2: Every flag in the tree carries its owner, story and cleanup clock 
 type: 'feature'
 created: '2026-09-28'
 status: 'in-progress'
+baseline_revision: bce4a0ce7f1b8e712010482f26f22efb4c1c2482
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: flag-infrastructure
