@@ -221,6 +221,75 @@ def test_catalog_entries_empty_root(tmp_path: Path) -> None:
     assert response.status_code == HTTPStatus.OK
 
 
+def _write(path: Path, text: str = "") -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_catalog_specs_lists_tier2_spec_folders(tmp_path: Path) -> None:
+    specs = tmp_path / "_bmad-output" / "projects" / "pyforge-doctor"
+    specs = specs / "planning-artifacts" / "specs"
+    _write(specs / "spec-pyforge-doctor" / "SPEC.md")
+    _write(tmp_path / "docs" / "governance" / "spec-coverage-gate" / "SPEC.md")
+    (specs / "spec-empty").mkdir()
+    _write(specs / "spec-77-1-a-story-spec.md")
+    _write(tmp_path / "docs" / "specs" / "flyte-conda-forge.md")
+    assert catalog_entries("specs", tmp_path) == [
+        "spec-coverage-gate",
+        "spec-pyforge-doctor",
+    ]
+
+
+def test_catalog_archived_unions_archive_home_and_marked_dreams(
+    tmp_path: Path,
+) -> None:
+    dreams = tmp_path / "docs" / "dreams"
+    _write(tmp_path / "archive" / "docs" / "dreams" / "deckcraft.md", "# Deck\n")
+    _write(dreams / "live-dream.md", "---\nstatus: dreamt\n---\n# Live\n")
+    _write(dreams / "old-dream.md", "---\nstatus: archived\n---\n# Old\n")
+    commented = "---\ntitle: T\nstatus: 'archived'   # 2026-09-16 folded\n---\n"
+    _write(dreams / "commented-dream.md", commented)
+    assert catalog_entries("archived", tmp_path) == [
+        "commented-dream",
+        "deckcraft",
+        "old-dream",
+    ]
+    assert catalog_entries("dreams", tmp_path) == [
+        "commented-dream",
+        "live-dream",
+        "old-dream",
+    ]
+
+
+def test_catalog_archived_lists_a_slug_in_both_places_once(tmp_path: Path) -> None:
+    _write(tmp_path / "archive" / "docs" / "dreams" / "twin.md")
+    _write(tmp_path / "docs" / "dreams" / "twin.md", "---\nstatus: archived\n---\n")
+    assert catalog_entries("archived", tmp_path) == ["twin"]
+
+
+def test_catalog_archived_ignores_malformed_frontmatter(tmp_path: Path) -> None:
+    dreams = tmp_path / "docs" / "dreams"
+    _write(dreams / "glued.md", "---title: Glued\nstatus: archived\n---\n")
+    _write(dreams / "unclosed.md", "---\nstatus: archived\n# no closing marker\n")
+    _write(dreams / "in-body.md", "---\ntitle: T\n---\nstatus: archived\n")
+    _write(dreams / "no-status.md", "---\ntitle: T\n---\n")
+    _write(dreams / "empty.md")
+    (dreams / "binary.md").write_bytes(b"---\nstatus: archived\xff\xfe\n---\n")
+    assert catalog_entries("archived", tmp_path) == []
+
+
+def test_catalog_archived_survives_an_unreadable_dream(tmp_path: Path) -> None:
+    _write(tmp_path / "docs" / "dreams" / "locked.md", "---\nstatus: archived\n---\n")
+    with patch.object(Path, "open", side_effect=PermissionError("locked")):
+        assert catalog_entries("archived", tmp_path) == []
+
+
+def test_catalog_specs_and_archived_empty_root(tmp_path: Path) -> None:
+    assert catalog_entries("specs", tmp_path) == []
+    assert catalog_entries("archived", tmp_path) == []
+
+
 def test_directory_rows_skip_incomplete_ids() -> None:
     with patch.dict("platformapp.front_door.console_parity.HOMES", {}, clear=True):
         assert directory_rows() == []
