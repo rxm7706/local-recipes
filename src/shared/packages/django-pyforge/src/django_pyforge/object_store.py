@@ -275,8 +275,7 @@ class _BodyChunks:
     def close(self) -> None:
         if not self._closed:
             self._closed = True
-            if self._chunks is not None:
-                self._body.close()
+            self._body.close()
 
 
 def stat(key: str) -> StoredObject:
