@@ -9,6 +9,7 @@ Harness style matches test_bmad_loop_baseline_drift_check.py: importlib-load
 the script by path. Only the read-only modes are exercised in-process; ``--fix``
 and ``--write-baseline`` mutate the project tree and are not run here.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -49,6 +50,7 @@ def test_specs_flag_exits_2_from_the_command_line():
         capture_output=True,
         text=True,
         cwd=REPO_ROOT,
+        check=False,
     )
     assert proc.returncode == 2
     assert "unrecognized arguments: --specs" in proc.stderr
