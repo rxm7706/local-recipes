@@ -336,15 +336,16 @@ def test_the_check_is_read_only(tmp_path: Path) -> None:
 # --- CLI ---------------------------------------------------------------------
 
 
-def test_cli_exits_1_on_an_incomplete_fold_and_0_on_a_complete_one(
+def test_cli_exits_2_on_an_incomplete_fold_and_0_on_a_complete_one(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     root = _tree(tmp_path)
     _archived(root, "foo", _para("one"))
     _station(root, "mason", "nothing pasted in yet\n")
     monkeypatch.chdir(root)
-    assert dispatch.main(["fold-complete"]) == 1
-    assert "fold-complete-incomplete: FAIL" in capsys.readouterr().out
+    # doctor's exit domain is {0, 2, 130}: a FAIL finding exits 2, never 1
+    assert dispatch.main(["fold-complete"]) == 2
+    assert "fold-complete-incomplete: fail" in capsys.readouterr().out
 
     _station(root, "mason", _para("one"))
     assert dispatch.main(["fold-complete"]) == 0
