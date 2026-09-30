@@ -172,12 +172,18 @@ def test_the_last_story_of_an_epic_stops_at_the_next_epic_heading() -> None:
     blocks = prelaunch.story_epics_blocks(_EPICS)
     assert "do **not** dispatch" in blocks[normalize("44.4")]
     assert "Epic 45 preamble" not in blocks[normalize("44.4")]
-    assert prelaunch.find_prose_park(
-        story="45-1-x", station_skips={}, epics_block=blocks[normalize("45.1")], spec_text=None
-    ) is None
-    assert prelaunch.find_prose_park(
-        story="44-3-x", station_skips={}, epics_block=blocks[normalize("44.3")], spec_text=None
-    ) is None
+    assert (
+        prelaunch.find_prose_park(
+            story="45-1-x", station_skips={}, epics_block=blocks[normalize("45.1")], spec_text=None
+        )
+        is None
+    )
+    assert (
+        prelaunch.find_prose_park(
+            story="44-3-x", station_skips={}, epics_block=blocks[normalize("44.3")], spec_text=None
+        )
+        is None
+    )
 
 
 def test_a_document_with_no_story_headings_has_no_blocks() -> None:

@@ -558,7 +558,11 @@ def _plan_station(
                 "max_parallel": cycle.wave.max_parallel,
                 "members": list(cycle.wave.members),
                 "refused": [
-                    {"story": r.story, "reason": r.reason, **({"overlap_with": r.overlap_with} if r.overlap_with else {})}
+                    {
+                        "story": r.story,
+                        "reason": r.reason,
+                        **({"overlap_with": r.overlap_with} if r.overlap_with else {}),
+                    }
                     for r in cycle.wave.refused
                 ],
             }

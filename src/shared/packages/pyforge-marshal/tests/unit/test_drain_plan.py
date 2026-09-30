@@ -302,7 +302,9 @@ def test_steward_replay_names_the_binding_refusal_the_park_the_parks_and_the_ine
     assert envelope["verdict"] == "error"
 
 
-def test_the_station_payload_carries_the_promised_projection(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_the_station_payload_carries_the_promised_projection(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     _seed_steward(tmp_path)
     _code, envelope, _out = _steward_plan(tmp_path, capsys)
 
@@ -419,9 +421,7 @@ def test_declared_skips_are_listed_and_never_next_and_never_named_by_a_finding(
     assert code == 0
 
 
-def test_a_skip_beyond_the_walk_is_still_listed_as_declared(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_a_skip_beyond_the_walk_is_still_listed_as_declared(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _seed_steward(
         tmp_path,
         queue_config=(
@@ -625,9 +625,7 @@ def test_serial_mode_warns_the_unmet_deps_do_not_gate(tmp_path: Path, capsys: py
     assert code == 0  # WARN never changes the exit
 
 
-def test_parallel_mode_holds_the_story_and_names_the_mode(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_parallel_mode_holds_the_story_and_names_the_mode(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     ledgers = _seed_unmet_deps(tmp_path)
     code, envelope, _out = _plan(
         tmp_path,
@@ -1050,7 +1048,7 @@ def _seed_worktree_spec(repo: Path, slug: str, key: str, story: str, *, status: 
     dest = worktree / spec.relative_to(repo)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(
-        f"---\nstatus: {status}\nfollowup_review_recommended: {followup}\nsurface: [\"src/x/**\"]\n---\n"
+        f'---\nstatus: {status}\nfollowup_review_recommended: {followup}\nsurface: ["src/x/**"]\n---\n'
         f"{_BOUND_SPEC_BODY}\nBlocking condition: waiting on mason 13.x\n",
         encoding="utf-8",
     )
@@ -1214,9 +1212,7 @@ def test_an_unknown_station_is_reported_like_the_drain_reports_it(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _seed_steward(tmp_path)
-    code, envelope, _out = _plan(
-        tmp_path, "--mode", "drain_to_zero", "--station", "nowhere", ledgers={}, capsys=capsys
-    )
+    code, envelope, _out = _plan(tmp_path, "--mode", "drain_to_zero", "--station", "nowhere", ledgers={}, capsys=capsys)
     assert _findings(envelope, "MRS-DRAIN-013")
     assert envelope["data"]["stations"] == []
     assert code == 4
