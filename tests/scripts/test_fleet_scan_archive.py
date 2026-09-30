@@ -177,8 +177,12 @@ def test_an_archive_dream_reads_archived_whatever_its_frontmatter_says(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fs = _load(_install(tmp_path), monkeypatch)
-    _dream(tmp_path / "archive" / "docs" / "dreams" / "straggler.md",
-           title="A straggler", owner="herald", status="specified")
+    _dream(
+        tmp_path / "archive" / "docs" / "dreams" / "straggler.md",
+        title="A straggler",
+        owner="herald",
+        status="specified",
+    )
     assert _row(fs, "straggler")["status"] == "archived"
     assert _chain(fs, "straggler")[1:4] == ("pyforge-herald", "herald", "archived")
 
@@ -188,10 +192,19 @@ def test_a_slug_in_both_places_is_read_from_docs_dreams_once(
 ) -> None:
     """Criterion 3."""
     fs = _load(_install(tmp_path), monkeypatch)
-    _dream(tmp_path / "docs" / "dreams" / "twin.md",
-           title="Live copy", owner="doctor", status="specified")
-    _dream(tmp_path / "archive" / "docs" / "dreams" / "twin.md",
-           title="Archive copy", owner="herald", status="archived", reason="retired")
+    _dream(
+        tmp_path / "docs" / "dreams" / "twin.md",
+        title="Live copy",
+        owner="doctor",
+        status="specified",
+    )
+    _dream(
+        tmp_path / "archive" / "docs" / "dreams" / "twin.md",
+        title="Archive copy",
+        owner="herald",
+        status="archived",
+        reason="retired",
+    )
     row = _row(fs, "twin")
     assert (row["title"], row["status"], row["owner"]) == ("Live copy", "specified", "doctor")
     assert "archived_reason" not in row
@@ -233,10 +246,19 @@ def test_no_archive_directory_scans_as_before(
     for name, source in (("current", None), ("live-only", _live_only_source())):
         target = tmp_path / name
         fs = _load(_install(target, source=source), monkeypatch)
-        _dream(target / "docs" / "dreams" / "alpha.md",
-               title="Alpha", owner="marshal", status="specified")
-        _dream(target / "docs" / "dreams" / "beta.md",
-               title="Beta", owner="herald", status="archived", reason="retired")
+        _dream(
+            target / "docs" / "dreams" / "alpha.md",
+            title="Alpha",
+            owner="marshal",
+            status="specified",
+        )
+        _dream(
+            target / "docs" / "dreams" / "beta.md",
+            title="Beta",
+            owner="herald",
+            status="archived",
+            reason="retired",
+        )
         (target / "docs" / "dreams" / "README.md").write_text("# Dreams\n", encoding="utf-8")
         assert not fs.ARCHIVE_DREAMS_DIR.exists()
         capsys.readouterr()
