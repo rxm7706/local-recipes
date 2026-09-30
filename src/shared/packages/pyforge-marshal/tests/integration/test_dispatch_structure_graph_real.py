@@ -142,9 +142,10 @@ def test_a_worktree_seeded_from_a_base_in_a_sibling_directory_answers_for_the_wo
     assert _WORKTREE_ONLY_SYMBOL not in (primary / relative).read_text(encoding="utf-8")
     # ... and it still answers for the code both trees share.
     assert _entry_files(worktree, _BASE_SYMBOL) == ["pkg/alpha.py"]
-    # The base never learned of the worktree's symbol, and provisioning never wrote to it.
-    assert _entry_files(primary, _WORKTREE_ONLY_SYMBOL) == []
+    # Provisioning never wrote to the base (snapshotted before anything opens its db) ...
     assert _snapshot(primary / ".codegraph") == base_before
+    # ... and the base never learned of the worktree's symbol.
+    assert _entry_files(primary, _WORKTREE_ONLY_SYMBOL) == []
 
 
 def test_a_synced_worktree_index_drops_a_file_the_worktree_removed(tmp_path: Path) -> None:

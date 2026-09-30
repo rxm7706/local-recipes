@@ -2170,12 +2170,12 @@ def dispatch_once(
     # absent makes every consumer guard a read that was specified not to
     # need one. Overwritten with the real decision once a launch returns.
     data["wire"] = harness_profile.WireWrap(applied=False).journal_payload()
-    # Story 77.1 (CAP-282): the same guarantee for the `structure-graph`
-    # layer's disposition -- present on every envelope this verb can emit,
+    # Story 77.1 (CAP-282): the same guarantee, from the same point, for the
+    # `structure-graph` layer's disposition -- present on every envelope
+    # emitted from the policy composition onward (the argument, repo-root,
+    # scope and spec-lookup refusals return earlier, as they do for `wire`),
     # including every refusal before a worktree exists. Overwritten with the
     # real outcome once the worktree is provisioned.
-    structure_graph = StructureGraphSeed()
-    data["structure_graph"] = structure_graph.journal_payload()
 
     # Story 22.8 (FR-193 CAP-8): profile-aware harness resolution -- the
     # policy's ordered `harness_preference` walked to the first profile

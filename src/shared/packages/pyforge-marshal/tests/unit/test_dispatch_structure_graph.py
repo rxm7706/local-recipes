@@ -100,7 +100,7 @@ def _fail(returncode: int, stderr: str):
     return lambda argv, cwd: ProcessResult(returncode=returncode, stdout="", stderr=stderr)
 
 
-def _timeout(verb: str, ceiling: float):
+def _timeout(ceiling: float):
     def behavior(argv: list[str], cwd: Path) -> ProcessResult:
         raise ProcessError(f"command timed out after {ceiling}s: {' '.join(argv)}")
 
@@ -258,11 +258,15 @@ def test_a_sync_timeout_on_an_existing_worktree_index_leaves_that_index_in_place
     (worktree / ".codegraph").mkdir(parents=True)
     (worktree / _DB).write_bytes(b"the worktree's own index")
 
-    result, worktree, _fs, process = _seed(tmp_path, repo=repo, process=_Process(sync=_timeout("sync", SYNC_TIMEOUT_S)))
+    result, worktree, _fs, process = _seed(tmp_path, repo=repo, process=_Process(sync=_timeout(SYNC_TIMEOUT_S)))
 
     assert result.mode == "skipped" and result.reason == "timeout"
     assert (worktree / _DB).read_bytes() == b"the worktree's own index"
     assert process.verbs == ["sync"]
+    [finding] = result.findings
+    assert finding.code == "MRS-DISP-054"
+    assert "existing codegraph index was left in place, unsynced (possibly stale)" in finding.message
+    assert "runs without a codegraph index" not in finding.message
 
 
 def test_a_sync_failure_on_an_existing_worktree_index_does_not_init_over_it(tmp_path: Path) -> None:
@@ -280,6 +284,8 @@ def test_a_sync_failure_on_an_existing_worktree_index_does_not_init_over_it(tmp_
     assert result.applied is False and result.mode == "skipped"
     assert "db is locked" in (result.reason or "")
     assert [f.code for f in result.findings] == ["MRS-DISP-054"]
+    assert "existing codegraph index was left in place, unsynced (possibly stale)" in result.findings[0].message
+    assert "runs without a codegraph index" not in result.findings[0].message
     assert (worktree / _DB).read_bytes() == b"the worktree's own index"
 
 
@@ -363,12 +369,13 @@ def test_a_failed_sync_of_the_copied_base_falls_back_to_init_once_over_a_cleared
 def test_a_sync_timeout_ends_in_skipped_with_no_init_fallback_and_no_index_left(tmp_path: Path) -> None:
     repo = _primary(tmp_path)
 
-    result, worktree, _fs, process = _seed(tmp_path, repo=repo, process=_Process(sync=_timeout("sync", SYNC_TIMEOUT_S)))
+    result, worktree, _fs, process = _seed(tmp_path, repo=repo, process=_Process(sync=_timeout(SYNC_TIMEOUT_S)))
 
     assert process.verbs == ["sync"]  # init's 900 s ceiling never stacks on a timed-out sync
     assert result.applied is False and result.mode == "skipped" and result.reason == "timeout"
     [finding] = result.findings
     assert finding.code == "MRS-DISP-054" and "timed out" in finding.message
+    assert "runs without a codegraph index" in finding.message
     assert not (worktree / ".codegraph").exists()  # the session must not open on a half-synced index
 
 
@@ -394,7 +401,7 @@ def test_a_timeout_of_the_fallback_init_is_also_skipped_with_reason_timeout(tmp_
     result, worktree, _fs, process = _seed(
         tmp_path,
         repo=repo,
-        process=_Process(sync=_fail(1, "malformed"), init=_timeout("init", INDEX_TIMEOUT_S)),
+        process=_Process(sync=_fail(1, "malformed"), init=_timeout(INDEX_TIMEOUT_S)),
     )
 
     assert process.verbs == ["sync", "init"]
@@ -668,23 +675,35 @@ def test_dispatch_states_the_structure_graph_disposition_even_when_the_launch_fa
     assert payload["data"]["structure_graph"]["mode"] == "sync"
 
 
-def test_a_refusal_before_any_worktree_still_states_the_disposition_as_off(
+def test_a_refusal_after_the_policy_composes_still_states_the_disposition_as_off(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
+    """The harness refusal (MRS-DISP-003) comes after the off-shape seed and
+    before the worktree seed: the key is present and reads off even though the
+    layer is enabled and a base index exists -- nothing was provisioned."""
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
+    story = "77-1-dispatch-seeds-the-worktree-index"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    (tmp_path / ".codegraph").mkdir()
+    (tmp_path / ".codegraph" / "codegraph.db").write_bytes(b"base")
+    effective, _ = policy.compose(project_slug=slug, project={"context": {"structure-graph": _ON}}, flags={})
+    monkeypatch.setattr(dispatch_module, "_compose_policy", lambda _slug, flags=None: effective)
     monkeypatch.chdir(tmp_path)
+    vcs, process = FakeVcs(tmp_path), _DispatchProcess()
 
     code = run_dispatch(
-        argparse.Namespace(slug=slug, story="77-1-no-such-spec", format="json"),
+        argparse.Namespace(slug=slug, story=story, format="json"),
         fs=_DispatchFs(),
-        vcs=FakeVcs(tmp_path),
+        vcs=vcs,
         build_harness=FakeBuildHarness(present=False),
-        process=_DispatchProcess(),
+        process=process,
     )
 
     assert code != EXIT_OK
     payload = json.loads(capsys.readouterr().out)
-    # Either the spec refusal (no key yet) or the harness refusal (key seeded off) -- never a half-state.
-    if "structure_graph" in payload["data"]:
-        assert payload["data"]["structure_graph"] == StructureGraphSeed().journal_payload()
+    assert [f["code"] for f in payload["findings"] if f["code"] == "MRS-DISP-003"] == ["MRS-DISP-003"]
+    assert vcs.added == [] and process.codegraph_calls == []  # refused before any worktree existed
+    assert payload["data"]["structure_graph"] == StructureGraphSeed().journal_payload()
