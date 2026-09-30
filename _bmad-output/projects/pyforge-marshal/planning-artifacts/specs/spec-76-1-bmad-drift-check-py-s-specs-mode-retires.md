@@ -2,9 +2,10 @@
 title: "76.1: bmad_drift_check.py's --specs mode retires"
 type: 'chore'
 created: '2026-09-29'
-status: 'backlog'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: '2157e66d12c7306777f98b02fe25ee3080f432c5'
 context:
   - docs/governance/spec-one-chain-per-station/SPEC.md
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
@@ -96,6 +97,33 @@ Type / Effort / Deps: chore / S / —.
 | seed templates | `seed/templates/*` naming `docs/specs` | unchanged | out of scope |
 
 </intent-contract>
+
+## Code Map
+
+Line numbers are from `2157e66d12`; measured, not copied from the intent.
+
+- `scripts/bmad_drift_check.py` -- edit. Module docstring names `--specs` at 2, 20-30, 52. `DOCS_SPECS` at 85.
+  `frontmatter_status` at 237-244 has `cmd_specs` as its only caller (`git grep` over `scripts src tests .claude`; the
+  `_frontmatter_status` twins in doctor and scribe are separate functions), so it goes with it. `cmd_specs` at 463-480.
+  The argparse flag at 488-489 and its dispatch at 500-501. The bare-run stderr message at 530-535 also lists `--specs`.
+  Keep `_read` (many callers), `classify`, `TRACKED`.
+- `_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md` -- edit. `docs/specs/` at 46 (surface list), 76 (`git diff`
+  paths), 84 (`tracked-impl-artifact` remedy) and 85 (`docs-specs-nonmd` row). The intent named 46, 76 and 85; line 84
+  is the fourth hit and the "finds nothing" AC needs it gone too.
+- `scripts/fleet_scan.py` -- edit two comments. 1126 (specs-roster header: "docs/specs legacy is deliberately out"; the
+  intent named only the second hit) and 2294 (the 6-artifact family standard, cited to `docs/specs/presentation-deck.md`;
+  the intent said ~2257).
+- `tests/scripts/test_bmad_drift_check_specs_retired.py` -- new. No `bmad_drift_check` test exists in `tests/scripts/`;
+  style follows `test_bmad_loop_baseline_drift_check.py` (importlib-load the script by path).
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/{development-guide.md:244,443, source-tree-analysis.md:588,
+  project-overview.md:437}` -- edit. These describe `--specs` as a live mode; removing the mode makes them false, so the
+  same change fixes them (AGENTS.md § Behavioural guidelines 3).
+- Read-only. `pyforge-doctor/.../sources/factory.py` `FINGERPRINT_KEYS` (257-265) has no `docs/specs`, which confirms the
+  runbook claim was already untrue. Its `docs-specs-nonmd` emitter and `_docs_specs` stay: doctor Story 37.1's.
+  `docs/how-to/presentation-deck.md` is the deck standard's home. Marshal seed templates: out of scope.
+- Pre-change baseline (scratchpad): `--json` and `--groundtruth` are byte-identical, 229 bytes; a bare run exits 2.
+
+## Spec Change Log
 
 ## Binding
 
