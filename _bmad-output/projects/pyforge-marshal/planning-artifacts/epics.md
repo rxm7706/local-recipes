@@ -7738,6 +7738,14 @@ fifth) • canopy:AD-11 • `flag-exempt: flag-infrastructure`
 that is listed-and-refusing and fails on one that is absent from `--help` or exits 0
 **And** the kit's own tests exercise both states, and no provider state leaks between tests; `pixi run --frozen -e
 pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-ci pyforge-deps-test` green
+**Amended 2026-09-30 (operator ruling, recorded on `spec-feature-flag-governance` and `spec-pyforge-core`):** the first
+dispatch stopped blocked because `openfeature-sdk` in the kit's `[project] dependencies` reds pyforge-core's leaf pin
+(`test_branch_diff_guard_exemption_rests_on_the_kits_leaf_declaration`, Q-26). The story takes the pin's own prescribed
+path. The kit declares its real runtime dependencies (`openfeature-sdk` and `pyforge-core`). `branch_diff_guard.py`'s
+nine version-control call sites move onto `pyforge.core.process.PosixProcess.run`. The file's `_EXEMPT_RELATIVE_PATHS`
+entry, the would-fire proof and the leaf pin leave `src/shared/packages/pyforge-core/tests/meta/test_process_sole_ownership.py`,
+and a test proves the file is scanned and clean. The surface widens to that one test file (`[epic_surfaces]` `"74"`),
+reconciled on `spec-pyforge-core`, and `pixi run -e pyforge-guild pyforge-station-tests` is green.
 
 ### Story 74.2: Dispatch refuses a story the flag gate would red, before any session starts
 
