@@ -120,25 +120,41 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 ## Auto Run Result
 
-Status: blocked
-Blocking condition: intent gap. The approach (read `archive/docs/dreams/*.md` in both places) contradicts Acceptance Criterion 1 ("today's tree: `scan_dreams()` returns exactly the rows it returns before this change") and the manual check that `fleet-picture` output is identical before and after.
+Status: in-review (implemented under the 2026-09-30 operator ruling; no independent review has run yet).
 
-Evidence (measured 2026-09-29 in the dispatch worktree, before any code change):
+Changed:
 
-- `archive/docs/dreams/` already holds six Dream files (last touched by commit `e07834580d8`, and older ones): `deckcraft.md` (status `specified`, owner `herald`), `design-code-bridge.md` (`realized`, `herald`), `herald-pitch-deck-family-expansion.md` (`dreamt`, `herald`), `modernist-identity.md` (`realized`, `herald`), `pyforge-genesis.md` (`specified`, `guild`), `video-scripts.md` (`dreamt`, `herald`).
-- None has `status: archived`, and none has a twin in `docs/dreams/`, so the "first copy of each slug" rule does not drop any of them.
-- `scan_dreams()` (`scripts/fleet_scan.py:1043`) and `_fleet_chains()` (`scripts/fleet_scan.py:1616`) read only `docs/dreams/*.md` today. An unconditional archive read adds six Dream rows and six fleet chains to today's output, and `pyforge-genesis` (`owner: guild`, not in `GUILD_DREAMS`) also gains a `[dreams] WARN`. Criterion 1 and the identical-`fleet-picture` check then fail.
+- `scripts/fleet_scan.py`
+  - Adds `ARCHIVE_DREAMS_DIR` (`archive/docs/dreams/`) beside the unchanged `DREAMS_DIR`, and one helper, `_dream_files()`. The helper reads `docs/dreams/*.md` and then `archive/docs/dreams/*.md`, skips `README.md`, keeps the first copy of each slug, and returns `(path, in_archive)` pairs.
+  - `scan_dreams()` and `_fleet_chains()` both iterate `_dream_files()`. A Dream read from the archive reads `status: archived` whatever its frontmatter says. The row shape does not change.
+  - Two dead locals are removed from code this story reads: `proj` in `_stage_globs` and `total_h` in the velocity block.
+- `tests/scripts/test_fleet_scan_archive.py` (new, allowlisted under `tests/**`). It loads the real script by `importlib` into temporary trees and has one test per acceptance criterion, plus a frontmatter-override test.
+- `spec-pyforge-marshal/.memlog.md`: a surface-reconcile event for `scripts/fleet_scan.py`.
+- `origin/main` is merged into the branch twice, never rebased: `c8f74d5657` (the ruling's precondition), then `14434a231e` (scribe 25.1, #1686).
 
-Two readings lead to different, observable outcomes, and nothing in the spec selects between them:
+Evidence:
 
-1. **Read every `archive/docs/dreams/*.md`** (the Approach as written). The six stragglers become visible in the console and the fleet chains now. Criterion 1 and the identical-output check must be reworded to "the `docs/dreams/` rows are unchanged and the archive rows are added".
-2. **Read only archive Dreams whose frontmatter says `status: archived`** (the "moved archived Dream keeps its row" case). Every criterion holds as written, but the six stragglers stay hidden, and the filter is a rule the spec does not state. CHAIN-STANDARD §11 says an archived Dream sits under `archive/docs/dreams/`; it does not say every file there reads `status: archived`.
+- New test, 7 tests: exit 0 in `-e pyforge-guild` and exit 0 in `-e pyforge-ci`, the CI lane's environment.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0, with 8939 passed and 1 skipped. Measured after the second merge.
+- `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test`: exit 0, with 1039 passed and 7 skipped.
+- `detectors-ci`: exit 0 after the second merge. Before that merge it exited 1 on `bmad-estate-check` alone. The cause was a `skills` section drift from the gitignored `.claude/skills/caveman/`, which is not this story's; scribe 25.1 on `main` fixed it.
+- `spec-surface-check`: exit 0.
+- Criterion 1 on today's tree. The before/after `scan_dreams()` snapshot:
+  - Dream rows go from 174 to 180. The `docs/dreams/` rows are byte-identical.
+  - The only additions are `deckcraft`, `design-code-bridge`, `herald-pitch-deck-family-expansion`, `modernist-identity`, `pyforge-genesis` and `video-scripts`, all reading `archived`.
+  - Fleet chains go from 183 to 189, with no existing chain changed. Five of the new chains carry `pyforge-herald`; `pyforge-genesis` has no project and owner `guild`.
+  - The Archived tab goes from 119 to 125, with every earlier row unchanged.
+  - Backlog rows are unchanged. The practice list gains `modernist-identity`.
+- Mutation: with the archive tuple removed from `_dream_files()`, 6 of the 7 tests fail, including the moved-Dream test. The file was restored and checked with `cmp`. The test suite also carries its own mutation test: it rewrites a copy of the script to read only the live directory and asserts that the moved-Dream check fails.
+- `fleet-picture` exited 0 before and after. The only differences were live fleet state (scribe 25.1 building, the loop homes two commits further behind). `fleet-picture` does not read `fleet_scan.py`, so the six Dreams do not appear there; they appear in the console data (`fleet_scan.py` output) measured above.
 
-Questions for the operator:
+Spec surface: `spec-surface-check` names no Spec. `scripts/fleet_scan.py` is governed by `spec-pyforge-marshal` alone, and its memlog moved in this change. The memlog entry is written, and the scoped `--write-baseline --spec pyforge-marshal/spec-pyforge-marshal` stamp is left to the landing, because a dispatch never stamps its own baseline.
 
-1. Should the six existing `archive/docs/dreams/` files appear in the console and fleet chains after this story (reading 1), or stay out until a fold PR restates their status (reading 2)?
-2. Whichever reading holds, which criterion text changes (Criterion 1 and the manual `fleet-picture` check for reading 1; the Approach and a new "non-archived file in the archive" criterion for reading 2)?
+Left open (outside this story's two read sites; each still builds a `docs/dreams/<slug>.md` path and needs the same treatment before the first fold PR moves a Dream):
 
-Also noted, not part of the blocker: `scripts/fleet_scan.py:1139` (`scan_specs()` sets a Spec row's `dream` from `DREAMS_DIR / f"{slug}.md"`) and the per-chain artifact globs at lines 1924, 1934, 2104 and 2647 build `docs/dreams/<slug>.md` paths. The spec names two read sites only; these will need the same treatment before the first fold PR moves a Dream.
-
-No code, test, ledger or `SPEC.md` file was changed. Only this story spec's `status` moved.
+- `scan_specs()` sets a Spec row's `dream` from `DREAMS_DIR`.
+- The per-chain Dream-stage glob in `_stage_globs` and the Dream path in `_last_touched`.
+- `_GIT_SCOPES` does not include `archive/`.
+- `build_archived` links every archived row to `docs/dreams/<slug>.md`, which is wrong for the six archive Dreams. None of the six has an `archived_reason`, so each shows as "retired".
+- `board._load_dashboard_generate` repoints `REPO_ROOT` and `DREAMS_DIR` but not `ARCHIVE_DREAMS_DIR`. This is harmless while the script resolves its repo root to the same tree.
+- `pyforge-genesis` (`owner: guild`, not in `GUILD_DREAMS`) now raises a `[dreams] WARN` and a `[fleet] WARN` (no spec directory and no station owner). Both are advisory.
