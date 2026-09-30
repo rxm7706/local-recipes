@@ -37,8 +37,8 @@ import re
 import secrets
 import sys
 import time
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -3753,6 +3753,274 @@ def _journal_dispatch_wave(
     _append_entry(fs, wave_run, intent, fsync=True)
 
 
+@dataclass(frozen=True)
+class CycleSlugs:
+    """The stations one drain cycle walks (Story 65.1: extracted from
+    ``execute_fleet_cycle`` so ``factory drain --plan`` resolves them the same
+    way). ``finding`` is ``MRS-DRAIN-013`` (``station`` names no live pyforge
+    station -- ``unknown_station`` is then true and the cycle stops) or
+    ``MRS-DRAIN-012`` (no stations found at all -- the cycle walks none)."""
+
+    slugs: tuple[str, ...]
+    finding: Finding | None = None
+    unknown_station: bool = False
+
+
+def resolve_cycle_slugs(repo_root: Path, station: str | None) -> CycleSlugs:
+    """The live pyforge stations one cycle walks, ``station`` narrowing to one."""
+    slugs = dispatch_fleet.fleet_station_slugs(dispatch_core.list_station_slugs(repo_root))
+    if station is not None:
+        normalized_station = dispatch_fleet.normalize_station_slug(station)
+        if normalized_station not in slugs:
+            return CycleSlugs(
+                slugs=(),
+                finding=Finding(
+                    code="MRS-DRAIN-013",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"unknown station {normalized_station!r}: not among "
+                        f"the live pyforge stations ({', '.join(slugs) or 'none found'})"
+                    ),
+                ),
+                unknown_station=True,
+            )
+        slugs = (normalized_station,)
+    if not slugs:
+        # Distinct from "every station is drained": `campaign_complete(())`
+        # is vacuously True, so without this the operator would get a clean,
+        # findings-free "campaign complete" from a repo where the projects
+        # tree was simply unreadable or absent -- a false green.
+        return CycleSlugs(
+            slugs=(),
+            finding=Finding(
+                code="MRS-DRAIN-012",
+                severity=Severity.ERROR,
+                message=(
+                    "no pyforge stations found under "
+                    f"{dispatch_core.canonical_repo_root(repo_root)}"
+                    "/_bmad-output/projects -- an empty fleet is reported, "
+                    "never treated as a drained one"
+                ),
+            ),
+        )
+    return CycleSlugs(slugs=slugs)
+
+
+@dataclass(frozen=True)
+class StationCyclePlan:
+    """One station's queue computation for one drain cycle (Story 65.1).
+
+    FACTS only -- ledger, backlog, blocked map, queue decision and (parallel
+    mode) the wave -- never a finding and never a write, so
+    ``execute_fleet_cycle`` keeps every emission and every writer in its
+    existing order while ``factory drain --plan`` reads the very same facts.
+    Each early return of ``plan_station_cycle`` leaves the later fields at
+    their defaults; the fields that ARE set say why the cycle stops there:
+
+    * ``ledger_error`` -- the tracked ledger could not be read;
+    * ``finalize_pending`` -- the head is mid-finalize (Story 50.1 Part A);
+    * ``queue`` with no ``next_story`` -- blocked, drained, left-remaining or
+      everything skipped;
+    * ``live_stories`` -- a parallel wave is still in flight;
+    * otherwise ``stories_to_dispatch`` -- serial: the queue head; parallel:
+      ``wave.members`` (possibly empty)."""
+
+    slug: str
+    ledger_path: Path
+    ledger_error: str | None = None
+    statuses: tuple[tuple[str, str], ...] = ()
+    backlog: tuple[str, ...] = ()
+    effective_policy: policy.EffectivePolicy | None = None
+    station_skips: Mapping[str, str] = field(default_factory=dict)
+    finalize_pending: tuple[str, str] | None = None
+    blocked: Mapping[str, str] = field(default_factory=dict)
+    block_classes: Mapping[str, dispatch_fleet.FleetBlockClass] = field(default_factory=dict)
+    queue: dispatch_fleet.StationQueuePlan | None = None
+    parallel_cap: int = 1
+    live_stories: tuple[str, ...] = ()
+    deps_graph: Mapping[str, tuple[StoryKey, ...]] | None = None
+    ready: tuple[str, ...] = ()
+    surfaces: Mapping[str, tuple[str, ...] | None] = field(default_factory=dict)
+    wave: dispatch_fleet.WaveBatch | None = None
+    stories_to_dispatch: tuple[str, ...] = ()
+
+
+def plan_station_cycle(
+    *,
+    repo_root: Path,
+    slug: str,
+    mode: dispatch_fleet.FleetCampaignMode,
+    leave_remaining: int,
+    campaign_blocked: Mapping[str, str],
+    order_override: Sequence[str] | None,
+    station_skips: Mapping[str, str],
+    explicit_stories: tuple[str, ...] | None,
+    policy_flags: dict[str, object] | None,
+    max_in_flight: int | None,
+    retry_environment_blocks: bool,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    harness: HarnessPort,
+    mint_wave_id: Callable[[], str],
+) -> StationCyclePlan:
+    """One station's per-cycle queue computation -- READ-ONLY (Story 65.1).
+
+    The body ``execute_fleet_cycle`` used to hold inline, moved verbatim: the
+    tracked-ledger read, ``station_backlog`` with the queue file's override and
+    Deps, ``station_finalize_pending_story``, ``_station_blocked_map``,
+    ``plan_station_queue`` and, in parallel mode, ``ordered_ready_backlog`` and
+    ``build_wave_batch``. ``factory drain --plan`` calls this same function, so
+    the plan cannot drift from the drain. It reads (ledger, journals, git,
+    process liveness) and never writes: the wave id is minted through
+    ``mint_wave_id`` only when a wave is actually built, and journaling that
+    wave stays the caller's."""
+    ledger_path = dispatch_fleet.station_ledger_path(repo_root, slug)
+    try:
+        statuses = _station_ledger_statuses(harness=harness, vcs=vcs, repo_root=repo_root, ledger_path=ledger_path)
+    except (HarnessError, OSError, ValueError) as exc:
+        return StationCyclePlan(slug=slug, ledger_path=ledger_path, ledger_error=str(exc))
+
+    backlog = (
+        dispatch_fleet.explicit_story_backlog(statuses, explicit_stories)
+        if explicit_stories is not None
+        else dispatch_fleet.station_backlog(
+            statuses,
+            order_override=order_override,
+            deps_by_story=(None if order_override else _load_station_story_deps(fs, repo_root, slug)),
+        )
+    )
+    effective_policy = _compose_policy(slug, flags=policy_flags)
+    # Story 50.1 Part A: the ~45 s window between session exit and ledger
+    # promotion. Reported IN_FLIGHT (deliberately absent from
+    # TERMINAL_STATION_STATUSES), so this station provisions nothing this
+    # cycle and the campaign chains its next ready story on the following
+    # one instead of re-dispatching or blocking on the story it just landed.
+    finalize_pending = station_finalize_pending_story(
+        fs=fs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        backlog=backlog,
+        effective_policy=effective_policy,
+    )
+    base = StationCyclePlan(
+        slug=slug,
+        ledger_path=ledger_path,
+        statuses=tuple(statuses),
+        backlog=backlog,
+        effective_policy=effective_policy,
+        station_skips=station_skips,
+    )
+    if finalize_pending is not None:
+        return replace(base, finalize_pending=finalize_pending)
+    blocked, block_classes = _station_blocked_map(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        backlog=backlog,
+        configured_skips=station_skips,
+        campaign_blocked=campaign_blocked,
+        effective_policy=effective_policy,
+    )
+    queue = dispatch_fleet.plan_station_queue(
+        slug=slug,
+        backlog=backlog,
+        mode=mode,
+        leave_remaining=leave_remaining,
+        blocked=blocked,
+        block_classes=block_classes,
+        retry_environment_blocks=retry_environment_blocks,
+        declared_skips=station_skips,
+    )
+    base = replace(base, blocked=blocked, block_classes=block_classes, queue=queue)
+    if queue.outcome is dispatch_fleet.StationQueueOutcome.BLOCKED or queue.next_story is None:
+        return base
+
+    parallel_cap = resolve_max_parallel(
+        effective_policy,
+        cli_override=max_in_flight,
+        policy_flags=policy_flags,
+    )
+    base = replace(base, parallel_cap=parallel_cap)
+    if parallel_cap <= 1:
+        return replace(base, stories_to_dispatch=(queue.next_story,))
+
+    live_stories = _live_dispatch_story_keys(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        effective_policy=effective_policy,
+    )
+    if live_stories:
+        return replace(base, live_stories=live_stories)
+    deps_graph = _load_station_deps_graph(repo_root, slug)
+    ready = dispatch_fleet.ordered_ready_backlog(backlog, statuses, deps_graph)
+    eligible = tuple(story for story in ready if story not in blocked and story not in station_skips)
+    surfaces: dict[str, tuple[str, ...] | None] = {}
+    for story in eligible:
+        spec_path = dispatch_core.resolve_story_spec_path(repo_root, slug, story)
+        if spec_path is None:
+            surfaces[story] = None
+            continue
+        try:
+            spec_text = spec_path.read_text(encoding="utf-8")
+        except OSError:
+            surfaces[story] = None
+            continue
+        try:
+            surfaces[story] = _effective_surface_for_spec(
+                spec_text=spec_text,
+                story_key=normalize(story),
+                slug=slug,
+                effective_policy=effective_policy,
+            )
+        except ValueError:
+            surfaces[story] = None
+    wave = dispatch_fleet.build_wave_batch(
+        wave_id=mint_wave_id(),
+        ready=eligible,
+        cap=parallel_cap,
+        surfaces=surfaces,
+        deps_graph=deps_graph,
+    )
+    return replace(
+        base,
+        deps_graph=deps_graph,
+        ready=ready,
+        surfaces=surfaces,
+        wave=wave,
+        stories_to_dispatch=wave.members,
+    )
+
+
+def skip_basis(
+    *,
+    story: str,
+    reason: str,
+    station_skips: Mapping[str, str],
+    block_classes: Mapping[str, dispatch_fleet.FleetBlockClass],
+    mode: dispatch_fleet.FleetCampaignMode,
+) -> str:
+    """Why ``plan_station_queue`` stepped past ``story`` -- the wording the
+    cycle's ``MRS-DRAIN-004`` names and ``factory drain --plan`` reports."""
+    if story in station_skips:
+        return "declared skip policy"
+    if dispatch_fleet.is_harness_done_advance_reason(reason):
+        return "harness-done CAP-4 (MRS-DISP-040); remaining backlog continues"
+    if reason.startswith(dispatch_fleet.ALREADY_LANDED_ADVANCE_PREFIX):
+        # Story 50.1 Part B: named for what it is -- an advance past
+        # work that already landed -- never mislabelled "blocked".
+        return "already landed (Story 50.1); remaining backlog continues"
+    if block_classes.get(story) is dispatch_fleet.FleetBlockClass.ENVIRONMENT:
+        return "environment-classified block"
+    return f"blocked, and {mode.value} skips past it"
+
+
 def execute_fleet_cycle(
     *,
     repo_root: Path,
@@ -3792,20 +4060,10 @@ def execute_fleet_cycle(
     overrides, configured_skips, config_findings = _read_fleet_queue_config(fs, repo_root)
     findings.extend(config_findings)
 
-    slugs = dispatch_fleet.fleet_station_slugs(dispatch_core.list_station_slugs(repo_root))
-    if station is not None:
-        normalized_station = dispatch_fleet.normalize_station_slug(station)
-        if normalized_station not in slugs:
-            findings.append(
-                Finding(
-                    code="MRS-DRAIN-013",
-                    severity=Severity.ERROR,
-                    message=(
-                        f"unknown station {normalized_station!r}: not among "
-                        f"the live pyforge stations ({', '.join(slugs) or 'none found'})"
-                    ),
-                )
-            )
+    cycle_slugs = resolve_cycle_slugs(repo_root, station)
+    if cycle_slugs.finding is not None:
+        findings.append(cycle_slugs.finding)
+        if cycle_slugs.unknown_station:
             return FleetCycleReport(
                 results=(),
                 findings=tuple(findings),
@@ -3817,39 +4075,39 @@ def execute_fleet_cycle(
                     "unresolved": [],
                 },
             )
-        slugs = (normalized_station,)
-    if not slugs:
-        # Distinct from "every station is drained": `campaign_complete(())`
-        # is vacuously True, so without this the operator would get a clean,
-        # findings-free "campaign complete" from a repo where the projects
-        # tree was simply unreadable or absent -- a false green.
-        findings.append(
-            Finding(
-                code="MRS-DRAIN-012",
-                severity=Severity.ERROR,
-                message=(
-                    "no pyforge stations found under "
-                    f"{dispatch_core.canonical_repo_root(repo_root)}"
-                    "/_bmad-output/projects -- an empty fleet is reported, "
-                    "never treated as a drained one"
-                ),
-            )
+    for slug in cycle_slugs.slugs:
+        # Story 65.1: the per-station queue computation lives in ONE read-only
+        # planner that `factory drain --plan` calls too; everything below
+        # (every finding, every result, every writer) stays here, in order.
+        cycle = plan_station_cycle(
+            repo_root=repo_root,
+            slug=slug,
+            mode=mode,
+            leave_remaining=leave_remaining,
+            campaign_blocked=campaign_blocked.get(slug, {}),
+            order_override=overrides.get(slug),
+            station_skips=configured_skips.get(slug, {}),
+            explicit_stories=explicit_stories,
+            policy_flags=policy_flags,
+            max_in_flight=max_in_flight,
+            retry_environment_blocks=retry_environment_blocks,
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            harness=harness,
+            mint_wave_id=lambda slug=slug: mint_run_id(slug, _format_utc_compact(_now_utc()), _random_token()),
         )
-    for slug in slugs:
-        ledger_path = dispatch_fleet.station_ledger_path(repo_root, slug)
-        try:
-            statuses = _station_ledger_statuses(harness=harness, vcs=vcs, repo_root=repo_root, ledger_path=ledger_path)
-        except (HarnessError, OSError, ValueError) as exc:
+        if cycle.ledger_error is not None:
             findings.append(
                 Finding(
                     code="MRS-DRAIN-003",
                     severity=Severity.WARN,
                     message=(
                         f"station {slug!r}: cannot read the tracked ledger at "
-                        f"{ledger_path}: {exc} -- station excluded from this "
+                        f"{cycle.ledger_path}: {cycle.ledger_error} -- station excluded from this "
                         "campaign (its backlog is unknown, never assumed empty)"
                     ),
-                    path=str(ledger_path),
+                    path=str(cycle.ledger_path),
                 )
             )
             results.append(
@@ -3857,37 +4115,18 @@ def execute_fleet_cycle(
                     slug=slug,
                     status=dispatch_fleet.StationCycleStatus.LEDGER_UNREADABLE,
                     remaining=0,
-                    detail=str(exc),
+                    detail=cycle.ledger_error,
                 )
             )
             continue
 
-        backlog = (
-            dispatch_fleet.explicit_story_backlog(statuses, explicit_stories)
-            if explicit_stories is not None
-            else dispatch_fleet.station_backlog(
-                statuses,
-                order_override=overrides.get(slug),
-                deps_by_story=(None if overrides.get(slug) else _load_station_story_deps(fs, repo_root, slug)),
-            )
-        )
-        effective_policy = _compose_policy(slug, flags=policy_flags)
-        station_skips = configured_skips.get(slug, {})
-        # Story 50.1 Part A: the ~45 s window between session exit and ledger
-        # promotion. Reported IN_FLIGHT (deliberately absent from
-        # TERMINAL_STATION_STATUSES), so this station provisions nothing this
-        # cycle and the campaign chains its next ready story on the following
-        # one instead of re-dispatching or blocking on the story it just landed.
-        finalize_pending = station_finalize_pending_story(
-            fs=fs,
-            process=process,
-            repo_root=repo_root,
-            slug=slug,
-            backlog=backlog,
-            effective_policy=effective_policy,
-        )
-        if finalize_pending is not None:
-            pending_story, pending_evidence = finalize_pending
+        backlog = cycle.backlog
+        effective_policy = cycle.effective_policy
+        assert effective_policy is not None
+        station_skips = cycle.station_skips
+        block_classes = cycle.block_classes
+        if cycle.finalize_pending is not None:
+            pending_story, pending_evidence = cycle.finalize_pending
             results.append(
                 dispatch_fleet.StationCycleResult(
                     slug=slug,
@@ -3908,40 +4147,16 @@ def execute_fleet_cycle(
                 )
             )
             continue
-        blocked, block_classes = _station_blocked_map(
-            fs=fs,
-            vcs=vcs,
-            process=process,
-            repo_root=repo_root,
-            slug=slug,
-            backlog=backlog,
-            configured_skips=station_skips,
-            campaign_blocked=campaign_blocked.get(slug, {}),
-            effective_policy=effective_policy,
-        )
-        plan = dispatch_fleet.plan_station_queue(
-            slug=slug,
-            backlog=backlog,
-            mode=mode,
-            leave_remaining=leave_remaining,
-            blocked=blocked,
-            block_classes=block_classes,
-            retry_environment_blocks=retry_environment_blocks,
-            declared_skips=station_skips,
-        )
+        plan = cycle.queue
+        assert plan is not None
         for story, reason in plan.skipped:
-            if story in station_skips:
-                basis = "declared skip policy"
-            elif dispatch_fleet.is_harness_done_advance_reason(reason):
-                basis = "harness-done CAP-4 (MRS-DISP-040); remaining backlog continues"
-            elif reason.startswith(dispatch_fleet.ALREADY_LANDED_ADVANCE_PREFIX):
-                # Story 50.1 Part B: named for what it is -- an advance past
-                # work that already landed -- never mislabelled "blocked".
-                basis = "already landed (Story 50.1); remaining backlog continues"
-            elif block_classes.get(story) is dispatch_fleet.FleetBlockClass.ENVIRONMENT:
-                basis = "environment-classified block"
-            else:
-                basis = f"blocked, and {mode.value} skips past it"
+            basis = skip_basis(
+                story=story,
+                reason=reason,
+                station_skips=station_skips,
+                block_classes=block_classes,
+                mode=mode,
+            )
             findings.append(
                 Finding(
                     code="MRS-DRAIN-004",
@@ -4007,34 +4222,19 @@ def execute_fleet_cycle(
             )
             continue
 
-        parallel_cap = resolve_max_parallel(
-            effective_policy,
-            cli_override=max_in_flight,
-            policy_flags=policy_flags,
-        )
-        stories_to_dispatch: tuple[str, ...] = ()
+        parallel_cap = cycle.parallel_cap
+        stories_to_dispatch = cycle.stories_to_dispatch
         wave_detail: str | None = None
-        if parallel_cap <= 1:
-            if plan.next_story is not None:
-                stories_to_dispatch = (plan.next_story,)
-        else:
-            live_stories = _live_dispatch_story_keys(
-                fs=fs,
-                vcs=vcs,
-                process=process,
-                repo_root=repo_root,
-                slug=slug,
-                effective_policy=effective_policy,
-            )
-            if live_stories:
+        if parallel_cap > 1:
+            if cycle.live_stories:
                 results.append(
                     dispatch_fleet.StationCycleResult(
                         slug=slug,
                         status=dispatch_fleet.StationCycleStatus.IN_FLIGHT,
                         remaining=len(backlog),
-                        story=live_stories[0],
+                        story=cycle.live_stories[0],
                         detail=(
-                            f"wave in flight: {', '.join(live_stories)} "
+                            f"wave in flight: {', '.join(cycle.live_stories)} "
                             "(waiting for terminal outcomes before next batch)"
                         ),
                         skipped=plan.skipped,
@@ -4047,56 +4247,26 @@ def execute_fleet_cycle(
                         message=(
                             f"station {slug!r}: no dispatch this cycle -- "
                             f"waiting on in-flight wave member(s) "
-                            f"{', '.join(live_stories)!r}"
+                            f"{', '.join(cycle.live_stories)!r}"
                         ),
                     )
                 )
                 continue
-            deps_graph = _load_station_deps_graph(repo_root, slug)
-            ready = dispatch_fleet.ordered_ready_backlog(backlog, statuses, deps_graph)
-            eligible = tuple(story for story in ready if story not in blocked and story not in station_skips)
-            surfaces: dict[str, tuple[str, ...] | None] = {}
-            for story in eligible:
-                spec_path = dispatch_core.resolve_story_spec_path(repo_root, slug, story)
-                if spec_path is None:
-                    surfaces[story] = None
-                    continue
-                try:
-                    spec_text = spec_path.read_text(encoding="utf-8")
-                except OSError:
-                    surfaces[story] = None
-                    continue
-                try:
-                    surfaces[story] = _effective_surface_for_spec(
-                        spec_text=spec_text,
-                        story_key=normalize(story),
-                        slug=slug,
-                        effective_policy=effective_policy,
-                    )
-                except ValueError:
-                    surfaces[story] = None
-            wave_id = mint_run_id(slug, _format_utc_compact(_now_utc()), _random_token())
-            wave = dispatch_fleet.build_wave_batch(
-                wave_id=wave_id,
-                ready=eligible,
-                cap=parallel_cap,
-                surfaces=surfaces,
-                deps_graph=deps_graph,
-            )
-            stories_to_dispatch = wave.members
+            wave = cycle.wave
+            assert wave is not None
             if wave.members:
-                _journal_dispatch_wave(fs, repo_root, slug, wave, surfaces=surfaces)
+                _journal_dispatch_wave(fs, repo_root, slug, wave, surfaces=cycle.surfaces)
             for ref in wave.refused:
                 overlap = f" (overlap with {ref.overlap_with}: {', '.join(ref.paths)})" if ref.overlap_with else ""
                 findings.append(
                     Finding(
                         code="MRS-DRAIN-016",
                         severity=Severity.WARN,
-                        message=(f"station {slug!r}: wave {wave_id} refused {ref.story!r}: {ref.reason}{overlap}"),
+                        message=(f"station {slug!r}: wave {wave.wave_id} refused {ref.story!r}: {ref.reason}{overlap}"),
                     )
                 )
             if wave.members:
-                wave_detail = f"wave {wave_id}: {', '.join(wave.members)} (max_parallel={parallel_cap})"
+                wave_detail = f"wave {wave.wave_id}: {', '.join(wave.members)} (max_parallel={parallel_cap})"
 
         if not stories_to_dispatch:
             results.append(
