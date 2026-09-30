@@ -573,6 +573,26 @@ def test_a_test_that_writes_two_flagd_trees_for_the_key_has_no_finding(
         ("two trees, both on", f'KEY = "{KEY}"\n_flagd_tree("on")\n_flagd_tree("on")\n'),
         ("one call naming both", f'KEY = "{KEY}"\n_flagd_tree("on", "off")\n'),
         ("a definition is not a call", f'KEY = "{KEY}"\ndef _flagd_tree(v="on"): ...\ndef _flagd_tree(v="off"): ...\n'),
+        (
+            "kit helper imported and key named, never called",
+            f'from pyforge.testing_kit.flags import flag_states\nKEY = "{KEY}"\n',
+        ),
+        (
+            "kit helper, a key that ends in the spec's key after a dot",
+            f'from pyforge.testing_kit.flags import flag_states\n@flag_states("other.{KEY}")\n',
+        ),
+        (
+            "kit helper, a key that ends in the spec's key after a hyphen",
+            f'from pyforge.testing_kit.flags import flag_states\n@flag_states("x-{KEY}")\n',
+        ),
+        (
+            "kit helper, a key that ends in the spec's key after a word character",
+            f'from pyforge.testing_kit.flags import flag_states\n@flag_states("my{KEY}")\n',
+        ),
+        (
+            "an unrelated off after two on trees",
+            f'KEY = "{KEY}"\n_flagd_tree("on")\n_flagd_tree("on")\n\ndef test_x():\n    assert mode == "off"\n',
+        ),
     ],
 )
 def test_a_test_that_does_not_run_the_specs_key_in_both_states_is_one_fail_naming_the_spec_and_the_test_file(
@@ -592,6 +612,36 @@ def test_a_test_that_does_not_run_the_specs_key_in_both_states_is_one_fail_namin
     assert finding["severity"] == "fail"
     assert "tests/test_flagged.py" in finding["message"]
     assert f"`{KEY}`" in finding["message"]
+
+
+@pytest.mark.parametrize("identifier", ["undef", "typedef"])
+def test_a_flagd_tree_call_after_an_identifier_that_ends_in_def_is_still_a_call(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], identifier: str
+):
+    root = _landed_root(tmp_path)
+    content = f'KEY = "{KEY}"\n{identifier}\n_flagd_tree("on")\n{identifier}\n_flagd_tree("off")\n'
+    _write(root, "tests/test_flagged.py", content)
+    _landed_spec(root, _verification("tests/test_flagged.py"))
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 0
+    assert payload["findings"] == []
+
+
+def test_the_not_two_state_finding_names_every_named_test_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    root = _landed_root(tmp_path)
+    _write(root, "tests/test_weak_one.py", "def test_x(): ...\n")
+    _write(root, "tests/test_weak_two.py", f'KEY = "{KEY}"\n')
+    _landed_spec(root, _verification("tests/test_weak_one.py", "tests/test_weak_two.py"))
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert _kinds(payload) == ["flag-test-not-two-state"]
+    message = payload["findings"][0]["message"]
+    assert "tests/test_weak_one.py" in message
+    assert "tests/test_weak_two.py" in message
 
 
 def test_a_verification_that_names_no_test_file_is_one_fail_naming_the_spec(
@@ -619,6 +669,8 @@ def test_a_verification_that_names_no_test_file_is_one_fail_naming_the_spec(
         "## Verification\n\nRun the tests/test_flagged.py file.\n",  # prose, not a backticked path
         "## Design Notes\n\n`tests/test_flagged.py`\n\n## Verification\n\n- `pytest -q`\n",  # another section
         "## Verification\n\n- `pytest -q`\n\n## Review Triage Log\n\n- `tests/test_flagged.py`\n",  # after it
+        "## Verification\n\n- `pytest -q`\n\n## Verification Notes\n\n- `tests/test_flagged.py`\n",  # not the heading
+        "## Verification\n\n- `https://example.com/tests/test_flagged.py`\n",  # a URL is not a file the run executes
     ],
 )
 def test_only_a_test_file_named_in_the_verification_section_counts(
@@ -649,6 +701,23 @@ def test_backticked_paths_and_pytest_targets_in_every_written_form_are_collected
 ):
     root = _landed_root(tmp_path)
     _write_test(root, KEY, KIT_TEST)
+    _landed_spec(root, body)
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 0
+    assert payload["findings"] == []
+
+
+def test_a_second_verification_section_after_another_section_is_read_too(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _landed_root(tmp_path)
+    _write_test(root, KEY, KIT_TEST)
+    body = (
+        "## Verification\n\n- `pytest -q`\n\n## Design Notes\n\nprose\n\n"
+        "## Verification\n\n- `pytest tests/test_flagged.py`\n"
+    )
     _landed_spec(root, body)
 
     rc, payload = _tree_json(root, capsys)
@@ -1205,6 +1274,29 @@ def test_the_gate_imports_no_station_module_and_never_reads_the_second_tree():
 
     assert not [m for m in imported if m == "pyforge" or m.startswith("pyforge.")]
     assert ".steward/flags.json" not in source  # steward Story 76.3 folds that second tree into the one tree
+
+
+KIT_SRC = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-testing-kit" / "src" / "pyforge" / "testing_kit"
+
+
+def test_the_gates_kit_helper_is_what_marshal_74_1_landed():
+    """A rename in the kit would silently red the first story that uses it; read the kit, never import it."""
+    helper = flag_gate_check._KIT_HELPER
+    flags = ast.parse((KIT_SRC / "flags.py").read_text(encoding="utf-8"))
+    package = ast.parse((KIT_SRC / "__init__.py").read_text(encoding="utf-8"))
+
+    defined = {node.name for node in flags.body if isinstance(node, ast.FunctionDef)}
+    reexported = {
+        alias.name
+        for node in package.body
+        if isinstance(node, ast.ImportFrom) and node.module == "pyforge.testing_kit.flags"
+        for alias in node.names
+    }
+    assert helper in defined
+    assert helper in reexported
+    # and the gate's own import pattern accepts the module the kit defines it in
+    assert flag_gate_check._KIT_IMPORT.search(f"from pyforge.testing_kit.flags import {helper}\n")
+    assert flag_gate_check._KIT_CALL.search(f'@{helper}("{KEY}")')
 
 
 def test_the_gate_declares_itself_a_repo_scope_detector():
