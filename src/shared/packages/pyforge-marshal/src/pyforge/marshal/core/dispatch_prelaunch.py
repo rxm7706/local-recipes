@@ -63,6 +63,9 @@ _PARKED_RE = re.compile(r"(?<![A-Za-z0-9_])(?<!un-)parked\b", re.IGNORECASE)
 _DO_NOT_DISPATCH_RE = re.compile(r"\bdo\s+not\s+dispatch\b", re.IGNORECASE)
 _EXCERPT_LIMIT = 200
 
+# The `N` of `### Story E.N:` -- digits plus an optional lowercase suffix.
+_STORY_NUMBER_RE = re.compile(r"(\d+)([a-z]?)")
+
 # An epic-level heading closes the last story of the epic above it; without it
 # an epic's preamble would be read as part of that story's block.
 _EPIC_HEADING_RE = re.compile(r"^## ", re.MULTILINE)
@@ -90,10 +93,10 @@ def story_epics_blocks(epics_text: str) -> dict[StoryKey, str]:
         epic_break = _EPIC_HEADING_RE.search(epics_text, match.end())
         if epic_break is not None and epic_break.start() < end:
             end = epic_break.start()
-        try:
-            key = normalize(f"{match.group('pe')}.{match.group('pn')}")
-        except MalformedStoryKeyError:
+        number = _STORY_NUMBER_RE.fullmatch(match.group("pn"))
+        if number is None:
             continue
+        key = StoryKey(epic=int(match.group("pe")), seq=int(number.group(1)), suffix=number.group(2))
         block = epics_text[match.start() : end]
         blocks[key] = f"{blocks[key]}\n{block}" if key in blocks else block
     return blocks
