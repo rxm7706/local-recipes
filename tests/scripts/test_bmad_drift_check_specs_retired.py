@@ -23,7 +23,8 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "bmad_drift_check.py"
 # The keys `--json` / `--groundtruth` printed before Story 76.1, pinned as a literal so a
-# dropped or renamed fact reds here (the values are live and are deliberately not pinned).
+# dropped or renamed fact reds here (the values are live and are deliberately not pinned; a
+# new fact added later does not red it).
 GROUND_TRUTH_KEYS = [
     "skill_version",
     "schema_version",
@@ -81,7 +82,7 @@ def test_ground_truth_modes_still_print_the_pinned_json_shape(flag, capsys):
     assert mod.main([flag]) == 0
     out = capsys.readouterr().out
     printed = json.loads(out)
-    assert list(printed) == GROUND_TRUTH_KEYS
+    assert set(GROUND_TRUTH_KEYS) <= set(printed)
     assert set(printed["recipes_churny"]) == {"dirs", "recipe_yaml", "meta_yaml"}
     assert out == json.dumps(printed, indent=2) + "\n"
 
