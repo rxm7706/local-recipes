@@ -2,7 +2,7 @@
 title: '34.5: The flag gate reds a landed flagged story whose test does not run both states'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 50976c802aac4e6716012db7b8430b8cae63c286
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
@@ -117,6 +117,7 @@ Verification that names no two-state test) and Charter §6, decomposed 2026-09-2
 ## Spec Change Log
 
 - 2026-09-30 -- operator flip, `blocked` -> `backlog`: the cross-station gate cleared when marshal Story 74.1 landed on main (1c3e4ba113). Nothing else in the contract changed. A resumed worktree brings `origin/main` into its branch first (merge, never rebase).
+- 2026-09-30 -- implemented: status `in-progress` -> `in-review`; every task done, the intent contract unchanged. The kit helper's name is `flag_states` in `pyforge.testing_kit.flags` (read from the landed module, also re-exported by `pyforge.testing_kit`); the pre-kit shape is one `*flagd_tree*` call naming `"on"` and another naming `"off"`. Live tree: both `done` flagged specs (steward 74.1 and 75.1) pass through the pre-kit shape in `src/platform/tests/test_openfeature_file_flags.py`; `flag-gate-check` exits 0 (1208 judged, 0 fail, 840 warn).
 
 ## Binding
 
