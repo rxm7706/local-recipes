@@ -2,10 +2,10 @@
 title: "76.1: The one flag tree carries per-environment values, so off in production is a value"
 type: 'feature'
 created: '2026-09-28'
-status: 'done'
+status: 'in-review'
 baseline_revision: '6b7d586b33fdf7edf7b54b81c9cacc8f33efffa7'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 flag-exempt: flag-infrastructure
 context:
   - docs/governance/spec-feature-flag-governance/SPEC.md
