@@ -2,7 +2,7 @@
 title: "75.1: fleet_scan reads archived Dreams from the archive"
 type: 'chore'
 created: '2026-09-29'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'c8f74d5657bc67459115281f75afbbd577401c09'
