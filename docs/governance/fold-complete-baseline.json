@@ -1,0 +1,22 @@
+{
+  "$comment": [
+    "fold-complete-check baseline (doctor Story 36.1, spec-one-chain-per-station CAP-11).",
+    "Rule date 2026-09-29 (operator ruling: one archive home, and a fold that is complete).",
+    "Every path here sits under archive/docs/dreams/ but is NOT a fold of a station Dream, so",
+    "the check never opens it: six Dreams already archived there, plus the historical split of",
+    "a live Dream that moves from docs/dreams/archive/. Every other archived Dream must have",
+    "each long paragraph in its station Dream before the file moves.",
+    "This file only ever SHRINKS, like chain-sprawl-baseline.json: an entry leaves when its",
+    "file leaves archive/docs/dreams/. Adding an entry is a governance act, never a way to",
+    "clear a finding."
+  ],
+  "paths": [
+    "archive/docs/dreams/deckcraft.md",
+    "archive/docs/dreams/design-code-bridge.md",
+    "archive/docs/dreams/herald-pitch-deck-family-expansion.md",
+    "archive/docs/dreams/modernist-identity.md",
+    "archive/docs/dreams/pyforge-genesis.md",
+    "archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md",
+    "archive/docs/dreams/video-scripts.md"
+  ]
+}

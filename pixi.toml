@@ -1390,6 +1390,10 @@ cmd = "python -m pyforge.doctor.sources chain-sprawl"
 description = "Detector: a product requirement minted after the rule date names its source capability (doctor Story 25.2, spec-one-chain-per-station CAP-5; CHAIN-STANDARD § 2 `FR-n <- CAP-m`). New FR/NFR ids per station PRD (vs docs/governance/fr-baseline.json, re-baselined only at that station's fold PR) must cite a CAP-m on the defining line or its first body line -- else FAIL fr-without-cap; a citation no open Spec under the station declares is FAIL fr-cap-unresolved."
 cmd = "python -m pyforge.doctor.sources fr-without-cap"
 
+[feature.guild-tasks.tasks.fold-complete-check]
+description = "Detector: a fold is complete before its file moves (doctor Story 36.1, spec-one-chain-per-station CAP-11; CHAIN-STANDARD section 11). Every archive/docs/dreams/*.md not in docs/governance/fold-complete-baseline.json (a dated list that only ever shrinks) must have each paragraph longer than 80 characters, whitespace-collapsed and headings left out, in its station Dream docs/dreams/pyforge-<owner>.md -- else FAIL fold-complete-incomplete (names the file and the count); an unreadable `owner:` is FAIL fold-complete-no-owner, an absent station Dream FAIL fold-complete-no-station-dream. Every docs/dreams/*.md still reading `status: archived` is ONE WARN with the count per station (the migration countdown, never a FAIL)."
+cmd = "python -m pyforge.doctor.sources fold-complete"
+
 [feature.guild-tasks.tasks.docs-shelf-occupancy-check]
 description = "Detector: leftover-shelf path occupancy vs the docs/MAP.md allow-list (Story 23.7, spec-pyforge-doctor CAP-54). Compares the _bmad-output/ root and the air-gap documentation cluster against MAP.md's own 'Outside this map' table and Story 23.2's fold -- a re-added dated campaign note at _bmad-output/ root, or a second air-gap how-to outside the cluster, is a finding with a quoted path. Distinct from general-docs-consistency-check (identity, not occupancy). Warn-only, read-only, fail-open -- never a second PR gate. Contract: spec-23-7-a-new-doctor-source-flags-leftover-shelf-occupancy."
 cmd = "python -m pyforge.doctor.sources docs-shelf-occupancy"
