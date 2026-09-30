@@ -371,3 +371,307 @@ def test_chart_configmap_is_the_one_tree_and_has_no_flag_sidecar() -> None:
         assert names == [container.get("name")]
     migrate_vols = by_component["migrate"].get("volumes") or []
     assert not any(v.get("name") == "flags" for v in migrate_vols)
+
+
+# --- Story 76.1: per-environment values ---------------------------------------
+
+_OFF_IN_PRODUCTION = "pyforge.test.off_in_production"
+# `configure_file_provider` waits on FLAG_KEY (FILE init is asynchronous), so every tree the
+# provider loads defines it: it is the fixture's flag that no overlay changes.
+_ON_EVERYWHERE = FLAG_KEY
+_KILLED = "pyforge.test.killed"
+_OFF_BY_TREE = "pyforge.test.off_by_tree"
+_BOOL_KEYS = (_OFF_IN_PRODUCTION, _ON_EVERYWHERE, _KILLED, _OFF_BY_TREE)
+# What each key evaluates to per environment for the fixture pair below.
+_EXPECTED = {
+    "production": {_OFF_IN_PRODUCTION: False, _ON_EVERYWHERE: True, _KILLED: False, _OFF_BY_TREE: False},
+    "staging": {_OFF_IN_PRODUCTION: True, _ON_EVERYWHERE: True, _KILLED: False, _OFF_BY_TREE: True},
+    "dev": {_OFF_IN_PRODUCTION: True, _ON_EVERYWHERE: True, _KILLED: False, _OFF_BY_TREE: False},
+}
+
+
+def _entry(default_variant: str, *, state: str = "ENABLED") -> dict[str, Any]:
+    return {"state": state, "variants": {"on": True, "off": False}, "defaultVariant": default_variant}
+
+
+def _fixture_pair(directory: Path, overlays: object | None = None) -> Path:
+    """A tree (four boolean flags) and its sibling overlay document; returns the tree."""
+    tree = directory / "flags.json"
+    tree.write_text(
+        json.dumps(
+            {
+                "flags": {
+                    _OFF_IN_PRODUCTION: _entry("on"),
+                    _ON_EVERYWHERE: _entry("on"),
+                    _KILLED: _entry("on", state="DISABLED"),
+                    _OFF_BY_TREE: _entry("off"),
+                },
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    document = overlays if overlays is not None else {
+        "dev": {_OFF_IN_PRODUCTION: "on", _ON_EVERYWHERE: "on", _KILLED: "on", _OFF_BY_TREE: "off"},
+        "staging": {_OFF_IN_PRODUCTION: "on", _KILLED: "on", _OFF_BY_TREE: "on"},
+        "production": {_OFF_IN_PRODUCTION: "off", _KILLED: "on"},
+    }
+    (directory / "flag-overlays.json").write_text(json.dumps(document, indent=2), encoding="utf-8")
+    return tree
+
+
+def _isolate_flag_environment(monkeypatch: pytest.MonkeyPatch, tree: Path, environment: str | None) -> None:
+    """`configure_file_provider` writes these process-wide; monkeypatch owns their restoration."""
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.setenv("FLAGD_OFFLINE_FLAG_SOURCE_PATH", str(tree))
+    if environment is None:
+        monkeypatch.delenv(_ENV_ENVIRONMENT, raising=False)
+    else:
+        monkeypatch.setenv(_ENV_ENVIRONMENT, environment)
+
+
+def _three_readings(tree: Path, key: str) -> tuple[bool, bool, bool]:
+    """(the host's FILE provider over the resolved file, evaluate_from_source, the CLI reader)."""
+    path = resolve_flags_path(tree)
+    assert path is not None
+    configure_file_provider(path)
+    provider = evaluate_boolean(key)
+    return provider, evaluate_from_source(key=key, source=tree), evaluate_cli_boolean(key, source=tree)
+
+
+@pytest.mark.parametrize("environment", _ENVIRONMENTS)
+def test_host_provider_evaluate_from_source_and_cli_reader_agree_per_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    environment: str,
+) -> None:
+    tree = _fixture_pair(tmp_path)
+    _isolate_flag_environment(monkeypatch, tree, environment)
+    for key in _BOOL_KEYS:
+        assert _three_readings(tree, key) == (_EXPECTED[environment][key],) * 3, (environment, key)
+
+
+def test_an_unset_environment_reads_the_dev_rendering(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    tree = _fixture_pair(tmp_path)
+    _isolate_flag_environment(monkeypatch, tree, None)
+    for key in _BOOL_KEYS:
+        assert _three_readings(tree, key) == (_EXPECTED["dev"][key],) * 3, key
+
+
+@pytest.mark.parametrize("environment", _ENVIRONMENTS)
+def test_the_shipped_tree_and_overlay_agree_across_the_three_readers(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    environment: str,
+) -> None:
+    payload = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
+    boolean_keys = [
+        key
+        for key, entry in payload["flags"].items()
+        if all(isinstance(value, bool) for value in entry["variants"].values())
+    ]
+    assert boolean_keys, "the shipped tree defines at least one boolean flag"
+    _isolate_flag_environment(monkeypatch, _FLAGS_JSON, environment)
+    for key in boolean_keys:
+        provider, from_source, cli = _three_readings(_FLAGS_JSON, key)
+        assert provider == from_source == cli, (environment, key)
+
+
+def test_the_provider_reads_a_materialised_rendering_and_the_tree_stays_the_editable_source(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tree = _fixture_pair(tmp_path)
+    _isolate_flag_environment(monkeypatch, tree, "production")
+    resolved = resolve_flags_path(tree)
+    assert resolved is not None and resolved != tree
+    assert json.loads(resolved.read_text(encoding="utf-8")) == json.loads(render_flag_tree("production", tree))
+    assert resolve_tree_path(tree) == tree  # what an actuator (doctor's kill switch) edits
+    # a later edit of the overlay reaches the same file the provider polls
+    (tmp_path / "flag-overlays.json").write_text(json.dumps({"production": {_OFF_IN_PRODUCTION: "on"}}), encoding="utf-8")
+    assert resolve_flags_path(tree) == resolved
+    assert json.loads(resolved.read_text(encoding="utf-8"))["flags"][_OFF_IN_PRODUCTION]["defaultVariant"] == "on"
+
+
+def test_a_mounted_rendered_tree_has_no_sibling_and_is_used_as_it_is(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    mount = tmp_path / "mount"
+    mount.mkdir()
+    path = mount / "flags.json"
+    path.write_bytes(_flagd_tree("off"))
+    for environment in _ENVIRONMENTS:
+        _isolate_flag_environment(monkeypatch, path, environment)
+        assert resolve_flags_path(path) == path
+        assert read_flag_tree_bytes(path) == path.read_bytes()
+        assert _three_readings(path, FLAG_KEY) == (False, False, False)
+
+
+def test_an_unknown_environment_refuses_on_every_host_surface(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    tree = _fixture_pair(tmp_path)
+    _isolate_flag_environment(monkeypatch, tree, "qa")
+    for call in (
+        lambda: resolve_flags_path(tree),
+        lambda: read_flag_tree_bytes(tree),
+        lambda: evaluate_from_source(key=_ON_EVERYWHERE, source=tree),
+        lambda: evaluate_cli_boolean(_ON_EVERYWHERE, True, tree),
+    ):
+        with pytest.raises(ValueError, match="qa"):
+            call()
+    assert flags_main([_ON_EVERYWHERE, "--source", str(tree)]) == 1
+    assert "qa" in capsys.readouterr().err
+
+
+def test_tree_view_serves_the_rendering_for_the_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tree = _fixture_pair(tmp_path)
+    _isolate_flag_environment(monkeypatch, tree, "production")
+    request = RequestFactory().get("/flags.json")
+    request.user = type("U", (), {"is_authenticated": True})()
+    response = tree_view(request)
+    assert response.status_code == HTTPStatus.OK
+    served = json.loads(response.content)
+    assert served == json.loads(render_flag_tree("production", tree))
+    assert served["flags"][_OFF_IN_PRODUCTION]["defaultVariant"] == "off"
+
+
+def test_render_verb_writes_the_tree_for_the_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    tree = _fixture_pair(tmp_path)
+    monkeypatch.delenv(_ENV_ENVIRONMENT, raising=False)
+    out = tmp_path / "out" / "flags.json"
+    assert flags_main(["render", "--environment", "production", "--source", str(tree), "--output", str(out)]) == 0
+    assert out.read_bytes() == render_flag_tree("production", tree)
+    assert json.loads(out.read_bytes())["flags"][_OFF_IN_PRODUCTION]["defaultVariant"] == "off"
+    assert flags_main(["render", "--environment", "staging", "--source", str(tree)]) == 0
+    assert capsys.readouterr().out.encode() == render_flag_tree("staging", tree)
+
+
+def test_render_verb_refuses_with_the_named_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    tree = _fixture_pair(tmp_path)
+    assert flags_main(["render", "--environment", "qa", "--source", str(tree)]) == 1
+    assert "qa" in capsys.readouterr().err
+    _fixture_pair(tmp_path, {"production": {"pyforge.test.missing": "off"}})
+    assert flags_main(["render", "--environment", "dev", "--source", str(tree)]) == 1
+    assert "pyforge.test.missing" in capsys.readouterr().err
+    assert flags_main(["render", "--environment", "dev", "--source", str(tmp_path / "absent.json")]) == 1
+    assert "no flag tree" in capsys.readouterr().err
+    with pytest.raises(SystemExit):  # --environment is required
+        flags_main(["render"])
+
+
+def _configmap_defaults(rendered: dict[str, Any]) -> dict[str, str]:
+    return {key: entry["defaultVariant"] for key, entry in rendered["flags"].items()}
+
+
+@requires_helm
+@pytest.mark.parametrize("environment", _ENVIRONMENTS)
+def test_chart_configmap_is_the_tree_rendered_for_the_environment(environment: str) -> None:
+    docs = _render_core(environment)
+    assert _flags_configmap(docs) == json.loads(render_flag_tree(environment, _FLAGS_JSON))
+    pods = [
+        doc["spec"]["template"]["spec"]
+        for doc in docs
+        if doc.get("kind") in {"Deployment", "StatefulSet", "Job"}
+    ]
+    readers = 0
+    for spec in pods:
+        for container in spec["containers"]:
+            env = {item["name"]: item.get("value") for item in container.get("env") or []}
+            if "PYFORGE_FLAGS_PATH" in env:
+                readers += 1
+                assert env.get(_ENV_ENVIRONMENT) == environment, container["name"]
+    assert readers, "at least one workload reads the flag tree"
+
+
+@requires_helm
+def test_chart_production_and_dev_configmaps_differ_exactly_by_the_overlay_values(tmp_path: Path) -> None:
+    tree = _fixture_pair(tmp_path)
+    overlays = tmp_path / "flag-overlays.json"
+    rendered = {env: _flags_configmap(_render_core(env, tree=tree, overlays=overlays)) for env in _ENVIRONMENTS}
+    for env, cm in rendered.items():
+        assert cm == json.loads(render_flag_tree(env, tree)), env
+    production, dev = rendered["production"], rendered["dev"]
+    assert production != dev
+    differing = {key for key in _BOOL_KEYS if _configmap_defaults(production)[key] != _configmap_defaults(dev)[key]}
+    assert differing == {_OFF_IN_PRODUCTION}
+    # everything but that one defaultVariant is identical
+    patched = json.loads(json.dumps(dev))
+    patched["flags"][_OFF_IN_PRODUCTION]["defaultVariant"] = "off"
+    assert patched == production
+    # and staging is the only place the tree's off flag turns on
+    assert _configmap_defaults(rendered["staging"])[_OFF_BY_TREE] == "on"
+    assert _configmap_defaults(dev)[_OFF_BY_TREE] == _configmap_defaults(production)[_OFF_BY_TREE] == "off"
+
+
+@requires_helm
+def test_chart_keeps_a_disabled_flag_disabled_in_every_environment(tmp_path: Path) -> None:
+    tree = _fixture_pair(tmp_path, {env: {_KILLED: "on"} for env in _ENVIRONMENTS})
+    overlays = tmp_path / "flag-overlays.json"
+    for env in _ENVIRONMENTS:
+        cm = _flags_configmap(_render_core(env, tree=tree, overlays=overlays))
+        assert cm["flags"][_KILLED]["state"] == "DISABLED"
+        assert cm["flags"][_KILLED]["defaultVariant"] == "on"
+        assert cm == json.loads(render_flag_tree(env, tree))
+
+
+@requires_helm
+@pytest.mark.parametrize("environment", [None, "", "qa", "prod", "Production"])
+def test_chart_refuses_a_release_without_a_valid_flags_environment(environment: str | None) -> None:
+    result = _helm_core(environment)
+    assert result.returncode != 0, result.stdout
+    assert "flags.environment" in result.stderr
+
+
+@requires_helm
+def test_chart_refuses_a_release_without_the_overlay_document() -> None:
+    result = _helm_core("production", overlays=None)
+    assert result.returncode != 0, result.stdout
+    assert "flags.overlays" in result.stderr
+
+
+# (overlay document, the chart's message fragment, the core error's class name): the chart and
+# pyforge.core.flags.compose refuse the same overlays, each naming the offending entry.
+_REFUSED_OVERLAYS = [
+    pytest.param({"production": {"pyforge.nope": "off"}}, "names a key the tree lacks", "OverlayUnknownKeyError", id="key"),
+    pytest.param({"staging": {_ON_EVERYWHERE: "maybe"}}, 'names variant "maybe"', "OverlayUnknownVariantError", id="variant"),
+    pytest.param(
+        {"production": {_ON_EVERYWHERE: {"variants": {"on": True}, "defaultVariant": "on"}}},
+        "is not a variant name",
+        "OverlayNotAVariantError",
+        id="object",
+    ),
+    pytest.param({"qa": {_ON_EVERYWHERE: "off"}}, 'environment "qa"', "UnknownEnvironmentError", id="environment"),
+]
+
+
+@requires_helm
+@pytest.mark.parametrize(("overlay", "fragment", "error"), _REFUSED_OVERLAYS)
+def test_chart_and_core_refuse_the_same_overlays_naming_the_entry(
+    tmp_path: Path,
+    overlay: dict[str, Any],
+    fragment: str,
+    error: str,
+) -> None:
+    tree = _fixture_pair(tmp_path, overlay)
+    result = _helm_core("dev", tree=tree, overlays=tmp_path / "flag-overlays.json")
+    assert result.returncode != 0, result.stdout
+    assert fragment in result.stderr, result.stderr
+    with pytest.raises(ValueError) as caught:  # noqa: PT011 -- the class is asserted by name below
+        render_flag_tree("dev", tree)
+    assert type(caught.value).__name__ == error
+    for name in overlay:
+        assert name in result.stderr and name in str(caught.value)
