@@ -235,6 +235,65 @@ def test_a_relative_path_is_read_against_the_repo_root(tmp_path: Path):
     assert flag_rule.classify(spec.relative_to(root), repo_root=root).verdict == flag_rule.FLAG
 
 
+def test_read_frontmatter_returns_the_mapping_for_a_readable_spec(tmp_path: Path):
+    root = _repo(tmp_path)
+    spec = _spec(root, FLAG_BLOCK)
+
+    mapping, why = flag_rule.read_frontmatter(spec)
+
+    assert why == ""
+    assert mapping is not None
+    assert mapping["type"] == "feature"
+    assert mapping["flag"]["key"] == "pyforge.atlas.dependency_history"
+
+
+def test_read_frontmatter_takes_a_repo_relative_path_against_the_repo_root(tmp_path: Path):
+    root = _repo(tmp_path)
+    spec = _spec(root, "flag-exempt: alpha\n")
+
+    mapping, why = flag_rule.read_frontmatter(spec.relative_to(root), repo_root=root)
+
+    assert why == ""
+    assert mapping is not None
+    assert mapping["flag-exempt"] == "alpha"
+
+
+def test_read_frontmatter_feeds_the_same_verdict_as_classify(tmp_path: Path):
+    root = _repo(tmp_path)
+    spec = _spec(root, FLAG_BLOCK)
+    mapping, _ = flag_rule.read_frontmatter(spec)
+
+    assert mapping is not None
+    assert flag_rule.classify_frontmatter(mapping, ("alpha",)) == flag_rule.classify(spec, exemptions=("alpha",))
+    assert flag_rule.in_scope(mapping) is flag_rule.in_scope(spec)
+
+
+@pytest.mark.parametrize(
+    ("text", "reason"),
+    [
+        ("# just a body, no fence\n", "no frontmatter"),
+        ("---\n---\n", "empty"),
+        ("---\nkey: [unclosed\n---\n", "not valid YAML"),
+        ("---\ncreated: 2026-02-30\n---\n", "not valid YAML"),
+    ],
+)
+def test_read_frontmatter_reports_why_it_is_unreadable_and_never_raises(tmp_path: Path, text: str, reason: str):
+    path = tmp_path / "spec-1-1-x.md"
+    path.write_text(text, encoding="utf-8")
+
+    mapping, why = flag_rule.read_frontmatter(path)
+
+    assert mapping is None
+    assert reason in why
+
+
+def test_read_frontmatter_of_a_missing_file_is_unreadable_never_a_raise(tmp_path: Path):
+    mapping, why = flag_rule.read_frontmatter(tmp_path / "spec-9-9-absent.md")
+
+    assert mapping is None
+    assert "cannot read" in why
+
+
 def test_the_roster_is_the_only_source_of_the_exemption_list(tmp_path: Path):
     root = _repo(tmp_path, exemptions=("alpha", "beta"))
 

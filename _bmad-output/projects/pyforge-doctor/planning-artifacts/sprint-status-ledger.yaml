@@ -104,7 +104,7 @@ development_status:
   32-1-the-gates-base-normalizer-names-the-remote-tracking-ref: done
   33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries: blocked
   34-1-the-flag-rule-has-a-closed-exemption-list-a-rule-date-baseline-and-one-block-shape: done
-  34-2-the-flag-gate-ships-in-scripts-outside-every-station-and-runs-in-detectors-ci: backlog
+  34-2-the-flag-gate-ships-in-scripts-outside-every-station-and-runs-in-detectors-ci: done
   34-3-the-flag-gate-reads-the-tree-metadata-per-environment-defaults-and-the-90-day-clock: blocked
   34-4-each-station-has-a-checked-in-flag-inventory-of-its-runtime-capabilities: backlog
   34-5-the-flag-gate-reds-a-landed-flagged-story-whose-test-does-not-run-both-states: blocked
@@ -198,7 +198,7 @@ development_status:
   epic-32-retrospective: optional
   epic-33: backlog
   epic-33-retrospective: optional
-  epic-34: in-progress
+  epic-34: backlog
   epic-34-retrospective: optional
   epic-35: backlog
   epic-35-retrospective: optional

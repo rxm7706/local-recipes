@@ -1313,6 +1313,10 @@ description = "Story 66.1 (spec-pyforge-steward CAP-153): every pyforge-* packag
 cmd = "python scripts/precommit_config_check.py"
 description = "Story 66.2 (spec-pyforge-steward CAP-154): .pre-commit-config.yaml exists at the repo root, declares the commit-msg and pre-push hook types, and carries the two local hooks (commit-msg attribution refusal; pre-push pr-preflight). Exit 0 clean, 1 findings."
 
+[feature.guild-tasks.tasks.flag-gate-check]
+cmd = "python scripts/flag_gate_check.py"
+description = "Detector: the flag gate (Story 34.2, spec-feature-flag-governance CAP-2). Every post-rule `type: feature` story spec carries a `flag:` block or a `flag-exempt:` value from docs/governance/guild-roster.json; a `flag-exempt:` off the roster, a `done` spec whose flag.key the one tree (src/platform/config/flags.json) lacks, and a tree key no tracked file under src/ or scripts/ reads are findings; a pre-rule feature spec without either only warns, grouped by station. `--spec <path>` prints one JSON object (verdict pass/warn/red) for marshal's dispatch preflight. Lives in scripts/, outside every pyforge.<station> package (Charter section 6). Exit 0 clean (warnings allowed), 1 findings, 2 could-not-run."
+
 [feature.guild-tasks.tasks.lint-types]
 depends-on = ["ruff", "ruff-format", "mypy", "target-version-check", "precommit-config-check"]
 description = "Story 66.1 / 66.2: the whole hygiene lane in one task -- exactly what .github/workflows/lint-types.yml runs and what pr-preflight's `lint-types` leg runs."
