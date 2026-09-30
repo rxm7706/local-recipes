@@ -8,7 +8,9 @@ the gather and the CLI on this checkout (the "today's main" leg).
 
 from __future__ import annotations
 
+import contextlib
 import json
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -119,6 +121,23 @@ def test_complete_fold_is_ok(tmp_path: Path) -> None:
     assert ok.evidence["complete"] == ["archive/docs/dreams/foo.md"]
 
 
+def test_a_complete_fold_reports_an_ok_naming_the_file(tmp_path: Path) -> None:
+    root = _tree(tmp_path)
+    _archived(root, "foo", f"{_para('one')}\n\n{_para('two')}\n")
+    _station(root, "mason", f"{_para('one')}\n\n{_para('two')}\n")
+    (ok,) = _by_check(one_chain.gather_fold_complete(root))["fold-complete-ok"]
+    assert ok.status is DoctorStatus.OK
+    assert "archive/docs/dreams/foo.md" in ok.message and "docs/dreams/pyforge-mason.md" in ok.message
+    assert ok.evidence["paragraphs"] == 2 and ok.evidence["owner"] == "mason"
+
+
+def test_a_failing_fold_has_no_per_file_ok(tmp_path: Path) -> None:
+    root = _tree(tmp_path)
+    _archived(root, "foo", _para("one"))
+    _station(root, "mason", "nothing pasted in yet\n")
+    assert "fold-complete-ok" not in _by_check(one_chain.gather_fold_complete(root))
+
+
 def test_one_missing_paragraph_fails_naming_file_and_count(tmp_path: Path) -> None:
     root = _tree(tmp_path)
     _archived(root, "foo", f"{_para('one')}\n\n{_para('two')}\n")
@@ -195,15 +214,21 @@ def test_a_leftover_consolidated_into_banner_is_a_missing_paragraph(tmp_path: Pa
         pytest.param(f"---title: Glued\nowner: mason\n---\n{_para('one')}\n", id="glued-opener"),
         pytest.param(f"---\nstatus: archived\n---\n{_para('one')}\n", id="no-owner-key"),
         pytest.param(f"---\nowner: ../secrets\n---\n{_para('one')}\n", id="owner-not-a-slug"),
+        pytest.param(f"---\nowner: Mason\n---\n{_para('one')}\n", id="owner-not-lowercase"),
+        # a YAML block scalar keeps its trailing newline: "mason\n" is not a slug
+        pytest.param(f"---\nowner: |\n  mason\n---\n{_para('one')}\n", id="owner-trailing-newline"),
     ],
 )
 def test_unreadable_owner_fails_naming_the_file(tmp_path: Path, text: str) -> None:
     root = _tree(tmp_path)
     _write(root, "archive/docs/dreams/foo.md", text)
     _station(root, "mason", _para("one"))
-    (f,) = _by_check(one_chain.gather_fold_complete(root))["fold-complete-no-owner"]
+    by = _by_check(one_chain.gather_fold_complete(root))
+    (f,) = by["fold-complete-no-owner"]
     assert f.status is DoctorStatus.FAIL
     assert "archive/docs/dreams/foo.md" in f.message
+    assert "missing, unparseable, or not a station slug" in f.message
+    assert "fold-complete-no-station-dream" not in by
 
 
 def test_missing_station_dream_fails_naming_it(tmp_path: Path) -> None:
@@ -213,6 +238,44 @@ def test_missing_station_dream_fails_naming_it(tmp_path: Path) -> None:
     assert f.status is DoctorStatus.FAIL
     assert "archive/docs/dreams/foo.md" in f.message
     assert "docs/dreams/pyforge-atlas.md" in f.message
+
+
+def test_a_non_utf8_station_dream_fails_as_unreadable(tmp_path: Path) -> None:
+    root = _tree(tmp_path)
+    _archived(root, "foo", _para("one"))
+    station = root / "docs" / "dreams" / "pyforge-mason.md"
+    station.parent.mkdir(parents=True, exist_ok=True)
+    station.write_bytes(b"\xff\xfe\x00 not utf-8 \x80\x81")
+    (f,) = _by_check(one_chain.gather_fold_complete(root))["fold-complete-no-station-dream"]
+    assert f.status is DoctorStatus.FAIL
+    assert "archive/docs/dreams/foo.md" in f.message and "docs/dreams/pyforge-mason.md" in f.message
+
+
+def test_two_owners_are_each_judged_against_their_own_station_dream(tmp_path: Path) -> None:
+    root = _tree(tmp_path)
+    _archived(root, "a-mason", _para("mason"), owner="mason")
+    _archived(root, "b-atlas", _para("atlas"), owner="atlas")
+    _station(root, "mason", _para("mason"))
+    _station(root, "atlas", _para("atlas"))
+    findings = one_chain.gather_fold_complete(root)
+    assert not _fails(findings)
+    assert _by_check(findings)["fold-complete"][0].evidence["complete"] == [
+        "archive/docs/dreams/a-mason.md",
+        "archive/docs/dreams/b-atlas.md",
+    ]
+
+
+def test_a_paragraph_in_the_wrong_station_dream_does_not_count(tmp_path: Path) -> None:
+    root = _tree(tmp_path)
+    _archived(root, "a-mason", _para("mason"), owner="mason")
+    _archived(root, "b-atlas", _para("atlas"), owner="atlas")
+    _station(root, "mason", f"{_para('mason')}\n\n{_para('atlas')}\n")  # B's body is here ...
+    _station(root, "atlas", "nothing pasted in yet\n")  # ... but not in its own station Dream
+    findings = one_chain.gather_fold_complete(root)
+    (f,) = _fails(findings)
+    assert f.check == "fold-complete-incomplete"
+    assert "archive/docs/dreams/b-atlas.md" in f.message and "docs/dreams/pyforge-atlas.md" in f.message
+    assert _by_check(findings)["fold-complete"][0].evidence["complete"] == ["archive/docs/dreams/a-mason.md"]
 
 
 def test_each_archived_dream_is_judged_on_its_own(tmp_path: Path) -> None:
@@ -231,8 +294,10 @@ def test_each_archived_dream_is_judged_on_its_own(tmp_path: Path) -> None:
 
 def test_archived_dreams_in_the_live_tree_are_one_warn_with_per_station_counts(tmp_path: Path) -> None:
     root = _tree(tmp_path)
-    _write(root, "docs/dreams/one.md", _dream_text("x\n", owner="doctor", status="archived"))
-    _write(root, "docs/dreams/two.md", _dream_text("x\n", owner="herald", status="archived"))
+    # filename order (a-herald, b-doctor) is the reverse of station order, so the
+    # message is only "doctor 1, herald 1" if the join sorts by station
+    _write(root, "docs/dreams/a-herald.md", _dream_text("x\n", owner="herald", status="archived"))
+    _write(root, "docs/dreams/b-doctor.md", _dream_text("x\n", owner="doctor", status="archived"))
     _write(root, "docs/dreams/live.md", _dream_text("x\n", owner="doctor", status="specified"))
     findings = one_chain.gather_fold_complete(root)
     assert not _fails(findings)
@@ -265,6 +330,15 @@ def test_unreadable_frontmatter_in_the_live_tree_is_reported_beside_the_count(tm
     assert "1 more have unreadable frontmatter" in warn.message
 
 
+def test_unreadable_frontmatter_alone_still_raises_the_countdown_warn(tmp_path: Path) -> None:
+    root = _tree(tmp_path)
+    _write(root, "docs/dreams/glued.md", "---title: Glued\nstatus: archived\n---\nx\n")
+    (warn,) = [f for f in one_chain.gather_fold_complete(root) if f.status is DoctorStatus.WARN]
+    assert warn.check == "fold-complete-archived-in-live-tree"
+    assert warn.evidence == {"total": 0, "by_station": {}, "unreadable_frontmatter": 1}
+    assert "(none)" in warn.message and "1 more have unreadable frontmatter" in warn.message
+
+
 def test_the_countdown_never_reads_docs_dreams_archive(tmp_path: Path) -> None:
     root = _tree(tmp_path)
     _write(root, "docs/dreams/archive/old.md", _dream_text("x\n", owner="doctor", status="archived"))
@@ -274,25 +348,56 @@ def test_the_countdown_never_reads_docs_dreams_archive(tmp_path: Path) -> None:
 # --- AC 7: the baseline ------------------------------------------------------
 
 
+@contextlib.contextmanager
+def _record_opens(monkeypatch: pytest.MonkeyPatch) -> Iterator[list[str]]:
+    """Record the name of every path opened by ``Path.open`` / ``read_text`` /
+    ``read_bytes``. Recording, not raising: the gather degrades any exception
+    to a WARN finding, so a raise would be swallowed rather than fail the test."""
+    opened: list[str] = []
+    for attr in ("open", "read_text", "read_bytes"):
+        real = getattr(Path, attr)
+
+        def spy(self: Path, *args, _real=real, **kwargs):
+            opened.append(self.name)
+            return _real(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, attr, spy)
+    yield opened
+
+
 def test_a_baselined_file_is_ok_and_never_read(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = tmp_path / "repo"
     listed = "archive/docs/dreams/deckcraft.md"
     _write(root, listed, "no frontmatter, no owner: would be a FAIL if it were read\n")
     _baseline(root, listed)
 
-    opened: list[str] = []
-    real = one_chain._frontmatter_parse
-
-    def spy(path: Path):
-        opened.append(path.name)
-        return real(path)
-
-    monkeypatch.setattr(one_chain, "_frontmatter_parse", spy)
-    findings = one_chain.gather_fold_complete(root)
+    with _record_opens(monkeypatch) as opened:
+        findings = one_chain.gather_fold_complete(root)
     assert not _fails(findings)
+    assert not [f for f in findings if f.status is DoctorStatus.WARN]  # no swallowed exception either
     assert "deckcraft.md" not in opened
+    assert "fold-complete-baseline.json" in opened  # the recorder does see reads
     (ok,) = _by_check(findings)["fold-complete"]
     assert ok.evidence["baselined"] == [listed] and ok.evidence["complete"] == []
+
+
+def test_a_baselined_file_reports_an_ok_naming_it(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    listed = "archive/docs/dreams/deckcraft.md"
+    _write(root, listed, "not read\n")
+    _baseline(root, listed)
+    (f,) = _by_check(one_chain.gather_fold_complete(root))["fold-complete-baselined"]
+    assert f.status is DoctorStatus.OK and listed in f.message and "not read" in f.message
+    assert f.evidence == {"path": listed}
+
+
+def test_the_recorder_catches_an_unbaselined_file_being_read(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = tmp_path / "repo"
+    _write(root, "archive/docs/dreams/deckcraft.md", "not baselined\n")
+    _baseline(root)
+    with _record_opens(monkeypatch) as opened:
+        one_chain.gather_fold_complete(root)
+    assert "deckcraft.md" in opened
 
 
 def test_a_file_missing_from_the_baseline_is_measured(tmp_path: Path) -> None:
