@@ -2176,6 +2176,8 @@ def dispatch_once(
     # scope and spec-lookup refusals return earlier, as they do for `wire`),
     # including every refusal before a worktree exists. Overwritten with the
     # real outcome once the worktree is provisioned.
+    structure_graph = StructureGraphSeed()
+    data["structure_graph"] = structure_graph.journal_payload()
 
     # Story 22.8 (FR-193 CAP-8): profile-aware harness resolution -- the
     # policy's ordered `harness_preference` walked to the first profile
