@@ -2,7 +2,8 @@
 title: "36.2: The sibling-drift check reads acknowledged Dreams under the archive"
 type: 'chore'
 created: '2026-09-29'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'a04d17d946b148d986d8c159b2fadb973a472ab1'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -83,6 +84,24 @@ Type / Effort / Deps: chore / S / —.
 | unreadable file | `OSError` | skipped, as today | fail-open |
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py:154` -- `_local_fingerprints(target)`, the only edit site. Today: one `docs/dreams` dir, `is_dir()` guard returns `{}`, `glob` `OSError` returns `{}`, per-file `read_text` `OSError` is skipped, `out[path.stem] = fp`.
+- `sibling_dreams.py:69` -- `_gather` does `if not local: return ()` right after; an archive-only tree must still count as non-empty.
+- `sibling_dreams.py:246` -- `_diff_shared_slugs` reads `sibling_acknowledged` off the local fingerprint; unchanged (fingerprint and ack rule stay byte-for-byte).
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py` -- helpers `_write_local_dream`, `_write_local_dream_with_ack`, `_fingerprint`; sibling side stubbed by `monkeypatch.setattr(sibling_dreams, "_fetch_sibling_fingerprints", ...)`. New tests append at the end, same helpers.
+- Read-only evidence (measured 2026-09-30): `archive/docs/dreams/` holds six Dreams (`deckcraft`, `design-code-bridge`, `herald-pitch-deck-family-expansion`, `modernist-identity`, `pyforge-genesis`, `video-scripts`), none with a filename in the sibling's `docs/dreams` (17 files). Live `gather` on this tree before the change: `[]`. So AC 5 holds by construction and is re-measured after.
+- Governors (baseline): `spec-pyforge-doctor` (tests file) and `spec-pyforge-core` (`sibling_dreams.py`); `spec-surface-check` names the final list.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py` -- loop `_local_fingerprints` over `docs/dreams` then `archive/docs/dreams`; skip a missing dir, skip a dir whose `glob` raises `OSError`, keep `out.setdefault`-style first-wins per slug; update the module docstring's "``docs/dreams/``" line -- CHAIN-STANDARD §11 reader rule.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py` -- add one test per contract AC plus the two I/O-matrix edges (archive-only tree, `OSError` in one dir/file) -- every AC needs an executable oracle.
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md` and `spec-pyforge-core/.memlog.md` -- memlog `event` naming each governed path changed, then `git add`, then scoped `--write-baseline --spec` (never bare).
+
+**Acceptance Criteria:** the six in the intent contract above, verbatim; each maps to a named test, and the mutation AC is run by hand (archive read removed, moved-Dream test red) and logged in the Auto Run Result.
 
 ## Binding
 
