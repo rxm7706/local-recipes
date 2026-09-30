@@ -5,8 +5,8 @@ Inventory is a CAP heading + intent/success extract
 through Scribe's text-file node helper or a truncated SPEC prefix.
 
 HARD: unclassified live ``CAP-N``, ``A-only`` without expiry.
-``--append`` (WARN): a path/Spec added after the ledger ``source_sha``
-that has no ledger row.
+``--append`` (WARN): a live (ready/in-progress) path/Spec added after the
+ledger ``source_sha`` that has no ledger row.
 
 Independence: never imports ``pyforge.steward`` / ``pyforge.scribe``.
 """
@@ -340,6 +340,16 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         if not path.endswith("/SPEC.md"):
             continue
         if "/planning-artifacts/specs/" not in path:
+            continue
+        # A non-live Spec (absorbed, draft, shipped, no status) has no extract to
+        # classify, so its warning could never be cleared. Same test as
+        # ``iter_live_specs``; a path gone from the working tree is not live. Any
+        # other read error is not "gone", so it reaches ``degrade_on_exception``.
+        try:
+            text = (target / path).read_text(encoding="utf-8", errors="replace")
+        except FileNotFoundError, NotADirectoryError:
+            continue
+        if _frontmatter(text).get("status") not in _LIVE_STATUSES:
             continue
         if path in classified_paths:
             continue
