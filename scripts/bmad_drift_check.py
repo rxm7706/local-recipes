@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Mutation-only residual: ground-truth facts, the `--specs` status report,
-`--fix`, and `--write-baseline` for the local-recipes BMAD project docs.
+"""Mutation-only residual: ground-truth facts, `--fix`, and `--write-baseline`
+for the local-recipes BMAD project docs.
 
 Story 6.9 ("the `scripts/` shims retire") ported this script's own
 read-only VERDICT — the 18 finding kinds across pin currency, archive
@@ -17,17 +17,13 @@ What survives here, and why it could not simply move with the rest: Doctor
 sources are deliberately READ-ONLY gathers (Charter §6 — the producing
 station keeps the operational guard; only Doctor holds the verdict), so
 `factory.gather` never got a `--fix`/`--write-baseline` mutation path or
-the `--specs`/`--json` reporting modes, and nothing else in the repo has
-them either. All four are live and depended on today —
-`_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md`, `CLAUDE.md`'s own
-Sync-loop section (which documents `bmad-drift-check --specs` by name),
-and the `pixi run -e local-recipes bmad-drift-check -- --fix`/
-`-- --write-baseline` workflow all instruct real, working commands. So
-they stay here:
+the `--json` reporting mode, and nothing else in the repo has them either.
+All three are live and depended on today —
+`_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md` and the
+`pixi run -e local-recipes bmad-drift-check -- --fix`/`-- --write-baseline`
+workflow instruct real, working commands. So they stay here:
 
   --json / --groundtruth   print live ground-truth facts (unchanged)
-  --specs                  report each docs/specs intake spec's status +
-                            whether CLAUDE.md indexes it (unchanged)
   --fix                    apply the safe mechanical remediations (archive
                             moves, stray-file removal) (unchanged)
   --write-baseline         stamp .sync-baseline.json to the current state,
@@ -49,7 +45,6 @@ these flags):
   python scripts/bmad_drift_check.py --fix
   python scripts/bmad_drift_check.py --write-baseline
   python scripts/bmad_drift_check.py --json    # or --groundtruth, same output
-  python scripts/bmad_drift_check.py --specs
 Verdict (the 18 finding kinds, unchanged behavior):
   pixi run -e local-recipes bmad-drift-check
   python -m pyforge.doctor.sources bmad-drift
@@ -82,7 +77,6 @@ PROJ = REPO_ROOT / "_bmad-output" / "projects" / "pyforge-marshal"
 PLAN = PROJ / "planning-artifacts"
 IMPL = PROJ / "implementation-artifacts"
 BASELINE = PROJ / ".sync-baseline.json"  # records the repo state artifacts were last reconciled against
-DOCS_SPECS = REPO_ROOT / "docs" / "specs"  # Tier-1: BMAD-consumable intake specs (bmad-quick-dev entry points)
 
 Ver = tuple[int, int, int]
 
@@ -234,15 +228,6 @@ def fingerprint() -> dict:
 
 
 # ----------------------------------------------------------------- doc parsing
-def frontmatter_status(path: Path) -> str | None:
-    """The neutral `status:` from a spec's YAML frontmatter (framework-agnostic source of truth)."""
-    text = _read(path)
-    parts = text.split("---", 2)
-    fm = parts[1] if len(parts) >= 3 and text.lstrip().startswith("---") else text[:600]
-    m = re.search(r"^\s*status\s*:\s*([A-Za-z-]+)", fm, re.M)
-    return m.group(1).lower() if m else None
-
-
 def classify(path: Path) -> str:
     """Filing-convention classifier -- carried verbatim, uncalled within
     this reduced file (its sole caller, `check_coverage`, moved to
@@ -460,33 +445,11 @@ def cmd_json() -> int:
     return 0
 
 
-def cmd_specs() -> int:
-    """Report each Tier-1 intake spec's neutral status + whether it's indexed in CLAUDE.md."""
-    if not DOCS_SPECS.is_dir():
-        print(f"no docs/specs/ at {DOCS_SPECS}", file=sys.stderr)
-        return 0
-    claude = _read(REPO_ROOT / "CLAUDE.md")
-    specs = sorted(DOCS_SPECS.glob("*.md"))
-    w = max((len(p.name) for p in specs), default=4)
-    print(f"docs/specs intake specs ({len(specs)}) — status is the framework-neutral source of truth\n")
-    print(f"  {'SPEC'.ljust(w)}  {'STATUS':<12} INDEXED")
-    print(f"  {'-' * w}  {'-' * 12} -------")
-    by_status: dict[str, int] = {}
-    for p in specs:
-        st = frontmatter_status(p) or "(none)"
-        by_status[st] = by_status.get(st, 0) + 1
-        print(f"  {p.name.ljust(w)}  {st:<12} {'yes' if p.name in claude else 'NO'}")
-    print("\n  totals: " + "  ".join(f"{k}={v}" for k, v in sorted(by_status.items())))
-    return 0
-
-
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--json", "--groundtruth", action="store_true", dest="json",
                    help="print live ground-truth facts as JSON")
-    g.add_argument("--specs", action="store_true",
-                   help="report each docs/specs intake spec's status + CLAUDE.md index state")
     ap.add_argument("--fix", action="store_true",
                     help="apply safe mechanical remediations (archive moves, stray-file removal)")
     ap.add_argument("--write-baseline", action="store_true",
@@ -497,8 +460,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.json:
         return cmd_json()
-    if args.specs:
-        return cmd_specs()
     if args.write_baseline:
         BASELINE.write_text(json.dumps(fingerprint(), indent=2) + "\n", encoding="utf-8")
         fp = fingerprint()
@@ -530,7 +491,7 @@ def main(argv: list[str] | None = None) -> int:
     print(
         "this script no longer computes the drift verdict -- run "
         "`python -m pyforge.doctor.sources bmad-drift` for that. Pass --json/"
-        "--groundtruth, --specs, --fix, or --write-baseline for this script's "
+        "--groundtruth, --fix, or --write-baseline for this script's "
         "remaining mutation/reporting surface.",
         file=sys.stderr,
     )
