@@ -586,6 +586,60 @@ def test_the_shipped_tree_and_overlay_agree_across_the_three_readers(
     _assert_cutover_root_agrees(_FLAGS_JSON, environment)
 
 
+# Story 76.2: what every key in the shipped tree evaluates to, per environment -- the values
+# before the tree carried metadata. Metadata is inert to evaluation.
+_SHIPPED_BOOLEANS = {
+    "pyforge.three_surfaces": True,
+    "pyforge.steward.ghe_fleet_credentials": False,
+    "pyforge.steward.object_store_consumer": False,
+}
+_METADATA_FIELDS = ("owner", "story", "created", "on_everywhere", "cleanup_by")
+
+
+@pytest.mark.parametrize("environment", _ENVIRONMENTS)
+def test_the_shipped_tree_with_metadata_evaluates_as_it_did_without(
+    monkeypatch: pytest.MonkeyPatch,
+    environment: str,
+) -> None:
+    payload = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
+    assert set(payload["flags"]) == {*_SHIPPED_BOOLEANS, _CUTOVER_KEY}, (
+        "a key joined or left the shipped tree: state its evaluation here"
+    )
+    _isolate_flag_environment(monkeypatch, _FLAGS_JSON, environment)
+    for key, expected in _SHIPPED_BOOLEANS.items():
+        assert _three_readings(_FLAGS_JSON, key) == (expected,) * 3, (environment, key)
+    _assert_cutover_root_agrees(_FLAGS_JSON, environment)
+    assert evaluate_cutover_root(_FLAGS_JSON) == "local-recipes"
+
+
+@pytest.mark.parametrize("environment", _ENVIRONMENTS)
+def test_every_flag_in_the_shipped_tree_carries_its_metadata_through_the_file_provider(
+    monkeypatch: pytest.MonkeyPatch,
+    environment: str,
+) -> None:
+    from openfeature import api  # noqa: PLC0415 -- after the importorskip above
+
+    payload = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
+    _isolate_flag_environment(monkeypatch, _FLAGS_JSON, environment)
+    path = resolve_flags_path(_FLAGS_JSON)
+    assert path is not None
+    configure_file_provider(path)
+    client = api.get_client()
+    for key, entry in payload["flags"].items():
+        metadata = entry["metadata"]
+        assert tuple(metadata) == _METADATA_FIELDS, key
+        assert all(isinstance(value, str) for value in metadata.values()), key
+        details = (
+            client.get_boolean_details(key, False)
+            if key in _SHIPPED_BOOLEANS
+            else client.get_string_details(key, "")
+        )
+        assert details.error_code is None, (environment, key, details)
+        assert details.flag_metadata == metadata, (environment, key)
+        rendered = json.loads(render_flag_tree(environment, _FLAGS_JSON))
+        assert rendered["flags"][key]["metadata"] == metadata, (environment, key)
+
+
 @pytest.mark.parametrize(
     ("environment", "expected"),
     [("dev", "local-recipes"), ("staging", "local-recipes"), ("production", "foundry")],

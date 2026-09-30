@@ -438,11 +438,16 @@ def test_the_checked_in_tree_ships_the_flag_off(configured, name):
     flag = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))["flags"][
         object_store.FLAG_KEY
     ]
+    # Story 76.2: the flag also carries its owner and cleanup clock in `metadata`; the
+    # evaluation-bearing fields are what this test pins, and off means the clock is empty.
+    metadata = flag.pop("metadata")
     assert flag == {
         "state": "ENABLED",
         "variants": {"on": True, "off": False},
         "defaultVariant": "off",
     }
+    assert metadata["owner"] == "steward"
+    assert metadata["on_everywhere"] == metadata["cleanup_by"] == ""
     configure_file_provider(_FLAGS_JSON)
 
     with pytest.raises(object_store.ObjectStoreDisabled):
