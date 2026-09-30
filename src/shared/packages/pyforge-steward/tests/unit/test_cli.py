@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from pyforge.core.flags import FlagOff
 
@@ -186,6 +188,37 @@ def test_flag_off_raised_inside_a_duty_projects_to_the_usage_code(monkeypatch, c
     captured = capsys.readouterr()
     assert captured.err == "steward: flag pyforge.test.some_capability is off\n"
     assert captured.out == ""
+
+
+@pytest.mark.parametrize("argv", [["--help"], ["keys", "--help"], ["keys", "list"]])
+def test_a_bad_flag_environment_projects_to_the_usage_code_not_a_traceback(monkeypatch, capsys, argv):
+    """Story 76.1: `build_parser` reads a flag (`keys exec`'s help), so a bad
+    PYFORGE_ENVIRONMENT arrives before any verb runs -- a named message and steward's
+    usage code 2, never a traceback and exit 70."""
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "qa")
+    rc = main(argv)
+    assert rc == EXIT_USAGE
+    captured = capsys.readouterr()
+    assert captured.err.startswith("steward: ")
+    assert "PYFORGE_ENVIRONMENT" in captured.err
+    assert "'qa'" in captured.err
+    assert "Traceback" not in captured.err
+    assert captured.out == ""
+
+
+def test_a_bad_flag_overlay_projects_to_the_usage_code(monkeypatch, tmp_path, capsys):
+    tree = tmp_path / "flags.json"
+    tree.write_text(
+        json.dumps({"flags": {"pyforge.steward.ghe_fleet_credentials": {
+            "state": "ENABLED", "variants": {"on": True, "off": False}, "defaultVariant": "off"}}}),
+        encoding="utf-8",
+    )
+    (tmp_path / "flag-overlays.json").write_text(json.dumps({"dev": {"pyforge.nope": "off"}}), encoding="utf-8")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
+    assert main(["--help"]) == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert "pyforge.nope" in err and "Traceback" not in err
 
 
 def test_keys_exec_is_a_verb_of_keys_not_a_new_duty(capsys):

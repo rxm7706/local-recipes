@@ -102,3 +102,99 @@ def test_flip_refused_while_loop_running(tmp_path: Path) -> None:
     with pytest.raises(CutoverRootError, match="loop is running"):
         flip_root(flags, "foundry", realization, loop_home=tmp_path / "loops")
     assert read_cutover_root(flags) == "local-recipes"
+
+
+# --- Story 76.1: a flip is not masked by the per-environment overlay -------------
+
+
+def _flag_tree(directory: Path, overlays: object | None = None) -> Path:
+    flags = directory / "flags.json"
+    flags.write_text(
+        json.dumps(
+            {
+                "flags": {
+                    "pyforge.cutover_root": {
+                        "state": "ENABLED",
+                        "variants": {"local-recipes": "local-recipes", "foundry": "foundry"},
+                        "defaultVariant": "local-recipes",
+                    },
+                    "pyforge.other": {
+                        "state": "ENABLED",
+                        "variants": {"on": True, "off": False},
+                        "defaultVariant": "off",
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    if overlays is not None:
+        (directory / "flag-overlays.json").write_text(json.dumps(overlays), encoding="utf-8")
+    return flags
+
+
+_PINNED = {
+    "dev": {"pyforge.cutover_root": "local-recipes", "pyforge.other": "off"},
+    "staging": {"pyforge.cutover_root": "local-recipes", "pyforge.other": "on"},
+    "production": {"pyforge.cutover_root": "local-recipes"},
+}
+
+
+def test_the_reader_sees_the_overlay_pinned_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    flags = _flag_tree(tmp_path, {**_PINNED, "staging": {"pyforge.cutover_root": "foundry"}})
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "staging")
+    assert read_cutover_root(flags) == "foundry"
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    assert read_cutover_root(flags) == "local-recipes"
+
+
+@pytest.mark.parametrize("target", ["foundry", "local-recipes"])
+def test_flip_then_read_agree_in_every_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, target: str
+) -> None:
+    from pyforge.core import flags as core_flags
+
+    flags = _flag_tree(tmp_path, _PINNED)
+    other = "foundry" if target == "local-recipes" else "local-recipes"
+    flip_root(flags, other, tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
+    flip_root(flags, target, tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
+    for environment in core_flags.ENVIRONMENTS:
+        monkeypatch.setenv("PYFORGE_ENVIRONMENT", environment)
+        assert read_cutover_root(flags) == target, environment
+        rendered = json.loads(core_flags.render(environment, flags_path=flags))
+        assert rendered["flags"]["pyforge.cutover_root"]["defaultVariant"] == target, environment
+
+
+def test_flip_touches_only_the_cutover_key_of_the_overlay(tmp_path: Path) -> None:
+    flags = _flag_tree(tmp_path, _PINNED)
+    flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
+    overlays = json.loads((tmp_path / "flag-overlays.json").read_text(encoding="utf-8"))
+    assert overlays == {
+        "dev": {"pyforge.cutover_root": "foundry", "pyforge.other": "off"},
+        "staging": {"pyforge.cutover_root": "foundry", "pyforge.other": "on"},
+        "production": {"pyforge.cutover_root": "foundry"},
+    }
+    assert json.loads(flags.read_text(encoding="utf-8"))["flags"]["pyforge.cutover_root"]["defaultVariant"] == "foundry"
+
+
+def test_flip_leaves_an_environment_that_does_not_name_the_flag_alone(tmp_path: Path) -> None:
+    flags = _flag_tree(tmp_path, {"dev": {"pyforge.other": "on"}, "production": {"pyforge.cutover_root": "local-recipes"}})
+    flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
+    overlays = json.loads((tmp_path / "flag-overlays.json").read_text(encoding="utf-8"))
+    assert overlays == {"dev": {"pyforge.other": "on"}, "production": {"pyforge.cutover_root": "foundry"}}
+
+
+def test_flip_without_a_sibling_overlay_writes_no_overlay(tmp_path: Path) -> None:
+    flags = _flag_tree(tmp_path)
+    flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
+    assert not (tmp_path / "flag-overlays.json").exists()
+    assert read_cutover_root(flags) == "foundry"
+
+
+def test_flip_refuses_a_broken_overlay_before_writing_anything(tmp_path: Path) -> None:
+    flags = _flag_tree(tmp_path)
+    (tmp_path / "flag-overlays.json").write_text("{not json", encoding="utf-8")
+    before = flags.read_text(encoding="utf-8")
+    with pytest.raises(CutoverRootError, match="flip refused"):
+        flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
+    assert flags.read_text(encoding="utf-8") == before
