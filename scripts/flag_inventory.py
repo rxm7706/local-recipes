@@ -389,14 +389,15 @@ def classify_cap(
             continue
         entry = _entry(path, parts, kind)
         entries[(kind, entry.rel)] = entry
-    if entries:
+    if entries and not others:
         ordered = sorted(entries.values(), key=lambda e: (_KIND_ORDER[e.kind], e.rel))
         return RUNTIME, "; ".join(e.render() for e in ordered)
     return MODULE, "code with no entry point: " + _collapse_paths(others)
 
 
 def _collapse_paths(paths: Iterable[str]) -> str:
-    ordered = sorted(set(paths))
+    # The join can hand back prose or half-parenthesised fragments; a backtick inside one would leave the span open.
+    ordered = sorted({p.replace("`", "") for p in paths})
     shown = [f"`{p}`" for p in ordered[:_NAME_LIMIT]]
     if len(ordered) > _NAME_LIMIT:
         shown.append(f"(+{len(ordered) - _NAME_LIMIT} more)")
@@ -631,9 +632,25 @@ def build_reports(root: Path) -> dict[str, str]:
 
 
 def write_reports(out_dir: Path, reports: Mapping[str, str]) -> None:
+    """Write every report to a dot-prefixed temporary name, then replace the targets: a failure leaves none replaced.
+
+    A target that exists and is not a regular file is refused before the first replace, so it can never leave a mix
+    of new and stale reports. The temporaries are removed on any outcome.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
-    for name in sorted(reports):
-        (out_dir / name).write_text(reports[name], encoding="utf-8", newline="\n")
+    targets = {name: out_dir / name for name in sorted(reports)}
+    temps = {name: out_dir / f".{name}.{os.getpid()}.tmp" for name in targets}
+    try:
+        for name, temp in temps.items():
+            temp.write_text(reports[name], encoding="utf-8", newline="\n")
+        for target in targets.values():
+            if target.exists() and not target.is_file():
+                raise IsADirectoryError(f"{target} exists and is not a regular file")
+        for name, temp in temps.items():
+            os.replace(temp, targets[name])
+    finally:
+        for temp in temps.values():
+            temp.unlink(missing_ok=True)
 
 
 def build_parser() -> argparse.ArgumentParser:
