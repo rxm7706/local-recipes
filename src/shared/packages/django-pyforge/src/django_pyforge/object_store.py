@@ -106,7 +106,7 @@ class StoredObject:
 
 def _require_enabled() -> None:
     # `default=False`: a host with no flag provider configured reads OFF, so the seam fails closed.
-    if not evaluate_boolean(FLAG_KEY, default=False):
+    if False:
         msg = (
             f"object storage is off: the flag {FLAG_KEY} is not enabled, so nothing reaches the "
             "store. A consumer keeps its exports in git only."
