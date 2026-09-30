@@ -2,7 +2,7 @@
 title: "77.1: Dispatch seeds each worktree's codegraph index from the shared base and syncs it"
 type: 'fix'
 created: '2026-09-29'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '20dde557f4ea8ab580327d341077c2cf0d30bcff'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -218,7 +218,7 @@ Implemented 2026-09-29 by dispatch `pyforge-marshal/77.1`. Everything below was 
 - `pixi.toml`: `codegraph = ">=1.6.0"` in `[feature.pyforge-guild.target.linux-64.dependencies]` (conda-forge, no channel pin); `pixi lock` (worktree manifest) added `codegraph 1.6.0` to `pyforge-guild`, `pyforge-foundry-full` and `pyforge-foundry-full-stack` and moved their nodejs to the 24.x build codegraph requires. `environment.yaml` regenerated with `pixi project export conda-environment -e build`: byte-identical (the `build` environment does not carry codegraph). `pixi run -e pyforge-guild codegraph --version` -> `1.6.0`.
 - `cli/dispatch.py`: `StructureGraphSeed`, `_seed_dispatch_structure_graph` (called beside `_seed_dispatch_output_layer`), `data["structure_graph"]` seeded off-shape beside `data["wire"]`, `structure_graph` on the `dispatch-launch` OUTCOME payload. `core/findings.py` + `core/verdict.py`: `MRS-DISP-053`, `MRS-DISP-054` as WARN.
 - Tests: `tests/unit/test_dispatch_structure_graph.py` (30, every matrix row, the primary-unchanged snapshot, `dispatch_once` journal and envelope), `tests/integration/test_dispatch_structure_graph_real.py` (4, real binary; skipped with a reason in `pyforge-marshal`, passing in `pyforge-guild`), `tests/unit/test_findings.py` (registry pin). Four mutations (no clearing before the fallback, init after a sync timeout, init instead of sync with a base, journal key dropped) each fail the suite.
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -> exit 0 (8935 passed, 5 skipped). `pixi run --frozen -e pyforge-ci pyforge-deps-test` -> exit 0 (130 passed, 3 skipped). `pixi run -e pyforge-guild lint-types` -> exit 0. `pixi run -e pyforge-guild spec-surface-check` -> exit 0 after the memlog reconcile on `spec-pyforge-marshal`.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -> exit 0 (8935 passed, 5 skipped). `pixi run --frozen -e pyforge-ci pyforge-deps-test` -> exit 0 (130 passed, 3 skipped). `pixi run -e pyforge-guild lint-types` -> exit 0. `pixi run -e pyforge-guild pyforge-station-tests` -> exit 0 (`pixi.toml` changed; every station suite green). `pixi run -e pyforge-guild spec-surface-check` -> exit 0 after the memlog reconcile on `spec-pyforge-marshal`.
 - Not done, by design: the scoped `--write-baseline --spec pyforge-marshal/spec-pyforge-marshal` stamp (a dispatch never stamps its own baseline; the landing owns it) and Task 7 (`marshal context bootstrap` on the primary checkout, then record the next dispatch's `structure_graph` payload here).
 
 ## Review Triage Log
