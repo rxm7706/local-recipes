@@ -576,7 +576,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/refs.py": "f44bb0461a79bb2f5af144ca83d99e33f835ca3a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/rekey.py": "ecb719460617b32c03f88a5aa19447b5eb2b717a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/score.py": "26e8ca6fab689d64d16f67129a2999d4771fc722",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "64b22d615a7fb23e7868efbda0ccd264711de49c",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "1eea59af715c5d666fc85a5afb3c046ae67f10b5",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py": "6745212aff03cff4f8a454bcf4935ec7c087ccf7",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "69c37216b49848d59e67f94f8a444cbbccb85a76",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/backlog_intake.py": "e358154551e49424ea40980b7de3167727cde589",
@@ -713,7 +713,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_pixi_currency.py": "4c5e040199b26b2fae9e683f91e93bb43036a4b2",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_platform_policy.py": "d1290cf5257af24f00ec7d79c4b2afe294421080",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py": "9a7f6fcaeef1ba2477c02c403747892383de3424",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py": "d3fdf62427e552493dba1412fe247f2ce198b0d6",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py": "386059f5923a44b96da43733eee5811cf117724f",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_consistency.py": "56c5f61d3f500e0870e70e4df7995e01748412f3",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_open_questions.py": "f59feb575b4607294ec890a5ca4eab5222850b62",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_promissory.py": "a6d165e95e3a64b16347c003425c7513a09dd9a0",
@@ -722,7 +722,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "3ce2bb5ab3d6f9e2e55d91e913470dc2d30835dd"
+  "memlog": "49cd88a36d7ecd1f6c9f2f738f164ba7cb3055b2"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -3067,7 +3067,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/refs.py": "f44bb0461a79bb2f5af144ca83d99e33f835ca3a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/rekey.py": "ecb719460617b32c03f88a5aa19447b5eb2b717a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/score.py": "26e8ca6fab689d64d16f67129a2999d4771fc722",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "64b22d615a7fb23e7868efbda0ccd264711de49c",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "1eea59af715c5d666fc85a5afb3c046ae67f10b5",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py": "6745212aff03cff4f8a454bcf4935ec7c087ccf7",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "69c37216b49848d59e67f94f8a444cbbccb85a76",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/backlog_intake.py": "e358154551e49424ea40980b7de3167727cde589",
@@ -3089,7 +3089,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py": "125a4d9d581a1f196398028993093cd42a6544e2",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pixi_currency.py": "5c7b5801d9a4ee6e60926d80825842565000bac5",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/platform_policy.py": "7dcf6aa67967f984ce3a37250e9dfc5308730f21",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py": "7a479d98d5163ee685a06d702ee4f33977a015c9",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py": "b9e3a238b538c76d5c64be6346f4260226bdb9da",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py": "195ccfd30160b534add488ebcea16bcac409da4b",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py": "fe061fce39ca5e85b5693512f7600835b552fc33",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/__init__.py": "3907e36b301bd8f1ae866c8754b1d9fac7b5f4b2",
@@ -3452,7 +3452,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7841247dfd900ae288c19463e38af1276d4d9e81",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "909a2f23a3a42db3a3b791a9ea895ee91ca99a70"
+  "memlog": "a418ac7cc778e6f0813a947b495722fa3761ff0a"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
