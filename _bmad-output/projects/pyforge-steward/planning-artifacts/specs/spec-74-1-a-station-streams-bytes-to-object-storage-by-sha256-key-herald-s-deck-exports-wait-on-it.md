@@ -2,7 +2,7 @@
 title: "74.1: A station streams bytes to object storage by sha256 key — herald's deck exports wait on it"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: 73dca4a27565789905adcaf19aa223dfef9038b4
 review_loop_iteration: 0
 followup_review_recommended: true
@@ -268,3 +268,64 @@ Deps: —. Herald Stories 29.1 and 29.2 wait on this story as `blocked` rows in 
   - `[low]` `[patch]` Verification Gap: the "stored content type comes back" rule on a repeat put is unpinned (a mutation left all 69 tests green) — patched with the two-content-type test.
   - `[medium]` `[patch]` Verification Gap: the "no boto3 / botocore import" boundary is claimed as test-pinned but is not, and django-pyforge declares neither dependency — verified against its `pyproject.toml`. Patched with a meta-test rule and a tmp-tree mutation proof.
   - `[low]` `[defer]` Verification Gap (other finding): the `pixi.toml:226` comment still says "no consumer wired in yet" — true and stale, but a `pixi.toml` edit needs eight spec reconciles and `pyforge-station-tests` across every station suite; deferred to batch with the next `pixi.toml` change.
+
+## Auto Run Result
+
+Status: done
+
+### Summary of the implemented change
+
+`django_pyforge.object_store` is the one contract a station portal uses to reach CAP-97's S3 seam: `put_stream` hashes the caller's stream while spooling it in fixed chunks to a `SpooledTemporaryFile` and uploads it under `<prefix>/sha256/<hex>` unless `head_object` already finds it; `open_stream` yields the object in chunks and `stat` returns its size and content type. Keys are checked as `sha256/<64 lowercase hex>` before any client call. The client comes from the setting-named factory through `import_string`, so the chrome never imports the host's `config`. `OBJECT_STORAGE_BUCKET` and `OBJECT_STORAGE_PREFIX` (no default, `ImproperlyConfigured` naming the one unset) and `OBJECT_STORAGE_CLIENT_FACTORY` join `config/settings/base.py`. The flag `pyforge.steward.object_store_consumer` ships `defaultVariant: off` in `config/flags.json` and is read with `evaluate_boolean(default=False)`, so OFF and an unconfigured provider both raise `ObjectStoreDisabled` before the client is touched. No presigned URLs.
+
+### Files changed
+
+- `src/shared/packages/django-pyforge/src/django_pyforge/object_store.py` — new: `StoredObject`, `ObjectStoreDisabled`, `put_stream`, `open_stream`, `stat`, the `_BodyChunks` iterator, setting-name constants and `SPOOL_MAX_BYTES` / `CHUNK_BYTES`.
+- `src/platform/config/settings/base.py` — the three new settings; the secret references are untouched.
+- `src/platform/config/flags.json` — the new flag, default off.
+- `src/platform/config/object_storage.py` — docstring only: names the consumer.
+- `src/platform/tests/test_object_store_seam.py` — new: the I/O matrix and the ACs against a real ephemeral silo and two flagd trees, plus silo-free fake-client tests for the sha256, the dedup skip, the bounded reads, the stored content type and the iterator close.
+- `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` — new: the AST guards (`pyforge.*` under `src/platform` with the closed four-file allowlist, `config` under `django_pyforge`, `boto3` / `botocore` in `object_store.py`) with tmp-tree mutation proofs.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` and `.../spec-pyforge-unifying-strategy/.memlog.md` — the surface reconcile lines naming every governed path changed.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` — `DW-steward-74-1` and `DW-steward-74-1-2` to `-4`, the twins of this spec's four `deferred:` entries.
+- This story spec — the run's write-back.
+
+### Review findings breakdown
+
+39 findings: high 0, medium 7, low 21, false 10, maybe-false 1. Routing: 10 rows patched (6 entries), 4 rows deferred (3 new `deferred:` entries), 25 rejected. Patched counts by verdict: medium 5 rows in 4 entries, low 5 rows in 2 entries.
+
+Patches applied:
+- An unstarted `open_stream` generator leaked its body: replaced by the `_BodyChunks` iterator class, with a close-before-first-read test (medium).
+- The ASGI buffering of a sync iterator and the "bounded temporary file" wording: docstrings now say so (medium; low).
+- The silo-free regression gap on the sha256, dedup and bounded reads: fake-client tests added, each killing the mutation the reviewer found (medium).
+- The unpinned `boto3` / `botocore` boundary: a meta-test rule and mutation proof added (medium).
+- The unpinned stored content type on a repeat put: a two-content-type test (low).
+- The import-only scan not naming its limit: a docstring sentence (low).
+
+Deferred (each has a `location:` path and a tracked twin):
+- `DW-steward-74-1-2` — `head_object` answers 403 without `s3:ListBucket` on real S3 (medium, unverified; settled by Story 74.2's credential).
+- `DW-steward-74-1-3` — the silo-backed tests skip in Platform CI and `platform-ci-local` (medium; the same pattern already holds for CAP-97's test).
+- `DW-steward-74-1-4` — the stale `pixi.toml:226` comment (low; a `pixi.toml` edit costs eight spec reconciles and every station suite).
+
+Rejected, each with its reason in the Review Triage Log above: the four intent-alignment divergences that are settled by the spec (runner split, the four-file allowlist, "unset" scope, "both calls"); the stamp-width and baseline-hunk findings (moot, the stamp was reverted); the ledger row and status flip (required by the detector and the workflow); the dedup-trusts-`ContentLength`, concurrent-put, `read()`-returns-`None`, non-callable-factory, dedup-versus-`stat` content-type, content-type-validation and bucket/prefix-whitespace findings (states not shown reachable; each fix adds a guard); the raw-`ClientError` finding (the contract prescribes it and the fix edits it); the two-call `stat` race (the key is content-addressed and immutable); the allowlist-has-no-owner finding (restates `DW-steward-74-1`); the AST-brittleness and test-hygiene nits; the undocumented-variables finding (the chart is Story 74.2's); the flag-metadata finding (it lives in the spec frontmatter); and the `PYFORGE_FLAGS_PATH` leak (nothing reads it, and the existing flag test does the same).
+
+### Follow-up review recommendation
+
+`followup_review_recommended: true`: this first pass patched four medium entries. The named unverified risk is `_BodyChunks`, a new iterator class that replaced a generator: its close, exhaustion, error and idempotence semantics are tested against a fake body and a real silo, but never behind a real Django `StreamingHttpResponse` served by this platform's uvicorn worker, and the ASGI caveat in the `open_stream` docstring rests on Django 5.2.17's `StreamingHttpResponse.__aiter__` source, not on a test.
+
+### Verification performed
+
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0, 1852 passed, 2 skipped; the story's own meta-test alone: 10 passed, none skipped.
+- The seam test in the `platform-ci-test` environment against a real ephemeral silo — 73 passed, 0 skipped.
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — exit 0; system checks, ruff, ruff format, mypy, the policy suite, sqlmigrate extraction and the full pytest suite all PASS.
+- `python scripts/spec_surface_reconcile.py` and `pixi run -e pyforge-guild spec-surface-check` — both exit 0, with no baseline stamp.
+- I/O matrix audit: each of the eight rows (first put, repeat put, large put, get, bad key, unset setting, flag OFF, store down) has a covering test that ran and passed; the subagent also killed 16 hand-made mutations of `object_store.py`, and eight more after the review fixes.
+- `pixi run -e pyforge-guild detectors-ci` — exit 1 on two findings, neither from this diff (see the residual risks).
+
+### Residual risks
+
+- `detectors-ci` reds on `ledger-direction` for `pyforge-marshal/77-1`: `main` landed that story after this branch point and this branch's marshal ledger predates it, so the finding clears when the branch merges with `main`; this diff touches no ledger.
+- `detectors-ci` reds on `bmad_estate_check` (`skills` section) in this dispatch worktree only: the dispatch seeds a gitignored `.claude/skills/caveman/` (131 skill directories on disk, 130 tracked) that `main`'s catalog does not list; this diff touches no skill file, and regenerating the catalog here would commit an entry for a gitignored skill.
+- The story's Boundaries say to stamp each Spec scoped with `--spec`, but this run's instruction forbids `--write-baseline`; the implementation subagent stamped twice, and both stamps were restored from `baseline_revision`. The surface guards pass on the memlog reconciles alone; a scoped stamp is left to whoever lands the story.
+- The silo round trips are proven locally only (`DW-steward-74-1-3`); a consumer on real S3 may meet the 403 case (`DW-steward-74-1-2`).
+- Herald's Stories 29.1 and 29.2 must handle the raw `ClientError` a missing key raises, and must offload chunks to a thread under ASGI; neither is a seam defect, both are in the docstrings now.
+- `.pixi/envs/` in this worktree now holds `platform-ci-test`, `platform-dev`, `platform-object-storage`, `pyforge-steward` and `pyforge-warden` (gitignored).
