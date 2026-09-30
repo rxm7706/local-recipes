@@ -2,7 +2,7 @@
 title: "77.1: The console lists Tier-2 Specs and the archived Dreams"
 type: 'fix'
 created: '2026-09-29'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'd4ed036eb7f317a1650a72afb64c618bb41539c9'
 review_loop_iteration: 0
 followup_review_recommended: false
