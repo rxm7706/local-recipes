@@ -226,6 +226,7 @@ def open_stream(key: str) -> Iterator[bytes]:
         ImproperlyConfigured: the bucket, the prefix or the client factory is unusable.
     """
     _require_enabled()
+    _check_key(key)
     bucket, prefix = _location()
     body = _client().get_object(Bucket=bucket, Key=f"{prefix}/{key}")["Body"]
     return _chunks(body)
