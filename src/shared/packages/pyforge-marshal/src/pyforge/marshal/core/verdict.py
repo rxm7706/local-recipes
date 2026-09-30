@@ -1191,6 +1191,16 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # a missing navigation aid must never refuse a launch.
     "MRS-DISP-053": Verdict.WARN,
     "MRS-DISP-054": Verdict.WARN,
+    # Story 74.2 (spec-feature-flag-governance CAP-3): the pre-session flag-gate
+    # consult. 052 refuses the dispatch (the gate reds the spec, or could not
+    # judge it -- unevaluable is failure, AD-8): ERROR, the tier of MRS-DISP-041
+    # above, which refuses a dispatch before it provisions anything. 055 is the
+    # proceeds-with-a-warning half (a pre-rule spec; the gate script absent):
+    # WARN, the tier of MRS-DISP-042/049/053. Two codes because this table
+    # classifies by code alone (AD-31) -- a WARN under the ERROR-tier 052 would
+    # red a dispatch that proceeds.
+    "MRS-DISP-052": Verdict.ERROR,
+    "MRS-DISP-055": Verdict.WARN,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

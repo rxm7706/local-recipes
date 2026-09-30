@@ -52,7 +52,7 @@ from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
-from ..core import dispatch_fleet, dispatch_re_preflight, gate, harness_profile, policy
+from ..core import dispatch_fleet, dispatch_flag_gate, dispatch_re_preflight, gate, harness_profile, policy
 from ..core import promotion as promotion_core
 from ..core.dispatch_completion import (
     DispatchGitFacts,
@@ -487,6 +487,37 @@ def _surface_session_precondition_findings(*, process: ProcessPort, repo_root: P
         code="MRS-DISP-049",
         severity=Severity.WARN,
         message=f"steward session check reported a non-ok session-precondition verdict: {detail}",
+    )
+
+
+_FLAG_GATE_TIMEOUT_S = 60.0
+
+
+def _consult_flag_gate(*, fs: FsPort, process: ProcessPort, repo_root: Path, spec_path: Path) -> Finding | None:
+    """Story 74.2 (spec-feature-flag-governance CAP-3): consult the Guild's flag
+    gate on the story's tracked spec before any worktree or session exists.
+
+    Runs ``<this interpreter> scripts/flag_gate_check.py --spec <spec>`` from
+    ``repo_root`` through ``process`` -- the gate is a process, never an import
+    (Charter Section 6: it belongs to no station) -- and hands its exit code and
+    JSON to ``core.dispatch_flag_gate``, which decides. The result: an ERROR
+    ``MRS-DISP-052`` (the gate reds the spec, or could not judge it -- a timeout
+    included), a WARN ``MRS-DISP-055`` (a pre-rule spec; the gate script absent
+    from this repository), or ``None`` (the gate passes). No policy key turns
+    the consult off: CI reds regardless."""
+    if not fs.exists(repo_root / dispatch_flag_gate.GATE_SCRIPT_REL):
+        return dispatch_flag_gate.gate_absent_finding()
+    try:
+        spec_arg = spec_path.relative_to(dispatch_core.canonical_repo_root(repo_root)).as_posix()
+    except ValueError:
+        spec_arg = str(spec_path)
+    argv = [sys.executable, dispatch_flag_gate.GATE_SCRIPT_REL, "--spec", spec_arg]
+    try:
+        result = process.run(argv, cwd=repo_root, timeout_s=_FLAG_GATE_TIMEOUT_S)
+    except ProcessError as exc:
+        return dispatch_flag_gate.decide_gate_failure(spec_arg, str(exc))
+    return dispatch_flag_gate.decide_gate_result(
+        spec_arg, returncode=result.returncode, stdout=result.stdout, stderr=result.stderr
     )
 
 
@@ -2123,6 +2154,16 @@ def dispatch_once(
             )
         )
         return _done()
+
+    # Story 74.2 (spec-feature-flag-governance CAP-3): the Guild's flag gate is
+    # consulted before the policy composes and before any worktree or harness
+    # session exists -- a story the gate would red is refused here, with zero
+    # changed paths, instead of by MRS-GATE-010 after the work is done.
+    flag_finding = _consult_flag_gate(fs=fs, process=process, repo_root=repo_root, spec_path=spec_path)
+    if flag_finding is not None:
+        findings.append(flag_finding)
+        if flag_finding.severity == Severity.ERROR:
+            return _done()
 
     effective_policy = _compose_policy(slug, flags=policy_flags)
     difficulty = dispatch_core.read_declared_difficulty(spec_text)

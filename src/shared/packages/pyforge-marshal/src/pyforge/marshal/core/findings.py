@@ -1833,6 +1833,20 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # finding.
         "MRS-DISP-053",
         "MRS-DISP-054",
+        # Story 74.2 (spec-feature-flag-governance CAP-3): the pre-session
+        # consult of the Guild's flag gate (`scripts/flag_gate_check.py --spec`)
+        # in `dispatch_once`'s preflight. 052 ERROR: the gate reds the story's
+        # spec (a post-rule `type: feature` spec with neither a `flag:` block
+        # nor a `flag-exempt:` value), or the gate could not judge it (exit 2,
+        # a timeout, output that is not its JSON -- AD-8, unevaluable is
+        # failure); the dispatch is refused before any worktree or session.
+        # 055 WARN: the gate warned (a pre-rule spec, backlog warns until it
+        # is retrofitted) or the script is absent from this repository (one
+        # that has not adopted the rule); the dispatch proceeds. Its own code,
+        # not 052 -- the verdict is classified by code alone and AD-31 gives
+        # one code one rung. (053/054 are Story 77.1's, 050 Story 65.2's.)
+        "MRS-DISP-052",
+        "MRS-DISP-055",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
