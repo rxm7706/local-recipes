@@ -91,9 +91,11 @@ so "off in production, on in staging and dev" is a reviewed value, not an ops
 convention. The overlay defines nothing (a key, variant or environment the tree
 or chart lacks, or an entry that is an object, fails the render with a named
 error), and a flag whose tree `state` is `DISABLED` stays off everywhere.
-`PYFORGE_ENVIRONMENT` is set on every platform pod, and a checkout renders the
-same bytes (`python -m django_pyforge.flags render --environment <env>`;
-`pyforge.core.flags.read_boolean` composes it for a station CLI).
+`PYFORGE_ENVIRONMENT` is set on every workload that reads flags, and a checkout
+renders the same content once parsed (`python -m django_pyforge.flags render
+--environment <env>`; Helm sorts keys and escapes HTML characters where Python
+keeps insertion order, so the bytes differ; `pyforge.core.flags.read_boolean`
+composes it for a station CLI).
 
 Renders: web Deployment (gunicorn, probes `/api/health` liveness + `/ht/`
 readiness), Celery worker Deployment (the general pool), a `worker-builds`

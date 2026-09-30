@@ -188,10 +188,15 @@ def evaluate_boolean(key: str = FLAG_KEY, default: bool = False) -> bool:
 
 
 def evaluate_cutover_root(source: Path | str | None = None) -> str:
-    """In-process cutover root — same file the FILE provider serves."""
+    """In-process cutover root -- the CLI reader over the tree itself.
+
+    ``read_cutover_root`` composes the sibling ``flag-overlays.json`` for the current
+    environment (Story 76.1), so this is an independent reading of the value the FILE
+    provider serves from the rendered file.
+    """
     from pyforge.core.cutover_root import read_cutover_root
 
-    path = resolve_flags_path(source)
+    path = resolve_tree_path(source)
     return read_cutover_root(path)
 
 

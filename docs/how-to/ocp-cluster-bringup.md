@@ -290,10 +290,16 @@ This creates an **ImageStream** `<project>/platform:local` the chart can pull.
 ```sh
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
   -f src/platform/deploy/overlays/ocp/core-overrides.yaml \
+  --set-file flags.tree=src/platform/config/flags.json \
+  --set-file flags.overlays=src/platform/config/flag-overlays.json \
+  --set flags.environment=dev \
   --set image.registry=default-route-openshift-image-registry.apps-crc.testing \
   --set image.repository=<project>/platform \
   --set image.tag=local
 ```
+
+`flags.environment` (`dev` here; `staging` or `production` for those releases) is required: the chart
+mounts the flag tree rendered for it (`docs/explanation/platform-deployment-architecture.md`).
 
 Then install the Route overlay per `README.md` in this directory.
 
@@ -324,6 +330,9 @@ kubectl create secret generic platform-secrets \
 
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
   -f src/platform/deploy/overlays/ocp/core-overrides.yaml \
+  --set-file flags.tree=src/platform/config/flags.json \
+  --set-file flags.overlays=src/platform/config/flag-overlays.json \
+  --set flags.environment=dev \
   --namespace platform \
   --set image.registry=default-route-openshift-image-registry.apps-crc.testing \
   --set image.repository=platform/platform \

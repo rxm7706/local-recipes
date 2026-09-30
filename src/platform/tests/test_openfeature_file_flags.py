@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 import time
 from http import HTTPStatus
 from pathlib import Path
@@ -28,6 +29,7 @@ from django_pyforge.flags import configure_file_provider
 from django_pyforge.flags import eval_view
 from django_pyforge.flags import evaluate_boolean
 from django_pyforge.flags import evaluate_cli_boolean
+from django_pyforge.flags import evaluate_cutover_root
 from django_pyforge.flags import evaluate_from_source
 from django_pyforge.flags import flags_asgi_app
 from django_pyforge.flags import main as flags_main
@@ -507,6 +509,23 @@ def test_an_unset_environment_reads_the_dev_rendering(
         assert _three_readings(tree, key) == (_EXPECTED["dev"][key],) * 3, key
 
 
+_CUTOVER_KEY = "pyforge.cutover_root"
+
+
+def _assert_cutover_root_agrees(tree: Path, environment: str) -> None:
+    """The non-boolean key: the FILE provider's string, the CLI reader
+    (`read_cutover_root`, which composes the overlay itself) and the rendered tree."""
+    from openfeature import api
+
+    path = resolve_flags_path(tree)
+    assert path is not None
+    configure_file_provider(path)
+    provider = api.get_client().get_string_value(_CUTOVER_KEY, "")
+    entry = json.loads(render_flag_tree(environment, tree))["flags"][_CUTOVER_KEY]
+    rendered = entry["variants"][entry["defaultVariant"]]
+    assert provider == evaluate_cutover_root(tree) == rendered, environment
+
+
 @pytest.mark.parametrize("environment", _ENVIRONMENTS)
 def test_the_shipped_tree_and_overlay_agree_across_the_three_readers(
     tmp_path: Path,
@@ -524,6 +543,41 @@ def test_the_shipped_tree_and_overlay_agree_across_the_three_readers(
     for key in boolean_keys:
         provider, from_source, cli = _three_readings(_FLAGS_JSON, key)
         assert provider == from_source == cli, (environment, key)
+    _assert_cutover_root_agrees(_FLAGS_JSON, environment)
+
+
+@pytest.mark.parametrize(
+    ("environment", "expected"),
+    [("dev", "local-recipes"), ("staging", "local-recipes"), ("production", "foundry")],
+)
+def test_the_non_boolean_key_follows_the_overlay_on_every_reader(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    environment: str,
+    expected: str,
+) -> None:
+    tree = tmp_path / "flags.json"
+    tree.write_text(
+        json.dumps(
+            {
+                "flags": {
+                    FLAG_KEY: _entry("on"),
+                    _CUTOVER_KEY: {
+                        "state": "ENABLED",
+                        "variants": {"local-recipes": "local-recipes", "foundry": "foundry"},
+                        "defaultVariant": "local-recipes",
+                    },
+                },
+            },
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "flag-overlays.json").write_text(
+        json.dumps({"production": {_CUTOVER_KEY: "foundry"}}), encoding="utf-8"
+    )
+    _isolate_flag_environment(monkeypatch, tree, environment)
+    _assert_cutover_root_agrees(tree, environment)
+    assert evaluate_cutover_root(tree) == expected
 
 
 def test_the_provider_reads_a_materialised_copy_and_the_tree_stays_the_source(
@@ -663,6 +717,46 @@ def test_render_verb_refuses_with_the_named_error(
         flags_main(["render"])
 
 
+def test_render_verb_reports_an_unwritable_output_path(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    tree = _fixture_pair(tmp_path)
+    blocker = tmp_path / "a-file"
+    blocker.write_text("not a directory", encoding="utf-8")
+    for output in (blocker / "flags.json", tmp_path):  # a parent that is a file; a directory
+        argv = ["render", "--environment", "dev", "--source", str(tree)]
+        assert flags_main([*argv, "--output", str(output)]) == 1
+        err = capsys.readouterr().err
+        assert "cannot write" in err
+        assert str(output) in err
+        assert "Traceback" not in err
+
+
+def test_without_pyforge_core_the_host_reads_the_tree_as_it_is(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The mcp-host sidecar image copies `django_pyforge` but not `pyforge/core`, and its
+    `AppConfig.ready()` calls `configure_from_env()` -> `resolve_flags_path()`. With
+    `pyforge` unimportable the resolver must return the tree (or None), never raise."""
+    tree = _fixture_pair(tmp_path)
+    _isolate_flag_environment(monkeypatch, tree, "production")
+    monkeypatch.setattr("django_pyforge.flags.IN_CLUSTER_FLAGS_PATH", tmp_path / "absent" / "flags.json")
+    monkeypatch.setitem(sys.modules, "pyforge", None)
+    monkeypatch.setitem(sys.modules, "pyforge.core", None)
+    monkeypatch.setitem(sys.modules, "pyforge.core.flags", None)
+    with pytest.raises(ImportError):
+        __import__("pyforge.core.flags")  # the block is real
+    assert resolve_flags_path() == tree  # PYFORGE_FLAGS_PATH
+    assert resolve_flags_path(tree) == tree
+    assert read_flag_tree_bytes(tree) == tree.read_bytes()
+    monkeypatch.delenv("PYFORGE_FLAGS_PATH")
+    monkeypatch.delenv("FLAGD_OFFLINE_FLAG_SOURCE_PATH")
+    monkeypatch.chdir(tmp_path)  # no src/platform/config/flags.json above
+    assert resolve_flags_path() is None
+
+
 def _configmap_defaults(rendered: dict[str, Any]) -> dict[str, str]:
     return {key: entry["defaultVariant"] for key, entry in rendered["flags"].items()}
 
@@ -680,15 +774,27 @@ def test_chart_configmap_is_the_tree_rendered_for_the_environment(
         doc["spec"]["template"]["spec"]
         for doc in docs
         if doc.get("kind") in {"Deployment", "StatefulSet", "Job"}
+    ] + [
+        doc["spec"]["jobTemplate"]["spec"]["template"]["spec"]
+        for doc in docs
+        if doc.get("kind") == "CronJob"
     ]
     readers = 0
     for spec in pods:
-        for container in spec["containers"]:
+        for container in [*spec["containers"], *(spec.get("initContainers") or [])]:
             env = {
                 item["name"]: item.get("value") for item in container.get("env") or []
             }
-            if "PYFORGE_FLAGS_PATH" in env:
+            mounts_flags = any(
+                mount.get("name") == "flags"
+                for mount in container.get("volumeMounts") or []
+            )
+            if "PYFORGE_FLAGS_PATH" in env or mounts_flags:
                 readers += 1
+            # a workload that mounts the tree must say which environment it was rendered for
+            if mounts_flags:
+                assert env.get(_ENV_ENVIRONMENT) == environment, container["name"]
+            if "PYFORGE_FLAGS_PATH" in env:
                 assert env.get(_ENV_ENVIRONMENT) == environment, container["name"]
     assert readers, "at least one workload reads the flag tree"
 
