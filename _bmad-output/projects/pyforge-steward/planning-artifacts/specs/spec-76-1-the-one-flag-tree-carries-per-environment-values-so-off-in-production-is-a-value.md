@@ -2,7 +2,7 @@
 title: "76.1: The one flag tree carries per-environment values, so off in production is a value"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: '6b7d586b33fdf7edf7b54b81c9cacc8f33efffa7'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -334,3 +334,35 @@ Rejected, with the recorded reason (full rows in the Review Triage Log):
 - The full platform suite ran once after the patch round; the flaky Redis test aside, it is green. The container and promotion stages of `platform-ci-local`, the full `pr-preflight` bundle and the other seven station suites were not run.
 - The helm-gated chart tests' CI coverage is unverified (deferred).
 - A flip now edits two tracked files (`flags.json` and `flag-overlays.json`); the flip stories 44.4–44.6 are parked, so no live flow exercises it yet.
+
+### Follow-up review pass (2026-09-29)
+
+This pass is the one follow-up the first pass recommended (`followup_pass` = true), run over the diff since `baseline_revision` by four fresh layers. It re-checked the patch-round code the first pass could not review: `flip_root`'s overlay write, `read_cutover_root`'s composition and the mcp-host `ImportError` fallback.
+
+Summary of implemented change: the patch-round code held except one gap. `flip_root` said it validated the overlay before writing either file but only checked that the document parsed; an overlay naming a key the tree lacks, a variant the flag lacks, an unknown environment or an object entry flipped both files and then made every reader refuse. It now composes the overlay it will write (every entry of every environment) first and refuses with `flip refused: <named entry>`, leaving both files untouched. The `resolve_flags_path` docstring also overstated when an edit reaches the FILE provider; it now says a checkout process that ran `configure_from_env` with `PYFORGE_FLAGS_PATH` unset serves a frozen copy until restart (the in-cluster mount is polled live). No behaviour changed beyond the `flip_root` refusal.
+
+Files changed in this pass:
+
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py` — `flip_root` composes the overlay before either write.
+- `src/shared/packages/pyforge-steward/tests/unit/test_cutover.py` — four refusal cases (unknown key, unknown variant, unknown environment, object entry): the named entry in the message, both files unchanged.
+- `src/shared/packages/django-pyforge/src/django_pyforge/flags.py` — `resolve_flags_path` docstring only.
+- `spec-pyforge-steward` and `spec-pyforge-unifying-strategy` memlogs — surface-reconcile entries naming the three paths above (appended with `_bmad/scripts/memlog.py`; no `--write-baseline`).
+
+Review findings breakdown: 32 findings (high 1, medium 4, low 15, false 9, maybe-false 3). Patched: 2 entries — medium 1 (`flip_root`, three finding rows) and low 1 (the docstring). Carried from the first pass without re-triage: 15 rows, including the already-patched mcp-host `ImportError` fallback (high) and steward `FlagConfigError` mapping (medium). Deferred: none added (the helm-skip finding is the existing frontmatter entry, `location: .github/workflows/platform-ci.yml`). Rejected, each with its recorded reason in the Review Triage Log: the environment-isolation fixtures (unlikely, three packages), the CD-render value assertion (nothing to assert yet), the required-chart-values upgrade note (the intent requires the value), the `render` verb gaps, the double-compose of a rendered tree beside the overlay, the `default=True` provider difference (pre-existing OpenFeature semantics), the OCP doc edit path, the second-write `OSError` in `flip_root`, and the false findings (docstring scope, owning-Spec memlog forbidden by the intent, resolver order fixed by Story 75.1, provider and CLI reader sharing a path by the intent's own routing).
+
+Follow-up review recommendation: `false`. This was a follow-up pass and it patched no `high`, so the work has converged; patched counts by verdict: medium 1 entry, low 1 entry.
+
+Verification performed:
+
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0, 1857 passed, 2 skipped (1853 before; the four new cases).
+- The four new `test_cutover.py` cases fail with the `compose` line removed (4 failed, 11 passed) and pass with it (15 passed).
+- `python scripts/spec_surface_reconcile.py` — exit 0; `pixi run --frozen -e pyforge-guild spec-surface-check` — exit 0; no `--write-baseline` passed.
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+- Not re-run: the platform suite and `detectors-ci` (this pass's only non-test code change is in `pyforge-steward`; the `django_pyforge` change is a docstring). The first pass's platform and detector results stand.
+- Ad-hoc `ruff check` on `django_pyforge/flags.py` reports RUF100/I001 findings; the file has no lane (the platform lane lints `src/platform` only, `lint-types` the ten `pyforge-*` packages), the `# noqa: PLC0415` comments follow the package's own convention, and 7 of the 13 findings are on the baseline file.
+
+Residual risks:
+
+- The checkout provider snapshot is unchanged and now documented accurately: a host started in a checkout does not see a tree or overlay edit until restart. The kill switch and a `flip_root` reach a running in-cluster provider (live mount), not a checkout one.
+- `flip_root` still writes the tree and the overlay as two atomic writes, not one; a failure between them leaves the tree flipped and the overlay pinning the old root. The flip stories 44.4–44.6 are parked, so no live flow exercises it.
+- The helm-gated chart tests' CI coverage is unverified (the frontmatter `deferred` entry).
