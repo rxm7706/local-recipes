@@ -13,13 +13,28 @@ Tree mode (no arguments) walks every tracked
     FAIL  flag-exempt-unknown   a ``flag-exempt:`` value that is not on the roster's list
     FAIL  flag-key-not-in-tree  a ``done`` spec whose ``flag.key`` the tree does not hold
     FAIL  flag-key-orphan       a tree key that no tracked file under ``src/`` or ``scripts/`` reads
+    FAIL  flag-verification-names-no-test
+                                a ``done`` post-rule flagged spec whose ``## Verification`` names no test file
+    FAIL  flag-test-file-missing
+                                the same, when a test file it names does not exist
+    FAIL  flag-test-not-two-state
+                                the same, when no test file it names runs the spec's key in both states
     WARN  flag-pre-rule         a pre-rule ``type: feature`` spec that carries neither, grouped
                                 by station (the list Story 34.4's inventory counts); never a FAIL
 
 ``--spec <path>`` judges one story spec and prints one JSON object (``verdict`` ``pass``, ``warn``
 or ``red``, ``findings``, ``rule_date``) -- the interface marshal Story 74.2's dispatch preflight
-consults. The metadata checks (per-environment defaults, the 90-day clock) are Story 34.3's; the
-two-state-test check is Story 34.5's.
+consults. The metadata checks (per-environment defaults, the 90-day clock) are Story 34.3's.
+
+The two-state-test check (Story 34.5, ``spec-feature-flag-governance`` CAP-4's gate clause) judges only a
+``done``, post-rule spec that carries a complete ``flag:`` block: it reads the spec's ``## Verification``
+section, collects the test files it names (backticked paths and ``pytest`` targets), and reads each one
+statically -- never imported, never run. A file runs both states when it names the spec's ``flag.key`` together
+with the testing kit's helper (``pyforge.testing_kit.flags.flag_states``, marshal Story 74.1) or with two flagd
+trees written for it (the pre-kit shape, one ``*flagd_tree*`` call for ``"on"`` and another for ``"off"``). It is
+presence-based: it cannot prove a tree is written for the key, only that the file names the key and carries the
+shape. A spec still in backlog, and an exempt one, is never judged on it (its test does not exist yet, or it
+carries no flag).
 
 Lives outside every ``pyforge.<station>`` package (Charter section 6): this check can red any
 station's pull request, so no station it judges may host it, and it imports no station module. A
@@ -39,6 +54,7 @@ DETECTOR = {"scope": "repo"}
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Collection, Iterable, Mapping, Sequence
@@ -70,6 +86,9 @@ K_EXEMPT_UNKNOWN = "flag-exempt-unknown"
 K_NOT_IN_TREE = "flag-key-not-in-tree"
 K_ORPHAN = "flag-key-orphan"
 K_PRE_RULE = "flag-pre-rule"
+K_NO_TEST = "flag-verification-names-no-test"
+K_TEST_MISSING = "flag-test-file-missing"
+K_NOT_TWO_STATE = "flag-test-not-two-state"
 
 # How many pre-rule specs a station lists by default before `-v` is needed.
 _WARN_LIST_LIMIT = 3
@@ -288,6 +307,154 @@ def judge_spec(
     return findings
 
 
+# --- the two-state test (Story 34.5) ----------------------------------------------------------
+
+
+# The testing kit's ON/OFF helper, as marshal Story 74.1 landed it: `flag_states(key)` in
+# `pyforge.testing_kit.flags`, re-exported by `pyforge.testing_kit`. Read from that module, never guessed.
+_KIT_HELPER = "flag_states"
+_KIT_MODULE = r"pyforge\.testing_kit(?:\.flags)?"
+_KIT_IMPORT = re.compile(rf"^[ \t]*(?:from[ \t]+{_KIT_MODULE}[ \t]+import\b|import[ \t]+{_KIT_MODULE}\b)", re.MULTILINE)
+_KIT_CALL = re.compile(rf"\b{_KIT_HELPER}\(")
+# The pre-kit shape: a `*flagd_tree*` writer called once with "on" and once with "off".
+_TREE_CALL = re.compile(r"\b\w*flagd_tree\w*[ \t]*\(")
+_VARIANT = re.compile(r"""["'](on|off)["']""")
+_TEST_NAME = re.compile(r"^(?:test_.*\.py|.*_test\.py|.*\.(?:test|spec)\.\w+)$")
+_VERIFICATION_HEADING = re.compile(r"^##[ \t]+Verification[ \t]*$", re.MULTILINE)
+_LEVEL_TWO_HEADING = re.compile(r"^##[ \t]", re.MULTILINE)
+_FENCED = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n(.*?)^[ \t]*\1[ \t]*$", re.MULTILINE | re.DOTALL)
+_INLINE = re.compile(r"`([^`\n]+)`")
+
+
+def _verification_text(text: str) -> str:
+    """The body of every ``## Verification`` section of a story spec (each ends at the next ``## `` heading)."""
+    sections = []
+    for heading in _VERIFICATION_HEADING.finditer(text):
+        end = _LEVEL_TWO_HEADING.search(text, heading.end())
+        sections.append(text[heading.end() : end.start() if end else len(text)])
+    return "\n".join(sections)
+
+
+def _named_test_files(verification: str) -> list[str]:
+    """The test files a Verification section names, in order, once each.
+
+    Candidates are the words of its code spans (inline and fenced), so a backticked path and a ``pytest``
+    target both count. A pytest node id loses its ``::test`` suffix; an option (``--ignore=...``) and a URL are
+    not a file the run executes. A word counts by its file name (``test_*.py``, ``*_test.py``, ``*.test.*``,
+    ``*.spec.*``): a directory target names no file.
+    """
+    spans = [m.group(2) for m in _FENCED.finditer(verification)]
+    spans += _INLINE.findall(_FENCED.sub("", verification))
+    named: list[str] = []
+    for span in spans:
+        for word in span.split():
+            candidate = word.split("::", 1)[0].strip("\"'`,;()<>")
+            if candidate.startswith("-") or "://" in candidate:
+                continue
+            candidate = candidate.removeprefix("./")
+            if candidate and _TEST_NAME.match(candidate.rsplit("/", 1)[-1]) and candidate not in named:
+                named.append(candidate)
+    return named
+
+
+def _read_test(root: Path, named: str) -> str | None:
+    """The text of a named test file, or None when it is not a readable file inside ``root``."""
+    path = Path(named)
+    try:
+        resolved = (path if path.is_absolute() else root / path).resolve()
+        resolved.relative_to(root.resolve())
+        return resolved.read_text(encoding="utf-8", errors="replace") if resolved.is_file() else None
+    except (OSError, ValueError):  # ValueError: outside the repo root
+        return None
+
+
+def _names_key(text: str, key: str) -> bool:
+    return re.search(rf"(?<![\w.-]){re.escape(key)}(?![\w-]|\.\w)", text) is not None
+
+
+def _call_arguments(text: str, opening: int) -> str:
+    """The text between the parenthesis at ``opening`` and its match (to the end of ``text`` if unbalanced)."""
+    depth = 0
+    for index in range(opening, len(text)):
+        if text[index] == "(":
+            depth += 1
+        elif text[index] == ")":
+            depth -= 1
+            if depth == 0:
+                return text[opening + 1 : index]
+    return text[opening + 1 :]
+
+
+def _writes_both_trees(text: str) -> bool:
+    """Two distinct ``*flagd_tree*`` calls, one naming ``"on"`` and another ``"off"`` (a ``def`` is no call)."""
+    variants = [
+        set(_VARIANT.findall(_call_arguments(text, call.end() - 1)))
+        for call in _TREE_CALL.finditer(text)
+        if not text[: call.start()].rstrip().endswith("def")
+    ]
+    on = {i for i, seen in enumerate(variants) if "on" in seen}
+    off = {i for i, seen in enumerate(variants) if "off" in seen}
+    return any(i != j for i in on for j in off)
+
+
+def runs_both_states(text: str, key: str) -> bool:
+    """True when the test text names ``key`` with the kit's helper or with two flagd trees (either shape)."""
+    if not _names_key(text, key):
+        return False
+    return bool(_KIT_IMPORT.search(text) and _KIT_CALL.search(text)) or _writes_both_trees(text)
+
+
+def judge_two_state(
+    root: Path, rel: str, frontmatter: Mapping[str, Any], *, exemptions: Sequence[str]
+) -> list[Finding]:
+    """The two-state-test findings for one story spec (Story 34.5, CAP-4's gate clause).
+
+    Only a ``done`` spec with a complete ``flag:`` block is judged; a backlog spec has no test yet and an
+    exempt one carries no flag. At most one finding, in this order: the Verification names no test file; a
+    named file does not exist; no named file runs the spec's key in both states.
+    """
+    if str(frontmatter.get("status", "")).strip().lower() != "done":
+        return []
+    if flag_rule.classify_frontmatter(frontmatter, exemptions).verdict != flag_rule.FLAG:
+        return []
+    key = _flag_key(frontmatter)
+    if not key:
+        return []
+    station = station_of(rel)
+    try:
+        spec_text = (root / rel).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []  # the frontmatter was read a moment ago; a file that vanished is judged elsewhere
+
+    def finding(kind: str, message: str) -> list[Finding]:
+        return [Finding(kind, FAIL, message, path=rel, station=station, key=key)]
+
+    named = _named_test_files(_verification_text(spec_text))
+    if not named:
+        return finding(
+            K_NO_TEST,
+            f"a `done` spec that declares flag `{key}` must name, in its `## Verification`, a test file that runs "
+            "both states (`test_*.py`, `*_test.py`, `*.test.*` or `*.spec.*` -- the testing kit's `flag_states`, "
+            "or two flagd trees); it names none",
+        )
+    texts = {path: _read_test(root, path) for path in named}
+    missing = [path for path, text in texts.items() if text is None]
+    if missing:
+        return finding(
+            K_TEST_MISSING,
+            f"the `## Verification` of a `done` spec that declares flag `{key}` names test file(s) that do not "
+            f"exist: {', '.join(missing)}",
+        )
+    if not any(runs_both_states(text or "", key) for text in texts.values()):
+        return finding(
+            K_NOT_TWO_STATE,
+            f"no test file the `## Verification` names runs flag `{key}` in both states ({', '.join(named)}): each "
+            f"must name the key together with the testing kit's `{_KIT_HELPER}` "
+            "(`pyforge.testing_kit.flags`) or with two flagd trees, one `\"on\"` and one `\"off\"`",
+        )
+    return []
+
+
 # --- the two modes --------------------------------------------------------------------------
 
 
@@ -310,14 +477,18 @@ def load_inputs(root: Path) -> Inputs:
 
 def judge_one(root: Path, inputs: Inputs, rel: str) -> list[Finding]:
     frontmatter, why = flag_rule.read_frontmatter(rel, repo_root=root)
-    return judge_spec(
+    post_rule = flag_rule.is_post_rule(rel, baseline=inputs.baseline, repo_root=root)
+    findings = judge_spec(
         rel,
         frontmatter,
         why,
         exemptions=inputs.exemptions,
-        post_rule=flag_rule.is_post_rule(rel, baseline=inputs.baseline, repo_root=root),
+        post_rule=post_rule,
         tree_keys=inputs.tree,
     )
+    if post_rule and frontmatter is not None:
+        findings += judge_two_state(root, rel, frontmatter, exemptions=inputs.exemptions)
+    return findings
 
 
 def judge_tree(root: Path, inputs: Inputs) -> tuple[int, list[Finding]]:
