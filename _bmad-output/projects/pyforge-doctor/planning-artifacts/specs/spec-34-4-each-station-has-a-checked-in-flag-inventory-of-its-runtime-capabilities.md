@@ -2,7 +2,7 @@
 title: '34.4: Each station has a checked-in flag inventory of its runtime capabilities'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: '6b7d586b33fdf7edf7b54b81c9cacc8f33efffa7'
 flag-exempt: flag-infrastructure   # the retrofit's own infrastructure (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
