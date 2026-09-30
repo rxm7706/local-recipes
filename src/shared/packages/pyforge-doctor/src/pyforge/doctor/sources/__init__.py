@@ -377,7 +377,7 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         subject_station="fleet",
         owning_station="doctor",
     ),  # Story 16.1 (Epic 16 / CAP-1) -- sources/sibling_dreams.py. Diffs
-    # shared Dream titles vs the named sibling tree; warn-only; fleet
+    # shared Dream status/owner/content-hash/title vs the named sibling tree; warn-only; fleet
     # subject (local docs/dreams + archive/docs/dreams, and the sibling). Opt-in via
     # `doctor check --sibling-dreams` + fleet-picture ATTENTION probe.
     SourceRegistration(
