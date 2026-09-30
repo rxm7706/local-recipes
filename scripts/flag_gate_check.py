@@ -198,7 +198,11 @@ def _unknown_exemption(frontmatter: Mapping[str, Any], exemptions: Sequence[str]
     if "flag" in frontmatter or "flag-exempt" not in frontmatter:
         return None
     value = frontmatter["flag-exempt"]
-    blank = value is None or (isinstance(value, str) and not value.strip()) or (isinstance(value, (list, dict)) and not value)
+    blank = (
+        value is None
+        or (isinstance(value, str) and not value.strip())
+        or (isinstance(value, (list, dict)) and not value)
+    )
     return None if blank or value in exemptions else value
 
 
@@ -351,7 +355,8 @@ def run_spec(root: Path, raw: str) -> int:
         rule_date = inputs.rule_date
         if not flag_rule.is_story_spec(rel):
             raise flag_rule.FlagRuleError(
-                f"{rel} is not a story spec (`{SPECS_ROOT_REL}/<project>/planning-artifacts/specs/spec-<epic>-<story>-*.md`)"
+                f"{rel} is not a story spec "
+                f"(`{SPECS_ROOT_REL}/<project>/planning-artifacts/specs/spec-<epic>-<story>-*.md`)"
             )
         if not (root / rel).is_file():
             raise flag_rule.FlagRuleError(f"cannot read {rel}: no such file")
@@ -361,9 +366,7 @@ def run_spec(root: Path, raw: str) -> int:
         print(f"[flag-gate] unknown -- {exc}", file=sys.stderr)
         return 2
     verdict = _verdict(findings)
-    _emit_json(
-        {"verdict": verdict, "spec": rel, "rule_date": rule_date, "findings": [f.as_dict() for f in findings]}
-    )
+    _emit_json({"verdict": verdict, "spec": rel, "rule_date": rule_date, "findings": [f.as_dict() for f in findings]})
     return 1 if verdict == "red" else 0
 
 
@@ -377,7 +380,10 @@ def _print_tree_report(judged: int, findings: Sequence[Finding], rule_date: str 
         by_station.setdefault(f.station or "(no project)", []).append(f)
     for station in sorted(by_station):
         group = by_station[station]
-        print(f"[flag-gate] warn -- {station}: {len(group)} pre-rule `type: feature` spec(s) carry neither a flag block nor an exemption")
+        print(
+            f"[flag-gate] warn -- {station}: {len(group)} pre-rule `type: feature` spec(s) "
+            "carry neither a flag block nor an exemption"
+        )
         shown = group if verbose else group[:_WARN_LIST_LIMIT]
         for f in shown:
             print(f"    {f.path}")

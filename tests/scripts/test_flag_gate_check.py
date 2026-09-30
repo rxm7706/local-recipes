@@ -67,7 +67,9 @@ def _fixture(
     (gov / "flag-rule-baseline.json").write_text(json.dumps(document), encoding="utf-8")
     tree = tmp_path / "src" / "platform" / "config" / "flags.json"
     tree.parent.mkdir(parents=True, exist_ok=True)
-    flags = {key: {"state": "ENABLED", "variants": {"on": True, "off": False}, "defaultVariant": "on"} for key in tree_keys}
+    flags = {
+        key: {"state": "ENABLED", "variants": {"on": True, "off": False}, "defaultVariant": "on"} for key in tree_keys
+    }
     tree.write_text(json.dumps({"flags": flags}), encoding="utf-8")
     return tmp_path
 
@@ -85,7 +87,9 @@ def _spec(
     rel = f"_bmad-output/projects/{project}/planning-artifacts/specs/{name}"
     path = root / rel
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(f"---\ntitle: a story\ntype: {type_}\nstatus: {status}\n{frontmatter}---\n\nbody\n", encoding="utf-8")
+    path.write_text(
+        f"---\ntitle: a story\ntype: {type_}\nstatus: {status}\n{frontmatter}---\n\nbody\n", encoding="utf-8"
+    )
     return rel
 
 
@@ -186,7 +190,9 @@ def test_warnings_group_by_station_and_a_default_run_lists_a_few_while_verbose_l
     assert "more (-v lists them all)" not in out_verbose
 
 
-def test_the_json_report_lists_every_pre_rule_warning_with_its_station(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_the_json_report_lists_every_pre_rule_warning_with_its_station(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path)
     rels = [_spec(root, name=f"spec-1-{n}-story.md", project="pyforge-mason") for n in range(1, 6)]
     _fixture(tmp_path, baseline=rels)
@@ -295,7 +301,9 @@ def test_an_unknown_exemption_is_named_in_the_text_report(tmp_path: Path, capsys
     rc, out, _ = _run(root, capsys=capsys)
 
     assert rc == 1
-    assert len([ln for ln in out.splitlines() if ln.startswith("[flag-gate] fail --")]) == 2  # the finding, then the summary
+    assert (
+        len([ln for ln in out.splitlines() if ln.startswith("[flag-gate] fail --")]) == 2
+    )  # the finding, then the summary
     assert "someday" in out
 
 
@@ -477,7 +485,9 @@ def test_a_tracked_spec_deleted_from_the_working_tree_is_not_judged(tmp_path: Pa
 # --- a spec that cannot be read is never silently out of scope --------------------------------
 
 
-@pytest.mark.parametrize("text", ["# no fence at all\n", "---\ntype: feature\nnever closed\n", "---\nkey: [unclosed\n---\n"])
+@pytest.mark.parametrize(
+    "text", ["# no fence at all\n", "---\ntype: feature\nnever closed\n", "---\nkey: [unclosed\n---\n"]
+)
 def test_a_spec_with_unreadable_frontmatter_is_neither_a_post_rule_fail_and_a_pre_rule_warn(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], text: str
 ):
@@ -497,7 +507,9 @@ def test_a_spec_with_unreadable_frontmatter_is_neither_a_post_rule_fail_and_a_pr
 # --- --spec: one JSON object -------------------------------------------------------------------
 
 
-def test_spec_mode_prints_one_json_object_per_verdict_and_exits_1_0_0(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_spec_mode_prints_one_json_object_per_verdict_and_exits_1_0_0(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path)
     red = _spec(root, name="spec-1-1-red.md")
     warn = _spec(root, name="spec-1-2-warn.md")
@@ -586,7 +598,12 @@ def test_spec_mode_on_a_path_that_is_not_a_story_spec_is_unknown_exit_2(
 def test_spec_mode_on_a_missing_spec_is_unknown_exit_2(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     root = _fixture(tmp_path)
 
-    rc, out, _ = _run(root, "--spec", "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-9-9-absent.md", capsys=capsys)
+    rc, out, _ = _run(
+        root,
+        "--spec",
+        "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-9-9-absent.md",
+        capsys=capsys,
+    )
 
     payload = json.loads(out)
     assert rc == 2
@@ -632,7 +649,9 @@ def test_an_unreadable_roster_baseline_or_tree_exits_2_and_names_what_it_could_n
 
 
 @pytest.mark.parametrize("which", ["roster", "baseline", "tree"])
-def test_spec_mode_with_an_unreadable_input_is_unknown_exit_2(tmp_path: Path, capsys: pytest.CaptureFixture[str], which: str):
+def test_spec_mode_with_an_unreadable_input_is_unknown_exit_2(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], which: str
+):
     root = _fixture(tmp_path)
     rel = _spec(root, "flag-exempt: alpha\n")
     _break(root, which, "missing")
@@ -645,7 +664,9 @@ def test_spec_mode_with_an_unreadable_input_is_unknown_exit_2(tmp_path: Path, ca
     assert payload["findings"] == []
 
 
-def test_the_json_report_of_an_unreadable_input_is_unknown_never_pass(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_the_json_report_of_an_unreadable_input_is_unknown_never_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path)
     _break(root, "tree", "missing")
 
@@ -665,7 +686,9 @@ def test_a_root_that_does_not_exist_is_exit_2(tmp_path: Path, capsys: pytest.Cap
 
 
 @pytest.mark.skipif(git is None, reason="git is not installed")
-def test_a_git_checkout_whose_tracked_files_cannot_be_listed_is_exit_2(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_a_git_checkout_whose_tracked_files_cannot_be_listed_is_exit_2(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path)
     (root / ".git").write_text("not a git dir\n", encoding="utf-8")  # `.git` exists but is not a repository
 
@@ -703,7 +726,9 @@ def test_the_script_runs_as_a_program_and_exits_with_the_verdict(tmp_path: Path)
     _fixture(tmp_path, baseline=["_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-1-1-a-story.md"])
     warn = subprocess.run([sys.executable, str(GATE), "--root", str(root)], capture_output=True, text=True, check=False)
     (root / "docs/governance/guild-roster.json").unlink()
-    unknown = subprocess.run([sys.executable, str(GATE), "--root", str(root)], capture_output=True, text=True, check=False)
+    unknown = subprocess.run(
+        [sys.executable, str(GATE), "--root", str(root)], capture_output=True, text=True, check=False
+    )
 
     assert (red.returncode, warn.returncode, unknown.returncode) == (1, 0, 2)
     assert red.stdout.splitlines()[-1].startswith("[flag-gate] fail --")
