@@ -2,7 +2,8 @@
 title: '78.1: A landing unions append-only memlogs instead of refusing'
 type: 'feature'
 created: '2026-09-30'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '70d6e11a515a75838b7d6c5c9a5e24a96641204d'
 flag-exempt: detector-or-gate   # the heal decides whether a landing merges: part of marshal's landing gate (spec-feature-flag-governance Q2; Story 74.2's precedent)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -118,6 +119,18 @@ Type / Effort / Deps: feature / M / —.
 | memlog + other file | e.g. a `.py` file | — | escalate the other file, nothing committed |
 
 </intent-contract>
+
+## Code Map
+
+Investigated 2026-09-30 (step 2). Paths are under `src/shared/packages/pyforge-marshal/`.
+
+- `src/pyforge/marshal/core/dispatch_landing.py` -- pure home of the ledger helpers (`three_way_ledger_statuses`, `is_mechanical_conflict_path`, `unknown_conflict_paths`). Add `MEMLOG_BASENAME`, `is_memlog_path`, and the resolver `union_memlog_texts(base, main, branch) -> str | None` here. `core/` may not import `adapters` (AD-4), and `_bmad/scripts/memlog.py` is a script outside the package: mirror its `split` (first line `---`, closing fence the first later line that is exactly `---`, `key: value` lines split on the first `:` and stripped, body `lstrip("\n")`) and `render` (`---\n<fields>\n---\n\n<body rstripped>\n`) in the resolver; do not import it.
+- `src/pyforge/marshal/dispatch_land_heal.py` -- `try_heal_dispatch_land_merge` (line 47) computes `unknown = unknown_conflict_paths(conflict_paths, ...)` up front and only enters the union heal when every conflicted path is the ledger. `_try_ledger_union_heal` (line 131) reads base/main/branch ledger text with `vcs.file_text_at_ref(git_repo_root, base_sha | probe | head_ref, rel)`, then one `vcs.merge_ref_resolving(worktree, probe, resolutions={ledger_rel: resolved}, message=...)`, `push`, retried `forge.merge_pr`. Rework: drop memlog paths from the `unknown` set, resolve the ledger only when it conflicted, resolve every conflicted memlog, and put all of them in the one `resolutions` map. `DispatchLandHealResult` gains `healed_memlog_paths: tuple[str, ...] = ()` (defaulted, so Story 59.1's `DispatchLandHealResult(healed=True, retried_forge_merge=True)` assertions still hold for a ledger-only heal).
+- `src/pyforge/marshal/adapters/vcs_git.py:1171` -- `merge_ref_resolving` (read-only here, contract unchanged). It writes only the paths git left conflicted and ignores extra `resolutions` keys; a conflicted path with no resolution aborts the merge before any commit.
+- `src/pyforge/marshal/dispatch_land.py:972-1043` -- the heal call and the landing record: `data["ledger_union_heal"] = True` when `heal.retried_forge_merge`. Add `data["memlog_union_heal"]` (the healed paths, as a list) beside it when non-empty. `ledger_union_heal` keeps its meaning "the union merge ran"; only `tests/unit/test_dispatch_landing.py:1129` reads it.
+- `tests/meta/test_local_branch_refs_are_full_refnames.py` -- AST scan that every `vcs.file_text_at_ref` ref is a full ref or sha; keep the heal's variable names `probe`, `head_ref`, `base_sha` so the new reads stay inside it.
+- `tests/unit/test_dispatch_land_heal.py:350-600` -- Story 59.1's bare-remote fixtures (`_landing`, `_HonestForge`, `_heal`, `_generated_ledger`). Task 1 names `tests/unit/test_dispatch_landing.py`; the heal fixtures are here, and `test_dispatch_landing.py:1129` is the landing-record test. Add the resolver table test and the bare-remote memlog tests in this file; add the record test beside line 1129.
+- `_bmad/scripts/memlog.py:90-113` -- the file shape the resolver parses and renders.
 
 ## Binding
 
