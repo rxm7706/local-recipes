@@ -113,7 +113,7 @@ class Refusal:
     """One reason a queued story would not dispatch cleanly.
 
     ``code`` is the would-be finding code the launch path (or the post-session
-    gate) raises -- ``MRS-DISP-041/005/045/030/036/039/019/003``,
+    gate) raises -- ``MRS-DISP-041/005/045/030/036/039/019/003/002``,
     ``MRS-GATE-010/011/003`` -- or ``already-landed`` / ``prose-park``."""
 
     story: str
@@ -469,6 +469,38 @@ def _held_reason(reads: _StationReads, head: str, deps_graph: Mapping[str, tuple
     return "not selected for this wave"
 
 
+def _station_row(
+    slug: str,
+    mode: dispatch_fleet.FleetCampaignMode,
+    *,
+    parallel_cap: int | None,
+    backlog: Sequence[str],
+    env_checked: bool,
+) -> dict[str, object]:
+    """The one skeleton of a station row, so a computed plan and an
+    ``MRS-DRAINPLAN-005`` row always carry the same keys (a consumer indexing a
+    row must not ``KeyError`` on exactly the rows that report a failure)."""
+    return {
+        "slug": slug,
+        "mode": mode.value,
+        "parallel_cap": parallel_cap,
+        "backlog": list(backlog),
+        "outcome": "",
+        "next_story": None,
+        "stories": [],
+        "wave": None,
+        "held": [],
+        "would_dispatch": False,
+        "land_only": [],
+        "refusals": [],
+        "prose_parks": [],
+        "skipped": [],
+        "deps": {},
+        "evaluated": [],
+        "env_checked": env_checked,
+    }
+
+
 def _plan_station(
     *,
     reads: _StationReads,
@@ -483,24 +515,9 @@ def _plan_station(
     cycle = reads.cycle
     slug = reads.slug
     findings: list[Finding] = []
-    payload: dict[str, object] = {
-        "slug": slug,
-        "mode": mode.value,
-        "parallel_cap": cycle.parallel_cap,
-        "backlog": list(cycle.backlog),
-        "outcome": "",
-        "next_story": None,
-        "stories": [],
-        "wave": None,
-        "held": [],
-        "would_dispatch": False,
-        "land_only": [],
-        "refusals": [],
-        "prose_parks": [],
-        "skipped": [],
-        "deps": {},
-        "env_checked": check_env,
-    }
+    payload = _station_row(
+        slug, mode, parallel_cap=cycle.parallel_cap, backlog=cycle.backlog, env_checked=check_env
+    )
 
     queue = cycle.queue
     station_skips = cycle.station_skips
@@ -619,10 +636,15 @@ def _plan_station(
                     ),
                 )
             )
-        if parallel and head not in targets and cycle.finalize_pending is None and not cycle.live_stories:
+        if parallel and cycle.wave is not None:
+            # Everything the wave holds out: the queue head when unmet Deps keep
+            # it from the ready set, and every story the wave itself refused.
             held = payload["held"]
             assert isinstance(held, list)
-            held.append({"story": head, "reason": _held_reason(reads, head, deps_graph)})
+            held_stories = [refused.story for refused in cycle.wave.refused]
+            if head not in targets and head not in held_stories:
+                held_stories.insert(0, head)
+            held.extend({"story": story, "reason": _held_reason(reads, story, deps_graph)} for story in held_stories)
 
     # Which stories get the full evaluation: what the cycle would hand
     # `dispatch_once` (the first of them is "the next story"), and every queued
@@ -659,12 +681,15 @@ def _plan_station(
         refusals.extend(env_refusals)
         payload["env"] = env
     findings.extend(env_findings)
-    next_story = targets[0] if targets else None
+    # Every story the cycle would hand to `dispatch_once` -- one in serial mode,
+    # every wave member in parallel mode -- is graded as "next": a refusal on
+    # wave member 2+ is as fatal to its launch as one on the first.
+    handed = frozenset(targets)
     for refusal in refusals:
-        findings.append(_finding_for_refusal(slug, refusal, is_next=refusal.story == next_story))
+        findings.append(_finding_for_refusal(slug, refusal, is_next=refusal.story in handed))
     payload["refusals"] = [refusal.to_payload() for refusal in refusals]
     payload["land_only"] = [evaluation.story for evaluation in evaluations if evaluation.land_only]
-    payload["would_dispatch"] = next_story is not None and not any(r.story == next_story for r in refusals)
+    payload["would_dispatch"] = bool(handed) and not any(r.story in handed for r in refusals)
 
     # Prose parks are reported ALWAYS: every backlog story a park marker names
     # that no skip_policies entry mirrors. An evaluated story's park is already
@@ -722,20 +747,8 @@ def _unevaluable(
         message=f"station {slug!r}: the plan could not be computed -- {cause}; this is never a clean plan",
         path=path,
     )
-    payload: dict[str, object] = {
-        "slug": slug,
-        "mode": mode.value,
-        "outcome": "unevaluable",
-        "detail": cause,
-        "would_dispatch": False,
-        "next_story": None,
-        "stories": [],
-        "backlog": [],
-        "refusals": [],
-        "skipped": [],
-        "deps": {},
-        "env_checked": False,
-    }
+    payload = _station_row(slug, mode, parallel_cap=None, backlog=(), env_checked=False)
+    payload.update(outcome="unevaluable", detail=cause)
     return payload, finding
 
 
