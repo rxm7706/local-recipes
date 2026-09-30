@@ -1005,8 +1005,9 @@ platform-object-storage = { features = ["platform-object-storage"], no-default-f
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-core package (stdlib only -- no third-party run-dep) + pytest.
 pyforge-core = { features = ["pyforge-core"], no-default-feature = true }
-# Lean testing-kit env (Story 19.2 / FR-130, pyforge-core mirror): own leaf
-# (Q-26), stdlib-only shared test mocks; no-default-feature keeps it lean.
+# Lean testing-kit env (Story 19.2 / FR-130, pyforge-core mirror): its own
+# package (Q-26, not pyforge.core.testing) that declares pyforge-core and
+# openfeature-sdk (Story 74.1); no-default-feature keeps it lean.
 pyforge-testing-kit = { features = ["pyforge-testing-kit"], no-default-feature = true }
 # BMad Method UI dashboards (docs/specs/bmad-loop-adoption.md W4): consumes the
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
@@ -1317,6 +1318,10 @@ description = "Story 66.2 (spec-pyforge-steward CAP-154): .pre-commit-config.yam
 cmd = "python scripts/flag_gate_check.py"
 description = "Detector: the flag gate (Story 34.2, spec-feature-flag-governance CAP-2). Every post-rule `type: feature` story spec carries a `flag:` block or a `flag-exempt:` value from docs/governance/guild-roster.json; a `flag-exempt:` off the roster, a `done` spec whose flag.key the one tree (src/platform/config/flags.json) lacks, and a tree key no tracked file under src/ or scripts/ reads are findings; a pre-rule feature spec without either only warns, grouped by station. `--spec <path>` prints one JSON object (verdict pass/warn/red) for marshal's dispatch preflight. Lives in scripts/, outside every pyforge.<station> package (Charter section 6). Exit 0 clean (warnings allowed), 1 findings, 2 could-not-run."
 
+[feature.guild-tasks.tasks.flag-inventory]
+cmd = "python scripts/flag_inventory.py"
+description = "Report, not a detector (Story 34.4, spec-feature-flag-governance CAP-7): writes one checked-in Markdown report per station to docs/governance/flag-inventory/pyforge-<station>.md. For each CAP of an open Spec the station hosts it lists whether the code is reachable at runtime (a CLI verb, an MCP tool, a REST route or a portal view; joined through pyforge.doctor.sources.capability_effect), the flag key in the one tree that gates it or `none`, and every pre-rule `type: feature` story spec the flag gate warns on. The header names the SHA read and the two counts each Smith's retrofit stories are minted against: runtime CAPs with no flag, warned specs. Deterministic: a second run on the same tree is byte-identical. Lives in scripts/, outside every pyforge.<station> package. Exit 0 wrote the reports, 2 could-not-run (nothing written)."
+
 [feature.guild-tasks.tasks.lint-types]
 depends-on = ["ruff", "ruff-format", "mypy", "target-version-check", "precommit-config-check"]
 description = "Story 66.1 / 66.2: the whole hygiene lane in one task -- exactly what .github/workflows/lint-types.yml runs and what pr-preflight's `lint-types` leg runs."
@@ -1384,6 +1389,10 @@ cmd = "python -m pyforge.doctor.sources chain-sprawl"
 [feature.guild-tasks.tasks.fr-without-cap-check]
 description = "Detector: a product requirement minted after the rule date names its source capability (doctor Story 25.2, spec-one-chain-per-station CAP-5; CHAIN-STANDARD § 2 `FR-n <- CAP-m`). New FR/NFR ids per station PRD (vs docs/governance/fr-baseline.json, re-baselined only at that station's fold PR) must cite a CAP-m on the defining line or its first body line -- else FAIL fr-without-cap; a citation no open Spec under the station declares is FAIL fr-cap-unresolved."
 cmd = "python -m pyforge.doctor.sources fr-without-cap"
+
+[feature.guild-tasks.tasks.fold-complete-check]
+description = "Detector: a fold is complete before its file moves (doctor Story 36.1, spec-one-chain-per-station CAP-11; CHAIN-STANDARD section 11). Every archive/docs/dreams/*.md not in docs/governance/fold-complete-baseline.json (a dated list that only ever shrinks) must have each paragraph longer than 80 characters, whitespace-collapsed and headings left out, in its station Dream docs/dreams/pyforge-<owner>.md -- else FAIL fold-complete-incomplete (names the file and the count); an unreadable `owner:` is FAIL fold-complete-no-owner, an absent station Dream FAIL fold-complete-no-station-dream. Every docs/dreams/*.md still reading `status: archived` is ONE WARN with the count per station (the migration countdown, never a FAIL)."
+cmd = "python -m pyforge.doctor.sources fold-complete"
 
 [feature.guild-tasks.tasks.docs-shelf-occupancy-check]
 description = "Detector: leftover-shelf path occupancy vs the docs/MAP.md allow-list (Story 23.7, spec-pyforge-doctor CAP-54). Compares the _bmad-output/ root and the air-gap documentation cluster against MAP.md's own 'Outside this map' table and Story 23.2's fold -- a re-added dated campaign note at _bmad-output/ root, or a second air-gap how-to outside the cluster, is a finding with a quoted path. Distinct from general-docs-consistency-check (identity, not occupancy). Warn-only, read-only, fail-open -- never a second PR gate. Contract: spec-23-7-a-new-doctor-source-flags-leftover-shelf-occupancy."
@@ -3042,8 +3051,9 @@ description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-core-build-conda", "pyforge-core-build-dist"]
 
 # --- pyforge-testing-kit (Story 19.2 / FR-130, pyforge-core mirror) --
-# Own leaf (Q-26): CLI-runner / page-object / DB-factory / auth-HTTP-time
-# mocks seeded from Marshal's four real mocks. Spec:
+# Its own package (Q-26, not pyforge.core.testing) that declares pyforge-core and
+# openfeature-sdk (Story 74.1): CLI-runner / page-object / DB-factory / auth-HTTP-time
+# mocks seeded from Marshal's four real mocks, plus the feature-flag family. Spec:
 # _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
 # spec-19-2-the-shared-test-support-kit.md
 [feature.pyforge-testing-kit.dependencies]
@@ -3055,6 +3065,7 @@ cryptography = ">=50.0.1"         # Provides cryptographic recipes and primitive
 hatchling = ">=1.32.4"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
+openfeature-sdk = ">=0.10.0"      # Story 74.1: pyforge.testing_kit.flags installs OpenFeature's InMemoryProvider
 
 [feature.pyforge-testing-kit.tasks.pyforge-testing-kit-test]
 description = "Run the pyforge.testing_kit test suite"
