@@ -2,7 +2,8 @@
 title: "77.1: The console lists Tier-2 Specs and the archived Dreams"
 type: 'fix'
 created: '2026-09-29'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'd4ed036eb7f317a1650a72afb64c618bb41539c9'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -93,6 +94,35 @@ Type / Effort / Deps: fix / S / —.
 
 </intent-contract>
 
+## Code Map
+
+- `src/platform/platformapp/front_door/runtime_catalog.py` -- `catalog_entries` mapping: `"specs"` (line 41, `_stems(docs/specs)`)
+  and `"archived"` (line 46, `_stems(docs/dreams)`) are the only two entries to change; `"guild"` and `"dreams"` keep reading
+  `docs/dreams`. `_stems`, `_story_specs`, `_ledger_titles`, `_projects` are the local helper idiom (stdlib `Path`, `[]` when
+  the directory is missing).
+- `src/platform/platformapp/front_door/views.py:113` -- `console_catalog` calls `catalog_entries(surface_id)` with no root;
+  read-only, unchanged.
+- `src/platform/platformapp/front_door/console_parity.py` -- `Surface`/`HOMES` rows for `specs` and `archived`; ids and URLs
+  stay, so read-only.
+- `src/platform/tests/test_console_parity_homes.py:213` -- `test_catalog_entries_empty_root` is the sibling for the new
+  unit tests; `test_catalog_pages_scan_tracked_files` (line 190) already asserts both console URLs return 200 (AC 5).
+- Live-tree evidence (2026-09-30): 175 `spec-*` matches under the two Spec homes, 171 with a `SPEC.md`, no duplicate folder
+  name; `spec-*` also matches story-spec `.md` files, which drop out on the `SPEC.md` test; `archive/docs/dreams/` holds 6
+  stems; `docs/dreams/*.md` frontmatter carries inline YAML comments (`status: archived   # 2026-09-16 …`) and 35 files open
+  with a glued `---title:` line (not frontmatter).
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/platform/platformapp/front_door/runtime_catalog.py` -- `"specs"` -> `_spec_folders(base)`; `"archived"` ->
+  `_archived_dreams(base)`; add `_frontmatter_status(path)` (stdlib, first line must be `---`, stops at the closing `---`,
+  strips an inline ` #` comment and quotes, returns `None` on anything else) -- the two surfaces read the Tier-2 homes
+- `src/platform/tests/test_console_parity_homes.py` -- unit tests beside `test_catalog_entries_empty_root` for every AC and
+  the malformed-frontmatter matrix row, on `tmp_path` fixture roots -- proves the contract without the live tree
+
+**Acceptance Criteria:** the five Given/When/Then rows in the intent contract above; the fifth (both console URLs return 200)
+is already asserted by `test_catalog_pages_scan_tracked_files`.
+
 ## Binding
 
 Parent capability: `spec-one-chain-per-station:CAP-11` (Guild relay; no steward CAP or FR).
@@ -111,6 +141,17 @@ Flag: none. This is a `fix` (`spec-feature-flag-governance` Q1).
 - `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: pass (the platform lane).
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the scoped stamps.
 
+## Spec Change Log
+
+_Empty until the first `bad_spec` loopback._
+
 ## Review Triage Log
 
 - No independent review has run yet (implementation and review stay separate).
+
+## Design Notes
+
+`archived` is a union, not a move: today the archived Dreams still sit in `docs/dreams/` (marked by frontmatter), after the
+fold PRs they sit under `archive/docs/dreams/`. One reader serves both, so the fold PRs need no second catalog change.
+A frontmatter status is the first-line-`---` block only; a file that does not open with `---` (the glued `---title:` form)
+is not archived, by the matrix row, and never raises.
