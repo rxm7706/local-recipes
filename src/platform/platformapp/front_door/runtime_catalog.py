@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 _FRONT_DOOR = Path(__file__).resolve().parent
@@ -36,12 +37,12 @@ def catalog_entries(surface_id: str, root: Path | None = None) -> list[str]:
     base = root or REPO_ROOT
     mapping = {
         "dreams": _stems(base / "docs" / "dreams", "*.md"),
-        "specs": _stems(base / "docs" / "specs", "*.md"),
+        "specs": _spec_folders(base),
         "story_specs": _story_specs(base),
         "guild": _stems(base / "docs" / "dreams", "*.md"),
         "backlog": _ledger_titles(base),
         "open_work": _ledger_titles(base),
-        "archived": _stems(base / "docs" / "dreams", "*.md"),
+        "archived": _archived_dreams(base),
         "program_story_status": _projects(base),
         "in_build_realized_membership": _projects(base),
     }
@@ -52,6 +53,49 @@ def _stems(directory: Path, pattern: str) -> list[str]:
     if not directory.is_dir():
         return []
     return sorted(path.stem for path in directory.glob(pattern) if path.is_file())
+
+
+def _spec_folders(root: Path) -> list[str]:
+    """Tier-2 Spec folders (those holding a ``SPEC.md``), by folder name."""
+    folders = [
+        *root.glob("_bmad-output/projects/*/planning-artifacts/specs/spec-*"),
+        *root.glob("docs/governance/spec-*"),
+    ]
+    return sorted({path.name for path in folders if (path / "SPEC.md").is_file()})
+
+
+def _archived_dreams(root: Path) -> list[str]:
+    """Archived Dreams: the archive home plus any live file still marked archived."""
+    dreams = root / "docs" / "dreams"
+    marked = (
+        path.stem
+        for path in dreams.glob("*.md")
+        if path.is_file() and _frontmatter_status(path) == "archived"
+    )
+    archived = _stems(root / "archive" / "docs" / "dreams", "*.md")
+    return sorted({*archived, *marked})
+
+
+def _frontmatter_status(path: Path) -> str | None:
+    """``status`` of a file's leading ``---`` block; ``None`` if it has none.
+
+    The block must open on the first line and close on a ``---`` line of its own,
+    so a glued ``---title:`` opener or an unclosed block reads as no frontmatter.
+    """
+    try:
+        with path.open(encoding="utf-8-sig", errors="replace") as handle:
+            if handle.readline().rstrip() != "---":
+                return None
+            status = None
+            for line in handle:
+                if line.rstrip() == "---":
+                    return status
+                if status is None and line.startswith("status:"):
+                    value = re.sub(r"(^|\s)#.*$", "", line[len("status:") :])
+                    status = value.strip().strip("'\"")
+    except OSError:
+        return None
+    return None
 
 
 def _story_specs(root: Path) -> list[str]:
