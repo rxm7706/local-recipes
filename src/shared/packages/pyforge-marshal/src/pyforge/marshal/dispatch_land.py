@@ -1041,6 +1041,9 @@ def execute_dispatch_land(
             data["local_main_advance"] = True
         if heal.retried_forge_merge:
             data["ledger_union_heal"] = True
+        if heal.healed_memlog_paths:
+            # Story 78.1 (CAP-283): the Spec memlogs the union merge resolved, beside the flag above.
+            data["memlog_union_heal"] = list(heal.healed_memlog_paths)
 
     data["merged"] = True
 
