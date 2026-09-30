@@ -2,7 +2,7 @@
 title: '74.1: The testing kit runs a story in both flag states through one fixture'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '7151e3d2653a6289c4f01a4ac17f8514aee3247a'
 flag-exempt: flag-infrastructure   # the rule's own test infrastructure (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
