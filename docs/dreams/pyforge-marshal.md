@@ -800,6 +800,48 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   181 rows at once, so a drain campaign queues at most `dispatch.max_followup_reviews_per_campaign`
   follow-ups (default 2), newest landings first; the rest wait for later campaigns. → CAP-281 amended,
   Story 73.2.
+- **2026-09-29 — Proposed: every dispatch session opens on the shared codegraph index.** Operator
+  direction, 2026-09-29: caveman, headroom and codegraph must be installed, working and in use before
+  the next fleet drain, so the drain earns the token-economy savings.
+  Measured on the first dispatches of that evening:
+  - **Two layers work.**
+    - `wire` (`headroom wrap claude`, a proxy on a per-worktree port) was applied. One stopped
+      session had saved 15.7% of its tokens (443,514 of 2,829,915) in five minutes.
+    - `output` (the caveman skill) was deployed into every dispatch worktree.
+  - **The third does not.** `structure-graph` is enabled for every station by policy (Epic 55), but
+    nothing on the dispatch path gives a worktree a codegraph index. The binary is not in the
+    `pyforge-guild` environment that dispatch runs in (only `local-recipes` has it), the primary
+    checkout has no `.codegraph/`, and `bmad-build-auto`'s step 01 only uses an index that already
+    exists in its worktree (Story 28.33).
+  - **Story 28.31's spike already chose the shape**
+    (`benchmarks/structure-graph-dispatch-28-31.json`): share one repo-level index. A fresh
+    `codegraph init -y` cost about 19 s and 222 MiB per worktree, `codegraph sync -q` from a shared
+    base about 4 s, against about 52k tokens of unaided navigation.
+    - Its follow-on draft (`spec-28-34-…`) was never minted and is archived, tracked as
+      `DW-FU-28-31-1`. That row's own trigger ("only if the token-economy layers are switched on") has
+      now fired.
+
+  **What it looks like when real:**
+  - `codegraph` is on PATH in the Guild environment, from conda-forge, beside `headroom-ai` and
+    `caveman-installer`.
+  - With the layer enabled, `dispatch_once` gives each new worktree a codegraph index:
+    - it copies the primary checkout's `.codegraph/` and runs `codegraph sync -q`;
+    - when no base exists, it runs `codegraph init -y` in the worktree and names
+      `marshal context bootstrap` as the fix;
+    - when the binary is absent, the session runs without an index and says so.
+  - The dispatch journal records which of the three happened.
+  - The primary checkout's base index is built by `marshal context bootstrap`.
+
+  **Constraints:**
+  - An unavailable instrument never blocks a dispatch: each layer's graceful-degrade contract holds.
+  - The primary checkout is only read, never written. Story 64.1 keeps dispatch off the shared
+    checkout's files.
+  - `.codegraph/` stays gitignored, so no index is ever committed.
+  - No second index format and no harness change: step 01 already reads the index.
+
+  Kinships: Story 28.31 (the spike), Story 28.33 (step 01's reference), Epic 55 (the layer switched
+  on), CAP-192 (`marshal context bootstrap`'s substrate), Story 46.9 (per-layer benchmark legs);
+  owner `spec-pyforge-marshal`. → CAP-282 / Epic 77 / Story 77.1 (FR-229), specced 2026-09-29.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

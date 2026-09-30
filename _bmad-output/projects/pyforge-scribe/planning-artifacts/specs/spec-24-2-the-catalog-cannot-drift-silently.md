@@ -3,6 +3,7 @@ title: '24.2: The catalog cannot drift silently'
 type: 'feature'
 created: '2026-09-29'
 status: 'done'
+flag-exempt: detector-or-gate
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
