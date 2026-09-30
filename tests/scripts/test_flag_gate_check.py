@@ -1243,13 +1243,21 @@ def test_every_key_the_live_tree_holds_is_read_in_src_or_scripts():
 @pytest.mark.skipif(git is None, reason="git is not installed")
 def test_the_live_tree_has_no_unknown_exemption_no_landed_key_missing_and_no_orphan():
     # Deliberately not "exit 0": a post-rule story that lacks both blocks is a FAIL owned by its Smith,
-    # and this suite must not turn red for it a second time. It pins the honesty of the tree and the roster.
+    # and this suite must not turn red for it a second time; the same holds for a `done` flagged story whose
+    # Verification names no two-state test (Story 34.5), which is equally its own Smith's to fix.
+    # It pins the honesty of the tree and the roster.
+    owned = {
+        flag_gate_check.K_MISSING,
+        flag_gate_check.K_NO_TEST,
+        flag_gate_check.K_TEST_MISSING,
+        flag_gate_check.K_NOT_TWO_STATE,
+    }
     inputs = flag_gate_check.load_inputs(REPO_ROOT)
 
     _judged, findings = flag_gate_check.judge_tree(REPO_ROOT, inputs)
 
-    assert {f.kind for f in findings} <= {flag_gate_check.K_MISSING, flag_gate_check.K_PRE_RULE}
-    assert [f for f in findings if f.severity == flag_gate_check.FAIL and f.kind != flag_gate_check.K_MISSING] == []
+    assert {f.kind for f in findings} <= {*owned, flag_gate_check.K_PRE_RULE}
+    assert [f for f in findings if f.severity == flag_gate_check.FAIL and f.kind not in owned] == []
 
 
 # --- one declared source, outside every station --------------------------------------------------
