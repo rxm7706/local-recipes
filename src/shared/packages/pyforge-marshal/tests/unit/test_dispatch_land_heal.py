@@ -635,8 +635,8 @@ def test_a_memlog_is_mechanical_beside_the_landing_ledger_only() -> None:
     assert is_mechanical_conflict_path(_MEMLOG, ledger_rel=_LEDGER)
     assert is_mechanical_conflict_path(_CO_MEMLOG, ledger_rel=_LEDGER)
     assert unknown_conflict_paths((_MEMLOG, _LEDGER, _FOREIGN_LEDGER, "README.md"), ledger_rel=_LEDGER) == (
-        _FOREIGN_LEDGER,
         "README.md",
+        _FOREIGN_LEDGER,
     )
 
 
