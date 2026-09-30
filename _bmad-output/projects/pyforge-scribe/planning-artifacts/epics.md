@@ -890,6 +890,28 @@ So that the picture is one read away without `AGENTS.md` restating a version, a 
 **And** scribe's parity meta-test, `governance-currency`, `general-docs-consistency` and `spec-surface-check` green; co-governor reconcile as in 24.1
 **Status:** done
 
+## Epic 25: The estate catalog reads only in-tree skills (spec-pyforge-scribe CAP-32)
+
+Minted 2026-09-30 from the station Dream's Realization log entry of the same date: a defect in
+CAP-32's realization, not a new capability, so no CAP is minted. A new epic because Epic 24 is
+`done`. One story. **HARD boundaries:** the catalog's sources and sections do not change; the
+rendered file on a clean checkout is byte-identical; no network call and no `pyforge.<station>`
+import; the check's exit-code domain (0 / 1 / 2) is unchanged.
+
+### Story 25.1: The estate catalog skips skill directories git ignores
+
+As an operator running `pr-preflight` on a checkout where marshal's token-economy kit deployed the `caveman` skill,
+I want the estate catalog to count only the skill directories that are part of the tree,
+So that `bmad-estate-check` reads the same on my checkout as it does in CI, and nobody "fixes" the committed catalog to include a local tool.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-32 • Dream 2026-09-30 (Realization log)
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py` (`read_skills`), `tests/unit/test_catalog_bmad_estate.py` (the git-work-tree cases).
+**Given** `read_skills` walks every directory under `.claude/skills/` on disk, the primary checkout and every dispatch worktree carry the gitignored `caveman` skill, and the primary also carries `cfe-recipe-generation` and `cfe-recipe-lifecycle`, which hold only ignored `__pycache__` files — so `bmad-estate-check` reds locally (one extra skill, two extra no-`SKILL.md` directories) while CI stays green
+**When** the catalog is derived from a root that is a git work tree
+**Then** a directory under `.claude/skills/` counts, as a skill or as a no-`SKILL.md` directory, only when git lists at least one file in it that it does not ignore (tracked, or untracked and not ignored); an ignored directory and a directory holding only ignored files are skipped; a new, not-yet-added skill still counts; when the root is not a work tree or git is unavailable, the disk walk is today's
+**And** on a clean checkout `scribe catalog bmad-estate --check` exits 0 and `--write` changes no byte; on the primary checkout with `caveman` deployed it exits 0; the new tests build a temporary work tree with an ignored skill, an ignored-files-only directory, a tracked skill and an untracked skill, and fail when the filter is removed (mutation); `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec
+**Status:** backlog
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.
