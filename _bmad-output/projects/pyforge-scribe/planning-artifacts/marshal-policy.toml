@@ -142,6 +142,14 @@ verify_commands = [
   "docs/MAP.md",
   "AGENTS.md",
 ]
+"25" = [  # the estate catalog reads only in-tree skills (spec-pyforge-scribe CAP-32 defect), added 2026-09-30
+  "src/shared/packages/pyforge-scribe/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-scribe/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md",
+  "scripts/.spec-surface-baseline.json",
+  "docs/reference/bmad-estate-llms-full.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

@@ -37,6 +37,8 @@ import hashlib
 import io
 import json
 import re
+import shutil
+import subprocess
 import tomllib
 from dataclasses import asdict, dataclass, field
 from datetime import date
@@ -357,14 +359,59 @@ def read_help(root: Path) -> tuple[list[dict[str, str]], dict[str, str]]:
     return rows, docs
 
 
+def _git_listed_skill_dirs(root: Path) -> set[str] | None:
+    """First-level ``.claude/skills/`` directory names git does not ignore.
+
+    Returns ``None`` when ``root`` is not a work tree, git is missing, or the
+    call fails -- never raises. An empty set means git listed no files there.
+    """
+    if not (root / ".git").exists():
+        return None
+    git_bin = shutil.which("git")
+    if git_bin is None:
+        return None
+    argv = [
+        git_bin,
+        "-C",
+        str(root),
+        "ls-files",
+        "--cached",
+        "--others",
+        "--exclude-standard",
+        "-z",
+        "--",
+        SKILLS_RELPATH.as_posix(),
+    ]
+    try:
+        completed = subprocess.run(argv, capture_output=True, timeout=30, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if completed.returncode != 0:
+        return None
+    names: set[str] = set()
+    for raw in completed.stdout.split(b"\0"):
+        if not raw:
+            continue
+        try:
+            relative = Path(raw.decode("utf-8", errors="replace")).relative_to(SKILLS_RELPATH)
+        except ValueError:
+            continue
+        if relative.parts:
+            names.add(relative.parts[0])
+    return names
+
+
 def read_skills(root: Path, help_modules: dict[str, str]) -> tuple[list[Skill], list[str]]:
     skills_dir = root / SKILLS_RELPATH
     if not skills_dir.is_dir():
         raise CatalogSourceError(f"{SKILLS_RELPATH} is not a directory")
     skills: list[Skill] = []
     missing: list[str] = []
+    allowed = _git_listed_skill_dirs(root)
     for entry in sorted(skills_dir.iterdir(), key=lambda p: p.name):
         if not entry.is_dir():
+            continue
+        if allowed is not None and entry.name not in allowed:
             continue
         skill_md = entry / "SKILL.md"
         if not skill_md.is_file():
