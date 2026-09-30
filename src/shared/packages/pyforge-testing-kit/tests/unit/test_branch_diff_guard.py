@@ -115,6 +115,15 @@ def test_commits_since_and_commit_metadata(repo: Path):
     assert commit_files(repo, shas[0]) == ["a.py"]
 
 
+def test_a_failing_git_call_still_raises_called_process_error(repo: Path):
+    # The git calls run through pyforge.core.process.PosixProcess, whose `run` never raises for a
+    # non-zero exit; the guard re-raises it so a failing git is loud, as `check_output` was.
+    with pytest.raises(subprocess.CalledProcessError) as caught:
+        commit_subject(repo, "0" * 40)
+    assert caught.value.returncode != 0
+    assert caught.value.cmd[:2] == ["git", "log"]
+
+
 def test_unsanctioned_commits_accepts_a_sanctioned_retro(repo: Path):
     _make_origin_main(repo)
     surface = "surface"
