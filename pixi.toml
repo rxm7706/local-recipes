@@ -1005,8 +1005,9 @@ platform-object-storage = { features = ["platform-object-storage"], no-default-f
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-core package (stdlib only -- no third-party run-dep) + pytest.
 pyforge-core = { features = ["pyforge-core"], no-default-feature = true }
-# Lean testing-kit env (Story 19.2 / FR-130, pyforge-core mirror): own leaf
-# (Q-26), stdlib-only shared test mocks; no-default-feature keeps it lean.
+# Lean testing-kit env (Story 19.2 / FR-130, pyforge-core mirror): its own
+# package (Q-26, not pyforge.core.testing) that declares pyforge-core and
+# openfeature-sdk (Story 74.1); no-default-feature keeps it lean.
 pyforge-testing-kit = { features = ["pyforge-testing-kit"], no-default-feature = true }
 # BMad Method UI dashboards (docs/specs/bmad-loop-adoption.md W4): consumes the
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
@@ -3042,8 +3043,9 @@ description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-core-build-conda", "pyforge-core-build-dist"]
 
 # --- pyforge-testing-kit (Story 19.2 / FR-130, pyforge-core mirror) --
-# Own leaf (Q-26): CLI-runner / page-object / DB-factory / auth-HTTP-time
-# mocks seeded from Marshal's four real mocks. Spec:
+# Its own package (Q-26, not pyforge.core.testing) that declares pyforge-core and
+# openfeature-sdk (Story 74.1): CLI-runner / page-object / DB-factory / auth-HTTP-time
+# mocks seeded from Marshal's four real mocks, plus the feature-flag family. Spec:
 # _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
 # spec-19-2-the-shared-test-support-kit.md
 [feature.pyforge-testing-kit.dependencies]

@@ -2,7 +2,8 @@
 
 Five families: four seeded from Marshal's already-real mocks (not rewritten), and the
 feature-flag family (``pyforge.testing_kit.flags``, spec-feature-flag-governance CAP-4).
-Q-26: own leaf package ``pyforge-testing-kit``, not ``pyforge.core.testing``.
+Q-26: its own package ``pyforge-testing-kit``, not ``pyforge.core.testing``; it declares
+``pyforge-core`` and ``openfeature-sdk`` as runtime dependencies (marshal Story 74.1).
 
 PEP 420: this package must NOT ship ``src/pyforge/__init__.py`` — ``pyforge``
 is a shared namespace across stations.

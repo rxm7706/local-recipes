@@ -8,7 +8,7 @@ and a fifth, the feature-flag family (`spec-feature-flag-governance` CAP-4):
 
 | Family | Module | Seed |
 |--------|--------|------|
-| CLI-runner | `pyforge.testing_kit.cli_runner` | `mock_runner.py` |
+| CLI-runner (`MockRunner`; `invoke_cli` / `CliResult`, which run a station's `main(argv)` in-process and return its exit code and output) | `pyforge.testing_kit.cli_runner` | `mock_runner.py` |
 | page-object | `pyforge.testing_kit.page_object` | `mock_worktree.py` |
 | DB-factory | `pyforge.testing_kit.db_factory` | `mock_supervisor.py` + conftest store factories |
 | auth/HTTP/time | `pyforge.testing_kit.auth_http_time` | `mock_github_api.py` + supervisor timing |
@@ -19,6 +19,32 @@ test-only fixtures out of every station's runtime `pyforge-core` install. The
 kit itself depends on `pyforge-core` (its git calls run through
 `pyforge.core.process`) and on `openfeature-sdk` (the flag family); `pyforge-core`
 does not depend on the kit.
+
+## Feature-flag family
+
+Run a flagged story in both flag states through OpenFeature's `InMemoryProvider`
+(`spec-feature-flag-governance` CAP-4). Bind the fixture once in the station's
+`conftest.py`, or a test using it fails with `fixture 'flag_provider' not found`:
+
+```python
+# conftest.py
+from pyforge.testing_kit import make_flag_provider_fixture
+
+flag_provider = make_flag_provider_fixture()
+
+# a test module
+from pyforge.testing_kit import assert_flag_off_verb, flag_states
+
+@flag_states("pyforge.example.thing")   # runs twice: ids `on` and `off`
+def test_the_capability(): ...
+
+def test_the_verb_when_its_flag_is_off():
+    assert_flag_off_verb(main, "thing", usage_code)   # listed in --help as disabled; exits with usage_code
+```
+
+For integration tests, and for Playwright against a server started on it,
+`flagd_tree(tmp_path, {"pyforge.example.thing": "off"})` writes a temporary flagd
+FILE tree in the shape of `src/platform/config/flags.json` and returns its path.
 
 ## Develop
 
