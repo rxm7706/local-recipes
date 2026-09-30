@@ -3,7 +3,7 @@ title: "74.1: A station streams bytes to object storage by sha256 key — herald
 type: 'feature'
 created: '2026-09-28'
 status: 'in-progress'
-baseline_revision: 7ac7b29fa5f40108f2c183ab118140667d92b743
+baseline_revision: 73dca4a27565789905adcaf19aa223dfef9038b4
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
