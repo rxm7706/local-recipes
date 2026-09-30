@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 499
+# stories: 502
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -352,6 +352,7 @@ development_status:
   75-1-fleet-scan-reads-archived-dreams-from-the-archive: done
   76-1-bmad-drift-check-py-s-specs-mode-retires: done
   77-1-dispatch-seeds-each-worktree-s-codegraph-index-from-the-shared-base-and-syncs-it: done
+  78-1-a-landing-unions-append-only-memlogs-instead-of-refusing: backlog
   8-1-marker-grammar-and-the-per-format-registry: done
   8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: done
   8-3-span-substitution-the-update-primitive: done
@@ -503,12 +504,14 @@ development_status:
   epic-73-retrospective: optional
   epic-74: in-progress
   epic-74-retrospective: optional
-  epic-75: backlog
+  epic-75: done
   epic-75-retrospective: optional
-  epic-76: backlog
+  epic-76: done
   epic-76-retrospective: optional
   epic-77: done
   epic-77-retrospective: optional
+  epic-78: backlog
+  epic-78-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done
