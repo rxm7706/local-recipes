@@ -261,8 +261,10 @@ def check_metadata(flags: Mapping[str, Any], overlays: Mapping[str, Any] | None 
     ``on_everywhere`` is set exactly when every environment of :data:`ENVIRONMENTS` renders the flag
     ON (the tree's ``defaultVariant`` with ``overlays`` applied; a ``DISABLED`` or non-boolean flag
     never does, so its clock stays ``""``), and ``cleanup_by`` is ``on_everywhere`` plus
-    :data:`CLEANUP_DAYS` days, else ``""``. Each refusal is a :class:`FlagMetadataError` subclass
-    whose message names the flag and the field; ``flags`` is not modified.
+    :data:`CLEANUP_DAYS` days, else ``""``. A flag killed with ``state: DISABLED`` reads OFF in every
+    environment, so a kill switch clears its clock in the same edit. Each refusal is a
+    :class:`FlagMetadataError` subclass whose message names the flag and the field; ``flags`` is
+    not modified.
     """
     overlays = overlays or {}
     for key, entry in flags.items():
