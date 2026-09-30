@@ -2,7 +2,7 @@
 title: '78.1: A landing unions append-only memlogs instead of refusing'
 type: 'feature'
 created: '2026-09-30'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '70d6e11a515a75838b7d6c5c9a5e24a96641204d'
 flag-exempt: detector-or-gate   # the heal decides whether a landing merges: part of marshal's landing gate (spec-feature-flag-governance Q2; Story 74.2's precedent)
 review_loop_iteration: 0
