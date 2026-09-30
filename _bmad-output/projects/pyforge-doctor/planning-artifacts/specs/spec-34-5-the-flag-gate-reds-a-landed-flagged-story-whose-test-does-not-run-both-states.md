@@ -95,7 +95,7 @@ Type / Effort / Deps: feature / S / S-34.2 (cross-project gate: marshal Story 74
 - `src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/flags.py` -- marshal 74.1's landed helper (on main, `1c3e4ba113`): module `pyforge.testing_kit.flags`; the ON/OFF helper is `flag_states(key)`; `flagd_tree(tmp_path, {key: "on"|"off"})` writes one tree. Read-only; take the names from here, never guess.
 - `src/platform/tests/test_openfeature_file_flags.py` -- the pre-kit shape: `_flagd_tree("on")` and `_flagd_tree("off")` calls (lines ~267, 278). It is also the only test the one live `done` flagged spec names (steward 74.1, key `pyforge.steward.object_store_consumer`, which the file names at `_SHIPPED_BOOLEANS`), so the live tree stays green through this shape.
 - `tests/scripts/test_flag_gate_check.py` -- the suite. `_fixture`, `_spec`, `_write`, `_run`, `_tree_json`, `_kinds` are the helpers. `_spec` writes a body of `body\n`; the three existing tests that write a `done` flagged spec expecting no finding (`status="done"` at the `landed` / `spec-1-2-done` rows) now need a Verification naming a two-state test.
-- `docs/reference/story-spec-flag-block.md` -- "How a machine reads it" paragraph names what the gate judges; add the two-state check there.
+- `docs/reference/story-spec-flag-block.md` -- "How a machine reads it" paragraph names what the gate judges. Not changed (see the 2026-09-30 review entry in the Spec Change Log): the contract's Boundaries confine every change to `scripts/` and `tests/scripts/`.
 - `src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py` -- pins "no `pyforge.*` import in the gate"; the new code is stdlib-only.
 
 ## Tasks & Acceptance
@@ -103,7 +103,7 @@ Type / Effort / Deps: feature / S / S-34.2 (cross-project gate: marshal Story 74
 **Execution:**
 - `scripts/flag_gate_check.py` -- add `judge_two_state(root, rel, frontmatter, *, exemptions)` and three kinds (`flag-verification-names-no-test`, `flag-test-file-missing`, `flag-test-not-two-state`); call it from `judge_one` for post-rule specs; update the module docstring -- CAP-4's gate clause, static reads only
 - `tests/scripts/test_flag_gate_check.py` -- one test per acceptance row and I/O row (kit helper, two trees, key never referenced, no test named, missing file, backlog and exempt, `--spec` red); fix the three existing `done`-spec tests -- the new check changes what a `done` flagged fixture must carry
-- `docs/reference/story-spec-flag-block.md` -- one sentence: the gate also reds a `done` flagged spec whose Verification names no test that runs both states
+- ~~`docs/reference/story-spec-flag-block.md` -- one sentence about the new check~~ -- dropped at review: outside the contract's Boundaries (`scripts/` and `tests/scripts/` only)
 
 **Acceptance Criteria:**
 - Given the acceptance criteria and I/O matrix in the intent contract, when the suite runs, then every row has a passing test
