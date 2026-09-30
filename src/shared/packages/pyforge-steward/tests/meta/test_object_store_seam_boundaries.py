@@ -1,4 +1,4 @@
-"""Steward Story 74.1 (spec-pyforge-steward CAP-163): the object-store seam's two import rules.
+"""Steward Story 74.1 (spec-pyforge-steward CAP-163): the object-store seam's three import rules.
 
 `django_pyforge.object_store` reaches CAP-97's S3 client without either side importing the
 other's world:
@@ -9,11 +9,16 @@ other's world:
 2. `django_pyforge` never imports the host's `config` package (nor `config.*`). The chrome is
    installed beside stations and reaches the host's client factory by the dotted path in
    `OBJECT_STORAGE_CLIENT_FACTORY`, resolved with `import_string`.
+3. `django_pyforge/object_store.py` imports neither `boto3` nor `botocore`: the client is the
+   factory's, and django-pyforge declares neither dependency, so a portal environment
+   without boto3 must still import the module.
 
 The guard reads every `.py` file with `ast` and inspects import statements only -- a
 string, a docstring or a comment that merely names a module is not an import, and a
 function-local or `TYPE_CHECKING` import counts as one. A relative import (`level > 0`)
-stays inside its own package and is never a finding.
+stays inside its own package and is never a finding. Because it reads import statements
+only, a dynamic load -- `importlib.import_module("pyforge...")` or `import_string` (the
+sanctioned ones are in `config/asgi.py` and `config/station_api.py`) -- is out of its scope.
 
 Rule 1 has one known breach, closed and exact: `src/platform/ingest/github_projects` (Story
 12.8's dlt lane) still imports `pyforge.steward.keys` and `.sync`; `pixi.toml`
@@ -100,6 +105,20 @@ def chrome_findings(importers: dict[str, list[int]]) -> list[str]:
     ]
 
 
+#: The client libraries `object_store.py` must never import (rule 3).
+CLIENT_LIBRARIES: tuple[str, ...] = ("boto3", "botocore")
+
+
+def client_library_findings(py_file: Path) -> list[str]:
+    """Rule 3: every boto3 / botocore import in one file, as (line) findings."""
+    return [
+        f"{py_file.name}:{line}: imports {module}; the client comes from the factory the "
+        "OBJECT_STORAGE_CLIENT_FACTORY setting names, and django-pyforge declares no boto3"
+        for line, module in _imported_modules(py_file)
+        if any(_is_package_or_submodule(module, lib) for lib in CLIENT_LIBRARIES)
+    ]
+
+
 # --- the live tree ---------------------------------------------------------------------
 
 
@@ -120,6 +139,11 @@ def test_src_platform_imports_no_pyforge_beyond_the_closed_allowlist() -> None:
 def test_django_pyforge_imports_nothing_from_the_host_config_package() -> None:
     importers = importers_of(DJANGO_PYFORGE, "config", repo_root=ROOT)
     assert not chrome_findings(importers), "\n" + "\n".join(chrome_findings(importers))
+
+
+def test_object_store_imports_no_client_library() -> None:
+    findings = client_library_findings(DJANGO_PYFORGE / "object_store.py")
+    assert not findings, "\n" + "\n".join(findings)
 
 
 # --- mutation proofs: the guards red on a planted breach, on a tmp tree -------------------
@@ -204,3 +228,30 @@ def test_the_chrome_guard_ignores_what_is_not_a_config_import(tmp_path: Path) ->
     _write(tmp_path, f"{pkg}/c.py", "import configparser\nfrom config_extras import x\nimport django_pyforge.config\n")
 
     assert importers_of(tmp_path / pkg, "config", repo_root=tmp_path) == {}
+
+
+def test_the_client_library_guard_reds_every_shape_and_ignores_non_imports(tmp_path: Path) -> None:
+    planted = tmp_path / "planted.py"
+    planted.write_text(
+        "import boto3\n"
+        "from botocore.exceptions import ClientError\n"
+        "import botocore.config as cfg\n"
+        "def f():\n    from boto3.s3.transfer import TransferConfig\n",
+        encoding="utf-8",
+    )
+    findings = client_library_findings(planted)
+    assert [f.split(" imports ")[0] for f in findings] == [
+        "planted.py:1:",
+        "planted.py:2:",
+        "planted.py:3:",
+        "planted.py:5:",
+    ]
+
+    clean = tmp_path / "clean.py"
+    clean.write_text(
+        'NAME = "boto3"\n"""import botocore"""\n# import boto3\n'
+        "import boto3_extras\nfrom botocore_stubs import x\nfrom . import boto3\n"
+        "from django.utils.module_loading import import_string\n",
+        encoding="utf-8",
+    )
+    assert client_library_findings(clean) == []
