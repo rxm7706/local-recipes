@@ -320,7 +320,10 @@ def compose(tree: Mapping[str, Any], overlays: Mapping[str, Any], environment: s
 
     Every entry of the whole overlay document is validated first (any environment), each a named
     :class:`FlagConfigError`; then :func:`check_metadata` runs over every flag (Story 76.2), so no
-    path that composes the tree accepts one whose clock is wrong. A flag whose tree ``state`` is
+    ``pyforge.core`` path that composes the tree (``read_boolean``, :func:`render`,
+    ``read_cutover_root``) accepts one whose clock is wrong. The chart's Go-template composition
+    (``platform.flags.rendered``) does not run the check; the tests compose the shipped tree
+    through this function before it reaches the chart. A flag whose tree ``state`` is
     ``DISABLED`` keeps it and its variant: the kill switch wins in every environment. ``tree`` is
     not modified.
     """
