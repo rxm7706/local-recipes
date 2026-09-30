@@ -2,7 +2,7 @@
 title: "75.1: fleet_scan reads archived Dreams from the archive"
 type: 'chore'
 created: '2026-09-29'
-status: 'blocked'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -47,7 +47,7 @@ Type / Effort / Deps: chore / S / —.
 
 ## Acceptance Criteria
 
-- Given today's tree When `scan_dreams()` runs Then it returns exactly the rows it returns before this change
+- Given today's tree When `scan_dreams()` runs Then every row read from `docs/dreams/` is exactly what it was before this change, and the only additions are the six Dreams already under `archive/docs/dreams/` (`deckcraft`, `design-code-bridge`, `herald-pitch-deck-family-expansion`, `modernist-identity`, `pyforge-genesis`, `video-scripts`), each reported as archived (location is the archive signal, whatever its frontmatter `status`), with their fleet chains
 - Given a fixture archived Dream in `docs/dreams/` When it moves to `archive/docs/dreams/` Then `scan_dreams()` returns the same row for it (slug, title, status, owner, archived reason)
 - Given one slug in both directories When `scan_dreams()` runs Then the `docs/dreams/` copy is returned, once
 - Given an absorbed Spec whose `owner-dream` is repointed to the moved Dream's archive path When `_fleet_chains()` runs Then the Spec keeps its station
@@ -82,13 +82,17 @@ Type / Effort / Deps: chore / S / —.
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
-| today's tree | no Dream moved | identical rows | — |
+| today's tree | no Dream moved | `docs/dreams/` rows identical; the six already-archived Dreams added as archived | — |
 | Dream moved | archived Dream under the archive | same row | — |
 | slug in both | two copies | `docs/dreams/` copy, once | — |
 | Spec whose Dream moved | `owner-dream` repointed | station kept | — |
 | no archive directory | — | as today | — |
 
 </intent-contract>
+
+## Spec Change Log
+
+- 2026-09-30 -- operator ruling, unblocked (contract amended; recorded on `spec-one-chain-per-station`'s memlog and `epics.md` Story 75.1): take this spec's own option 1 -- read every `archive/docs/dreams/*.md`. The six Dreams already there (`deckcraft`, `design-code-bridge`, `herald-pitch-deck-family-expansion`, `modernist-identity`, `pyforge-genesis`, `video-scripts`) become visible now, which is CAP-11's intent ("the console's Archived column still counts archived Dreams"). None of the six reads `status: archived`, so a Dream read from `archive/docs/dreams/` is reported as archived whatever its frontmatter says (CHAIN-STANDARD §11: a Dream is live in `docs/dreams/` or archived under `archive/`); a slug in both places is read from `docs/dreams/`. Criterion 1, the matrix row and the fleet-picture check are reworded to match. First bring `origin/main` into this branch (merge, never rebase); the work already done is kept.
 
 ## Binding
 
@@ -106,7 +110,7 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 **Manual checks:**
 - `pixi run -e pyforge-guild python -m pytest tests/scripts/test_fleet_scan_archive.py -q` — expected: pass.
-- `pixi run -e pyforge-guild fleet-picture` before and after the change on `main` — expected: identical output.
+- `pixi run -e pyforge-guild fleet-picture` before and after the change on `main` — expected: identical except that the six already-archived Dreams (and their chains) are now counted, as archived.
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the scoped stamps.
 
 ## Review Triage Log
