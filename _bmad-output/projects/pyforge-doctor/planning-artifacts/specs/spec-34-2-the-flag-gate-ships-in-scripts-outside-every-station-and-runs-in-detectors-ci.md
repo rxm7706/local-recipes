@@ -2,10 +2,12 @@
 title: '34.2: The flag gate ships in scripts, outside every station, and runs in detectors-ci'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '7151e3d2653a6289c4f01a4ac17f8514aee3247a'
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
+warnings: [oversized]
 context:
   - docs/governance/spec-feature-flag-governance/SPEC.md
   - docs/dreams/feature-flag-governance.md
@@ -104,6 +106,46 @@ Type / Effort / Deps: feature / M / S-34.1.
 | unreadable input | tree, roster or baseline | the input named | exit 2 |
 
 </intent-contract>
+
+## Code Map
+
+- `scripts/flag_rule.py` -- Story 34.1's pure reader; reuse `load_exemptions`, `load_baseline`/`read_baseline` (`rule_date`), `is_story_spec`, `is_post_rule`, `in_scope`, `classify_frontmatter`, `repo_relative`, and the two named errors `RosterUnreadable`/`BaselineUnreadable` (both under `FlagRuleError` = exit 2). `_frontmatter` is private: expose it as a public `read_frontmatter`, so the gate reads each spec once.
+- `scripts/precommit_config_check.py` -- the shape to copy: `DETECTOR = {"scope": "repo"}` above the imports, `main() -> int`, `sys.exit(main())`; exit 0/1/2. `scripts/detectors.py` finds it by the `*_check.py` glob and pairs it to the pixi task whose `cmd` contains the file name.
+- `src/platform/config/flags.json` -- the one tree; keys today: `pyforge.three_surfaces`, `pyforge.cutover_root`, `pyforge.steward.ghe_fleet_credentials`, all read in `src/` non-test files.
+- `src/shared/packages/pyforge-doctor/tests/meta/test_coverage_gate_stays_outside_every_station.py` and `pyforge-core/tests/meta/test_coverage_gate_ci_trigger_companion.py` -- the "outside every station" meta-test and its core companion (predicates duplicated on purpose; core does not depend on doctor).
+- `pixi.toml` ~line 1311 -- `[feature.guild-tasks.tasks.precommit-config-check]`: the sibling task shape for `flag-gate-check`.
+- `scripts/spec_surface_allowlist.txt` lines 40-44 -- the `flag_rule.py` / `coverage_gate.py` allowlist lines to mirror.
+- `tests/scripts/test_flag_rule.py` -- the test header to copy (`pytest.importorskip("yaml")`, `sys.path.insert` of `scripts/`).
+- Live tree measured 2026-09-29 with `flag_rule`: 839 pre-rule feature specs `neither` (WARN); 22 post-rule `exempt`; 19 post-rule `flag`; **2 post-rule `neither`**: scribe `spec-24-1-...` and `spec-24-2-...` (see Design Notes).
+
+## Tasks & Acceptance
+
+**Execution:**
+- `scripts/flag_rule.py` -- add public `read_frontmatter(path, *, repo_root=None)` wrapping `_frontmatter`; unit-test it in `tests/scripts/test_flag_rule.py` -- one read per spec, no private import across files
+- `scripts/flag_gate_check.py` -- new: `DETECTOR = {"scope": "repo"}`; `--root`, `--spec`, `--json`, `-v`; tree mode (5 finding kinds: `flag-missing`, `flag-exempt-unknown`, `flag-key-not-in-tree`, `flag-key-orphan` FAIL; `flag-pre-rule` WARN grouped by station); `--spec` mode prints one JSON object (`verdict`, `findings`, `rule_date`); exit 0/1/2 -- the gate itself
+- `tests/scripts/test_flag_gate_check.py` -- new: fixture-tree tests for every I/O row and every AC (fixture `src/`, `scripts/`, roster, baseline, tree written under `tmp_path`); assert exit codes, finding text, `--spec` JSON, exit 2 on each unreadable input -- the oracle
+- `src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py` -- new: scan all eight stations for a module named `flag_gate`/`flag_gate_check` (file or package dir) or importing it (static or dynamic); planted-module proof per station; real tree passes -- Charter section 6
+- `src/shared/packages/pyforge-core/tests/meta/test_flag_gate_ci_trigger_companion.py` -- new: narrower copy for single-station PRs, same predicates -- core suite runs on any station change
+- `pixi.toml` -- add `[feature.guild-tasks.tasks.flag-gate-check]` (`cmd = "python scripts/flag_gate_check.py"`) after `precommit-config-check`; `environment.yaml` -- regenerate with `pixi project export conda-environment -e build > environment.yaml` -- registry needs a task or `detectors` reports a gap
+- `scripts/spec_surface_allowlist.txt` -- add the `scripts/flag_gate_check.py` line -- same shape as `flag_rule.py`
+- `docs/governance/spec-feature-flag-governance/.memlog.md` (via `_bmad/scripts/memlog.py append`) and every co-governor `python scripts/spec_surface_reconcile.py` names -- record the new paths; never `--write-baseline`
+
+**Acceptance Criteria:**
+- Given the Acceptance Criteria in the intent contract, when `pixi run -e pyforge-guild python -m pytest tests/scripts/test_flag_gate_check.py tests/scripts/test_flag_rule.py -q` runs, then it passes
+- Given the meta-test and its core companion, when they run against the real tree, then both pass; against a planted `pyforge.<station>.flag_gate` module, both fail
+- Given `pixi run -e pyforge-guild detectors --scope repo --list`, when it runs, then `flag_gate_check` is listed with task `flag-gate-check` and no registry gap is reported
+
+## Spec Change Log
+
+## Design Notes
+
+**Unknown exemption vs `neither`.** A `flag-exempt:` value that is non-blank and off the roster yields one `flag-exempt-unknown` FAIL (any spec, any type, pre- or post-rule) and suppresses that spec's `flag-missing` finding, so `someday` never reports twice. A blank or doubled declaration stays `neither`. A spec whose frontmatter cannot be read is treated as `neither` (never silently out of scope).
+
+**Orphan key search.** A key is read when its text appears in a tracked file under `src/` or `scripts/`: `git ls-files` when `<root>/.git` exists, else a filesystem walk (fixtures). Skipped: the tree, any path part `tests`/`test`/`docs`/`fixtures`, `test_*.py`, `conftest.py`, and `*.md`. The gate names no live key in its own source, so it never satisfies itself.
+
+**`--spec`** judges one story spec: `red` (post-rule `neither`, unknown exemption, `done` key absent from tree), `warn` (pre-rule `neither`), else `pass`. A path that is unreadable or not a story spec exits 2 with `verdict: "unknown"`, never green.
+
+**Live-tree conflict (found in planning, 2026-09-29).** Scribe Stories 24.1 and 24.2 (PR #1672, merged after the baseline) are post-rule `type: feature` specs carrying neither block, so the gate correctly reds the live tree with 2 FAIL findings, and the intent contract's "no exemption by this story" and "zero FAIL at the landing SHA" cannot both hold until scribe adds a block or exemption to its own specs. Implement the gate as specified; do not edit scribe's specs and do not exempt them here. Record both specs in a `deferred:` entry located at each spec path, name them in the landing PR, and report the landing as blocked on scribe, since a red `detectors-ci` row would red every PR.
 
 ## Source
 
