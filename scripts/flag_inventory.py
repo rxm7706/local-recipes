@@ -389,7 +389,7 @@ def classify_cap(
             continue
         entry = _entry(path, parts, kind)
         entries[(kind, entry.rel)] = entry
-    if entries and not others:
+    if entries:
         ordered = sorted(entries.values(), key=lambda e: (_KIND_ORDER[e.kind], e.rel))
         return RUNTIME, "; ".join(e.render() for e in ordered)
     return MODULE, "code with no entry point: " + _collapse_paths(others)
