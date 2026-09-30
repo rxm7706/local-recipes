@@ -186,6 +186,25 @@ def evaluate_cutover_root(source: Path | str | None = None) -> str:
 
 
 
+def evaluate_cli_boolean(key: str = FLAG_KEY, default: bool = False, source: Path | str | None = None) -> bool:
+    """The CLI reader's value for *key*: ``pyforge.core.flags.read_boolean`` over the tree itself.
+
+    ``read_boolean`` composes the overlay beside the tree on its own, so this is the independent
+    reading the FILE provider's rendered file must agree with (the platform tests may not import
+    ``pyforge.*`` -- they reach it here, as they reach ``evaluate_cutover_root``).
+    """
+    from pyforge.core.flags import read_boolean  # noqa: PLC0415
+
+    return read_boolean(key, default, flags_path=source)
+
+
+def render_flag_tree(environment: str, source: Path | str | None = None) -> bytes:
+    """The tree as *environment* reads it (``pyforge.core.flags.render``): what the chart's ConfigMap must carry."""
+    from pyforge.core import flags as core_flags  # noqa: PLC0415
+
+    return core_flags.render(environment, flags_path=source)
+
+
 def materialize_tree_bytes(data: bytes, dest: Path) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(data)
@@ -286,19 +305,15 @@ RENDER_VERB = "render"
 
 def render_main(argv: list[str]) -> int:
     """``render --environment <env> [--source PATH] [--output PATH]``: the tree as that environment reads it."""
-    from pyforge.core import flags as core_flags  # noqa: PLC0415
+    from pyforge.core.flags import ENVIRONMENTS  # noqa: PLC0415
 
     parser = argparse.ArgumentParser(prog=f"python -m django_pyforge.flags {RENDER_VERB}")
-    parser.add_argument(
-        "--environment",
-        required=True,
-        help=f"one of {', '.join(core_flags.ENVIRONMENTS)}",
-    )
+    parser.add_argument("--environment", required=True, help=f"one of {', '.join(ENVIRONMENTS)}")
     parser.add_argument("--source", default=None, help="the tree (default: PYFORGE_FLAGS_PATH, else the checkout's)")
     parser.add_argument("--output", default=None, help="write here instead of stdout")
     ns = parser.parse_args(argv)
     try:
-        rendered = core_flags.render(ns.environment, flags_path=ns.source)
+        rendered = render_flag_tree(ns.environment, ns.source)
     except ValueError as exc:  # pyforge.core.flags.FlagConfigError
         print(str(exc), file=sys.stderr)
         return 1

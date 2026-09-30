@@ -1,4 +1,12 @@
-"""Story 26.4 — one FILE flag tree flips Django, MCP, and CLI (FR-34 / AD-11)."""
+"""Story 26.4 — one FILE flag tree flips Django, MCP, and CLI (FR-34 / AD-11).
+
+Story 76.1 adds the per-environment rendering: the value-only ``flag-overlays.json`` beside the
+tree, ``PYFORGE_ENVIRONMENT``, and the chart's ConfigMap carrying the tree rendered for
+``flags.environment``. The host's FILE provider, ``evaluate_from_source`` and the CLI reader
+(``pyforge.core.flags.read_boolean``, reached through ``django_pyforge.flags`` because this
+package's import-linter contract bars ``pyforge`` imports) must agree for every key in every
+environment.
+"""
 
 from __future__ import annotations
 
@@ -18,8 +26,14 @@ from django_pyforge.flags import FLAG_KEY
 from django_pyforge.flags import configure_file_provider
 from django_pyforge.flags import eval_view
 from django_pyforge.flags import evaluate_boolean
+from django_pyforge.flags import evaluate_cli_boolean
 from django_pyforge.flags import evaluate_from_source
 from django_pyforge.flags import flags_asgi_app
+from django_pyforge.flags import main as flags_main
+from django_pyforge.flags import read_flag_tree_bytes
+from django_pyforge.flags import render_flag_tree
+from django_pyforge.flags import resolve_flags_path
+from django_pyforge.flags import resolve_tree_path
 from django_pyforge.flags import tree_view
 from django_pyforge.mcp_http import dispatch_station_mcp
 from django_pyforge.mcp_http import register_station_mcp_app
@@ -30,6 +44,9 @@ pytest.importorskip("openfeature.contrib.provider.flagd")
 
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 _FLAGS_JSON = _PLATFORM_DIR / "config" / "flags.json"
+_OVERLAYS_JSON = _PLATFORM_DIR / "config" / "flag-overlays.json"
+_ENVIRONMENTS = ("dev", "staging", "production")
+_ENV_ENVIRONMENT = "PYFORGE_ENVIRONMENT"
 _CORE_CHART = _PLATFORM_DIR / "deploy" / "charts" / "platform"
 
 requires_helm = pytest.mark.skipif(
@@ -41,33 +58,60 @@ requires_helm = pytest.mark.skipif(
 _TEST_IMAGE_DIGEST = "sha256:" + ("a" * 64)
 
 
-def _render_core() -> list[dict[str, Any]]:
-    yaml = pytest.importorskip("yaml")
-    flags = _PLATFORM_DIR / "config" / "flags.json"
-    result = subprocess.run(  # noqa: S603
-        [  # noqa: S607
-            "helm",
-            "template",
-            "platform",
-            str(_CORE_CHART),
-            "--set-file",
-            f"flags.tree={flags}",
-            # The chart refuses a mutable image default ("image.digest or
-            # image.tag is required"); pin all three images by digest exactly
-            # as tests/test_chart_invariants.py::_helm does.
-            *(
-                f"--set={prefix}.digest={_TEST_IMAGE_DIGEST}"
-                for prefix in ("image", "sidecar.image", "mcpHost.image")
-            ),
-        ],
+def _helm_core(
+    environment: str | None = "dev",
+    *,
+    tree: Path = _FLAGS_JSON,
+    overlays: Path | None = _OVERLAYS_JSON,
+) -> subprocess.CompletedProcess[str]:
+    """`helm template` of the core chart, digests pinned; the flag values are the parameters."""
+    argv = [
+        "helm",
+        "template",
+        "platform",
+        str(_CORE_CHART),
+        "--set-file",
+        f"flags.tree={tree}",
+        # The chart refuses a mutable image default ("image.digest or
+        # image.tag is required"); pin all three images by digest exactly
+        # as tests/test_chart_invariants.py::_helm does.
+        *(f"--set={prefix}.digest={_TEST_IMAGE_DIGEST}" for prefix in ("image", "sidecar.image", "mcpHost.image")),
+    ]
+    if overlays is not None:
+        argv += ["--set-file", f"flags.overlays={overlays}"]
+    if environment is not None:
+        argv += ["--set", f"flags.environment={environment}"]
+    return subprocess.run(  # noqa: S603 -- fixed argv, no shell, no untrusted input
+        argv,  # noqa: S607
         check=False,
         capture_output=True,
         text=True,
         timeout=180,
     )
+
+
+def _render_core(
+    environment: str | None = "dev",
+    *,
+    tree: Path = _FLAGS_JSON,
+    overlays: Path | None = _OVERLAYS_JSON,
+) -> list[dict[str, Any]]:
+    yaml = pytest.importorskip("yaml")
+    result = _helm_core(environment, tree=tree, overlays=overlays)
     if result.returncode != 0:
         pytest.fail(result.stderr)
     return [doc for doc in yaml.safe_load_all(result.stdout) if doc]
+
+
+def _flags_configmap(docs: list[dict[str, Any]]) -> dict[str, Any]:
+    flags_maps = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "ConfigMap"
+        and (doc.get("metadata") or {}).get("labels", {}).get("app.kubernetes.io/component") == "flags"
+    ]
+    assert len(flags_maps) == 1, flags_maps
+    return json.loads(flags_maps[0]["data"]["flags.json"])
 
 
 def _flagd_tree(default_variant: str) -> bytes:
@@ -290,18 +334,11 @@ def test_src_platform_does_not_import_pyforge() -> None:
 @requires_helm
 def test_chart_configmap_is_the_one_tree_and_has_no_flag_sidecar() -> None:
     docs = _render_core()
-    flags_maps = [
-        doc
-        for doc in docs
-        if doc.get("kind") == "ConfigMap"
-        and (doc.get("metadata") or {})
-        .get("labels", {})
-        .get("app.kubernetes.io/component")
-        == "flags"
-    ]
-    assert len(flags_maps) == 1, flags_maps
-    rendered = json.loads(flags_maps[0]["data"]["flags.json"])
+    # Story 76.1: the one tree, rendered for the release's environment (dev here). The shipped
+    # overlay starts every key at its tree value, so this is also the tree as it was.
+    rendered = _flags_configmap(docs)
     on_disk = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
+    assert rendered == json.loads(render_flag_tree("dev", _FLAGS_JSON))
     assert rendered == on_disk
 
     blob = json.dumps(docs).lower()
@@ -320,6 +357,7 @@ def test_chart_configmap_is_the_one_tree_and_has_no_flag_sidecar() -> None:
         container = by_component[component]["containers"][0]
         env = {item["name"]: item.get("value") for item in container.get("env") or []}
         assert env.get("FLAGD_RESOLVER") == "file"
+        assert env.get(_ENV_ENVIRONMENT) == "dev"
         assert env.get("FLAGD_OFFLINE_FLAG_SOURCE_PATH") == "/etc/pyforge/flags.json"
         mounts = container.get("volumeMounts") or []
         flags_mount = next(m for m in mounts if m.get("name") == "flags")
