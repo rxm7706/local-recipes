@@ -89,9 +89,16 @@ def resolve_flags_path(explicit: Path | str | None = None) -> Path | None:
     A tree with a ``flag-overlays.json`` beside it (a checkout) is composed by
     ``pyforge.core.flags`` and materialised; the in-cluster mount holds the rendered tree and
     has no sibling, so it is returned as it is. An unknown environment raises
-    ``pyforge.core.flags.UnknownEnvironmentError`` on every call.
+    ``pyforge.core.flags.UnknownEnvironmentError`` on every call. In a checkout the rendered
+    copy is written when this is called, so edits to the tree or the overlay reach a running
+    FILE provider only when it is called again. Where ``pyforge.core`` is not installed (the
+    mcp-host sidecar image ships ``django_pyforge`` alone) there is nothing to compose: the
+    tree is returned as it is.
     """
-    from pyforge.core import flags as core_flags  # noqa: PLC0415
+    try:
+        from pyforge.core import flags as core_flags  # noqa: PLC0415
+    except ImportError:
+        return resolve_tree_path(explicit)
 
     environment = core_flags.current_environment()
     tree = resolve_tree_path(explicit)
@@ -102,7 +109,10 @@ def resolve_flags_path(explicit: Path | str | None = None) -> Path | None:
 
 def read_flag_tree_bytes(path: Path) -> bytes:
     """The tree's bytes as the current environment renders it (as they are when no overlay is beside it)."""
-    from pyforge.core import flags as core_flags  # noqa: PLC0415
+    try:
+        from pyforge.core import flags as core_flags  # noqa: PLC0415
+    except ImportError:  # no pyforge.core (the mcp-host image): the tree as it is
+        return path.read_bytes()
 
     environment = core_flags.current_environment()
     if core_flags.overlays_path_for(path) is None:
@@ -319,8 +329,12 @@ def render_main(argv: list[str]) -> int:
         return 1
     if ns.output:
         dest = Path(ns.output)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(rendered)
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(rendered)
+        except OSError as exc:
+            print(f"cannot write {dest}: {exc}", file=sys.stderr)
+            return 1
     else:
         sys.stdout.write(rendered.decode("utf-8"))
     return 0
