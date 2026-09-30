@@ -6916,3 +6916,58 @@ status: open
   severity: low
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-75-1: fleet_scan's per-chain Dream lookups still build only `docs/dreams/<slug>.md`, so a chain whose Dream sits under `archive/docs/dreams/` reads as having no Dream.
+
+- source_spec: `planning-artifacts/specs/spec-75-1-fleet-scan-reads-archived-dreams-from-the-archive.md`
+  summary: fleet_scan's per-chain Dream lookups still build only `docs/dreams/<slug>.md`, so a chain whose Dream sits under `archive/docs/dreams/` reads as having no Dream.
+  evidence: The dream-stage glob in `_stage_globs` (scripts/fleet_scan.py:1962 and :1971), the `_GIT_SCOPES` date index (:1723) and the `_last_touched` Dream prefix in `scan_fleet` (:2141) name only `docs/dreams/`. A `scan_fleet({}, None)` probe on 2026-09-30 showed all six archive chains (deckcraft, design-code-bridge, herald-pitch-deck-family-expansion, modernist-identity, pyforge-genesis, video-scripts) with `noDream: true`, a `dream` gap and `chainAudit.verdict: fail`. The rows are archived, so they stay out of the live flags and counts, and doctor's `chain-completeness --layers --project pyforge-herald` still reads 15/15. After a fold PR moves a live chain's Dream, that chain would lose its dream stage and date the same way. CHAIN-STANDARD §11 requires these readers to follow the move, as Stories, before the first fold PR moves a file. Doctor's `test_every_stage_glob_is_inside_the_git_date_index` requires the glob and `_GIT_SCOPES` to change together. `scan_specs()` (:1169) and `build_archived()`'s link (:2686) also build only the live path, but they are reached only from the uncalled `_generate()` (the next item). No sibling Story (doctor 36.1 and 36.2, herald 33.1, steward 77.1) covers these sites, and this story's intent names exactly two read sites, so they need their own Story before any fold PR.
+  location: scripts/fleet_scan.py:1971
+  origin: spec-deferred 0ccc0e198035 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-75-1-2: `_generate()` in scripts/fleet_scan.py has no caller, and it alone reaches `scan_dreams`, `scan_specs`, `build_archived`, `scan_guild` and `scan_backlog`.
+
+- source_spec: `planning-artifacts/specs/spec-75-1-fleet-scan-reads-archived-dreams-from-the-archive.md`
+  summary: `_generate()` in scripts/fleet_scan.py has no caller, and it alone reaches `scan_dreams`, `scan_specs`, `build_archived`, `scan_guild` and `scan_backlog`.
+  evidence: `main()` prints "retired" and returns 2, and `_generate` appears in the file only at its definition (scripts/fleet_scan.py:3568; verified 2026-09-30). So this story's `scan_dreams()` change, and the Archived-tab, Guild and Backlog effects the reviewers measured, are exercised only by tests. Those readers drift unobserved: for example `build_archived` links the six archive Dreams to `docs/dreams/<slug>.md`, which does not exist, and `scan_backlog` lists an archived `type: practice` Dream (modernist-identity) under practices as well as under Archived. The problem predates this story. Whether to delete the retired console generator and its readers, or rewire them, is not this story's decision.
+  location: scripts/fleet_scan.py:3568
+  origin: spec-deferred fd4645ac7631 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-75-1-3: Doctor's `chain-completeness --layers --json` stdout carries fleet_scan's `[fleet]` lines ahead of the JSON array, so the output cannot be parsed as JSON.
+
+- source_spec: `planning-artifacts/specs/spec-75-1-fleet-scan-reads-archived-dreams-from-the-archive.md`
+  summary: Doctor's `chain-completeness --layers --json` stdout carries fleet_scan's `[fleet]` lines ahead of the JSON array, so the output cannot be parsed as JSON.
+  evidence: `board._gather_chain_layers_audit` calls `gen.scan_fleet({}, None)` (src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:1274). fleet_scan prints its `[fleet]` lines to stdout, and `sources/__main__.py` prints the JSON after them. On 2026-09-30 the review counted 40 such lines ahead of the payload. The problem predates this story, which adds one line (`[fleet] WARN chain 'pyforge-genesis' …`). The fix belongs at doctor's call site (capture or redirect stdout around the call), or in a change to fleet_scan's print stream that every other loader would see.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:1274
+  origin: spec-deferred 983a51df3e4f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-75-1-4: Comments in doctor's board.py still say the loader imports `docs/dashboard/generate.py`, but the code loads `scripts/fleet_scan.py`.
+
+- source_spec: `planning-artifacts/specs/spec-75-1-fleet-scan-reads-archived-dreams-from-the-archive.md`
+  summary: Comments in doctor's board.py still say the loader imports `docs/dashboard/generate.py`, but the code loads `scripts/fleet_scan.py`.
+  evidence: board.py:1129 and the comment block at :1499 name `docs/dashboard/generate.py`. The loaders (`_load_dashboard_generate` at :1524, and `_gather_chain_layers_audit`) load `<target>/scripts/fleet_scan.py`. The comments predate this story, and they sit in pyforge-doctor's package, under doctor's Spec surface, not this story's.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:1499
+  origin: spec-deferred a30f1d3dbea4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-75-1-5: `scan_dreams()` does not strip an inline YAML comment from a Dream's frontmatter values, so a `status:` line with a trailing `# …` is read with the comment attached.
+
+- source_spec: `planning-artifacts/specs/spec-75-1-fleet-scan-reads-archived-dreams-from-the-archive.md`
+  summary: `scan_dreams()` does not strip an inline YAML comment from a Dream's frontmatter values, so a `status:` line with a trailing `# …` is read with the comment attached.
+  evidence: scripts/fleet_scan.py:1087 takes `line.split(":", 1)[1].strip()`, whereas `_frontmatter_scalars` (:1628) strips comments. Six Dreams under docs/dreams/ carry an inline comment on their `status:` line (verified 2026-09-30; for example adaptive-model-tiering, bmad-cursor-interactive-routing and cursor-native-tier-map). Each of them then fails the `DREAM_STATUSES` check with a `[dreams] WARN`. The problem predates this story. Fixing it here would change rows read from `docs/dreams/`, which acceptance criterion 1 requires to stay identical. The function is also reached only from the uncalled `_generate()` (the second item).
+  location: scripts/fleet_scan.py:1087
+  origin: spec-deferred e01ac992292d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
