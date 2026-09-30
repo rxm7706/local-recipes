@@ -2,7 +2,7 @@
 title: '34.5: The flag gate reds a landed flagged story whose test does not run both states'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -87,6 +87,27 @@ Type / Effort / Deps: feature / S / S-34.2 (cross-project gate: marshal Story 74
 
 </intent-contract>
 
+## Code Map
+
+- `scripts/flag_gate_check.py` -- the gate. `judge_one` (reads frontmatter, `is_post_rule`, calls `judge_spec`) is the one place both `--spec` and tree mode pass through, so the new check hangs off it; `K_*` finding kinds, `Finding`, and the module docstring's kind list are the shape to extend. The existing `done` test (`K_NOT_IN_TREE`, in `judge_spec`) is the precedent for "landed".
+- `scripts/flag_rule.py` -- pure reader: `classify_frontmatter(...).verdict == FLAG` is "flagged with a complete block", `read_frontmatter`, `is_post_rule`. Read-only here.
+- `src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/flags.py` -- marshal 74.1's landed helper (on main, `1c3e4ba113`): module `pyforge.testing_kit.flags`; the ON/OFF helper is `flag_states(key)`; `flagd_tree(tmp_path, {key: "on"|"off"})` writes one tree. Read-only; take the names from here, never guess.
+- `src/platform/tests/test_openfeature_file_flags.py` -- the pre-kit shape: `_flagd_tree("on")` and `_flagd_tree("off")` calls (lines ~267, 278). It is also the only test the one live `done` flagged spec names (steward 74.1, key `pyforge.steward.object_store_consumer`, which the file names at `_SHIPPED_BOOLEANS`), so the live tree stays green through this shape.
+- `tests/scripts/test_flag_gate_check.py` -- the suite. `_fixture`, `_spec`, `_write`, `_run`, `_tree_json`, `_kinds` are the helpers. `_spec` writes a body of `body\n`; the three existing tests that write a `done` flagged spec expecting no finding (`status="done"` at the `landed` / `spec-1-2-done` rows) now need a Verification naming a two-state test.
+- `docs/reference/story-spec-flag-block.md` -- "How a machine reads it" paragraph names what the gate judges; add the two-state check there.
+- `src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py` -- pins "no `pyforge.*` import in the gate"; the new code is stdlib-only.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `scripts/flag_gate_check.py` -- add `judge_two_state(root, rel, frontmatter, *, exemptions)` and three kinds (`flag-verification-names-no-test`, `flag-test-file-missing`, `flag-test-not-two-state`); call it from `judge_one` for post-rule specs; update the module docstring -- CAP-4's gate clause, static reads only
+- `tests/scripts/test_flag_gate_check.py` -- one test per acceptance row and I/O row (kit helper, two trees, key never referenced, no test named, missing file, backlog and exempt, `--spec` red); fix the three existing `done`-spec tests -- the new check changes what a `done` flagged fixture must carry
+- `docs/reference/story-spec-flag-block.md` -- one sentence: the gate also reds a `done` flagged spec whose Verification names no test that runs both states
+
+**Acceptance Criteria:**
+- Given the acceptance criteria and I/O matrix in the intent contract, when the suite runs, then every row has a passing test
+- Given the live tree, when `pixi run -e pyforge-guild flag-gate-check` runs, then it exits 0
+
 ## Source
 
 Contract authored from `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-4 (success: the gate can tell a
@@ -104,6 +125,18 @@ Dream: `docs/dreams/feature-flag-governance.md` § Realization log → *2026-09-
 Ledger key: `34-5-the-flag-gate-reds-a-landed-flagged-story-whose-test-does-not-run-both-states`.
 Ledger status at mint: `blocked` (cross-project gate: marshal Story 74.1).
 Policy: `marshal-policy.toml` `[epic_surfaces]` `"34"`.
+
+## Design Notes
+
+The check is static and presence-based: it cannot prove a tree in a test file is written for the spec's key, only
+that the file names the key and carries the shape. That is the contract's own bar ("references the key together
+with ..."), and it is what lets a pre-kit story pass without a rewrite. A named path counts as a test file by its
+name (`test_*.py`, `*_test.py`, `*.test.*`, `*.spec.*`); a directory target (`pytest some/dir`) names no file.
+
+- Kit shape: the file imports `pyforge.testing_kit.flags`, calls `flag_states(`, and names the key.
+- Pre-kit shape: the file names the key and calls a `*flagd_tree*` writer at least twice, with both `"on"` and `"off"`.
+- Finding order per spec: no test named -> one FAIL; named paths absent -> one FAIL listing them; else, when no
+  present file has either shape -> one FAIL naming the spec and those files. Never two FAILs for one cause.
 
 ## Verification
 
