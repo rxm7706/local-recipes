@@ -343,10 +343,11 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             continue
         # A non-live Spec (absorbed, draft, shipped, no status) has no extract to
         # classify, so its warning could never be cleared. Same test as
-        # ``iter_live_specs``; a path gone from the working tree is not live.
+        # ``iter_live_specs``; a path gone from the working tree is not live. Any
+        # other read error is not "gone", so it reaches ``degrade_on_exception``.
         try:
             text = (target / path).read_text(encoding="utf-8", errors="replace")
-        except OSError:
+        except (FileNotFoundError, NotADirectoryError):
             continue
         if _frontmatter(text).get("status") not in _LIVE_STATUSES:
             continue

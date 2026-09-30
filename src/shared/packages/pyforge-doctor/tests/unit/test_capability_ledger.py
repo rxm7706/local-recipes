@@ -336,3 +336,37 @@ def test_post_pin_spec_gone_from_working_tree_reports_nothing(tmp_path: Path):
 
     # ``gather`` degrades an unguarded read into a finding, so assert no non-OK finding at all.
     assert [f.status for f in findings] == [DoctorStatus.OK]
+
+
+def test_post_pin_non_live_spec_does_not_mask_a_live_one(tmp_path: Path):
+    repo, pin = _pinned_repo(tmp_path)
+    specs = "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
+    live_rel = f"{specs}/spec-z-live/SPEC.md"
+    # ``sorted(added)`` walks the absorbed Spec first; skipping it must not end the loop.
+    _write_spec(repo, f"{specs}/spec-a-absorbed/SPEC.md", _post_pin_spec("absorbed", with_cap=False))
+    _write_spec(repo, live_rel, _post_pin_spec("ready", with_cap=False))
+    _write_ledger(repo, [], source_sha=pin)
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "post-pin specs")
+
+    findings = gather(repo)
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert findings[0].evidence == {"kind": "append", "path": live_rel}
+
+
+def test_post_pin_spec_present_but_unreadable_degrades_not_skips(tmp_path: Path):
+    repo, pin = _pinned_repo(tmp_path)
+    # Off the inventory glob (``specs/*/SPEC.md``), so ``iter_live_specs`` never reads it first.
+    rel = "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-fixture-ledger-spec/nested/SPEC.md"
+    _write_spec(repo, rel, _post_pin_spec("ready", with_cap=False))
+    _write_ledger(repo, [], source_sha=pin)
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "post-pin spec")
+    (repo / rel).unlink()
+    (repo / rel).mkdir()  # present but not a file: only a *gone* path is skipped
+
+    findings = gather(repo)
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert "could not be evaluated" in findings[0].message
