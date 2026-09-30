@@ -1680,8 +1680,13 @@ def _fleet_chains() -> list[tuple[str, str, str, str]]:
         od = _frontmatter_scalars(d / "SPEC.md", ("owner-dream",)).get("owner-dream", "")
         if od:
             owner_dream.setdefault(slug, Path(od.strip("'\"")).stem)
-    dreams = {f.stem: _frontmatter_scalars(f, ("owner", "status"))
-              for f in sorted(DREAMS_DIR.glob("*.md")) if f.name != "README.md"}
+    # Live Dreams, then archived ones (_dream_files()); an archived Dream still lends
+    # its station to a Spec whose `owner-dream:` points at it, and reads `archived`.
+    dreams: dict[str, dict[str, str]] = {}
+    for f, in_archive in _dream_files():
+        dreams[f.stem] = _frontmatter_scalars(f, ("owner", "status"))
+        if in_archive:
+            dreams[f.stem]["status"] = "archived"
     out = []
     for slug in sorted(set(spec_project) | set(dreams)):
         meta = dreams.get(slug, {})
