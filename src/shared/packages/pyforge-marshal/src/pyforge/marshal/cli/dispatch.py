@@ -36,11 +36,12 @@ import os
 import re
 import secrets
 import sys
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import yaml
 from pyforge.core.errors import PyforgeError
@@ -120,9 +121,9 @@ from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort
 from ..scope import format_scope_drift, verify_scope
-from ..seed.detect.kit import probe_instrument
+from ..seed.detect.kit import layer_enabled, probe_instrument
 from ..seed.model.kit import KitItemId, kit_item
-from ..seed.verbs.kit import render_deployed_skill
+from ..seed.verbs.kit import build_codegraph_index, render_deployed_skill
 from .config import (
     PolicyIOError,
     _read_project_policy,
