@@ -89,7 +89,7 @@ def gate_absent_finding(script_rel: str = GATE_SCRIPT_REL) -> Finding:
 def _parse_object(stdout: str) -> Mapping[str, object] | None:
     try:
         payload = json.loads(stdout)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
     return payload if isinstance(payload, Mapping) else None
 
@@ -116,8 +116,7 @@ def _red(spec: str, payload: Mapping[str, object]) -> Finding:
         code=REFUSED_CODE,
         severity=Severity.ERROR,
         message=(
-            f"the feature-flag gate reds {spec}: {detail} -- dispatch is refused before any session starts; "
-            f"{_REMEDY}"
+            f"the feature-flag gate reds {spec}: {detail} -- dispatch is refused before any session starts; {_REMEDY}"
         ),
     )
 

@@ -2837,7 +2837,9 @@ def test_dispatch_once_journals_one_warn_for_a_pre_rule_spec_and_proceeds(
     assert any("dispatch-launch" in line for _, line, _ in fs.appended)  # the WARN rides the journaled dispatch
 
 
-def test_dispatch_once_adds_no_flag_finding_when_the_gate_passes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dispatch_once_adds_no_flag_finding_when_the_gate_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """AC3 / I-O row 3: gate ``pass`` -> no flag finding and the dispatch proceeds as today."""
     _seed_flag_gate_repo(tmp_path)
     process = GateProcess(result=ProcessResult(returncode=0, stdout=_gate_json("pass"), stderr=""))

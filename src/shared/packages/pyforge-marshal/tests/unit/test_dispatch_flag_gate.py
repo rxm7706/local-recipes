@@ -22,7 +22,9 @@ SPEC = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-74-2
 
 
 def _gate_json(verdict: str, findings: list[dict[str, str]] | None = None, **extra: object) -> str:
-    return json.dumps({"verdict": verdict, "spec": SPEC, "rule_date": "2026-09-28", "findings": findings or [], **extra})
+    return json.dumps(
+        {"verdict": verdict, "spec": SPEC, "rule_date": "2026-09-28", "findings": findings or [], **extra}
+    )
 
 
 _RED_FINDINGS = [

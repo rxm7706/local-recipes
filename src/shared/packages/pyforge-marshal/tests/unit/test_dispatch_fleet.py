@@ -1016,7 +1016,9 @@ def test_flag_gate_refuse_re_preflights_when_the_spec_is_edited(
     ledgers = {"pyforge-marshal": (("22-7-fleet", "backlog"),)}
 
     refused = FakeBuildHarness()
-    _run_drain(tmp_path, _drain_args(once=True), ledgers=ledgers, build_harness=refused, process=_GateByFlagExempt(alive=False))
+    _run_drain(
+        tmp_path, _drain_args(once=True), ledgers=ledgers, build_harness=refused, process=_GateByFlagExempt(alive=False)
+    )
     run_id = next(dispatch_fleet.fleet_runs_dir(tmp_path).iterdir()).name
     assert refused.dispatched == []
     assert "MRS-DISP-052" in capsys.readouterr().out
