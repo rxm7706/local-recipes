@@ -2,7 +2,8 @@
 title: "35.1: capability-ledger's post-PIN check reads only live Specs"
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '0df667a53da3a72a655aed96608b53c33182145d'
 flag-exempt: detector-or-gate
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -110,6 +111,39 @@ Type / Effort / Deps: fix / S / —.
 | path gone | added after the PIN, since removed | nothing | no exception |
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py` -- the fix site. `_LIVE_STATUSES`
+  (line 36) and `_frontmatter` (line 122) are the reuse points; `iter_live_specs` (line 144) applies the status test at
+  line 150. `_gather`'s second post-PIN loop (lines 339-354) is the only edit: after the `endswith("/SPEC.md")` and
+  `/planning-artifacts/specs/` tests, read `target / path`, skip on `OSError`, skip when `_frontmatter(text).get("status")`
+  is not in `_LIVE_STATUSES`. The first loop (per-CAP WARN, lines 310-337), the HARD checks (270-303) and
+  `_added_after_pin` (222) are read-only for this story.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_capability_ledger.py` -- add the tests here. Reuse `_git` (211),
+  `_write_spec` (68), `_write_ledger` (74) and `_FIXTURE_SPEC` (18, `status: ready`, CAP-9). The reference fixture is
+  `test_post_pin_spec_without_row_is_append` (218): `git init`, commit `README.md` as the PIN, write the Spec and ledger
+  with `source_sha=pin`, commit again.
+- `python -m pyforge.doctor.sources capability-ledger` -- the `capability-ledger-check` task's command. Measured before the
+  change in this worktree: exit 0, exactly eight `post-PIN Spec without a ledger row` WARNs, the eight paths in the table.
+- `_added_after_pin` diffs `PIN..HEAD` (commits), while the fix reads the working tree. A path is "gone" when it was
+  committed after the PIN and then deleted in the working tree without a commit. That is the fixture for the gone-path test.
+- `gather` wraps `_gather` in `degrade_on_exception`, so an unguarded `FileNotFoundError` would surface as a degraded
+  finding, not a raise. The gone-path test therefore asserts no non-OK finding at all, not only "no exception".
+- Read-only: `docs/foundry/capability-ledger.yaml`, `spec-foundry-capability-ledger`, `sprint-status-ledger.yaml`, every
+  `SPEC.md`.
+
+## Tasks & Acceptance
+
+**Execution:**
+- [ ] `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py` -- in `_gather`'s post-PIN Spec loop, skip a path whose file is unreadable or whose frontmatter `status` is not in `_LIVE_STATUSES` -- a non-live Spec has no extract, so its warning could never be cleared
+- [ ] `src/shared/packages/pyforge-doctor/tests/unit/test_capability_ledger.py` -- add a pinned-repo helper and tests: non-live statuses (absorbed, draft, shipped, none) with a CAP heading and no row report nothing; a `ready` Spec with no CAP heading reports exactly one `kind: append` WARN naming its path; a path removed from the working tree reports nothing and degrades nothing -- pins the loop's new contract
+- [ ] Mutation check (not committed): remove the status test and confirm the absorbed and draft tests fail -- proves the tests bind the fix
+
+**Acceptance Criteria:**
+- Given the intent-contract's eight acceptance criteria, when the unit tests and `capability-ledger-check` run, then each holds and `pyforge-doctor-test` passes
+
+## Spec Change Log
 
 ## Source
 
