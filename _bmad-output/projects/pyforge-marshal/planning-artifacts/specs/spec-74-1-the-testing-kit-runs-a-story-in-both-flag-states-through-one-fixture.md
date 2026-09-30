@@ -2,7 +2,7 @@
 title: '74.1: The testing kit runs a story in both flag states through one fixture'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '7151e3d2653a6289c4f01a4ac17f8514aee3247a'
 flag-exempt: flag-infrastructure   # the rule's own test infrastructure (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
@@ -130,6 +130,16 @@ Kit root `K` = `src/shared/packages/pyforge-testing-kit`; modules `M` = `K/src/p
 - Given the changed paths, when `python scripts/spec_surface_reconcile.py` runs, then it exits 0 with every governed path named on its Spec's `.memlog.md`
 
 ## Spec Change Log
+
+- 2026-09-29 (implementation, no change to the contract): the mandated `dependencies = ["openfeature-sdk>=0.10.0"]` reds one
+  test outside this story's surface, `pyforge-core`'s
+  `tests/meta/test_process_sole_ownership.py::test_branch_diff_guard_exemption_rests_on_the_kits_leaf_declaration`
+  (line 368, `assert ['openfeature-sdk>=0.10.0'] == []`), which pins the kit's `[project] dependencies` to `[]`. The pin
+  stands in for the Q-26 premise behind `branch_diff_guard.py`'s sanctioned `subprocess` opt-out, that the kit does not depend on
+  `pyforge-core`; that premise still holds. Left alone because `marshal-policy.toml` `[epic_surfaces]` `"74"` does not admit
+  it (MRS-GATE-007). `pyforge-core-test` and the core leg of `pyforge-station-tests` stay red until it changes: widen the
+  entry to that one file, then have the test assert no `pyforge-core` dependency instead of an empty list. Also in the
+  charter Spec's `.memlog.md` (the 2026-09-29 Surface reconcile entry).
 
 ## Source
 
