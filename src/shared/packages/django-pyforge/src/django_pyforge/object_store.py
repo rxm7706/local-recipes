@@ -5,10 +5,16 @@ the platform resolves. This module is the contract a `django-<station>` portal -
 station API it serves under `/stations/<name>/api/v1/` -- uses to reach it:
 
 - `put_stream(fileobj, content_type=...)` hashes the caller's stream while spooling it to
-  a bounded temporary file, then uploads it under `<prefix>/sha256/<hex>` unless that key
-  is already in the store (content-addressed: identical bytes land once).
-- `open_stream(key)` yields an object back in chunks, ready for a
-  `StreamingHttpResponse`; `stat(key)` returns its size and content type.
+  a temporary file, then uploads it under `<prefix>/sha256/<hex>` unless that key is
+  already in the store (content-addressed: identical bytes land once). Only MEMORY is
+  bounded (`SPOOL_MAX_BYTES`); above that the spool rolls to disk, which holds the whole
+  payload. The seam enforces no upload size limit -- the caller does.
+- `open_stream(key)` yields an object back in `CHUNK_BYTES` chunks; `stat(key)` returns
+  its size and content type. The iterator is synchronous: a WSGI view can hand it to a
+  `StreamingHttpResponse` as is, but the platform serves ASGI (gunicorn + UvicornWorker),
+  where Django consumes a synchronous iterator with `sync_to_async(list)` -- the whole
+  object in memory. An async view must offload each chunk to a thread and give the
+  response an async iterator, closing this one when done.
 
 Boundaries this module holds, each pinned by a test:
 
@@ -214,11 +220,18 @@ def put_stream(fileobj: BinaryIO, *, content_type: str) -> StoredObject:
 
 
 def open_stream(key: str) -> Iterator[bytes]:
-    """Yield the object at *key* in `CHUNK_BYTES` chunks, for a `StreamingHttpResponse`.
+    """Return an iterator over the object at *key*, in `CHUNK_BYTES` chunks.
 
     `get_object` is called eagerly, so a missing key raises here -- before a view builds
-    its response -- not on first iteration. The returned generator closes the body when it
-    is exhausted or closed.
+    its response -- not on first iteration. The iterator is synchronous and reads lazily.
+    Under ASGI, Django buffers a synchronous iterator whole (`sync_to_async(list)`), so an
+    async view must offload each `next()` to a thread (`asyncio.to_thread(next, it, None)`)
+    and hand the response an async iterator, not this one. A WSGI view can pass it straight
+    to a `StreamingHttpResponse`.
+
+    The iterator's `close()` closes the underlying body -- whether or not iteration
+    started, and more than once -- and it is closed on exhaustion or error too. Always
+    close it (`StreamingHttpResponse` does), or the body's pooled connection leaks.
 
     Raises:
         ObjectStoreDisabled: the flag is OFF; nothing reached the client.
@@ -229,14 +242,40 @@ def open_stream(key: str) -> Iterator[bytes]:
     _check_key(key)
     bucket, prefix = _location()
     body = _client().get_object(Bucket=bucket, Key=f"{prefix}/{key}")["Body"]
-    return _chunks(body)
+    return _BodyChunks(body)
 
 
-def _chunks(body: Any) -> Iterator[bytes]:
-    try:
-        yield from body.iter_chunks(CHUNK_BYTES)
-    finally:
-        body.close()
+class _BodyChunks:
+    """Lazy `CHUNK_BYTES` iterator over an object body; `close()` closes the body.
+
+    A class, not a generator: an unstarted generator never runs its `finally`, so a
+    response closed before the first `next()` (a HEAD request, a client that hung up)
+    would leak the body's pooled connection.
+    """
+
+    def __init__(self, body: Any) -> None:
+        self._body = body
+        self._chunks: Iterator[bytes] | None = None
+        self._closed = False
+
+    def __iter__(self) -> _BodyChunks:
+        return self
+
+    def __next__(self) -> bytes:
+        if self._closed:
+            raise StopIteration
+        try:
+            if self._chunks is None:
+                self._chunks = iter(self._body.iter_chunks(CHUNK_BYTES))
+            return next(self._chunks)
+        except BaseException:  # exhaustion, a read error or a signal: release the body
+            self.close()
+            raise
+
+    def close(self) -> None:
+        if not self._closed:
+            self._closed = True
+            self._body.close()
 
 
 def stat(key: str) -> StoredObject:

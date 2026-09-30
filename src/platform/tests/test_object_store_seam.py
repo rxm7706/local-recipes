@@ -519,6 +519,33 @@ class _FakeClient:
         return {"Body": self._body}
 
 
+class _MemoryClient(_FakeClient):
+    """A fake that remembers its uploads, so a repeat put finds the first."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.objects: dict[str, dict[str, Any]] = {}
+
+    def head_object(self, **kwargs: Any) -> dict[str, Any]:
+        self.calls.append("head_object")
+        stored = self.objects.get(kwargs["Key"])
+        if stored is None:
+            raise _FakeClientError({"Error": {"Code": "404"}})
+        return {
+            "ContentLength": len(stored["body"]),
+            "ContentType": stored["content_type"],
+        }
+
+    def upload_fileobj(
+        self, fileobj: Any, bucket: str, key: str, **kwargs: Any
+    ) -> None:
+        self.calls.append("upload_fileobj")
+        self.objects[key] = {
+            "body": fileobj.read(),
+            "content_type": kwargs["ExtraArgs"]["ContentType"],
+        }
+
+
 @pytest.mark.parametrize(
     "response",
     [
@@ -581,6 +608,67 @@ def test_any_other_head_error_propagates_and_nothing_is_uploaded(
     assert client.calls == ["head_object"]
 
 
+def test_a_multi_chunk_put_hashes_reads_in_fixed_chunks_and_keys_by_the_hash(
+    configured, monkeypatch
+):
+    """The sha256, the key and the bounded reads, with no silo to lean on."""
+    monkeypatch.setattr(object_store, "CHUNK_BYTES", _SMALL_CHUNK)
+    payload = os.urandom(_TWO * _SMALL_CHUNK + _ODD_TAIL)
+    stream = _ChunkCountingStream(payload)
+    client = _FakeClient(head=_FakeClientError({"Error": {"Code": "404"}}))
+    monkeypatch.setattr(object_storage_seam, "object_storage_client", lambda: client)
+
+    stored = object_store.put_stream(stream, content_type=_CONTENT_TYPE)
+
+    expected = hashlib.sha256(payload).hexdigest()  # independent of the module
+    assert stored.sha256 == expected
+    assert stored.key == f"sha256/{expected}"
+    assert stored.size == len(payload)
+    assert client.uploaded["key"].endswith(f"/{expected}")
+    assert client.uploaded["body"] == payload
+    assert len(stream.read_sizes) > _TWO
+    assert all(size == _SMALL_CHUNK for size in stream.read_sizes), stream.read_sizes
+
+
+def test_a_put_of_an_object_already_stored_uploads_nothing_and_returns_it(
+    configured, monkeypatch
+):
+    payload = b"already in the store"
+    expected = hashlib.sha256(payload).hexdigest()
+    client = _FakeClient(
+        head={"ContentLength": len(payload), "ContentType": _CONTENT_TYPE}
+    )
+    monkeypatch.setattr(object_storage_seam, "object_storage_client", lambda: client)
+
+    stored = object_store.put_stream(io.BytesIO(payload), content_type="text/other")
+
+    assert client.calls == ["head_object"]
+    assert stored == object_store.StoredObject(
+        key=f"sha256/{expected}",
+        sha256=expected,
+        size=len(payload),
+        content_type=_CONTENT_TYPE,
+    )
+
+
+def test_a_repeat_put_under_another_content_type_returns_the_stored_one(
+    configured, monkeypatch
+):
+    client = _MemoryClient()
+    monkeypatch.setattr(object_storage_seam, "object_storage_client", lambda: client)
+
+    first = object_store.put_stream(
+        io.BytesIO(b"same bytes"), content_type="text/first"
+    )
+    second = object_store.put_stream(
+        io.BytesIO(b"same bytes"), content_type="text/second"
+    )
+
+    assert first.content_type == "text/first"
+    assert second == first
+    assert client.calls == ["head_object", "upload_fileobj", "head_object"]
+
+
 def test_open_stream_closes_the_body_when_exhausted_or_closed(configured, monkeypatch):
     def _open(body):
         monkeypatch.setattr(
@@ -599,6 +687,25 @@ def test_open_stream_closes_the_body_when_exhausted_or_closed(configured, monkey
     assert not abandoned.closed
     stream.close()
     assert abandoned.closed
+
+
+def test_closing_the_iterator_before_the_first_read_closes_the_body(
+    configured, monkeypatch
+):
+    """An unstarted generator would never run its `finally`: HEAD, a client hang-up."""
+    body = _FakeBody([b"ab", b"cd"])
+    monkeypatch.setattr(
+        object_storage_seam, "object_storage_client", lambda: _FakeClient(body=body)
+    )
+
+    stream = object_store.open_stream(_A_KEY)
+    assert not body.closed
+    stream.close()
+
+    assert body.closed
+    assert body.chunk_sizes == []  # never started reading
+    stream.close()  # idempotent
+    assert list(stream) == []
 
 
 # --- the factory setting --------------------------------------------------------------
