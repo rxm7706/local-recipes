@@ -41,7 +41,7 @@ import json
 import os
 import subprocess
 import sys
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -198,9 +198,8 @@ def _unknown_exemption(frontmatter: Mapping[str, Any], exemptions: Sequence[str]
     if "flag" in frontmatter or "flag-exempt" not in frontmatter:
         return None
     value = frontmatter["flag-exempt"]
-    if value is None or (isinstance(value, (str, list, dict)) and not (value.strip() if isinstance(value, str) else value)):
-        return None
-    return None if value in exemptions else value
+    blank = value is None or (isinstance(value, str) and not value.strip()) or (isinstance(value, (list, dict)) and not value)
+    return None if blank or value in exemptions else value
 
 
 def _flag_key(frontmatter: Mapping[str, Any]) -> str:
@@ -264,18 +263,20 @@ def judge_spec(
                 )
             )
 
-    key = _flag_key(frontmatter) if frontmatter is not None else ""
-    if key and str(frontmatter.get("status", "")).strip().lower() == "done" and key not in tree_keys:  # type: ignore[union-attr]
-        findings.append(
-            Finding(
-                K_NOT_IN_TREE,
-                FAIL,
-                f"a `done` spec names flag key `{key}`, which {TREE_REL.as_posix()} does not hold",
-                path=rel,
-                station=station,
-                key=key,
+    if frontmatter is not None:
+        key = _flag_key(frontmatter)
+        # Only a landed story is judged: a story still in backlog has not added its key to the tree yet.
+        if key and str(frontmatter.get("status", "")).strip().lower() == "done" and key not in tree_keys:
+            findings.append(
+                Finding(
+                    K_NOT_IN_TREE,
+                    FAIL,
+                    f"a `done` spec names flag key `{key}`, which {TREE_REL.as_posix()} does not hold",
+                    path=rel,
+                    station=station,
+                    key=key,
+                )
             )
-        )
     return findings
 
 
@@ -433,7 +434,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_spec(root, args.spec)
         return run_tree(root, as_json=args.json, verbose=args.verbose)
     except Exception as exc:  # noqa: BLE001 -- a crash is unknown, never a false green or a false red
-        print(f"[flag-gate] unknown -- the gate crashed: {exc.__class__.__name__}: {exc}", file=sys.stderr)
+        message = f"the gate crashed: {exc.__class__.__name__}: {exc}"
+        if args.spec is not None or args.json:
+            _emit_json({"verdict": "unknown", "rule_date": None, "findings": [], "error": message})
+        print(f"[flag-gate] unknown -- {message}", file=sys.stderr)
         return 2
 
 
