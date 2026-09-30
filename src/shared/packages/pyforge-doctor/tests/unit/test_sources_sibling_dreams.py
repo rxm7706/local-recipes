@@ -649,14 +649,14 @@ def test_live_copy_wins_when_a_slug_is_in_both_homes(tmp_path: Path, monkeypatch
 
 
 def test_no_archive_directory_behaves_as_before(tmp_path: Path, monkeypatch):
-    # AC 4: only docs/dreams/ exists; nothing is read from, or created at, archive/.
+    # AC 4: only docs/dreams/ exists, so the archive home is simply absent.
     sibling = _miniforge_sibling()
     _write_miniforge(tmp_path, _LIVE_HOME, ack="deadbeef" * 8)
     _stub_sibling(monkeypatch, sibling)
-    assert not (tmp_path / "archive").exists()
     assert list(sibling_dreams._local_fingerprints(tmp_path)) == ["miniforge-installer"]
-    assert len(sibling_dreams.gather(tmp_path)) == 1
-    assert not (tmp_path / "archive").exists()
+    findings = sibling_dreams.gather(tmp_path)
+    assert len(findings) == 1
+    assert findings[0].check == "sibling-dreams-drift"
 
 
 def test_archive_only_tree_still_reports(tmp_path: Path, monkeypatch):
@@ -677,20 +677,30 @@ def test_archive_dreams_are_merged_with_live_ones(tmp_path: Path):
     assert fps["gone-one"]["status"] == "archived"
 
 
-def test_unlistable_archive_dir_is_skipped_and_live_dreams_survive(tmp_path: Path, monkeypatch):
-    # I/O matrix: OSError listing one directory skips that directory only.
+@pytest.mark.parametrize(
+    ("raising_home", "expected"),
+    [(_LIVE_HOME, ["gone-one"]), (_ARCHIVE_HOME, ["live-one"])],
+    ids=["live-raises", "archive-raises"],
+)
+def test_unlistable_dir_is_skipped_and_the_other_home_survives(tmp_path: Path, monkeypatch, raising_home, expected):
+    # I/O matrix: OSError listing one directory skips that directory only, in
+    # whichever home it happens (a `break` instead of `continue` would drop the
+    # archive when the live home raises).
     _write_local_dream(tmp_path.joinpath(*_LIVE_HOME), "live-one", title="Live", status="dreamt", owner="doctor")
     _write_local_dream(tmp_path.joinpath(*_ARCHIVE_HOME), "gone-one", title="Gone", status="archived", owner="doctor")
-    archive_dir = tmp_path.joinpath(*_ARCHIVE_HOME)
+    raising_dir = tmp_path.joinpath(*raising_home)
     real_glob = Path.glob
+    hits: list[Path] = []
 
     def flaky_glob(self, pattern, *args, **kwargs):
-        if self == archive_dir:
+        if self == raising_dir:
+            hits.append(self)
             raise OSError("listing denied")
         return real_glob(self, pattern, *args, **kwargs)
 
     monkeypatch.setattr(Path, "glob", flaky_glob)
-    assert list(sibling_dreams._local_fingerprints(tmp_path)) == ["live-one"]
+    assert list(sibling_dreams._local_fingerprints(tmp_path)) == expected
+    assert hits == [raising_dir]
 
 
 def test_unreadable_file_is_skipped_in_the_archive(tmp_path: Path, monkeypatch):
@@ -706,3 +716,28 @@ def test_unreadable_file_is_skipped_in_the_archive(tmp_path: Path, monkeypatch):
 
     monkeypatch.setattr(Path, "read_text", flaky_read_text)
     assert list(sibling_dreams._local_fingerprints(tmp_path)) == ["readable"]
+
+
+def test_malformed_live_copy_is_not_replaced_by_the_archive_copy(tmp_path: Path):
+    # The first home to list a slug owns it: a live Dream that fails to parse
+    # leaves the slug absent, never the archive copy's stale acknowledgement.
+    live = tmp_path.joinpath(*_LIVE_HOME)
+    live.mkdir(parents=True)
+    (live / "miniforge-installer.md").write_text("no frontmatter", encoding="utf-8")
+    _write_miniforge(tmp_path, _ARCHIVE_HOME, ack="deadbeef" * 8)
+    assert "miniforge-installer" not in sibling_dreams._local_fingerprints(tmp_path)
+
+
+def test_unreadable_live_copy_is_not_replaced_by_the_archive_copy(tmp_path: Path, monkeypatch):
+    _write_miniforge(tmp_path, _LIVE_HOME, ack="deadbeef" * 8)
+    _write_miniforge(tmp_path, _ARCHIVE_HOME, ack="cafebabe" * 8)
+    live_file = tmp_path.joinpath(*_LIVE_HOME) / "miniforge-installer.md"
+    real_read_text = Path.read_text
+
+    def flaky_read_text(self, *args, **kwargs):
+        if self == live_file:
+            raise OSError("permission denied")
+        return real_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", flaky_read_text)
+    assert "miniforge-installer" not in sibling_dreams._local_fingerprints(tmp_path)

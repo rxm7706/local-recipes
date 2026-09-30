@@ -1,4 +1,4 @@
-"""Sibling-dreams drift gather (Story 16.1 / CAP-1; re-key Story 21.3; Story 29.1).
+"""Sibling-dreams drift gather (Story 16.1 / CAP-1; re-key Story 21.3; Story 29.1; Story 36.2).
 
 Diffs shared Dream filenames between this repo's ``docs/dreams/`` and
 ``archive/docs/dreams/`` and the one named sibling PyForge tree
@@ -163,12 +163,15 @@ def _parse_dream_fingerprint(text: str) -> dict[str, str] | None:
 def _local_fingerprints(target: Path) -> dict[str, dict[str, str]]:
     """Fingerprint local Dreams from both homes; ``docs/dreams/`` wins a tie.
 
-    The live tree is read first and each slug keeps its first fingerprint, so
-    a stray archive copy never overrides a live Dream. A missing directory, a
+    The live tree is listed first and the first home to list a slug owns it,
+    even when that file is unreadable or fails to parse: a broken live Dream
+    leaves the slug absent rather than letting a stale archive copy (and its
+    ``sibling-acknowledged:`` hash) stand in for it. A missing directory, a
     directory whose listing raises ``OSError`` and an unreadable file are each
     skipped (fail-open), as before the archive was read.
     """
     out: dict[str, dict[str, str]] = {}
+    seen: set[str] = set()
     for dreams_dir in (target.joinpath(*parts) for parts in _LOCAL_DREAM_DIRS):
         if not dreams_dir.is_dir():
             continue
@@ -177,6 +180,9 @@ def _local_fingerprints(target: Path) -> dict[str, dict[str, str]]:
         except OSError:
             continue
         for path in paths:
+            if path.stem in seen:
+                continue
+            seen.add(path.stem)
             try:
                 text = path.read_text(encoding="utf-8")
             except OSError:
@@ -184,7 +190,7 @@ def _local_fingerprints(target: Path) -> dict[str, dict[str, str]]:
             fp = _parse_dream_fingerprint(text)
             if fp is None:
                 continue
-            out.setdefault(path.stem, fp)
+            out[path.stem] = fp
     return out
 
 

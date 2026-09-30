@@ -11,7 +11,14 @@ context:
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
   - src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py
-deferred: []
+deferred:
+  - summary: >-
+      `ruff format --check` is red for `pyforge-scribe`, so `lint-types` (the first leg of `pr-preflight`) is red on this branch, but the red is on `origin/main` and not in this diff.
+    evidence: |-
+      `src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py` is byte-identical to `origin/main`. `ruff format --diff` with the scribe package config wants `except OSError, subprocess.TimeoutExpired:` (PEP 758, py314) in place of the parenthesised tuple at line 387. Landed by scribe Story 25.1 (2026-09-30). The file sits in the surfaces of `spec-pyforge-scribe`, `spec-pyforge-core` and `spec-pyforge-unifying-strategy`, so a fix from this doctor story would need a memlog entry and a scoped stamp on three other stations' Specs and would collide with parallel dispatches; the owning station's next story should take the one-token fix. A `dispatch/*` branch skips `pr-preflight` (journaled), so this story's landing is not blocked by it.
+    location: >-
+      src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py:387
+    severity: medium
 declared_low_risk: false
 ---
 
