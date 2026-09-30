@@ -112,7 +112,7 @@ from ..core.refs import ORIGIN_MAIN
 from ..core.spec_deps import story_deps_from_epics, story_transitively_depends_on
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_verdict
-from ..core.verdict import compute_verdict, exit_code_for
+from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
 from ..dispatch_verify import evaluate_dispatch_verification
@@ -3211,16 +3211,20 @@ def add_factory_drain_subparser(factory_subparsers: argparse._SubParsersAction) 
         action="store_true",
         help="Run exactly one cycle and return; spawn no campaign supervisor.",
     )
+    # `--max-cycles` / `--tick-seconds` default to SUPPRESS so `--plan` can tell
+    # an explicit `--max-cycles 0` from an absent flag (both are launch-only
+    # and a usage error beside `--plan`); `run_fleet_drain` reads each with
+    # `getattr(args, ..., default)`, so a drain's own behaviour is unchanged.
     parser.add_argument(
         "--max-cycles",
         type=int,
-        default=0,
-        help="Campaign-supervisor cycle ceiling (0 = until the campaign completes).",
+        default=argparse.SUPPRESS,
+        help="Campaign-supervisor cycle ceiling (default 0 = until the campaign completes).",
     )
     parser.add_argument(
         "--tick-seconds",
         type=int,
-        default=_FLEET_TICK_SECONDS,
+        default=argparse.SUPPRESS,
         help=f"Campaign-supervisor delay between cycles (default: {_FLEET_TICK_SECONDS}).",
     )
     parser.add_argument(
@@ -3267,6 +3271,39 @@ def add_factory_drain_subparser(factory_subparsers: argparse._SubParsersAction) 
             "blocks (zero git progress, zero review/verify evidence) so the "
             "next story dispatches. Story-classified failures still halt the "
             "station. Also honored under skip_on_blocked (the default there)."
+        ),
+    )
+    parser.add_argument(
+        "--plan",
+        action="store_true",
+        help=(
+            "Story 65.1 (CAP-274): report what this drain would do -- each "
+            "station's next story (or parallel wave) and every refusal "
+            "decidable before launch -- and launch nothing: no worktree, run "
+            "directory, journal entry, lock or supervisor. Takes --mode, "
+            "--station, --stories, --leave-remaining, --max-in-flight, "
+            "--harness and --retry-environment-blocks; --once, --campaign, "
+            "--max-cycles and --tick-seconds are launch-only (usage error). "
+            "Exits 4 when a station's next story would not dispatch cleanly, "
+            "1 when a plan cannot be computed, 0 otherwise."
+        ),
+    )
+    parser.add_argument(
+        "--all-stories",
+        action="store_true",
+        help=(
+            "With --plan: evaluate every queued story, not only each "
+            "station's next one (queued stories report as MRS-DRAINPLAN-002)."
+        ),
+    )
+    parser.add_argument(
+        "--check-env",
+        action="store_true",
+        help=(
+            "With --plan: also probe the environment a launch needs -- the "
+            "session-harness binary and authcheck walk (MRS-DISP-003) and the "
+            "steward session-precondition check (MRS-DISP-049). Off by "
+            "default: the plan otherwise runs no harness, authcheck or probe."
         ),
     )
     parser.set_defaults(handler=run_fleet_drain)
@@ -4597,8 +4634,22 @@ def run_fleet_drain(
     campaign is already complete) it then detaches
     ``pyforge.marshal.dispatch_fleet_supervisor``, which re-runs this same
     command on a tick until the campaign completes. Nothing here waits.
+
+    Story 65.1 (CAP-274): with ``--plan`` it answers "what would this drain
+    do?" instead -- ``cli/drain_plan.py`` computes each station's queue through
+    ``plan_station_cycle`` (the very code a cycle runs) and reports every
+    refusal decidable before launch, before anything below is minted: no run
+    directory, lock, journal entry, worktree or supervisor.
     """
     del context
+    # Function-local, the `cli/gate.py` precedent: `drain_plan` imports this
+    # module's planner, so a module-level import would be load-order fragile.
+    from .drain_plan import plan_usage_error, run_drain_plan
+
+    usage_error = plan_usage_error(args)
+    if usage_error is not None:
+        print(f"marshal factory drain: error: {usage_error}", file=sys.stderr)
+        return EXIT_USAGE
     fs = fs if fs is not None else LocalFs()
     vcs = vcs if vcs is not None else GitVcs()
     build_harness = build_harness if build_harness is not None else BmadBuildHarness()
@@ -4614,6 +4665,8 @@ def run_fleet_drain(
         findings.append(Finding(code="MRS-DRAIN-001", severity=Severity.ERROR, message=str(exc)))
         return _emit(args, data, findings, command="factory drain")
     data["mode"] = mode.value
+    if bool(getattr(args, "plan", False)):
+        data["plan"] = True
 
     leave_remaining = max(0, int(getattr(args, "leave_remaining", 1) or 0))
     once = bool(getattr(args, "once", False))
@@ -4798,6 +4851,27 @@ def run_fleet_drain(
     policy_flags = _policy_flags_from_harness_arg(getattr(args, "harness", None))
     if policy_flags:
         data["harness_preference_override"] = list(policy_flags.get("harness_preference", ()))
+
+    if bool(getattr(args, "plan", False)):
+        # Story 65.1: answered HERE, before a campaign id, run directory,
+        # advisory lock, journal entry or supervisor exists -- the plan is
+        # read-only by construction, so nothing below this branch runs.
+        return run_drain_plan(
+            args,
+            data=data,
+            findings=findings,
+            repo_root=repo_root,
+            mode=mode,
+            leave_remaining=leave_remaining,
+            station=station,
+            explicit_stories=explicit_stories,
+            policy_flags=policy_flags or None,
+            fs=fs,
+            vcs=vcs,
+            build_harness=build_harness,
+            process=process,
+            harness=harness,
+        )
 
     run_id = raw_campaign or mint_run_id(
         dispatch_fleet.FLEET_JOURNAL_SLUG,
