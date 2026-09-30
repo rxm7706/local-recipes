@@ -248,6 +248,21 @@ def _call(name: str, stream: io.BytesIO | None = None) -> Any:
     return object_store.stat(_A_KEY)
 
 
+def _spy_on_spool_rollovers(monkeypatch) -> list[int]:
+    """Record the size at which each `put_stream` spool rolls from memory to disk."""
+    rollovers: list[int] = []
+
+    class _SpySpool(tempfile.SpooledTemporaryFile):
+        def rollover(self):
+            rollovers.append(self.tell())
+            super().rollover()
+
+    monkeypatch.setattr(
+        object_store, "tempfile", SimpleNamespace(SpooledTemporaryFile=_SpySpool)
+    )
+    return rollovers
+
+
 def _stored_bytes(store: SimpleNamespace, key: str) -> tuple[bytes, str]:
     obj = store.raw.get_object(Bucket=store.bucket, Key=f"{store.prefix}/{key}")
     return obj["Body"].read(), obj["ContentType"]
@@ -273,16 +288,7 @@ def test_large_put_streams_hashes_and_lands_at_the_prefixed_sha256_key(
     )
     stream = _ChunkCountingStream(payload)
 
-    rollovers = []
-
-    class _SpySpool(tempfile.SpooledTemporaryFile):
-        def rollover(self):
-            rollovers.append(self.tell())
-            super().rollover()
-
-    monkeypatch.setattr(
-        object_store, "tempfile", SimpleNamespace(SpooledTemporaryFile=_SpySpool)
-    )
+    rollovers = _spy_on_spool_rollovers(monkeypatch)
 
     stored = object_store.put_stream(stream, content_type=_CONTENT_TYPE)
 
@@ -634,6 +640,76 @@ def test_a_multi_chunk_put_hashes_reads_in_fixed_chunks_and_keys_by_the_hash(
     assert all(size == _SMALL_CHUNK for size in stream.read_sizes), stream.read_sizes
 
 
+@pytest.mark.parametrize(
+    ("size", "expected_rollovers"),
+    [
+        (_SMALL_SPOOL - _ODD_TAIL, 0),
+        (_SMALL_SPOOL + _TWO * _SMALL_CHUNK + _ODD_TAIL, 1),
+    ],
+    ids=["below-threshold-stays-in-memory", "above-threshold-rolls-to-disk"],
+)
+def test_the_spool_rolls_to_disk_only_past_the_threshold(
+    configured, monkeypatch, size, expected_rollovers
+):
+    """The memory bound, with no silo to lean on: past `SPOOL_MAX_BYTES` the spool spills."""
+    monkeypatch.setattr(object_store, "SPOOL_MAX_BYTES", _SMALL_SPOOL)
+    monkeypatch.setattr(object_store, "CHUNK_BYTES", _SMALL_CHUNK)
+    rollovers = _spy_on_spool_rollovers(monkeypatch)
+    payload = os.urandom(size)
+    client = _FakeClient(head=_FakeClientError({"Error": {"Code": "404"}}))
+    monkeypatch.setattr(object_storage_seam, "object_storage_client", lambda: client)
+
+    object_store.put_stream(io.BytesIO(payload), content_type=_CONTENT_TYPE)
+
+    assert len(rollovers) == expected_rollovers
+    assert all(at > _SMALL_SPOOL for at in rollovers), rollovers
+    assert client.uploaded["body"] == payload
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [f"/{_PREFIX}/", f"{_PREFIX}/", f"/{_PREFIX}"],
+    ids=["both-slashes", "trailing-slash", "leading-slash"],
+)
+def test_a_slash_wrapped_prefix_lands_at_the_same_key_as_a_clean_one(
+    configured, monkeypatch, settings, prefix
+):
+    """`a//b` is a different S3 key from `a/b`: a stray slash would split the store in two."""
+    settings.OBJECT_STORAGE_PREFIX = prefix
+    client = _FakeClient(head=_FakeClientError({"Error": {"Code": "404"}}))
+    monkeypatch.setattr(object_storage_seam, "object_storage_client", lambda: client)
+
+    stored = object_store.put_stream(io.BytesIO(b"payload"), content_type=_CONTENT_TYPE)
+
+    assert client.uploaded["key"] == f"{_PREFIX}/{stored.key}"
+
+
+def test_a_repeat_put_of_an_object_stored_without_a_content_type_returns_the_callers(
+    configured, monkeypatch
+):
+    payload = b"written outside the seam"
+    client = _FakeClient(head={"ContentLength": len(payload)})
+    monkeypatch.setattr(object_storage_seam, "object_storage_client", lambda: client)
+
+    stored = object_store.put_stream(io.BytesIO(payload), content_type="text/other")
+
+    assert client.calls == ["head_object"]
+    assert stored.content_type == "text/other"
+    assert stored.size == len(payload)
+
+
+def test_stat_reads_an_object_stored_without_a_content_type_as_octet_stream(
+    configured, monkeypatch
+):
+    client = _FakeClient(head={"ContentLength": _ODD_TAIL})
+    monkeypatch.setattr(object_storage_seam, "object_storage_client", lambda: client)
+
+    stat = object_store.stat(_A_KEY)
+
+    assert stat.content_type == "application/octet-stream"
+    assert stat.size == _ODD_TAIL
+
+
 def test_a_put_of_an_object_already_stored_uploads_nothing_and_returns_it(
     configured, monkeypatch
 ):
@@ -692,6 +768,55 @@ def test_open_stream_closes_the_body_when_exhausted_or_closed(configured, monkey
     assert not abandoned.closed
     stream.close()
     assert abandoned.closed
+
+
+class _FailingBody(_FakeBody):
+    """A body whose chunks run out into a dropped connection instead of an end."""
+
+    def iter_chunks(self, chunk_size: int):
+        self.chunk_sizes.append(chunk_size)
+        return self._die_after_the_parts()
+
+    def _die_after_the_parts(self):
+        yield from self._parts
+        msg = "the store went away mid-read"
+        raise ConnectionResetError(msg)
+
+
+class _UnreadableBody(_FakeBody):
+    """A body that fails the moment its chunks are asked for."""
+
+    def iter_chunks(self, chunk_size: int):
+        self.chunk_sizes.append(chunk_size)
+        msg = "the store went away before the first chunk"
+        raise ConnectionResetError(msg)
+
+
+@pytest.mark.parametrize(
+    ("body_class", "chunks_before_failure"),
+    [(_FailingBody, 2), (_UnreadableBody, 0)],
+    ids=["dies-after-two-chunks", "dies-on-the-first-read"],
+)
+def test_open_stream_closes_the_body_when_a_read_fails(
+    configured, monkeypatch, body_class, chunks_before_failure
+):
+    """A dropped connection must release the body, or its pooled connection leaks."""
+    body = body_class([b"ab", b"cd"])
+    monkeypatch.setattr(
+        object_storage_seam, "object_storage_client", lambda: _FakeClient(body=body)
+    )
+
+    stream = object_store.open_stream(_A_KEY)
+    for _ in range(chunks_before_failure):
+        next(stream)
+    assert not body.closed
+    with pytest.raises(ConnectionResetError):
+        next(stream)
+
+    assert body.closed
+    assert body.close_calls == 1
+    assert list(stream) == []  # a failed iterator stays finished, and closes nothing twice
+    assert body.close_calls == 1
 
 
 def test_closing_the_iterator_before_the_first_read_closes_the_body(

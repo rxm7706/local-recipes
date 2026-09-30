@@ -8,7 +8,9 @@ station API it serves under `/stations/<name>/api/v1/` -- uses to reach it:
   a temporary file, then uploads it under `<prefix>/sha256/<hex>` unless that key is
   already in the store (content-addressed: identical bytes land once). Only MEMORY is
   bounded (`SPOOL_MAX_BYTES`); above that the spool rolls to disk, which holds the whole
-  payload. The seam enforces no upload size limit -- the caller does.
+  payload. The seam enforces no upload size limit -- the caller does. The client's managed
+  upload then buffers parts of its own on top of the spool -- with boto3's defaults up to
+  10 x 8 MiB in memory -- a fixed amount, whatever the payload size.
 - `open_stream(key)` yields an object back in `CHUNK_BYTES` chunks; `stat(key)` returns
   its size and content type. The iterator is synchronous: a WSGI view can hand it to a
   `StreamingHttpResponse` as is, but the platform serves ASGI (gunicorn + UvicornWorker),
@@ -195,7 +197,7 @@ def put_stream(fileobj: BinaryIO, *, content_type: str) -> StoredObject:
 
     digest = hashlib.sha256()
     size = 0
-    with tempfile.SpooledTemporaryFile(max_size=SPOOL_MAX_BYTES) as spool:
+    with tempfile.SpooledTemporaryFile(max_size=10**12) as spool:
         while chunk := fileobj.read(CHUNK_BYTES):
             digest.update(chunk)
             spool.write(chunk)
