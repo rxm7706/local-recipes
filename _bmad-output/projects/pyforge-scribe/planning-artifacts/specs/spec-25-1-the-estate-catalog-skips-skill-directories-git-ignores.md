@@ -2,7 +2,7 @@
 title: '25.1: The estate catalog skips skill directories git ignores'
 type: 'fix'
 created: '2026-09-30'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -44,7 +44,7 @@ stays exactly as it is today, which keeps every existing fixture test unchanged.
 the generator stays offline-safe.
 
 Ledger key: `25-1-the-estate-catalog-skips-skill-directories-git-ignores`.
-Ledger status (do not edit the ledger): `backlog`.
+Ledger status (do not edit the ledger): `done` -- landed 2026-09-30 as `a1dbda7915` (marshal dispatch, Cursor harness).
 Type / Effort / Deps: fix / S / —.
 
 ### Living CAP citations
@@ -129,4 +129,19 @@ See `epics.md` § Story 25.1 for the full Given / When / Then / And.
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+- 2026-09-30, the dispatch session's review pass (run `pyforge-scribe-20260930T092014808Z-b3f8b69a`, grok-4.6): 22
+  findings -- 19 false, 2 low (rejected), 1 "maybe-false" deferred. Zero patches, so the session made no spec commit;
+  this record and the `done` status are promoted by hand after landing.
+- The deferred finding (Unicode NFC/NFD at `catalog.py`'s `entry.name not in allowed` comparison): **rejected**. The
+  comparison can only miss when a first-level directory name differs between git's bytes and `iterdir()`'s in Unicode
+  normalization, which needs non-ASCII names. All 135 first-level names under `.claude/skills/` match
+  `[a-z0-9._-]` (measured 2026-09-30), and the Agent Skills naming rule confines a skill name to lowercase letters,
+  digits and hyphens.
+- Verification at landing: `pyforge-scribe-test` exit 0 (413 passed, 11 skipped); `scribe catalog bmad-estate --check`
+  and `bmad-estate-check` exit 0 in the dispatch worktree, which carries `caveman`; confirmed again after landing on
+  the primary checkout (with `caveman` and the two `cfe-recipe-*` leftovers): `bmad-estate-check` and `detectors-ci`
+  exit 0.
+- Post-landing fix, 2026-09-30: the landed `catalog.py` failed `ruff format --check` (py314 target, PEP 758 wants
+  `except OSError, subprocess.TimeoutExpired:` unparenthesized), so `lint-types` was red for `pyforge-scribe` on
+  `main` from `a1dbda7915` on. The dispatch's verification did not include `lint-types`, and the lane is not in the
+  `detectors-ci` merge gate. Fixed by reformatting that one line; recorded on `spec-pyforge-scribe`'s memlog.

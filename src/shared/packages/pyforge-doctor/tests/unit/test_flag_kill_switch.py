@@ -96,3 +96,30 @@ def test_cli_kill_switch_edits_the_tree_itself_not_a_rendered_copy(tmp_path: Pat
     assert json.loads((tmp_path / "flag-overlays.json").read_text(encoding="utf-8"))["production"] == {
         "pyforge.three_surfaces": "on"
     }
+
+
+_SHIPPED_CONFIG = Path(__file__).resolve().parents[6] / "src" / "platform" / "config"
+
+
+def test_killing_the_dated_shipped_flag_leaves_the_tree_composable_and_reads_off(tmp_path: Path, monkeypatch):
+    """Story 76.2: ``disable_flag`` sets only ``state``. ``pyforge.three_surfaces`` carries a dated clock
+    (``on_everywhere``), so a clock check that judged ``state`` would refuse every flag read of the
+    killed tree, the sibling flags' included. It judges the rendered variant, so the kill composes."""
+    from pyforge.core import flags
+
+    tree = tmp_path / "flags.json"
+    for name in ("flags.json", flags.OVERLAYS_FILE_NAME):
+        source = _SHIPPED_CONFIG / name
+        if not source.is_file():
+            pytest.skip(f"{name} is not in this checkout")
+        (tmp_path / name).write_bytes(source.read_bytes())
+
+    disable_flag(tree, "pyforge.three_surfaces")
+
+    killed = json.loads(tree.read_text(encoding="utf-8"))["flags"]["pyforge.three_surfaces"]
+    assert killed["state"] == "DISABLED"
+    assert killed["metadata"]["on_everywhere"] == "2026-08-25"  # the clock is left as it was
+    for environment in flags.ENVIRONMENTS:
+        monkeypatch.setenv(flags.ENV_ENVIRONMENT, environment)
+        assert flags.read_boolean("pyforge.three_surfaces", True, flags_path=tree) is False, environment
+        assert flags.read_boolean("pyforge.steward.ghe_fleet_credentials", flags_path=tree) is False, environment

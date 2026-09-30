@@ -16,6 +16,8 @@ import shutil
 import subprocess
 import sys
 import time
+from datetime import date
+from datetime import timedelta
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
@@ -415,44 +417,84 @@ _EXPECTED = {
 }
 
 
-def _entry(default_variant: str, *, state: str = "ENABLED") -> dict[str, Any]:
+def _metadata(on_everywhere: str = "") -> dict[str, str]:
+    """The five-field flagd `metadata` (Story 76.2); the clock is dated + 90 days."""
+    cleanup_by = ""
+    if on_everywhere:
+        cleanup_by = (
+            date.fromisoformat(on_everywhere) + timedelta(days=90)
+        ).isoformat()
+    return {
+        "owner": "steward",
+        "story": "76-2-a-fixture",
+        "created": "2026-09-01",
+        "on_everywhere": on_everywhere,
+        "cleanup_by": cleanup_by,
+    }
+
+
+def _entry(
+    default_variant: str, *, state: str = "ENABLED", on_everywhere: str = ""
+) -> dict[str, Any]:
     return {
         "state": state,
         "variants": {"on": True, "off": False},
         "defaultVariant": default_variant,
+        "metadata": _metadata(on_everywhere),
+    }
+
+
+# The fixture pair's overlay document: what each environment renders differently.
+_FIXTURE_OVERLAYS: dict[str, dict[str, str]] = {
+    "dev": {
+        _OFF_IN_PRODUCTION: "on",
+        _ON_EVERYWHERE: "on",
+        _KILLED: "on",
+        _OFF_BY_TREE: "off",
+    },
+    "staging": {_OFF_IN_PRODUCTION: "on", _KILLED: "on", _OFF_BY_TREE: "on"},
+    "production": {_OFF_IN_PRODUCTION: "off", _KILLED: "on"},
+}
+
+
+def _fixture_flags(document: object) -> dict[str, Any]:
+    """The fixture's four boolean flags, dated only where `document` renders one ON in
+    every environment (the clock the metadata check requires)."""
+    named = document if isinstance(document, dict) else {}
+    tree_defaults = {
+        _OFF_IN_PRODUCTION: ("on", "ENABLED"),
+        _ON_EVERYWHERE: ("on", "ENABLED"),
+        _KILLED: ("on", "DISABLED"),
+        _OFF_BY_TREE: ("off", "ENABLED"),
+    }
+
+    def _on(key: str, environment: str) -> bool:
+        default, state = tree_defaults[key]
+        overlay = named.get(environment)
+        variant = overlay.get(key, default) if isinstance(overlay, dict) else default
+        if state == "DISABLED":  # compose ignores the overlay for a killed flag
+            variant = default
+        return variant == "on"
+
+    return {
+        key: _entry(
+            default,
+            state=state,
+            on_everywhere=(
+                "2026-09-01" if all(_on(key, env) for env in _ENVIRONMENTS) else ""
+            ),
+        )
+        for key, (default, state) in tree_defaults.items()
     }
 
 
 def _fixture_pair(directory: Path, overlays: object | None = None) -> Path:
     """A tree (four boolean flags) and its sibling overlay document; the tree."""
+    document = overlays if overlays is not None else _FIXTURE_OVERLAYS
     tree = directory / "flags.json"
     tree.write_text(
-        json.dumps(
-            {
-                "flags": {
-                    _OFF_IN_PRODUCTION: _entry("on"),
-                    _ON_EVERYWHERE: _entry("on"),
-                    _KILLED: _entry("on", state="DISABLED"),
-                    _OFF_BY_TREE: _entry("off"),
-                },
-            },
-            indent=2,
-        ),
+        json.dumps({"flags": _fixture_flags(document)}, indent=2),
         encoding="utf-8",
-    )
-    document = (
-        overlays
-        if overlays is not None
-        else {
-            "dev": {
-                _OFF_IN_PRODUCTION: "on",
-                _ON_EVERYWHERE: "on",
-                _KILLED: "on",
-                _OFF_BY_TREE: "off",
-            },
-            "staging": {_OFF_IN_PRODUCTION: "on", _KILLED: "on", _OFF_BY_TREE: "on"},
-            "production": {_OFF_IN_PRODUCTION: "off", _KILLED: "on"},
-        }
     )
     (directory / "flag-overlays.json").write_text(
         json.dumps(document, indent=2), encoding="utf-8"
@@ -546,6 +588,60 @@ def test_the_shipped_tree_and_overlay_agree_across_the_three_readers(
     _assert_cutover_root_agrees(_FLAGS_JSON, environment)
 
 
+# Story 76.2: what every key in the shipped tree evaluates to, per environment -- the
+# values before the tree carried metadata. Metadata is inert to evaluation.
+_SHIPPED_BOOLEANS = {
+    "pyforge.three_surfaces": True,
+    "pyforge.steward.ghe_fleet_credentials": False,
+    "pyforge.steward.object_store_consumer": False,
+}
+_METADATA_FIELDS = ("owner", "story", "created", "on_everywhere", "cleanup_by")
+
+
+@pytest.mark.parametrize("environment", _ENVIRONMENTS)
+def test_the_shipped_tree_with_metadata_evaluates_as_it_did_without(
+    monkeypatch: pytest.MonkeyPatch,
+    environment: str,
+) -> None:
+    payload = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
+    assert set(payload["flags"]) == {*_SHIPPED_BOOLEANS, _CUTOVER_KEY}, (
+        "a key joined or left the shipped tree: state its evaluation here"
+    )
+    _isolate_flag_environment(monkeypatch, _FLAGS_JSON, environment)
+    for key, expected in _SHIPPED_BOOLEANS.items():
+        assert _three_readings(_FLAGS_JSON, key) == (expected,) * 3, (environment, key)
+    _assert_cutover_root_agrees(_FLAGS_JSON, environment)
+    assert evaluate_cutover_root(_FLAGS_JSON) == "local-recipes"
+
+
+@pytest.mark.parametrize("environment", _ENVIRONMENTS)
+def test_every_flag_in_the_shipped_tree_carries_its_metadata_through_the_file_provider(
+    monkeypatch: pytest.MonkeyPatch,
+    environment: str,
+) -> None:
+    from openfeature import api  # noqa: PLC0415 -- after the importorskip above
+
+    payload = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
+    _isolate_flag_environment(monkeypatch, _FLAGS_JSON, environment)
+    path = resolve_flags_path(_FLAGS_JSON)
+    assert path is not None
+    configure_file_provider(path)
+    client = api.get_client()
+    for key, entry in payload["flags"].items():
+        metadata = entry["metadata"]
+        assert tuple(metadata) == _METADATA_FIELDS, key
+        assert all(isinstance(value, str) for value in metadata.values()), key
+        details = (
+            client.get_boolean_details(key, default_value=False)
+            if key in _SHIPPED_BOOLEANS
+            else client.get_string_details(key, "")
+        )
+        assert details.error_code is None, (environment, key, details)
+        assert details.flag_metadata == metadata, (environment, key)
+        rendered = json.loads(render_flag_tree(environment, _FLAGS_JSON))
+        assert rendered["flags"][key]["metadata"] == metadata, (environment, key)
+
+
 @pytest.mark.parametrize(
     ("environment", "expected"),
     [("dev", "local-recipes"), ("staging", "local-recipes"), ("production", "foundry")],
@@ -561,7 +657,7 @@ def test_the_non_boolean_key_follows_the_overlay_on_every_reader(
         json.dumps(
             {
                 "flags": {
-                    FLAG_KEY: _entry("on"),
+                    FLAG_KEY: _entry("on", on_everywhere="2026-09-01"),
                     _CUTOVER_KEY: {
                         "state": "ENABLED",
                         "variants": {
@@ -569,6 +665,7 @@ def test_the_non_boolean_key_follows_the_overlay_on_every_reader(
                             "foundry": "foundry",
                         },
                         "defaultVariant": "local-recipes",
+                        "metadata": _metadata(),
                     },
                 },
             },
@@ -598,13 +695,14 @@ def test_the_provider_reads_a_materialised_copy_and_the_tree_stays_the_source(
     assert (
         resolve_tree_path(tree) == tree
     )  # what an actuator (doctor's kill switch) edits
-    # a later edit of the overlay reaches the same file the provider polls
-    (tmp_path / "flag-overlays.json").write_text(
-        json.dumps({"production": {_OFF_IN_PRODUCTION: "on"}}), encoding="utf-8"
-    )
+    # a later edit of the overlay reaches the same file the provider polls (the edit
+    # keeps every flag's dated clock true: `_OFF_BY_TREE` is still off in dev)
+    production = {**_FIXTURE_OVERLAYS["production"], _OFF_BY_TREE: "on"}
+    edited = {**_FIXTURE_OVERLAYS, "production": production}
+    (tmp_path / "flag-overlays.json").write_text(json.dumps(edited), encoding="utf-8")
     assert resolve_flags_path(tree) == resolved
     assert (
-        json.loads(resolved.read_text(encoding="utf-8"))["flags"][_OFF_IN_PRODUCTION][
+        json.loads(resolved.read_text(encoding="utf-8"))["flags"][_OFF_BY_TREE][
             "defaultVariant"
         ]
         == "on"

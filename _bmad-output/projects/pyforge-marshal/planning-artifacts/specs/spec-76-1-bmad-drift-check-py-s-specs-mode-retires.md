@@ -2,9 +2,10 @@
 title: "76.1: bmad_drift_check.py's --specs mode retires"
 type: 'chore'
 created: '2026-09-29'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: '2157e66d12c7306777f98b02fe25ee3080f432c5'
 context:
   - docs/governance/spec-one-chain-per-station/SPEC.md
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
@@ -97,6 +98,33 @@ Type / Effort / Deps: chore / S / —.
 
 </intent-contract>
 
+## Code Map
+
+Line numbers are from `2157e66d12`; measured, not copied from the intent.
+
+- `scripts/bmad_drift_check.py` -- edit. Module docstring names `--specs` at 2, 20-30, 52. `DOCS_SPECS` at 85.
+  `frontmatter_status` at 237-244 has `cmd_specs` as its only caller (`git grep` over `scripts src tests .claude`; the
+  `_frontmatter_status` twins in doctor and scribe are separate functions), so it goes with it. `cmd_specs` at 463-480.
+  The argparse flag at 488-489 and its dispatch at 500-501. The bare-run stderr message at 530-535 also lists `--specs`.
+  Keep `_read` (many callers), `classify`, `TRACKED`.
+- `_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md` -- edit. `docs/specs/` at 46 (surface list), 76 (`git diff`
+  paths), 84 (`tracked-impl-artifact` remedy) and 85 (`docs-specs-nonmd` row). The intent named 46, 76 and 85; line 84
+  is the fourth hit and the "finds nothing" AC needs it gone too.
+- `scripts/fleet_scan.py` -- edit two comments. 1126 (specs-roster header: "docs/specs legacy is deliberately out"; the
+  intent named only the second hit) and 2294 (the 6-artifact family standard, cited to `docs/specs/presentation-deck.md`;
+  the intent said ~2257).
+- `tests/scripts/test_bmad_drift_check_specs_retired.py` -- new. No `bmad_drift_check` test exists in `tests/scripts/`;
+  style follows `test_bmad_loop_baseline_drift_check.py` (importlib-load the script by path).
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/{development-guide.md:244,443, source-tree-analysis.md:588,
+  project-overview.md:437}` -- edit. These describe `--specs` as a live mode; removing the mode makes them false, so the
+  same change fixes them (AGENTS.md § Behavioural guidelines 3).
+- Read-only. `pyforge-doctor/.../sources/factory.py` `FINGERPRINT_KEYS` (257-265) has no `docs/specs`, which confirms the
+  runbook claim was already untrue. Its `docs-specs-nonmd` emitter and `_docs_specs` stay: doctor Story 37.1's.
+  `docs/how-to/presentation-deck.md` is the deck standard's home. Marshal seed templates: out of scope.
+- Pre-change baseline (scratchpad): `--json` and `--groundtruth` are byte-identical, 229 bytes; a bare run exits 2.
+
+## Spec Change Log
+
 ## Binding
 
 Parent capability: `spec-one-chain-per-station:CAP-11` (Guild relay; no marshal CAP or FR).
@@ -117,4 +145,74 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+### 2026-09-30 — Review pass
+- verdicts: 30 findings — high 0, medium 0, low 22, false 8, maybe-false 0
+- findings:
+  - Blind Hunter (10)
+    - `[low]` `[patch]` `agent-instruction-notes.md` lines 56 and 346 still name the removed `--specs` flag as a working command — verified (the report's line 247 is the same claim, found on a sweep); reworded all three to point at each spec's own frontmatter `status:` field.
+    - `[low]` `[patch]` `agent-instruction-notes.md:259` still lists `docs/specs/` as a `surface-changed` trigger, contradicting the runbook edit — verified; dropped it from the list.
+    - `[low]` `[reject]` Runbook lost its `docs-specs-nonmd` row while doctor's `factory.py` still emits that finding — the intent orders the row's removal; `docs/specs/` holds only `.md` files, so the finding cannot fire; doctor Story 37.1 drops the emitter (its spec, Tasks item 2). Fix would edit against the intent.
+    - `[low]` `[patch]` The rewritten `tracked-impl-artifact` row still ends `see CLAUDE.md "three tiers"`, a section CLAUDE.md no longer has — verified; repointed to `AGENTS.md § The tiers`.
+    - `[low]` `[patch]` Stale facts on touched lines: `--integrity-only` (grep finds it in no script, nor in doctor's sources) and the "19 files" count (`docs/specs/` holds 5) — verified; dropped the dead flag and reworded the pixi-task row, dropped the count from the `project-overview.md` line. The dated "19 files, verified 2026-07-25" snapshot sentence in `development-guide.md` stays: it is a dated statement of a past fact.
+    - `[low]` `[patch]` The "output unchanged" test compares `--json` with `ground_truth()`, i.e. with itself — verified; added a subset assertion on six stable keys.
+    - `[low]` `[reject]` No standing guard that the runbook stays free of `docs/specs/` — AC 3 is a one-time `git grep` check, not a standing test; a text guard is new surface.
+    - `[low]` `[reject]` Test harness leaves `sys.modules` registered and re-executes the module per test — the sibling `test_bmad_loop_baseline_drift_check.py` does the same; the module name is unique, so nothing collides.
+    - `[low]` `[patch]` Allowlist reason line says the `--specs` report "retired with the docs/specs tier" though the tier still holds 5 files — verified; reworded to "ahead of". The memlog wording ("full entry" across two entries) stays: memlogs are append-only and the two entries together are complete.
+    - `[low]` `[reject]` `AGENTS.md:221` still names `--specs` with no interim note — the intent itself defers that sentence to doctor Story 37.1 (its spec, Tasks item 3).
+  - Edge Case Hunter (8)
+    - `[low]` `[patch]` `agent-instruction-notes.md` lines 346 and 56 — same root cause as the first Blind Hunter row; fixed together.
+    - `[low]` `[patch]` `spec_surface_allowlist.txt:7` says `drift-check --specs governs`, a governor that no longer exists — verified; dropped the clause. Doctor Story 37.1 later drops the whole line.
+    - `[false]` `[reject]` No tracked owner for the `docs/specs` stubs, `AGENTS.md:221` or the atlas `factory_status.py:14` docstring — each has one: the stubs and `AGENTS.md` are 37.1's (its spec, Tasks items 3 and 5), the docstring is atlas Story 26.1's (its spec, Tasks item 2); this story's Never clause forbids editing `docs/specs/`.
+    - `[low]` `[reject]` `docs-specs-nonmd` row removed while doctor still emits it — same as the third Blind Hunter row.
+    - `[low]` `[reject]` Runbook remedy names `planning-artifacts/specs/` while doctor's emitted text still says `docs/specs/` — 37.1's Tasks item 2 rewrites the emitter's remedy to name the Tier-2 folder, which is what the runbook now says; the runbook is the correct end state.
+    - `[low]` `[patch]` `--json` test asserts against its own function — same root cause as the sixth Blind Hunter row; fixed together.
+    - `[low]` `[reject]` `sys.modules` leak and unguarded `spec_from_file_location` — same as the eighth Blind Hunter row.
+    - `[false]` `[reject]` `--json` on a checkout without the marshal project dir prints nothing, so the test would hit `JSONDecodeError` — this repository tracks `_bmad-output/projects/pyforge-marshal/`; the failure would be loud, not silent, and cannot occur here.
+  - Verification Gap Reviewer (6, filed under `Other findings`; the layer filed no gap)
+    - `[low]` `[patch]` `agent-instruction-notes.md` lines 56 and 346 — same root cause as the first Blind Hunter row; fixed together.
+    - `[low]` `[reject]` `AGENTS.md:221` — same as the tenth Blind Hunter row.
+    - `[false]` `[reject]` The three `docs/specs/*.md` stubs still say `--specs` keeps reporting `status: workflow` — true, and this story's Never clause forbids editing `docs/specs/`; 37.1 moves the stubs. No bad outcome at this story's surface.
+    - `[low]` `[reject]` Runbook and detector give different guidance for `tracked-impl-artifact` — same as the fifth Edge Case Hunter row.
+    - `[low]` `[patch]` `spec_surface_allowlist.txt:7` — same as the second Edge Case Hunter row; fixed together.
+    - `[false]` `[reject]` The atlas `factory_status.py:14` docstring is historical text with no owner — atlas Story 26.1's Tasks item 2 updates that module docstring.
+  - Intent Alignment Auditor (6, descriptive; each divergence it names is triaged as a finding)
+    - `[false]` `[reject]` AC 5 lives on the package-test surface while the change sits under `scripts/` — the spec's Tasks item 4 runs both the marshal suite and `tests/scripts -k drift`, which collects the new test; both ran green (8939 and 50 passed).
+    - `[low]` `[patch]` AC 2 ("other modes unchanged") is asserted against the post-change module, and `--fix`/`--write-baseline` run in no test — the before/after byte comparison was made on the tree (229 bytes, identical); the standing test now pins the stable `--json` keys (same fix as the sixth Blind Hunter row); `--fix` and `--write-baseline` mutate the project tree and stay untested on purpose.
+    - `[false]` `[reject]` AC 1 and AC 4 are exercised in-process and through a subprocess — the auditor names no divergence; mutation check run by hand: restoring the flag fails 2 of 6 tests, restoring the file passes 6 of 6.
+    - `[false]` `[reject]` Task 5's scoped `--write-baseline` stamps are absent — the dispatch instruction for this run forbids `--write-baseline` and overrides the spec's Task 5; the implementation subagent stamped once, and that stamp of `scripts/.spec-surface-baseline.json` was reverted to the baseline revision. Both governing Specs' memlogs name the changed paths; `spec_surface_reconcile.py` and `spec-surface-check` exit 0 without a stamp.
+    - `[low]` `[reject]` Residual readers: `architecture-bmad-infra.md` still lists the `docs-specs-nonmd` finding, and `AGENTS.md` still names `--specs` — the finding code exists until 37.1 drops it, so the doc is accurate today; `AGENTS.md` is 37.1's. The `agent-instruction-notes.md:259` part of this row is the second Blind Hunter row, patched.
+    - `[false]` `[reject]` Edits beyond the named items (`frontmatter_status`, the second `fleet_scan.py` comment, the `tracked-impl-artifact` row, four docs, the allowlist) — informational; each is required by an acceptance criterion or by a line the flag's removal made false, and none crosses a Never clause.
+
+## Auto Run Result
+
+Status: done
+
+**Summary.** `python scripts/bmad_drift_check.py --specs` is gone: it exits 2 with argparse's "unrecognized arguments: --specs". `DOCS_SPECS`, `cmd_specs` and `frontmatter_status` (whose only caller was `cmd_specs`) are removed, with the flag, its dispatch and every docstring and message line that named it. `--json`, `--groundtruth`, `--fix` and `--write-baseline` are unchanged; `--json` and `--groundtruth` print output byte-identical to the pre-change capture (229 bytes). The runbook, `fleet_scan.py` and four marshal or reference docs stop describing `--specs` and `docs/specs/` as live.
+
+**Files changed.**
+- `scripts/bmad_drift_check.py`: the mode, its constant, its helper, its flag, dispatch, and docstring and bare-run message mentions.
+- `scripts/fleet_scan.py`: two comments repointed (the deck standard now cites `docs/how-to/presentation-deck.md`; the specs-roster header drops the path).
+- `_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md`: `docs/specs/` out of the surface list and the `git diff` command; `docs-specs-nonmd` row deleted; `tracked-impl-artifact` remedy repointed at `planning-artifacts/specs/` and `AGENTS.md` § *The tiers*.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/{development-guide,project-overview,source-tree-analysis}.md`: stop describing `--specs` as a live mode; the dead `--integrity-only` flag and the stale "19" count dropped.
+- `docs/reference/agent-instruction-notes.md`: four lines that named `--specs` or listed `docs/specs/` as a `surface-changed` trigger.
+- `scripts/spec_surface_allowlist.txt`: the two reason lines that named `--specs`.
+- `tests/scripts/test_bmad_drift_check_specs_retired.py` (new, 6 tests): flag rejected in-process and as a subprocess, removed symbols gone, `--json`/`--groundtruth` keep their pinned key shape, a bare run lists only live modes.
+- Both governing Specs' `.memlog.md` (`spec-pyforge-marshal`, and the absorbed `spec-dream-to-code-model-self-verification`), appended with `memlog.py`, naming every changed path.
+
+**Review.** 30 findings across four layers: high 0, medium 0, low 22, false 8, maybe-false 0. Patches applied: 5 entries, all `low` (stale `--specs` mentions in the reference notes; the `surface-changed` trigger list; the dead `CLAUDE.md "three tiers"` pointer; dead-flag and stale-count facts on touched lines; the self-referential `--json` test; the allowlist reason lines). Deferred: none. Every rejected finding carries its recorded reason in the triage log above; the recurring ones are that doctor Story 37.1, atlas Story 26.1 and the intent itself own the remaining `docs/specs` and `--specs` mentions (`AGENTS.md:221`, the three `docs/specs` stubs, the atlas docstring, doctor's `docs-specs-nonmd` emitter).
+
+**Follow-up review recommended:** false. No patched entry was `high` and fewer than two were `medium` (patched by verdict: high 0, medium 0, low 5).
+
+**Verification** (every verdict read from an exit code, never through a pipe).
+- `python scripts/bmad_drift_check.py --specs`: exit 2, "unrecognized arguments: --specs".
+- `--json` and `--groundtruth`: byte-identical to the pre-change capture. A bare run still exits 2; its message differs only by the dropped `--specs`.
+- `git grep "docs/specs"` over `SYNC-RUNBOOK.md` and `scripts/fleet_scan.py`: finds nothing.
+- Mutation: with the flag restored, 2 of 6 new tests fail; with the file restored, 6 pass.
+- `pytest tests/scripts -k drift`: 50 passed. `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: 8939 passed, 1 skipped (run before the review patches; the patches touched no package code or test).
+- `python scripts/spec_surface_reconcile.py`, `spec-surface-check`, `governance-currency`, `bmad-drift-check`: exit 0 after the patches. `ruff check` and `ruff format --check` on the new test: clean.
+
+**Deviations and residual risks.**
+- **No baseline stamp.** The spec's Task 5 asks for a scoped `--write-baseline --spec` on each governing Spec. This run's dispatch instruction forbids `--write-baseline`, so none was kept: the implementation subagent stamped `spec-pyforge-marshal` once, which also absorbed about 20 unrelated marshal file hashes from earlier stories, and that change to `scripts/.spec-surface-baseline.json` was reverted to the baseline revision. The guard and `spec-surface-check` exit 0 without a stamp; both memlogs record the stamp as left to the landing.
+- **Only one Spec has a baseline entry for a changed path.** `spec-dream-to-code-model-self-verification` is `absorbed` into `spec-pyforge-marshal`; both memlogs name the paths regardless.
+- **Interim inconsistencies owned elsewhere.** Until doctor Story 37.1 lands, `AGENTS.md:221`, the three `docs/specs/*.md` stubs and doctor's `docs-specs-nonmd` emitter and remedy text still name the retired mode or tier; until atlas Story 26.1 lands, `factory_status.py`'s docstring does too. `docs/specs/` holds only `.md` files, so the emitter cannot fire.
+- **Left untouched.** `bmad-drift-check` reports `surface-changed` and `pixi-env-matrix-stale` warnings from other stories' drift; `.sync-baseline.json` was not restamped. Six pre-existing ruff findings remain in `scripts/bmad_drift_check.py` on lines this story did not touch (`scripts/` is outside the `lint-types` gate).

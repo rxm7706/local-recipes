@@ -241,7 +241,7 @@ lives at `conf/base/knowledge.yml`.
 
 | Task | What it runs |
 |---|---|
-| `pixi run bmad-drift-check` | Artifact-vs-live drift: pins, counts, stale rules, archive hygiene, coverage completeness, baseline. `-- --fix`, `-- --specs`, `-- --integrity-only`, `-- --write-baseline` |
+| `pixi run bmad-drift-check` | Artifact-vs-live drift: pins, counts, stale rules, archive hygiene, coverage completeness, baseline. It runs `python -m pyforge.doctor.sources bmad-drift` and takes no mutation flags; `--fix` and `--write-baseline` are `python scripts/bmad_drift_check.py --fix` and `python scripts/bmad_drift_check.py --write-baseline`. |
 | `pixi run bmad-groundtruth` | The same live facts as JSON — skill version, schema, MCP tools, atlas phases, pixi envs, gotchas |
 | `pixi run llms-full-check` | Drift between `docs/reference/library-llms-full.md` and `pixi.toml` — undocumented deps, ghost entries, version-floor drift |
 | `pixi run spec-surface-check` | Every tracked file is governed by a spec surface or explicitly allowlisted (`scripts/spec_surface_allowlist.txt`) |
@@ -439,8 +439,7 @@ _bmad-output/projects/<slug>/implementation-artifacts/
 
 `docs/specs/` is the **legacy** Tier-1 intake tier (19 files, verified 2026-07-25 —
 6 in-progress, 6 shipped, 4 superseded, 3 timeless workflows). It is kept for in-flight
-efforts; author no new specs there. List live statuses with
-`pixi run --frozen -e local-recipes bmad-drift-check -- --specs`.
+efforts; author no new specs there.
 
 **Story specs are durable, not Tier-3.** `bmad-loop` drafts a per-story spec into the run's
 gitignored `implementation-artifacts/`; after the story merges, promote it into the tracked
