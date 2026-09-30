@@ -43,7 +43,7 @@ development_status:
   24-1-the-bmad-estate-catalog-is-generated-not-written: done
   24-2-the-catalog-cannot-drift-silently: done
   24-3-every-harness-is-pointed-at-the-catalog-once: done
-  25-1-the-estate-catalog-skips-skill-directories-git-ignores: backlog
+  25-1-the-estate-catalog-skips-skill-directories-git-ignores: done
   3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: done
   3-2-transcripts-join-the-compile-sources: done
   3-3-the-nightly-compile-gets-a-schedule-and-a-cost-ceiling: done
