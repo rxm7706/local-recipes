@@ -7857,7 +7857,7 @@ station from its `owner-dream`
 repointed
 **Then** `scan_dreams()` returns the same row for it (slug, title, status, owner and archived reason), and the Spec keeps its
 station
-**And** on today's tree the scan's output is unchanged; the new test passes under `pixi run -e pyforge-guild python -m
+**And** on today's tree every row read from `docs/dreams/` is unchanged and the six Dreams already under `archive/docs/dreams/` (`deckcraft`, `design-code-bridge`, `herald-pitch-deck-family-expansion`, `modernist-identity`, `pyforge-genesis`, `video-scripts`) are added, reported as archived whatever their frontmatter `status`, with their chains *(amended 2026-09-30, operator ruling after the first dispatch stopped on this contradiction: location is the archive signal, CHAIN-STANDARD §11)*; the new test passes under `pixi run -e pyforge-guild python -m
 pytest tests/scripts/test_fleet_scan_archive.py -q`; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ## Epic 76: The drift script's legacy --specs report retires with its tier (spec-one-chain-per-station CAP-11)

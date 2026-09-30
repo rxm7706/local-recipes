@@ -347,7 +347,7 @@ development_status:
   73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch: backlog
   73-2-a-drain-schedules-the-follow-up-review-a-landed-story-recommended: backlog
   74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-fixture: done
-  74-2-dispatch-refuses-a-story-the-flag-gate-would-red-before-any-session-starts: blocked
+  74-2-dispatch-refuses-a-story-the-flag-gate-would-red-before-any-session-starts: backlog
   74-3-bmad-spec-bmad-build-and-bmad-tea-carry-the-flag-mandate-in-their-overrides: backlog
   75-1-fleet-scan-reads-archived-dreams-from-the-archive: backlog
   76-1-bmad-drift-check-py-s-specs-mode-retires: backlog
@@ -501,13 +501,13 @@ development_status:
   epic-72-retrospective: optional
   epic-73: backlog
   epic-73-retrospective: optional
-  epic-74: backlog
+  epic-74: in-progress
   epic-74-retrospective: optional
   epic-75: backlog
   epic-75-retrospective: optional
   epic-76: backlog
   epic-76-retrospective: optional
-  epic-77: backlog
+  epic-77: done
   epic-77-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
