@@ -14,7 +14,21 @@ context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-34-2-the-flag-gate-ships-in-scripts-outside-every-station-and-runs-in-detectors-ci.md
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_effect.py
   - src/platform/config/flags.json
-deferred: []
+deferred:
+  - summary: >-
+      Doctor's Surface-line join resolves only 7.2% of the CAP rows the inventory lists (56 of 778), so the
+      per-station "Runtime CAPs with no flag" counts are a lower bound.
+    evidence: |-
+      Measured on the checked-in reports at this story's review: unresolved 722, module 38, planning 14, runtime 4.
+      `_story_surface_by_cap` attaches a `Surface:` line to a CAP only when the citing story's line names the Spec
+      slug and the CAP together, and most epics.md stories cite `(CAP-n)` against absorbed Spec slugs or carry no
+      `Surface:` line. This story reuses the join by mandate (intent: "never invent a second one"), so it reports the
+      gap as `unresolved` rows and does not close it. Closing it means a Doctor story that widens the join (for
+      example to read the Spec's own CAP-to-story map) and then re-runs `pixi run -e pyforge-guild flag-inventory`;
+      each Smith should read the `unresolved` rows of their report before sizing a retrofit.
+    location: >-
+      src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_effect.py:498
+    severity: medium
 declared_low_risk: false
 ---
 
