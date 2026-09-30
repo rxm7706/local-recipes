@@ -4905,3 +4905,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-76-1: The new helm-gated chart tests may skip silently in the Platform CI `test` job.
+
+- source_spec: `planning-artifacts/specs/spec-76-1-the-one-flag-tree-carries-per-environment-values-so-off-in-production-is-a-value.md`
+  summary: The new helm-gated chart tests may skip silently in the Platform CI `test` job.
+  evidence: Every chart test carries `requires_helm` (skip when `helm` is not on PATH). The `test` job runs on `ubuntu-latest` in the slim `platform-ci-test` pixi env, which has no `kubernetes-helm` (only `platform-dev` does). Whether the runner supplies its own `helm` was not verified here. Settled by reading the job log of a Platform CI `test` run for a skip count on `tests/test_chart_invariants.py` and `tests/test_openfeature_file_flags.py`. The same pattern covers every pre-existing chart test.
+  location: .github/workflows/platform-ci.yml
+  origin: spec-deferred 4242385d065e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
