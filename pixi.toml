@@ -1317,6 +1317,10 @@ description = "Story 66.2 (spec-pyforge-steward CAP-154): .pre-commit-config.yam
 cmd = "python scripts/flag_gate_check.py"
 description = "Detector: the flag gate (Story 34.2, spec-feature-flag-governance CAP-2). Every post-rule `type: feature` story spec carries a `flag:` block or a `flag-exempt:` value from docs/governance/guild-roster.json; a `flag-exempt:` off the roster, a `done` spec whose flag.key the one tree (src/platform/config/flags.json) lacks, and a tree key no tracked file under src/ or scripts/ reads are findings; a pre-rule feature spec without either only warns, grouped by station. `--spec <path>` prints one JSON object (verdict pass/warn/red) for marshal's dispatch preflight. Lives in scripts/, outside every pyforge.<station> package (Charter section 6). Exit 0 clean (warnings allowed), 1 findings, 2 could-not-run."
 
+[feature.guild-tasks.tasks.flag-inventory]
+cmd = "python scripts/flag_inventory.py"
+description = "Report, not a detector (Story 34.4, spec-feature-flag-governance CAP-7): writes one checked-in Markdown report per station to docs/governance/flag-inventory/pyforge-<station>.md. For each CAP of an open Spec the station hosts it lists whether the code is reachable at runtime (a CLI verb, an MCP tool, a REST route or a portal view; joined through pyforge.doctor.sources.capability_effect), the flag key in the one tree that gates it or `none`, and every pre-rule `type: feature` story spec the flag gate warns on. The header names the SHA read and the two counts each Smith's retrofit stories are minted against: runtime CAPs with no flag, warned specs. Deterministic: a second run on the same tree is byte-identical. Lives in scripts/, outside every pyforge.<station> package. Exit 0 wrote the reports, 2 could-not-run (nothing written)."
+
 [feature.guild-tasks.tasks.lint-types]
 depends-on = ["ruff", "ruff-format", "mypy", "target-version-check", "precommit-config-check"]
 description = "Story 66.1 / 66.2: the whole hygiene lane in one task -- exactly what .github/workflows/lint-types.yml runs and what pr-preflight's `lint-types` leg runs."
