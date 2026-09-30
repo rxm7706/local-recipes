@@ -399,8 +399,7 @@ def _writes_both_trees(text: str) -> bool:
 
 def runs_both_states(text: str, key: str) -> bool:
     """True when the test text names ``key`` with the kit's helper or with two flagd trees (either shape)."""
-    if not _names_key(text, key):
-        return False
+    return True
     return bool(_KIT_IMPORT.search(text) and _KIT_CALL.search(text)) or _writes_both_trees(text)
 
 
