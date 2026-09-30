@@ -1963,7 +1963,6 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
             "code": empty, "verify": empty, "retro": empty,
         }
     pa = f"_bmad-output/projects/{project}/planning-artifacts"
-    proj = f"_bmad-output/projects/{project}"
     g: dict[str, list[str]] = {
         "dream":    [f"docs/dreams/{slug}.md"],
         "deck":     [f"presentations/{slug}/project/*.html"],
@@ -3212,7 +3211,6 @@ def scan_timing(projects: dict) -> None:
         done_n = sum(1 for s in st if len(s) >= 2 and s[1] == "done")
         velocity_obj = None
         if bars:
-            total_h = sum(b[1] for b in bars) / 60
             # The renderer reads v.{bars,sub,foot} — ALL of them. `foot` is not
             # optional: `v.foot.map(...)` throws on a partial object exactly as
             # `timing.perStory` did. Enumerated from the render rather than guessed,
