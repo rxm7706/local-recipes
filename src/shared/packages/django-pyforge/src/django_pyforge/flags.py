@@ -91,7 +91,11 @@ def resolve_flags_path(explicit: Path | str | None = None) -> Path | None:
     has no sibling, so it is returned as it is. An unknown environment raises
     ``pyforge.core.flags.UnknownEnvironmentError`` on every call. In a checkout the rendered
     copy is written when this is called, so edits to the tree or the overlay reach a running
-    FILE provider only when it is called again. Where ``pyforge.core`` is not installed (the
+    FILE provider only when it is called again -- and only while ``PYFORGE_FLAGS_PATH`` still
+    names the tree. ``configure_file_provider`` pins an unset ``PYFORGE_FLAGS_PATH`` to the
+    rendered copy, which has no sibling overlay, so after ``configure_from_env`` in such a
+    process a later call returns that frozen copy: restart the process to pick up an edit
+    (the in-cluster mount is polled live). Where ``pyforge.core`` is not installed (the
     mcp-host sidecar image ships ``django_pyforge`` alone) there is nothing to compose: the
     tree is returned as it is.
     """

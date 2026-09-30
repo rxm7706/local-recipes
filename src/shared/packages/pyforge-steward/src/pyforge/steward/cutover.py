@@ -260,17 +260,18 @@ def flip_root(
     entry["defaultVariant"] = target
     # Story 76.1: an overlay that names the flag would mask the tree's variant, so a flip sets the
     # target in every environment that names it -- one root everywhere, as before. Read and
-    # validated before either file is written.
+    # composed (every entry of every environment validated) before either file is written.
     overlays_path = core_flags.overlays_path_for(flags_path)
     overlays: dict[str, object] | None = None
     if overlays_path is not None:
         try:
             overlays = core_flags.load_overlays(overlays_path)
+            for entries in overlays.values():
+                if isinstance(entries, dict) and CUTOVER_FLAG in entries:
+                    entries[CUTOVER_FLAG] = target
+            core_flags.compose(payload, overlays, core_flags.DEFAULT_ENVIRONMENT)
         except core_flags.FlagConfigError as exc:
             raise CutoverRootError(f"flip refused: {exc}") from exc
-        for entries in overlays.values():
-            if isinstance(entries, dict) and CUTOVER_FLAG in entries:
-                entries[CUTOVER_FLAG] = target
     atomic_write_text(flags_path, json.dumps(payload, indent=2) + "\n")
     if overlays_path is not None and overlays is not None:
         atomic_write_text(overlays_path, json.dumps(overlays, indent=2) + "\n")

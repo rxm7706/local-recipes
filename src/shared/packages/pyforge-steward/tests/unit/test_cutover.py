@@ -200,3 +200,26 @@ def test_flip_refuses_a_broken_overlay_before_writing_anything(tmp_path: Path) -
     with pytest.raises(CutoverRootError, match="flip refused"):
         flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
     assert flags.read_text(encoding="utf-8") == before
+
+
+@pytest.mark.parametrize(
+    ("overlays", "named"),
+    [
+        ({"dev": {"pyforge.typo": "off"}}, "pyforge.typo"),
+        ({"dev": {"pyforge.other": "maybe"}}, "maybe"),
+        ({"qa": {"pyforge.other": "on"}}, "qa"),
+        ({"dev": {"pyforge.other": {"variants": {}}}}, "pyforge.other"),
+    ],
+)
+def test_flip_refuses_an_invalid_overlay_entry_before_writing_anything(
+    tmp_path: Path, overlays: object, named: str
+) -> None:
+    flags = _flag_tree(tmp_path, overlays)
+    overlays_path = tmp_path / "flag-overlays.json"
+    tree_before = flags.read_text(encoding="utf-8")
+    overlays_before = overlays_path.read_text(encoding="utf-8")
+    with pytest.raises(CutoverRootError, match="flip refused") as excinfo:
+        flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
+    assert named in str(excinfo.value)
+    assert flags.read_text(encoding="utf-8") == tree_before
+    assert overlays_path.read_text(encoding="utf-8") == overlays_before
