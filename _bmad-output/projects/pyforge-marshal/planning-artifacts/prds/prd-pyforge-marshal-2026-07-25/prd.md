@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-09-29"   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-282 (Epic 77); FR-229 registered. See section 32. Earlier 2026-09-28: RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -2998,3 +2998,31 @@ read from `origin/main` (AD-29, AD-33); no new port, adapter or decision boundar
 (FR-225, FR-227, FR-228 amended in place): AD-55 is amended in place, additively (a manifest entry's
 optional `required_in`); FR-227's widening lands on AD-29 and AD-33 as written; FR-228's cap is one
 more field of the composed `dispatch` block (AD-16's layers unchanged). § 31.11 later (Epic 74, `spec-feature-flag-governance` CAP-3, CAP-4, CAP-6; no FR): the dispatch refusal lands on AD-4, AD-5, AD-8 and AD-15 as written — a pure decision in `core/` over the verdict a repo-root gate prints, the gate run as a process through the edge `dispatch_verify` already uses; the kit and the `_bmad/custom/` overrides sit outside the hexagon. No AD amended.
+
+## 32. Currency reconciliation — 2026-09-29
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-marshal` gained CAP-282 on 2026-09-29, after this PRD's
+2026-09-28 re-stamp. The FR is derived from the CAP (`one-chain-per-station`).*
+
+### 32.1 The FR space: FR-229 registered
+
+The `structure-graph` context layer is enabled for every station by policy (Epic 55), and a dispatch never realizes
+it. `codegraph` is not in the `pyforge-guild` environment dispatch runs in, the primary checkout has no index, and no
+code on the dispatch path provisions one, although `bmad-build-auto`'s step 01 uses an index present in its worktree
+(Story 28.33). Story 28.31's spike chose the shape (share one repo-level index; sync from a shared base about 4 s
+against about 19 s and 222 MiB for a fresh init per worktree), and its follow-on was never minted (`DW-FU-28-31-1`).
+FR-229 decomposes into **Epic 77** (Story 77.1).
+
+#### FR-229: Every dispatch session opens on the shared codegraph index ← CAP-282
+`codegraph` is in the `pyforge-guild` environment, from conda-forge. With `[context."structure-graph"]` enabled,
+`dispatch_once` gives each new worktree an index: it copies the primary checkout's `.codegraph/` and runs
+`codegraph sync -q`; with no base index it runs `codegraph init -y` in the worktree, and a named WARN names
+`marshal context bootstrap` as the fix; with no binary it skips with a named WARN. A dispatch is never blocked, the
+primary checkout is read and never written, and the `dispatch-launch` journal records the layer's outcome (`applied`,
+`mode` `sync|init|skipped`, `reason`, `seconds`) beside `wire`.
+
+**ONE FR space now FR-1..FR-229** (FR-230 = next free id).
+
+**Content changed:** § 32 added (FR-229 registered). No FR renumbered or removed. No AD amended: provisioning is one
+more step of the governed dispatch verb (AD-75), `codegraph` runs through the injected `ProcessPort` (AD-20), and a
+present index is synced rather than rebuilt (AD-21). `updated:` bumped.
