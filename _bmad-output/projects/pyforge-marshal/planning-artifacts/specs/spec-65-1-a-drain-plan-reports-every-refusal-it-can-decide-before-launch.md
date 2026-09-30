@@ -2,7 +2,7 @@
 title: '65.1: A drain plan reports every refusal it can decide before launch'
 type: 'feature'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '8ed023218fc075e8ddc58403331f4990cb4ee156'
 review_loop_iteration: 0
 followup_review_recommended: false
