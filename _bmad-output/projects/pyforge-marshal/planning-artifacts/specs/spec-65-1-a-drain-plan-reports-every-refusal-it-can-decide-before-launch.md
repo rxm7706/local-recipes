@@ -2,13 +2,18 @@
 title: '65.1: A drain plan reports every refusal it can decide before launch'
 type: 'feature'
 created: '2026-09-27'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '8ed023218fc075e8ddc58403331f4990cb4ee156'
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - docs/dreams/pyforge-marshal.md
-warnings: []
+warnings:
+  - oversized
 deferred: []
+declared_low_risk: false
 ---
 
 <intent-contract>
@@ -94,6 +99,46 @@ Type / Effort / Deps: feature / M / —.
 | launch-only flags | `--plan` with `--once`/`--campaign`/`--max-cycles`/`--tick-seconds` | usage error | exit 2 |
 
 </intent-contract>
+
+## Code Map
+
+All under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` abbreviated `M/`).
+
+- `M/cli/dispatch.py` -- `execute_fleet_cycle` (`:3756`) holds the per-station queue computation to extract: ledger read `_station_ledger_statuses` (`:3324`), `station_backlog` + `_load_station_story_deps` (`:3505`; the Deps sort is skipped when `overrides.get(slug)` is non-empty), `station_finalize_pending_story` (`:1410`), `_station_blocked_map` (`:3607`), `plan_station_queue`, then `resolve_max_parallel` (`:1359`), `_live_dispatch_story_keys` (`:1380`), `_load_station_deps_graph` (`:1330`), `ordered_ready_backlog`, per-story `_effective_surface_for_spec` (`:1339`) and `build_wave_batch`. Its writers stay in the cycle: `_journal_dispatch_wave` (`:3712`), `dispatch_once` (`:2024`), campaign-block bookkeeping. `run_fleet_drain` (`:4414`) parses and validates the flags, then mints the run dir, takes the lock and journals; `add_factory_drain_subparser` (`:3154`) defines the flags. `_read_fleet_queue_config` (`:3527`) returns `(overrides, skips, findings)`.
+- Launch-path refusals the plan mirrors, all in `dispatch_once` (`:2024`): scope `_dispatch_scope_refusal` (`:280`, `MRS-DISP-041`); spec `dispatch_core.resolve_story_spec_path` (`MRS-DISP-005`); harness walk `build_harness.binary_present` (`MRS-DISP-003`) and `_surface_session_precondition_findings` (`:458`) -- `--check-env` only; legacy branch `dispatch_core.resolve_dispatch_branch` (`M/core/dispatch.py:463`, `MRS-DISP-030`, read-only); WIP `_surface_worktree_wip_before_dispatch` (`:421`, `MRS-DISP-036`) and `_redispatch_blocked_pending_supervisor_finalize` (`:893`, `MRS-DISP-039`); worktree spec status `parse_spec_status` / `blocks_harness_relaunch` (`M/core/dispatch_harness_done.py:115,133`) -> `MRS-DISP-040` land-only or `MRS-DISP-045`. `_ensure_dispatch_worktree` (`:1009`) is the WRITER (`vcs.add_worktree`); the plan calls only `resolve_dispatch_branch` and `vcs.worktree_path_for_branch`.
+- `M/core/dispatch_fleet.py` -- `station_backlog` (`:543`), `plan_station_queue` (`:707`), `build_wave_batch` (`:869`), `ordered_ready_backlog` (`:930`), `_STORY_HEADING_RE` / `parse_epics_dependencies` (`:389`, `:432`: the `### Story N.M:` block splitter the prose-park detector reuses), `StationQueuePlan` / `StationCycleStatus`, `queue_config_path`, `station_epics_paths`.
+- `M/core/gate.py:646` `check_spec_binding`, `M/core/spec_binding.py:106` `parse_success_signal` (`None` = no `## Verification`), `M/dispatch_verify.py:76` `_verify_commands_with_surface_guard` and `:45` `_bare_shell_metacharacters` (`MRS-GATE-003` shape; pre-existing, unchanged), `M/core/identity.py:226` `render_merge_subject`, `M/core/dispatch_landing.py:180` `merge_subject_is_marshal_native` (`MRS-DISP-019`), `M/core/promotion.py` `corroborated_merged_story_keys` (already-landed; the same call `_reconcile_campaign_blocked` makes).
+- `M/core/findings.py` (`REGISTERED_CODES`, `CODE_PATTERN` `:903` admits `MRS-DRAINPLAN-001`), `M/core/verdict.py` (`_CLASSIFY_TABLE`; exit lattice ERROR 4 / UNEVALUABLE 1 / WARN 0; `EXIT_USAGE = 2` is a handler-returnable domain member) and `tests/unit/test_findings.py` (the expected-code set) -- the three places a code is registered.
+- New: `M/core/dispatch_prelaunch.py` (pure, AD-4, no I/O): `spec_binding_findings`, `find_prose_park`, `story_epics_blocks`, `inert_override_keys`. New: `M/cli/drain_plan.py` (reads, projection, findings, rendering); `run_fleet_drain` reaches it through a function-local import (the `cli/gate.py` precedent, load-order safe).
+- Tests fake the ports with `FakeFs` / `FakeVcs` / `FakeBuildHarness` / `FakeProcess` / `FakeHarness` and `_seed_fleet` in `tests/unit/test_dispatch_fleet.py:361-580` (`FakeFs` writes through, so the no-write assertions need a recording variant). Read-only evidence: `_bmad-output/projects/pyforge-marshal/planning-artifacts/fleet-drain-queue.yaml` already declares the 44.4-44.6 skips (2026-09-27), so the steward replay is a fixture, not live state.
+- Baseline before any change: `tests/unit/test_dispatch_fleet.py` 145 passed.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `M/core/dispatch_prelaunch.py` -- new pure predicates (spec binding, prose park, inert override, epics block split) -- the plan and Story 65.2 share them
+- `M/core/findings.py`, `M/core/verdict.py`, `tests/unit/test_findings.py` -- register `MRS-DRAINPLAN-001..005` at ERROR / WARN / WARN / WARN / UNEVALUABLE
+- `M/cli/dispatch.py` -- extract `resolve_cycle_slugs` and one read-only `plan_station_cycle` (behaviour-preserving) and have `execute_fleet_cycle` call them; add `--plan`, `--check-env`, `--all-stories`; usage-error the launch-only flags; branch `run_fleet_drain` to the plan before anything is minted
+- `M/cli/drain_plan.py` -- per-station refusal evaluation, `data.stations[]` projection, findings, text rendering, exit via the lattice
+- `tests/unit/test_dispatch_prelaunch.py`, `tests/unit/test_drain_plan.py` -- one test per Acceptance Criterion plus the I/O matrix rows; existing `test_dispatch_fleet.py` / `test_dispatch.py` untouched and green
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` and each co-governor `spec-surface` names -- surface-reconcile entry (never `--write-baseline`)
+
+**Acceptance Criteria:**
+- Given the Acceptance Criteria above, when the station suite runs, then every one has a passing test and `test_dispatch_fleet.py` / `test_dispatch.py` still pass unchanged.
+
+## Spec Change Log
+
+- 2026-09-30: planned from the pre-authored contract; the file was minted at `status: backlog` (not a recognised workflow status), so the tracked spec stays the story spec of record and moves `ready-for-dev` -> `in-progress` in place; no second copy under `implementation-artifacts/`. Intent contract unchanged.
+
+## Review Triage Log
+
+<!-- Append-only; step-04 records one row per reviewer finding. -->
+
+## Design Notes
+
+- The plan and the drain share ONE planner because "the plan cannot drift from the drain" is the contract; the planner returns facts (ledger, backlog, blocked map, queue plan, wave) and never emits findings or writes, so `execute_fleet_cycle` keeps every emission and every writer in its existing order.
+- `--tick-seconds` / `--max-cycles` default to `argparse.SUPPRESS` so "explicitly given" is detectable; `run_fleet_drain` already reads both with `getattr(..., default)`, so the drain's own behaviour is unchanged.
+- Prose-park detection strips markdown emphasis first (`do **not** dispatch` is the real steward wording), and does not match `un-parked` / `unparked`.
 
 ## Source
 
