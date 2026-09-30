@@ -2,7 +2,7 @@
 title: "76.2: Every flag in the tree carries its owner, story and cleanup clock in flagd metadata"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'blocked'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: flag-infrastructure
@@ -121,3 +121,30 @@ Deps: S-76.1 (the rendered per-environment trees the clock is defined over).
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new findings.
 
 ## Review Triage Log
+
+## Auto Run Result
+
+Status: blocked
+Blocking condition: spec failed ready-for-development standard (Sufficient) — dependency Story 76.1 has not landed on this base.
+
+Evidence (2026-09-29, `dispatch/pyforge-steward/76.2` at `a468651c83`):
+
+- Ledger row `76-1-the-one-flag-tree-carries-per-environment-values-so-off-in-production-is-a-value` is `backlog`; its PR is open
+  (rxm7706/local-recipes#1683, branch `dispatch/pyforge-steward/76.1`, not an ancestor of this `HEAD` per
+  `git merge-base --is-ancestor`).
+- `src/platform/config/flag-overlays.json` does not exist on this base (`git ls-files | grep flag-overlay` is empty), yet it
+  is in this spec's `context:` and defines the per-environment rendered trees `on_everywhere` is measured over.
+- `pyforge.core.flags` has no `evaluate_boolean` (only `read_boolean`, `require`, `disabled_help`); AC 6 and the
+  "check run wherever the tree is composed" both bind to 76.1's composer. 76.1's diff adds it (`flags.py` +170 lines).
+- Building on the unmerged 76.1 branch would stack this story on a moving base (76.1 already carries a follow-up
+  commit); the Deps gate is `S-76.1` and it is not met.
+
+Also for the re-plan, once 76.1 lands:
+
+- `src/platform/config/flags.json` now holds three flags, not "the two existing flags": `pyforge.steward.ghe_fleet_credentials`
+  (`defaultVariant: off`) needs `owner`/`story`/`created` with an empty clock; read its dates from
+  `git log --follow src/platform/config/flags.json` like the others.
+- `pyforge.three_surfaces` remains owed to Story 76.4 (`on_everywhere` 2026-08-25, `cleanup_by` 2026-11-23, per the
+  operator's 2026-09-28 ruling); no other flag has a passed `cleanup_by` as of this run.
+
+Next: land #1683, then re-dispatch Story 76.2. No source, ledger or `SPEC.md` file was touched; no `deferred:` entry written.
