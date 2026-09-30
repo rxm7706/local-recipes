@@ -9,6 +9,8 @@ without touching the live tree or the network.
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from datetime import date
 from pathlib import Path
 
@@ -17,6 +19,8 @@ from typer.testing import CliRunner
 
 from pyforge.scribe import catalog
 from pyforge.scribe.cli import app
+
+_GIT_MISSING = shutil.which("git") is None
 
 runner = CliRunner()
 
@@ -376,3 +380,63 @@ def test_cli_output_option_targets_another_file(estate_root: Path, tmp_path: Pat
         app, ["catalog", "bmad-estate", "--root", str(estate_root), "--check", "--output", str(target)]
     )
     assert checked.exit_code == 0, checked.output
+
+
+def _git(repo_root: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=str(repo_root), check=True, capture_output=True, text=True)
+
+
+def _skill_worktree(tmp_path: Path) -> Path:
+    """A throwaway work tree: tracked skill, untracked skill, gitignored skill, leftover."""
+    root = tmp_path / "worktree"
+    _skill(root, "tracked-skill", "Tracked.")
+    (root / ".gitignore").write_text("**/.claude/skills/ignored-skill/\n__pycache__/\n", encoding="utf-8")
+    _git(root, "init", "-q")
+    _git(root, "config", "user.email", "test@example.com")
+    _git(root, "config", "user.name", "Test")
+    _git(root, "config", "commit.gpgsign", "false")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-q", "-m", "tracked skill")
+    _skill(root, "untracked-skill", "Untracked.")
+    _skill(root, "ignored-skill", "Ignored.")
+    leftover = root / catalog.SKILLS_RELPATH / "leftover" / "__pycache__"
+    leftover.mkdir(parents=True)
+    (leftover / "x.pyc").write_bytes(b"pyc")
+    return root
+
+
+@pytest.mark.skipif(_GIT_MISSING, reason="git binary not found on PATH")
+def test_read_skills_matches_the_git_tree_not_the_dirty_disk(tmp_path: Path) -> None:
+    root = _skill_worktree(tmp_path)
+    skills, missing = catalog.read_skills(root, {})
+    names = {s.name for s in skills}
+    assert names == {"tracked-skill", "untracked-skill"}
+    assert "ignored-skill" not in names
+    assert "ignored-skill" not in missing
+    assert "leftover" not in missing
+
+
+@pytest.mark.skipif(_GIT_MISSING, reason="git binary not found on PATH")
+@pytest.mark.parametrize("mode", ["nonzero", "oserror", "timeout", "missing"])
+def test_read_skills_falls_back_to_disk_walk_when_git_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    root = _skill_worktree(tmp_path)
+
+    def _fail_run(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        if mode == "oserror":
+            raise OSError("git boom")
+        if mode == "timeout":
+            raise subprocess.TimeoutExpired(cmd="git", timeout=30)
+        return subprocess.CompletedProcess(args=["git"], returncode=128, stdout=b"", stderr=b"fail")
+
+    if mode == "missing":
+        monkeypatch.setattr(catalog.shutil, "which", lambda _name: None)
+    else:
+        monkeypatch.setattr(catalog.subprocess, "run", _fail_run)
+
+    skills, missing = catalog.read_skills(root, {})
+    names = {s.name for s in skills}
+    assert names == {"tracked-skill", "untracked-skill", "ignored-skill"}
+    assert "leftover" in missing
+    assert skills
