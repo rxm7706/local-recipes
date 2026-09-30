@@ -5,6 +5,7 @@ created: '2026-09-29'
 status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: 'c8f74d5657bc67459115281f75afbbd577401c09'
 context:
   - docs/governance/spec-one-chain-per-station/SPEC.md
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
