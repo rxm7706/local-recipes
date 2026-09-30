@@ -209,8 +209,17 @@ def test_a_bad_flag_environment_projects_to_the_usage_code_not_a_traceback(monke
 def test_a_bad_flag_overlay_projects_to_the_usage_code(monkeypatch, tmp_path, capsys):
     tree = tmp_path / "flags.json"
     tree.write_text(
-        json.dumps({"flags": {"pyforge.steward.ghe_fleet_credentials": {
-            "state": "ENABLED", "variants": {"on": True, "off": False}, "defaultVariant": "off"}}}),
+        json.dumps(
+            {
+                "flags": {
+                    "pyforge.steward.ghe_fleet_credentials": {
+                        "state": "ENABLED",
+                        "variants": {"on": True, "off": False},
+                        "defaultVariant": "off",
+                    }
+                }
+            }
+        ),
         encoding="utf-8",
     )
     (tmp_path / "flag-overlays.json").write_text(json.dumps({"dev": {"pyforge.nope": "off"}}), encoding="utf-8")

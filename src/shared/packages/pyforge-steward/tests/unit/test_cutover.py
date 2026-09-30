@@ -178,7 +178,9 @@ def test_flip_touches_only_the_cutover_key_of_the_overlay(tmp_path: Path) -> Non
 
 
 def test_flip_leaves_an_environment_that_does_not_name_the_flag_alone(tmp_path: Path) -> None:
-    flags = _flag_tree(tmp_path, {"dev": {"pyforge.other": "on"}, "production": {"pyforge.cutover_root": "local-recipes"}})
+    flags = _flag_tree(
+        tmp_path, {"dev": {"pyforge.other": "on"}, "production": {"pyforge.cutover_root": "local-recipes"}}
+    )
     flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
     overlays = json.loads((tmp_path / "flag-overlays.json").read_text(encoding="utf-8"))
     assert overlays == {"dev": {"pyforge.other": "on"}, "production": {"pyforge.cutover_root": "foundry"}}

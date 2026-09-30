@@ -515,7 +515,7 @@ _CUTOVER_KEY = "pyforge.cutover_root"
 def _assert_cutover_root_agrees(tree: Path, environment: str) -> None:
     """The non-boolean key: the FILE provider's string, the CLI reader
     (`read_cutover_root`, which composes the overlay itself) and the rendered tree."""
-    from openfeature import api
+    from openfeature import api  # noqa: PLC0415 -- after the importorskip above
 
     path = resolve_flags_path(tree)
     assert path is not None
@@ -564,7 +564,10 @@ def test_the_non_boolean_key_follows_the_overlay_on_every_reader(
                     FLAG_KEY: _entry("on"),
                     _CUTOVER_KEY: {
                         "state": "ENABLED",
-                        "variants": {"local-recipes": "local-recipes", "foundry": "foundry"},
+                        "variants": {
+                            "local-recipes": "local-recipes",
+                            "foundry": "foundry",
+                        },
                         "defaultVariant": "local-recipes",
                     },
                 },
@@ -724,7 +727,10 @@ def test_render_verb_reports_an_unwritable_output_path(
     tree = _fixture_pair(tmp_path)
     blocker = tmp_path / "a-file"
     blocker.write_text("not a directory", encoding="utf-8")
-    for output in (blocker / "flags.json", tmp_path):  # a parent that is a file; a directory
+    for output in (
+        blocker / "flags.json",
+        tmp_path,
+    ):  # a parent that is a file; a directory
         argv = ["render", "--environment", "dev", "--source", str(tree)]
         assert flags_main([*argv, "--output", str(output)]) == 1
         err = capsys.readouterr().err
@@ -737,12 +743,14 @@ def test_without_pyforge_core_the_host_reads_the_tree_as_it_is(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The mcp-host sidecar image copies `django_pyforge` but not `pyforge/core`, and its
-    `AppConfig.ready()` calls `configure_from_env()` -> `resolve_flags_path()`. With
+    """The mcp-host sidecar image copies `django_pyforge` but not `pyforge/core`, and
+    its `AppConfig.ready()` calls `configure_from_env()` -> `resolve_flags_path()`. With
     `pyforge` unimportable the resolver must return the tree (or None), never raise."""
     tree = _fixture_pair(tmp_path)
     _isolate_flag_environment(monkeypatch, tree, "production")
-    monkeypatch.setattr("django_pyforge.flags.IN_CLUSTER_FLAGS_PATH", tmp_path / "absent" / "flags.json")
+    monkeypatch.setattr(
+        "django_pyforge.flags.IN_CLUSTER_FLAGS_PATH", tmp_path / "absent" / "flags.json"
+    )
     monkeypatch.setitem(sys.modules, "pyforge", None)
     monkeypatch.setitem(sys.modules, "pyforge.core", None)
     monkeypatch.setitem(sys.modules, "pyforge.core.flags", None)
@@ -791,7 +799,7 @@ def test_chart_configmap_is_the_tree_rendered_for_the_environment(
             )
             if "PYFORGE_FLAGS_PATH" in env or mounts_flags:
                 readers += 1
-            # a workload that mounts the tree must say which environment it was rendered for
+            # a workload that mounts the tree names the environment it was rendered for
             if mounts_flags:
                 assert env.get(_ENV_ENVIRONMENT) == environment, container["name"]
             if "PYFORGE_FLAGS_PATH" in env:
