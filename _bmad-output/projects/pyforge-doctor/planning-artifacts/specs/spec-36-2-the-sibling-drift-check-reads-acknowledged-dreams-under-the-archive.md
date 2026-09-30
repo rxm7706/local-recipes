@@ -2,10 +2,10 @@
 title: "36.2: The sibling-drift check reads acknowledged Dreams under the archive"
 type: 'chore'
 created: '2026-09-29'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'a04d17d946b148d986d8c159b2fadb973a472ab1'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - docs/governance/spec-one-chain-per-station/SPEC.md
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
@@ -160,32 +160,44 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 ## Auto Run Result
 
-Status: in-review
+Status: done
 
-**Summary.** `_local_fingerprints` now reads `docs/dreams/*.md` and then `archive/docs/dreams/*.md` (`_LOCAL_DREAM_DIRS`, live first). Each slug keeps its first parsed fingerprint (`out.setdefault`), so the `docs/dreams/` copy wins a tie. A missing directory, a directory whose `glob` raises `OSError` and an unreadable file are each skipped. The fingerprint, the acknowledgement rule, the messages, the sibling coordinates and the fail-open paths are untouched. `_gather`'s `if not local` guard needed no change: an archive-only tree is non-empty.
+**Summary.** `_local_fingerprints` reads `docs/dreams/*.md` and then `archive/docs/dreams/*.md` (`_LOCAL_DREAM_DIRS`, live first). The first home to list a slug owns it (a `seen` set of stems, added before read and parse), so the `docs/dreams/` copy wins a tie, and a live copy that is unreadable or fails to parse leaves the slug absent instead of letting an archive copy stand in. A missing directory, a directory whose `glob` raises `OSError` (in either home) and an unreadable file are each skipped. The fingerprint, the acknowledgement rule, the messages, the sibling coordinates and the fail-open paths are untouched. `_gather`'s `if not local` guard needed no change: an archive-only tree is non-empty.
 
 **Files changed:**
-- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py` -- archive read, module docstring (CHAIN-STANDARD section 11 reader rule).
-- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py` -- eight new tests (nine cases) appended.
-- `spec-pyforge-doctor/.memlog.md`, `spec-pyforge-core/.memlog.md` -- surface-reconcile events; `spec-pyforge-unifying-strategy/.memlog.md` -- co-governor carry (see Residual).
-- `scripts/.spec-surface-baseline.json` -- three scoped stamps.
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py` -- archive read with first-lister-owns-the-slug precedence; docstrings name the CHAIN-STANDARD section 11 reader rule and Story 36.2.
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py` -- comment only: the `SIBLING_DREAMS_DRIFT` registration names both local Dream homes.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py` -- 12 new test cases (44 in the file, 41 before the review patches).
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` -- surface-reconcile events (implementation and review patches); `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md` -- co-governor carry (see Residual).
+- `scripts/.spec-surface-baseline.json` -- scoped stamps for the three Specs, none bare; the last re-stamp (doctor, core) moved exactly the four entries the review patches touched.
 
 **AC to test map.**
 - AC 1, AC 2 (silent): `test_acknowledged_dream_is_silent_in_either_home[live|archive]`
 - AC 2 (re-fire): `test_stale_acknowledgement_refires_identically_before_and_after_the_move`
-- AC 3: `test_live_copy_wins_when_a_slug_is_in_both_homes` (both directions)
+- AC 3: `test_live_copy_wins_when_a_slug_is_in_both_homes` (both directions), plus `test_malformed_live_copy_is_not_replaced_by_the_archive_copy` and `test_unreadable_live_copy_is_not_replaced_by_the_archive_copy`
 - AC 4: `test_no_archive_directory_behaves_as_before`
 - AC 5: live measurement below
-- Matrix edges: `test_archive_only_tree_still_reports`, `test_archive_dreams_are_merged_with_live_ones`, `test_unlistable_archive_dir_is_skipped_and_live_dreams_survive`, `test_unreadable_file_is_skipped_in_the_archive`
+- AC 6: mutation run below
+- Matrix edges: `test_archive_only_tree_still_reports`, `test_archive_dreams_are_merged_with_live_ones`, `test_unlistable_dir_is_skipped_and_the_other_home_survives[live-raises|archive-raises]`, `test_unreadable_file_is_skipped_in_the_archive`
 
-**Mutation AC (run by hand).** `_LOCAL_DREAM_DIRS` cut to `(("docs", "dreams"),)`, file restored afterwards. First run: 4 failed, 37 passed, and `test_acknowledged_dream_is_silent_in_either_home[archive]` still passed (an unseen Dream is silent too, so silence alone was a vacuous oracle). That test now also asserts the archived Dream's acknowledgement is parsed and the sibling fetch ran. Second run: 5 failed, 36 passed, the `[archive]` case among the failures. Unmutated: 41 passed.
+**Mutation (run by hand on the final code, file restored byte-identical each time).** Unmutated: 44 passed. Archive read removed (AC 6): 7 failed. Plain assignment without the `seen` check: 3 failed. Directories swapped: 3 failed. `seen` check dropped with `setdefault` after the parse: 2 failed. Glob-`OSError` handler `continue` -> `break`: 1 failed (`[live-raises]`); before the review patches this mutant passed all 41 tests.
 
-**AC 5 (live, real sibling, GH token from `gh auth token`).** `gather` on this tree returns `()` before (docs only) and `()` after (docs plus archive); the six archived Dreams are read (146 local slugs), none shares a filename with the sibling.
+**AC 5 (live, real sibling, GH token from `gh auth token`, read-only GETs).** `gather` on this tree returns `[]` before the change and `[]` after the final code (findings byte-identical); the worktree env reads 146 local slugs, including the six archive-only Dreams (`deckcraft`, `design-code-bridge`, `herald-pitch-deck-family-expansion`, `modernist-identity`, `pyforge-genesis`, `video-scripts`), none of which shares a filename with the sibling's 17.
 
-**Verification (exit codes read directly).**
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- exit 0, 3073 passed, 1 skipped.
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test-coverage` -- exit 0 (`sibling_dreams.py` 99%, floor 80%).
-- `lint-types`: ruff and mypy are green for every package; `ruff-format` is red for `pyforge-scribe` only (`catalog.py:387`, present on `origin/main`, not this diff).
+**Review (one pass, four layers, 25 findings: high 0, medium 9, low 7, false 9).**
+- Patches applied, 5 entries: (1) live-directory listing `OSError` coverage (medium; Blind 1, Edge 3, Verification gap) -- test parametrized over both homes with a hit counter; (2) a broken live copy yielding to the archive copy (medium; Blind 6b, Edge 2, Edge 4, Verification gap other 1, Intent d) -- `seen` set plus two tests; (3) the unlistable-archive test not proving the listing (low; Blind 4); (4) vacuous `archive/` exists asserts (low; Blind 5, Verification gap other 2); (5) stale registry comment and story list (low; Blind 7 first part, Edge 5). Patched counts by entry verdict: high 0, medium 2, low 3.
+- Deferred, 1: `ruff-format` red for `pyforge-scribe` at `catalog.py:387` (medium, pre-existing on `origin/main`; frontmatter `deferred`, `location` is that path).
+- Rejected, with reasons in the Review Triage Log: Blind 2, 3, 9, 10 and Intent a, b, c, e, f as `false` (each refuted by measurement or by the intent's own text); Blind 11 (append-only memlogs) and Edge 1 (non-UTF-8 archived file: same handler shape as before, loud WARN, fix adds a guard) as `low`; the pre-edit Code Map line numbers, the `docs/dreams/pyforge-doctor.md` note and the `pr-preflight` omission in Blind 7 and Blind 8 are not acted on, with reasons in their rows.
+
+**Follow-up review recommendation: `true`.** Two `medium` entries were patched on a first pass. The unverified risk: the `seen`-set ownership rule in `_local_fingerprints` (a broken live copy suppresses the archive copy, the file-presence reading of "first copy of each slug") and its three new tests landed after the review layers ran, so no independent reviewer has read them. The five mutants above kill it, but a reviewer should confirm that file-presence precedence is the grain the operator wants for a slug that is broken live and acknowledged in the archive.
+
+**Verification (exit codes read directly, none through a pipe).**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- exit 0, 3076 passed, 1 skipped.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test-coverage` -- exit 0 (`sibling_dreams.py` 99%, floor 80%; total 92%).
+- `python scripts/lint_types.py ruff` -- exit 0; `python scripts/lint_types.py mypy` -- exit 0; `python scripts/lint_types.py ruff-format` -- exit 1, for `pyforge-scribe` `catalog.py:387` only (`pyforge-doctor` is `ok`; deferred above).
 - `pixi run -e pyforge-guild spec-surface-check` -- exit 0, no findings, after the scoped stamps.
+- `python scripts/spec_surface_reconcile.py` -- exit 0 ("every tracked file governed or allowlisted; no drift").
+- Matrix audit: each of the five I/O-matrix rows has a covering test that ran and passed in the verbose run (41 of 41 at the time; 44 of 44 now).
+- Not run: the full `pr-preflight` (it would red on the deferred scribe lane, and a `dispatch/*` branch skips it, journaled); nothing was pushed and no PR was opened.
 
-**Residual.** Stamping `spec-pyforge-core` re-baselined files that only its memlog had been clearing; that surfaced two `drift-presumed` WARNs for `spec-pyforge-unifying-strategy` (`cutover_root.py`, `test_cutover_root.py`, both changed under steward Story 76.1 and already reconciled in core's memlog). They were cleared with a memlog event on that Spec and a scoped stamp. The stamps also carry baselines for other memlog-reconciled files of the three Specs.
+**Residual.** Stamping `spec-pyforge-core` re-baselined files that only its memlog had been clearing; that surfaced two `drift-presumed` WARNs for `spec-pyforge-unifying-strategy` (`cutover_root.py`, `test_cutover_root.py`, both changed under steward Story 76.1 and already reconciled in core's memlog). They were cleared with a memlog event on that Spec and a scoped stamp; I verified by script against the pre-change baseline that every one of the 29 paths that stamp moved is named in that Spec's own memlog. The stamps also carry baselines for other memlog-reconciled files of the three Specs. The Code Map above keeps the pre-edit line numbers of `sibling_dreams.py`.
