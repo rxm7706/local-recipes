@@ -2,7 +2,7 @@
 title: "75.1: fleet_scan reads archived Dreams from the archive"
 type: 'chore'
 created: '2026-09-29'
-status: 'backlog'
+status: 'blocked'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -112,3 +112,28 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 ## Review Triage Log
 
 - No independent review has run yet (implementation and review stay separate).
+
+## Auto Run Result
+
+Status: blocked
+Blocking condition: intent gap. The approach (read `archive/docs/dreams/*.md` in both places) contradicts Acceptance Criterion 1 ("today's tree: `scan_dreams()` returns exactly the rows it returns before this change") and the manual check that `fleet-picture` output is identical before and after.
+
+Evidence (measured 2026-09-29 in the dispatch worktree, before any code change):
+
+- `archive/docs/dreams/` already holds six Dream files (last touched by commit `e07834580d8`, and older ones): `deckcraft.md` (status `specified`, owner `herald`), `design-code-bridge.md` (`realized`, `herald`), `herald-pitch-deck-family-expansion.md` (`dreamt`, `herald`), `modernist-identity.md` (`realized`, `herald`), `pyforge-genesis.md` (`specified`, `guild`), `video-scripts.md` (`dreamt`, `herald`).
+- None has `status: archived`, and none has a twin in `docs/dreams/`, so the "first copy of each slug" rule does not drop any of them.
+- `scan_dreams()` (`scripts/fleet_scan.py:1043`) and `_fleet_chains()` (`scripts/fleet_scan.py:1616`) read only `docs/dreams/*.md` today. An unconditional archive read adds six Dream rows and six fleet chains to today's output, and `pyforge-genesis` (`owner: guild`, not in `GUILD_DREAMS`) also gains a `[dreams] WARN`. Criterion 1 and the identical-`fleet-picture` check then fail.
+
+Two readings lead to different, observable outcomes, and nothing in the spec selects between them:
+
+1. **Read every `archive/docs/dreams/*.md`** (the Approach as written). The six stragglers become visible in the console and the fleet chains now. Criterion 1 and the identical-output check must be reworded to "the `docs/dreams/` rows are unchanged and the archive rows are added".
+2. **Read only archive Dreams whose frontmatter says `status: archived`** (the "moved archived Dream keeps its row" case). Every criterion holds as written, but the six stragglers stay hidden, and the filter is a rule the spec does not state. CHAIN-STANDARD §11 says an archived Dream sits under `archive/docs/dreams/`; it does not say every file there reads `status: archived`.
+
+Questions for the operator:
+
+1. Should the six existing `archive/docs/dreams/` files appear in the console and fleet chains after this story (reading 1), or stay out until a fold PR restates their status (reading 2)?
+2. Whichever reading holds, which criterion text changes (Criterion 1 and the manual `fleet-picture` check for reading 1; the Approach and a new "non-archived file in the archive" criterion for reading 2)?
+
+Also noted, not part of the blocker: `scripts/fleet_scan.py:1139` (`scan_specs()` sets a Spec row's `dream` from `DREAMS_DIR / f"{slug}.md"`) and the per-chain artifact globs at lines 1924, 1934, 2104 and 2647 build `docs/dreams/<slug>.md` paths. The spec names two read sites only; these will need the same treatment before the first fold PR moves a Dream.
+
+No code, test, ledger or `SPEC.md` file was changed. Only this story spec's `status` moved.
