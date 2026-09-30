@@ -163,9 +163,7 @@ def _validate_overlays(flags: Mapping[str, Any], overlays: Mapping[str, Any]) ->
     """Every entry of every environment, whichever one is being rendered: a typo never waits for its turn."""
     for name, entries in overlays.items():
         if name not in ENVIRONMENTS:
-            raise UnknownEnvironmentError(
-                f"overlay environment {name!r} is not one of {', '.join(ENVIRONMENTS)}"
-            )
+            raise UnknownEnvironmentError(f"overlay environment {name!r} is not one of {', '.join(ENVIRONMENTS)}")
         if not isinstance(entries, dict):
             raise OverlayDocumentError(f"overlay {name} is not an object mapping keys to variant names")
         for key, variant in entries.items():

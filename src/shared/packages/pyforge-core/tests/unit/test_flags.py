@@ -459,7 +459,10 @@ def test_compose_does_not_modify_its_inputs(tmp_path):
 
 
 def test_compose_keeps_every_other_field_of_the_tree():
-    tree = {"$schema": "https://flagd.dev/schema/v0/flags.json", "flags": {KEY: {**_bool_entry("on"), "metadata": {"owner": "steward"}}}}
+    tree = {
+        "$schema": "https://flagd.dev/schema/v0/flags.json",
+        "flags": {KEY: {**_bool_entry("on"), "metadata": {"owner": "steward"}}},
+    }
     composed = flags.compose(tree, {"dev": {KEY: "off"}}, "dev")
     assert composed["$schema"] == tree["$schema"]
     assert composed["flags"][KEY]["metadata"] == {"owner": "steward"}
