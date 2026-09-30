@@ -24,7 +24,7 @@ two-state-test check is Story 34.5's.
 Lives outside every ``pyforge.<station>`` package (Charter section 6): this check can red any
 station's pull request, so no station it judges may host it, and it imports no station module. A
 meta-test in ``pyforge-doctor`` (and its companion in ``pyforge-core``) pins that. Gates are
-themselves exempt from the rule (``detector-or-gate``): a gated gate reports a silent green.
+themselves exempt from the rule (the roster's gate value): a gated gate reports a silent green.
 
 EXIT  0 clean (warnings allowed) / ``pass`` or ``warn`` · 1 findings / ``red`` · 2 could-not-run
       (the roster, the baseline, the tree or the list of tracked files cannot be read: unknown,
