@@ -567,10 +567,10 @@ class StructureGraphSeed:
     not the plain one (why the run built instead of synced, or why nothing was
     seeded). ``findings`` are the WARNs the dispatch folds into its envelope.
 
-    The default instance is the layer-off shape: nothing was copied or run,
-    so there is nothing to say and no finding -- today's behavior, byte for
-    byte. ``journal_payload()`` is the one spelling of the payload both the
-    envelope and the ``dispatch-launch`` OUTCOME entry carry."""
+    The default instance is the layer-off shape: nothing was copied or run
+    and no finding is raised, but the payload still reports ``applied: false``
+    (the envelope and the ``dispatch-launch`` OUTCOME entry always carry the
+    key). ``journal_payload()`` is the one spelling of the payload both carry."""
 
     applied: bool = False
     mode: str = _STRUCTURE_GRAPH_MODE_SKIPPED
@@ -682,7 +682,14 @@ def _seed_dispatch_structure_graph(
     def _elapsed() -> float:
         return round(time.monotonic() - started, 2)
 
-    def _unseeded(reason: str, cause: str) -> StructureGraphSeed:
+    def _unseeded(reason: str, cause: str, *, index_kept: bool = False) -> StructureGraphSeed:
+        # A re-dispatched worktree's own index is left on disk when its sync
+        # fails, and step 01 opens on it -- so the tail says that, not "no index".
+        outcome = (
+            "the worktree's existing codegraph index was left in place, unsynced (possibly stale)"
+            if index_kept
+            else "this dispatch session runs without a codegraph index"
+        )
         return StructureGraphSeed(
             applied=False,
             mode=_STRUCTURE_GRAPH_MODE_SKIPPED,
@@ -692,10 +699,7 @@ def _seed_dispatch_structure_graph(
                 Finding(
                     code="MRS-DISP-054",
                     severity=Severity.WARN,
-                    message=(
-                        f"the {item.layer!r} layer is enabled but {cause} -- "
-                        "this dispatch session runs without a codegraph index"
-                    ),
+                    message=f"the {item.layer!r} layer is enabled but {cause} -- {outcome}",
                 ),
             ),
         )
@@ -720,7 +724,7 @@ def _seed_dispatch_structure_graph(
     def _fail(reason: str, cause: str) -> StructureGraphSeed:
         if owned_dir is not None:
             _discard_worktree_index(fs, owned_dir)
-        return _unseeded(reason, cause)
+        return _unseeded(reason, cause, index_kept=owned_dir is None and fs.exists(worktree_db))
 
     stale = True  # `sync -q` refreshes an index; `init -y` creates one
     if not already_indexed and fs.exists(base_db):
@@ -743,7 +747,7 @@ def _seed_dispatch_structure_graph(
             # no-op `_discard_worktree_index` describes, and the index is the
             # session's own: leave it and say the sync failed.
             why = f"the worktree's existing index could not be synced: {error}"
-            return _unseeded(why, why)
+            return _fail(why, why)
         sync_failure = error
         stale = False
         _discard_worktree_index(fs, worktree_dir)
@@ -779,8 +783,7 @@ def _seed_dispatch_structure_graph(
                 severity=Severity.WARN,
                 message=(
                     f"the {item.layer!r} layer is enabled but the primary checkout has no base index at "
-                    f"{base_db} -- built one in {worktree} with `codegraph init -y` (about 19 s and 222 MiB "
-                    "here, against about 4 s to sync a copied base); run "
+                    f"{base_db} -- built one in {worktree} with `codegraph init -y`; run "
                     f"`{_CONTEXT_BOOTSTRAP_COMMAND}` so later dispatches sync instead"
                 ),
             )
