@@ -1,15 +1,15 @@
-"""Story 74.1 (steward CAP-163): a station streams bytes to object storage by sha256 key.
+"""Story 74.1 (steward CAP-163): a station streams bytes to object storage.
 
-`django_pyforge.object_store` is the one contract a portal (or the station API it serves)
-uses to reach CAP-97's S3 seam. The round trips here run against a REAL, ephemeral `silo`
--- never a mock -- the way `test_object_storage_client.py` does (own port, own tmp data
-dir, the `platform-object-storage` pixi env's binary). A missing env skips those tests,
-and a skip for a missing environment is not a pass for this story: run
-`pixi install -e platform-object-storage` first.
+`django_pyforge.object_store` is the one contract a portal (or the station API it
+serves) uses to reach CAP-97's S3 seam. The round trips here run against a REAL,
+ephemeral `silo` -- never a mock -- the way `test_object_storage_client.py` does (own
+port, own tmp data dir, the `platform-object-storage` pixi env's binary). A missing
+env skips those tests, and a skip for a missing environment is not a pass for this
+story: run `pixi install -e platform-object-storage` first.
 
-The rows that need no server -- key refusal, unset settings, the flag OFF, the store down,
-what counts as "absent" -- run everywhere, against a factory that fails the test if
-anything asks it for a client, or against a small fake.
+The rows that need no server -- key refusal, unset settings, the flag OFF, the store
+down, what counts as "absent" -- run everywhere, against a factory that fails the test
+if anything asks it for a client, or against a small fake.
 
 The flag is exercised through two flagd trees (on and off), written the way
 `test_openfeature_file_flags.py` does, until the testing-kit fixture of
@@ -90,12 +90,12 @@ def _health_ok(url: str) -> bool:
 
 @pytest.fixture(scope="module")
 def local_silo(tmp_path_factory):
-    """Start a real, ephemeral silo server once per module; yield its endpoint + credentials."""
+    """Start a real, ephemeral silo server once per module; yield its access."""
     if not _SILO_BINARY.is_file():
         pytest.skip(
             "platform-object-storage pixi env not installed -- run "
             "`pixi install -e platform-object-storage` to exercise the object-store "
-            "round trips (Story 50.1's Silo recipe); a skip is not a pass for Story 74.1"
+            "round trips (Story 50.1's Silo recipe); a skip is not a pass here"
         )
 
     api_port = _free_port()
@@ -165,7 +165,7 @@ def _set_flag(tmp_path: Path, *, on: bool) -> None:
 
 @pytest.fixture(autouse=True)
 def _restore_the_checked_in_flag_tree():
-    """Leave the process on the tree the host configured, whatever tree a test swapped in."""
+    """Leave the process on the tree the host configured, whatever a test swapped in."""
     yield
     configure_file_provider(_FLAGS_JSON)
 
@@ -176,7 +176,7 @@ def _no_client_expected():
 
 @pytest.fixture
 def configured(settings, monkeypatch, tmp_path):
-    """Flag ON, bucket and prefix set, and a factory that fails the test if it is ever called."""
+    """Flag ON, bucket and prefix set, and a factory that fails the test if called."""
     settings.OBJECT_STORAGE_BUCKET = "unused-bucket"
     settings.OBJECT_STORAGE_PREFIX = _PREFIX
     monkeypatch.setattr(
@@ -204,7 +204,7 @@ class _RecordingClient:
 
 @pytest.fixture
 def store(local_silo, settings, monkeypatch, tmp_path):
-    """Flag ON, a fresh bucket in a real silo, CAP-97's factory wrapped in a call recorder."""
+    """Flag ON, a fresh bucket in a real silo, CAP-97's factory behind a recorder."""
     endpoint, access_key, secret_key = local_silo
     settings.OBJECT_STORAGE_ENDPOINT_URL = endpoint
     settings.OBJECT_STORAGE_ACCESS_KEY = access_key
@@ -253,7 +253,7 @@ def _stored_bytes(store: SimpleNamespace, key: str) -> tuple[bytes, str]:
     return obj["Body"].read(), obj["ContentType"]
 
 
-# --- the round trip, against a real silo ------------------------------------------------
+# --- the round trip, against a real silo ----------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -264,7 +264,7 @@ def _stored_bytes(store: SimpleNamespace, key: str) -> tuple[bytes, str]:
 def test_large_put_streams_hashes_and_lands_at_the_prefixed_sha256_key(
     store, monkeypatch, spool, chunk
 ):
-    """A stream past the spool threshold: independent sha256, right key, never one buffer."""
+    """A stream past the spool threshold lands under its sha256, never in one buffer."""
     if spool is not None:
         monkeypatch.setattr(object_store, "SPOOL_MAX_BYTES", spool)
         monkeypatch.setattr(object_store, "CHUNK_BYTES", chunk)
@@ -286,9 +286,8 @@ def test_large_put_streams_hashes_and_lands_at_the_prefixed_sha256_key(
 
     stored = object_store.put_stream(stream, content_type=_CONTENT_TYPE)
 
-    expected = hashlib.sha256(
-        payload
-    ).hexdigest()  # computed independently of the module
+    # Computed here, independently of the module under test.
+    expected = hashlib.sha256(payload).hexdigest()
     assert stored == object_store.StoredObject(
         key=f"sha256/{expected}",
         sha256=expected,
@@ -376,9 +375,7 @@ def test_a_missing_key_raises_the_clients_error_at_the_call_not_on_iteration(sto
         None,
     ],
 )
-def test_a_key_that_is_not_sha256_slash_64_lowercase_hex_is_refused_before_any_client_call(
-    configured, name, key
-):
+def test_a_malformed_key_is_refused_before_any_client_call(configured, name, key):
     with pytest.raises(ValueError, match="not an object-store key"):
         getattr(object_store, name)(
             key
@@ -446,7 +443,7 @@ def test_the_checked_in_tree_ships_the_flag_off(configured, name):
         _call(name)
 
 
-# --- the store down, and what counts as absent ------------------------------------------
+# --- the store down, and what counts as absent ----------------------------------
 
 
 @pytest.mark.parametrize("name", _CALLS)
@@ -507,14 +504,14 @@ class _FakeClient:
         return self._head
 
     def upload_fileobj(
-        self, fileobj: Any, bucket: str, key: str, ExtraArgs: dict[str, str]
-    ) -> None:  # noqa: N803
+        self, fileobj: Any, bucket: str, key: str, **kwargs: Any
+    ) -> None:
         self.calls.append("upload_fileobj")
         self.uploaded = {
             "body": fileobj.read(),
             "bucket": bucket,
             "key": key,
-            "extra": ExtraArgs,
+            "extra": kwargs["ExtraArgs"],
         }
 
     def get_object(self, **_kwargs: Any) -> dict[str, Any]:
