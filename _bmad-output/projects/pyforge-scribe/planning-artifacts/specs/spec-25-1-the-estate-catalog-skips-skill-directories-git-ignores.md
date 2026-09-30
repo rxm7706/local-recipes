@@ -141,3 +141,7 @@ See `epics.md` § Story 25.1 for the full Given / When / Then / And.
   and `bmad-estate-check` exit 0 in the dispatch worktree, which carries `caveman`; confirmed again after landing on
   the primary checkout (with `caveman` and the two `cfe-recipe-*` leftovers): `bmad-estate-check` and `detectors-ci`
   exit 0.
+- Post-landing fix, 2026-09-30: the landed `catalog.py` failed `ruff format --check` (py314 target, PEP 758 wants
+  `except OSError, subprocess.TimeoutExpired:` unparenthesized), so `lint-types` was red for `pyforge-scribe` on
+  `main` from `a1dbda7915` on. The dispatch's verification did not include `lint-types`, and the lane is not in the
+  `detectors-ci` merge gate. Fixed by reformatting that one line; recorded on `spec-pyforge-scribe`'s memlog.
