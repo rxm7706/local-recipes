@@ -2,7 +2,7 @@
 title: '74.2: Dispatch refuses a story the flag gate would red, before any session starts'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'd7c798649479458741580630d995c69af722ec1b'
 flag-exempt: detector-or-gate   # a refusal path is a gate; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
