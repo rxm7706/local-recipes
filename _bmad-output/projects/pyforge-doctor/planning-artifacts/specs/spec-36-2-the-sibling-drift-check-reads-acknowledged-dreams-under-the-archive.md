@@ -2,10 +2,10 @@
 title: "36.2: The sibling-drift check reads acknowledged Dreams under the archive"
 type: 'chore'
 created: '2026-09-29'
-status: 'done'
+status: 'in-review'
 baseline_revision: 'a04d17d946b148d986d8c159b2fadb973a472ab1'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - docs/governance/spec-one-chain-per-station/SPEC.md
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
