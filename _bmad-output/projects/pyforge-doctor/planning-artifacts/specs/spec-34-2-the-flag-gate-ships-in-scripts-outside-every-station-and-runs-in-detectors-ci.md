@@ -2,7 +2,7 @@
 title: '34.2: The flag gate ships in scripts, outside every station, and runs in detectors-ci'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'blocked'
 baseline_revision: '7151e3d2653a6289c4f01a4ac17f8514aee3247a'
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
@@ -197,3 +197,17 @@ Policy: `marshal-policy.toml` `[epic_surfaces]` `"34"`.
 - `pixi run --frozen -e pyforge-core pyforge-core-test` — expected: pass (the companion meta-test).
 
 ## Review Triage Log
+
+## Auto Run Result
+
+Status: blocked
+Blocking condition: implementation verification failed -- `pixi run -e pyforge-guild flag-gate-check` exits 1 on the live tree, not 0. Two FAIL findings (`flag-missing`), both post-rule `type: feature` specs merged in PR #1672 after the rule-date baseline, carrying neither a `flag:` block nor a `flag-exempt:` value: `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-24-1-the-bmad-estate-catalog-is-generated-not-written.md` and `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-24-2-the-catalog-cannot-drift-silently.md`. This story may neither edit scribe's specs nor exempt them, so the failure cannot be fixed here. Scribe adds a `flag:` block or a roster `flag-exempt:` value to both, then this story lands; until then the gate's `detectors-ci` row would red every PR. Recorded in `deferred:` and promoted to `DW-doctor-34-2` / `DW-doctor-34-2-2` in the doctor deferred-work ledger. The operator flips the row once scribe has fixed its specs.
+
+Built and verified (measured 2026-09-29, exit codes read directly):
+- `scripts/flag_gate_check.py` (`DETECTOR = {"scope": "repo"}`, task `flag-gate-check`), public `read_frontmatter` in `scripts/flag_rule.py`, `tests/scripts/test_flag_gate_check.py`, the doctor meta-test and its core companion, allowlist line, regenerated `docs/reference/detectors.md`, `docs/how-to/pixi-tasks.md`, `docs/map.yaml`.
+- `tests/scripts/test_flag_gate_check.py` + `test_flag_rule.py`: 149 passed. `pyforge-doctor-test`: 3005 passed, 1 skipped, exit 0. `pyforge-core-test`: 1992 passed, exit 0. Every I/O-matrix row has a passing test.
+- Live tree: 1206 story specs judged, 2 FAIL (the scribe pair), 840 WARN; no orphan key, no unknown exemption, no `done` key missing from the tree.
+- `python scripts/spec_surface_reconcile.py` and `spec-surface-check` exit 0. `scripts/.spec-surface-baseline.json` is unchanged: the implementation subagent's three scoped `--write-baseline` stamps were reverted (this run forbids `--write-baseline`); the surface is reconciled by memlog entries on `docs/governance/spec-feature-flag-governance`, `spec-pyforge-doctor`, `spec-pyforge-core` and `spec-pyforge-unifying-strategy`, plus a correction entry on the Guild Spec.
+- `detectors-ci` also shows `bmad_estate_check` (the gitignored, dispatch-seeded `.claude/skills/caveman/`) and `ledger-direction` (`pyforge-marshal/77-1` is on `origin/main`, not on this branch). Neither is touched by this diff; expect both to clear on rebase / in CI.
+
+Not run: adversarial review (step 4), because verification failed. Open for the reviewer once unblocked: `marshal-policy.toml` `[epic_surfaces]` `"34"` does not admit the doctor deferred-work ledger, `docs/reference/detectors.md` or `docs/how-to/pixi-tasks.md`, and admits a core file named `test_flag_gate_stays_outside_every_station.py` where this spec names `test_flag_gate_ci_trigger_companion.py`; the spec's name was followed.
