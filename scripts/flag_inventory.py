@@ -347,7 +347,7 @@ def classify_cap(
     """(class, reach) for one declared CAP: precedence runtime, module, planning, unresolved."""
     key = (slug, cap)
     if key not in surface_by_cap:
-        return UNRESOLVED, "no story in epics.md cites this CAP"
+        return UNRESOLVED, "no story in epics.md cites this CAP on a line naming the Spec"
     surface = surface_by_cap[key]
     if surface is None:
         return UNRESOLVED, "the citing story carries no `Surface:` line"
@@ -366,6 +366,10 @@ def classify_cap(
             resolved.update(_norm(p) for p in paths)
         else:
             absent.append(join.strip_surface_annotation(fragment).strip().strip("`"))
+    # A `:line` suffix hides a document's suffix from the fragment test above, so test what resolved too.
+    resolved = {p for p in resolved if not join.is_document_surface_fragment(flag_rule.repo_relative(p, root))}
+    if not resolved and not absent:
+        return PLANNING, "planning documents only"
     if not resolved:
         return UNRESOLVED, "no `Surface:` code path exists: " + _collapse_paths(absent)
 
