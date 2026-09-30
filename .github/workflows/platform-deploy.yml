@@ -69,6 +69,8 @@ jobs:
             --set sidecar.image.digest="${{ inputs.sidecar_digest }}" \
             --set mcpHost.image.digest="${{ inputs.mcp_host_digest }}" \
             --set-file flags.tree=src/platform/config/flags.json \
+            --set-file flags.overlays=src/platform/config/flag-overlays.json \
+            --set flags.environment=production \
             > platform-deploy-render.yaml
           grep -q "@${{ inputs.platform_digest }}" platform-deploy-render.yaml
           grep -q "@${{ inputs.sidecar_digest }}" platform-deploy-render.yaml

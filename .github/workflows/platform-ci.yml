@@ -1199,6 +1199,9 @@ jobs:
             --namespace platform-smoke \
             --set image.tag=gke-smoke \
             --set django.secureSslRedirect=False \
+            --set-file flags.tree=src/platform/config/flags.json \
+            --set-file flags.overlays=src/platform/config/flag-overlays.json \
+            --set flags.environment=dev \
             --timeout 5m || {
             echo "::error::helm install failed"
             kubectl get pods,jobs,events -n platform-smoke
@@ -1392,6 +1395,9 @@ jobs:
             --set image.repository=platform-smoke/platform \
             --set image.tag=ocp-smoke \
             --set django.secureSslRedirect=False \
+            --set-file flags.tree=src/platform/config/flags.json \
+            --set-file flags.overlays=src/platform/config/flag-overlays.json \
+            --set flags.environment=dev \
             --timeout 5m || {
             echo "::error::helm install platform failed"
             kubectl get pods,jobs,events,routes -n platform-smoke

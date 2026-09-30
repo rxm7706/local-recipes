@@ -436,6 +436,19 @@ def test_the_tree_itself_and_story_specs_never_read_a_key(tmp_path: Path, capsys
     assert "flag-key-orphan" in _kinds(payload)
 
 
+def test_the_overlay_document_names_every_key_and_reads_none(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """Story 76.1: `flag-overlays.json` lists a key per environment; it is no more a reader than the tree."""
+    root = _fixture(tmp_path, tree_keys=[ORPHAN_KEY])
+    _write(root, "src/platform/config/flag-overlays.json", '{"production": {"%s": "off"}}\n' % ORPHAN_KEY)
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert _kinds(payload) == ["flag-key-orphan"]
+    assert payload["findings"][0]["key"] == ORPHAN_KEY
+    assert flag_gate_check.OVERLAYS_REL.as_posix() == "src/platform/config/flag-overlays.json"
+
+
 def test_only_the_unread_key_is_orphaned(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     root = _fixture(tmp_path, tree_keys=[ORPHAN_KEY, "pyforge.test.read"])
     _write(root, "src/pkg/reader.py", 'flag("pyforge.test.read")\n')
