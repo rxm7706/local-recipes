@@ -480,14 +480,18 @@ class _FakeBody:
     def __init__(self, parts: list[bytes]) -> None:
         self._parts = parts
         self.closed = False
+        self.close_calls = 0
         self.chunk_sizes: list[int] = []
 
     def iter_chunks(self, chunk_size: int):
+        # Not a generator: the call itself is recorded, so a caller that asks for the
+        # chunks before its first read shows up in `chunk_sizes`.
         self.chunk_sizes.append(chunk_size)
-        yield from self._parts
+        return iter(self._parts)
 
     def close(self) -> None:
         self.closed = True
+        self.close_calls += 1
 
 
 class _FakeClient:
@@ -679,6 +683,7 @@ def test_open_stream_closes_the_body_when_exhausted_or_closed(configured, monkey
     exhausted = _FakeBody([b"ab", b"cd"])
     assert b"".join(_open(exhausted)) == b"abcd"
     assert exhausted.closed
+    assert exhausted.close_calls == 1
     assert exhausted.chunk_sizes == [object_store.CHUNK_BYTES]
 
     abandoned = _FakeBody([b"ab", b"cd"])
@@ -704,7 +709,8 @@ def test_closing_the_iterator_before_the_first_read_closes_the_body(
 
     assert body.closed
     assert body.chunk_sizes == []  # never started reading
-    stream.close()  # idempotent
+    stream.close()  # idempotent: the body is closed once
+    assert body.close_calls == 1
     assert list(stream) == []
 
 

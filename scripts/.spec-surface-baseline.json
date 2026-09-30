@@ -5532,7 +5532,7 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py": "6e8650907a6efadef8519dd82f8aef85325a3d09",
    "src/shared/packages/pyforge-steward/tests/meta/test_invariants.py": "36212cded5aebc8a9312bc50791606eb2d4d38bf",
    "src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py": "4750c9c067f90140fb370e19c80ea25bfd810f5c",
-   "src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py": "d3c5b4a46673d88c27a46031a1b3626865bc7f55",
+   "src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py": "e93d820f26e75253380d0afcdb06be6240fec2ef",
    "src/shared/packages/pyforge-steward/tests/meta/test_release_cadence_runbook.py": "64ad65f6bfed0a00c0141b58fe83a2fe30133032",
    "src/shared/packages/pyforge-steward/tests/meta/test_session_check_entry_points.py": "219fae1d7e7366eb4593e891765707e80488b37d",
    "src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py": "9d14116c3798645c57a92c5a5182830258a931e4",
@@ -5621,7 +5621,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "0234f9f1c32c32a2bc784ad028d3cb1cca523a30",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "de924bb0a3041e73f29142deead519d00d836254"
   },
-  "memlog": "6ca2986c96fd85f206f670f40e3f4e4e9ba25e8e"
+  "memlog": "97bdda20dea548b61f20761e6daabdce60bd76c7"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
