@@ -3,7 +3,10 @@
 # Layer with:
 #   pixi run -e platform-dev helm install platform \
 #     src/platform/deploy/charts/platform \
-#     -f src/platform/deploy/overlays/external-redis/values.yaml
+#     -f src/platform/deploy/overlays/external-redis/values.yaml \
+#     --set-file flags.tree=src/platform/config/flags.json \
+#     --set-file flags.overlays=src/platform/config/flag-overlays.json \
+#     --set flags.environment=<dev|staging|production>
 #
 # Replace the placeholder hostnames with the operator's Enterprise Managed
 # Redis endpoints. REDIS_PASSWORD still comes from existingSecret; URLs may

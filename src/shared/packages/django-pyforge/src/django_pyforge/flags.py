@@ -2,14 +2,24 @@
 
 No Django import at module top so the steward CLI can evaluate without
 loading the host. MCP and views import Django lazily.
+
+Story 76.1: the FILE provider reads the tree as ``PYFORGE_ENVIRONMENT`` renders it.
+``pyforge.core.flags`` composes the value-only ``flag-overlays.json`` beside the tree
+(the one implementation, shared with the CLI reader ``read_boolean``); in-cluster the
+mounted ConfigMap already holds the rendered tree and has no sibling, so it is read as
+it is. ``python -m django_pyforge.flags render --environment <env>`` writes the rendering.
 """
 
 from __future__ import annotations
 
 import argparse
+import atexit
+import hashlib
 import json
 import os
+import shutil
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -36,7 +46,8 @@ def local_dev_flags_path(start: Path | None = None) -> Path | None:
     return None
 
 
-def resolve_flags_path(explicit: Path | str | None = None) -> Path | None:
+def resolve_tree_path(explicit: Path | str | None = None) -> Path | None:
+    """The tree file itself, unrendered -- the file an operator or an actuator edits."""
     if explicit is not None:
         path = Path(explicit)
         return path if path.is_file() else None
@@ -50,8 +61,67 @@ def resolve_flags_path(explicit: Path | str | None = None) -> Path | None:
     return local_dev_flags_path()
 
 
+_RENDER_DIR: Path | None = None
+
+
+def _render_dir() -> Path:
+    global _RENDER_DIR  # noqa: PLW0603 -- one scratch directory per process, removed at exit
+    if _RENDER_DIR is None:
+        _RENDER_DIR = Path(tempfile.mkdtemp(prefix="pyforge-flags-"))
+        atexit.register(shutil.rmtree, _RENDER_DIR, True)
+    return _RENDER_DIR
+
+
+def _materialise(rendered: bytes, tree: Path, environment: str) -> Path:
+    """Write the rendering to a stable per-tree, per-environment file the FILE provider can poll."""
+    from pyforge.core.atomic_write import atomic_write_bytes  # noqa: PLC0415
+
+    digest = hashlib.sha256(str(tree.resolve()).encode()).hexdigest()[:12]
+    dest = _render_dir() / f"{digest}-{environment}" / "flags.json"
+    if not dest.is_file() or dest.read_bytes() != rendered:
+        atomic_write_bytes(dest, rendered)
+    return dest
+
+
+def resolve_flags_path(explicit: Path | str | None = None) -> Path | None:
+    """The file the FILE provider reads: the tree as ``PYFORGE_ENVIRONMENT`` renders it.
+
+    A tree with a ``flag-overlays.json`` beside it (a checkout) is composed by
+    ``pyforge.core.flags`` and materialised; the in-cluster mount holds the rendered tree and
+    has no sibling, so it is returned as it is. An unknown environment raises
+    ``pyforge.core.flags.UnknownEnvironmentError`` on every call. In a checkout the rendered
+    copy is written when this is called, so edits to the tree or the overlay reach a running
+    FILE provider only when it is called again -- and only while ``PYFORGE_FLAGS_PATH`` still
+    names the tree. ``configure_file_provider`` pins an unset ``PYFORGE_FLAGS_PATH`` to the
+    rendered copy, which has no sibling overlay, so after ``configure_from_env`` in such a
+    process a later call returns that frozen copy: restart the process to pick up an edit
+    (the in-cluster mount is polled live). Where ``pyforge.core`` is not installed (the
+    mcp-host sidecar image ships ``django_pyforge`` alone) there is nothing to compose: the
+    tree is returned as it is.
+    """
+    try:
+        from pyforge.core import flags as core_flags  # noqa: PLC0415
+    except ImportError:
+        return resolve_tree_path(explicit)
+
+    environment = core_flags.current_environment()
+    tree = resolve_tree_path(explicit)
+    if tree is None or core_flags.overlays_path_for(tree) is None:
+        return tree
+    return _materialise(core_flags.render(environment, flags_path=tree), tree, environment)
+
+
 def read_flag_tree_bytes(path: Path) -> bytes:
-    return path.read_bytes()
+    """The tree's bytes as the current environment renders it (as they are when no overlay is beside it)."""
+    try:
+        from pyforge.core import flags as core_flags  # noqa: PLC0415
+    except ImportError:  # no pyforge.core (the mcp-host image): the tree as it is
+        return path.read_bytes()
+
+    environment = core_flags.current_environment()
+    if core_flags.overlays_path_for(path) is None:
+        return path.read_bytes()
+    return core_flags.render(environment, flags_path=path)
 
 
 def fetch_flag_tree(url: str, token: str, opener: _Fetch | None = None) -> bytes:
@@ -122,12 +192,36 @@ def evaluate_boolean(key: str = FLAG_KEY, default: bool = False) -> bool:
 
 
 def evaluate_cutover_root(source: Path | str | None = None) -> str:
-    """In-process cutover root — same file the FILE provider serves."""
+    """In-process cutover root -- the CLI reader over the tree itself.
+
+    ``read_cutover_root`` composes the sibling ``flag-overlays.json`` for the current
+    environment (Story 76.1), so this is an independent reading of the value the FILE
+    provider serves from the rendered file.
+    """
     from pyforge.core.cutover_root import read_cutover_root
 
-    path = resolve_flags_path(source)
+    path = resolve_tree_path(source)
     return read_cutover_root(path)
 
+
+
+def evaluate_cli_boolean(key: str = FLAG_KEY, default: bool = False, source: Path | str | None = None) -> bool:
+    """The CLI reader's value for *key*: ``pyforge.core.flags.read_boolean`` over the tree itself.
+
+    ``read_boolean`` composes the overlay beside the tree on its own, so this is the independent
+    reading the FILE provider's rendered file must agree with (the platform tests may not import
+    ``pyforge.*`` -- they reach it here, as they reach ``evaluate_cutover_root``).
+    """
+    from pyforge.core.flags import read_boolean  # noqa: PLC0415
+
+    return read_boolean(key, default, flags_path=source)
+
+
+def render_flag_tree(environment: str, source: Path | str | None = None) -> bytes:
+    """The tree as *environment* reads it (``pyforge.core.flags.render``): what the chart's ConfigMap must carry."""
+    from pyforge.core import flags as core_flags  # noqa: PLC0415
+
+    return core_flags.render(environment, flags_path=source)
 
 
 def materialize_tree_bytes(data: bytes, dest: Path) -> Path:
@@ -219,19 +313,52 @@ def run_cli_namespace(ns: argparse.Namespace) -> tuple[bool, str, dict[str, obje
             host=ns.host,
             token=ns.token,
         )
-    except RuntimeError as exc:
+    except (RuntimeError, ValueError) as exc:  # ValueError: pyforge.core.flags.FlagConfigError
         return False, str(exc), {}
     payload = {"key": ns.key, "value": value}
     return True, json.dumps(payload, sort_keys=True), payload
 
 
+RENDER_VERB = "render"
+
+
+def render_main(argv: list[str]) -> int:
+    """``render --environment <env> [--source PATH] [--output PATH]``: the tree as that environment reads it."""
+    from pyforge.core.flags import ENVIRONMENTS  # noqa: PLC0415
+
+    parser = argparse.ArgumentParser(prog=f"python -m django_pyforge.flags {RENDER_VERB}")
+    parser.add_argument("--environment", required=True, help=f"one of {', '.join(ENVIRONMENTS)}")
+    parser.add_argument("--source", default=None, help="the tree (default: PYFORGE_FLAGS_PATH, else the checkout's)")
+    parser.add_argument("--output", default=None, help="write here instead of stdout")
+    ns = parser.parse_args(argv)
+    try:
+        rendered = render_flag_tree(ns.environment, ns.source)
+    except ValueError as exc:  # pyforge.core.flags.FlagConfigError
+        print(str(exc), file=sys.stderr)
+        return 1
+    if ns.output:
+        dest = Path(ns.output)
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(rendered)
+        except OSError as exc:
+            print(f"cannot write {dest}: {exc}", file=sys.stderr)
+            return 1
+    else:
+        sys.stdout.write(rendered.decode("utf-8"))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args and args[0] == RENDER_VERB:
+        return render_main(args[1:])
     parser = argparse.ArgumentParser(prog="python -m django_pyforge.flags")
     parser.add_argument("key", nargs="?", default=FLAG_KEY)
     parser.add_argument("--source", default=None)
     parser.add_argument("--host", default=None)
     parser.add_argument("--token", default=None)
-    ns = parser.parse_args(argv)
+    ns = parser.parse_args(args)
     try:
         value = evaluate_from_source(
             key=ns.key,
@@ -239,7 +366,7 @@ def main(argv: list[str] | None = None) -> int:
             host=ns.host,
             token=ns.token,
         )
-    except RuntimeError as exc:
+    except (RuntimeError, ValueError) as exc:  # ValueError: pyforge.core.flags.FlagConfigError
         print(str(exc), file=sys.stderr)
         return 1
     print(json.dumps({"key": ns.key, "value": value}, sort_keys=True))

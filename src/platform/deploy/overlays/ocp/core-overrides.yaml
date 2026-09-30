@@ -2,7 +2,10 @@
 # the overlay (the Route itself is the sibling chart/ directory). Apply
 # with:
 #   helm install platform src/platform/deploy/charts/platform \
-#       -f src/platform/deploy/overlays/ocp/core-overrides.yaml
+#       -f src/platform/deploy/overlays/ocp/core-overrides.yaml \
+#       --set-file flags.tree=src/platform/config/flags.json \
+#       --set-file flags.overlays=src/platform/config/flag-overlays.json \
+#       --set flags.environment=<dev|staging|production>
 #
 # OCP-only: applying this on vanilla K8s would leave the data services
 # unable to pass the kubelet's runAsNonRoot verification (the official

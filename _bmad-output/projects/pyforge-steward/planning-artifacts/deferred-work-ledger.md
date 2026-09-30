@@ -4861,3 +4861,58 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-29 — relayed by hand from the catalog's first render
   status: open
+
+### DW-steward-74-1: src/platform/ingest/github_projects still imports pyforge.steward.keys and .sync, a live breach of "src/platform never imports pyforge.*"; the new meta-test enforces the rule tree-wide with a closed, exact allowlist of those four files.
+
+- source_spec: `planning-artifacts/specs/spec-74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it.md`
+  summary: src/platform/ingest/github_projects still imports pyforge.steward.keys and .sync, a live breach of "src/platform never imports pyforge.*"; the new meta-test enforces the rule tree-wide with a closed, exact allowlist of those four files.
+  evidence: pixi.toml [feature.platform-ci-test.dependencies] already names it "the live pap:AD-2 breach". Relocating the Story 12.8 dlt lane out of the host is its own effort (its pixi tasks, ruff per-file ignores and Postgres sink move with it), not this story's Surface. The allowlist is exact: a listed file that stops importing pyforge.* fails the test until it is removed from the list, so the list can only shrink, and any new importer reds.
+  location: src/platform/ingest/github_projects/pipeline.py
+  origin: spec-deferred c01bb4cb9513 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-74-1-2: On real S3 a head_object on an absent key answers 403 rather than 404 when the credential lacks s3:ListBucket, so a Put/Get-only credential would fail every first put_stream with the client's AccessDenied instead of uploading.
+
+- source_spec: `planning-artifacts/specs/spec-74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it.md`
+  summary: On real S3 a head_object on an absent key answers 403 rather than 404 when the credential lacks s3:ListBucket, so a Put/Get-only credential would fail every first put_stream with the client's AccessDenied instead of uploading.
+  evidence: Unverified. The spec's Design Notes propagate every non-404 client error on purpose (a permission error must never read as absent), so the module does what the contract says. What would settle it: the policy of the credential that Story 74.2's chart mounts (canopy:AD-19). If it lacks s3:ListBucket, either grant it or decide in that story how a 403 on head is read.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/object_store.py
+  origin: spec-deferred 492f999e9820 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-74-1-3: The silo-backed round-trip tests skip in Platform CI and in platform-ci-local, because neither lane installs the platform-object-storage environment, so only a local run exercises the real store.
+
+- source_spec: `planning-artifacts/specs/spec-74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it.md`
+  summary: The silo-backed round-trip tests skip in Platform CI and in platform-ci-local, because neither lane installs the platform-object-storage environment, so only a local run exercises the real store.
+  evidence: .github/workflows/platform-ci.yml runs the platform-ci-test environment only, and scripts/platform-ci-local.sh ensure_envs provisions platform-ci-test, platform-dev and pyforge-warden. The same skip-in-CI pattern already holds for CAP-97's own src/platform/tests/test_object_storage_client.py. This story added silo-free tests that pin the sha256, the dedup skip and the bounded reads, so the contract no longer depends on the silo for those. Wiring the environment into the lane is a CI change outside this story's Surface.
+  location: .github/workflows/platform-ci.yml
+  origin: spec-deferred 12ab4de8f7e8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-74-1-4: pixi.toml:226 still says of boto3 "no consumer wired in yet", which is false now that django_pyforge.object_store consumes the seam.
+
+- source_spec: `planning-artifacts/specs/spec-74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it.md`
+  summary: pixi.toml:226 still says of boto3 "no consumer wired in yet", which is false now that django_pyforge.object_store consumes the seam.
+  evidence: Cosmetic; the text is a comment, and docs/reference/library-llms-full.md does not embed it (checked). pixi.toml is governed by eight specs' surfaces, and a pixi.toml change fires pyforge-station-tests across every station suite and eight memlog reconciles, which is out of proportion to a comment. Batch it with the next pixi.toml change (Story 74.2).
+  location: pixi.toml
+  origin: spec-deferred f7d141d54893 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-76-1: The new helm-gated chart tests may skip silently in the Platform CI `test` job.
+
+- source_spec: `planning-artifacts/specs/spec-76-1-the-one-flag-tree-carries-per-environment-values-so-off-in-production-is-a-value.md`
+  summary: The new helm-gated chart tests may skip silently in the Platform CI `test` job.
+  evidence: Every chart test carries `requires_helm` (skip when `helm` is not on PATH). The `test` job runs on `ubuntu-latest` in the slim `platform-ci-test` pixi env, which has no `kubernetes-helm` (only `platform-dev` does). Whether the runner supplies its own `helm` was not verified here. Settled by reading the job log of a Platform CI `test` run for a skip count on `tests/test_chart_invariants.py` and `tests/test_openfeature_file_flags.py`. The same pattern covers every pre-existing chart test.
+  location: .github/workflows/platform-ci.yml
+  origin: spec-deferred 4242385d065e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

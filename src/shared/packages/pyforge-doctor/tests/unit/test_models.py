@@ -212,6 +212,8 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         # mechanism): 25.1 sprawl gate, 25.2 FR<-CAP check.
         "chain-sprawl",
         "fr-without-cap",
+        # Story 36.1 (CAP-11): a fold is complete before its file moves.
+        "fold-complete",
         # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md vs the four
         # Diátaxis quadrants -- missing link FAIL, unmapped page FAIL
         # (promoted from WARN by Story 30.2).

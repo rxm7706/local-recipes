@@ -301,10 +301,10 @@ development_status:
   72-1-the-guild-environment-answers-pyforge-mason: backlog
   72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: blocked
   73-1-steward-session-check-reads-marshal-seed-check-s-envelope-whatever-its-exit-code: backlog
-  74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it: backlog
+  74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it: done
   74-2-the-chart-names-the-bucket-and-prefix-per-environment-and-reaches-only-the-consumed-store: backlog
   75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity: done
-  76-1-the-one-flag-tree-carries-per-environment-values-so-off-in-production-is-a-value: backlog
+  76-1-the-one-flag-tree-carries-per-environment-values-so-off-in-production-is-a-value: done
   76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata: backlog
   76-3-the-ledger-query-s-flags-fold-into-the-one-tree-and-evaluate-through-openfeature: backlog
   76-4-the-pyforge-three-surfaces-demo-flag-leaves-the-tree: backlog
@@ -465,11 +465,11 @@ development_status:
   epic-72-retrospective: optional
   epic-73: backlog
   epic-73-retrospective: optional
-  epic-74: backlog
+  epic-74: in-progress
   epic-74-retrospective: optional
   epic-75: done
   epic-75-retrospective: optional
-  epic-76: backlog
+  epic-76: in-progress
   epic-76-retrospective: optional
   epic-77: backlog
   epic-77-retrospective: optional

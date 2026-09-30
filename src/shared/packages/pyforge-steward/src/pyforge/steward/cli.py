@@ -13,7 +13,7 @@ import argparse
 import sys
 from collections.abc import Sequence
 
-from pyforge.core.flags import FlagOff, disabled_help
+from pyforge.core.flags import FlagConfigError, FlagOff, disabled_help
 
 from . import __version__
 from .interfaces import Duty, DutyResult, NullDuty
@@ -1479,6 +1479,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         # A flag-gated capability was invoked while its flag reads OFF
         # (spec-feature-flag-governance Q3): steward's usage code, never a new
         # one. `pyforge.core.flags` defines no exit code -- the choice is here.
+        print(f"steward: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    except FlagConfigError as exc:
+        # A bad PYFORGE_ENVIRONMENT or flag-overlays.json (Story 76.1): `build_parser` reads a
+        # flag for `keys exec`'s help, so this arrives before any verb runs. The named message
+        # and the same usage code, never a traceback and exit 70.
         print(f"steward: {exc}", file=sys.stderr)
         return EXIT_USAGE
     except Exception:  # noqa: BLE001 — deliberate boundary
