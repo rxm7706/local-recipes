@@ -2,7 +2,7 @@
 title: "36.1: A fold-complete check proves each archived Dream's body is in its station Dream"
 type: 'feature'
 created: '2026-09-29'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'a468651c83a9f3c97b5ec4c7cbaf872fa95a16ce'
 flag-exempt: detector-or-gate
 review_loop_iteration: 0
