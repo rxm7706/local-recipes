@@ -66,7 +66,7 @@ def try_heal_dispatch_land_merge(
     forge: ForgePort,
     probe_ref: str | None = None,
 ) -> DispatchLandHealResult:
-    """Attempt ledger union or local main advance after ``merge_pr`` fails.
+    """Attempt a ledger and memlog union or a local main advance after ``merge_pr`` fails.
 
     ``probe_ref`` is what conflicts are measured against and what the ledger union merges --
     ``dispatch land`` passes ``refs/remotes/origin/main`` right after fetching it, the ref GitHub
@@ -84,6 +84,14 @@ def try_heal_dispatch_land_merge(
     except VcsCommandError:
         return DispatchLandHealResult(healed=False)
 
+    try:
+        merge_state = forge.pr_merge_state(repo_ref, pr.number)
+    except ForgeCommandError:
+        merge_state = "UNKNOWN"
+
+    # Story 78.1 review: the network read above precedes the text reads below, so the window between
+    # reading `probe`'s memlog and ledger text and `merge_ref_resolving` resolving `probe` stays what
+    # Story 59.1 left it -- never wider by a forge call.
     unknown = unknown_conflict_paths(conflict_paths, ledger_rel=ledger_rel)
     memlog_paths = tuple(sorted(p for p in conflict_paths if is_memlog_path(p)))
     resolutions: dict[str, str] = {}
@@ -103,11 +111,6 @@ def try_heal_dispatch_land_merge(
         unknown = tuple(sorted({*unknown, *unresolved_memlogs}))
     if unknown:
         return DispatchLandHealResult(healed=False, escalated_paths=unknown)
-
-    try:
-        merge_state = forge.pr_merge_state(repo_ref, pr.number)
-    except ForgeCommandError:
-        merge_state = "UNKNOWN"
 
     if conflict_paths and all(is_mechanical_conflict_path(p, ledger_rel=ledger_rel) for p in conflict_paths):
         # Story 59.1 review (high): the union heal is the whole answer for this attempt. Once

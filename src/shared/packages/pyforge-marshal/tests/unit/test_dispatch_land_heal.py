@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.adapters.vcs_git import GitVcs
+from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core.chain_regen import render_ledger_statuses
 from pyforge.marshal.core.dispatch_landing import (
     is_mechanical_conflict_path,
@@ -956,3 +956,56 @@ def test_real_heal_never_lands_on_main_when_a_memlog_heal_is_refused_by_the_forg
     assert _heal(clone, wt, forge) == DispatchLandHealResult(healed=False)
     assert _run_git(remote, "rev-parse", "main").strip() == main_before
     assert forge.closed == []
+
+
+class _UnreadableVcs(FakeVcsHeal):
+    """A git read of the merge base or of a conflicted path fails mid-heal."""
+
+    def __init__(self, *, fail_on: str, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._fail_on = fail_on
+
+    def merge_base(self, repo_root: Path, a: str, b: str) -> str:
+        if self._fail_on == "merge_base":
+            raise VcsCommandError("git merge-base failed")
+        return super().merge_base(repo_root, a, b)
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str):
+        if self._fail_on == "file_text_at_ref":
+            raise VcsCommandError(f"git show {ref}:{path} failed")
+        return super().file_text_at_ref(repo_root, ref, path)
+
+
+@pytest.mark.parametrize("fail_on", ["merge_base", "file_text_at_ref"])
+@pytest.mark.parametrize("conflicts", [(_MEMLOG,), (_LEDGER,), (_LEDGER, _MEMLOG)])
+def test_heal_refuses_cleanly_when_a_resolution_read_fails(
+    tmp_path: Path, conflicts: tuple[str, ...], fail_on: str
+) -> None:
+    """Story 78.1 review: the reads that feed the resolutions moved into their own helper and now
+    cover every memlog. A failed git read is a refusal (`healed=False`, nothing merged or pushed,
+    the forge never asked to merge) -- never an exception out of the heal, which `dispatch land`
+    does not catch there."""
+    vcs = _UnreadableVcs(fail_on=fail_on, conflict_paths=conflicts)
+    forge = FakeForgeHeal(merge_state="CONFLICTING")
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=tmp_path,
+        worktree=tmp_path,
+        base="main",
+        head_branch=_HEAD,
+        head_sha="unused",
+        subject="Merge 78.1 into main",
+        merge_strategy="merge",
+        delete_branch=False,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=PrInfo(number=78, url="https://example/pr/78", state="open", base="main"),
+        fs=FakeFsHeal(),
+        vcs=vcs,
+        forge=forge,
+        probe_ref=_ORIGIN_MAIN,
+    )
+
+    assert result == DispatchLandHealResult(healed=False)
+    assert vcs.merges == [] and vcs.pushed == [] and vcs.commits == []
+    assert forge.merge_calls == 0 and forge.closed == []
