@@ -5,7 +5,7 @@ Dream ``docs/dreams/one-chain-per-station.md``, ``owner: guild`` by the
 Charter §5 shape of 2026-09-14). Mechanism: Doctor's, under §5's
 outcome/mechanism rule -- the same relay as Epic 24.
 
-Two gathers, both ``scope="repo"`` (tracked planning artifacts only, no
+Three gathers, all ``scope="repo"`` (tracked planning artifacts only, no
 network, no station import):
 
 * ``gather_chain_sprawl`` (Story 25.1, CAP-2) -- Dream-**append**-first is
@@ -26,7 +26,16 @@ network, no station import):
   is regenerated only at a station's fold PR, when its PRD is re-derived
   FR <- CAP in full.
 
-Both degrade, never crash (the house rule), and both report a missing
+* ``gather_fold_complete`` (Story 36.1, CAP-11) -- a fold is complete before
+  its file moves. Every ``archive/docs/dreams/*.md`` not in
+  ``docs/governance/fold-complete-baseline.json`` has each of its long
+  paragraphs in its station Dream (``docs/dreams/pyforge-<owner>.md``),
+  whitespace-collapsed; a missing one is a FAIL naming the file and the count.
+  Every ``docs/dreams/*.md`` still reading ``status: archived`` is ONE WARN
+  with the count per station -- the migration's countdown, never a FAIL.
+  Read-only: it moves no file and edits no Dream.
+
+All degrade, never crash (the house rule), and all report a missing
 baseline as WARN -- cannot-evaluate is never a FAIL and never a silent green.
 """
 
@@ -38,14 +47,17 @@ from pathlib import Path
 
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
-from .chain import _frontmatter_parse
+from .chain import _dream_body_after_frontmatter, _frontmatter_parse
 
 __all__ = (
     "CHAIN_SPRAWL_BASELINE_REL",
+    "FOLD_COMPLETE_BASELINE_REL",
     "FR_BASELINE_REL",
     "enumerate_chain_units",
     "gather_chain_sprawl",
+    "gather_fold_complete",
     "gather_fr_without_cap",
+    "long_paragraphs",
     "prune_chain_sprawl_baseline",
     "snapshot_chain_sprawl_baseline",
     "snapshot_fr_baseline",
@@ -53,6 +65,7 @@ __all__ = (
 
 CHAIN_SPRAWL_BASELINE_REL = Path("docs") / "governance" / "chain-sprawl-baseline.json"
 FR_BASELINE_REL = Path("docs") / "governance" / "fr-baseline.json"
+FOLD_COMPLETE_BASELINE_REL = Path("docs") / "governance" / "fold-complete-baseline.json"
 _ROSTER_REL = Path("docs") / "governance" / "guild-roster.json"
 _DREAMS_REL = Path("docs") / "dreams"
 _PROJECTS_REL = Path("_bmad-output") / "projects"
@@ -504,3 +517,229 @@ def _gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
             )
         )
     return tuple(findings)
+
+
+# --------------------------------------------------------------------------
+# Story 36.1 -- fold-complete
+# --------------------------------------------------------------------------
+
+_ARCHIVE_DREAMS_REL = Path("archive") / "docs" / "dreams"
+_HEADING_LINE_RE = re.compile(r"^#{1,6}(?:\s|$)")
+_OWNER_RE = re.compile(r"[a-z][a-z0-9-]*")  # used with fullmatch: `$` would let "mason\n" through
+_MIN_PARAGRAPH_CHARS = 80  # a paragraph is "long" when it is LONGER than this
+_EXCERPTS_SHOWN = 3
+_EXCERPT_CHARS = 80
+
+
+def _collapse(text: str) -> str:
+    return " ".join(text.split())
+
+
+def long_paragraphs(text: str) -> list[str]:
+    """The paragraphs of a Dream's body that a fold must carry, in order.
+
+    The frontmatter block is left out (``_dream_body_after_frontmatter``, the
+    same line-anchored scan ``_frontmatter_parse`` bounds it with). A blank
+    line ends a paragraph, and so does a heading line (``#{1,6}`` then a
+    space), which is itself dropped: a satellite whose headings were demoted
+    one level when pasted still matches, and so does a paragraph that abuts a
+    heading with no blank line. Whitespace runs collapse to one space, and
+    only a paragraph longer than 80 characters is kept.
+    """
+    out: list[str] = []
+    current: list[str] = []
+
+    def _flush() -> None:
+        if current:
+            paragraph = _collapse(" ".join(current))
+            if len(paragraph) > _MIN_PARAGRAPH_CHARS:
+                out.append(paragraph)
+            current.clear()
+
+    for line in _dream_body_after_frontmatter(text).splitlines():
+        if not line.strip() or _HEADING_LINE_RE.match(line):
+            _flush()
+            continue
+        current.append(line)
+    _flush()
+    return out
+
+
+def gather_fold_complete(target: Path) -> tuple[Finding, ...]:
+    """An archived Dream's long paragraphs are all in its station Dream."""
+    return degrade_on_exception(Source.FOLD_COMPLETE, "fold-complete", lambda: _gather_fold_complete(target))
+
+
+def _fold_fail(check: str, rel: str, message: str, **evidence: object) -> Finding:
+    return Finding(
+        source=Source.FOLD_COMPLETE,
+        check=check,
+        status=DoctorStatus.FAIL,
+        message=f"{rel}: {message}",
+        evidence={"path": rel, **evidence},
+    )
+
+
+def _gather_fold_complete(target: Path) -> tuple[Finding, ...]:
+    baseline = _read_json(target / FOLD_COMPLETE_BASELINE_REL)
+    if baseline is None or not isinstance(baseline.get("paths"), list):
+        return (
+            Finding(
+                source=Source.FOLD_COMPLETE,
+                check="fold-complete-no-baseline",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{FOLD_COMPLETE_BASELINE_REL.as_posix()} is missing or unreadable — "
+                    "the files under archive/docs/dreams/ that are not folds cannot be told "
+                    "from the folds"
+                ),
+                evidence={"baseline": FOLD_COMPLETE_BASELINE_REL.as_posix()},
+            ),
+        )
+    baselined = {p for p in baseline["paths"] if isinstance(p, str)}
+
+    findings: list[Finding] = []
+    complete: list[str] = []
+    skipped: list[str] = []
+    station_texts: dict[str, str | None] = {}  # owner -> collapsed station Dream, None when absent
+    adir = target / _ARCHIVE_DREAMS_REL
+    for path in sorted(adir.glob("*.md")) if adir.is_dir() else []:
+        rel = path.relative_to(target).as_posix()
+        if rel in baselined:
+            skipped.append(rel)  # not a fold of a station Dream: never opened
+            findings.append(
+                Finding(
+                    source=Source.FOLD_COMPLETE,
+                    check="fold-complete-baselined",
+                    status=DoctorStatus.OK,
+                    message=(
+                        f"{rel} is listed in {FOLD_COMPLETE_BASELINE_REL.as_posix()} "
+                        "(not a fold of a station Dream) -- not read"
+                    ),
+                    evidence={"path": rel},
+                )
+            )
+            continue
+        fields, _unparseable = _frontmatter_parse(path)
+        owner = fields.get("owner")
+        if not isinstance(owner, str) or not _OWNER_RE.fullmatch(owner):
+            findings.append(
+                _fold_fail(
+                    "fold-complete-no-owner",
+                    rel,
+                    "no readable `owner:` in its frontmatter (missing, unparseable, or not a "
+                    "station slug) — the station Dream it folds into cannot be named",
+                )
+            )
+            continue
+        station_rel = f"{_DREAMS_REL.as_posix()}/pyforge-{owner}.md"
+        if owner not in station_texts:
+            try:
+                station_texts[owner] = _collapse((target / station_rel).read_text(encoding="utf-8"))
+            except OSError, UnicodeDecodeError:
+                station_texts[owner] = None
+        station_text = station_texts[owner]
+        if station_text is None:
+            findings.append(
+                _fold_fail(
+                    "fold-complete-no-station-dream",
+                    rel,
+                    f"owner `{owner}` names {station_rel}, which is missing or unreadable",
+                    owner=owner,
+                    station_dream=station_rel,
+                )
+            )
+            continue
+        paragraphs = long_paragraphs(path.read_text(encoding="utf-8"))
+        missing = [p for p in paragraphs if p not in station_text]
+        if missing:
+            count = len(missing)
+            findings.append(
+                _fold_fail(
+                    "fold-complete-incomplete",
+                    rel,
+                    f"{count} paragraph{'' if count == 1 else 's'} missing from {station_rel} "
+                    f"(of {len(paragraphs)} long) — paste the body in, verbatim, under a dated "
+                    "section before the file moves",
+                    owner=owner,
+                    station_dream=station_rel,
+                    missing=count,
+                    paragraphs=len(paragraphs),
+                    missing_excerpts=[p[:_EXCERPT_CHARS] for p in missing[:_EXCERPTS_SHOWN]],
+                )
+            )
+            continue
+        complete.append(rel)
+        findings.append(
+            Finding(
+                source=Source.FOLD_COMPLETE,
+                check="fold-complete-ok",
+                status=DoctorStatus.OK,
+                message=f"{rel}: all {len(paragraphs)} long paragraph(s) are in {station_rel}",
+                evidence={
+                    "path": rel,
+                    "owner": owner,
+                    "station_dream": station_rel,
+                    "paragraphs": len(paragraphs),
+                },
+            )
+        )
+
+    findings.append(
+        Finding(
+            source=Source.FOLD_COMPLETE,
+            check="fold-complete",
+            status=DoctorStatus.OK,
+            message=(
+                f"{len(complete)} archived Dream(s) folded into their station Dream, "
+                f"{len(skipped)} baselined (not read)"
+            ),
+            evidence={"complete": complete, "baselined": skipped},
+        )
+    )
+
+    live_finding = _archived_in_live_tree(target)
+    if live_finding is not None:
+        findings.append(live_finding)
+    return tuple(findings)
+
+
+def _archived_in_live_tree(target: Path) -> Finding | None:
+    """ONE WARN counting the Dreams in ``docs/dreams/`` that still read
+    ``status: archived``, per station -- the migration's countdown. A Dream
+    whose frontmatter cannot be read has no status to count; it is reported
+    beside the count so the countdown never silently undercounts."""
+    ddir = target / _DREAMS_REL
+    by_station: dict[str, int] = {}
+    unreadable = 0
+    for path in sorted(ddir.glob("*.md")) if ddir.is_dir() else []:
+        fields, unparseable = _frontmatter_parse(path)
+        if unparseable:
+            unreadable += 1
+            continue
+        status = fields.get("status")
+        if not isinstance(status, str) or status.strip() != "archived":
+            continue
+        owner = fields.get("owner")
+        station = owner if isinstance(owner, str) and owner else "unknown"
+        by_station[station] = by_station.get(station, 0) + 1
+    total = sum(by_station.values())
+    if total == 0 and unreadable == 0:
+        return None
+    per_station = ", ".join(f"{station} {n}" for station, n in sorted(by_station.items())) or "none"
+    tail = f"; {unreadable} more have unreadable frontmatter (status unknown)" if unreadable else ""
+    return Finding(
+        source=Source.FOLD_COMPLETE,
+        check="fold-complete-archived-in-live-tree",
+        status=DoctorStatus.WARN,
+        message=(
+            f"{total} Dream(s) in docs/dreams/ still read `status: archived` ({per_station}){tail} — "
+            "each moves to archive/docs/dreams/ once its body is in its station Dream "
+            "(spec-one-chain-per-station CAP-11)"
+        ),
+        evidence={
+            "total": total,
+            "by_station": dict(sorted(by_station.items())),
+            "unreadable_frontmatter": unreadable,
+        },
+    )

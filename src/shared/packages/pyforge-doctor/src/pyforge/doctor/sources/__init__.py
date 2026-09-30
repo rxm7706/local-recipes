@@ -503,6 +503,17 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # date cites a CAP that an open Spec under its station declares;
     # docs/governance/fr-baseline.json is the pre-rule population. CAN FAIL.
     SourceRegistration(
+        source=Source.FOLD_COMPLETE,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 36.1 (spec-one-chain-per-station CAP-11) -- sources/one_chain.py.
+    # Every archive/docs/dreams/*.md not in fold-complete-baseline.json has
+    # each long paragraph in its station Dream (docs/dreams/pyforge-<owner>.md);
+    # one WARN counts the Dreams in docs/dreams/ still `status: archived`, per
+    # station (the migration's countdown, never a FAIL). Fleet subject: it
+    # grades every station's Dreams. CAN FAIL.
+    SourceRegistration(
         source=Source.DOCS_MAP_HYGIENE,
         scope="repo",
         subject_station="fleet",
