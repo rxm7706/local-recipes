@@ -234,7 +234,14 @@ def read_boolean(key: str, default: bool = False, *, flags_path: Path | str | No
     ``defaultVariant`` value is returned when it is a bool; a missing tree, an
     unreadable or malformed tree, a missing key or a non-bool value returns
     ``default`` after one named WARN on stderr (never an exception).
+
+    The tree is read as ``PYFORGE_ENVIRONMENT`` renders it (Story 76.1): a
+    ``flag-overlays.json`` beside the resolved tree is composed for that
+    environment (see :func:`compose`). An unknown environment, or an overlay that
+    cannot be composed, raises a :class:`FlagConfigError` subclass -- never a
+    WARN plus ``default``, which could read ON.
     """
+    environment = current_environment()  # before any read: a bad environment never reads ON
     resolved = cutover_root.resolve_flags_path(flags_path)
     if resolved is None:
         return _warn(key, "no flag tree (set PYFORGE_FLAGS_PATH or pass flags_path)", default)
@@ -245,13 +252,15 @@ def read_boolean(key: str, default: bool = False, *, flags_path: Path | str | No
     flags = payload.get("flags") if isinstance(payload, dict) else None
     if not isinstance(flags, dict):
         return _warn(key, f"malformed flag tree {resolved}: no 'flags' object", default)
+    overlays = overlays_path_for(resolved)
+    if overlays is not None:
+        flags = compose(payload, load_overlays(overlays), environment)["flags"]
     if key not in flags:
         return _warn(key, f"key missing from {resolved}", default)
     entry = flags[key]
     if not isinstance(entry, dict):
         return _warn(key, f"entry in {resolved} is not an object", default)
-    state = entry.get("state")
-    if isinstance(state, str) and state.upper() == _DISABLED_STATE:
+    if _is_disabled(entry):
         return False  # the kill switch wins over any variant and over ``default``
     variants = entry.get("variants")
     variant = entry.get("defaultVariant")
