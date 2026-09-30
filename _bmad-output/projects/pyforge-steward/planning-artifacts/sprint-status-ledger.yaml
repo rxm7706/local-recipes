@@ -308,7 +308,7 @@ development_status:
   76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata: done
   76-3-the-ledger-query-s-flags-fold-into-the-one-tree-and-evaluate-through-openfeature: backlog
   76-4-the-pyforge-three-surfaces-demo-flag-leaves-the-tree: backlog
-  77-1-the-console-lists-tier-2-specs-and-the-archived-dreams: backlog
+  77-1-the-console-lists-tier-2-specs-and-the-archived-dreams: done
   8-1-bidirectional-propagation: done
   8-2-zero-loop-guarantee: done
   8-3-idempotent-update-processing: done
