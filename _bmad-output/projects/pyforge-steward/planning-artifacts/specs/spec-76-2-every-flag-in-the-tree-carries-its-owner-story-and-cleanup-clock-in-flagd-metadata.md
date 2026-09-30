@@ -2,7 +2,7 @@
 title: "76.2: Every flag in the tree carries its owner, story and cleanup clock in flagd metadata"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: bce4a0ce7f1b8e712010482f26f22efb4c1c2482
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -129,27 +129,45 @@ Deps: S-76.1 (the rendered per-environment trees the clock is defined over).
 
 ## Auto Run Result
 
-Status: blocked
-Blocking condition: spec failed ready-for-development standard (Sufficient) — dependency Story 76.1 has not landed on this base.
+Status: implemented, awaiting review (`in-review`). Implementation and review stay separate: this section is the implementer's record.
 
-Evidence (2026-09-29, `dispatch/pyforge-steward/76.2` at `a468651c83`):
+**What changed**
 
-- Ledger row `76-1-the-one-flag-tree-carries-per-environment-values-so-off-in-production-is-a-value` is `backlog`; its PR is open
-  (rxm7706/local-recipes#1683, branch `dispatch/pyforge-steward/76.1`, not an ancestor of this `HEAD` per
-  `git merge-base --is-ancestor`).
-- `src/platform/config/flag-overlays.json` does not exist on this base (`git ls-files | grep flag-overlay` is empty), yet it
-  is in this spec's `context:` and defines the per-environment rendered trees `on_everywhere` is measured over.
-- `pyforge.core.flags` has no `evaluate_boolean` (only `read_boolean`, `require`, `disabled_help`); AC 6 and the
-  "check run wherever the tree is composed" both bind to 76.1's composer. 76.1's diff adds it (`flags.py` +170 lines).
-- Building on the unmerged 76.1 branch would stack this story on a moving base (76.1 already carries a follow-up
-  commit); the Deps gate is `S-76.1` and it is not met.
+- `src/shared/packages/pyforge-core/src/pyforge/core/flags.py`: `METADATA_FIELDS`, `CLEANUP_DAYS`, `check_metadata(flags, overlays)` and five named errors under `FlagMetadataError` (a `FlagConfigError`): `FlagMetadataMissingError` (no metadata object, a missing field, an empty `owner`/`story`), `FlagMetadataNotAStringError`, `FlagMetadataDateError` (not a real `YYYY-MM-DD`; `created` may not be empty), `FlagClockMismatchError` (`on_everywhere` set where an environment does not render ON, or empty where every one does) and `FlagCleanupDateError` (`cleanup_by` is not `on_everywhere` + 90 days). `compose` runs it after the overlay validation, so `read_boolean`, `render` and `read_cutover_root` refuse a tree that breaks it; each message names the flag and the field (the cleanup message names both dates). "ON" is a boolean-true variant of an `ENABLED` flag, per environment, with the overlay applied. A string flag (`pyforge.cutover_root`) is never ON, so its clock stays empty and raises nothing. A tree with no `flag-overlays.json` beside it is not composed and reads as it did.
+- `src/platform/config/flags.json`: every flag carries the five string fields (values below). No `state`, `variants` or `defaultVariant` changed.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py`: `flip_root`'s create-if-absent `pyforge.cutover_root` entry carries an empty-clock metadata block, so a flip into a tree that lacks the key still composes.
+- Tests: `pyforge-core` `test_flags.py` (about 70 cases: each error, the matrix rows, date arithmetic across month/year/leap boundaries, overlay-driven ON everywhere, DISABLED and string flags, `read_boolean`/`render` refusing and never reading `default`, the shipped tree's dates) and `test_cutover_root.py` (fixture); `pyforge-steward` `test_cutover.py`; `src/platform/tests/test_openfeature_file_flags.py` (fixtures carry consistent metadata; new tests pin every shipped key's evaluation in every environment across the FILE provider, `evaluate_from_source` and `read_boolean`, and that the FILE provider surfaces each flag's metadata); `src/platform/tests/test_object_store_seam.py` (the shipped-tree assertion now allows the metadata key).
+- Three Spec memlogs carry the surface reconcile: `spec-pyforge-core`, `spec-pyforge-steward`, `spec-pyforge-unifying-strategy`, each stamped scoped with `--spec`.
 
-Also for the re-plan, once 76.1 lands:
+**The dates (read from the tree's own history)**
 
-- `src/platform/config/flags.json` now holds three flags, not "the two existing flags": `pyforge.steward.ghe_fleet_credentials`
-  (`defaultVariant: off`) needs `owner`/`story`/`created` with an empty clock; read its dates from
-  `git log --follow src/platform/config/flags.json` like the others.
-- `pyforge.three_surfaces` remains owed to Story 76.4 (`on_everywhere` 2026-08-25, `cleanup_by` 2026-11-23, per the
-  operator's 2026-09-28 ruling); no other flag has a passed `cleanup_by` as of this run.
+Commands: `git log --follow --format='%h %ad %s' --date=iso -- src/platform/config/flags.json`, then per key `git log -S'"<key>"' --format='%h %ad %s' --date=short --reverse -- src/platform/config/flags.json`, and the ledger keys from `sprint-status-ledger.yaml`. Dates are the commit author dates `git log` prints.
 
-Next: land #1683, then re-dispatch Story 76.2. No source, ledger or `SPEC.md` file was touched; no `deferred:` entry written.
+| Flag | Introduced by | `created` | `on_everywhere` | `cleanup_by` |
+|---|---|---|---|---|
+| `pyforge.three_surfaces` | `7a194d3f57`, Story 26.4 | 2026-08-25 | 2026-08-25 | 2026-11-23 |
+| `pyforge.cutover_root` | `d021af5df0`, Story 44.12 | 2026-09-13 | empty | empty |
+| `pyforge.steward.ghe_fleet_credentials` | `7eb54cd87e`, Story 75.1 | 2026-09-29 | empty | empty |
+| `pyforge.steward.object_store_consumer` | `09f515cc9f`, Story 74.1 | 2026-09-29 | empty | empty |
+
+All four are `owner: steward`; `story` holds the full ledger key. `flags.json` holds four flags, not the two the contract names or the three the change log names: Story 74.1 added `pyforge.steward.object_store_consumer` after that note. It is OFF in every environment, so its clock is empty. `object_store_consumer`'s commit is 2026-09-29 20:27 -0500 (2026-09-30 01:27 UTC, merged to `main` 2026-09-30 02:13 -0500); `created` follows the commit's own date, the way the 26.4 date above does.
+
+**Owed at landing (Q4), landing date 2026-09-30**
+
+- `pyforge.three_surfaces` (owner steward): its clock runs out on 2026-11-23. The operator's 2026-09-28 (night) ruling removes it: Story 76.4 (`Deps: S-76.2`) removes it after this story lands. It is owed to Story 76.4 and needs no keep decision.
+- No other flag has a `cleanup_by`, and none is before the landing date. No flag owes a removal story or a keep decision today.
+
+**Verification**
+
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: exit 0, 1896 passed, 2 skipped.
+- `pixi run --frozen -e pyforge-guild pytest src/shared/packages/pyforge-core/tests -q`: 2138 passed.
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0. Platform `ruff check .`, `ruff format --check .` and `mypy platformapp config tests` (the `platform-ci-local` test-stage lint steps, run against the same envs): clean.
+- `src/platform` `pytest tests/test_openfeature_file_flags.py test_object_store_seam.py test_chart_invariants.py test_django_pyforge_assertion.py test_golden_path_promotion_closure.py`: 285 passed, 6 skipped (helm on PATH). The full `platform-ci-local -- --test` needs PostgreSQL and Redis and was not run; these are every platform test that reads the flag tree.
+- `pixi run -e pyforge-guild spec-surface-check`: exit 0 after the three scoped stamps.
+- `pixi run --frozen -e pyforge-guild detectors-ci`: one finding, `bmad_estate_check` (`skills` section drifted against `.claude/skills/*/SKILL.md`). This diff touches no `.claude/` or `docs/reference/` path (`git diff origin/main --stat -- .claude docs/reference` is empty), so it is this worktree's own skill set (scribe Story 25.1 covers a catalog that counts skills the tree does not track), not a change from this story.
+
+**Risks**
+
+- The chart composes the tree in Go templates (`_helpers.tpl`), not through `pyforge.core.flags`, so it does not run the metadata check. The shipped tree reaches the chart only after `test_openfeature_file_flags.py` and `test_flags.py` compose it through `pyforge.core`.
+- A flag killed with `state: DISABLED` reads OFF in every environment, so a set `on_everywhere` on it is a `FlagClockMismatchError` in any checkout that composes the tree. The doctor kill switch (`flag_kill_switch.py`) edits `state` only. Killing `pyforge.three_surfaces` now needs its clock cleared in the same edit. That is the contract's literal reading; it is the operator's call whether a killed flag should keep its clock, and the actuator is doctor's.
+- The Guild's gate (doctor's CAP-2, Story 34.3) reads these five fields; it is not implemented here.
