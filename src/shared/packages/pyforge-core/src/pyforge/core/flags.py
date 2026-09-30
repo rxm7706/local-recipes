@@ -224,17 +224,19 @@ def _validate_overlays(flags: Mapping[str, Any], overlays: Mapping[str, Any]) ->
 
 
 def _rendered_variant(key: str, entry: Mapping[str, Any], overlays: Mapping[str, Any], environment: str) -> object:
-    """The variant ``environment`` reads for ``key``: the overlay's, else the tree's ``defaultVariant``."""
+    """The variant :func:`compose` renders for ``key`` in ``environment``.
+
+    The overlay's when it names the key, else the tree's ``defaultVariant``; a ``DISABLED`` flag keeps
+    the tree's own (``compose`` ignores its overlay), so killing a flag changes no clock.
+    """
     named = overlays.get(environment)
-    if isinstance(named, dict) and key in named:
+    if not _is_disabled(entry) and isinstance(named, dict) and key in named:
         return named[key]
     return entry.get("defaultVariant")
 
 
-def _renders_on(key: str, entry: object, overlays: Mapping[str, Any], environment: str) -> bool:
-    """True when ``environment`` reads ``key`` as boolean ON (a ``DISABLED`` flag and a non-boolean one never do)."""
-    if not isinstance(entry, dict) or _is_disabled(entry):
-        return False
+def _renders_on(key: str, entry: Mapping[str, Any], overlays: Mapping[str, Any], environment: str) -> bool:
+    """True when ``environment`` renders ``key`` as a boolean-true variant (``state`` is not judged)."""
     variant = _rendered_variant(key, entry, overlays, environment)
     variants = entry.get("variants")
     return isinstance(variant, str) and isinstance(variants, dict) and variants.get(variant) is True
@@ -259,12 +261,12 @@ def check_metadata(flags: Mapping[str, Any], overlays: Mapping[str, Any] | None 
     Each flag needs the five :data:`METADATA_FIELDS` as strings: ``owner`` and ``story`` non-empty,
     ``created`` a real ``YYYY-MM-DD`` date, ``on_everywhere`` and ``cleanup_by`` a date or ``""``.
     ``on_everywhere`` is set exactly when every environment of :data:`ENVIRONMENTS` renders the flag
-    ON (the tree's ``defaultVariant`` with ``overlays`` applied; a ``DISABLED`` or non-boolean flag
-    never does, so its clock stays ``""``), and ``cleanup_by`` is ``on_everywhere`` plus
-    :data:`CLEANUP_DAYS` days, else ``""``. A flag killed with ``state: DISABLED`` reads OFF in every
-    environment, so a kill switch clears its clock in the same edit. Each refusal is a
-    :class:`FlagMetadataError` subclass whose message names the flag and the field; ``flags`` is
-    not modified.
+    ON (the rendered variant :func:`compose` produces -- the tree's ``defaultVariant`` with
+    ``overlays`` applied -- holds boolean true; a non-boolean flag never does, so its clock stays
+    ``""``), and ``cleanup_by`` is ``on_everywhere`` plus :data:`CLEANUP_DAYS` days, else ``""``.
+    ``state`` is not judged: a flag killed with ``state: DISABLED`` renders the same variants, so
+    killing it leaves its clock as it was. Each refusal is a :class:`FlagMetadataError` subclass
+    whose message names the flag and the field; ``flags`` is not modified.
     """
     overlays = overlays or {}
     for key, entry in flags.items():

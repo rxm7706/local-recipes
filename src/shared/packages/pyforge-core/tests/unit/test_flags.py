@@ -277,8 +277,13 @@ def _stamp(tree: dict, overlays: object) -> dict:
 
         def _on(environment: str, key=key, entry=entry, variants=variants) -> bool:
             names = named.get(environment) if isinstance(named.get(environment), dict) else {}
-            variant = names.get(key, entry.get("defaultVariant"))
-            return entry.get("state") != "DISABLED" and isinstance(variant, str) and variants.get(variant) is True
+            # compose ignores the overlay for a DISABLED flag: it renders the tree's own variant
+            variant = (
+                entry.get("defaultVariant")
+                if entry.get("state") == "DISABLED"
+                else names.get(key, entry.get("defaultVariant"))
+            )
+            return isinstance(variant, str) and variants.get(variant) is True
 
         on_everywhere = "2026-09-01" if all(_on(name) for name in flags.ENVIRONMENTS) else ""
         entry["metadata"] = _metadata(on_everywhere)
@@ -772,10 +777,30 @@ def test_a_string_flag_never_runs_a_clock():
     assert "pyforge.cutover_root" in str(caught.value)
 
 
-def test_a_disabled_flag_is_never_on_so_its_clock_stays_empty():
-    _compose_all({KEY: _flag("on", state="DISABLED")}, {name: {KEY: "on"} for name in flags.ENVIRONMENTS})
-    with pytest.raises(flags.FlagClockMismatchError):
-        _compose_all({KEY: _flag("on", state="DISABLED", on_everywhere="2026-08-25")})
+def test_a_killed_flag_keeps_its_dated_clock_and_reads_off_while_a_sibling_reads_on(tmp_path, monkeypatch):
+    """The clock judges the rendered variant, never ``state``: killing a dated flag (doctor's
+    ``disable_flag`` sets only ``state``) leaves the tree composable, and the kill still wins."""
+    dated = {"on_everywhere": "2026-08-25"}
+    tree = _overlay_tree(
+        tmp_path,
+        {"production": {KEY: "off"}},  # ignored for a DISABLED flag: it renders the tree's own ``on``
+        tree={"flags": {KEY: _flag("on", state="DISABLED", **dated), OTHER: _flag("on", **dated)}},
+    )
+    for environment in flags.ENVIRONMENTS:
+        assert _read_in(environment, monkeypatch, tree, KEY) is False, environment
+        assert _read_in(environment, monkeypatch, tree, OTHER) is True, environment
+        assert json.loads(flags.render(environment, flags_path=tree))["flags"][KEY]["defaultVariant"] == "on"
+
+
+def test_a_killed_flag_that_renders_off_composes_with_an_empty_clock_whatever_the_overlay_says():
+    _compose_all({KEY: _flag("off", state="DISABLED")})
+    _compose_all({KEY: _flag("off", state="DISABLED")}, {name: {KEY: "on"} for name in flags.ENVIRONMENTS})
+
+
+def test_a_killed_flag_that_renders_off_with_a_dated_clock_is_still_a_named_mismatch():
+    with pytest.raises(flags.FlagClockMismatchError) as caught:
+        _compose_all({KEY: _flag("off", state="DISABLED", on_everywhere="2026-08-25")})
+    assert KEY in str(caught.value) and "dev, staging, production" in str(caught.value)
 
 
 def test_the_first_offending_flag_in_tree_order_is_the_one_named():
