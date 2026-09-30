@@ -1193,6 +1193,9 @@ jobs:
       # schema exists -- confirmed live, one restart, then Ready. The two
       # explicit `kubectl wait`/curl-retry steps below stand in for what
       # --wait would otherwise have proven.
+      # The chart refuses a release without its flag tree, the tree's per-environment overlay
+      # and `flags.environment` (Story 76.1): the repo's own two files, passed as values --
+      # not a second chart, overlay chart or values file.
       - name: helm install the unmodified core chart (scalar --set overrides only)
         run: |
           helm install platform src/platform/deploy/charts/platform \
@@ -1386,6 +1389,7 @@ jobs:
       # is False for the same TLS-less-probe rationale documented in
       # gke-smoke (the Route still terminates TLS at the edge).
       # Deliberately NO --wait: same migrate-hook deadlock as gke-smoke.
+      # Same three flag inputs as the unmodified-chart installs (Story 76.1).
       - name: helm install core chart with OCP overrides
         run: |
           helm install platform src/platform/deploy/charts/platform \
@@ -1837,6 +1841,9 @@ jobs:
       # `--wait`, for the identical documented migrate-Job deadlock reason
       # `gke-portability-smoke`'s own helm-install step's comment explains
       # in full -- not re-derived here.
+      # The chart refuses a release without its flag tree, the tree's per-environment overlay
+      # and `flags.environment` (Story 76.1): the repo's own two files, passed as values --
+      # not a second chart, overlay chart or values file.
       - name: helm install the unmodified core chart (scalar --set overrides only)
         run: |
           helm install platform src/platform/deploy/charts/platform \
@@ -1845,6 +1852,9 @@ jobs:
             --set sidecar.image.tag=air-gap-smoke \
             --set mcpHost.image.tag=air-gap-smoke \
             --set django.secureSslRedirect=False \
+            --set-file flags.tree=src/platform/config/flags.json \
+            --set-file flags.overlays=src/platform/config/flag-overlays.json \
+            --set flags.environment=dev \
             --timeout 5m || {
             echo "::error::helm install failed"
             kubectl get pods,jobs,events -n platform-airgap
