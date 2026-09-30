@@ -6,11 +6,13 @@ from __future__ import annotations
 import re
 import subprocess
 import tomllib
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+from pyforge.core.process import PosixProcess, ProcessResult
 from pyforge.testing_kit import (
     changed_paths_since,
     commit_files,
@@ -142,9 +144,6 @@ def _unsanctioned_commits_with_a_corrupt_index(repo: Path) -> list[str]:
 _FAILING_CALLS: dict[str, Callable[[Path], object]] = {
     "diff_text_since": lambda repo: diff_text_since(repo, base="origin/main", pathspec=_BAD_PATHSPEC),
     "changed_paths_since": lambda repo: changed_paths_since(repo, base="origin/main", pathspec=_BAD_PATHSPEC),
-    "changed_paths_since_untracked": lambda repo: changed_paths_since(
-        repo, base="origin/main", pathspec=_BAD_PATHSPEC, include_untracked=True
-    ),
     "commits_since": lambda repo: commits_since(repo, base="origin/main", pathspec=_BAD_PATHSPEC),
     "commit_files": lambda repo: commit_files(repo, "0" * 40),
     "unsanctioned_commits_history": lambda repo: unsanctioned_commits(
@@ -161,6 +160,24 @@ def test_every_guard_raises_called_process_error_on_a_git_failure(repo: Path, ca
         _FAILING_CALLS[call](repo)
     assert caught.value.returncode != 0
     assert caught.value.cmd[0] == "git"
+
+
+def test_a_failing_untracked_listing_raises_called_process_error(repo: Path, monkeypatch: pytest.MonkeyPatch):
+    # No input makes `git ls-files --others` fail (git only warns) while the `git diff` before it passes,
+    # so fail that one call at the process seam.
+    real_run = PosixProcess.run
+
+    def run(self: PosixProcess, argv: Sequence[str], **kwargs: Any) -> ProcessResult:
+        if "ls-files" in argv:
+            return ProcessResult(returncode=128, stdout="", stderr="fatal: forced")
+        return real_run(self, argv, **kwargs)
+
+    monkeypatch.setattr(PosixProcess, "run", run)
+    _make_origin_main(repo)
+    with pytest.raises(subprocess.CalledProcessError) as caught:
+        changed_paths_since(repo, base="origin/main", include_untracked=True)
+    assert caught.value.returncode == 128
+    assert caught.value.cmd[:2] == ["git", "ls-files"]
 
 
 def _dist_name(requirement: str) -> str:
