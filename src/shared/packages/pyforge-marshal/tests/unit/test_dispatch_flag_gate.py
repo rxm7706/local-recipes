@@ -81,6 +81,13 @@ def test_warn_verdict_with_exit_0_is_one_warn_naming_the_pre_rule_spec() -> None
     assert "minted before the rule date" in finding.message
 
 
+def test_warn_verdict_without_finding_text_still_names_the_pre_rule_spec() -> None:
+    finding = flag_gate.decide_gate_result(SPEC, returncode=0, stdout=_gate_json("warn"), stderr="")
+    assert finding is not None
+    assert (finding.code, finding.severity) == ("MRS-DISP-055", Severity.WARN)
+    assert "a pre-rule spec that carries neither" in finding.message
+
+
 def test_pass_verdict_with_exit_0_is_no_finding() -> None:
     assert flag_gate.decide_gate_result(SPEC, returncode=0, stdout=_gate_json("pass"), stderr="") is None
 

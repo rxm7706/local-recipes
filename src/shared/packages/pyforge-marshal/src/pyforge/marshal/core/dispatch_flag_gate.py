@@ -123,7 +123,9 @@ def _red(spec: str, payload: Mapping[str, object]) -> Finding:
 
 def _warn(spec: str, payload: Mapping[str, object]) -> Finding:
     named = _gate_findings(payload, "warn")
-    detail = "; ".join(named) if named else "a pre-rule spec that carries neither a `flag:` block nor a `flag-exempt:` value"
+    detail = (
+        "; ".join(named) if named else "a pre-rule spec that carries neither a `flag:` block nor a `flag-exempt:` value"
+    )
     return Finding(
         code=WARNED_CODE,
         severity=Severity.WARN,
