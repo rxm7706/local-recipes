@@ -109,7 +109,7 @@ def flag_states(key: str) -> Callable[[F], F]:
     usefixtures = pytest.mark.usefixtures(FLAG_PROVIDER_FIXTURE)
 
     def decorate(test: F) -> F:
-        return usefixtures(parametrize(test))  # type: ignore[no-any-return]
+        return usefixtures(parametrize(test))
 
     return decorate
 
