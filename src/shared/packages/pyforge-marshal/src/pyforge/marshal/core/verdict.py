@@ -1184,6 +1184,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # tier of MRS-DISP-048 above: it stops a landing being reported clean while the
     # bookkeeping never reached main (the 64.1 landing, 2026-09-28).
     "MRS-DISP-051": Verdict.ERROR,
+    # Story 77.1 (spec-pyforge-marshal CAP-282): the `structure-graph` layer's
+    # dispatch half -- 053 built (or rebuilt) the worktree's index with `init`
+    # instead of syncing a copied base; 054 seeded no index at all. WARN, the
+    # tier of MRS-DISP-042/033: the session is otherwise entirely viable and
+    # a missing navigation aid must never refuse a launch.
+    "MRS-DISP-053": Verdict.WARN,
+    "MRS-DISP-054": Verdict.WARN,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight
