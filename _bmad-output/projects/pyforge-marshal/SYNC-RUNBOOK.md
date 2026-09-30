@@ -43,7 +43,7 @@ detector trips).
 - **Every CFE retro / skill MINOR bump** (CLAUDE.md Rule 2 — every conda-forge effort ends with a
   retro that bumps the skill; that bump is the re-sync trigger).
 - **After any out-of-band change** to the source-of-truth surface (`recipes/`, `.claude/skills/`,
-  `.claude/tools/`, `pixi.toml`, `docs/specs/`) — the baseline check (`surface-changed`) detects it.
+  `.claude/tools/`, `pixi.toml`) — the baseline check (`surface-changed`) detects it.
 - **At least once per BMAD core minor bump** (e.g. 6.10 → 6.11) — marshal re-grounds living factory
   docs even if the detector has not yet tripped on a skill pin.
 - **Living-doc cadence (marshal-owned, 2026-08-24):** when any of the triggers above fire,
@@ -73,7 +73,7 @@ If `surface-changed` appears, see what moved out-of-band since the last reconcil
 
 ```bash
 BASE=$(python -c "import json;print(json.load(open('_bmad-output/projects/local-recipes/.sync-baseline.json'))['git_head'])")
-git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml docs/specs
+git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml
 ```
 
 ## Step 1 — Reconcile, by finding type
@@ -81,8 +81,7 @@ git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml docs/specs
 | Detector finding | Doc(s) | Reconciler |
 |---|---|---|
 | `archive-misplaced`, `stray-file` | planning / impl | `python scripts/bmad_drift_check.py --fix` (auto: moves SCPs→`change-history/`, retros→`retros/`, deletes stray `.patch`) |
-| `tracked-impl-artifact` | impl-artifacts | A git-tracked file under `implementation-artifacts/` (gitignored/local-only) is misfiled. If it's an **intake spec**, `git mv` it to `docs/specs/` (Tier 1); if it's a Tier-3 output, `git rm --cached` it. (This is the tier model — see CLAUDE.md "three tiers" + `AGENTS.md`.) |
-| `docs-specs-nonmd` | docs/specs | `docs/specs/` holds Tier-1 markdown intake specs only — move the non-`.md` file out. |
+| `tracked-impl-artifact` | impl-artifacts | A git-tracked file under `implementation-artifacts/` (gitignored/local-only) is misfiled. If it's a durable **story spec**, `git mv` it to the project's `planning-artifacts/specs/` (Tier 2); if it's a Tier-3 output, `git rm --cached` it. (This is the tier model — see CLAUDE.md "three tiers" + `AGENTS.md`.) |
 | `pin-missing`, `baseline-corrupt` | any | restore the frontmatter `source_pin`/`last_synced_skill_version`. (Neither this covers nor `factory.py`/`bmad_drift_check.py` track the AGENTS.md `bmad:context` block — that surface carries no `source_pin`, and its own freshness proof is `bmad-project-context`'s "Verified `<date>` against `<commit>`" stamp, checked by `bmad-project-context audit`, not by this detector.) |
 | **Derived pin (Story 33.10)** | all tracked | The **currency verdict** reads live CFE version from `.claude/skills/conda-forge-expert/SKILL.md` frontmatter `version:` — never from a stamped literal in a doc. **`source_pin`** on living/plan docs records *which skill version the doc was last re-grounded against* (a fact about a past act); it is **not** compared for `pin-behind`. Snapshot docs still get informational `pin-behind` when their stamped pin predates live `SKILL.md`. |
 | `count-stale` / `phase-list-stale` (living: `architecture-*`, `source-tree-analysis`, `project-overview`, `integration-architecture`, `*-guide`, `project-parts.json`) | living | **marshal** re-grounds living docs by hand or with a plain read-only agent when content is stale — **`count-stale` / `phase-list-stale` / `stale-rule` / `surface-changed` are the currency signals**, not `pin-behind`. After re-grounding, bump `source_pin` to record the act. **6.11 removed `bmad-document-project`** and its successor `bmad-project-context` does NOT produce brownfield docs. Cadence: after CFE MINOR / `surface-changed` / BMAD core minor (see When to run). Separately (no shared detector finding, since it isn't `source_pin`-tracked): run **`bmad-project-context`** in refresh/audit mode against the AGENTS.md `bmad:context` block on the same cadence — **not** a per-station relay (Story 30.2, 2026-09-06, retired the eight per-station rulebook files this cadence used to also re-ground) |

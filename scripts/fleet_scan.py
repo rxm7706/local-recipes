@@ -1123,7 +1123,7 @@ def scan_dreams() -> list[dict]:
     return dreams
 
 
-# ---- specs roster (all BMAD Specs; docs/specs legacy is deliberately out) --
+# ---- specs roster (all BMAD Specs; the retired legacy intake tier is deliberately out) --
 
 def _git_date(path: Path) -> str:
     r = subprocess.run(
@@ -2291,7 +2291,7 @@ def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
 # ---- pitch roster (the deck family) ------------------------------------------
 
 PITCH_TITLES = {"agentic-sdlc": "Agentic AI across the SDLC"}
-# the 6-artifact family standard, per docs/specs/presentation-deck.md
+# the 6-artifact family standard, per docs/how-to/presentation-deck.md
 _PITCH_CHECK = ("prototype", "exec", "infographic", "marp", "standalone", "pptx")
 # spec-design-sync-loop CAP-2 (Story 23.2): presentations/_design-systems/ is
 # a library home (Modernist/Broadsheet/Nocturne, mirrored not authored), not
