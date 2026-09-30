@@ -5,7 +5,7 @@ created: '2026-09-28'
 status: 'in-review'
 baseline_revision: 73dca4a27565789905adcaf19aa223dfef9038b4
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 flag:
   key: pyforge.steward.object_store_consumer
   provider: openfeature-file                   # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -33,6 +33,38 @@ deferred:
     location: >-
       src/platform/ingest/github_projects/pipeline.py
     severity: medium
+  - summary: >-
+      On real S3 a head_object on an absent key answers 403 rather than 404 when the credential lacks s3:ListBucket, so a
+      Put/Get-only credential would fail every first put_stream with the client's AccessDenied instead of uploading.
+    evidence: |-
+      Unverified. The spec's Design Notes propagate every non-404 client error on purpose (a permission error must never read
+      as absent), so the module does what the contract says. What would settle it: the policy of the credential that Story 74.2's
+      chart mounts (canopy:AD-19). If it lacks s3:ListBucket, either grant it or decide in that story how a 403 on head is read.
+    location: >-
+      src/shared/packages/django-pyforge/src/django_pyforge/object_store.py
+    severity: medium (unverified)
+  - summary: >-
+      The silo-backed round-trip tests skip in Platform CI and in platform-ci-local, because neither lane installs the
+      platform-object-storage environment, so only a local run exercises the real store.
+    evidence: |-
+      .github/workflows/platform-ci.yml runs the platform-ci-test environment only, and scripts/platform-ci-local.sh ensure_envs
+      provisions platform-ci-test, platform-dev and pyforge-warden. The same skip-in-CI pattern already holds for CAP-97's own
+      src/platform/tests/test_object_storage_client.py. This story added silo-free tests that pin the sha256, the dedup skip and
+      the bounded reads, so the contract no longer depends on the silo for those. Wiring the environment into the lane is a CI
+      change outside this story's Surface.
+    location: >-
+      .github/workflows/platform-ci.yml
+    severity: medium
+  - summary: >-
+      pixi.toml:226 still says of boto3 "no consumer wired in yet", which is false now that django_pyforge.object_store consumes
+      the seam.
+    evidence: |-
+      Cosmetic; the text is a comment, and docs/reference/library-llms-full.md does not embed it (checked). pixi.toml is governed by
+      eight specs' surfaces, and a pixi.toml change fires pyforge-station-tests across every station suite and eight memlog
+      reconciles, which is out of proportion to a comment. Batch it with the next pixi.toml change (Story 74.2).
+    location: >-
+      pixi.toml
+    severity: low
 declared_low_risk: false
 ---
 
