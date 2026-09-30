@@ -5,7 +5,7 @@ Dream ``docs/dreams/one-chain-per-station.md``, ``owner: guild`` by the
 Charter §5 shape of 2026-09-14). Mechanism: Doctor's, under §5's
 outcome/mechanism rule -- the same relay as Epic 24.
 
-Two gathers, both ``scope="repo"`` (tracked planning artifacts only, no
+Three gathers, all ``scope="repo"`` (tracked planning artifacts only, no
 network, no station import):
 
 * ``gather_chain_sprawl`` (Story 25.1, CAP-2) -- Dream-**append**-first is
@@ -26,7 +26,16 @@ network, no station import):
   is regenerated only at a station's fold PR, when its PRD is re-derived
   FR <- CAP in full.
 
-Both degrade, never crash (the house rule), and both report a missing
+* ``gather_fold_complete`` (Story 36.1, CAP-11) -- a fold is complete before
+  its file moves. Every ``archive/docs/dreams/*.md`` not in
+  ``docs/governance/fold-complete-baseline.json`` has each of its long
+  paragraphs in its station Dream (``docs/dreams/pyforge-<owner>.md``),
+  whitespace-collapsed; a missing one is a FAIL naming the file and the count.
+  Every ``docs/dreams/*.md`` still reading ``status: archived`` is ONE WARN
+  with the count per station -- the migration's countdown, never a FAIL.
+  Read-only: it moves no file and edits no Dream.
+
+All degrade, never crash (the house rule), and all report a missing
 baseline as WARN -- cannot-evaluate is never a FAIL and never a silent green.
 """
 
@@ -38,14 +47,17 @@ from pathlib import Path
 
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
-from .chain import _frontmatter_parse
+from .chain import _dream_body_after_frontmatter, _frontmatter_parse
 
 __all__ = (
     "CHAIN_SPRAWL_BASELINE_REL",
+    "FOLD_COMPLETE_BASELINE_REL",
     "FR_BASELINE_REL",
     "enumerate_chain_units",
     "gather_chain_sprawl",
+    "gather_fold_complete",
     "gather_fr_without_cap",
+    "long_paragraphs",
     "prune_chain_sprawl_baseline",
     "snapshot_chain_sprawl_baseline",
     "snapshot_fr_baseline",
@@ -53,6 +65,7 @@ __all__ = (
 
 CHAIN_SPRAWL_BASELINE_REL = Path("docs") / "governance" / "chain-sprawl-baseline.json"
 FR_BASELINE_REL = Path("docs") / "governance" / "fr-baseline.json"
+FOLD_COMPLETE_BASELINE_REL = Path("docs") / "governance" / "fold-complete-baseline.json"
 _ROSTER_REL = Path("docs") / "governance" / "guild-roster.json"
 _DREAMS_REL = Path("docs") / "dreams"
 _PROJECTS_REL = Path("_bmad-output") / "projects"
