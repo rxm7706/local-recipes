@@ -58,7 +58,3 @@ warn_redundant_casts = true
 warn_unused_configs = true
 # Sibling stations and bmad_loop ship no py.typed marker; their imports are checked as untyped, not refused.
 disable_error_code = ["import-untyped"]
-
-[[tool.mypy.overrides]]
-module = "pyforge.testing_kit.branch_diff_guard"
-disable_error_code = ["attr-defined"]

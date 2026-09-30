@@ -150,11 +150,12 @@ def pyforge_import_offenders(paths: list[str], root: Path) -> list[str]:
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
-            names: list[str] = []
             if isinstance(node, ast.Import):
                 names = [alias.name.split(".")[0] for alias in node.names]
             elif isinstance(node, ast.ImportFrom) and node.module:
                 names = [node.module.split(".")[0]]
+            else:
+                continue
             if "pyforge" in names:
                 offenders.append(f"{rel}:{node.lineno}")
     return offenders
