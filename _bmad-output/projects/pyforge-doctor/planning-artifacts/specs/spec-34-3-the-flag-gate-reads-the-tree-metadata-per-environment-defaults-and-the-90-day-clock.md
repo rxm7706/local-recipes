@@ -2,8 +2,7 @@
 title: '34.3: The flag gate reads the tree metadata — per-environment defaults and the 90-day clock'
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
-blocking_condition: 'blocked until steward Stories 76.1 (per-environment overlays make a flag value per environment expressible) and 76.2 (each flag carries owner, story key, created, ON-everywhere and cleanup dates in flagd metadata) -- spec-feature-flag-governance CAP-5 -- have landed on main; before them the tree cannot say "off in production" or when a flag went ON everywhere, so these checks have nothing to read. The operator flips the ledger key, never a session (marshal''s Deps: parser is station-local).'
+status: 'backlog'
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -44,7 +43,7 @@ because marshal's `Deps:` parser is station-local, so a cross-station preconditi
 pitfalls; the doctor 33.1 precedent). Do not start this story while either is unlanded.
 
 Ledger key: `34-3-the-flag-gate-reads-the-tree-metadata-per-environment-defaults-and-the-90-day-clock`.
-Ledger status (do not edit the ledger): `blocked`.
+Ledger status (do not edit the ledger): `backlog` -- flipped 2026-09-30 by the operator after steward Stories 76.1 (`177f67e991`) and 76.2 (`43c7fd0efd`) landed on main.
 Type / Effort / Deps: feature / S / S-34.2 (cross-project gate: steward Stories 76.1 and 76.2).
 
 ### Living CAP citations
@@ -94,6 +93,10 @@ Type / Effort / Deps: feature / S / S-34.2 (cross-project gate: steward Stories 
 
 Contract authored from `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-2 and CAP-5 (with the constraint *"Off
 in production" waits for CAP-5*) and the Q4 ruling (memlog 23), decomposed 2026-09-28 (night) as Epic 34's mint.
+
+## Spec Change Log
+
+- 2026-09-30 -- operator flip, `blocked` -> `backlog`: the cross-station gate cleared when steward Stories 76.1 (`177f67e991`) and 76.2 (`43c7fd0efd`) landed on main. The tree now carries per-environment values (76.1) and each flag's owner, story, created, ON-everywhere and cleanup dates in flagd metadata (76.2), so every check this story names has something to read. Nothing else in the contract changed. A resumed worktree brings `origin/main` into its branch first (merge, never rebase).
 
 ## Binding
 

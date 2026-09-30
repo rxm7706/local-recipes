@@ -384,7 +384,7 @@ def _git_listed_skill_dirs(root: Path) -> set[str] | None:
     ]
     try:
         completed = subprocess.run(argv, capture_output=True, timeout=30, check=False)
-    except (OSError, subprocess.TimeoutExpired):
+    except OSError, subprocess.TimeoutExpired:
         return None
     if completed.returncode != 0:
         return None
