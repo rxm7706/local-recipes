@@ -31,19 +31,73 @@ evaluation through OpenFeature; neither changes what is stated here).
   returns its own usage code (2 for steward), so no station's frozen exit-code
   domain changes and this module defines no exit code.
 
+* **The environment** (Story 76.1, ``canopy:AD-11`` amended 2026-09-28). ``PYFORGE_ENVIRONMENT``
+  names one of ``dev`` / ``staging`` / ``production`` (``dev`` when unset, for local
+  development); anything else is a named :class:`UnknownEnvironmentError`, never a read that
+  falls back to ``default``. A ``flag-overlays.json`` document beside the resolved tree is
+  value-only -- per environment, a key the tree defines mapped to one of that flag's variant
+  names -- and :func:`compose` returns the tree with each overlaid ``defaultVariant`` replaced
+  for the environment (a ``DISABLED`` flag stays off in every environment). :func:`render`
+  returns that composed tree as bytes: the chart's ConfigMap and the host's FILE provider mount
+  or read the same rendering ``read_boolean`` reads here. No sibling document (the in-cluster
+  mount already holds the rendered tree) reads the tree as it is. An invalid environment or
+  overlay raises a :class:`FlagConfigError` subclass out of ``read_boolean`` (a WARN plus
+  ``default`` could read ON for a retrofit ``default=True``).
+
 Stdlib-only apart from its sibling ``cutover_root``; no OpenFeature dependency, no
 environment-variable provider and no station-specific logic belong here.
 """
 
 from __future__ import annotations
 
+import copy
 import json
+import os
 import sys
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from pyforge.core import cutover_root
 
 _DISABLED_STATE = "DISABLED"
+
+ENV_ENVIRONMENT = "PYFORGE_ENVIRONMENT"
+ENVIRONMENTS = ("dev", "staging", "production")
+DEFAULT_ENVIRONMENT = "dev"
+OVERLAYS_FILE_NAME = "flag-overlays.json"
+
+
+class FlagConfigError(ValueError):
+    """The environment, the overlay document or the tree cannot be composed.
+
+    Raised, never downgraded to a WARN plus ``default``: a fallback could read ON. Each
+    subclass below names one refusal and its message names the offending entry.
+    """
+
+
+class UnknownEnvironmentError(FlagConfigError):
+    """An environment outside ``dev`` / ``staging`` / ``production``."""
+
+
+class OverlayDocumentError(FlagConfigError):
+    """The overlay document is unreadable or not shaped ``{environment: {key: variant}}``."""
+
+
+class OverlayUnknownKeyError(FlagConfigError):
+    """An overlay key the tree does not define."""
+
+
+class OverlayUnknownVariantError(FlagConfigError):
+    """An overlay variant the flag does not define."""
+
+
+class OverlayNotAVariantError(FlagConfigError):
+    """An overlay entry that is not a variant name (an object would define a second tree)."""
+
+
+class FlagTreeError(FlagConfigError):
+    """``render`` found no tree, or one it cannot read."""
 
 
 class FlagOff(Exception):
@@ -66,6 +120,111 @@ def _warn(key: str, reason: str, default: bool) -> bool:
         file=sys.stderr,
     )
     return default
+
+
+def check_environment(name: str, *, source: str = "environment") -> str:
+    """Return ``name`` when it is one of :data:`ENVIRONMENTS`, else raise :class:`UnknownEnvironmentError`."""
+    if name not in ENVIRONMENTS:
+        raise UnknownEnvironmentError(f"{source} {name!r} is not one of {', '.join(ENVIRONMENTS)}")
+    return name
+
+
+def current_environment(environ: Mapping[str, str] | None = None) -> str:
+    """The environment from ``PYFORGE_ENVIRONMENT`` (``dev`` when unset); an unknown value raises."""
+    raw = (os.environ if environ is None else environ).get(ENV_ENVIRONMENT)
+    if raw is None:
+        return DEFAULT_ENVIRONMENT
+    return check_environment(raw, source=ENV_ENVIRONMENT)
+
+
+def overlays_path_for(tree_path: Path | str) -> Path | None:
+    """The ``flag-overlays.json`` beside ``tree_path``, or None when there is no such file."""
+    candidate = Path(tree_path).with_name(OVERLAYS_FILE_NAME)
+    return candidate if candidate.is_file() else None
+
+
+def load_overlays(path: Path | str) -> dict[str, Any]:
+    """Read the overlay document at ``path``; raises :class:`OverlayDocumentError` when it is unusable."""
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:  # json.JSONDecodeError and UnicodeDecodeError are ValueErrors
+        raise OverlayDocumentError(f"unreadable overlay document {path}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise OverlayDocumentError(f"overlay document {path} is not an object keyed by environment")
+    return payload
+
+
+def _is_disabled(entry: object) -> bool:
+    state = entry.get("state") if isinstance(entry, dict) else None
+    return isinstance(state, str) and state.upper() == _DISABLED_STATE
+
+
+def _validate_overlays(flags: Mapping[str, Any], overlays: Mapping[str, Any]) -> None:
+    """Every entry of every environment, whichever one is being rendered: a typo never waits for its turn."""
+    for name, entries in overlays.items():
+        if name not in ENVIRONMENTS:
+            raise UnknownEnvironmentError(
+                f"overlay environment {name!r} is not one of {', '.join(ENVIRONMENTS)}"
+            )
+        if not isinstance(entries, dict):
+            raise OverlayDocumentError(f"overlay {name} is not an object mapping keys to variant names")
+        for key, variant in entries.items():
+            where = f"overlay {name}.{key}"
+            if key not in flags:
+                raise OverlayUnknownKeyError(f"{where} names a key the tree lacks")
+            if not isinstance(variant, str):
+                what = "an object" if isinstance(variant, dict) else type(variant).__name__
+                raise OverlayNotAVariantError(
+                    f"{where} is {what}, not a variant name (an overlay holds values only; "
+                    "a definition would be a second tree)"
+                )
+            entry = flags[key]
+            variants = entry.get("variants") if isinstance(entry, dict) else None
+            if not isinstance(variants, dict) or variant not in variants:
+                raise OverlayUnknownVariantError(f"{where} names variant {variant!r}, which the flag lacks")
+
+
+def compose(tree: Mapping[str, Any], overlays: Mapping[str, Any], environment: str) -> dict[str, Any]:
+    """The tree with each ``defaultVariant`` the overlay names for ``environment`` replaced.
+
+    Every entry of the whole overlay document is validated first (any environment), each a named
+    :class:`FlagConfigError`. A flag whose tree ``state`` is ``DISABLED`` keeps it and its
+    variant: the kill switch wins in every environment. ``tree`` is not modified.
+    """
+    check_environment(environment)
+    flags = tree.get("flags")
+    if not isinstance(flags, dict):
+        raise FlagTreeError("flag tree has no 'flags' object")
+    _validate_overlays(flags, overlays)
+    composed = copy.deepcopy(dict(tree))
+    for key, variant in (overlays.get(environment) or {}).items():
+        entry = composed["flags"][key]
+        if not _is_disabled(entry):
+            entry["defaultVariant"] = variant
+    return composed
+
+
+def render(environment: str, *, flags_path: Path | str | None = None) -> bytes:
+    """The tree as ``environment`` reads it, as JSON bytes: the chart's ConfigMap and the host's FILE provider.
+
+    Resolves the tree exactly as ``read_boolean`` does and composes the ``flag-overlays.json``
+    beside it when there is one (else the tree as it is). Raises :class:`FlagConfigError`
+    subclasses; unlike ``read_boolean`` it has no ``default`` to fall back to.
+    """
+    check_environment(environment)
+    resolved = cutover_root.resolve_flags_path(flags_path)
+    if resolved is None:
+        raise FlagTreeError("no flag tree: set PYFORGE_FLAGS_PATH or pass flags_path")
+    try:
+        tree = json.loads(resolved.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise FlagTreeError(f"unreadable flag tree {resolved}: {exc}") from exc
+    if not isinstance(tree, dict):
+        raise FlagTreeError(f"malformed flag tree {resolved}: not an object")
+    overlays = overlays_path_for(resolved)
+    if overlays is not None:
+        tree = compose(tree, load_overlays(overlays), environment)
+    return (json.dumps(tree, indent=2) + "\n").encode("utf-8")
 
 
 def read_boolean(key: str, default: bool = False, *, flags_path: Path | str | None = None) -> bool:
