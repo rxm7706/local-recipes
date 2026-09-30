@@ -614,6 +614,12 @@ def _plan_station(
     # `dispatch_once` (the first of them is "the next story"), and every queued
     # story with --all-stories.
     to_evaluate: list[str] = list(targets)
+    if head is not None and head not in to_evaluate and cycle.finalize_pending is None and not cycle.live_stories:
+        # A head the parallel wave holds out (unmet Deps, an unknown surface,
+        # a cap): it is not handed to `dispatch_once` this cycle, but the
+        # refusals it would meet once released are the very thing an operator
+        # reads a plan for -- reported as a queued story, never as "the next".
+        to_evaluate.append(head)
     if all_stories:
         for story in cycle.backlog:
             if story not in station_skips and story not in to_evaluate:

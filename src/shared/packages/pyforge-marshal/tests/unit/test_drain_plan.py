@@ -226,7 +226,10 @@ def _plan(
     text: bool = False,
 ) -> tuple[int, dict, str]:
     """Run ``drain --plan ...``; returns ``(exit code, parsed JSON envelope, raw stdout)``."""
-    args = _parse("--plan", *(() if text else ("--format", "json")), *argv)
+    # Station policies differ (marshal's own runs waves): every test that does
+    # not ask for a wave plans a serial cycle, as `_cycle` in test_dispatch_fleet does.
+    cap = () if "--max-in-flight" in argv else ("--max-in-flight", "1")
+    args = _parse("--plan", *(() if text else ("--format", "json")), *cap, *argv)
     code = run_fleet_drain(
         args,
         fs=fs if fs is not None else RecordingFs(),
@@ -1156,7 +1159,9 @@ def test_all_stories_evaluates_every_queued_story_as_a_002(tmp_path: Path, capsy
     estate = [f for f in queued if _K_ESTATE in f["message"]]
     assert any("MRS-GATE-010" in f["message"] for f in estate)  # the full evaluation reached 44.5
     assert any("prose-park" in f["message"] for f in estate)
-    assert len([f for f in queued if _K_CFE in f["message"]]) == 1  # no spec: only its park, once
+    cfe = [f["message"] for f in queued if _K_CFE in f["message"]]
+    assert len(cfe) == 2  # no tracked spec (MRS-DISP-005) and its park, once each
+    assert any("MRS-DISP-005" in m for m in cfe) and any("prose-park" in m for m in cfe)
     assert _K_FOLD not in "".join(f["message"] for f in queued)
     assert envelope["data"]["all_stories"] is True
     assert code == 4
