@@ -367,6 +367,12 @@ def test_registered_codes_contains_the_real_codes():
             # index was seeded at all. Both WARN, never blocking.
             "MRS-DISP-053",
             "MRS-DISP-054",
+            # Story 74.2 (spec-feature-flag-governance CAP-3, the pre-session flag-gate
+            # consult): 052 ERROR the gate reds the spec or could not judge it (the
+            # dispatch is refused); 055 WARN the gate warned (a pre-rule spec) or its
+            # script is absent (the dispatch proceeds).
+            "MRS-DISP-052",
+            "MRS-DISP-055",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",
@@ -544,3 +550,28 @@ def test_mrs_disp_051_is_registered_at_the_error_tier():
         )
         is verdict.Verdict.ERROR
     )
+
+
+def test_mrs_disp_052_is_registered_once_at_the_error_tier_and_055_at_warn():
+    """Story 74.2 (spec-feature-flag-governance CAP-3): the flag-gate refusal is ERROR; the
+    proceeds-with-a-warning half takes its own code because ``compute_verdict`` classifies by
+    code alone (AD-31 -- one code, one rung). ``052`` appears exactly once in the registry
+    source AND the classification table (AD-15), so it cannot sit on two rungs."""
+    import inspect
+    import re
+
+    from pyforge.marshal.core import verdict
+    from pyforge.marshal.core.model import Finding, Severity
+
+    assert "MRS-DISP-052" in findings.REGISTERED_CODES
+    assert "MRS-DISP-055" in findings.REGISTERED_CODES
+    assert verdict.classify("MRS-DISP-052") is verdict.Verdict.ERROR
+    assert verdict.classify("MRS-DISP-055") is verdict.Verdict.WARN
+    registry_source = inspect.getsource(findings)
+    table_source = inspect.getsource(verdict)
+    assert len(re.findall(r'^\s+"MRS-DISP-052",\s*$', registry_source, re.MULTILINE)) == 1
+    assert len(re.findall(r'^\s+"MRS-DISP-052":', table_source, re.MULTILINE)) == 1
+    refused = Finding(code="MRS-DISP-052", severity=Severity.ERROR, message="the gate reds the spec")
+    warned = Finding(code="MRS-DISP-055", severity=Severity.WARN, message="a pre-rule spec")
+    assert verdict.compute_verdict((refused,)) is verdict.Verdict.ERROR
+    assert verdict.compute_verdict((warned,)) is verdict.Verdict.WARN
