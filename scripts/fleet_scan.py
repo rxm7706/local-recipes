@@ -1123,7 +1123,7 @@ def scan_dreams() -> list[dict]:
     return dreams
 
 
-# ---- specs roster (all BMAD Specs; the retired legacy intake tier is deliberately out) --
+# ---- specs roster (all BMAD Specs; the legacy intake tier is deliberately out) --
 
 def _git_date(path: Path) -> str:
     r = subprocess.run(

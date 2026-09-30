@@ -585,7 +585,7 @@ docs/                                        # 83 files, all tracked
 
 scripts/                                     # 14 tracked entries (+ __pycache__)
 ├── bmad-switch                              # ★ active-project switcher — re-points BOTH symlinks, writes marker last
-├── bmad_drift_check.py                      # ★ the detector this reconcile loop runs (--specs / --fix / --write-baseline)
+├── bmad_drift_check.py                      # ★ the detector this reconcile loop runs (--json / --fix / --write-baseline)
 ├── spec_surface_check.py                    # ★ deterministic spec-surface coverage + drift checker (CFE v8.79.1)
 ├── spec_surface_allowlist.txt               #   its allowlist
 ├── .spec-surface-baseline.json              #   its baseline (462 KB, tracked)
