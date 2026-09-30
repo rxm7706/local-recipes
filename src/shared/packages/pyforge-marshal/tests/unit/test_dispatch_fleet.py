@@ -12,6 +12,7 @@ Two layers:
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 from pathlib import Path
 
@@ -978,6 +979,77 @@ def test_unchanged_refuse_predicate_is_rate_limited_across_campaign_cycles(
     assert harness.dispatched == []
     assert "MRS-DRAIN-017" in out
     assert "MRS-DRAIN-005" in out
+
+
+def test_flag_gate_refuse_re_preflights_when_the_spec_is_edited(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Story 74.2 (spec-feature-flag-governance CAP-3): a drain cycle that met ``MRS-DISP-052`` leaves a campaign block;
+    an unchanged spec stays blocked (rate-limited), and once the spec's fingerprint changes the next cycle re-preflights
+    the story -- ``dispatch_once`` runs again and the gate judges the edited spec."""
+
+    class _GateByFlagExempt(FakeProcess):
+        """Answers ``scripts/flag_gate_check.py --spec`` from the spec's bytes on disk, the way the real gate would:
+        ``red`` until the spec declares a ``flag-exempt:`` value."""
+
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            if not any(str(part).endswith("flag_gate_check.py") for part in argv):
+                return super().run(argv, cwd=cwd, timeout_s=timeout_s)
+            exempt = "flag-exempt:" in (cwd / argv[-1]).read_text(encoding="utf-8")
+            verdict = "pass" if exempt else "red"
+            rows = [] if exempt else [{"kind": "flag-missing", "severity": "fail", "message": "no block, no exemption"}]
+            return ProcessResult(
+                returncode=0 if exempt else 1,
+                stdout=json.dumps({"verdict": verdict, "spec": argv[-1], "rule_date": "2026-09-28", "findings": rows}),
+                stderr="",
+            )
+
+    _init_git_repo(tmp_path)
+    (tmp_path / "_bmad-output" / "projects" / "pyforge-marshal").mkdir(parents=True)
+    specs = dispatch_core.planning_specs_dir(tmp_path, "pyforge-marshal")
+    specs.mkdir(parents=True)
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "flag_gate_check.py").write_text("# stand-in; the gate is faked\n", encoding="utf-8")
+    spec = specs / "spec-22-7-fleet.md"
+    spec.write_text('---\ntype: feature\ndifficulty: medium\nsurface: ["src/**"]\n---\n', encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    ledgers = {"pyforge-marshal": (("22-7-fleet", "backlog"),)}
+
+    refused = FakeBuildHarness()
+    _run_drain(
+        tmp_path, _drain_args(once=True), ledgers=ledgers, build_harness=refused, process=_GateByFlagExempt(alive=False)
+    )
+    run_id = next(dispatch_fleet.fleet_runs_dir(tmp_path).iterdir()).name
+    assert refused.dispatched == []
+    assert "MRS-DISP-052" in capsys.readouterr().out
+
+    unchanged = FakeBuildHarness()
+    _run_drain(
+        tmp_path,
+        _drain_args(once=True, campaign=run_id),
+        ledgers=ledgers,
+        build_harness=unchanged,
+        process=_GateByFlagExempt(alive=False),
+    )
+    out = capsys.readouterr().out
+    assert unchanged.dispatched == []
+    assert "MRS-DRAIN-017" in out  # the unchanged predicate is rate-limited, not re-dispatched
+
+    spec.write_text(
+        '---\ntype: feature\nflag-exempt: detector-or-gate\ndifficulty: medium\nsurface: ["src/**"]\n---\n',
+        encoding="utf-8",
+    )
+    edited = FakeBuildHarness()
+    _run_drain(
+        tmp_path,
+        _drain_args(once=True, campaign=run_id),
+        ledgers=ledgers,
+        build_harness=edited,
+        process=_GateByFlagExempt(alive=False),
+    )
+    out = capsys.readouterr().out
+    assert edited.dispatched == [("pyforge-marshal", "22.7")]
+    assert "MRS-DISP-052" not in out
 
 
 def test_skip_on_blocked_moves_to_the_next_story_and_reports_the_skip(

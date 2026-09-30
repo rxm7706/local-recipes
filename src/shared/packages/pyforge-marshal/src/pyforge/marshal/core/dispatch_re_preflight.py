@@ -51,10 +51,14 @@ class RePreflightResult:
     predicate: RefusePredicate | None = None
 
 
+#: Story 74.2: the refusal a fingerprint change (a spec edit) clears.
+_FLAG_GATE_REFUSAL = "MRS-DISP-052"
+
 # Gates whose refuse reason can change without operator intervention.
 _RE_PREFLIGHTABLE_GATES: frozenset[str] = frozenset(
     {
         "MRS-DISP-005",  # missing/unreadable tracked spec
+        _FLAG_GATE_REFUSAL,  # Story 74.2: the flag gate reds (or cannot judge) the spec; an edit re-preflights it
         "MRS-GATE-001",
         "MRS-GATE-002",
         "MRS-GATE-003",
@@ -186,6 +190,20 @@ def reconcile_station_re_preflight(
             kept[story] = detail
             continue
         # Predicate changed but refuse still applies.
+        if gate == _FLAG_GATE_REFUSAL and previous.spec_fingerprint != current.spec_fingerprint:
+            # Story 74.2: the spec was edited after the refusal -- the change a
+            # cheap tick-local fingerprint can see. Clear, and the next tick's
+            # dispatch_once consults the gate again (this module never asks it).
+            results.append(
+                RePreflightResult(
+                    story=story,
+                    gate=gate,
+                    decision=RePreflightDecision.CLEARED,
+                    prior_detail=detail,
+                    predicate=current,
+                )
+            )
+            continue
         if gate.startswith("MRS-GATE-") and verify_rerun_needed(prior=previous, current=current):
             # Verify config changed — clear so the next tick re-dispatches.
             results.append(

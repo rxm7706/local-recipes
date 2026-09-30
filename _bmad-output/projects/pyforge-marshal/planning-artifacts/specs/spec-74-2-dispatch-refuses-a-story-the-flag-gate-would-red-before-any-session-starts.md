@@ -2,10 +2,13 @@
 title: '74.2: Dispatch refuses a story the flag gate would red, before any session starts'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-review'
+baseline_revision: 'd7c798649479458741580630d995c69af722ec1b'
 flag-exempt: detector-or-gate   # a refusal path is a gate; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
+warnings:
+  - oversized
 context:
   - docs/governance/spec-feature-flag-governance/SPEC.md
   - docs/dreams/feature-flag-governance.md
@@ -100,6 +103,41 @@ Type / Effort / Deps: feature / S / — (cross-project gate: doctor Story 34.2).
 
 </intent-contract>
 
+## Code Map
+
+Investigated 2026-09-30 (step 2). Paths are under `src/shared/packages/pyforge-marshal/` unless they start `scripts/` or `docs/`.
+
+- `src/pyforge/marshal/cli/dispatch.py` -- `dispatch_once` (L2024). Preflight order today: repo root (L2080) -> `_surface_session_precondition_findings` (L2091, WARN `MRS-DISP-049`) -> `_dispatch_scope_refusal` (L2095, ERROR `041`) -> `resolve_story_spec_path` (L2100, ERROR `005`) -> spec read (L2115-2125) -> `_compose_policy` (L2127) -> harness walk -> worktree. A refusal appends an ERROR `Finding` and `return _done()`; `DispatchAttempt.errors` (L159) is the ERROR-severity subset and `_classify_attempt` (L3697) turns `errors[0]` into the campaign-block detail `"<code>: <message>"`, which `dispatch_re_preflight.parse_refuse_gate` reads. Add `_consult_flag_gate(*, fs, process, repo_root, spec_path) -> Finding | None` next to `_surface_session_precondition_findings` (L458, the same `process.run` / `ProcessError` shape) and call it right after the spec read, before `_compose_policy`: append the finding; if its severity is ERROR, `return _done()`. Script presence through `fs.exists(repo_root / "scripts" / "flag_gate_check.py")`; argv `[sys.executable, "scripts/flag_gate_check.py", "--spec", <spec path relative to repo_root, posix>]`, `cwd=repo_root`, a `_FLAG_GATE_TIMEOUT_S = 60.0` beside `_SESSION_CHECK_TIMEOUT_S` (L455).
+- `src/pyforge/marshal/core/dispatch_flag_gate.py` -- NEW, pure (AD-4). Imports only `json`, `dataclasses` if needed, and `.findings` (`Finding`, `Severity`); no `pathlib`, no `open`/`read_text`, no frontmatter parsing. Three functions: `decide_gate_result(spec, *, returncode, stdout, stderr)`, `decide_gate_failure(spec, failure)` (the `ProcessError` text, incl. the timeout) and `gate_absent_finding(script_rel)`; each returns `Finding | None`. Style sibling: `core/dispatch_prelaunch.py::spec_binding_findings`.
+- `src/pyforge/marshal/core/findings.py` (`REGISTERED_CODES`, the `MRS-DISP-051` / `053` / `054` block, ~L1816-1835) and `src/pyforge/marshal/core/verdict.py` (`_CLASSIFY_TABLE`, the same block, ~L1181-1193) -- the two registries; a new code goes in both. `052` -> `Verdict.ERROR`, `055` -> `Verdict.WARN`. `050` is Story 65.2's and `053`/`054` Story 77.1's; `055` is claimed nowhere.
+- `src/pyforge/marshal/core/dispatch_re_preflight.py` -- `_RE_PREFLIGHTABLE_GATES` (L55) gains `MRS-DISP-052`. `reconcile_station_re_preflight` (L126) rate-limits every non-`MRS-GATE-` gate whose spec fingerprint changed (L201-212), so `052` needs its own CLEARED branch: after the `previous is None` rate-limit (L175) and before the `MRS-GATE-` branch (L189), clear when `gate == "MRS-DISP-052"` and `previous.spec_fingerprint != current.spec_fingerprint`. The drain records the predicate for a REFUSED station at `cli/dispatch.py` L4421-4433.
+- `scripts/flag_gate_check.py` (read only) -- `run_spec` (L525-546): prints one JSON object `{verdict, spec, rule_date, findings[], error?}`; exit 1 iff `red`, 2 for `unknown`, else 0. A finding is `{kind, severity: fail|warn, message, path?, station?, key?}`. It runs from its own checkout (`--root` defaults to the script's parent). `docs/reference/story-spec-flag-block.md` exists (doctor 34.1), so the refusal's remedy cites it.
+- `pyforge-core` `src/pyforge/core/process.py` (read only) -- `ProcessPort.run` never raises for a non-zero exit; it raises `ProcessError` for an unlaunchable argv or a timeout ("command timed out after Ns: ...").
+- `core/verdict.py::compute_verdict` (L1313) classifies by `finding.code` alone (L1327), never by `Finding.severity`; AD-31 forbids one code on two rungs. That is why the two WARN outcomes take their own code (Design Notes).
+- Tests: `tests/unit/test_dispatch.py` (`FakeFs` L60-112, `FakeVcs`, `FakeBuildHarness`, `FakeProcess` L189-207, `_init_git_repo`, the `dispatch_once` wiring test L264-294 as the template); `tests/unit/test_dispatch_hotfix.py` L248-410 (the re-preflight tests, `re_preflight` alias); `tests/unit/test_findings.py` L65 (exact `REGISTERED_CODES` set) and L533 (a per-code tier test, the `MRS-DISP-051` shape). The seeded repos in those tests carry no `scripts/flag_gate_check.py`, so after this change every `dispatch_once` test sees the WARN `MRS-DISP-055`; a test that asserts the exact finding list needs the new code, never a suppression.
+
+## Tasks & Acceptance
+
+**Execution:**
+- [x] `src/pyforge/marshal/core/findings.py`, `src/pyforge/marshal/core/verdict.py` -- register `MRS-DISP-052` (ERROR) and `MRS-DISP-055` (WARN), each with the dated comment its neighbours carry -- rationale: AD-15 and AD-31
+- [x] `src/pyforge/marshal/core/dispatch_flag_gate.py` -- NEW. `decide_gate_result`: `returncode` 0 or 1 and `stdout` a JSON object whose `verdict` agrees with the exit code (`red` <-> 1; `pass`/`warn` <-> 0) -> `red`: ERROR `MRS-DISP-052` naming the spec, each `fail` finding's `kind` and `message`, and the remedy (a `flag:` block or a `flag-exempt:` value, `docs/reference/story-spec-flag-block.md`); `warn`: WARN `MRS-DISP-055` naming the pre-rule spec; `pass`: `None`. Anything else -- exit 2, another exit code, non-JSON, a non-object, a missing or `unknown` verdict, a verdict that disagrees with the exit code -- ERROR `MRS-DISP-052` naming the gate's failure (its `error` field, else the last stderr line, else the exit code). `decide_gate_failure`: ERROR `MRS-DISP-052` carrying the `ProcessError` text. `gate_absent_finding`: WARN `MRS-DISP-055` naming the missing script -- rationale: AD-8, unevaluable is failure, never a silent green
+- [x] `src/pyforge/marshal/cli/dispatch.py` -- `_consult_flag_gate` and its call site in `dispatch_once`, as the Code Map places it; no policy key, no import of `scripts/` or a doctor module -- rationale: AD-4 (impure edge), the gate is a process
+- [x] `src/pyforge/marshal/core/dispatch_re_preflight.py` -- `MRS-DISP-052` joins `_RE_PREFLIGHTABLE_GATES` with its own CLEARED branch -- rationale: a drain re-preflights once the spec is edited
+- [x] `tests/unit/test_dispatch_flag_gate.py` (NEW), `tests/unit/test_dispatch.py`, `tests/unit/test_dispatch_re_preflight.py` (NEW), `tests/unit/test_findings.py` -- one test per Acceptance Criterion below, plus the I/O-matrix rows; every existing test that the new `055` WARN changes is updated to expect it
+- [x] Surface reconcile -- run `python scripts/spec_surface_reconcile.py`; name every governed path this story changed on the owning Spec's `.memlog.md` (`spec-pyforge-marshal`) and on each co-governor `spec-surface` names (`spec-pyforge-core` governs every station's `src/`), with `python _bmad/scripts/memlog.py append --workspace <spec-folder> --type event --text "Surface reconcile 2026-09-30: <path> ..."`; never `--write-baseline`
+
+**Acceptance Criteria:**
+- Given the ten Acceptance Criteria in the intent contract, when the suite runs, then each maps to one named test and every one passes
+- Given a red fixture and `_consult_flag_gate` patched to return `None`, when `dispatch_once` runs, then the story dispatches and the refusal test fails (the mutation)
+- Given `core/dispatch_flag_gate.py`, when its source is scanned by AST, then it imports nothing outside the allow-list and calls no `open` / `read_text` / `read_bytes`; the scanner itself is proven on a synthetic module that reads frontmatter
+
+## Design Notes
+
+- **Why a second code.** The contract names only `MRS-DISP-052`, but `compute_verdict` reads `classify(finding.code)` and AD-31 forbids one code on two rungs, so a WARN under an ERROR-tier `052` would red a dispatch that proceeds. The two WARN outcomes (a pre-rule spec, an absent gate) therefore take `MRS-DISP-055`, WARN tier, the `042` / `049` / `053` tier. `052` stays registered once, as the AD-15 criterion requires.
+- **Exit code and verdict must agree.** The gate documents `red` <-> exit 1 and `pass`/`warn` <-> exit 0. A JSON `pass` with exit 1, or `red` with exit 0, is not a verdict the consult can trust, so it refuses (AD-8) rather than choosing one of the two signals.
+- **Drain shape.** The refusal detail begins `MRS-DISP-052:` (from `_classify_attempt`), which is the form `parse_refuse_gate` reads. The first re-preflight after a refusal rate-limits (no prior predicate); a later tick with a different spec fingerprint clears, so the next cycle runs `dispatch_once` again and the gate judges the edited spec.
+- **Out of scope, on purpose.** `cli/drain_plan.py` mirrors some `dispatch_once` refusals for `--plan`; the contract does not ask for `052` there, and a drain's own cycle already reaches it through `dispatch_once`.
+
 ## Source
 
 Contract authored from `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-3 and the Q7 ruling (memlog 23),
@@ -108,6 +146,7 @@ decomposed 2026-09-28 (night) as Epic 74's mint.
 ## Spec Change Log
 
 - 2026-09-30 -- operator flip, `blocked` -> `backlog`: the cross-station gate cleared when doctor Story 34.2 landed on main (5a6dbc5e21). Nothing else in the contract changed. A resumed worktree brings `origin/main` into its branch first (merge, never rebase).
+- 2026-09-30 -- step-02 planning, no contract change: (1) the two WARN outcomes take a sibling code, `MRS-DISP-055`, because the verdict is classified by code and AD-31 gives one code one rung (Design Notes); `MRS-DISP-052` is still the only code the Acceptance Criteria name and is registered once. (2) The frontmatter `status` was `backlog`, which step-01 does not list; it was treated as "not yet planned", the path Stories 74.1, 75.1, 76.1, 77.1 and 78.1 took.
 
 ## Binding
 
