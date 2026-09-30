@@ -2,10 +2,10 @@
 title: "74.1: A station streams bytes to object storage by sha256 key — herald's deck exports wait on it"
 type: 'feature'
 created: '2026-09-28'
-status: 'done'
+status: 'in-review'
 baseline_revision: 73dca4a27565789905adcaf19aa223dfef9038b4
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 flag:
   key: pyforge.steward.object_store_consumer
   provider: openfeature-file                   # the one tree, src/platform/config/flags.json (canopy:AD-11)
