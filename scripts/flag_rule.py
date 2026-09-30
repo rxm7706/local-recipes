@@ -9,6 +9,7 @@ Story 34.2's gate turns a verdict into a finding, and the two named errors below
     classify(path)        -> Classification("flag" | "exempt" | "neither", reasons)
     is_post_rule(path)    -> True when the spec is absent from the rule-date baseline
     in_scope(spec)        -> True when the spec is `type: feature` (Q1)
+    read_frontmatter(path) -> (mapping, "") or (None, why), for a caller that reads a spec once
 
 The exemption list is read from the roster at call time; this file holds no copy of it, and
 a unit test fails one. The baseline (docs/governance/flag-rule-baseline.json) is stamped by
@@ -158,6 +159,17 @@ def _frontmatter(path: Path) -> tuple[dict[str, Any] | None, str]:
     if not isinstance(data, dict):
         return None, "frontmatter is not a mapping"
     return data, ""
+
+
+def read_frontmatter(
+    path: str | os.PathLike[str], *, repo_root: Path | None = None
+) -> tuple[dict[str, Any] | None, str]:
+    """(mapping, "") for a readable story-spec frontmatter, else (None, why). Never raises.
+
+    The public reader Story 34.2's gate uses, so it reads each spec once and hands the mapping to
+    `classify_frontmatter` and `in_scope`. A relative `path` is taken as repo-relative, as in `classify`.
+    """
+    return _frontmatter(_absolute(path, repo_root))
 
 
 def _blank(value: Any) -> bool:
