@@ -1942,3 +1942,27 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   fix: default to `refs/remotes/origin/main` (and qualify a bare `$GITHUB_BASE_REF` as `refs/remotes/origin/<name>`), through the governance Spec's own chain.
   status: closed
   resolved: 2026-09-27 (doctor Story 32.1, spec-coverage-gate-independence CAP-4) — `_normalize_base` names `refs/remotes/origin/<name>` for a bare branch name and for `origin/<name>` (an `origin/<name>` expression too; shas, full refs and other revision expressions pass through), so the default and the pixi tasks read the remote-tracking ref with no argument changed; `coverage-gates.yml`'s pull_request `BASE` now names `refs/remotes/origin/${GITHUB_BASE_REF}` (its station selection diffs outside the driver). A real-git shadow test fails on the old normalizer. The station-tests lane's station selection and the recipe CI workflows' changed-recipe selection have the same shape and other owners: `DW-marshal-station-tests-short-base-ref-2026-09-27` (spec-pyforge-core CAP-8) and `DW-mason-recipe-ci-short-base-ref-2026-09-27`.
+
+### DW-doctor-34-2: Scribe Story 24.1 is a post-rule `type: feature` story spec that carries neither a `flag:` block nor a `flag-exempt:` value, so the gate reds it (`flag-missing`) and the landing is blocked on scribe.
+
+- source_spec: `planning-artifacts/specs/spec-34-2-the-flag-gate-ships-in-scripts-outside-every-station-and-runs-in-detectors-ci.md`
+  summary: Scribe Story 24.1 is a post-rule `type: feature` story spec that carries neither a `flag:` block nor a `flag-exempt:` value, so the gate reds it (`flag-missing`) and the landing is blocked on scribe.
+  evidence: PR #1672 merged after the rule-date baseline (5e977accb9). `pixi run -e pyforge-guild flag-gate-check` on the landing tree exits 1 with exactly two FAIL findings, this spec and the one below; every other finding is a pre-rule WARN. A red `flag-gate-check` row would red `detectors-ci` for every PR, and this story may neither edit scribe's specs nor exempt them. Scribe adds a `flag:` block, or a `flag-exempt:` value from the roster's closed list, to both specs before this story lands.
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-24-1-the-bmad-estate-catalog-is-generated-not-written.md
+  origin: spec-deferred 879d8a34eaf9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  resolved: 2026-09-29 (doctor Story 34.2, spec-feature-flag-governance CAP-2) -- scribe's own spec now reads `flag-exempt: docs-only` (PR #1677, unblock-wave1-2026-09-30, merged to `origin/main`); this story edited no scribe spec and exempted nothing. Measured on the merged tree: `pixi run -e pyforge-guild flag-gate-check` exits 0 (1207 story specs judged, 0 fail, 840 warn) and `flag_gate_check.py --spec` on this spec returns `pass`.
+  status: closed
+
+### DW-doctor-34-2-2: Scribe Story 24.2 is a post-rule `type: feature` story spec that carries neither a `flag:` block nor a `flag-exempt:` value, so the gate reds it (`flag-missing`) and the landing is blocked on scribe.
+
+- source_spec: `planning-artifacts/specs/spec-34-2-the-flag-gate-ships-in-scripts-outside-every-station-and-runs-in-detectors-ci.md`
+  summary: Scribe Story 24.2 is a post-rule `type: feature` story spec that carries neither a `flag:` block nor a `flag-exempt:` value, so the gate reds it (`flag-missing`) and the landing is blocked on scribe.
+  evidence: Same cause and same fix as Story 24.1 above: merged in PR #1672 after the baseline, reported to its owning Smith, not exempted by this story.
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-24-2-the-catalog-cannot-drift-silently.md
+  origin: spec-deferred 9fc94a59b093 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  resolved: 2026-09-29 (doctor Story 34.2, spec-feature-flag-governance CAP-2) -- scribe's own spec now reads `flag-exempt: detector-or-gate` (PR #1677); same measurement as DW-doctor-34-2 above, no scribe spec edited here.
+  status: closed
