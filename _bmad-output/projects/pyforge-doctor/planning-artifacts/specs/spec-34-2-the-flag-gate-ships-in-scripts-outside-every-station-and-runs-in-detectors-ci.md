@@ -2,7 +2,7 @@
 title: '34.2: The flag gate ships in scripts, outside every station, and runs in detectors-ci'
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
+status: 'in-progress'
 baseline_revision: '7151e3d2653a6289c4f01a4ac17f8514aee3247a'
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
@@ -158,6 +158,7 @@ Type / Effort / Deps: feature / M / S-34.1.
 
 ## Spec Change Log
 
+- 2026-09-30 -- operator decision, unblocked (no change to the intent contract): scribe fixed the two specs this gate reds on the live tree -- `spec-24-1-...` now reads `flag-exempt: docs-only` and `spec-24-2-...` `flag-exempt: detector-or-gate` (PR `unblock-wave1-2026-09-30`, merged to `origin/main`; recorded on `spec-feature-flag-governance` and `spec-pyforge-scribe`). Before anything else, bring `origin/main` into this branch (merge, never rebase), resolve any conflict in favour of `main` outside this story's surface, then re-run the Verification commands and `pixi run -e pyforge-guild flag-gate-check` against the merged tree and read each exit code. The AC "the live tree exits 0" is expected to hold now; if the gate names any other spec, record it in `deferred:` and stop blocked again rather than editing another station's spec. The implementation itself is complete and is not redone.
 - 2026-09-29 -- implemented: status `in-progress` -> `in-review`; every task done; the intent contract is unchanged. `deferred:` records the two scribe specs the live tree reds (Design Notes, Live-tree conflict). Two additions beyond the Tasks list, both forced by a detector: `docs/reference/detectors.md` and `docs/how-to/pixi-tasks.md` re-rendered (`docs-detectors`, `docs-pixi-tasks`; the first also picks up `bmad_estate_check`, missing since PR #1672), and one sentence in `docs/reference/story-spec-flag-block.md` that said the gate was a separate story's. Not delivered as written: the AC "the live tree exits 0" cannot hold until scribe fixes its two specs.
 
 ## Design Notes
