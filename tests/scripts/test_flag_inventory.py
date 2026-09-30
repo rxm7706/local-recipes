@@ -156,6 +156,24 @@ def _warned_paths(report: str) -> set[str]:
     }
 
 
+def _warned_rows(report: str) -> list[tuple[str, str, str]]:
+    """The warned table's (key, status, path) rows, in the order the report lists them."""
+    section = report.split("## Warned specs", 1)[1]
+    cells = [[c.strip() for c in line.split("|")] for line in section.splitlines() if line.startswith("| ")]
+    return [(c[1], c[2], c[3]) for c in cells if c[3].endswith(".md")]
+
+
+def _odd_backtick_cells(report: str) -> list[str]:
+    """Every table cell whose code spans cannot close: an odd number of backticks (`\\|` is not a cell edge)."""
+    return [
+        cell
+        for line in report.splitlines()
+        if line.startswith("| ")
+        for cell in re.split(r"(?<!\\)\|", line)
+        if cell.count("`") % 2
+    ]
+
+
 # --- CLI CAP, no flag -----------------------------------------------------------------------
 
 
@@ -224,6 +242,26 @@ def test_a_flag_block_that_cites_another_cap_or_another_station_gates_nothing(
 
     assert _row(report, 1).endswith("| none |")
     assert f"`{KEY}`" in _row(report, 2)
+
+
+def test_a_cap_with_two_citing_flags_one_in_the_tree_and_one_not_lists_the_present_key_and_is_not_unflagged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    absent_key = "pyforge.atlas.beta_feature"
+    root = _fixture(tmp_path, tree_keys=[KEY])
+    _spec(root)
+    _epics(root, ("CAP-1", "`cli.py`"))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _story_spec(root, "spec-1-1-alpha.md", FLAG_BLOCK.format(key=KEY), body=f"Living CAP: `{SLUG}` CAP-1.")
+    _story_spec(root, "spec-1-2-beta.md", FLAG_BLOCK.format(key=absent_key), body=f"Living CAP: `{SLUG}` CAP-1.")
+
+    report = _report(root, tmp_path, capsys)
+
+    row = _row(report, 1)
+    assert row.endswith(f"| `{KEY}` |")
+    assert "none" not in row
+    assert absent_key not in row
+    assert _header(report, "Runtime CAPs with no flag") == 0
 
 
 # --- planning-only CAP ----------------------------------------------------------------------
