@@ -418,7 +418,7 @@ _EXPECTED = {
 
 
 def _metadata(on_everywhere: str = "") -> dict[str, str]:
-    """The five-field flagd `metadata` (Story 76.2); `cleanup_by` is `on_everywhere` + 90 days."""
+    """The five-field flagd `metadata` (Story 76.2); the clock is dated + 90 days."""
     cleanup_by = ""
     if on_everywhere:
         cleanup_by = (
@@ -458,7 +458,7 @@ _FIXTURE_OVERLAYS: dict[str, dict[str, str]] = {
 
 
 def _fixture_flags(document: object) -> dict[str, Any]:
-    """The fixture's four boolean flags, each dated only where `document` renders it ON in
+    """The fixture's four boolean flags, dated only where `document` renders one ON in
     every environment (the clock the metadata check requires)."""
     named = document if isinstance(document, dict) else {}
     tree_defaults = {
@@ -586,8 +586,8 @@ def test_the_shipped_tree_and_overlay_agree_across_the_three_readers(
     _assert_cutover_root_agrees(_FLAGS_JSON, environment)
 
 
-# Story 76.2: what every key in the shipped tree evaluates to, per environment -- the values
-# before the tree carried metadata. Metadata is inert to evaluation.
+# Story 76.2: what every key in the shipped tree evaluates to, per environment -- the
+# values before the tree carried metadata. Metadata is inert to evaluation.
 _SHIPPED_BOOLEANS = {
     "pyforge.three_surfaces": True,
     "pyforge.steward.ghe_fleet_credentials": False,
@@ -630,7 +630,7 @@ def test_every_flag_in_the_shipped_tree_carries_its_metadata_through_the_file_pr
         assert tuple(metadata) == _METADATA_FIELDS, key
         assert all(isinstance(value, str) for value in metadata.values()), key
         details = (
-            client.get_boolean_details(key, False)
+            client.get_boolean_details(key, default_value=False)
             if key in _SHIPPED_BOOLEANS
             else client.get_string_details(key, "")
         )
@@ -693,9 +693,10 @@ def test_the_provider_reads_a_materialised_copy_and_the_tree_stays_the_source(
     assert (
         resolve_tree_path(tree) == tree
     )  # what an actuator (doctor's kill switch) edits
-    # a later edit of the overlay reaches the same file the provider polls (the edit keeps
-    # every flag's dated clock true: `_OFF_BY_TREE` is still off in dev)
-    edited = {**_FIXTURE_OVERLAYS, "production": {**_FIXTURE_OVERLAYS["production"], _OFF_BY_TREE: "on"}}
+    # a later edit of the overlay reaches the same file the provider polls (the edit
+    # keeps every flag's dated clock true: `_OFF_BY_TREE` is still off in dev)
+    production = {**_FIXTURE_OVERLAYS["production"], _OFF_BY_TREE: "on"}
+    edited = {**_FIXTURE_OVERLAYS, "production": production}
     (tmp_path / "flag-overlays.json").write_text(json.dumps(edited), encoding="utf-8")
     assert resolve_flags_path(tree) == resolved
     assert (

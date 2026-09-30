@@ -438,8 +438,8 @@ def test_the_checked_in_tree_ships_the_flag_off(configured, name):
     flag = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))["flags"][
         object_store.FLAG_KEY
     ]
-    # Story 76.2: the flag also carries its owner and cleanup clock in `metadata`; the
-    # evaluation-bearing fields are what this test pins, and off means the clock is empty.
+    # Story 76.2: the flag also carries its owner and cleanup clock in `metadata`; this
+    # test pins the evaluation-bearing fields, and an off flag has an empty clock.
     metadata = flag.pop("metadata")
     assert flag == {
         "state": "ENABLED",
