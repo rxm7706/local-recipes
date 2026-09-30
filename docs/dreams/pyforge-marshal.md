@@ -842,6 +842,39 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   Kinships: Story 28.31 (the spike), Story 28.33 (step 01's reference), Epic 55 (the layer switched
   on), CAP-192 (`marshal context bootstrap`'s substrate), Story 46.9 (per-layer benchmark legs);
   owner `spec-pyforge-marshal`. → CAP-282 / Epic 77 / Story 77.1 (FR-229), specced 2026-09-29.
+- **2026-09-30 — Proposed: a landing unions append-only memlogs instead of refusing.** Found landing
+  wave 1, 2026-09-30:
+  - **Four landings refused on one conflict (MRS-DISP-038).** Steward 74.1 (#1679), doctor 35.1 (#1682), steward
+    76.1 (#1683) and doctor 36.2 (#1692, twice). Every conflicted path was a `.memlog.md`. The story and `main` had
+    both appended entries, and rewritten `updated:`, in the same Spec memlogs: the owning Spec's, and the
+    co-governors' (`spec-pyforge-core`, `spec-pyforge-unifying-strategy`) that every station's surface reconcile
+    writes.
+  - **The heal resolves one path.** CAP-4 (Story 28.20) and CAP-269 (Story 59.1) heal only the landing project's own
+    sprint ledger; every other conflicted path escalates by name. So when two stories run at once and both
+    reconcile a shared co-governor, the second to land is refused, however clean its code.
+  - **Each refusal cost an operator hand-landing.** Merge `origin/main` in the dispatch worktree, union the memlogs,
+    commit, push, wait for CI, merge with the landing subject, replay `dispatch_land_finalize`, set the Tier-3 feed
+    row. Meanwhile the campaign parks the story (MRS-DISP-040) or re-dispatches it into the same conflict: doctor
+    36.2 ran a second full session, then a land-only retry that held the campaign lock through the station suite.
+
+  **What it looks like when real:**
+  - The heal treats a conflicted `.memlog.md` as mechanical when both sides only appended to it since the merge
+    base. The resolved text is `main`'s, followed by the story's new entries in their order, and `updated:` takes
+    the later stamp.
+  - It rides the real merge of `origin/main` the ledger heal already makes, so ledger and memlogs heal in one
+    commit.
+  - A memlog either side edited or truncated, or a frontmatter field other than `updated:` that both sides changed
+    differently, escalates by name as today. The landing journal names every healed path.
+
+  **Constraints:**
+  - Only append-only memlogs join the mechanical set: not the spec-surface baseline, not another project's ledger.
+  - Never a lossy resolution: every entry from both sides survives, none twice.
+  - One unresolvable path aborts the merge before any commit or push.
+  - No new port method: `merge_ref_resolving` already takes a map of resolutions.
+
+  Kinships: CAP-4 (Story 28.20), CAP-269 (Story 59.1), `_bmad/scripts/memlog.py` (the append-only format), the
+  S-13.7 surface-reconcile guard (why every story writes memlogs); owner `spec-pyforge-marshal`. → CAP-283 /
+  Epic 78 / Story 78.1 (FR-230), specced 2026-09-30.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
