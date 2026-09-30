@@ -2,7 +2,8 @@
 title: "76.1: The one flag tree carries per-environment values, so off in production is a value"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '6b7d586b33fdf7edf7b54b81c9cacc8f33efffa7'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: flag-infrastructure
@@ -14,6 +15,7 @@ context:
   - src/shared/packages/pyforge-core/src/pyforge/core/cutover_root.py
   - src/platform/deploy/charts/platform/templates/flags-configmap.yaml
   - src/platform/tests/test_openfeature_file_flags.py
+warnings: [oversized]
 deferred: []
 declared_low_risk: false
 ---
@@ -108,6 +110,35 @@ Type / Effort / Deps: feature / M / S-75.1 (the reader this story extends).
 
 </intent-contract>
 
+## Code Map
+
+- `src/shared/packages/pyforge-core/src/pyforge/core/flags.py` -- Story 75.1's reader (`read_boolean`, `require`, `disabled_help`, `FlagOff`); gains environment, `compose`, `render`, the named errors. Tree path reuses `cutover_root.resolve_flags_path` (unchanged).
+- `src/shared/packages/pyforge-core/src/pyforge/core/cutover_root.py` -- read-only: path resolver reuse; its string reader is not overlay-aware (out of scope; boolean flags only).
+- `src/shared/packages/django-pyforge/src/django_pyforge/flags.py` -- host FILE provider glue: `resolve_flags_path`, `read_flag_tree_bytes`, `evaluate_from_source`, `evaluate_cutover_root`, `main`; callers `apps.py` (`configure_from_env`), `config/urls.py` (`tree_view`, `eval_view`), doctor `__main__.py` (`resolve_flags_path`).
+- `src/platform/config/flags.json` -- the one tree, unchanged; `src/platform/config/flag-overlays.json` (new) -- the value-only overlay document.
+- `src/platform/deploy/charts/platform/{values.yaml,templates/flags-configmap.yaml,templates/_helpers.tpl,templates/NOTES.txt}` -- ConfigMap composes tree + overlays for `flags.environment`; `PYFORGE_ENVIRONMENT` joins `PYFORGE_FLAGS_PATH` in the shared env define (every flag-reading workload).
+- `src/platform/tests/{test_openfeature_file_flags.py,test_chart_invariants.py}` -- host provider vs `read_boolean` agreement; chart render, `_helm` default args.
+- `scripts/flag_gate_check.py` -- `orphan_keys` treats any tracked `src/` file naming a key as its reader; the overlay names every key, so it joins the tree as a non-reader.
+- Chart callers to keep working: `.github/workflows/platform-deploy.yml`, overlay READMEs, `docs/explanation/platform-deployment-architecture.md`.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/platform/config/flag-overlays.json` -- new; `dev` / `staging` / `production`, each key at its current `defaultVariant` -- no evaluated value changes on landing
+- `src/shared/packages/pyforge-core/src/pyforge/core/flags.py` -- `PYFORGE_ENVIRONMENT` (`dev` when unset, else one of three), `compose` (validate every overlay entry, replace `defaultVariant` for the environment, skip a `DISABLED` flag), `render` -> bytes, sibling `flag-overlays.json` discovery, `read_boolean` reads the composed tree; named errors -- one implementation for CLI and host
+- `src/shared/packages/pyforge-core/tests/unit/test_flags.py` -- I/O matrix rows, environment handling, `read_boolean` per environment, unchanged 75.1 semantics
+- `src/shared/packages/django-pyforge/src/django_pyforge/flags.py` -- `resolve_flags_path` returns a path whose content is the rendered tree (materialised via core when an overlay sits beside the tree), `read_flag_tree_bytes` rendered, `render --environment <env>` verb -- host provider and CLI read the same bytes
+- `src/platform/deploy/charts/platform/` -- `flags.environment` required and validated, `flags.overlays` file, ConfigMap composed, `PYFORGE_ENVIRONMENT` env -- chart can compose, so no `flags-render` task and no `pixi.toml` change
+- `src/platform/tests/` + chart callers (`.github/workflows/platform-deploy.yml`, overlay READMEs, docs, `NOTES.txt`) -- pass `flags.overlays` and `flags.environment`; agreement and chart tests
+- `scripts/flag_gate_check.py` -- overlay is not a reader -- keeps orphan detection honest
+- Governed paths -- name each on the owning Spec memlog and every co-governor `spec-surface` names (append only; no `--write-baseline`)
+
+**Acceptance Criteria:**
+- Given the intent-contract ACs, when the core, host and chart tests run, then each AC has a test that observes it at its outermost surface (`read_boolean`, provider value, `helm template`)
+
+## Spec Change Log
+
+
 ## Source
 
 Contract authored from `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-5 (the Guild's; ready 2026-09-28), the
@@ -122,6 +153,12 @@ Dream: `docs/dreams/feature-flag-governance.md`.
 Ledger key: `76-1-the-one-flag-tree-carries-per-environment-values-so-off-in-production-is-a-value`.
 Ledger status at mint: `backlog`.
 Deps: S-75.1 (the `pyforge.core.flags` reader this story extends).
+
+## Design Notes
+
+- Overlay discovery: `flag-overlays.json` beside the resolved tree. The in-cluster mount holds the already rendered tree with no sibling, so it reads as is; the repo checkout composes on the fly. `PYFORGE_ENVIRONMENT` is validated on every read either way.
+- An invalid environment or overlay raises a named `ValueError` subclass from `read_boolean`. A WARN plus `default` could read ON for a retrofit `default=True`, which the AC forbids.
+- The chart composes with `fromJson` / `set` / `toPrettyJson` and repeats the validation with `fail`; a test asserts the ConfigMap equals `pyforge.core.flags.render(env)` parsed, so the two cannot drift silently.
 
 ## Verification
 
