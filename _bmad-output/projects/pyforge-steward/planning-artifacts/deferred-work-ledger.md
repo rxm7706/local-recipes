@@ -4861,3 +4861,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-29 — relayed by hand from the catalog's first render
   status: open
+
+### DW-steward-74-1: src/platform/ingest/github_projects still imports pyforge.steward.keys and .sync, a live breach of "src/platform never imports pyforge.*"; the new meta-test enforces the rule tree-wide with a closed, exact allowlist of those four files.
+
+- source_spec: `planning-artifacts/specs/spec-74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it.md`
+  summary: src/platform/ingest/github_projects still imports pyforge.steward.keys and .sync, a live breach of "src/platform never imports pyforge.*"; the new meta-test enforces the rule tree-wide with a closed, exact allowlist of those four files.
+  evidence: pixi.toml [feature.platform-ci-test.dependencies] already names it "the live pap:AD-2 breach". Relocating the Story 12.8 dlt lane out of the host is its own effort (its pixi tasks, ruff per-file ignores and Postgres sink move with it), not this story's Surface. The allowlist is exact: a listed file that stops importing pyforge.* fails the test until it is removed from the list, so the list can only shrink, and any new importer reds.
+  location: src/platform/ingest/github_projects/pipeline.py
+  origin: spec-deferred c01bb4cb9513 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
