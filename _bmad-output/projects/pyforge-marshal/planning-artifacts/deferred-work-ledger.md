@@ -7004,3 +7004,14 @@ status: open
   severity: high
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-78-1: The heal reads refs/remotes/origin/main by name for its texts and conflict paths, then merge_ref_resolving resolves it again, so a concurrent fetch between the two makes a resolution stale.
+
+- source_spec: `planning-artifacts/specs/spec-78-1-a-landing-unions-append-only-memlogs-instead-of-refusing.md`
+  summary: The heal reads refs/remotes/origin/main by name for its texts and conflict paths, then merge_ref_resolving resolves it again, so a concurrent fetch between the two makes a resolution stale.
+  evidence: Pre-existing since Story 59.1 (CAP-269): the ledger heal has always read the probe ref by name and merged it afterwards. A stale resolution would overwrite entries main gained in a conflicted memlog or ledger. Pinning the ref to a sha needs resolve_ref (a branch-name taker, refused for a full ref by tests/meta/test_local_branch_refs_are_full_refnames.py) or a new VcsPort method, which Story 78.1's Never list forbids. Settling it: a story that pins the probe to a sha once and passes it to the reads, merge_tree_conflict_paths and merge_ref_resolving.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py
+  origin: spec-deferred 6662c70d12d1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
