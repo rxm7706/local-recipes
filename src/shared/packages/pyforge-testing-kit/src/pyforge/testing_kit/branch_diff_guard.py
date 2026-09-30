@@ -61,7 +61,9 @@ def _git_out(root: Path, *args: str) -> str:
     """``git <args>`` stdout; a non-zero exit raises ``CalledProcessError`` (the old ``check_output`` contract)."""
     result = _git(root, *args)
     if result.returncode != 0:
-        raise subprocess.CalledProcessError(result.returncode, ["git", *args], output=result.stdout, stderr=result.stderr)
+        raise subprocess.CalledProcessError(
+            result.returncode, ["git", *args], output=result.stdout, stderr=result.stderr
+        )
     return result.stdout
 
 
