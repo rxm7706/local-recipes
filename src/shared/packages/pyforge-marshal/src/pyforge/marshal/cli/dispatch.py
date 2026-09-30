@@ -543,6 +543,257 @@ def _seed_dispatch_output_layer(*, fs: FsPort, worktree: Path, context_payload: 
     return None
 
 
+#: The command MRS-DISP-053 names as the fix for a missing base index
+#: (Story 46.1, CAP-192): it builds -- or fetches -- the substrate's
+#: `.codegraph/` on the primary checkout, which every later dispatch then
+#: copies and syncs instead of indexing from scratch.
+_CONTEXT_BOOTSTRAP_COMMAND = "pixi run -e pyforge-guild marshal context bootstrap"
+
+_STRUCTURE_GRAPH_MODE_SYNC = "sync"
+_STRUCTURE_GRAPH_MODE_INIT = "init"
+_STRUCTURE_GRAPH_MODE_SKIPPED = "skipped"
+
+
+@dataclass(frozen=True)
+class StructureGraphSeed:
+    """``_seed_dispatch_structure_graph``'s outcome for ONE dispatch (Story
+    77.1, CAP-282), the ``structure-graph`` twin of ``harness_profile.WireWrap``.
+
+    ``mode`` is ``sync`` (a base index was copied or already there, and
+    ``codegraph sync -q`` refreshed it), ``init`` (``codegraph init -y`` built
+    one in the worktree) or ``skipped`` (no index was seeded). ``applied`` is
+    true for the first two only. ``reason`` is ``None`` for the plain
+    ``sync`` path and the layer-off shape; otherwise it says why the path was
+    not the plain one (why the run built instead of synced, or why nothing was
+    seeded). ``findings`` are the WARNs the dispatch folds into its envelope.
+
+    The default instance is the layer-off shape: nothing was copied or run,
+    so there is nothing to say and no finding -- today's behavior, byte for
+    byte. ``journal_payload()`` is the one spelling of the payload both the
+    envelope and the ``dispatch-launch`` OUTCOME entry carry."""
+
+    applied: bool = False
+    mode: str = _STRUCTURE_GRAPH_MODE_SKIPPED
+    reason: str | None = None
+    seconds: float = 0.0
+    findings: tuple[Finding, ...] = ()
+
+    def journal_payload(self) -> dict[str, object]:
+        """A fresh plain ``dict`` per call, so the echoed envelope and the
+        journal entry can never alias one another."""
+        return {
+            "applied": self.applied,
+            "mode": self.mode,
+            "reason": self.reason,
+            "seconds": self.seconds,
+        }
+
+
+def _codegraph_files(directory: Path) -> list[Path]:
+    """Every regular file under ``directory`` (sorted), never following a
+    symlink -- a symlinked file is skipped and a symlinked directory is not
+    entered. Read-only."""
+    found: list[Path] = []
+    for dirpath, _dirnames, filenames in os.walk(directory, followlinks=False):
+        for name in filenames:
+            path = Path(dirpath) / name
+            if path.is_symlink() or not path.is_file():
+                continue
+            found.append(path)
+    return sorted(found)
+
+
+def _discard_worktree_index(fs: FsPort, index_dir: Path) -> None:
+    """Best-effort removal of a worktree's ``.codegraph/`` that this dispatch
+    created and could not finish.
+
+    Two callers need it. A ``codegraph init -y`` over an existing
+    ``.codegraph/`` is a silent no-op that exits 0 ("Already initialized" --
+    measured 2026-09-29, even over a corrupt db), so the fallback that follows
+    a failed sync must clear the copied index first or it would report a build
+    that never ran. And a session must not open on a half-built index:
+    ``bmad-build-auto``'s step 01 prefers ``.codegraph/codegraph.db`` whenever
+    it exists (Story 28.33), and a timeout can leave a partial db behind. Only
+    called for a directory this run created; a re-dispatched worktree's own
+    index is never touched. Never raises."""
+    for path in _codegraph_files(index_dir):
+        try:
+            path.unlink()
+        except OSError:
+            pass
+    for dirpath, _dirnames, _filenames in os.walk(index_dir, topdown=False):
+        try:
+            fs.remove_empty_dir(Path(dirpath))
+        except (OSError, PyforgeError):
+            pass
+
+
+def _seed_dispatch_structure_graph(
+    *,
+    fs: FsPort,
+    process: ProcessPort,
+    worktree: Path,
+    repo_root: Path,
+    context_payload: Mapping[str, Mapping[str, Any]],
+) -> StructureGraphSeed:
+    """Story 77.1 (spec-pyforge-marshal CAP-282, dispatch half of the
+    ``structure-graph`` layer): give a fresh dispatch worktree a codegraph
+    index, the way Story 28.31's spike measured it -- ``codegraph sync -q``
+    from a shared base (~4 s) rather than ``codegraph init -y`` per worktree
+    (~19 s, ~222 MiB). Mirrors ``_seed_dispatch_output_layer`` (Story 28.30):
+    never raises, a layer that is off does nothing, an instrument that is
+    unavailable or a step that fails becomes a named WARN, and the dispatch
+    proceeds without an index either way.
+
+    Order: (1) layer off -> the off shape. (2) ``codegraph`` not on PATH ->
+    ``skipped``, MRS-DISP-054, nothing copied. (3) the worktree already holds
+    an index (a re-dispatch) -> ``sync -q`` only, never a copy over it. (4)
+    the primary checkout holds a base -> copy its files, then ``sync -q``.
+    (5) no base -> ``init -y`` here, and MRS-DISP-053 names ``marshal context
+    bootstrap`` as the fix.
+
+    **Copy, never link, never write the primary (Story 64.1).** ``sync``
+    writes the index, so the base is copied file by file (sqlite's ``-wal`` /
+    ``-shm`` sidecars travel with the db because the whole directory is
+    enumerated) and only read. The build itself is ``build_codegraph_index``,
+    the one builder ``marshal seed kit`` and ``marshal context bootstrap``
+    share, run through the injected ``ProcessPort`` (AD-20).
+
+    **Failure ladder.** A ``sync`` that fails for any reason but its ceiling
+    falls back to ``init -y`` once (MRS-DISP-053, carrying the sync reason)
+    after the copied index is cleared; a copied index that answers only for
+    the primary's paths would fail exactly this way. A timeout on either verb
+    ends in ``skipped`` with reason ``timeout`` and no fallback -- init's 900 s
+    ceiling must not stack on a timed-out sync. Anything ``skipped`` after this
+    run created the worktree's index leaves no index behind. The mode that
+    finally applied is what is journaled.
+
+    Measured 2026-09-29 (Story 77.1): an index copied from a sibling directory
+    and synced answers with worktree files only -- its db holds no absolute
+    path, and a symbol added in the worktree is found there and not in the
+    base -- so a root-bound copy is unreachable and there is no runtime probe
+    for it."""
+    item = kit_item(KitItemId.CODEGRAPH_INDEX)
+    if not layer_enabled(context_payload, item.layer):
+        return StructureGraphSeed()
+
+    started = time.monotonic()
+
+    def _elapsed() -> float:
+        return round(time.monotonic() - started, 2)
+
+    def _unseeded(reason: str, cause: str) -> StructureGraphSeed:
+        return StructureGraphSeed(
+            applied=False,
+            mode=_STRUCTURE_GRAPH_MODE_SKIPPED,
+            reason=reason,
+            seconds=_elapsed(),
+            findings=(
+                Finding(
+                    code="MRS-DISP-054",
+                    severity=Severity.WARN,
+                    message=(
+                        f"the {item.layer!r} layer is enabled but {cause} -- "
+                        "this dispatch session runs without a codegraph index"
+                    ),
+                ),
+            ),
+        )
+
+    probe = probe_instrument(item)
+    if not probe.available:
+        why = probe.reason or f"{item.instrument} is not available"
+        return _unseeded(why, why)
+
+    index_rel = Path(item.relpath).parent
+    base_dir = repo_root / index_rel
+    worktree_dir = worktree / index_rel
+    worktree_db = worktree / item.relpath
+    base_db = repo_root / item.relpath
+
+    # A re-dispatched worktree keeps its own index: sync it, never copy over
+    # it, never delete it. Only an index this run creates is this run's to
+    # clear when the run cannot finish it.
+    already_indexed = fs.exists(worktree_db)
+    owned_dir = None if already_indexed else worktree_dir
+
+    def _fail(reason: str, cause: str) -> StructureGraphSeed:
+        if owned_dir is not None:
+            _discard_worktree_index(fs, owned_dir)
+        return _unseeded(reason, cause)
+
+    stale = True  # `sync -q` refreshes an index; `init -y` creates one
+    if not already_indexed and fs.exists(base_db):
+        try:
+            for source in _codegraph_files(base_dir):
+                fs.copy_file(source, worktree_dir / source.relative_to(base_dir))
+        except (OSError, PyforgeError) as exc:
+            why = f"the base index at {base_dir} could not be copied into {worktree_dir}: {type(exc).__name__}: {exc}"
+            return _fail(why, why)
+    elif not already_indexed:
+        stale = False
+
+    sync_failure: str | None = None
+    error = build_codegraph_index(worktree, stale=stale, process=process)
+    if error is not None and "timed out" in error:
+        return _fail("timeout", error)
+    if error is not None and stale:
+        if already_indexed:
+            # `init -y` over an index this run did not create is the silent
+            # no-op `_discard_worktree_index` describes, and the index is the
+            # session's own: leave it and say the sync failed.
+            why = f"the worktree's existing index could not be synced: {error}"
+            return _unseeded(why, why)
+        sync_failure = error
+        stale = False
+        _discard_worktree_index(fs, worktree_dir)
+        error = build_codegraph_index(worktree, stale=False, process=process)
+        if error is not None:
+            error = f"{error} (after the copied base index failed to sync: {sync_failure})"
+    if error is not None:
+        return _fail("timeout" if "timed out" in error else error, error)
+    if not fs.exists(worktree_db):
+        why = f"`codegraph {'sync' if stale else 'init'}` exited 0 but {item.relpath} does not exist in {worktree}"
+        return _fail(why, why)
+
+    findings: list[Finding] = []
+    reason: str | None = None
+    if sync_failure is not None:
+        reason = sync_failure
+        findings.append(
+            Finding(
+                code="MRS-DISP-053",
+                severity=Severity.WARN,
+                message=(
+                    f"the {item.layer!r} layer's copied base index could not be synced in {worktree} "
+                    f"({sync_failure}) -- rebuilt it there with `codegraph init -y`; run "
+                    f"`{_CONTEXT_BOOTSTRAP_COMMAND}` on the primary checkout if the base is stale or damaged"
+                ),
+            )
+        )
+    elif not stale:
+        reason = f"no base index at {base_db}"
+        findings.append(
+            Finding(
+                code="MRS-DISP-053",
+                severity=Severity.WARN,
+                message=(
+                    f"the {item.layer!r} layer is enabled but the primary checkout has no base index at "
+                    f"{base_db} -- built one in {worktree} with `codegraph init -y` (about 19 s and 222 MiB "
+                    "here, against about 4 s to sync a copied base); run "
+                    f"`{_CONTEXT_BOOTSTRAP_COMMAND}` so later dispatches sync instead"
+                ),
+            )
+        )
+    return StructureGraphSeed(
+        applied=True,
+        mode=_STRUCTURE_GRAPH_MODE_SYNC if stale else _STRUCTURE_GRAPH_MODE_INIT,
+        reason=reason,
+        seconds=_elapsed(),
+        findings=tuple(findings),
+    )
+
+
 def _spec_text_prefer_worktree(spec_path: Path, repo_root: Path, worktree: Path, main_text: str) -> str:
     """Prefer the worktree copy: main often still says ready-for-dev."""
     try:
@@ -1916,6 +2167,12 @@ def dispatch_once(
     # absent makes every consumer guard a read that was specified not to
     # need one. Overwritten with the real decision once a launch returns.
     data["wire"] = harness_profile.WireWrap(applied=False).journal_payload()
+    # Story 77.1 (CAP-282): the same guarantee for the `structure-graph`
+    # layer's disposition -- present on every envelope this verb can emit,
+    # including every refusal before a worktree exists. Overwritten with the
+    # real outcome once the worktree is provisioned.
+    structure_graph = StructureGraphSeed()
+    data["structure_graph"] = structure_graph.journal_payload()
 
     # Story 22.8 (FR-193 CAP-8): profile-aware harness resolution -- the
     # policy's ordered `harness_preference` walked to the first profile
@@ -2154,6 +2411,19 @@ def dispatch_once(
     output_finding = _seed_dispatch_output_layer(fs=fs, worktree=worktree, context_payload=context_payload)
     if output_finding is not None:
         findings.append(output_finding)
+    # Story 77.1 (CAP-282): give the worktree a codegraph index -- a copy of
+    # the primary checkout's base, synced -- so `bmad-build-auto`'s step 01
+    # finds `.codegraph/codegraph.db` (Story 28.33). Never blocks: every
+    # failure is a named WARN and the session runs without the index.
+    structure_graph = _seed_dispatch_structure_graph(
+        fs=fs,
+        process=process,
+        worktree=worktree,
+        repo_root=repo_root,
+        context_payload=context_payload,
+    )
+    findings.extend(structure_graph.findings)
+    data["structure_graph"] = structure_graph.journal_payload()
     try:
         spec_path = dispatch_core.relocated_spec_path(spec_path, repo_root, worktree)
     except ValueError as exc:
@@ -2411,6 +2681,11 @@ def dispatch_once(
             # A fresh dict per call (never the one already in `data`), so
             # the journal payload and the echoed envelope can never alias.
             "wire": wire.journal_payload(),
+            # Story 77.1 (CAP-282): what the `structure-graph` layer did for
+            # THIS worktree -- sync / init / skipped, and why -- so "did this
+            # session open on an index?" is a recorded fact. A fresh dict,
+            # like `wire`'s, so the journal and the envelope never alias.
+            "structure_graph": structure_graph.journal_payload(),
         },
     )
     try:
