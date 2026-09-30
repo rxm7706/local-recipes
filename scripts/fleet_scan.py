@@ -947,6 +947,29 @@ def apply_git(projects: dict) -> None:
 # ---- dreams (both modes) -----------------------------------------------------
 
 DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
+# `spec-one-chain-per-station` CAP-11 / CHAIN-STANDARD §11: a Dream is live in
+# docs/dreams/ or archived under archive/docs/dreams/. scan_dreams() and
+# _fleet_chains() read both through _dream_files() (marshal Story 75.1).
+ARCHIVE_DREAMS_DIR = REPO_ROOT / "archive" / "docs" / "dreams"
+
+
+def _dream_files() -> list[tuple[Path, bool]]:
+    """Every Dream file as `(path, in_archive)`: docs/dreams/*.md, then
+    archive/docs/dreams/*.md, README skipped, the first copy of a slug kept.
+
+    A missing archive directory globs to nothing, so the scan reads as it did
+    before the archive existed.
+    """
+    seen: set[str] = set()
+    out: list[tuple[Path, bool]] = []
+    for directory, in_archive in ((DREAMS_DIR, False), (ARCHIVE_DREAMS_DIR, True)):
+        for f in sorted(directory.glob("*.md")):
+            if f.name == "README.md" or f.stem in seen:
+                continue
+            seen.add(f.stem)
+            out.append((f, in_archive))
+    return out
+
 
 # The Guild's own vocabulary, read from its single home rather than restated.
 # See docs/governance/guild-roster.json for why it lives beside the governance
@@ -1041,11 +1064,16 @@ def dream_chain(slug: str) -> dict:
 
 
 def scan_dreams() -> list[dict]:
-    """[{slug, title, status}] from docs/dreams/*.md frontmatter (README skipped)."""
+    """[{slug, title, status, owner, type, chain}] from Dream frontmatter (README
+    skipped), plus `blockedOn` / `archived_reason` when set.
+
+    Reads docs/dreams/*.md, then archive/docs/dreams/*.md (see _dream_files()).
+    Location is the archive signal: a Dream read from the archive is reported
+    `archived` whatever its frontmatter `status` says (operator ruling
+    2026-09-30, Story 75.1).
+    """
     dreams: list[dict] = []
-    for f in sorted(DREAMS_DIR.glob("*.md")):
-        if f.name == "README.md":
-            continue
+    for f, in_archive in _dream_files():
         title, status, owner, archived_reason = None, None, None, None
         dtype, blocked_on = None, None
         lines = f.read_text(encoding="utf-8").splitlines()
@@ -1065,6 +1093,8 @@ def scan_dreams() -> list[dict]:
                     dtype = line.split(":", 1)[1].strip()
                 elif line.startswith("blocked-on:"):
                     blocked_on = line.split(":", 1)[1].strip()
+        if in_archive:
+            status = "archived"
         if status not in DREAM_STATUSES:
             print(f"[dreams] WARN {f.name}: status {status!r} not in {DREAM_STATUSES}"
                   " — passed through; board shows it under 'dreamt'")
@@ -1613,15 +1643,18 @@ def _frontmatter_scalars(path: Path, keys: tuple[str, ...]) -> dict[str, str]:
     return out
 
 
-def _fleet_chains() -> list[tuple[str, str, str, str]]:
-    """Every chain in the repo as `(slug, project, owner, dream_status)` — DERIVED.
+def _fleet_chains() -> list[tuple[str, str, str, str, str]]:
+    """Every chain in the repo as `(slug, project, owner, dream_status, parent)` — DERIVED.
+
+    `parent` is the Spec's `owner-dream:` stem, empty when it names none.
 
     The roster was a 13-entry literal while the repo held 34 chains, so 21 chains — every
     one of them carrying a SPEC.md — had no Fleet row at all, including all three that
     carry unresolved `open_questions`. A hardcoded roster omits exactly the newest thing;
     deriving it and warning on what cannot be placed is the standing rule here.
 
-    A chain is a Dream (`docs/dreams/<slug>.md`) OR a Spec directory
+    A chain is a Dream (`docs/dreams/<slug>.md`, or `archive/docs/dreams/<slug>.md` once
+    archived) OR a Spec directory
     (`…/planning-artifacts/specs/spec-<slug>/`). The UNION on purpose: a Dream with no Spec
     and a Spec with no Dream are both real conditions worth seeing, and taking either side
     alone would hide one of them. The Spec's own location names the owning project —
@@ -1651,8 +1684,13 @@ def _fleet_chains() -> list[tuple[str, str, str, str]]:
         od = _frontmatter_scalars(d / "SPEC.md", ("owner-dream",)).get("owner-dream", "")
         if od:
             owner_dream.setdefault(slug, Path(od.strip("'\"")).stem)
-    dreams = {f.stem: _frontmatter_scalars(f, ("owner", "status"))
-              for f in sorted(DREAMS_DIR.glob("*.md")) if f.name != "README.md"}
+    # Live Dreams, then archived ones (_dream_files()); an archived Dream still lends
+    # its station to a Spec whose `owner-dream:` points at it, and reads `archived`.
+    dreams: dict[str, dict[str, str]] = {}
+    for f, in_archive in _dream_files():
+        dreams[f.stem] = _frontmatter_scalars(f, ("owner", "status"))
+        if in_archive:
+            dreams[f.stem]["status"] = "archived"
     out = []
     for slug in sorted(set(spec_project) | set(dreams)):
         meta = dreams.get(slug, {})
@@ -1929,7 +1967,6 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
             "code": empty, "verify": empty, "retro": empty,
         }
     pa = f"_bmad-output/projects/{project}/planning-artifacts"
-    proj = f"_bmad-output/projects/{project}"
     g: dict[str, list[str]] = {
         "dream":    [f"docs/dreams/{slug}.md"],
         "deck":     [f"presentations/{slug}/project/*.html"],
@@ -2627,16 +2664,18 @@ def scan_deferred() -> dict:
 
 # ---- archived (absorbed / retired / terminal / blocked) ----------------------
 
-# Archived is driven ENTIRELY by Dream frontmatter (`status: archived` +
-# `archived-reason:`) — the former hardcoded ARCHIVED_SEED list was retired
-# 2026-07-25 when its five entries became real archived Dreams. One source of
-# truth: a thing cannot be archived on the board without being archived in its
-# Dream, which is what let Sentinel render as a live backlog Dream AND an
-# archived entry simultaneously.
+# Archived is driven ENTIRELY by the Dream: frontmatter `status: archived` (with
+# `archived-reason:`), or a Dream read from archive/docs/dreams/, which
+# scan_dreams() reports `archived` whatever its frontmatter says (Story 75.1).
+# The former hardcoded ARCHIVED_SEED list was retired 2026-07-25 when its five
+# entries became real archived Dreams. One source of truth: a thing cannot be
+# archived on the board without being archived in its Dream, which is what let
+# Sentinel render as a live backlog Dream AND an archived entry simultaneously.
 
 
 def build_archived(dreams: list[dict]) -> list[dict]:
-    """Every Dream frontmatter-marked `status: archived`."""
+    """Every Dream whose row reads `status: archived`: frontmatter-marked, or read
+    from archive/docs/dreams/ (scan_dreams() sets it)."""
     out: list[dict] = []
     for d in dreams:
         if d["status"] == "archived":
@@ -3178,7 +3217,6 @@ def scan_timing(projects: dict) -> None:
         done_n = sum(1 for s in st if len(s) >= 2 and s[1] == "done")
         velocity_obj = None
         if bars:
-            total_h = sum(b[1] for b in bars) / 60
             # The renderer reads v.{bars,sub,foot} — ALL of them. `foot` is not
             # optional: `v.foot.map(...)` throws on a partial object exactly as
             # `timing.perStory` did. Enumerated from the render rather than guessed,
