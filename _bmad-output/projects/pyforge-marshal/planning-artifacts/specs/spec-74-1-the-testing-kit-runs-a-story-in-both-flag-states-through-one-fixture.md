@@ -2,7 +2,8 @@
 title: '74.1: The testing kit runs a story in both flag states through one fixture'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '7151e3d2653a6289c4f01a4ac17f8514aee3247a'
 flag-exempt: flag-infrastructure   # the rule's own test infrastructure (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -95,6 +96,41 @@ Type / Effort / Deps: feature / M / —.
 
 </intent-contract>
 
+## Code Map
+
+Kit root `K` = `src/shared/packages/pyforge-testing-kit`; modules `M` = `K/src/pyforge/testing_kit`.
+
+- `M/cli_runner.py` -- the CLI-runner family (`MockRunner`, alias `CliRunner`); no real CLI invoker yet, so the OFF helper needs one here
+- `M/branch_diff_guard.py:50-67` -- precedent: `import pytest` inside the function keeps the kit a stdlib leaf
+- `M/__init__.py` -- family re-exports and sorted `__all__`; no test pins the family count
+- `K/pyproject.toml`, `K/pixi.toml` -- `dependencies = []` and header comments say "stdlib leaf / zero third-party run-deps"; both change
+- `K/README.md` -- family table (four rows) gains the fifth
+- `K/tests/unit/test_families.py`, `K/tests/conftest.py` -- test style and the Django settings bootstrap; new tests sit beside them
+- `pixi.toml:3044` `[feature.pyforge-testing-kit.dependencies]` -- root declaration site; `openfeature-sdk >=0.10.0` already pinned at `pixi.toml:242` and `:496`
+- `src/platform/config/flags.json` -- read-only: the tree shape (`flags` → key → `state`, `variants`, `defaultVariant`)
+- `src/platform/tests/test_openfeature_file_flags.py:73` -- read-only: the hand-written `_flagd_tree` this family replaces (no station test changes here)
+- `tests/packaging/test_dependency_completeness.py:82,389,547` -- read-only: hard imports must map to a declared dist; `openfeature` → `openfeature-sdk` needs a `MODULE_ALIASES` entry, and this file is outside the Epic 74 surface, so kit imports of `openfeature` stay function-scoped (deferred)
+- OpenFeature SDK 0.10.0 (read from the `platform-ci-test` env): `openfeature.api.set_provider_and_wait`, `api.get_client().provider` (the default-domain provider, public), `openfeature.provider.in_memory_provider.InMemoryProvider` / `InMemoryFlag(default_variant, variants)`; `set_provider` shuts the replaced provider down, so restore re-sets the prior one
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/.memlog.md` -- owning Spec's memlog for the surface reconcile
+
+## Tasks & Acceptance
+
+**Execution:**
+- `M/cli_runner.py` -- add `CliResult` (frozen: `exit_code`, `output`) and `invoke_cli(main, argv)`: run `main(list(argv))`, capture stdout and stderr, take the exit code from the return value or `SystemExit` -- the invoker the OFF helper builds on
+- `M/flags.py` (new) -- `installed_flags(values)` context manager (InMemoryProvider, prior default provider restored, `openfeature` imported inside), `make_flag_provider_fixture()` (pytest fixture `flag_provider`, `pytest` imported inside), `flag_states(key)`, `flagd_tree(tmp_path, flags)`, `assert_flag_off_verb(main, verb, usage_code)`
+- `M/__init__.py` -- export the new names, docstring "five families"
+- `K/pyproject.toml`, `K/pixi.toml` -- declare `openfeature-sdk>=0.10.0` / `">=0.10.0"` in `[project] dependencies` and `[package.run-dependencies]`; fix the leaf comments
+- `pixi.toml` -- add `openfeature-sdk = ">=0.10.0"` to `[feature.pyforge-testing-kit.dependencies]`; re-solve `pixi.lock` (`pixi lock`), regenerate `environment.yaml`
+- `K/README.md` -- family table row for `pyforge.testing_kit.flags`
+- `K/tests/unit/test_flags.py` (new) -- unit-test every I/O Matrix row and the four kit ACs below
+- `spec-pyforge-testing-charter/.memlog.md` and each co-governor `spec_surface_reconcile.py` names -- one `Surface reconcile` entry naming every changed governed path; never `--write-baseline` in this run
+
+**Acceptance Criteria:**
+- Given the kit gains `openfeature-sdk`, when `pixi run --frozen -e pyforge-ci pyforge-deps-test` runs, then pyproject and package pixi.toml agree on the pin and the gate passes
+- Given the changed paths, when `python scripts/spec_surface_reconcile.py` runs, then it exits 0 with every governed path named on its Spec's `.memlog.md`
+
+## Spec Change Log
+
 ## Source
 
 Contract authored from `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-4 and the Q3 ruling (memlog 23), the
@@ -110,6 +146,12 @@ Ledger key: `74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-f
 Ledger status at mint: `backlog`.
 Policy: `marshal-policy.toml` `[epic_surfaces]` `"74"` admits the testing kit, the testing-charter memlog and the
 `_bmad/custom/` overrides beside the default surface.
+
+## Design Notes
+
+- One fixture: `flag_provider` reads `request.param` (a `{key: bool}` mapping, empty when unparametrized). `flag_states(key)` returns a decorator that parametrizes `flag_provider` indirectly with ids `on` / `off` and adds `usefixtures("flag_provider")`, so a test needs no argument to be run twice. A station binds the fixture with `flag_provider = make_flag_provider_fixture()` in its `conftest.py`; the factory is what keeps `pytest` out of the kit's module-level imports.
+- `openfeature` is imported inside `installed_flags`, not at module level: a module-level import makes `pyforge-deps-test` require a `MODULE_ALIASES` entry in `tests/packaging/`, outside the Epic 74 surface. The dependency is still declared in both manifests (AC 5), so the gate's parity checks bind it.
+- A dispatch run may not stamp its own baseline. This run reconciles through the memlogs only; the scoped `--write-baseline` clause in *Boundaries* is the landing step, not this run's.
 
 ## Verification
 
