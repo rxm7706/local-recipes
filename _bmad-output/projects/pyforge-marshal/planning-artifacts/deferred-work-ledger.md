@@ -6502,7 +6502,8 @@ status: open
   origin: fleet consistency pass 2026-09-20 (spec-status fallout PR)
   severity: low
   promoted: 2026-09-20
-  status: open — mint as a story (new epic, since Epic 28 is done) only if the token-economy layers are switched on and dispatch index provisioning cost is measured again; until then the draft is reference material. Minted 2026-09-29 as Story 77.1 (CAP-282, FR-229; operator direction that day, with the layers on since Epic 55); this row resolves when 77.1 lands.
+  resolution: RESOLVED 2026-09-30 — minted as marshal Story 77.1 (CAP-282, FR-229) and landed as PR #1676 (`e1a0cb94e0`, verification verified): `dispatch_once` copies the primary checkout's `.codegraph/` into each dispatch worktree and runs `codegraph sync -q`, and codegraph is in the pyforge-guild environment. Verified live the same night: every relaunched wave-1 dispatch journaled `structure_graph` applied, mode `sync`, about 11.5 s.
+  status: resolved
 
 ### DW-FU-53-2: The reconcile's own memlog + baseline-stamp commit is never re-run through a merge-tree preview before `forge.merge_pr`.
 
