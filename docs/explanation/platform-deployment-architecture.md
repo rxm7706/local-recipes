@@ -67,6 +67,8 @@ kubectl create secret generic platform-secrets \
     --from-literal=KEYCLOAK_ADMIN_PASSWORD=...
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
     --set-file flags.tree=src/platform/config/flags.json \
+    --set-file flags.overlays=src/platform/config/flag-overlays.json \
+    --set flags.environment=<dev|staging|production> \
     --set image.digest=sha256:<digest-from-platform-ci>
 ```
 
@@ -78,6 +80,22 @@ CI run id and digests) — the workflow refuses a digest that is not recorded
 with a Warden verdict. Sidecar images use `sidecar.image.digest` and
 `mcpHost.image.digest` the same way. Optional registry push:
 `PLATFORM_CI_PUSH_REGISTRY=true` + `PLATFORM_CI_REGISTRY` repo variable.
+
+**Feature flags per environment (Story 76.1).** The chart mounts one
+ConfigMap, `<release>-flags`, holding `src/platform/config/flags.json` rendered
+for `flags.environment` (`dev`, `staging` or `production`; required, no default).
+The values that environment takes are the value-only overlay document
+`src/platform/config/flag-overlays.json` (`--set-file flags.overlays=`): per
+environment, a key the tree defines mapped to one of that flag's variant names,
+so "off in production, on in staging and dev" is a reviewed value, not an ops
+convention. The overlay defines nothing (a key, variant or environment the tree
+or chart lacks, or an entry that is an object, fails the render with a named
+error), and a flag whose tree `state` is `DISABLED` stays off everywhere.
+`PYFORGE_ENVIRONMENT` is set on every workload that reads flags, and a checkout
+renders the same content once parsed (`python -m django_pyforge.flags render
+--environment <env>`; Helm sorts keys and escapes HTML characters where Python
+keeps insertion order, so the bytes differ; `pyforge.core.flags.read_boolean`
+composes it for a station CLI).
 
 Renders: web Deployment (gunicorn, probes `/api/health` liveness + `/ht/`
 readiness), Celery worker Deployment (the general pool), a `worker-builds`
@@ -124,7 +142,9 @@ internal registry (see `overlays/ocp/README.md` for detail):
 ```sh
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
     -f src/platform/deploy/overlays/ocp/core-overrides.yaml \
-    --set-file flags.tree=src/platform/config/flags.json
+    --set-file flags.tree=src/platform/config/flags.json \
+    --set-file flags.overlays=src/platform/config/flag-overlays.json \
+    --set flags.environment=<dev|staging|production>
 pixi run -e platform-dev helm install platform-ocp src/platform/deploy/overlays/ocp/chart
 ```
 
@@ -141,6 +161,8 @@ anywhere** — the image's own `USER 1001:0` covers vanilla K8s).
 pixi run -e platform-dev helm lint src/platform/deploy/charts/platform src/platform/deploy/overlays/ocp/chart
 pixi run -e platform-dev helm template platform src/platform/deploy/charts/platform \
     --set-file flags.tree=src/platform/config/flags.json \
+    --set-file flags.overlays=src/platform/config/flag-overlays.json \
+    --set flags.environment=<dev|staging|production> \
     --set image.digest=sha256:<digest> \
     --set sidecar.image.digest=sha256:<digest> \
     --set mcpHost.image.digest=sha256:<digest>

@@ -34,6 +34,8 @@ kubectl -n platform get secret platform-secrets
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
   --namespace platform \
   --set-file flags.tree=src/platform/config/flags.json \
+  --set-file flags.overlays=src/platform/config/flag-overlays.json \
+  --set flags.environment=<dev|staging|production> \
   --set image.digest=sha256:<digest>
 ```
 

@@ -414,10 +414,18 @@ podDisruptionBudget:
 
 # Story 26.4 / canopy AD-11: FILE flags. The JSON tree is NOT stored here —
 # pass --set-file flags.tree=src/platform/config/flags.json (the only tree).
+# Story 76.1 (canopy AD-11 amended 2026-09-28): the per-environment values are
+# the value-only overlay document, passed the same way
+# (--set-file flags.overlays=src/platform/config/flag-overlays.json); the
+# ConfigMap carries the tree rendered for `flags.environment`. The environment
+# has no default on purpose: a release that forgot it must not quietly take
+# another environment's values.
 flags:
   mountPath: /etc/pyforge
   fileName: flags.json
+  environment: ""   # required: dev | staging | production
   tree: ""
+  overlays: ""
 
 # Story 48.5 / R-21: SLO contract alert rules as a vanilla ConfigMap.
 observability:

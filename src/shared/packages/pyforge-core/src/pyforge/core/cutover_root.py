@@ -38,8 +38,25 @@ def resolve_flags_path(explicit: Path | str | None = None) -> Path | None:
     return None
 
 
+def _composed_for_environment(resolved: Path, payload: object) -> object:
+    """The tree as ``PYFORGE_ENVIRONMENT`` renders it (Story 76.1): the sibling ``flag-overlays.json``
+    composed in, so this reader agrees with the chart, the host provider and ``read_boolean``.
+    A bad environment or overlay is a named :class:`CutoverRootError`."""
+    from pyforge.core import flags as core_flags  # noqa: PLC0415 -- flags imports this module at load
+
+    try:
+        environment = core_flags.current_environment()
+        overlays = core_flags.overlays_path_for(resolved)
+        if overlays is None or not isinstance(payload, dict):
+            return payload
+        return core_flags.compose(payload, core_flags.load_overlays(overlays), environment)
+    except core_flags.FlagConfigError as exc:
+        raise CutoverRootError(str(exc)) from exc
+
+
 def read_cutover_root(path: Path | str | None = None) -> str:
-    """Return ``local-recipes`` or ``foundry`` from the flag's defaultVariant."""
+    """Return ``local-recipes`` or ``foundry`` from the flag's defaultVariant
+    (as the current environment renders the tree)."""
     resolved = resolve_flags_path(path)
     if resolved is None:
         raise CutoverRootError("no flag tree: set PYFORGE_FLAGS_PATH or pass a flags.json path")
@@ -47,6 +64,7 @@ def read_cutover_root(path: Path | str | None = None) -> str:
         payload = json.loads(resolved.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise CutoverRootError(f"unreadable flag tree {resolved}: {exc}") from exc
+    payload = _composed_for_environment(resolved, payload)
     flags = payload.get("flags") if isinstance(payload, dict) else None
     if not isinstance(flags, dict) or CUTOVER_FLAG not in flags:
         raise CutoverRootError(f"{CUTOVER_FLAG} missing from {resolved}")

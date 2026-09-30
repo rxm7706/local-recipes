@@ -53,9 +53,13 @@ Database check is connectivity-only), so ORM-touching pages 500 transiently
 until Liquibase + fake-migrate complete; upgrades are covered by pre-upgrade
 ordering.
 
-Flags (Story 26.4 / AD-11): ConfigMap {{ include "platform.fullname" . }}-flags
-is the in-cluster copy of src/platform/config/flags.json. Install with
+Flags (Story 26.4 / AD-11, Story 76.1): ConfigMap {{ include "platform.fullname" . }}-flags
+is the in-cluster copy of src/platform/config/flags.json rendered for the
+{{ include "platform.flags.environment" . }} environment (flags.environment; the values that
+environment takes come from src/platform/config/flag-overlays.json). Install with
   --set-file flags.tree=src/platform/config/flags.json
+  --set-file flags.overlays=src/platform/config/flag-overlays.json
+  --set flags.environment=<dev|staging|production>
 The FILE provider polls /etc/pyforge/flags.json in-process — do not add a
 Reloader or flagd sidecar.
 {{- if not .Values.postgres.backup.enabled }}

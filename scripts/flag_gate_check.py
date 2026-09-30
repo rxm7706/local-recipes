@@ -53,6 +53,9 @@ if str(_SCRIPTS_DIR) not in sys.path:
 import flag_rule  # noqa: E402
 
 TREE_REL = Path("src/platform/config/flags.json")
+# Story 76.1: the value-only overlay document names every tree key per environment, so it is a
+# non-reader exactly as the tree is (else it would hide every orphan).
+OVERLAYS_REL = Path("src/platform/config/flag-overlays.json")
 SPECS_ROOT_REL = "_bmad-output/projects"
 READER_ROOTS = ("src", "scripts")
 
@@ -148,7 +151,7 @@ def story_specs(root: Path) -> list[str]:
 
 
 def _is_reader_candidate(rel: str) -> bool:
-    if rel == TREE_REL.as_posix():
+    if rel in (TREE_REL.as_posix(), OVERLAYS_REL.as_posix()):
         return False
     parts = rel.split("/")
     name = parts[-1]
@@ -160,8 +163,9 @@ def _is_reader_candidate(rel: str) -> bool:
 def orphan_keys(root: Path, keys: Iterable[str]) -> list[str]:
     """The keys whose text appears in no tracked reader file under ``src/`` or ``scripts/``.
 
-    Skipped as non-readers: the tree itself, any path part ``tests``/``test``/``docs``/``fixtures``,
-    ``test_*.py``, ``conftest.py`` and ``*.md``. This module names no live key, so it never reads one.
+    Skipped as non-readers: the tree itself and its overlay document (``flag-overlays.json``, Story 76.1),
+    any path part ``tests``/``test``/``docs``/``fixtures``, ``test_*.py``, ``conftest.py`` and ``*.md``.
+    This module names no live key, so it never reads one.
     """
     remaining = {key: key.encode("utf-8") for key in keys}
     if not remaining:

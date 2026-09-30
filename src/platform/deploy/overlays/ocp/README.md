@@ -17,7 +17,10 @@ The thin OpenShift face of the platform core chart (AD-11), in two halves:
 # 1. Core chart with the OCP overrides (release name "platform" so the
 #    web Service renders as "platform" -- the overlay's default target):
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
-    -f src/platform/deploy/overlays/ocp/core-overrides.yaml
+    -f src/platform/deploy/overlays/ocp/core-overrides.yaml \
+    --set-file flags.tree=src/platform/config/flags.json \
+    --set-file flags.overlays=src/platform/config/flag-overlays.json \
+    --set flags.environment=<dev|staging|production>
 
 # 2. The Route overlay beside it:
 pixi run -e platform-dev helm install platform-ocp src/platform/deploy/overlays/ocp/chart

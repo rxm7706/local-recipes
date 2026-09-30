@@ -387,6 +387,9 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
   value: {{ printf "http://%s:8090" (include "platform.mcpHost.fullname" .) | quote }}
 - name: PYFORGE_FLAGS_PATH
   value: {{ printf "%s/%s" .Values.flags.mountPath .Values.flags.fileName | quote }}
+{{- /* Story 76.1: the environment the mounted tree was rendered for; pyforge.core.flags validates it on every read. */}}
+- name: PYFORGE_ENVIRONMENT
+  value: {{ include "platform.flags.environment" . | quote }}
 - name: FLAGD_RESOLVER
   value: "file"
 - name: FLAGD_OFFLINE_FLAG_SOURCE_PATH
@@ -630,4 +633,70 @@ in-cluster Services.
 {{ include "platform.networkPolicy.egressToKeycloak" . }}
 {{- end }}
 {{ include "platform.networkPolicy.dnsEgress" . }}
+{{- end }}
+
+{{/*
+Story 76.1 / canopy AD-11 (amended 2026-09-28): the environment the flag tree
+is rendered for. Required and one of the three -- there is no default, so a
+release that forgot it fails naming the value instead of taking another
+environment's flag values.
+*/}}
+{{- define "platform.flags.environment" -}}
+{{- $environment := required "flags.environment is required: one of dev, staging, production (canopy AD-11)" .Values.flags.environment -}}
+{{- if not (has $environment (list "dev" "staging" "production")) -}}
+{{- fail (printf "flags.environment %q is not one of dev, staging, production" $environment) -}}
+{{- end -}}
+{{- $environment -}}
+{{- end }}
+
+{{/*
+Story 76.1: the one tree rendered for flags.environment -- the tree with each
+defaultVariant the overlay document names for that environment replaced; a
+flag whose state is DISABLED keeps it (the kill switch wins). The same
+composition and the same refusals as pyforge.core.flags.compose (a chart test
+asserts the ConfigMap equals pyforge.core.flags.render), and every entry of
+every environment is validated, whichever one is rendered:
+  - an environment outside dev/staging/production
+  - an overlay key the tree lacks
+  - an overlay entry that is not a variant name (an object defines a flag: a second tree)
+  - a variant the flag lacks
+*/}}
+{{- define "platform.flags.rendered" -}}
+{{- $environment := include "platform.flags.environment" . -}}
+{{- $tree := mustFromJson (required "pass --set-file flags.tree=src/platform/config/flags.json (the only flag tree; canopy AD-11)" .Values.flags.tree) -}}
+{{- $overlays := mustFromJson (required "pass --set-file flags.overlays=src/platform/config/flag-overlays.json (the per-environment values; canopy AD-11, Story 76.1)" .Values.flags.overlays) -}}
+{{- if not (kindIs "map" $tree) -}}
+{{- fail "flags.tree is not a JSON object" -}}
+{{- end -}}
+{{- if not (kindIs "map" $tree.flags) -}}
+{{- fail "flags.tree has no `flags` object" -}}
+{{- end -}}
+{{- if not (kindIs "map" $overlays) -}}
+{{- fail "flags.overlays is not a JSON object keyed by environment" -}}
+{{- end -}}
+{{- $flags := $tree.flags -}}
+{{- range $name, $entries := $overlays -}}
+{{- if not (has $name (list "dev" "staging" "production")) -}}
+{{- fail (printf "flags.overlays names environment %q, which is not one of dev, staging, production" $name) -}}
+{{- end -}}
+{{- if not (kindIs "map" $entries) -}}
+{{- fail (printf "flags.overlays %s is not an object mapping keys to variant names" $name) -}}
+{{- end -}}
+{{- range $key, $variant := $entries -}}
+{{- if not (hasKey $flags $key) -}}
+{{- fail (printf "flags.overlays %s.%s names a key the tree lacks" $name $key) -}}
+{{- end -}}
+{{- if not (kindIs "string" $variant) -}}
+{{- fail (printf "flags.overlays %s.%s is not a variant name (an overlay holds values only; a definition would be a second tree)" $name $key) -}}
+{{- end -}}
+{{- $flag := get $flags $key -}}
+{{- if not (and (kindIs "map" $flag) (kindIs "map" $flag.variants) (hasKey $flag.variants $variant)) -}}
+{{- fail (printf "flags.overlays %s.%s names variant %q, which the flag lacks" $name $key $variant) -}}
+{{- end -}}
+{{- if and (eq $name $environment) (ne (upper (toString (get $flag "state"))) "DISABLED") -}}
+{{- $_ := set $flag "defaultVariant" $variant -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- toPrettyJson $tree -}}
 {{- end }}
