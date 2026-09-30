@@ -2,7 +2,7 @@
 title: "76.1: bmad_drift_check.py's --specs mode retires"
 type: 'chore'
 created: '2026-09-29'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: '2157e66d12c7306777f98b02fe25ee3080f432c5'
