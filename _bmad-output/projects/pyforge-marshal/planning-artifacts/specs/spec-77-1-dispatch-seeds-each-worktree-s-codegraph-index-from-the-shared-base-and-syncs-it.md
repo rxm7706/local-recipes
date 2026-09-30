@@ -2,7 +2,8 @@
 title: "77.1: Dispatch seeds each worktree's codegraph index from the shared base and syncs it"
 type: 'fix'
 created: '2026-09-29'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '20dde557f4ea8ab580327d341077c2cf0d30bcff'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -15,6 +16,8 @@ context:
   - .claude/skills/bmad-build-auto/step-01-clarify-and-route.md
   - _bmad-output/policy-defaults.toml
   - pixi.toml
+warnings:
+  - oversized
 deferred: []
 declared_low_risk: false
 ---
@@ -150,6 +153,46 @@ Ledger key: `77-1-dispatch-seeds-each-worktree-s-codegraph-index-from-the-shared
 Ledger status at mint: `backlog`.
 Deps: —.
 Flag: none. This is a `fix` (`spec-feature-flag-governance` Q1); the layer's switch is `[context."structure-graph"]`.
+
+## Code Map
+
+All marshal paths are under `src/shared/packages/pyforge-marshal/`.
+
+- `src/pyforge/marshal/cli/dispatch.py` -- `_seed_dispatch_output_layer` (~L492) is the sibling to mirror: never raises, layer off returns `None`, an unavailable instrument becomes a named WARN. `context_payload` is resolved ~L1905 and `data["wire"]` is seeded off-shape ~L1917 so every envelope carries it. The provisioning call site is ~L2153 (after `_seed_dispatch_worktree_scope`, before `spec_path` relocation). The wire disposition is echoed and journaled ~L2387-2413: `data["wire"]` plus the `"wire"` key of the `dispatch-launch` OUTCOME payload. `structure_graph` goes beside each of these three sites. The file uses Python 3.14 bare `except A, B:`; match it.
+- `src/pyforge/marshal/seed/verbs/kit.py` -- `build_codegraph_index(repo_root, *, stale, process)` (~L223) is the one builder: `stale=True` runs `codegraph sync -q`, `stale=False` runs `codegraph init -y`; ceilings `SYNC_TIMEOUT_S` 300 and `INDEX_TIMEOUT_S` 900. It returns `None` or a reason string (it swallows `ProcessError`, so a timeout arrives as `command timed out after ...`). Reuse; do not fork.
+- `src/pyforge/marshal/seed/model/kit.py` -- `KitItemId.CODEGRAPH_INDEX`, `CODEGRAPH_INDEX_RELPATH` (`.codegraph/codegraph.db`), layer `structure-graph`, `probe_binary` `codegraph`.
+- `src/pyforge/marshal/seed/detect/kit.py` -- `probe_instrument(item)` (binary on PATH via `shutil.which`, reason names the binary) and `layer_enabled(context_layers, layer)` (tri-state safe: an unresolved `"auto"` reads OFF). Use both; the output-layer sibling's `layer.get("enabled")` is truthy on `"auto"`.
+- `src/pyforge/marshal/ports/fs.py` / `adapters/fs_local.py` -- `FsPort.copy_file` copies real bytes (`shutil.copy2`); there is no tree copy or listing. Enumerate `<primary>/.codegraph/` read-only with `Path` and copy per file. Adding a port method is out of scope (it would touch every FsPort fake and `tests/meta/test_ad11_write_boundary.py`).
+- `src/pyforge/marshal/core/harness_profile.py` -- `WireWrap.journal_payload()` (~L299) is the payload shape to mirror: off is `applied=False, reason=None`, degraded carries a reason.
+- `src/pyforge/marshal/core/findings.py` (~L1823, `MRS-DISP-051` block) and `src/pyforge/marshal/core/verdict.py` (~L1186) -- the two registries; new codes go in both as `Verdict.WARN`. `MRS-DISP-050` (Story 65.2) and `MRS-DISP-052` (Story 74.2) are claimed by backlog specs and absent from source; this story takes `MRS-DISP-053` and `MRS-DISP-054`.
+- `src/pyforge/marshal/cli/context_bootstrap.py` -- builds the substrate base index (`_rebuild` calls `build_codegraph_index(root, stale=False, ...)`); read-only reference. The WARN message names its command.
+- `tests/unit/test_dispatch_output_layer.py` -- the test shape to follow (fake `FsPort`, `monkeypatch` at the `dispatch_module` call site). `tests/unit/test_dispatch.py` holds the `dispatch_once` fakes; existing exact-payload assertions gain a `structure_graph` key.
+- `pixi.toml` (~L899-902) -- `[feature.pyforge-guild.target.linux-64.dependencies]`, beside `caveman-installer`. The `codegraph` pin already exists in `feature.local-recipes`'s linux-64 table (~L2330). `_bmad-output/policy-defaults.toml` L69 -- `[context."structure-graph"] enabled = true`.
+- Shell note: this run's `PIXI_PROJECT_MANIFEST` names the primary checkout's `pixi.toml`. Every pixi command that edits or locks must run with `--manifest-path <worktree>/pixi.toml` (or the variable unset) so nothing writes to the primary.
+
+## Tasks & Acceptance
+
+The contract's `## Tasks` and `## Acceptance Criteria` stand as written. The execution order, one file per task:
+
+**Execution:**
+- `pixi.toml` -- add `codegraph = ">=1.6.0"` to `[feature.pyforge-guild.target.linux-64.dependencies]` beside `caveman-installer`, no channel pin; then `pixi lock` and regenerate `environment.yaml`, both with the worktree manifest -- Task 2
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `.../core/verdict.py` -- register `MRS-DISP-053` (no base index or sync fell back to init) and `MRS-DISP-054` (session runs without an index) as WARN -- Task 3
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` -- add `StructureGraphSeed` and `_seed_dispatch_structure_graph`; call it at the provisioning site; seed `data["structure_graph"]` off-shape beside `data["wire"]`; add `structure_graph` to the OUTCOME payload -- Task 3
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_structure_graph.py` -- every I/O-matrix row against a fake `FsPort`/`ProcessPort`, the primary-unchanged snapshot, and a `dispatch_once`-level journal assertion -- Task 4
+- `src/shared/packages/pyforge-marshal/tests/integration/test_dispatch_structure_graph_real.py` -- the real-binary seed-and-sync test, skipped with a reason when `codegraph` is absent -- Task 4
+- Existing `dispatch_once` tests that pin an exact OUTCOME payload -- add the `structure_graph` key -- Task 4
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` and each co-governor `spec-surface-check` names -- append a surface-reconcile entry per changed governed path -- Task 6
+
+## Design Notes
+
+- **Two contract steps are not this run's.** Task 6's scoped `--write-baseline --spec` stamp is not run: this dispatch forbids `--write-baseline` (a producer that stamps its own baseline launders drift), so the run reconciles by memlog only and the landing owns the stamp. Task 7 writes the primary checkout, which a dispatch never does, so it is a post-landing operator step.
+- **One dataclass, one payload spelling.** `StructureGraphSeed(applied, mode, reason, seconds, findings)` is frozen and has `journal_payload()` (`applied`, `mode`, `reason`, `seconds`), the way `WireWrap` does. The function returns it; `dispatch_once` puts `journal_payload()` on `data` and on the OUTCOME entry. The off shape is `applied=False, mode="skipped", reason=None, seconds=0.0` and has no finding.
+- **Order inside the function.** (1) layer off -> off shape. (2) `probe_instrument` unavailable -> `skipped`, reason from the probe, WARN `MRS-DISP-054`; nothing is copied. (3) worktree already holds `.codegraph/codegraph.db` -> `sync -q` only. (4) base present -> copy files, then `sync -q`. (5) no base -> `init -y` plus WARN `MRS-DISP-053` naming `pixi run -e pyforge-guild marshal context bootstrap`.
+- **Failure ladder.** A non-timeout `sync` failure falls back to `init -y` once, with a WARN `MRS-DISP-053` carrying the sync reason; the mode that finally applied is what is journaled. A reason containing `timed out` on either verb ends in `skipped`, reason `timeout`, WARN `MRS-DISP-054`, with no init fallback (init's 900 s ceiling must not stack on a timed-out sync). A copy failure ends in `skipped` with the OS reason, WARN `MRS-DISP-054`. The function never raises.
+- **Copy, never link, never touch the primary.** Only regular files under the base `.codegraph/` are copied (symlinks are skipped); sqlite sidecar files (`-wal`, `-shm`) travel with the db because the whole directory is enumerated. The primary is only read; a test snapshots each file's mtime and size before and after.
+- **`seconds`** is `time.monotonic()` around copy plus build, rounded to two decimals.
+- **Root-bound row.** The 28.31 benchmark timed `sync` from a base but never checked which paths a synced worktree index answers with. The binary is not installed here until Task 2 lands. Decision rule, fixed now: after Task 2, seed a worktree from a base built in a sibling directory and run `codegraph context` there. If it answers with worktree paths, the matrix row is unreachable and Design Notes records the measurement, with no runtime probe. If it answers with the base's paths, the sync path is unsound: `dispatch` falls back to `init -y` after the copy, with the WARN, and the integration test pins that behavior.
+## Spec Change Log
 
 ## Verification
 
