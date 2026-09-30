@@ -456,6 +456,16 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-WATCH-002",
             "MRS-WATCH-003",
             "MRS-WATCH-004",
+            # Story 65.1 (spec-pyforge-marshal CAP-274, `marshal factory drain
+            # --plan`): 001 ERROR next story would not dispatch cleanly; 002
+            # WARN queued story / unmirrored prose park; 003 WARN inert
+            # order_overrides; 004 WARN unmet Deps; 005 UNEVALUABLE plan
+            # could not be computed.
+            "MRS-DRAINPLAN-001",
+            "MRS-DRAINPLAN-002",
+            "MRS-DRAINPLAN-003",
+            "MRS-DRAINPLAN-004",
+            "MRS-DRAINPLAN-005",
         }
     )
 

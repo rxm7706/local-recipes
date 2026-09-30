@@ -6971,3 +6971,36 @@ status: open
   severity: low
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-65-1: The prose-park detector flags tracked specs and epics blocks that only quote or negate the marker, so a false match on a station's next story reads MRS-DRAINPLAN-001 (ERROR, exit 4).
+
+- source_spec: `planning-artifacts/specs/spec-65-1-a-drain-plan-reports-every-refusal-it-can-decide-before-launch.md`
+  summary: The prose-park detector flags tracked specs and epics blocks that only quote or negate the marker, so a false match on a station's next story reads MRS-DRAINPLAN-001 (ERROR, exit 4).
+  evidence: The intent-contract defines the detector literally ("Parked" or "do not dispatch", case-insensitive, anywhere in the story's epics.md block or its tracked spec), and the implementation follows it. Run over the 1,212 tracked spec-N-*.md files it matches 32; five are live backlog stories: marshal 65.2, 66.1 and 73.2 (boundary bullets such as "Do not dispatch a follow-up whose row is closed"), herald 28.1 ("parked; inherits the smaller tree") and mason 25.2 (a table cell). Steward 44.2, 44.9, 44.10 and 44.11 match on "Do not dispatch outward ... work without operator confirmation". Tightening it (a marker-line form, negation and fenced-code handling) changes the contract, which is read-only in a build run and is amended only through the Spec memlog and bmad-spec.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_prelaunch.py:113
+  origin: spec-deferred 439247b272c7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-65-1-2: A serial station with a live session reads would_dispatch true in the plan, while the drain relays it as in-flight (MRS-DRAIN-006 WARN) after dispatch_once refuses with MRS-DISP-011/021.
+
+- source_spec: `planning-artifacts/specs/spec-65-1-a-drain-plan-reports-every-refusal-it-can-decide-before-launch.md`
+  summary: A serial station with a live session reads would_dispatch true in the plan, while the drain relays it as in-flight (MRS-DRAIN-006 WARN) after dispatch_once refuses with MRS-DISP-011/021.
+  evidence: plan_station_cycle's serial branch returns the queue head without a liveness read (the parallel branch reads _live_dispatch_story_keys), and evaluate_story never calls station_in_flight_conflict, which dispatch_once runs. The intent's evaluated-refusal list and MRS-DRAINPLAN-001's would-be codes exclude MRS-DISP-011/021, so how a busy station maps to the plan's outcome, findings and exit code is a Spec decision (the drain's own reading is an in-flight WARN, never a refusal).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:3890
+  origin: spec-deferred 3696226d092d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-65-1-3: Pre-existing crash: with more than one story in flight allowed, an empty parallel wave makes execute_fleet_cycle raise ValueError from StationCycleStatus(plan.outcome.value).
+
+- source_spec: `planning-artifacts/specs/spec-65-1-a-drain-plan-reports-every-refusal-it-can-decide-before-launch.md`
+  summary: Pre-existing crash: with more than one story in flight allowed, an empty parallel wave makes execute_fleet_cycle raise ValueError from StationCycleStatus(plan.outcome.value).
+  evidence: When the wave has no members (a missing spec, an unknown surface, or unmet Deps on every ready story), stories_to_dispatch is empty and the cycle builds StationCycleResult with StationCycleStatus("dispatch"), which is not a member of the enum. Reproduced on a marshal station, whose policy has max_parallel 2, and confirmed by reading the pre-change code. Which status an empty wave should report (in-flight keeps the supervisor ticking, blocked or all-skipped stops it) is a supervisor-semantics decision, and this story's Boundaries require the extraction to preserve cycle behaviour. The plan reports the same case as outcome held and does not crash.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:4317
+  origin: spec-deferred e8ee69d75c54 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
