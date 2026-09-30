@@ -3,7 +3,10 @@ action item 11) against a throwaway git repo, not this checkout."""
 
 from __future__ import annotations
 
+import re
 import subprocess
+import tomllib
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -122,6 +125,62 @@ def test_a_failing_git_call_still_raises_called_process_error(repo: Path):
         commit_subject(repo, "0" * 40)
     assert caught.value.returncode != 0
     assert caught.value.cmd[:2] == ["git", "log"]
+
+
+_BAD_PATHSPEC = ":(bogus)x"  # git refuses an unknown pathspec magic with exit 128
+
+
+def _unsanctioned_commits_with_a_corrupt_index(repo: Path) -> list[str]:
+    # `git log` passes with a corrupt index and `git diff HEAD` does not, so this reaches only the
+    # dirty-path call at the end of unsanctioned_commits.
+    (repo / ".git" / "index").write_text("not an index\n", encoding="utf-8")
+    return unsanctioned_commits(repo, pathspec="surface", changelog_path="surface/CHANGELOG.md")
+
+
+# One row per `_git_out` call site: swapping any of them for the non-raising `_git` would turn a git
+# failure into a silent empty result. Each row makes its own git call fail for real.
+_FAILING_CALLS: dict[str, Callable[[Path], object]] = {
+    "diff_text_since": lambda repo: diff_text_since(repo, base="origin/main", pathspec=_BAD_PATHSPEC),
+    "changed_paths_since": lambda repo: changed_paths_since(repo, base="origin/main", pathspec=_BAD_PATHSPEC),
+    "changed_paths_since_untracked": lambda repo: changed_paths_since(
+        repo, base="origin/main", pathspec=_BAD_PATHSPEC, include_untracked=True
+    ),
+    "commits_since": lambda repo: commits_since(repo, base="origin/main", pathspec=_BAD_PATHSPEC),
+    "commit_files": lambda repo: commit_files(repo, "0" * 40),
+    "unsanctioned_commits_history": lambda repo: unsanctioned_commits(
+        repo, pathspec=_BAD_PATHSPEC, changelog_path="x/CHANGELOG.md"
+    ),
+    "unsanctioned_commits_dirty": _unsanctioned_commits_with_a_corrupt_index,
+}
+
+
+@pytest.mark.parametrize("call", _FAILING_CALLS, ids=list(_FAILING_CALLS))
+def test_every_guard_raises_called_process_error_on_a_git_failure(repo: Path, call: str):
+    _make_origin_main(repo)
+    with pytest.raises(subprocess.CalledProcessError) as caught:
+        _FAILING_CALLS[call](repo)
+    assert caught.value.returncode != 0
+    assert caught.value.cmd[0] == "git"
+
+
+def _dist_name(requirement: str) -> str:
+    match = re.match(r"[A-Za-z0-9_.-]+", requirement)
+    assert match, f"unparseable requirement {requirement!r}"
+    return match.group(0)
+
+
+def test_the_kit_declares_the_runtime_dependencies_it_imports():
+    """`tests/packaging/test_dependency_completeness.py` skips the `pyforge` namespace, so nothing else
+    pins that both manifests name the two packages the kit imports (`pyforge.core.process` in
+    `branch_diff_guard`, `openfeature` in `flags`)."""
+    kit = Path(__file__).resolve().parents[2]
+    with (kit / "pyproject.toml").open("rb") as handle:
+        pyproject = {_dist_name(dep) for dep in tomllib.load(handle)["project"]["dependencies"]}
+    with (kit / "pixi.toml").open("rb") as handle:
+        pixi = set(tomllib.load(handle)["package"]["run-dependencies"])
+    for name in ("pyforge-core", "openfeature-sdk"):
+        assert name in pyproject, f"{name} is not in pyproject.toml [project] dependencies"
+        assert name in pixi, f"{name} is not in pixi.toml [package.run-dependencies]"
 
 
 def test_unsanctioned_commits_accepts_a_sanctioned_retro(repo: Path):

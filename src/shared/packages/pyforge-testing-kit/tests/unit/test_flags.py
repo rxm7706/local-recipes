@@ -121,7 +121,8 @@ def test_flagd_tree_has_the_platform_trees_shape(tmp_path: Path) -> None:
     assert entry["state"] == "ENABLED"
 
     platform = json.loads((_REPO_ROOT / "src/platform/config/flags.json").read_text(encoding="utf-8"))
-    assert set(entry) == set(platform["flags"]["pyforge.three_surfaces"])
+    assert platform["flags"], "the platform tree carries no flag to compare the written shape against"
+    assert set(entry) == set(next(iter(platform["flags"].values())))
     assert set(json.loads(path.read_text(encoding="utf-8"))) == set(platform)
 
 
@@ -221,6 +222,15 @@ def test_the_off_helper_passes_on_a_listed_disabled_verb_that_refuses_with_the_u
 def test_the_off_helper_finds_the_marker_on_a_wrapped_help_line(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("COLUMNS", "70")
     assert_flag_off_verb(_fixture_cli(wraps=True), "thing", _USAGE)
+
+
+def test_the_off_helper_reads_a_coloured_help_the_same_as_a_plain_one(monkeypatch: pytest.MonkeyPatch) -> None:
+    # argparse on Python 3.14 colours --help when either variable is set, even into a captured stream.
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("PYTHON_COLORS", "1")
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    assert "\x1b[" not in invoke_cli(_fixture_cli(), ["--help"]).output
+    assert_flag_off_verb(_fixture_cli(), "thing", _USAGE)
 
 
 def test_the_off_helper_fails_naming_a_verb_absent_from_help() -> None:

@@ -114,7 +114,7 @@ def flag_states(key: str) -> Callable[[F], F]:
     return decorate
 
 
-def flagd_tree(tmp_path: Path, flags: Mapping[str, str], *, name: str = "flags.json") -> Path:
+def flagd_tree(tmp_path: Path, flags: dict[str, str], *, name: str = "flags.json") -> Path:
     """Write a temporary flagd FILE tree and return its path.
 
     ``flags`` maps a flag key to its default variant, ``"on"`` or ``"off"``. The file has the shape of
