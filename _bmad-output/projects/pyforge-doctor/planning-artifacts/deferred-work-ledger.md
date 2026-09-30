@@ -1952,7 +1952,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred 879d8a34eaf9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: high
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  resolved: 2026-09-29 (doctor Story 34.2, spec-feature-flag-governance CAP-2) -- scribe's own spec now reads `flag-exempt: docs-only` (PR #1677, unblock-wave1-2026-09-30, merged to `origin/main`); this story edited no scribe spec and exempted nothing. Measured on the merged tree: `pixi run -e pyforge-guild flag-gate-check` exits 0 (1207 story specs judged, 0 fail, 840 warn) and `flag_gate_check.py --spec` on this spec returns `pass`.
+  status: closed
 
 ### DW-doctor-34-2-2: Scribe Story 24.2 is a post-rule `type: feature` story spec that carries neither a `flag:` block nor a `flag-exempt:` value, so the gate reds it (`flag-missing`) and the landing is blocked on scribe.
 
@@ -1963,4 +1964,5 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred 9fc94a59b093 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: high
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  resolved: 2026-09-29 (doctor Story 34.2, spec-feature-flag-governance CAP-2) -- scribe's own spec now reads `flag-exempt: detector-or-gate` (PR #1677); same measurement as DW-doctor-34-2 above, no scribe spec edited here.
+  status: closed
