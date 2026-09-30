@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import subprocess
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,7 @@ DEFAULT_MANIFEST = Path("docs/foundry/manifest.json")
 FOUNDRY_EPOCH = "6e0607b530f5fa5db2faffd12cbc49da9d880083"
 REALIZATION_LOG = Path("docs/dreams/pyforge-unifying-strategy.md")
 ENV_FOUNDRY = "CUTOVER_FOUNDRY_ROOT"
+CUTOVER_FLAG_STORY = "44-12-cutover-flag-and-replay-harness"
 
 # Launch apply trees only — 44.1 still owns 100% coverage.
 _PHASE_RULES: dict[str, tuple[str, ...]] = {
@@ -255,6 +257,15 @@ def flip_root(
             "state": "ENABLED",
             "variants": {k: k for k in CUTOVER_VARIANTS},
             "defaultVariant": DEFAULT_CUTOVER_ROOT,
+            # Story 76.2: every flag carries its clock. A string flag has no ON variant, so
+            # `on_everywhere` and `cleanup_by` stay empty and no clock runs.
+            "metadata": {
+                "owner": "steward",
+                "story": CUTOVER_FLAG_STORY,
+                "created": date.today().isoformat(),
+                "on_everywhere": "",
+                "cleanup_by": "",
+            },
         },
     )
     entry["defaultVariant"] = target

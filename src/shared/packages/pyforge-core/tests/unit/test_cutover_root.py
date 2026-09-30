@@ -27,6 +27,14 @@ def _tree(tmp_path: Path, default: str = "local-recipes") -> Path:
                             "foundry": "foundry",
                         },
                         "defaultVariant": default,
+                        # Story 76.2: a string flag has no ON variant, so its clock stays empty.
+                        "metadata": {
+                            "owner": "steward",
+                            "story": "44-12-cutover-flag-and-replay-harness",
+                            "created": "2026-09-13",
+                            "on_everywhere": "",
+                            "cleanup_by": "",
+                        },
                     }
                 }
             }

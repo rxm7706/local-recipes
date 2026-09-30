@@ -116,6 +116,17 @@ def test_flip_refused_while_loop_running(tmp_path: Path) -> None:
 # --- Story 76.1: a flip is not masked by the per-environment overlay -------------
 
 
+# Story 76.2: every flag carries its clock. Neither fixture flag is ON in every environment
+# (a string flag never is; `pyforge.other` is off in the tree), so both clocks stay empty.
+_CLOCKLESS = {
+    "owner": "steward",
+    "story": "76-2-a-fixture",
+    "created": "2026-09-01",
+    "on_everywhere": "",
+    "cleanup_by": "",
+}
+
+
 def _flag_tree(directory: Path, overlays: object | None = None) -> Path:
     flags = directory / "flags.json"
     flags.write_text(
@@ -126,11 +137,13 @@ def _flag_tree(directory: Path, overlays: object | None = None) -> Path:
                         "state": "ENABLED",
                         "variants": {"local-recipes": "local-recipes", "foundry": "foundry"},
                         "defaultVariant": "local-recipes",
+                        "metadata": _CLOCKLESS,
                     },
                     "pyforge.other": {
                         "state": "ENABLED",
                         "variants": {"on": True, "off": False},
                         "defaultVariant": "off",
+                        "metadata": _CLOCKLESS,
                     },
                 }
             }
@@ -193,6 +206,23 @@ def test_flip_leaves_an_environment_that_does_not_name_the_flag_alone(tmp_path: 
     flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
     overlays = json.loads((tmp_path / "flag-overlays.json").read_text(encoding="utf-8"))
     assert overlays == {"dev": {"pyforge.other": "on"}, "production": {"pyforge.cutover_root": "foundry"}}
+
+
+def test_flip_creates_an_absent_flag_with_a_composable_clock(tmp_path: Path) -> None:
+    """A tree without the key gets it, carrying metadata, so a sibling overlay still composes."""
+    from pyforge.core import flags as core_flags
+
+    flags = tmp_path / "flags.json"
+    flags.write_text(json.dumps({"flags": {}}), encoding="utf-8")
+    (tmp_path / "flag-overlays.json").write_text(json.dumps({"production": {}}), encoding="utf-8")
+    flip_root(flags, "foundry", tmp_path / "no-dream.md", loop_home=tmp_path / "loops")
+    created = json.loads(flags.read_text(encoding="utf-8"))["flags"]["pyforge.cutover_root"]
+    assert created["defaultVariant"] == "foundry"
+    assert created["metadata"]["owner"] == "steward"
+    assert created["metadata"]["story"].startswith("44-12-")
+    assert created["metadata"]["on_everywhere"] == created["metadata"]["cleanup_by"] == ""
+    core_flags.check_metadata({"pyforge.cutover_root": created})
+    assert read_cutover_root(flags) == "foundry"
 
 
 def test_flip_without_a_sibling_overlay_writes_no_overlay(tmp_path: Path) -> None:

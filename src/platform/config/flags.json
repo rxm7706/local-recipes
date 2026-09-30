@@ -6,7 +6,14 @@
         "on": true,
         "off": false
       },
-      "defaultVariant": "on"
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "26-4-one-flag-flips-three-surfaces-without-a-redeploy",
+        "created": "2026-08-25",
+        "on_everywhere": "2026-08-25",
+        "cleanup_by": "2026-11-23"
+      }
     },
     "pyforge.cutover_root": {
       "state": "ENABLED",
@@ -14,7 +21,14 @@
         "local-recipes": "local-recipes",
         "foundry": "foundry"
       },
-      "defaultVariant": "local-recipes"
+      "defaultVariant": "local-recipes",
+      "metadata": {
+        "owner": "steward",
+        "story": "44-12-cutover-flag-and-replay-harness",
+        "created": "2026-09-13",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     },
     "pyforge.steward.ghe_fleet_credentials": {
       "state": "ENABLED",
@@ -22,7 +36,14 @@
         "on": true,
         "off": false
       },
-      "defaultVariant": "off"
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity",
+        "created": "2026-09-29",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     },
     "pyforge.steward.object_store_consumer": {
       "state": "ENABLED",
@@ -30,7 +51,14 @@
         "on": true,
         "off": false
       },
-      "defaultVariant": "off"
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it",
+        "created": "2026-09-29",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     }
   }
 }
