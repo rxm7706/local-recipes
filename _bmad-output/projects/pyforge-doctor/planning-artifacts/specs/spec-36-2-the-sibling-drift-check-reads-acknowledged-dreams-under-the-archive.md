@@ -11,14 +11,7 @@ context:
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
   - src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py
-deferred:
-  - summary: >-
-      `ruff format --check` is red for `pyforge-scribe`, so `lint-types` (the first leg of `pr-preflight`) is red on this branch, but the red is on `origin/main` and not in this diff.
-    evidence: |-
-      `src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py` is byte-identical to `origin/main`. `ruff format --diff` with the scribe package config wants `except OSError, subprocess.TimeoutExpired:` (PEP 758, py314) in place of the parenthesised tuple at line 387. Landed by scribe Story 25.1 (2026-09-30). The file sits in the surfaces of `spec-pyforge-scribe`, `spec-pyforge-core` and `spec-pyforge-unifying-strategy`, so a fix from this doctor story would need a memlog entry and a scoped stamp on three other stations' Specs and would collide with parallel dispatches; the owning station's next story should take the one-token fix. A `dispatch/*` branch skips `pr-preflight` (journaled), so this story's landing is not blocked by it.
-    location: >-
-      src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py:387
-    severity: medium
+deferred: []
 declared_low_risk: false
 ---
 
@@ -180,6 +173,11 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
   - `[false]` `[reject]` Intent (3): the intent's premise (seven acknowledged Dreams, `pyforge-doctor` live) does not match the tree — verified: six `docs/dreams/*.md` files carry a frontmatter `sibling-acknowledged:` line and `pyforge-doctor.md` mentions it only in prose; no code or test relies on the count and the check reads the line from whichever Dream has it, so no bad outcome occurs at any diff location, and the intent contract is not this build's to edit.
   - `[false]` `[reject]` Intent (4): the governance footprint is larger than Task 5's two Specs — carried from Blind 9, Blind 10 and Intent (f).
   - `[false]` `[reject]` Intent (5): a comment-only edit to `sources/__init__.py` sits outside the stated tasks — refuted: it is comment-only with no behaviour change, adjacent to the check being extended, and covered by the "broken window in what you touch" rule; it is the same edit Blind 7 of the first pass triaged as a patch.
+
+### 2026-09-30 — Operator landing (the deferral is resolved)
+- The landing was refused twice (MRS-DISP-038): the branch's appends to `spec-pyforge-doctor`, `spec-pyforge-core` and `spec-pyforge-unifying-strategy`'s `.memlog.md` conflicted with steward Story 76.2's. `origin/main` was merged in and the three memlogs resolved as an ordered union (main first, then this story; every entry from both sides kept, no duplicates).
+- The frontmatter deferral (Blind 8 of both passes: `ruff format` red for `pyforge-scribe` at `catalog.py:387`) is **resolved** and removed from `deferred:`: PR #1690 (`d923bdfd1b`) reformatted that line on `main`, and the merge brings it here; `ruff format --check` on the file exits 0 on this branch. No deferred-work ledger twin is needed.
+- Re-verified after the merge: `pyforge-doctor-test` exit 0 (3077 passed, 1 skipped).
 
 ## Auto Run Result
 
