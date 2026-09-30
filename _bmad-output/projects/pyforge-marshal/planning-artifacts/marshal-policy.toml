@@ -407,6 +407,19 @@ verify_commands = [
   # co-governor reconciles (spec-pyforge-testing-charter governs the kit)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"78" = [  # a landing unions append-only memlogs (spec-pyforge-marshal CAP-283), added 2026-09-30. The default
+          # surface, restated because a declared entry replaces it outright, plus every Spec memlog: the
+          # co-governor reconcile writes `spec-pyforge-unifying-strategy`'s, which lives under pyforge-steward.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
 # verbatim from CLAUDE.md's "PR CI gates" section -- now governed, machine-
