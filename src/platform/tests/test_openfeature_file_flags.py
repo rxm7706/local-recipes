@@ -472,7 +472,9 @@ def _fixture_flags(document: object) -> dict[str, Any]:
         default, state = tree_defaults[key]
         overlay = named.get(environment)
         variant = overlay.get(key, default) if isinstance(overlay, dict) else default
-        return state != "DISABLED" and variant == "on"
+        if state == "DISABLED":  # compose ignores the overlay for a killed flag
+            variant = default
+        return variant == "on"
 
     return {
         key: _entry(
