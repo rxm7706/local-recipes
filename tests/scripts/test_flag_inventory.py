@@ -71,7 +71,9 @@ def _fixture(
     _write(
         tmp_path,
         "docs/governance/guild-roster.json",
-        json.dumps({"stations": list(stations), "spec_statuses_ended_acts": list(ended), "flag_exemptions": ["docs-only"]}),
+        json.dumps(
+            {"stations": list(stations), "spec_statuses_ended_acts": list(ended), "flag_exemptions": ["docs-only"]}
+        ),
     )
     _write(
         tmp_path,
@@ -98,7 +100,9 @@ def _epics(root: Path, *stories: tuple[str, str | None], station="atlas", slug=S
     blocks = []
     for number, (caps, surface) in enumerate(stories, start=1):
         surface_line = f"**Surface:** {surface}\n" if surface is not None else ""
-        blocks.append(f"### Story 1.{number}: story {number}\n\nLiving CAP citations: `{slug}` {caps}.\n{surface_line}\n")
+        blocks.append(
+            f"### Story 1.{number}: story {number}\n\nLiving CAP citations: `{slug}` {caps}.\n{surface_line}\n"
+        )
     _write(
         root,
         f"_bmad-output/projects/pyforge-{station}/planning-artifacts/epics.md",
@@ -524,14 +528,18 @@ def test_the_warned_list_of_a_station_holds_the_same_paths_as_the_gates_warn_lis
 
     assert rc == 1  # the fixture has one red spec; the inventory must not care
     for station in ("atlas", "warden"):
-        expected = {f["path"] for f in gate["findings"] if f["kind"] == "flag-pre-rule" and f["station"] == f"pyforge-{station}"}
+        expected = {
+            f["path"] for f in gate["findings"] if f["kind"] == "flag-pre-rule" and f["station"] == f"pyforge-{station}"
+        }
         report = (out / f"pyforge-{station}.md").read_text(encoding="utf-8")
         assert len(expected) == 4
         assert _warned_paths(report) == expected
         assert _header(report, "Warned specs") == len(expected)
 
 
-def test_the_warned_list_is_sorted_and_carries_each_specs_own_status(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_the_warned_list_is_sorted_and_carries_each_specs_own_status(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     prefix = "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/"
     root = _fixture(tmp_path, baseline=[prefix + "spec-2-1-b.md", prefix + "spec-1-1-a.md"])
     _story_spec(root, "spec-2-1-b.md", status="done")
@@ -756,15 +764,10 @@ def test_the_seam_finds_all_eight_names_of_doctors_join():
     assert len(expected) == 8
     assert set(vars(join)) == expected
     assert all(callable(getattr(join, name)) for name in expected)
-
-
-def test_the_eight_underscore_names_exist_in_doctors_modules():
-    import importlib
-
-    for module_name, names in flag_inventory.JOIN_NAMES.items():
-        module = importlib.import_module(module_name)
-        for attribute in names.values():
-            assert callable(getattr(module, attribute)), f"{module_name}.{attribute} is gone"
+    assert {module for module in flag_inventory.JOIN_NAMES} == {
+        "pyforge.doctor.sources.capability_effect",
+        "pyforge.doctor.sources.board",
+    }
 
 
 def test_an_import_error_in_the_join_is_exit_2_naming_the_join(
@@ -791,7 +794,8 @@ def test_a_renamed_join_name_is_exit_2_not_a_traceback(
     root = _fixture(tmp_path)
     _spec(root)
     renamed = {
-        module: {**names, "canonical_epics": "_canonical_epics_renamed"} for module, names in flag_inventory.JOIN_NAMES.items()
+        module: {**names, "canonical_epics": "_canonical_epics_renamed"}
+        for module, names in flag_inventory.JOIN_NAMES.items()
     }
     monkeypatch.setattr(flag_inventory, "JOIN_NAMES", renamed)
 
@@ -849,7 +853,11 @@ def test_the_live_tree_builds_eight_reports_and_exits_0(tmp_path: Path):
     out = tmp_path / "out"
 
     proc = subprocess.run(
-        [sys.executable, str(INVENTORY), "--out-dir", str(out)], capture_output=True, text=True, check=False, cwd=REPO_ROOT
+        [sys.executable, str(INVENTORY), "--out-dir", str(out)],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=REPO_ROOT,
     )
 
     stations = json.loads((REPO_ROOT / "docs/governance/guild-roster.json").read_text(encoding="utf-8"))["stations"]
@@ -874,7 +882,9 @@ def test_the_live_reports_agree_with_the_gate_on_the_warned_specs_of_every_stati
         assert _header(text, "Warned specs") == len(expected)
         assert text.startswith(f"# Flag inventory: {station}\n")
         assert re.search(r"^- Read at SHA: `[0-9a-f]{40}`$", text, re.MULTILINE)
-        rows = [ln for ln in text.splitlines() if re.match(r"\| CAP-\d+ \| (runtime|module|planning|unresolved) \|", ln)]
+        rows = [
+            ln for ln in text.splitlines() if re.match(r"\| CAP-\d+ \| (runtime|module|planning|unresolved) \|", ln)
+        ]
         unflagged = [r for r in rows if "| runtime |" in r and r.endswith("| none |")]
         assert _header(text, "Runtime CAPs with no flag") >= len(unflagged)
 
@@ -939,7 +949,9 @@ def test_the_script_imports_no_pyforge_module_except_doctors_join_and_no_station
     named = {
         node.value
         for node in ast.walk(tree)
-        if isinstance(node, ast.Constant) and isinstance(node.value, str) and re.fullmatch(r"pyforge(\.\w+)+", node.value)
+        if isinstance(node, ast.Constant)
+        and isinstance(node.value, str)
+        and re.fullmatch(r"pyforge(\.\w+)+", node.value)
     }
 
     assert not {m for m in imported if m == "pyforge" or m.startswith("pyforge.")}

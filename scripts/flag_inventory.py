@@ -185,7 +185,9 @@ def head_sha(root: Path) -> str:
     if not (root / ".git").exists():
         return UNKNOWN
     try:
-        proc = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True, check=False)
+        proc = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+        )
     except OSError:
         return UNKNOWN
     sha = proc.stdout.strip()
@@ -252,7 +254,7 @@ def module_names(path: Path) -> dict[str, set[str]]:
     names: dict[str, set[str]] = {CLI: set(), MCP: set(), REST: set()}
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, SyntaxError, ValueError, RecursionError):
+    except OSError, UnicodeDecodeError, SyntaxError, ValueError, RecursionError:
         return names
     for stmt in tree.body:
         value: ast.expr | None = None
@@ -464,7 +466,7 @@ def _gating_flags(
             continue
         try:
             text = (root / story.rel).read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             continue  # the gate read this spec's frontmatter a moment ago; a vanished file gates nothing
         for line in text.splitlines():
             for slug in slugs:
@@ -510,7 +512,9 @@ def build_station(
     if open_specs:
         epics = join.canonical_epics(project_dir)
         if epics is None and (planning / "epics.md").exists():
-            raise InventoryError(f"cannot read epics {flag_rule.repo_relative(planning / 'epics.md', root)}: not a file")
+            raise InventoryError(
+                f"cannot read epics {flag_rule.repo_relative(planning / 'epics.md', root)}: not a file"
+            )
         if epics is not None:
             surface_by_cap = join.story_surface_by_cap(_read_text(epics, root, "epics"), slugs)
     gating = _gating_flags(join, root, stories, slugs) if open_specs else {}
