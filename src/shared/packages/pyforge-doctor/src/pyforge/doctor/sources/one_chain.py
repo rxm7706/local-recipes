@@ -525,7 +525,7 @@ def _gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
 
 _ARCHIVE_DREAMS_REL = Path("archive") / "docs" / "dreams"
 _HEADING_LINE_RE = re.compile(r"^#{1,6}(?:\s|$)")
-_OWNER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
+_OWNER_RE = re.compile(r"[a-z][a-z0-9-]*")  # used with fullmatch: `$` would let "mason\n" through
 _MIN_PARAGRAPH_CHARS = 80  # a paragraph is "long" when it is LONGER than this
 _EXCERPTS_SHOWN = 3
 _EXCERPT_CHARS = 80
@@ -607,16 +607,28 @@ def _gather_fold_complete(target: Path) -> tuple[Finding, ...]:
         rel = path.relative_to(target).as_posix()
         if rel in baselined:
             skipped.append(rel)  # not a fold of a station Dream: never opened
+            findings.append(
+                Finding(
+                    source=Source.FOLD_COMPLETE,
+                    check="fold-complete-baselined",
+                    status=DoctorStatus.OK,
+                    message=(
+                        f"{rel} is listed in {FOLD_COMPLETE_BASELINE_REL.as_posix()} "
+                        "(not a fold of a station Dream) -- not read"
+                    ),
+                    evidence={"path": rel},
+                )
+            )
             continue
         fields, _unparseable = _frontmatter_parse(path)
         owner = fields.get("owner")
-        if not isinstance(owner, str) or not _OWNER_RE.match(owner):
+        if not isinstance(owner, str) or not _OWNER_RE.fullmatch(owner):
             findings.append(
                 _fold_fail(
                     "fold-complete-no-owner",
                     rel,
-                    "no readable `owner:` in its frontmatter (missing, or unparseable) — "
-                    "the station Dream it folds into cannot be named",
+                    "no readable `owner:` in its frontmatter (missing, unparseable, or not a "
+                    "station slug) — the station Dream it folds into cannot be named",
                 )
             )
             continue
@@ -658,6 +670,20 @@ def _gather_fold_complete(target: Path) -> tuple[Finding, ...]:
             )
             continue
         complete.append(rel)
+        findings.append(
+            Finding(
+                source=Source.FOLD_COMPLETE,
+                check="fold-complete-ok",
+                status=DoctorStatus.OK,
+                message=f"{rel}: all {len(paragraphs)} long paragraph(s) are in {station_rel}",
+                evidence={
+                    "path": rel,
+                    "owner": owner,
+                    "station_dream": station_rel,
+                    "paragraphs": len(paragraphs),
+                },
+            )
+        )
 
     findings.append(
         Finding(
@@ -698,9 +724,9 @@ def _archived_in_live_tree(target: Path) -> Finding | None:
         station = owner if isinstance(owner, str) and owner else "unknown"
         by_station[station] = by_station.get(station, 0) + 1
     total = sum(by_station.values())
-    if total == 0:
+    if total == 0 and unreadable == 0:
         return None
-    per_station = ", ".join(f"{station} {n}" for station, n in sorted(by_station.items()))
+    per_station = ", ".join(f"{station} {n}" for station, n in sorted(by_station.items())) or "none"
     tail = f"; {unreadable} more have unreadable frontmatter (status unknown)" if unreadable else ""
     return Finding(
         source=Source.FOLD_COMPLETE,
