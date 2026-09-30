@@ -106,7 +106,7 @@ class StoredObject:
 
 def _require_enabled() -> None:
     # `default=False`: a host with no flag provider configured reads OFF, so the seam fails closed.
-    if False:
+    if not evaluate_boolean(FLAG_KEY, default=False):
         msg = (
             f"object storage is off: the flag {FLAG_KEY} is not enabled, so nothing reaches the "
             "store. A consumer keeps its exports in git only."
@@ -226,7 +226,6 @@ def open_stream(key: str) -> Iterator[bytes]:
         ImproperlyConfigured: the bucket, the prefix or the client factory is unusable.
     """
     _require_enabled()
-    _check_key(key)
     bucket, prefix = _location()
     body = _client().get_object(Bucket=bucket, Key=f"{prefix}/{key}")["Body"]
     return _chunks(body)
