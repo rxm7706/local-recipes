@@ -22,6 +22,17 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "bmad_drift_check.py"
+# The keys `--json` / `--groundtruth` printed before Story 76.1, pinned as a literal so a
+# dropped or renamed fact reds here (the values are live and are deliberately not pinned).
+GROUND_TRUTH_KEYS = [
+    "skill_version",
+    "schema_version",
+    "mcp_tools",
+    "atlas_phases",
+    "gotcha_max",
+    "pixi_envs",
+    "recipes_churny",
+]
 
 
 def _load_script():
@@ -65,11 +76,14 @@ def test_specs_mode_leaves_no_code_behind():
 
 
 @pytest.mark.parametrize("flag", ["--json", "--groundtruth"])
-def test_ground_truth_modes_still_print_the_same_json(flag, capsys):
+def test_ground_truth_modes_still_print_the_pinned_json_shape(flag, capsys):
     mod = _load_script()
     assert mod.main([flag]) == 0
     out = capsys.readouterr().out
-    assert json.loads(out) == mod.ground_truth()
+    printed = json.loads(out)
+    assert list(printed) == GROUND_TRUTH_KEYS
+    assert set(printed["recipes_churny"]) == {"dirs", "recipe_yaml", "meta_yaml"}
+    assert out == json.dumps(printed, indent=2) + "\n"
 
 
 def test_bare_run_still_points_at_doctor_and_lists_only_live_modes(capsys):

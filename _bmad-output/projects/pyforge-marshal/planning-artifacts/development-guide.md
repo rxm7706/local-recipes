@@ -241,7 +241,7 @@ lives at `conf/base/knowledge.yml`.
 
 | Task | What it runs |
 |---|---|
-| `pixi run bmad-drift-check` | Artifact-vs-live drift: pins, counts, stale rules, archive hygiene, coverage completeness, baseline. `-- --fix`, `-- --integrity-only`, `-- --write-baseline` |
+| `pixi run bmad-drift-check` | Artifact-vs-live drift: pins, counts, stale rules, archive hygiene, coverage completeness, baseline. It runs `python -m pyforge.doctor.sources bmad-drift` and takes no mutation flags; `--fix` and `--write-baseline` are `python scripts/bmad_drift_check.py --fix` and `python scripts/bmad_drift_check.py --write-baseline`. |
 | `pixi run bmad-groundtruth` | The same live facts as JSON — skill version, schema, MCP tools, atlas phases, pixi envs, gotchas |
 | `pixi run llms-full-check` | Drift between `docs/reference/library-llms-full.md` and `pixi.toml` — undocumented deps, ghost entries, version-floor drift |
 | `pixi run spec-surface-check` | Every tracked file is governed by a spec surface or explicitly allowlisted (`scripts/spec_surface_allowlist.txt`) |

@@ -434,7 +434,7 @@ This document set synthesizes the following existing sources. To rebuild faithfu
 - `docs/explanation/enterprise-deployment.md` — air-gap + JFrog + JFROG_API_KEY cross-host leak
 - `docs/reference/developer-guide.md` — local testing + recipe development
 - `docs/reference/library-llms-full.md` — LLM-facing catalog of every library/CLI in the pixi envs
-- `docs/specs/*.md` — 19 legacy Tier-1 intake specs; indexed in CLAUDE.md; each file's status is its frontmatter `status:`
+- `docs/specs/*.md` — legacy Tier-1 intake specs; indexed in CLAUDE.md; each file's status is its frontmatter `status:`
 - `_bmad-output/projects/<slug>/planning-artifacts/specs/spec-*/SPEC.md` — the 22 live Specs
 
 > **Removed 2026-07-25:** this list previously cited a `docs/`-level Copilot-bridge note that was **purged from the repository** during secret-leak remediation on 2026-07-24; it is intentionally not named or linked here, and must not be re-added. The list also cited `docs/developer-guide.md`, `docs/mcp-server-architecture.md` and `docs/enterprise-deployment.md` at the `docs/` top level; all three live under `docs/reference/`.
