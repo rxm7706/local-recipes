@@ -2,7 +2,7 @@
 title: "35.1: capability-ledger's post-PIN check reads only live Specs"
 type: 'fix'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '0df667a53da3a72a655aed96608b53c33182145d'
 flag-exempt: detector-or-gate
 review_loop_iteration: 0
@@ -136,9 +136,9 @@ Type / Effort / Deps: fix / S / —.
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py` -- in `_gather`'s post-PIN Spec loop, skip a path whose file is unreadable or whose frontmatter `status` is not in `_LIVE_STATUSES` -- a non-live Spec has no extract, so its warning could never be cleared
-- [ ] `src/shared/packages/pyforge-doctor/tests/unit/test_capability_ledger.py` -- add a pinned-repo helper and tests: non-live statuses (absorbed, draft, shipped, none) with a CAP heading and no row report nothing; a `ready` Spec with no CAP heading reports exactly one `kind: append` WARN naming its path; a path removed from the working tree reports nothing and degrades nothing -- pins the loop's new contract
-- [ ] Mutation check (not committed): remove the status test and confirm the absorbed and draft tests fail -- proves the tests bind the fix
+- [x] `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_ledger.py` -- in `_gather`'s post-PIN Spec loop, skip a path whose file is unreadable or whose frontmatter `status` is not in `_LIVE_STATUSES` -- a non-live Spec has no extract, so its warning could never be cleared
+- [x] `src/shared/packages/pyforge-doctor/tests/unit/test_capability_ledger.py` -- add a pinned-repo helper and tests: non-live statuses (absorbed, draft, shipped, none) with a CAP heading and no row report nothing; a `ready` Spec with no CAP heading reports exactly one `kind: append` WARN naming its path; a path removed from the working tree reports nothing and degrades nothing -- pins the loop's new contract
+- [x] Mutation check (not committed): remove the status test and confirm the absorbed and draft tests fail -- proves the tests bind the fix
 
 **Acceptance Criteria:**
 - Given the intent-contract's eight acceptance criteria, when the unit tests and `capability-ledger-check` run, then each holds and `pyforge-doctor-test` passes
