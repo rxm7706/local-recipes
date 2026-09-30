@@ -349,7 +349,7 @@ development_status:
   74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-fixture: done
   74-2-dispatch-refuses-a-story-the-flag-gate-would-red-before-any-session-starts: backlog
   74-3-bmad-spec-bmad-build-and-bmad-tea-carry-the-flag-mandate-in-their-overrides: backlog
-  75-1-fleet-scan-reads-archived-dreams-from-the-archive: backlog
+  75-1-fleet-scan-reads-archived-dreams-from-the-archive: done
   76-1-bmad-drift-check-py-s-specs-mode-retires: backlog
   77-1-dispatch-seeds-each-worktree-s-codegraph-index-from-the-shared-base-and-syncs-it: done
   8-1-marker-grammar-and-the-per-format-registry: done
