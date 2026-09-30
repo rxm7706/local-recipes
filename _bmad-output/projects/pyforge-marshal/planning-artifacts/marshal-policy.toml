@@ -395,6 +395,10 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   # 74.1: the kit's flags family, its manifests and its tests
   "src/shared/packages/pyforge-testing-kit/**",
+  # 74.1 (operator ruling 2026-09-30): the kit takes runtime dependencies, so Q-26's stdlib-leaf premise
+  # retires as the pin's own docstring prescribes -- branch_diff_guard.py (inside the kit glob above)
+  # moves onto pyforge.core.process.PosixProcess.run and its exemption and leaf pin leave this one test.
+  "src/shared/packages/pyforge-core/tests/meta/test_process_sole_ownership.py",
   # 74.3: the mandate, carried as overrides (never an installer-owned SKILL.md)
   "_bmad/custom/bmad-spec.toml",
   "_bmad/custom/bmad-build.toml",

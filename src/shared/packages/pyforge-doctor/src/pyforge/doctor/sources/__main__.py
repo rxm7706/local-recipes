@@ -133,6 +133,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # repo-scope, offline, deterministic -- in detectors-ci from day one.
     Source.CHAIN_SPRAWL.value: one_chain.gather_chain_sprawl,
     Source.FR_WITHOUT_CAP.value: one_chain.gather_fr_without_cap,
+    # Story 36.1 (spec-one-chain-per-station CAP-11): a fold is complete
+    # before its file moves -- same shape, repo-scope, offline.
+    Source.FOLD_COMPLETE.value: one_chain.gather_fold_complete,
     # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md vs the four
     # Diátaxis quadrants -- missing link FAIL, unmapped page FAIL (promoted
     # by Story 30.2).

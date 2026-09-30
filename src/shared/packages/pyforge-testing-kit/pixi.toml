@@ -7,7 +7,9 @@
 # `[feature.pyforge-testing-kit.dependencies]` table. `pixi-build-python` builds
 # this into a conda package.
 #
-# Own leaf (Q-26): test-support primitives only; zero third-party run-deps.
+# Own package (Q-26): test-support primitives only. Marshal Story 74.1 (operator ruling
+# 2026-09-30) retired the stdlib-leaf premise: two run-deps, openfeature-sdk (the flag
+# fixture's InMemoryProvider) and pyforge-core (branch_diff_guard.py's process seam).
 # Spec: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
 #       spec-19-2-the-shared-test-support-kit.md
 
@@ -25,3 +27,5 @@ hatchling = "*"
 
 [package.run-dependencies]
 python = ">=3.12"
+openfeature-sdk = ">=0.10.0"
+pyforge-core = { path = "../pyforge-core" }  # Story 74.1: branch_diff_guard.py runs git through pyforge.core.process

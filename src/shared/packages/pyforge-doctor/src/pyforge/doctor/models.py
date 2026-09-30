@@ -328,6 +328,10 @@ class Source(StrEnum):
     # a PRD FR minted after the rule date must cite a resolving `CAP-m`.
     CHAIN_SPRAWL = "chain-sprawl"
     FR_WITHOUT_CAP = "fr-without-cap"
+    # Story 36.1 (spec-one-chain-per-station CAP-11, doctor Epic 36): an
+    # archived Dream's body is proven verbatim in its station Dream before
+    # its file moves to archive/docs/dreams/ (sources/one_chain.py).
+    FOLD_COMPLETE = "fold-complete"
     # Story 30.1 (spec-pyforge-doctor CAP-83): the closed taxonomy EXTENDED
     # once more -- docs/MAP.md vs the four Diátaxis quadrant directories
     # (docs/tutorials, docs/how-to, docs/reference, docs/explanation) it

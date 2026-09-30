@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 496
+# stories: 499
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -346,11 +346,12 @@ development_status:
   72-1-the-dispatch-supervisor-reads-merge-facts-from-origin-main: backlog
   73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch: backlog
   73-2-a-drain-schedules-the-follow-up-review-a-landed-story-recommended: backlog
-  74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-fixture: backlog
+  74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-fixture: done
   74-2-dispatch-refuses-a-story-the-flag-gate-would-red-before-any-session-starts: blocked
   74-3-bmad-spec-bmad-build-and-bmad-tea-carry-the-flag-mandate-in-their-overrides: backlog
   75-1-fleet-scan-reads-archived-dreams-from-the-archive: backlog
   76-1-bmad-drift-check-py-s-specs-mode-retires: backlog
+  77-1-dispatch-seeds-each-worktree-s-codegraph-index-from-the-shared-base-and-syncs-it: done
   8-1-marker-grammar-and-the-per-format-registry: done
   8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: done
   8-3-span-substitution-the-update-primitive: done
@@ -506,6 +507,8 @@ development_status:
   epic-75-retrospective: optional
   epic-76: backlog
   epic-76-retrospective: optional
+  epic-77: backlog
+  epic-77-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done

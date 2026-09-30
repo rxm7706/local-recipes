@@ -99,8 +99,12 @@ and the refusal.
 `scripts/flag_rule.py` is the pure reader: `classify(path)` returns `flag`, `exempt` or
 `neither` with one reason per missing field or unknown value; `is_post_rule(path)` reads the
 baseline; `in_scope(spec)` is `type: feature`. It lives outside every station package and reads
-the exemption list from the roster at run time. It judges nothing itself: the gate that turns a
-verdict into a finding is a separate story's.
+the exemption list from the roster at run time. It judges nothing itself: `scripts/flag_gate_check.py`
+turns a verdict into a finding. It is a repo-scope detector, so `detectors-ci` runs it, and
+`pixi run -e pyforge-guild flag-gate-check` runs it alone (exit 0 clean, 1 findings, 2 when the
+roster, baseline or tree cannot be read). `python scripts/flag_gate_check.py --spec <path>` judges
+one story spec and prints one JSON object: `verdict` (`pass`, `warn` or `red`), `findings` and
+`rule_date`, exiting 0, 0 or 1 (2 when it cannot judge).
 
 `bmad-build` does not carry its own copy of the shape: marshal Story 74.3 adds a persistent fact
 under `_bmad/custom/` that points here.

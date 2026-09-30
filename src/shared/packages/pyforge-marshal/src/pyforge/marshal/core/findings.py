@@ -1821,6 +1821,18 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # the promotion's publish failed, and the landing is not a clean one.
         # ERROR: finalize exits 1, `dispatch land` refuses (MRS-DISP-020).
         "MRS-DISP-051",
+        # Story 77.1 (spec-pyforge-marshal CAP-282): the dispatch half of the
+        # `structure-graph` layer gave a worktree its codegraph index the slow
+        # way -- 053: no base index on the primary checkout (or the copied one
+        # would not sync), so `codegraph init -y` built one in the worktree;
+        # the message names `marshal context bootstrap` (CAP-192) as the fix.
+        # 054: no index was seeded at all (`codegraph` not on PATH, the base
+        # could not be copied, a build failed or hit its ceiling) and the
+        # session runs without one. Both WARN, never blocking -- the SAME tier
+        # as MRS-DISP-042 / MRS-DISP-033: a layer disables itself with a named
+        # finding.
+        "MRS-DISP-053",
+        "MRS-DISP-054",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
