@@ -57,8 +57,9 @@ def spec_binding_findings(
 # ``do **not** dispatch``. Underscores are only emphasis at a word edge
 # (``_not_``), never inside an identifier (``is_parked``).
 _EMPHASIS_RE = re.compile(r"[*`~]+|(?<![A-Za-z0-9])_+|_+(?![A-Za-z0-9])")
-# ``parked`` as a word; ``unparked`` / ``un-parked`` are the opposite claim.
-_PARKED_RE = re.compile(r"(?<![A-Za-z])(?<!un-)parked\b", re.IGNORECASE)
+# ``parked`` as a word (not inside an identifier); ``unparked`` / ``un-parked``
+# are the opposite claim.
+_PARKED_RE = re.compile(r"(?<![A-Za-z0-9_])(?<!un-)parked\b", re.IGNORECASE)
 _DO_NOT_DISPATCH_RE = re.compile(r"\bdo\s+not\s+dispatch\b", re.IGNORECASE)
 _EXCERPT_LIMIT = 200
 
