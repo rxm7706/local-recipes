@@ -197,7 +197,7 @@ def put_stream(fileobj: BinaryIO, *, content_type: str) -> StoredObject:
 
     digest = hashlib.sha256()
     size = 0
-    with tempfile.SpooledTemporaryFile(max_size=10**12) as spool:
+    with tempfile.SpooledTemporaryFile(max_size=SPOOL_MAX_BYTES) as spool:
         while chunk := fileobj.read(CHUNK_BYTES):
             digest.update(chunk)
             spool.write(chunk)
