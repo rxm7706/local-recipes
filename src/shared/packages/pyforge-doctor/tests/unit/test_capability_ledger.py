@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import capability_ledger
 from pyforge.doctor.sources.capability_ledger import (
