@@ -1966,3 +1966,14 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   resolved: 2026-09-29 (doctor Story 34.2, spec-feature-flag-governance CAP-2) -- scribe's own spec now reads `flag-exempt: detector-or-gate` (PR #1677); same measurement as DW-doctor-34-2 above, no scribe spec edited here.
   status: closed
+
+### DW-doctor-34-4: Doctor's Surface-line join resolves only 7.2% of the CAP rows the inventory lists (56 of 778), so the per-station "Runtime CAPs with no flag" counts are a lower bound.
+
+- source_spec: `planning-artifacts/specs/spec-34-4-each-station-has-a-checked-in-flag-inventory-of-its-runtime-capabilities.md`
+  summary: Doctor's Surface-line join resolves only 7.2% of the CAP rows the inventory lists (56 of 778), so the per-station "Runtime CAPs with no flag" counts are a lower bound.
+  evidence: Measured on the checked-in reports at this story's review: unresolved 722, module 38, planning 14, runtime 4. `_story_surface_by_cap` attaches a `Surface:` line to a CAP only when the citing story's line names the Spec slug and the CAP together, and most epics.md stories cite `(CAP-n)` against absorbed Spec slugs or carry no `Surface:` line. This story reuses the join by mandate (intent: "never invent a second one"), so it reports the gap as `unresolved` rows and does not close it. Closing it means a Doctor story that widens the join (for example to read the Spec's own CAP-to-story map) and then re-runs `pixi run -e pyforge-guild flag-inventory`; each Smith should read the `unresolved` rows of their report before sizing a retrofit.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_effect.py:498
+  origin: spec-deferred 7c9d67f16060 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
