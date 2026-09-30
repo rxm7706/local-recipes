@@ -2,10 +2,10 @@
 title: "76.2: Every flag in the tree carries its owner, story and cleanup clock in flagd metadata"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: bce4a0ce7f1b8e712010482f26f22efb4c1c2482
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 flag-exempt: flag-infrastructure
 context:
   - docs/governance/spec-feature-flag-governance/SPEC.md
@@ -161,7 +161,7 @@ Deps: S-76.1 (the rendered per-environment trees the clock is defined over).
 
 ## Auto Run Result
 
-Status: implemented, awaiting review (`in-review`). Implementation and review stay separate: this section is the implementer's record.
+Status: done. Implemented, reviewed (four review layers, one pass) and patched; follow-up review recommended (see Review).
 
 **What changed**
 
@@ -169,7 +169,7 @@ Status: implemented, awaiting review (`in-review`). Implementation and review st
 - `src/platform/config/flags.json`: every flag carries the five string fields (values below). No `state`, `variants` or `defaultVariant` changed.
 - `src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py`: `flip_root`'s create-if-absent `pyforge.cutover_root` entry carries an empty-clock metadata block, so a flip into a tree that lacks the key still composes.
 - Tests: `pyforge-core` `test_flags.py` (about 70 cases: each error, the matrix rows, date arithmetic across month/year/leap boundaries, overlay-driven ON everywhere, DISABLED and string flags, `read_boolean`/`render` refusing and never reading `default`, the shipped tree's dates) and `test_cutover_root.py` (fixture); `pyforge-steward` `test_cutover.py`; `src/platform/tests/test_openfeature_file_flags.py` (fixtures carry consistent metadata; new tests pin every shipped key's evaluation in every environment across the FILE provider, `evaluate_from_source` and `read_boolean`, and that the FILE provider surfaces each flag's metadata); `src/platform/tests/test_object_store_seam.py` (the shipped-tree assertion now allows the metadata key).
-- Three Spec memlogs carry the surface reconcile: `spec-pyforge-core`, `spec-pyforge-steward`, `spec-pyforge-unifying-strategy`, each stamped scoped with `--spec`.
+- Four Spec memlogs name every governed path this story changed: `spec-pyforge-core` (`flags.py`, `test_flags.py`, `test_cutover_root.py`), `spec-pyforge-steward` (`cutover.py`, `test_cutover.py`, `test_object_store_seam.py`), `spec-pyforge-unifying-strategy` (`flags.json`, `flags.py`, `test_openfeature_file_flags.py`, `test_object_store_seam.py`) and `spec-pyforge-doctor` (`test_flag_kill_switch.py`). No baseline was stamped: `--write-baseline` is not this run's to pass, so the landing owns the scoped stamp (`spec_surface_reconcile.py` and `spec-surface-check` both exit 0 without one).
 
 **The dates (read from the tree's own history)**
 
@@ -189,15 +189,25 @@ All four are `owner: steward`; `story` holds the full ledger key. `flags.json` h
 - `pyforge.three_surfaces` (owner steward): its clock runs out on 2026-11-23. The operator's 2026-09-28 (night) ruling removes it: Story 76.4 (`Deps: S-76.2`) removes it after this story lands. It is owed to Story 76.4 and needs no keep decision.
 - No other flag has a `cleanup_by`, and none is before the landing date. No flag owes a removal story or a keep decision today.
 
-**Verification**
+**Review** (2026-09-30; details in the Review Triage Log)
+
+- Four layers reported 28 findings: 4 high, 1 medium, 21 low, 2 false. Patches applied: 7 rows, three entries (one high, two low); no bad_spec and no intent_gap.
+- The one high entry (five rows): doctor's kill switch on a dated flag made every compose refuse the tree. Reproduced. The check now judges the rendered variant and never `state`; a killed flag keeps its clock, reads False, and its siblings read as before. Tests: three cases in `test_flags.py` and one in doctor's `test_flag_kill_switch.py` (both fail against the old logic); the platform fixture helper follows the new rule.
+- The two low patches: the `compose` and `check_metadata` docstrings no longer overstate (the chart's Go-template composition does not run the check), and `test_object_store_seam.py` is named on the memlogs that govern it.
+- Rejected with their recorded reasons: 21 (the chart-side check, date ordering and future dates, a sixth field, owner/story registries, test-fixture duplication, an AC 6 wording error that only a spec edit could fix, and the rest).
+- Deferred: none; no `deferred:` entry written.
+- Follow-up review recommended: `true`, because a high entry was patched. The unverified risk: the patch changes what "ON everywhere" means for a killed flag (a killed flag still counts as ON everywhere for the 90-day clock, because the check reads the rendered variant); a second reviewer should confirm doctor's gate (Story 34.3) wants that reading.
+
+**Verification** (exit codes read from files, never through a pipe; final tree after the last `origin/main` merge)
 
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test`: exit 0, 1896 passed, 2 skipped.
-- `pixi run --frozen -e pyforge-guild pytest src/shared/packages/pyforge-core/tests -q`: 2138 passed.
-- `pixi run --frozen -e pyforge-guild lint-types`: exit 0. Platform `ruff check .`, `ruff format --check .` and `mypy platformapp config tests` (the `platform-ci-local` test-stage lint steps, run against the same envs): clean.
-- `src/platform` `pytest tests/test_openfeature_file_flags.py test_object_store_seam.py test_chart_invariants.py test_django_pyforge_assertion.py test_golden_path_promotion_closure.py`: 285 passed, 6 skipped (helm on PATH). The full `platform-ci-local -- --test` needs PostgreSQL and Redis and was not run; these are every platform test that reads the flag tree.
-- `pixi run -e pyforge-guild spec-surface-check`: exit 0 after the three scoped stamps.
-- `pixi run -e pyforge-guild pr-preflight`: exit 0 (lint-types, target-version, precommit-config, `detectors-ci`, and the rest of its bundle), read from the exit code. The first run exited 1 on `bmad_estate_check` alone (`skills` section drifted); the cause is the gitignored, dispatch-deployed `.claude/skills/caveman/` that the catalog counts. This diff touches no `.claude/` or `docs/reference/` path. With that directory moved aside (and restored afterwards) the run exits 0. A `dispatch/*` push therefore needs the same aside, or scribe Story 25.1 landed.
-- `pixi run -e pyforge-guild spec-surface-check`: exit 0 after the three scoped stamps (`pyforge-marshal/spec-pyforge-core`, `pyforge-steward/spec-pyforge-steward`, `pyforge-steward/spec-pyforge-unifying-strategy`); the baseline diff against `origin/main` names only paths those Specs govern.
+- `pixi run --frozen -e pyforge-guild pytest src/shared/packages/pyforge-core/tests -q`: exit 0, 2140 passed (`flags.py` at 100% line and branch).
+- `pixi run --frozen -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_flag_kill_switch.py -q`: exit 0, 6 passed.
+- `pixi run -e pyforge-guild platform-ci-local -- --test`: exit 0 (Django checks, ruff, ruff format, mypy, the policy suite, sqlmigrate, and the full platform suite: 1051 passed, 13 skipped). The platform flag tests with `-rs`: 107 passed; the skips are helm-dependent chart tests and object-storage round trips.
+- `python scripts/spec_surface_reconcile.py`: exit 0. `pixi run -e pyforge-guild spec-surface-check`: exit 0. The `test-ci` lane's `test_spec_surface_check.py`: 10 passed.
+- `pixi run -e pyforge-guild detectors-ci`: exit 0. `pyforge-station-tests`: exit 0. `COVERAGE_GATES_STATIONS=steward ... coverage_gates_ci.py --suites unit` in the steward env: exit 0, `pyforge.steward.cutover` clears the 80% floor (the aggregate `pyforge-station-coverage-gates` task ran with `COVERAGE_GATES_STATIONS=warden` and printed "skipping pyforge-steward" and "skipping pyforge-doctor", so its exit 0 proves nothing for them).
+- `pixi run -e pyforge-guild pr-preflight`: exit 1, and stops at its first leg. That leg is `lint-types`, and the only finding is `ruff format --check` on `src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py:387` (`except (OSError, subprocess.TimeoutExpired)` versus the unparenthesised form the py314 formatter wants). That file is identical to `origin/main` (scribe Story 25.1's checkpoint commit `a6649d35e4`), and this diff touches no scribe path: the finding is main's, not this story's, and scribe owns the fix. The earlier pre-merge run of `pr-preflight` exited 0 apart from two findings that the second `origin/main` merge cleared (`bmad_estate_check`'s gitignored `caveman` skill directory and `ledger-direction` on scribe 25-1). The remaining legs (`test-ci`'s CFE suite, `pyforge-doctor-scripts-test`, `docs-map-render-test`, `docs-gen-test`, `site-check`) were not re-run after the merge; no path they read is in this diff.
+- The `platform-ci-local` full stage ran here against ephemeral PostgreSQL and Redis; the container, image and promotion stages were not run (no Dockerfile or chart path is in this diff).
 
 **Risks**
 
