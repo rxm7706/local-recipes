@@ -879,11 +879,13 @@ def _run_flags(args: argparse.Namespace) -> int:
         flags_path = Path(args.flags_path)
     else:
         try:
-            from django_pyforge.flags import resolve_flags_path
+            # The tree itself, never resolve_flags_path()'s per-environment rendering
+            # (Story 76.1): the kill switch edits the source, not a materialised copy.
+            from django_pyforge.flags import resolve_tree_path
         except ImportError:
             _stderr("doctor flags kill-switch: --flags-path is required when django_pyforge is not importable")
             return 2
-        resolved = resolve_flags_path()
+        resolved = resolve_tree_path()
         if resolved is None:
             _stderr("doctor flags kill-switch: could not resolve flags.json")
             return 2

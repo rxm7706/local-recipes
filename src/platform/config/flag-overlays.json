@@ -1,0 +1,17 @@
+{
+  "dev": {
+    "pyforge.three_surfaces": "on",
+    "pyforge.cutover_root": "local-recipes",
+    "pyforge.steward.ghe_fleet_credentials": "off"
+  },
+  "staging": {
+    "pyforge.three_surfaces": "on",
+    "pyforge.cutover_root": "local-recipes",
+    "pyforge.steward.ghe_fleet_credentials": "off"
+  },
+  "production": {
+    "pyforge.three_surfaces": "on",
+    "pyforge.cutover_root": "local-recipes",
+    "pyforge.steward.ghe_fleet_credentials": "off"
+  }
+}
