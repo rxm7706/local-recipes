@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -91,11 +92,17 @@ def _exit_code(value: object, stderr: io.StringIO) -> int:
     return 1
 
 
+# ANSI SGR colour sequences. argparse on Python 3.14 colours its help when FORCE_COLOR=1 or
+# PYTHON_COLORS=1 is set, even into a captured stream, and the escapes split a verb from its help text.
+_ANSI_SGR = re.compile(r"\x1b\[[0-9;]*m")
+
+
 def invoke_cli(main: Callable[[list[str]], int | None], argv: Sequence[str]) -> CliResult:
     """Run ``main(list(argv))`` in-process, capturing stdout and stderr.
 
     The exit code is ``main``'s return value or, when it raises ``SystemExit`` (argparse's
-    ``--help`` and usage errors do), that exit's code. Any other exception propagates.
+    ``--help`` and usage errors do), that exit's code. Any other exception propagates. ANSI colour
+    sequences are stripped from the captured output, so it reads the same whatever the environment.
     """
     stdout, stderr = io.StringIO(), io.StringIO()
     with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
@@ -103,4 +110,4 @@ def invoke_cli(main: Callable[[list[str]], int | None], argv: Sequence[str]) -> 
             code = _exit_code(main(list(argv)), stderr)
         except SystemExit as raised:
             code = _exit_code(raised.code, stderr)
-    return CliResult(exit_code=code, output=stdout.getvalue() + stderr.getvalue())
+    return CliResult(exit_code=code, output=_ANSI_SGR.sub("", stdout.getvalue() + stderr.getvalue()))
