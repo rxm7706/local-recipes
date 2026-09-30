@@ -159,6 +159,10 @@ class _StationReads:
     def station_skips(self) -> Mapping[str, str]:
         return self.cycle.station_skips
 
+    @property
+    def merge_subject_template(self) -> str:
+        return str(self.effective_policy.merge_subject_template.value)
+
     def verify_commands(self) -> tuple[str, ...]:
         """The commands the post-session gate runs: policy widened with the guard."""
         return _verify_commands_with_surface_guard(self.effective_policy)
@@ -192,11 +196,16 @@ class _StationReads:
 
             self._merged = promotion_core.corroborated_merged_story_keys(
                 subjects,
-                self.effective_policy.merge_subject_template.value,
+                self.merge_subject_template,
                 slug,
                 spec_status_for=_spec_status_for,
             )
         return self._merged
+
+
+def _as_str_tuple(value: object) -> tuple[str, ...]:
+    """A policy value that is a list of names, as a tuple of ``str``."""
+    return tuple(str(item) for item in value) if isinstance(value, (list, tuple)) else ()
 
 
 def _command_shape_problem(command: str) -> str | None:
@@ -318,7 +327,7 @@ def evaluate_story(reads: _StationReads, story: str) -> StoryEvaluation:
         if problem is not None:
             refuse("MRS-GATE-003", problem)
 
-    template = reads.effective_policy.merge_subject_template.value
+    template = reads.merge_subject_template
     subject: str | None = None
     native = False
     detail = ""
@@ -386,13 +395,14 @@ def _check_environment(
     difficulty = dispatch_core.read_declared_difficulty(spec_text) if spec_text is not None else None
     session_log = dispatch_cli._last_failed_dispatch_session_log(reads.fs, reads.repo_root, reads.slug, feed)
     tier = dispatch_core.resolve_tier_harness(effective, difficulty=difficulty, session_log=session_log)
-    preference = tuple(effective.harness_preference.value)
+    configured = _as_str_tuple(effective.harness_preference.value)
+    preference = configured
     explicit_flag = effective.harness_preference.layer == policy.PolicyLayer.FLAG
     if tier.harness_profile is not None and not explicit_flag:
         preference = (tier.harness_profile,) + tuple(name for name in preference if name != tier.harness_profile)
     preference = exclude_harness_profiles_after_transient_failure(preference, session_log)
     if not preference:
-        preference = tuple(effective.harness_preference.value)
+        preference = configured
     resolution = build_harness.binary_present(preference, repo_root=reads.repo_root)
     findings: list[Finding] = []
     for profile_error in resolution.profile_errors:
@@ -418,7 +428,7 @@ def _check_environment(
                 reason=f"no dispatchable session-harness profile ({tried})",
             )
         )
-    env = {
+    env: dict[str, object] = {
         "harness_profile": resolution.profile,
         "preference": list(preference),
         "skipped": [{"profile": s.profile, "reason": s.reason} for s in resolution.skipped],
@@ -664,9 +674,9 @@ def _plan_station(
     for story in cycle.backlog:
         if story in station_skips:
             continue
-        evaluation = evaluated.get(story)
-        if evaluation is not None:
-            park = evaluation.prose_park
+        known = evaluated.get(story)
+        if known is not None:
+            park = known.prose_park
         else:
             park = _scan_prose_park(reads, story)
             if park is not None:

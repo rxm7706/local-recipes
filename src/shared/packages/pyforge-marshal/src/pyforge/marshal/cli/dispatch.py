@@ -3649,8 +3649,8 @@ def _station_blocked_map(
     repo_root: Path,
     slug: str,
     backlog: tuple[str, ...],
-    configured_skips: dict[str, str],
-    campaign_blocked: dict[str, str],
+    configured_skips: Mapping[str, str],
+    campaign_blocked: Mapping[str, str],
     effective_policy: policy.EffectivePolicy,
 ) -> tuple[dict[str, str], dict[str, dispatch_fleet.FleetBlockClass]]:
     """DERIVED blocks at the HEAD of ``backlog``, with their evidence.
@@ -3732,6 +3732,11 @@ def _classify_attempt(
         f"{first.code}: {first.message}",
         findings,
     )
+
+
+def _mint_wave_id(slug: str) -> str:
+    """A fresh dispatch-wave id for ``slug`` (the cycle's own; a plan never mints one)."""
+    return mint_run_id(slug, _format_utc_compact(_now_utc()), _random_token())
 
 
 def _wave_journal_writer_id(wave_id: str) -> str:
@@ -4132,7 +4137,7 @@ def execute_fleet_cycle(
             vcs=vcs,
             process=process,
             harness=harness,
-            mint_wave_id=lambda slug=slug: mint_run_id(slug, _format_utc_compact(_now_utc()), _random_token()),
+            mint_wave_id=lambda: _mint_wave_id(slug),
         )
         if cycle.ledger_error is not None:
             findings.append(
