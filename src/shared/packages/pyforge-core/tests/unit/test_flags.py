@@ -290,7 +290,9 @@ def _overlay_tree(tmp_path: Path, overlays: object, *, tree: dict | None = None)
     flags_json = tmp_path / "flags.json"
     flags_json.write_text(
         json.dumps(
-            _stamp(tree if tree is not None else {"flags": {KEY: _bool_entry("on"), OTHER: _bool_entry("off")}}, overlays)
+            _stamp(
+                tree if tree is not None else {"flags": {KEY: _bool_entry("on"), OTHER: _bool_entry("off")}}, overlays
+            )
         ),
         encoding="utf-8",
     )
@@ -611,7 +613,12 @@ def test_every_metadata_error_is_a_named_flag_config_error():
 
 
 def test_a_flag_with_no_metadata_object_is_a_named_error_naming_the_flag():
-    for entry in (_bool_entry("off"), {**_bool_entry("off"), "metadata": []}, {**_bool_entry("off"), "metadata": None}, 7):
+    for entry in (
+        _bool_entry("off"),
+        {**_bool_entry("off"), "metadata": []},
+        {**_bool_entry("off"), "metadata": None},
+        7,
+    ):
         with pytest.raises(flags.FlagMetadataMissingError) as caught:
             _compose_all({KEY: entry})
         assert KEY in str(caught.value) and "metadata" in str(caught.value)
@@ -646,7 +653,19 @@ def test_a_field_that_is_not_a_string_is_a_named_error(field, value):
 
 
 @pytest.mark.parametrize(
-    "bad", ["2026-9-1", "2026-09-1", "26-09-01", "20260901", "2026-13-01", "2026-02-30", "2026-09-01T00:00", " 2026-09-01", "", "soon"]
+    "bad",
+    [
+        "2026-9-1",
+        "2026-09-1",
+        "26-09-01",
+        "20260901",
+        "2026-13-01",
+        "2026-02-30",
+        "2026-09-01T00:00",
+        " 2026-09-01",
+        "",
+        "soon",
+    ],
 )
 def test_a_malformed_created_date_is_a_named_error_naming_the_flag_and_the_field(bad):
     with pytest.raises(flags.FlagMetadataDateError) as caught:
@@ -689,7 +708,9 @@ def test_on_everywhere_set_where_the_tree_itself_is_off_names_every_environment_
 def test_on_everywhere_empty_where_every_environment_renders_on_is_a_named_error():
     with pytest.raises(flags.FlagClockMismatchError) as caught:
         _compose_all({KEY: _flag("on")})
-    assert KEY in str(caught.value) and "on_everywhere" in str(caught.value) and "every environment" in str(caught.value)
+    assert (
+        KEY in str(caught.value) and "on_everywhere" in str(caught.value) and "every environment" in str(caught.value)
+    )
 
 
 def test_an_overlay_that_turns_a_flag_on_everywhere_starts_the_clock_requirement():
@@ -726,7 +747,12 @@ def test_a_cleanup_date_without_an_on_everywhere_date_is_a_named_error():
 
 @pytest.mark.parametrize(
     ("on_everywhere", "cleanup_by"),
-    [("2026-08-25", "2026-11-23"), ("2026-12-15", "2027-03-15"), ("2027-12-01", "2028-02-29"), ("2028-01-01", "2028-03-31")],
+    [
+        ("2026-08-25", "2026-11-23"),
+        ("2026-12-15", "2027-03-15"),
+        ("2027-12-01", "2028-02-29"),
+        ("2028-01-01", "2028-03-31"),
+    ],
 )
 def test_the_clock_is_calendar_days_across_month_year_and_leap_boundaries(on_everywhere, cleanup_by):
     _compose_all({KEY: _flag("on", on_everywhere=on_everywhere)})
@@ -873,7 +899,9 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.ghe_fleet_credentials": False,
         "pyforge.steward.object_store_consumer": False,
     }
-    assert {k for k, e in payload["flags"].items() if all(isinstance(v, bool) for v in e["variants"].values())} == set(expected)
+    assert {k for k, e in payload["flags"].items() if all(isinstance(v, bool) for v in e["variants"].values())} == set(
+        expected
+    )
     for environment in flags.ENVIRONMENTS:
         monkeypatch.setenv(flags.ENV_ENVIRONMENT, environment)
         for key, value in expected.items():
