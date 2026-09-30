@@ -362,6 +362,45 @@ def test_a_cap_that_resolves_to_code_with_no_entry_point_is_module_and_not_count
     assert _header(report, "Runtime CAPs with no flag") == 0
 
 
+# --- an entry point beside other fragments: runtime wins the precedence ---------------------
+
+
+def test_a_surface_of_an_entry_point_and_a_non_entry_file_is_runtime_and_counted_as_unflagged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path)
+    _spec(root)
+    _epics(root, ("CAP-1", "`cli.py`, `store.py`"))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _code(root, "store.py", "X = 1\n")
+
+    report = _report(root, tmp_path, capsys)
+
+    row = _row(report, 1)
+    assert "| runtime |" in row
+    assert "CLI `cli.py` (frobnicate)" in row
+    assert row.endswith("| none |")
+    assert _header(report, "Runtime CAPs with no flag") == 1
+
+
+def test_a_surface_of_an_entry_point_and_a_nonexistent_path_is_runtime_not_unresolved(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path)
+    _spec(root)
+    _epics(root, ("CAP-1", "`cli.py`, `missing.py`"))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+
+    report = _report(root, tmp_path, capsys)
+
+    row = _row(report, 1)
+    assert "| runtime |" in row
+    assert "unresolved" not in row
+    assert "CLI `cli.py` (frobnicate)" in row
+    assert row.endswith("| none |")
+    assert _header(report, "Runtime CAPs with no flag") == 1
+
+
 # --- how a runtime CAP is reached -----------------------------------------------------------
 
 
@@ -455,6 +494,24 @@ def test_a_cell_never_carries_a_bare_pipe(tmp_path: Path, capsys: pytest.Capture
 
     assert "a\\|b/" in row
     assert len(re.split(r"(?<!\\)\|", row)) == 6
+
+
+def test_a_prose_fragment_with_a_stray_backtick_never_leaves_a_code_span_open(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    # The join splits a `Surface:` line on top-level commas only, so prose with a lone backtick comes back as a
+    # "fragment"; wrapped in backticks as it is, the cell would carry an odd number of them.
+    root = _fixture(tmp_path)
+    _spec(root)
+    _epics(root, ("CAP-1", "`gone.py`, prose about `helper"))
+
+    report = _report(root, tmp_path, capsys)
+
+    row = _row(report, 1)
+    assert "| unresolved | no `Surface:` code path exists: " in row
+    assert "`gone.py`" in row
+    assert "helper" in row
+    assert _odd_backtick_cells(report) == []
 
 
 # --- which Specs are read -------------------------------------------------------------------
@@ -575,19 +632,25 @@ def test_the_warned_list_of_a_station_holds_the_same_paths_as_the_gates_warn_lis
         assert _header(report, "Warned specs") == len(expected)
 
 
-def test_the_warned_list_is_sorted_and_carries_each_specs_own_status(
+def test_the_warned_list_is_sorted_by_path_and_carries_each_specs_own_status(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
+    # `-` sorts before `.`, so by path `spec-1-1-a-b.md` precedes `spec-1-1-a.md`; by key (`1-1-a` is a prefix of
+    # `1-1-a-b`) and by status (`backlog` < `done`) the order is the reverse. Only a path sort gives the asserted order.
     prefix = "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/"
-    root = _fixture(tmp_path, baseline=[prefix + "spec-2-1-b.md", prefix + "spec-1-1-a.md"])
-    _story_spec(root, "spec-2-1-b.md", status="done")
+    root = _fixture(tmp_path, baseline=[prefix + "spec-1-1-a.md", prefix + "spec-1-1-a-b.md"])
     _story_spec(root, "spec-1-1-a.md", status="backlog")
+    _story_spec(root, "spec-1-1-a-b.md", status="done")
 
-    report = _report(root, tmp_path, capsys)
+    rows = _warned_rows(_report(root, tmp_path, capsys))
 
-    rows = [ln for ln in report.splitlines() if ln.startswith(("| 1-1-a", "| 2-1-b"))]
-    assert [r.split("|")[1].strip() for r in rows] == ["1-1-a", "2-1-b"]
-    assert [r.split("|")[2].strip() for r in rows] == ["backlog", "done"]
+    assert rows == [
+        ("1-1-a-b", "done", prefix + "spec-1-1-a-b.md"),
+        ("1-1-a", "backlog", prefix + "spec-1-1-a.md"),
+    ]
+    assert [path for _key, _status, path in rows] == sorted(path for _key, _status, path in rows)
+    assert [key for key, _status, _path in rows] != sorted(key for key, _status, _path in rows)
+    assert [status for _key, status, _path in rows] != sorted(status for _key, status, _path in rows)
 
 
 # --- the header -----------------------------------------------------------------------------
@@ -651,6 +714,32 @@ def test_a_rerun_over_existing_reports_replaces_them_in_place(tmp_path: Path, ca
     assert _run(root, out, capsys)[0] == 0
 
     assert (out / "pyforge-atlas.md").read_text(encoding="utf-8").startswith("# Flag inventory: pyforge-atlas\n")
+
+
+def test_a_write_failure_part_way_leaves_every_existing_report_byte_identical_and_no_temporary_file(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    stations = ("atlas", "mason", "warden")
+    root = _fixture(tmp_path, stations=stations)
+    _spec(root)
+    out = tmp_path / "out"
+    out.mkdir()
+    stale = {f"pyforge-{s}.md": f"stale {s}\n".encode() for s in stations if s != "warden"}
+    for name, data in stale.items():
+        (out / name).write_bytes(data)
+    # The LAST target is a directory: a writer that replaces the reports one by one has already replaced the
+    # other two by the time it reaches this one.
+    (out / "pyforge-warden.md").mkdir()
+
+    rc, stdout, err = _run(root, out, capsys)
+
+    assert rc == 2
+    assert "cannot write the reports" in err
+    assert "pyforge-warden.md" in err
+    assert "not a regular file" in err
+    assert "wrote" not in stdout
+    assert {name: (out / name).read_bytes() for name in stale} == stale
+    assert sorted(p.name for p in out.iterdir()) == sorted([*stale, "pyforge-warden.md"])  # dot-files included
 
 
 # --- unreadable input: exit 2, the input named, nothing written ------------------------------
@@ -937,6 +1026,20 @@ def test_the_checked_in_reports_exist_for_every_roster_station():
         assert text.startswith(f"# Flag inventory: pyforge-{station}\n")
         _header(text, "Runtime CAPs with no flag")
         _header(text, "Warned specs")
+
+
+@pytest.mark.skipif(git is None, reason="git is not installed")
+def test_no_table_cell_of_a_live_or_checked_in_report_has_an_odd_number_of_backticks(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    out = tmp_path / "out"
+    assert flag_inventory.main(["--out-dir", str(out)]) == 0
+    capsys.readouterr()
+    reports = sorted(out.glob("pyforge-*.md")) + sorted((REPO_ROOT / "docs/governance/flag-inventory").glob("*.md"))
+
+    assert len(reports) == 16
+    for report in reports:
+        assert _odd_backtick_cells(report.read_text(encoding="utf-8")) == [], report
 
 
 # --- a report, not a detector; outside every station -------------------------------------------
