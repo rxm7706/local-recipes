@@ -6,6 +6,7 @@ import inspect
 import subprocess
 from pathlib import Path
 
+import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import capability_ledger
 from pyforge.doctor.sources.capability_ledger import (
@@ -238,3 +239,99 @@ def test_post_pin_spec_without_row_is_append(tmp_path: Path):
     assert not fails
     assert any("--append" in f.message for f in warns)
     assert any(f.evidence.get("kind") == "append" for f in warns)
+
+
+def _pinned_repo(tmp_path: Path) -> tuple[Path, str]:
+    """A throwaway git repo whose first commit is the ledger PIN."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "35.1@example.test")
+    _git(repo, "config", "user.name", "Story 35.1")
+    (repo / "README.md").write_text("pin\n", encoding="utf-8")
+    _git(repo, "add", "README.md")
+    _git(repo, "commit", "-m", "pin")
+    return repo, _git(repo, "rev-parse", "HEAD")
+
+
+def _post_pin_spec(status: str | None, *, with_cap: bool) -> str:
+    frontmatter = "spec: fixture-ledger-spec\n" + (f"status: {status}\n" if status else "")
+    cap = (
+        "\n- **CAP-9 — Example capability.**\n"
+        "  - **intent:** classify this heading extract only\n"
+        "  - **success:** CAP-9 is visible\n"
+        if with_cap
+        else "\nNo capability heading here.\n"
+    )
+    return f"---\n{frontmatter}---\n\n# SPEC — fixture\n{cap}"
+
+
+def _commit_post_pin_spec(
+    repo: Path,
+    pin: str,
+    body: str,
+    *,
+    rows: list[dict] | None = None,
+) -> None:
+    _write_spec(repo, _SPEC_REL, body)
+    _write_ledger(repo, rows or [], source_sha=pin)
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "post-pin spec")
+
+
+@pytest.mark.parametrize("status", ["absorbed", "draft", "shipped", None])
+def test_post_pin_non_live_spec_reports_nothing(tmp_path: Path, status: str | None):
+    repo, pin = _pinned_repo(tmp_path)
+    _commit_post_pin_spec(repo, pin, _post_pin_spec(status, with_cap=True))
+
+    findings = gather(repo)
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+
+
+def test_post_pin_live_spec_without_cap_or_row_is_one_append_warn(tmp_path: Path):
+    repo, pin = _pinned_repo(tmp_path)
+    _commit_post_pin_spec(repo, pin, _post_pin_spec("ready", with_cap=False))
+
+    findings = gather(repo)
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert findings[0].evidence == {"kind": "append", "path": _SPEC_REL}
+    assert _SPEC_REL in findings[0].message
+
+
+def test_post_pin_in_progress_spec_with_unclassified_cap_keeps_per_cap_warn(tmp_path: Path):
+    repo, pin = _pinned_repo(tmp_path)
+    _commit_post_pin_spec(repo, pin, _post_pin_spec("in-progress", with_cap=True))
+
+    findings = gather(repo)
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert findings[0].message == "fixture-ledger-spec:CAP-9: post-PIN unclassified --append"
+    assert findings[0].evidence["kind"] == "append"
+
+
+def test_post_pin_live_spec_with_a_row_for_its_path_reports_nothing(tmp_path: Path):
+    repo, pin = _pinned_repo(tmp_path)
+    _commit_post_pin_spec(
+        repo,
+        pin,
+        _post_pin_spec("ready", with_cap=False),
+        rows=[_classified_row(id="fixture-ledger-spec:CAP-1")],
+    )
+
+    findings = gather(repo)
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+
+
+def test_post_pin_spec_gone_from_working_tree_reports_nothing(tmp_path: Path):
+    repo, pin = _pinned_repo(tmp_path)
+    _commit_post_pin_spec(repo, pin, _post_pin_spec("ready", with_cap=False))
+    # Committed after the PIN, then deleted without a commit: still in ``PIN..HEAD``.
+    (repo / _SPEC_REL).unlink()
+
+    findings = gather(repo)
+
+    # ``gather`` degrades an unguarded read into a finding, so assert no non-OK finding at all.
+    assert [f.status for f in findings] == [DoctorStatus.OK]
