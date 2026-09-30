@@ -2,7 +2,8 @@
 title: '34.5: The flag gate reds a landed flagged story whose test does not run both states'
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 50976c802aac4e6716012db7b8430b8cae63c286
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
