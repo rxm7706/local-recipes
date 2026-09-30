@@ -7,6 +7,7 @@ self-report without passing independent verification (Story 22.3).
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Mapping
 from enum import StrEnum
 
@@ -139,11 +140,24 @@ def three_way_ledger_statuses(
     return out
 
 
+MEMLOG_BASENAME = ".memlog.md"
+
+
+def is_memlog_path(path: str) -> bool:
+    """True when ``path`` is a Spec memlog: its basename is ``.memlog.md``, in any project --
+    co-governor memlogs live under other projects, and an append-only union is safe wherever
+    the file sits (Story 78.1, CAP-283)."""
+    return path.replace("\\", "/").rsplit("/", 1)[-1] == MEMLOG_BASENAME
+
+
 def is_mechanical_conflict_path(path: str, *, ledger_rel: str | None = None) -> bool:
-    """True when ``path`` is a known mechanical-only merge conflict. Given ``ledger_rel`` (the
-    landing project's own ledger), only that exact path is mechanical -- another project's
-    ledger is not this landing's to resolve (Story 59.1)."""
+    """True when ``path`` is a known mechanical-only merge conflict: a Spec memlog (Story 78.1;
+    the heal still escalates one that is not append-only) or a sprint ledger. Given
+    ``ledger_rel`` (the landing project's own ledger), only that exact path is a mechanical
+    ledger -- another project's ledger is not this landing's to resolve (Story 59.1)."""
     normalized = path.replace("\\", "/")
+    if is_memlog_path(normalized):
+        return True
     if ledger_rel is not None:
         return normalized == ledger_rel
     return normalized.endswith(f"planning-artifacts/{SPRINT_LEDGER_BASENAME}") or normalized.endswith(
@@ -154,6 +168,98 @@ def is_mechanical_conflict_path(path: str, *, ledger_rel: str | None = None) -> 
 def unknown_conflict_paths(paths: tuple[str, ...], *, ledger_rel: str | None = None) -> tuple[str, ...]:
     """Conflict paths that are not mechanical — must escalate, never merge."""
     return tuple(sorted(p for p in paths if not is_mechanical_conflict_path(p, ledger_rel=ledger_rel)))
+
+
+# --- Story 78.1 (CAP-283): append-only memlog union ------------------------
+
+_FENCE = "---"
+
+
+def _split_memlog(text: str) -> tuple[dict[str, str], list[str]] | None:
+    """``_bmad/scripts/memlog.py``'s ``split``: the ``key: value`` frontmatter fields in source
+    order, then the body's lines -- or ``None`` when ``text`` has no terminated ``---`` frontmatter.
+    Mirrored, not imported: that script sits outside this package."""
+    lines = text.splitlines()
+    if not lines or lines[0] != _FENCE:
+        return None
+    end = next((i for i in range(1, len(lines)) if lines[i] == _FENCE), None)
+    if end is None:
+        return None
+    fields: dict[str, str] = {}
+    for line in lines[1:end]:
+        if ":" in line:
+            key, value = line.split(":", 1)
+            fields[key.strip()] = value.strip()
+    body = "\n".join(lines[end + 1 :]).lstrip("\n")
+    return fields, body.rstrip("\n").splitlines()
+
+
+def _render_memlog(fields: Mapping[str, str], body: list[str]) -> str:
+    """``_bmad/scripts/memlog.py``'s ``render``: fence, fields, fence, a blank line, the body,
+    one trailing newline."""
+    frontmatter = "\n".join(f"{key}: {value}" for key, value in fields.items())
+    return f"{_FENCE}\n{frontmatter}\n{_FENCE}\n\n" + "\n".join(body).rstrip("\n") + "\n"
+
+
+def _union_memlog_fields(
+    base: Mapping[str, str], main: Mapping[str, str], branch: Mapping[str, str]
+) -> dict[str, str] | None:
+    """Three-way merge of memlog frontmatter fields, in ``main``'s order: a field only one side
+    changed takes that side's value (a removal is a change), ``updated`` takes the later stamp
+    (ISO text compares correctly), and any other field both sides changed differently is
+    ``None``. A field only the branch added lands before ``updated``, which ``memlog.py`` keeps
+    last."""
+    order = list(main)
+    for key in branch:
+        if key not in main:
+            order.insert(order.index("updated") if "updated" in order else len(order), key)
+    merged: dict[str, str] = {}
+    for key in order:
+        was, ours, theirs = base.get(key), main.get(key), branch.get(key)
+        if key == "updated":
+            value: str | None = max(stamp for stamp in (ours, theirs) if stamp is not None)
+        elif ours == theirs or theirs == was:
+            value = ours
+        elif ours == was:
+            value = theirs
+        else:
+            return None
+        if value is not None:
+            merged[key] = value
+    return merged
+
+
+def union_memlog_texts(base: str, main: str, branch: str) -> str | None:
+    """Story 78.1 (CAP-283): the union of two append-only edits of one ``.memlog.md``, or ``None``
+    when either side is not append-only or the frontmatter cannot be merged (the heal then
+    escalates the path by name).
+
+    Each text is parsed the way ``memlog.py`` writes it. A side is append-only when its body
+    starts with the base body, line for line -- a rewritten, dropped or reordered line is not.
+    The result body is ``main``'s, then each line the branch appended after the base, in order,
+    skipping one line per identical line ``main`` appended (so an entry both sides appended
+    appears once, in ``main``'s position, while an entry repeated on purpose is never dropped).
+    Frontmatter is ``_union_memlog_fields``. Rendered in ``memlog.py``'s shape."""
+    base_parts, main_parts, branch_parts = _split_memlog(base), _split_memlog(main), _split_memlog(branch)
+    if base_parts is None or main_parts is None or branch_parts is None:
+        return None
+    base_fields, base_body = base_parts
+    main_fields, main_body = main_parts
+    branch_fields, branch_body = branch_parts
+    kept = len(base_body)
+    if main_body[:kept] != base_body or branch_body[:kept] != base_body:
+        return None
+    fields = _union_memlog_fields(base_fields, main_fields, branch_fields)
+    if fields is None:
+        return None
+    already_on_main = Counter(main_body[kept:])
+    appended: list[str] = []
+    for line in branch_body[kept:]:
+        if already_on_main[line] > 0:
+            already_on_main[line] -= 1
+        else:
+            appended.append(line)
+    return _render_memlog(fields, main_body + appended)
 
 
 # --- Story 51.11 (CAP-258): blocked-twin promotion --------------------------

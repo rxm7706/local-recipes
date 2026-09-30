@@ -1137,6 +1137,84 @@ def test_execute_dispatch_land_heals_ledger_only_conflict(tmp_path: Path) -> Non
     assert "28-20-y: backlog" in written
 
 
+_MEMLOG_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md"
+
+
+def _memlog_text(*entries: str, updated: str) -> str:
+    return "---\ntopic: Marshal\nupdated: " + updated + "\n---\n\n" + "\n".join(entries) + "\n"
+
+
+class _MemlogHealVcs(HealCapableVcs):
+    """Story 78.1: a memlog conflicts beside the ledger; the merge base has one entry, `main` a
+    second and the branch a third, each restamped."""
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str):
+        if path != _MEMLOG_REL:
+            return super().file_text_at_ref(repo_root, ref, path)
+        if ref == "base000":
+            return _memlog_text("- (event) a", updated="2026-09-30T10:00")
+        if ref == "refs/remotes/origin/main":
+            return _memlog_text("- (event) a", "- (event) from main", updated="2026-09-30T12:00")
+        return _memlog_text("- (event) a", "- (event) from branch", updated="2026-09-30T11:00")
+
+
+def test_execute_dispatch_land_records_the_healed_memlog_paths(tmp_path: Path) -> None:
+    """Story 78.1 (CAP-283): a landing whose conflicts are a ledger and a memlog heals both in the
+    one merge, and its record names the memlog beside `ledger_union_heal`."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    vcs = _MemlogHealVcs(
+        conflict_paths=(ledger_rel, _MEMLOG_REL),
+        main_ledger=_ledger_yaml(("28-19-x", "done")),
+        branch_ledger=_ledger_yaml(("28-20-y", "backlog")),
+    )
+    forge = HealRetryForge()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="28-20-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=forge,
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert envelope.data.get("ledger_union_heal") is True
+    assert envelope.data.get("memlog_union_heal") == [_MEMLOG_REL]
+    assert forge.merge_calls == 2
+    assert [(ref, sorted(res)) for _, ref, res in vcs.merges] == [
+        ("refs/remotes/origin/main", sorted([ledger_rel, _MEMLOG_REL]))
+    ]
+    assert (worktree / _MEMLOG_REL).read_text(encoding="utf-8") == _memlog_text(
+        "- (event) a", "- (event) from main", "- (event) from branch", updated="2026-09-30T12:00"
+    )
+
+
+def test_execute_dispatch_land_records_no_memlog_paths_for_a_ledger_only_heal(tmp_path: Path) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    vcs = HealCapableVcs(
+        conflict_paths=(ledger_rel,),
+        main_ledger=_ledger_yaml(("28-19-x", "done")),
+        branch_ledger=_ledger_yaml(("28-20-y", "backlog")),
+    )
+    _result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="28-20-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=HealRetryForge(),
+        process=FakeProcess(),
+    )
+    assert envelope.data.get("ledger_union_heal") is True
+    assert "memlog_union_heal" not in envelope.data
+
+
 class _HealFetchFailsVcs(HealCapableVcs):
     """The landing's first fetch (the 51.1 preview gate) succeeds; the heal's fetch fails."""
 

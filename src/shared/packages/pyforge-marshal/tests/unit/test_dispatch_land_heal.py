@@ -5,12 +5,16 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from pyforge.marshal.adapters.vcs_git import GitVcs
+import pytest
+
+from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core.chain_regen import render_ledger_statuses
 from pyforge.marshal.core.dispatch_landing import (
     is_mechanical_conflict_path,
+    is_memlog_path,
     ledger_status_precedence,
     three_way_ledger_statuses,
+    union_memlog_texts,
     union_sprint_ledger_maps,
     unknown_conflict_paths,
 )
@@ -603,3 +607,405 @@ def test_render_ledger_statuses_keeps_the_template_header_and_sorts_the_map() ->
         "# GENERATED\n# note\ndevelopment_status:\n  a-1: done\n  b-2: backlog\n"
     )
     assert render_ledger_statuses("", {"a-1": "done"}) == "development_status:\n  a-1: done\n"
+
+
+# --- Story 78.1 (CAP-283): a landing unions append-only memlogs ------------------------------------
+
+_MEMLOG = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md"
+_CO_MEMLOG = "_bmad-output/projects/pyforge-core/planning-artifacts/specs/spec-pyforge-core/.memlog.md"
+_T0, _T1, _T2 = "2026-09-30T10:00", "2026-09-30T11:00", "2026-09-30T12:00"
+
+
+def _memlog(*entries: str, updated: str = _T0, **fields: str) -> str:
+    """A memlog in `_bmad/scripts/memlog.py`'s shape: `updated:` last, a blank line, the entries."""
+    meta = {"topic": "Marshal", **fields, "updated": updated}
+    head = "".join(f"{key}: {value}\n" for key, value in meta.items())
+    return f"---\n{head}---\n\n" + "\n".join(entries) + "\n"
+
+
+def test_is_memlog_path_reads_the_basename_in_any_project() -> None:
+    assert is_memlog_path(_MEMLOG) and is_memlog_path(_CO_MEMLOG) and is_memlog_path(".memlog.md")
+    assert is_memlog_path("a\\b\\.memlog.md")
+    assert not is_memlog_path("specs/spec-x/memlog.md")
+    assert not is_memlog_path("specs/spec-x/.memlog.md.bak")
+    assert not is_memlog_path("specs/spec-x/SPEC.md")
+
+
+def test_a_memlog_is_mechanical_beside_the_landing_ledger_only() -> None:
+    assert is_mechanical_conflict_path(_MEMLOG, ledger_rel=_LEDGER)
+    assert is_mechanical_conflict_path(_CO_MEMLOG, ledger_rel=_LEDGER)
+    assert unknown_conflict_paths((_MEMLOG, _LEDGER, _FOREIGN_LEDGER, "README.md"), ledger_rel=_LEDGER) == (
+        "README.md",
+        _FOREIGN_LEDGER,
+    )
+
+
+_A, _M1, _M2, _B1, _B2 = ("- (event) a", "- (event) m1", "- (event) m2", "- (event) b1", "- (event) b2")
+_NO_FENCE = "- (event) a\n"
+_OPEN_FENCE = "---\ntopic: Marshal\n- (event) a\n"
+
+
+@pytest.mark.parametrize(
+    ("base", "main", "branch", "expected"),
+    [
+        pytest.param(  # both appended and restamped: main's frontmatter, its body, the branch's lines
+            _memlog(_A, updated=_T0),
+            _memlog(_A, _M1, _M2, updated=_T2),
+            _memlog(_A, _B1, _B2, updated=_T1),
+            _memlog(_A, _M1, _M2, _B1, _B2, updated=_T2),
+            id="both-appended",
+        ),
+        pytest.param(  # the branch restamped later than main: `updated:` is the later stamp
+            _memlog(_A, updated=_T0),
+            _memlog(_A, _M1, updated=_T1),
+            _memlog(_A, _B1, updated=_T2),
+            _memlog(_A, _M1, _B1, updated=_T2),
+            id="later-stamp-is-the-branchs",
+        ),
+        pytest.param(  # only the branch appended: the branch's text
+            _memlog(_A, updated=_T0),
+            _memlog(_A, updated=_T0),
+            _memlog(_A, _B1, updated=_T1),
+            _memlog(_A, _B1, updated=_T1),
+            id="only-the-branch-appended",
+        ),
+        pytest.param(  # only main appended: main's text
+            _memlog(_A, updated=_T0),
+            _memlog(_A, _M1, updated=_T1),
+            _memlog(_A, updated=_T0),
+            _memlog(_A, _M1, updated=_T1),
+            id="only-main-appended",
+        ),
+        pytest.param(  # a line both sides appended appears once, in main's position
+            _memlog(_A, updated=_T0),
+            _memlog(_A, _M1, _M2, updated=_T2),
+            _memlog(_A, _M2, _B1, updated=_T1),
+            _memlog(_A, _M1, _M2, _B1, updated=_T2),
+            id="shared-line-appears-once",
+        ),
+        pytest.param(  # an entry the branch repeats on purpose is never dropped
+            _memlog(_A, updated=_T0),
+            _memlog(_A, _M1, updated=_T1),
+            _memlog(_A, _M1, _M1, updated=_T1),
+            _memlog(_A, _M1, _M1, updated=_T1),
+            id="a-repeated-entry-is-kept",
+        ),
+        pytest.param(  # an empty base body: everything either side wrote is appended
+            _memlog(updated=_T0),
+            _memlog(_M1, updated=_T1),
+            _memlog(_B1, updated=_T2),
+            _memlog(_M1, _B1, updated=_T2),
+            id="empty-base-body",
+        ),
+        pytest.param(  # a field only one side changed takes that side's value, whichever side
+            _memlog(_A, updated=_T0, goal="g0", topic="t0"),
+            _memlog(_A, _M1, updated=_T1, goal="g0", topic="t1"),
+            _memlog(_A, _B1, updated=_T2, goal="g1", topic="t0"),
+            _memlog(_A, _M1, _B1, updated=_T2, goal="g1", topic="t1"),
+            id="a-field-only-one-side-changed",
+        ),
+        pytest.param(  # both sides changed a field to the same value
+            _memlog(_A, updated=_T0, topic="t0"),
+            _memlog(_A, _M1, updated=_T1, topic="t1"),
+            _memlog(_A, _B1, updated=_T2, topic="t1"),
+            _memlog(_A, _M1, _B1, updated=_T2, topic="t1"),
+            id="a-field-both-changed-alike",
+        ),
+        pytest.param(  # a field only the branch added lands before `updated:`, which stays last
+            _memlog(_A, updated=_T0),
+            _memlog(_A, _M1, updated=_T1),
+            _memlog(_A, _B1, updated=_T2, goal="lift retention"),
+            _memlog(_A, _M1, _B1, updated=_T2, goal="lift retention"),
+            id="a-field-the-branch-added",
+        ),
+        pytest.param(  # a rewritten base line, on the branch
+            _memlog(_A, _M1, updated=_T0),
+            _memlog(_A, _M1, _M2, updated=_T1),
+            _memlog(_A, "- (event) m1 edited", _B1, updated=_T2),
+            None,
+            id="rewritten-by-the-branch",
+        ),
+        pytest.param(  # a rewritten base line, on main
+            _memlog(_A, _M1, updated=_T0),
+            _memlog(_A, "- (event) m1 edited", _M2, updated=_T1),
+            _memlog(_A, _M1, _B1, updated=_T2),
+            None,
+            id="rewritten-by-main",
+        ),
+        pytest.param(  # a dropped trailing base line
+            _memlog(_A, _M1, updated=_T0),
+            _memlog(_A, _M1, _M2, updated=_T1),
+            _memlog(_A, updated=_T2),
+            None,
+            id="truncated-body",
+        ),
+        pytest.param(  # a dropped base body altogether
+            _memlog(_A, updated=_T0),
+            _memlog(_A, _M1, updated=_T1),
+            _memlog(updated=_T2),
+            None,
+            id="emptied-body",
+        ),
+        pytest.param(  # reordered base lines
+            _memlog(_A, _M1, updated=_T0),
+            _memlog(_A, _M1, _M2, updated=_T1),
+            _memlog(_M1, _A, _B1, updated=_T2),
+            None,
+            id="reordered",
+        ),
+        pytest.param(  # a field both sides changed differently
+            _memlog(_A, updated=_T0, topic="t0"),
+            _memlog(_A, _M1, updated=_T1, topic="from main"),
+            _memlog(_A, _B1, updated=_T2, topic="from branch"),
+            None,
+            id="topic-changed-differently",
+        ),
+        pytest.param(  # main removed a field the branch changed
+            _memlog(_A, updated=_T0, goal="g0"),
+            _memlog(_A, _M1, updated=_T1),
+            _memlog(_A, _B1, updated=_T2, goal="g1"),
+            None,
+            id="removed-on-one-side-changed-on-the-other",
+        ),
+        pytest.param(_memlog(_A), _NO_FENCE, _memlog(_A, _B1), None, id="no-frontmatter-on-main"),
+        pytest.param(_memlog(_A), _memlog(_A, _M1), _NO_FENCE, None, id="no-frontmatter-on-the-branch"),
+        pytest.param(_NO_FENCE, _memlog(_A, _M1), _memlog(_A, _B1), None, id="no-frontmatter-in-the-base"),
+        pytest.param(_memlog(_A), _OPEN_FENCE, _memlog(_A, _B1), None, id="unterminated-frontmatter"),
+        pytest.param("", _memlog(_A, _M1), _memlog(_A, _B1), None, id="added-on-both-sides"),
+    ],
+)
+def test_union_memlog_texts(base: str, main: str, branch: str, expected: str | None) -> None:
+    assert union_memlog_texts(base, main, branch) == expected
+
+
+def test_a_memlog_union_is_a_fixed_point_of_a_second_union() -> None:
+    """Applying the same branch onto the union again adds nothing: no entry twice."""
+    base = _memlog(_A, updated=_T0)
+    main = _memlog(_A, _M1, updated=_T2)
+    branch = _memlog(_A, _B1, updated=_T1)
+    once = union_memlog_texts(base, main, branch)
+    assert once is not None
+    assert union_memlog_texts(base, once, branch) == once
+
+
+def _entry_counts(text: str, *entries: str) -> list[int]:
+    return [text.splitlines().count(entry) for entry in entries]
+
+
+def _two_memlogs(*, main_entry: str = _M1, branch_entry: str = _B1) -> dict[str, dict[str, str]]:
+    """Base, main and branch files for two memlogs: the landing's own and a co-governor's."""
+    return {
+        "base": {_MEMLOG: _memlog(_A, updated=_T0), _CO_MEMLOG: _memlog(_A, updated=_T0)},
+        "main": {_MEMLOG: _memlog(_A, main_entry, updated=_T2), _CO_MEMLOG: _memlog(_A, main_entry, updated=_T2)},
+        "branch": {_MEMLOG: _memlog(_A, branch_entry, updated=_T1), _CO_MEMLOG: _memlog(_A, branch_entry, updated=_T1)},
+    }
+
+
+def _assert_merge_of_origin_main(remote: Path, clone: Path) -> str:
+    """The pushed head is a merge commit whose second parent is `origin/main`; returns its sha."""
+    pushed = _run_git(remote, "rev-parse", _HEAD).strip()
+    parents = _run_git(clone, "rev-list", "--parents", "-n", "1", pushed).split()[1:]
+    assert len(parents) == 2
+    assert parents[1] == _run_git(clone, "rev-parse", _ORIGIN_MAIN).strip()
+    return pushed
+
+
+def test_real_heal_unions_memlogs_both_sides_appended_to(tmp_path: Path) -> None:
+    """The 2026-09-30 refusals: two stories each append to the same memlogs -- the landing's own
+    Spec's and a co-governor's -- and restamp `updated:`. Both are healed in one merge."""
+    remote, clone, wt = _landing(tmp_path, **_two_memlogs())
+    forge = _HonestForge(clone)
+
+    result = _heal(clone, wt, forge)
+
+    assert result == DispatchLandHealResult(
+        healed=True, retried_forge_merge=True, healed_memlog_paths=(_CO_MEMLOG, _MEMLOG)
+    )
+    assert forge.merge_calls == 1
+    pushed = _assert_merge_of_origin_main(remote, clone)
+    for rel in (_MEMLOG, _CO_MEMLOG):
+        text = _run_git(clone, "show", f"{pushed}:{rel}")
+        assert text == _memlog(_A, _M1, _B1, updated=_T2)
+        assert _entry_counts(text, _A, _M1, _B1) == [1, 1, 1]
+    assert _run_git(wt, "status", "--porcelain") == ""
+
+
+def test_real_heal_unions_a_line_both_sides_appended_once(tmp_path: Path) -> None:
+    remote, clone, wt = _landing(tmp_path, **_two_memlogs(main_entry=_M1, branch_entry=_M1))
+    forge = _HonestForge(clone)
+
+    result = _heal(clone, wt, forge)
+
+    assert result == DispatchLandHealResult(
+        healed=True, retried_forge_merge=True, healed_memlog_paths=(_CO_MEMLOG, _MEMLOG)
+    )
+    pushed = _assert_merge_of_origin_main(remote, clone)
+    assert _entry_counts(_run_git(clone, "show", f"{pushed}:{_MEMLOG}"), _A, _M1) == [1, 1]
+
+
+def test_real_heal_resolves_memlogs_and_the_ledger_in_the_same_merge(tmp_path: Path) -> None:
+    files = _two_memlogs()
+    remote, clone, wt = _landing(
+        tmp_path,
+        base={**files["base"], **_ADJACENT["base"]},
+        main={**files["main"], **_ADJACENT["main"]},
+        branch={**files["branch"], **_ADJACENT["branch"]},
+    )
+    forge = _HonestForge(clone)
+
+    result = _heal(clone, wt, forge)
+
+    assert result == DispatchLandHealResult(
+        healed=True, retried_forge_merge=True, healed_memlog_paths=(_CO_MEMLOG, _MEMLOG)
+    )
+    assert forge.merge_calls == 1
+    pushed = _assert_merge_of_origin_main(remote, clone)
+    assert _run_git(clone, "rev-list", "--merges", "--count", f"{_ORIGIN_MAIN}..{pushed}").strip() == "1"
+    ledger = _run_git(clone, "show", f"{pushed}:{_LEDGER}")
+    assert "58-1-x: backlog" in ledger and "59-1-y: done" in ledger
+    assert _entry_counts(_run_git(clone, "show", f"{pushed}:{_MEMLOG}"), _A, _M1, _B1) == [1, 1, 1]
+
+
+def test_real_heal_unions_a_co_governor_memlog_alone(tmp_path: Path) -> None:
+    """Only a co-governor's memlog conflicts, under another project: still mechanical."""
+    remote, clone, wt = _landing(
+        tmp_path,
+        base={_CO_MEMLOG: _memlog(_A, updated=_T0)},
+        main={_CO_MEMLOG: _memlog(_A, _M1, updated=_T2)},
+        branch={_CO_MEMLOG: _memlog(_A, _B1, updated=_T1)},
+    )
+
+    result = _heal(clone, wt, _HonestForge(clone))
+
+    assert result == DispatchLandHealResult(healed=True, retried_forge_merge=True, healed_memlog_paths=(_CO_MEMLOG,))
+
+
+def test_real_heal_escalates_an_edited_memlog_by_name_and_pushes_nothing(tmp_path: Path) -> None:
+    remote, clone, wt = _landing(
+        tmp_path,
+        base={_MEMLOG: _memlog(_A, _M1, updated=_T0), _CO_MEMLOG: _memlog(_A, updated=_T0)},
+        main={_MEMLOG: _memlog(_A, _M1, _M2, updated=_T2), _CO_MEMLOG: _memlog(_A, _M1, updated=_T2)},
+        branch={
+            _MEMLOG: _memlog(_A, "- (event) m1 edited", updated=_T1),
+            _CO_MEMLOG: _memlog(_A, _B1, updated=_T1),
+        },
+    )
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    wt_head_before = _run_git(wt, "rev-parse", "HEAD").strip()
+    forge = _HonestForge(clone)
+
+    # only the edited memlog escalates: the co-governor's own is still append-only on both sides
+    assert _heal(clone, wt, forge) == DispatchLandHealResult(healed=False, escalated_paths=(_MEMLOG,))
+    assert forge.merge_calls == 0
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+    assert _run_git(wt, "rev-parse", "HEAD").strip() == wt_head_before
+    assert _run_git(wt, "status", "--porcelain") == ""
+
+
+def test_real_heal_escalates_a_memlog_added_on_both_sides(tmp_path: Path) -> None:
+    remote, clone, wt = _landing(
+        tmp_path,
+        base={"README.md": "base\n"},
+        main={_MEMLOG: _memlog(_M1, updated=_T2)},
+        branch={_MEMLOG: _memlog(_B1, updated=_T1)},
+    )
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+
+    assert _heal(clone, wt, _HonestForge(clone)) == DispatchLandHealResult(healed=False, escalated_paths=(_MEMLOG,))
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+
+
+def test_real_heal_escalates_a_conflict_beside_a_memlog_and_commits_nothing(tmp_path: Path) -> None:
+    files = _two_memlogs()
+    remote, clone, wt = _landing(
+        tmp_path,
+        base={**files["base"], "README.md": "base\n"},
+        main={**files["main"], "README.md": "main\n"},
+        branch={**files["branch"], "README.md": "branch\n"},
+    )
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    wt_head_before = _run_git(wt, "rev-parse", "HEAD").strip()
+    forge = _HonestForge(clone)
+
+    assert _heal(clone, wt, forge) == DispatchLandHealResult(healed=False, escalated_paths=("README.md",))
+    assert forge.merge_calls == 0
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+    assert _run_git(wt, "rev-parse", "HEAD").strip() == wt_head_before
+    assert _run_git(wt, "status", "--porcelain") == ""
+
+
+def test_real_heal_names_both_the_other_file_and_the_edited_memlog(tmp_path: Path) -> None:
+    remote, clone, wt = _landing(
+        tmp_path,
+        base={_MEMLOG: _memlog(_A, updated=_T0), "README.md": "base\n"},
+        main={_MEMLOG: _memlog(_A, _M1, updated=_T2), "README.md": "main\n"},
+        branch={_MEMLOG: _memlog("- (event) a edited", updated=_T1), "README.md": "branch\n"},
+    )
+
+    assert _heal(clone, wt, _HonestForge(clone)) == DispatchLandHealResult(
+        healed=False, escalated_paths=("README.md", _MEMLOG)
+    )
+
+
+def test_real_heal_never_lands_on_main_when_a_memlog_heal_is_refused_by_the_forge(tmp_path: Path) -> None:
+    """CAP-269's guarantee holds for a memlog heal: a refused retry leaves remote `main` untouched."""
+    remote, clone, wt = _landing(tmp_path, **_two_memlogs())
+    main_before = _run_git(remote, "rev-parse", "main").strip()
+    forge = _HonestForge(clone, refuse=True)
+
+    assert _heal(clone, wt, forge) == DispatchLandHealResult(healed=False)
+    assert _run_git(remote, "rev-parse", "main").strip() == main_before
+    assert forge.closed == []
+
+
+class _UnreadableVcs(FakeVcsHeal):
+    """A git read of the merge base or of a conflicted path fails mid-heal."""
+
+    def __init__(self, *, fail_on: str, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._fail_on = fail_on
+
+    def merge_base(self, repo_root: Path, a: str, b: str) -> str:
+        if self._fail_on == "merge_base":
+            raise VcsCommandError("git merge-base failed")
+        return super().merge_base(repo_root, a, b)
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str):
+        if self._fail_on == "file_text_at_ref":
+            raise VcsCommandError(f"git show {ref}:{path} failed")
+        return super().file_text_at_ref(repo_root, ref, path)
+
+
+@pytest.mark.parametrize("fail_on", ["merge_base", "file_text_at_ref"])
+@pytest.mark.parametrize("conflicts", [(_MEMLOG,), (_LEDGER,), (_LEDGER, _MEMLOG)])
+def test_heal_refuses_cleanly_when_a_resolution_read_fails(
+    tmp_path: Path, conflicts: tuple[str, ...], fail_on: str
+) -> None:
+    """Story 78.1 review: the reads that feed the resolutions moved into their own helper and now
+    cover every memlog. A failed git read is a refusal (`healed=False`, nothing merged or pushed,
+    the forge never asked to merge) -- never an exception out of the heal, which `dispatch land`
+    does not catch there."""
+    vcs = _UnreadableVcs(fail_on=fail_on, conflict_paths=conflicts)
+    forge = FakeForgeHeal(merge_state="CONFLICTING")
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=tmp_path,
+        worktree=tmp_path,
+        base="main",
+        head_branch=_HEAD,
+        head_sha="unused",
+        subject="Merge 78.1 into main",
+        merge_strategy="merge",
+        delete_branch=False,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=PrInfo(number=78, url="https://example/pr/78", state="open", base="main"),
+        fs=FakeFsHeal(),
+        vcs=vcs,
+        forge=forge,
+        probe_ref=_ORIGIN_MAIN,
+    )
+
+    assert result == DispatchLandHealResult(healed=False)
+    assert vcs.merges == [] and vcs.pushed == [] and vcs.commits == []
+    assert forge.merge_calls == 0 and forge.closed == []
