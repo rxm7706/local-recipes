@@ -71,6 +71,10 @@ This occurs when a governed file is added or modified, but the owning Spec's `.m
 This occurs if you create a standalone Dream/Spec pair that violates the 1:1 "one chain per station" rule, without an explicit `fold-exemption`.
 - **Fix:** Either fold the capability into an existing station's Spec, or add an exemption if it is truly cross-cutting (e.g., the testing kit). See [One-Chain Station Ops](one-chain-station-ops.md).
 
+### Fold complete (`fold-complete-check`)
+An archived Dream under `archive/docs/dreams/` has a paragraph that is not in its station Dream (`docs/dreams/pyforge-<owner>.md`). The check splits the archived body into paragraphs (blank-line separated, frontmatter and heading lines left out, whitespace collapsed, only those longer than 80 characters) and fails naming the file and how many are missing (`fold-complete-incomplete`). An `owner:` that cannot be read fails (`fold-complete-no-owner`), and so does an owner whose station Dream is absent (`fold-complete-no-station-dream`). Files listed in `docs/governance/fold-complete-baseline.json` are not folds of a station Dream and are never read. The same run raises one warning counting the Dreams in `docs/dreams/` that still read `status: archived`, per station; that is the migration's countdown, never a failure.
+- **Fix:** paste the satellite's whole body, verbatim, into a dated section of the station Dream, with its headings demoted one level, then `git mv` the file to `archive/docs/dreams/`. Heading depth does not matter to the check. A leftover `Consolidated into` banner counts as a missing paragraph, because CHAIN-STANDARD section 7 item 4 says a moved Dream carries none. Never add a path to the baseline to clear a finding. See CHAIN-STANDARD section 11.
+
 ### Docs map hygiene (`docs-map-hygiene-check`)
 A page under `docs/tutorials`, `docs/how-to`, `docs/reference` or `docs/explanation` is not linked from `docs/MAP.md` (fail — promoted from warn by Story 30.2/CAP-84), or the map links a page under `docs/` that does not exist (fail).
 - **Fix:** Add the page to the right quadrant table in `docs/MAP.md`, or repoint/remove the dead link.
