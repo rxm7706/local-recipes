@@ -6894,3 +6894,25 @@ status: open
   severity: medium (unverified)
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-74-1: No CI lane or pr-preflight leg runs the pyforge-testing-kit suite, so the flags family, invoke_cli and the branch_diff_guard loud-failure tests are guarded only by the manual `pyforge-testing-kit-test` command.
+
+- source_spec: `planning-artifacts/specs/spec-74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-fixture.md`
+  summary: No CI lane or pr-preflight leg runs the pyforge-testing-kit suite, so the flags family, invoke_cli and the branch_diff_guard loud-failure tests are guarded only by the manual `pyforge-testing-kit-test` command.
+  evidence: The only definition of `pyforge-testing-kit-test` is the pixi task at pixi.toml:3060; .github/workflows/pyforge-station-tests.yml has `core-test` plus the eight station jobs and no kit job, and the `pyforge-station-tests` task depends on `pyforge-core-test` and the eight station tasks only. The gap pre-dates this story (the kit's existing test_branch_diff_guard.py was never in a lane either). Fixing it needs a new job in that workflow and a matching `depends-on` entry, both outside marshal-policy.toml `[epic_surfaces]` "74" (MRS-GATE-007), plus the workflow's trigger-companion meta-tests, so a run inside this story cannot land it.
+  location: .github/workflows/pyforge-station-tests.yml
+  origin: spec-deferred f9e68a634a29 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-74-1-2: spec-pyforge-core's SPEC.md still calls the testing kit "a stdlib leaf by Q-26" and lists "Not pyforge-testing-kit" as a non-goal, after the 2026-09-30 operator ruling retired that premise.
+
+- source_spec: `planning-artifacts/specs/spec-74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-fixture.md`
+  summary: spec-pyforge-core's SPEC.md still calls the testing kit "a stdlib leaf by Q-26" and lists "Not pyforge-testing-kit" as a non-goal, after the 2026-09-30 operator ruling retired that premise.
+  evidence: SPEC.md:152 reads "a stdlib leaf by Q-26" and SPEC.md:217 reads "Not `pyforge-testing-kit`". The supersession is recorded on the .memlog.md of spec-pyforge-core, spec-pyforge-testing-charter and spec-feature-flag-governance (the sanctioned reconcile path), but this story's Never clause and AGENTS.md forbid a hand edit of SPEC.md; it is re-derived with bmad-spec.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md:152
+  origin: spec-deferred 0c32bbe7c7c8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

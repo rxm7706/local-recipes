@@ -2245,6 +2245,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mypy_extensions-1.1.0-pyha770c72_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nodeenv-1.10.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openai-3.19.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -2314,7 +2315,7 @@ environments:
       - conda_source: pyforge-marshal[0cbccd1c] @ src/shared/packages/pyforge-marshal
       - conda_source: pyforge-scribe[fd291461] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/6f/ad/6afd073b0f817b3e03f9e37ad626ae341805891f23c74b5292818f49ac63/sqlite_vec-0.1.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux1_x86_64.whl
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
@@ -2386,6 +2387,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mypy_extensions-1.1.0-pyha770c72_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nodeenv-1.10.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openai-3.19.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -2557,7 +2559,7 @@ environments:
       - conda_source: pyforge-marshal[bdc4b046] @ src/shared/packages/pyforge-marshal
       - conda_source: pyforge-scribe[725215b1] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[a7ae2c72] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/a4/3d/3677e0cd2f92e5ebc43cd29fbf565b75582bff1ccfa0b8327c7508e1084f/sqlite_vec-0.1.9-py3-none-macosx_11_0_arm64.whl
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
@@ -2629,6 +2631,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mypy_extensions-1.1.0-pyha770c72_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nodeenv-1.10.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openai-3.19.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -2785,7 +2788,7 @@ environments:
       - conda_source: pyforge-marshal[e660c7de] @ src/shared/packages/pyforge-marshal
       - conda_source: pyforge-scribe[2711ccd9] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[42119315] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/42/89/81b2907cda14e566b9bf215e2ad82fc9b349edf07d2010756ffdb902f328/sqlite_vec-0.1.9-py3-none-win_amd64.whl
   detectors:
     channels:
@@ -10179,6 +10182,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/nest-asyncio-1.6.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/omegaconf-2.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openlineage-python-1.53.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-sdk-1.45.0-pyhd8ed1ab_0.conda
@@ -10295,7 +10299,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-atlas[8fd8162b] @ src/shared/packages/pyforge-atlas
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
@@ -10446,6 +10450,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/nest-asyncio-1.6.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/omegaconf-2.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openlineage-python-1.53.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-sdk-1.45.0-pyhd8ed1ab_0.conda
@@ -10727,7 +10732,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-atlas[b829d090] @ src/shared/packages/pyforge-atlas
       - conda_source: pyforge-core[b9202233] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[3b23250e] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
@@ -10877,6 +10882,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/nest-asyncio-1.6.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/omegaconf-2.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openlineage-python-1.53.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-sdk-1.45.0-pyhd8ed1ab_0.conda
@@ -11152,7 +11158,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-atlas[72e9f0cf] @ src/shared/packages/pyforge-atlas
       - conda_source: pyforge-core[ac8420c7] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[95d1e351] @ src/shared/packages/pyforge-warden
   pyforge-ci:
     channels:
@@ -11988,6 +11994,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nlohmann_json-abi-3.12.0-h0f90c79_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/omegaconf-2.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openlineage-python-1.53.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-sdk-1.45.0-pyhd8ed1ab_0.conda
@@ -12140,7 +12147,7 @@ environments:
       - conda_source: pyforge-mason[484eb8e5] @ src/shared/packages/pyforge-mason
       - conda_source: pyforge-scribe[fd291461] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
@@ -12349,6 +12356,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nlohmann_json-abi-3.12.0-h0f90c79_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/omegaconf-2.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openlineage-python-1.53.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-sdk-1.45.0-pyhd8ed1ab_0.conda
@@ -12751,7 +12759,7 @@ environments:
       - conda_source: pyforge-mason[1457374e] @ src/shared/packages/pyforge-mason
       - conda_source: pyforge-scribe[725215b1] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[a7ae2c72] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[3b23250e] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h2fd06db_0.conda
@@ -12960,6 +12968,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nlohmann_json-abi-3.12.0-h0f90c79_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/omegaconf-2.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openlineage-python-1.53.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-sdk-1.45.0-pyhd8ed1ab_0.conda
@@ -13346,7 +13355,7 @@ environments:
       - conda_source: pyforge-mason[b4b5ffa4] @ src/shared/packages/pyforge-mason
       - conda_source: pyforge-scribe[2711ccd9] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[42119315] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[95d1e351] @ src/shared/packages/pyforge-warden
   pyforge-core:
     channels:
@@ -13539,6 +13548,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-2.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-types-2.2.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packageurl-python-0.17.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
@@ -13581,7 +13591,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-doctor[a461c9cf] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -13612,6 +13622,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-2.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-types-2.2.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packageurl-python-0.17.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
@@ -13679,7 +13690,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b9202233] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-doctor[21c36bfc] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[3b23250e] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -13710,6 +13721,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-2.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-types-2.2.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packageurl-python-0.17.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
@@ -13778,7 +13790,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[ac8420c7] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-doctor[eb195730] @ src/shared/packages/pyforge-doctor
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[95d1e351] @ src/shared/packages/pyforge-warden
   pyforge-foundry-full:
     channels:
@@ -14339,6 +14351,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/nvidia-virtual-packages-0.2.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/omegaconf-2.3.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openai-3.19.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openlineage-python-1.53.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-sdk-1.45.0-pyhd8ed1ab_0.conda
@@ -14506,7 +14519,7 @@ environments:
       - conda_source: pyforge-mason[484eb8e5] @ src/shared/packages/pyforge-mason
       - conda_source: pyforge-scribe[fd291461] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/6f/ad/6afd073b0f817b3e03f9e37ad626ae341805891f23c74b5292818f49ac63/sqlite_vec-0.1.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux1_x86_64.whl
       osx-arm64-min:
@@ -14745,6 +14758,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/nvidia-virtual-packages-0.2.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/omegaconf-2.3.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openai-3.19.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openlineage-python-1.53.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-sdk-1.45.0-pyhd8ed1ab_0.conda
@@ -15193,7 +15207,7 @@ environments:
       - conda_source: pyforge-mason[1457374e] @ src/shared/packages/pyforge-mason
       - conda_source: pyforge-scribe[725215b1] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[a7ae2c72] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[3b23250e] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/a4/3d/3677e0cd2f92e5ebc43cd29fbf565b75582bff1ccfa0b8327c7508e1084f/sqlite_vec-0.1.9-py3-none-macosx_11_0_arm64.whl
       win-64:
@@ -15513,6 +15527,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/nvidia-virtual-packages-0.2.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/omegaconf-2.3.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openai-3.19.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openlineage-python-1.53.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-sdk-1.45.0-pyhd8ed1ab_0.conda
@@ -15941,7 +15956,7 @@ environments:
       - conda_source: pyforge-mason[b4b5ffa4] @ src/shared/packages/pyforge-mason
       - conda_source: pyforge-scribe[2711ccd9] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[42119315] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[95d1e351] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/42/89/81b2907cda14e566b9bf215e2ad82fc9b349edf07d2010756ffdb902f328/sqlite_vec-0.1.9-py3-none-win_amd64.whl
   pyforge-foundry-full-stack:
@@ -16514,6 +16529,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/nvidia-virtual-packages-0.2.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/omegaconf-2.3.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openai-3.19.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openlineage-python-1.53.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-sdk-1.45.0-pyhd8ed1ab_0.conda
@@ -16681,7 +16697,7 @@ environments:
       - conda_source: pyforge-mason[484eb8e5] @ src/shared/packages/pyforge-mason
       - conda_source: pyforge-scribe[fd291461] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/6f/ad/6afd073b0f817b3e03f9e37ad626ae341805891f23c74b5292818f49ac63/sqlite_vec-0.1.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux1_x86_64.whl
   pyforge-guild:
@@ -16866,6 +16882,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mypy_extensions-1.1.0-pyha770c72_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nodeenv-1.10.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openai-3.19.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -16935,7 +16952,7 @@ environments:
       - conda_source: pyforge-marshal[0cbccd1c] @ src/shared/packages/pyforge-marshal
       - conda_source: pyforge-scribe[fd291461] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/6f/ad/6afd073b0f817b3e03f9e37ad626ae341805891f23c74b5292818f49ac63/sqlite_vec-0.1.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux1_x86_64.whl
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
@@ -17007,6 +17024,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mypy_extensions-1.1.0-pyha770c72_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nodeenv-1.10.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openai-3.19.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -17178,7 +17196,7 @@ environments:
       - conda_source: pyforge-marshal[bdc4b046] @ src/shared/packages/pyforge-marshal
       - conda_source: pyforge-scribe[725215b1] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[a7ae2c72] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/a4/3d/3677e0cd2f92e5ebc43cd29fbf565b75582bff1ccfa0b8327c7508e1084f/sqlite_vec-0.1.9-py3-none-macosx_11_0_arm64.whl
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
@@ -17250,6 +17268,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mypy_extensions-1.1.0-pyha770c72_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nodeenv-1.10.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/openai-3.19.2-pyh5ded981_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -17406,7 +17425,7 @@ environments:
       - conda_source: pyforge-marshal[e660c7de] @ src/shared/packages/pyforge-marshal
       - conda_source: pyforge-scribe[2711ccd9] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[42119315] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
       - pypi: https://files.pythonhosted.org/packages/42/89/81b2907cda14e566b9bf215e2ad82fc9b349edf07d2010756ffdb902f328/sqlite_vec-0.1.9-py3-none-win_amd64.whl
   pyforge-herald:
     channels:
@@ -17512,6 +17531,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-2.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-types-2.2.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -17559,7 +17579,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-herald[5e433402] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -17593,6 +17613,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-2.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-types-2.2.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -17697,7 +17718,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b9202233] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-herald[ca5d576a] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -17730,6 +17751,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-2.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-types-2.2.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/opentelemetry-api-1.45.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -17830,7 +17852,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[ac8420c7] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-herald[94b6f63e] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
   pyforge-marshal:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -17921,6 +17943,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.11.15-pyh5ded981_0.conda
@@ -17964,7 +17987,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-marshal[0cbccd1c] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -18011,6 +18034,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.11.15-pyh5ded981_0.conda
@@ -18090,7 +18114,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b9202233] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-marshal[bdc4b046] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -18137,6 +18161,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.11.15-pyh5ded981_0.conda
@@ -18211,7 +18236,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[ac8420c7] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-marshal[e660c7de] @ src/shared/packages/pyforge-marshal
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
   pyforge-mason:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -18315,6 +18340,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/more-itertools-11.1.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/oras-py-0.1.14-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -18359,7 +18385,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-mason[484eb8e5] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -18412,6 +18438,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/more-itertools-11.1.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/oras-py-0.1.14-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -18490,7 +18517,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b9202233] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-mason[1457374e] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -18543,6 +18570,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/more-itertools-11.1.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/oras-py-0.1.14-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -18622,7 +18650,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[ac8420c7] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-mason[b4b5ffa4] @ src/shared/packages/pyforge-mason
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
   pyforge-scribe:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -18718,6 +18746,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -18748,7 +18777,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-scribe[fd291461] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -18767,6 +18796,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -18865,7 +18895,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b9202233] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-scribe[725215b1] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -18884,6 +18914,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -18982,7 +19013,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[ac8420c7] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-scribe[2711ccd9] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
   pyforge-scribe-pg:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -19086,6 +19117,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -19116,7 +19148,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-scribe[fd291461] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -19135,6 +19167,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.7-pyhc364b38_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -19241,7 +19274,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b9202233] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-scribe[725215b1] @ src/shared/packages/pyforge-scribe
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
   pyforge-steward:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -19314,6 +19347,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/incremental-24.11.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -19344,7 +19378,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -19370,6 +19404,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/incremental-24.11.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -19434,7 +19469,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b9202233] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[a7ae2c72] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h2fd06db_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -19459,6 +19494,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/incremental-24.11.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -19521,7 +19557,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[ac8420c7] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[42119315] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
   pyforge-testing-kit:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -19562,6 +19598,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -19581,7 +19618,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/asgiref-3.12.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
@@ -19592,6 +19629,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -19628,7 +19666,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b9202233] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/asgiref-3.12.1-pyhcf101f3_0.conda
@@ -19641,6 +19679,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -19678,7 +19717,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[ac8420c7] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
   pyforge-warden:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -19806,6 +19845,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/jsonschema-specifications-2025.9.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/license-expression-30.4.4-pyhe01879c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nlohmann_json-abi-3.12.0-h0f90c79_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packageurl-python-0.17.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -19848,7 +19888,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -19901,6 +19941,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/jsonschema-specifications-2025.9.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/license-expression-30.4.4-pyhe01879c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nlohmann_json-abi-3.12.0-h0f90c79_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packageurl-python-0.17.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -20018,7 +20059,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-cpp-0.8.0-h784d473_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b9202233] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[3b23250e] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -20073,6 +20114,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/m2-msys2-runtime-3.6.1.4-hc364b38_6.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/m2-patch-2.7.6.3-hc364b38_6.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/nlohmann_json-abi-3.12.0-h0f90c79_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/openfeature-sdk-0.10.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packageurl-python-0.17.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
@@ -20177,7 +20219,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-cpp-0.8.0-h5112557_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[ac8420c7] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+      - conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[95d1e351] @ src/shared/packages/pyforge-warden
   python-agent-platform:
     channels:
@@ -43388,6 +43430,8 @@ packages:
   - python
   license: Apache-2.0
   license_family: APACHE
+  purls:
+  - pkg:pypi/openfeature-sdk?source=hash-mapping
   run_exports: {}
   size: 39016
   timestamp: 1788882014379
@@ -64811,14 +64855,19 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-testing-kit[3855bd45] @ src/shared/packages/pyforge-testing-kit
+- conda_source: pyforge-testing-kit[226eff50] @ src/shared/packages/pyforge-testing-kit
   variants:
     target_platform: noarch
   depends:
   - python >=3.12
   - python >=3.14
   - python *
+  - openfeature-sdk >=0.10.0
+  - pyforge-core
   license: MIT
+  source_depends:
+    pyforge-core:
+      path: ../pyforge-core
   host_packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
@@ -64847,14 +64896,19 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-testing-kit[3fecb1a4] @ src/shared/packages/pyforge-testing-kit
+- conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
   variants:
     target_platform: noarch
   depends:
   - python >=3.12
   - python >=3.14
   - python *
+  - openfeature-sdk >=0.10.0
+  - pyforge-core
   license: MIT
+  source_depends:
+    pyforge-core:
+      path: ../pyforge-core
   host_packages:
   - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
@@ -64888,14 +64942,19 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.15.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.9.21.13-pyh5ded981_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-testing-kit[defafd04] @ src/shared/packages/pyforge-testing-kit
+- conda_source: pyforge-testing-kit[916e0721] @ src/shared/packages/pyforge-testing-kit
   variants:
     target_platform: noarch
   depends:
   - python >=3.12
   - python >=3.14
   - python *
+  - openfeature-sdk >=0.10.0
+  - pyforge-core
   license: MIT
+  source_depends:
+    pyforge-core:
+      path: ../pyforge-core
   host_packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda

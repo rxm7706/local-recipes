@@ -77,6 +77,8 @@ _EXPECTED_DISPATCH = {
     # Doctor Epic 25 -- both in detectors-ci from day one.
     "chain-sprawl": one_chain.gather_chain_sprawl,
     "fr-without-cap": one_chain.gather_fr_without_cap,
+    # Story 36.1 (spec-one-chain-per-station CAP-11).
+    "fold-complete": one_chain.gather_fold_complete,
     # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md hygiene.
     "docs-map-hygiene": docs_map_hygiene.gather,
     # Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml vs its render,
