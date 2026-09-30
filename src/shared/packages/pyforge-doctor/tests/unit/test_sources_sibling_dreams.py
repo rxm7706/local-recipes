@@ -551,3 +551,158 @@ def test_gather_reports_http_status_on_fetch_failure(tmp_path: Path, monkeypatch
     assert len(findings) == 1
     assert findings[0].check == "sibling-dreams-unreachable"
     assert "HTTP 404" in findings[0].message
+
+
+# --- archived Dreams under archive/docs/dreams/ (Story 36.2) -------------------
+#
+# spec-one-chain-per-station CAP-11 / CHAIN-STANDARD section 11: a retired Dream
+# moves to ``archive/docs/dreams/``. The local side must read both homes so a
+# ``sibling-acknowledged:`` line keeps suppressing its drift after the move.
+
+_LIVE_HOME = ("docs", "dreams")
+_ARCHIVE_HOME = ("archive", "docs", "dreams")
+
+
+def _stub_sibling(monkeypatch, sibling: dict[str, dict[str, str]]) -> list[str]:
+    """Stub the sibling side; return the list of fetches made (one per gather)."""
+    fetches: list[str] = []
+
+    def fake_fetch(token: str) -> dict[str, dict[str, str]]:
+        fetches.append(token)
+        return sibling
+
+    monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
+    monkeypatch.setattr(sibling_dreams, "_fetch_sibling_fingerprints", fake_fetch)
+    return fetches
+
+
+def _miniforge_sibling() -> dict[str, dict[str, str]]:
+    return {"miniforge-installer": _fingerprint(title="Miniforge", status="dreamt", owner="mason")}
+
+
+def _write_miniforge(root: Path, home: tuple[str, ...], *, ack: str, body: str = "local body\n") -> None:
+    _write_local_dream_with_ack(
+        root.joinpath(*home),
+        "miniforge-installer",
+        title="Miniforge",
+        status="archived",
+        owner="mason",
+        ack=ack,
+        body=body,
+    )
+
+
+@pytest.mark.parametrize("home", [_LIVE_HOME, _ARCHIVE_HOME], ids=["live", "archive"])
+def test_acknowledged_dream_is_silent_in_either_home(tmp_path: Path, monkeypatch, home):
+    # AC 1 and AC 2: the same acknowledged Dream reports the same (silence)
+    # whether it sits in docs/dreams/ or has moved under archive/docs/dreams/.
+    sibling = _miniforge_sibling()
+    good = sibling["miniforge-installer"]["content_hash"]
+    _write_miniforge(tmp_path, home, ack=good)
+    fetches = _stub_sibling(monkeypatch, sibling)
+    assert sibling_dreams.gather(tmp_path) == ()
+    # Silence alone is ambiguous (an unseen Dream is silent too): prove the
+    # Dream was read, its acknowledgement parsed, and the diff actually ran.
+    assert sibling_dreams._local_fingerprints(tmp_path)["miniforge-installer"]["sibling_acknowledged"] == good
+    assert fetches == ["tok"]
+
+
+def test_stale_acknowledgement_refires_identically_before_and_after_the_move(tmp_path: Path, monkeypatch):
+    # AC 2, non-silent leg: a stale hash must re-fire with the very same finding
+    # after the move -- reading the archive is not just "more silence".
+    stale = "deadbeef" * 8
+    sibling = _miniforge_sibling()
+    _stub_sibling(monkeypatch, sibling)
+    results = {}
+    for name, home in (("live", _LIVE_HOME), ("archive", _ARCHIVE_HOME)):
+        root = tmp_path / name
+        _write_miniforge(root, home, ack=stale)
+        results[name] = sibling_dreams.gather(root)
+    assert len(results["live"]) == 1
+    assert results["live"] == results["archive"]
+    assert stale in results["archive"][0].message
+
+
+def test_live_copy_wins_when_a_slug_is_in_both_homes(tmp_path: Path, monkeypatch):
+    # AC 3: same slug in both homes, different acknowledgement hashes.
+    sibling = _miniforge_sibling()
+    good = sibling["miniforge-installer"]["content_hash"]
+    stale = "deadbeef" * 8
+    _stub_sibling(monkeypatch, sibling)
+
+    # live copy acknowledges the current hash, archive copy is stale -> silent
+    silent_root = tmp_path / "live-good"
+    _write_miniforge(silent_root, _LIVE_HOME, ack=good)
+    _write_miniforge(silent_root, _ARCHIVE_HOME, ack=stale)
+    assert sibling_dreams.gather(silent_root) == ()
+
+    # live copy is stale, archive copy acknowledges the current hash -> re-fires
+    # naming the LIVE hash (a read order that merely happens to favour the live
+    # copy on one leg cannot pass both).
+    loud_root = tmp_path / "live-stale"
+    _write_miniforge(loud_root, _LIVE_HOME, ack=stale)
+    _write_miniforge(loud_root, _ARCHIVE_HOME, ack=good)
+    findings = sibling_dreams.gather(loud_root)
+    assert len(findings) == 1
+    assert findings[0].evidence["sibling_acknowledged"] == stale
+    assert stale in findings[0].message
+
+
+def test_no_archive_directory_behaves_as_before(tmp_path: Path, monkeypatch):
+    # AC 4: only docs/dreams/ exists; nothing is read from, or created at, archive/.
+    sibling = _miniforge_sibling()
+    _write_miniforge(tmp_path, _LIVE_HOME, ack="deadbeef" * 8)
+    _stub_sibling(monkeypatch, sibling)
+    assert not (tmp_path / "archive").exists()
+    assert list(sibling_dreams._local_fingerprints(tmp_path)) == ["miniforge-installer"]
+    assert len(sibling_dreams.gather(tmp_path)) == 1
+    assert not (tmp_path / "archive").exists()
+
+
+def test_archive_only_tree_still_reports(tmp_path: Path, monkeypatch):
+    # An archive-only tree (no docs/dreams/) is non-empty: _gather must not
+    # short-circuit on "no local Dreams", or the unreachable path goes silent.
+    _write_miniforge(tmp_path, _ARCHIVE_HOME, ack="deadbeef" * 8)
+    monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: None)
+    findings = sibling_dreams.gather(tmp_path)
+    assert len(findings) == 1
+    assert findings[0].check == "sibling-dreams-unreachable"
+
+
+def test_archive_dreams_are_merged_with_live_ones(tmp_path: Path):
+    _write_local_dream(tmp_path.joinpath(*_LIVE_HOME), "live-one", title="Live", status="dreamt", owner="doctor")
+    _write_local_dream(tmp_path.joinpath(*_ARCHIVE_HOME), "gone-one", title="Gone", status="archived", owner="doctor")
+    fps = sibling_dreams._local_fingerprints(tmp_path)
+    assert sorted(fps) == ["gone-one", "live-one"]
+    assert fps["gone-one"]["status"] == "archived"
+
+
+def test_unlistable_archive_dir_is_skipped_and_live_dreams_survive(tmp_path: Path, monkeypatch):
+    # I/O matrix: OSError listing one directory skips that directory only.
+    _write_local_dream(tmp_path.joinpath(*_LIVE_HOME), "live-one", title="Live", status="dreamt", owner="doctor")
+    _write_local_dream(tmp_path.joinpath(*_ARCHIVE_HOME), "gone-one", title="Gone", status="archived", owner="doctor")
+    archive_dir = tmp_path.joinpath(*_ARCHIVE_HOME)
+    real_glob = Path.glob
+
+    def flaky_glob(self, pattern, *args, **kwargs):
+        if self == archive_dir:
+            raise OSError("listing denied")
+        return real_glob(self, pattern, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "glob", flaky_glob)
+    assert list(sibling_dreams._local_fingerprints(tmp_path)) == ["live-one"]
+
+
+def test_unreadable_file_is_skipped_in_the_archive(tmp_path: Path, monkeypatch):
+    # I/O matrix: OSError reading one file skips that file, as it always has.
+    _write_local_dream(tmp_path.joinpath(*_ARCHIVE_HOME), "readable", title="R", status="archived", owner="doctor")
+    _write_local_dream(tmp_path.joinpath(*_ARCHIVE_HOME), "locked", title="L", status="archived", owner="doctor")
+    real_read_text = Path.read_text
+
+    def flaky_read_text(self, *args, **kwargs):
+        if self.name == "locked.md":
+            raise OSError("permission denied")
+        return real_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", flaky_read_text)
+    assert list(sibling_dreams._local_fingerprints(tmp_path)) == ["readable"]
