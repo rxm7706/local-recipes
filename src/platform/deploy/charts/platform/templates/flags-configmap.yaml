@@ -1,6 +1,8 @@
 # One JSON tree (AD-11 / FR-34). Built from src/platform/config/flags.json
-# via `helm --set-file flags.tree=src/platform/config/flags.json`. Never
-# duplicate that document in values.
+# via `helm --set-file flags.tree=src/platform/config/flags.json`, rendered
+# for `flags.environment` with the value-only overlays in
+# src/platform/config/flag-overlays.json (`--set-file flags.overlays=...`;
+# Story 76.1). Never duplicate either document in values.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,4 +12,4 @@ metadata:
     app.kubernetes.io/component: flags
 data:
   flags.json: |
-{{ required "pass --set-file flags.tree=src/platform/config/flags.json (the only flag tree; canopy AD-11)" .Values.flags.tree | nindent 4 }}
+{{- include "platform.flags.rendered" . | nindent 4 }}

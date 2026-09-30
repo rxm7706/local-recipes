@@ -16,8 +16,11 @@ construction works unmodified against Story 50.2's local dev backend
 (Silo/Garage, `scripts/platform_object_storage.py`) or a real S3-compatible
 endpoint; only the three settings values differ.
 
-No existing feature is wired to consume this seam yet -- that is deliberate,
-future, story-by-story work (this story's own scope boundary).
+The seam's first consumer is `django_pyforge.object_store` (Story 74.1, steward
+CAP-163): the streaming, sha256-addressed put/get contract a station portal uses.
+It resolves this factory by the dotted path in `OBJECT_STORAGE_CLIENT_FACTORY` and
+imports nothing from this package, so `django_pyforge` never depends on the host's
+`config` and this host never imports `pyforge.*`.
 """
 
 from __future__ import annotations

@@ -129,15 +129,18 @@ inventory rows — each with its own `age`-encrypted payload — and hands one t
 child process through `steward keys exec`, the only delivery path. The host is
 the one `GITHUB_API_BASE_URL` already names (`https://<ghe-host>/api`); Steward
 keeps no URL config of its own. The capability ships behind the flag
-`pyforge.steward.ghe_fleet_credentials`: while it reads OFF (the tree default,
+`pyforge.steward.ghe_fleet_credentials`: while it reads OFF (`off` in every
+environment of `src/platform/config/flag-overlays.json`, as in the tree,
 `src/platform/config/flags.json`), `keys exec` stays listed in
-`steward keys --help` as disabled and exits 2. Until the tree carries
-per-environment values (Guild CAP-5, steward Epic 76), turn it on for a session by
-pointing `PYFORGE_FLAGS_PATH` at a copy of the tree whose
-`pyforge.steward.ghe_fleet_credentials` `defaultVariant` is `on`; the tracked
-default stays `off`. `PYFORGE_FLAGS_PATH` also redirects the `pyforge.cutover_root`
-reader, so unset it when the session ends. Run everything below from the repo
-root; the real rows land when you issue the tokens, never before.
+`steward keys --help` as disabled and exits 2. A station CLI reads the tree as
+`PYFORGE_ENVIRONMENT` renders it (`dev` when unset; steward Story 76.1), so turn it
+on for a session by setting `pyforge.steward.ghe_fleet_credentials` to `on` under
+`dev` in that overlay file and reverting the edit when the session ends; the
+tracked value stays `off`. Or point `PYFORGE_FLAGS_PATH` at a copy of the tree
+whose `defaultVariant` is `on` (a copy with no `flag-overlays.json` beside it is read
+as it is); that variable also redirects the `pyforge.cutover_root` reader, so unset
+it when the session ends. Run everything below from the repo root; the real rows
+land when you issue the tokens, never before.
 
 **1. Issue two separate tokens in GitHub Enterprise** (never one token for both
 scopes — `steward keys audit` reds a payload that serves both):
@@ -287,10 +290,16 @@ This creates an **ImageStream** `<project>/platform:local` the chart can pull.
 ```sh
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
   -f src/platform/deploy/overlays/ocp/core-overrides.yaml \
+  --set-file flags.tree=src/platform/config/flags.json \
+  --set-file flags.overlays=src/platform/config/flag-overlays.json \
+  --set flags.environment=dev \
   --set image.registry=default-route-openshift-image-registry.apps-crc.testing \
   --set image.repository=<project>/platform \
   --set image.tag=local
 ```
+
+`flags.environment` (`dev` here; `staging` or `production` for those releases) is required: the chart
+mounts the flag tree rendered for it (`docs/explanation/platform-deployment-architecture.md`).
 
 Then install the Route overlay per `README.md` in this directory.
 
@@ -321,6 +330,9 @@ kubectl create secret generic platform-secrets \
 
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
   -f src/platform/deploy/overlays/ocp/core-overrides.yaml \
+  --set-file flags.tree=src/platform/config/flags.json \
+  --set-file flags.overlays=src/platform/config/flag-overlays.json \
+  --set flags.environment=dev \
   --namespace platform \
   --set image.registry=default-route-openshift-image-registry.apps-crc.testing \
   --set image.repository=platform/platform \

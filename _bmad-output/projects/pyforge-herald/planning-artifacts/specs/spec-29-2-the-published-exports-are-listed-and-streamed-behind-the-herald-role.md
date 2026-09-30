@@ -2,8 +2,7 @@
 title: '29.2: The published exports are listed and streamed behind the herald role'
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
-blocking_condition: 'blocked until steward Story 74.1 (the object-storage seam''s first-consumer contract) has landed on main; the operator flips the ledger key, never a session'
+status: 'backlog'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -53,7 +52,7 @@ require OIDC and a station role, and station routes live under `/stations/herald
   role, and neither sends a CORS header (D4).
 
 Ledger key: `29-2-the-published-exports-are-listed-and-streamed-behind-the-herald-role`.
-Ledger status (do not edit the ledger): `blocked`, until steward Story 74.1 lands; the operator flips it.
+Ledger status (do not edit the ledger): `backlog` -- flipped 2026-09-30 by the operator after steward Story 74.1 landed on main (dd95e70db7).
 Type / Effort / Deps: feature / M / S-29.1.
 
 ### Living CAP citations
@@ -118,6 +117,10 @@ Type / Effort / Deps: feature / M / S-29.1.
 | 74.1 absent | dispatched before 74.1 landed | refused: the ledger key is `blocked` | operator gate |
 
 </intent-contract>
+
+## Spec Change Log
+
+- 2026-09-30 -- operator flip, `blocked` -> `backlog`: the cross-station gate cleared when steward Story 74.1 landed on main (dd95e70db7). Nothing else in the contract changed. A resumed worktree brings `origin/main` into its branch first (merge, never rebase).
 
 ## Binding
 

@@ -16,7 +16,10 @@ from the overlay's URL fields instead of in-cluster Service DNS.
 # Core chart with external Redis (release name "platform" matches the
 # documented vanilla-K8s install in ../README.md):
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
-    -f src/platform/deploy/overlays/external-redis/values.yaml
+    -f src/platform/deploy/overlays/external-redis/values.yaml \
+    --set-file flags.tree=src/platform/config/flags.json \
+    --set-file flags.overlays=src/platform/config/flag-overlays.json \
+    --set flags.environment=<dev|staging|production>
 ```
 
 Edit `values.yaml` in this directory before install: replace the

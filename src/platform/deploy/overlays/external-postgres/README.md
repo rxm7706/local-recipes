@@ -16,6 +16,8 @@ and the backup `PersistentVolumeClaim`. Platform pods still read
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
     -f src/platform/deploy/overlays/external-postgres/values.yaml \
     --set-file flags.tree=src/platform/config/flags.json \
+    --set-file flags.overlays=src/platform/config/flag-overlays.json \
+    --set flags.environment=<dev|staging|production> \
     --set image.digest=sha256:<digest-from-platform-ci>
 ```
 

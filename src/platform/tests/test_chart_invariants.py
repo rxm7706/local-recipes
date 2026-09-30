@@ -152,6 +152,17 @@ _OCP_DNS_EGRESS_PORT = 5353
 # deploys pin the CI-recorded digest; tests inject this placeholder.
 _TEST_IMAGE_DIGEST = "sha256:" + ("a" * 64)
 _CORE_IMAGE_PIN_PREFIXES = ("image", "sidecar.image", "mcpHost.image")
+# Story 76.1: the flag tree is rendered per environment, and a release without
+# `flags.environment` (or the overlay document) is refused -- every core render
+# carries all three, the environment being the local-development one.
+_FLAGS_RENDER_ARGS = [
+    "--set-file",
+    f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}",
+    "--set-file",
+    f"flags.overlays={_PLATFORM_DIR / 'config' / 'flag-overlays.json'}",
+    "--set",
+    "flags.environment=dev",
+]
 
 requires_helm = pytest.mark.skipif(
     shutil.which("helm") is None,
@@ -210,9 +221,7 @@ def _helm(*args: str) -> str:
         except OSError:
             continue
     if touches_core and "--set-file" not in args:
-        argv.extend(
-            ["--set-file", f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}"],
-        )
+        argv.extend(_FLAGS_RENDER_ARGS)
     if touches_core:
         for prefix in _CORE_IMAGE_PIN_PREFIXES:
             if not _args_contain_values_path(argv, prefix):
@@ -1637,8 +1646,7 @@ def test_helm_template_fails_when_mcp_host_repository_empty() -> None:
             "template",
             "test-release",
             str(_CORE_CHART),
-            "--set-file",
-            f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}",
+            *_FLAGS_RENDER_ARGS,
             "--set",
             f"image.digest={_TEST_IMAGE_DIGEST}",
             "--set",
@@ -1667,8 +1675,7 @@ def test_helm_template_fails_without_platform_image_digest_or_tag() -> None:
             "template",
             "test-release",
             str(_CORE_CHART),
-            "--set-file",
-            f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}",
+            *_FLAGS_RENDER_ARGS,
             "--set",
             f"sidecar.image.digest={_TEST_IMAGE_DIGEST}",
             "--set",
@@ -1693,8 +1700,7 @@ def test_helm_template_refuses_latest_platform_image_tag() -> None:
             "template",
             "test-release",
             str(_CORE_CHART),
-            "--set-file",
-            f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}",
+            *_FLAGS_RENDER_ARGS,
             "--set",
             "image.tag=latest",
             "--set",

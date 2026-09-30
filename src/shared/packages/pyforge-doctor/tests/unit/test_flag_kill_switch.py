@@ -64,3 +64,35 @@ def test_record_kill_switch_metric_noop_without_prometheus(monkeypatch):
         None,
     )
     record_kill_switch_metric("pyforge.three_surfaces", "test")
+
+
+_DJANGO_PYFORGE_SRC = Path(__file__).resolve().parents[3] / "django-pyforge" / "src"
+
+
+def test_cli_kill_switch_edits_the_tree_itself_not_a_rendered_copy(tmp_path: Path, monkeypatch, capsys):
+    """Story 76.1: with no ``--flags-path`` the actuator resolves the tree through
+    ``django_pyforge.flags.resolve_tree_path``. ``resolve_flags_path`` now returns the
+    per-environment rendering (a temp copy) whenever ``flag-overlays.json`` sits beside the
+    tree, and a kill switch that edited the copy would report success and change nothing."""
+    from pyforge.doctor.__main__ import main
+
+    monkeypatch.syspath_prepend(str(_DJANGO_PYFORGE_SRC))  # django_pyforge.flags imports no Django at module top
+    tree = tmp_path / "flags.json"
+    tree.write_text(json.dumps(_sample_tree(), indent=2) + "\n", encoding="utf-8")
+    (tmp_path / "flag-overlays.json").write_text(
+        json.dumps({env: {"pyforge.three_surfaces": "on"} for env in ("dev", "staging", "production")}),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.delenv("FLAGD_OFFLINE_FLAG_SOURCE_PATH", raising=False)
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
+
+    rc = main(["flags", "kill-switch", "--flag", "pyforge.three_surfaces", "--reason", "test"])
+
+    assert rc == 0
+    assert json.loads(tree.read_text(encoding="utf-8"))["flags"]["pyforge.three_surfaces"]["state"] == "DISABLED"
+    assert str(tree) in capsys.readouterr().out
+    # the overlay is a value document: the actuator leaves it alone
+    assert json.loads((tmp_path / "flag-overlays.json").read_text(encoding="utf-8"))["production"] == {
+        "pyforge.three_surfaces": "on"
+    }

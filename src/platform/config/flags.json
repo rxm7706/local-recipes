@@ -23,6 +23,14 @@
         "off": false
       },
       "defaultVariant": "off"
+    },
+    "pyforge.steward.object_store_consumer": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
     }
   }
 }

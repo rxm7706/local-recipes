@@ -257,6 +257,9 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # an unfolded station both pass (eventual consistency).
     ("chain-sprawl", "chain-sprawl-check"),
     ("fr-without-cap", "fr-without-cap-check"),
+    # Story 36.1 (spec-one-chain-per-station CAP-11): a fold is complete
+    # before its file moves -- offline, deterministic, read-only.
+    ("fold-complete", "fold-complete-check"),
     # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md vs the four
     # Diátaxis quadrants -- missing link FAIL, unmapped page WARN.
     ("docs-map-hygiene", "docs-map-hygiene-check"),

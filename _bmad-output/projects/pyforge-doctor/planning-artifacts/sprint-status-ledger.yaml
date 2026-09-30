@@ -107,9 +107,9 @@ development_status:
   34-2-the-flag-gate-ships-in-scripts-outside-every-station-and-runs-in-detectors-ci: done
   34-3-the-flag-gate-reads-the-tree-metadata-per-environment-defaults-and-the-90-day-clock: blocked
   34-4-each-station-has-a-checked-in-flag-inventory-of-its-runtime-capabilities: done
-  34-5-the-flag-gate-reds-a-landed-flagged-story-whose-test-does-not-run-both-states: blocked
-  35-1-capability-ledger-s-post-pin-check-reads-only-live-specs: backlog
-  36-1-a-fold-complete-check-proves-each-archived-dream-s-body-is-in-its-station-dream: backlog
+  34-5-the-flag-gate-reds-a-landed-flagged-story-whose-test-does-not-run-both-states: backlog
+  35-1-capability-ledger-s-post-pin-check-reads-only-live-specs: done
+  36-1-a-fold-complete-check-proves-each-archived-dream-s-body-is-in-its-station-dream: done
   36-2-the-sibling-drift-check-reads-acknowledged-dreams-under-the-archive: backlog
   37-1-docs-specs-and-docs-intake-empty-and-the-legacy-tier-s-index-and-check-retire: blocked
   4-1-health-scoring-fr-10: done
@@ -198,11 +198,11 @@ development_status:
   epic-32-retrospective: optional
   epic-33: backlog
   epic-33-retrospective: optional
-  epic-34: backlog
+  epic-34: in-progress
   epic-34-retrospective: optional
-  epic-35: backlog
+  epic-35: done
   epic-35-retrospective: optional
-  epic-36: backlog
+  epic-36: in-progress
   epic-36-retrospective: optional
   epic-37: backlog
   epic-37-retrospective: optional

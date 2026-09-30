@@ -2,8 +2,7 @@
 title: '74.2: Dispatch refuses a story the flag gate would red, before any session starts'
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
-blocking_condition: 'blocked until doctor Story 34.2 (spec-feature-flag-governance CAP-2, "The flag gate ships in scripts, outside every station, and runs in detectors-ci") has landed on main -- dispatch consults that gate''s --spec interface, which does not exist before it. The operator flips the ledger key, never a session (marshal''s Deps: parser is station-local); flipping it the day 34.2 lands keeps the Spec''s Q7 (detectors-ci and marshal refuse from the same day).'
+status: 'backlog'
 flag-exempt: detector-or-gate   # a refusal path is a gate; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -50,7 +49,7 @@ a spec's frontmatter: the rules live in the gate alone.
 minted `blocked` because the `Deps:` parser is station-local (AGENTS.md § Known pitfalls; the doctor 33.1 precedent).
 
 Ledger key: `74-2-dispatch-refuses-a-story-the-flag-gate-would-red-before-any-session-starts`.
-Ledger status (do not edit the ledger): `blocked`.
+Ledger status (do not edit the ledger): `backlog` -- flipped 2026-09-30 by the operator after doctor Story 34.2 landed on main (5a6dbc5e21).
 Type / Effort / Deps: feature / S / — (cross-project gate: doctor Story 34.2).
 
 ### Living CAP citations
@@ -105,6 +104,10 @@ Type / Effort / Deps: feature / S / — (cross-project gate: doctor Story 34.2).
 
 Contract authored from `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-3 and the Q7 ruling (memlog 23),
 decomposed 2026-09-28 (night) as Epic 74's mint.
+
+## Spec Change Log
+
+- 2026-09-30 -- operator flip, `blocked` -> `backlog`: the cross-station gate cleared when doctor Story 34.2 landed on main (5a6dbc5e21). Nothing else in the contract changed. A resumed worktree brings `origin/main` into its branch first (merge, never rebase).
 
 ## Binding
 

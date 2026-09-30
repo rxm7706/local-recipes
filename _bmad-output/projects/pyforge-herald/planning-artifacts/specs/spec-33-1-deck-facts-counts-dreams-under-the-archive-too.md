@@ -27,7 +27,7 @@ fold PR moves a file.
 
 **Approach:** the `pyforge-genesis` branch also counts `archive/docs/dreams/*.md` files that carry a frontmatter `status`,
 and each fact's source names both globs (`docs/dreams/*.md + archive/docs/dreams/*.md`). A slug in both places is counted
-once, from `docs/dreams/`. Nothing else in `deck_facts.py` changes.
+once, from `docs/dreams/`. A Dream read from `archive/docs/dreams/` counts as archived whatever its frontmatter `status` (CHAIN-STANDARD §11: location is the archive signal; amended 2026-09-30, operator ruling). Nothing else in `deck_facts.py` changes.
 
 Ledger key: `33-1-deck-facts-counts-dreams-under-the-archive-too`.
 Ledger status (do not edit the ledger): `backlog`.
@@ -43,7 +43,7 @@ Type / Effort / Deps: chore / S / —.
 
 ## Acceptance Criteria
 
-- Given today's tree When `deck-facts pyforge-genesis` runs Then every `dreams_*` count is unchanged, and only each fact's source text changes
+- Given today's tree When `deck-facts pyforge-genesis` runs Then every count derived from `docs/dreams/` is unchanged, and the six Dreams already under `archive/docs/dreams/` (`deckcraft`, `design-code-bridge`, `herald-pitch-deck-family-expansion`, `modernist-identity`, `pyforge-genesis`, `video-scripts`) are added to `dreams_total` and `dreams_archived` (none of them to its frontmatter status bucket); each fact's source text names both globs
 - Given a fixture archived Dream moved to `archive/docs/dreams/` When it runs Then `dreams_total` and `dreams_archived` keep their values
 - Given an archive file with no frontmatter `status` When it runs Then it is not counted, as a live file with no status is not
 - Given one slug in both directories When it runs Then it is counted once
@@ -62,7 +62,7 @@ Type / Effort / Deps: chore / S / —.
 ## Boundaries & Constraints
 
 **Always:**
-- Keep every count on today's tree.
+- Keep every count derived from `docs/dreams/` unchanged on today's tree; only the archive's six are added, as archived.
 - Read every verdict from the exit code, never through a pipe.
 
 **Never:**
@@ -74,8 +74,8 @@ Type / Effort / Deps: chore / S / —.
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
-| today's tree | nothing moved | counts unchanged; source text names both globs | — |
-| Dream moved | archived Dream under the archive | counts unchanged | — |
+| today's tree | nothing moved | `docs/dreams/` counts unchanged; the archive's six added to total and archived; source text names both globs | — |
+| Dream moved | archived Dream moved under the archive | counts unchanged by the move | — |
 | no status | archive file without `status` | not counted | — |
 | slug in both | two copies | counted once | — |
 
