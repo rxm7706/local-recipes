@@ -25,13 +25,13 @@ from test_dispatch_fleet import (
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import dispatch as dispatch_cli
+from pyforge.marshal.cli import drain_plan
 from pyforge.marshal.cli.dispatch import (
     DispatchAttempt,
     add_factory_drain_subparser,
     execute_fleet_cycle,
     run_fleet_drain,
 )
-from pyforge.marshal.cli import drain_plan
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import dispatch_fleet, policy, verdict
 from pyforge.marshal.core.dispatch_fleet import FleetCampaignMode
@@ -1266,3 +1266,351 @@ def test_the_text_form_names_the_station_the_refusal_and_the_verdict(
     assert _STEWARD in out and f"next={_K_FOLD}" in out and "would_dispatch=no" in out
     assert f"refuses {_K_FOLD}: MRS-GATE-010" in out
     assert "finding MRS-DRAINPLAN-001" in out and "finding MRS-DRAINPLAN-003" in out
+
+
+# --------------------------------------------------------------------------
+# Review round: every wave member is graded, the 005 row, --check-env, the wave
+# --------------------------------------------------------------------------
+
+_PARALLEL_LEDGER = (("1-1-alpha", "backlog"), ("1-2-beta", "backlog"))
+
+
+def test_a_refusal_on_the_second_wave_member_is_as_fatal_as_the_first(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Every wave member is handed to `dispatch_once`: beta's missing `## Verification` is a 001, not a 002."""
+    slug = "pyforge-marshal"
+    _write_spec(tmp_path, slug, "1-1-alpha", surface="src/a/**")
+    _write_spec(tmp_path, slug, "1-2-beta", surface="src/b/**", body=_UNBOUND_SPEC_BODY)
+    code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        slug,
+        "--max-in-flight",
+        "2",
+        ledgers={slug: _PARALLEL_LEDGER},
+        capsys=capsys,
+    )
+
+    row = _station(envelope, slug)
+    assert row["stories"] == ["1-1-alpha", "1-2-beta"]
+    assert row["next_story"] == "1-1-alpha"  # the queue head is unchanged
+    hits = _findings(envelope, "MRS-DRAINPLAN-001")
+    assert len(hits) == 1
+    assert "1-2-beta" in hits[0]["message"] and "MRS-GATE-010" in hits[0]["message"]
+    assert not _findings(envelope, "MRS-DRAINPLAN-002")
+    assert row["would_dispatch"] is False
+    assert code == 4
+
+
+def test_a_held_head_outside_the_wave_stays_a_warning(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A story the wave holds out is NOT handed to `dispatch_once`, so its refusals are 002 WARNs."""
+    ledgers = _seed_unmet_deps(tmp_path)
+    _write_spec(tmp_path, _STEWARD, _K_FOLD, surface="src/fold/**", body=_UNBOUND_SPEC_BODY)
+    code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        _STEWARD,
+        "--max-in-flight",
+        "2",
+        ledgers=ledgers,
+        capsys=capsys,
+    )
+
+    row = _station(envelope)
+    assert row["stories"] == [_K_KERNEL] and [h["story"] for h in row["held"]] == [_K_FOLD]
+    assert not _findings(envelope, "MRS-DRAINPLAN-001")
+    held_warns = [f for f in _findings(envelope, "MRS-DRAINPLAN-002") if _K_FOLD in f["message"]]
+    assert len(held_warns) == 1 and "MRS-GATE-010" in held_warns[0]["message"]
+    assert row["would_dispatch"] is True  # the wave member itself is clean
+    assert code == 0
+
+
+_STATION_ROW_KEYS = (
+    "slug",
+    "mode",
+    "parallel_cap",
+    "backlog",
+    "outcome",
+    "next_story",
+    "stories",
+    "wave",
+    "held",
+    "would_dispatch",
+    "land_only",
+    "refusals",
+    "prose_parks",
+    "skipped",
+    "deps",
+    "evaluated",
+    "env_checked",
+)
+
+
+def test_an_unevaluable_row_carries_every_key_a_computed_row_carries(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    slug = "pyforge-marshal"
+    _write_spec(tmp_path, slug, "22-7-fleet")
+    (tmp_path / "_bmad-output" / "projects" / "pyforge-doctor").mkdir(parents=True)
+    _code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        ledgers={slug: (("22-7-fleet", "backlog"),)},  # pyforge-doctor's ledger cannot be read
+        capsys=capsys,
+    )
+
+    good, bad = _station(envelope, slug), _station(envelope, "pyforge-doctor")
+    assert set(_STATION_ROW_KEYS) <= set(good)
+    assert set(good) <= set(bad)  # a consumer indexing a row never KeyErrors on a failure row
+    assert bad["outcome"] == "unevaluable" and bad["backlog"] == []
+    assert bad["parallel_cap"] is None and bad["wave"] is None
+    assert bad["held"] == bad["land_only"] == bad["prose_parks"] == bad["evaluated"] == []
+    assert bad["would_dispatch"] is False and bad["env_checked"] is False
+
+
+def test_the_station_row_skeleton_is_the_one_source_of_both_rows() -> None:
+    mode = FleetCampaignMode.DRAIN_TO_ZERO
+    skeleton = drain_plan._station_row("pyforge-x", mode, parallel_cap=None, backlog=(), env_checked=False)
+    failed, _finding = drain_plan._unevaluable("pyforge-x", mode, "boom")
+    assert set(skeleton) == set(_STATION_ROW_KEYS)
+    assert set(failed) == set(skeleton) | {"detail"}
+
+
+# -- --check-env: the harness preference and the session probe ---------------
+
+_CURSOR_LEAD_TIER_MAP = {"medium": {"dev": {"harness": "cursor", "model": "composer-2.5-fast"}}}
+
+
+def _pin_project_policy(monkeypatch: pytest.MonkeyPatch, **project: object) -> None:
+    """Compose every station's policy from ``project`` alone (plus the plan's own flags)."""
+
+    def _compose(slug, *, flags=None):
+        effective, _findings_ = policy.compose(project_slug=slug, project=project, flags=dict(flags or {}))
+        return effective
+
+    monkeypatch.setattr(dispatch_cli, "_compose_policy", _compose)
+
+
+def _check_env_preference(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], *extra: str
+) -> tuple[list[str], list[tuple[str, ...]]]:
+    """Plan ``pyforge-marshal --check-env``; returns ``(env["preference"], the lists binary_present was handed)``."""
+    slug = "pyforge-marshal"
+    build_harness = ProbeBuildHarness()
+    code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        slug,
+        "--check-env",
+        *extra,
+        ledgers={slug: (("22-7-fleet", "backlog"),)},
+        build_harness=build_harness,
+        capsys=capsys,
+    )
+    assert code == 0
+    return _station(envelope, slug)["env"]["preference"], build_harness.preferences
+
+
+def test_check_env_walks_the_tier_maps_harness_first_without_a_harness_flag(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_spec(tmp_path, "pyforge-marshal", "22-7-fleet")
+    _pin_project_policy(monkeypatch, harness_preference=["claude", "cursor"], model_tier_map=_CURSOR_LEAD_TIER_MAP)
+    preference, walked = _check_env_preference(tmp_path, capsys)
+    assert preference == ["cursor", "claude"]
+    assert walked == [("cursor", "claude")]
+
+
+def test_check_env_lets_an_explicit_harness_flag_outrank_the_tier_lead(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_spec(tmp_path, "pyforge-marshal", "22-7-fleet")
+    _pin_project_policy(monkeypatch, harness_preference=["claude", "cursor"], model_tier_map=_CURSOR_LEAD_TIER_MAP)
+    preference, walked = _check_env_preference(tmp_path, capsys, "--harness", "claude,gemini")
+    assert preference == ["claude", "gemini"]  # cursor, the tier lead the flag does not name, contributes nothing
+    assert walked == [("claude", "gemini")]
+
+
+def _seed_failed_run(repo: Path, slug: str, story_feed: str, session_log: str) -> None:
+    """A finished, `failed` dispatch run of ``story_feed`` whose session log is ``session_log``."""
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+
+    run_id = f"{slug}-20260901T000000000Z-abcd1234"
+    run_dir = dispatch_core.dispatch_run_dir(repo, slug, run_id)
+    run_dir.mkdir(parents=True)
+    intent = build_entry(
+        id=JournalEntryId("w", 0),
+        ts="2026-09-01T00:00:00.000Z",
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+        phase=Phase.INTENT,
+        payload={"story_key": story_feed},
+    )
+    completion_intent = build_entry(
+        id=JournalEntryId("w", 2),
+        ts="2026-09-01T00:01:00.000Z",
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+        phase=Phase.INTENT,
+        payload={"verdict": "failed"},
+    )
+    completion_outcome = build_entry(
+        id=JournalEntryId("w", 3),
+        ts="2026-09-01T00:01:01.000Z",
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("w", 2),
+        payload={"verdict": "failed", "ok": True},
+    )
+    lines = [prepare_for_write(entry).line for entry in (intent, completion_intent, completion_outcome)]
+    (run_dir / "journal.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (run_dir / "session.log").write_text(session_log, encoding="utf-8")
+
+
+def test_check_env_drops_the_profile_a_transient_failed_session_log_excludes(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    slug = "pyforge-marshal"
+    _write_spec(tmp_path, slug, "22-7-fleet")
+    _seed_failed_run(tmp_path, slug, "22.7", "You have hit your usage limit for this month.")
+    _pin_project_policy(monkeypatch, harness_preference=["claude", "cursor"])
+    preference, walked = _check_env_preference(tmp_path, capsys)
+    assert preference == ["cursor"]  # claude hit its quota last time: the walk starts past it
+    assert walked == [("cursor",)]
+
+
+def test_check_env_session_probe_that_is_not_ok_is_a_warn_and_never_changes_the_exit(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    slug = "pyforge-marshal"
+    _write_spec(tmp_path, slug, "22-7-fleet")
+    process = FakeProcess(alive=False, session_check_returncode=1)
+    code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        slug,
+        "--check-env",
+        ledgers={slug: (("22-7-fleet", "backlog"),)},
+        process=process,
+        capsys=capsys,
+    )
+
+    hits = _findings(envelope, "MRS-DISP-049")
+    assert len(hits) == 1 and hits[0]["severity"] == "warn"
+    assert envelope["data"]["session_check"] == hits[0]["message"] != "ok"
+    assert len(process.run_calls) == 1
+    assert code == 0
+
+
+# -- the wave: its id, its refusals, why a story is held ----------------------
+
+
+def test_each_cycle_mints_its_own_wave_id_journals_it_and_names_it_in_the_refusal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    slug = "pyforge-marshal"
+    keys = ("1-1-alpha", "1-2-beta", "1-3-gamma")
+    for index, key in enumerate(keys):
+        _write_spec(tmp_path, slug, key, surface=f"src/{index}/**")
+    ledgers = {slug: tuple((key, "backlog") for key in keys)}
+    _record_launches(monkeypatch)
+    monkeypatch.setattr(dispatch_cli, "_journal_dispatch_wave", _REAL_JOURNAL_DISPATCH_WAVE)
+
+    reports = [_run_one_cycle(tmp_path, ledgers, station=slug, max_in_flight=2) for _ in range(2)]
+
+    wave_ids: list[str] = []
+    for report in reports:
+        (result,) = report.results
+        match = re.match(r"wave (\S+): ", result.detail or "")
+        assert match is not None, result.detail
+        wave_id = match.group(1)
+        wave_ids.append(wave_id)
+        refused = [f for f in report.findings if f.code == "MRS-DRAIN-016"]
+        assert len(refused) == 1  # cap 2: gamma is left out
+        assert wave_id in refused[0].message and "1-3-gamma" in refused[0].message
+    assert wave_ids[0] != wave_ids[1]
+    waves_dir = dispatch_core.dispatch_runs_dir(tmp_path, slug) / "waves"
+    assert sorted(path.name for path in waves_dir.iterdir()) == sorted(wave_ids)
+    for wave_id in wave_ids:
+        assert wave_id in (waves_dir / wave_id / "journal.jsonl").read_text(encoding="utf-8")
+
+
+def test_a_wave_plan_reports_what_the_wave_refused_and_why(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    slug = "pyforge-marshal"
+    # A wave compares EFFECTIVE surfaces (the spec's, narrowed to the station's derived policy surface): use
+    # paths inside it, with the repo's own marshal-policy out of the picture.
+    _pin_project_policy(monkeypatch)
+    inside = "src/shared/packages/pyforge-marshal/**"
+    _write_spec(tmp_path, slug, "1-1-alpha", surface=inside)
+    _write_spec(tmp_path, slug, "1-2-beta", surface=inside)  # overlaps alpha
+    code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        slug,
+        "--max-in-flight",
+        "2",
+        ledgers={slug: _PARALLEL_LEDGER},
+        capsys=capsys,
+    )
+
+    row = _station(envelope, slug)
+    assert row["stories"] == ["1-1-alpha"]
+    assert row["wave"]["members"] == ["1-1-alpha"]
+    assert row["wave"]["refused"] == [{"story": "1-2-beta", "reason": "surface-overlap", "overlap_with": "1-1-alpha"}]
+    assert row["held"] == [{"story": "1-2-beta", "reason": "refused from the wave: surface-overlap"}]
+    assert code == 0
+
+
+def test_held_reason_names_unmet_deps_then_the_wave_rule_then_falls_back(tmp_path: Path) -> None:
+    """The plan cannot reach the fallback (a head no rule refused is always a wave member), so it is pinned here."""
+    refused = dispatch_fleet.WaveRefused(story="1-3-gamma", reason="cap")
+    wave = dispatch_fleet.WaveBatch(wave_id="w", members=("1-2-beta",), refused=(refused,), max_parallel=2)
+    cycle = dispatch_cli.StationCyclePlan(slug="pyforge-marshal", ledger_path=tmp_path / "ledger.yaml", wave=wave)
+    reads = drain_plan._StationReads(
+        repo_root=tmp_path, slug="pyforge-marshal", cycle=cycle, fs=FakeFs(), vcs=FakeVcs(tmp_path)
+    )
+
+    assert drain_plan._held_reason(reads, "1-3-gamma", {}) == "refused from the wave: cap"
+    assert drain_plan._held_reason(reads, "1-1-alpha", {}) == "not selected for this wave"
+    unmet = drain_plan._held_reason(reads, "44-4-fold", {"44.4": (normalize("44.3"),)})
+    assert unmet == "declared Deps not all done: 44.3"
+
+
+# -- a verify command the gate cannot even tokenize ---------------------------
+
+
+def test_a_verify_command_with_an_unbalanced_quote_is_gate_003_cannot_parse(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    slug = "pyforge-marshal"
+    _write_spec(tmp_path, slug, "22-7-fleet")
+    _with_policy_flags(monkeypatch, verify_commands=["pixi run 'never closed"])
+    code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        slug,
+        ledgers={slug: (("22-7-fleet", "backlog"),)},
+        capsys=capsys,
+    )
+
+    hits = [f for f in _findings(envelope, "MRS-DRAINPLAN-001") if "MRS-GATE-003" in f["message"]]
+    assert len(hits) == 1
+    assert "cannot parse verify command" in hits[0]["message"] and "never closed" in hits[0]["message"]
+    assert code == 4

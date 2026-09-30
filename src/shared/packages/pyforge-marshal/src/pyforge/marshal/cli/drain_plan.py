@@ -515,9 +515,7 @@ def _plan_station(
     cycle = reads.cycle
     slug = reads.slug
     findings: list[Finding] = []
-    payload = _station_row(
-        slug, mode, parallel_cap=cycle.parallel_cap, backlog=cycle.backlog, env_checked=check_env
-    )
+    payload = _station_row(slug, mode, parallel_cap=cycle.parallel_cap, backlog=cycle.backlog, env_checked=check_env)
 
     queue = cycle.queue
     station_skips = cycle.station_skips
