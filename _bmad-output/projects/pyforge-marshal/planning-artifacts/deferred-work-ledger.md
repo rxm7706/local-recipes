@@ -6502,7 +6502,8 @@ status: open
   origin: fleet consistency pass 2026-09-20 (spec-status fallout PR)
   severity: low
   promoted: 2026-09-20
-  status: open — mint as a story (new epic, since Epic 28 is done) only if the token-economy layers are switched on and dispatch index provisioning cost is measured again; until then the draft is reference material.
+  resolution: RESOLVED 2026-09-30 — minted as marshal Story 77.1 (CAP-282, FR-229) and landed as PR #1676 (`e1a0cb94e0`, verification verified): `dispatch_once` copies the primary checkout's `.codegraph/` into each dispatch worktree and runs `codegraph sync -q`, and codegraph is in the pyforge-guild environment. Verified live the same night: every relaunched wave-1 dispatch journaled `structure_graph` applied, mode `sync`, about 11.5 s.
+  status: resolved
 
 ### DW-FU-53-2: The reconcile's own memlog + baseline-stamp commit is never re-run through a merge-tree preview before `forge.merge_pr`.
 
@@ -6869,5 +6870,27 @@ status: open
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py:1340
   origin: spec-deferred 177985a6b07e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-77-1: The four real-binary codegraph integration tests for Story 77.1 run in no automated lane, so a codegraph release that changes the behavior the seed relies on turns nothing red.
+
+- source_spec: `planning-artifacts/specs/spec-77-1-dispatch-seeds-each-worktree-s-codegraph-index-from-the-shared-base-and-syncs-it.md`
+  summary: The four real-binary codegraph integration tests for Story 77.1 run in no automated lane, so a codegraph release that changes the behavior the seed relies on turns nothing red.
+  evidence: `pyforge-marshal-test` runs in the `pyforge-marshal` environment, which does not carry codegraph, so `tests/integration/test_dispatch_structure_graph_real.py` collects and skips there (verified 2026-09-29: 4 skipped, "codegraph is not on PATH"). The same file passes 4 of 4 in `pyforge-guild` (verified the same day), the only environment that gained codegraph, and no `.github/workflows/` file or pixi task names the file or runs marshal tests in that environment. The unit suite pins the seed only against fakes that hard-code three measured facts: a copied index synced in a sibling directory answers for that directory, `codegraph sync` exits non-zero on a damaged copy, and `codegraph init -y` over an existing `.codegraph/` exits 0 having done nothing. The pin is `codegraph >=1.6.0` with no upper bound. Closing it needs a Guild-environment lane (a pixi task wired into `pr-preflight` and CI), which is a new capability that takes a Dream append, a CAP and a Story; the acceptance criterion itself allows the skip where the binary is absent.
+  location: src/shared/packages/pyforge-marshal/tests/integration/test_dispatch_structure_graph_real.py
+  origin: spec-deferred de23ff347589 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-77-1-2: Copying the primary checkout's base index file by file while another process writes it can produce a db, -wal and -shm set that do not belong together.
+
+- source_spec: `planning-artifacts/specs/spec-77-1-dispatch-seeds-each-worktree-s-codegraph-index-from-the-shared-base-and-syncs-it.md`
+  summary: Copying the primary checkout's base index file by file while another process writes it can produce a db, -wal and -shm set that do not belong together.
+  evidence: Would settle it: run `_seed_dispatch_structure_graph` against a real base while a loop runs `codegraph sync -q` on that base (or `marshal context bootstrap` rebuilds it), then check whether the worktree's sync exits 0 on an inconsistent copy and whether `codegraph context` then answers wrongly. Today the failure ladder catches only a loud failure (a malformed db makes sync exit non-zero and the seed rebuilds with `init -y`); a torn set that syncs cleanly into a wrong index is not covered. Writers to the primary's `.codegraph/` are the operator-run `marshal context bootstrap` and any codegraph git hook, so the window is rare.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
+  origin: spec-deferred d965b746e615 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

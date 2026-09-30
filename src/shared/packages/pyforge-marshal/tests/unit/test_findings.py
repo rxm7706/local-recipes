@@ -360,6 +360,13 @@ def test_registered_codes_contains_the_real_codes():
             # key does not read `done` there (absent, another status, unreadable) --
             # ERROR: finalize exits 1 and `dispatch land` refuses (MRS-DISP-020).
             "MRS-DISP-051",
+            # Story 77.1 (spec-pyforge-marshal CAP-282, dispatch half of the
+            # `structure-graph` layer): 053 the worktree's codegraph index was
+            # built with `init -y` (no base index, or the copied one would not
+            # sync) and the message names `marshal context bootstrap`; 054 no
+            # index was seeded at all. Both WARN, never blocking.
+            "MRS-DISP-053",
+            "MRS-DISP-054",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",
