@@ -4872,3 +4872,36 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-74-1-2: On real S3 a head_object on an absent key answers 403 rather than 404 when the credential lacks s3:ListBucket, so a Put/Get-only credential would fail every first put_stream with the client's AccessDenied instead of uploading.
+
+- source_spec: `planning-artifacts/specs/spec-74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it.md`
+  summary: On real S3 a head_object on an absent key answers 403 rather than 404 when the credential lacks s3:ListBucket, so a Put/Get-only credential would fail every first put_stream with the client's AccessDenied instead of uploading.
+  evidence: Unverified. The spec's Design Notes propagate every non-404 client error on purpose (a permission error must never read as absent), so the module does what the contract says. What would settle it: the policy of the credential that Story 74.2's chart mounts (canopy:AD-19). If it lacks s3:ListBucket, either grant it or decide in that story how a 403 on head is read.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/object_store.py
+  origin: spec-deferred 492f999e9820 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-74-1-3: The silo-backed round-trip tests skip in Platform CI and in platform-ci-local, because neither lane installs the platform-object-storage environment, so only a local run exercises the real store.
+
+- source_spec: `planning-artifacts/specs/spec-74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it.md`
+  summary: The silo-backed round-trip tests skip in Platform CI and in platform-ci-local, because neither lane installs the platform-object-storage environment, so only a local run exercises the real store.
+  evidence: .github/workflows/platform-ci.yml runs the platform-ci-test environment only, and scripts/platform-ci-local.sh ensure_envs provisions platform-ci-test, platform-dev and pyforge-warden. The same skip-in-CI pattern already holds for CAP-97's own src/platform/tests/test_object_storage_client.py. This story added silo-free tests that pin the sha256, the dedup skip and the bounded reads, so the contract no longer depends on the silo for those. Wiring the environment into the lane is a CI change outside this story's Surface.
+  location: .github/workflows/platform-ci.yml
+  origin: spec-deferred 12ab4de8f7e8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-74-1-4: pixi.toml:226 still says of boto3 "no consumer wired in yet", which is false now that django_pyforge.object_store consumes the seam.
+
+- source_spec: `planning-artifacts/specs/spec-74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it.md`
+  summary: pixi.toml:226 still says of boto3 "no consumer wired in yet", which is false now that django_pyforge.object_store consumes the seam.
+  evidence: Cosmetic; the text is a comment, and docs/reference/library-llms-full.md does not embed it (checked). pixi.toml is governed by eight specs' surfaces, and a pixi.toml change fires pyforge-station-tests across every station suite and eight memlog reconciles, which is out of proportion to a comment. Batch it with the next pixi.toml change (Story 74.2).
+  location: pixi.toml
+  origin: spec-deferred f7d141d54893 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
