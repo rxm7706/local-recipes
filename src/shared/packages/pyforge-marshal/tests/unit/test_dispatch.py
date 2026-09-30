@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ from pyforge.core.process import ProcessError, ProcessResult
 from scope_triangle import point_scope_triangle
 
 from pyforge.marshal.adapters.fs_local import FsError
+from pyforge.marshal.cli import dispatch as dispatch_module
 from pyforge.marshal.cli.dispatch import (
     _surface_session_precondition_findings,
     dispatch_once,
@@ -2715,3 +2717,252 @@ def test_dispatch_worktree_scope_write_failure_is_mrs_disp_006(tmp_path: Path, m
     [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-006"]
     assert "cannot provision dispatch worktree scope triangle" in finding.message
     assert not attempt.launched
+
+
+# --- Story 74.2 (spec-feature-flag-governance CAP-3): the pre-session flag-gate consult ---------------
+
+_FLAG_STORY = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
+_FLAG_SPEC_REL = f"_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-{_FLAG_STORY}.md"
+_FLAG_RED_ROW = {
+    "kind": "flag-missing",
+    "severity": "fail",
+    "message": "a post-rule `type: feature` spec carries neither a `flag:` block nor a `flag-exempt:` value",
+}
+_FLAG_WARN_ROW = {"kind": "flag-pre-rule", "severity": "warn", "message": "minted before the rule date"}
+
+
+def _gate_json(verdict: str, *rows: dict[str, str]) -> str:
+    return json.dumps({"verdict": verdict, "spec": _FLAG_SPEC_REL, "rule_date": "2026-09-28", "findings": list(rows)})
+
+
+class GateProcess(FakeProcess):
+    """A ``ProcessPort`` whose ``scripts/flag_gate_check.py`` call answers ``result`` (or raises ``error``);
+    every other argv (the ``steward session check``) is ``FakeProcess``'s."""
+
+    def __init__(self, *, result: ProcessResult | None = None, error: Exception | None = None) -> None:
+        super().__init__()
+        self.result = result
+        self.error = error
+        self.gate_calls: list[tuple[list[str], Path, float | None]] = []
+
+    def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+        if any(str(part).endswith("flag_gate_check.py") for part in argv):
+            self.gate_calls.append((list(argv), cwd, timeout_s))
+            if self.error is not None:
+                raise self.error
+            assert self.result is not None
+            return self.result
+        return super().run(argv, cwd=cwd, timeout_s=timeout_s)
+
+
+def _seed_flag_gate_repo(tmp_path: Path, *, with_gate: bool = True) -> tuple[str, Path]:
+    """A git repo with the story's tracked spec and (by default) a stand-in ``scripts/flag_gate_check.py``
+    -- the gate is a process, so every test answers it through ``GateProcess``."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    spec = _seed_spec(tmp_path, slug, _FLAG_STORY)
+    spec.write_text("---\ntype: feature\ndifficulty: medium\n---\n# spec\n", encoding="utf-8")
+    if with_gate:
+        (tmp_path / "scripts").mkdir()
+        (tmp_path / "scripts" / "flag_gate_check.py").write_text("# stand-in; the gate is faked\n", encoding="utf-8")
+    return slug, spec
+
+
+def _tree(root: Path) -> dict[str, bytes]:
+    return {
+        str(path.relative_to(root)): path.read_bytes()
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and ".git" not in path.relative_to(root).parts
+    }
+
+
+def _dispatch_flag_story(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, process: FakeProcess
+) -> tuple[dispatch_module.DispatchAttempt, FakeFs, FakeVcs, FakeBuildHarness]:
+    monkeypatch.chdir(tmp_path)
+    fs, vcs, harness = FakeFs(), FakeVcs(tmp_path), FakeBuildHarness()
+    attempt = dispatch_once(
+        slug="pyforge-marshal", story=_FLAG_STORY, fs=fs, vcs=vcs, build_harness=harness, process=process
+    )
+    return attempt, fs, vcs, harness
+
+
+def _flag_findings(attempt: dispatch_module.DispatchAttempt) -> list:
+    return [f for f in attempt.findings if f.code in {"MRS-DISP-052", "MRS-DISP-055"}]
+
+
+def test_dispatch_once_refuses_a_spec_the_flag_gate_reds_before_any_worktree_or_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC1 / I-O row 1: gate ``red`` (exit 1) -> REFUSED ``MRS-DISP-052`` naming the spec and the findings; no worktree,
+    no harness launch, and zero changed paths."""
+    _seed_flag_gate_repo(tmp_path)
+    before = _tree(tmp_path)
+    process = GateProcess(result=ProcessResult(returncode=1, stdout=_gate_json("red", _FLAG_RED_ROW), stderr=""))
+    attempt, fs, vcs, harness = _dispatch_flag_story(tmp_path, monkeypatch, process)
+
+    [refusal] = [f for f in attempt.errors if f.code == "MRS-DISP-052"]
+    assert refusal.severity is Severity.ERROR
+    assert _FLAG_SPEC_REL in refusal.message
+    assert "flag-missing" in refusal.message
+    assert "neither a `flag:` block nor a `flag-exempt:` value" in refusal.message
+    assert "docs/reference/story-spec-flag-block.md" in refusal.message
+    assert attempt.errors == (refusal,)
+    assert not attempt.launched
+    assert harness.calls == [] and vcs.added == []
+    assert fs.dirs == set() and fs.appended == [] and fs.files == {}
+    assert _tree(tmp_path) == before
+    assert "session_pid" not in attempt.data
+    # The gate was consulted once, as a process, from the repo root.
+    [(argv, cwd, timeout_s)] = process.gate_calls
+    assert argv == [sys.executable, "scripts/flag_gate_check.py", "--spec", _FLAG_SPEC_REL]
+    assert cwd == tmp_path
+    assert timeout_s == dispatch_module._FLAG_GATE_TIMEOUT_S
+
+
+def test_dispatch_once_journals_one_warn_for_a_pre_rule_spec_and_proceeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC2 / I-O row 2: gate ``warn`` (exit 0) -> one WARN finding, the dispatch proceeds."""
+    _seed_flag_gate_repo(tmp_path)
+    process = GateProcess(result=ProcessResult(returncode=0, stdout=_gate_json("warn", _FLAG_WARN_ROW), stderr=""))
+    attempt, fs, vcs, harness = _dispatch_flag_story(tmp_path, monkeypatch, process)
+
+    [warning] = _flag_findings(attempt)
+    assert (warning.code, warning.severity) == ("MRS-DISP-055", Severity.WARN)
+    assert _FLAG_SPEC_REL in warning.message and "pre-rule" in warning.message
+    assert attempt.errors == ()
+    assert attempt.launched
+    assert harness.calls and vcs.added
+    assert any("dispatch-launch" in line for _, line, _ in fs.appended)  # the WARN rides the journaled dispatch
+
+
+def test_dispatch_once_adds_no_flag_finding_when_the_gate_passes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AC3 / I-O row 3: gate ``pass`` -> no flag finding and the dispatch proceeds as today."""
+    _seed_flag_gate_repo(tmp_path)
+    process = GateProcess(result=ProcessResult(returncode=0, stdout=_gate_json("pass"), stderr=""))
+    attempt, _fs, _vcs, harness = _dispatch_flag_story(tmp_path, monkeypatch, process)
+
+    assert _flag_findings(attempt) == []
+    assert attempt.errors == ()
+    assert attempt.launched and harness.calls
+    assert len(process.gate_calls) == 1
+
+
+def test_dispatch_once_warns_once_and_proceeds_when_the_gate_script_is_absent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC4 / I-O row 4: no ``scripts/flag_gate_check.py`` -> one WARN naming its absence, the dispatch proceeds, and
+    nothing is run."""
+    _seed_flag_gate_repo(tmp_path, with_gate=False)
+    process = GateProcess(error=AssertionError("the gate must not be run when its script is absent"))
+    attempt, _fs, _vcs, harness = _dispatch_flag_story(tmp_path, monkeypatch, process)
+
+    [warning] = _flag_findings(attempt)
+    assert (warning.code, warning.severity) == ("MRS-DISP-055", Severity.WARN)
+    assert "scripts/flag_gate_check.py is not in this repository" in warning.message
+    assert attempt.errors == ()
+    assert attempt.launched and harness.calls
+    assert process.gate_calls == []
+
+
+@pytest.mark.parametrize(
+    ("label", "process", "expected"),
+    [
+        (
+            "exit 2",
+            GateProcess(
+                result=ProcessResult(
+                    returncode=2,
+                    stdout=json.dumps({"verdict": "unknown", "findings": [], "error": "cannot read the roster"}),
+                    stderr="[flag-gate] unknown -- cannot read the roster",
+                )
+            ),
+            "cannot read the roster",
+        ),
+        (
+            "timeout",
+            GateProcess(error=ProcessError("command timed out after 60.0s: python scripts/flag_gate_check.py")),
+            "timed out after 60.0s",
+        ),
+        (
+            "unlaunchable",
+            GateProcess(error=ProcessError("cannot launch python: not found")),
+            "cannot launch python",
+        ),
+        (
+            "non-JSON output",
+            GateProcess(result=ProcessResult(returncode=0, stdout="Traceback: boom", stderr="KeyError: 'x'")),
+            "KeyError: 'x'",
+        ),
+        (
+            "verdict contradicting the exit code",
+            GateProcess(result=ProcessResult(returncode=0, stdout=_gate_json("red", _FLAG_RED_ROW), stderr="")),
+            "contradicts its exit code",
+        ),
+    ],
+)
+def test_dispatch_once_refuses_when_the_gate_cannot_judge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, label: str, process: GateProcess, expected: str
+) -> None:
+    """AC5 / I-O rows 5-6: exit 2, a timeout, or output that is not the gate's JSON -> REFUSED ``MRS-DISP-052`` naming the
+    gate's failure (AD-8: unevaluable is failure), with nothing provisioned."""
+    _seed_flag_gate_repo(tmp_path)
+    before = _tree(tmp_path)
+    attempt, fs, vcs, harness = _dispatch_flag_story(tmp_path, monkeypatch, process)
+
+    [refusal] = [f for f in attempt.errors if f.code == "MRS-DISP-052"]
+    assert expected in refusal.message, label
+    assert "could not judge" in refusal.message
+    assert not attempt.launched
+    assert harness.calls == [] and vcs.added == [] and fs.dirs == set() and fs.appended == []
+    assert _tree(tmp_path) == before
+
+
+def test_the_flag_gate_refusal_is_the_first_campaign_block_detail_a_drain_reads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A drain relays ``errors[0]`` as ``"<code>: <message>"`` -- the form ``parse_refuse_gate`` reads back, which is what
+    lets ``MRS-DISP-052`` be re-preflighted."""
+    from pyforge.marshal.core import dispatch_re_preflight
+
+    _seed_flag_gate_repo(tmp_path)
+    process = GateProcess(result=ProcessResult(returncode=1, stdout=_gate_json("red", _FLAG_RED_ROW), stderr=""))
+    attempt, *_ = _dispatch_flag_story(tmp_path, monkeypatch, process)
+
+    _status, detail, _findings = dispatch_module._classify_attempt("pyforge-marshal", _FLAG_STORY, attempt)
+    assert detail is not None and detail.startswith("MRS-DISP-052:")
+    assert dispatch_re_preflight.parse_refuse_gate(detail) == "MRS-DISP-052"
+    assert dispatch_re_preflight.is_re_preflightable_gate("MRS-DISP-052")
+
+
+def test_the_flag_gate_refusal_keeps_the_earlier_preflight_refusals_in_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The consult sits after the spec lookup: a story with no tracked spec is still ``MRS-DISP-005``, and the gate is
+    never run for it."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "flag_gate_check.py").write_text("# stand-in\n", encoding="utf-8")
+    process = GateProcess(error=AssertionError("the gate must not be run before the spec resolves"))
+    attempt, *_ = _dispatch_flag_story(tmp_path, monkeypatch, process)
+
+    assert [f.code for f in attempt.errors] == ["MRS-DISP-005"]
+    assert process.gate_calls == []
+
+
+def test_removing_the_flag_gate_consult_lets_the_red_fixture_dispatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The mutation: with ``_consult_flag_gate`` returning ``None`` the red fixture launches -- exactly what the refusal
+    test above asserts does not happen, so that test fails on the mutant."""
+    _seed_flag_gate_repo(tmp_path)
+    monkeypatch.setattr(dispatch_module, "_consult_flag_gate", lambda **_kwargs: None)
+    process = GateProcess(result=ProcessResult(returncode=1, stdout=_gate_json("red", _FLAG_RED_ROW), stderr=""))
+    attempt, _fs, vcs, harness = _dispatch_flag_story(tmp_path, monkeypatch, process)
+
+    assert attempt.errors == ()
+    assert attempt.launched
+    assert harness.calls and vcs.added
+    assert process.gate_calls == []
