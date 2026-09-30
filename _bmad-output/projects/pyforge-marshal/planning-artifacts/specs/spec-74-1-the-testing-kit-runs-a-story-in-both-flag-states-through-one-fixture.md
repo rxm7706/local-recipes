@@ -2,7 +2,7 @@
 title: '74.1: The testing kit runs a story in both flag states through one fixture'
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
+status: 'in-progress'
 baseline_revision: '7151e3d2653a6289c4f01a4ac17f8514aee3247a'
 flag-exempt: flag-infrastructure   # the rule's own test infrastructure (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
@@ -131,6 +131,12 @@ Kit root `K` = `src/shared/packages/pyforge-testing-kit`; modules `M` = `K/src/p
 
 ## Spec Change Log
 
+- 2026-09-30 -- operator ruling, unblocked (contract widened; recorded on `spec-feature-flag-governance`, `spec-pyforge-core` and `epics.md` Story 74.1, PR `unblock-wave1-2026-09-30` on `origin/main`): **migrate, as the leaf pin's own docstring prescribes -- do not retarget or loosen the pin.** Q-26's stdlib-leaf premise retires.
+  - The kit declares its real runtime dependencies: `openfeature-sdk>=0.10.0` (already added) and `pyforge-core` (the kit's pyproject, its package `pixi.toml`, and the root `pixi.toml` feature, then `pixi lock`; regenerate `environment.yaml`). pyforge-core does not depend on the kit, so there is no cycle.
+  - `src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py`: move its nine `subprocess` `run`/`check_output` version-control call sites onto `pyforge.core.process.PosixProcess.run` (behaviour unchanged; its own tests stay green).
+  - `src/shared/packages/pyforge-core/tests/meta/test_process_sole_ownership.py` (now inside `[epic_surfaces]` `"74"` on `origin/main`): remove `branch_diff_guard.py` from `_EXEMPT_RELATIVE_PATHS`, delete `test_branch_diff_guard_is_excluded_from_the_scan`, `test_branch_diff_guard_would_fire_if_it_were_not_excluded` and `test_branch_diff_guard_exemption_rests_on_the_kits_leaf_declaration`, and add one test that the file is scanned and has no violations.
+  - Reconcile `spec-pyforge-core` (governs that test) and `spec-pyforge-testing-charter` (governs the kit): memlog first naming each path, then their scoped stamps at landing.
+  - First bring `origin/main` into this branch (merge, never rebase) so the widened policy and the rulings are present. Then the Verification commands, `pixi run -e pyforge-guild pyforge-station-tests` (every leg, pyforge-core included) and `pyforge-testing-kit-test` must exit 0. The flags work already done is kept, not redone.
 - 2026-09-29 (implementation, no change to the contract): the mandated `dependencies = ["openfeature-sdk>=0.10.0"]` reds one
   test outside this story's surface, `pyforge-core`'s
   `tests/meta/test_process_sole_ownership.py::test_branch_diff_guard_exemption_rests_on_the_kits_leaf_declaration`
