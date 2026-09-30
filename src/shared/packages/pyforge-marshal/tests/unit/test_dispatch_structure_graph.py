@@ -321,7 +321,9 @@ def test_no_codegraph_binary_skips_with_a_named_warning_and_touches_nothing(
     monkeypatch.setattr(
         dispatch_module,
         "probe_instrument",
-        lambda item: InstrumentProbe(available=False, reason="codegraph is not installed here ('codegraph' is not on PATH)"),
+        lambda item: InstrumentProbe(
+            available=False, reason="codegraph is not installed here ('codegraph' is not on PATH)"
+        ),
     )
     repo = _primary(tmp_path)
 
@@ -342,7 +344,9 @@ def test_no_codegraph_binary_skips_with_a_named_warning_and_touches_nothing(
 def test_a_failed_sync_of_the_copied_base_falls_back_to_init_once_over_a_cleared_index(tmp_path: Path) -> None:
     repo = _primary(tmp_path)
 
-    result, worktree, _fs, process = _seed(tmp_path, repo=repo, process=_Process(sync=_fail(1, "database disk image is malformed")))
+    result, worktree, _fs, process = _seed(
+        tmp_path, repo=repo, process=_Process(sync=_fail(1, "database disk image is malformed"))
+    )
 
     assert process.verbs == ["sync", "init"]
     # `codegraph init -y` no-ops over an existing `.codegraph/`, so the copied index is gone by then.
@@ -597,7 +601,9 @@ def test_dispatch_proceeds_when_codegraph_is_missing(
     monkeypatch.setattr(
         dispatch_module,
         "probe_instrument",
-        lambda item: InstrumentProbe(available=False, reason="codegraph is not installed here ('codegraph' is not on PATH)"),
+        lambda item: InstrumentProbe(
+            available=False, reason="codegraph is not installed here ('codegraph' is not on PATH)"
+        ),
     )
 
     payload, launched, process, _worktree = _dispatch_with_layer(tmp_path, monkeypatch, capsys, layer=_ON, base=True)
@@ -644,9 +650,7 @@ def test_dispatch_states_the_structure_graph_disposition_even_when_the_launch_fa
     (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
     (tmp_path / ".codegraph").mkdir()
     (tmp_path / ".codegraph" / "codegraph.db").write_bytes(b"base")
-    effective, _ = policy.compose(
-        project_slug=slug, project={"context": {"structure-graph": _ON}}, flags={}
-    )
+    effective, _ = policy.compose(project_slug=slug, project={"context": {"structure-graph": _ON}}, flags={})
     monkeypatch.setattr(dispatch_module, "_compose_policy", lambda _slug, flags=None: effective)
     monkeypatch.chdir(tmp_path)
 

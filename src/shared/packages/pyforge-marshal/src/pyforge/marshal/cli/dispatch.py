@@ -624,7 +624,7 @@ def _discard_worktree_index(fs: FsPort, index_dir: Path) -> None:
     for dirpath, _dirnames, _filenames in os.walk(index_dir, topdown=False):
         try:
             fs.remove_empty_dir(Path(dirpath))
-        except (OSError, PyforgeError):
+        except OSError, PyforgeError:
             pass
 
 
