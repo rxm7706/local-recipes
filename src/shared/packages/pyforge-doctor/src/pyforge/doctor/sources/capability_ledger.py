@@ -347,7 +347,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         # other read error is not "gone", so it reaches ``degrade_on_exception``.
         try:
             text = (target / path).read_text(encoding="utf-8", errors="replace")
-        except (FileNotFoundError, NotADirectoryError):
+        except FileNotFoundError, NotADirectoryError:
             continue
         if _frontmatter(text).get("status") not in _LIVE_STATUSES:
             continue
