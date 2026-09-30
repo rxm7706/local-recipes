@@ -3,7 +3,8 @@
 General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
 
 Shared test-support kit for PyForge stations (FR-130 / Story 19.2). Four
-mock families, seeded from Marshal's already-real mocks rather than rewritten:
+mock families, seeded from Marshal's already-real mocks rather than rewritten,
+and a fifth, the feature-flag family (`spec-feature-flag-governance` CAP-4):
 
 | Family | Module | Seed |
 |--------|--------|------|
@@ -11,6 +12,7 @@ mock families, seeded from Marshal's already-real mocks rather than rewritten:
 | page-object | `pyforge.testing_kit.page_object` | `mock_worktree.py` |
 | DB-factory | `pyforge.testing_kit.db_factory` | `mock_supervisor.py` + conftest store factories |
 | auth/HTTP/time | `pyforge.testing_kit.auth_http_time` | `mock_github_api.py` + supervisor timing |
+| feature-flag | `pyforge.testing_kit.flags` | `src/platform/tests/test_openfeature_file_flags.py`'s hand-written flagd tree |
 
 **Q-26 decision:** own leaf package (not `pyforge.core.testing`) — keeps
 test-only fixtures out of every station's runtime `pyforge-core` install.

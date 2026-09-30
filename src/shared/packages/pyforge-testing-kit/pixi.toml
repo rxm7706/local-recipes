@@ -7,7 +7,8 @@
 # `[feature.pyforge-testing-kit.dependencies]` table. `pixi-build-python` builds
 # this into a conda package.
 #
-# Own leaf (Q-26): test-support primitives only; zero third-party run-deps.
+# Own leaf (Q-26): test-support primitives only; one third-party run-dep, openfeature-sdk
+# (marshal Story 74.1: the flag fixture's InMemoryProvider), and no pyforge-core.
 # Spec: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
 #       spec-19-2-the-shared-test-support-kit.md
 
@@ -25,3 +26,4 @@ hatchling = "*"
 
 [package.run-dependencies]
 python = ">=3.12"
+openfeature-sdk = ">=0.10.0"

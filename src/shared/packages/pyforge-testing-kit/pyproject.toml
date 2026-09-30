@@ -5,15 +5,18 @@ requires = ["hatchling"]
 [project]
 name = "pyforge-testing-kit"
 version = "0.1.0"
-description = "Shared test-support kit for PyForge stations: CLI-runner, page-object, DB-factory, and auth/HTTP/time mock primitives (FR-130 / Story 19.2)."
+description = "Shared test-support kit for PyForge stations: CLI-runner, page-object, DB-factory, auth/HTTP/time mock primitives (FR-130 / Story 19.2) and the feature-flag fixture (spec-feature-flag-governance CAP-4)."
 readme = "README.md"
 requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
-# Test-support only — stdlib leaf. Never a station runtime dependency.
+# Test-support only — a leaf: no station, no pyforge-core. Never a station runtime dependency.
 # Q-26 (Story 19.2): own leaf, not pyforge.core.testing, so test fixtures
 # do not couple into every station's runtime install of pyforge-core.
-dependencies = []
+# openfeature-sdk (marshal Story 74.1, spec-feature-flag-governance CAP-4) is the one
+# third-party run-dep: pyforge.testing_kit.flags installs OpenFeature's InMemoryProvider.
+# It is imported inside the function that needs it, never at module level.
+dependencies = ["openfeature-sdk>=0.10.0"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]

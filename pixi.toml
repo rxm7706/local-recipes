@@ -3050,6 +3050,7 @@ cryptography = ">=50.0.1"         # Provides cryptographic recipes and primitive
 hatchling = ">=1.32.4"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
+openfeature-sdk = ">=0.10.0"      # Story 74.1: pyforge.testing_kit.flags installs OpenFeature's InMemoryProvider
 
 [feature.pyforge-testing-kit.tasks.pyforge-testing-kit-test]
 description = "Run the pyforge.testing_kit test suite"
