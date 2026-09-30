@@ -289,15 +289,20 @@ def check_metadata(flags: Mapping[str, Any], overlays: Mapping[str, Any] | None 
         not_on = [name for name in ENVIRONMENTS if not _renders_on(key, entry, overlays, name)]
         if on_everywhere is not None and not_on:
             raise FlagClockMismatchError(
-                f"flag {key} metadata.on_everywhere is {values['on_everywhere']!r} but "
-                f"{', '.join(not_on)} does not render it ON (it stays '' until every environment does)"
+                f"flag {key} metadata.on_everywhere is {values['on_everywhere']!r} but it does not "
+                f"render ON in {', '.join(not_on)} (it stays '' until every environment does)"
             )
         if on_everywhere is None and not not_on:
             raise FlagClockMismatchError(
                 f"flag {key} metadata.on_everywhere is '' but every environment renders it ON "
                 "(record the day it first did)"
             )
-        expected = on_everywhere + timedelta(days=CLEANUP_DAYS) if on_everywhere is not None else None
+        try:
+            expected = on_everywhere + timedelta(days=CLEANUP_DAYS) if on_everywhere is not None else None
+        except OverflowError as exc:  # 9999-12-31 + 90 days
+            raise FlagMetadataDateError(
+                f"flag {key} metadata.on_everywhere {values['on_everywhere']!r} + {CLEANUP_DAYS} days is not a date"
+            ) from exc
         if cleanup_by != expected:
             expected_text = expected.isoformat() if expected is not None else ""
             raise FlagCleanupDateError(

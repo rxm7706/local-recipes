@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import ast
 import json
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -36,6 +37,21 @@ def _tree(tmp_path: Path, entry: object, *, key: str = KEY, name: str = "flags.j
 
 def _bool_entry(variant: str, *, state: str = "ENABLED") -> dict[str, object]:
     return {"state": state, "variants": {"on": True, "off": False}, "defaultVariant": variant}
+
+
+def _metadata(on_everywhere: str = "", **overrides: object) -> dict[str, object]:
+    """A valid five-field ``metadata`` object (Story 76.2); ``cleanup_by`` is ``on_everywhere`` + 90 days."""
+    cleanup_by = ""
+    if on_everywhere:
+        cleanup_by = (date.fromisoformat(on_everywhere) + timedelta(days=90)).isoformat()
+    return {
+        "owner": "steward",
+        "story": "76-2-a-fixture",
+        "created": "2026-09-01",
+        "on_everywhere": on_everywhere,
+        "cleanup_by": cleanup_by,
+        **overrides,
+    }
 
 
 # --- the fourteenth acceptance criterion's tree matrix ------------------------
@@ -246,11 +262,36 @@ def test_the_module_defines_no_exit_code():
 OTHER = "pyforge.test.other_capability"
 
 
+def _stamp(tree: dict, overlays: object) -> dict:
+    """Give every flag object that lacks ``metadata`` a clock consistent with what ``overlays`` render (Story 76.2).
+
+    Fixtures below test overlays, not the clock: a flag is dated only where every environment
+    renders it ON, so composing the fixture never trips the metadata check.
+    """
+    named = overlays if isinstance(overlays, dict) else {}
+    stamped = json.loads(json.dumps(tree))
+    for key, entry in (stamped.get("flags") or {}).items():
+        if not isinstance(entry, dict) or "metadata" in entry:
+            continue
+        variants = entry.get("variants") if isinstance(entry.get("variants"), dict) else {}
+
+        def _on(environment: str, key=key, entry=entry, variants=variants) -> bool:
+            names = named.get(environment) if isinstance(named.get(environment), dict) else {}
+            variant = names.get(key, entry.get("defaultVariant"))
+            return entry.get("state") != "DISABLED" and isinstance(variant, str) and variants.get(variant) is True
+
+        on_everywhere = "2026-09-01" if all(_on(name) for name in flags.ENVIRONMENTS) else ""
+        entry["metadata"] = _metadata(on_everywhere)
+    return stamped
+
+
 def _overlay_tree(tmp_path: Path, overlays: object, *, tree: dict | None = None) -> Path:
     """A tree with two flags (KEY on, OTHER off) and a sibling ``flag-overlays.json``."""
     flags_json = tmp_path / "flags.json"
     flags_json.write_text(
-        json.dumps(tree if tree is not None else {"flags": {KEY: _bool_entry("on"), OTHER: _bool_entry("off")}}),
+        json.dumps(
+            _stamp(tree if tree is not None else {"flags": {KEY: _bool_entry("on"), OTHER: _bool_entry("off")}}, overlays)
+        ),
         encoding="utf-8",
     )
     (tmp_path / flags.OVERLAYS_FILE_NAME).write_text(json.dumps(overlays), encoding="utf-8")
@@ -450,22 +491,22 @@ def test_the_rendered_tree_read_back_agrees_with_read_boolean(tmp_path, monkeypa
 
 
 def test_compose_does_not_modify_its_inputs(tmp_path):
-    tree = {"flags": {KEY: _bool_entry("on")}}
+    tree = {"flags": {KEY: {**_bool_entry("on"), "metadata": _metadata()}}}
     overlays = {"production": {KEY: "off"}}
     composed = flags.compose(tree, overlays, "production")
     assert composed["flags"][KEY]["defaultVariant"] == "off"
-    assert tree == {"flags": {KEY: _bool_entry("on")}}
+    assert tree == {"flags": {KEY: {**_bool_entry("on"), "metadata": _metadata()}}}
     assert overlays == {"production": {KEY: "off"}}
 
 
 def test_compose_keeps_every_other_field_of_the_tree():
     tree = {
         "$schema": "https://flagd.dev/schema/v0/flags.json",
-        "flags": {KEY: {**_bool_entry("on"), "metadata": {"owner": "steward"}}},
+        "flags": {KEY: {**_bool_entry("on"), "metadata": _metadata()}},
     }
     composed = flags.compose(tree, {"dev": {KEY: "off"}}, "dev")
     assert composed["$schema"] == tree["$schema"]
-    assert composed["flags"][KEY]["metadata"] == {"owner": "steward"}
+    assert composed["flags"][KEY]["metadata"] == _metadata()
     assert composed["flags"][KEY]["defaultVariant"] == "off"
 
 
