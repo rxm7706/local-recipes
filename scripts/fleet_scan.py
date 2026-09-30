@@ -947,6 +947,29 @@ def apply_git(projects: dict) -> None:
 # ---- dreams (both modes) -----------------------------------------------------
 
 DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
+# `spec-one-chain-per-station` CAP-11 / CHAIN-STANDARD §11: a Dream is live in
+# docs/dreams/ or archived under archive/docs/dreams/. scan_dreams() and
+# _fleet_chains() read both through _dream_files() (marshal Story 75.1).
+ARCHIVE_DREAMS_DIR = REPO_ROOT / "archive" / "docs" / "dreams"
+
+
+def _dream_files() -> list[tuple[Path, bool]]:
+    """Every Dream file as `(path, in_archive)`: docs/dreams/*.md, then
+    archive/docs/dreams/*.md, README skipped, the first copy of a slug kept.
+
+    A missing archive directory globs to nothing, so the scan reads as it did
+    before the archive existed.
+    """
+    seen: set[str] = set()
+    out: list[tuple[Path, bool]] = []
+    for directory, in_archive in ((DREAMS_DIR, False), (ARCHIVE_DREAMS_DIR, True)):
+        for f in sorted(directory.glob("*.md")):
+            if f.name == "README.md" or f.stem in seen:
+                continue
+            seen.add(f.stem)
+            out.append((f, in_archive))
+    return out
+
 
 # The Guild's own vocabulary, read from its single home rather than restated.
 # See docs/governance/guild-roster.json for why it lives beside the governance
@@ -1041,11 +1064,15 @@ def dream_chain(slug: str) -> dict:
 
 
 def scan_dreams() -> list[dict]:
-    """[{slug, title, status}] from docs/dreams/*.md frontmatter (README skipped)."""
+    """[{slug, title, status}] from Dream frontmatter (README skipped).
+
+    Reads docs/dreams/*.md, then archive/docs/dreams/*.md (see _dream_files()).
+    Location is the archive signal: a Dream read from the archive is reported
+    `archived` whatever its frontmatter `status` says (operator ruling
+    2026-09-30, Story 75.1).
+    """
     dreams: list[dict] = []
-    for f in sorted(DREAMS_DIR.glob("*.md")):
-        if f.name == "README.md":
-            continue
+    for f, in_archive in _dream_files():
         title, status, owner, archived_reason = None, None, None, None
         dtype, blocked_on = None, None
         lines = f.read_text(encoding="utf-8").splitlines()
@@ -1065,6 +1092,8 @@ def scan_dreams() -> list[dict]:
                     dtype = line.split(":", 1)[1].strip()
                 elif line.startswith("blocked-on:"):
                     blocked_on = line.split(":", 1)[1].strip()
+        if in_archive:
+            status = "archived"
         if status not in DREAM_STATUSES:
             print(f"[dreams] WARN {f.name}: status {status!r} not in {DREAM_STATUSES}"
                   " — passed through; board shows it under 'dreamt'")
