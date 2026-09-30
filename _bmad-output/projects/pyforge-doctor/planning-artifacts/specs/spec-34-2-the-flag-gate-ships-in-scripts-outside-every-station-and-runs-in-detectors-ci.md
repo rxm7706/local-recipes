@@ -16,7 +16,28 @@ context:
   - scripts/detectors.py
   - src/platform/config/flags.json
   - src/shared/packages/pyforge-doctor/tests/meta/test_coverage_gate_stays_outside_every_station.py
-deferred: []
+deferred:
+  - summary: >-
+      Scribe Story 24.1 is a post-rule `type: feature` story spec that carries neither a `flag:` block nor a
+      `flag-exempt:` value, so the gate reds it (`flag-missing`) and the landing is blocked on scribe.
+    evidence: |-
+      PR #1672 merged after the rule-date baseline (5e977accb9). `pixi run -e pyforge-guild flag-gate-check` on the
+      landing tree exits 1 with exactly two FAIL findings, this spec and the one below; every other finding is a
+      pre-rule WARN. A red `flag-gate-check` row would red `detectors-ci` for every PR, and this story may neither
+      edit scribe's specs nor exempt them. Scribe adds a `flag:` block, or a `flag-exempt:` value from the roster's
+      closed list, to both specs before this story lands.
+    location: >-
+      _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-24-1-the-bmad-estate-catalog-is-generated-not-written.md
+    severity: high
+  - summary: >-
+      Scribe Story 24.2 is a post-rule `type: feature` story spec that carries neither a `flag:` block nor a
+      `flag-exempt:` value, so the gate reds it (`flag-missing`) and the landing is blocked on scribe.
+    evidence: |-
+      Same cause and same fix as Story 24.1 above: merged in PR #1672 after the baseline, reported to its owning Smith,
+      not exempted by this story.
+    location: >-
+      _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-24-2-the-catalog-cannot-drift-silently.md
+    severity: high
 declared_low_risk: false
 ---
 
