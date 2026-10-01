@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 463
+# stories: 466
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -309,6 +309,7 @@ development_status:
   76-3-the-ledger-query-s-flags-fold-into-the-one-tree-and-evaluate-through-openfeature: backlog
   76-4-the-pyforge-three-surfaces-demo-flag-leaves-the-tree: backlog
   77-1-the-console-lists-tier-2-specs-and-the-archived-dreams: done
+  78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request: backlog
   8-1-bidirectional-propagation: done
   8-2-zero-loop-guarantee: done
   8-3-idempotent-update-processing: done
@@ -473,6 +474,8 @@ development_status:
   epic-76-retrospective: optional
   epic-77: done
   epic-77-retrospective: optional
+  epic-78: backlog
+  epic-78-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done

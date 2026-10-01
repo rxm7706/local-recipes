@@ -449,6 +449,26 @@ Drift — orphaned between stations.
   attaches its own issued enterprise identities, and AD-2 is amended to say so. The pods' secret
   references are wired by the story that deploys the fleet scan.
   → CAP-164 / Epic 75 / Story 75.1 (FR-37), specced 2026-09-28.
+- **2026-10-01 — Found: two platform auth controls fail open.** The deferral burn-down of
+  2026-09-30 re-checked every open steward deferral against `main` and found two security holes,
+  both verified by hand:
+  - **Langflow mints a superuser token for anyone.** `config/asgi.py:148` forwards every
+    `/langflow/…` request to Langflow's app with no auth gate, and nothing sets
+    `LANGFLOW_AUTO_LOGIN=False`, so Langflow's default holds and `GET /langflow/api/v1/auto_login`
+    returns a bearer token for the bootstrap superuser (DW-FU-11-1, against CAP-99).
+  - **An IdP revocation waits for the next login.** `SOCIALACCOUNT_STORE_TOKENS` is never set, so
+    allauth stores no token, `config/authorization/idp_userinfo.py::_access_token_for` always
+    returns `None`, and `current_claims` falls back to the login-time claims on every request. The
+    only test of that path mocks `_access_token_for`, so it passes (DW-FU-26-1, duplicate
+    DW-FU-18-2; Story 49.6's realization of `spec-pyforge-unifying-strategy` CAP-12, and CAP-86).
+  **What it looks like when fixed:** Langflow's auto-login is off and its superuser credential
+  comes from the environment or a secret, never a default; a request to `/langflow/api/v1/auto_login`
+  is refused. allauth stores the IdP's tokens, an expired access token is refreshed, and revoking a
+  role at the IdP removes access on the user's next request, proven by a test that does not mock the
+  token lookup.
+  **Constraints:** no new CAP (both are defects of shipped capabilities); credentials never in code
+  or CLI flags (canopy:AD-19); a userinfo failure must not grant access it could not confirm.
+  Owner: steward. → Epic 78 / Story 78.1, specced 2026-10-01.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

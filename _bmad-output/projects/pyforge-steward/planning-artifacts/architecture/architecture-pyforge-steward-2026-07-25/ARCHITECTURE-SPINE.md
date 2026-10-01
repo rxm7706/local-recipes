@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: '2026-10-01'   # RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> spine) for FR-35 / CAP-162 (Epic 73). No AD added, amended or removed; lands on AD-1 and AD-8. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> spine) for FR-33 / CAP-160 and FR-34 / CAP-161 (Epic 72). No AD added, amended or removed; lands on canopy:AD-14, canopy:AD-17 and AD-5; the CAP-15 row's mason note updated in place. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD -> spine) for FR-32 / CAP-159 (Epic 71). No AD added, amended or removed; lands on AD-1, AD-5 and AD-8. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2225,3 +2225,18 @@ the rest hold as written:
 
 **Content changed:** this section; AD-2 and canopy:AD-11 each gain one dated amendment; the Deferred row *FILE flag env
 promotion overlays* names the story that takes it up. `updated:` bumped. No AD added or removed.
+
+## Currency reconciliation — 2026-10-01
+
+*Trigger: the PRD's re-stamp for Epic 78 (`prd→arch`): two platform auth controls stop failing open.* Checked against
+every AD. The fix lands on the decisions as written:
+
+- **canopy:AD-19 (pods carry secret references, never values).** Langflow's superuser credential is read from the
+  environment and wired from a Secret in the chart and an env file in compose; nothing ships a default.
+- **AD-8 (exit and failure domains).** A userinfo failure denies rather than serving login-time claims, and production
+  refuses to start without the Langflow superuser credential, a named configuration error like the other required
+  secrets.
+
+No port, adapter or package boundary moves; `src/platform/` still imports no `pyforge.*`.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
