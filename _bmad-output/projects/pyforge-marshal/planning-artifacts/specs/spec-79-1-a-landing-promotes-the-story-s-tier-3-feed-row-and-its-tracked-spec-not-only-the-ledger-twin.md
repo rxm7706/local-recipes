@@ -2,7 +2,7 @@
 title: "79.1: A landing promotes the story's Tier-3 feed row and its tracked spec, not only the ledger twin"
 type: 'fix'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '681964f299f2ca5a3562aeff55db3919b25e7dc4'
 review_loop_iteration: 1
 followup_review_recommended: false
