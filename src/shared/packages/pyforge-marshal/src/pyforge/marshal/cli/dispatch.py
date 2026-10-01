@@ -871,6 +871,16 @@ def _seed_dispatch_structure_graph(
     )
 
 
+def _resolve_origin_main_tip(vcs: VcsPort, repo_root: Path) -> str:
+    """``origin/main``'s tip commit sha, by its full refname.
+
+    ``VcsPort.resolve_ref`` reads ``refs/heads/<name>`` -- a LOCAL branch name only, so handing it
+    ``ORIGIN_MAIN`` raises on real git (the trap ``cli/init.py`` documents at its own ``resolve_ref`` call, and
+    that a fake which returns whatever it is told never shows). ``merge_base`` takes any revision, and a commit's
+    merge base with itself is that commit."""
+    return vcs.merge_base(repo_root, ORIGIN_MAIN, ORIGIN_MAIN)
+
+
 def _derive_followup_review(
     *, vcs: VcsPort, repo_root: Path, slug: str, story_key: StoryKey, spec_text: str
 ) -> FollowupReview | None:
@@ -894,7 +904,7 @@ def _derive_followup_review(
         vcs.fetch(repo_root, "origin", "main")
     except VcsCommandError:
         pass
-    launch_tip = vcs.resolve_ref(repo_root, ORIGIN_MAIN)
+    launch_tip = _resolve_origin_main_tip(vcs, repo_root)
     ledger_rel = f"_bmad-output/projects/{slug}/planning-artifacts/deferred-work-ledger.md"
     try:
         ledger_text = vcs.file_text_at_ref(repo_root, ORIGIN_MAIN, ledger_rel)

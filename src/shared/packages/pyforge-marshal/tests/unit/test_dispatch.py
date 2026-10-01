@@ -1889,12 +1889,10 @@ class _OriginVcs(FakeVcs):
         if self._fetch_raises:
             raise VcsCommandError("git fetch failed (test double)")
 
-    def resolve_ref(self, repo_root: Path, ref: str) -> str:
-        self.calls.append(("resolve_ref", ref))
-        if ref != ORIGIN_MAIN:
-            return super().resolve_ref(repo_root, ref)
+    def merge_base(self, _repo_root: Path, a: str, b: str) -> str:
+        self.calls.append(("merge_base", a, b))
         if self._tip_raises:
-            raise VcsCommandError("git rev-parse failed (test double)")
+            raise VcsCommandError("git merge-base failed (test double)")
         return _ORIGIN_TIP
 
     def file_text_at_ref(self, _repo_root: Path, ref: str, path: str) -> str | None:
@@ -1973,7 +1971,7 @@ def test_a_follow_up_review_launch_reads_origin_main_after_its_fetch_by_full_ref
 
     assert vcs.calls == [
         ("fetch", "origin", "main"),
-        ("resolve_ref", ORIGIN_MAIN),
+        ("merge_base", ORIGIN_MAIN, ORIGIN_MAIN),
         ("file_text_at_ref", ORIGIN_MAIN, _FOLLOWUP_LEDGER_REL),
     ]
 
