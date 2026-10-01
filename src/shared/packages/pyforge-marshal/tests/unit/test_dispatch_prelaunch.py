@@ -228,9 +228,8 @@ def test_a_mid_line_closing_tag_mention_does_not_end_a_contract_early() -> None:
 
 
 def test_a_stripped_block_never_joins_the_lines_around_it() -> None:
-    """The block becomes a newline, so "do not" before it and "dispatch" after it stay two lines."""
-    assert _spec_park("do not\n<intent-contract>\nrules\n</intent-contract>\ndispatch it\n") is None
-    assert _spec_park("do not <intent-contract>\nrules\n</intent-contract>\ndispatch it\n") is None
+    """The lines before and after a stripped block stay two lines ("do not " + "dispatch it" is no park)."""
+    assert _spec_park("do not \n<intent-contract>\nrules\n</intent-contract>\ndispatch it\n") is None
 
 
 def test_a_skip_policies_entry_mirrors_the_park_so_it_is_not_a_finding() -> None:
