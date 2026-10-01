@@ -603,8 +603,15 @@ ACCOUNT_FORMS = {"signup": "platformapp.users.forms.UserSignupForm"}
 SOCIALACCOUNT_ADAPTER = "config.authorization.adapters.OIDCSocialAccountAdapter"
 SOCIALACCOUNT_FORMS = {"signup": "platformapp.users.forms.UserSocialSignupForm"}
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
+# Story 78.1 / CAP-86 / unifying-strategy CAP-12: allauth defaults this to False,
+# so no SocialToken row was ever saved, `config.authorization.idp_userinfo` had no
+# access token to re-check the IdP with, and a revocation waited for the next
+# login. Forced, not an env knob: nothing may switch revocation-on-the-next-
+# request off. The access token is the only credential stored; the refresh token
+# (token_secret) is what renews it.
+SOCIALACCOUNT_STORE_TOKENS = True
 
-OIDC_ISSUER = env.str("COMPONENT_OIDC_ISSUER", default="")
+OIDC_ISSUER =env.str("COMPONENT_OIDC_ISSUER", default="")
 OIDC_CLIENT_ID = env.str("COMPONENT_OIDC_CLIENT_ID", default="")
 OIDC_JWKS_URL = env.str("COMPONENT_OIDC_JWKS_URL", default="")
 OIDC_AUDIENCE = env.str("COMPONENT_OIDC_AUDIENCE", default="") or OIDC_CLIENT_ID
@@ -697,6 +704,26 @@ LANGFLOW_KNOWLEDGE_BASES_DIR = env(
 )
 os.environ["LANGFLOW_CONFIG_DIR"] = LANGFLOW_CONFIG_DIR
 os.environ["LANGFLOW_KNOWLEDGE_BASES_DIR"] = LANGFLOW_KNOWLEDGE_BASES_DIR
+
+# Story 78.1 / CAP-99 (DW-FU-11-1): Langflow's own default is AUTO_LOGIN=True,
+# under which `GET /langflow/api/v1/auto_login` hands ANY caller a bearer token
+# for the bootstrap superuser -- `config/asgi.py` forwards `/langflow/...` with
+# no platform-side gate, so Langflow's own login is the only one. ASSIGNED, not
+# `env(...)` / `setdefault`: no deployer value (a `.env` line, a chart env, a
+# shell export) can switch it back on, and no setting exists that does.
+LANGFLOW_AUTO_LOGIN = False
+os.environ["LANGFLOW_AUTO_LOGIN"] = "False"
+# With auto-login off Langflow's lifespan startup (`setup_superuser`) needs a
+# non-empty LANGFLOW_SUPERUSER_PASSWORD and refuses its legacy default, so the
+# mounted app does not start without one. The credential comes from the
+# environment only (canopy AD-19: a Secret in the chart, an env-file reference in
+# compose, never code, a default or a flag); deployed boots refuse it by name in
+# stage 1 (`config.startup.stage_one.REQUIRED_SETTINGS`). `default=None` means
+# unset, not a credential. These are read here so the setting is inspectable;
+# `env.read_env` has already put a `.env` value into `os.environ`, which is where
+# Langflow's own settings service reads it from (`create_app()`, at ASGI import).
+LANGFLOW_SUPERUSER = env("LANGFLOW_SUPERUSER", default=None)
+LANGFLOW_SUPERUSER_PASSWORD = env("LANGFLOW_SUPERUSER_PASSWORD", default=None)
 
 # DB-GPT integration (Story 11.2, pap:CAP-3, AD-17
 # Pattern B)
