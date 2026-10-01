@@ -2950,6 +2950,11 @@ row's state gates a follow-up; the ledger key stays `done` and is never re-queue
 `dispatch.max_followup_reviews_per_campaign` follow-ups (Marshal default 2; 0 turns scheduling off),
 counted across its stations and cycles and resolved from the repository's policy layers, newest
 landings first; the rest wait for a later campaign, named in one INFO finding.
+*(Amended 2026-10-01, operator rulings on Story 73.1's intent gap.)* A follow-up run's launch INTENT
+records `origin/main`'s tip at launch; the run counts only merges that reach `origin/main` after it, so a reused,
+pre-merge dispatch worktree cannot read the story's first landing as its own. Every reader of a run's merge facts
+(the supervisor, `dispatch land`, the CAP-4 land-only retry, the session verdict, the drain's block facts,
+`marshal status`) applies that scope from the launch INTENT, and the open row id is read from `origin/main`.
 
 ### 31.10 FR-225, FR-227 and FR-228 amended (operator rulings, 2026-09-28)
 
