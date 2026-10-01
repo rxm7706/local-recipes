@@ -18,6 +18,7 @@ from pyforge.marshal.core.deferred_work import (
     followup_review_id,
     followup_review_to_promote,
     open_followup_review_id,
+    open_followup_review_story_keys,
     parse_followup_deferrals,
     promoted_id,
     render_followup_review_entry,
@@ -592,6 +593,81 @@ def test_open_followup_review_id_reads_the_status_of_its_own_row_only():
 def test_open_followup_review_id_tolerates_a_status_comment_and_a_bullet():
     bulleted = "### DW-FRR-51-2: x\n\n- status: open  # still to do\n"
     assert open_followup_review_id(bulleted, normalize("51.2")) == "DW-FRR-51-2"
+
+
+# --- every open row, read as the drain's gate (Story 73.2, CAP-281) -------------------
+
+
+def _row(story: str, *, status: str = "open", origin: str = "dispatch-followup-review") -> str:
+    key = normalize(story)
+    return (
+        f"### {followup_review_id(key)}: Follow-up review still recommended for story {key}\n\n"
+        f"- source_spec: `planning-artifacts/specs/spec-{story}.md`\n"
+        f"  origin: {origin}\n"
+        f"  severity: low\n"
+        f"  status: {status}\n\n"
+    )
+
+
+def test_open_followup_review_story_keys_lists_every_open_row_in_ledger_order():
+    ledger = "# Ledger\n\nold\n\n" + _row("73.1") + _row("51.2") + _row("66.2")
+    assert open_followup_review_story_keys(ledger) == (StoryKey(73, 1), StoryKey(51, 2), StoryKey(66, 2))
+
+
+def test_open_followup_review_story_keys_reads_what_the_carry_renders():
+    ledger = "# Ledger\n\n" + render_followup_review_entry(_frr_candidate(), promoted_date="2026-10-01")
+    assert open_followup_review_story_keys(ledger) == (StoryKey(51, 2),)
+
+
+def test_open_followup_review_story_keys_skips_a_closed_row_and_a_row_of_another_origin():
+    ledger = _row("51.2", status="closed") + _row("51.3", origin="spec-deferred") + _row("51.4")
+    assert open_followup_review_story_keys(ledger) == (StoryKey(51, 4),)
+
+
+def test_open_followup_review_story_keys_is_empty_without_rows():
+    assert open_followup_review_story_keys("") == ()
+    assert open_followup_review_story_keys("# Ledger\n\n### DW-FU-51-2-1: a hand-filed row\n  status: open\n") == ()
+
+
+def test_open_followup_review_story_keys_is_not_fooled_by_prose_or_a_prefix_collision():
+    prose = (
+        "### DW-FU-51-2-1: a hand-filed row\n\n- source_spec: `x`\n  verified: DW-FRR-51-2 is the carry\n"
+        "  origin: dispatch-followup-review\n  status: open\n"
+    )
+    assert open_followup_review_story_keys(prose) == ()
+    assert open_followup_review_story_keys(_row("51.20")) == (StoryKey(51, 20),)  # never 51.2
+
+
+def test_open_followup_review_story_keys_reads_each_rows_own_status_and_origin_only():
+    """The next row's open ``status:`` / dispatch ``origin:`` after a closed row is not that row's."""
+    ledger = (
+        "### DW-FRR-51-2: x\n\n- source_spec: `x`\n  origin: spec-deferred\n  status: closed\n\n"
+        "### DW-X-1: other\n\n- source_spec: `x`\n  origin: dispatch-followup-review\n  status: open\n"
+    )
+    assert open_followup_review_story_keys(ledger) == ()
+
+
+def test_open_followup_review_story_keys_names_a_story_once():
+    assert open_followup_review_story_keys(_row("51.2") + _row("51.2")) == (StoryKey(51, 2),)
+    # An open row after a closed one of the same id still gates the story.
+    assert open_followup_review_story_keys(_row("51.2", status="closed") + _row("51.2")) == (StoryKey(51, 2),)
+
+
+def test_open_followup_review_story_keys_tolerates_a_status_comment_and_a_hanging_bullet_origin():
+    ledger = "### DW-FRR-51-2: x\n\n- origin: dispatch-followup-review # carried\n  status: open  # still to do\n"
+    assert open_followup_review_story_keys(ledger) == (StoryKey(51, 2),)
+
+
+def test_open_followup_review_story_keys_skips_an_id_that_is_not_a_canonical_story_row():
+    assert open_followup_review_story_keys(_row("51.2").replace("DW-FRR-51-2:", "DW-FRR-51-2-foo:")) == ()
+    assert open_followup_review_story_keys(_row("51.2").replace("DW-FRR-51-2:", "DW-FRR-nonsense:")) == ()
+
+
+def test_open_followup_review_story_keys_agrees_with_open_followup_review_id():
+    ledger = _row("51.2") + _row("51.3", status="closed")
+    keys = open_followup_review_story_keys(ledger)
+    assert [open_followup_review_id(ledger, key) for key in keys] == ["DW-FRR-51-2"]
+    assert open_followup_review_id(ledger, StoryKey(51, 3)) is None
 
 
 def test_close_followup_review_row_renders_the_row_closed_in_place():
