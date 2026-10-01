@@ -30,13 +30,13 @@ from .adapters.fs_local import LocalFs
 from .adapters.vcs_git import GitVcs, VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import identity, promotion
+from .core.dispatch_harness_done import FollowupReview
 from .core.dispatch_landing import (
     DispatchLandingVerdict,
     may_attempt_dispatch_landing,
     merge_subject_is_marshal_native,
     refuse_unverified_landing,
 )
-from .core.dispatch_harness_done import FollowupReview
 from .core.dispatch_verification import DispatchVerificationVerdict
 from .core.egress import Redacted
 from .core.identity import StoryKey, normalize, render_feed_key

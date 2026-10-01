@@ -51,7 +51,6 @@ from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core import dispatch as dispatch_core
 from ..core import (
     deferred_work,
     dispatch_flag_gate,
@@ -61,6 +60,7 @@ from ..core import (
     harness_profile,
     policy,
 )
+from ..core import dispatch as dispatch_core
 from ..core import promotion as promotion_core
 from ..core.dispatch_completion import (
     DispatchGitFacts,
