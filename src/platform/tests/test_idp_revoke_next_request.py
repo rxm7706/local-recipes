@@ -198,12 +198,21 @@ class _IdPStub:
         self.refresh_grants: dict[str, tuple[str, str | None]] = {}
         self.userinfo_status: int | None = None
         self.token_status: int | None = None
+        # The client secret the token endpoint demands; "" is a public client,
+        # whose refresh request must carry no `client_secret` key at all.
+        self.expected_client_secret = _CLIENT_SECRET
         self.delay_seconds = 0.0
         self.userinfo_calls: list[str] = []
         self.token_calls: list[dict[str, str]] = []
 
-    def grant_role(self, access_token: str, groups: list[str]) -> None:
-        self.claims_by_access_token[access_token] = {"sub": _SUB, "groups": groups}
+    def grant_role(
+        self,
+        access_token: str,
+        groups: list[str],
+        *,
+        sub: str = _SUB,
+    ) -> None:
+        self.claims_by_access_token[access_token] = {"sub": sub, "groups": groups}
 
 
 class _IdPHandler(BaseHTTPRequestHandler):
@@ -245,7 +254,7 @@ class _IdPHandler(BaseHTTPRequestHandler):
             self._answer(HTTPStatus.NOT_FOUND, {})
         elif stub.token_status is not None:
             self._answer(stub.token_status, {"error": "forced"})
-        elif not _refresh_request_is_valid(form, grant):
+        elif not _refresh_request_is_valid(form, grant, stub.expected_client_secret):
             self._answer(HTTPStatus.BAD_REQUEST, {"error": "invalid_grant"})
         else:
             assert grant is not None
@@ -259,14 +268,39 @@ class _IdPHandler(BaseHTTPRequestHandler):
 def _refresh_request_is_valid(
     form: dict[str, str],
     grant: tuple[str, str | None] | None,
+    expected_client_secret: str,
 ) -> bool:
-    """A refresh_token grant from the configured client, for a live refresh token."""
+    """A refresh_token grant from the configured client, for a live refresh token.
+
+    A public client (``expected_client_secret == ""``) must send no secret key.
+    """
+    secret_ok = (
+        form.get("client_secret") == expected_client_secret
+        if expected_client_secret
+        else "client_secret" not in form
+    )
     return (
         grant is not None
         and form.get("grant_type") == "refresh_token"
         and form.get("client_id") == _CLIENT_ID
-        and form.get("client_secret") == _CLIENT_SECRET
+        and secret_ok
     )
+
+
+def _oidc_providers(settings, secret: str) -> dict[str, object]:
+    return {
+        "openid_connect": {
+            "APPS": [
+                {
+                    "provider_id": settings.OIDC_PROVIDER_ID,
+                    "name": "stub",
+                    "client_id": _CLIENT_ID,
+                    "secret": secret,
+                    "settings": {"server_url": settings.OIDC_ISSUER},
+                },
+            ],
+        },
+    }
 
 
 @pytest.fixture
@@ -282,19 +316,7 @@ def idp(settings, monkeypatch):
     monkeypatch.setenv("NO_PROXY", "127.0.0.1")
     monkeypatch.setenv("no_proxy", "127.0.0.1")
     settings.OIDC_ISSUER = f"http://127.0.0.1:{server.server_port}/realms/platform"
-    settings.SOCIALACCOUNT_PROVIDERS = {
-        "openid_connect": {
-            "APPS": [
-                {
-                    "provider_id": settings.OIDC_PROVIDER_ID,
-                    "name": "stub",
-                    "client_id": _CLIENT_ID,
-                    "secret": _CLIENT_SECRET,
-                    "settings": {"server_url": settings.OIDC_ISSUER},
-                },
-            ],
-        },
-    }
+    settings.SOCIALACCOUNT_PROVIDERS = _oidc_providers(settings, _CLIENT_SECRET)
     settings.IDP_CLAIMS_SNAPSHOT = None
     settings.IDP_USERINFO = fetch_current_userinfo
     settings.IDP_CLAIMS_CACHE_SECONDS = 0
@@ -310,7 +332,7 @@ def _login_through_the_idp(
     *,
     access_token: str = "access-1",  # noqa: S107 -- a stub token, not a credential
     refresh_token: str = "refresh-1",  # noqa: S107
-    groups: list[str] | None = None,
+    sub: str = _SUB,
 ) -> SimpleNamespace:
     """What an interactive IdP login leaves behind, via the real adapter.
 
@@ -318,12 +340,11 @@ def _login_through_the_idp(
     calls ``sociallogin.connect`` -> allauth's ``SocialLogin.save``, which stores
     the ``SocialToken`` iff ``SOCIALACCOUNT_STORE_TOKENS``.
     """
-    groups = _LOGIN_TIME_GROUPS if groups is None else groups
-    stub.grant_role(access_token, groups)
+    stub.grant_role(access_token, _LOGIN_TIME_GROUPS, sub=sub)
     claims = stub.claims_by_access_token[access_token]
     account = SocialAccount(
         provider=django_settings.OIDC_PROVIDER_ID,
-        uid=_SUB,
+        uid=sub,
         extra_data={"userinfo": claims},
     )
     token = SocialToken(
@@ -498,6 +519,112 @@ def test_a_session_with_no_stored_token_is_denied(idp: _IdPStub) -> None:
 
 
 @pytest.mark.django_db
+def test_a_non_rotating_refresh_keeps_the_refresh_token_and_renews_the_expiry(
+    idp: _IdPStub,
+) -> None:
+    client = Client()
+    login = _login_through_the_idp(client, idp)
+    # The stored access token has expired, as it has when userinfo answers 401.
+    SocialToken.objects.filter(account__user=login.user).update(
+        expires_at=timezone.now() - timedelta(minutes=1),
+    )
+    del idp.claims_by_access_token["access-1"]
+    idp.refresh_grants["refresh-1"] = ("access-2", None)  # the IdP does not rotate
+    idp.grant_role("access-2", _LOGIN_TIME_GROUPS)
+
+    response = client.get(_STATION_URL)
+
+    assert response.status_code == HTTPStatus.OK
+    row = _stored_token(login.user)
+    assert row.token == "access-2"  # noqa: S105 -- a stub token
+    assert row.token_secret == "refresh-1"  # noqa: S105 -- kept, not wiped
+    assert row.expires_at is not None
+    assert row.expires_at > timezone.now()
+
+
+@pytest.mark.django_db
+def test_a_public_client_refreshes_without_a_client_secret(
+    idp: _IdPStub,
+    settings,
+) -> None:
+    """The bundled Keycloak profile's client is public: an empty secret."""
+    settings.SOCIALACCOUNT_PROVIDERS = _oidc_providers(settings, "")
+    idp.expected_client_secret = ""
+    client = Client()
+    _login_through_the_idp(client, idp)
+    del idp.claims_by_access_token["access-1"]
+    idp.refresh_grants["refresh-1"] = ("access-2", "refresh-2")
+    idp.grant_role("access-2", _LOGIN_TIME_GROUPS)
+
+    response = client.get(_STATION_URL)
+
+    assert response.status_code == HTTPStatus.OK
+    assert idp.token_calls == [
+        {
+            "grant_type": "refresh_token",
+            "refresh_token": "refresh-1",
+            "client_id": _CLIENT_ID,
+        },
+    ]
+    assert idp.userinfo_calls == ["access-1", "access-2"]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "token_status",
+    [HTTPStatus.UNAUTHORIZED, HTTPStatus.SERVICE_UNAVAILABLE],
+    ids=["401", "503"],
+)
+def test_a_token_endpoint_failure_denies_after_one_refresh_attempt(
+    idp: _IdPStub,
+    token_status: HTTPStatus,
+) -> None:
+    client = Client()
+    _login_through_the_idp(client, idp)
+    del idp.claims_by_access_token["access-1"]
+    idp.refresh_grants["refresh-1"] = ("access-2", "refresh-2")
+    idp.grant_role("access-2", _LOGIN_TIME_GROUPS)
+    idp.token_status = token_status  # the grant would have worked; the endpoint fails
+
+    response = client.get(_STATION_URL)
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert len(idp.token_calls) == 1
+    assert idp.userinfo_calls == ["access-1"]  # never retried with a token it lacks
+
+
+@pytest.mark.django_db
+def test_a_user_with_no_stored_token_is_never_served_another_users_token(
+    idp: _IdPStub,
+) -> None:
+    """The token lookup is scoped to the requesting user. User A holds the newest
+    token (the one an unscoped ``.first()`` would pick) and a role; user B is
+    logged in with login-time claims granting the role but no token row, so B is
+    denied and A's access token never reaches the IdP on B's behalf."""
+    client_a, client_b = Client(), Client()
+    login_b = _login_through_the_idp(
+        client_b,
+        idp,
+        sub="idp-user-b",
+        access_token="access-b",  # noqa: S106 -- a stub token
+        refresh_token="refresh-b",  # noqa: S106
+    )
+    login_a = _login_through_the_idp(client_a, idp)  # later login: newest expires_at
+    SocialToken.objects.filter(account__user=login_b.user).delete()
+    assert SocialToken.objects.filter(account__user=login_a.user).count() == 1
+
+    response = client_b.get(_STATION_URL)
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert "access-1" not in idp.userinfo_calls
+    assert idp.userinfo_calls == []
+    assert idp.token_calls == []
+    # Control: A, who does hold the token, is still allowed.
+    assert client_a.get(_STATION_URL).status_code == HTTPStatus.OK
+    assert idp.userinfo_calls == ["access-1"]
+
+
+@pytest.mark.django_db
 def test_userinfo_server_error_denies_and_does_not_refresh(idp: _IdPStub) -> None:
     client = Client()
     _login_through_the_idp(client, idp)
@@ -519,6 +646,7 @@ def test_userinfo_timeout_denies(idp: _IdPStub, monkeypatch) -> None:
     response = client.get(_STATION_URL)
 
     assert response.status_code == HTTPStatus.FORBIDDEN
+    assert idp.token_calls == []  # a timeout is not "the token is stale"
 
 
 @pytest.mark.django_db
