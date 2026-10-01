@@ -20,6 +20,7 @@ import stat
 import subprocess
 import sys
 import textwrap
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -29,9 +30,14 @@ from tests.helm_gate import requires_helm
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 
 
-def _chart_test() -> str:
-    """Stand-in for a chart test: returns a sentinel when it actually runs."""
-    return "ran"
+def _chart_test() -> Callable[[], str]:
+    """A fresh stand-in chart test each call (a skip mark is stored on the function
+    it decorates, so a shared one would carry marks from test to test)."""
+
+    def chart_test() -> str:
+        return "ran"
+
+    return chart_test
 
 
 def _without_helm(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -57,8 +63,9 @@ def test_helm_present_returns_the_test_unchanged(
             monkeypatch.delenv("CI", raising=False)
         else:
             monkeypatch.setenv("CI", ci)
-        gated = requires_helm(_chart_test)
-        assert gated is _chart_test
+        chart_test = _chart_test()
+        gated = requires_helm(chart_test)
+        assert gated is chart_test
         assert gated() == "ran"
 
 
@@ -68,8 +75,9 @@ def test_helm_absent_under_ci_fails_naming_helm(
 ) -> None:
     _without_helm(monkeypatch, tmp_path)
     monkeypatch.setenv("CI", "true")
-    gated = requires_helm(_chart_test)
-    assert gated is not _chart_test
+    chart_test = _chart_test()
+    gated = requires_helm(chart_test)
+    assert gated is not chart_test
     with pytest.raises(pytest.fail.Exception, match="helm") as failure:
         gated()
     assert "CI" in str(failure.value)
@@ -81,7 +89,7 @@ def test_helm_absent_outside_ci_skips(
 ) -> None:
     _without_helm(monkeypatch, tmp_path)
     monkeypatch.delenv("CI", raising=False)
-    gated = requires_helm(_chart_test)
+    gated = requires_helm(_chart_test())
     marks = [m for m in gated.pytestmark if m.name == "skip"]  # type: ignore[attr-defined]
     assert len(marks) == 1
     assert "helm" in marks[0].kwargs["reason"]
@@ -94,7 +102,7 @@ def test_an_empty_ci_variable_counts_as_unset(
 ) -> None:
     _without_helm(monkeypatch, tmp_path)
     monkeypatch.setenv("CI", "")
-    gated = requires_helm(_chart_test)
+    gated = requires_helm(_chart_test())
     assert any(m.name == "skip" for m in gated.pytestmark)  # type: ignore[attr-defined]
 
 
