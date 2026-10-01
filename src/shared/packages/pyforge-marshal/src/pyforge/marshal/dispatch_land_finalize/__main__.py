@@ -2,9 +2,7 @@
 
 Spawned as a subprocess by ``dispatch_land`` so ``dispatch_supervisor`` never
 imports ``cli/`` (AD-9). Composes ``deploy promote`` + ``land``'s sprint
-ledger promotion machinery, then (Story 79.1) carries the promotion to the two
-files that machinery never reached: the story's Tier-3 feed row and its
-tracked spec.
+ledger promotion machinery.
 """
 
 from __future__ import annotations
@@ -36,7 +34,6 @@ from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, norm
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT
-from pyforge.marshal.core.status import render_ledger_advancements
 from pyforge.marshal.ports.fs import FsPort
 from pyforge.marshal.ports.vcs import VcsPort
 
@@ -54,10 +51,6 @@ _FINALIZE_RESYNC_KIND = "dispatch-land-finalize-resync"
 #: (`_project_slug_map` strips this prefix) -- never the full
 #: `_bmad-output/projects/<slug>` directory name.
 _PROJECT_SLUG_PREFIX = "pyforge-"
-
-#: Story 79.1: a Tier-3 feed row that reads this is a deliberate state the landing never moves
-#: (`_LEDGER_DONE_STATUS`, imported above, is the other one).
-_LEDGER_BLOCKED_STATUS = "blocked"
 
 
 def _run_deferred_work_intake(
@@ -217,118 +210,6 @@ def _landed_key_not_done_finding(vcs: VcsPort, root: Path, project_slug: str, ke
     return None
 
 
-def _promote_tier3_feed_row(fs: FsPort, root: Path, project_slug: str, key: StoryKey) -> Finding | None:
-    """Story 79.1 (spec-pyforge-marshal CAP-229/CAP-277): write the landed ``key`` ``done`` in the story's
-    Tier-3 feed (``implementation-artifacts/sprint-status.yaml``), the file ``_promote_sprint_ledger``
-    reads, syncs INTO the tracked twin and never writes back. Left at ``backlog`` it makes the next plain
-    ``sprint-ledger-sync`` refuse ("feed would un-finish") until someone aligns it by hand
-    (DW-OPS-2026-10-01-1).
-
-    A row already ``done`` or ``blocked`` is left exactly as it is -- a promotion never moves a row
-    backwards, and ``blocked`` is the operator's. The rewrite is ``render_ledger_advancements``'s
-    byte-preserving line rewrite (the feed has the ledger's ``development_status:`` shape), written
-    through ``FsPort.write_text_atomic`` (a temp file in the same directory, then ``os.replace``). The
-    feed is gitignored Tier-3, so it is written in place and never published (CAP-233: the operator
-    checkout's tracked files are never touched). No lock: a concurrent feed writer inside the
-    read-to-replace window can lose one update, and the feed is re-derivable.
-
-    Never creates the file or a row. Returns ``None`` on a write or a no-op; an absent feed, an absent
-    row, an unreadable or unwritable feed and a row the rewrite cannot match are ``MRS-DISP-047`` WARN
-    findings naming the path -- the post-merge bookkeeping tier this module already uses, never a crash
-    and never a second landing refusal this far past the merge."""
-    feed_path = root / "_bmad-output" / "projects" / project_slug / "implementation-artifacts" / "sprint-status.yaml"
-
-    def _warn(message: str) -> Finding:
-        return Finding(code="MRS-DISP-047", severity=Severity.WARN, message=message, path=str(feed_path))
-
-    try:
-        feed_text = fs.read_text(feed_path)
-    except FsError as exc:
-        return _warn(f"cannot read the Tier-3 sprint feed at {str(feed_path)!r} to mark story {key} done: {exc}")
-    if feed_text is None:
-        return _warn(f"no Tier-3 sprint feed at {str(feed_path)!r}; story {key}'s feed row was not promoted")
-    rows: list[tuple[str, str]] = []
-    for raw_key, status in _parse_sprint_ledger_statuses(feed_text).items():
-        try:
-            if normalize(raw_key) == key:
-                rows.append((raw_key, status))
-        except MalformedStoryKeyError:
-            continue
-    if not rows:
-        return _warn(f"the Tier-3 sprint feed at {str(feed_path)!r} has no row for story {key}; none was created")
-    behind = frozenset(
-        raw_key for raw_key, status in rows if status not in (_LEDGER_DONE_STATUS, _LEDGER_BLOCKED_STATUS)
-    )
-    if not behind:
-        return None
-    new_text, matched = render_ledger_advancements(feed_text, behind)
-    if matched != behind:
-        return _warn(
-            f"the Tier-3 sprint feed at {str(feed_path)!r} has a row for story {key} that could not be "
-            f"rewritten to done ({sorted(behind - matched)}); the feed was left as it was"
-        )
-    try:
-        fs.write_text_atomic(feed_path, new_text)
-    except FsError as exc:
-        return _warn(f"cannot write the Tier-3 sprint feed at {str(feed_path)!r} to mark story {key} done: {exc}")
-    return None
-
-
-def _promote_tracked_spec(
-    vcs: VcsPort, root: Path, project_slug: str, key: StoryKey, worktree: Path | None
-) -> Finding | None:
-    """Story 79.1 (spec-pyforge-marshal CAP-229/CAP-261b, DW-FU-53-2-4): set the landed story's TRACKED spec
-    ``status: done`` on ``origin/main``. The Tier-3 promotion (``_execute_promotion_plan``) only reaches a
-    spec the session left in ``implementation-artifacts/``; a session that committed the tracked spec
-    itself and left no Tier-3 twin got no promotion at all, and scribe 25.1's spec stayed ``backlog`` on
-    ``main`` with an empty Review Triage Log until a hand edit.
-
-    The path is resolved against ``root`` and then the dispatch ``worktree`` (the primary's local tree may
-    not hold a spec the merged PR added until the resync later in this run), and read at ``ORIGIN_MAIN``
-    -- the ref the caller has just fetched. A status outside ``PRE_DONE_SPEC_STATUSES`` (``done``,
-    ``blocked``, ``superseded``, unreadable) and a spec that cannot be found are left alone, silently.
-    Otherwise the one-token rewrite (``promotion.set_spec_status``) is published as its own
-    ``commit_paths_onto_remote_tip`` commit -- the ledger commit returns early whenever the twin is
-    already converged -- so ``origin/main`` moves and the operator checkout never does (CAP-233).
-
-    Returns ``None`` on a publish or a no-op; a failed read or publish is an ``MRS-DISP-047`` WARN."""
-    rel: str | None = None
-    for base in (root, worktree):
-        if base is None:
-            continue
-        rel = dispatch_core.story_spec_rel_path(base, project_slug, str(key))
-        if rel is not None:
-            break
-    if rel is None:
-        return None
-
-    def _warn(message: str) -> Finding:
-        return Finding(code="MRS-DISP-047", severity=Severity.WARN, message=message, path=rel)
-
-    try:
-        text = vcs.file_text_at_ref(root, ORIGIN_MAIN, rel)
-    except VcsCommandError as exc:
-        return _warn(f"cannot read story {key}'s tracked spec {rel!r} at {ORIGIN_MAIN_SHORT} to mark it done: {exc}")
-    if text is None or promotion.read_spec_status(text) not in promotion.PRE_DONE_SPEC_STATUSES:
-        return None
-    new_text = promotion.set_spec_status(text, promotion.SPEC_STATUS_DONE)
-    if new_text == text:
-        return None
-    try:
-        vcs.commit_paths_onto_remote_tip(
-            root,
-            remote="origin",
-            ref="main",
-            writes=((rel, new_text),),
-            message=f"marshal: promote story {key}'s tracked spec to done",
-            # The adapter proves this is a planning-artifacts-only commit before it sets the opt-out.
-            preflight_skip_reason=f"marshal tracked-spec promotion for {project_slug!r}, story {key}",
-        )
-    except VcsCommandError as exc:
-        return _warn(f"story {key}'s tracked spec {rel!r} could not be promoted to done on {ORIGIN_MAIN_SHORT}: {exc}")
-    return None
-
-
 def finalize_dispatch_land(
     project_slug: str,
     story_key: str,
@@ -340,8 +221,7 @@ def finalize_dispatch_land(
     ``worktree`` (Story 51.2), when given, is the dispatch worktree the
     session actually ran in -- its own Tier-3 ``implementation-artifacts/``
     is scanned alongside the primary checkout's, in case the session wrote
-    its spec there instead; it is also the second place the tracked spec is
-    looked for (Story 79.1). ``None`` (the default) scans only the primary."""
+    its spec there instead. ``None`` (the default) scans only the primary."""
     root = repo_root()
     fs = LocalFs()
     vcs = GitVcs()
@@ -357,13 +237,7 @@ def finalize_dispatch_land(
     deploy_run = _DeployRun(fs, root, project_slug, _deploy_writer_id("dispatch-land-finalize"))
     scan = _scan_promotions(root, project_slug, vcs=vcs, fs=fs, worktree=worktree)
     findings.extend(scan.findings)
-    # Story 79.1: corroboration is computed whenever the scan has a plan -- it used to be computed only when
-    # `to_promote` was non-empty -- because it now also gates the landed key's Tier-3 feed row and tracked
-    # spec below, and a session that committed the tracked spec itself leaves `to_promote` empty. A scan
-    # with no plan (`MRS-DEPLOY-003`) corroborates nothing: it fails closed, so neither write happens.
-    corroborated: frozenset[StoryKey] = frozenset()
-    to_promote: tuple = ()
-    if scan.plan is not None:
+    if scan.plan is not None and scan.plan.to_promote:
 
         def _spec_status_for(candidate_key: StoryKey) -> str | None:
             # Story 51.7/CAP-255: `_scan_promotions` (cli/deploy.py) still
@@ -388,6 +262,8 @@ def finalize_dispatch_land(
             spec_status_for=_spec_status_for,
         )
         to_promote = tuple(candidate for candidate in scan.plan.to_promote if candidate.story_key in corroborated)
+    else:
+        to_promote = ()
     if to_promote:
         specs_dir = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
         _execute_promotion_plan(
@@ -413,19 +289,6 @@ def finalize_dispatch_land(
     not_done = _landed_key_not_done_finding(vcs, root, project_slug, key)
     if not_done is not None:
         findings.append(not_done)
-    elif key in corroborated:
-        # Story 79.1 (DW-OPS-2026-10-01-1, DW-FU-53-2-4): the twin reads `done` on `origin/main` and the
-        # landing is corroborated -- so the two files that promotion never reached follow it: the story's
-        # Tier-3 feed row (else the next plain `sprint-ledger-sync` refuses "feed would un-finish") and
-        # its tracked spec (when the session committed it itself and left no Tier-3 twin to promote). The
-        # gate reads `origin/main`, never `_promote_sprint_ledger`'s return value, so a re-run of finalize
-        # repairs a feed an earlier run left behind. Both are WARN-only: the PR has already merged.
-        feed_finding = _promote_tier3_feed_row(fs, root, project_slug, key)
-        if feed_finding is not None:
-            findings.append(feed_finding)
-        spec_finding = _promote_tracked_spec(vcs, root, project_slug, key, worktree)
-        if spec_finding is not None:
-            findings.append(spec_finding)
     # Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger` deliberately
     # never touches the primary checkout's own working tree (CAP-5) -- so
     # nothing else picked up that promotion either, and the fleet

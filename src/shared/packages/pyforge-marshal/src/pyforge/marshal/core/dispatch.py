@@ -165,22 +165,6 @@ def resolve_story_spec_path(repo_root: Path, slug: str, story: str) -> Path | No
     return None
 
 
-def story_spec_rel_path(repo_root: Path, slug: str, story: str) -> str | None:
-    """A story's tracked spec path as a repo-relative POSIX string (Story 79.1) -- the path half of
-    ``spec_text_at_ref``, for a caller that publishes the spec rather than reads it.
-
-    Resolves against ``repo_root``'s LOCAL working tree through ``resolve_story_spec_path`` and
-    performs no writes. ``None`` when ``story`` does not parse as a story key, no local candidate
-    resolves, or the resolved path is not under ``repo_root``."""
-    path = resolve_story_spec_path(repo_root, slug, story)
-    if path is None:
-        return None
-    try:
-        return path.relative_to(canonical_repo_root(repo_root)).as_posix()
-    except ValueError:
-        return None
-
-
 def spec_text_at_ref(
     vcs: VcsPort,
     repo_root: Path,
@@ -207,10 +191,15 @@ def spec_text_at_ref(
     ``story`` does not parse as a story key, no local candidate resolves,
     or ``ref`` has no such path (a spec minted after ``ref`` was fetched,
     or not yet fetched at all)."""
-    rel = story_spec_rel_path(repo_root, slug, story)
-    if rel is None:
+    path = resolve_story_spec_path(repo_root, slug, story)
+    if path is None:
         return None
-    return vcs.file_text_at_ref(repo_root, ref, rel)
+    root = canonical_repo_root(repo_root)
+    try:
+        rel = path.relative_to(root)
+    except ValueError:
+        return None
+    return vcs.file_text_at_ref(repo_root, ref, rel.as_posix())
 
 
 def relocated_spec_path(spec_path: Path, repo_root: Path, worktree: Path) -> Path:
