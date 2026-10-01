@@ -51,18 +51,29 @@ from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
+from ..core import (
+    deferred_work,
+    dispatch_flag_gate,
+    dispatch_fleet,
+    dispatch_re_preflight,
+    gate,
+    harness_profile,
+    policy,
+)
 from ..core import dispatch as dispatch_core
-from ..core import dispatch_flag_gate, dispatch_fleet, dispatch_re_preflight, gate, harness_profile, policy
 from ..core import promotion as promotion_core
 from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
     is_spec_only_narration,
+    narration_spec_path,
     zombie_redispatch_evidence,
 )
 from ..core.dispatch_harness_done import (
+    FollowupReview,
     blocks_harness_relaunch,
     followup_review_recommended,
+    is_followup_review_spec,
     land_fail_operator_message,
     parse_blocking_condition,
     parse_spec_status,
@@ -109,7 +120,7 @@ from ..core.model_cost import (
     is_harness_default_model,
     provider_declaring_model,
 )
-from ..core.refs import ORIGIN_MAIN
+from ..core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT
 from ..core.spec_deps import story_deps_from_epics, story_transitively_depends_on
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_verdict
@@ -860,6 +871,49 @@ def _seed_dispatch_structure_graph(
     )
 
 
+def _resolve_origin_main_tip(vcs: VcsPort, repo_root: Path) -> str:
+    """``origin/main``'s tip commit sha, by its full refname.
+
+    ``VcsPort.resolve_ref`` reads ``refs/heads/<name>`` -- a LOCAL branch name only, so handing it
+    ``ORIGIN_MAIN`` raises on real git (the trap ``cli/init.py`` documents at its own ``resolve_ref`` call, and
+    that a fake which returns whatever it is told never shows). ``merge_base`` takes any revision, and a commit's
+    merge base with itself is that commit."""
+    return vcs.merge_base(repo_root, ORIGIN_MAIN, ORIGIN_MAIN)
+
+
+def _derive_followup_review(
+    *, vcs: VcsPort, repo_root: Path, slug: str, story_key: StoryKey, spec_text: str
+) -> FollowupReview | None:
+    """Story 73.1 (spec-pyforge-marshal CAP-281): the follow-up review marker of a launch, or ``None``.
+
+    A launch is a follow-up review run when the story's tracked spec (``spec_text``, the primary's) reads
+    ``status: done`` with ``followup_review_recommended`` an explicit truthy -- the pairing Story 29.2 lets
+    through to a fresh review. The marker is derived, never declared, from two ``origin/main`` reads made
+    after the launch's own fetch (best effort, as ``dispatch land`` and the supervisor fetch it; a stale
+    remote-tracking ref reads an older tip and ledger, never a newer one):
+
+    * ``launch_origin_main_sha`` -- ``origin/main``'s resolved tip, the point after which a merge is this
+      run's own (``core.dispatch_completion.merge_subject_ref``). Raises ``VcsCommandError`` when it cannot
+      be resolved: a follow-up run with no launch tip could not be judged by its own branch.
+    * ``dw_id`` -- the open ``DW-FRR-<story>`` row the station's deferred-work ledger holds AT
+      ``origin/main``, not the primary's working copy, which lags a carry's publish until the next resync.
+      ``None`` when it holds none or cannot be read -- the launch proceeds either way."""
+    if not is_followup_review_spec(spec_text):
+        return None
+    try:
+        vcs.fetch(repo_root, "origin", "main")
+    except VcsCommandError:
+        pass
+    launch_tip = _resolve_origin_main_tip(vcs, repo_root)
+    ledger_rel = f"_bmad-output/projects/{slug}/planning-artifacts/deferred-work-ledger.md"
+    try:
+        ledger_text = vcs.file_text_at_ref(repo_root, ORIGIN_MAIN, ledger_rel)
+    except VcsCommandError:
+        ledger_text = None
+    dw_id = deferred_work.open_followup_review_id(ledger_text, story_key) if ledger_text is not None else None
+    return FollowupReview(dw_id=dw_id, launch_origin_main_sha=launch_tip)
+
+
 def _spec_text_prefer_worktree(spec_path: Path, repo_root: Path, worktree: Path, main_text: str) -> str:
     """Prefer the worktree copy: main often still says ready-for-dev."""
     try:
@@ -913,8 +967,14 @@ def _attempt_harness_done_cap4(
     fs: FsPort,
     vcs: VcsPort,
     process: ProcessPort,
+    followup_review: FollowupReview | None = None,
 ) -> tuple[DispatchLandingVerdict, str, object]:
-    """Compose with the existing CAP-4 land path — never a second lander."""
+    """Compose with the existing CAP-4 land path — never a second lander.
+
+    ``followup_review`` (Story 73.1, CAP-281) is the marker of the story's latest run when that run was a
+    follow-up review: the landing then judges ALREADY_LANDED by the run's own head and closes its row,
+    exactly as the supervisor's landing does -- never by the story's first merge. ``None`` (a normal run)
+    hands the landing nothing."""
     verification = _verification_verdict_for_cap4(
         slug=slug,
         story_key=story_key,
@@ -935,6 +995,7 @@ def _attempt_harness_done_cap4(
         fs=fs,
         vcs=vcs,
         process=process,
+        **_followup_review_kwargs(followup_review),
     )
     named = envelope.data.get("pr_url")
     if named is None and result.pr_number is not None:
@@ -951,6 +1012,23 @@ def _latest_story_run_dir(fs: FsPort, repo_root: Path, slug: str, story_key: str
         if journal.story_key == feed_story:
             return run_dir
     return None
+
+
+def _latest_story_followup_review(fs: FsPort, repo_root: Path, slug: str, story_key: str) -> FollowupReview | None:
+    """Story 73.1 (CAP-281): the follow-up review marker of the story's latest dispatch run, or ``None``.
+
+    The CAP-4 land-only retry launches no session and so writes no launch INTENT of its own; the run it
+    lands is the story's latest one, and the marker is the one that run's launch INTENT carries."""
+    run_dir = _latest_story_run_dir(fs, repo_root, slug, story_key)
+    if run_dir is None:
+        return None
+    return gather_dispatch_journal_facts(fs, run_dir, run_dir.name).followup_review
+
+
+def _followup_review_kwargs(followup_review: FollowupReview | None) -> dict[str, FollowupReview]:
+    """``{"followup_review": marker}`` for a follow-up review run, ``{}`` otherwise -- so a normal run's
+    call to a landing or CAP-4 seam carries no new keyword at all (Story 73.1, CAP-281)."""
+    return {"followup_review": followup_review} if followup_review is not None else {}
 
 
 def _redispatch_blocked_pending_supervisor_finalize(
@@ -1154,6 +1232,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     worktree_path: str | None = None
     launched_at: datetime | None = None
     baseline_head_sha: str | None = None
+    followup_review: FollowupReview | None = None
     supervisor_pid: int | None = None
     completion_verdict: str | None = None
     completion_stop_reason: str | None = None
@@ -1162,6 +1241,9 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     verification_scope_advisories: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
         if entry.phase == Phase.INTENT:
+            # Story 73.1 (CAP-281): the follow-up review marker rides the launch INTENT, read back here for
+            # every reader of this run's merge facts.
+            followup_review = FollowupReview.from_intent_payload(entry.payload)
             raw_story = entry.payload.get("story_key")
             story_key = raw_story if isinstance(raw_story, str) else None
             model_val = entry.payload.get("model")
@@ -1254,6 +1336,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         launched_at=launched_at,
         worktree_path=worktree_path,
         baseline_head_sha=baseline_head_sha,
+        followup_review=followup_review,
         supervisor_pid=supervisor_pid,
         completion_verdict=completion_verdict,
         completion_stop_reason=completion_stop_reason,
@@ -1311,6 +1394,9 @@ def resolve_dispatch_session_verdict(
             project_slug=slug,
             baseline_head_sha=journal.baseline_head_sha,
             merge_subject_template=effective_policy.merge_subject_template.value,
+            # Story 73.1 (CAP-281): a follow-up review run is judged by its own branch, never by the
+            # story's first merge -- the marker comes off the run's own launch INTENT.
+            followup_review=journal.followup_review,
         )
     except VcsCommandError, ValueError:
         return DispatchSessionVerdict.LIVE if session_alive else None
@@ -1323,7 +1409,7 @@ def resolve_dispatch_session_verdict(
         verification_verdict=journal.verification_verdict,
         detach_reason=journal.completion_stop_reason,
         session_log=session_log,
-        spec_relative_path=spec_relative_path,
+        spec_relative_path=narration_spec_path(spec_relative_path, followup_review=journal.followup_review),
     )
 
 
@@ -1366,6 +1452,7 @@ def _live_dispatch_evidence(
         project_slug=slug,
         baseline_head_sha=journal.baseline_head_sha,
         merge_subject_template=effective_policy.merge_subject_template.value,
+        followup_review=journal.followup_review,
     )
     return (
         zombie_redispatch_evidence(
@@ -1881,6 +1968,7 @@ def station_story_block_facts(
                         project_slug=slug,
                         baseline_head_sha=journal.baseline_head_sha,
                         merge_subject_template=effective_policy.merge_subject_template.value,
+                        followup_review=journal.followup_review,
                     )
                     changed_path_count = len(git_facts.changed_paths)
                     git_changed_paths = git_facts.changed_paths
@@ -1932,7 +2020,9 @@ def station_story_block_facts(
             # 51.3 incident) classifies TRANSIENT/re-dispatchable via the
             # existing session-log check below, not TERMINAL.
             classify_changed_path_count = changed_path_count
-            if not git_progress_unknown and is_spec_only_narration(git_changed_paths, spec_relative_path):
+            if not git_progress_unknown and is_spec_only_narration(
+                git_changed_paths, narration_spec_path(spec_relative_path, followup_review=journal.followup_review)
+            ):
                 classify_changed_path_count = 0
             block_kind = classify_dispatch_block(
                 session_log=session_log,
@@ -2572,6 +2662,8 @@ def dispatch_once(
             fs=fs,
             vcs=vcs,
             process=process,
+            # Story 73.1 (CAP-281): a story whose latest run was a follow-up review lands as one.
+            **_followup_review_kwargs(_latest_story_followup_review(fs, repo_root, slug, render_feed_key(story_key))),
         )
         data["land_verdict"] = land_verdict.value
         data["land_named_target"] = named_target
@@ -2612,6 +2704,26 @@ def dispatch_once(
                     f"status: blocked -- not relaunching bmad-build-auto without "
                     f"an operator decision (blocking condition: "
                     f"{parse_blocking_condition(live_spec_text) or 'not stated'})"
+                ),
+            )
+        )
+        return _done()
+
+    # Story 73.1 (CAP-281): a launch on a `done` spec whose flag is still true is a follow-up review run --
+    # derived here, journaled on the launch INTENT below, and read back by the supervisor, the landing and
+    # every other reader of the run's merge facts.
+    try:
+        followup_review = _derive_followup_review(
+            vcs=vcs, repo_root=repo_root, slug=slug, story_key=story_key, spec_text=spec_text
+        )
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DISP-016",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot resolve {ORIGIN_MAIN_SHORT!r} to scope the follow-up review run of story "
+                    f"{render_feed_key(story_key)!r} to its own branch: {exc}"
                 ),
             )
         )
@@ -2661,6 +2773,7 @@ def dispatch_once(
                 if escalated
                 else {}
             ),
+            **(followup_review.to_intent_payload() if followup_review is not None else {}),
         },
     )
     try:

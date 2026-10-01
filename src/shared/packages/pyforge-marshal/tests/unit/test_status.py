@@ -6222,11 +6222,12 @@ class TestLandingRefusalSupersededInTheSweep:
         "message": "merge of PR #7 failed: the merge commit cannot be cleanly created.",
     }
 
-    def _seed_refused_run(self, tmp_path: Path) -> None:
+    def _seed_refused_run(self, tmp_path: Path, intent_extra: dict[str, object] | None = None) -> None:
         """A stopped run whose last act was a refused landing -- the shape
-        of the live doctor 30.3 / marshal 46.6 journals."""
+        of the live doctor 30.3 / marshal 46.6 journals. ``intent_extra`` rides the
+        launch INTENT (Story 73.1: a follow-up review's marker)."""
         run_dir = tmp_path / "_bmad-output/projects/acme/implementation-artifacts/dispatch-runs" / self._RUN
-        run_dir.mkdir(parents=True)
+        run_dir.mkdir(parents=True, exist_ok=True)
         entries = (
             build_entry(
                 id=JournalEntryId("w", 0),
@@ -6234,7 +6235,7 @@ class TestLandingRefusalSupersededInTheSweep:
                 run_id=self._RUN,
                 kind="dispatch-launch",
                 phase=Phase.INTENT,
-                payload={"harness_profile": "claude", "story_key": "30.3"},
+                payload={"harness_profile": "claude", "story_key": "30.3", **(intent_extra or {})},
             ),
             build_entry(
                 id=JournalEntryId("w", 1),
@@ -6267,9 +6268,9 @@ class TestLandingRefusalSupersededInTheSweep:
             "".join(prepare_for_write(entry).line.rstrip("\n") + "\n" for entry in entries), encoding="utf-8"
         )
 
-    def _home(self, tmp_path, capsys, monkeypatch, vcs):
+    def _home(self, tmp_path, capsys, monkeypatch, vcs, intent_extra=None):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
-        self._seed_refused_run(tmp_path)
+        self._seed_refused_run(tmp_path, intent_extra)
         exit_code = status_cli.run_status(
             _args(project="acme"),
             vcs=vcs,
@@ -6307,6 +6308,31 @@ class TestLandingRefusalSupersededInTheSweep:
         assert "dispatch_landing_superseded" not in home
         assert "MRS-STATUS-011" not in {f["code"] for f in payload["findings"]}
         assert exit_code == 0
+
+    def test_a_follow_up_runs_refusal_is_scoped_to_its_launch_tip_in_the_sweep(self, tmp_path, capsys, monkeypatch):
+        """Story 73.1 (CAP-281): the sweep reads the row's marker off the run's launch INTENT, so the story's
+        first landing on `main` does not mark the refused REVIEW landing superseded; the run's own merge does."""
+        from pyforge.marshal.core.dispatch_harness_done import FollowupReview
+
+        tip = "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d"
+        intent_extra = FollowupReview(dw_id="DW-FRR-30-3", launch_origin_main_sha=tip).to_intent_payload()
+        first_landing = ("Merge pull request #7 from rxm7706/dispatch/acme/30.3",)
+
+        class _RangeAwareVcs(_FakeVcs):
+            def commit_subjects(self, repo_root, ref):
+                self.commit_subjects_calls.append((repo_root, ref))
+                return first_landing if ref == f"{tip}..refs/remotes/origin/main" and self.own_merge else ()
+
+        vcs = _RangeAwareVcs(repo_root_value=tmp_path)
+        vcs.own_merge = False
+        _exit, _payload_, home = self._home(tmp_path, capsys, monkeypatch, vcs, intent_extra)
+        assert "dispatch_landing_superseded" not in home
+        assert [ref for _, ref in vcs.commit_subjects_calls] == [f"{tip}..refs/remotes/origin/main"]
+
+        vcs = _RangeAwareVcs(repo_root_value=tmp_path)
+        vcs.own_merge = True
+        _exit, _payload_, home = self._home(tmp_path, capsys, monkeypatch, vcs, intent_extra)
+        assert home["dispatch_landing_superseded"] is True
 
     def _run_with_patch_home(self, tmp_path, capsys, monkeypatch, vcs_kwargs):
         """A loop home carrying a failed patch AND a refused dispatch

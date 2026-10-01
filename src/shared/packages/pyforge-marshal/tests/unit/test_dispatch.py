@@ -14,6 +14,7 @@ from pyforge.core.process import ProcessError, ProcessResult
 from scope_triangle import point_scope_triangle
 
 from pyforge.marshal.adapters.fs_local import FsError
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import dispatch as dispatch_module
 from pyforge.marshal.cli.dispatch import (
     _surface_session_precondition_findings,
@@ -23,8 +24,11 @@ from pyforge.marshal.cli.dispatch import (
 )
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import policy
+from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
+from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.model import Severity
+from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.build_harness import (
@@ -1837,6 +1841,796 @@ def test_followup_true_still_launches(tmp_path: Path, monkeypatch: pytest.Monkey
         process=FakeProcess(),
     )
     assert harness.calls
+
+
+# --- Story 73.1 (CAP-281): a launch on a `done` spec that still recommends a review is a follow-up run ---
+
+_FOLLOWUP_SLUG = "pyforge-marshal"
+_FOLLOWUP_STORY = "51-2-the-landing-record"
+_FOLLOWUP_SPEC = "---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\n---\n# spec\n"
+_ORIGIN_TIP = "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334"
+_FOLLOWUP_LEDGER_REL = f"_bmad-output/projects/{_FOLLOWUP_SLUG}/planning-artifacts/deferred-work-ledger.md"
+
+
+def _followup_ledger_text(*, status: str = "open") -> str:
+    """A station ledger holding the ``DW-FRR-51-2`` row exactly as finalize's carry renders it (Story 66.1)."""
+    from pyforge.marshal.core import deferred_work
+
+    candidate = deferred_work.followup_review_candidate(
+        _FOLLOWUP_SPEC,
+        dispatch_core.normalize(_FOLLOWUP_STORY),
+        f"_bmad-output/projects/{_FOLLOWUP_SLUG}/planning-artifacts/specs/spec-{_FOLLOWUP_STORY}.md",
+    )
+    assert candidate is not None
+    row = deferred_work.render_followup_review_entry(candidate, promoted_date="2026-09-28")
+    return "# Deferred work\n\n" + row.replace("status: open", f"status: {status}")
+
+
+class _OriginVcs(FakeVcs):
+    """``FakeVcs`` with the three ``origin/main`` reads a follow-up launch makes: the fetch, the tip and the
+    station's deferred-work ledger as ``origin/main`` holds it. ``calls`` logs them in order."""
+
+    def __init__(
+        self,
+        repo_root: Path,
+        *,
+        ledger_at_origin: str | None = None,
+        fetch_raises: bool = False,
+        tip_raises: bool = False,
+        ledger_raises: bool = False,
+    ) -> None:
+        super().__init__(repo_root)
+        self.ledger_at_origin = ledger_at_origin
+        self._fetch_raises, self._tip_raises, self._ledger_raises = fetch_raises, tip_raises, ledger_raises
+        self.calls: list[tuple[str, ...]] = []
+
+    def fetch(self, _repo_root: Path, remote: str, ref: str) -> None:
+        self.calls.append(("fetch", remote, ref))
+        if self._fetch_raises:
+            raise VcsCommandError("git fetch failed (test double)")
+
+    def merge_base(self, _repo_root: Path, a: str, b: str) -> str:
+        self.calls.append(("merge_base", a, b))
+        if self._tip_raises:
+            raise VcsCommandError("git merge-base failed (test double)")
+        return _ORIGIN_TIP
+
+    def file_text_at_ref(self, _repo_root: Path, ref: str, path: str) -> str | None:
+        self.calls.append(("file_text_at_ref", ref, path))
+        if self._ledger_raises:
+            raise VcsCommandError("git show failed (test double)")
+        return self.ledger_at_origin if path == _FOLLOWUP_LEDGER_REL else None
+
+
+def _seed_followup_spec(repo: Path, text: str = _FOLLOWUP_SPEC) -> Path:
+    """The story's tracked spec in the primary checkout; returns the station's planning-artifacts dir."""
+    specs = dispatch_core.planning_specs_dir(repo, _FOLLOWUP_SLUG)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{_FOLLOWUP_STORY}.md").write_text(text, encoding="utf-8")
+    return specs.parent
+
+
+def _launch_intent(fs: FakeFs) -> dict:
+    """The payload of the launch INTENT the fake fs journaled."""
+    for _path, line, _fsync in fs.appended:
+        entry = json.loads(line)
+        if entry["kind"] == "dispatch-launch" and entry["phase"] == "intent":
+            return entry["payload"]
+    raise AssertionError("no dispatch-launch INTENT was journaled")
+
+
+def _launch_followup_story(repo: Path, monkeypatch: pytest.MonkeyPatch, vcs: FakeVcs | None = None):
+    _init_git_repo(repo, scope_slug=_FOLLOWUP_SLUG)
+    monkeypatch.chdir(repo)
+    fs = FakeFs()
+    harness = FakeBuildHarness()
+    vcs = vcs if vcs is not None else _OriginVcs(repo, ledger_at_origin=_followup_ledger_text())
+    attempt = dispatch_once(
+        slug=_FOLLOWUP_SLUG,
+        story=_FOLLOWUP_STORY,
+        fs=fs,
+        vcs=vcs,
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    return fs, harness, attempt, vcs
+
+
+def test_a_follow_up_review_launch_journals_the_marker_with_the_open_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+
+    fs, harness, attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch)
+
+    # `bmad-build-auto` is launched on the `done` spec, and the INTENT names the row it serves.
+    assert len(harness.calls) == 1
+    assert attempt.data["session_pid"] == 4242
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": "DW-FRR-51-2"}
+
+
+def test_a_follow_up_review_launch_records_origin_mains_tip_on_the_intent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+
+    fs, _harness, _attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert _launch_intent(fs)["launch_origin_main_sha"] == _ORIGIN_TIP
+
+
+def test_a_follow_up_review_launch_reads_origin_main_after_its_fetch_by_full_refname(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+
+    _fs, _harness, _attempt, vcs = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert vcs.calls == [
+        ("fetch", "origin", "main"),
+        ("merge_base", ORIGIN_MAIN, ORIGIN_MAIN),
+        ("file_text_at_ref", ORIGIN_MAIN, _FOLLOWUP_LEDGER_REL),
+    ]
+
+
+def test_a_follow_up_review_launch_reads_the_row_at_origin_main_not_the_primarys_copy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The primary's working copy lags a carry's publish: here it holds no ledger at all, yet the row that
+    ``origin/main`` carries is the one the INTENT names."""
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    planning = _seed_followup_spec(tmp_path)
+    assert not (planning / "deferred-work-ledger.md").exists()
+
+    fs, harness, _attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert len(harness.calls) == 1
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": "DW-FRR-51-2"}
+
+
+def test_a_follow_up_review_launch_ignores_a_row_only_the_primarys_copy_carries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    planning = _seed_followup_spec(tmp_path)
+    (planning / "deferred-work-ledger.md").write_text(_followup_ledger_text(), encoding="utf-8")
+    vcs = _OriginVcs(tmp_path, ledger_at_origin="# Deferred work\n\nnothing carried\n")
+
+    fs, harness, _attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch, vcs)
+
+    assert len(harness.calls) == 1
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": None}
+
+
+def test_a_follow_up_review_launch_without_a_row_journals_a_null_row_id(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+    vcs = _OriginVcs(tmp_path, ledger_at_origin="# Deferred work\n\nnothing carried\n")
+
+    fs, harness, _attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch, vcs)
+
+    assert len(harness.calls) == 1
+    intent = _launch_intent(fs)
+    assert intent["followup_review"] == {"dw_id": None}
+    assert intent["launch_origin_main_sha"] == _ORIGIN_TIP
+
+
+def test_a_follow_up_review_launch_without_a_ledger_at_origin_main_still_launches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+
+    fs, harness, _attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch, _OriginVcs(tmp_path))
+
+    assert len(harness.calls) == 1
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": None}
+
+
+def test_a_follow_up_review_launch_does_not_name_a_closed_row(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+    vcs = _OriginVcs(tmp_path, ledger_at_origin=_followup_ledger_text(status="closed"))
+
+    fs, _harness, _attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch, vcs)
+
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": None}
+
+
+def test_a_follow_up_review_launch_survives_an_unreadable_ledger(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+    vcs = _OriginVcs(tmp_path, ledger_at_origin=_followup_ledger_text(), ledger_raises=True)
+
+    fs, harness, _attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch, vcs)
+
+    assert len(harness.calls) == 1
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": None}
+
+
+def test_a_follow_up_review_launch_survives_a_failed_fetch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fetch is best effort, as ``dispatch land`` and the supervisor make it: the launch reads the
+    last-fetched remote-tracking ref."""
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+    vcs = _OriginVcs(tmp_path, ledger_at_origin=_followup_ledger_text(), fetch_raises=True)
+
+    fs, harness, _attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch, vcs)
+
+    assert len(harness.calls) == 1
+    intent = _launch_intent(fs)
+    assert intent["followup_review"] == {"dw_id": "DW-FRR-51-2"}
+    assert intent["launch_origin_main_sha"] == _ORIGIN_TIP
+
+
+def test_a_follow_up_review_launch_is_refused_when_origin_main_cannot_be_resolved(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A follow-up run with no launch tip could not be judged by its own branch, so no session is launched."""
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+    vcs = _OriginVcs(tmp_path, ledger_at_origin=_followup_ledger_text(), tip_raises=True)
+
+    fs, harness, attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch, vcs)
+
+    assert harness.calls == []
+    assert [line for _path, line, _fsync in fs.appended if "dispatch-launch" in line] == []
+    refusal = [f for f in attempt.findings if f.code == "MRS-DISP-016"]
+    assert len(refusal) == 1
+    assert refusal[0].severity == Severity.ERROR
+    assert "refs/remotes/origin/main" not in refusal[0].message  # the human form, not the refname
+    assert "origin/main" in refusal[0].message
+
+
+def test_a_done_spec_with_the_flag_false_journals_no_marker_and_stays_land_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 29.2's land-only path is unchanged: no harness launch, so no launch INTENT and no marker -- and
+    no ``origin/main`` read the follow-up derivation would have made."""
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path, _DONE_SPEC)
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.LANDED, "PR #9", None),
+    )
+
+    fs, harness, attempt, vcs = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert harness.calls == []
+    assert attempt.data["land_verdict"] == "landed"
+    assert [line for _path, line, _fsync in fs.appended if "dispatch-launch" in line] == []
+    assert vcs.calls == []
+
+
+def test_a_normal_launch_journals_no_follow_up_marker_and_reads_nothing_from_origin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    # Even with an open row for the story in the ledger, a spec that is not `done` is a normal run.
+    _seed_followup_spec(tmp_path, _READY_SPEC)
+
+    fs, harness, _attempt, vcs = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert len(harness.calls) == 1
+    intent = _launch_intent(fs)
+    assert "followup_review" not in intent
+    assert "launch_origin_main_sha" not in intent
+    assert vcs.calls == []
+
+
+def test_a_done_spec_that_never_asked_for_a_review_is_not_a_follow_up_even_with_a_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The marker is derived from the spec's own frontmatter: a spec reading `status: done` with the flag
+    absent is blocked by Story 29.2's gate, never launched as a review."""
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path, "---\nstatus: done\ndifficulty: medium\n---\n# spec\n")
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.LANDED, "PR #9", None),
+    )
+
+    fs, harness, _attempt, vcs = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert harness.calls == []
+    assert [line for _path, line, _fsync in fs.appended if "dispatch-launch" in line] == []
+    assert vcs.calls == []
+
+
+# --- the derivation against real git: the tip is the fetched origin/main, the row is origin/main's -------
+
+
+def _git_in(repo: Path, *args: str) -> str:
+    return subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True).stdout.strip()
+
+
+def test_derive_followup_review_reads_the_fetched_origin_main_tip_and_ledger_against_real_git(tmp_path: Path) -> None:
+    from pyforge.marshal.adapters.vcs_git import GitVcs
+
+    remote, clone, other = tmp_path / "remote.git", tmp_path / "clone", tmp_path / "other"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(remote)], check=True)
+    for repo in (clone, other):
+        subprocess.run(["git", "clone", "-q", str(remote), str(repo)], check=True, capture_output=True)
+        _git_in(repo, "config", "user.email", "t@example.com")
+        _git_in(repo, "config", "user.name", "T")
+    (clone / "README.md").write_text("base\n", encoding="utf-8")
+    _git_in(clone, "add", "-A")
+    _git_in(clone, "commit", "-qm", "base")
+    _git_in(clone, "push", "-q", "origin", "main")
+    # A second clone publishes the carry: the row reaches origin/main while `clone` has not fetched it.
+    _git_in(other, "pull", "-q", "origin", "main")
+    ledger = other / _FOLLOWUP_LEDGER_REL
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text(_followup_ledger_text(), encoding="utf-8")
+    _git_in(other, "add", "-A")
+    _git_in(other, "commit", "-qm", "carry the follow-up review row")
+    _git_in(other, "push", "-q", "origin", "main")
+    published_tip = _git_in(other, "rev-parse", "HEAD")
+    assert _git_in(clone, "rev-parse", ORIGIN_MAIN) != published_tip  # not yet fetched
+
+    marker = dispatch_module._derive_followup_review(
+        vcs=GitVcs(),
+        repo_root=clone,
+        slug=_FOLLOWUP_SLUG,
+        story_key=dispatch_core.normalize(_FOLLOWUP_STORY),
+        spec_text=_FOLLOWUP_SPEC,
+    )
+
+    assert marker is not None
+    # The launch's own fetch brought the carry in: the tip is the published one and the row is named,
+    # although `clone`'s working copy never held the ledger.
+    assert marker.launch_origin_main_sha == published_tip
+    assert marker.dw_id == "DW-FRR-51-2"
+    assert not (clone / _FOLLOWUP_LEDGER_REL).exists()
+
+
+def test_derive_followup_review_is_none_for_a_spec_that_is_not_a_follow_up(tmp_path: Path) -> None:
+    class _NoReads:
+        def __getattr__(self, name: str):
+            raise AssertionError(f"a normal launch must not touch vcs.{name}")
+
+    for text in (_READY_SPEC, _DONE_SPEC):
+        assert (
+            dispatch_module._derive_followup_review(
+                vcs=_NoReads(),  # type: ignore[arg-type]
+                repo_root=tmp_path,
+                slug=_FOLLOWUP_SLUG,
+                story_key=dispatch_core.normalize(_FOLLOWUP_STORY),
+                spec_text=text,
+            )
+            is None
+        )
+
+
+# --- the readers: each takes the marker off the run's launch INTENT and scopes its merge facts ---------
+
+_READER_STORY = "51.11"
+_READER_TIP_RANGE = f"{_ORIGIN_TIP}..{ORIGIN_MAIN}"
+_READER_PR_MERGE = "Merge pull request #1477 from rxm7706/marshal/51-11-halt"
+_READER_DONE = "---\nstatus: done\n---\n"
+_READER_MARKER = FollowupReview(dw_id="DW-FRR-51-11", launch_origin_main_sha=_ORIGIN_TIP)
+_MOVED_HEAD = "feedfacecafebabe0000000000000000deadbeef"
+
+
+class _ReaderVcs(FakeVcs):
+    """The story's FIRST merge is on ``origin/main`` (whole ref), and the launch-tip range is empty until the
+    run's own merge reaches it (``own_merge``). Every ``commit_subjects`` read is logged."""
+
+    def __init__(self, repo_root: Path, *, own_merge: bool = False, head_sha: str = "baseline0001") -> None:
+        super().__init__(repo_root)
+        self.subjects = {ORIGIN_MAIN: (_READER_PR_MERGE,), _READER_TIP_RANGE: (_READER_PR_MERGE,) if own_merge else ()}
+        self.reads: list[str] = []
+        self._head_sha = head_sha
+
+    def worktree_head_sha(self, _worktree: Path) -> str:
+        return self._head_sha
+
+    def changed_files(self, _repo_root: Path, _worktree: Path, *, base: str):
+        return ()
+
+    def is_branch_merged(self, _repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+        return False
+
+    def commit_subjects(self, _repo_root: Path, ref: str):
+        self.reads.append(ref)
+        return self.subjects.get(ref, ())
+
+    def file_text_at_ref(self, _repo_root: Path, ref: str, path: str) -> str | None:
+        return _READER_DONE
+
+
+class _AliveProcess:
+    def __init__(self, alive: bool) -> None:
+        self._alive = alive
+
+    def is_alive(self, _pid: int) -> bool:
+        return self._alive
+
+
+def _reader_effective():
+    from types import SimpleNamespace
+
+    return SimpleNamespace(merge_subject_template=SimpleNamespace(value="Merge {slug}/{key} into main"))
+
+
+def _seed_reader_spec(tmp_path: Path) -> None:
+    """The story's tracked spec, so the PR-merge subject's station branch can be corroborated against it."""
+    specs = dispatch_core.planning_specs_dir(tmp_path, _FOLLOWUP_SLUG)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / "spec-51-11-halt.md").write_text(_DONE_SPEC, encoding="utf-8")
+
+
+def _reader_journal(tmp_path: Path, followup_review: FollowupReview | None):
+    return dispatch_core.DispatchJournalFacts(
+        story_key=_READER_STORY,
+        session_pid=999999,
+        model=None,
+        launched_at=None,
+        worktree_path=str(tmp_path / "wt"),
+        baseline_head_sha="baseline0001",
+        followup_review=followup_review,
+    )
+
+
+def _reader_verdict(tmp_path: Path, vcs: _ReaderVcs, *, alive: bool, followup_review: FollowupReview | None):
+    _seed_reader_spec(tmp_path)
+    return dispatch_module.resolve_dispatch_session_verdict(
+        fs=FakeFs(),
+        vcs=vcs,
+        process=_AliveProcess(alive),
+        repo_root=tmp_path,
+        slug=_FOLLOWUP_SLUG,
+        journal=_reader_journal(tmp_path, followup_review),
+        effective_policy=_reader_effective(),
+    )
+
+
+def test_the_journal_facts_read_the_marker_and_the_launch_tip_off_the_launch_intent(tmp_path: Path) -> None:
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+
+    run_id = "pyforge-marshal-20261001T000000000Z-cafebabe"
+    run_dir = dispatch_core.dispatch_run_dir(tmp_path, _FOLLOWUP_SLUG, run_id)
+    run_dir.mkdir(parents=True)
+
+    def _journal(payload: dict[str, object]) -> None:
+        entry = build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-10-01T00:00:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload=payload,
+        )
+        (run_dir / "journal.jsonl").write_text(prepare_for_write(entry).line.rstrip("\n") + "\n", encoding="utf-8")
+
+    _journal({"story_key": _READER_STORY, **_READER_MARKER.to_intent_payload()})
+    assert dispatch_module.gather_dispatch_journal_facts(FakeFs(), run_dir, run_id).followup_review == _READER_MARKER
+    _journal({"story_key": _READER_STORY})
+    assert dispatch_module.gather_dispatch_journal_facts(FakeFs(), run_dir, run_id).followup_review is None
+
+
+def test_the_session_verdict_of_a_live_follow_up_run_is_not_completed_by_the_stories_first_merge(
+    tmp_path: Path,
+) -> None:
+    vcs = _ReaderVcs(tmp_path)
+
+    verdict = _reader_verdict(tmp_path, vcs, alive=True, followup_review=_READER_MARKER)
+
+    assert verdict == DispatchSessionVerdict.LIVE
+    assert vcs.reads == [_READER_TIP_RANGE]
+
+
+def test_the_session_verdict_of_a_follow_up_run_completes_on_its_own_merge(tmp_path: Path) -> None:
+    vcs = _ReaderVcs(tmp_path, own_merge=True)
+
+    assert (
+        _reader_verdict(tmp_path, vcs, alive=True, followup_review=_READER_MARKER) == DispatchSessionVerdict.COMPLETED
+    )
+
+
+def test_the_session_verdict_of_a_normal_run_is_still_completed_by_the_stories_merge(tmp_path: Path) -> None:
+    vcs = _ReaderVcs(tmp_path)
+
+    assert _reader_verdict(tmp_path, vcs, alive=True, followup_review=None) == DispatchSessionVerdict.COMPLETED
+    assert vcs.reads == [ORIGIN_MAIN]
+
+
+_READER_SPEC_REL = f"_bmad-output/projects/{_FOLLOWUP_SLUG}/planning-artifacts/specs/spec-51-11-halt.md"
+
+
+class _SpecOnlyVcs(_ReaderVcs):
+    """No merge anywhere, and the whole diff is the story's own spec (head unmoved)."""
+
+    def __init__(self, repo_root: Path) -> None:
+        super().__init__(repo_root)
+        self.subjects = {}
+
+    def changed_files(self, _repo_root: Path, _worktree: Path, *, base: str):
+        return (_READER_SPEC_REL,)
+
+
+def test_a_dead_follow_up_runs_spec_only_diff_is_progress_where_a_normal_runs_is_narration(tmp_path: Path) -> None:
+    """The narration path is dropped for a follow-up run: a diff of only its own spec is its record."""
+    _seed_reader_spec(tmp_path)
+
+    def _verdict(followup_review: FollowupReview | None):
+        return dispatch_module.resolve_dispatch_session_verdict(
+            fs=FakeFs(),
+            vcs=_SpecOnlyVcs(tmp_path),
+            process=_AliveProcess(False),
+            repo_root=tmp_path,
+            slug=_FOLLOWUP_SLUG,
+            journal=_reader_journal(tmp_path, followup_review),
+            effective_policy=_reader_effective(),
+            spec_relative_path=_READER_SPEC_REL,
+        )
+
+    assert _verdict(None) == DispatchSessionVerdict.FAILED
+    assert _verdict(_READER_MARKER) == DispatchSessionVerdict.STOPPED_EXTERNALLY
+
+
+def test_the_live_evidence_of_a_follow_up_run_gathers_with_the_launch_tip_scope(tmp_path: Path) -> None:
+    _seed_reader_spec(tmp_path)
+    vcs = _ReaderVcs(tmp_path)
+
+    evidence = dispatch_module._live_dispatch_evidence(
+        journal=_reader_journal(tmp_path, _READER_MARKER),
+        verdict=DispatchSessionVerdict.LIVE,
+        fs=FakeFs(),
+        vcs=vcs,
+        process=_AliveProcess(True),
+        repo_root=tmp_path,
+        slug=_FOLLOWUP_SLUG,
+        effective_policy=_reader_effective(),
+    )
+
+    assert "live" in evidence
+    assert vcs.reads == [_READER_TIP_RANGE]
+
+
+def test_the_live_evidence_of_a_normal_run_reads_origin_main_whole(tmp_path: Path) -> None:
+    _seed_reader_spec(tmp_path)
+    vcs = _ReaderVcs(tmp_path)
+
+    dispatch_module._live_dispatch_evidence(
+        journal=_reader_journal(tmp_path, None),
+        verdict=DispatchSessionVerdict.LIVE,
+        fs=FakeFs(),
+        vcs=vcs,
+        process=_AliveProcess(True),
+        repo_root=tmp_path,
+        slug=_FOLLOWUP_SLUG,
+        effective_policy=_reader_effective(),
+    )
+
+    assert vcs.reads == [ORIGIN_MAIN]
+
+
+def _seed_reader_run(
+    tmp_path: Path,
+    *,
+    followup_review: FollowupReview | None,
+    story_key: str = _READER_STORY,
+    verification_verdict: str | None = None,
+    session_log: str | None = None,
+) -> None:
+    """A dispatch run for story 51.11 whose session is dead, with no git progress and no verdict journaled --
+    unless ``verification_verdict`` journals a verification outcome, or ``session_log`` writes the session's log."""
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+
+    run_id = "pyforge-marshal-20261001T000000000Z-cafebabe"
+    run_dir = dispatch_core.dispatch_run_dir(tmp_path, _FOLLOWUP_SLUG, run_id)
+    run_dir.mkdir(parents=True)
+    payload: dict[str, object] = {
+        "story_key": story_key,
+        "worktree_path": str(tmp_path / "wt"),
+        "baseline_head_sha": "baseline0001",
+    }
+    if followup_review is not None:
+        payload.update(followup_review.to_intent_payload())
+    intent = build_entry(
+        id=JournalEntryId("w", 0),
+        ts="2026-10-01T00:00:00.000Z",
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+        phase=Phase.INTENT,
+        payload=payload,
+    )
+    outcome = build_entry(
+        id=JournalEntryId("w", 1),
+        ts="2026-10-01T00:00:01.000Z",
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("w", 0),
+        payload={"session_pid": 999999},
+    )
+    entries = [intent, outcome]
+    if verification_verdict is not None:
+        entries += [
+            build_entry(
+                id=JournalEntryId("w", 2),
+                ts="2026-10-01T00:00:02.000Z",
+                run_id=run_id,
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                phase=Phase.INTENT,
+                payload={"verdict": verification_verdict},
+            ),
+            build_entry(
+                id=JournalEntryId("w", 3),
+                ts="2026-10-01T00:00:03.000Z",
+                run_id=run_id,
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                phase=Phase.OUTCOME,
+                intent_id=JournalEntryId("w", 2),
+                payload={"verdict": verification_verdict, "ok": True},
+            ),
+        ]
+    (run_dir / "journal.jsonl").write_text(
+        "".join(prepare_for_write(entry).line.rstrip("\n") + "\n" for entry in entries), encoding="utf-8"
+    )
+    if session_log is not None:
+        (run_dir / "session.log").write_text(session_log, encoding="utf-8")
+
+
+def _block_facts(tmp_path: Path, vcs: _ReaderVcs):
+    return dispatch_module.station_story_block_facts(
+        fs=FakeFs(),
+        vcs=vcs,
+        process=_AliveProcess(False),
+        repo_root=tmp_path,
+        slug=_FOLLOWUP_SLUG,
+        story_key=_READER_STORY,
+        effective_policy=_reader_effective(),
+    )
+
+
+def test_the_drains_block_facts_do_not_read_a_follow_up_run_completed_by_the_stories_first_merge(
+    tmp_path: Path,
+) -> None:
+    """The follow-up run died having done nothing: it is a blocked story, not a completed one."""
+    _seed_reader_spec(tmp_path)
+    _seed_reader_run(tmp_path, followup_review=_READER_MARKER)
+    vcs = _ReaderVcs(tmp_path)
+
+    facts = _block_facts(tmp_path, vcs)
+
+    assert facts is not None
+    assert "ended 'failed'" in facts.reason
+    assert vcs.reads and all(ref == _READER_TIP_RANGE for ref in vcs.reads)
+
+
+def test_the_drains_block_facts_still_read_a_normal_run_completed_by_the_stories_merge(tmp_path: Path) -> None:
+    _seed_reader_spec(tmp_path)
+    _seed_reader_run(tmp_path, followup_review=None)
+    vcs = _ReaderVcs(tmp_path)
+
+    assert _block_facts(tmp_path, vcs) is None
+    assert vcs.reads == [ORIGIN_MAIN]
+
+
+@pytest.mark.parametrize(
+    ("followup_review", "blocked"),
+    [pytest.param(_READER_MARKER, True, id="follow-up"), pytest.param(None, False, id="normal")],
+)
+def test_the_drains_block_facts_read_a_follow_up_runs_spec_only_diff_as_progress(
+    tmp_path: Path, followup_review: FollowupReview | None, blocked: bool
+) -> None:
+    """A dead session, a refused verification and a diff that is only the story's own spec, with a transient
+    harness outcome in the session log. A normal run's spec-only diff is narration (zero changed paths), so the
+    transient outcome makes it re-dispatchable and nothing blocks the station; a follow-up run's is its record
+    (one changed path), so the same facts are a block."""
+    _seed_reader_spec(tmp_path)
+    _seed_reader_run(
+        tmp_path,
+        followup_review=followup_review,
+        verification_verdict="refused",
+        session_log="background tasks still running\n",
+    )
+
+    facts = _block_facts(tmp_path, _SpecOnlyVcs(tmp_path))
+
+    if blocked:
+        assert facts is not None
+        assert "ended 'failed'" in facts.reason
+    else:
+        assert facts is None
+
+
+def test_the_cap4_retry_hands_a_follow_up_runs_marker_to_the_landing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    landings: list[dict] = []
+
+    def _fake_land(**kwargs):
+        landings.append(kwargs)
+        from pyforge.marshal.core.model import build_envelope
+        from pyforge.marshal.dispatch_land import DispatchLandingResult
+
+        return DispatchLandingResult(verdict=DispatchLandingVerdict.ALREADY_LANDED), build_envelope(
+            command="dispatch land", verdict="clean", data={}
+        )
+
+    monkeypatch.setattr(dispatch_module, "execute_dispatch_land", _fake_land)
+    monkeypatch.setattr(
+        dispatch_module,
+        "_verification_verdict_for_cap4",
+        lambda **_kwargs: dispatch_module.DispatchVerificationVerdict.VERIFIED,
+    )
+    common = {
+        "slug": _FOLLOWUP_SLUG,
+        "story_key": dispatch_core.normalize(_READER_STORY),
+        "worktree": tmp_path / "wt",
+        "repo_root": tmp_path,
+        "effective_policy": None,
+        "spec_text": _DONE_SPEC,
+        "fs": FakeFs(),
+        "vcs": FakeVcs(tmp_path),
+        "process": FakeProcess(),
+    }
+
+    dispatch_module._attempt_harness_done_cap4(**common, followup_review=_READER_MARKER)
+    dispatch_module._attempt_harness_done_cap4(**common)
+
+    assert landings[0]["followup_review"] == _READER_MARKER
+    assert "followup_review" not in landings[1]
+
+
+def _dispatch_cap4_retry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, followup_review: FollowupReview | None):
+    """``dispatch_once`` on a `done` spec whose flag is false (Story 29.2's land-only path), the story's latest
+    run having been launched with ``followup_review``; returns what the CAP-4 seam was called with."""
+    from pyforge.marshal.core.identity import normalize, render_feed_key
+
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    story = "51-11-halt"
+    _seed_reader_spec(tmp_path)
+    _seed_reader_run(tmp_path, followup_review=followup_review, story_key=render_feed_key(normalize(story)))
+    captured: list[dict] = []
+
+    def _fake_cap4(**kwargs):
+        captured.append(kwargs)
+        return DispatchLandingVerdict.LANDED, "PR #9", None
+
+    monkeypatch.setattr(dispatch_module, "_attempt_harness_done_cap4", _fake_cap4)
+    monkeypatch.chdir(tmp_path)
+
+    attempt = dispatch_once(
+        slug=_FOLLOWUP_SLUG,
+        story=story,
+        fs=FakeFs(),
+        vcs=_ReaderVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(alive=False),
+    )
+    assert attempt.data["land_verdict"] == "landed"
+    return captured
+
+
+def test_the_cap4_retry_of_a_story_whose_latest_run_was_a_follow_up_review_lands_it_as_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured = _dispatch_cap4_retry(tmp_path, monkeypatch, followup_review=_READER_MARKER)
+
+    assert len(captured) == 1
+    assert captured[0]["followup_review"] == _READER_MARKER
+
+
+def test_the_cap4_retry_of_a_story_whose_latest_run_was_normal_passes_no_marker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured = _dispatch_cap4_retry(tmp_path, monkeypatch, followup_review=None)
+
+    assert len(captured) == 1
+    assert "followup_review" not in captured[0]
 
 
 def test_relocated_spec_path_maps_primary_tree_onto_worktree(tmp_path: Path) -> None:

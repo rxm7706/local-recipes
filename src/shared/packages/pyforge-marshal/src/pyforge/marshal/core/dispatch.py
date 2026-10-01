@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING
 
 from pyforge.core.landing_evidence import DISPATCH_BRANCH_PREFIX
 
+from .dispatch_harness_done import FollowupReview
 from .identity import StoryKey, normalize, render_filename_slug
 from .policy import EffectivePolicy
 from .refs import ORIGIN_MAIN
@@ -119,6 +120,10 @@ class DispatchJournalFacts:
     baseline_revision: str | None = None
     final_revision: str | None = None
     preserve_ref: str | None = None
+    # Story 73.1 (CAP-281): the follow-up review marker this run's own launch INTENT carries, else ``None``
+    # (a normal run). Every reader that re-gathers the run's merge facts takes the marker from here --
+    # read off the INTENT, never re-derived from a spec the review itself rewrites.
+    followup_review: FollowupReview | None = None
 
 
 def canonical_repo_root(repo_root: Path) -> Path:

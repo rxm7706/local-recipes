@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import inspect
 import subprocess
 from pathlib import Path
 
@@ -17,9 +18,14 @@ from pyforge.marshal.core.dispatch_completion import (
     DispatchCompletionInput,
     DispatchGitFacts,
     DispatchSessionVerdict,
+    has_git_progress,
+    is_spec_only_narration,
     judge_dispatch_completion,
+    merge_subject_ref,
+    narration_spec_path,
     zombie_redispatch_evidence,
 )
+from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.build_harness import DispatchLaunchResult, HarnessResolution
@@ -445,3 +451,62 @@ def test_live_dispatch_conflict_refuses_marshal_initiated_zombie_redispatch(
     )
     assert evidence is not None
     assert "git facts" in evidence
+
+
+# --- a follow-up review run's two scopes (Story 73.1, CAP-281) ----------------
+
+_LAUNCH_TIP = "0123456789abcdef0123456789abcdef01234567"
+_MARKER = FollowupReview(dw_id="DW-FRR-51-2", launch_origin_main_sha=_LAUNCH_TIP)
+
+
+def test_merge_subject_ref_is_the_whole_ref_for_a_normal_run() -> None:
+    assert merge_subject_ref("refs/remotes/origin/main", followup_review=None) == "refs/remotes/origin/main"
+
+
+def test_merge_subject_ref_is_the_range_since_the_launch_tip_for_a_follow_up() -> None:
+    assert (
+        merge_subject_ref("refs/remotes/origin/main", followup_review=_MARKER)
+        == f"{_LAUNCH_TIP}..refs/remotes/origin/main"
+    )
+
+
+def test_merge_subject_ref_never_scopes_a_follow_up_to_anything_but_the_launch_tip() -> None:
+    """The run's baseline has no parameter here at all: a reused pre-merge worktree makes it stale (G1)."""
+    assert "baseline_head_sha" not in inspect.signature(merge_subject_ref).parameters
+    other_tip = "f" * 40
+    marker = FollowupReview(dw_id=None, launch_origin_main_sha=other_tip)
+    assert merge_subject_ref("refs/remotes/origin/main", followup_review=marker).startswith(f"{other_tip}..")
+
+
+def test_merge_subject_ref_reads_nothing_for_a_follow_up_whose_intent_recorded_no_tip() -> None:
+    assert merge_subject_ref("refs/remotes/origin/main", followup_review=FollowupReview(dw_id="DW-FRR-51-2")) is None
+
+
+_SPEC_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-2-x.md"
+
+
+def test_narration_spec_path_keeps_the_path_for_a_normal_run_and_drops_it_for_a_follow_up() -> None:
+    assert narration_spec_path(_SPEC_REL, followup_review=None) == _SPEC_REL
+    assert narration_spec_path(_SPEC_REL, followup_review=_MARKER) is None
+    assert narration_spec_path(None, followup_review=None) is None
+    assert narration_spec_path(None, followup_review=_MARKER) is None
+
+
+def _spec_only_facts() -> DispatchGitFacts:
+    return DispatchGitFacts(
+        baseline_head_sha="aaa",
+        current_head_sha="bbb",
+        changed_paths=(_SPEC_REL,),
+        branch_merged=False,
+        story_merged_on_main=False,
+    )
+
+
+def test_a_spec_only_diff_is_narration_for_a_normal_run_and_progress_for_a_follow_up() -> None:
+    git = _spec_only_facts()
+    normal = narration_spec_path(_SPEC_REL, followup_review=None)
+    followup = narration_spec_path(_SPEC_REL, followup_review=_MARKER)
+    assert is_spec_only_narration(git.changed_paths, normal) is True
+    assert has_git_progress(git, spec_relative_path=normal) is False
+    assert is_spec_only_narration(git.changed_paths, followup) is False
+    assert has_git_progress(git, spec_relative_path=followup) is True

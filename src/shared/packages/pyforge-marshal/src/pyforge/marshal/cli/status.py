@@ -126,10 +126,11 @@ from ..core import dispatch as dispatch_core
 from ..core import dispatch_fleet, dispatch_landing, layer_savings_sources, promotion
 from ..core import policy as policy_core
 from ..core import status as status_core
+from ..core.dispatch_completion import merge_subject_ref
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize
 from ..core.journal import Phase, fold
 from ..core.model import Finding, Severity, build_envelope
-from ..core.refs import local_branch_ref
+from ..core.refs import ORIGIN_MAIN, local_branch_ref
 from ..core.verdict import Verdict, classify, compute_verdict, exit_code_for
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
@@ -940,6 +941,7 @@ def _merge_dispatch_overlay(
         dispatch_verification_failed_gate=journal.verification_failed_gate,
         dispatch_verification_scope_advisories=journal.verification_scope_advisories,
         dispatch_landing_findings=journal.landing_findings,
+        dispatch_followup_review=journal.followup_review,
         dispatch_supervisor_alive=supervisor_alive,
         dispatch_story_started_at=journal.story_started_at,
         dispatch_story_ended_at=journal.story_ended_at,
@@ -1515,14 +1517,31 @@ def _landing_superseded(
     actionable rather than being hidden on a guess. The spec-status reader
     answers only for this row's own key -- the one membership asked about --
     so other keys' station-branch merges cost nothing; it runs one ``git
-    show`` per station-branch merge that names this key."""
+    show`` per station-branch merge that names this key.
+
+    Story 73.1 (CAP-281): a row whose latest run was a follow-up review
+    (``facts.dispatch_followup_review``) reviews a story that is on ``main``
+    from its FIRST landing, so that merge says nothing about the refused
+    review landing. It reads only the subjects that reached ``origin/main``
+    after the run's launch tip (``merge_subject_ref``) -- the run's own merge
+    -- and answers ``False`` when it has no tip or the range cannot be read.
+    A normal run's row reads the shared whole-``main`` history, as before."""
     if not facts.dispatch_story or not dispatch_landing.landing_was_refused(facts.dispatch_landing_findings):
         return False
     try:
         story_key = str(normalize(facts.dispatch_story))
     except MalformedStoryKeyError:
         return False
-    subjects = main.read(vcs, repo_root)
+    if facts.dispatch_followup_review is None:
+        subjects = main.read(vcs, repo_root)
+    else:
+        subject_ref = merge_subject_ref(ORIGIN_MAIN, followup_review=facts.dispatch_followup_review)
+        if subject_ref is None:
+            return False
+        try:
+            subjects = vcs.commit_subjects(repo_root, subject_ref)
+        except VcsCommandError:
+            return False
     if subjects is None:
         return False
 

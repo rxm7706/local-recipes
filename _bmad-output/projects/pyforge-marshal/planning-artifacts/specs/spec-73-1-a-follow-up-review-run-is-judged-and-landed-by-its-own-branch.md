@@ -2,9 +2,10 @@
 title: '73.1: A follow-up review run is judged and landed by its own branch'
 type: 'fix'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'd8d0ac4469861f6ea58fa22b7dcae01c9eeaee3d'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -12,7 +13,15 @@ context:
   - .claude/skills/bmad-build-auto/step-01-clarify-and-route.md
 warnings:
   - oversized
-deferred: []
+deferred:
+  - summary: >-
+      The drain's campaign-block pruning still reads the whole origin/main, so a blocked follow-up review
+      story would be pruned as merged once a drain can schedule follow-ups (Story 73.2).
+    evidence: |-
+      `cli/dispatch.py::_reconcile_campaign_blocked` (def at line 3685) reads `commit_subjects(repo_root, _BASE_REF)` at line 3699, and `cli/drain_plan.py` `merged_keys` (def at line 182) reads `commit_subjects` at line 188, both without a launch-tip scope. A story whose first landing is on origin/main reads merged there, so a blocked follow-up review would be pruned. Not reachable today: a drain does not schedule follow-ups (this story's Never rule, Story 73.2), and a campaign block carries no run to read a marker from. Finalize's corroboration reads (`dispatch_land_finalize/__main__.py`), which the Intent Alignment layer also listed, were not examined by this review; settling them means reading what finalize writes for a story already `done` when a follow-up lands.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:3699
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -179,6 +188,49 @@ Paths below sit under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/`
   - `[false]` `[reject]` IA-8 "No CLI flag": the diff adds two flags to the finalize module's argv — the contract's "No CLI flag" is about how the marker is declared at launch (`dispatch_once`); finalize's argv is an internal subprocess protocol that only `execute_dispatch_land` invokes, so no operator-facing flag exists.
   - `[medium]` `[defer]` IA-9 The 29.2 gate reads the worktree-preferred spec while the marker reads the primary's, and they differ once a prior review attempt rewrote the flag false, so the gate routes to the land-only path with no marker — same root as BH-3 and EC-5. Entry R1.
 
+### 2026-10-01 — Review pass (re-run on the evening rulings)
+- verdicts: 37 findings — high 0, medium 4, low 26, false 7, maybe-false 0
+- layers: Blind Hunter (14), Edge Case Hunter (9), Verification Gap (2; `Other findings`: none), Intent Alignment (12 divergences). Ids carry a `P2-` prefix so they do not collide with the first pass's rows above. A row marked `carried` repeats a first-pass row (its id in brackets) at the same claim, and the code still reads as that row describes.
+- routing: no `intent_gap` and no `bad_spec`. Two `patch` entries (P2-VG-1, P2-VG-2), both applied by the implementation subagent re-engaged by id. One `defer` entry D1 (P2-EC-5, P2-IA-11), written to `deferred:`. The remaining 33 rows are rejected.
+- findings:
+  - `[low]` `[reject]` P2-BH-1 A failed `origin main` fetch is swallowed, so the launch tip and `dw_id` can come from a stale remote-tracking ref, and `<tip>..origin/main` would then hold the story's first merge — the harm needs a tracking ref older than the story's first merge while the primary's spec already reads `done` with the flag true; the primary only has that spec by pulling the first landing, which moves `origin/main` with it, so a guard (refuse, or journal the failed fetch) adds a branch for a state the landing flow does not produce.
+  - `[low]` `[reject]` P2-BH-2 Carried [BH-5]: the marker reads the primary's spec while the tip and the ledger come from `origin/main` — the contract says to read the primary's tracked spec, and a lagging ledger only nulls `dw_id`, which the contract allows.
+  - `[low]` `[reject]` P2-BH-3 The journal reader keeps the last launch INTENT and the supervisor's reader the first with its run id — `cli/dispatch.py:2755` is the only place a launch entry is written at `Phase.INTENT`, so a run's journal holds one, and the journal reader already works per run directory.
+  - `[low]` `[reject]` P2-BH-4 `execute_dispatch_land` still reads `commit_subjects(origin/main)` for a follow-up run, and a failed read refuses with `MRS-DISP-016` — the read fails only when `origin/main` is unreadable, which breaks the ancestry check that follows on the same ref; skipping the read adds a branch for no reachable case.
+  - `[low]` `[reject]` P2-BH-5 Carried [BH-4]: a follow-up whose head equals its baseline answers ALREADY_LANDED — a run with no change has nothing to land, and ALREADY_LANDED never starting finalize is the existing behaviour for every run. Routing the CAP-4 retry into this function is the contract's own requirement.
+  - `[false]` `[reject]` P2-BH-6 The memlog entries name paths this re-run did not touch — `git diff --stat origin/main...HEAD` lists each of them (`dispatch_land.py`, `dispatch_land_finalize/__main__.py`, `test_deferred_work.py`, `test_dispatch_landing.py`, `test_dispatch_land_finalize.py`) because attempt 1's restored commit changed them against `main`, which is what `spec_surface_reconcile.py` reads; "unchanged by the re-run" is true only against the re-run's start.
+  - `[low]` `[reject]` P2-BH-7 The BH-6 fix rewords a docstring and leaves three closed-row shapes in one ledger — the contract prescribes both fields and not their order, `deferred-work-check` (`python -m pyforge.doctor.sources deferred-work`) checks that no entry lives only in Tier-3 (its pixi description), and a row rendered through `close_followup_review_row` reads `resolved:` then `status: closed`.
+  - `[low]` `[reject]` P2-BH-8 `_resolve_origin_main_tip` works around `VcsPort.resolve_ref` reading only `refs/heads/<name>` — the workaround is documented where it sits and pinned by the real-git test `test_derive_followup_review_reads_the_fetched_origin_main_tip_and_ledger_against_real_git`; a new port method is public surface for no demonstrated harm.
+  - `[low]` `[reject]` P2-BH-9 The ledger path, the best-effort fetch and the conditional-keyword helper repeat patterns found elsewhere — cosmetic: `file_text_at_ref` takes a repo-relative string, and no caller that will diverge is named.
+  - `[low]` `[reject]` P2-BH-10 The launch refusal reuses `MRS-DISP-016` and names no remedy — the code is registered as "main history (ERROR)" in `core/findings.py`, the refusal fires only when `origin/main` cannot be resolved, and since Story 72.1 every merge fact a dispatch run reads is `origin/main`, so that checkout cannot land a dispatch either; a new code and docs add surface for a case that cannot complete anyway.
+  - `[low]` `[reject]` P2-BH-11 Carried [BH-12]: the new INTENT key is undocumented outside the code — it is documented in docstrings and both memlog entries, and the story adds no flag, so the flag inventory has no row to add.
+  - `[low]` `[reject]` P2-BH-12 The land-only retry now reads run journals with no guard — verified new on that path (`dispatch_once` reads no run journal before it), but `_latest_story_run_dir` already runs the same unguarded `gather_dispatch_journal_facts` for its other callers (`cli/dispatch.py:1022`, `:1043`), marshal writes these journals itself, and I did not test a corrupt one; a `try` adds a branch for a rare state.
+  - `[low]` `[reject]` P2-BH-13 The tests duplicate bootstrap scaffolding and hard-code refs — developer-only, and no caller that will diverge is named.
+  - `[low]` `[reject]` P2-BH-14 Carried [IA-7]: no test carries a real `dispatch_once` INTENT through the supervisor into real git — each seam has its own test, and the writer and every reader share one `to_intent_payload` / `from_intent_payload` pair that is itself unit-tested.
+  - `[low]` `[reject]` P2-EC-1 A swallowed fetch failure reads a stale `origin/main` as tip and ledger — same claim and evidence as P2-BH-1.
+  - `[low]` `[reject]` P2-EC-2 The docstring's "an older tip, never a newer one" hides that an older tip widens the range — the statement is true, and widening matters only for a tip older than the first merge, the precondition P2-BH-1 shows the landing flow does not produce.
+  - `[false]` `[reject]` P2-EC-3 Tip and ledger are read in two git calls, so a concurrent fetch pairs different commits — the two reads feed independent consumers (the tip scopes merge subjects, `dw_id` picks the row finalize closes), and a mismatch changes neither.
+  - `[low]` `[reject]` P2-EC-4 Carried [BH-5]: the marker comes from the primary's spec while the relaunch gate reads the worktree-preferred one — same claim; the contract names the primary's spec. The CAP-4 variant (first pass IA-9, deferred as R1) is closed in this run: that retry takes the marker from the story's latest run's launch INTENT.
+  - `[medium]` `[defer]` P2-EC-5 `_reconcile_campaign_blocked` and `drain_plan.merged_keys` read the whole `origin/main`, so a blocked follow-up review story is pruned as merged — verified by reading: `cli/dispatch.py:3699` (inside `_reconcile_campaign_blocked`, def at 3685) and `cli/drain_plan.py:182-188`. Not reachable until a drain can schedule a follow-up (Story 73.2; this story's Never rule), and a campaign block carries no run to read a marker from. Entry D1, with P2-IA-11.
+  - `[low]` `[reject]` P2-EC-6 The whole-history read still gates a follow-up landing — same claim and evidence as P2-BH-4.
+  - `[low]` `[reject]` P2-EC-7 `launch_origin_main_sha` is spliced into a git revision with no format check — the value is a `merge_base` result that marshal wrote into its own journal; a hand-edited journal is outside what the code defends against elsewhere, and a regex adds a guard.
+  - `[low]` `[reject]` P2-EC-8 First versus last launch INTENT — same claim and evidence as P2-BH-3.
+  - `[low]` `[reject]` P2-EC-9 A recorded tip that later becomes unreachable errors on every tick — it needs `origin/main` rewritten or the tip collected; every merge fact reads `origin/main` since Story 72.1 and a normal run's baseline depends on history the same way, and the tick loop catches `VcsCommandError` at the gather instead of crashing.
+  - `[medium]` `[patch]` P2-VG-1 The drain's `station_story_block_facts` narration check (`narration_spec_path(..., followup_review=journal.followup_review)`, `cli/dispatch.py:2024`) survives `followup_review=None`, because no test feeds it a non-empty diff — pre-verified by the layer's mutation (9608 passed unmutated and mutated). Fix applied: `test_the_drains_block_facts_read_a_follow_up_runs_spec_only_diff_as_progress` (a follow-up case returning block evidence and a normal case returning `None`; `_seed_reader_run` gained optional `verification_verdict` and `session_log` keywords). The same mutation on a copy of the package now fails its follow-up case.
+  - `[medium]` `[patch]` P2-VG-2 The supervisor's blocked-halt re-gather (`dispatch_supervisor/__main__.py:1953`) survives `followup_review=None`, so a blocked follow-up run would journal `story_merged_on_main: true` — pre-verified by the layer's mutation. The layer filed `defer`; re-routed to patch because the site changed with this story's boolean-to-marker change and the fix is one test. Fix applied: `test_a_follow_up_runs_blocked_halt_regathers_with_the_launch_tip_scope` asserts every `commit_subjects` read is the launch-tip range and the completion INTENT reads verdict `blocked` with `story_merged_on_main: false`. The mutation on a copy now fails it.
+  - `[low]` `[reject]` P2-IA-1 Carried [IA-7]: the `dispatch_once` INTENT tests use a fake whose `merge_base` returns a constant, and real git reaches only the private derive function.
+  - `[low]` `[reject]` P2-IA-2 The real-git supervisor test stops at `gather_dispatch_git_facts` and `judge_dispatch_completion`, below the loop — attempt 1's G1 reproduction, which the criterion cites, is that function against real git, and the loop's use of the facts is pinned by loop tests that fail under per-site mutation.
+  - `[low]` `[reject]` P2-IA-3 The surviving-worktree topology is built by hand and not through `_ensure_dispatch_worktree` — the criterion's condition is a baseline that is not a descendant of the first merge, which the fixture builds with `git worktree add` before the first merge.
+  - `[false]` `[reject]` P2-IA-4 The mutation criterion is realised as a sibling test, not by failing the LIVE test under a mutated source — I ran the criterion's mutation (a pytest plugin replacing the supervisor's `merge_subject_ref` with the whole ref): 10 follow-up tests in `test_dispatch_supervisor_main_loop.py` fail, the LIVE test and the real-git reused-worktree test among them.
+  - `[false]` `[reject]` P2-IA-5 The landing, finalize and close criteria rest on baseline content this diff does not touch — those tests exist on the branch (attempt 1's restored commit) and ran in the full pass; 72 of the 142 follow-up tests I ran by name sit in `test_dispatch_landing.py`, `test_dispatch_land_finalize.py` and `test_deferred_work.py` (keyword count), and mutating the follow-up branch of `execute_dispatch_land` (`if followup_review is None:` to `if True:`) fails `test_a_follow_up_landing_names_the_row_and_the_merge_subject_to_finalize` and other follow-up landing tests.
+  - `[false]` `[reject]` P2-IA-6 The spec-only-diff criterion changed only types at the narration call sites — no bad outcome is claimed; `test_a_dead_follow_up_runs_spec_only_diff_is_progress_where_a_normal_runs_is_narration` covers the session verdict and the P2-VG-1 test covers the block-facts site.
+  - `[false]` `[reject]` P2-IA-7 `marshal status` reads the marker only in `_landing_superseded` — it is the only reader on a dispatch row's path that re-reads merge subjects (`_merge_dispatch_overlay` carries the journal's facts); the other whole-main reads in `cli/status.py` (the ledger-`done` consistency view near line 2322 and the bmad-loop failed-patch fold) judge ledger keys and loop patches, not a dispatch run.
+  - `[low]` `[reject]` P2-IA-8 The launch refusal is not in the intent — same claim and evidence as P2-BH-10.
+  - `[low]` `[reject]` P2-IA-9 A marker with no recorded tip counts no merge — only attempt 1's own run directory (blocked, dead) can hold such an INTENT, and counting nothing is the safe side: it cannot read the first merge as the run's own.
+  - `[low]` `[reject]` P2-IA-10 The derive makes a fetch the launch did not make before — the contract's "after the launch's fetch" names a fetch `dispatch_once` does not have; a best-effort fetch is what `dispatch land` and the supervisor already do, and its failure is P2-BH-1.
+  - `[medium]` `[defer]` P2-IA-11 Merge-evidence readers outside the four named — `drain_plan.merged_keys` and `_reconcile_campaign_blocked` are verified (P2-EC-5); finalize's corroboration reads (`dispatch_land_finalize/__main__.py`) were not examined, and `cli/status.py`'s ledger consistency read agrees with a story that is already `done`. Entry D1.
+  - `[false]` `[reject]` P2-IA-12 The memlog claims versus the diff — same claim and evidence as P2-BH-6.
+
 ## Design Notes
 
 - The follow-up marker travels as data, never as a flag: the INTENT carries it, the supervisor reads it, `execute_dispatch_land` takes it as a keyword, and finalize (a subprocess the landing starts) takes the row id and the merge subject on argv. A normal run passes nothing, so every normal-run path is byte-identical.
@@ -225,3 +277,44 @@ Blocking condition: intent gap
 **Verification performed.** On the attempted tree, before review: `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` passed (9597 passed, 1 skipped); `pixi run --frozen -e pyforge-ci pyforge-deps-test` passed (130 passed, 3 skipped); `pixi run -e pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0. During triage: the criterion's baseline-scope mutation made `test_gather_git_facts_for_a_follow_up_ignores_the_stories_first_merge` fail, as required, and G1 was reproduced against real git as described above. After the revert: `python scripts/spec_surface_reconcile.py` exit 0. No `--write-baseline` was run, the sprint-status ledger and every `SPEC.md` are untouched, and nothing under `implementation-artifacts/` is tracked.
 
 **Residual risks.** Until question 1 is answered, any follow-up run for a story whose dispatch worktree survives would read COMPLETED on its first tick without landing, and Story 73.2's drain would schedule exactly those runs. The attempted design is otherwise sound; the review's other findings were low or moot.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Summary of implemented change.** The re-run took attempt 1's restored code to the operator's 2026-10-01 rulings. A launch on a `done` spec whose `followup_review_recommended` is true now writes `followup_review: {"dw_id": …}` and `launch_origin_main_sha` (`origin/main`'s tip, read after a best-effort `origin main` fetch) on the launch INTENT; `dw_id` is read from the ledger at `origin/main`, not the primary's copy. Every reader takes the marker from that INTENT and counts only merge subjects in `<launch_origin_main_sha>..refs/remotes/origin/main`, never the run's baseline: the supervisor, `resolve_dispatch_session_verdict`, the live-run evidence, `station_story_block_facts`, `marshal status` (`_landing_superseded`) and the CAP-4 land-only retry, which also passes it to `execute_dispatch_land`. A follow-up run's spec-only diff counts as progress, it lands as ALREADY_LANDED only when its own head is an ancestor of `origin/main`, and finalize closes its `DW-FRR` row. One behaviour beyond the contract: `dispatch_once` refuses the launch with `MRS-DISP-016` when `origin/main` cannot be resolved (rows P2-BH-10 and P2-IA-8, rejected as low).
+
+**Files changed** (net against `main`: 22 files, +3099/−82; paths under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/` unless noted):
+- `core/dispatch_harness_done.py` — `FollowupReview` carries `launch_origin_main_sha` beside `dw_id`; one INTENT round trip for the writer and every reader.
+- `core/dispatch_completion.py` — `merge_subject_ref` (the launch-tip range, `None` when no tip) and `narration_spec_path` take the marker.
+- `core/dispatch.py`, `core/status.py` — `DispatchJournalFacts.followup_review` and `FleetHomeFacts.dispatch_followup_review`.
+- `core/deferred_work.py` — `open_followup_review_id` and `close_followup_review_row`, pure; the BH-6 docstring reworded.
+- `cli/dispatch.py` — `dispatch_once` derives the marker (fetch, tip via `merge_base`, `dw_id` at `origin/main`, the refusal); journal facts, session verdict, live evidence, block facts and the CAP-4 retry read or pass it.
+- `cli/status.py` — `_landing_superseded` reads the launch-tip range for a follow-up row.
+- `dispatch_supervisor/__main__.py` — the marker object, not a boolean, through the git facts, the narration checks and the land sites.
+- `dispatch_land.py`, `dispatch_land_finalize/__main__.py` — the ancestor-only ALREADY_LANDED for a follow-up run and the row close with its `MRS-DISP-047` WARN (attempt 1's restored code; the re-run moved the corroboration read inside the normal-run branch).
+- `tests/unit/` — `test_deferred_work.py`, `test_dispatch.py`, `test_dispatch_completion.py`, `test_dispatch_harness_done.py`, `test_dispatch_land_finalize.py`, `test_dispatch_landing.py`, `test_dispatch_supervisor_main_loop.py`, `test_status.py`, `test_status_landing_superseded.py` (new).
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` and `…/spec-pyforge-core/.memlog.md` — surface reconcile entries naming every governed path; no baseline stamped.
+- This story spec — status, triage log, `deferred:`, this section.
+
+**Review findings breakdown.** 37 findings (high 0, medium 4, low 26, false 7). Patches applied: 2, both medium — P2-VG-1 and P2-VG-2, each a missing test that let a one-line mutation survive; no production code changed in the patch round. Deferred: 1 entry (campaign-block pruning, rows P2-EC-5 and P2-IA-11). Rejected: 33 (26 low, six of them carried from the first pass, and 7 false), each with its reason in the Review Triage Log. No `intent_gap`, no `bad_spec`; `review_loop_iteration` stays 0.
+
+**Follow-up review recommendation.** `true` (first pass; two medium entries were patched, high 0, medium 2). The specific unverified risk: a follow-up review that patches nothing. Build-auto step 04 restores the spec when a pass applies no patch, which leaves the run with head equal to its baseline and no changed path. `judge_dispatch_completion` returns FAILED for a dead session with no git progress that has not merged, and no test covers this end state, so whether a clean follow-up review reads as a failed run, and whether its `DW-FRR` row ever closes, is untraced.
+
+**Verification performed** (all on the final tree unless noted):
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — exit 0, 9638 passed, 1 skipped, 12 deselected (9635 before the patch round, plus its 3 new tests).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — exit 0, 130 passed, 3 skipped.
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0 (ruff, `ruff format --check`, mypy over the ten packages, target-version and pre-commit checks).
+- `python scripts/spec_surface_reconcile.py` — exit 0; `pixi run --frozen -e pyforge-guild spec-surface-check` — exit 0 (warn-only `stale-surface` globs that match no tracked file, none of them a path this change touched). No `--write-baseline` was run.
+- Matrix audit: before the patch round, the follow-up tests selected by name ran verbosely — 142 passed, 0 failed, 0 skipped — and named tests covering the launch with and without a row, the flag-false `done` spec, the reused-worktree real-git case, the CAP-4 retry, the session verdict, the block facts, `marshal status` and the spec-only diff all passed.
+- Mutations, run on a copy of the package so the worktree stayed untouched: the criterion's scope mutation (whole ref in place of the launch-tip range) fails 10 follow-up supervisor tests, including the LIVE test and the real-git reused-worktree test; the P2-VG-1 and P2-VG-2 sites fail their new tests; dropping the marker at the CAP-4 retry (`cli/dispatch.py:998`), at the land-only call (`:2666`), at the status overlay (`cli/status.py:944`) and forcing the follow-up branch of `execute_dispatch_land` back to the key-based answer each fail at least one follow-up test. The unmutated copy passed each time.
+
+**Residual risks.**
+- The clean-review end state above.
+- Deferred D1: a blocked follow-up story would be pruned as merged by the drain's campaign-block readers once Story 73.2 schedules follow-ups; finalize's corroboration reads were not examined.
+- A launch now refuses where `origin/main` cannot be resolved; the contract is silent on that case.
+- A failed fetch leaves the tip to a stale remote-tracking ref; judged not reachable through the landing flow (P2-BH-1), not guarded.
+- The land-only retry now reads run journals unguarded, like the other callers of `_latest_story_run_dir`; a corrupt journal was not tested.
+
+**Process note.** The Agent tool ran every subagent (the implementation, the four reviewers and the patch round) as a detached task with a completion notice, where the workflow asks for blocking calls. Each result was used only after its completion notice, and the implementation and patch work were checked against the diff and the runs above, not the subagent's report.

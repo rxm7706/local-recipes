@@ -2025,7 +2025,15 @@ def _frr_setup(root: Path, ledger: str | None = _FRR_BASE_LEDGER, *, spec: bool 
 
 
 def _frr_finalize(
-    monkeypatch, root: Path, vcs, process=None, *, worktree: Path | None = None, fs=None, with_clock: bool = True
+    monkeypatch,
+    root: Path,
+    vcs,
+    process=None,
+    *,
+    worktree: Path | None = None,
+    fs=None,
+    with_clock: bool = True,
+    **finalize_kwargs,
 ) -> int:
     monkeypatch.setattr(f"{_FINALIZE_MOD_79}.repo_root", lambda: root)
     monkeypatch.setattr(f"{_FINALIZE_MOD_79}.GitVcs", lambda: vcs)
@@ -2036,7 +2044,9 @@ def _frr_finalize(
     monkeypatch.setattr(f"{_FINALIZE_MOD_79}._resync_home_branch", lambda *a, **k: True)
     process = process if process is not None else _FakeIntakeProcess(returncode=0)
     clock = _FixedClock() if with_clock else None
-    return finalize_dispatch_land(_SLUG_79, _FRR_KEY, worktree=worktree, process=process, clock=clock)
+    return finalize_dispatch_land(
+        _SLUG_79, _FRR_KEY, worktree=worktree, process=process, clock=clock, **finalize_kwargs
+    )
 
 
 def _frr_published_ledger(vcs: _PublishVcs) -> str:
@@ -2609,3 +2619,417 @@ def test_against_real_git_the_row_is_published_onto_origin_mains_ledger_while_th
     )
     assert _git_79(origin, "rev-parse", "main").strip() == tip
     assert _git_79(origin, "show", f"main:{ledger_rel}").count("### DW-FRR-79-1:") == 1
+
+
+# -- Story 73.1 (spec-pyforge-marshal CAP-281): the landed follow-up review run closes the row it served -----
+#
+# Same fixtures as the carry above. After a follow-up review lands, its spec reads `done` with the flag
+# `false` (`bmad-build-auto` step 04), so the carry has nothing to add; the open `DW-FRR-51-2` row the review
+# served is rendered closed in the intake step's own locked publish.
+
+_FRR_REVIEWED_SPEC = _FRR_SPEC.replace("followup_review_recommended: true", "followup_review_recommended: false")
+_FRR_LANDING = "Merge pyforge-marshal/51-2 into main"
+_FRR_CLOSED_LINES = f"  resolved: 2026-10-01 (dispatch-land finalize: {_FRR_LANDING})\n  status: closed\n"
+
+
+def _frr_open_row_ledger(base: str = _FRR_BASE_LEDGER) -> str:
+    """``base`` plus the open ``DW-FRR-51-2`` row exactly as the carry renders it (Story 66.1)."""
+    from pyforge.marshal.core import deferred_work
+
+    candidate = deferred_work.followup_review_candidate(_FRR_SPEC, normalize(_FRR_KEY), _FRR_SPEC_REL)
+    assert candidate is not None
+    return deferred_work.append_ledger_entry(
+        base, deferred_work.render_followup_review_entry(candidate, promoted_date="2026-09-28")
+    )
+
+
+def _frr_expected_closed(ledger: str) -> str:
+    """``ledger`` with ONLY the ``DW-FRR-51-2`` row's own ``status: open`` line closed (other rows' stay)."""
+    head, heading, row = ledger.partition(f"### {_FRR_ID}:")
+    assert heading, "the ledger holds no DW-FRR-51-2 row"
+    return head + heading + row.replace("  status: open\n", _FRR_CLOSED_LINES, 1)
+
+
+def _frr_closed_id(root: Path) -> str | None:
+    return _observation_79(root)["followup_review_closed_id"]
+
+
+def _frr_close(monkeypatch, root: Path, vcs, process=None, **kwargs) -> int:
+    return _frr_finalize(monkeypatch, root, vcs, process, followup_review_id=_FRR_ID, landing=_FRR_LANDING, **kwargs)
+
+
+def test_a_landed_follow_up_review_closes_its_row_and_adds_no_new_one(tmp_path: Path, monkeypatch) -> None:
+    """AC 8: `DW-FRR-51-2` is published `status: closed` with `resolved:` naming the landing, no new `DW-FRR` row
+    is added, the rest of the ledger is byte-identical, and the primary's working copy is back as it was."""
+    open_ledger = _frr_open_row_ledger()
+    ledger = _frr_setup(tmp_path, open_ledger)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=open_ledger)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert published == _frr_expected_closed(open_ledger)
+    assert published.count("### DW-FRR-") == 1
+    assert published.startswith(_FRR_BASE_LEDGER)
+    [publish] = vcs.publishes
+    assert (publish["remote"], publish["ref"]) == ("origin", "main")
+    assert publish["message"] == "marshal: close follow-up review row DW-FRR-51-2 for 'marshal'"
+    assert _FRR_KEY in publish["preflight_skip_reason"]
+    assert ledger.read_text(encoding="utf-8") == open_ledger
+    assert _frr_closed_id(tmp_path) == _FRR_ID
+    assert _frr_promoted_id(tmp_path) is None
+    assert _journaled_findings_79(tmp_path) == []
+
+
+def test_a_second_finalize_closes_nothing_twice(tmp_path: Path, monkeypatch) -> None:
+    open_ledger = _frr_open_row_ledger()
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=open_ledger)
+    first = tmp_path / "first"
+    _frr_setup(first, open_ledger)
+    assert _frr_close(monkeypatch, first, vcs) == 0
+    closed = vcs.origin_ledger
+    assert "status: closed" in closed
+
+    second = tmp_path / "second"
+    _frr_setup(second, open_ledger)
+    assert _frr_close(monkeypatch, second, vcs) == 0
+
+    assert len(vcs.publishes) == 1
+    assert vcs.origin_ledger == closed
+    assert _frr_closed_id(second) is None
+    assert _journaled_findings_79(second) == []
+
+
+def test_a_follow_up_landing_with_no_row_to_close_publishes_nothing(tmp_path: Path, monkeypatch) -> None:
+    """The row is absent at origin/main (a closed or never-carried row reads the same): nothing to close."""
+    ledger = _frr_setup(tmp_path)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs) == 0
+
+    assert vcs.publishes == []
+    assert _frr_closed_id(tmp_path) is None
+    assert _journaled_findings_79(tmp_path) == []
+    assert ledger.read_text(encoding="utf-8") == _FRR_BASE_LEDGER
+
+
+def test_a_normal_landing_closes_no_row_even_when_one_is_open(tmp_path: Path, monkeypatch) -> None:
+    """No `--followup-review-id`: an open row for the story stays open, and the payload says null."""
+    open_ledger = _frr_open_row_ledger()
+    _frr_setup(tmp_path, open_ledger)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=open_ledger)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    assert vcs.publishes == []
+    assert vcs.origin_ledger == open_ledger
+    assert _frr_closed_id(tmp_path) is None
+
+
+def test_the_closure_rides_the_same_publish_as_the_intakes_rows(tmp_path: Path, monkeypatch) -> None:
+    open_ledger = _frr_open_row_ledger()
+    ledger = _frr_setup(tmp_path, open_ledger)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=open_ledger)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs, _AddingIntakeProcess(ledger)) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert published == _frr_expected_closed(open_ledger + "\n### DW-INTAKE-1: filed by intake\n")
+    [publish] = vcs.publishes
+    assert publish["message"] == (
+        "marshal: promote deferred-work intake and close follow-up review row DW-FRR-51-2 for 'marshal'"
+    )
+    assert ledger.read_text(encoding="utf-8") == open_ledger
+    assert _frr_closed_id(tmp_path) == _FRR_ID
+
+
+def test_the_closure_is_built_on_origin_mains_ledger_not_a_stale_primary_copy(tmp_path: Path, monkeypatch) -> None:
+    """The primary's copy lacks a row a concurrent finalize published; the closure is built on the tip's text,
+    so that row survives and the primary's stale copy is left exactly as it was."""
+    stale = _frr_open_row_ledger()
+    tip = stale + _FRR_CONCURRENT_ROW
+    ledger = _frr_setup(tmp_path, stale)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=tip)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert published == _frr_expected_closed(tip)
+    assert "### DW-CONCURRENT-1:" in published
+    assert ledger.read_text(encoding="utf-8") == stale
+
+
+def test_a_failed_closure_publish_is_a_warn_naming_the_row_and_keeps_the_exit_code(tmp_path: Path, monkeypatch) -> None:
+    """AC 9: `commit_paths_onto_remote_tip` raising `VcsCommandError` while closing is an `MRS-DISP-047` WARN
+    naming the closure and the row; nothing landed, the payload id is null, finalize's exit code is unchanged."""
+    open_ledger = _frr_open_row_ledger()
+    ledger = _frr_setup(tmp_path, open_ledger)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=open_ledger, publish_raises=True)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs) == 0
+
+    [finding] = _journaled_findings_79(tmp_path)
+    assert (finding["code"], finding["severity"]) == ("MRS-DISP-047", "warn")
+    assert "closure of follow-up review row" in finding["message"] and _FRR_ID in finding["message"]
+    assert "not a fast-forward" in finding["message"]
+    assert _frr_closed_id(tmp_path) is None
+    assert vcs.origin_ledger == open_ledger
+    assert ledger.read_text(encoding="utf-8") == open_ledger
+
+
+def test_a_failed_closure_publish_after_a_refused_intake_reports_both_warns(tmp_path: Path, monkeypatch) -> None:
+    open_ledger = _frr_open_row_ledger()
+    ledger = _frr_setup(tmp_path, open_ledger)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=open_ledger, publish_raises=True)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs, _AddingIntakeProcess(ledger, returncode=1)) == 0
+
+    messages = _frr_messages(tmp_path)
+    assert len(messages) == 2
+    assert any("refused (exit 1)" in message for message in messages)
+    assert any("not a fast-forward" in message and _FRR_ID in message for message in messages)
+    assert _frr_closed_id(tmp_path) is None
+
+
+def test_a_refused_intake_still_publishes_the_closure(tmp_path: Path, monkeypatch) -> None:
+    open_ledger = _frr_open_row_ledger()
+    ledger = _frr_setup(tmp_path, open_ledger)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=open_ledger)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs, _AddingIntakeProcess(ledger, returncode=1)) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert "DW-INTAKE-1" not in published and "status: closed" in published
+    assert ledger.read_text(encoding="utf-8") == open_ledger
+    assert _frr_closed_id(tmp_path) == _FRR_ID
+    [message] = _frr_messages(tmp_path)
+    assert "refused (exit 1)" in message
+
+
+def test_an_unreadable_tip_skips_the_closure_with_a_warn_and_the_intakes_publish_stands(
+    tmp_path: Path, monkeypatch
+) -> None:
+    open_ledger = _frr_open_row_ledger()
+    ledger = _frr_setup(tmp_path, open_ledger)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=open_ledger, origin_ledger_raises=True)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs, _AddingIntakeProcess(ledger)) == 0
+
+    assert _frr_published_ledger(vcs) == open_ledger + "\n### DW-INTAKE-1: filed by intake\n"
+    [message] = _frr_messages(tmp_path)
+    assert _FRR_ID in message and "was not closed" in message and "bad object" in message
+    assert _frr_closed_id(tmp_path) is None
+
+
+def test_a_ledger_absent_at_the_tip_is_never_created_for_a_closure(tmp_path: Path, monkeypatch) -> None:
+    ledger = _frr_setup(tmp_path, ledger=None)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=None)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs) == 0
+
+    [finding] = _journaled_findings_79(tmp_path)
+    assert (finding["code"], finding["severity"]) == ("MRS-DISP-047", "warn")
+    assert "does not exist" in finding["message"] and "was not closed" in finding["message"]
+    assert vcs.publishes == []
+    assert not ledger.exists()
+
+
+def test_a_primary_copy_the_intake_changed_that_is_not_the_tips_skips_the_closure(tmp_path: Path, monkeypatch) -> None:
+    """The carry's rule: two texts are never merged. The intake changed a copy that differs from the tip's, so
+    the closure is skipped (a re-run closes it) and the intake's own publish goes out as it always has."""
+    stale = _frr_open_row_ledger()
+    ledger = _frr_setup(tmp_path, stale)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=stale + _FRR_CONCURRENT_ROW)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs, _AddingIntakeProcess(ledger)) == 0
+
+    assert _frr_published_ledger(vcs) == stale + "\n### DW-INTAKE-1: filed by intake\n"
+    [message] = _frr_messages(tmp_path)
+    assert _FRR_ID in message and "was not closed" in message and "a re-run of finalize closes it" in message
+    assert _frr_closed_id(tmp_path) is None
+
+
+def test_a_contended_ledger_lock_names_the_row_that_was_not_closed(tmp_path: Path, monkeypatch) -> None:
+    open_ledger = _frr_open_row_ledger()
+    _frr_setup(tmp_path, open_ledger)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=open_ledger)
+
+    assert _frr_close(monkeypatch, tmp_path, vcs, fs=_LedgerLockedFs()) == 0
+
+    [message] = _frr_messages(tmp_path)
+    assert "lock" in message and _FRR_ID in message and "was not closed" in message
+    assert vcs.publishes == []
+    assert _frr_closed_id(tmp_path) is None
+
+
+def test_a_landed_review_that_left_its_flag_true_carries_nothing_but_closes_its_row(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A review that (against step 04) left `followup_review_recommended: true`: the carry sees the row's
+    heading, so it adds nothing; the closure closes it, so the row is not re-queued."""
+    open_ledger = _frr_open_row_ledger()
+    _frr_setup(tmp_path, open_ledger)
+    vcs = _FrrVcs(origin_ledger=open_ledger)  # the spec at origin/main still reads done + flagged
+
+    assert _frr_close(monkeypatch, tmp_path, vcs) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert published == _frr_expected_closed(open_ledger)
+    assert published.count("### DW-FRR-") == 1
+    assert _frr_closed_id(tmp_path) == _FRR_ID
+    assert _frr_promoted_id(tmp_path) is None
+
+
+def test_a_carry_and_a_closure_in_one_finalize_share_one_publish(tmp_path: Path, monkeypatch) -> None:
+    """The row is absent and the spec is still flagged: the carry adds it and, on the same tip-built text, the
+    closure closes it -- one publish, no second fetch for the closure."""
+    _frr_setup(tmp_path)
+    vcs = _FrrVcs()
+
+    assert _frr_close(monkeypatch, tmp_path, vcs) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert published.startswith(_FRR_BASE_LEDGER) and published.count("### DW-FRR-") == 1
+    assert published.endswith(_FRR_CLOSED_LINES)
+    assert len(vcs.publishes) == 1
+    assert _frr_promoted_id(tmp_path) == _FRR_ID and _frr_closed_id(tmp_path) == _FRR_ID
+    [publish] = vcs.publishes
+    assert "carry follow-up review row DW-FRR-51-2" in publish["message"]
+    assert "close follow-up review row DW-FRR-51-2" in publish["message"]
+    assert "follow-up review carry and follow-up review closure" in publish["preflight_skip_reason"]
+
+
+def test_a_follow_up_landing_without_a_merge_subject_still_closes_its_row(tmp_path: Path, monkeypatch) -> None:
+    open_ledger = _frr_open_row_ledger()
+    _frr_setup(tmp_path, open_ledger)
+    vcs = _FrrVcs(spec_text=_FRR_REVIEWED_SPEC, origin_ledger=open_ledger)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs, followup_review_id=_FRR_ID) == 0
+
+    assert "(dispatch-land finalize: the follow-up review landed)" in _frr_published_ledger(vcs)
+    assert _frr_closed_id(tmp_path) == _FRR_ID
+
+
+def test_main_forwards_the_follow_up_flags_and_only_them(monkeypatch, tmp_path: Path) -> None:
+    from pyforge.marshal.dispatch_land_finalize import __main__ as mod
+
+    seen: list[tuple] = []
+
+    def _record(slug, key, worktree, **kwargs):
+        seen.append((slug, key, worktree, kwargs))
+        return 0
+
+    monkeypatch.setattr(mod, "finalize_dispatch_land", _record)
+
+    assert (
+        mod.main(
+            [
+                "pyforge-marshal",
+                "51.2",
+                str(tmp_path),
+                "--followup-review-id",
+                "DW-FRR-51-2",
+                "--landing-subject",
+                "Merge pyforge-marshal/51-2 into main",
+            ]
+        )
+        == 0
+    )
+    assert mod.main(["pyforge-marshal", "51.2", str(tmp_path), "--followup-review-id", "DW-FRR-51-2"]) == 0
+    assert seen == [
+        (
+            "pyforge-marshal",
+            "51.2",
+            tmp_path,
+            {"followup_review_id": "DW-FRR-51-2", "landing": "Merge pyforge-marshal/51-2 into main"},
+        ),
+        ("pyforge-marshal", "51.2", tmp_path, {"followup_review_id": "DW-FRR-51-2", "landing": None}),
+    ]
+
+
+def test_against_real_git_the_closure_is_published_onto_origin_mains_ledger(tmp_path: Path, monkeypatch) -> None:
+    """The closure against REAL git, finalize end to end: a bare `origin`, a primary clone with a stale ledger and
+    a second clone that lands the follow-up review of story 79.1 (its reviewed `done` spec, `done` twin and a
+    ledger holding the open `DW-FRR-79-1` row beside a row a concurrent finalize published). The closure is
+    published through the real `commit_paths_onto_remote_tip` onto origin/main's text; a second finalize is a no-op."""
+    ledger_rel = f"_bmad-output/projects/{_SLUG_79}/planning-artifacts/deferred-work-ledger.md"
+    twin_rel = f"_bmad-output/projects/{_SLUG_79}/planning-artifacts/sprint-status-ledger.yaml"
+    stale = "# Deferred Work Ledger\n\n### DW-FU-1-1: old\n\n- source_spec: `x`\n  status: open\n"
+    reviewed = _TRACKED_SPEC_79.replace("'backlog'", "'done'").replace(
+        "---\n\n", "followup_review_recommended: false\n---\n\n", 1
+    )
+    from pyforge.marshal.core import deferred_work
+
+    candidate = deferred_work.followup_review_candidate(
+        reviewed.replace("recommended: false", "recommended: true"), normalize("79.1"), _SPEC_REL_79
+    )
+    assert candidate is not None
+    open_row = deferred_work.render_followup_review_entry(candidate, promoted_date="2026-09-28")
+    remote_ledger = deferred_work.append_ledger_entry(stale + _FRR_CONCURRENT_ROW, open_row)
+
+    origin = tmp_path / "origin.git"
+    origin.mkdir()
+    _git_79(origin, "init", "--bare", "-b", "main")
+    primary = tmp_path / "primary"
+    primary.mkdir()
+    _git_79(primary, "init", "-b", "main")
+    _configure_git_79(primary)
+    (primary / ledger_rel).parent.mkdir(parents=True)
+    (primary / ledger_rel).write_text(stale, encoding="utf-8")
+    _git_79(primary, "add", ledger_rel)
+    _git_79(primary, "commit", "-m", "base")
+    _git_79(primary, "remote", "add", "origin", str(origin))
+    _git_79(primary, "push", "-u", "origin", "main")
+
+    landing = tmp_path / "landing"
+    _git_79(tmp_path, "clone", str(origin), str(landing))
+    _configure_git_79(landing)
+    for rel, text in ((_SPEC_REL_79, reviewed), (twin_rel, _DONE_LEDGER_79), (ledger_rel, remote_ledger)):
+        (landing / rel).parent.mkdir(parents=True, exist_ok=True)
+        (landing / rel).write_text(text, encoding="utf-8")
+        _git_79(landing, "add", rel)
+    _git_79(landing, "commit", "-m", _DISPATCH_MERGE_79)
+    landing_sha = _git_79(landing, "rev-parse", "HEAD").strip()
+    _git_79(landing, "push", "origin", "main")
+
+    worktree = tmp_path / "dispatch-worktree"
+    _write_tracked_spec_79(worktree, text=reviewed)
+    _write_feed_79(primary)
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}.repo_root", lambda: primary)
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}._scan_promotions", lambda *a, **k: _PlannedScan())
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}._promote_sprint_ledger", lambda *a, **k: ())
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}._resync_home_branch", lambda *a, **k: True)
+    head_before = _git_79(primary, "rev-parse", "HEAD").strip()
+
+    def _finalize() -> int:
+        return finalize_dispatch_land(
+            _SLUG_79,
+            "79.1",
+            worktree=worktree,
+            process=_FakeIntakeProcess(returncode=0),
+            clock=_FixedClock(),
+            followup_review_id="DW-FRR-79-1",
+            landing=_DISPATCH_MERGE_79,
+        )
+
+    assert _finalize() == 0
+
+    published = _git_79(origin, "show", f"main:{ledger_rel}")
+    assert published.count("### DW-FRR-79-1:") == 1
+    # Only the follow-up row's own (last) `status: open` line moved; the concurrent row published since survives.
+    head, _, tail = remote_ledger.rpartition("  status: open\n")
+    closed_lines = f"  resolved: 2026-10-01 (dispatch-land finalize: {_DISPATCH_MERGE_79})\n  status: closed\n"
+    assert published == head + closed_lines + tail
+    assert "### DW-CONCURRENT-1:" in published
+    assert _git_79(origin, "rev-parse", "main~1").strip() == landing_sha
+    assert _git_79(origin, "diff", "--name-only", "main~1", "main").split() == [ledger_rel]
+    # The story's key reads `done` in the tracked ledger throughout: the closure never touches it.
+    assert _git_79(origin, "show", f"main:{twin_rel}") == _DONE_LEDGER_79
+    assert _observation_79(primary)["followup_review_closed_id"] == "DW-FRR-79-1"
+    assert (primary / ledger_rel).read_text(encoding="utf-8") == stale
+    assert _git_79(primary, "status", "--porcelain", "--", ledger_rel) == ""
+    assert _git_79(primary, "rev-parse", "HEAD").strip() == head_before
+
+    tip = _git_79(origin, "rev-parse", "main").strip()
+    assert _finalize() == 0
+    assert _git_79(origin, "rev-parse", "main").strip() == tip
