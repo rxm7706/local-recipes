@@ -102,6 +102,28 @@ def _bare_shell_metacharacters(command: str) -> list[str]:
     return found
 
 
+#: Story 79.2 (spec-79-2, CAP-261a): the hygiene lane every dispatch
+#: verification runs, whatever a station's own ``verify_commands`` say.
+#: ``dispatch/*`` branches skip ``pr-preflight`` (the supervisor gates them),
+#: and ``lint-types`` is in neither a station's ``verify_commands`` nor the
+#: ``detectors-ci`` merge gate -- so scribe Story 25.1 landed a format
+#: ``ruff format`` rewrites and ``lint-types`` stayed red on ``main``
+#: (DW-OPS-2026-10-01-2). The same "derive, don't declare" rule as
+#: ``_SURFACE_RECONCILE_COMMAND``: one constant, folded in at use time, never
+#: written into eight stations' ``marshal-policy.toml``. Only ``pyforge-guild``
+#: exists at runtime (``AGENTS.md`` § Running and verifying), so the command is
+#: the same for every station.
+_LINT_TYPES_COMMAND = "pixi run --frozen -e pyforge-guild lint-types"
+
+
+def _same_command_key(command: str) -> str:
+    """The comparison key two spellings of one command share: whitespace
+    collapsed (the ``gate.check_spec_binding`` normalization) and ``--frozen``
+    dropped, so a station that declared ``pixi run -e pyforge-guild
+    lint-types`` still de-duplicates against ``_LINT_TYPES_COMMAND``."""
+    return " ".join(token for token in command.split() if token != "--frozen")
+
+
 def _verify_commands_with_surface_guard(
     effective: EffectivePolicy,
 ) -> tuple[str, ...]:
@@ -118,15 +140,26 @@ def _verify_commands_with_surface_guard(
     does, so a station-declared guard that differs only in spacing still
     de-duplicates instead of running twice.
 
+    Story 79.2 (spec-79-2): ``_LINT_TYPES_COMMAND`` is derived here too, last,
+    by the same append-after-dedupe rule -- the ONE place the derived commands
+    are folded in, so every station's dispatch verification runs ``lint-types``
+    exactly once, after its own ``verify_commands`` and the guard, even when
+    the station already lists it. A red result is an ordinary
+    ``MRS-GATE-001`` (``verify command '<command>' exited N``), so the refusal
+    names ``lint-types`` with no new finding code. The name stays
+    ``_verify_commands_with_surface_guard`` (three callers import it); it now
+    returns every derived-commands list, not the guard alone.
+
     Unlike the loop adapter, this is not a rendered file an operator can
     read before a run starts -- it is folded in at USE time, right before
     the commands actually execute and before ``check_spec_binding`` sees
     them, so a dispatch session is gated on the guard exactly like a loop
     session even though nothing in ``marshal-policy.toml`` ever declares
     it."""
-    normalized_guard = " ".join(_SURFACE_RECONCILE_COMMAND.split())
-    verify = [c for c in effective.verify_commands.value if " ".join(c.split()) != normalized_guard]
-    verify.append(_SURFACE_RECONCILE_COMMAND)
+    derived = (_SURFACE_RECONCILE_COMMAND, _LINT_TYPES_COMMAND)
+    derived_keys = {_same_command_key(command) for command in derived}
+    verify = [c for c in effective.verify_commands.value if _same_command_key(c) not in derived_keys]
+    verify.extend(derived)
     return tuple(verify)
 
 
