@@ -1678,7 +1678,15 @@ def test_a_cycle_whose_wave_holds_every_story_reports_held_instead_of_crashing(
 
     # The plan reads the same state as `held`, in the same words.
     _code, envelope, _out = _plan(
-        tmp_path, "--mode", "drain_to_zero", "--station", _STEWARD, "--max-in-flight", "2", ledgers=ledgers, capsys=capsys
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        _STEWARD,
+        "--max-in-flight",
+        "2",
+        ledgers=ledgers,
+        capsys=capsys,
     )
     row = _station(envelope)
     assert row["outcome"] == "held"
@@ -1692,9 +1700,7 @@ def test_dispatch_stories_on_a_held_wave_reports_the_held_stories(
 ) -> None:
     ledgers = _seed_held_wave(tmp_path)
     process = FakeProcess(alive=False)
-    args = argparse.Namespace(
-        slug=_STEWARD, story=None, stories=_K_FOLD, format="json", harness=None, max_in_flight=2
-    )
+    args = argparse.Namespace(slug=_STEWARD, story=None, stories=_K_FOLD, format="json", harness=None, max_in_flight=2)
 
     code = dispatch_cli.run_dispatch(
         args,
@@ -1715,9 +1721,7 @@ def test_dispatch_stories_on_a_held_wave_reports_the_held_stories(
     assert code == 0  # WARN never changes the exit
 
 
-def test_a_wave_that_admits_a_story_still_reports_dispatched(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_a_wave_that_admits_a_story_still_reports_dispatched(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     ledgers = _seed_unmet_deps(tmp_path)  # the head (44.4) is held by 44.3, but the wave admits 44.3 itself
     launches = _record_launches(monkeypatch)
     monkeypatch.setattr(dispatch_cli, "_journal_dispatch_wave", lambda *a, **k: None)
