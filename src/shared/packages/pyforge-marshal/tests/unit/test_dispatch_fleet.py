@@ -60,6 +60,7 @@ from pyforge.marshal.core.journal import (
     prepare_for_write,
 )
 from pyforge.marshal.core.model import Severity
+from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.build_harness import (
     DispatchLaunchResult,
@@ -3975,10 +3976,12 @@ def _fu_codes(report, code: str):
     return [f for f in report.findings if f.code == code]
 
 
-@pytest.fixture(autouse=True)
-def _fu_repository_layers(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
-    """The drain reads the repository's own policy layers; pin them to "none" so a fixture composes Marshal's
-    default cap (2) whatever this checkout's `_bmad-output/policy-defaults.toml` or any station layer says."""
+def _fu_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A git-initialised tmp repo as cwd, and the drain's repository policy layers pinned to "none": the drain
+    reads them from the real checkout, so without this a fixture would compose whatever this checkout's
+    `_bmad-output/policy-defaults.toml` or a station's `marshal-policy.toml` says about the cap."""
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(cli_dispatch, "read_repo_policy_defaults", lambda: ({}, None))
     monkeypatch.setattr(cli_dispatch, "conventional_project_policy_path", lambda slug: tmp_path / f"{slug}-none.toml")
 
@@ -4155,8 +4158,7 @@ def test_a_done_key_is_still_never_an_implementable_backlog_entry() -> None:
 def test_an_empty_backlog_and_an_open_row_dispatch_one_follow_up_review(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
     harness = FakeBuildHarness()
@@ -4176,8 +4178,7 @@ def test_the_launch_is_a_follow_up_review_run_through_dispatch_once(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The launch is Story 73.1's: the INTENT carries the marker and the row it serves."""
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
 
@@ -4193,8 +4194,7 @@ def test_the_launch_is_a_follow_up_review_run_through_dispatch_once(
 def test_once_the_review_landed_and_its_row_closed_nothing_is_dispatched(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "closed")])}
     harness = FakeBuildHarness()
@@ -4211,8 +4211,7 @@ def test_the_second_cycle_after_the_row_closes_dispatches_nothing_for_the_story(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """AC1 then AC2 on one fixture: the first cycle launches, the landing closes the row, the next dispatches nothing."""
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
     harness = FakeBuildHarness()
@@ -4233,8 +4232,7 @@ def test_mutation_without_the_row_gate_the_second_cycle_dispatches_the_story_aga
 ) -> None:
     """Candidates taken from specs alone: the row closed, the spec still reads done/true -- and 51.2 launches
     again, which is exactly the failure `test_the_second_cycle_after_the_row_closes_...` pins."""
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "closed")])}
     harness = FakeBuildHarness()
@@ -4248,8 +4246,7 @@ def test_mutation_without_the_row_gate_the_second_cycle_dispatches_the_story_aga
 def test_a_non_empty_backlog_dispatches_first_and_the_follow_up_queues_after_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     done_statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])
     _seed_fleet(tmp_path, stories={_FU_SLUG: ["52-1-implementable"]})
@@ -4293,8 +4290,7 @@ def test_a_non_empty_backlog_dispatches_first_and_the_follow_up_queues_after_it(
 def test_a_stale_open_row_and_a_row_less_spec_dispatch_nothing_and_the_stale_row_is_named(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers = {
         _FU_SLUG: _fu_seed_station(
@@ -4322,8 +4318,7 @@ def test_a_stale_open_row_and_a_row_less_spec_dispatch_nothing_and_the_stale_row
 def test_a_follow_up_whose_run_failed_is_a_campaign_block_like_any_story(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
     harness = FakeBuildHarness()
@@ -4342,8 +4337,7 @@ def test_a_follow_up_whose_run_failed_is_a_campaign_block_like_any_story(
 def test_a_follow_up_refused_this_campaign_is_blocked_from_the_journal_not_retried(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
     harness = FakeBuildHarness()
@@ -4365,8 +4359,7 @@ def test_the_sprint_ledger_twin_reads_done_before_during_and_after(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """No ledger key is added, flipped or re-queued: the tracked twin is byte-identical across a launch."""
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])
     twin = dispatch_fleet.station_ledger_path(tmp_path, _FU_SLUG)
@@ -4387,8 +4380,7 @@ def test_the_sprint_ledger_twin_reads_done_before_during_and_after(
 def test_an_unreadable_deferred_work_ledger_queues_nothing_for_that_station_and_names_the_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers = {
         _FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")]),
@@ -4409,8 +4401,7 @@ def test_an_unreadable_deferred_work_ledger_queues_nothing_for_that_station_and_
 def test_an_absent_deferred_work_ledger_is_no_rows_and_no_finding(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     _seed_fleet(tmp_path, stories={_FU_SLUG: ["52-1-implementable"]})
     harness = FakeBuildHarness()
 
@@ -4429,8 +4420,7 @@ def test_an_absent_deferred_work_ledger_is_no_rows_and_no_finding(
 
 def test_stories_never_queues_a_follow_up(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """`--stories` is unchanged: the caller's own sequence, and no deferred-work ledger is even read."""
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])
     _seed_fleet(tmp_path, stories={_FU_SLUG: ["52-1-implementable"]})
@@ -4454,8 +4444,7 @@ def test_stories_never_queues_a_follow_up(tmp_path: Path, monkeypatch: pytest.Mo
 def test_stories_naming_a_done_key_with_an_open_row_still_refuses(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
     build_harness = FakeBuildHarness()
@@ -4513,8 +4502,7 @@ def _fu_close_rows(vcs: _FollowupVcs, slug: str, stories: list[str]) -> None:
 def test_181_open_rows_a_campaign_dispatches_exactly_the_two_newest_landings(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers, _order = _fu_big_fixture(tmp_path, vcs)
     harness = FakeBuildHarness()
@@ -4533,8 +4521,7 @@ def test_181_open_rows_a_campaign_dispatches_exactly_the_two_newest_landings(
 def test_the_cap_selects_the_newest_landings_first_across_every_station(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     _fu_big_fixture(tmp_path, vcs)
 
@@ -4553,8 +4540,7 @@ def test_the_cap_selects_the_newest_landings_first_across_every_station(
 def test_once_the_two_landed_and_closed_the_next_campaign_takes_the_next_two(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers, order = _fu_big_fixture(tmp_path, vcs)
     first_harness = FakeBuildHarness()
@@ -4568,7 +4554,8 @@ def test_once_the_two_landed_and_closed_the_next_campaign_takes_the_next_two(
     report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=second_harness)
 
     # The next two newest by merge-subject position: marshal 70.9, then the first of the rest (marshal 70.1).
-    assert sorted(second_harness.dispatched) == [(_FU_SLUG, "70.1")] or len(second_harness.dispatched) <= 2
+    # Serial mode launches a station's head per cycle, so 70.9 launches now and 70.1 queues behind it.
+    assert second_harness.dispatched == [(_FU_SLUG, "70.9")]
     plan = cli_dispatch.plan_followup_reviews(
         repo_root=tmp_path, slugs=(_FU_OTHER_SLUG, _FU_SLUG), vcs=vcs, policy_flags=_CYCLE_POLICY_SERIAL
     )
@@ -4582,8 +4569,7 @@ def test_once_the_two_landed_and_closed_the_next_campaign_takes_the_next_two(
 def test_the_cap_holds_across_every_cycle_of_one_campaign_from_its_journal(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers, _order = _fu_big_fixture(tmp_path, vcs)
     build_harness = FakeBuildHarness()
@@ -4613,8 +4599,7 @@ def test_the_cap_holds_across_every_cycle_of_one_campaign_from_its_journal(
 
 
 def test_a_fresh_campaign_id_starts_with_nothing_launched(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     ledgers, _order = _fu_big_fixture(tmp_path, vcs)
     process = FakeProcess(alive=True)
@@ -4623,17 +4608,25 @@ def test_a_fresh_campaign_id_starts_with_nothing_launched(tmp_path: Path, monkey
     second = FakeBuildHarness()
     _run_drain(tmp_path, _drain_args(once=True, campaign="camp-b"), ledgers=ledgers, vcs=vcs, build_harness=second, process=process)
 
-    # camp-b's own journal holds no launches: its budget is the whole cap, and the two live follow-ups of camp-a
+    # camp-b's own journal holds no launches: its budget is the whole cap, and camp-a's two live follow-ups
     # (still open rows) are the same two newest -- queued, read in-flight, nothing new launched.
     assert len(first.dispatched) == 2
     assert second.dispatched == []
+    assert cli_dispatch._followups_launched_from_journal(
+        FakeFs(), dispatch_fleet.fleet_run_dir(tmp_path, "camp-a"), "camp-a"
+    ) != frozenset()
+    assert (
+        cli_dispatch._followups_launched_from_journal(
+            FakeFs(), dispatch_fleet.fleet_run_dir(tmp_path, "camp-b"), "camp-b"
+        )
+        == frozenset()
+    )
 
 
 def test_a_cap_of_zero_in_the_repository_defaults_queues_nothing_and_names_every_row_waiting(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     monkeypatch.setattr(
         cli_dispatch,
         "read_repo_policy_defaults",
@@ -4654,8 +4647,7 @@ def test_a_cap_of_zero_in_the_repository_defaults_queues_nothing_and_names_every
 def test_a_repository_defaults_cap_changes_how_many_a_campaign_queues(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     monkeypatch.setattr(
         cli_dispatch,
         "read_repo_policy_defaults",
@@ -4673,8 +4665,7 @@ def test_a_repository_defaults_cap_changes_how_many_a_campaign_queues(
 def test_a_station_project_layer_that_sets_the_cap_draws_a_warn_and_changes_nothing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     layer = tmp_path / "marshal-policy.toml"
     layer.write_text("[dispatch]\nmax_followup_reviews_per_campaign = 9\n", encoding="utf-8")
     monkeypatch.setattr(
@@ -4697,8 +4688,7 @@ def test_a_station_project_layer_that_sets_the_cap_draws_a_warn_and_changes_noth
 
 
 def test_a_project_layer_without_the_cap_draws_no_warn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     layer = tmp_path / "marshal-policy.toml"
     layer.write_text("[dispatch]\nmax_parallel = 2\n", encoding="utf-8")
     monkeypatch.setattr(cli_dispatch, "conventional_project_policy_path", lambda slug: layer)
@@ -4714,11 +4704,10 @@ def test_a_project_layer_without_the_cap_draws_no_warn(tmp_path: Path, monkeypat
 def test_a_candidate_with_no_merge_subject_on_origin_main_sorts_after_every_matched_one(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     stories = ["60-1-first", "60-2-second", "60-3-third", "60-4-fourth"]
-    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(s, _fu_spec(), "open") for s in stories])}
+    _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(s, _fu_spec(), "open") for s in stories])
     # Only 60.3 and 60.4 landed under a subject marshal recognises (the older one first in history order);
     # 60.1 and 60.2 were hand-landed under another subject.
     vcs.subjects = (_fu_subject(_FU_SLUG, "60-4-fourth"), "hand landed 60.2", _fu_subject(_FU_SLUG, "60-3-third"))
@@ -4728,20 +4717,18 @@ def test_a_candidate_with_no_merge_subject_on_origin_main_sorts_after_every_matc
     )
     assert [str(c.key) for c in plan.selected[_FU_SLUG]] == ["60.4", "60.3"]
     assert [str(c.key) for c in plan.waiting] == ["60.1", "60.2"]  # ledger order after every matched one
-    del ledgers
 
 
 def test_an_unreadable_history_takes_the_follow_ups_in_ledger_order_and_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(s, _fu_spec(), "open") for s in ("60-1-a", "60-2-b", "60-3-c")])
     vcs.history_unreadable = True
 
     plan = cli_dispatch.plan_followup_reviews(
-        repo_root=tmp_path, slugs=(_FU_SLUG,), vcs=vcs, policy_flags=_CYCLE_POICY if False else _CYCLE_POLICY_SERIAL
+        repo_root=tmp_path, slugs=(_FU_SLUG,), vcs=vcs, policy_flags=_CYCLE_POLICY_SERIAL
     )
     assert [str(c.key) for c in plan.selected[_FU_SLUG]] == ["60.1", "60.2"]
     (warning,) = [f for f in plan.findings if f.code == "MRS-DRAIN-018"]
@@ -4752,8 +4739,7 @@ def test_mutation_without_the_cap_the_181_row_campaign_queues_more_than_two(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The cap removed from the selection: every candidate is queued -- which the 181-row tests above fail on."""
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     _fu_big_fixture(tmp_path, vcs)
     monkeypatch.setattr(
@@ -4775,8 +4761,7 @@ def test_a_conditional_fetch_refreshes_origin_main_only_when_a_row_is_open(
 ) -> None:
     """A stale remote-tracking ref would show a row a landed review already closed -- so open rows are re-read
     after a fetch; a drain with no rows fetches nothing extra."""
-    _init_git_repo(tmp_path)
-    monkeypatch.chdir(tmp_path)
+    _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
     _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "closed")])
     cli_dispatch.plan_followup_reviews(repo_root=tmp_path, slugs=(_FU_SLUG,), vcs=vcs)
@@ -4786,13 +4771,7 @@ def test_a_conditional_fetch_refreshes_origin_main_only_when_a_row_is_open(
     cli_dispatch.plan_followup_reviews(repo_root=tmp_path, slugs=(_FU_SLUG,), vcs=vcs)
     assert vcs.fetched == [("origin", "main")]
     ledger_reads = [ref for ref, path in vcs.reads if path == _fu_ledger_rel(_FU_SLUG)]
-    assert ledger_reads == [dispatch_cli_origin_main()] * 3  # closed read; open read; the re-read after the fetch
-
-
-def dispatch_cli_origin_main() -> str:
-    from pyforge.marshal.core.refs import ORIGIN_MAIN
-
-    return ORIGIN_MAIN
+    assert ledger_reads == [ORIGIN_MAIN] * 3  # the closed read; then the open read and the re-read after the fetch
 
 
 # -- a follow-up is judged by its row, not by the story's first landing ------------------------------------
