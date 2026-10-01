@@ -757,7 +757,7 @@ def test_read_spec_status_tolerates_a_leading_banner():
 def test_set_spec_status_rewrites_only_the_value_token_and_keeps_the_quote_style():
     text = "---\ntitle: 'x'\nstatus: 'backlog'\nother: 1\n---\n\nbody status: backlog\n"
     assert set_spec_status(text, "done") == "---\ntitle: 'x'\nstatus: 'done'\nother: 1\n---\n\nbody status: backlog\n"
-    assert set_spec_status("---\nstatus: \"ready\"\n---\n", "done") == "---\nstatus: \"done\"\n---\n"
+    assert set_spec_status('---\nstatus: "ready"\n---\n', "done") == '---\nstatus: "done"\n---\n'
     assert set_spec_status("---\nstatus: ready\n---\n", "done") == "---\nstatus: done\n---\n"
 
 

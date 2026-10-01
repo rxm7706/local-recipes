@@ -967,11 +967,11 @@ def test_the_resync_observation_carries_every_finding_of_every_severity(tmp_path
 _SLUG_79 = "pyforge-marshal"
 _FEED_KEY_79 = "79-1-a-landing-promotes-the-feed-row"
 _FEED_HEADER_79 = "generated: 2026-10-01T00:00:00Z\nproject: pyforge-marshal\n"
-_FEED_BACKLOG_79 = (
-    f"{_FEED_HEADER_79}development_status:\n  epic-79: in-progress\n  {_FEED_KEY_79}: backlog\n  79-2-another-story: backlog\n"
-)
+_FEED_BACKLOG_79 = f"{_FEED_HEADER_79}development_status:\n  epic-79: in-progress\n  {_FEED_KEY_79}: backlog\n  79-2-another-story: backlog\n"
 _FEED_DONE_79 = _FEED_BACKLOG_79.replace(f"{_FEED_KEY_79}: backlog", f"{_FEED_KEY_79}: done")
-_DONE_LEDGER_79 = f"development_status:\n  epic-79: in-progress\n  {_FEED_KEY_79}: done\n  79-2-another-story: backlog\n"
+_DONE_LEDGER_79 = (
+    f"development_status:\n  epic-79: in-progress\n  {_FEED_KEY_79}: done\n  79-2-another-story: backlog\n"
+)
 _BACKLOG_LEDGER_79 = _DONE_LEDGER_79.replace(f"{_FEED_KEY_79}: done", f"{_FEED_KEY_79}: backlog")
 #: A `dispatch/<slug>/<key>` merge is trusted outright; a station-branch merge needs the spec `done` on origin/main.
 _DISPATCH_MERGE_79 = "Merge pull request #1705 from rxm7706/dispatch/pyforge-marshal/79.1"
