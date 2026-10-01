@@ -2,7 +2,10 @@
 title: '66.1: Finalize carries a recommended follow-up review into the deferred-work ledger'
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-review'
+baseline_revision: 'a240511f5b149a47d6972d4a335f591419d0d840'
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -67,6 +70,36 @@ Type / Effort / Deps: fix / S / —.
 | publish fails | `VcsCommandError` from the publish | nothing lands on `origin/main`; primary copy restored | `MRS-DISP-047` WARN; exit code unchanged |
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/deferred_work.py` -- Story 4.13's pure loop twin; the new dispatch twin sits beside it: `followup_review_id` (`DW-FRR-<epic>-<seq><suffix>` via `render_filename_slug`), `followup_review_candidate` (spec text -> candidate, reading status through `promotion.read_spec_status` and the flag through `dispatch_harness_done.followup_review_recommended`), `followup_review_to_promote` (greedy `DW-FRR-` token idempotency, `_tracked_followup_review_ids`), `render_followup_review_entry`, `append_ledger_entry`. No I/O, no clock (AD-4).
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` -- `_followup_review_carry` (the read: path through `_local_spec_rel_path`, text through `vcs.file_text_at_ref(ORIGIN_MAIN, ...)`), `_FollowupReviewCarry` (in/out holder), `_run_intake_script` (the intake script run, split out unchanged), `_carry_followup_row`, and `_run_deferred_work_intake(..., followup=)` publishing intake rows and the row in ONE `commit_paths_onto_remote_tip`; `finalize_dispatch_land` gains `clock` and the payload key `followup_review_promoted_id`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py` -- read-only: `story_spec_rel_path` / `spec_text_at_ref` are the spec reader's two halves.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py` -- read-only: `_promote_deferred_work` is the loop twin's impure edge (date from `ClockPort`, blank-line separation) this story mirrors.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_deferred_work.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize.py` -- the tests; four existing finalize tests were narrowed (the carry reads the spec once more and warns on the same failed read) and three intake stubs take `**_kwargs`.
+- `scripts/deferred_work_intake.py` -- read-only (governed by spec-pyforge-doctor; the Never list).
+
+## Tasks & Acceptance
+
+- [x] `core/deferred_work.py` -- pure candidate / selection / rendering / append functions -- the loop twin's neighbour (AD-4).
+- [x] `dispatch_land_finalize/__main__.py` -- carry read after the resync, one locked publish holding intake rows and the row, payload id, WARN-only failures.
+- [x] `tests/unit/test_deferred_work.py`, `tests/unit/test_dispatch_land_finalize.py` -- one test per acceptance criterion and I/O-matrix row; the mutation (carry call removed) turns 11 tests red.
+
+## Spec Change Log
+
+_(none -- no bad_spec loopback yet)_
+
+## Review Triage Log
+
+_(no independent review has run yet)_
+
+## Design Notes
+
+- **Where the row is built.** The spec is read in `finalize_dispatch_land` (after the resync, so the primary holds a spec the merged PR added); the row is built and appended INSIDE `_run_deferred_work_intake`'s advisory lock, from the text that step publishes (post-`--fix`, or pre-`--fix` after a refusal). One `commit_paths_onto_remote_tip` therefore holds both, and a refused or no-op intake still publishes the row.
+- **The out-parameter.** `_run_deferred_work_intake` keeps its `Finding | None` return (every existing stub and caller depends on it); `_FollowupReviewCarry` carries the id and the one WARN that return has no room for -- the shape `_execute_promotion_plan`'s `findings` / `data` already use.
+- **Reader.** `dispatch_core.spec_text_at_ref` is `story_spec_rel_path` + `file_text_at_ref`; the carry calls those two halves so the path resolves through the dispatch worktree as `_promote_tracked_spec` does (the helper `_local_spec_rel_path` is lifted out of it, behaviour unchanged).
+- **Base text.** The published text derives from the primary's working copy, as the intake's own publish always has; after finalize's resync that is `origin/main`'s ledger. A concurrent finalize publishing between the resync and the lock could lose its row -- the self-announcing backstop is Doctor's `followup-review-uncarried` source (spec-pyforge-doctor Story 33.1), and a re-run re-carries (idempotent).
 
 ## Source
 
