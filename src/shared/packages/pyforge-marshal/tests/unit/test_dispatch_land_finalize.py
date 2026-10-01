@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 from pyforge.core.process import ProcessError, ProcessResult
 
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
-from pyforge.marshal.adapters.vcs_git import VcsCommandError
+from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
+from pyforge.marshal.cli.deploy import _scan_promotions
 from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
@@ -18,6 +20,8 @@ from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.core.status import render_ledger_advancements
 from pyforge.marshal.dispatch_land_finalize.__main__ import (
     _FINALIZE_RESYNC_KIND,
+    _landing_corroboration,
+    _promote_tracked_spec,
     _run_deferred_work_intake,
     finalize_dispatch_land,
 )
@@ -1787,3 +1791,88 @@ def test_nothing_moves_while_origin_mains_ledger_does_not_read_the_key_done(tmp_
     assert vcs.publishes == []
     assert [f["code"] for f in _journaled_findings_79(tmp_path)] == ["MRS-DISP-051"]
     assert _promotion_flags_79(tmp_path) == (False, False, False)
+
+
+# -- real git: the stale scan, the gate's own fetch, and the spec publish through the real adapter ---------
+
+
+def _git_79(repo: Path, *args: str) -> str:
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    return result.stdout
+
+
+def _configure_git_79(repo: Path) -> None:
+    _git_79(repo, "config", "user.email", "test@example.com")
+    _git_79(repo, "config", "user.name", "Test")
+    _git_79(repo, "config", "commit.gpgsign", "false")
+    _git_79(repo, "config", "core.hooksPath", "/dev/null")  # never the machine's own pre-push hook
+
+
+def test_against_real_git_a_stale_scan_is_corroborated_after_the_gates_own_fetch_and_the_spec_is_published(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The stale-scan defect and the spec publish against REAL git, not a model of it: a bare `origin`, the
+    primary clone, and a second clone that "merges" the landing (adds the story's tracked spec at
+    `status: 'backlog'` under `planning-artifacts/specs/`, with a `dispatch/` merge subject, and pushes) while
+    the primary has not fetched. The real scan cannot see the merge; the gate fetches itself and does; the
+    publish goes through the real `commit_paths_onto_remote_tip` (so its planning-artifacts-only proof runs
+    against the path `story_spec_rel_path` yields) and `origin/main`'s spec reads `done`, the primary's
+    working tree and branch untouched."""
+    origin = tmp_path / "origin.git"
+    origin.mkdir()
+    _git_79(origin, "init", "--bare", "-b", "main")
+    primary = tmp_path / "primary"
+    primary.mkdir()
+    _git_79(primary, "init", "-b", "main")
+    _configure_git_79(primary)
+    (primary / "README.md").write_text("hello\n", encoding="utf-8")
+    _git_79(primary, "add", "README.md")
+    _git_79(primary, "commit", "-m", "base")
+    _git_79(primary, "remote", "add", "origin", str(origin))
+    _git_79(primary, "push", "-u", "origin", "main")
+
+    landing = tmp_path / "landing"
+    _git_79(tmp_path, "clone", str(origin), str(landing))
+    _configure_git_79(landing)
+    landed_spec = landing / _SPEC_REL_79
+    landed_spec.parent.mkdir(parents=True)
+    landed_spec.write_text(_TRACKED_SPEC_79, encoding="utf-8")
+    _git_79(landing, "add", _SPEC_REL_79)
+    _git_79(landing, "commit", "-m", _DISPATCH_MERGE_79)
+    landing_sha = _git_79(landing, "rev-parse", "HEAD").strip()
+    _git_79(landing, "push", "origin", "main")
+
+    # The dispatch worktree holds the spec the merged PR added; the primary's own tree does not (yet).
+    worktree = tmp_path / "dispatch-worktree"
+    (worktree / _SPEC_REL_79).parent.mkdir(parents=True)
+    (worktree / _SPEC_REL_79).write_text(_TRACKED_SPEC_79, encoding="utf-8")
+
+    monkeypatch.setattr("pyforge.marshal.cli.config.repo_root", lambda: primary)
+    vcs = GitVcs()
+    head_before = _git_79(primary, "rev-parse", "HEAD").strip()
+    scan = _scan_promotions(primary, _SLUG_79, vcs=vcs, fs=LocalFs())
+    assert scan.plan is not None
+    assert _DISPATCH_MERGE_79 not in scan.combined_subjects  # the defect: the scan ran before any fetch
+    key = normalize("79.1")
+
+    corroborated, finding = _landing_corroboration(vcs, primary, _SLUG_79, key, scan)
+
+    assert (corroborated, finding) == (True, None)
+    assert _git_79(primary, "rev-parse", "refs/remotes/origin/main").strip() == landing_sha
+
+    promoted, finding = _promote_tracked_spec(vcs, primary, _SLUG_79, key, worktree)
+
+    assert (promoted, finding) == (True, None)
+    assert _git_79(origin, "show", f"main:{_SPEC_REL_79}") == _TRACKED_SPEC_79.replace("'backlog'", "'done'")
+    assert _git_79(origin, "rev-parse", "main~1").strip() == landing_sha
+    assert _git_79(origin, "diff", "--name-only", "main~1", "main").split() == [_SPEC_REL_79]
+    assert _git_79(origin, "log", "-1", "--format=%s", "main").strip() == (
+        "marshal: promote story 79.1's tracked spec to done"
+    )
+    # CAP-233: the operator checkout is untouched -- same HEAD and branch, clean tree, no spec, no leaked worktree.
+    assert _git_79(primary, "rev-parse", "HEAD").strip() == head_before
+    assert _git_79(primary, "branch", "--show-current").strip() == "main"
+    assert _git_79(primary, "status", "--porcelain") == ""
+    assert not (primary / _SPEC_REL_79).exists()
+    assert _git_79(primary, "worktree", "list", "--porcelain").count("worktree ") == 1
