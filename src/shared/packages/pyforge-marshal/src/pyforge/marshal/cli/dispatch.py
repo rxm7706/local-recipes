@@ -104,6 +104,7 @@ from ..core.identity import (
 )
 from ..core.journal import (
     LANDING_CHECKS_FIELD,
+    FoldResult,
     JournalEntryId,
     Phase,
     build_entry,
@@ -882,6 +883,11 @@ def _resolve_origin_main_tip(vcs: VcsPort, repo_root: Path) -> str:
     return vcs.merge_base(repo_root, ORIGIN_MAIN, ORIGIN_MAIN)
 
 
+def _deferred_work_ledger_rel(slug: str) -> str:
+    """A station's tracked deferred-work ledger, repo-relative (where its ``DW-FRR`` rows live)."""
+    return f"_bmad-output/projects/{slug}/planning-artifacts/deferred-work-ledger.md"
+
+
 def _derive_followup_review(
     *, vcs: VcsPort, repo_root: Path, slug: str, story_key: StoryKey, spec_text: str
 ) -> FollowupReview | None:
@@ -906,7 +912,7 @@ def _derive_followup_review(
     except VcsCommandError:
         pass
     launch_tip = _resolve_origin_main_tip(vcs, repo_root)
-    ledger_rel = f"_bmad-output/projects/{slug}/planning-artifacts/deferred-work-ledger.md"
+    ledger_rel = _deferred_work_ledger_rel(slug)
     try:
         ledger_text = vcs.file_text_at_ref(repo_root, ORIGIN_MAIN, ledger_rel)
     except VcsCommandError:
@@ -1896,6 +1902,7 @@ def station_story_block_facts(
     slug: str,
     story_key: str,
     effective_policy: policy.EffectivePolicy,
+    followup_entry: bool = False,
 ) -> dispatch_fleet.StationBlockEvidence | None:
     """Evidence + environment/story classification for a blocked story (34.3).
 
@@ -1904,6 +1911,10 @@ def station_story_block_facts(
     CAP-2's own verdict resolution verbatim -- only the MOST RECENT run for
     that story counts, so a story that failed once and was later re-driven to
     ``live``/``completed`` is not treated as blocked forever.
+
+    ``followup_entry`` (Story 73.2, CAP-281): the queue entry is a follow-up review of an already-landed story,
+    judged by its open ``DW-FRR`` row and never by the story's first landing -- so Part B's already-landed
+    advance below does not apply to it. A follow-up that failed is a block like any story's.
     """
     feed_story = render_feed_key(normalize(story_key))
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
@@ -1985,9 +1996,13 @@ def station_story_block_facts(
             # blocked-spec check below (2026-09-19 review pass) so a worktree
             # that is both already-landed and carries a stale `blocked` spec
             # still reports the more definitive, terminal fact.
-            if not git_progress_unknown and dispatch_fleet.is_already_landed_self_refusal(
-                changed_path_count=changed_path_count,
-                session_log=session_log,
+            if (
+                not followup_entry
+                and not git_progress_unknown
+                and dispatch_fleet.is_already_landed_self_refusal(
+                    changed_path_count=changed_path_count,
+                    session_log=session_log,
+                )
             ):
                 return dispatch_fleet.StationBlockEvidence(
                     reason=(
@@ -3683,13 +3698,27 @@ def _reconcile_campaign_blocked_for_re_preflight(
     return reconciled, findings
 
 
+def _open_followup_row_keys(vcs: VcsPort, repo_root: Path, slug: str) -> frozenset[StoryKey]:
+    """The stories whose ``DW-FRR`` row is open in ``slug``'s deferred-work ledger at ``origin/main``.
+
+    An absent or unreadable ledger is none: the row gate only ever keeps a follow-up in play, never adds one."""
+    try:
+        text = vcs.file_text_at_ref(repo_root, ORIGIN_MAIN, _deferred_work_ledger_rel(slug))
+    except VcsCommandError:
+        return frozenset()
+    return frozenset(deferred_work.open_followup_review_story_keys(text)) if text else frozenset()
+
+
 def _reconcile_campaign_blocked(
     *,
     vcs: VcsPort,
     repo_root: Path,
     blocked: dict[str, dict[str, str]],
 ) -> dict[str, dict[str, str]]:
-    """Drop blocked entries for stories already merged on origin/main."""
+    """Drop blocked entries for stories already merged on origin/main.
+
+    A follow-up review entry (Story 73.2, CAP-281) is judged by its row, not by the story's first merge: a
+    story whose ``DW-FRR`` row is still open on ``origin/main`` is not "already landed", so its block stays."""
     if not blocked:
         return blocked
     fetch = getattr(vcs, "fetch", None)
@@ -3722,7 +3751,8 @@ def _reconcile_campaign_blocked(
             slug,
             spec_status_for=_spec_status_for,
         )
-        merged_feed = frozenset(render_feed_key(key) for key in merged)
+        open_followups = _open_followup_row_keys(vcs, repo_root, slug)
+        merged_feed = frozenset(render_feed_key(key) for key in merged if key not in open_followups)
         reconciled[slug] = prune_blocked_stories_merged_on_main(
             station_blocked,
             merged_story_keys=merged_feed,
@@ -3843,6 +3873,7 @@ def _station_blocked_map(
     configured_skips: Mapping[str, str],
     campaign_blocked: Mapping[str, str],
     effective_policy: policy.EffectivePolicy,
+    followups: frozenset[str] = frozenset(),
 ) -> tuple[dict[str, str], dict[str, dispatch_fleet.FleetBlockClass]]:
     """DERIVED blocks at the HEAD of ``backlog``, with their evidence.
 
@@ -3856,6 +3887,9 @@ def _station_blocked_map(
     operator declared skipped -- those never enter the returned map, because
     a hand-declared skip is honored under every mode while a derived block
     is what the campaign mode governs (see ``plan_station_queue``).
+
+    ``followups`` (Story 73.2): the queue entries that are follow-up reviews, which
+    ``station_story_block_facts`` judges by their open row, not by the story's first landing.
     """
     blocked: dict[str, str] = {}
     block_classes: dict[str, dispatch_fleet.FleetBlockClass] = {}
@@ -3875,6 +3909,7 @@ def _station_blocked_map(
                 slug=slug,
                 story_key=story,
                 effective_policy=effective_policy,
+                followup_entry=story in followups,
             )
         except VcsCommandError, ValueError:
             facts = None
@@ -4037,6 +4072,217 @@ def resolve_cycle_slugs(repo_root: Path, station: str | None) -> CycleSlugs:
             ),
         )
     return CycleSlugs(slugs=slugs)
+
+
+@dataclass(frozen=True)
+class FollowupPlan:
+    """What a drain campaign does about the follow-up reviews landed stories recommended (Story 73.2, CAP-281).
+
+    ``selected`` maps each station to the follow-ups it queues after its implementable backlog, newest landing
+    first; ``waiting`` are the qualifying rows beyond the per-campaign cap (they wait for a later campaign);
+    ``stale`` are open rows whose spec no longer qualifies (named, never dispatched); ``cap`` is
+    ``dispatch.max_followup_reviews_per_campaign`` as the repository's layers resolve it and ``launched`` how
+    many follow-ups the campaign already launched. ``findings`` are the facts the cycle emits -- the unreadable
+    ledger, the stale rows, a station layer that sets the cap and the waiting count -- empty when a drain has
+    no follow-up facts at all, so such a drain is byte-identical to one before this story."""
+
+    selected: Mapping[str, tuple[dispatch_fleet.FollowupCandidate, ...]] = field(default_factory=dict)
+    waiting: tuple[dispatch_fleet.FollowupCandidate, ...] = ()
+    stale: tuple[dispatch_fleet.StaleFollowupRow, ...] = ()
+    findings: tuple[Finding, ...] = ()
+    cap: int = policy.DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN
+    launched: int = 0
+
+
+def _repository_followup_review_cap() -> int:
+    """``dispatch.max_followup_reviews_per_campaign`` from the repository's layers only: Marshal's default, then
+    ``_bmad-output/policy-defaults.toml``. The cap bounds a CAMPAIGN, not a station, so no station's project
+    layer or invocation flag is composed in (``plan_followup_reviews`` names a project layer that sets it)."""
+    repo_defaults, _repo_finding = read_repo_policy_defaults()
+    effective, _findings = policy.compose(
+        project_slug=dispatch_fleet.FLEET_JOURNAL_SLUG, repo_defaults=repo_defaults, project={}, flags={}
+    )
+    return policy.resolve_followup_review_cap(effective)
+
+
+def _project_layer_followup_cap_path(slug: str) -> Path | None:
+    """``slug``'s project ``marshal-policy.toml`` when it sets ``[dispatch].max_followup_reviews_per_campaign``."""
+    candidate = conventional_project_policy_path(slug)
+    if not candidate.is_file():
+        return None
+    try:
+        project_data = _read_project_policy(candidate)
+    except PolicyIOError:
+        return None
+    block = project_data.get("dispatch")
+    if isinstance(block, Mapping) and policy.MAX_FOLLOWUP_REVIEWS_KEY in block:
+        return candidate
+    return None
+
+
+def plan_followup_reviews(
+    *,
+    repo_root: Path,
+    slugs: Sequence[str],
+    vcs: VcsPort,
+    launched: frozenset[tuple[str, StoryKey]] = frozenset(),
+    policy_flags: dict[str, object] | None = None,
+) -> FollowupPlan:
+    """The campaign's follow-up review decision for ``slugs`` -- READ-ONLY (Story 73.2, spec-pyforge-marshal CAP-281).
+
+    One campaign-wide read before the per-station loop, shared by ``execute_fleet_cycle`` and ``factory drain
+    --plan`` so the plan cannot drift from the drain. For each station it reads the tracked deferred-work ledger
+    AT ``origin/main`` (a row the finalize published and the primary has not pulled yet still counts; an absent
+    ledger holds no rows, an unreadable one is a WARN and no follow-ups for that station) and each open
+    ``DW-FRR`` row's story spec at ``origin/main`` (``dispatch_core.spec_text_at_ref``). When any row is open it
+    fetches ``origin main`` first and reads again: a stale remote-tracking ref would show a row a landed review
+    already closed, and the drain would run the review a second time.
+
+    The pure core decides: ``station_followup_queue`` (row gate x spec ``done`` with the flag true; the rest
+    stale), ``landing_positions`` (the newest-first position of each story's corroborated merge subject in
+    ``commit_subjects(ORIGIN_MAIN)``) and ``select_campaign_followups`` (newest landing first, at most the cap
+    minus ``launched``). ``launched`` is what the campaign journal says earlier cycles already launched
+    (``_followups_launched_from_journal``). Nothing here writes, and a git failure degrades to a named finding."""
+    findings: list[Finding] = []
+    for slug in slugs:
+        layer_path = _project_layer_followup_cap_path(slug)
+        if layer_path is not None:
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-018",
+                    severity=Severity.WARN,
+                    message=(
+                        f"station {slug!r}: {layer_path} sets dispatch.{policy.MAX_FOLLOWUP_REVIEWS_KEY} -- not "
+                        "applied: the cap bounds a campaign, not a station, so only Marshal's default and "
+                        "_bmad-output/policy-defaults.toml set it"
+                    ),
+                    path=str(layer_path),
+                )
+            )
+
+    def read_rows() -> dict[str, tuple[StoryKey, ...] | Finding]:
+        rows: dict[str, tuple[StoryKey, ...] | Finding] = {}
+        for slug in slugs:
+            ledger_rel = _deferred_work_ledger_rel(slug)
+            try:
+                text = vcs.file_text_at_ref(repo_root, ORIGIN_MAIN, ledger_rel)
+            except VcsCommandError as exc:
+                rows[slug] = Finding(
+                    code="MRS-DRAIN-018",
+                    severity=Severity.WARN,
+                    message=(
+                        f"station {slug!r}: cannot read the deferred-work ledger {ledger_rel} at {ORIGIN_MAIN}: "
+                        f"{exc} -- no follow-up reviews are queued for it this cycle"
+                    ),
+                    path=ledger_rel,
+                )
+                continue
+            rows[slug] = deferred_work.open_followup_review_story_keys(text) if text else ()
+        return rows
+
+    rows = read_rows()
+    if any(isinstance(value, tuple) and value for value in rows.values()):
+        try:
+            vcs.fetch(repo_root, "origin", "main")
+        except VcsCommandError:
+            pass
+        rows = read_rows()
+
+    candidates: list[dispatch_fleet.FollowupCandidate] = []
+    stale: list[dispatch_fleet.StaleFollowupRow] = []
+    spec_cache: dict[tuple[str, StoryKey], str | None] = {}
+
+    def spec_text(slug: str, key: StoryKey) -> str | None:
+        if (slug, key) not in spec_cache:
+            try:
+                spec_cache[(slug, key)] = dispatch_core.spec_text_at_ref(vcs, repo_root, slug, str(key))
+            except VcsCommandError:
+                spec_cache[(slug, key)] = None
+        return spec_cache[(slug, key)]
+
+    for slug in slugs:
+        station_rows = rows.get(slug, ())
+        if isinstance(station_rows, Finding):
+            findings.append(station_rows)
+            continue
+        if not station_rows:
+            continue
+        station_candidates, station_stale = dispatch_fleet.station_followup_queue(
+            slug, station_rows, {key: spec_text(slug, key) for key in station_rows}
+        )
+        candidates.extend(station_candidates)
+        stale.extend(station_stale)
+
+    for row in stale:
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-018",
+                severity=Severity.WARN,
+                message=(
+                    f"station {row.slug!r}: the open follow-up review row {row.row_id} is not dispatched -- "
+                    f"{row.reason}; it stays open and is never queued while that holds"
+                ),
+            )
+        )
+
+    cap = _repository_followup_review_cap()
+    positions: dict[tuple[str, StoryKey], int] = {}
+    if candidates and cap - len(launched) > 0:
+        try:
+            subjects = vcs.commit_subjects(repo_root, _BASE_REF)
+        except VcsCommandError as exc:
+            subjects = ()
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-018",
+                    severity=Severity.WARN,
+                    message=(
+                        f"cannot read {_BASE_REF}'s history: {exc} -- the follow-up reviews are taken in ledger "
+                        "order, not newest landing first"
+                    ),
+                )
+            )
+        for slug in dict.fromkeys(candidate.slug for candidate in candidates):
+            template = _compose_policy(slug, flags=policy_flags).merge_subject_template.value
+
+            def _spec_status_for(key: StoryKey, *, _slug: str = slug) -> str | None:
+                # `_reconcile_campaign_blocked`'s corroboration reader: a station-branch merge counts as a
+                # landing only when the story's spec reads done at origin/main (fails closed on a git error).
+                return promotion_core.read_spec_status(spec_text(_slug, key))
+
+            found = dispatch_fleet.landing_positions(
+                subjects,
+                template,
+                slug,
+                wanted={candidate.key for candidate in candidates if candidate.slug == slug},
+                spec_status_for=_spec_status_for,
+            )
+            positions.update({(slug, key): index for key, index in found.items()})
+
+    selection = dispatch_fleet.select_campaign_followups(candidates, positions, cap=cap, launched=launched)
+    if selection.waiting:
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-019",
+                severity=Severity.INFO,
+                message=(
+                    f"{len(selection.waiting)} follow-up review(s) wait for a later campaign: "
+                    f"dispatch.{policy.MAX_FOLLOWUP_REVIEWS_KEY} is {cap} ({len(launched)} already launched this "
+                    "campaign), newest landings first"
+                ),
+            )
+        )
+    selected: dict[str, tuple[dispatch_fleet.FollowupCandidate, ...]] = {}
+    for candidate in selection.selected:
+        selected[candidate.slug] = (*selected.get(candidate.slug, ()), candidate)
+    return FollowupPlan(
+        selected=selected,
+        waiting=selection.waiting,
+        stale=tuple(stale),
+        findings=tuple(findings),
+        cap=cap,
+        launched=len(launched),
+    )
 
 
 @dataclass(frozen=True)
@@ -4700,34 +4946,9 @@ def _campaign_blocked_from_journal(
     """
     blocked: dict[str, dict[str, str]] = {}
     predicates: dict[str, dict[str, dispatch_re_preflight.RefusePredicate]] = {}
-    try:
-        text = fs.read_text(run_dir / _JOURNAL_FILENAME)
-    except FsError, ValueError:
+    folded = _fold_campaign_journal(fs, run_dir)
+    if folded is None:
         return blocked, predicates
-    if text is None:
-        return blocked, predicates
-    lines = text.split("\n")
-    # AD-30 sidecars are NOT optional on this read side. A cycle payload
-    # carries one row per station plus every skip reason and refusal detail,
-    # and eight stations cross `SIDECAR_THRESHOLD_BYTES` (4 KiB) well before
-    # a real campaign finishes -- at which point `prepare_for_write` writes
-    # the payload to `blobs/` and leaves a `{"sidecar_ref": ...}` pointer.
-    # Folding without resolving those pointers quarantines the very entries
-    # this function exists to read, so a station refused for a non-liveness
-    # reason (no tracked spec) would be silently retried on every 60 s tick
-    # forever and the campaign could never report itself complete.
-    # Deferred import, matching `cli/deploy.py`'s own `.gate` convention: a
-    # module-level `from .gate import ...` here would be load-order fragile
-    # (gate -> spin -> dispatch). The helper is reused rather than re-copied.
-    from .gate import _sidecar_refs_for_fold
-
-    sidecars: dict[str, str | None] = {}
-    for ref in _sidecar_refs_for_fold(lines):
-        try:
-            sidecars[ref] = fs.read_text(run_dir / ref)
-        except FsError, ValueError:
-            sidecars[ref] = None
-    folded = fold(lines, sidecars=sidecars)
     for entry in folded.by_kind(dispatch_fleet.KIND_FLEET_CYCLE):
         if entry.run_id != run_id or entry.phase != Phase.OUTCOME:
             continue
@@ -4749,6 +4970,58 @@ def _campaign_blocked_from_journal(
             if predicate is not None:
                 predicates.setdefault(slug, {})[story] = predicate
     return blocked, predicates
+
+
+def _followups_launched_from_journal(fs: FsPort, run_dir: Path, run_id: str) -> frozenset[tuple[str, StoryKey]]:
+    """Every ``(station, story)`` follow-up review this campaign's earlier cycles launched (Story 73.2, CAP-281).
+
+    Folded from the campaign journal's fleet-cycle OUTCOME rows the way ``_campaign_blocked_from_journal`` folds
+    its blocks -- campaign state lives in the journal, never in a process, so the per-campaign cap
+    ``dispatch.max_followup_reviews_per_campaign`` holds across every cycle of one campaign (each supervised
+    tick is its own process). An absent or unreadable journal is no launches."""
+    folded = _fold_campaign_journal(fs, run_dir)
+    if folded is None:
+        return frozenset()
+    rows: list[object] = []
+    for entry in folded.by_kind(dispatch_fleet.KIND_FLEET_CYCLE):
+        if entry.run_id != run_id or entry.phase != Phase.OUTCOME:
+            continue
+        stations = entry.payload.get("stations")
+        if isinstance(stations, list):
+            rows.extend(stations)
+    return dispatch_fleet.followups_launched(rows)
+
+
+def _fold_campaign_journal(fs: FsPort, run_dir: Path) -> FoldResult | None:
+    """The campaign journal folded, sidecars resolved, or ``None`` when it is absent or unreadable."""
+    try:
+        text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+    except FsError, ValueError:
+        return None
+    if text is None:
+        return None
+    lines = text.split("\n")
+    # AD-30 sidecars are NOT optional on this read side. A cycle payload
+    # carries one row per station plus every skip reason and refusal detail,
+    # and eight stations cross `SIDECAR_THRESHOLD_BYTES` (4 KiB) well before
+    # a real campaign finishes -- at which point `prepare_for_write` writes
+    # the payload to `blobs/` and leaves a `{"sidecar_ref": ...}` pointer.
+    # Folding without resolving those pointers quarantines the very entries
+    # this function exists to read, so a station refused for a non-liveness
+    # reason (no tracked spec) would be silently retried on every 60 s tick
+    # forever and the campaign could never report itself complete.
+    # Deferred import, matching `cli/deploy.py`'s own `.gate` convention: a
+    # module-level `from .gate import ...` here would be load-order fragile
+    # (gate -> spin -> dispatch). The helper is reused rather than re-copied.
+    from .gate import _sidecar_refs_for_fold
+
+    sidecars: dict[str, str | None] = {}
+    for ref in _sidecar_refs_for_fold(lines):
+        try:
+            sidecars[ref] = fs.read_text(run_dir / ref)
+        except FsError, ValueError:
+            sidecars[ref] = None
+    return fold(lines, sidecars=sidecars)
 
 
 def _journal_fleet_cycle(
