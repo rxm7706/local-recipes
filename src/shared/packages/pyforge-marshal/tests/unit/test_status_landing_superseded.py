@@ -13,12 +13,14 @@ Fixtures are the two live cases that motivated the story: doctor 30.3 (PR
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import status as status_cli
+from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 
@@ -208,6 +210,74 @@ def test_the_spec_reader_answers_only_for_the_rows_own_key(tmp_path: Path) -> No
     vcs = _Vcs((_STATION_BRANCH_MERGE,), spec_texts={_SPEC_REL: "---\nstatus: 'done'\n---\n"})
     assert not _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), vcs, tmp_path)
     assert vcs.file_reads == []
+
+
+# --- Story 73.1 (CAP-281): a follow-up review's story is on main from its FIRST landing ------------------
+
+_LAUNCH_TIP = "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d"
+_TIP_RANGE = f"{_LAUNCH_TIP}..refs/remotes/origin/main"
+_FOLLOWUP = FollowupReview(dw_id="DW-FRR-30-3", launch_origin_main_sha=_LAUNCH_TIP)
+
+
+class _RangeVcs(_Vcs):
+    """Answers per ref: the whole local ``main`` carries the story's first merge; the launch-tip range carries
+    the run's own merge only when ``own_merge``."""
+
+    def __init__(self, *, own_merge: bool = False, range_raises: bool = False) -> None:
+        super().__init__((_DOCTOR_MERGE,))
+        self.own_merge = own_merge
+        self.range_raises = range_raises
+
+    def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
+        self.commit_subjects_calls.append(ref)
+        if ref == _TIP_RANGE:
+            if self.range_raises:
+                raise VcsCommandError("fatal: bad revision (test double)")
+            return (_DOCTOR_MERGE,) if self.own_merge else ()
+        return (_DOCTOR_MERGE,)
+
+
+def _followup_facts(followup_review: FollowupReview | None) -> FleetHomeFacts:
+    return replace(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), dispatch_followup_review=followup_review)
+
+
+def test_a_follow_up_refusal_is_not_superseded_by_the_stories_first_landing(tmp_path: Path) -> None:
+    """Story 30.3 is on `main` from its first landing, so the whole-`main` read would mark the refused
+    REVIEW landing superseded; only the launch-tip range can say the review itself landed."""
+    vcs = _RangeVcs()
+    main = status_cli._MainSubjects()
+
+    assert not _superseded(_followup_facts(_FOLLOWUP), vcs, tmp_path, main)
+    assert vcs.commit_subjects_calls == [_TIP_RANGE]
+    assert not main.attempted  # the sweep's shared whole-`main` read is never taken for this row
+
+
+def test_a_follow_up_refusal_is_superseded_once_its_own_merge_reaches_origin_main(tmp_path: Path) -> None:
+    vcs = _RangeVcs(own_merge=True)
+
+    assert _superseded(_followup_facts(_FOLLOWUP), vcs, tmp_path)
+    assert vcs.commit_subjects_calls == [_TIP_RANGE]
+
+
+def test_the_same_refusal_without_the_marker_is_still_superseded_by_the_stories_merge(tmp_path: Path) -> None:
+    vcs = _RangeVcs()
+
+    assert _superseded(_followup_facts(None), vcs, tmp_path)
+    assert vcs.commit_subjects_calls == ["refs/heads/main"]
+
+
+def test_a_follow_up_refusal_with_no_recorded_tip_is_never_superseded_and_reads_nothing(tmp_path: Path) -> None:
+    vcs = _RangeVcs(own_merge=True)
+
+    assert not _superseded(_followup_facts(FollowupReview(dw_id="DW-FRR-30-3")), vcs, tmp_path)
+    assert vcs.commit_subjects_calls == []
+
+
+def test_an_unreadable_launch_tip_range_leaves_a_follow_up_refusal_actionable(tmp_path: Path) -> None:
+    vcs = _RangeVcs(own_merge=True, range_raises=True)
+
+    assert not _superseded(_followup_facts(_FOLLOWUP), vcs, tmp_path)
+    assert vcs.commit_subjects_calls == [_TIP_RANGE]
 
 
 # --- the JSON row (core/status.py) -------------------------------------------
