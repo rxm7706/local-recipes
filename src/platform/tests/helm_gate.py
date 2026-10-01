@@ -3,8 +3,8 @@
 The chart render/lint tests (``test_chart_invariants.py``,
 ``test_openfeature_file_flags.py``) shell out to ``helm template``. Until 80.1
 each module guarded them with a ``pytest.mark.skipif`` on ``helm`` being absent,
-so in the Platform CI ``test`` job -- whose env had no helm -- all 73 skipped
-without a word. helm is now pixi-provisioned in ``platform-ci-test`` (AD-16);
+so in the Platform CI ``test`` job -- whose env had no helm -- every one of them
+skipped without a word. helm is now pixi-provisioned in ``platform-ci-test`` (AD-16);
 this gate makes its absence loud where it must not happen:
 
 * ``helm`` on ``PATH``            -- the test is returned unchanged;

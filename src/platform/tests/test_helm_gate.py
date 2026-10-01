@@ -1,7 +1,7 @@
 """Story 80.1 -- ``tests.helm_gate.requires_helm`` runs, fails or skips by environment.
 
-The chart tests used to skip silently when ``helm`` was absent, which is how all
-73 of them skipped in the Platform CI ``test`` job for weeks. These tests pin the
+The chart tests used to skip silently when ``helm`` was absent, which is how every
+one of them skipped in the Platform CI ``test`` job for weeks. These tests pin the
 three branches of the gate against a patched ``PATH`` and ``CI``:
 
 * ``helm`` on ``PATH``           -> the test is returned unchanged;
