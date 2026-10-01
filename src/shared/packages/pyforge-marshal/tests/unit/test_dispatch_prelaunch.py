@@ -147,12 +147,18 @@ def test_a_park_before_the_intent_contract_is_still_found() -> None:
     assert park is not None and park.source == "tracked spec"
 
 
-def test_every_intent_contract_block_is_skipped_and_the_lines_around_stay_apart() -> None:
+def test_every_intent_contract_block_is_skipped() -> None:
     spec = (
         "<intent-contract>\nDo not dispatch a.\n</intent-contract>"
         "<intent-contract>\nParked b.\n</intent-contract>\n"
         "an ordinary line\n"
     )
+    assert prelaunch.find_prose_park(story="1-1-x", station_skips={}, epics_block=None, spec_text=spec) is None
+
+
+def test_a_stripped_block_never_joins_the_lines_around_it() -> None:
+    """The block becomes a newline, so "do not" before it and "dispatch" after it stay two lines."""
+    spec = "do not <intent-contract>\nrules\n</intent-contract>dispatch it\n"
     assert prelaunch.find_prose_park(story="1-1-x", station_skips={}, epics_block=None, spec_text=spec) is None
 
 
