@@ -66,6 +66,7 @@ from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
     is_spec_only_narration,
+    narration_spec_path,
     zombie_redispatch_evidence,
 )
 from ..core.dispatch_harness_done import (
@@ -956,8 +957,14 @@ def _attempt_harness_done_cap4(
     fs: FsPort,
     vcs: VcsPort,
     process: ProcessPort,
+    followup_review: FollowupReview | None = None,
 ) -> tuple[DispatchLandingVerdict, str, object]:
-    """Compose with the existing CAP-4 land path — never a second lander."""
+    """Compose with the existing CAP-4 land path — never a second lander.
+
+    ``followup_review`` (Story 73.1, CAP-281) is the marker of the story's latest run when that run was a
+    follow-up review: the landing then judges ALREADY_LANDED by the run's own head and closes its row,
+    exactly as the supervisor's landing does -- never by the story's first merge. ``None`` (a normal run)
+    hands the landing nothing."""
     verification = _verification_verdict_for_cap4(
         slug=slug,
         story_key=story_key,
@@ -978,6 +985,7 @@ def _attempt_harness_done_cap4(
         fs=fs,
         vcs=vcs,
         process=process,
+        **_followup_review_kwargs(followup_review),
     )
     named = envelope.data.get("pr_url")
     if named is None and result.pr_number is not None:
@@ -994,6 +1002,23 @@ def _latest_story_run_dir(fs: FsPort, repo_root: Path, slug: str, story_key: str
         if journal.story_key == feed_story:
             return run_dir
     return None
+
+
+def _latest_story_followup_review(fs: FsPort, repo_root: Path, slug: str, story_key: str) -> FollowupReview | None:
+    """Story 73.1 (CAP-281): the follow-up review marker of the story's latest dispatch run, or ``None``.
+
+    The CAP-4 land-only retry launches no session and so writes no launch INTENT of its own; the run it
+    lands is the story's latest one, and the marker is the one that run's launch INTENT carries."""
+    run_dir = _latest_story_run_dir(fs, repo_root, slug, story_key)
+    if run_dir is None:
+        return None
+    return gather_dispatch_journal_facts(fs, run_dir, run_dir.name).followup_review
+
+
+def _followup_review_kwargs(followup_review: FollowupReview | None) -> dict[str, FollowupReview]:
+    """``{"followup_review": marker}`` for a follow-up review run, ``{}`` otherwise -- so a normal run's
+    call to a landing or CAP-4 seam carries no new keyword at all (Story 73.1, CAP-281)."""
+    return {"followup_review": followup_review} if followup_review is not None else {}
 
 
 def _redispatch_blocked_pending_supervisor_finalize(
@@ -1359,6 +1384,9 @@ def resolve_dispatch_session_verdict(
             project_slug=slug,
             baseline_head_sha=journal.baseline_head_sha,
             merge_subject_template=effective_policy.merge_subject_template.value,
+            # Story 73.1 (CAP-281): a follow-up review run is judged by its own branch, never by the
+            # story's first merge -- the marker comes off the run's own launch INTENT.
+            followup_review=journal.followup_review,
         )
     except VcsCommandError, ValueError:
         return DispatchSessionVerdict.LIVE if session_alive else None
@@ -1371,7 +1399,7 @@ def resolve_dispatch_session_verdict(
         verification_verdict=journal.verification_verdict,
         detach_reason=journal.completion_stop_reason,
         session_log=session_log,
-        spec_relative_path=spec_relative_path,
+        spec_relative_path=narration_spec_path(spec_relative_path, followup_review=journal.followup_review),
     )
 
 
@@ -1414,6 +1442,7 @@ def _live_dispatch_evidence(
         project_slug=slug,
         baseline_head_sha=journal.baseline_head_sha,
         merge_subject_template=effective_policy.merge_subject_template.value,
+        followup_review=journal.followup_review,
     )
     return (
         zombie_redispatch_evidence(
@@ -1929,6 +1958,7 @@ def station_story_block_facts(
                         project_slug=slug,
                         baseline_head_sha=journal.baseline_head_sha,
                         merge_subject_template=effective_policy.merge_subject_template.value,
+                        followup_review=journal.followup_review,
                     )
                     changed_path_count = len(git_facts.changed_paths)
                     git_changed_paths = git_facts.changed_paths
@@ -1980,7 +2010,9 @@ def station_story_block_facts(
             # 51.3 incident) classifies TRANSIENT/re-dispatchable via the
             # existing session-log check below, not TERMINAL.
             classify_changed_path_count = changed_path_count
-            if not git_progress_unknown and is_spec_only_narration(git_changed_paths, spec_relative_path):
+            if not git_progress_unknown and is_spec_only_narration(
+                git_changed_paths, narration_spec_path(spec_relative_path, followup_review=journal.followup_review)
+            ):
                 classify_changed_path_count = 0
             block_kind = classify_dispatch_block(
                 session_log=session_log,
@@ -2620,6 +2652,8 @@ def dispatch_once(
             fs=fs,
             vcs=vcs,
             process=process,
+            # Story 73.1 (CAP-281): a story whose latest run was a follow-up review lands as one.
+            **_followup_review_kwargs(_latest_story_followup_review(fs, repo_root, slug, render_feed_key(story_key))),
         )
         data["land_verdict"] = land_verdict.value
         data["land_named_target"] = named_target

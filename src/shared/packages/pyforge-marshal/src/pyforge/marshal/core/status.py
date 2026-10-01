@@ -77,6 +77,7 @@ from typing import Literal
 from pyforge.core.process import ProcessResult
 
 from ..ports.harness import DeferredStory, TaskPhaseSnapshot
+from .dispatch_harness_done import FollowupReview
 from .dispatch_supervisor_state import landing_journal_indicates_complete
 from .identity import StoryKey, normalize, render_feed_key
 from .model import Finding, Severity
@@ -1009,6 +1010,11 @@ class FleetHomeFacts:
     # ledger's `done`, which fleet-picture reads (AD-5 keeps story state out
     # of this summary).
     dispatch_landing_superseded: bool = False
+    # Story 73.1 (CAP-281): the latest dispatch run's follow-up review marker, read off its launch INTENT
+    # (``None`` for a normal run). The refused landing's "is its story on main" read
+    # (``cli/status.py::_landing_superseded``) is scoped to this run's own branch with it -- a follow-up
+    # review's story is on ``main`` from its first landing, which says nothing about the review's.
+    dispatch_followup_review: FollowupReview | None = None
     # Story 22.6 (dispatch operator survival, FR-193 CAP-6): supervision and
     # per-story timing / preserve refs from the dispatch journal alone.
     dispatch_supervisor_alive: bool = False
