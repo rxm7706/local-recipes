@@ -3949,7 +3949,16 @@ def _fu_subject(slug: str, story: str) -> str:
     return render_merge_subject(normalize(story), template, slug)
 
 
-def _fu_cycle(tmp_path: Path, *, ledgers, vcs: _FollowupVcs, harness: FakeBuildHarness | None = None, **kwargs):
+def _fu_cycle(
+    tmp_path: Path,
+    *,
+    ledgers,
+    vcs: _FollowupVcs,
+    harness: FakeBuildHarness | None = None,
+    ledger_harness: FakeHarness | None = None,
+    **kwargs,
+):
+    """One fleet cycle over ``_FollowupVcs``; ``harness`` is the BUILD harness (what records dispatches)."""
     kwargs.setdefault("process", FakeProcess(alive=False))
     return _cycle(
         tmp_path,
@@ -3957,6 +3966,7 @@ def _fu_cycle(tmp_path: Path, *, ledgers, vcs: _FollowupVcs, harness: FakeBuildH
         ledgers=ledgers,
         vcs=vcs,
         build_harness=harness if harness is not None else FakeBuildHarness(),
+        harness=ledger_harness,
         **kwargs,
     )
 
@@ -4006,7 +4016,7 @@ def test_landing_positions_are_newest_first_by_the_corroborated_merge_subject() 
     subjects = (
         "docs: unrelated",
         "Merge pyforge-marshal/51-3 into main",
-        f"Merge {_DOCTOR_FU}/51-2 into main",  # another station's landing of the same key: not this station's
+        f"Merge {_FU_OTHER_SLUG}/51-2 into main",  # another station's landing of the same key: not this station's
         "Merge pyforge-marshal/51-2 into main",
     )
     positions = dispatch_fleet.landing_positions(
@@ -4015,31 +4025,28 @@ def test_landing_positions_are_newest_first_by_the_corroborated_merge_subject() 
     assert positions == {k3: 1, k2: 3}  # 51.9 has no merge subject: absent
 
 
-_DOCTOR_FU = "pyforge-doctor"
-
-
 def test_landing_positions_use_the_corroborating_classifier_not_a_second_one() -> None:
     """A mint PR (a station branch merged at `ready`) is not a landing -- the same gate every other reader uses."""
     key = StoryKey(27, 4)
     subjects = ("Merge pull request #1477 from rxm7706/doctor/27-4-mint",)
     assert dispatch_fleet.landing_positions(
-        subjects, _FU_TEMPLATE, _DOCTOR_FU, wanted={key}, spec_status_for=lambda k: "ready"
+        subjects, _FU_TEMPLATE, _FU_OTHER_SLUG, wanted={key}, spec_status_for=lambda k: "ready"
     ) == {}
     assert dispatch_fleet.landing_positions(
-        subjects, _FU_TEMPLATE, _DOCTOR_FU, wanted={key}, spec_status_for=lambda k: "done"
+        subjects, _FU_TEMPLATE, _FU_OTHER_SLUG, wanted={key}, spec_status_for=lambda k: "done"
     ) == {key: 0}
 
 
 def test_landing_positions_stop_scanning_once_every_wanted_story_has_one() -> None:
-    seen: list[str] = []
+    def _boom(key: StoryKey) -> str | None:
+        raise AssertionError("scanned past the last wanted story's merge subject")
 
-    def _subjects():
-        for subject in ("Merge pyforge-marshal/51-2 into main", "Merge pyforge-marshal/51-3 into main"):
-            seen.append(subject)
-            yield subject
-
+    subjects = (
+        "Merge pyforge-marshal/51-2 into main",
+        "Merge pull request #1477 from rxm7706/marshal/27-4-mint",  # would need a spec read, were it reached
+    )
     positions = dispatch_fleet.landing_positions(
-        tuple(_subjects()), _FU_TEMPLATE, _FU_SLUG, wanted={StoryKey(51, 2)}, spec_status_for=lambda key: "done"
+        subjects, _FU_TEMPLATE, _FU_SLUG, wanted={StoryKey(51, 2)}, spec_status_for=_boom
     )
     assert positions == {StoryKey(51, 2): 0}
 
@@ -4176,13 +4183,9 @@ def test_the_launch_is_a_follow_up_review_run_through_dispatch_once(
 
     _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, station=_FU_SLUG)
 
-    journals = sorted((tmp_path / "_bmad-output" / "projects" / _FU_SLUG).rglob("dispatch-runs/*/journal.jsonl"))
-    assert len(journals) == 1
-    intent = next(
-        json.loads(line)
-        for line in journals[0].read_text(encoding="utf-8").splitlines()
-        if '"kind":"dispatch-launch"' in line.replace(" ", "") and '"phase":"intent"' in line.replace(" ", "")
-    )
+    (run_dir,) = cli_dispatch.iter_dispatch_run_dirs(tmp_path, _FU_SLUG)
+    entries = [json.loads(line) for line in (run_dir / "journal.jsonl").read_text(encoding="utf-8").splitlines()]
+    intent = next(e for e in entries if e["kind"] == "dispatch-launch" and e["phase"] == "intent")
     assert intent["payload"]["followup_review"]["dw_id"] == "DW-FRR-51-2"
     assert intent["payload"]["launch_origin_main_sha"] == _FU_TIP
 
@@ -4251,15 +4254,8 @@ def test_a_non_empty_backlog_dispatches_first_and_the_follow_up_queues_after_it(
     done_statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])
     _seed_fleet(tmp_path, stories={_FU_SLUG: ["52-1-implementable"]})
     ledgers = {_FU_SLUG: (("52-1-implementable", "backlog"), *done_statuses)}
-    harness = FakeBuildHarness()
 
-    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
-
-    # The implementable story goes first; the follow-up waits behind it in the same station queue.
-    assert harness.dispatched == [(_FU_SLUG, "52.1")]
-    (row,) = report.results
-    assert row.followup_reviews == ()
-    assert row.remaining == 2
+    # The station's plan: the implementable backlog first, the follow-up appended behind it.
     plan = cli_dispatch.plan_station_cycle(
         repo_root=tmp_path,
         slug=_FU_SLUG,
@@ -4284,6 +4280,14 @@ def test_a_non_empty_backlog_dispatches_first_and_the_follow_up_queues_after_it(
     assert plan.backlog == ("52-1-implementable", _FU_STORY)
     assert plan.followup_stories == (_FU_STORY,)
     assert plan.queue is not None and plan.queue.next_story == "52-1-implementable"
+
+    # The cycle dispatches the implementable story, not the follow-up; both count as remaining.
+    harness = FakeBuildHarness()
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+    assert harness.dispatched == [(_FU_SLUG, "52.1")]
+    (row,) = report.results
+    assert row.followup_reviews == ()
+    assert row.remaining == 2
 
 
 def test_a_stale_open_row_and_a_row_less_spec_dispatch_nothing_and_the_stale_row_is_named(
@@ -4371,11 +4375,11 @@ def test_the_sprint_ledger_twin_reads_done_before_during_and_after(
     ledgers = {_FU_SLUG: statuses}
     harness = FakeHarness(ledgers)
 
-    first = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, station=_FU_SLUG, harness_port=harness)
-    second = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, station=_FU_SLUG, harness_port=harness)
+    first = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, station=_FU_SLUG, ledger_harness=harness)
+    second = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, station=_FU_SLUG, ledger_harness=harness)
 
     assert _status_by_station(first)[_FU_SLUG] is StationCycleStatus.DISPATCHED
-    assert second is not None
+    assert _status_by_station(second)[_FU_SLUG] is StationCycleStatus.BLOCKED  # its own run failed; never re-queued
     assert twin.read_bytes() == before
     assert harness.ledgers == ledgers and ledgers[_FU_SLUG] == ((_FU_STORY, "done"),)
 
