@@ -3023,6 +3023,8 @@ def test_against_real_git_the_closure_is_published_onto_origin_mains_ledger(tmp_
     assert "### DW-CONCURRENT-1:" in published
     assert _git_79(origin, "rev-parse", "main~1").strip() == landing_sha
     assert _git_79(origin, "diff", "--name-only", "main~1", "main").split() == [ledger_rel]
+    # The story's key reads `done` in the tracked ledger throughout: the closure never touches it.
+    assert _git_79(origin, "show", f"main:{twin_rel}") == _DONE_LEDGER_79
     assert _observation_79(primary)["followup_review_closed_id"] == "DW-FRR-79-1"
     assert (primary / ledger_rel).read_text(encoding="utf-8") == stale
     assert _git_79(primary, "status", "--porcelain", "--", ledger_rel) == ""
