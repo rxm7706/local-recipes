@@ -5,7 +5,7 @@ created: '2026-09-28'
 status: 'in-review'
 baseline_revision: 'd8d0ac4469861f6ea58fa22b7dcae01c9eeaee3d'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -13,7 +13,15 @@ context:
   - .claude/skills/bmad-build-auto/step-01-clarify-and-route.md
 warnings:
   - oversized
-deferred: []
+deferred:
+  - summary: >-
+      The drain's campaign-block pruning still reads the whole origin/main, so a blocked follow-up review
+      story would be pruned as merged once a drain can schedule follow-ups (Story 73.2).
+    evidence: |-
+      `cli/dispatch.py::_reconcile_campaign_blocked` (def at line 3685) reads `commit_subjects(repo_root, _BASE_REF)` at line 3699, and `cli/drain_plan.py` `merged_keys` (def at line 182) reads `commit_subjects` at line 188, both without a launch-tip scope. A story whose first landing is on origin/main reads merged there, so a blocked follow-up review would be pruned. Not reachable today: a drain does not schedule follow-ups (this story's Never rule, Story 73.2), and a campaign block carries no run to read a marker from. Finalize's corroboration reads (`dispatch_land_finalize/__main__.py`), which the Intent Alignment layer also listed, were not examined by this review; settling them means reading what finalize writes for a story already `done` when a follow-up lands.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:3699
+    severity: medium
 declared_low_risk: false
 ---
 
