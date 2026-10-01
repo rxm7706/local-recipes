@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 513
+# stories: 514
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -363,6 +363,7 @@ development_status:
   80-1-a-dispatch-landing-waits-for-its-pr-s-checks-and-refuses-on-a-red-one: done
   81-1-a-drain-cycle-whose-wave-holds-every-story-reports-held-instead-of-crashing: backlog
   81-2-the-drain-plan-reads-a-prose-park-only-where-one-is-written-never-in-a-story-s-own-rules: backlog
+  81-3-the-campaign-supervisor-keeps-retry-environment-blocks-across-its-cycles: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done
@@ -489,7 +490,7 @@ development_status:
   epic-64-retrospective: optional
   epic-65: in-progress
   epic-65-retrospective: optional
-  epic-66: backlog
+  epic-66: in-progress
   epic-66-retrospective: optional
   epic-67: done
   epic-67-retrospective: optional
@@ -505,7 +506,7 @@ development_status:
   epic-71-retrospective: optional
   epic-72: done
   epic-72-retrospective: optional
-  epic-73: backlog
+  epic-73: in-progress
   epic-73-retrospective: optional
   epic-74: in-progress
   epic-74-retrospective: optional
