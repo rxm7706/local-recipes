@@ -549,6 +549,12 @@ def test_open_followup_review_id_names_the_open_row():
     assert open_followup_review_id(_open_row_ledger(), normalize("51.2")) == "DW-FRR-51-2"
 
 
+def test_open_followup_review_id_takes_the_story_key_as_text_too():
+    assert open_followup_review_id(_open_row_ledger(), "51.2") == "DW-FRR-51-2"
+    assert open_followup_review_id(_open_row_ledger(), "51-2-the-landing-record") == "DW-FRR-51-2"
+    assert open_followup_review_id(_open_row_ledger(), "51.3") is None
+
+
 def test_open_followup_review_id_is_none_without_a_row():
     assert open_followup_review_id("# Ledger\n\nold\n", normalize("51.2")) is None
     assert open_followup_review_id("", normalize("51.2")) is None

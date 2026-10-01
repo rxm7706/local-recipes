@@ -437,11 +437,13 @@ def _open_followup_review_rows(ledger_text: str, row_id: str) -> tuple[re.Match[
     return tuple(found)
 
 
-def open_followup_review_id(ledger_text: str, story_key: StoryKey) -> str | None:
+def open_followup_review_id(ledger_text: str, story_key: StoryKey | str) -> str | None:
     """``DW-FRR-<story>`` when ``ledger_text`` holds a row headed that id whose ``status:`` reads ``open``,
-    else ``None`` (Story 73.1): the row a follow-up review run serves. A closed row, an absent one and a
-    prose mention of the id are all ``None``; no clock, no I/O (AD-4)."""
-    row_id = followup_review_id(story_key)
+    else ``None`` (Story 73.1): the row a follow-up review run serves. ``story_key`` is a ``StoryKey`` or
+    the story key as text (``"51.2"``). A closed row, an absent one and a prose mention of the id are all
+    ``None``; no clock, no I/O (AD-4)."""
+    key = normalize(story_key) if isinstance(story_key, str) else story_key
+    row_id = followup_review_id(key)
     return row_id if _open_followup_review_rows(ledger_text, row_id) else None
 
 
