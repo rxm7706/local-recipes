@@ -2545,6 +2545,27 @@ def test_the_union_healed_head_is_waited_on_before_the_retried_merge(tmp_path: P
     assert [run["conclusion"] for run in heal["runs"]] == ["success", "success"]
 
 
+def test_a_union_healed_landing_reports_the_healed_head_not_the_pre_heal_one(tmp_path: Path, monkeypatch) -> None:
+    """The retried merge landed the head the heal pushed (`healed222`), so `merge_sha` and
+    `data["head_sha"]` name it -- the pre-heal head (`abc123`) is not what is on `main`."""
+    forge = _HealChecksForge(abc123=[_GREEN], healed222=[_GREEN])
+    result, envelope = _land_waiting(tmp_path, forge, _FakeClock(), monkeypatch, vcs=_heal_vcs())
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert forge.merged_heads == ["abc123", "healed222"]
+    assert result.merge_sha == "healed222"
+    assert envelope.data["head_sha"] == "healed222"
+    assert envelope.data["landing_checks"]["head_sha"] == "abc123"  # the first wait still names its own head
+
+
+def test_a_local_main_advance_still_reports_the_pre_heal_head(tmp_path: Path, monkeypatch) -> None:
+    """The local-`main` advance merges the head the pre-merge wait cleared: nothing to re-point."""
+    result, envelope = _land_waiting(tmp_path, _DirtyChecksForge(), _FakeClock(), monkeypatch, vcs=DirtyHealVcs())
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert envelope.data["local_main_advance"] is True
+    assert result.merge_sha == "abc123"
+    assert envelope.data["head_sha"] == "abc123"
+
+
 @pytest.mark.parametrize("conclusion", ["failure", "cancelled", "timed_out", "action_required"])
 def test_a_red_union_healed_head_refuses_with_the_checks_finding_and_never_retries_the_merge(
     tmp_path: Path, monkeypatch, conclusion: str

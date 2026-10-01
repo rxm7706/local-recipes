@@ -2589,6 +2589,39 @@ def test_supervisor_heartbeats_the_run_through_the_landing_wait(
     assert len(ids) == len(set(ids))  # the ticks and the landing's own entries never reuse a journal id
 
 
+def test_supervisor_heartbeats_the_run_through_the_landing_wait_on_the_terminal_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """The tick loop's SECOND landing call site (a finished harness session: finalize verifies, the
+    verdict is terminal, then it lands) hands the landing the same wait heartbeat -- two wait ticks
+    write two heartbeat observations and call the publisher heartbeat twice. No loop heartbeat
+    follows: the verdict is terminal, so the run completes instead."""
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    land_calls = _patch_landing(monkeypatch, wait_ticks=2)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    vcs = FakeVcs(branches=frozenset({branch}), head_sha=_MOVED)
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert len(land_calls) == 1
+    assert publisher.heartbeats == ["handle-1"] * 2
+    beats = _heartbeat_entries(fs)
+    assert len(beats) == 2
+    assert all(beat["payload"]["session_alive"] is False for beat in beats)
+    assert all(beat["payload"]["current_head_sha"] == _MOVED for beat in beats)
+    assert '"verdict": "landed"' in fs.journal_text(run_dir)
+    assert publisher.completions
+
+
 def test_supervisor_without_a_publish_handle_still_journals_the_wait_heartbeat(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
 ) -> None:

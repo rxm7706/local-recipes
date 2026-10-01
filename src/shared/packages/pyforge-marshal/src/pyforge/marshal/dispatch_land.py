@@ -1307,6 +1307,11 @@ def execute_dispatch_land(
             data["local_main_advance"] = True
         if heal.retried_forge_merge:
             data["ledger_union_heal"] = True
+            if heal_waits:
+                # Story 80.1 (CAP-284): the union heal pushed a new head and the retried merge landed IT,
+                # so report that head (the one `landing_checks.heal` waited on), not the pre-heal one.
+                head_sha = str(heal_waits[-1].record["head_sha"])
+                data["head_sha"] = head_sha
         if heal.healed_memlog_paths:
             # Story 78.1 (CAP-283): the Spec memlogs the union merge resolved, beside the flag above.
             data["memlog_union_heal"] = list(heal.healed_memlog_paths)

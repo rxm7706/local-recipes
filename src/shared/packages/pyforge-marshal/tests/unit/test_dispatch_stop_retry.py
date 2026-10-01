@@ -463,3 +463,18 @@ def test_resolve_max_parallel_defaults_from_effective_policy() -> None:
 
     effective = _compose_policy("pyforge-marshal")
     assert resolve_max_parallel(effective) == int(effective.dispatch.value["max_parallel"])
+
+
+def test_resolve_max_parallel_is_serial_for_a_dispatch_block_that_omits_max_parallel() -> None:
+    """Story 80.1 (CAP-284): the block validator now accepts any non-empty subset of the four
+    `dispatch` keys, so a project block that declares only a `landing_check_*` knob composes
+    cleanly with no `max_parallel` -- the wave cap must read as the serial default, not fail."""
+    from pyforge.marshal.cli.dispatch import resolve_max_parallel
+    from pyforge.marshal.core import policy
+
+    effective, findings = policy.compose(
+        project_slug="pyforge-marshal", project={"dispatch": {"landing_check_poll_seconds": 5}}, flags={}
+    )
+    assert findings == ()
+    assert "max_parallel" not in effective.dispatch.value
+    assert resolve_max_parallel(effective) == 1
