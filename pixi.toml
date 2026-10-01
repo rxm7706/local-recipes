@@ -463,6 +463,8 @@ django-debug-toolbar = ">=8.0.0"  #
 django-extensions = ">=4.1"       #
 django_coverage_plugin = ">=3.2.2"  #
 pytest-django = ">=4.13.0"        #
+# Story 80.1 / AD-16 — the chart tests (`requires_helm`) run here, not skip: same pin as platform-dev
+kubernetes-helm = ">=4.3.0"       # `helm template`/`lint` for tests/test_chart_invariants.py + tests/test_openfeature_file_flags.py
 # CAP-1 / steward 16.5 — local JWT minting for OIDC mapper tests
 pyjwt = ">=2.15.0"                #
 cryptography = ">=50.0.1"         #
