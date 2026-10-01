@@ -2217,9 +2217,10 @@ def _stale_surface_findings(specs: dict[str, dict], files: list[str]) -> list[di
                     "kind": "stale-surface",
                     "path": name,
                     "detail": (
-                        f"{name}: surface glob {glob!r} matches no tracked "
-                        f"file — remove or fix it in the Spec's surface: list "
-                        f"(it governs nothing)"
+                        f"{name}: surface glob {glob!r} matches no tracked file "
+                        "(a trailing '/' or a '{a,b}' brace is not expanded; write "
+                        "'dir/**', one glob per name) — fix it in the owning Spec, "
+                        "re-derived with bmad-spec, never hand-edited"
                     ),
                 }
             )

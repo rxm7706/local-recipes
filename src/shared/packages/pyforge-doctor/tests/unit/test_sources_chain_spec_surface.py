@@ -1445,9 +1445,12 @@ def test_the_same_dead_glob_in_two_specs_is_one_row_per_spec(tmp_path: Path) -> 
     assert sorted(f.evidence["path"] for f in rows) == ["pyforge-x/spec-foo", "pyforge-y/spec-bar"]
 
 
-def test_dead_glob_keeps_the_ok_verdict_and_the_exit_code(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dead_glob_keeps_the_ok_verdict_and_the_exit_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     """A WARN beside an otherwise clean run: the OK row stays (the finding rides
-    ``presumed``, never ``findings``) and the CLI still exits 0."""
+    ``presumed``, never ``findings``), the CLI lists the dead glob and still
+    exits 0."""
     repo = tmp_path / "repo"
     _init_repo(repo)
     _write_spec(repo, "pyforge-x", "spec-foo", surface=["**", "retired/**"], drift="exempt")
@@ -1465,6 +1468,8 @@ def test_dead_glob_keeps_the_ok_verdict_and_the_exit_code(tmp_path: Path, monkey
 
     monkeypatch.chdir(repo)
     assert dispatch.main(["spec-surface"]) == 0
+    listing = capsys.readouterr().out
+    assert "stale-surface" in listing and "retired/**" in listing, listing
 
 
 def test_dead_glob_does_not_change_an_existing_gating_finding(tmp_path: Path) -> None:
