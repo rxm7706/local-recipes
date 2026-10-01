@@ -2021,7 +2021,7 @@ def station_story_block_facts(
             # existing session-log check below, not TERMINAL.
             classify_changed_path_count = changed_path_count
             if not git_progress_unknown and is_spec_only_narration(
-                git_changed_paths, narration_spec_path(spec_relative_path, followup_review=journal.followup_review)
+                git_changed_paths, narration_spec_path(spec_relative_path, followup_review=None)
             ):
                 classify_changed_path_count = 0
             block_kind = classify_dispatch_block(
