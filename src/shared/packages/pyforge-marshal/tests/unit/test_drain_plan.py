@@ -1721,7 +1721,9 @@ def test_dispatch_stories_on_a_held_wave_reports_the_held_stories(
     assert code == 0  # WARN never changes the exit
 
 
-def test_dispatch_stories_on_a_held_wave_says_why_in_text_mode(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_dispatch_stories_on_a_held_wave_says_why_in_text_mode(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     """The operator's surface is the text report, not the envelope: the held story and its Dep must be on it."""
     ledgers = _seed_held_wave(tmp_path)
     args = argparse.Namespace(slug=_STEWARD, story=None, stories=_K_FOLD, format="text", harness=None, max_in_flight=2)
