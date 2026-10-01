@@ -7784,3 +7784,14 @@ status: open
   severity: low
   promoted: 2026-10-01 — minted by the deferral burn-down
   status: open
+
+### DW-marshal-79-1: The Tier-3 spec promotion in finalize classifies its candidates from the scan's pre-fetch commit subjects, so on the normal GitHub-merge path it probably never fires.
+
+- source_spec: `planning-artifacts/specs/spec-79-1-a-landing-promotes-the-story-s-tier-3-feed-row-and-its-tracked-spec-not-only-the-ledger-twin.md`
+  summary: The Tier-3 spec promotion in finalize classifies its candidates from the scan's pre-fetch commit subjects, so on the normal GitHub-merge path it probably never fires.
+  evidence: Blind Hunter, review pass 2 (2026-10-01); the ordering was reproduced with real git in pass 1: `commit_subjects(origin/main)` lacks the merge subject until the fetch finalize makes later, and `to_promote` is classified from the same `merged_keys`. Journals: 6 of 38 finalize runs carry a `deploy-promote-commit` entry, none of the last 8. Not caused by Story 79.1, which fixes its own gate. Widening the Tier-3 gate would let `_execute_promotion_plan`'s `commit_paths` commit onto the primary checkout (CAP-233), so it needs its own Spec decision.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py
+  origin: spec-deferred d7ca1a359baf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
