@@ -2,7 +2,7 @@
 title: "38.2: `spec-surface` names a Spec surface glob that matches nothing"
 type: 'feature'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '5b6a82b4c7a038dbcef39d8592bb08d20719e8d1'
 warnings: [oversized]
 review_loop_iteration: 0
