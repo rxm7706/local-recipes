@@ -344,9 +344,7 @@ class GhForge:
             if len(runs) >= total:
                 return tuple(runs)
             if not entries:
-                raise ForgeCommandError(
-                    f"{context}: gh returned an empty page after {len(runs)} of {total} check runs"
-                )
+                raise ForgeCommandError(f"{context}: gh returned an empty page after {len(runs)} of {total} check runs")
         raise ForgeCommandError(
             f"gh api {base}: more than {_CHECK_RUNS_MAX_PAGES} pages of check runs -- refusing to page further"
         )

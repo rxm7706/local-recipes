@@ -13,8 +13,8 @@ here.
 
 from __future__ import annotations
 
-import json
 import dataclasses
+import json
 import tomllib
 from pathlib import Path
 
@@ -757,7 +757,11 @@ def test_resolve_landing_check_settings_never_raises_on_a_value_that_bypassed_va
     """The resolver is the consumer's read, bounded by policy: a stored value that fails its
     validator (only reachable by constructing the field directly) reads as the default."""
     garbage = PolicyField(
-        value={"landing_check_poll_seconds": 0, "landing_check_timeout_minutes": "x", "landing_check_grace_seconds": -5},
+        value={
+            "landing_check_poll_seconds": 0,
+            "landing_check_timeout_minutes": "x",
+            "landing_check_grace_seconds": -5,
+        },
         layer="project",
         raw_source={},
     )

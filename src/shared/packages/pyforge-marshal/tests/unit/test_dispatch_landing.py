@@ -2077,7 +2077,9 @@ def test_landing_merges_when_every_check_run_is_green_and_journals_the_runs(tmp_
 
 
 @pytest.mark.parametrize("conclusion", ["failure", "cancelled", "timed_out", "action_required"])
-def test_landing_refuses_on_a_red_run_names_it_and_leaves_the_pr_open(tmp_path: Path, monkeypatch, conclusion: str) -> None:
+def test_landing_refuses_on_a_red_run_names_it_and_leaves_the_pr_open(
+    tmp_path: Path, monkeypatch, conclusion: str
+) -> None:
     """AC2: a red run refuses with a finding naming it, merges nothing, and leaves the PR open."""
     forge = _ChecksForge((_run("Lint / ruff"), _run("Detectors / scripts-suite", conclusion=conclusion)))
     clock = _FakeClock()
@@ -2132,7 +2134,9 @@ def test_landing_refuses_when_runs_are_still_pending_at_the_timeout_and_names_th
 def test_the_last_sleep_is_clipped_to_the_time_left(tmp_path: Path, monkeypatch) -> None:
     """A timeout that is not a multiple of the poll: the wait never overshoots it (60 + 30 = 90s)."""
     forge, clock = _ChecksForge(_PENDING), _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch, dispatch={"landing_check_timeout_minutes": 1.5})
+    result, envelope = _land_waiting(
+        tmp_path, forge, clock, monkeypatch, dispatch={"landing_check_timeout_minutes": 1.5}
+    )
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert clock.sleeps == [60.0, 30.0]
     assert _codes(envelope) == ["MRS-DISP-057"]
