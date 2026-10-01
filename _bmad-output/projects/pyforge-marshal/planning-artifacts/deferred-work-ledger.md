@@ -117,6 +117,8 @@ command (`pyforge-deps-test`, `llms-full-check`, the local-recipes adopt oracle,
   evidence: Reproduced live during the Story 1.1 review — probe files created under `pyforge-marshal/dist/` appeared as untracked until the comments were moved to their own lines; doctor's and warden's `.gitignore` are byte-identical to the pre-fix marshal file. Pre-existing in already-merged sibling packages, outside this story's surface.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — '/dist/ # pypi...' and '/dist-conda/ # conda...' at .gitignore:2-3 of pyforge-core, -doctor, -herald, -scribe, -testing-kit and -warden. 'git check-ignore -v --no-index' shows dist/x.whl and dist-conda/x.conda ignored only by the *.whl / *.conda lines (:5-6), while dist-conda/foo.json is not ignored (root .gitignore:490 negation wins). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN and WIDER than recorded — the entry named doctor and warden; it is now FOUR packages. `pyforge-warden/.gitignore:2-3`, `pyforge-doctor/.gitignore:2-3`, `pyforge-scribe/.gitignore:2-3` and `pyforge-herald/.gitignore:2-3` all carry the trailing-comment form `/dist/          # pypi: wheel + sdist (python -m build)`. gitignore has no trailing-comment syntax, so all eight patterns are dead. marshal (`:6-7`) and atlas (`:6`) use bare lines and are clean — the defect spread to scribe and herald by the same clone-the-sibling route that created it.
 
@@ -131,6 +133,8 @@ command (`pyforge-deps-test`, `llms-full-check`, the local-recipes adopt oracle,
   evidence: `ls src/shared/packages/*/LICENSE*` returns nothing while every sibling `pyproject.toml` declares MIT. Repo-wide sibling convention predating this story; fixing marshal alone would diverge from the mirror-the-siblings mandate, so it needs a one-sweep fix across all five packages.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — 'ls src/shared/packages/*/LICENSE*' returns nothing; 19 package pyproject.toml files (10 pyforge-*, 9 django-*) declare license = { text = 'MIT' }; only the repo root has LICENSE / LICENSE.txt. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and the sweep is now bigger: `ls src/shared/packages/*/LICENSE*` still returns nothing, across all EIGHT sibling packages (atlas, doctor, herald, marshal, mason, scribe, steward, warden) — the entry counted five. Every sibling `pyproject.toml` still declares `license = { text = "MIT" }` with no LICENSE file to ship.
 
@@ -156,6 +160,7 @@ source_spec: `spec-1-1-package-spine-verdict-lattice-findings-registry-and-the-m
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260725-234618-4c9d; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+  verified: 2026-10-01 — STANDS — No review artifact for story 1.1 exists anywhere under planning-artifacts/ (confirmed no matching file found; only spec-6-9-*.md mentions the story slug in passing). (2026-09-30 deferral burn-down triage)
 
 verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent follow-up never happened. Grepping the whole of `planning-artifacts/` (32 files) for `1-1-package-spine` matches only `sprint-status-ledger.yaml` and this ledger; no review artifact exists for the story.
 
@@ -195,6 +200,9 @@ verified: 2026-09-05 — STANDS — no review artifact for story 1.1 exists anyw
   evidence: Found during Story 1.3's adversarial + edge-case review passes (both reviewers independently flagged it). Reproduced by inspection: `EffectivePolicy.content_hash` and `cli/config.py::_policy_fields_payload()` both read `field.value` directly; only the payload path calls `redact()` before serializing for the file BODY, while the hash used for the FILENAME does not. Currently inert (no real secret-shaped key exists — the spec's own Never bullet says "do not invent a real secret key today"), but the tension is real: hashing the redacted value instead would make two different secrets that redact identically collide (defeating write-once correctness), so the fix is a genuine threat-model decision, not a mechanical patch. Needs a human call before any future story introduces a real secret-shaped policy key.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — NEEDS-DECISION — core/policy.py:1839-1860 content_hash hashes the RAW {value, layer, raw_source}; is_secret_key (:697-701) matches *_TOKEN/_KEY/_SECRET/_PASSWORD; none of today's EffectivePolicy fields (verify_commands ... dispatch) is secret-shaped, so the issue is inert. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Before any secret-shaped policy key ships, should materialize()'s content-addressed filename use a keyed digest (or exclude secret values), accepting the collision trade-off the entry describes?
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — and the behaviour is now deliberately documented, which does not close the concern. `core/policy.py:569-582`'s own `content_hash` docstring states it hashes 'over the RAW (unredacted) values … (redaction is a display/persistence concern, not an identity one)', while `cli/config.py:211` and `:213` still apply `policy.redact()` to the file BODY only. Note the docstring's stated rationale answers a DIFFERENT question than this entry asks — it justifies not hashing redacted values (collision avoidance), and says nothing about the filename becoming a fingerprint of a secret. Still inert: no secret-shaped key exists among the 9 shipped.
 
@@ -209,6 +217,8 @@ verified: 2026-09-05 — STANDS — no review artifact for story 1.1 exists anyw
   evidence: Found during Story 1.3's adversarial review pass. Confirmed by reading `schemas/policy.json`: the reused `policyField` shape gives `value`/`raw_source` a `description` but no `type` constraint, because the same `$defs` entry is shared across all 9 policy keys whose value types differ (str/int/tuple-as-array/dict). A precise fix needs per-field-name conditional typing (mirroring `pyforge-doctor/src/pyforge/doctor/data/report-schema.json`'s `if/then/else` pattern) — real schema-authoring effort, not a one-line change. Outside this story's `Effort: M` budget.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — schemas/policy.json $defs.policyField.properties.value and raw_source carry only a description; every per-key property (now 33+, e.g. verify_commands, max_dev_attempts, review_min_score) is a bare $ref to it. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, verified by loading the schema rather than reading it. Parsing `schemas/policy.json` and inspecting `$defs.policyField.properties` gives exactly: `value: ['description']`, `layer: ['enum', 'description']`, `raw_source: ['description']` — so `value` and `raw_source` still carry NO `type` keyword and a wrong-typed materialized document still validates. No `if/then/else` per-field conditional typing was added.
 
@@ -223,6 +233,8 @@ verified: 2026-09-05 — STANDS — no review artifact for story 1.1 exists anyw
   evidence: Found during Story 1.3's edge-case review pass. Confirmed by reading `materialize()`: its `except BaseException: tmp_path.unlink(...); raise` cleanup only runs for exceptions the interpreter gets to handle, which a `SIGKILL` or crash bypasses entirely. Low-probability (requires an unhandleable interrupt at a narrow window) and no loop-home/cleanup story exists yet to own a general tmp-file sweep (Story 1.4+/`[cleanup]` policy territory) — outside this story's surface.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/config.py:48 and :514-537 materialize through pyforge.core atomic_write_bytes; pyforge-core atomic_write.py:108 mkstemp(prefix='.<name>-', suffix='.tmp') is cleaned only in an except BaseException, which SIGKILL bypasses; no sweep exists in pyforge-core or pyforge-marshal. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — no sweep mechanism exists. `cli/config.py:317` still names the temp file `.pid{os.getpid()}.t{threading.get_native_id()}.tmp`, and grepping the whole `pyforge/marshal/` package for a sweep/orphan/tmp-glob reclaimer returns only the unrelated `[sweep]` stanza in the harness template. A SIGKILL between `mkstemp` and `os.replace` still strands the file permanently.
 
@@ -236,6 +248,7 @@ source_spec: `spec-1-3-layered-policy-composition-with-provenance-and-validation
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260730-001132-58f6; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+  verified: 2026-10-01 — STANDS — No review artifact for story 1.3 under planning-artifacts/ (find for *1-3*review* returns nothing relevant besides an unrelated spec-31-3-tea-test-review file). (2026-09-30 deferral burn-down triage)
 
 verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 twin. `1-3-layered-policy` matches only `sprint-status-ledger.yaml` and this ledger across all of `planning-artifacts/`; no review artifact was ever produced.
 
@@ -272,6 +285,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.10's adversarial review. Confirmed by reading `pixi.toml`'s `bmad-loop = ">=0.9.0"` pin (no ceiling) and `_POLICY_TEMPLATE`'s own docstring, which states the template was "verified once ... rather than imported at runtime." This repo already has an equivalent-purpose mechanism for a structurally similar problem (`scripts/bmad_drift_check.py`, `llms-full-check`) but nothing analogous protects this new vendored artifact. Deliberately out of this story's `Effort: M` scope (the spec explicitly chose vendoring over an `import bmad_loop` dependency to avoid a root pixi.lock re-solve); a lightweight version-pinned drift check is a reasonable follow-up for whichever story next touches this file.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — pyforge-marshal pyproject.toml:36 now caps bmad-loop>=0.11.0,<0.13, so a minor bump is a deliberate cap widening; tests/unit/test_harness_policy_render.py:321 loads the rendered template through the installed bmad_loop.policy.loads and :374 mirrors its enum vocabularies; nothing compares key sets or defaults. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN on both halves. The pin still has no ceiling: `pixi.toml:926` reads `bmad-loop = ">=0.9.0"`. And no drift detector guards the vendored snapshot — grepping `scripts/*.py` and the package's own `tests/` for `_POLICY_TEMPLATE` returns nothing, so the template at `adapters/harness_bmadloop.py:81` is still unprotected against a renamed or re-defaulted harness key.
 
@@ -286,6 +301,9 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.10's adversarial review. Confirmed in the installed `bmad_loop` 0.9.0 source: `policy.py::write_mux_backend()` rewrites `[mux].backend` in place, and `TuiPolicy`'s pane-dimension fields are documented as written by the TUI on resize. This is a direct consequence of AD-12/AD-35's own "written whole -- never patched, never merged" invariant (epics.md's Story 1.10 AC text, not a choice this story's spec introduced) — resolving it would need an architecture-level carve-out (e.g. round-tripping `[mux]`/`[tui]` from the pre-existing file before overwriting everything else), which is a product decision, not a mechanical patch.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — NEEDS-DECISION — adapters/harness_bmadloop.py:797-830 write_policy_toml 'Never reads an existing file at that path first'; the vendored template carries [tui] and [mux] (:403-407, backend commented out); the module docstring (:17-22) and the single-key patch writer (:1040-1060) both acknowledge the harness persists those keys. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: May write_policy_toml round-trip the harness-owned [tui] pane geometry and [mux].backend from the existing file (a carve-out from AD-12/AD-35's written-whole invariant), or is resetting them on every re-render accepted?
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — now stated outright in the code. `write_policy_toml`'s docstring (`adapters/harness_bmadloop.py:281-282`) says: 'Never reads an existing file at that path first: every call fully replaces any prior content, including hand-edited or unrelated bytes.' The harness-owned sections are in the vendored template (`[tui]` at `:184`, `[mux]` at `:187`), so a second render does not merely drop live pane geometry and the `mux set` backend — it resets them to template values.
 
@@ -334,7 +352,10 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-1-10-render-the-harness-policy-from-the-canonical-effectivepolicy.md`
   summary: The tracked `.bmad-loop/policy.toml` this story deletes carried curated operational commentary with no other tracked home — the A4/A6 authoring conventions from the pyforge-atlas retro, the hard-story model-escalation batch procedure, the atlas-gates restore instructions, the `--frozen` verify rationale, and the full max_followup_reviews=2 argument — which now survives only in git history (`git show 99ba90ea4e:.bmad-loop/policy.toml`) and in untracked per-home working copies; the still-relevant parts should be relocated to a tracked home (template comments, the future project-policy source, or project docs) when Story 1.4/1.7 establishes where policy values live.
   evidence: Found during Story 1.10's follow-up review (second pass). Directly visible in this story's diff (250 deleted lines, of which ~120 are curated commentary, not config); the A4/A6 block explicitly says "recorded here because this is where a loop operator looks." Not permanent loss (git history retains the blob), but a real discoverability regression; placement of each fragment depends on the policy-source design owned by later stories, so it is not mechanically patchable inside this story's declared surface (adapter + tests + .gitignore).
-  status: open
+  status: closed
+  severity: low
+  resolution: 2026-10-01 — obsolete: The hand-edited .bmad-loop/policy.toml is gone (rendered from EffectivePolicy since Story 1.10). Its HARD-STORY BATCH PROCEDURE is superseded by FR-51 model_tier_map (marshal epics.md:269 cites that block as the motivating evidence); max_followup_reviews lives in core/policy.py; A4/A6 live in atlas's retro SYNTHESIS; atlas's marshal-policy.toml:46-50 records its own --frozen reasoning.
+  verified: 2026-10-01 — OBSOLETE — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-07-30 — PARTIALLY RESOLVED, so held open for the remainder. Two fragments now DO have tracked homes: the `max_followup_reviews = 2` argument was relocated in full to `core/policy.py:141-150` (ten comment lines naming the repo-wide framing, the five damped stories and DW-AD23-3), and the A4/A6 authoring conventions live in the tracked `pyforge-atlas/planning-artifacts/retros/SYNTHESIS.md`. Not verified as relocated: the hard-story model-escalation batch procedure, the atlas-gates restore instructions, and the `--frozen` verify rationale. Those still survive only in `git show 99ba90ea4e:.bmad-loop/policy.toml` and untracked per-home copies.
 
@@ -369,6 +390,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.8's adversarial review pass, while verifying an inline comment in the new `run_teardown` code that (incorrectly, now corrected) claimed `run_preflight` already shared this guard. Confirmed by code inspection: `run_preflight`'s slug gate (`cli/init.py`, its `MRS-PREFLIGHT-010` check) calls only `policy._is_valid_project_slug(slug)`, with no `.`/`..`/`.lock` check anywhere in that function. Pre-existing gap, not introduced by this story; fixing it is a one-line addition to `run_preflight` but is Story 1.7's surface, not this story's.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — The ref-shape guard exists at cli/init.py:625 (run_init) and :2308 (run_teardown); run_preflight (:1367ff) checks only policy._is_valid_project_slug at :1407. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-07-31 — CONFIRMED STILL OPEN. `run_preflight` calls only `policy._is_valid_project_slug(slug)`; `run_teardown` still carries an inline comment explicitly recording the missing companion guard.
 
@@ -383,6 +406,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.8's adversarial review pass. This mirrors an already-adjudicated hardcoding: Story 1.4's `add_worktree` calls already hardcode `base="main"` when minting a loop-home branch, and `EffectivePolicy` (Story 1.3) deliberately owns only 9 fixed keys, none naming a base/integration branch. `is_branch_merged`'s new `into` parameter makes the assumption more visible than before, but does not introduce it. Needs a product decision (add a tenth policy key, or accept `main`-only as a permanent constraint of this factory) before it can be fixed — out of scope for an Effort:S story.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/init.py:2438 is_branch_merged(repo_root, branch, into='main') and :726 add_worktree(base=local_branch_ref('main')); the policy key landing_base_branch now exists (schemas/policy.json, core/policy.py) and cli/retire.py:310 reads it. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -397,6 +422,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.8's adversarial review pass. The window is narrow (the worktree itself is removed before `delete_branch` runs, and git worktrees are exclusive to one branch, so only an out-of-band `git update-ref`/push from a separate process could land new commits in it) and no architecture doc in this repo describes protecting against concurrent multi-process mutation of the same loop-home branch — AD-11's isolation model assumes one operator, one loop home. Real but requires a broader concurrency-control design (e.g. re-verifying `is_branch_merged` immediately before `delete_branch`, or locking) that is out of scope for an Effort:S story.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/init.py:2438 reads is_branch_merged; after worktree removal :2607 runs vcs.delete_branch(repo_root, branch, force=True) with no re-check. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -411,6 +438,9 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found by Story 1.8's follow-up adversarial review, live-verified two ways -- unforced `git worktree remove` exits 0 and recursively deletes ignored files in a scratch repo, and the real `~/.bmad-loops/pyforge-marshal` home read `git status --porcelain`-clean at review time while hosting an active run with unpromoted work (the precise artifact class the pyforge-warden incident lost). Not patchable naively -- EVERY loop home carries gitignored content (`run_init`'s own marker/symlink, `.bmad-loop/runs/`), so refusing on any ignored content would refuse every ordinary teardown and train the gate away (the exact F-14 failure mode AD-29's amendment warns about). Distinguishing disposable from precious gitignored content is what AD-29's promotion-reachability predicate exists for; this entry is concrete evidence for Epic 4's wiring of `_unreachable_promotions` (a hardcoded no-op today by the spec's own Never-clause).
 
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — run_teardown's dirty probe is VcsPort.has_uncommitted_changes, i.e. git status --porcelain (adapters/vcs_git.py:~370-391), which omits ignored files, and remove_worktree (:511-526) deletes them. _unreachable_promotions (cli/init.py:2119) now delegates to cli.deploy.unreachable_promotions_for_slug and guards unpromoted story work even past --force. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Which gitignored content in a loop home is precious enough to refuse teardown (unfinished .bmad-loop/runs state, logs), beyond the unpromoted story work AD-29 already guards?
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -425,6 +455,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found by Story 1.8's follow-up adversarial review, live-verified -- unforced `git worktree remove <home>` on a home containing a nested registered worktree succeeds, recursively deletes it including uncommitted files, and leaves a prunable orphan block in `git worktree list --porcelain`; six of the eight fleet homes at `~/.bmad-loops/` contained such nested worktrees at review time. Committed nested work survives as `bmad-loop/...` branch refs in the common git dir; uncommitted work is lost. A naive any-nested-worktree refusal would fire on every fleet home (universal refusal, gate trained away), so the fix needs a designed policy -- per-nested-worktree dirty/merged checks and a post-removal `git worktree prune` -- a scope decision beyond this Effort:S story's contract, adjacent to Epic 4's AD-29 wiring.
 
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — run_teardown (cli/init.py:2271-2640) never calls vcs.list_worktrees and removes the home at :2600 (remove_worktree); VcsPort already offers list_worktrees and prune_worktrees (adapters/vcs_git.py:528). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -439,6 +471,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found by Story 1.8's follow-up adversarial review. The 8-home fleet at `~/.bmad-loops/` runs unattended, and a live run's worktrees/logs/state are all inside gitignored paths (see the companion gitignored-blindness entry), so both refusal probes pass while a story is mid-implementation; the check-then-remove sequence is also unsynchronized with any concurrent writer (same class as the already-deferred delete-branch TOCTOU entry). No liveness mechanism exists anywhere in Marshal's architecture yet to consult -- introducing one (probe choice, staleness thresholds, lock protocol) is a design decision interacting with the same Epic 4 refusal-extension seam, not a patch.
 
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — No liveness probe in run_teardown (cli/init.py:2271-2640: no engine_alive, tmux or status consult); cli/status.py:935-999 already computes engine liveness for the fleet picture. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -468,6 +502,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: FR-57's journal clause is explicit in the PRD; `core/journal.py` does not exist yet (`supervisor/__init__.py` is a reserved stub), so the write cannot land now. Story 1.9's spec's Design Notes promised exactly this ledger entry ("log a deferred-work entry that Story 3.1's journal writer must record {marshal_version, harness_version} per run once it exists") but no such entry had ever been appended -- its absence was itself a Story 1.9 follow-up-review finding.
 
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — grep for marshal_version / harness_version / __version__ / 'version' in core/journal.py, cli/spin.py, cli/dispatch.py and schemas/journal.json: no hit; the only harness_version is the adapter probe (adapters/harness_bmadloop.py:1285). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -573,6 +609,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.4's adversarial + edge-case review passes (both reviewers independently flagged it). This repo's own documented history includes parallel-agent races over shared git/BMAD state (see `feedback_parallel_bmad_physical_paths.md`), so the scenario is realistic, not purely theoretical. A real fix (a lock file, or accepting git's own worktree-add race semantics as "good enough" with a clearer error) is a design decision spanning this story and possibly Story 1.6's isolation-verification surface — not a mechanical patch.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/init.py:693 worktree_path_for_branch read then :726 add_worktree with no lock; the only 'lock' in run_init is the '.lock' slug-shape check at :625. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   scope note (2026-07-31): this entry is the concrete, in-code instance of a wider question — nothing serializes concurrent writes to the SHARED Tier-2 artifacts (`epics.md`, this ledger, `sprint-status-ledger.yaml`) that every loop line writes. That question was raised against the Spec and PRD rather than this ledger, and was RESOLVED the same day by decomposition (PRD Q-10 / the Spec memlog decision): merge append-only inputs and re-derive regenerated outputs on main after landing; advisory append lock on the shared canonical Tier-3 store; the journal's two-writer case stays with F-6. Fixing this entry does not answer that question, and its resolution does not close this entry — the init TOCTOU remains its own open deferral.
 
@@ -589,6 +627,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.4's adversarial review. Confirmed by grep: `BMAD_LOOP_HOME_ROOT` is set in every test file that imports `run_init`/`main`. The code itself is a one-line `Path` join with low risk, but the coverage gap is real and mechanically closeable (a single test with `monkeypatch.delenv`) — recorded rather than patched now to keep this pass's diff scoped to the findings that change behavior, not just coverage.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/init.py:347-358 default Path.home() / '.bmad-loops'; the only delenv tests (tests/unit/test_init.py:1025, :3578) make Path.home raise; the autouse _sandbox_loop_home_root fixture (:451) pins the env var everywhere else. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -603,6 +643,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.4's adversarial review. Confirmed by diff: both helpers are byte-identical (`subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)` plus the same returncode assertion). Minor test-hygiene issue with no runtime consequence.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — grep '^def _git(' finds 29 definitions under src/shared/packages/pyforge-marshal/tests (meta 2, integration 5, unit 22); there is no tests/conftest.py at the package test root. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -632,6 +674,9 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.4's edge-case review, corroborated by this project's own memory (`project_bmad_loop_worktree_path_length_limit.md`) and by `scripts/bmad-loop-worktree`'s own comment documenting the exact panic and the `~/.bmad-loops` short-root mitigation it already applies. Pre-existing risk, not newly introduced by this diff (the reference script has the identical gap) — the existing 255-char `_is_valid_project_slug` cap is a POSIX single-segment bound, not a total-path bound. Needs a product decision on whether Marshal should add a total-length check now or continue relying on the short default root as sufficient mitigation.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — NEEDS-DECISION — No length guard in cli/init.py, cli/spin.py, cli/dispatch.py or core/policy.py (grep for 173 / 'too long' / 'path length' / PATH_MAX: no hit); _is_valid_project_slug's 255-character single-segment cap is the only bound. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should marshal init/spin refuse a loop-home path longer than the ~173-byte pixi-build-python panic threshold, or is the short ~/.bmad-loops default root the accepted mitigation?
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -646,6 +691,9 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.4's follow-up review (both reviewers flagged escape paths; the specific known escapes — `Path.cwd()` OSError, `Path.home()` RuntimeError, `UnicodeDecodeError` from marker reads and git output, pathlib `PermissionError` on the 3.12 floor — were all patched at their sources in that pass). The residual clamp is a pre-existing Story 1.1/1.3 design decision on the CLI spine (silently converting unknown bugs to `EXIT_USAGE` trades a loud traceback for domain purity), not a mechanical patch; it spans every current and future subcommand, so it deserves its own deliberate change rather than a review-pass side edit.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — NEEDS-DECISION — cli/main.py:343-406 catches only SystemExit and KeyboardInterrupt; core/verdict.py:439-445 maps UNEVALUABLE to exit 1, so an uncaught crash exits 1, which is inside GUARDED_EXIT_CODES but indistinguishable from a real UNEVALUABLE verdict. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should marshal's CLI spine convert an unanticipated exception into an explicit crash envelope and code (steward uses exit 70), or is Python's traceback with exit 1 (read as UNEVALUABLE) acceptable?
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -660,6 +708,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found independently by both reviewers in Story 1.4's second follow-up review. Confirmed by grep: `pyforge-marshal-test-slow` appears only in `pixi.toml` and the spec; no CI workflow references either marshal task. Wiring it in is a decision about WHERE (a CI workflow vs. the loop's verify gate vs. a `depends-on` aggregate task) — the loop verify command is orchestrator-owned policy, so this needs a deliberate placement decision, not a review-pass side edit.
 
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — pixi.toml:732-738: pyforge-marshal-test passes -m 'not slow' and pyforge-marshal-test-slow is the only runner of @slow tests; grep of .github/workflows for 'test-slow' / '-m slow' finds nothing. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -674,6 +724,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found independently by both reviewers in Story 1.5's review pass. Confirmed by code inspection: `fs.is_dir(local)` is False for a plain file, so the `remove_empty_dir`/`MRS-INIT-005` branch is never reached; `repoint_symlink_atomic`/`ensure_dir` still safely refuse (no data is destroyed), just under the less-specific code. Low real-world likelihood (why would a plain file occupy exactly this path?) and current behavior is already safe, so not patched now — a dedicated check would need a general `exists()`-style `FsPort` primitive this story's narrow surface doesn't otherwise need.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/init.py:773 only 'tier3_link_target is None and fs.is_dir(local)' reaches the MRS-INIT-005 branch; a plain file falls through to :803-809 and a generic MRS-INIT-004 via _op_failed_finding. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -688,6 +740,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.5's adversarial review. Both `local`'s stored target and `canonical` are always computed identically via the same deterministic `repo_common_root()`/path-join logic on every invocation (Marshal never hand-configures this symlink, unlike the more varied historical states `bmad-switch` has to tolerate), so a divergence causing spurious non-convergence is unlikely in practice — but the inconsistency with the reference script's own comparison method is real and worth revisiting for full fidelity.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/init.py:767 compares the raw readlink target ('tier3_link_target == canonical'); scripts/bmad-switch (~:119-125) compares resolved paths. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-07-31 — promoted in the second pass of this audit. Missed by the first pass, which swept the id-less Tier-3 block without reconciling its entry count against the tracked ledger — the same anonymous-entry blind spot recorded as `DW-AUD-2026-07-31-3`, reproduced by the audit that reported it.
 
@@ -702,6 +756,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.5's edge-case review. Confirmed by code inspection: no compensating write restores the removed directory in the `except FsError` branches after `remove_empty_dir`. Low practical impact since the removed directory was necessarily EMPTY (no data loss) and a subsequent successful re-run self-heals via the same "fresh backlink" path, but a true rollback would be more robust.
 
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/init.py:781 remove_empty_dir(local), then :803-809 ensure_dir / repoint_symlink_atomic; the except FsError returns _op_failed_finding with no compensating mkdir. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-07-31 — promoted in the second pass of this audit, alongside `DW-1-5-13`. Same miss, same cause.
 
@@ -716,6 +772,8 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   evidence: Found during Story 1.5's follow-up adversarial review. Confirmed by inspection of `_bmad/bmm/config.yaml:8` (top-level path hard-coded), `scripts/bmad-switch::_ARTIFACT_LINKS`/`desync_warning` (requires BOTH top-level links to agree with the marker), and the epics: no later story creates the link — Story 1.6 only VERIFIES Tier-3 realpaths, Story 1.7 seeds adapter configs. The spec deliberately scoped the top-level compatibility link out of Story 1.5 (its Never section + Design Notes: it belongs to `bmad-switch::repoint_links`, shared with `planning-artifacts`), and today's operational mitigation is running `bmad-switch` inside the home (auto-memory `feedback_bmad_loop_worktree_needs_switch_and_backlink.md`). Needs a product decision: either a later Marshal story ports `repoint_links`' implementation-artifacts half (e.g. into 1.6/1.7's surface), or the FR-3 claim "every consumer sees the same path" is formally narrowed to nested-path consumers.
 
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/init.py creates only the nested backlink (:759-809) and the planning-artifacts link (:812-837); nothing in the package writes _bmad-output/implementation-artifacts, while _bmad/bmm/config.yaml:8 still resolves implementation_artifacts to that top-level path and scripts/bmad-switch:80 _ARTIFACT_LINKS repoints both links. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -731,7 +789,10 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   impact: A safety refusal that cries wolf on 26 provably-safe stories is worse than no refusal — the documented override (`--force --abandon <26 keys>`) trains the operator to abandon a list they cannot practically verify, which is exactly the trust erosion AD-27's "every widening is recorded" discipline exists to prevent. It also makes tearing down any retired project impossible without that override.
   candidate fix: scope the durable-story scan to the project (or treat "project planning tree absent" as a distinct, non-blocking state — a project with no specs directory has no promotions to lose, which is a different fact from "26 promotions are missing their specs"). Worth deciding alongside the `--abandon` UX: it currently accepts a space-separated list but silently rejects the comma-separated form the refusal message's own rendering suggests.
 
-  status: open
+  status: resolved
+  severity: high
+  resolution: 2026-10-01 — Story 50.4 (spec-marshal-templated-merge-subject-cross-project-collision CAP-1) changed the repo default merge_subject_template to "Merge {slug}/{key} into main" (core/policy.py:460) and self-scopes templated-shape classification at the grammar layer per core/promotion.py:153-162's docstring. Live reproduction today: `pixi run -e pyforge-marshal python -c "from pyforge.marshal.cli.deploy import unreachable_promotions_for_slug; from pathlib import Path; print(unreachable_promotions_for_slug(Path('.').resolve(), 'pyforge-genesis'))"` returns `()` (empty), not the 26 misattributed pyforge-marshal keys the entry reproduced on 2026-08-08; unreachable_promotions_for_slug(root, 'pyforge-marshal') …
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-08 — found and reproduced during the genesis retirement; the teardown was completed with `--force --abandon` only after proving the 0-vs-26 asymmetry above. Supersedes the read recorded in auto-memory `project_genesis_teardown_deferred_2026-08-08.md`, which concluded the 26 keys were "stale artifacts of an already-completed retirement (pre-split planning-phase epics)" — they are not; they are Marshal's current, shipped stories.
 
@@ -931,6 +992,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-3` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-3`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
   severity: low
   status: open
+  verified: 2026-10-01 — STANDS — No review artifact for story 2.1 exists under planning-artifacts/ (targeted find returns nothing). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -946,6 +1008,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-4` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-4`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
   severity: low
   status: open
+  verified: 2026-10-01 — STANDS — No review artifact for story 2.6 exists under planning-artifacts/ (targeted find returns nothing). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -961,6 +1024,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-5` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-5`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
   severity: low
   status: open
+  verified: 2026-10-01 — STANDS — No review artifact for story 3.3 anywhere under `_bmad-output/projects/pyforge-marshal/planning-artifacts/` (targeted find for *3-3*/*review* patterns found none). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -976,6 +1040,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-6` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-6`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
   severity: low
   status: open
+  verified: 2026-10-01 — STANDS — No review artifact for story 3.4 anywhere under planning-artifacts/ (targeted find found none). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -991,6 +1056,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-7` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-7`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
   severity: low
   status: open
+  verified: 2026-10-01 — STANDS — No review artifact for story 3.5 anywhere under planning-artifacts/ (targeted find found none). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1004,7 +1070,10 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: follow-up review still recommended for 4-14 after the damping cap was spent — an independent pass is owed on the failed-story safety-net reporting.
   evidence: the follow-up-review damping cap (`limits.max_followup_reviews = 2`) was spent with the story finalized (status `done`, verify green) while the review pass still recommended an independent follow-up. Committed by bmad-loop run `20260809-231524-abb9`. 4-14 also cleared on its LAST review cycle (rev 3 of 3), which is the profile where an independent pass earns its cost.
   promoted: 2026-08-10 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-8` there) under this ledger's own `DW-FU-<story>` convention (`DW-FU-2-6`, `DW-FU-3-3`, `DW-FU-3-4`, `DW-FU-3-5`). A generic `DW-8` would collide with the next damped story.
-  status: open
+  status: resolved
+  severity: low
+  resolution: 2026-10-01 — The follow-up review this entry says is 'owed' has, in substance, already happened repeatedly: DW-FU-4-14-2 through DW-FU-4-14-12 in this same ledger document at least 4 distinct independent adversarial review passes (Blind Hunter + Edge Case Hunter, separately) over Story 4.14's diff, several landing real code fixes (e.g. `_one_line` sanitization, the MRS-STATUS-011 withheld-codes naming) before the single merge commit `11461c31660e` (2026-08-10). Whatever the damping-cap bookkeeping said, the requested independent scrutiny was not skipped.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1018,6 +1087,7 @@ source_spec: `spec-7-4-manifest-schema-loader-and-model-version-ranges.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260810-192255-dbc6; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+  verified: 2026-10-01 — STANDS — find _bmad-output/projects/pyforge-marshal/planning-artifacts for any story-7.4 review artifact: none found (only the spec file itself exists). (2026-09-30 deferral burn-down triage)
   severity: medium
   status: open
   promoted: 2026-08-11 (landing pass, mason 2-2 / marshal 7-4)
@@ -1044,7 +1114,10 @@ status: open
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
   summary: `default_plan_path` is `<repo_root>/.marshal/plan.json`, which is only gitignored by the `model-ignores` region of the target's `.gitignore` -- a region a not-yet-seeded repo has not received. So `write_plan(plan, default_plan_path(repo))` on a clean repo makes `git status --porcelain --untracked-files=normal` report `?? .marshal/`, `fingerprint_drift` reports a `dirty` divergence, and `run_apply` refuses with a stale-plan `PreconditionFailure` -- blocking the plan-then-apply flow that is Genesis's entire purpose, and naming `dirty` rather than the plan file, so an operator has no way to diagnose it.
   evidence: Raised independently by BOTH of this story's review passes (Blind Hunter and Edge Case Hunter, no shared context) and reproduced by execution: on a clean git repo, `build_plan` records `dirty=False`; after `write_plan(plan, default_plan_path(d))`, `fingerprint_drift` returns `('dirty: the plan was built with dirty=False, the repo is now dirty=True',)` and `run_apply` raises. This corroborates the already-filed `DW-FU-9-6-2`, which predicted exactly this once a later story started trusting the fingerprint for a refuse decision; recorded separately per this workflow's instruction not to consolidate defer findings against existing ledger entries. Not fixed here: the remedy is a write-ORDER guarantee (materialize the `.gitignore` region before writing the plan file, or write the plan outside the target tree) owned by whichever story sequences those writes -- Story 10.6 (`adopt`) -- or a dirty-probe that excludes `.marshal/`, which is `plan/build.py`'s `_repo_is_dirty` and changes what every plan records, not just what apply checks. Both are outside this story's Surface and inside its Never list (no `plan.json` read or write, no verb sequencing).
-  status: open
+  status: resolved
+  severity: high
+  resolution: 2026-10-01 — Story 10.6 (a06fc1f149, 2026-08-21): seed/verbs/adopt.py:1022 write_plan, then :1063-1066 re-stamps repo_fingerprint.dirty with _repo_is_dirty_now (:386), and _unexpected_dirt_since_plan_write guards unrelated dirt; seed/verbs/init.py:493 and :524-529 and seed/verbs/update.py:1070 and :1103-1108 do the same before run_apply, so a freshly built plan no longer refuses itself as stale.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1058,6 +1131,9 @@ status: open
   summary: `run_apply` catches `BaseException` and, whenever any single restore fails, re-raises as `InternalError` (exit 10) chained from the original. When the original IS a `KeyboardInterrupt` or `SystemExit`, that converts an uncatchable interrupt into an ordinary `Exception` subclass, so the CLI story that eventually does `except SeedError as e: sys.exit(e.exit_code)` will exit 10 on an operator interrupt instead of dying. This directly contradicts `_restore`'s own docstring, which argues at length that catching `Exception` rather than `BaseException` is deliberate because swallowing a Ctrl-C "would make the process unkillable at exactly the moment a human is trying to stop it".
   evidence: Raised by this story's second review pass (Blind Hunter) and verified by execution: with `commit` raising `KeyboardInterrupt` and one target inside the caller's never-write set, the caller receives `InternalError` with `__cause__` set to the interrupt. Not fixed here because it is a contract-level conflict, not a local bug: the spec's I/O & Edge-Case Matrix has a "Rollback itself fails" row mandating `InternalError` naming every unrestorable path, with no carve-out for an interrupt, and a separate "Interrupt mid-run" row promising `KeyboardInterrupt` propagates unchanged -- both rows are inside the FROZEN `<intent-contract>`, and they collide exactly when both conditions hold. Choosing which wins is an intent decision (and every mechanical alternative has a cost: re-raising the interrupt bare discards the unrestorable-path list, which is the same diagnostics loss already filed as `DW-FU-10-3-5`). This story's `_restore` docstring now states the behavior explicitly so it is not read as an oversight. Belongs with whoever amends the matrix, or with the CLI story that owns exit-code dispatch.
   status: open
+  severity: low
+  verified: 2026-10-01 — NEEDS-DECISION — seed/apply/run.py:393-404 catches BaseException and raises InternalError from the original whenever _restore reports unrestorable paths, including when the original is a KeyboardInterrupt. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: When an interrupt coincides with a failed rollback, which frozen matrix row wins: propagate the interrupt unchanged (listing the unrestored paths on stderr) or raise InternalError?
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-10` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1071,6 +1147,8 @@ status: open
   summary: `run_apply`'s snapshot is `target.read_bytes()`, and the restore is `fs.write` -> `atomic_write_bytes(path, data)` with no mode argument, which chmods the temp file to `0o666 & ~umask` before `os.replace`. A target that was `0o755` therefore comes back `0o664`. The packaged manifest ships `scripts/bmad-switch` and `scripts/bmad-loop-worktree` as `copied-managed` executable model machinery, so a rolled-back apply silently breaks them while the runner claims to have left the repo exactly as it found it.
   evidence: Raised by this story's Blind Hunter review and independently by the Edge Case Hunter, and reproduced by execution: a `hook.sh` at `0o755`, committed by action 1, with action 2 failing, comes back with correct content at mode `0o664`. Not fixed here: `fs.write(path, data, *, repo_root, never_write)` exposes no `mode=` passthrough to the `atomic_write_bytes(path, data, mode=...)` parameter that already exists one layer down, so the fix edits `seed/fs.py` -- the never-write guard module, explicitly listed as consumed-unmodified in this story's Code Map and outside its Surface. The runner's own docstring now states the bound rather than implying it away.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/fs.py:334-346 write() calls atomic_write_bytes(path, data) with no mode kwarg; src/shared/packages/pyforge-core/src/pyforge/core/atomic_write.py:124 atomic_write_bytes(path, data, *, mode: int | None = None) already has the parameter. seed/apply/run.py:252 fs.write(target, snapshot, ...) is the only restore call site and cannot pass a mode either. Confirmed on main today, same as latest_verified. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1084,6 +1162,8 @@ status: open
   summary: `run_apply` records `None` for any target that is not a regular file, and its restore path only removes `if target.is_file()`. A manifest artifact whose path is a directory -- the packaged manifest's `deck-scaffolding` entry is `path: "presentations/{{ slug }}/"`, rationale "Genesis lays the directory" -- therefore survives rollback along with everything `commit` created under it. The same asymmetry covers empty parent directories `atomic_write_bytes` creates for a nested target, and the case where a `commit` replaces a regular-file target with a directory (`os.replace` onto a non-empty directory fails, and the file is reported unrestorable instead).
   evidence: Raised by both of this story's review passes and reproduced by execution: an action creating `adir/` plus `adir/junk.txt`, followed by a failing action, leaves both on disk after rollback. Not fixed here: `seed/fs.py` ships no directory-removal primitive (its own `remove` docstring says so explicitly, contrasting itself with `ports/fs.py`'s separate `remove_empty_dir`), and P-01 forbids reaching around `fs` with `shutil`/`os` on a target path -- so the fix adds a primitive to the guard module, outside this story's Surface and inside its Never list. The runner's docstring now enumerates this residue precisely rather than mentioning only empty parent directories.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — seed/apply/run.py:248-250 `if snapshot is None: if target.is_file(): fs.remove(...)` -- target.is_file() is False for a directory, so fs.remove is never called and the directory (plus everything commit created under it) survives rollback. seed/fs.py:399-412 remove() only wraps Path.unlink() and offers no directory-removal primitive. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-3` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1097,6 +1177,8 @@ status: open
   summary: `run_apply`'s snapshot predicate is `target.is_file()`, which FOLLOWS symlinks, so a symlinked artifact captures its referent's bytes; but `fs.write` -> `atomic_write_bytes` -> `os.replace` replaces the link itself (POSIX `rename(2)` never follows a symlink at its destination -- `seed/fs.py`'s own docstring records this, confirmed by direct execution). Rollback therefore turns the symlink into a regular file holding the referent's old bytes, while the referent keeps whatever `commit` wrote through it: a state that matches neither before nor after.
   evidence: Raised by both of this story's review passes and reproduced by execution: `CLAUDE.md -> real.md` containing `"REAL\n"`, a commit writing `"mat\n"` through the link, then a later failure, leaves `CLAUDE.md` a regular file containing `"REAL\n"` and `real.md` containing `"mat\n"`. Not fixed here: a correct fix snapshots link-ness (`os.readlink`) and restores through a symlink-aware primitive `seed/fs.py` does not offer, or refuses symlinked targets outright -- a precondition, which is Story 10.4's surface. `fs.py` itself already accepts this identical bound on the stated grounds that no real V1 target artifact is expected to be a symlink; the runner now states the same bound explicitly instead of inheriting it silently.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — seed/apply/run.py:390 snapshot predicate `target.read_bytes() if target.is_file() else None` follows symlinks (captures the referent's bytes), but restore (fs.write -> atomic_write_bytes -> os.replace, seed/fs.py:334-346) replaces the link itself since POSIX rename(2) never follows a destination symlink -- so rollback turns the symlink into a regular file holding the referent's old bytes while the referent keeps whatever was written through it. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-4` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1110,6 +1192,8 @@ status: open
   summary: `_restore` catches `Exception`, not `BaseException`, so a `KeyboardInterrupt` arriving while rollback is running unwinds straight past `run_apply`'s inspection of its return value. The `unrestorable` list accumulated up to that point is thrown away with it, and the caller receives a bare `KeyboardInterrupt` -- maximum partial state with zero diagnostics about which paths are known broken.
   evidence: Raised by this story's Blind Hunter review and reproduced by execution: with three modified targets where the first restore raises `PermissionError` and the second raises `KeyboardInterrupt`, the caller sees only the interrupt, no `InternalError` and no path list, while all three files sit at the committed content and the third was never attempted. Not fixed here because every available remedy is worse than the gap and the choice is a real design decision, not a mechanical fix: aggregating into an `InternalError` would downgrade an interrupt to a catchable `SeedError` (independently flagged as harmful by the Edge Case Hunter, since an `except SeedError` caller would then swallow a Ctrl-C), and writing the list to stderr would put I/O into a library module whose whole taxonomy deliberately has none (`errors.py`: no formatting beyond `__str__`, no I/O). Belongs with whichever story owns operator-facing output for the seed verbs -- `seed/cli/seed.py`, which also owns exit-code dispatch.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — seed/apply/run.py:253 `except Exception as failure:` in _restore's per-target loop -- a KeyboardInterrupt (BaseException, not Exception) during one target's restore propagates immediately, discarding the `unrestorable` list accumulated for every prior target in the same call. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-5` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1137,6 +1221,8 @@ status: open
   summary: `RepoFingerprint` carries `git_head`, `dirty`, and per-artifact hashes, but nothing naming the repo the plan was built against. For a non-git target both git fields degrade identically (`git_head=None`, `dirty=True`) in every directory, so a plan built against directory A and handed to `run_apply(plan, repo_root=B)` reports zero drift whenever B's artifacts happen to hash the same -- most easily when both are empty of the actioned artifacts, which is the common greenfield case. Genesis then seeds the wrong directory.
   evidence: Raised by this story's Edge Case Hunter review. Verified by reading `plan/types.py::RepoFingerprint` (three fields, no repo identity) and `plan/build.py::_git_head`/`_repo_is_dirty` (both degrade to the same values for any non-git directory, by design). Not fixed here: the fix adds a field to `RepoFingerprint`, whose module `plan/types.py` is listed as consumed-unmodified in this story's Code Map and named in its Never list -- and it changes the serialized `plan.json` wire shape, which is a Story 9.6 surface decision with its own round-trip tests, not an apply-runner one.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — seed/plan/types.py:220-235 RepoFingerprint carries only git_head, dirty, and artifact_hashes -- no field naming which repo the plan was built against. seed/plan/build.py:482-505 _git_head/_repo_is_dirty degrade identically (None/True) for ANY non-git directory, so two different non-git directories that happen to hash the same (the common empty-greenfield case) are indistinguishable to fingerprint_drift. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-7` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1150,6 +1236,8 @@ status: open
   summary: `fingerprint_drift(plan, repo_root)` reads and hashes `repo_root / action.target_path` with no containment check of its own, and `Path(repo) / "/abs/path"` discards `repo` entirely -- so a hand-edited `plan.json` handed straight to the verifier reads any host file the process can open and reports its absolute path back in a drift string. `run_apply` happens to pre-screen every target before calling it, but that guard is the CALLER's, so any second caller inherits an unguarded read.
   evidence: Raised by this story's second review pass (Blind Hunter) and verified by execution: `fingerprint_drift` called directly with `target_path="/tmp/.../secret.txt"` read that file and returned a drift tuple naming the absolute path. Not fixed here: the story's Design Notes explicitly ACCEPT this direction as fail-closed for `run_apply`'s own use ("an entry whose path escapes `repo_root` ... may find a real file there and report drift ... refuses rather than proceeds"), and the containment check was deliberately placed in `run_apply` where a `PreconditionFailure` can be raised and surfaced. The residual risk is a FUTURE second caller, and Story 10.4's own `Surface:` line names `seed/apply/run.py` while also owning the precondition ladder -- so the natural fix (hoist containment into `fingerprint_drift`, or expose a shared `_resolve_within_repo`-style helper from `detect/inventory.py` that both call) lands with the story that adds the second caller, not before it.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — seed/plan/build.py:198 `target = repo_root / entry_path` in _read_text_or_blank_verbose has no containment check; an absolute entry_path discards repo_root entirely (Path.__truediv__ semantics, confirmed live: `Path('/repo') / '/etc/passwd'` == `/etc/passwd`). Line 827 then echoes the raw absolute target_path back into the drift message. run_apply pre-screens every target before calling this function today, so the shipped CLI path is not currently exploitable; the gap is in the shared primitive itself for a future second caller. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-8` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1163,6 +1251,8 @@ status: open
   summary: `detect/inventory.py::_resolve_within_repo` returns `None` for a manifest entry whose `path` is absolute, traverses upward, or is an in-repo symlink pointing outside, and `_classify_entry` treats `None` as `ABSENT` -- so `build_plan` emits an ordinary `Action` still carrying the raw escaping path. `run_apply` must then refuse the WHOLE plan (`escaping-target`, exit 3), because the containment check is plan-wide and correctly runs before any write. A single malformed model-manifest entry therefore blocks apply for every artifact in the repo, and re-planning reproduces the identical plan.
   evidence: Raised by this story's second review pass (Edge Case Hunter) and verified by execution for all three shapes: `entry.path` of `/etc/hostname`, `../sibling.txt`, and an in-repo symlink to an outside file each classified `ABSENT`, each produced a normal `Action`, and each made `run_apply` raise. Partially addressed here: this story corrected the refusal's REMEDY, which previously asserted such a plan "did not come from `build_plan`" and told the operator to re-plan -- provably wrong advice that sends them around a loop producing the same plan; it now names the manifest entry as the thing that must change. Not fixed here: stopping the bad `Action` from being emitted at all (skip it, or classify it into an explicit refusal state) edits `detect/inventory.py` and `plan/build.py`'s classify path, both consumed-unmodified in this story's Code Map, and changes what every plan records rather than what apply checks. Belongs with whoever owns manifest validation -- the natural home is a model-manifest schema check that rejects a non-normalized `path` at load time, before detect ever sees it.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — seed/detect/inventory.py:574 `if target is None or not target.exists(): return ArtifactState.ABSENT` treats an escaping path (_resolve_within_repo returns None) the same as a genuinely absent one, so build_plan emits a normal Action carrying the raw escaping path. seed/apply/run.py:332,358 'escaping-target' then refuses the entire plan. Confirmed the remedy text was corrected this story (no longer wrongly claims the plan 'did not come from build_plan') but the bad Action is still emitted. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-9` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1176,6 +1266,8 @@ status: open
   summary: A symlinked ancestor directory defeats the never-write guard, because the pattern is matched against the resolved destination path rather than the repo-relative one the operator wrote.
   evidence: Raised by this story's Blind Hunter review and reproduced by execution: in a repo where `docs -> real/`, with `never_write=("docs/dreams/*.md",)`, an action targeting `docs/dreams/x.md` clears all six precondition rungs, because `_relative_within` resolves parent symlinks and the matched string becomes `real/dreams/x.md`. Not fixed here: the resolution semantics are inherited deliberately from `seed/fs.py::_guard`, which resolves both `path` and `repo_root` before matching and documents the consequence as an accepted trade -- so the gap is genuinely `fs.py`'s, and `fs.py` is on this story's Never list (narrowing the precondition alone would also make the gate and the write primitive disagree, which is worse than either behavior). The scope is wider than one rung: any repo that keeps `docs/` or `_bmad-output/` on another volume via a symlink silently loses Tier-0/Tier-2 never-write protection at BOTH the precondition and the write primitive. Whoever owns `fs.py` next should decide between lexical matching before resolution, matching both strings, or refusing a symlinked ancestor outright. This story softened its own refusal text so it no longer claims a protection stronger than the one `fs.py` actually provides.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — seed/fs.py:237-254 _guard resolves both path and repo_root via Path.resolve() (symlink-following) before computing the relative string matched against never-write patterns; seed/verbs/preconditions.py:288-315 _relative_within does the identical resolve-then-relativize. In a repo where docs -> real/, an action targeting docs/dreams/x.md with never_write=("docs/dreams/*.md",) resolves to real/dreams/x.md, which the pattern never matches, clearing every rung. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-4` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1189,6 +1281,8 @@ status: open
   summary: The new never-imported packaging ratchet cannot see `python-build`, the one exempted name its own docstring says the gate exists to cover.
   evidence: Found independently by both of this story's review passes and confirmed by execution: `test_conda_only_run_deps_are_never_imported` intersects distribution names from `_conda_only(package)` with `_candidate_distributions(module)`; for pyforge-mason the exempt set contains `python-build` while `_candidate_distributions("build")` yields `{"build"}`, so the intersection is empty and `from build import ProjectBuilder` inside a mason function would keep the gate green while shipping a wheel that raises `ModuleNotFoundError`. `twine` and `conda-lock` are covered (`conda_lock` normalizes correctly); only this one name is not. The one-line remedy is a `MODULE_ALIASES` entry mapping the `build` import module to the `python-build` distribution. Not fixed here for a merge-safety reason specific to this run: `tests/packaging/test_dependency_completeness.py` was adopted byte-identical from the sibling branch `bmad-loop/20260814-202331-bc8d/10-3-the-apply-runner-transactional-guarded` precisely so the two branches merge without a conflict, and editing it here would forfeit that property and put two divergent versions of the same fix in the tree. It belongs to whoever lands that file -- one fix, in one place, once the two branches are merged.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — tests/packaging/test_dependency_completeness.py:82-95 MODULE_ALIASES has no "build" key, so _candidate_distributions("build") (line 389-390) returns frozenset({"build"}); CONDA_ONLY_RUN_DEPS["pyforge-mason"] (line 136-138) exempts "python-build". The intersection used by test_conda_only_run_deps_are_never_imported is empty, so an `import build`/`from build import ProjectBuilder` inside mason would keep this gate green while shipping a wheel that raises ModuleNotFoundError. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-4-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1201,7 +1295,10 @@ status: open
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-4-preconditions-refusals-and-skips.md`
   summary: `ManagedRecord`'s region-bearing shape has no source in the state model Story 10.2 actually landed, so rung 6 cannot be wired for hybrid artifacts.
   evidence: Raised by this story's second Blind Hunter pass and verified against `main` after Stories 10.2 and 10.3 landed (both were unmerged siblings when this story was planned, so its contract could only treat `ManagedRecord` as an abstract input). `seed/state/store.py::ManagedArtifact` on `main` carries exactly `id`, `path`, `artifact_class`, `body_sha: str` and `inserted_region_span: RegionSpanRecord | None`, and `RegionSpanRecord` is `name` plus UTF-8 byte offsets -- it holds NO per-region sha and NO region format. This story's `ManagedRecord` requires `region_shas: Mapping[str, str]` and a `region_format` whenever `region_shas` is non-empty. There is therefore no total function from the landed state model to a region-bearing `ManagedRecord`: a caller loading real state for a `hybrid-managed-region` artifact can only build a whole-file record, which sends the single `body_sha` into `check_managed_file` against the hash of the WHOLE file, refusing on any human edit outside the managed region -- the edits the hybrid class exists to permit. The consequence is that `_region_divergences` and `check_managed_region` are unreachable from real state, so the region half of SC-04 is unmitigated at runtime even though it is fully implemented and tested here. Not fixable inside this story: its frozen contract states that `ManagedRecord` is an INPUT supplied by whoever loads state and puts every state-store concern on Story 10.2's surface, and both modules involved landed after this story's baseline `64e717d`. Belongs to the verb-wiring story (10.5/10.6/10.7) that first calls `check_preconditions` with real state, which must decide whether state grows a per-region sha and a region format, or whether the adapter recomputes region shas at load time from the recorded span.
-  status: open
+  status: resolved
+  severity: medium
+  resolution: 2026-10-01 — Story 10.6 (commit a06fc1f149d, 2026-08-21, 'pyforge-marshal story 10-6: marshal seed adopt') added seed/verbs/preconditions.py::ManagedRecord (region_shas + region_format fields, exactly the shape the entry said had no source) and seed/verbs/adopt.py::_managed_records / seed/verbs/update.py::_region_shas_for_record, which ARE a total function from the landed state model (seed/state/store.py::ManagedArtifact/RegionSpanRecord) to a region-bearing ManagedRecord: adopt.py:571-581 builds `ManagedRecord(artifact_id=artifact.id, path=artifact.path, region_shas=((artifact.inserted_region_span.name, artifact.body_sha),), region_format=entry.format)` for a hybrid-managed-region artifact. This landed…
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-4-3` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1215,6 +1312,8 @@ status: open
   summary: `managed_after_skips` cannot protect the artifact class rung 6 actually guards, because a hand-edited managed file never carries a plan action to be skipped.
   evidence: Raised by this story's second Blind Hunter pass. `skips.managed_after_skips(managed, plan)` filters the caller's `ManagedRecord`s by `plan.skipped`, but only an artifact carrying an `Action` can ever enter `plan.skipped` -- and this story's own Design Notes argue at length that a hand-edited managed FILE never appears in the plan at all (`classify` marks a present `copied-managed` artifact `PRESENT_CONFORMANT` regardless of its bytes, per P-07, and `build_plan` emits actions only for `ABSENT` and `PRESENT_DIVERGENT`). The two facts together make the affordance inert for exactly the case it was added to serve: an operator who hand-edits a managed file and passes the skip pattern for it gets `plan.skipped == ()`, an unfiltered `managed` sequence, and the same rung-6 refusal, whose only offered override is `--force` -- which discards that very edit. The seam test added with it (`test_rung_six_refuses_a_skipped_artifacts_hand_edit_unless_the_caller_filters`) proves the helper only against a plan that contains an action for the hand-edited artifact, a shape `build_plan` cannot produce, so the suite stays green while the operator-visible behavior does not exist. Not fixed here: the working remedy is to filter by the skip PATTERNS rather than by `plan.skipped`, which changes the helper's signature, and whether patterns or `plan.skipped` is the natural caller-side input depends on how the verb wires `state.skips[]` -- a design decision owned by the wiring story, not a local patch. There is no production caller of `check_preconditions`, `apply_skips`, `record_skip` or `managed_after_skips` anywhere in `src/` today, so the operator-facing consequence is latent rather than live. Note for whoever takes it: this story's own Review Triage Log records the affordance as delivering the fix, which is the claim this entry corrects.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — seed/verbs/skips.py:359-385 managed_after_skips filters by `{entry.artifact_id for entry in plan.skipped}`; seed/verbs/skips.py:250-325 apply_skips populates plan.skipped exclusively by moving matching entries OUT of plan.actions. A copied-managed artifact that classify marks PRESENT_CONFORMANT regardless of its bytes (P-07) never gets an Action in the first place, so it can never enter plan.skipped -- --skip <pattern> for such an artifact is a silent no-op, and the only working override left is --force, which discards every hand-edit in the repo. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-4-4` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1228,6 +1327,8 @@ status: open
   summary: An action whose target is an existing DIRECTORY clears all six precondition rungs and fails later as an untyped `IsADirectoryError` instead of a refusal with a remedy.
   evidence: Raised by this story's second Blind Hunter pass. With `docs/` an existing directory and an action whose `target_path` is `docs`, rung 3 yields the repo-relative string `docs` (not the `.`/`""` the repo-root guard catches), rung 4 matches no never-write glob, rung 5's `lstat` finds a directory rather than a symlink, and rung 6 is unrelated -- so `check_preconditions` returns `None` and the apply runner reaches `os.replace(tmp, docs)`, which raises `IsADirectoryError`. That is an untyped crash escaping the `SeedError` taxonomy, where every other refusal in this ladder is a `PreconditionFailure` with exit code 3 and a non-blank remedy. This story added a repo-root check inside rung 3 for the `.`/`""` case, which is one instance of the directory-target class while declining the class itself -- deliberately, because the six-rung ladder and its fixed evaluation order are frozen inside this story's `<intent-contract>`, so adding a seventh structural check is a contract amendment rather than an implementation choice. Belongs with whoever next amends the ladder, or with the apply runner's own owner if the cheaper answer is for the writer to raise a typed error. Latent rather than live today: nothing calls `check_preconditions` in `src/` yet, and a manifest that declares a bare directory as an artifact target is itself unusual.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — seed/verbs/preconditions.py:635-671 rung 5 only lstat()s the target and checks S_ISLNK(mode) (raising for a symlink); a directory's mode fails that check and falls through silently. seed/verbs/preconditions.py:195-230 _require_existing_repo_root's own is_dir() check only guards repo_root itself, never a per-action target_path. An action whose target_path names an existing directory therefore clears all six rungs and would later crash apply's os.replace(tmp, target) with an untyped IsADirectoryError, breaking the ladder's own 'every refusal is a PreconditionFailure with a remedy' contract. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-4-5` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1241,6 +1342,8 @@ status: open
   summary: `src/shared/packages/pyforge-core/.gitignore` reads `/dist/          # pypi: wheel + sdist (python -m build)` and `/dist-conda/    # conda: .conda (pixi build --output-dir dist-conda)`. `.gitignore` has no trailing-comment syntax, so the `#`-onward text is part of the literal pattern on each line, which then matches nothing — verified with a throwaway `git init` repro and directly in this worktree via `git check-ignore`/`git add -n`. Only the file-extension globs later in the same file (`*.conda`, `*.whl`, `*.tar.gz`, `*.egg-info/`) actually protect those two directories in practice; a non-extension-matching build byproduct written under `dist/` or `dist-conda/` (e.g. a wheel's loose `PKG-INFO`, a conda build's `repodata.json`) would show as untracked and could be accidentally staged.
   evidence: Surfaced by the Blind Hunter adversarial review pass over this story's diff (independent, no shared context with the Edge Case Hunter reviewer). This story's `.gitignore` was written by mirroring `pyforge-scribe/.gitignore` byte-for-byte per the spec's own instruction, which carries the identical broken pattern — and this exact defect (for `pyforge-doctor`/`pyforge-warden`) is already recorded as still-open in this same file's own 2026-07-29 reconciliation note above (Story 1.1's original entry 2). Not fixed here: this story's copy is one more instance of a fleet-wide pattern now present in most `src/shared/packages/*/.gitignore` files; fixing only `pyforge-core`'s copy would diverge it from its siblings for no benefit, and the real fix is a one-sweep correction across every package's `.gitignore` (move each comment to its own line), which is a repo-tooling change outside this story's own scaffolding-only surface.
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-core/.gitignore:2-3 still reads `/dist/ # pypi: wheel + sdist (python -m build)` -- .gitignore has no trailing-comment syntax, so the pattern includes the comment text and matches nothing. grep across src/shared/packages/*/.gitignore shows the identical bug now in SIX packages: pyforge-herald, pyforge-testing-kit, pyforge-warden, pyforge-doctor, pyforge-core, pyforge-scribe (wider than the five cited in the 2026-09-05 note). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-1` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1268,6 +1371,8 @@ status: open
   summary: Doctor's `cli_bridge.py::CliBridgeError`/`sources/atlas.py::_FetchFailed` and seven Steward exception roots across `budget.py`/`dashboard/cache.py`/`dashboard/export.py`/`dashboard/middleware.py`/`deploy.py`/`keys.py`/`sync.py` do not inherit `pyforge.core.errors.PyforgeError`, unlike the 39 classes (herald, mason, warden, marshal, atlas) this story re-parented.
   evidence: Confirmed live while authoring this story's exception-root sole-ownership meta-test (`pyforge-core/tests/meta/test_exception_root_sole_ownership.py`): running its AST detector fleet-wide, before scoping the scan to exclude `pyforge-doctor`/`pyforge-steward`, found these 9 real, un-reparented root classes. Neither station is named in SPEC-pyforge-core CAP-5's original census (herald, mason, warden, marshal, atlas only) or this story's own Boundaries roster -- confirmed 1:1: every hit outside the two excluded stations corresponds exactly to a class in the roster, and every roster class is covered. Not fixed here: the guard's `_OUT_OF_SCOPE_STATIONS` exclusion documents this explicitly; a future story extending CAP-5 to doctor/steward should re-parent these 9 classes and remove that exclusion in the same change.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-core/tests/meta/test_exception_root_sole_ownership.py:69 `_OUT_OF_SCOPE_STATIONS = frozenset({"pyforge-doctor", "pyforge-steward"})` still excludes both stations from the fleet-wide exception-root sole-ownership scan. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-3` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1281,6 +1386,8 @@ status: open
   summary: Herald's `transport/agent_sdk_transport.py` + `deck_pipeline.py`, Mason's `cfe.py` + `engines/__init__.py`, and Scribe's `compile.py` each call `subprocess` directly with no local sole-ownership guard, discovered by this story's new fleet-wide `pyforge-core` subprocess guard and excluded from it rather than migrated.
   evidence: Confirmed live while authoring `pyforge-core/tests/meta/test_process_sole_ownership.py`'s fleet-wide scan (Story 14.4): before excluding these three stations the detector fired on real, non-synthetic `subprocess.run`/`Popen` call sites in each. Unlike Doctor (its own already-working `test_cli_bridge_sole_subprocess.py`) and Warden/Steward (named in this story's own Boundaries), none of the three had a local guard filling the gap, and Mason's `test_adapter_sole_caller.py` polices CFE-path references specifically, not general subprocess ownership. Not fixed here: CAP-6's success text names only Marshal for mandatory migration; a future story extending CAP-6 to any of the three should either migrate it to `pyforge.core.process` or add a local sole-site guard, removing its entry from `_OUT_OF_SCOPE_STATIONS` in the same change.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-core/tests/meta/test_process_sole_ownership.py:120-127 _OUT_OF_SCOPE_STATIONS still lists pyforge-doctor, pyforge-warden, pyforge-steward, pyforge-herald, pyforge-mason, pyforge-scribe; the module's own docstring at line 32-47 confirms doctor/warden/steward have documented, sanctioned local guards/exemptions, while herald/mason/scribe do not. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-4` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1294,6 +1401,8 @@ status: open
   summary: Marshal's `core/gate.py` and `core/status.py` now import `ProcessResult` from `pyforge.core.process`, a module that itself imports `os`/`subprocess` at module scope -- but `lint-imports` (grimp-based) reports 0 broken because grimp collapses the external `pyforge.core` package to a single leaf node and never expands into `pyforge.core.process`, so AD-4's `core/**` purity contract has a verification blind spot for any external package's own internal imports.
   evidence: Confirmed live during this story's review pass: `g.find_shortest_chain('pyforge.marshal.core.gate', 'os')` returns `None` even though the transitive import genuinely exists, because `pyforge.core.process` isn't even present in the built grimp graph. The actual behavioral invariant still holds (`core/gate.py` and `core/status.py` only ever reference the pure `ProcessResult` dataclass, never instantiate or call `PosixProcess`) -- this is a verification-tooling gap, not a live purity violation, but it means a FUTURE `pyforge-core` addition that imports `os`/`subprocess` would be equally invisible to this check. Not fixed here: reconfiguring the import-linter/grimp contract to expand into external packages' own internals is a fleet-wide tooling change spanning more than this story's subprocess-guard scope.
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/pyproject.toml:77-88 [[tool.importlinter.contracts]] AD-4 forbidden_modules is still exactly ["subprocess", "os", "time", "pyforge.marshal.adapters"] -- no expansion into pyforge.core's internals, and grep for "pyforge.core"/"pyforge_core" in that pyproject.toml shows it appears only as a dependency declaration and an entry-point name, never as an import-linter contract entity. grimp collapses the external pyforge.core package to one leaf node, so a future pyforge.core addition importing os/subprocess stays invisible to this gate. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-4-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1307,6 +1416,8 @@ status: open
   summary: `_bmad-output/planning-artifacts/epics.md`'s "Story 2.8: A low-risk story's review runs lighter, never absent" section has no `**Surface:**` line, even though every sibling Epic-2 story (2.1-2.7) carries one and the governing `SPEC.md` (`_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth/SPEC.md`) already unambiguously scopes `surface: [core/gate.py]`. That line is the one signal that would let a reader tell "CLI/envelope wiring is a deliberate follow-on story" from "wiring was simply forgotten" without cross-referencing the SPEC by hand. Pre-existing in `epics.md`, outside this story's own Code Map (`core/gate.py`, its two test files, `deferred-work.md`) -- not fixed here.
   evidence: Surfaced by the Blind Hunter adversarial review pass over this story's diff (independent, no shared context with the Edge Case Hunter). Confirmed live: `grep -n "Surface:" _bmad-output/planning-artifacts/epics.md` shows a `**Surface:**` line for Stories 2.1 through 2.7's sections but none for Story 2.8's own section between its "Why now" paragraph and its Acceptance Criteria.
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md:604-651 Story 2.8's section ('A low-risk story's review runs lighter, never absent') goes from 'Why now' straight to 'Acceptance Criteria' with no **Surface:** line anywhere in between, unlike its siblings. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-2-8` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1320,6 +1431,8 @@ status: open
   summary: `cli/spin.py::_apply_retry_escalation` reads `max_dev_attempts`/`max_review_cycles` off `.bmad-loop/policy.toml` as it exists AT RESUME TIME, and compares them against `DeferredStory.attempt`/`.review_cycle` -- counters that accumulated under whatever policy governed the ORIGINAL launch. If an operator re-renders the loop home's policy between a story's deferral and its resume (e.g. `marshal config --write-harness-policy`, or a later `factory spin` for a different story in the same home), raising either ceiling, a story that genuinely exhausted the LOWER, original ceiling can silently stop qualifying for escalation on its next resume -- the mechanism evaluates against a ceiling the story never actually operated under.
   evidence: Confirmed via direct code reading during Story 3.12's review pass (Blind Hunter). `_apply_retry_escalation` (`cli/spin.py`) has no path back to the policy that was in effect when `run_spin` originally launched the run -- only the CURRENT on-disk file. This is a known, accepted trade-off of the story's own deliberate design choice (documented in the spec's Design Notes: "read the on-disk policy.toml rather than re-run policy.compose()... reflects exactly what THIS run was launched under, never a possibly-diverged current project policy" -- true only for the FIRST resume after any given render, not across an intervening re-render). Not fixed here: resolving this needs either persisting the launch-time ceilings alongside the run's own state (a new field on `RunState`/journal, `bmad_loop`-adjacent and out of this story's `cli/spin.py`-only surface) or accepting the drift as a documented limitation -- a design call for a follow-up story, not a mechanical patch to this one.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py:1975-1991 `_apply_retry_escalation` reads `text = fs.read_text(policy_path)` -- the on-disk .bmad-loop/policy.toml AS IT EXISTS AT RESUME TIME -- and compares max_dev_attempts/max_review_cycles from that read against DeferredStory.attempt/.review_cycle, counters accumulated under whatever policy governed the original launch. No launch-time snapshot of these ceilings is persisted anywhere (grep for a persisted launch ceiling on RunState/journal is empty). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-12` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1333,6 +1446,8 @@ status: open
   summary: `cli/spin.py::_apply_retry_escalation`'s `from_model == to_model` idempotence short-circuit (the mechanism's own "bounded, never re-fires" guarantee) returns `False, [], None, None` immediately once the on-disk `[adapter].model` already equals `[adapter.review].model`, WITHOUT recomputing which deferred stories are currently crossing their ceiling. If a DIFFERENT story newly crosses its own ceiling on a resume where the model is already escalated (from an earlier trigger), that new crossing is never named in `escalated_stories`/the journal for that resume -- the correct model is already running, but the record of WHO justified it stays incomplete after the first write.
   evidence: Confirmed via direct code reading during Story 3.12's review pass (Edge Case Hunter). The mechanism's functional guarantee (a struggling story's next attempt runs under a floor-raised model) still holds -- this is a completeness gap in the journal's own "naming the trigger" AC, not a correctness defect in the escalation itself. Not fixed here: recomputing and always returning `escalated_stories` regardless of whether a NEW write occurred would change the established return-contract shape ("populate detail fields only when `escalated: true`", mirroring `story_key`/`resolution_reference`'s own precedent elsewhere in `run_resume`) -- a deliberate design call for a follow-up story rather than a rushed patch to this one.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/spin.py:2027-2031 `if from_model == to_model: return False, [], None, None` returns before line 2050's `crossing = _crossing_deferred_story_keys(...)` ever runs, so a different story crossing its own ceiling on a resume where the model is already floor-raised is never named in escalated_stories/the journal for that resume. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-12-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1346,6 +1461,8 @@ status: open
   summary: `cli/spin.py::run_resume` calls `_apply_retry_escalation` (which durably rewrites `.bmad-loop/policy.toml` when escalation fires) BEFORE `mint_run_id`/`create_dir_exclusive`/the intent `_append_entry` for the resume itself. If run-directory creation or the intent append then fails, the floor-raise has already taken effect on disk with zero journal record of it. This is not a new pattern introduced by Story 3.12: `run_spin`'s own pre-existing `_resolve_model_tiering` (Story 6.1/3.11-adjacent) has the IDENTICAL ordering -- its `write_policy_toml` call also lands before that launch's own intent entry.
   evidence: Confirmed via direct diff comparison during Story 3.12's review pass (Blind Hunter). `_resolve_model_tiering` is called from `run_spin` before that function's own `mint_run_id`-and-intent-journal sequence, the same shape `_apply_retry_escalation` now mirrors in `run_resume`. The reviewer who raised it explicitly noted it "isn't a novel defect" but that Story 3.12 "extends the same unaudited-mutation risk to a second, more consequential write (one that changes which model the NEXT engine process uses)". Consequence is bounded in practice: a lost journal entry does not lose the escalation itself (the file is already written), only the evidentiary record of why -- and a later resume's own read-back would simply find the model already at its floor-raised value (idempotent, no re-fire). Not fixed here: reordering either call site to write-after-journal is a shared fix across BOTH `_resolve_model_tiering` (run_spin) and `_apply_retry_escalation` (run_resume), out of this story's own narrower Surface.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — cli/spin.py:1643 `_resolve_model_tiering(...)` runs before `mint_run_id(...)` at line 1673 in run_spin; cli/spin.py:2283 `_apply_retry_escalation(fs, home, status_snapshot.deferred, findings)` runs before `mint_run_id(...)` at line 2296 in run_resume. Both durably rewrite policy.toml before the launch/resume's own intent is journaled, so a subsequent run-directory-creation or intent-append failure leaves the floor-raise on disk with no journal record of it. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-12-3` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1359,6 +1476,8 @@ status: open
   summary: `adapters/harness_bmadloop.py::write_policy_document`'s `tomlkit.dumps(doc)` call runs OUTSIDE `_atomic_write_policy_text`'s own try/except, so a serialization failure there would propagate as a raw exception rather than the `HarnessPolicyWriteError` `cli/spin.py::_apply_retry_escalation` explicitly catches to degrade to `MRS-SPIN-016` (WARN). This mirrors a PRE-EXISTING shape: `write_policy_toml`'s own `render_policy_toml(...)` call (which itself calls `tomlkit.dumps` internally) is equally unwrapped, and predates this story.
   evidence: Confirmed via direct code reading during Story 3.12's review pass (Edge Case Hunter). `write_policy_document`'s body is `text = tomlkit.dumps(doc); return _atomic_write_policy_text(text, loop_home)` -- the `dumps` call is not inside the try. `write_policy_toml`'s own body has the identical shape (`text = render_policy_toml(...)` before the same `_atomic_write_policy_text` call), confirmed unchanged by this story's diff. Practical risk is low: `tomlkit.dumps` over a document already successfully round-tripped through `tomlkit.parse` plus one scalar-string key assignment is not a realistic failure mode in normal operation. Not fixed here: widening the try/except (or moving the dumps call inside it) is a shared fix across both functions, out of this story's own narrower Surface, and belongs with DW-FU-3-12-3's write-ordering fix as one coordinated hardening pass over `_atomic_write_policy_text`'s two callers.
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — adapters/harness_bmadloop.py:1069-1070 `text = tomlkit.dumps(doc); return _atomic_write_policy_text(text, loop_home)` -- the dumps call sits outside _atomic_write_policy_text's own try/except (which only wraps the actual file write). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-12-4` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1372,6 +1491,8 @@ status: open
   summary: `cli/config.py`'s `_UNSETTABLE_KEYS` comment block ("Naming any of these 9 keys on `--set` is a usage error") and two test function names, `tests/unit/test_cli.py::test_config_prints_all_twenty_keys` and `tests/unit/test_policy.py::test_schema_file_declares_the_twenty_keys`, hardcode a key-count in prose/identifiers that does not track `core/policy.py::_ALL_KEYS`'s actual size and was already wrong before this story -- the frozenset held far more than 9 members and the real count was already 22, not 20, prior to Story 3.13's `max_parallel` addition.
   evidence: Confirmed live in this checkout: `cli/config.py:103-104`'s comment reads "Naming any of these 9 keys..." immediately above a frozenset literal (`_UNSETTABLE_KEYS`) that already held well over 9 members before this story's edit. Both test names were touched by this story's own diff (their docstrings/assertions were bumped from "22"/"now 22" to "23"/"now 23") without renaming the functions themselves, unlike the sibling `test_seed_view_returns_all_ten_seed_fields` -> `test_seed_view_returns_all_eleven_seed_fields` rename landed in the same diff -- proving the renaming convention is known in this codebase, just not applied uniformly to every touched count-named test. Surfaced by the Blind Hunter review pass over Story 3.13's diff (independent, no shared context with the Edge Case Hunter reviewer). Not fixed here: correcting the `_UNSETTABLE_KEYS` comment's stale "9" and renaming two test functions is pre-existing drift this story's own diff sits adjacent to but did not cause, out of Story 3.13's `max_parallel`-only Surface.
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/config.py:133-137's _UNSETTABLE_KEYS comment now explicitly says 'the set below is the authority -- do NOT restate its size here' and records that DW-3-13-1 tracked the prior drift -- that specific instance is RESOLVED. But live count via `pixi run -e pyforge-marshal python -c "from pyforge.marshal.core import policy; print(len(policy._ALL_KEYS))"` returns 34, while test_cli.py:255's own docstring says 'every one of the 34 policy keys' yet the function is still named ...all_thirty_three_keys, and test_policy.py:2065 is named ...the_thirty_three_keys -- the exact recurring drift pattern DW-3-13-1 named has recurred with the newest key (Story 33.8's 'dispatch'). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-13` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1387,6 +1508,8 @@ status: open
   summary: `cli/land.py::run_land`'s new call `identity.render_merge_subject(wave_keys[0], template)` is not wrapped in any try/except, matching `deploy.py::run_land_story`'s existing identical, unguarded call by deliberate design (this story's own Boundaries: "mirror that precedent exactly rather than giving `land` new handling `land-story` lacks"). `core/policy.py::_valid_merge_subject_template` only validates a non-empty `str` -- it never checks for the required single `{key}` placeholder -- so a project's `merge_subject_template` policy value missing (or duplicating) `{key}` passes policy composition cleanly and then raises a bare `ValueError` out of `render_merge_subject`'s `_split_template` helper, crashing the whole command with a raw traceback instead of a reported `Finding`.
   evidence: Surfaced independently by both the Blind Hunter and Edge Case Hunter review passes over this story's diff (same underlying root cause, reported from two angles). Confirmed live: `identity.render_merge_subject(StoryKey(4, 4), "Merge into main")` (a template with no `{key}` placeholder) raises `ValueError: template must contain exactly one '{key}' placeholder...`. Pre-existing gap in `core/policy.py::_valid_merge_subject_template` (out of this story's own Surface, which is `cli/land.py`/`ports/forge.py`/`adapters/forge_gh.py` only) -- `deploy.py::run_land_story` already carries the identical unguarded call site and crash risk today; this story adds a SECOND call site through `marshal land`'s own batch/automated path (higher traffic than the single-story `land-story` command), widening the blast radius of an already-latent gap rather than introducing a new one. Not fixed here: closing it means either validating the placeholder shape in `core/policy.py::_valid_merge_subject_template` (a `core/` change outside this story's Surface) or wrapping both call sites in a new caught-and-reported error path (a behavior change to `deploy.py::run_land_story` this story's own Never bullet explicitly forbids) -- either fix is a cross-cutting change touching code this story is bounded not to touch.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — core/policy.py:1256-1259 `_valid_merge_subject_template` only checks `isinstance(value, str) and value != ""` -- no placeholder check. core/identity.py:224-234 `_split_template` still raises a bare ValueError when template.count('{key}') != 1. cli/land.py:970 `identity.render_merge_subject(wave_keys[0], template, slug)` is not wrapped in try/except (matches deploy.py::run_land_story's identical unguarded precedent). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-10` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1400,6 +1523,9 @@ status: open
   summary: `run_land` renders `subject = identity.render_merge_subject(wave_keys[0], template)` -- the wave's lowest-sorted key only, per this story's own Design Notes (`identity.render_merge_subject`/`parse_merge_subject` are AD-24's fixed single-`{key}`-placeholder pair, and this story's Surface deliberately excludes `core/identity.py`/`core/promotion.py`, so no multi-key form exists). Under the default `"merge"` strategy the non-primary keys' own already-existing bmad-loop-native commit subjects remain ancestors of `main` after the merge and are independently classified by `marshal_native_merged_keys` regardless of this commit's own subject (as the Design Notes already state) -- but under `"squash"`/`"rebase"`, `cli/land.py::_resync_home_branch`'s own docstring already documents that "the landed commits are never ancestors of `origin/<base>` ... BY CONSTRUCTION" for those two strategies, so a squash merge's non-primary wave keys have no fallback detection path at all, remaining permanently unclassified via this mechanism (though a `rebase` strategy DOES preserve each original commit's own subject verbatim on `main`, so its non-primary keys stay detectable via the pre-existing bmad-loop-native pattern independent of this gap -- only `squash` genuinely loses them).
   evidence: Surfaced by the Blind Hunter adversarial review pass over this story's diff. Confirmed via direct code reading of `_resync_home_branch`'s own docstring and `core/identity.py::_split_template`'s single-placeholder contract. Not a regression: before this story, ZERO wave keys were ever classified via the merge commit's own subject (no subject was ever rendered), so covering the primary key only is a strict improvement, never worse than the prior state, for every strategy including squash. Not fixed here: giving every wave key its own detectable trace under `squash` needs either a multi-key subject form (a `core/identity.py` change this story's Surface explicitly excludes) or a different detection mechanism entirely (e.g., an explicit per-key marker committed alongside the squash), both larger, cross-cutting changes out of this story's own bounded (Effort: S) scope; Story 5.9's own measured history shows `marshal land` waves are overwhelmingly single-key in practice, and `squash`/`rebase` are non-default `landing_merge_strategy` values.
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — cli/land.py:970 `subject = identity.render_merge_subject(wave_keys[0], template, slug)` still renders from the wave's lowest-sorted key only; core/identity.py's render_merge_subject/parse_merge_subject remain a fixed single-{key}-placeholder pair (AD-24). cli/land.py's own _resync_home_branch docstring still states landed commits are never ancestors of origin/<base> under squash/rebase 'BY CONSTRUCTION'. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should marshal invest in a multi-key merge-subject form (an AD-24 architecture change) so every wave key is independently detectable after a squash/rebase landing, or is per-primary-key detection (a strict improvement over the prior no-detection state) sufficient given squash/rebase wave landings are the less common strategy?
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-10-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1413,6 +1539,8 @@ status: open
   summary: `run_land` passes the rendered `subject` to `forge.merge_pr` unconditionally, for every `landing_merge_strategy` value, per this story's own Boundaries ("`gh pr merge -t/--subject` applies uniformly across `--merge`/`--squash`/`--rebase`" -- a claim inherited from epics.md's own Story 5.10 text, "Confirmed low-risk: `gh pr merge` already supports `-t/--subject` for every strategy"). Verified live against GitHub's own GraphQL schema (`gh api graphql` introspection of `MergePullRequestInput`) that `commitHeadline`'s own description reads "Commit headline to use for **the merge commit**; if omitted, a default message will be used" -- and a `REBASE` merge, by definition, creates NO new merge commit at all (each original commit is replayed onto the base branch with its own preserved subject). `gh`'s own CLI source (`pkg/cmd/pr/merge/merge.go`/`http.go`) confirms `commitSubject` is sent unconditionally in the mutation input for all three merge methods, with no method-conditional guard -- so the flag is accepted without error for `rebase`, but has nothing to apply to: the API accepts it and silently does nothing with it. `data["subject"]` in `run_land`'s own envelope therefore reports a subject for a rebase-strategy landing that was never actually written to any real commit -- though the wave's original commits (already carrying their own preserved subjects, e.g. bmad-loop-native form) remain independently detectable via the pre-existing pattern-3 match in `marshal_native_merged_keys`, unaffected by this gap, so the story's actual detectability GOAL is still met for `rebase` by a different, already-existing mechanism; only the new `subject` parameter itself is a harmless no-op for that one strategy.
   evidence: Surfaced independently by both the Blind Hunter and Edge Case Hunter review passes over this story's diff (same underlying concern, reported from two angles: one flagging the docstring's unverified cross-strategy claim, the other flagging the unconditional pass-through with no method gate). Confirmed via live `gh api graphql` schema introspection (`MergePullRequestInput.commitHeadline`'s own description) and `gh`'s own public source (`cli/cli` `pkg/cmd/pr/merge/merge.go`'s `allowEditMsg := payload.method != PullRequestMergeMethodRebase` in the interactive path, `http.go`'s unconditional `input.CommitHeadline` assignment in the non-interactive path) during this review pass -- not a speculative concern. Not fixed here: `ports/forge.py`'s docstring wording was corrected in this same pass (a doc-only, non-behavioral patch) to describe the rebase case accurately instead of claiming uniform effect; deciding whether `land` should SKIP passing `subject` for `rebase` (to avoid a misleading `data["subject"]` value in that one case) is a small but real behavior change this bounded review pass declined to make unilaterally, since `landing_merge_strategy: rebase` is a non-default, apparently unused-in-practice value across this fleet's own projects and the actual detectability outcome is unaffected either way.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/land.py:987-994 forge.merge_pr(..., ForgeRef(merge_strategy), ..., subject=ForgeRef(subject)) still passes subject unconditionally for every landing_merge_strategy value, with no rebase-specific gate. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-10-3` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1426,6 +1554,8 @@ status: open
   summary: `core/status.py::is_run_live` (Story 4.11's own landing-safety predicate `cli/land.py` uses to refuse retiring a branch out from under a live run) still returns `not facts.finished and facts.supervisor_alive is True` -- exactly the "dead sidecar = not live" verdict `derive_home_state` used to give before this story's fix, consulting only `supervisor_alive`, never the new `facts.engine_alive`. In precisely this story's own motivating scenario (a dead supervisor sidecar behind a genuinely live, in-flight engine -- the 2026-08-11 incident), `is_run_live` returns `False`, so `marshal land` would treat the branch as safe to retire while a real run is still actively using it.
   evidence: Surfaced by the Blind Hunter adversarial review pass over this story's diff. Confirmed via direct code reading: `is_run_live`'s body (`core/status.py`) is unchanged by this story's diff and reads `facts.supervisor_alive` only; `cli/land.py` gates branch deletion on its return value. `is_run_live`'s own docstring explicitly names its purpose as preventing "a live 9-story run, avoided only because a human read the source first" -- the exact class of incident this gap reopens for the dead-sidecar-alive-engine case. Not fixed here: this story's own Boundaries explicitly scope it to `derive_home_state`'s fleet-status reporting and name `is_run_live`/`cli/land.py` as out of scope ("Its own docstring already documents why it deliberately never calls `derive_home_state`; extending it to consult engine liveness is a separate, unscoped change this story does not make") -- resolving it requires a design decision about whether `is_run_live` should consult `engine_alive` directly or via some other mechanism, which belongs to a dedicated follow-up story, not a rushed patch to this one's `derive_home_state`-focused surface.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — core/status.py:1249-1290 is_run_live's final line `return not facts.finished and facts.supervisor_alive is True` still consults only supervisor_alive, never facts.engine_alive -- unchanged by the story that added engine_alive to FleetHomeFacts. cli/land.py gates branch deletion on this return value. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-8` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1439,6 +1569,8 @@ status: open
   summary: `adapters/process_posix.py::ProcessPort.is_alive` is a bare pid-existence check (`os.kill(pid, 0)`-equivalent) with no process start-time or identity cross-check, so OS pid reuse can make a genuinely-dead process read as alive; a malformed/degenerate journaled `"pid": 0` entry passes the existing `isinstance(candidate, int) and not isinstance(candidate, bool)` validation and `is_alive(0)` reads `True` (signals the caller's own process group) rather than "unprobed". This risk pre-dates this story for `supervisor_alive`, but this story extends the same unguarded probe to `engine_alive` and gives it new leverage: a false-alive reading can now flip `derive_home_state`'s verdict from `"unsupervised"` to a healthy state outright, in tension with this story's own "narrows a false positive, never softens a real one" constraint.
   evidence: Surfaced independently by both the Blind Hunter and Edge Case Hunter review passes over this story's diff (same underlying concern, reported from two different angles: pid reuse and the pid-0 degenerate case). Confirmed via direct code reading: `adapters/process_posix.py::is_alive` performs no start-time comparison; `cli/status.py::_gather_run_journal_facts`'s payload validation for both `launch_pid` and `supervisor_pid` is identical (`isinstance(candidate, int) and not isinstance(candidate, bool)`), which lets `0` through for either. Not fixed here: hardening `is_alive` (e.g. via `/proc/<pid>/stat` start-time comparison against the journaled timestamp, or rejecting non-positive pids before probing) is a shared, cross-cutting change to a primitive already used identically for `supervisor_alive` since Story 3.4/5.1 -- out of this story's own `derive_home_state`/`FleetHomeFacts`-focused surface, and belongs to a dedicated hardening story for `ProcessPort.is_alive` itself rather than a narrow patch to this one's engine-liveness consumer.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-core/src/pyforge/core/process.py:216-226 PosixProcess.is_alive is still a bare `os.kill(pid, 0)` probe with no start-time or identity cross-check, so OS pid reuse can read a dead process as alive, and a malformed journaled `pid: 0` still passes int validation and probes as the caller's own process group (alive). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-8-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1452,6 +1584,8 @@ status: open
   summary: This story's verification repair pass added a `pyforge-steward: {"django": ...}` entry to `BASELINE_UNDECLARED_IMPORTS` (a single shared dict in a repo-root test file) to close a pre-existing, unrelated `pyforge-deps-test` failure (Story 9.1's `dashboard/apps.py`/`cache.py`) blocking this story's own land -- the same class of repair `20ad57a62f` already made once for a different marshal story. Because this repo runs many concurrent bmad-loop worktrees off the same `main` (per this repo's own `CLAUDE.md` parallel-agent documentation), every other worktree forked before this lands and independently hitting the same `pyforge-deps-test` failure is likely to add its own similarly-shaped but not-identical entry for the same `pyforge-steward: django` key, producing a merge collision or, if merged blind, a duplicate/overwritten dict entry -- unlike the analogous `pixi.toml` case, which `CLAUDE.md` already instructs to "fix main directly whenever a `pixi.toml` dep change lands there" specifically to avoid this.
   evidence: Surfaced by the Blind Hunter adversarial review pass over this story's repair diff (independent, no shared context with the Edge Case Hunter reviewer, who separately confirmed the entry itself is genuine and correctly shaped). Confirmed via direct reading of `CLAUDE.md`'s "PARALLEL AGENTS" and pixi.toml-sync sections, which document this exact class of shared-global-state race for other files but do not mention `tests/packaging/test_dependency_completeness.py`. Not fixed here: deciding whether `BASELINE_UNDECLARED_IMPORTS` repairs should also land on `main` directly (mirroring the `pixi.toml` convention), or whether some other de-duplication mechanism is warranted, is a repo-tooling/process decision outside this story's `derive_home_state`/`FleetHomeFacts`-focused surface and requires its own scoped follow-up.
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — grep for "BASELINE_UNDECLARED_IMPORTS" across CLAUDE.md/AGENTS.md returns no match; only pixi.toml/environment.yaml are named as needing the fix-main-directly convention for shared repo-root state shared across concurrent bmad-loop worktrees. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-8-3` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1465,6 +1599,8 @@ status: open
   summary: `cli/deploy.py::run_reconcile_completions` builds `raw_key_by_dot: dict[str, str]` by iterating the tracked ledger's raw `(raw_key, raw_status)` pairs and keying on each raw key's normalized dot-form `StoryKey`. If the ledger ever carries two DIFFERENT raw keys that both normalize to the SAME `StoryKey` (a malformed/duplicate-keyed ledger), the dict collapses to last-write-wins: `render_ledger_advancements` rewrites only one of the two matching lines, while `data["advanced"]`/`data["advanced_count"]` still report the key as fully advanced -- an over-reporting mismatch between what the envelope claims and what the file actually reflects.
   evidence: Surfaced by the Edge Case Hunter adversarial review pass over this story's diff (independent, no shared context with the Blind Hunter reviewer). Confirmed via direct code reading: `raw_key_by_dot[dot_key] = raw_key` inside the single `for raw_key, raw_status in raw_statuses` loop has no duplicate-key detection, and `render_ledger_advancements` is handed only the SET of raw keys to advance (`raw_keys_to_advance`), which cannot distinguish "the one true raw key for this story" from "one of several colliding raw keys" once the dict has already collapsed. Not fixed here: this requires a genuinely malformed/hand-corrupted ledger to trigger (this repo's own generators -- `promote_sprint_status.py`, `bmad-quick-dev`'s `sync-sprint-status.md` -- never produce two raw keys for the same story) and reproducing it needs either a duplicate-key detection pass over `raw_statuses` (reporting a new finding) or a design decision about which of the colliding raw keys is authoritative, out of this story's own bounded patch-pass scope.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/deploy.py:3733-3745 builds `raw_key_by_dot: dict[str, str] = {}` and assigns `raw_key_by_dot[dot_key] = raw_key` inside a single loop with no duplicate-key detection. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-9` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1478,6 +1614,8 @@ status: open
   summary: In `run_promote`'s promotion loop, `promoted.append(str(spec_candidate.story_key))` runs immediately after a successful `fs.copy_file`, BEFORE the batched `vcs.commit_paths` that actually makes the copy durable. When `commit_paths` raises `VcsCommandError`, the handler appends an `MRS-DEPLOY-003` ERROR finding but never removes the affected keys from `promoted`, so `data["promoted"]`/`data["promoted_count"]` still publish every key in the batch as promoted while only an uncommitted copy exists on disk. This is the same "pre-write eligibility published as post-write outcome" defect class that Story 5.9's own review pass 1 fixed for its `data["advanced"]` field, left unfixed on the sibling `promoted` field in the same envelope shape.
   evidence: Surfaced by the Edge Case Hunter adversarial review pass over Story 5.9's diff (independent, no shared context with the Blind Hunter reviewer). Confirmed pre-existing and NOT introduced by Story 5.9 via direct reading of `git show main:src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py`, where the same ordering is already present on `main` (the `promoted.append(...)` at the end of the copy loop, and the `commit_paths` failure handler that only appends a finding). Story 5.9's own code was subsequently reverted in full for an unrelated intent-contract gap, so this defect survives that revert untouched and remains live on `main` today. Not fixed here: it is a pre-existing defect in `run_promote`'s own envelope contract, surfaced only incidentally by this story's review, and correcting it means deciding whether a partially-committed batch should report an empty `promoted` list or a per-key partition -- an envelope-contract decision affecting every existing `deploy promote` consumer, out of this review pass's scope.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — cli/deploy.py:944-957 `fs.copy_file(...)` then `promoted.append(str(spec_candidate.story_key))` runs inside the per-candidate loop, BEFORE the batched `vcs.commit_paths(root, tuple(commit_targets), message)` at line 980; the `except VcsCommandError` handler at line 981-988 appends an MRS-DEPLOY-003 finding but never removes any key from `promoted`. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-9-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1491,6 +1629,8 @@ status: open
   summary: `cli/deploy.py::_repair_tier3_feed` calls `promote_sprint_status.repair_feed(feed_path, incoming, twin_values)` with `twin_values` keyed by the tracked ledger's own raw key spelling for each just-advanced key. `repair_feed` folds a `twin_values` key into the merged feed map only when it is absent from `incoming` (`missing = [k for k in twin_values if k not in incoming]`), an exact string-equality test. If the Tier-3 feed's own raw key for the same story is spelled differently than the ledger's (e.g. divergent hyphenation/casing introduced by a change to bmad-loop's own key-writing convention after the twin was originally promoted), the check finds no match, so the ledger's spelling is inserted as a NEW row while the feed's own differently-spelled, non-terminal row is left untouched -- two rows for one story instead of a true reconciliation.
   evidence: Surfaced by the Edge Case Hunter adversarial review pass over this story's diff (independent, no shared context with the Blind Hunter reviewer). Confirmed via direct code reading of `repair_feed`'s `missing`/merge logic (`scripts/promote_sprint_status.py`) -- the matching logic is REUSED VERBATIM from `main()`'s own pre-existing `--repair-feed` inline block (only extracted into a function by this story, never behaviorally changed), so this is a pre-existing limitation of that logic, not something Story 5.9 introduced. Not fixed here: in this story's own call path the ledger's raw keys are historically sourced FROM the feed's own spelling via a prior `promote_sprint_status.py` promotion, so the two are expected to already agree in the common case; reproducing a genuine divergence requires an out-of-band change to a DIFFERENT subsystem (bmad-loop's own key-writing convention), out of this story's own bounded scope.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — scripts/promote_sprint_status.py:273 `missing = [k for k in twin_values if k not in incoming]` is still an exact-string containment test (dict-key equality). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-9-3` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1504,6 +1644,8 @@ status: open
   summary: `VcsPort.commit_paths` (`adapters/vcs_git.py`) stages each path with a separate `git add -- <path>` call and only THEN runs `git commit`; if the `git add` succeeds but the subsequent `git commit` fails (a plausible hook/signing rejection, not just a git-invocation crash), the path is left staged in git's index. `run_reconcile_completions`'s review-fix rollback (`fs.write_text_atomic(ledger_path, ledger_text)` on a `commit_paths` failure) restores the WORKING TREE to its pre-advance content so a later run can retry cleanly, but does not unstage the already-added index entry -- `git status`/`git diff --cached` would show the ledger as staged with the (reverted) advanced content until a later successful `commit_paths` call to the same path overwrites the stale index entry via its own `git add`, or a human runs `git reset`.
   evidence: Surfaced by the Blind Hunter adversarial review pass over this story's diff. Confirmed via direct code reading of `adapters/vcs_git.py::commit_paths` (per-path `git add --` loop, then a single `git commit -- <paths>`) and of `run_reconcile_completions`'s own rollback, which only calls `fs.write_text_atomic`, never a VCS-level unstage. Self-healing on the very next successful `commit_paths` call to the same ledger path (which re-stages the then-current, correct content), so this is a narrow, transient git-hygiene gap rather than a data-loss or false-report risk. Not fixed here: closing it cleanly needs a new `VcsPort` method (e.g. an explicit unstage/reset-path primitive) that does not exist on the port today -- extending the port's interface (plus every adapter and fake implementing it) is a larger, cross-cutting change outside this story's own bounded patch-pass scope.
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — adapters/vcs_git.py:826-843 commit_paths stages each path with a separate `git add -- <path>` call, THEN commits; ports/vcs.py has no unstage/reset primitive (grep for 'unstage'/'reset_paths' is empty). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-9-4` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1517,6 +1659,8 @@ status: open
   summary: `core/status.py::render_ledger_advancements` tracks which raw keys still need rewriting in a `remaining: set[str]`, discarding a key the moment its FIRST matching line is rewritten (`remaining.discard(key_part)`). If the ledger text contains the SAME raw key spelled identically on two separate lines (a malformed/hand-duplicated "do not hand-edit" file), only the first occurrence is rewritten to `done`; the second stays at its old status, silently. `matched_raw_keys` still reports the key as matched (once), so the caller's `data["advanced"]` reports success even though one of the two lines is stale.
   evidence: Surfaced independently by both the Blind Hunter and Edge Case Hunter review passes over this story's diff (same underlying finding, reported from two different angles). Confirmed via direct code reading of the `for i in range(0, len(parts), 2)` loop and its `remaining`/`matched` set bookkeeping -- there is no detection of a SECOND line matching an already-discarded key. Distinct from the already-recorded `DW-FU-5-9` (which is about two DIFFERENT raw keys colliding on the same normalized `StoryKey` inside `raw_key_by_dot`): this is the narrower case of the exact SAME raw key spelling appearing twice in the file's own text. Not fixed here: `render()` (`scripts/promote_sprint_status.py`) can never itself produce a duplicate key (it renders from a Python `dict`, which cannot hold two entries for the same key), so reproducing this requires a hand-edited "do not hand-edit, GENERATED" file; because the parsed READ side (`generate.py::parse_sprint_status`) already collapses a duplicate key to one value before this function ever runs, the practical consequence is a cosmetic stale duplicate LINE in the tracked file rather than a wrong STATUS being read back by any consumer -- out of this patch pass's bounded scope.
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/status.py:2078 `remaining.discard(key_part)` still drops a key from the pending set on its first matching line, so a second line carrying the identical raw key spelling is never rewritten. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-9-5` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1544,6 +1688,8 @@ status: open
   summary: This story's own deterministic-verification repair pass (reconciling `spec-pyforge-marshal`'s memlog for the two files story 9.1 added) exposed two pre-existing gaps in `scripts/spec_surface_check.py`'s `--write-baseline --spec NAME` mutation path: (1) it merges `current[name]` -- EVERY file the named spec's surface glob currently matches (~165 for this one spec's broad `src/shared/packages/pyforge-marshal/**` glob) -- into the baseline, not just the paths the accompanying memlog entry actually names, so an unrelated, un-narrated drifted file under the same broad surface would be silently absorbed as "reconciled" with no trace, not even a non-gating `drift-presumed` WARN; (2) the read-modify-write of `scripts/.spec-surface-baseline.json` carries no advisory lock, so two loop homes stamping different specs' baselines concurrently could each merge from a stale read and drop the other's just-written entry.
   evidence: Surfaced independently by both the Blind Hunter and Edge Case Hunter review passes over this repair diff (Edge Case Hunter's finding CONFIRMED after direct code reading of `spec_surface_check.py`'s `merged[name] = current[name]` line and live verification against this run's own stamp -- no unrelated file actually drifted at stamp time here, so no masking occurred in this instance, but the mechanism itself has no guard). Not fixed here: both gaps are in `scripts/spec_surface_check.py` and `pyforge.doctor.sources.chain`, entirely outside `pyforge.marshal.seed.detect.findings` (this story's own Surface) and outside the intent-contract this repair pass is bound not to touch; narrowing the stamp to named paths and/or adding a file lock (the architecture doc's own advisory-lock pattern for shared Tier-3 appends, per this project's memlog) is a `spec-surface-drift-reconciliation`-scoped fix for a future story.
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — scripts/spec_surface_check.py:233 `merged[name] = current[name]` still merges EVERY file the named spec's surface glob matches (not just memlog-named paths) into the baseline. The companion gap (no advisory lock on the read-modify-write) IS fixed: lines 190-206 now hold a real flock on a `.spec-surface-baseline.json.lock` sidecar. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-1` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1571,6 +1717,8 @@ status: open
   summary: `epics.md`'s Story 9.4 AC says "the canonical case is covered by test: `docs/specs/*.md` present ⇒ preserved, recorded" -- but `_classify_entry`'s presence check is a literal `Path.exists()` against `entry.path`, which never glob-expands, so an artifact entry whose `path` was literally set to a glob like `docs/specs/*.md` would report `absent` on every real repo (no file is named `*.md`). Both the shipped `templates/manifest.yaml` (`specs-dir-legacy`, `path: "docs/specs/"`) and this story's own spec/test correctly use the bare directory instead, sidestepping the AC's wording, but the AC prose itself was never reconciled to match.
   evidence: Surfaced by this story's second (fresh, post-`done`) review pass, Blind Hunter. Verified directly by reading `epics.md` line 2153 (the literal glob text) against `seed/templates/manifest.yaml`'s real `specs-dir-legacy` entry (bare directory path, no `legacy_of` set) and this story's own intent-contract (also bare directory) -- the implementation is correct and consistent with the module's pre-existing, non-globbing presence-check semantics (unchanged since S-9.2); only the epics AC's illustrative wording is imprecise. Not fixed here: this story's Surface is `inventory.py`/`findings.py`, not `epics.md`, and the AC's glob phrasing was already pre-existing before this story's dev work began -- a future editorial pass over Epic 9's AC prose (or whichever story next reads it closely) should reword this bullet to name the bare directory, so a future manifest author does not take the glob literally and hit a silent `absent` misclassification.
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md:2244 still reads 'the canonical case is covered by test: `docs/specs/*.md` present ⇒ preserved, recorded,' -- the literal glob text (now at line 2244 vs the 2026-09-05 note's :2182, shifted only by the file's growth). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-4` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1584,6 +1732,9 @@ status: open
   summary: `coverage_findings()`/`coverage_counts()` (S-9.5, FR-69/SC-10) re-verify `entry.artifact_class`/`entry.rationale` as a second, independent gate against `ManifestEntry.__post_init__` (S-7.4/7.5) already enforcing both unconditionally -- so no manifest built through `load_manifest` or ordinary `ManifestEntry(...)` construction can ever produce an `uncovered` finding; the failing branches are reachable only via `object.__setattr__` bypassing the frozen dataclass, a technique that appears nowhere in production code. The corresponding CI-gate test (`test_packaged_manifest_passes_coverage_findings_with_zero_findings`) can consequently only fail if `load_manifest` itself already failed to enforce its own invariants, in which case the fixture would have raised before the test body runs -- adding little regression protection beyond the pre-existing `test_packaged_manifest_class_counts_match_the_spec_exactly`. Separately, the implementation only validates that a *declared* manifest entry is internally well-formed; it never reconciles against `Inventory`/the target repo, so it cannot detect the arguably more valuable reading of SC-10's "100% manifest coverage" -- a real repo artifact with no manifest entry at all, or an entry whose declared class doesn't match what's actually on disk.
   evidence: Surfaced by this story's review pass (Blind Hunter). Verified directly: `ManifestEntry.__post_init__` (`model/manifest.py`) unconditionally coerces `artifact_class` through `ArtifactClass(...)` (raising on any invalid value) and requires a non-blank `rationale` via `_require_text` on every entry regardless of class -- both conditions `_uncovered_reason` checks are already fully closed before a `ManifestEntry` can exist. This is faithful to epics.md Story 9.5's literal AC (an explicit, planning-approved requirement predating this dev pass, mirroring AD-54's "coverage check that HARD-fails any unclassified artifact" design and `bmad_drift_check.py`'s own redundant-gate philosophy) -- not a defect introduced by this diff, so not fixed here. Worth a future architecture-level look (perhaps alongside S-9.6's plan builder or a later report-renderer story) at whether the coverage check should also reconcile against `Inventory`'s classification output to catch the file-system-divergence case, which is the reading with real teeth.
   status: open
+  severity: low
+  verified: 2026-10-01 — NEEDS-DECISION — seed/detect/inventory.py:721 `coverage_findings(manifest: Manifest)` still takes the manifest alone. seed/model/manifest.py's ManifestEntry.__post_init__ unconditionally enforces both conditions _uncovered_reason checks (artifact_class coercion, non-blank rationale), so no ManifestEntry built through load_manifest or ordinary construction can ever trigger the 'uncovered' branch -- only object.__setattr__ bypassing the frozen dataclass can, a technique absent from production code. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Is coverage_findings' 'uncovered' branch intentional defense-in-depth (mirroring bmad_drift_check.py's own redundant-gate philosophy and AD-54's stated design), worth keeping even though it is currently unreachable via normal construction -- or should a future story make it reachable against real corruption paths?
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-5` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1611,6 +1762,9 @@ status: open
   summary: `coverage_findings()`/`coverage_counts()` operate on `Manifest.entries`, which -- when the `Manifest` came from `load_manifest` (`model/manifest.py`) -- has already been filtered to only entries `in_range(model_version, entry.since, entry.until)` at the manifest's own declared `model_version`. An entry staged for a future version (`since` not yet reached) or already retired (`until` passed) is invisible to the coverage check entirely, so a corrupted `artifact_class`/`rationale` on such an entry produces no `uncovered` finding at the model version where the check actually runs. This is consistent with `load_manifest`'s documented version-filtering design (the manifest is an append-only historical ledger; AD-55) and with the intent contract's own explicit boundary ("coverage is intrinsic to the manifest alone"), but it sits in tension with FR-69's "every artifact [Genesis] knows about" framing, which reads as broader than "every artifact active at the manifest's own declared version."
   evidence: Raised by this pass's Blind Hunter review. Verified directly: `load_manifest`'s `filtered_entries = tuple(entry for entry in entries if in_range(model_version, entry.since, entry.until))` (`model/manifest.py`) runs before `Manifest(...)` is constructed, so `Manifest.entries` -- the only input `coverage_findings`/`coverage_counts` ever see -- never contains an out-of-range entry when built via the loader. Not this story's defect: the version-filtering behavior is S-7.4's pre-existing design, and S-9.5's intent contract explicitly scopes coverage to the manifest alone (no `Inventory`/repo-target involvement), which by construction means "the manifest at its declared version," not "every entry the YAML source ever mentions." Worth a future look (perhaps alongside a report-renderer story) at whether a coverage-style check should also run against the UNFILTERED entry list to catch corruption in staged/retired entries before they become active.
   status: open
+  severity: low
+  verified: 2026-10-01 — NEEDS-DECISION — seed/detect/inventory.py:721 coverage_findings still consumes only manifest.entries; seed/model/manifest.py:601-602 `filtered_entries = tuple(entry for entry in entries if in_range(model_version, entry.since, entry.until))` runs before Manifest(...) is constructed via load_manifest, so an out-of-range (staged or retired) entry is invisible to the coverage check entirely. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should a coverage-style check also run against the manifest's UNFILTERED entry list (every artifact ever mentioned, regardless of since/until) to catch corruption in a staged-or-retired entry, or is scoping coverage to the manifest at its currently-declared model_version (S-7.4's pre-existing, documented design) the intended contract?
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-5-3` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1624,6 +1778,8 @@ status: open
   summary: `_git_head`/`_repo_is_dirty` run `git rev-parse HEAD`/`git status --porcelain` with `cwd=inventory.repo_root` and no `--show-toplevel`-style boundary check; if `repo_root` is a subdirectory of an ENCLOSING git checkout rather than a repo root of its own, both calls succeed and report the ANCESTOR repository's HEAD/dirty state instead of degrading to `git_head=None` the way a genuinely non-git target does -- silently mislabeling `RepoFingerprint` for a target that is not actually version-controlled on its own terms.
   evidence: Raised by this story's review pass (Blind Hunter). Verified by reading `build.py::_git_head`/`_repo_is_dirty`: both simply pass `cwd=repo_root` to `git`, and `git` itself walks upward to the nearest enclosing `.git` when the given directory is not itself a repo root -- there is no code here (or anywhere else in `seed/`) that calls `git rev-parse --show-toplevel` or otherwise confirms `repo_root` IS the repository root before trusting its answer. `errors.py`'s own `PreconditionFailure` docstring already earmarks "a target that is not a git repo" as a check a later `seed/verbs/` story performs before running any verb -- the nested-repo variant of that same boundary question belongs there (where a `PreconditionFailure` can actually be raised and surfaced to the operator), not in this story's `plan/build.py` (a later `apply` story, Epic 10, is the one that would actually trust `repo_fingerprint` for a refuse decision, per this story's own Never list). Not fixed here: this story's Boundaries/Never list explicitly excludes both CLI-level precondition checking and any fingerprint-based refusal logic. A future `seed/verbs/` (or the `apply` story itself) should add a `--show-toplevel` (or equivalent) boundary check before computing or trusting a `RepoFingerprint`.
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — seed/plan/build.py:482-505 _git_head/_repo_is_dirty still simply pass `cwd=repo_root` to git with no --show-toplevel or other boundary check; grep for 'show-toplevel' anywhere under seed/ is empty. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-6` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1637,6 +1793,8 @@ status: open
   summary: `write_plan` composes freely with `build_plan` -- nothing in this story sequences them -- so a future verb calling `write_plan(plan, default_plan_path(repo_root))` against a target repo whose `.gitignore` has not yet had the model's `model-ignores` region materialized into it (e.g. the very first `init`/`adopt` run, before Genesis has written anything) leaves the freshly-written `.marshal/plan.json` as an untracked file. A subsequent `build_plan` call against that same repo (e.g. to verify idempotence, AD-60) would then see that untracked file via `git status --porcelain` and report `dirty=True`, even though nothing about the repo's OWN content actually changed. (Whether `.marshal/plan.json` is covered by the packaged `.gitignore` region at all was also raised and is independently verified TRUE: `templates/files/model-ignores.gitignore.j2` lists it explicitly -- the surviving concern is purely the ORDERING between materializing that region and writing the plan file, not whether the ignore rule itself exists.)
   evidence: Raised by this story's review pass (Blind Hunter). Verified by reading `build.py`: `build_plan` and `write_plan` are two entirely independent, composable functions with no call-order relationship to each other or to whatever future code materializes a target repo's `.gitignore` -- this story never writes to a target repo at all (Never list: "No apply integration"). The self-referential fragility is real but only reachable once a LATER story (Epic 10's `apply`, or whichever `seed/verbs/` story first sequences `init`/`adopt`) starts calling `write_plan` against a real target repo; nothing in Story 9.6's own test suite triggers it, since none of `build_plan`'s tests call `write_plan` against a repo that also has a real `.gitignore` file. Not fixed here: the correct fix is a write-order guarantee ("materialize `.gitignore`'s `model-ignores` region before writing `plan.json`, or write `plan.json` outside the target repo's own tree entirely") that belongs to whichever future story actually sequences those writes -- outside this story's Surface (`plan/types.py`, `plan/build.py`) and explicitly outside its Never list's "no apply integration" boundary.
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — seed/verbs/init.py:484-493 check_preconditions(...) (read-only, never materializes .gitignore) runs immediately before write_plan(plan, default_plan_path(path)) with nothing in between that writes the model-ignores region first. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-6-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -1669,6 +1827,7 @@ status: open
   promoted: 2026-08-20 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-10` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-10`.
   severity: low
   status: open
+  verified: 2026-10-01 — STANDS — No review artifact for story 8.5 anywhere under planning-artifacts/ (targeted find for *8-5-marker*/*review* patterns found none). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1721,6 +1880,7 @@ status: open
   severity: medium
   reason: PR #612 merged verified-green (marshal 5223 passed) but without its review round applied. Finalize omissions were completed post-merge same day (ledger flip, owed memlog events for spec-bmad-611 + spec-bmad-loop-governance, story-spec promotion, pixi.toml stall-check description, meta-test baseline classification). The MATERIAL unapplied findings, distilled: (1) ports/harness.py RunStatusSnapshot is a frozen dataclass now carrying a MUTABLE DICT field (sweeps_refused) — hash()/set-membership raises TypeError; tuple-of-pairs or eq=False is the fix; (2) loop_stall_check.parked_tasks assumes state.json "tasks" is a dict — a list/string crashes the whole watchdog before other homes are checked; (3) a run that flips finished/stopped while still carrying awaiting-operator tasks drops its owed confirms from the watchdog (parked-outranks-finished precedence not honored at the liveness gate); (4) fleet_picture's ATTENTION chain emits BOTH "idle — needs a spin" AND the parked-confirm line for a parked station with backlog (the state column pins confirm-not-respin; ATTENTION lacks the exclusion); (5) derive_home_state precedence cell parked+escalated+dead-supervisor flips unsupervised→paused-on-escalation, hiding the dead supervisor; (6) preserve_ref values + sweeps_refused keys print verbatim (no redaction/shape-check) into terminal + dashboard JSON; (7) the installed-package drift pins degrade to silent SKIPS via importorskip when bmad_loop is absent — nothing asserts the env carries it; (8) `sweeps_refused: None` renders as a raw Python literal conflating absent-key with unreadable-state; (9) the parked state cell drops the "N left" backlog count; (10) ledger-count plumbing (counts[awaiting-operator] + the ATTENTION needs line) is untested and the feed-token spelling is unpinned; (11) doctor's marshal.py false-green source: a feed-done story whose harness phase is awaiting-operator confirms "landed" via park commit_sha though acceptance was never confirmed; (12) minor: dead preserve_ref fixture param, F541 f-string, summary-line accounting, mid-phrase wraps. Fix shape: one remediation story (or the Epic 25 retro) applies 1-6 with tests, decides 7's env-assertion posture, and polishes 8-12; nothing here invalidates the landed behavior, which is fixture-verified for the primary paths.
   status: open
+  verified: 2026-10-01 — STANDS — Finding 1: ports/harness.py:409-472 RunStatusSnapshot is @dataclass(frozen=True, kw_only=True) with sweeps_refused: Mapping[str, str] = field(default_factory=dict), so hash() raises TypeError. Finding 2: scripts/loop_stall_check.py:99-101 does `tasks = st.get('tasks') or {}` then tasks.items() with no isinstance guard, called unguarded at :163 inside the per-home loop, so a list/str tasks value crashes the whole watchdog. Finding 4 narrowed: scripts/fleet_picture.py:1060-1076 can still emit the idle line (now in `watch`) and the parked-confirm needs line for the same station. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1738,6 +1898,8 @@ status: open
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — seed/verbs/update.py:406-470 _wholesale_regenerate_actions iterates state.managed and, for a hybrid entry, names every declared region in chosen_anchor (:445-449) with no reference to state.opted_out or state.skips; run_update merges it at :1035-1058 excluding only migration-claimed ids, while only build_plan (:996-997) receives opted_out. (2026-09-30 deferral burn-down triage)
+  decision: On `marshal seed update`, should a region the operator opted out of (state.opted_out), or an artifact skipped at adopt (state.skips), stay excluded from the FR-98/FR-99 wholesale regenerate, or does update intentionally refresh every managed region?
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1755,6 +1917,7 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_update.py: only one include_seeded test exists, test_include_seeded_applies_the_migration_offered_action (now at line 796, single run_update call); no test issues two sequential run_update calls (grep for 'sequential', 'second', 'twice' in test names: no match). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1772,6 +1935,7 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — tests/unit/test_seed_verbs_update.py:611 test_force_bypasses_the_hand_edited_managed_content_precondition uses _copied_managed('whole', 'WHOLE.md') with artifact_class='copied-managed' -- the whole-file case only; no hybrid-managed-region + --force test exists (grep for 'hybrid' near '--force'/'force=True': no match). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1789,6 +1953,7 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/seed/verbs/update.py:643-652 _region_body_for has the projects-table/projects-index special case; grep for 'projects-table'/'projects_table'/'projects-index' in tests/unit/test_seed_verbs_update.py returns zero matches. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1822,6 +1987,8 @@ status: open
   severity: high
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — Reproduced read-only 2026-09-30 by running run_adopt's own plan pipeline in memory (read_state -> classify -> build_plan -> _augment_plan_with_first_claims, skipping write_plan; seed/verbs/adopt.py:998-1022): state=None (no .marshal/ at the repo root), 22 actions, 21 after the 3 unclassified-deferred ids -- identical to the recorded count. The 21: 5 present-divergent hybrid regions (AGENTS.md, CLAUDE.md, .gitignore, README.md, _bmad-output/PROJECTS.md), 12 first-claims of files that already exist (scripts/bmad-switch, scripts/bmad-loop-worktree, scripts/detectors.py, .github/workflows/detectors.yml, GEMINI.md, .github/copilot-instructions.md, .cursor/rules/specs.mdc, docs/dreams/, docs/drea… (2026-09-30 deferral burn-down triage)
+  decision: Should the control-plane repo itself be genesis-adopted (seed adopt --apply inserts managed regions into AGENTS.md/CLAUDE.md/.gitignore/README.md/PROJECTS.md, claims 12 existing files as tool-owned and writes .marshal/seed-state.yml), or should SC-02's oracle be re-scoped for this repo (render {{ slug }} as Story 70.1 does for check, skip loop-home-only entries) -- K-02 forbids simply widening the exclusion set?
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1839,6 +2006,7 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/mcp/coverage.py: tool_surface_coverage_report and its helpers (station_governed_surface etc.) use only Path.is_file()/candidate.is_file() checks (lines ~69, 84) -- an empty stub file still counts as covered. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1856,6 +2024,7 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/mcp/parity.py:69-72: 'from pyforge.marshal.cli.main import _build_parser' then 'parser = _build_parser(); for action in parser._actions:' -- both private. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1873,6 +2042,7 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/mcp/coverage.py:45-51 resolve_repo_root walks parents looking for (pixi.toml + .claude); no os.environ read anywhere in the file (grep for 'MARSHAL_REPO_ROOT' and 'os.environ' in coverage.py: no env-var match). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1890,6 +2060,7 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/auth_http_time.py:95-123 FrozenClock.advance(seconds) has no guard against a negative seconds value (accepts and applies any float unconditionally) -- confirms at least the negative-clock-advance gap named in the entry still exists; the package's mock surface (auth_http_time.py, db_factory.py, cli_runner.py, page_object.py) shows no recreate-after-delete or journal-reload handling either. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1924,7 +2095,9 @@ status: open
   origin: spec-deferred 64e543f27d3d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — .github/workflows/coverage-gates.yml:117-160 now runs a per-station matrix (`station: ${{ fromJSON(needs.changes.outputs.stations) }}`, setup-pixi `environments: pyforge-${{ matrix.station }}`, a Postgres+pgvector service for scribe); introduced by 6b6cb6470b (2026-09-07, 'CI to all 8') and 9080195184, after the 2026-09-05 verification.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1941,7 +2114,9 @@ status: open
   origin: spec-deferred 60790d83b8fd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — pixi.toml now defines a pyforge-<station>-test-coverage task for all 8 stations, not just marshal: grep '^\\[feature.pyforge-.*\\.tasks\\.pyforge-.*-test-coverage\\]' pixi.toml matches pyforge-mason (:558), pyforge-steward (:619), pyforge-marshal (:745), pyforge-warden (:2564), pyforge-atlas (:2670), pyforge-doctor (:2939), pyforge-scribe (:2965), pyforge-herald (:3000).
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1959,6 +2134,7 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — grep 'upload-artifact' .github/workflows/coverage-gates.yml: no match (exit 1). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -1976,6 +2152,8 @@ status: open
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — Still unwired: grep over .github/workflows/ and scripts/detectors.py finds no reference; only pixi.toml:1147-1149 defines the local-recipes task. Ran its command read-only (`python _bmad/scripts/bmad_tea_playwright.py --all --check`, tree clean afterwards): exit 1 with DRIFT on all 8 stations -- e.g. marshal's matrix misses ~140 story ids (5.11 ... 78.1), steward's ~120, herald's ~58, doctor's ~57. (2026-09-30 deferral burn-down triage)
+  decision: CAP-5's Story Coverage Matrices are stale on all eight stations: should the check be wired into detectors-ci (advisory or blocking) after a regeneration, or should CAP-5's matrix contract be retired?
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2008,7 +2186,10 @@ status: open
   evidence: Blind-hunter finding: spec-bmad-loop-baseline-drift CAP-3 text may still say gated/unfiled; outside this chore's Code Map surfaces.
   origin: spec-deferred 3099eeba57f5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  severity: low
+  resolution: 2026-10-01 — obsolete: The cited artifact, planning-artifacts/specs/spec-bmad-loop-baseline-drift/SPEC.md, was folded/absorbed into spec-pyforge-marshal on 2026-09-16 (frontmatter `status: absorbed`, body disposed -- the file is now 13 lines pointing to its own .memlog.md). The absorbing spec's compact entry (specs/spec-pyforge-marshal/SPEC.md:386-388, CAP-52) makes no 'unfiled' status claim. The authoritative sources already correctly record the filing: docs/dreams/bmad-loop-baseline-drift.md:126 '### Filed issue (was DRAFT -- filed 2026-08-23)' and :229 'Filed coordinated issue https://github.com/bmad-code-org/bmad-loop/issues/701'; Story 20.3's own tracked spec (specs/spec-20-3-the-gated-upstream-filing.md:74,…
+  verified: 2026-10-01 — OBSOLETE — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2024,6 +2205,8 @@ status: open
   origin: spec-deferred e50b56676a5b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — specs/spec-20-3-the-gated-upstream-filing.md:89 still records this as explicitly deferred: 'deferred (not patched here): parent Spec CAP-3 memlog oracle sync; future partial-close of #701 requiring register split -- tracked in note.' No register split or note exists yet in the tracked artifacts. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2077,6 +2260,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — src/pyforge/marshal/core/chain_regen.py:688-716 verify_code_linkage always returns status='complete' regardless of how many spec cites are missing -- detail carries only 'N spec cite(s); M missing', never a 'failed'/blocking outcome. (2026-09-30 deferral burn-down triage)
+  decision: Should read-only code-linkage verify be tightened to fail/block the orchestrated chain when spec cites are missing, or does CAP-1's read-only-verify-then-orphan-report contract intentionally stop short of that (as the entry's own text states: 'a product choice beyond CAP-1')?
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2094,6 +2279,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — src/pyforge/marshal/cli/chain.py (marshal chain regenerate, Story 17.4) and src/pyforge/marshal/cli/planning.py (marshal planning chain-regenerate, Story 21.2) both still exist as live subcommands; grep for 'deprecat' across both files: zero matches. (2026-09-30 deferral burn-down triage)
+  decision: Should marshal chain regenerate (the Story 17.4 four-phase dry-run verb) be deprecated or cross-linked to marshal planning chain-regenerate (Story 21.2's fuller orchestrated verb), or do the two serve genuinely distinct, permanent purposes?
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2111,6 +2298,7 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/cli/planning.py:137-160 hard-codes '(default: true)'/'(default: false ...)' in argparse help= strings for the same three flags core.chain_regen.cap5_defaults() (chain_regen.py:452-470) returns programmatically. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2127,7 +2315,9 @@ status: open
   origin: spec-deferred 2d5dc03c245d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — scan_timing now lives in scripts/fleet_scan.py:3122 (not pyforge.doctor.sources.fleet_scan) and keeps the classes apart: journal minutes -> epicMin, wall-clock -> epicMinWallClock (:3266, :3320), `total` is the primary class only (:3312) with a dual totalLabel when mixed. Story 23.2 (CAP-2) is done (marshal sprint-status-ledger.yaml:111).
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2145,6 +2335,7 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — scripts/fleet_scan.py:3086-3088 def _sid_from_journal_key(key): m = re.match(r'^(\\d+)-(\\d+)', key); return f'{m.group(1)}.{m.group(2)}' if m else key -- still requires the leading N-M pattern, falling back to the raw key (which then won't match a board sid) otherwise. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2161,7 +2352,9 @@ status: open
   origin: spec-deferred e334aaacbac9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — scripts/fleet_scan.py:3050-3090 _velocity_coverage_sub_caption partitions unmeasured stories into true classes (wall-clock-derived, spec-without-revision-fields, no-spec, ...; docstring 'four true classes, never predates'), used at :3241; grep for 'predate loop instrumentation' over src/ and scripts/ is empty. Story 23.3 is done (marshal sprint-status-ledger.yaml:112).
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2178,7 +2371,9 @@ status: open
   origin: spec-deferred 44ab09a08fa7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-01 — obsolete: docs/dashboard/index.html and docs/dashboard/check_render.js no longer exist (ls docs/dashboard/ shows only kedro-viz/, __pycache__/, README.md). git log confirms deletion: commit e07834580d 'chore(steward): delete Guildhall generator and inbound refs (30.2)', and epics.md:2040 'Story 30.2: Delete the generator and its inbound refs'.
+  verified: 2026-10-01 — OBSOLETE — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2262,9 +2457,10 @@ status: open
   evidence: resolve_dispatch_branch asks VcsPort.branch_exists, and GitVcs.branch_exists verifies refs/heads/<branch> only -- a remote-tracking ref under refs/remotes/origin/ never matches. Live: origin carries refs/heads/marshal/12.2 (05538789c674). Pre-existing in shape rather than caused by Story 22.9: before the change the same state re-created a fresh marshal/<key> from main with the same orphaning, so this story neither introduced nor widened it.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py
   origin: spec-deferred 901646ff57c3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — adapters/vcs_git.py:234-259 branch_exists still verifies refs/heads/<branch> only; core/dispatch.py:463-515 resolve_dispatch_branch uses it for the station branch and the legacy marshal/<key> branch. The cited live example is gone: `git ls-remote --heads origin 'marshal/*'` now lists only marshal/12-1-full-pixi-wiring, marshal/12-3-egress-counter, marshal/15-2-landing-ledger-staleness (plus two non-story branches), all for stories done in the marshal ledger. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2280,6 +2476,7 @@ status: open
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — core/dispatch.py:491-493 still returns early on branch_exists(branch) without checking the worktree. Narrower than recorded: cli/dispatch.py:1519-1551 refuses a same-story redispatch (MRS-DISP-011) whenever a prior dispatch journal for that story reads LIVE, so the sequential case is guarded; what remains is the race between that journal-based check and the new run's journal write -- dispatch_once takes no lock (the only acquire_advisory_lock in cli/dispatch.py is the fleet-cycle lock at :4908). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2295,6 +2492,7 @@ status: open
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/dispatch_supervisor/__main__.py: gather_dispatch_git_facts (def at line 330) calls dispatch_core.resolve_dispatch_branch (line 357) and is itself invoked from 8 separate call sites in the file (lines 888, 1482, 1564, 1637, 1719, 1770, plus the CAP-5 in-flight guard at 1195/dispatch_core.resolve_dispatch_branch directly) -- confirms the repeated-shelling shape the entry describes. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2310,6 +2508,7 @@ status: open
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/tests/integration/test_init_worktree.py: grep for 'dispatch/' finds zero matches -- no real-git test creates the three-segment dispatch ref shape; Story 22.9's tests use hand-written FakeVcs doubles only. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2405,6 +2604,7 @@ status: open
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/schemas/policy.json:147 and src/pyforge/marshal/core/policy.py (lines 96, 315, 514, 1391, 1584, 1592) all still say 'bmad_loop 0.9.0' / "0.9.0's own Phase 5 ... scheduler is unbuilt". core/policy.py:368/:522 confirm the repo is actually on bmad_loop 0.11.0 stock elsewhere in the same file. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2420,6 +2620,7 @@ status: open
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/tests/unit/test_policy.py: the only _STATIC_KEYS reference is a monkeypatch override at line 2164, not a membership/count assertion; no test enumerates or counts the real _STATIC_KEYS frozenset (core/policy.py:207). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2434,7 +2635,9 @@ status: open
   origin: spec-deferred 79ec1e7f38fb — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-611-era-alignment/SPEC.md frontmatter now reads 'status: absorbed', 'absorbed-into: spec-pyforge-marshal', 'updated: "2026-09-16"' (matching this DW entry's own path_last_changed date exactly) -- no longer 'status: ready'. Body: 'This Spec folder was folded on 2026-09-16 (one-chain-per-station CAP-3 / CAP-8 pilot). The decision record is .memlog.md in this folder.'
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2447,9 +2650,10 @@ status: open
   evidence: Blind Hunter finding; intent surfaces were living docs + SYNC-RUNBOOK + parent SPEC open question — not PROJECTS.md.
   location: _bmad-output/PROJECTS.md
   origin: spec-deferred b716d26940a5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — _bmad-output/PROJECTS.md was refreshed after 25.7 (3fa06f200a 2026-09-07 cutover layout; 8a6aefcd60 2026-09-16) and now lists the 8 active stations with dissolved/absorbed projects struck through, so the historical-layout claim is resolved. Residual staleness: the pyforge-warden row cites docs/specs/pyforge-warden.md and the pyforge-atlas row docs/specs/cfe-atlas-datapipeline-kedro-migration.md (both absent); the atlas row's counts are 'as of 2026-08-15'; § Cutover target says Story 44.5 is 'blocked pending solutioning review' while the steward ledger has 44-5-move-the-estate: backlog (parked). Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2479,6 +2683,7 @@ status: open
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — Design-notes text for spec-25-7 itself accepts 'thin depth' for this area; searched cli/status.py and related dispatch/dispatch_landing.py/core/status.py modules for an existing grammar note or legend string and found none accompanying the done/backlog Counter-style totals. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2493,6 +2698,7 @@ status: open
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture.md:116, :611 and :804 still call the Guildhall dashboard (docs/dashboard/ -> GitHub Pages, data.js regenerated) 'the one deployed artifact'. .github/workflows/dashboard.yml:3-5 says steward 30.2 retired the Guildhall generator (e07834580d); docs/dashboard/ now holds only kedro-viz/ and a README, Pages serves herald's dossier + Kedro-Viz, the operator console is Lane 1 /console/, and the platform ships a deploy chart (src/platform/deploy/charts/). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2507,6 +2713,7 @@ status: open
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md:347-349: CAP-39 ('Living factory docs re-grounded, with a named owner' <- spec-bmad-611-era-alignment CAP-7) still has only '(see absorbed Spec memlog)' for both intent and success -- no dated prose in the body itself. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2535,6 +2742,8 @@ status: open
   evidence: Found during Story 2.1's adversarial review pass (both the Blind Hunter and Edge Case Hunter reviewers independently). Confirmed by inspection: `cli/gate.py::run_evaluate` calls `process.run(tokens, cwd=root)` with no `timeout_s` argument, and `PosixProcess.run`'s own default is `None` (unbounded) -- a deliberate Story 2.1 design choice (see the spec's Design Notes: "Marshal has no policy field for a per-command timeout budget today ... rather than inventing an arbitrary ceiling"). Fixing this properly needs a genuine policy decision (a new `EffectivePolicy` field, its default value, whether it's per-command or global) that is out of this Effort:M story's declared surface.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/gate.py:936 `result = process.run(tokens, cwd=root)` still passes no timeout_s; PosixProcess.run's own default (pyforge.core.process) is None (unbounded); no timeout policy key exists in core/policy.py (only the unrelated harness-side review_on_timeout). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-1-standalone-verify-command-runner-project-scoped.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2547,6 +2756,8 @@ status: open
   evidence: Found during Story 2.1's adversarial review pass. Confirmed by grep: `repo_defaults` appears only in `core/policy.py`'s signature/docstring, never as an actual call-site argument anywhere in `cli/`. Pre-existing since Story 1.10, not introduced by this story -- `cli/gate.py` reused `run_config`'s exact (already-incomplete) resolution pattern by design (Boundaries & Constraints: "reused, not reimplemented"). Wiring `repo_defaults` through is a small fix but touches `cli/config.py` too, outside this story's declared surface.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/gate.py:798 `policy.compose(project_slug=project_slug, project=project_data, flags={})` still omits repo_defaults=, while cli/config.py:650, cli/seed.py:247-251, and cli/dispatch.py:328 now all pass it -- confirming the fix pattern is established elsewhere but gate.py alone was not updated. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/implementation-artifacts/spec-2-1-standalone-verify-command-runner-project-scoped.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2559,6 +2770,8 @@ status: open
   evidence: Found during Story 2.1's adversarial review pass (Edge Case Hunter). `subprocess.run(..., capture_output=True)` has no output-size limit, and `Envelope.__post_init__` deep-copies and JSON-serializes `data` in full. No evidence this has caused a real incident yet (this repo's real verify commands are pixi test invocations with bounded output), and a truncation policy (byte cap, where to truncate, whether it's configurable) is a design decision beyond this story's scope.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-core/src/pyforge/core/process.py:157-178 `subprocess.run(..., capture_output=True, ...)` still has no size cap; grep for 'truncat'/'max_bytes' in that module is empty. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-1-standalone-verify-command-runner-project-scoped.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2571,6 +2784,8 @@ status: open
   evidence: Found during Story 2.1's adversarial review pass (Blind Hunter). Live-verified: `shlex.split("   ")` returns `[]`, and `PosixProcess.run([])`'s own empty-argv guard is what fires, correctly landing in the `unevaluable` tier but under the wrong finding code/message for the actual root cause. Low-severity UX papercut, not a correctness bug (the verdict is still correctly non-`clean`); fixing it cleanly needs `shlex.split`'s empty result distinguished from a truly launch-failed command inside `cli/gate.py`, a small but non-trivial refactor of the `MRS-GATE-002`/`003` split this story just established.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/policy.py:718-727 `_valid_str_tuple`'s check is still `isinstance(item, str) and item != ""` -- a whitespace-only string like " " passes. Confirmed live: `shlex.split(" ")` returns `[]`, which then falls into PosixProcess.run's 'cannot launch an empty argv' guard (process.py:173,255) instead of a targeted diagnosis. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-1-standalone-verify-command-runner-project-scoped.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2583,6 +2798,8 @@ status: open
   evidence: Found during Story 2.1's adversarial review pass (Blind Hunter). Currently harmless in practice: `cli/gate.py`'s one real call site always passes `cwd=repo_root()`, a path that by construction exists whenever `marshal` itself is running. A latent trap for any future caller of `ProcessPort.run` with an unvalidated `cwd`, not an exploitable gap today.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-core/src/pyforge/core/process.py:200 -- `except FileNotFoundError as exc: raise ProcessError(f"executable not found: {argv[0]!r} ({exc})")` unconditionally. The sibling method the ledger called `run_logged` was renamed to `spawn_detached` (:309-315) and now correctly states only what is actually known ("NOT necessarily the executable is missing... Popen raises this identical exception when cwd itself cannot be chdir'd into"), so `run()` is the one remaining conflating call site. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-1-standalone-verify-command-runner-project-scoped.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2595,6 +2812,8 @@ status: open
   evidence: Found during Story 2.1's follow-up review pass (both reviewers independently, from different angles). Pre-existing in `cli/config.py` since Story 1.3 and explicitly reused by this story per its own Boundaries & Constraints ("imported, not reimplemented"); NOT introduced here. Live-verified as currently HARMLESS in this repo: the `pyforge-marshal` pixi env installs the package editably (`_editable_impl_pyforge_marshal.pth` points back at the source tree), so `repo_root()` returns the real worktree root and the conventional path resolves -- confirmed by running `marshal gate evaluate` end-to-end, which found and ran both of this project's real verify commands. What changed is the STAKES: before this story a mis-resolved root only mis-printed a policy (`marshal config`), whereas now a verdict depends on it, and the failure mode is silent success rather than a visible error. The only existing guard, `test_conventional_project_policy_path_lands_on_the_repo_root`, can by construction only ever run against the editable tree. Fixing it needs a decision on the correct anchor (invocation `Path.cwd()` + a git-root walk, as every sibling command in `cli/init.py` already uses; an explicit target argument; or an installed-vs-editable branch), and it touches `marshal config` too -- outside this story's declared surface.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: critical
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py:474-487 -- `repo_root()` is still `Path(__file__).resolve().parents[8]`, unchanged from the cited text. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-1-standalone-verify-command-runner-project-scoped.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2646,6 +2865,9 @@ status: open
   evidence: Found during Story 2.1's second follow-up review pass (Blind Hunter). Confirmed by grep — this is the package's only `core -> ports` import — and by reading `pyproject.toml`'s `[tool.importlinter]` contracts, neither of which names `pyforge.marshal.ports`. Not patched here because both remedies are spec/architecture decisions, not defect fixes: moving `ProcessResult` to `core/model.py` (so `ports/process.py` imports it and the direction is restored one-way) directly contradicts this story's own Code Map, which places the dataclass in `ports/process.py`; amending AD-4's declaration to bless a `core -> ports` value-type edge is an architecture amendment of the kind F-16 (2026-07-30) already went through for `adapters -> core`. Behaviourally harmless today (`ProcessResult` is a frozen, I/O-free dataclass), but the invariant is now stated in one place and unenforced in another.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — grep for 'from ..ports' / 'from .ports' across core/*.py shows core/ now imports from ports/ in EIGHT modules: dispatch.py:39, conformance.py:55, supervise.py:81, publish.py:12-13, worktree_checkpoint.py:8, token_economy_benchmark.py:23, status.py:79 -- wider than the five cited in the 2026-09-05 note. pyproject.toml's AD-4 contract (forbidden_modules = ["subprocess", "os", "time", "pyforge.marshal.adapters"]) still does not name pyforge.marshal.ports. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should AD-4's import-linter contract be widened to forbid core -> ports (closing the now-eight-module edge and forcing the affected value types to move into core/model.py), or should architecture.md's 'core imports nothing from ports' claim be amended to bless a core -> ports value-type edge, the way F-16 (2026-07-30) already amended it for adapters -> core?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-1-standalone-verify-command-runner-project-scoped.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2658,6 +2880,9 @@ status: open
   evidence: Found during Story 2.1's second follow-up review pass (both reviewers, from different angles). Confirmed by inspection: `envelope.v1.json` deliberately leaves `data` open ("its shape is per-command and opaque"), `schemas/` contains only `envelope.v1.json` and `policy.json`, and the only description of the gate payload is `core/gate.py`'s docstring. The heterogeneous shape itself was already dispositioned as `reject` in the first review pass (deliberate, documented); what is new here is the ABSENCE of a machine-readable contract for a payload CI is expected to parse, plus the unbumped `data_version`. Establishing a per-command payload schema (and whether `data_version` is per-command or per-envelope, and where its registry lives) is a cross-command convention decision touching `marshal config` too, outside this story's declared surface.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — NEEDS-DECISION — src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/ now holds conformance.json, envelope.v1.json, gate-record.json, journal.json, policy.json, status.json -- gate-record.json is Story 2.6's durable record, not a schema for gate evaluate's own data payload; grep for 'data_version' in cli/gate.py is empty (never set, so it rides envelope.v1.json's default). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should marshal gate evaluate (and other per-command payloads) ship a machine-readable JSON Schema the way marshal config does with schemas/policy.json, and is data_version meant to be a per-command convention with its own registry, or is the envelope's documented 'data is per-command and opaque' stance sufficient?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-2-1-standalone-verify-command-runner-project-scoped.md, src/pyforge/marshal/schemas/policy.json); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2683,6 +2908,9 @@ status: open
   evidence: Found during Story 2.1's third review pass (Blind Hunter), while implementing the containment narrowing this same pass patched. Confirmed by inspection: `cli/gate.py::_resolve_policy_source` instantiates a `PolicyIOError` purely to harvest its `.finding`, deliberately reusing the I/O code rather than minting a new one, and the shipped tests for a TOML syntax error, a directory squat, a cross-project symlink and a relocated projects tree all assert the same `["MRS-POLICY-004"]`. Not patched here because the story's finding-code budget is fixed by its own spec (`MRS-GATE-001..005` registered in `core/findings.py` + `core/verdict.py` together), and a containment refusal is arguably a POLICY-class rather than GATE-class code, so choosing its namespace, severity tier and registry placement is a spec-level decision. Behaviour is correct and fail-closed either way (`MRS-POLICY-004` classifies `UNEVALUABLE`, exit 1) -- this is a diagnosability gap, not a false green.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — cli/gate.py:356-401 _resolve_policy_source still returns 'one MRS-POLICY-004 finding' for a containment violation alongside the malformed/unreadable/directory-squat cases (lines 766,779-789,879-885 all route through the same code); no MRS-POLICY-005/006-class containment-specific code exists in core/findings.py. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should a containment refusal (a symlink/relocated-tree attack on the conventional policy path) get its own distinct finding code separate from MRS-POLICY-004's malformed-TOML/unreadable/directory-squat cases, and if so does it belong in the POLICY namespace or a new GATE-class code -- a namespace and registry-placement decision the story's own fixed finding-code budget deferred?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-1-standalone-verify-command-runner-project-scoped.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2695,6 +2923,8 @@ status: open
   evidence: Found during Story 2.1's third review pass (Edge Case Hunter), which explicitly excluded it from its own findings list as unverified because demonstrating it requires winning a race. Reasoned from code only: `_resolve_policy_source` returns a resolved `Path`, and `_read_project_policy` does `open(path, "rb")` on it with no `O_NOFOLLOW` and no handle carried over from the check. Not patched here because the fix is not local -- closing it means opening the file ONCE and validating the open file description (e.g. `os.open` with `O_NOFOLLOW` per component, or `os.fstat` + `st_dev`/`st_ino` comparison against the resolved parent), which changes `_read_project_policy`'s signature and therefore `marshal config`'s call path too, outside this story's declared READ-ONLY treatment of `cli/config.py`. Severity is bounded by the precondition (write access inside the projects tree already implies the ability to edit a policy file directly, without a race) -- it matters only for the narrower attacker who can create/replace symlinks but not write the legitimate policy file.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — grep for 'O_NOFOLLOW'/'st_ino'/'fstat' across cli/config.py and cli/gate.py is empty; _resolve_policy_source still returns a resolved Path via Path.resolve(), and _read_project_policy still re-opens that path by string (open(path, "rb")), so the kernel re-traverses and re-follows every symlink at open() time. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/implementation-artifacts/spec-2-1-standalone-verify-command-runner-project-scoped.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2707,6 +2937,8 @@ status: open
   evidence: Confirmed live during Story 2.4's implementation and review: no occurrence of "no changes in worktree" or any worktree-diff logic exists anywhere in `cli/gate.py`; no story-spec-frontmatter-reading mechanism exists anywhere in the `pyforge-marshal` package; `VcsPort.has_uncommitted_changes` (Story 1.8) is confirmed dirty-tree-only by its own docstring. Both review passes (Blind Hunter, Edge Case Hunter) independently flagged the missing end-to-end wiring; this entry consolidates their overlapping findings into the one follow-up the spec's own Never clause already promised to log.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/gate.py:253 `classify_doc_only_declaration` -- `grep -n "classify_doc_only_declaration(" cli/gate.py` returns no real call (only docstring/comment mentions at :51,103,306,743,749,758). `marshal gate evaluate` still cannot classify a real story as doc-only end-to-end. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-4-doc-only-story-classification.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2719,6 +2951,8 @@ status: open
   evidence: Confirmed live during Story 2.5's implementation: `find src/shared/packages/pyforge-marshal/src -iname '*journal*'` returns nothing; no `gate_mode`-setting CLI flag or subcommand exists anywhere in `cli/`; `cli/gate.py::run_evaluate`'s `--run` branch is itself an explicit refusal (`MRS-GATE-005`) precisely because no run-journal fold exists yet. The spec's own Design Notes name this gap explicitly and direct it here rather than an unattended invention of a decision-entry format.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/gate.py:870 `gate_mode_report = gate.describe_gate_mode(effective.seed_view()["gate_mode"].value)` confirms the read-only autonomy-label surfacing IS wired (contrary to a naive reading of the summary, this part shipped). `grep -n gate_mode core/journal.py` returns nothing -- no decision-entry recording exists for a gate-mode change. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-5-gate-mode-ladder-with-autonomy-labels.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2731,6 +2965,8 @@ status: open
   evidence: Confirmed live during Story 2.6's implementation: `grep -rn "tree_revision\|rev-parse\|commit" src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py` returns nothing -- no method on `VcsPort` returns any revision-shaped value; `cli/gate.py::run_evaluate` has no `--scope-check`/scope-verdict-producing code path (Story 2.3 is unimplemented). Both blockers are named in this story's own spec Design Notes ("Why `cli/gate.py` is untouched") as the reason live wiring is out of this story's declared surface, not a defect this story introduced.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — `grep -rn "build_gate_record(" cli/ dispatch_verify.py` -- no matches anywhere. `grep -rn "write_redacted_atomic(" cli/ adapters/` shows only cli/adapters.py:1395,1757 (state files) and adapters/notify_file_desktop.py:63 -- never cli/gate.py. Confirming the narrowing: ports/vcs.py now has `worktree_head_sha`/`resolve_ref`, and Story 2.3's scope check has shipped, so both originally-cited blockers are resolved, yet the wiring itself was never done. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-6-gate-evidence-record-with-redaction-at-egress.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2743,6 +2979,8 @@ status: open
   evidence: Confirmed live during Story 2.6's implementation by reading `cli/config.py::materialize()`: it builds `expected_bytes` from `_policy_fields_payload()` (which applies `policy.redact()` per field), then writes them via its own `os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)` + `os.replace(tmp_path, target_path)` sequence -- no call to `FsPort.write_text_atomic`, `RecordPort.write_redacted_atomic`, or `core.egress.to_redacted()` anywhere in the function. Reconciling it needs a real design decision (does `cli/config.py --materialize` become a second `RecordPort` call site, and does `policy.redact()`'s field-name-only mechanism get subsumed by `to_redacted()`'s broader name-plus-shape one, or do the two mechanisms deliberately keep coexisting for policy-display vs. durable-record writes) -- out of this Effort-scoped story's surface, which this story's own spec Design Notes ("Why two redaction mechanisms coexist") already anticipates and directs here.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/config.py:512-563 `materialize()` now delegates to the shared `atomic_write_bytes` primitive (Story 14.2) instead of its own os.open/os.replace, but its payload is still built by `_policy_fields_payload()`/`policy.redact()` only (:436-438) -- no `to_redacted()`/`RecordPort` call anywhere in the function. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-2-6-gate-evidence-record-with-redaction-at-egress.md, tests/meta/test_ad34_egress_registry_completeness.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2755,6 +2993,8 @@ status: open
   evidence: Confirmed live during Story 2.6's follow-up review (Blind Hunter, independently corroborated by Edge Case Hunter). AD-34's rule text read directly from `planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md`; the bypass executed against the shipped package (`LocalFs().write_text_atomic(d/"gate-record.json", json.dumps({"stdout": "token=ghp_"+"a"*36}))` writes a plaintext credential to a durable file, suite still green). PRE-EXISTING, not introduced here: `ports/fs.py`'s own docstring has said "Not an egress port: every path stays inside the local filesystem" since Story 1.4, and `ports/vcs.py`'s has said "Not an egress port: nothing here ever leaves the local git repository" since Story 1.4 -- this story only transcribed those already-shipped, already-reviewed declarations into the registry the AC asked for. Reconciling it is a real design decision spanning at least three stories' surfaces (reclassifying `FsPort` egress makes its own `write_text_atomic(path, content: str)` a meta-test violation, and `VcsPort`'s reclassification waits on the commit/PR-text methods Epic 4 adds), and Story 2.6's Never clause explicitly scopes `ports/vcs.py`/`adapters/vcs_git.py` out. Note VcsPort's classification is defensible TODAY on the narrow ground that none of its nine methods emits a commit message or PR body yet -- but the story that adds them must revisit this entry.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — core/egress.py:193-206 `EGRESS_PORTS` still has `"VcsPort": False`. Since the prior verification, Story 4.4 DID add `"ForgePort": True` (correctly covering PR text), but VcsPort now also ships a real bare-str method, `ports/vcs.py:355 commit_paths(self, repo_root, paths, message: str) -> str`, which writes exactly the "VCS commit" text AD-34 names as egress -- unguarded by the AD-34 meta-test because VcsPort stays classified False. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-6-gate-evidence-record-with-redaction-at-egress.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2767,6 +3007,8 @@ status: open
   evidence: Confirmed live during Story 2.6's follow-up review by executing `is_secret_key` against each name (all seven return `False`; `API_TOKEN`/`GITHUB_TOKEN` return `True`). Not fixable inside this story: the spec's Always clause MANDATES reusing Story 1.3's vocabulary ("reuses Story 1.3's existing suffix vocabulary -- no second secret-key concept") and its Never clause forbids touching `core/policy.py`, where the suffix set lives. Widening it is a genuine cross-story decision -- `is_secret_key` also drives `policy.redact()`'s policy-field DISPLAY path, so a broader vocabulary changes what `marshal config` prints, not just what a record persists.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — core/policy.py:634 `SECRET_KEY_SUFFIXES = frozenset({"_TOKEN","_KEY","_SECRET","_PASSWORD"})`; core/policy.py:697-701 `is_secret_key` only checks `.endswith(suffix)`, so bare names `password`, `token`, `secret`, `apikey`, `authorization`, `credentials`, `passwd` all still return False. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-6-gate-evidence-record-with-redaction-at-egress.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2779,6 +3021,8 @@ status: open
   evidence: Confirmed by reading the guard's `_port_modules()`/`_non_egress_modules()` scan surfaces during Story 2.6's follow-up review; the shipped `LocalFs.write_redacted_atomic` does conform today (typed `Redacted`, plus a runtime `isinstance` check added in this review pass), so nothing is live-broken. The story's own spec scoped the guard to ports deliberately (its Always clause specifies "every port classified `True` has no method parameter type-hinted bare `str`"), so closing the gap means widening a spec-declared structural contract, not patching a defect. This review pass recorded the divergence in the meta-test's own Bounds docstring rather than silently leaving the AD-34 sentence over-claimed.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — tests/meta/test_ad34_egress_registry_completeness.py:60-63 still states guards (1) and (2) 'scan the ports/ package RECURSIVELY... scan only ports/ -- not adapters/.' Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-2-6-gate-evidence-record-with-redaction-at-egress.md, tests/meta/test_ad34_egress_registry_completeness.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2791,6 +3035,8 @@ status: open
   evidence: Confirmed by reading all five port modules during Story 2.6's follow-up review. Documentation-only (no behavior depends on either docstring), but self-contradicting at merge: the new registry docstring warns against exactly the duplication the sibling files still contain. Not patchable inside this story -- its Never clause explicitly forbids touching `ports/process.py`, `ports/vcs.py` and `ports/harness.py` "beyond reading them for the registry's 4 pre-existing `False` entries" -- and the wording of any replacement depends on how the FsPort/VcsPort classification question above is resolved, so the two should be fixed together.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — ports/fs.py:4, ports/vcs.py:4, ports/harness.py:6 and ports/clock.py:4 all still carry their own 'Not an egress port' prose alongside the EGRESS_PORTS registry. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-6-gate-evidence-record-with-redaction-at-egress.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2803,6 +3049,8 @@ status: open
   evidence: Confirmed live during Story 2.6's third review pass (Blind Hunter): `LocalFs().write_redacted_atomic(tmp/"r.json", to_redacted({...}))` produces a file at mode `0o664`, world-readable. PRE-EXISTING in `write_text_atomic` (Story 1.4, unchanged by this story) and out of this story's surface, whose Always clause specifies `write_redacted_atomic` "implements it by delegating to the existing `self.write_text_atomic(path, payload.text)` -- no new write mechanics, only a type boundary". Note the mode question only becomes urgent once `cli/gate.py` wiring lands (itself deferred above) and real records start hitting disk; until then no record is written end-to-end at all.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — adapters/fs_local.py:256-286 `write_redacted_atomic` delegates to `write_text_atomic` (:131-140) which calls `atomic_write_text(path, content)` with no `mode=`. pyforge-core's atomic_write.py:88-139 `atomic_write`/`atomic_write_bytes`/`atomic_write_text` now all accept `mode: int | None = None`. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-6-gate-evidence-record-with-redaction-at-egress.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2828,6 +3076,8 @@ status: open
   evidence: Confirmed by reading `adapters/fs_local.py::write_text_atomic` during Story 2.6's fourth review pass (Blind Hunter): the sequence is `os.open(tmp, O_WRONLY|O_CREAT|O_EXCL, 0o666)` -> `os.fdopen(...).write(content)` -> `os.replace(tmp, path)`, with no `fsync` anywhere in the function or its callers. PRE-EXISTING in Story 1.4's primitive and out of this story's surface, whose Always clause specifies `write_redacted_atomic` delegates to `write_text_atomic` with "no new write mechanics, only a type boundary" -- and, like the file-mode entry, only becomes urgent once `cli/gate.py` wiring lands and real records start hitting disk. Pairs naturally with that entry: both are properties of the shared primitive that the evidence-record use case wants tightened, and both should be decided together.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-core/src/pyforge/core/atomic_write.py -- no `fsync` call anywhere (grep empty). The primitive's two real callers today, cli/adapters.py:1395/1757 (state files, RecordPort) and adapters/notify_file_desktop.py:63 (NotifyPort), inherit this atomic-visibility-not-durability gap live, not just theoretically. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-6-gate-evidence-record-with-redaction-at-egress.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2840,6 +3090,8 @@ status: open
   evidence: Confirmed live during Story 2.6's fourth review pass (Edge Case Hunter, verified by feeding synthetic source to the guard's own helpers: an inherited bare-`str` method returned `[]` before the same-module fix). No port in the package inherits from anything but `Protocol` today, so nothing is live-broken; the bound is now stated explicitly in the meta-test module's own Bounds docstring rather than left implicit. Recorded rather than fixed because a runtime-introspection rewrite of the guard is a deliberate change to a spec-declared structural contract ("a meta-test asserts none accepts a bare string"), not a patch, and it interacts with the already-logged `ports/`-vs-`adapters/` scan-surface entry above -- the two should be decided together.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — tests/meta/test_ad34_egress_registry_completeness.py:248-261 `_bare_str_param_violations` still resolves only same-module bases via a per-module `class_map` ('only SAME-MODULE bases are resolved'). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-2-6-gate-evidence-record-with-redaction-at-egress.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2852,6 +3104,8 @@ status: open
   evidence: Confirmed live during Story 3.1's implementation: no `sessions/`-namespace/session-id-minting concept exists anywhere in the codebase before or after this story (`grep -ril session src/shared/packages/pyforge-marshal/src` returns only unrelated prose -- `bmad-loop`'s own `session_timeout_min`/`max_tokens_per_session` policy keys, a supervisor docstring's "session self-report" phrase, an egress comment about "agent sessions" -- none of them Marshal's own AD-25 concept); `cli/gate.py`'s `--run` stub is the only related surface and it stays untouched per this story's own Never clause. Inventing session-id minting with no real caller today would be exactly the kind of unattended surface-widening this project's precedent (Stories 2.4/2.5/2.6, and now 3.1 itself) explicitly avoids -- the spec's own Never clause directs this gap here rather than an unattended invention of a minting/binding format.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/journal.py:57 docstring still states "AD-25's sessions/ namespace remains entirely unimplemented"; no session-id minting concept exists anywhere in the package. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-1-run-identity-and-the-journal-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2877,6 +3131,9 @@ status: open
   evidence: Confirmed live during Story 3.1's adversarial review (Blind Hunter and Edge Case Hunter both flagged it independently): `json.dumps({"k": "x" * (4096 - overhead)})` sits at exactly `SIDECAR_THRESHOLD_BYTES` and inlines; the FULL envelope (`id`, `ts`, `run_id`, `kind`, `phase`) adds roughly 150-300 further bytes not counted against the threshold. Not fixed in this story: `epics.md`'s AC text is unambiguous ("payloads over 4 KiB") and is this story's own preserved contract of record, so the code correctly implements it; the tension is between two PLANNING artifacts (AD-30's prose vs. the AC it produced), not something this story's spec or implementation introduced. Reconciling AD-30's wording (or re-deriving the AC from it) is a planning-layer decision, out of an implementation story's scope.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — core/journal.py:529,594 `len(payload_text.encode("utf-8")) <= SIDECAR_THRESHOLD_BYTES` -- still measures the payload alone, never the full envelope+payload line, unchanged from the cited text. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should the 4 KiB sidecar threshold measure the full journal line (envelope + payload, per AD-30's architecture prose) or the payload alone (per epics.md's AC, which the shipped code implements verbatim)? The two planning artifacts disagree; the code correctly implements one of them.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-1-run-identity-and-the-journal-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2902,6 +3159,8 @@ status: open
   evidence: Flagged during Story 3.1's adversarial review (Blind Hunter). Verified live: `JournalEntryId(writer_id="a" * 1000, counter=0)` constructs without error. Not fixed in this story: no real caller mints a `writer_id` yet (no CLI wiring -- see the CLI-wiring entry above), so the actual risk is theoretical until Story 3.3 decides how `writer_id` values are generated; a length bound added now would be guessing at a value with no real caller to validate it against.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/journal.py:114,219-221 `_WRITER_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")` -- charset check only, no length bound. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-1-run-identity-and-the-journal-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2914,6 +3173,8 @@ status: open
   evidence: Flagged during Story 3.1's adversarial review (Blind Hunter and Edge Case Hunter both, independently). Verified live: `path.touch(); create_dir_exclusive(path)` raises `DirectoryAlreadyExistsError`, same as a real pre-existing directory. Not fixed in this story: distinguishing the two cases needs an extra `os.path.isdir()` stat call, which introduces its own TOCTOU window without changing the SAFETY behavior (both cases correctly refuse to write) -- a diagnostic-precision improvement, not a correctness gap, and no real caller exists yet to act differently on the distinction.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — adapters/fs_local.py:346-358 `create_dir_exclusive` still maps every `FileExistsError` to `DirectoryAlreadyExistsError` with no directory-vs-file distinction. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-1-run-identity-and-the-journal-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2926,6 +3187,8 @@ status: open
   evidence: Flagged during Story 3.1's adversarial review (Edge Case Hunter). Verified by code inspection: both `os.write`'s short-write path and `os.fsync`'s own `OSError` are caught by the same outer `except OSError as exc: raise FsError(...)`, with no field distinguishing "the write itself failed/was incomplete" from "the write succeeded but fsync did not." Not fixed in this story: no real caller retries on `FsError` yet (no CLI wiring exists -- see the CLI-wiring entry above), so this is a latent hazard for whichever future story (Story 3.3's launch, or Story 3.4's supervisor) builds retry logic around this primitive; that story must account for write-succeeded-fsync-failed as a distinct outcome, not invent a distinguishing signal unattended here with no real caller to validate the design against.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — adapters/fs_local.py:296-342 `append_line` -- both the short-write check (`written != len(data)`) and `os.fsync(fd)` sit inside the same `try`, caught by one `except OSError as exc: raise FsError(...)` with no distinguishing field. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-1-run-identity-and-the-journal-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2938,6 +3201,9 @@ status: open
   evidence: Flagged during Story 3.2's adversarial review (Blind Hunter, Edge Case Hunter independently). Verified live: two `Phase.INTENT` entries built with the identical `(writer_id, counter)` id both fold cleanly into `entries` with zero quarantine; the moment any outcome references that shared id, both intents vanish from `open_intents` with no signal of which one actually "closed." Not fixed in this story: detecting a collision needs a design decision this story's own AC set does not make (quarantine both entries? emit a distinct finding code? which one wins the pairing?) -- no real id-minting caller exists yet (Story 3.3's launch is the first), so the actual collision risk is theoretical until that story's real writer_id/counter generation can be evaluated against a concrete design.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — core/journal.py:974-988 `intents_by_id` dict comprehension keeps only the last of two entries sharing an identical JournalEntryId, with zero quarantine or finding emitted, unchanged from the cited text. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: When two journal entries share the identical JournalEntryId (writer-restart/counter-reuse corruption, or a crash-and-retry duplicate line), should fold() quarantine both, quarantine one, or emit a distinct finding code -- and which one wins pairing until then?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2950,6 +3216,8 @@ status: open
   evidence: Flagged during Story 3.2's adversarial review (Blind Hunter), drawing the comparison to `resolve_feed`'s AD-38/F-13 precedent (a silently-dropped entry). Verified by code inspection: the invariant already holds structurally today -- `fold`'s loop unconditionally routes every raw line into either `parsed` or `quarantined`, no third path exists -- so this is an ergonomic/observability gap, not a live correctness bug. Not fixed in this story: adding a stored `total` field is a small, low-risk addition, but no consumer exists yet to say whether it should count raw `lines` (pre-parse) or something else; deferred for whichever future story (a fold consumer) actually needs to assert it rather than guessing the right shape unattended.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/journal.py:679-708 `FoldResult` dataclass fields are exactly `entries, open_intents, orphaned_outcomes, quarantined` -- no `total` field. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2962,6 +3230,8 @@ status: open
   evidence: Flagged during Story 3.2's second review pass (Blind Hunter). Verified live: `FoldResult(entries=(), open_intents=(ghost_intent,), orphaned_outcomes=(), quarantined=())` constructs without error, where `ghost_intent` appears nowhere in `entries`. `fold()` itself never produces such a mismatch -- every value in both views is drawn from `parsed`. Not fixed in this review pass: `JournalEntry` is frozen but carries a `Mapping` payload and is therefore UNHASHABLE, so a cheap set-membership check is unavailable and the guard would be an O(n*m) equality scan on every construction -- a real cost to weigh against a gap no current producer can reach. The same objection does not apply to the phase checks added in the first review pass (those are O(n) and allocation-free). Whichever future story gains a second `FoldResult` producer should decide whether that cost is worth paying.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/journal.py:712-761 `FoldResult.__post_init__` validates tuple-ness, JournalEntry type, AD-28 total order, and Phase membership of open_intents/orphaned_outcomes, but never that those entries are members of entries itself. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2974,6 +3244,8 @@ status: open
   evidence: Flagged during Story 3.2's second review pass (Blind Hunter and Edge Case Hunter independently). Verified live: a line carrying `schema_version: 99` plus an unrecognized field folds cleanly into an entry with both discarded and zero quarantine. Not fixed in this story: the on-disk journal-line SHAPE is Story 3.1's (AD-28) and `schemas/journal.json`'s, not the fold's -- adding strict unknown-field rejection at read time would impose a contract the writer side never declared, and `core/model.py`'s `SCHEMA_VERSION` is an envelope-level constant with no per-journal-line analogue defined anywhere yet. Deciding whether journal lines carry their own version (and whether unknown fields are an error or forward-compatibility slack) is a writer-side/architecture decision, not one a read-side story should make unattended.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — core/journal.py -- no `schema_version` handling anywhere (grep empty); `_parse_entry` reads only the fields it recognizes and silently discards the rest, with zero quarantine reporting the loss. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2999,6 +3271,9 @@ status: open
   evidence: Flagged during Story 3.2's third review pass (Blind Hunter and Edge Case Hunter independently). Verified live: intent `(cli-1,0)` plus outcomes `(cli-1,1)`/`(cli-1,2)` both referencing `intent_id=(cli-1,0)` folds to `open_intents=0, orphaned_outcomes=0, quarantined=0` with payloads `[{}, {'v':'clean'}, {'v':'failed'}]`. `matched_intent_ids` is a `set`, so a second reference to an already-matched id is simply re-added. DISTINCT from the already-logged duplicate-`JournalEntryId` entry above: there the entry IDs collide, here the entry IDs are unique and the REFERENCES collide. Not fixed in this story for the same reason that one was not: the remedy needs a design decision no AC makes (quarantine the second outcome? a new finding code? does first or last win for pairing? is a re-close ever legitimate, e.g. a retry?), and no real writer mints `intent`/`outcome` pairs yet to validate a choice against.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — core/journal.py:977-988 `matched_intent_ids: set[JournalEntryId] = set()` -- a second `outcome` entry referencing an already-matched `intent_id` is still silently re-added to the set with zero quarantine or signal. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: When two outcome entries both reference the same intent_id, which one is authoritative -- quarantine the second, flag both, emit a new finding code, or is a re-close (e.g. after a retry) ever legitimate?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3011,6 +3286,8 @@ status: open
   evidence: Flagged during Story 3.2's third review pass (Blind Hunter and Edge Case Hunter independently). Verified live: a single 200,001-byte corrupt line yields `Finding.path` length 200,001 and `QuarantinedRecord.raw` length 200,001; a line with a 1 MB list payload yields `Finding.message` length 1,000,035. The `path=raw_line` convention was adopted from `core.identity`'s MRS-IDENT-001/002 in an earlier review pass, where the "offending raw input" is only ever a short story key -- the precedent does not carry to arbitrary journal lines. Not fixed in this story: the remedy needs a truncation policy no AC states (which fields truncate -- `raw` is an in-memory forensic field, `path`/`message` are the ones that serialize; what cap; whether `SIDECAR_THRESHOLD_BYTES` is the right anchor), and no consumer serializes fold findings yet.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — core/journal.py -- no 'truncat' anywhere in the module (grep empty); `_quarantine` (:1207-1233) still copies the entire (now-redacted, per DW-FU-3-2-12's fix, but not size-capped) line/exception text into Finding.path/QuarantinedRecord.raw/message. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3023,6 +3300,9 @@ status: open
   evidence: Flagged during Story 3.2's third review pass (Blind Hunter #7/#8 and Edge Case Hunter #10, independently). Verified live: after a line scoped `(3.1, "gate-verdict")` quarantines, `is_evaluable(StoryKey(3,1), "story-transition")` returns `True` and `is_evaluable(StoryKey(3,1), None)` raises `ValueError`; `for_story(None)` raises `TypeError`. Not fixed in this story: each remedy contradicts an invariant a previous review pass deliberately added, so resolving it means re-deciding what a story-level query MEANS (any quarantine touching the story? only whole-run ones?) and whether run-scoped entries deserve their own accessor or a re-admitted `None`. No real consumer of the query surface exists yet (Story 2.3 is the first) to validate a choice against.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — core/journal.py:798-830 `is_evaluable` still raises `ValueError` for an asymmetric `(story, None)` pair; core/journal.py:769-782 `for_story(story: StoryKey)` still raises `TypeError` for `None`. Both confirmed unchanged from the cited text. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: What does a story-level is_evaluable/for_story query mean once run-scoped (story=None) entries exist -- should None be re-admitted as a distinct, legal query value, and should a story-level question mean 'any quarantine touching the story' or only whole-run ones? Each candidate remedy contradicts an invariant a previous review pass deliberately added.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3035,6 +3315,8 @@ status: open
   evidence: Flagged during Story 3.2's third review pass (Blind Hunter). Verified live: a line with `"payload": {"x": NaN}` folds to `entries=1` with `payload={'x': nan}`, and `prepare_for_write` regenerates a line containing the bare token `NaN`. Not fixed in this story: a read-side-only fix (`parse_constant=`) would make Marshal quarantine lines Marshal itself wrote -- strictly worse -- so the coherent remedy also sets `allow_nan=False` on the WRITE side, which changes Story 3.1's shipped `JournalEntry` construction contract (a payload containing `float('nan')` would begin failing at construction) with its own tests and no AC asking for it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/journal.py -- no `allow_nan`/`parse_constant` anywhere in the module (grep empty). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3047,6 +3329,8 @@ status: open
   evidence: Flagged during Story 3.2's third review pass (Blind Hunter). Verified live: the line above yields `entries=1, quarantined=0, run_id='forged'`. Not fixed in this story: the remedy is an `object_pairs_hook` that rejects repeated keys, but it applies to the whole document including caller-authored `payload` sub-objects, so adopting it decides that a duplicate key anywhere inside an arbitrary business payload is fatal -- a writer-side/format policy question no AC answers, and no real writer emits duplicate keys today.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/journal.py:450,1065,1172 `json.loads(...)` calls -- no `object_pairs_hook` anywhere in the module (grep empty); a duplicate top-level key (e.g. two `run_id` keys) still silently last-wins. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3059,6 +3343,8 @@ status: open
   evidence: Flagged during Story 3.2's third review pass (Blind Hunter, lower-confidence section); verified live: `normalize('3.1-totally-different-story')` returns `3.1`, and `normalize('3.1 ')` returns `3.1`. PRE-EXISTING, not caused by this story: `normalize` is `core.identity`'s AD-23-owned parser (Story 1.x) and this story is required to route through it rather than write a second parser. No real writer can trip it (`to_json_dict` renders `str(story)`), so it affects only corrupt/forged input -- but tightening `normalize` is an AD-23 identity-module decision with every existing caller in scope, not a read-side one.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/identity.py:140-160 `normalize` -- docstring explicitly states it 'discards any trailing text after it' by design, covering filename slugs, branch segments and merge-subject substrings; unchanged from the cited text. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3070,7 +3356,10 @@ status: open
   summary: A quarantine republishes the offending journal line's payload VERBATIM into `Finding.path` (`_quarantine` sets `path=raw_line`, the whole line), so any credential a writer put in an entry's payload flows into every `Envelope.findings` consumer -- stdout JSON, CI logs, dashboards -- for exactly the lines Marshal could not validate. DISTINCT from the already-logged unbounded-length entry above: truncating `path` to a cap does NOT fix this (a secret in the first N characters still escapes), and redacting does not fix the size problem, so the two remedies do not substitute for each other.
   evidence: Flagged during Story 3.2's fourth review pass (Blind Hunter). Verified live: folding a line whose payload is `{"api_token": "SECRET-abc123"}` but whose `run_id` is missing yields `quarantined[0].finding.path` containing the literal `SECRET-abc123`. This codebase already treats credential-shaped data as a first-class concern (`core/policy.py`'s `SECRET_KEY_SUFFIXES`), and `Finding` is the user-facing, machine-readable output type. Not fixed in this story: the remedy needs a redaction policy no AC states (reuse `SECRET_KEY_SUFFIXES` against the decoded document? drop `payload` from `path` entirely and keep only the envelope fields? emit a content hash instead?), the `path=raw_line` convention was adopted from `core.identity`'s MRS-IDENT-001/002 where the raw input is only ever a short story key, and no consumer serializes fold findings yet.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: resolved
+  severity: medium
+  resolution: 2026-10-01 — core/journal.py:1233 `_quarantine` now sets `Finding(..., path=redact_raw_text(raw_line))` instead of the raw line; core/egress.py:345 `redact_raw_text` is the new helper (parses as JSON, redacts via to_redacted for both field-name and token-shape coverage, falls back to an opaque-string wrap). A comment at core/journal.py:1221 cites this entry's own id as the fix's provenance.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-2-the-journal-fold-one-producer-for-accumulating-run-state.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3085,6 +3374,8 @@ status: open
   evidence: Flagged during Story 3.3's review pass (Blind Hunter and Edge Case Hunter, independently). The story's own detach-and-return-promptly design removes the one thing that previously made an accidental concurrent `bmad-loop run` invocation hard to trigger -- a blocking foreground command occupying the terminal. `bmad-loop run` itself (the installed 0.9.0 `cmd_run`) also carries no such check (only `worktree_clean`/base-skills gates), so two concurrent engines could drive the same project's story feed, journal, and working tree simultaneously. Not fixed in this story: whether concurrent runs should even be disallowed, and at what granularity (per loop home? per story? per epic?), is a genuine product decision no AC in this story's spec makes -- Story 3.4's supervisor (which tracks process liveness) is the more natural home for an answer than a mechanical precondition patch here.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — cli/spin.py -- no already-live/concurrent-run guard anywhere in run_spin (grep for 'already'/'live'/'concurrent' hits only unrelated docstring prose at :1439/1574/1439ish); MRS-SPIN codes run 001 through 012 with none covering this precondition. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3097,6 +3388,8 @@ status: open
   evidence: Flagged during Story 3.3's review pass (Blind Hunter). This degrades gracefully under the architecture's OWN existing rules rather than corrupting anything -- AD-28 already says a lone open `intent` "stays open and is reported, never inferred closed", and AD-21's amendment (F-17) already classifies an unclosed intent `Verdict.WARN`, never `error`, specifically so it does not break exit-0 convergence -- so this is a real but bounded paper-trail gap, not a crash or false green. Not fixed in this story: the coherent remedy (wrap the spawn-through-outcome-write region so a `KeyboardInterrupt` during the poll still attempts a best-effort outcome write before re-raising, or shield the poll from interruption entirely) is a process-lifecycle-robustness design decision more naturally owned by Story 3.4's supervisor (which already deals with externally-observed process state) than a one-line patch here with no AC asking for it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/spin.py -- no `except KeyboardInterrupt` wraps the spawn-through-outcome-write region; the only two mentions (:1439,1574) are comments about main()'s own SystemExit/KeyboardInterrupt catch set. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3109,6 +3402,8 @@ status: open
   evidence: Flagged during Story 3.3's second review pass (Blind Hunter and Edge Case Hunter, independently, both verified live: a child exiting 1 after ~10 ms still costs the full 5.01 s window and yields `SpinResult(pid=..., harness_run_id=None)` -> exit 0). `_poll_for_harness_run_id(log_path)` never receives the `Popen` object, so a dead child is indistinguishable from a slow one, and the real error text sits unread in `harness.log`. A CI wrapper doing `marshal factory spin acme && echo launched` therefore reports success for a run that never began. NOT fixed in this pass because the story's contract covers this case and answers it deliberately the other way: its I/O matrix's `harness_run_id`-unconfirmed row (trigger: "the redirected log never shows the 'starting' line within the poll window") specifies exactly the current behaviour -- "spawn still counted a success (pid known)", exit 0, WARN -- consistent with `MRS-SPIN-003`'s own "raise only when the process could not be LAUNCHED at all", and the story's Never clause ("do not attach a supervisor -- `spin` launches and returns; nothing watches the process after this story") puts child-liveness inspection in Story 3.4's scope. Changing the verdict here would contradict the frozen contract; Story 3.4's supervisor, which already tracks process liveness, is the coherent owner -- alongside the two lifecycle items already logged above.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — adapters/harness_bmadloop.py:1514 `_poll_for_harness_run_id(self, log_path: Path)` still receives only the log path, no Popen/poll()/returncode consultation. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3121,6 +3416,8 @@ status: open
   evidence: Flagged during Story 3.3's second review pass (Blind Hunter, verified live). `bmad_loop.sprintstatus.select_actionable` filters on `s.status in ACTIONABLE_STATUSES` before applying the count; `HarnessPort.story_feed_keys` returns bare key strings and discards the statuses, so `cli/spin.py::_filter_preview` cannot apply that filter even in principle. DISTINCT from the preview-grammar narrowness rejected in the first review pass: that one makes the preview merely NARROWER than the real selection (an unresolvable `--story` previews empty), which the spec's own Never clause and Design Notes sanction; this one makes it AFFIRMATIVELY WRONG about which stories will run, in the artifact the AC names ("the resolved story list is ... recorded in the journal"). Not fixed in this pass: the spec's Design Notes explicitly frame the preview as a best-effort, non-authoritative echo, and the only coherent fix widens `HarnessPort.story_feed_keys`'s return type to carry statuses -- a port-contract change touching the AD-3 seam and the AD-38 raw-population rule that reads on it, which no AC in this story asks for.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — adapters/harness_bmadloop.py:1456-1489 `story_feed_keys` returns bare key strings with no status field; cli/spin.py's own `_filter_preview` docstring still says it is 'deliberately NOT select_actionable's full matching grammar'. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3133,6 +3430,9 @@ status: open
   evidence: Flagged during Story 3.3's second review pass (Blind Hunter). Confirmed by reading `cli/spin.py::run_spin`: the `--foreground` branch sits between the loop-home gate and the story-feed gate, and its own module docstring documents the omission as deliberate ("skips the story-feed/journal machinery entirely -- there is no minted run id and nothing to journal for a launch that never called `spin`"). Real consequence: AD-38's completeness guarantee, and the journal's coverage of launches, are both conditional on a CLI flag, so a `--foreground` run that executes six stories is invisible to `core.journal.fold` -- the module Story 3.2 declared Marshal's ONE producer of accumulating run state. Not fixed in this pass: the spec's Always bullet defines `--foreground` purely as "calls a synchronous, stdio-inheriting HarnessPort path instead of the detached one and relays its exit code" and its order-of-operations bullet describes only the detached path, so whether a foreground run is a first-class journaled Marshal run (and what its envelope would even be, given the flag deliberately bypasses the envelope) is an unanswered design question, not a mechanical omission.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — cli/spin.py:100-109 module docstring still documents `--foreground` as deliberately skipping the story-feed/journal machinery entirely ('there is no minted run id and nothing to journal for a launch that never called spin'). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should --foreground launches mint a run id and journal entries like the detached path (so AD-38 completeness and core.journal.fold's 'one producer of run state' claim hold for every launch mode), sacrificing --foreground's current zero-journal-machinery simplicity?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3145,6 +3445,8 @@ status: open
   evidence: Flagged during Story 3.3's second review pass (Blind Hunter). Confirmed by reading `cli/spin.py` (both `build_entry` calls omit `story=`) against `core/journal.py` (`JournalEntry.story` defaults to `None`). The selector value survives only inside `payload["story"]`, as the raw un-normalized flag string, outside the `core.identity` key vocabulary AD-23 makes authoritative. Not fixed in this pass: the spec's Always bullet enumerates the intent payload's contents precisely and never mentions the entry-level `story` field, and setting it is not mechanical -- a launch can be scoped to an epic, to nothing, or to a `--story` value that `normalize` rejects, so deciding when an entry is genuinely story-scoped (only a single-key preview? any `--story` at all, normalized or not?) is a journal-semantics choice, and Story 3.4 is the first real consumer able to validate it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/spin.py -- all 6 `build_entry(` call sites (:1692,1745,1783,2314,2362,2379) omit `story=`; `args.story` appears only inside `payload={"story": args.story, ...}` as raw, un-normalized text. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3157,6 +3459,8 @@ status: open
   evidence: Flagged during Story 3.3's third review pass (Edge Case Hunter). Verified against the installed bmad_loop 0.9.0: `policy.py` defines `STORIES_SOURCES = {"sprint-status", "stories"}` and validates `stories.source`, `cli.py:672` branches the whole run on `pol.stories.source == "stories"`, and `stories_engine.py:110` sets `state.source = "stories"` for that path. Marshal's side is sprint-status-only by construction -- `BmadLoopHarness.story_feed_error` ends in `sprintstatus.load(paths.sprint_status)` and `story_feed_keys` reads the same object's `stories`/`unknown_keys`. PRE-EXISTING, not caused by this story: both methods shipped earlier (Story 1.7's preflight has the identical blind spot); Story 3.3 is the first caller to make the assumption BLOCKING, which is what surfaced it. Not fixed in this pass: this story's Always bullet freezes the order of operations around `story_feed_error` -> `story_feed_keys` -> `resolve_feed`, so teaching Marshal the second source is a `HarnessPort` contract change (a source-aware feed reader behind the AD-3 seam, plus what AD-38's raw population and `--epic` even mean under folder+id dispatch) that no AC in this story asks for.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — adapters/harness_bmadloop.py -- no `stories.source`/`"stories"` handling anywhere (grep empty); `story_feed_error`/`story_feed_keys` are unconditionally `sprintstatus.load(paths.sprint_status)`-based. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3169,6 +3473,9 @@ status: open
   evidence: Flagged during Story 3.3's fourth review pass (Blind Hunter). Confirmed by reading `cli/spin.py`'s outcome `build_entry` call, whose payload is exactly `{"pid", "harness_run_id"}` (plus an `error` key on the failure branch), against the PRD's FR-57. NOT a contract violation by this story: its own Always bullet enumerates the outcome payload precisely as "`pid` and `harness_run_id`" and never mentions the two version fields, and Story 3.3's third review pass explicitly declined to widen that payload on exactly that reasoning ("The journal payload is deliberately unchanged -- the spec's Always bullet enumerates the outcome payload's fields precisely"). Logged as a NEW entry rather than an update to the pre-existing FR-57 entry, whose status the orchestrator owns. What needs deciding: whether the two fields belong in every `outcome` payload, in a once-per-run header entry, or in the run directory as sidecar metadata -- and which story owns it now that the designated trigger has passed. `HarnessPort.harness_version()` and the `--version` half of FR-57 already ship (Story 1.9), so the data is available; only the write site is undecided.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — NEEDS-DECISION — cli/spin.py and core/journal.py -- no `marshal_version`/`harness_version` anywhere (grep empty); cli/spin.py's outcome payload is exactly `{pid, harness_run_id[, error]}`, deliberately unchanged per a prior review pass's own stated reasoning. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Where should marshal_version/harness_version live to satisfy FR-57's 'both versions appear in the journal for every run' -- every outcome payload, a once-per-run header entry, or the run directory name -- given the outcome payload's fields were deliberately pinned exactly as {pid, harness_run_id} in a prior review pass?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3181,6 +3488,8 @@ status: open
   evidence: Flagged during Story 3.3's fourth review pass (Blind Hunter), reproduced live: a `development_status` of `1-1-first / 1-2 / 1-3-third` yields `story_feed_keys() == ('1-1-first', '1-3-third', '1-2')`, and `1.2` appears in the preview although bmad_loop's engine iterates `ss.stories` and can never reach it. DISTINCT from the status-blind-preview entry already logged by the second review pass, which is scoped specifically to story STATUS (a story the harness skips because it is already `done`); this one is about DISPATCHABILITY -- a key the harness does not recognize as a story at all -- and it also carries the ordering consequence, which the status entry does not. The port docstring's "file order" claim was corrected in the fourth pass (it now states per-group concatenation, matching what the adapter's own implementation comment already conceded), so only the preview-content half remains open. Not fixed in this pass: the only coherent fix widens `story_feed_keys`'s return type across the AD-3 seam so a caller can tell a dispatchable story from an unknown key -- a `HarnessPort` contract change, and the SAME structural fix the status-blind entry needs, so the two are best resolved together.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — adapters/harness_bmadloop.py:1456-1489 `story_feed_keys` still returns `tuple(story.key for story in feed.stories) + feed.unknown_keys` -- per-group concatenation of bare strings, not file-order interleaving, still including keys bmad-loop itself cannot dispatch. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3193,6 +3502,9 @@ status: open
   evidence: Flagged during Story 3.3's fourth review pass (Blind Hunter), reproduced with the module's own fakes: with `append_line` failing, `fs.created_dirs` is 1 and zero lines are appended; a retry mints a fresh run id and a fresh directory. The AD-6 write-before-act invariant itself HOLDS (no process is spawned -- pinned by a new test this pass), and the failure is correctly reported as `MRS-SPIN-003`, so this is litter, not corruption or a false green. Not fixed in this pass: removing a directory Marshal just created inside the canonical store is not obviously right -- an empty run directory is also evidence that a launch was attempted, which AD-6's ordering deliberately leaves behind, and `FsPort` exposes `remove_empty_dir` but using it on a failure path introduces a second, opposite write into the same store. Whether to clean up, leave the evidence, or have `fold` learn to report entry-less run directories is a journal-semantics decision no AC in this story makes.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — NEEDS-DECISION — cli/spin.py -- no `remove_empty_dir` call anywhere (grep empty); a failed intent-journal write still leaves the freshly-created run directory behind in the canonical Tier-3 store. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: On an intent-write failure in run_spin, should the just-created (now-empty) run directory be removed, left as evidence a launch was attempted (AD-6's own write-before-act ordering), or should fold() instead learn to report an entry-less run distinctly from a corrupted one?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3205,6 +3517,8 @@ status: open
   evidence: Flagged during Story 3.3's fourth review pass (Blind Hunter). The pre-print sequence was read live in the installed 0.9.0 `cli.py::cmd_run`; `_SPIN_LOG_POLL_TIMEOUT_S = 5.0` in `adapters/harness_bmadloop.py` is the only place the window is expressed. DISTINCT from the already-deferred dead-child false GREEN (a child that exits before printing): this is a false WARNING on a live, correct run, and its remedy is a knob rather than a liveness check. Bounded consequence -- the degrade path is contract-sanctioned ("degrading to `None` if the window elapses first"), the verdict is WARN not ERROR, and the fourth pass's predecessor already made the warning actionable by naming the log path. Not fixed in this pass: the spec's Always bullet specifies only "a bounded poll (a few seconds, never indefinite)", which 5.0 s satisfies, and making it configurable means deciding where it lives (a `core/policy.py` key? an env var? a `--wait` flag?) -- a policy-surface decision no AC asks for.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — adapters/harness_bmadloop.py:1174 `_SPIN_LOG_POLL_TIMEOUT_S = 5.0` is still a bare module constant; no matching key exists in core/policy.py. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3230,6 +3544,8 @@ status: open
   evidence: Read live against `core/journal.py::fold`'s own contract (a quarantined line is omitted from `entries`, never included with a placeholder) and `supervisor/__main__.py::run_supervisor`'s own inert-check (`any(entry.phase is Phase.OUTCOME ... for entry in fold_result.by_kind(_LAUNCH_KIND))`), which has no fallback onto `fold_result.quarantined` for this one decision. Bounded but real: this inverts the AC's own "inert on a run it did not start" into the opposite failure mode -- silently un-supervised on a run it DID start -- though only reachable via the SAME journal corruption AD-30 already treats as `unevaluable` everywhere else (a single physical `os.write()` interleaving is the class this file format exists to prevent, and it is rare by construction). Not fixed in this pass: the coherent remedy -- falling back to `fold_result.quarantined` to distinguish "no run-launch outcome recorded" from "one exists but is corrupt" -- changes what "inert" MEANS (attach-and-warn instead of exit silently?), and no AC in this story asks for that distinction; Story 3.5's `core/supervise.py`, or a `status`-surfaced finding (this story's own Never clause already defers `status`'s "dead supervisor" reporting to a later epic), is the more natural owner.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — supervisor/__main__.py:928-967 -- checks Phase.INTENT or Phase.OUTCOME across _LAUNCH_KIND/_RESUME_KIND (already widened beyond outcome-only), but a run-launch line that is itself wholly unparseable is quarantined and invisible to by_kind either way; tests/unit/test_supervisor.py:5200 test_inert_exit_on_a_quarantined_journal_says_so_distinctly confirms rc==0 and fs.appended_lines==[] when the whole journal is one invalid line -- a live run stays unsupervised, only a stderr diagnostic (not a journal write) records it. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-4-supervisor-process-lifecycle.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3242,6 +3558,8 @@ status: open
   evidence: Confirmed by reading `supervisor/__main__.py`'s own loop (one `_append("supervisor-heartbeat", ...)` per tick, unconditionally, for the run's entire lifetime) against `core/journal.py::fold`'s own read side (no incremental/offset read exists; every call re-parses `lines` in full). Not a NEW architectural gap this story invents -- architecture.md's own Deferred section already names "Persistence backend for journals" as a whole-system, explicitly-accepted seed decision ("line-delimited JSON files under the run directory... If fleet queries outgrow it, the read side is already isolated behind core/journal.py's fold") -- but this story is the FIRST writer with a recurring, unbounded-duration cadence (every prior writer, `cli/spin.py` included, appends a small, FIXED number of entries per invocation), so it is the first to make the growth rate materially worse rather than merely inherit the existing property. Not fixed in this pass: no AC in this story asks for rotation/truncation, and any fix (a size cap? a coarser tick? a summarizing rollup entry?) is a journal-persistence design decision belonging to whichever story first hits real growth in practice, matching this codebase's own "don't invent unused surface" precedent.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — supervisor/__main__.py:2408 unconditionally appends 'supervisor-heartbeat' every ~60s tick for the run's whole life; grep for rotat|truncat in supervisor/__main__.py and core/journal.py returns only a comment, no implementation; core/journal.py::fold (~885-995) re-parses the full line list on every call, no offset/incremental read exists. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-4-supervisor-process-lifecycle.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3266,6 +3584,8 @@ status: open
   evidence: Flagged independently by both reviewers in Story 3.4's follow-up pass; confirmed by reading `supervisor/__main__.py::run_supervisor` (no `signal` import anywhere in the package; the only non-`watched-process-exited` termination that writes anything is the `FsError` branch, which prints to stderr and returns 1 without a journal entry). Bounded, not silent-by-design: the module's own docstring rests dead-supervisor detection on heartbeat ABSENCE plus a liveness check against the attach entry's own `pid` -- a mechanism that works without any detach entry -- and this story's Never clause explicitly defers `status`-side "dead supervisor" reporting to a later epic's FR-36..40. So the operator-visible consequence is deferred detection detail, not lost detection. Not fixed in this pass: the spec's Always bullet enumerates the detach payload precisely as `{pid, reason: "watched-process-exited"}` -- a single reason -- so introducing a second reason value plus signal handling is new runtime behaviour beyond what any AC here asks for, and the natural owner is whichever story first builds the `status` reader that would consume the distinction.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — grep '^import signal' across src/pyforge/marshal returns nothing; supervisor/__main__.py's only detach writes are the ordinary 'watched-process-exited' path and the newer idle/budget reasons (:2625,:2637 'detach_reason or "watched-process-exited"'); SIGTERM/SIGHUP/pkill still leave an open supervisor-attach with no matching detach entry. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-4-supervisor-process-lifecycle.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3278,6 +3598,8 @@ status: open
   evidence: Read live against `cli/spin.py::run_spin`: the harness launch gets BOTH a `phase: intent` entry (fsync=True, before the spawn) and a `phase: outcome` entry -- including a FAILED-launch outcome carrying `{"pid": None, ..., "error": ...}` -- while the supervisor spawn immediately below gets neither, only `findings.append(Finding(code="MRS-SPIN-007", ...))` and `data["supervisor_pid"]`. Compounding: a supervisor that spawns successfully and then dies before its own first write (an import failure, an unreadable journal) leaves the run journal byte-identical to one where supervision was never attempted, since `supervisor-attach` is the sidecar's own first write and the parent recorded nothing. Not fixed in this pass: the spec's Always bullet enumerates this command's journal writes exactly -- one `run-launch` intent/outcome pair -- and `_writer_id`'s own docstring pins the counter convention to it ("0 for the intent, 1 for the outcome -- this module never appends a third entry"), so a third entry (or a second intent/outcome pair for the spawn) is new journal-vocabulary surface no AC in this story asks for. The natural owner is whichever story first builds the `status` reader that would consume it -- this story's own Never clause already defers `status`-side "dead supervisor" reporting to a later epic's FR-36..40, and that reader is the only consumer such an entry would have.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — cli/spin.py:1280-1332 -- supervisor_pid = process.spawn_detached(...); the failure branch only appends Finding(code='MRS-SPIN-007') and the success branch only sets data['supervisor_pid']; neither reaches journal.jsonl (no _append/append_line call in that block, confirmed by grep of _LAUNCH_KIND/_RESUME_KIND usage which excludes this code path). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-4-supervisor-process-lifecycle.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3290,6 +3612,8 @@ status: open
   evidence: Read live against `supervisor/__main__.py`: the one journal read at `run_supervisor`'s top decides attach-vs-inert, and every tick's continuation depends on `fs.append_line` succeeding (the `(FsError, ValueError)` branch prints one stderr line and returns 1). The agent session runs INSIDE the loop home and reaches the run directory through the Tier-3 backlink, so it holds write access. Two concrete paths: `chmod 0444 journal.jsonl` (or replacing it with a directory) makes the next tick fail and exit, leaving the journal byte-identical to a healthy supervisor mid-tick; corrupting the `run-launch` line before the sidecar's first read makes it exit inert forever. The module docstring's claim that the journal "is append-only, so its own future entries cannot be edited to control it" describes writer DISCIPLINE, not an enforced property of the file. Not fixed in this pass: every coherent remedy is privilege separation (a supervisor running as a different uid, an O_APPEND-only descriptor handed down from a more-privileged parent, or a second write target outside the session's reach) -- all of which contradict this story's own Always bullet that the supervisor's only write is the journal, and none of which any AC here asks for. The natural owner is whichever story first revisits AD-9's threat model as a whole rather than its import surface.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — supervisor/__main__.py: the one journal read at run_supervisor's top (fold_result = fold(lines, sidecars=...)) decides attach-vs-inert, and every tick's continuation depends on fs.append_line succeeding (the (FsError, ValueError) branch prints to stderr and returns 1); no privilege separation or append-only descriptor handoff exists anywhere in the package. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-4-supervisor-process-lifecycle.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3312,6 +3636,9 @@ status: open
   evidence: Verified live that `LocalFs().read_text(<fifo>)` blocks indefinitely (exit 124 under a 3s timeout). `_sidecar_refs` constrains the blob NAME's shape (no separators, no dot segments -- so a forged ref cannot walk the read out of the run directory) but says nothing about what the resolved path IS, and `Path.read_text` has no timeout on either call. The blob read is genuinely NEW surface added by this story (the previous shape passed no `sidecars` mapping at all), though the identical exposure already applies to the journal read beside it. Not fixed in this pass: the remedy is either a stat-based regular-file check -- which means either a new `FsPort` method or an `os.stat` call that bypasses the FsPort read seam every other read in this package goes through -- or a read timeout, which `FsPort` has no vocabulary for at all. Both are port-surface decisions no AC here asks for, and the premise (an adversarial writer inside the run directory) is the same one the separately-logged journal-as-control-channel entry rests on; they are best decided together.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — supervisor/__main__.py -- no `S_ISREG`/regular-file check anywhere; adapters/fs_local.py's `read_text` (:120) has no timeout parameter or mechanism. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should FsPort gain a regular-file check (a new method, or an os.stat bypass of the existing read seam) or a read timeout, to guard the supervisor's journal and sidecar-blob reads against a FIFO or other blocking special file at either path?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-4-supervisor-process-lifecycle.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3324,6 +3651,9 @@ status: open
   evidence: Confirmed by reading `run_spin`'s new composition step: `if project_policy_path.is_file(): try: ... except PolicyIOError: project_policy_data = {}` -- the `except` clause is bare, unlike `run_config`'s identical read, which appends `exc.finding` (`MRS-POLICY-004`) to its own envelope. Deliberate for this pass: `idle_threshold_minutes` is a supplementary soft-ladder value, not a launch precondition, and surfacing a NEW finding here would need `run_spin` to grow a policy-read failure code it does not otherwise have reason to register mid-launch. Not fixed in this pass: the fix is either accepting the silent degrade as intentional (the launch already reports `MRS-SPIN-002`-class findings for provisioning gaps, never for policy-value degrades) or threading a new low-severity WARN finding through -- a product decision, not a mechanical patch.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — cli/spin.py:399 `except Exception: # noqa: BLE001` around the project-policy read, falling back to project_policy_data = {} with no Finding appended -- contrast run_config's identical read, which appends exc.finding (MRS-POLICY-004). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should a failed project-policy read for idle_threshold_minutes surface a WARN finding (like `marshal config`'s MRS-POLICY-004), or is silently falling back to the default acceptable since it's a non-blocking, soft-ladder value?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3336,6 +3666,8 @@ status: open
   evidence: Confirmed by reading `cli/config.py::_INT_SET_KEYS`/`_UNSETTABLE_KEYS` (unions to the original 3 int-typed + 4 list/mapping-typed keys, neither list touched by this pass) against `_parse_set_flags` (only int-coerces `_INT_SET_KEYS` members). Reproduced: `main(["config", "--set", "idle_threshold_minutes=10"])` reports `MRS-POLICY-003` and prints the DEFAULT `25`, not `10`. Not fixed in this pass: the story's own Code Map explicitly scoped `cli/config.py`'s edit to `_FIELD_ORDER` alone (no AC asks for `--set` support, and the project-policy TOML layer already satisfies FR-12's "configurable" wording) -- extending `_INT_SET_KEYS` is a one-line, low-risk follow-up for whichever story or maintenance pass next revisits `--set`'s scalar-key coverage.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/config.py:62 _INT_SET_KEYS = frozenset({'max_dev_attempts','max_review_cycles','max_followup_reviews'}) -- idle_threshold_minutes still absent; comment at :64-81 documents the exclusion as deliberate. The project-policy TOML layer remains the only way to tune this key. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3347,7 +3679,10 @@ status: open
   summary: Every ladder-active tick now costs TWO `tmux` subprocess forks (`list-windows` to resolve the live window, then `capture-pane`) instead of Story 3.4's own one placeholder `capture-pane` call, and a `nudge` action costs three (`list-windows` plus two `send-keys` calls) -- a real, bounded increase in per-tick process-spawn overhead for the supervisor's whole (potentially multi-hour) lifetime, on top of the already-logged "no rotation on the unbounded heartbeat-cadence journal growth" entry from Story 3.4.
   evidence: Confirmed by reading `adapters/observer_mux.py::MultiplexerObserver.pane_content`/`.send_text`, both of which call the shared `_resolve_window` (one `tmux list-windows` subprocess) before their own action call. Not fixed in this pass: resolving the window live rather than caching it is this story's own deliberate design decision (Design Notes: "the window id is backend-assigned at creation and never persisted anywhere Marshal could read it back from"), so the extra fork is the cost of correctness, not an oversight; a future perf-motivated story could investigate caching the resolved window id per tick-run (invalidated on a `None` result) if the fork cost is ever measured as material against a 60s tick cadence.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  severity: low
+  resolution: 2026-10-01 — by design: adapters/observer_mux.py:129,173 pane_content/send_text each independently call self._resolve_window(session); the module's own docstring (~19-30) explains live resolution is deliberate because the window id is backend-assigned and never persisted, so caching would risk staleness.
+  verified: 2026-10-01 — BY-DESIGN — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3359,7 +3694,10 @@ status: open
   summary: `HarnessPort.stop`'s own bounded timeout (`_STOP_TIMEOUT_S = 30.0`) executes SYNCHRONOUSLY inside the supervisor's tick loop, between that tick's own `sleep(_TICK_SECONDS)` and its heartbeat append -- so a `stop-and-retry` action that takes close to the full 30s (a slow or contended `bmad-loop stop` invocation) stretches that ONE tick's own wall-clock duration well past the nominal 60s cadence NFR-14 otherwise holds the supervisor to, before the next tick's own sleep even begins.
   evidence: Confirmed by reading `run_supervisor`'s tick body: `harness.stop(...)`/`.resume(...)` run inline, with no timeout budget shared with the tick's own `_TICK_SECONDS`. Bounded and self-correcting (the 30s ceiling guarantees the tick eventually completes, and this is a rare event -- at most once per idle-strand incident, not every tick), so this is a real but low-severity latency footnote rather than a correctness gap. Not fixed in this pass: no AC asks for the tick cadence to stay strictly periodic during a ladder action, and NFR-14's own "poll interval never longer than the active prompt-cache TTL" language is about the STEADY-STATE heartbeat cadence, not a rare recovery action's own duration. status: open
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  severity: low
+  resolution: 2026-10-01 — by design: adapters/harness_bmadloop.py:1190 _STOP_TIMEOUT_S = 30.0, applied via timeout_s=_STOP_TIMEOUT_S at :1728/1821/1831, called synchronously inside the supervisor's tick loop with no separate timing budget from _TICK_SECONDS.
+  verified: 2026-10-01 — BY-DESIGN — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3372,6 +3710,8 @@ status: open
   evidence: Read live against `core/supervise.py::evaluate_idle`: the fresh-output check compares `current.pane_content != previous.pane_content or current.log_mtime != previous.log_mtime` with no special case for both being `None` on both sides -- `None != None` is `False`, so a stuck-at-`None` sequence never re-arms the window, identical to a stuck-at-identical-text sequence. Not fixed in this pass: distinguishing "idle" from "unobservable" would need a new signal this story's `Sample` shape doesn't carry (e.g. an explicit `observed: bool` flag per port call), which is a decision-core contract change affecting `evaluate_idle`'s own pure-function shape and every existing synthetic-sample test -- no AC here asks for it, and AD-9's own "never trust self-report" framing offers no guidance on what to do when EXTERNAL observation itself degrades. The natural owner is whichever story next hardens the supervisor against its own port failures rather than the watched session's.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — core/supervise.py (~191) fresh-output test: `current.pane_content != previous.pane_content or current.log_mtime != previous.log_mtime` -- no special case when both sides are None; a stuck-at-None sequence (broken tmux, permissions issue, missing harness log) reads identically to genuine idleness and can drive the full ladder (nudge/stop-and-retry/defer) against an actively-working, healthy session. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3397,6 +3737,8 @@ status: open
   evidence: Read live against `observer_mux.py`: `pane_content` and `send_text` each call `_resolve_window(session)` as their own first step, with no shared resolution passed between them; `supervisor/__main__.py`'s `NUDGE` branch calls `observer.pane_content(session_name)` earlier in the same tick (via the sampling step) and `observer.send_text(session_name, _NUDGE_TEXT)` later in the same tick when the rung fires, so a nudge-firing tick always pays for two independent `list-windows` calls. Not fixed in this pass: resolving once and threading the result into both calls would require either widening `SessionObserverPort`'s own method signatures (to accept a pre-resolved window) or reordering the tick loop to resolve once and pass the target down -- a port-shape decision this story's own Design Notes deliberately left to live resolution "at call time" for correctness; no AC asks for de-duplicating the resolution across two calls in the same tick.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — adapters/observer_mux.py:129 (pane_content) and :173 (send_text) each call _resolve_window(session) independently; a nudge-firing tick pays for two live tmux list-windows forks with no shared/cached resolution between them. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3409,6 +3751,8 @@ status: open
   evidence: Read live against `core/supervise.py::idle_since`/`evaluate_idle`: the fresh-output test is a raw `!=` over the whole captured pane string, OR-ed with the log mtime, so the NOISIEST of the two signals always wins and a single changing character re-arms the window. Not fixed in this pass: the OR semantics are mandated verbatim by this story's own Always bullet ("Fresh output (pane content OR mtime changed since the previous sample) re-arms the window"), so narrowing it -- to a normalized/stripped comparison, a similarity threshold, an AND over both signals, or a diff that ignores a trailing status line -- is a contract change to the decision core, not a mechanical patch. Whether it bites at all depends on what the supervised agent CLI actually renders, which no test here can determine; the natural owner is the first story that observes a real wedged run failing to escalate, or a deliberate hardening pass over the pane-diff signal itself.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — core/supervise.py (~191) is still a raw whole-string `!=` OR-ed with mtime; any continuously-redrawing pane element (a spinner, elapsed-seconds counter, live token tally) makes fresh-output true on every tick even while genuinely hung, so the ladder can never leave LadderRung.NONE -- FR-12 would be silently inert against exactly the wedged-session class it exists to catch. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3421,6 +3765,8 @@ status: open
   evidence: Read live against `_resolve_window`: it parses `tmux list-windows -F '#{window_id}\t#{window_active}'` and accepts the single row whose `window_active` is `1`, with a docstring that justifies this as "a session always has exactly one active window" -- true, but which window that IS is operator-mutable state, not a property of the engine. Partially mitigated in this pass: `_NUDGE_TEXT` was stripped of every shell metacharacter, so a nudge landing in a shell pane now costs one "command not found" line rather than executing a fragment and hanging the shell at a `>` continuation prompt. Not fixed: targeting the engine's own window specifically would require a durable identifier for it, and this story's own Design Notes record that the window id is backend-assigned at creation and persisted nowhere Marshal can read it back from (confirmed by grepping a live `state.json`/`journal.jsonl` for `window_id`/`native_id`). The natural owner is whichever story can either establish a window-naming convention with the harness upstream or persist the engine's window id at launch.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — adapters/observer_mux.py::_resolve_window (~97-120) still selects the tmux row whose window_active == '1'; docstring confirms no durable per-engine window id is persisted anywhere Marshal reads back from. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3433,6 +3779,8 @@ status: open
   evidence: Read live against `harness_bmadloop.py::stop`: `result = subprocess.run([...], capture_output=True, ...)` followed by `return result.returncode == 0` -- `result.stdout`/`result.stderr` are never read, and no logger exists in this adapter to route them to. Confirmed the consumer side too: both `MRS-SUPV-002` construction sites in `supervisor/__main__.py` can only interpolate what `stop()` gives back, which for the non-raising path is a bare `False`. Not fixed in this pass: surfacing the cause requires widening `HarnessPort.stop`'s own return contract beyond `bool` (a result object, or an exception carrying stderr on the non-launch-failure path), which changes the documented raise/return split every other method on this port shares -- a port-shape decision, not a mechanical patch, and no AC here asks for it. The natural owner is whichever story first needs machine-readable harness failure detail (Story 3.7's FR-16 deferral capture is the obvious candidate, since a reason-class taxonomy needs exactly this).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — adapters/harness_bmadloop.py:1715-1737 stop() -- now routed through pyforge.core.process.PosixProcess().run (Story 14.4 refactor, not the raw subprocess.run(capture_output=True) the 2026-09-05 note cites, but behavior is unchanged) -- returns only `result.returncode == 0`; result.stdout/stderr never read. MRS-SUPV-002 construction sites in supervisor/__main__.py (:2182,:2219,:2257,:2372,:2436) can only interpolate a bare False on this path. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3445,6 +3793,8 @@ status: open
   evidence: Read live: `core/supervise.py::evaluate_idle` is a floor-division over `idle_since`'s scan and nothing else; the three rules above are inline `if` blocks inside `run_supervisor`'s `while` body (each one mutating the local `rung` after `evaluate_idle` returned it). Each arrived as a review-pass repair to a real escalation defect, which is why they accreted at the call site rather than in the core. Not fixed in this pass: hoisting them into a pure `next_rung(samples, *, threshold_s, last_acted, already_retried)` in `core/supervise.py` is a genuine improvement and directly serves AD-20, but it is a refactor of the loop that decides whether to kill live runs -- out of proportion to a review pass's patch budget, and better done as its own change with the full transition matrix rewritten against synthetic samples first.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/supervise.py:248 evaluate_idle is the only pure decision function present; the one-rung clamp (supervisor/__main__.py:2051 rung = rung_at(rung_index(last_acted_rung) + 1)) and already_retried (:1393,:2062,:2317) remain inline in run_supervisor, not in core/supervise.py -- no next_rung symbol exists anywhere in the package. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md, tests/unit/test_supervise.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3457,6 +3807,8 @@ status: open
   evidence: Read live against `observer_mux.py` (`_resolve_window` precedes both `pane_content` and `send_text`; `send_text` itself makes two `send-keys` calls plus `_SEND_TEXT_SETTLE_S`) and the test body, which compares exactly two module constants. Distinct from the two already-logged tick-cost entries (extra subprocess FORKS, and `_STOP_TIMEOUT_S` stretching one tick): those record the cost, this records that the test written to catch such growth cannot see it. Not fixed in this pass: the honest assertion is over the worst-case SUM of the calls a single tick can make, which means the test needs a model of the tick's own call sequence -- effectively asserting `observer_mux`'s constants against `supervisor/__main__.py`'s control flow, a coupling the current one-constant-vs-one-constant shape deliberately avoids. The natural owner is whichever pass next revisits NFR-14's tick-cadence guarantee with a real measurement rather than a constant comparison.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — tests/unit/test_observer_mux.py:404,412-424 still compares only module._CAPTURE_PANE_TIMEOUT_S < _TICK_SECONDS as two bare constants; observer_mux.py:129 (pane_content) and :173 (send_text) each independently call _resolve_window, so a nudge tick's real tmux-call budget already exceeds what the test measures. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-5-idle-strand-detection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3482,6 +3834,8 @@ status: open
   evidence: Confirmed live by reading `cli/spin.py::run_spin` end to end and grepping the whole package for `difficulty`: the only real difficulty vocabulary is `core.policy.EffectivePolicy.model_tier_map` (a difficulty-class name -> `{stage: model}` mapping FR-51's tier-batching would resolve against), and `run_spin` never resolves which difficulty class applies to a given story -- `render_policy_toml`'s own `difficulty` parameter is always called with `difficulty=None` from every real caller in the tree today. Inventing a difficulty-resolution mechanism here, for a single non-blocking advisory's third input, would be speculative surface disproportionate to FR-14's own scope (the spec's own Never clause states this explicitly). Not fixed in this pass: the natural owner is whichever future story first wires FR-51 tier-batching end to end (resolving a story's difficulty class from its spec/epic metadata) -- at that point `MRS-SPIN-009` gains a third signal for free rather than inventing a parallel, throwaway classifier.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/spin.py:1523-1540 MRS-SPIN-009 only checks `spec_size >= _LARGE_SPEC_BYTES` and `key in prior_attempts`; comment at :1511 confirms 'declared difficulty' is deliberately excluded. core/spec_difficulty.py and _resolve_model_tiering (cli/spin.py ~577,1636) now exist (Story 6.1) but are not wired into this advisory. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3507,6 +3861,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter), verified live against the installed `bmad_loop` 0.9.0 (`stories_engine.py`/`sweep.py` both key `RunState.tasks` by the exact string stored in `StoryTask.story_key`, which currently agrees with `core.identity.render_feed_key`'s dot form) -- correct today, but every fixture in `test_spin.py`'s own new MRS-SPIN-009 tests hand-writes `state.json` in that same (currently-correct) format, so nothing exercises a format mismatch. A dedicated cross-package compatibility test (or a documented assumption comment naming the exact upstream symbol this depends on) would catch a future drift instead of silently degrading the advisory to always-false.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — tests/meta/ still contains only test_supervisor_run_path_agreement.py and test_no_loop_home_run_state_read.py -- neither is a bmad-loop state.json format-compatibility test for _prior_attempt_keys; the docstring at cli/spin.py:378-388 now notes normalize() accepts both key spellings, which mitigates (but doesn't test-pin) the specific risk originally flagged. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3519,6 +3875,9 @@ status: open
   evidence: Reviewer-identified (Blind Hunter). This may well be the CORRECT behavior (the operator's wall-clock budget for the story was genuinely consumed regardless of whether the engine was actively running during that window), but it is an undocumented interaction between two independently-designed mechanisms sharing the same tick loop, and no test pins down which behavior is intended. Needs a deliberate decision (does a stop-and-retry pause or continue the per-story wall-clock clock?) plus a test asserting it, rather than leaving the answer as "whatever the current code happens to do."
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — No test in tests/unit/test_supervisor.py combines stop-and-retry with the per-story wall-clock ceiling (grep 'retry.*wall'/'wall.*retry' empty); story_started_monotonic (supervisor/__main__.py:1090,1799,1814) is untouched by the retry branch (:2062-2073,2316-2317), so it keeps accruing through a stop/resume pause with nothing asserting whether that is intended. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should a stop-and-retry cycle pause the per-story wall-clock ceiling for the time the harness was stopped, or should it keep accruing through the pause (today's undocumented behavior)?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3531,6 +3890,8 @@ status: open
   evidence: Reviewer-identified independently by both lenses in review pass 2, read live against the gate at `supervisor/__main__.py` (the `is_stale` expression) and against `ports/clock.py::monotonic`'s own rationale. Consequence in both directions: a forward NTP step or a suspend/resume marks a genuinely fresh sample stale, so both token ceilings go dark and a spurious `MRS-SUPV-006` fires; a backward step marks a stale sample fresh, so a breach decision -- a hard `harness.stop` -- is taken on exactly the evidence the gate exists to reject. Not fixed in review pass 2: a filesystem mtime IS a wall-clock quantity, so there is no direct monotonic comparison available; making this sound needs either a monotonic-anchored cross-check (remember the mtime and monotonic reading from the previous tick and require both to agree) or an explicit "the clock moved non-monotonically, treat this tick's sample as unevaluable" branch. That is a design decision about the freshness model, not a mechanical patch. The natural owner is whichever story next revisits the staleness model -- see the sibling entry about `state.json`'s save cadence, which wants the same rework.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — supervisor/__main__.py:1840 `is_stale = state_mtime is None or (moment.timestamp() - state_mtime) > threshold_s` -- still a wall-clock delta, while the idle ladder elsewhere in the same tick loop uses clock.monotonic() with a dedicated regression test pinning that discipline. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3543,6 +3904,8 @@ status: open
   evidence: Reviewer-identified independently by both lenses in review pass 2 and measured against this machine's live journals: inter-write gaps of 178.8, 107.1, 93.7, 71.6, 56.6, 52.7 and 39.6 minutes were observed within single runs, against a 25-minute staleness window -- and this repo's own rendered harness policy sets `session_timeout_min = 180`, so a single dev session can legitimately leave `state.json` untouched for three hours. Net effect: the token ceilings can only ever act one tick after a phase boundary, i.e. after a session has already spent its tokens, never during the runaway session they exist to bound. The acceptance criterion "a wedged session's frozen counter can never defeat the ceiling" is therefore satisfied by the wall-clock half alone, exactly as AD-32 intends -- so this is a reach-of-enforcement gap, not a correctness break. Not fixed in review pass 2: the fix is to give usage-staleness its own basis (e.g. `max(idle_threshold_s, session_timeout_s)`) or to treat an unchanged-but-consistent sample as usable rather than skipping, both of which change the semantics AD-32's F-24 amendment fixed in place. The natural owner is whichever story revisits the freshness model; pair it with the monotonic-basis entry above.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — supervisor/__main__.py:842 `threshold_s = float(idle_threshold_minutes) * 60.0` is reused as the staleness window at :1840; default idle_threshold_minutes is 25 minutes while this repo's own rendered harness policy allows session_timeout_min = 180 -- both token ceilings go structurally dark for most of any long session. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3555,6 +3918,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 2), read live against `core/policy.py::DEFAULT_POLICY` and `adapters/harness_bmadloop.py::_POLICY_TEMPLATE`. Confirmed against the installed `bmad_loop` 0.9.0 that the harness-side key is genuinely advisory: its check runs after `advance(task, Phase.DONE)` and only appends a `token-budget-exceeded` journal entry, never attempting a stop. Failure mode is operator confusion, not a code defect: someone raising the ceiling in one file and seeing no change in the other's behaviour, in either direction. Not fixed in review pass 2: renaming Marshal's key (e.g. to `max_external_tokens_per_story`) is a policy-vocabulary change touching `_SEED_KEYS`, `schemas/policy.json`, `cli/config.py::_FIELD_ORDER`, the rendered TOML and every doc that names it -- a deliberate surface decision, not a review patch. The natural owner is whichever story next revises the policy vocabulary, or a dedicated naming pass over the four-layer composition model.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — core/policy.py:509 DEFAULT_POLICY['max_tokens_per_story'] = 50_000_000 (hard stop) vs adapters/harness_bmadloop.py:300 `max_tokens_per_story = 2000000` (bmad-loop's own advisory-only [limits] template) -- identical key name, two files, different enforcement semantics. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3567,6 +3932,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 2), read live against `_act_on_budget_transition` and `HarnessPort.stop`'s own contract. This is spec-sanctioned today: the intent contract's own Always bullet says a BREACH of either scope mirrors the idle ladder's terminal `defer` and exits via `supervisor-detach`, and its Never bullet rules out `stop-and-retry` for any budget breach. The rationale given there ("retrying the same story/run would immediately re-hit the same ceiling") justifies not retrying the offending story; it does not by itself justify killing the innocent remainder of the wave. Nothing marks the offending story as deferred in bmad-loop's own state either, so a re-launch simply re-runs it. Not fixed in review pass 2: a defer-this-story-and-continue path needs a harness capability Marshal does not have today (bmad-loop exposes run-level stop, not story-level skip) plus an amendment to this story's own intent contract -- a contract-level decision, out of scope for a review patch. The natural owner is whichever story first needs per-story deferral, most plausibly the FR-16 deferral-capture work.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — supervisor/__main__.py:1477-1495 `_act_on_budget_transition`'s BREACHED branch still fires HarnessPort.stop and ends the tick loop for the whole run (mirroring the idle ladder's terminal defer); no per-story skip exists, so one outlier story's ceiling breach abandons every remaining story in an overnight wave. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3579,6 +3946,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 2), read live against `cli/spin.py::_prior_attempt_keys`/`_large_spec_bytes` and `ports/fs.py`. The port genuinely has no glob-like or size/stat-like method, which is what this story's own Code Map anticipates -- but it DOES expose `read_text` and `exists` (`ports/fs.py`), and `LocalFs.read_text` is precisely what translates `OSError`/`UnicodeDecodeError` into `FsError`, so at minimum the prior-attempt scan's file reads could go through the port today. Visible consequence: the new MRS-SPIN-009 tests must write real files under `tmp_path` while the rest of the module's tests configure `FakeFs`. Not fixed in review pass 2: routing the whole advisory needs a port-surface decision (add `glob`/`size`, or accept a partial routing that leaves the discovery half unported), and a half-ported helper is arguably worse than a consistently unported one. The natural owner is whichever story next widens `FsPort`.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/spin.py:826 `_large_spec_bytes` still calls `candidate.stat()` directly, bypassing FsPort. `_prior_attempt_keys` (:393-431) now tries `pyforge.core.published_loop.fetch_story_tasks` first (a remote call added since 2026-09-05) and only falls back to the direct `home.glob(...)` scan when that plane is unreachable -- narrowing, but not resolving, the FsPort-bypass claim for that one function; _large_spec_bytes is unaffected by this change and still bypasses FsPort unconditionally. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3591,6 +3960,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 2) and visible in the suite itself: three pre-existing happy-path supervisor tests had to be amended in the original implementation pass to EXPECT a `budget-usage-stale` entry on the first tick, which documents the production behaviour rather than a test artifact. Consequence is signal erosion, not a functional break: an operator (or a future `marshal status` consumer that counts WARN findings) is trained to ignore the one code that also reports genuinely disabled enforcement. Not fixed in review pass 2: suppressing the first occurrence, or waiting for one successful sample before arming the finding, both weaken a signal whose whole purpose is to be noisy when enforcement is off -- the right shape depends on the freshness-model rework the two sibling entries above want, and should be decided with them rather than patched in isolation.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — tests/unit/test_supervisor.py:620,1225,1367,3054,3103 still expect/count exactly one 'budget-usage-stale' entry on the first tick of otherwise-healthy runs -- a WARN that also signals genuinely-disabled enforcement fires on effectively every normal run. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3603,6 +3974,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 2), read live against the constant and its comment. A project whose specs run 5-10 KB gets an advisory that can never trip; a project whose specs run 100 KB gets one that trips on every story. Bounded in consequence -- MRS-SPIN-009 is a non-blocking WARN that never gates a launch, and this story's own Never clause establishes that the advisory is deliberately simple -- so this is a portability wart rather than a defect. Not fixed in review pass 2: the alternatives (a fifth policy key, or deriving a percentile from the loop home's own spec corpus at spin time) both add surface disproportionate to a non-blocking heads-up, and no caller has asked for either. The natural owner is whichever story first runs Marshal against a project whose spec sizes differ materially from this repo's.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/spin.py:352 `_LARGE_SPEC_BYTES = 40_000` is still a bare module constant with no policy knob. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3615,6 +3988,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 2), read live against the module constant and the default-argument construction in `run_supervisor`. Harmless on a machine where `/home/acme-loop` does not exist (the read fails, `usage_snapshot` returns `None`, and the assertions hold) -- but `BMAD_LOOP_HOME_ROOT` defaults under `~/.bmad-loops/`, loop homes ARE directories under a home root, and the `spin` tests already patch that root to `tmp_path` while these do not. Consequence is environmental test flakiness, never production behaviour. Not fixed in review pass 2: the mechanical fix (point `_HOME` at a `tmp_path`-derived fixture) touches ~40 call sites that currently share a module-level constant, which is exactly the kind of mass edit this same review pass criticised elsewhere in the file; better done deliberately as its own small refactor.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — tests/unit/test_supervisor.py:513 `_HOME = Path('/home/acme-loop')` is still a module-level constant outside any tmp_path sandbox. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md, tests/unit/test_supervisor.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3627,6 +4002,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 2), read live against `tests/unit/test_supervisor.py`. The discipline exists in this suite already -- `test_every_ladder_journal_entry_conforms_to_the_frozen_journal_schema` established it for Story 3.5's kinds -- so this is an unextended convention rather than a missing idea. Also unproven: that a `budget-warn` does NOT re-fire on subsequent ticks (the rising-edge latch), since the one approaching-transition test runs a process alive for only 3 ticks, of which only one could have crossed. Not fixed in review pass 2: the pass's patch budget went to the four high-severity correctness defects and their regression tests; these are coverage extensions of already-passing behaviour, worth a deliberate small pass rather than being folded in at the end of a large one.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — tests/unit/test_supervisor.py has 4 jsonschema.validate call sites; only the one filtered to `kind == 'budget-usage'` (~3510-3535) exercises schema conformance for a Story 3.6 kind -- the other 3 cover only idle-ladder/attach/heartbeat/detach kinds, never budget-warn or budget-stop. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md, tests/unit/test_supervisor.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3639,6 +4016,8 @@ status: open
   evidence: Reviewer-identified independently by both lenses in review pass 3 and measured live against this factory's own loop home. `bmad_loop/engine.py` sets `task.spec_file` from the DEV session's own `result.json`, so the spec appears mid-run: `spec-3-5-idle-strand-detection.md` was born at 18:05:41 while story 3.5 started at 13:34. All 21 files matching `spec-*.md` in the Tier-3 store belong to stories that are already `done`; running the shipped helper directly against the real home returned `_large_spec_bytes == 0` for all 63 `backlog`/`ready-for-dev` stories -- i.e. for exactly the population `_filter_preview` can select. Review pass 2 saw the qualitative version of this ("unavailable on a story's FIRST run") and rejected it as inherent to the design with the prior-attempt signal as its documented complement; that reasoning still holds for the re-spin case the signal DOES cover, but the measurement upgrades the finding from "a first-run limitation" to "silent for the entire currently-launchable population", which is worth a deliberate decision rather than a standing assumption. Note the code conforms exactly to the intent contract, whose own Always bullet specifies "0 if absent" -- so this is a design-reach question for a future story, not a defect in the implementation. Candidate owners: use bmad-loop's own durable `task.tokens` as the predictor (see the sibling entry below), or drop the size half and say so.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/spin.py:803-829 `_large_spec_bytes` still reads the Tier-3 spec file via `.stat()`, which is only written mid/after a run; returns 0 for any not-yet-run story, i.e. for the exact population MRS-SPIN-009 is meant to warn about before launch. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3651,6 +4030,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 3), read live against the installed `bmad_loop` 0.9.0 (`runs.py`, where the reset carries its own "deliberate reset" comment). By contrast `task.sessions` and `task.tokens` are never reassigned anywhere in `runs.py`/`engine.py` -- they accumulate across attempts and survive the re-arm -- and `task.tokens` is already parsed by `adapters/harness_bmadloop.py::usage_snapshot` and is literally the budget quantity the advisory exists to predict. The mechanism itself works (across 30 real runs, `attempt >= 2` appears 10x and `deferred`/`escalated` 11x); it just reads the mutable field rather than the durable one. Not fixed in review pass 3: the intent contract names `attempt >= 2` and the terminal phases explicitly, so switching the input is a contract-level change, not a patch. Pair it with the spec-size entry above -- one decision about what FR-14 should actually predict from covers both.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/spin.py:364,408,449 `_PRIOR_ATTEMPT_PHASES = frozenset({'deferred','escalated'})` plus `attempt` remain the only inputs; grep '"tokens"' in cli/spin.py shows no read of task.tokens, the one field bmad-loop's own rearm_escalation never resets. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3663,6 +4044,8 @@ status: open
   evidence: Reviewer-identified (Edge Case Hunter, review pass 3), reproduced live: story `1.6` was left `phase=deferred` in run `20260730-180203-f2b7` and is `done` in `sprint-status.yaml` today, yet `_prior_attempt_keys(Path("/home/rxm7706/.bmad-loops/pyforge-marshal"))` returns exactly `{1.6}` right now. Bounded in blast radius (MRS-SPIN-009 never blocks a launch) but it is a permanent false positive on the one signal that can fire in practice, which is precisely how an advisory becomes background noise. Not fixed in review pass 3: choosing a recency rule (latest run wins? only runs since the story last completed? a decay window?) is a semantics decision the intent contract does not make -- its own text says only "a best-effort scan of this SAME loop home's existing `.bmad-loop/runs/*/state.json` files", which the code implements faithfully.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/spin.py:367-431 `_prior_attempt_keys` fallback path still unions every retained .bmad-loop/runs/*/state.json with no recency/latest-run-wins rule (`flagged.add(...)` inside an unbounded glob loop, no ordering). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3675,6 +4058,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 3). Distinct from the pass-1 entry about the story-KEY spelling: this is about the whole file layout and field vocabulary, not one key's format. The asymmetry is what makes it worth recording -- `tests/meta/test_supervisor_run_path_agreement.py` was added by this very story to pin the supervisor/adapter path pair precisely because a divergence there is silent, but this third copy got no equivalent guard and has no adapter counterpart to be pinned against. Failure mode is indistinguishable from the healthy "no story is risky" answer. Not fixed in review pass 3: the module deliberately does not import `bmad_loop` (AD-3 reserves that seam for `adapters/harness_bmadloop.py`), so the fix is either a meta-test asserting the shape against the installed package or moving the scan behind the adapter -- both design choices rather than patches.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/spin.py:367-431 fallback path still hand-parses the `tasks` map / `attempt` / `phase` / `story_key` fields; tests/meta/ contains only test_supervisor_run_path_agreement.py and test_no_loop_home_run_state_read.py, neither of which pins this function's own field assumptions. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md, tests/meta/test_supervisor_run_path_agreement.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3686,7 +4071,10 @@ status: open
   summary: Even a PERFECTLY FRESH `state.json` sample is one whole session behind, so the token ceilings can notice a runaway session only after it has already ended -- they can never bound one in flight. This is distinct from the staleness entries above: it holds on the ticks where the gate passes.
   evidence: Reviewer-identified independently by both lenses in review pass 3, read live against the installed `bmad_loop` 0.9.0. `task.tokens` is written by exactly two callers -- `StoryTask.record_session()` and `attach_session_usage()` (`bmad_loop/model.py`, `engine.py`) -- both of which run only AFTER a Claude session completes. Until then the per-story tally is frozen at the previous session's total no matter how fresh the file's mtime is. Measured consequence: one real session (`2-4-doc-only-story-classification-dev-1`) carried ~4.2M weighted tokens that were invisible to the supervisor for the session's entire life. The acceptance criterion is still met -- AD-32 makes the two wall-clock ceilings the binding constraint by design, and they are unaffected -- so this is a reach-of-enforcement limit, not a correctness break. Worth recording because the supervisor module's own docstring presents the token ceilings as enforcement peers of the wall-clock ones, and this limitation is documented nowhere. The natural owner is the freshness-model rework the two sibling staleness entries above already want; the honest near-term fix may just be a docstring stating that token ceilings are per-session-granular by construction.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  severity: low
+  resolution: 2026-10-01 — by design: No per-session-granularity caveat exists in supervisor/__main__.py's docstring (grep 'per-session'/'one session behind' empty); task.tokens is written only by bmad-loop's own record_session()/attach_session_usage(), both post-session, an architectural property of the installed bmad_loop package, not this module.
+  verified: 2026-10-01 — BY-DESIGN — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3699,6 +4087,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 3), read live against the tick loop. This is a second-order consequence of review pass 1's own (correct) fix for the opposite defect: a single transient read failure used to reset the per-story clock for a story that was still running, so the carry-forward rule became "only a POSITIVE reading ever changes `current_story_key`". That rule has no staleness bound of its own -- unlike the token path, which at least gates on mtime -- so an unreadable `state.json` that never heals (a permissions change, a truncated write) leaves the per-story wall-clock ceiling consuming a stale `story_started_monotonic` unconditionally. The only diagnostic is the same `MRS-SUPV-006` WARN already firing for the read failure itself. Low likelihood, and the run-scope wall-clock ceiling bounds the damage. Not fixed in review pass 3: bounding the carry-forward needs a "how long may a story attribution outlive its last confirmation?" decision that belongs with the freshness-model rework, and a naive bound would reintroduce exactly the defect pass 1 fixed.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — supervisor/__main__.py:1799,1814-1815 story_started_monotonic still carries forward unconditionally when usage_snapshot keeps failing, with no staleness bound of its own (unlike the token path, which at least gates on mtime). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3711,6 +4101,8 @@ status: open
   evidence: Reviewer-identified (Edge Case Hunter, review pass 3), read live against `tests/unit/test_supervisor.py`'s fake and `ports/session.py`'s real implementation. The staleness path itself IS tested by dedicated cases, so this is not an untested branch -- it is an unrealistic DEFAULT, which is subtler: every test that does not deliberately opt into staleness silently asserts behaviour under a sample that can never go stale, and measurement on real journals puts 67% of session windows (38 of 57) past the 25-minute window. Consequence is test-signal quality rather than production behaviour. Not fixed in review pass 3: flipping the fake's default would churn a large number of unrelated cases (the same ~40-call-site mass edit this file's own sibling entry cautions against), and the right default depends on the freshness-model decision the staleness entries above are waiting on.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — tests/unit/test_supervisor.py:234 `state_json_mtime: float | None = float('inf')` is still the class default. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md, tests/unit/test_supervisor.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3762,6 +4154,8 @@ status: open
   evidence: Reviewer-identified (Edge Case Hunter, review pass 1), confirmed live against `_latest_run_dir`/`_resolve_harness_run_id_for_resume`'s actual implementation -- both operate on the newest `<tier3>/runs/<slug>-*` entry only, with no fallback to an older candidate. Not fixed in this pass: closing it needs a real design decision (how many older candidates to search; whether an older run is still safe to resume after unbounded elapsed time, since its own paused state could itself be stale) rather than a mechanical patch, and no acceptance criterion in this story's own intent contract asks for multi-candidate resolution.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/spin.py:1846 `_latest_run_dir` still resolves only the single newest `runs/<slug>-*` entry (its one call site is at :2144), with no fallback to an older candidate. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-7-escalation-deferral-and-resume.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3774,6 +4168,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter, review pass 2), confirmed live against the installed `bmad_loop` 0.9.0's `cli.py::cmd_resume`, which gates on `runs.engine_liveness(run_dir) == "alive"` and returns 1 post-start. The sibling `state.finished` case WAS fixed in this pass (`RunStatusSnapshot.finished` + an `MRS-SPIN-011` refusal before any spawn), because bmad-loop's answer there is a plain durable flag Marshal can read from the same `state.json` it already reads. Liveness is not: it requires probing `engine.pid`, which has no `HarnessPort` counterpart and no Marshal-side primitive, and pid-liveness carries its own three-valued (`alive`/`dead`/`unknown`) semantics that would need a policy decision about what Marshal does with `unknown`. Blast radius is bounded -- bmad-loop's own refusal means no double-drive ever actually happens; the damage is a junk run directory plus a `run-resume` entry in an append-only EVIDENCE journal recording a resume that did not take. The same detached-launch blind spot is pre-existing and structural (`run_spin` has had it since Story 3.3, mitigated only by `MRS-SPIN-004`'s post-launch `harness_run_id` poll); the natural owner is whichever future story adds a general "confirm the detached child was accepted" primitive, which `supervisor/__main__.py::retry_verify_pending` already prototypes for the stop-and-retry path alone.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/spin.py:2197-2211 resume's gate now checks `status_snapshot.finished` (refusing with MRS-SPIN-011) but still has no engine-liveness probe; a live engine is refused only by the installed bmad_loop's own cmd_resume after Marshal has already spawned and attached a new supervisor. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-7-escalation-deferral-and-resume.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3812,6 +4208,8 @@ status: open
   evidence: Reviewer-identified (Blind Hunter + Edge Case Hunter, review pass 1), read live against `supervisor/__main__.py`'s `last_durability_push_monotonic = clock.monotonic()` seeded fresh at attach, with no read of any prior `"stage-push"` journal entry's timestamp. Not fixed in this pass: reconciling against the journal needs a decision about which prior entry counts (last successful push? last attempt regardless of outcome? only this run's own journal, or a prior attach's too?) and a journal-read at attach time that this story's own Code Map does not scope. The natural owner is whichever future story hardens crash/reattach durability guarantees generally.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — supervisor/__main__.py:1196 `last_durability_push_monotonic = clock.monotonic()` is still seeded fresh at attach with no read of any prior stage-push journal entry -- a crash-and-reattach cycle can double the worst-case gap the durability floor is supposed to bound. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-3-8-stage-bound-durability-and-fleet-launch-wiring.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3837,6 +4235,8 @@ status: open
   evidence: `supervisor/__main__.py::_process_stage_pushes` calls `_push_branch` once for the station branch and, when `task.branch` is non-empty, a second time for the per-story branch -- each call appends its own `"stage-push"` entry (`story_key`, `boundary`, `branch`, `outcome`) with no field tying the two together beyond the shared `story_key`/`boundary` VALUES, which is not the same as an explicit correlation id and could collide with an unrelated later push carrying the same `story_key`/`boundary` pair (e.g. after a phase regression, see the sibling entry above). This is contract-compliant today (the spec's own I/O matrix names "two separate PushTrigger/stage-push observations" as expected for "two boundaries in one tick", and this is a variant of the same one-trigger-two-pushes shape), so this entry is about consumability, not correctness.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — supervisor/__main__.py:1198-1230 `_push_branch` still appends one stage-push observation per call with no correlation/event-id field (grep 'correlation'/'push_group'/'event_id' in the module is empty). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-3-8-stage-bound-durability-and-fleet-launch-wiring.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3849,6 +4249,8 @@ status: open
   evidence: `cli/gate.py::_SCOPE_CHECK_BASE_BRANCH = "main"`, passed unconditionally into `VcsPort.changed_files(..., base=_SCOPE_CHECK_BASE_BRANCH)`. Not blocking for this repo (which does use `main` -- the same `into="main"` convention `is_branch_merged`/teardown callers already hardcode), but a real portability limitation for any future project this package might serve. Review finding, code review pass on Story 2.3.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/gate.py:199 `_SCOPE_CHECK_BASE_BRANCH = "main"`, used unconditionally at :584 and :676. core/policy.py:577 now defines a real `landing_base_branch` policy key (added by Story 4.4/AD-40, default "main") that `--scope-check` still never reads. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-2-3-frozen-surface-scope-check-narrowing-only.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3861,6 +4263,8 @@ status: open
   evidence: `cli/gate.py::_find_spec_text`'s own docstring already names this tie-break and its own risk ("an operator relying on a specific one among several should not rely on this tie-break"). Needs a real design decision (sort by mtime? by AD-23's own ordered-suffix convention?) before fixing, not a mechanical patch. Review finding, code review pass on Story 2.3.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/gate.py:491-518 `_find_spec_text` still does `sorted(specs_dir.glob(f"{stem}-*.md"))` and its own docstring still admits "an operator relying on a specific one among several should not rely on this tie-break." Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-2-3-frozen-surface-scope-check-narrowing-only.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3873,6 +4277,8 @@ status: open
   evidence: `adapters/vcs_git.py::GitVcs.changed_files` issues its `git diff --name-status -M` and `git status --porcelain` calls sequentially with no intervening lock. Low practical risk given this CLI's synchronous single-invocation usage model, but worth naming. Review finding, code review pass on Story 2.3.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — adapters/vcs_git.py:673-761 `changed_files` still issues `git diff --name-status -M` (:716) then `git status --porcelain` (:761) as two sequential subprocess calls with no snapshot or lock between them. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-2-3-frozen-surface-scope-check-narrowing-only.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3897,7 +4303,10 @@ status: open
   summary: AD-29's third reachability route -- "reachable from the declared durable local ref, a per-repository ref that teardown is forbidden to delete" -- has no implementation anywhere in this package. `marshal deploy promote` implements only the other two routes (pushed to `origin/main`; merged to local `main`), per this story's own explicit scope.
   evidence: The story's own Boundaries & Constraints and Design Notes name this deferral explicitly ("Do not implement the 'declared durable local ref' route -- log it, don't build it... No code anywhere in this package references a real mechanism for it (only one comment in `cli/init.py` names the concept)"). Grepped at implementation time: still absent. The two implemented routes are sufficient for every promotion this session actually performed by hand (PRs #266/#267/#269); building the third speculatively would be scope growth this project's own "Simplicity First" principle warns against. The natural owner is whichever future story needs an offline-only durability guarantee that neither push nor a local `main` merge can provide (an operator working fully disconnected from both a remote AND the shared integration branch) -- see AD-29's own F-14 amendment for the motivating scenario.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  severity: low
+  resolution: 2026-10-01 — by design: cli/deploy.py's module docstring documents 'Two of AD-29's three reachability routes' as this story's explicit scope; grep for the 'declared durable local ref' concept finds only the one acknowledging comment in cli/init.py -- no implementation exists anywhere.
+  verified: 2026-10-01 — BY-DESIGN — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-1-story-spec-promotion-with-a-durability-predicate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3910,6 +4319,8 @@ status: open
   evidence: Code review pass on Story 4.1's review-fix pass (Blind Hunter). Confirmed by code inspection: `adapters/vcs_git.py::GitVcs.commit_subjects` passes no `-n`/`--max-count`/`--since` to `git log`, and `core.promotion.merged_story_keys`/`count_conforming_subjects` both iterate the full returned tuple. Not observed as a real problem in this repo today (a few hundred merge commits, sub-second `git log --format=%s` even unbounded), but a real scaling limit: this method's own docstring already frames it as "exhaustive enumeration, not classification" by design, so bounding it would need either a policy-level depth/window (a new `EffectivePolicy` field, mirroring the already-logged "no per-command timeout budget" precedent from Story 2.1) or an incremental/since-last-run cursor -- a genuine design decision, not a mechanical patch, and out of this review-fix pass's own narrower scope (three named findings plus the merge-detection fix).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — adapters/vcs_git.py:813-823 `commit_subjects` still runs `git log <ref> --format=%s` with no --max-count/--since bound; its own docstring frames this as 'exhaustive enumeration, not classification' by design. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-1-story-spec-promotion-with-a-durability-predicate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3922,6 +4333,8 @@ status: open
   evidence: Code review pass on Story 4.1's review-fix pass (both reviewers). Confirmed by code inspection: `Path.glob` (not `Path.rglob`) with no recursive flag. Today every Tier-3 spec this session has ever produced sits flat under `implementation-artifacts/` (matches `cli/gate.py::_find_spec_text`'s own established flat-glob precedent, cited in this same function's docstring), so this is a latent gap, not an observed failure. Fixing it is a one-line `glob` -> `rglob` change, but was left unfixed pending a product decision on whether nested Tier-3 layouts are ever a real, intended shape (a `**` glob would also start matching candidate files this repo's own directory-listing conventions elsewhere deliberately keep flat).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/deploy.py:588 `_discover_candidates` still uses the non-recursive `tier3_dir.glob('spec-*.md')`; every Tier-3 spec in this repo today sits flat, matching cli/gate.py's own established flat-glob precedent. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-1-story-spec-promotion-with-a-durability-predicate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3934,6 +4347,8 @@ status: open
   evidence: Code review pass on Story 4.1's review-fix pass (Blind Hunter). Confirmed by code inspection: the glob pattern is built fresh from `render_filename_slug(candidate.story_key)` every call, with no fallback scan for any `spec-<epic>-<seq>*.md` shape that doesn't match the CURRENT rendering exactly. Low observed risk today (every promotion this session performed by hand, and every `is_valid_spec_text`-passing tracked file in this repo's own `planning-artifacts/specs/`, already follows the `spec-<key>.md`/`spec-<key>-<title>.md` convention this glob expects), but a real gap for any historical drift. A real fix needs a broader "canonicalize every `spec-*.md` filename's story key via `identity.normalize` on its stem, not just the two blessed shapes" scan -- a bigger surface than this review-fix pass's own scope.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — cli/deploy.py:606-634 `_already_promoted_keys` still builds its match stem solely from the current `render_filename_slug(candidate.story_key)` output, with no scan for a differently-suffixed historical variant of the same story's tracked file -- risking a duplicate promotion under a second filename if one exists. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-1-story-spec-promotion-with-a-durability-predicate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3946,6 +4361,8 @@ status: open
   evidence: Code review pass on Story 4.1's review-fix pass (Edge Case Hunter). Confirmed by code inspection: the per-path `git add` loop has no `try`/`except` around it and no cleanup path; a mid-loop failure leaves the index holding a partial stage. Low practical impact given this repo's own `deploy promote` caller always passes freshly-copied, freshly-created Tier-3 archive files (unlikely to individually fail `git add` after the sibling files in the same batch already succeeded) -- and the review-fix pass's own new `path_has_uncommitted_changes` check means a subsequent run would correctly re-detect any such orphaned staged file as not-yet-promoted rather than silently trusting it (the specific failure mode this same pass's `_already_promoted_keys` fix already closes). A full fix (stage into a scratch index, or `git reset -- <path>` on any exception mid-loop) is a design change to `commit_paths`'s own transaction shape, out of this review-fix pass's narrower scope.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — adapters/vcs_git.py:826-843 `commit_paths`'s per-path `git add` loop still has no try/except or compensating `git reset` on a mid-loop failure -- an already-staged path from earlier in the same batch is left staged when a later one fails. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-1-story-spec-promotion-with-a-durability-predicate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3958,6 +4375,8 @@ status: open
   evidence: Code review pass on Story 2.7 (Blind Hunter + Edge Case Hunter, parallel). Confirmed by code inspection: `run_evaluate` imports `policy` and calls `policy._is_valid_project_slug(project_slug)` at the `spec_text` resolution site and again at the spec-binding guard, both within the same function body -- the same double-call pattern `_run_scope_check` and `run_evaluate` also carry independently. A real fix needs either promoting the helper to a public `policy.is_valid_project_slug` or computing project-slug validity exactly once per invocation and threading the result through, both bigger than the P1 review-fix patch this pass otherwise applied to the same guard (which deliberately preserves this existing duplication rather than refactoring it, per the P1 patch's own note).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/gate.py now references `policy._is_valid_project_slug` at 6 sites (:553,661,748,829,968,1002) -- more than the 5 cited previously, since Story 33.5's new `_gather_review_depth` (:661) added another call. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-2-7-a-gate-binds-to-the-specs-success-signal.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3970,6 +4389,8 @@ status: open
   evidence: Code review pass on Story 2.7 (Blind Hunter + Edge Case Hunter, parallel). Confirmed by code inspection: `cli/gate.py::_render_text`'s spec-binding branch renders only `f"spec binding: {story} -- {violations} violation(s)"`, while `data["spec_binding"]["declared_commands"]` (and, after this pass's P3 patch, `"has_binding"`) is never projected into the text format at all -- an operator reading `--format text` alone cannot see which commands the spec declared without cross-referencing the `findings:` block's messages. Fixing this is a straightforward text-projection addition, but it is cosmetic (the underlying data and findings are already correct and complete) and out of this review-fix pass's own scope of the six named P1-P6 patches.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/gate.py:1172 `_render_text`'s spec-binding line is still exactly `f"spec binding: {story} -- {violations} violation(s)"`; `declared_commands`/`has_binding` never reach the text projection. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-2-7-a-gate-binds-to-the-specs-success-signal.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3982,6 +4403,9 @@ status: open
   evidence: Code review pass on Story 2.7 (Blind Hunter + Edge Case Hunter, parallel). Confirmed by code inspection: `core/gate.py::check_spec_binding` takes `policy_commands` as an opaque tuple and does pure membership comparison -- it has no visibility into `gate_mode`, `--run` scope, or whether a command actually executes on this invocation (a `--run`-scoped evaluation, for instance, reports `data["commands"] = []` and never runs anything at all, per this same module's own docstring, yet the binding check still runs against the seed's `verify_commands`). Needs a real design decision (what "reachable for this invocation" even means, and whether the closed admission lattice should distinguish it from "declared") -- not a mechanical patch, and no AC in this story names it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — core/gate.py:646-649 `check_spec_binding(declared_commands, policy_commands)` is still a pure membership comparison with no gate_mode/scope/reachability input -- confirmed no signature change. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: What does 'declared and reachable for this invocation' mean for check_spec_binding -- should a --run-scoped or otherwise-narrowed invocation treat a declared-but-unexercised command differently from a fully bound one, and if so how?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-2-7-a-gate-binds-to-the-specs-success-signal.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3994,6 +4418,8 @@ status: open
   evidence: Code review pass on Story 4.2 (Blind Hunter + Edge Case Hunter, parallel, D1). Confirmed by code inspection: `_scan_promotions`'s `try: origin_subjects = vcs.commit_subjects(root, _PUSH_REF) except VcsCommandError: origin_subjects = ()` carries no `Finding`, per AD-29's own F-14 amendment ("durability must not require the network" -- a missing/unfetched `origin` is the ORDINARY case, not an error). Lower severity than P1: the REQUIRED local-`main` route still runs and still gates teardown, so no destructive action can proceed on an unevaluated safety check via this path alone -- it only means the push route's own contribution to the durability answer is silently absent. Not fixed in this pass (P1's scope was the required route specifically); a real fix would need a way to distinguish "no origin configured" (the ordinary, correctly-silent case) from "origin configured but genuinely unreachable" (arguably worth a WARN), which needs a `VcsPort` primitive this codebase does not have today.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `cli/deploy.py:743-746` and `:3333-3336`: `try: origin_subjects = vcs.commit_subjects(root, _PUSH_REF) except VcsCommandError: origin_subjects = ()` -- still no `Finding` raised on this path in either call site, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-2-teardown-reachability-and-spec-recovery-assistance.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4006,6 +4432,8 @@ status: open
   evidence: Code review pass on Story 4.2 (Blind Hunter, D2). Confirmed by code inspection: `cli/deploy.py::run_recover_spec` calls `fs.exists(dest)` then, only in a later statement, `fs.write_text_atomic(dest, content)` -- the "atomic" in that method's name covers the WRITE itself (no partial/torn file), not the existence check preceding it. Low practical risk: this is a single-operator CLI with no concurrent-invocation use case documented anywhere in this project's own architecture, and `FsPort` has no exclusive-create primitive (`create_dir_exclusive` exists for directories, per `cli/init.py::_journal_abandonments`'s own use, but no file-level equivalent) to build a real fix on without growing the port's surface. Not fixed in this pass; the natural owner is whichever future story needs a genuinely concurrent-safe write path, at which point `FsPort` would need a `write_text_exclusive` (or similar) primitive first.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `ports/fs.py` still has no exclusive file-create primitive (`grep -n "write_text_exclusive\|create_file_exclusive" ports/fs.py` empty; only `create_dir_exclusive` exists). `cli/deploy.py:1332`: `already_present = fs.exists(dest)` still precedes the later write with no atomicity between the two. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-2-teardown-reachability-and-spec-recovery-assistance.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4018,6 +4446,8 @@ status: open
   evidence: Code review pass on Story 4.2 (Blind Hunter, D3). Confirmed by code inspection: `run_id = mint_run_id(slug, _abandon_format_utc_compact(moment), _abandon_random_token())` combines a millisecond-resolution timestamp with an 8-hex-digit random token (`secrets.token_hex(4)`, 2^32 space) -- a genuine collision within the same millisecond needs both the timestamp AND the random token to coincide, astronomically unlikely for this single-operator CLI's actual invocation pattern (one teardown at a time, by design -- git itself serializes worktree/branch mutation against the same repo). Not fixed in this pass: closing it with a real retry-on-collision loop is a mechanical addition but was judged not worth the complexity given the practically-zero collision probability; worth naming so a future reader of `_journal_abandonments` understands the gap is known, not overlooked.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `cli/init.py:2218-2236`, `_journal_abandonments` still mints one `run_id` and calls `fs.create_dir_exclusive(run_dir)` once, propagating `FsError` as `MRS-TEARDOWN-002` on any collision -- no retry loop, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-2-teardown-reachability-and-spec-recovery-assistance.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4030,6 +4460,8 @@ status: open
   evidence: Code review pass on Story 4.3 (D1). Confirmed by code inspection: `run_land_story` computes `since_ref` once, ahead of `evaluate_gate`'s own (unbounded-duration) verify-command run, and the conformance audit afterward walks `f"{since_ref}..{merge_sha}"` -- any commit landing on `main` in that window is included in the window even though it postdates the gate decision the audit is nominally reporting on. Low practical impact: the audit is purely a REPORT (never blocking, per the story's own Never bullet), so a misattributed subject only affects a cosmetic list, never the landing's own verdict or whether the merge proceeds. Not fixed in this pass: a real fix (re-deriving `since` from the merge-base as observed strictly before the gate call returns, or re-snapshotting `main`'s tip at that same instant) is a design question about what "the wave" is even supposed to mean once the gate's own duration is accounted for -- bigger than a mechanical patch, and no AC in this story names it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `cli/deploy.py:2009-2012` computes `since_ref` before `evaluate_gate` is called at `:2096`; the conformance-audit window walk at `:2255` (`f"{since_ref}..{merge_sha}"`) can therefore include commits that land on `main` during gate evaluation. Unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-3-merge-subject-conformance-and-review-cap-landing.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4055,6 +4487,8 @@ status: open
   evidence: Implementation of Story 4.4. `_evaluate_hygiene`'s `required_check` failure path is a distinct code (`MRS-DEPLOY-013`, `Verdict.SCOPE_VIOLATION`) precisely so a blocking hygiene refusal is distinguishable from a forge command failure -- but `add_labels`'s own failure (a real write attempted AFTER the PR already durably exists) reuses the same `MRS-DEPLOY-014`/`Verdict.ERROR` tier as a `find_open_pr`/`create_pr`/`update_pr` failure (where no PR write has landed at all), mirroring Story 4.3's own `land-story` precedent of folding a post-success reporting gap into a shared code rather than inventing a new one for every emit site. `data.pr_number`/`data.opened`/`data.updated` are always populated by the time `add_labels` could fail, so the distinction IS recoverable from the envelope -- just not from the finding code alone. A real fix (a dedicated `MRS-DEPLOY-01x` for "label application failed after an already-successful PR write") is a straightforward addition but was judged not worth a new code for this pass, since no AC in this story names the distinction and the envelope's own `data` fields already carry it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `cli/deploy.py:3000`: `forge.add_labels` failure still raises the same `_MRS_DEPLOY_014` shared with `find_open_pr`/`create_pr`/`update_pr` failures, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-4-batch-pull-request-with-hygiene-preflight.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4067,6 +4501,8 @@ status: open
   evidence: Code review pass on Story 4.4 (D1). Confirmed by code inspection: `_FORGE_REPO`'s own module-level comment records the reasoning (this repo's own reference note "gh pr create needs --repo rxm7706/local-recipes"), and the Spec Change Log entry 3 records the same deliberate choice not to add a policy field for it -- but no code anywhere in `run_batch_pr` reads `git remote get-url origin` (or equivalent) and compares it against the constant. Low practical risk today: this repo's own git remote genuinely IS that value, and every Marshal station really does live inside this one physical repo by construction (the loop-home worktree convention). Not fixed in this pass: worth naming as a portability gap if this package is ever used against a differently-configured checkout (e.g. a fork-of-the-fork, or a future multi-repo Marshal deployment) -- a real fix would read the actual remote and refuse/warn on mismatch, but no AC in this story asks for that verification.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `cli/deploy.py:388`: `_FORGE_REPO = "rxm7706/local-recipes"` remains a hardcoded module constant; `grep -n "remote get-url" cli/deploy.py adapters/forge_gh.py` is empty -- no runtime cross-check exists anywhere. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-4-batch-pull-request-with-hygiene-preflight.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4079,6 +4515,8 @@ status: open
   evidence: Code review pass on Story 4.4 (D2). Confirmed by code inspection: `run_batch_pr` checks `vcs.branch_exists(git_repo_root, head_branch)` (a local git ref check) before proceeding through wave discovery, the hygiene preflight, and eventually `forge.find_open_pr`/`create_pr` -- there is no earlier check that the branch is known to `gh`/the remote at all. In practice `gh pr create --head <branch>` (inside `GhForge.create_pr`) will fail cleanly and loudly (`ForgeCommandError`, surfaced as `MRS-DEPLOY-014`) if the branch isn't pushed, so the natural failure path is already reasonably safe -- the run does not silently succeed or corrupt state, it just fails later than it could. Not fixed in this pass: an earlier, clearer precondition check (e.g. `git ls-remote` against the configured forge repo) would fail faster with a better message naming the real problem ("branch not pushed") instead of a generic `gh pr create` stderr blob, but this is a UX polish, not a safety gap, and no AC in this story names it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `cli/deploy.py:1986,2591` still only call `vcs.branch_exists` (a local check) before proceeding into the hygiene preflight and PR-write path; no `ls-remote`/push-state precheck exists (`grep -n "ls-remote\|ls_remote" cli/deploy.py` empty). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-4-batch-pull-request-with-hygiene-preflight.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4091,6 +4529,8 @@ status: open
   evidence: Code review pass on Story 4.4 (D3). Confirmed by code inspection: `add_labels` issues ONE `gh pr edit` invocation carrying every `--add-label` flag together; a non-zero exit raises `ForgeCommandError` naming the whole command's stderr, with no per-label result parsed out of `gh`'s own output (which does not itself report partial application per flag). Low practical impact: labels are rarely rejected once the rule's own `name` is a valid, pre-existing repository label (the ordinary failure mode -- a typo'd or deleted label -- is a one-time policy-authoring mistake, not a runtime flake), and Story 4.4's own P2 fix already ensures `data.labels_applied` never CLAIMS success on a raised failure (it stays empty, not a stale intended-list). Not fixed in this pass: a real observability improvement (re-querying the PR's own labels after a partial failure to report exactly which landed) is a genuine gap worth naming, but no AC in this story asks for per-label confirmation.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `adapters/forge_gh.py:230-245`, `add_labels` still issues ONE `gh pr edit ... --add-label X --add-label Y ...` call and raises `ForgeCommandError` on any non-zero exit with no per-label result parsing, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-4-batch-pull-request-with-hygiene-preflight.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4116,6 +4556,8 @@ status: open
   evidence: Code review pass on Story 4.5 (Blind Hunter, D1). Confirmed by inspection of `tests/unit/test_deploy.py`'s `refresh-feed` section: every call to `deploy_module.run_refresh_feed` in that section constructs its `argparse.Namespace` via `_refresh_feed_args()`, whose own default is `format="json"`, and no test overrides it to `"text"`. `_render_text_refresh_feed` itself is a straightforward pure projection of the same envelope `data`/`findings` the JSON path already exercises (mirrors this module's own established `_render_text`/`_render_text_batch_pr` convention, all likewise under-tested for their text paths), so the risk of a live defect is low, but the function's own line coverage is genuinely zero. Not fixed in this pass: no AC in this story or its review findings names text-format coverage; a future pass adding it should mirror `_render_text_recover_spec`'s own test-coverage shape once one exists for that sibling command too.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `tests/unit/test_deploy.py:2618`: `_refresh_feed_args(*, project="acme", format="json")` still defaults to json, and every call site in the refresh-feed test section uses the default (`grep -n "_refresh_feed_args(format=\"text\"\|_render_text_refresh_feed" tests/unit/test_deploy.py` is empty) -- zero line coverage on the text-format path, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-5-feed-refresh-with-truth-partitioned-by-domain.md, tests/unit/test_deploy.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4128,6 +4570,8 @@ status: open
   evidence: Code review pass on Story 4.5 (Blind Hunter, D2). Confirmed by code inspection: `_gather_claimed_commits`'s own local-import comment names the `cli.spin <-> cli.init` load-order cycle (`cli/spin.py` imports `from .init import _home_path`, `cli/init.py` imports `from . import deploy`); `_run_resync_commands`'s local import is `from .gate import _bare_shell_metacharacters`, a DIFFERENT cycle shape (mirrors `run_land_story`'s own `cli.gate -> cli.init` comment instead). The cross-reference points a reader at the wrong rationale for the wrong cycle -- low-value doc fix, not urgent, and does not affect correctness (both local imports are independently correct, only the explanatory comment is misattributed). Not fixed in this pass: no AC names doc-comment precision, and fixing it is a one-line, purely cosmetic correction better bundled with the next real touch of either function.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `cli/deploy.py:3184,3287` both still say 'see `_gather_claimed_commits`'s own comment' while importing `.gate`; `_gather_claimed_commits`'s own local-import comment (around its definition at `:3054`) explains the unrelated `cli.spin <-> cli.init` cycle for its `.spin` import instead. Unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-5-feed-refresh-with-truth-partitioned-by-domain.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4140,6 +4584,8 @@ status: open
   evidence: Implementation of Story 4.6. The story's own Code Map/Design Notes do not specify a journal file layout for the new intent/outcome pairs; `_fold_deploy_journal` reuses `_gather_gate_verdicts`'s own established per-run-directory read loop (best-effort, skips unreadable directories) but accumulates every line from every run into ONE `fold()` call instead of folding per-directory, since a reconciliation outcome written by a LATER invocation lives in a DIFFERENT run directory than the intent it closes. No practical performance concern observed at this project's current scale (tens of runs per slug), but a project with thousands of accumulated runs would see this scan grow linearly. Not fixed in this pass: a real fix (a persistent per-slug idempotence journal, or an index) is a bigger design decision than this story's own scope, and no AC names a performance bound.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `cli/deploy.py:1635-1657`, `_fold_deploy_journal` still folds every `runs/*/journal.jsonl` under the project's Tier-3 store in one `fold()` call, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-6-deploy-idempotence-and-reconciliation-of-open-intents.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4178,6 +4624,8 @@ status: open
   evidence: Code review pass (2026-08-06, remediation, D2). Confirmed by code inspection: `run_promote`/`run_land_story`/`run_batch_pr` each pass a literal `evidence_note=` string to `_reconcile_open_intents`, which writes it verbatim into the `reconciliation` outcome's `payload["evidence"]` field with no cross-check against the `confirmed_story_keys` argument's own provenance (`scan.already_promoted`/`merged_keys_now`/the now-always-empty `batch-pr` set). Low practical risk today: all three strings are accurate as of this story's own implementation, and the three call sites are few enough to eyeball. Not fixed in this pass: a real fix would derive the note programmatically from the evidence-gathering call site itself (e.g. a small enum or a docstring-adjacent constant paired with the gathering code), but no AC in this story asks for that coupling, and the mismatch is a documentation-drift risk, not a correctness one -- `intent_reconciles`'s own decision never reads `evidence_note` at all.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `evidence_note=` is a hardcoded literal string at four call sites in `cli/deploy.py` (lines 1067, 2081, 2895, 3766) -- matches the 'narrowed to four sites' 2026-09-05 re-verification exactly. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-6-deploy-idempotence-and-reconciliation-of-open-intents.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4190,6 +4638,8 @@ status: open
   evidence: Code review pass (2026-08-06, remediation, D3). Confirmed by code inspection: `_reconcile_open_intents`'s single WARN message template is shared verbatim across all three `kind` values (`_PROMOTE_COMMIT_KIND`/`_LAND_MERGE_KIND`/`_BATCH_PR_WRITE_KIND`), with no per-kind wording distinguishing "this action's own idempotence check is git-native and strong" from "this action's own idempotence check depends on a forge-side lookup that can itself be stale or ambiguous." Not urgent given P2's fix already tightens the underlying evidence check for `batch-pr` specifically (an unconfirmed `batch-pr` intent no longer auto-closes on weak evidence at all, so the message's overstatement matters less than before this pass). Not fixed in this pass: softening the message per-kind is a straightforward follow-up but was judged cosmetic relative to P1-P5's own safety-critical scope, and no AC in this story names message-wording precision.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `cli/deploy.py:1895-1911`: the single WARN message template (ending '...though its own existing idempotence check may make attempting it again safe regardless') is still shared verbatim across all three `kind` values, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-6-deploy-idempotence-and-reconciliation-of-open-intents.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4202,6 +4652,8 @@ status: open
   evidence: Adversarial review pass on Story 4.8 (Edge Case Hunter, finding #5). No write happens in this branch regardless (the WARN is purely informational, `branch_retired` stays `None` either way), so the practical impact is a slightly less precise WARN message, not a wrong action. Not fixed in this pass: no AC or reviewer flagged this as blocking, and the fix (threading the same base check into this second call site) is a small, low-risk follow-up better bundled with Story 4.10's fleet-wide retirement work, which already needs to reason about "is this really OUR PR" more generally.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `cli/land.py:567-590`: the 'already landed, branch still exists' shortcut still calls `forge.find_open_pr` and reports `_MRS_LAND_003` with no check of `existing.base`, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-8-marshal-land-the-last-mile-lands-itself.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4214,6 +4666,8 @@ status: open
   evidence: Adversarial review pass on Story 4.8 (Blind Hunter, finding #4; independently also raised by Edge Case Hunter, finding #7). This pattern is inherited verbatim from `cli/deploy.py::run_batch_pr`'s own pre-existing, already-shipped equivalent (Story 4.4) -- not introduced by this story. `land.py`'s downstream consequence is more consequential than `batch-pr`'s (an eventual real `merge_pr` attempt rather than just PR metadata), but the failure mode remains a SAFE one: `find_open_pr`/`create_pr`/`update_pr` and the required-check gate all still run normally afterward, and `merge_pr`'s own `--match-head-commit` guard (this story's own P2 fix) would still refuse a stale/incorrect merge attempt rather than silently succeed. Not fixed in this pass: a real fix (a registered WARN finding on this specific read failure, mirroring `run_refresh_feed`'s own REQUIRED-vs-best-effort git-read split) is a small, low-risk follow-up shared with `batch-pr`'s identical gap -- better fixed once, in both call sites together, than divergently here.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `cli/land.py:540-543`: `try: base_subjects = vcs.commit_subjects(git_repo_root, base_ref) except VcsCommandError: base_subjects = ()` still has no accompanying finding, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-8-marshal-land-the-last-mile-lands-itself.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4226,6 +4680,8 @@ status: open
   evidence: Adversarial review pass on Story 4.9 (Edge Case Hunter, finding #2). This package already has an established POSIX-only precedent (`adapters/process_posix.py` is named and shaped POSIX-specific; no `sys.platform`/Windows guard exists anywhere in this package; no Windows platform classifier in `pyproject.toml`), so this is very likely NOT a real regression -- consistent with a Linux-first conda-forge factory tool -- but it was not independently CONFIRMED as an intentional, documented decision during this story. Not fixed in this pass: no AC names cross-platform support, and guarding the import (a lazy import inside the two new methods only) is a small, low-risk follow-up if a future effort ever needs this package importable on Windows.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `adapters/fs_local.py:50`: `import fcntl` remains a module-level import, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4238,6 +4694,8 @@ status: open
   evidence: Adversarial review pass on Story 4.9 (Edge Case Hunter, finding #4). Currently unreachable via the one shipped call site (`cli/deploy.py::run_promote` passes the hardcoded positive `_PROMOTE_LOCK_TIMEOUT_S = 5.0`), so no live defect exists today -- this only matters for a future caller invoking the port method directly with a config-derived or otherwise untrusted `timeout_s`. Not fixed in this pass: no AC names input validation for this parameter, and the degraded behavior (one honest attempt, no hang, just a confusing message) is not unsafe.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `adapters/fs_local.py:360-390`, `acquire_advisory_lock` still computes `deadline = time.monotonic() + timeout_s` with no validation. Both shipped call sites (`cli/deploy.py:913` `_PROMOTE_LOCK_TIMEOUT_S = 5.0`, and a newer second site at `:3668` `_LEDGER_LOCK_TIMEOUT_S`) still pass hardcoded positive constants, so this remains unreachable in practice. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4250,6 +4708,8 @@ status: open
   evidence: Adversarial review pass on Story 4.10 (Blind Hunter, finding #2). Not a safety issue -- `is_branch_merged`/`worktree_path_for_branch` are still the real, independently-run gates before a candidate ever reaches `RetirementProposal`; this is a reporting-fidelity fragility, not a wrong-deletion risk. Not fixed in this pass: fixing it properly means threading `merged_by_patch_id: bool`/`worktree_path: Path | None` onto `RetirementProposal` itself (a `core/retire.py` shape change) -- a small, low-risk follow-up better done together with any future change that touches `classify_retirement`'s own gating, rather than isolated here.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/retire.py:461-462 `data['proposals']` report still hard-codes `'merged_by_patch_id': True, 'worktree': None` as literals rather than deriving them from the per-branch facts gathered earlier in the loop (:362-401). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-10-fleet-wide-branch-retirement.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4262,6 +4722,8 @@ status: open
   evidence: Adversarial review pass on Story 5.1 (Edge Case Hunter, finding #2). Not introduced by this diff -- inherited from Story 3.4's own primitive, now load-bearing for this story's own trust model for the first time. Not fixed in this pass: a real fix (recording+comparing process start time alongside pid) is a `ProcessPort` interface change affecting every existing caller, out of this story's own scope.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `src/shared/packages/pyforge-core/src/pyforge/core/process.py:216-219`, `PosixProcess.is_alive` is still a bare `os.kill(pid, 0)` / `ProcessLookupError` check with no start-time or identity cross-check, confirming the 2026-09-05 note that this moved from `adapters/process_posix.py` to `pyforge.core.process.PosixProcess` but is otherwise unchanged. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-1-fleet-view.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4287,6 +4749,8 @@ status: open
   evidence: Adversarial review pass on Story 5.1 (Edge Case Hunter, finding #4). Not a crash risk -- both `--format json`/`text` render every state value without error. Not fixed in this pass: cosmetic, and the fix (an inline marker convention) is better designed once Story 5.3's own escalation-queue visual-distinction work exists to share a consistent convention with, rather than inventing one here first.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `cli/status.py::_render_text_status` (~line 2388): `state_text = home["state"]` is only specially handled for `awaiting-operator`; no equivalent branch exists for `unknown`, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-1-fleet-view.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4299,6 +4763,8 @@ status: open
   evidence: Adversarial review pass on Story 5.2 (Edge Case Hunter, finding #2). Not a crash risk -- both failure modes are deliberately collapsed into one signal, matching this command's own "clean, reportable absence, never a crash" convention. Not fixed in this pass: distinguishing them would need a separate `fs.is_dir(project_dir)` check and a second code, judged non-essential relative to this review pass's own safety-critical findings (the double-fold and the false-absence bug).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `cli/status.py:2150`: `if not fs.is_dir(run_dir):` is still the single check for both `--project` and `--run` correctness, folded into one generic 'not found' report, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-2-per-run-detail.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4311,6 +4777,8 @@ status: open
   evidence: Adversarial review pass on Story 5.2 (Edge Case Hunter, finding #3). Pre-existing, already-shipped behavior reused verbatim, not introduced by this diff -- arguably correct (gate verdicts are a project-level fact, not run-scoped), but the per-run detail view's own framing could mislead a reader into thinking the verdict pertains specifically to the run on screen. Not fixed in this pass: a docstring/UX clarification is the right-sized fix, not a functional change, and no AC in this story names run-scoped verdict isolation.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `cli/deploy.py:2392-2417`, `_gather_gate_verdicts`'s docstring still describes folding 'every one of this project's Tier-3 run directories' with no project-vs-run scoping caveat; `cli/status.py`'s `_run_detail` (~line 2118) still calls it with just `slug`, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-2-per-run-detail.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4334,6 +4802,8 @@ status: open
   evidence: Adversarial review pass on Story 5.4 (Blind Hunter, finding #2). The confidence-tiering fix (this review pass's own P1) makes the CONSEQUENCE of this gap low (an unconfirmed row is clearly labeled, not a false alarm), but the underlying detection gap itself remains uncovered by any test that would fail if it were accidentally "fixed" in a way that made things worse. Not fixed in this pass: adding a real squash-merge-subject fixture is a good, low-risk follow-up for whichever story next touches `merged_story_keys` or this reconciliation path.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `grep -n "(#[0-9]\+)" tests/unit/test_promotion.py tests/unit/test_status.py` is empty; `test_unlanded_patch_warns_as_unconfirmed_naming_the_run` (`tests/unit/test_status.py:4831`) still only uses `commit_subjects_value=()`, never a real squash subject. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-4-ledger-vs-git-reconciliation-and-the-versioned-status-contract.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4346,6 +4816,8 @@ status: open
   evidence: Adversarial review pass on Story 5.6 (Blind Hunter, finding). Not a crash risk -- the timeout still correctly surfaces as a registered WARN, never silently clean. Not fixed in this pass: the right fix (either raising the ceiling to comfortably exceed n_detectors x 300s, or passing a smaller `--timeout` down explicitly) depends on the real registry's own growth trajectory, better decided with more operational data than this story alone has.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `cli/check.py:80`: `_CHECK_TIMEOUT_S = 900.0` is unchanged. `pixi run --frozen -e pyforge-guild python scripts/detectors.py --list` now shows 57 registered detectors on current main (2026-09-30) -- up from the 42 noted on 2026-09-29 and the original 11 this constant's own comment was sized against. At the script's own 300s-per-detector default, a sequential `--scope all` worst case is now ~17,100s, nearly 5x the timeout it's supposed to be strictly larger than. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-6-marshal-check-the-detector-registry-through-the-front-door.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4358,6 +4830,8 @@ status: open
   evidence: Adversarial review pass on Story 5.6 (Blind Hunter, finding). Not a functional bug -- both handlers immediately discard the parameter regardless, per this story's own deliberate scope narrowing (see the spec's own Design Notes). Not fixed in this pass: a one-line doc correction, lower priority than the story's own three patched findings.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `core/context.py:18` still reads '`factory spin`/`status`/`land`... receive a resolved `MarshalContext`... at the dispatch boundary too'; `cli/spin.py:993,1046,1062` and `cli/land.py:218` still declare `slug` as a positional argument, confirming `factory spin`/`land` never actually exercise context resolution via the real CLI. `cli/main.py` itself no longer carries the overstated claim (narrowed, matching the 2026-09-05 note). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-6-marshal-check-the-detector-registry-through-the-front-door.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4370,6 +4844,8 @@ status: open
   evidence: Adversarial review pass on Story 5.6 (Edge Case Hunter, finding #1, folded into the same P1 patch as the traversal/PermissionError fix). Not fixed further in this pass: threading `_resolve_context`'s own findings back into `main()`'s shared dispatch return path would require a larger change to the dispatch mechanism itself (currently just relays a handler's own int exit code, with no findings-accumulation concept at that layer) -- a bigger, separately-risked change than this story's own scope, especially given the resolved policy isn't yet consumed by any handler beyond a discarded local variable.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `cli/main.py:321`: `effective, _findings = policy_core.compose(project_slug=slug, project=project_data, flags={})` still discards `_findings` via the underscore-prefixed name, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-6-marshal-check-the-detector-registry-through-the-front-door.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4382,6 +4858,8 @@ status: open
   evidence: Adversarial review pass on Story 4.11 (Edge Case Hunter, finding #1). Pre-existing, established Story 5.1 (`marshal status`) semantics -- `_gather_home_facts`'s own docstring documents `supervisor_pid` (never `launch_pid`) as deliberate, and this story reuses that function verbatim, unmodified. Previously low-consequence (a stale/misreported `marshal status` display row); this story raises the stakes by making the same signal gate a destructive branch-deletion decision. Not fixed in this pass: closing it requires either probing `launch_pid` liveness too (a second `ProcessPort.is_alive` call `_gather_home_facts` does not currently make) or a design decision about which pid should be authoritative for "is this branch in use" -- a `core/status.py`-wide semantic change affecting `marshal status` too, out of this story's own narrow scope (S-4.8 dependency only).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — core/status.py:1249-1290 `is_run_live` still returns `not facts.finished and facts.supervisor_alive is True`, never consulting `facts.engine_alive` (added by Story 5.8 and already used elsewhere at :783 for a different, softening purpose) or launch_pid liveness. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-11-marshal-land-refuses-while-a-run-is-in-flight.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4394,6 +4872,8 @@ status: open
   evidence: Adversarial review pass on Story 4.12 (Blind Hunter finding + Edge Case Hunter finding #4, independently). Already identified in this SAME spec's own prior review pass 1 (`[low] [defer]`, 2026-08-09) but never actually written to this ledger because that pass HALTed on an unrelated intent_gap before reaching the "process findings" step -- writing it for real now that the intent-gap repair has landed. Not a corruption risk for a file the live run has ALREADY uncommitted-edited (`--ff-only` refuses cleanly on that conflict, proven by `test_fast_forward_refuses_a_dirty_working_tree`); the narrower remaining window is a file the run hasn't touched yet. Not fixed in this pass: Story 4.9/AD-42 set an `fcntl.flock` precedent for serializing OTHER shared-state writes in this package, but extending that precedent to worktree/working-tree mutation is a broader architectural question (which process owns the lock, what it blocks, for how long) better decided deliberately than as a mechanical patch bolted onto this story's own narrow FR-173 scope.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — cli/land.py's `_resync_home_branch` (fetch+fast-forward, called at :533 and :616) still takes no lock -- grep 'lock'/'flock' in the function body is empty; the file's only lock (:189-196) guards the tracked ledger, not the working tree. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-12-a-landing-leaves-the-loop-home-current-with-main.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4405,7 +4885,10 @@ status: open
   summary: A second, distinct Tier-3 `review-budget-followup` deferral for a story that already has one promoted `DW-FU-<story>` entry is permanently invisible to `_promote_deferred_work`'s auto-promotion, since idempotency is keyed on story key alone (the established `DW-FU-<story>` convention has no counter).
   evidence: Independently flagged by both the Blind Hunter and Edge Case Hunter review passes on this story. Confirmed by code inspection of `core.deferred_work.deferrals_to_promote`: a candidate is dropped once `promoted_id(story_key)` already appears in the tracked ledger, regardless of whether its own `tier3_id` differs from the one that produced that promotion. Never observed in this codebase across 3 projects to date (at most one such entry per story), and mitigated by an existing safety net: `scripts/deferred_work_check.py` still reports the dropped Tier-3 id as `tier3-only-deferral` (the same manual-promotion fallback that existed before this story), so the gap is a missed automation, not silent data loss. Not fixed in this pass: closing it properly would need a counter-suffixed id scheme, which the intent-contract's own Boundaries explicitly reject in favor of the precedented no-counter form -- a deliberate contract decision, not something a mechanical patch can override.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  severity: low
+  resolution: 2026-10-01 — by design: core/deferred_work.py:238-272 `deferrals_to_promote` still keys idempotency on `promoted_id(candidate.story_key)` alone (`pid in tracked_ids or pid in seen`); the function's own docstring (:256-262) now explicitly documents the two-distinct-deferrals-for-one-story case as an accepted, deferred_work_check.py-covered gap rather than a defect to close.
+  verified: 2026-10-01 — BY-DESIGN — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-13-the-loops-deferred-work-reaches-the-tracked-ledger.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4418,6 +4901,8 @@ status: open
   evidence: Blind Hunter review pass, findings #2/#3. Confirmed by code inspection: `_LAND_MERGE_PR_KIND`/`_BATCH_PR_WRITE_KIND`/`_PROMOTE_COMMIT_KIND` are all reconciled via `_reconcile_open_intents` elsewhere in this codebase; the new kind is not. Not data loss: the actual promotion is NOT lost -- a later `land` run re-reads the tracked ledger (still missing the id, since the commit failed), and `deferrals_to_promote` correctly re-selects the same candidate for a fresh write/commit attempt, self-healing without needing the stale intent reconciled. The gap is confined to the journal's own paper trail (a dangling open INTENT), and reusing the existing reconciliation machinery verbatim does not fit cleanly: `intent_reconciles` expects a `"story_keys"` payload key confirmed via commit-history reachability, while this domain's own confirmation signal is "is the id present in the tracked ledger text" -- a different semantics requiring either a payload-shape change or a parallel reconciliation path, out of proportion to this story's own `Effort: S` budget.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — cli/land.py:182 `_LAND_DEFERRED_WORK_KIND` is still never passed to `_reconcile_open_intents` -- only two call sites exist (:547 and :761), both using _LAND_MERGE_PR_KIND/_BATCH_PR_WRITE_KIND. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-13-the-loops-deferred-work-reaches-the-tracked-ledger.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4430,6 +4915,8 @@ status: open
   evidence: Blind Hunter review pass, finding #5. Confirmed by code inspection: `parse_followup_deferrals` catches `MalformedStoryKeyError` and `continue`s past the block with no side effect, mirroring `core/promotion.py::merged_story_keys`'s established "skip, never a hard failure" convention for a non-conforming subject. Not fixed in this pass: every real `review-budget-followup` block examined across this project's own live Tier-3 history uses the bare-filename shape (bmad-loop's own deterministic, programmatic output), so this is currently a defensive guard against a hypothetical future/hand-edited shape rather than an observed failure -- worth hardening (e.g. a low-severity finding naming the unparseable block) if a real instance is ever observed.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — core/deferred_work.py:178-181 `parse_followup_deferrals` still `continue`s past a MalformedStoryKeyError with no Finding or diagnostic. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-13-the-loops-deferred-work-reaches-the-tracked-ledger.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4454,7 +4941,10 @@ status: open
   summary: The unparseable-story-dir-name fallback (`story_key = patch.parent.name`) flows unsanitized into the `MRS-STATUS-010` finding message and `failed_patches` entry, with no newline-stripping before interpolation, unlike `_render_text_status`'s own `unpushed.stat` sanitization.
   evidence: Blind Hunter review pass, finding #4. Confirmed by code inspection: the `stat_text = str(unpushed.get("stat")).replace("\n", " ").strip()` precedent exists specifically because a POSIX filename/dirname may contain a newline, and this new code path has no equivalent guard. Not fixed in this pass: the identical, pre-existing gap already exists unmodified for `MRS-STATUS-008`'s own `remedy`/`stat` interpolation into `Finding.message` (only the per-row TEXT-format `line +=` display sanitizes, not the finding message itself) -- a partial fix touching only the new `MRS-STATUS-010` code path while leaving `MRS-STATUS-008` unfixed would be an inconsistent point patch; the real fix (sanitizing every `Finding.message` at construction, or at the text-renderer's findings-block loop) is a wider, cross-cutting change out of this story's own narrow scope. Low real-world likelihood: bmad-loop, not an untrusted actor, controls this directory-name format.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: resolved
+  severity: low
+  resolution: 2026-10-01 — `cli/status.py:2008-2010` (git-blamed to the same 2026-08-10 merge commit `11461c31660e`, i.e. present since Story 4.14 itself): the MRS-STATUS-010 `Finding.message` now wraps `entry.get('story_key')`, `entry.get('run_id')` and `entry.get('path')` in a new `_one_line()` helper whose docstring says explicitly it exists to apply 'the SAME newline-stripping `_render_text_status` already applies to `unpushed.stat`... hoisted so every one of this story's own finding messages gets it'. This closes the specific defect the DW describes (an unsanitized newline in `Finding.message` forging a fake findings-block line in the text renderer).
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-4-14-the-failed-story-safety-net-is-reported.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4478,6 +4968,8 @@ status: open
   evidence: Review pass 2, verified by direct execution against `main`'s real 2,353 commit subjects. `extract_story_key_from_github_merge_subject('Merge pull request #383 from rxm7706/land/steward-8-1')` returns `None` -- `normalize` anchors at position 0, so the leading station token makes the segment unparseable -- and 22 such `land/<station>-<epic>-<seq>` merges exist on `main`. Squash subjects such as `marshal: recover Story 1.6 — isolation verification and home enumeration (#163)` likewise parse to nothing. This is the same blind spot `core/status.py`'s `CONFIDENCE_UNCONFIRMED` block already documents ("5 rows for genuinely-merged stories, zero true positives", naming story 1.6 specifically) and that `sprint-status-ledger.yaml`'s own header cites as the reason that ledger exists. Story 4.14's review pass 2 reverted its implementation over this: 2 of its 3 live WARNs were false for exactly these two shapes. Not fixed in this story: adding subject shapes to the shared classifier changes three other shipped views' behavior (see the sibling entry above); 4.14 instead reports `unconfirmed`, which is the honest handling available inside its own boundary. A dedicated story should extend the one owner to read both shapes, at which point 4.14's `confidence` values become mostly `confirmed` on their own.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — Narrower than originally filed: executed directly against current main (`pixi run --frozen -e pyforge-guild python`), `promotion.merged_story_keys(('Merge pull request #383 from rxm7706/land/steward-8-1',), 'Merge {key} into main', 'steward')` now returns `frozenset({StoryKey(epic=8, seq=1, suffix='')})` -- the `land/<station>-<epic>-<seq>` branch grammar IS now recognized (via `pyforge.core.landing_evidence`, story 51.7/CAP-255, `git log -S STATION_BRANCH` -> commit `58ee44b51d7`). But ordinary squash-merge prose still fails: `merged_story_keys(('marshal: recover Story 1.6 — isolation verification and home enumeration (#163)',), template, 'marshal')` returns `frozenset()`. Only a hand-cura… Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-4-14-the-failed-story-safety-net-is-reported.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4490,6 +4982,8 @@ status: open
   evidence: Review pass 2 (Blind Hunter). Confirmed by inspection: bmad-loop writes these files (`workspace.py`) and never removes them; the only readers in this repo are Story 4.14's own new call sites. The oldest live patch dates to 2026-07-24, and 12 exist across 7 homes as of 2026-08-10. Distinct from the "unbounded findings" concern pass 1 rejected -- that was about capping output volume (rejected on this repo's own no-silent-caps principle); this is about the absence of any lifecycle/acknowledgement state, which a cap would not address. Since every finding is WARN (exit 0 by the story's own Boundary), the practical decay mode is a permanently non-clean `marshal status` that operators learn to ignore. Not fixed in this story: a disposition mechanism needs a design decision about where acknowledgement state lives (a tracked ledger entry, a sidecar marker in the run dir, or a `marshal` subcommand) and who is allowed to write it -- out of proportion to a read-only reporting story.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `grep -rn "acknowledge\|disposition" cli/status.py core/status.py` is empty; nothing in the repo prunes or dispositions `<run>/failed/<story>/changes.patch` -- confirmed no change since 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-4-14-the-failed-story-safety-net-is-reported.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4502,6 +4996,8 @@ status: open
   evidence: Review pass 2, measured directly: **12** patches (not 7) across **7** stations (atlas, doctor, herald, marshal, mason, steward, warden -- adding atlas and steward; only scribe has none), sizes 26,363 bytes to **10,218,067 bytes** (`pyforge-atlas` `12-2-publish-the-real-dag-continuously`), i.e. a 10.2 MB worst case against a quoted 205 KB ceiling. And the "all belonging to stories that later reached done" claim no longer holds: `pyforge-doctor` `6-9-the-scripts-shims-retire` (394,112 bytes) has no landing on `main` at all -- a genuinely unlanded patch, which is the first true positive this signal has. Not fixed in this pass: the numbers live in tracked planning artifacts (`prd.md`, `epics.md`) that this story's diff does not touch, and in this spec's own `<intent-contract>`, which a review pass must not modify. Worth re-stamping when either planning artifact is next reconciled -- and worth noting that the motivating claim has now been overtaken by a real instance.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `_bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md:427` still reads 'measured 2026-08-09: **7 patches on disk, 26 KB to 205 KB**'; `epics.md:1291` carries the identical stale figure. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-4-14-the-failed-story-safety-net-is-reported.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4514,6 +5010,8 @@ status: open
   evidence: Review pass 3 (Blind Hunter; Edge Case Hunter reached the same mechanism from the symlink/permission angle). Verified against CPython 3.14.6 directly, not inferred: with two story dirs each holding a `changes.patch` and one of them `chmod 000`, `home.glob(".bmad-loop/runs/*/failed/*/changes.patch")` returns only the readable one and raises nothing -- `glob` swallows the `PermissionError` from `os.scandir` on intermediate segments -- so the helper's own `except OSError: return ()` guard never fires and the caller cannot tell a truncated enumeration from a complete one. Not fixed in this pass: every honest fix needs a way to REPORT the incomplete enumeration (manual `os.scandir` walk collecting per-directory errors, surfaced under a new `MRS-STATUS-*` code), since the two available silent behaviours -- partial result, or degrading the whole home to "none found" -- are both false greens; adding a third finding code and its registration/verdict/test surface is out of proportion to a read-only reporting story that pass 2 already reverted once. Low practical likelihood: these directories are created by bmad-loop itself, owned by the invoking user, and broken permissions inside a loop home would already be failing much of the harness. `core/status.py::FleetHomeFacts.failed_patches`'s docstring was corrected in pass 3 to stop claiming this field has "no could-not-be-consulted case of its own", so the limit is at least documented where a maintainer will read it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `cli/status.py:1260-1280`, `_gather_failed_patches`'s own docstring on current main states this verbatim as an open, deliberately-deferred gap: '`Path.glob` suppresses the `OSError` from an unreadable directory mid-traversal and silently yields a PARTIAL result... This is a known, recorded limit of this signal, deferred rather than reported... do NOT read `()` as proof the tree was fully read.' Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-4-14-the-failed-story-safety-net-is-reported.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4526,6 +5024,9 @@ status: open
   evidence: Review pass 3 (Blind Hunter). Confirmed by code inspection: the per-patch WARN is gated only on `done is False` and never consults `row["current_story"]` or `row["state"]`, both of which `build_fleet_row` has already computed from the same `facts`. Live at the time of review: `pyforge-marshal`'s own row showed `story=4-14-the-failed-story-safety-net-is-reported` while carrying three failed patches. Not fixed in this pass: the two candidate treatments each need a decision this story cannot make unilaterally -- SUPPRESSING the WARN would contradict the intent contract's own Always bullet ("Every `.bmad-loop/runs/*/failed/*/changes.patch` ... is reported on that home's own row"), while ANNOTATING it (an `in_flight: true` key) adds a field to the `failed_patches` entry shape that the contract enumerates, so it belongs to whoever next amends that shape. Consequence is mild in the meantime: the WARN's advice ("verify") is harmless for an in-flight story, merely noisy.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — `cli/status.py`'s per-patch WARN loop (`for entry in row.get('failed_patches') or (): if entry.get('done') is False:`) still never reads `current_story` or `state` (`grep -n "current_story" cli/status.py` shows it used only in the text renderer's display line, never in the WARN-emission logic). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should a failed-story patch for the story a loop home is CURRENTLY re-driving be suppressed from the MRS-STATUS-010 WARN entirely (risks contradicting the story's own 'every changes.patch is reported' Always-bullet), or should the `failed_patches` entry schema grow an `in_flight` field instead (a shape change enumerated in the story's own intent contract)? This is a product/contract decision the implementing story's own boundaries say it cannot make unilaterally.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-4-14-the-failed-story-safety-net-is-reported.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4538,6 +5039,8 @@ status: open
   evidence: Review pass 4 (Edge Case Hunter, finding #1), verified against this repo's own reflog rather than inferred. `cli/deploy.py:611-638` reads BOTH refs and passes `combined_subjects = tuple(origin_subjects) + tuple(main_subjects)` into `merged_story_keys`, with an explicit AD-29 rationale ("a missing/unfetched `origin/main` is the ordinary 'no push route available' case"); Story 4.14's fold reads one ref. The window is live and recurring: `git reflog show origin/main` records `origin/main -> 1aac6b566a` at 2026-08-10 01:33:44 while `refs/heads/main` stayed at `0228fbf269` until 01:55:20 (~22 min), and `origin/main -> c8503d9def` at 00:48:41 while `main` stayed at `989539934d` until 01:22:36 (~34 min). Story 4.12's `_fast_forward_loop_home` advances `loop/<slug>`, never `refs/heads/main`, so nothing in the harness closes it, and all 8 loop homes are worktrees of the one repo, so they all share that one stale ref. Two views of one question disagree. Not fixed in this pass: the frozen `<intent-contract>` defines "landed" as "present in `core.promotion.merged_story_keys`'s result for `main`", which a review pass must not amend, and `_reconcile_ledger` -- the closest sibling, in this very module -- reads `main` only too, so switching one caller alone would trade an inconsistency with `deploy` for an inconsistency with the module's own neighbour. Belongs with the `core/promotion.py` classifier story already deferred above, which will revisit what evidence "landed" should draw on.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — `cli/status.py:1489,2303` still call `vcs.commit_subjects(root, local_branch_ref(_MERGE_BASE_BRANCH))` -- local `main` only. `cli/deploy.py:744-766,3334-3355` still build `combined_subjects = tuple(origin_subjects) + tuple(main_subjects)` for the identical determination. The asymmetry is unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-14-the-failed-story-safety-net-is-reported.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4550,6 +5053,8 @@ status: open
   evidence: Review pass 4 (both reviewers independently: Blind Hunter #7, Edge Case Hunter #3). Confirmed by inspection: `core/promotion.py:203-218` ships `count_conforming_subjects` with a docstring naming this exact ambiguity as its reason for existing, `cli/deploy.py:738-772,891-915` consumes it, and `grep` finds no reference in `cli/status.py`. The `MRS-STATUS-011` "could not be determined" arm never fires on this path because the git read SUCCEEDS -- it just returns nothing usable -- so every patch on every home reports `done: false` and fires its own `MRS-STATUS-010`. Note the story's own primary unlanded test (`test_unlanded_patch_warns_as_unconfirmed_naming_the_run`) uses `commit_subjects_value=()`, an empty history, as its fixture for "unlanded", which is exactly the collision. Not fixed in this pass: distinguishing the two needs a new reported field (or a new finding code) on a signal whose entry shape the intent contract enumerates, and the practical trigger requires a degenerate clone of a repo whose real `main` carries 2,353 subjects. Consequence is bounded meanwhile: every affected finding already says UNCONFIRMED and "verify before recovering or discarding".
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — `grep -n "subjects_examined\|subjects_matched\|count_conforming_subjects" cli/status.py` is empty; these only exist in `cli/deploy.py` (lines 1041-1117). `cli/status.py`'s own failed-patch WARN logic has no equivalent signal. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-14-the-failed-story-safety-net-is-reported.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4562,6 +5067,8 @@ status: open
   evidence: Review pass 4 (Edge Case Hunter, finding #2), verified by direct execution: `policy_core.compose(project_slug='acme', project={'core': {'promotion': {'no_such_key': 1}}}, flags={})` returns `MRS-POLICY-001` at `Severity.ERROR`, `classify('MRS-POLICY-001') is Verdict.UNEVALUABLE` -- so it lands in `blocking` -- while the same call's `effective.merge_subject_template.value` resolves cleanly to `Merge {key} into main`. `core/policy.py:1239-1242` emits `MRS-POLICY-001` for any key outside `_ALL_KEYS`, so a stale key from an older Marshal or a hand-added table triggers it. `MRS-POLICY-006` (malformed slug) reaches the same branch. Latent, not live: all 8 project policies are currently clean. Partially addressed in pass 4 -- the emitted `MRS-STATUS-011` no longer asserts the false cause and now NAMES the withheld codes -- but the over-broad degradation itself remains. Not fixed in this pass: narrowing it needs `_merged_keys_for_slug` to report whether the template it returned came from the project's own file or from a fallback, a contract change to a helper this story deliberately made the single shared owner for two callers (KEEP #1). The degradation is at least in the SAFE direction: `null` is never fabricated as landed or unlanded.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `cli/status.py:1844-1865` (current main): `blocking = [f for f in keys_findings if classify(f.code) is not Verdict.CLEAN and classify(f.code) is not Verdict.WARN]` -- unchanged in substance from the 2026-09-05 read, just shifted line numbers. `MRS-POLICY-001` (unrecognized key) is `Verdict.UNEVALUABLE` and still lands in `blocking` even though `compose()` returns a perfectly usable template. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-14-the-failed-story-safety-net-is-reported.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4574,6 +5081,8 @@ status: open
   evidence: Review pass 4 (both reviewers independently: Blind Hunter #3, Edge Case Hunter #5). Confirmed by code inspection (`cli/status.py`: findings appended in the per-home loop, `rows` filtered after `sort_fleet_rows`) and by execution against a 3-home fixture: `escalations=True` yielded `rows: 0, findings: ['MRS-STATUS-010' x3], verdict warn`. This is the exact shipped behaviour of `MRS-STATUS-008` (Story 5.5), which is why review pass 2 rejected it as a pre-existing pattern this change copies rather than introduces -- that scope-based reading was re-verified and still holds. What is NEW and worth recording is reachability: `MRS-STATUS-008` fires ZERO findings on the live fleet today, while this signal fires 3 (up to 12 if `main` becomes unreadable), so a latent structural quirk has become a routinely-observable one. Not fixed in this pass: filtering findings alongside rows would change Story 5.5's own shipped contract for a code this story does not own.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — `cli/status.py:2062-2065`: `rows = status_core.sort_fleet_rows(rows); if getattr(args, "escalations", False): rows = [row for row in rows if row.get("state") == "paused-on-escalation"]` -- filters only `rows`/`data["homes"]`; the per-home loop above (~line 2000) already appended every `MRS-STATUS-010` WARN into the shared `findings` list, which is returned unfiltered via `_emit(args, data, findings)`. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-14-the-failed-story-safety-net-is-reported.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4599,6 +5108,9 @@ status: open
   evidence: Review pass 1 (Blind Hunter). Confirmed by reading `supervisor/__main__.py`: both the per-tick stage-boundary pushes and the interval fallback execute inside the same `while watched_alive and not deferred:` loop as the process doing the watching — there is no second process. Not a regression from this story: the retired `scripts/loop_push_watch.py` was confirmed never auto-started anywhere (empirically absent through an entire live multi-hour fleet session on 2026-08-03), so it provided zero actual protection against this failure mode either. Not fixed here: this story's own Boundaries explicitly forbid touching `supervisor/__main__.py`/`supervisor/durability.py` (FR-61 already shipped and correct); a structural fix would be a future story's call on whether a single-process durability sidecar is an acceptable risk.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — NEEDS-DECISION — `supervisor/__main__.py:1648`: `while watched_alive and not deferred:` -- the tick loop doing the pushing is the SAME process doing the watching; no second process exists anywhere in this module (confirmed unchanged from 2026-09-05, just shifted line numbers, e.g. push call now at `:1704` not `:1665`). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Is a single-process durability sidecar (crash of the sidecar = nothing pushes until the next tick) an acceptable residual risk for this repo's fleet-supervision model, or does it warrant a structural two-process design? This story's own Boundaries explicitly forbid touching `supervisor/__main__.py`, so only a follow-on story/operator decision can resolve it.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-15-one-pusher-not-two.md, scripts/loop_push_watch.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4611,6 +5123,9 @@ status: open
   evidence: Review pass 1 (Blind Hunter). Confirmed in `supervisor/__main__.py` (~line 259, `_push_branch(station_branch, _INTERVAL_PUSH_BOUNDARY, None)`): the interval fallback names only `station_branch`. The retired `scripts/loop_push_watch.py`'s design pushed "every loop home's station + per-story worktree branches" unconditionally, which this narrower scope does not fully replicate — though since that script was never actually running in practice, this is not a behavior regression caused by this story, only a pre-existing characteristic of Story 3.8's shipped scope. Not fixed here: this story's Boundaries forbid touching supervisor code; widening the interval fallback to cover per-story branches is a design decision for a future story, not a mechanical fix.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — `supervisor/__main__.py:1704`: `_push_branch(station_branch, _INTERVAL_PUSH_BOUNDARY, None)` -- the interval fallback still names only `station_branch`; per-story branches are pushed only on the three stage-boundary triggers (lines ~1353/1365), unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Is leaving per-story branches uncovered by the interval-fallback push (they rely solely on the three stage-boundary triggers firing) an acceptable gap, or should the interval fallback widen to match the retired `loop_push_watch.py`'s broader (never actually running) design intent? Boundaries forbid touching supervisor code in the originating story, so this needs an explicit call.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-4-15-one-pusher-not-two.md, scripts/loop_push_watch.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4623,6 +5138,8 @@ status: open
   evidence: Follow-up review pass (Blind Hunter #8 and Edge Case Hunter #8, independently). Verified by execution against the shipped loader: entries with `path: "../../../etc/cron.d/pwn"` and `path: "/etc/passwd"` both yield valid `ManifestEntry` objects and survive `load_manifest` with no error. Not fixed in this pass on two explicit scope grounds recorded in this story's own intent contract: its Boundaries state "`path` is validated only as a non-empty string", and its Never bullet assigns path matching and symlink resolution to Story 7.3's `fs` write guard ("No `never_write` enforcement (path matching, symlink resolution) — that's Story 7.3's `fs` guard"). Containment therefore has a named owner; what is worth recording is that neither the never-write set nor symlink resolution actually names "inside the target repo", so 7.3's guard should be checked to confirm it closes this, and a cheap `PurePosixPath(...).is_absolute() or ".." in parts` rejection at load time would make it a load-time error rather than an apply-time one.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — Executed directly against current main: `ManifestEntry(id='x', artifact_class=ArtifactClass.COPIED_SEEDED, path='../../../etc/cron.d/pwn', applies_to=AppliesTo.BOTH, rationale='test')` and an equivalent with `path='/etc/passwd'` both construct successfully with no error -- `seed/model/manifest.py`'s `__post_init__` still only calls `_require_text("path", self.path)`, a non-empty-string check, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-4-manifest-schema-loader-and-model-version-ranges.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4648,6 +5165,8 @@ status: open
   evidence: Follow-up review pass (Blind Hunter #2). Verified by code inspection (`load_manifest`'s closing `filtered_entries` comprehension is the only thing reaching the returned `Manifest`) and by reading AD-62, which specifies that the migration runner "selects the ordered chain from `state.model_version` to the bundled model version" — i.e. it reasons across a version RANGE, whereas the loader only ever answers for a single point. Severity is genuinely uncertain and that is why this is recorded rather than fixed: AD-62 registers migrations as `from_version`/`to_version` pure functions (code, not manifest entries), so a migration can encode what it needs about a retired artifact itself, and the need may never materialize. The append-only-ledger rationale this story documents is nonetheless preserved in the FILE and discarded at the API boundary. The fix, if wanted, is purely additive and non-breaking (an `at_version: ModelVersion | None = None` parameter, or an `all_entries` field alongside `entries`) and should be made by the story that first needs it, not speculatively here.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `seed/model/manifest.py:494`, `def load_manifest(path: Path) -> Manifest:` still takes no `at_version`/range parameter (`grep -n "at_version\|all_entries" seed/model/manifest.py` empty), unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-4-manifest-schema-loader-and-model-version-ranges.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4660,6 +5179,9 @@ status: open
   evidence: Second follow-up review pass (Blind Hunter #3 and Edge Case Hunter #3, independently). Verified by execution against the shipped loader: entries `agents-a` (`copied-managed`) and `agents-b` (`generated-derived`) both declaring `path: "AGENTS.md"` load clean and both survive the version filter, handing the apply stage two writers for one file with order-dependent last-writer-wins. Not fixed in this pass because the correct rule is genuinely ambiguous and the AC names no path-uniqueness requirement: entries with disjoint `applies_to` (`init` vs `adopt`) or disjoint `since`/`until` windows may legitimately share a path, and — decisively — the PRD's own V1 manifest lists `.gitignore` under BOTH `COPIED·MANAGED` ("the `.gitignore` model region") and `HYBRID` (".gitignore × 1"), so a hard load-time error could block Story 7.5 from authoring the manifest the PRD specifies. Whoever authors 7.5's real manifest should decide whether one path may carry two entries and, if not, add the check (scoped to entries surviving the filter with overlapping `applies_to`).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — `grep -n "seen_paths\|duplicate.*path" seed/model/manifest.py` is empty -- no cross-entry path-uniqueness check exists, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: What rule distinguishes a legitimate path-sharing pair of manifest entries (disjoint `applies_to`/`since`-`until` windows -- the PRD's own V1 manifest deliberately lists `.gitignore` under both COPIED-MANAGED and HYBRID) from an accidental double-owner bug that should hard-fail at load time? This needs a product/schema decision (e.g. a new disambiguation field) before a uniqueness check can be added without breaking the PRD's own intended manifest.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-4-manifest-schema-loader-and-model-version-ranges.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4698,6 +5220,9 @@ status: open
   evidence: Follow-up review pass (Edge Case Hunter, findings 1+2, merged -- they are one gap seen from two sides). Verified by computing ancestry over the loaded manifest: `dreams-dir` (`docs/dreams/`, both) is an ancestor of never-write `docs/dreams/*.md` AND contains `dreams-readme` (copied-managed, "regenerated wholesale") and `starter-dream` (copied-seeded, "never touched / hand-edit expected and fine"); `specs-dir-legacy` (`docs/specs/`, adopt) is an ancestor of `docs/specs/*.md`; `project-subtree` (`_bmad-output/projects/{{ slug }}/`, both) is an ancestor of BOTH `**/planning-artifacts/**` and `**/implementation-artifacts/**` AND contains `project-config` and `specs-readme` (both copied-seeded); the two `_bmad-output` symlink entries sit at the root of the same two globs. `artifact.py`'s GENERATED_DERIVED row is "recomputed every run (idempotent)" / "overwritten on next run; `check` reports" -- read literally against a directory path that is a never-write ancestor, that is an instruction to rewrite a Tier-0/Tier-2 subtree the model forbids writing. Nothing in Story 7.4's schema (`ManifestEntry` has no node-kind field) or in A-02 (the engine knows only the classes) resolves it, and no test covers it. Not fixed here for the same reason as the already-recorded `dreams-readme` collision: the resolution is a schema/orchestrator decision (a `kind: directory` marker, a path-containment precedence rule, or both) outside this story's Surface (`manifest.yaml` + `artifact.py`). Belongs with whichever story constructs `fs`'s `NeverWrite` set and the apply-stage writer from a loaded `Manifest`.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — `grep -n "kind" seed/model/manifest.py` is empty -- `ManifestEntry` still has no node-kind field, unchanged from 2026-09-05. The ancestry conflicts the entry lists (e.g. `dreams-dir` as ancestor of both never-write `docs/dreams/*.md` and its own `copied-managed`/`copied-seeded` children) are unchanged structurally in `seed/templates/manifest.yaml`. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: What precedence rule should govern a directory-class manifest entry (e.g. `generated-derived`, 'recomputed every run') whose subtree also contains never-write globs or children with conflicting `ArtifactClass` contracts? This needs a schema/architecture decision (a new node-kind concept) before the ambiguity can be closed, not just a bug fix.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 2/5 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-5-the-v1-extraction-manifest.md, docs/dreams/*.md, docs/specs/*.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4710,6 +5235,8 @@ status: open
   evidence: Follow-up review pass (Blind Hunter). Verified against the sources: `epics.md:1596` states the AC as "GENERATED-DERIVED (the four adapter files, ...)" and the PRD's GENERATED-DERIVED table still lists `CLAUDE.md` as a whole-file derived artifact, while `manifest.yaml` ships exactly three adapter entries (`cursor-rules`, `gemini-md`, `copilot-instructions`) and one `claude-md` HYBRID entry with two named regions. The dedup itself is CORRECT on the merits and is not the finding -- the PRD's own summary sentence ("all **three** inspected: `GEMINI.md`, `.cursor/rules/specs.mdc`, `.github/copilot-instructions.md`") deliberately excludes `CLAUDE.md`, and `test_claude_md_is_hybrid_not_also_generated_derived` pins it. The finding is that AD-55 makes the manifest "the product's actual contract" while the PRD/epics remain the input every LATER story reads, so a future story, `bmad-correct-course`, or drift-check run re-derives four and either re-adds an entry colliding with the hybrid one or reports the manifest as under-covered. Not fixed here: amending the PRD and epics is planning-artifact work outside this story's Surface, and per repo convention the resolution should land as a correct-course pass over the two source documents.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md:1984,2556` both still say 'the four adapter files'; `seed/templates/manifest.yaml` confirms exactly 3 `generated-derived` adapter ids (`cursor-rules:248`, `gemini-md:255`, `copilot-instructions:260`) plus `claude-md:325` as `hybrid-managed-region`, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-5-the-v1-extraction-manifest.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4722,6 +5249,8 @@ status: open
   evidence: Follow-up review pass (Blind Hunter). Verified by byte-comparison against the live file: `diff <(sed -n '65,78p' AGENTS.md) tiers.md.j2`, `diff <(sed -n '31,47p' AGENTS.md) portability-contract.md.j2` and `diff <(sed -n '51,61p' AGENTS.md) dream-first-workflow.md.j2` all report IDENTICAL, and all declared anchors line-prefix-match their live headings (`AGENTS.md:29/49/63`, `CLAUDE.md:39/83`). The shared `tiers` body additionally lands in `CLAUDE.md`'s own `### Spec-driven, framework-neutral layout (the tiers)` section, which already carries its own tier table. The byte-identity is REQUIRED by this story's AC ("faithful, install-target-neutral transcription"), so the template is not the defect -- the gap is that AD-56/S-8.4 define no detection for pre-existing unmarked content that a region body would duplicate (FR-80's `present-legacy` classification is the natural home for it). SC-10 ("the model reproduces the repo it came from") is the acceptance test that hits this. Not fixed here: insertion and idempotence live in S-8.4, not in this story's data-only Surface; recorded so S-8.4 does not inherit it as a surprise.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `grep -n "unmarked\|duplicate" seed/verbs/adopt.py` is empty -- no detection mechanism for pre-existing unmarked content exists, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-5-the-v1-extraction-manifest.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4734,6 +5263,8 @@ status: open
   evidence: Second follow-up review pass (Edge Case Hunter). Verified by execution against the shipped 7-pattern list in both plausible matcher dialects: `_bmad-output/projects/foo/planning-artifacts/PRD.md` matches under `fnmatch` AND `PurePosixPath.match`, but `_bmad-output/projects/foo/planning-artifacts` and `_bmad-output/planning-artifacts` match under NEITHER -- the trailing `/**` requires at least one following segment. AD-61 (architecture.md:1076-1085) says "`fs` holds an immutable `NeverWrite` set (loaded from the manifest ...). Every write resolves its path to an absolute, symlink-resolved form and matches it against the set", and closes with "Symlink resolution matters concretely here: `_bmad-output/planning-artifacts` is a symlink into `projects/<slug>/planning-artifacts`, so an unresolved match would miss it" -- but the RESOLVED form misses it too, because the resolved target is itself a bare directory node. Compounding it, the manifest declares `planning-artifacts-symlink` / `implementation-artifacts-symlink` as `generated-derived` WRITE targets on those same paths, so manifest and guard are only mutually consistent because the pattern silently fails to match. Not fixed here: the 7 patterns are pinned verbatim by this story's own Boundaries, and the resolution is a matcher-semantics decision (match ancestors, or normalise a directory target to `dir/`, or amend the patterns) belonging to whichever story implements AD-61's `NeverWrite` inside `fs`.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — Executed directly: `fnmatch.fnmatchcase('_bmad-output/projects/foo/planning-artifacts', '**/planning-artifacts/**')` returns `False`, while the same pattern against `.../planning-artifacts/PRD.md` returns `True` -- confirming the trailing `/**` still requires at least one following segment. `seed/fs.py::_guard` (current `_matches` helper) is unchanged in this respect from 2026-09-05. The manifest's `never_write` list still carries exactly these two directory-shaped patterns (`seed/templates/manifest.yaml:39-40`), and the `planning-artifacts-symlink`/`implementation-artifacts-symlink` entries (`:264-273`) name the bare directory paths as their own `path`. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/4 present (absent: _bmad-output/planning-artifacts, _bmad-output/projects/foo/planning-artifacts, _bmad-output/projects/foo/planning-artifacts/PRD.md…); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4772,6 +5303,8 @@ status: open
   evidence: Second follow-up review pass (Blind Hunter, two findings merged -- same gap, same remedy). Verified against each source. For `.bmad-loop/policy.toml`: the manifest classifies it `generated-derived` (correctly -- the first follow-up pass established this against `.gitignore:777`'s own comment and `adapters/harness_bmadloop.py`, AD-12/AD-35), while `prd.md`'s COPIED-SEEDED table row ("per-project verify gates and worktree seeds -- necessarily repo-specific"), the PRD's Genesis-vs-Marshal boundary table, `extraction-manifest.md:76`, and the epics AC (`epics.md:1595`) all still list it as seeded; the entry itself cites neither AD-12 nor AD-35, and a second-order consequence is that `generated-derived`'s contract ("recomputed every run") claims an ownership `seed` cannot exercise -- no derivation template for that path ships in `templates/`, and the AD-3 import-linter contract forbids `pyforge.marshal.seed` from reaching `bmad_loop`. For `_bmad/skf/**`: it is well-backed by `extraction-manifest.md:49` ("Installer-owned like `_bmad/bmm/**`; also in the never-write set. *Added 2026-07-31 -- the largest single omission in V1.*") and correct, but `prd.md`'s never-write table still has five rows and `epics.md:1601-1603` enumerates six patterns, so the PRD now UNDER-declares a structural guarantee the shipped data enforces. Also in this family: `epics.md:2243` still hard-codes `pixi >=0.76.2` against the manifest's live `>=0.76.1`. Not fixed here: amending the PRD and epics is planning-artifact work outside this story's Surface; same remedy as the already-recorded `CLAUDE.md` divergence (a `bmad-correct-course` pass over both documents), and nothing checks epics/PRD-vs-manifest agreement mechanically.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `epics.md:1979-1980` still lists `.bmad-loop/policy.toml` under COPIED-SEEDED while `seed/templates/manifest.yaml:237-241` classifies it `generated-derived`. `grep -n skf prd.md` is empty while `seed/templates/manifest.yaml:44` carries `"_bmad/skf/**"` as a 7th never-write pattern. Both gaps unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/3 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-5-the-v1-extraction-manifest.md, _bmad/bmm/**, _bmad/skf/**); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4784,6 +5317,8 @@ status: open
   evidence: Second follow-up review pass (Edge Case Hunter). Verified: the entry's rationale reads "legacy Tier-1 skeleton, created only when adopting a repo that already carries the legacy convention -- a fresh init never creates it", and the PRD's GENERATED-DERIVED table row reads "Directory skeletons (`docs/dreams/`, `docs/specs/` **only when legacy**, project subtrees)". `AppliesTo` has exactly three members (`INIT`/`ADOPT`/`BOTH`, `manifest.py:91-96`) and `_ENTRY_KEYS` carries no conditional-existence field, so the schema cannot express "only if the path already exists" -- `applies_to: adopt` means unconditional adopt. `test_applies_to_scoping_matches_the_spec` pins the id sets and cannot see the condition. The template body this story ships states the consequence itself (`templates/files/tiers.md.j2`: Tier 1 is "superseded by Tier 2; author no new files here"). Not fixed here: adding a conditional-materialisation field is a Story 7.4 schema change outside this story's Surface. Related but distinct from AD-59's `legacy_of` mechanism (which governs DETECTING existing legacy content and is correctly left unexercised -- `never_write` already covers `docs/specs/*.md`, so the legacy work product is protected).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `seed/templates/manifest.yaml:283-289`: `specs-dir-legacy` is still `applies_to: adopt` (unconditional) despite its own `rationale` text asserting it's 'created only when adopting a repo that already carries the legacy convention.' `AppliesTo` (`seed/model/manifest.py:93-98`) still has exactly three members (INIT/ADOPT/BOTH), no conditional-existence concept. Unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 2/4 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-5-the-v1-extraction-manifest.md, docs/specs/*.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4796,6 +5331,8 @@ status: open
   evidence: Second follow-up review pass (Edge Case Hunter). Verified: no entry among the 43 has a path under `.marshal/` or naming `.bmad-config.user.toml`, and `grep '\.marshal/' prd.md` returns nothing -- the PRD's V1 manifest never mentions the directory at all, so this is inherited from the source PRD rather than introduced here. The architecture does name them: AD-52 (`.marshal/seed-state.yml`, git-TRACKED and tool-owned; `.marshal/.copier-answers.yml`) and AD-57 (`.marshal/plan.json`). Two of the four are named by this story's OWN shipped template body: `templates/files/model-ignores.gitignore.j2` ignores `.marshal/plan.json` (with a comment explaining that `.marshal/seed-state.yml` must stay tracked) and `_bmad-output/projects/*/.bmad-config.user.toml`. So the manifest ships a gitignore region referencing artifacts the manifest does not classify. Not fixed here: this story's Boundaries pin the entry roster and the per-class counts exactly (16/5/5/10/4/3 = 43) and the ACs assert them, so adding entries is a contract change; the roster itself needs a PRD/companion-doc amendment first.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `seed/engine/copier.py:125-134` still explicitly comments these four as 'Fixed Genesis-owned paths with no manifest entry -- a known deferred-work gap'; `grep '\.marshal/' seed/templates/manifest.yaml` is empty, unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/*/.bmad-config.user.toml, _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-5-the-v1-extraction-manifest.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4808,6 +5345,8 @@ status: open
   evidence: Second follow-up review pass (Blind Hunter + Edge Case Hunter, independent duplicates). Verified against the shipped data and AD-56: all four hybrid entries (`agents-md`, `claude-md`, `gitignore`, `readme-badge`) are `applies_to: both`, so all apply on init; each of the seven regions declares a ONE-element anchor list; and this story's own Design Note establishes that "Region body files carry no heading of their own" because "the anchor IS the host file's own pre-existing heading" (correct for adopt -- `tiers.md.j2` begins with the table row `| Tier | Location | Purpose | Git |`, `portability-contract.md.j2` with prose, `dream-first-workflow.md.j2` with a numbered list). AD-56 (architecture.md:1028) is scoped to "region insertion into **pre-existing** files" and offers exactly two placements -- after the first anchor match, or appended at EOF -- with no branch for a host file that does not exist, and no whole-file seed body for any of the four ships in `templates/files/` (it contains only the six region bodies). S-10.7's AC ("Given an empty target directory") is the acceptance test that hits it. Not fixed here: the anchors and the heading-less body convention are both pinned by this story's Boundaries and Design Notes, and the resolution -- either host-file seed templates or an AD-56 "create with scaffold" branch -- belongs to the insertion story (S-8.4) and its architecture decision, not to this story's data-only Surface.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — `seed/templates/files/` still ships only 9 region-body `.j2` fragments (`bmad-multiproject.md.j2`, `copilot-instructions.md.j2`, `cursor-rules.mdc.j2`, `dream-first-workflow.md.j2`, `gemini-md.md.j2`, `model-badge.md.j2`, `model-ignores.gitignore.j2`, `portability-contract.md.j2`, `tiers.md.j2`) -- no AGENTS.md/CLAUDE.md host-file template exists, and `grep -n "AGENTS.md\|CLAUDE.md" seed/verbs/init.py` is empty, confirming `init` still creates no host files for these regions. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-5-the-v1-extraction-manifest.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4833,6 +5372,8 @@ status: open
   evidence: Surfaced by the Edge Case Hunter review pass over Story 7.6's diff (independent, no shared context with the adversarial reviewer). Each scenario is a real, plausible untested branch and none was exercised in the spike's throwaway investigation (confirmed against the spike's own Method/Results sections, which name only the scenarios in the five ACs). None affects the PASS verdict already recorded for the five stated Spike-0 criteria -- the epics AC does not require any of these four. Not fixed here: this story's Surface is the spike investigation itself (already complete) plus its report/spec/ledger deliverables, not `engine/copier.py`'s test suite, which does not exist yet. Whoever writes S-10.1's tests should consider covering these four before relying on the corresponding assumptions in production.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — `tests/unit/test_seed_engine_copier.py` has 13 tests today but none named or shaped around `pretend=True`/`skip_if_exists`/closed-stdin/malformed-tag (`grep` for these terms is empty), unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-7-6-spike-0-copier-api-fit.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4870,7 +5411,10 @@ status: open
   summary: Story 2.8 shipped only the pure `core/gate.py::classify_review_tier`/`resolve_review_cycles` mechanism plus its unit-tested proof, per the spec's own explicit Never clause (surface: `core/gate.py` alone, mirroring Story 2.4's `classify_doc_only_declaration` mechanism-only precedent). Three concrete pieces of follow-up wiring remain open, the same three Story 2.4 named for its own sibling mechanism, scoped here to review-tier classification: (1) no producer of `declared_low_risk`/`changed_files` exists ANYWHERE in the codebase yet -- no CLI flag, no story-spec-frontmatter field (neither `bmad-spec`'s nor `bmad-quick-dev`'s own `spec-template.md` has a `low_risk:`-shaped key), and no `VcsPort` call computes a real `changed_files` diff tuple; (2) nothing in `cli/gate.py` calls either new function, so `marshal gate evaluate` cannot classify a real story's review tier or bound its cycle allowance end-to-end; (3) "the classification is recorded in the run record" (AC2) is satisfied today ONLY via the returned `report` dict a future caller could fold into its own output, not a real journal write. Point (3) is a MATERIALLY DIFFERENT, more consequential gap than Story 2.4's own identical-sounding note: when Story 2.4 shipped, no journal existed anywhere in this package (`core/journal.py` was Epic 3/Story 3.1, still `backlog`), so "no real record" was the only possible state then. A real journal now exists and is a live end-to-end caller (Story 3.1's `mint_run_id`/`append_line`, wired into `cli/spin.py::run_spin` by Story 3.3) -- so this story's classification facts have a durable home ready to receive them and simply are not routed there, rather than having nowhere to go at all.
   evidence: Confirmed live during this story's real implementation (run `20260813-094919-bfcb`): `grep -rn "classify_review_tier\|resolve_review_cycles" src/pyforge/marshal/cli/` (from `src/shared/packages/pyforge-marshal/`) returns nothing -- zero CLI call sites; `grep -rln "declared_low_risk\|low_risk" src/ tests/` returns only `core/gate.py` and its two edited test files, no producer; neither `.claude/skills/bmad-spec/assets/spec-template.md` nor `.claude/skills/bmad-quick-dev/spec-template.md` contains `low_risk`. `find src/pyforge/marshal -iname '*journal*'` returns `core/journal.py`/`schemas/journal.json` (Story 3.1+, unlike Story 2.4's own equivalent check at the time IT shipped, which returned nothing) and `grep -n "mint_run_id\|append_line" src/pyforge/marshal/cli/spin.py` returns real call sites -- proving the journal exists and is reachable, just not from this story's two functions. This entry is distinct from the earlier, orphaned entry above sourced from `spec-2-8-a-low-risk-storys-review-runs-lighter-never-absent.md` (no `-2` suffix): that prior bmad-loop run's own code changes were written and evidenced live but never `git add`ed, then lost to a working-tree reset before this run started (see this `-2` spec's own Design Notes, "This spec supersedes an orphaned prior attempt") -- this is the first entry for this mechanism backed by code that actually landed.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: resolved
+  severity: low
+  resolution: 2026-10-01 — Resolved by Story 33.5 (spec-risk-tiered-review-depth enablement). core/spec_low_risk.py (new module) `parse_declared_low_risk` is the declared_low_risk producer, reading a `declared_low_risk:` frontmatter key from the tracked story spec. cli/gate.py:649-694 `_gather_review_depth` calls `gate.classify_review_tier`/`gate.resolve_review_cycles` and is wired into `run_evaluate` (`data["review_depth"]` at :1037) and into `_render_text` (:1173-1183).
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 2/4 present (absent: .claude/skills/bmad-quick-dev/spec-template.md, _bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-2-8-a-low-risk-storys-review-runs-lighter-never-absent-2.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4883,6 +5427,8 @@ status: open
   evidence: Edge Case Hunter, review pass 1. `core/policy.py`'s `_SLUG_CHARS` permits uppercase in a project slug; nothing enforces lowercase. All 8 real project slugs in this fleet are lowercase today (`pyforge-atlas`/`-doctor`/`-herald`/`-marshal`/`-mason`/`-scribe`/`-steward`/`-warden`), so no live occurrence. Not fixed in this pass: would need a decision about whether slugs should be case-normalized at the policy layer or only at this one comparison site -- out of this fix's scope (closing the cross-project false-positive, not auditing case-handling fleet-wide).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/core/policy.py:453 _SLUG_CHARS still admits both cases: frozenset("abc...xyzABC...XYZ0123456789._-"). grep for '.lower()' in core/promotion.py and core/identity.py finds only identity.py:163 suffix.lower() (unrelated to slug comparison) -- no case normalization exists at any slug-comparison site. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-marshal-land-cross-project-story-key-collision.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4895,6 +5441,8 @@ status: open
   evidence: Edge Case Hunter, review pass 1. E.g. a subject `"Merge pull request #N from mason/4-2-foo"` (fork owner literally `mason`) yields `branch="4-2-foo"`, no `"mason/"` prefix, gate rejects a genuine match. Practically unreachable today: this repo's real fork-owner identity is the fixed `rxm7706` GitHub account (confirmed via every real subject fixture in `test_promotion.py`), never a station name. Structurally present in the regex/gate design, not fixed in this pass -- would need distinguishing "fork owner" from "project prefix" more robustly than position-based parsing allows.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py:74 _GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\\d+ from \\S+?/(?P<branch>\\S+)$") -- the non-greedy \\S+? still consumes a single-segment fork-owner literally equal to a station's short name (e.g. 'mason') as 'owner', leaving no station-prefixed text in 'branch'. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-marshal-land-cross-project-story-key-collision.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4906,7 +5454,10 @@ status: open
   summary: `core.identity.parse_merge_subject` (the AD-24 templated form, `"Merge {key} into main"` -- every `marshal land` merge commit's own subject) is the FIRST of `merged_story_keys`' three patterns tried, and unlike the other two, it carries NO `project_slug` scoping at all -- so once one station's loop branch merges `main` (picking up another station's already-landed templated-form commits), a later `marshal land` wave-discovery for the FIRST station can list the SECOND station's story key in its own "wave" summary.
   evidence: Live 2026-08-15: after resolving a real merge conflict by merging `origin/main` into `loop/pyforge-mason` (which by then included doctor's already-landed `9.4`), the next `marshal land pyforge-mason` opened PR #546 with wave `(5.2, 5.3, 9.4)` -- `9.4` is doctor's story, not mason's. Verified NOT a data-loss or duplication bug: the actual merge commit's diff to `main` (`3deaf682bf`) contains only mason's own real changes, zero re-application of doctor's already-landed content -- `9.4`'s appearance is cosmetic (PR title/journal text) only, because the templated-form subject is reachable in mason's branch history via the merge and gets misattributed by `_classify_merge_subject`'s first (unscoped) pattern. Not fixed here: out of scope for `spec-marshal-land-cross-project-story-key-collision`, which explicitly scoped only the GitHub-PR-merge and bmad-loop-native patterns (Non-goals: "not adding recognition for new merge-subject shapes"); this is the SAME shape of bug in the one pattern that fix didn't touch, and needs its own Dream/Spec (`parse_merge_subject`'s template has no station-identifying text to scope against, unlike the other two patterns -- fixing it may require a station-namespaced template, e.g. `"Merge {key} into {station}"`, a bigger change than the two already-scoped patterns needed).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: resolved
+  severity: high
+  resolution: 2026-10-01 — Story 50.4 'Landing evidence carries the station in every shape' (spec-pyforge-marshal CAP-247, sprint-status-ledger.yaml:291 done) fixed exactly this: core/policy.py:460 now defaults merge_subject_template to "Merge {slug}/{key} into main" (was "Merge {key} into main"); pyforge-core/landing_evidence.py:234-268 _instantiate_slug/parse_templated_merge_subject fill the new optional {slug} placeholder against project_slug BEFORE the prefix/suffix split, so 'a subject rendered under a foreign slug ... fails the startswith/endswith check ... self-scoping the shape with no separate comparison step' (landing_evidence.py:262-266 docstring). epics.md:6372-6430 confirms the Given/Then: 'merged_story_…
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-marshal-land-cross-project-story-key-collision.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4918,7 +5469,10 @@ status: open
   summary: pyforge-doctor's board.py independently re-derives a project directory instead of calling generate.py's new resolve_project().
   evidence: Raised by this story's Blind Hunter adversarial review pass. `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py`'s `_check_project_dashboard_drift` (two call sites, `_load_dashboard_generate`'s dynamic `exec_module` of `generate.py`) computes a project directory via `gen._KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")` -- the exact fallback pattern S-16.1 collapsed into `resolve_project()`/`_PROJECT_OVERRIDES` everywhere inside `generate.py` itself. Doctor's board.py was left untouched, per this story's own Boundaries (`Never: Edit src/shared/packages/pyforge-doctor/ (out of surface)`), since its `Always` boundary only requires `PROJECT_SOURCES`/`_KEY_SLUG_OVERRIDE`/`_DERIVE_EXCLUDE` to remain present as module attributes with equivalent shape, which they do. It agrees with `resolve_project()` today only because `_KEY_SLUG_OVERRIDE` is empty on both sides (verified: `src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_dashboard_drift.py` 26/26 green, unmodified). Latent, not live: if a future `_PROJECT_OVERRIDES` entry diverges a dashboard key from `pyforge-<key>` again, doctor's board-drift detector would silently compute a different (wrong) directory than the dashboard itself resolves, and nothing would catch the two disagreeing. Belongs with whoever next touches `pyforge-doctor`'s board-drift source, or a small cross-package follow-up story that has `pyforge-doctor` in its own surface.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
-  status: open
+  status: closed
+  severity: low
+  resolution: 2026-10-01 — obsolete: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py no longer defines `_check_project_dashboard_drift` at all -- grep for it returns only a historical comment at line 1649. board.py:1497-1521's own comment block records that 'the dashboard-drift helper island, 494 lines across ten functions and ten constants -- had no live caller at all and was deleted outright the same day (DW-DASHBOARD-DEAD-CODE-1)' on 2026-09-14.
+  verified: 2026-10-01 — OBSOLETE — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 2/3 present (absent: _bmad-output/implementation-artifacts/spec-16-1-one-resolver-derived-sources-loud-failures.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4930,7 +5484,10 @@ status: open
   summary: The canonical spec-dashboard-project-path-derivation SPEC.md still names the retired genesis-installer/epics-genesis-installer.md slug as a live absorbed-satellite example.
   evidence: Raised by this story's Blind Hunter adversarial review pass. `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation/SPEC.md`'s Constraints section still cites "absorbed satellites resolve to the owning Smith's tree including non-default artifact names (`epics-presenton-pixi-image.md`, `epics-genesis-installer.md` inside pyforge-marshal)" as a live example pair. `genesis-installer` was retired as a slug on 2026-08-08 (per `IMPL_CAMPAIGN`'s own in-code comment: "the `genesis-installer` row is GONE, not relabelled... The two documents are now one canonical `epics.md`"), before this story shipped -- confirmed `_PROJECT_OVERRIDES` has no entry for it and no file named `epics-genesis-installer.md` exists in the live tree (only `epics-presenton-pixi-image.md` remains a real non-default-artifact-name example). This is stale prose in a canonical Tier-2 SPEC.md this story did not author and was not asked to audit -- pre-existing, not caused by S-16.1's diff. Belongs with whoever next reconciles that spec's Constraints section against live code (a one-line prose edit, not a behavior change).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
-  status: open
+  status: closed
+  severity: low
+  resolution: 2026-10-01 — obsolete: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation/SPEC.md is now a 13-line absorption stub (status: absorbed, absorbed-into: spec-pyforge-marshal, updated 2026-09-16); its 'Derived body' -- including the stale Constraints-section text this entry cited -- was explicitly disposed per that stub. The text `epics-genesis-installer.md` DOES still appear, but only in the absorbing spec-pyforge-marshal/SPEC.md:576-577, framed as a historical, already-shipped capability (CAP-115/116, 'Merge epics-genesis-installer.md's content into one combined [epics.md]... epics-genesis-installer.md archived'), not as a live absorbed-satellite example.
+  verified: 2026-10-01 — OBSOLETE — evidence in resolution. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/implementation-artifacts/spec-16-1-one-resolver-derived-sources-loud-failures.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4943,6 +5500,8 @@ status: open
   evidence: station-unresolved: see the previous entry's note -- the active-project env var disagreed with this file's own resolved project directory, forcing the unknown-station id shape. Blind Hunter, review pass 1. PRE-EXISTING, shipped by S-10.2, merely made observable by this story's first consumer of the field. `seed/state/schema.json` types `managed[].id` as `nonBlankString` (`"pattern": "\\S"`, so whitespace and `#` are both legal) while `opted_out`'s item pattern is `^[^\s#]+#[a-z0-9][a-z0-9-]*(?![\s\S])`. The schema's own description for `opted_out` asserts the artifact half is "deliberately as permissive as `managed[].id`" because "a stricter grammar here would make a legally-named entry's opt-out UNREPRESENTABLE" -- it is strictly less permissive, and that is exactly what happens. `ManifestEntry` requires only a non-blank `id`, so `record_opt_out(state, "has a space", "tiers")` raises rather than recording. NOT fixed in this pass: the fix is a `schema.json` change, which this story's Never bullets explicitly forbid (no new key, no schema edit, no state-schema migration), and it needs a decision about which of the two grammars moves -- tighten `managed[].id` to a slug (breaking existing state) or widen `opted_out`'s artifact half (weakening the key's parseability at the `#` separator). Not reachable with any manifest id in the fleet today; every real id is a slug.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/seed/state/schema.json:72-78: managed[].id uses $ref nonBlankString (pattern "\\S", so a space is legal), while opted_out's item pattern is "^[^\\s#]+#[a-z0-9][a-z0-9-]*(?![\\s\\S])" -- excludes whitespace and '#' from the artifact half. The description at :75 still asserts the two are 'deliberately as permissive as managed[].id, which is a nonBlankString' -- factually wrong, confirmed by reading both patterns side by side. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4955,6 +5514,8 @@ status: open
   evidence: station-unresolved: see the first entry's note. Blind Hunter, review pass 1. PRE-EXISTING staleness: `seed/detect/inventory.py`'s docstring reads "no `.marshal/seed-state.yml` read of any kind (no state-store story exists yet)", whose parenthetical stopped being true when S-10.2 landed `state/store.py`, well before this story. `inventory.py`'s own literal claim (it performs no state read) is still correct and this story does not change it -- only the justification is stale. Not fixed here because `inventory.py` is REFERENCE ONLY for this story (an explicit Never bullet: "no edit to `detect/inventory.py`"), and editing a shipped Epic-9 module's docstring to fix an unrelated Epic-10 staleness would widen this story's diff past its declared surface. `seed/plan/build.py` carried the identical stale claim and WAS amended, because this story genuinely changes that module -- so a reader auditing the detect/plan layer's state coupling currently gets opposite answers depending on which of the two files they open. `seed/detect/hashes.py` carries a third instance of the same stale claim.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+  severity: low
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/seed/detect/inventory.py:135 still reads '...no state-store story exists yet)', which stopped being true once seed/state/store.py landed (Story 10.2). The module's own literal behavior claim (no state read) is still correct; only the justification clause is stale. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4967,6 +5528,8 @@ status: open
   evidence: station-unresolved: see the first `8-5` entry's note -- `resolve_config.py --key project` reported `pyforge-mason` from a stale `BMAD_ACTIVE_PROJECT` while the marker, the loop home and this file's own resolved `projects/<slug>/` component all say `pyforge-marshal`, which forces the unknown-station id shape (identical to marshal's own). Blind Hunter, review pass 2, confirmed by execution. `seed/state/store.py::clear_opt_out` drops the artifact's region claim UNCONDITIONALLY -- a deliberate fix from review pass 1, without which a DERIVED opt-out (claim present, `opted_out` empty) could never be reinstated at all. The cost is that state alone cannot distinguish "markers deleted, claim survives" (must lose the claim) from "markers present, claim survives" (must keep it): they differ only in the FILE, which this pure function never sees and which its frozen `(state, artifact_id, region)` signature cannot be given. Called on the second, it discards the recorded `body_sha`, after which `seed/detect/hashes.py::check_managed_region` reports a HARD `managed-region-modified` ("no recorded hash in state (adopted out-of-band)") on every later run, while `build_plan` plans no insertion to rebuild the claim because the region IS present -- an unrecoverable state produced by what the operator experiences as a no-op. NOT fixed in this pass: the only correct guard needs the classification (clear only a pair `detect/optout.py` answers `OPTED_OUT` for), and that belongs to the verb that calls it -- S-10.6's `adopt --reinstate` -- which this story's Never bullets explicitly exclude ("No CLI work"). Unreachable today: `cli/seed.py` is six print-only stubs, so nothing in the shipped product can call `clear_opt_out` at all. Mitigated in this pass by documenting the precondition on the function and pinning the behaviour with `test_clear_opt_out_drops_a_live_claim_too_which_is_the_callers_to_prevent`, so the obligation is visible to whoever writes the verb.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/seed/state/store.py:989-1055 clear_opt_out drops the managed[] claim unconditionally via _without_region_claim; its own docstring at :970 says 'see clear_opt_out for the full walk-through and for DW-FU-8-5-4'. grep for 'clear_opt_out(' across seed/verbs/*.py and cli/*.py returns zero production call sites -- confirmed no caller exists today. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4979,6 +5542,8 @@ status: open
   evidence: station-unresolved: see the first `8-5` entry's note. Blind Hunter, review pass 2, confirmed by execution against live code. `seed/verbs/preconditions.py:450` raises `PreconditionFailure` with `"{path}#{name}: recorded managed region is missing from the file"` under `managed-content-modified`, whose remedy instructs the operator to "revert the hand-edits (git checkout the listed paths) ... or re-run with --force to discard them deliberately" -- i.e. to undo the very deletion this story makes a sanctioned, permanent opt-out. The precedent for the missing filter is in the same module: `skips.managed_after_skips(managed, plan)`, which callers are told to apply first (`preconditions.py:88` and `:514`) so a `--skip`ped artifact's own divergence cannot fail the gate. Opt-outs have no analogue, and neither this story's `detect/optout.py` nor its `plan/build.py` sequencing docstring mentions preconditions at all -- both name only `build_plan` as the step that must follow recording. NOT fixed in this pass: `seed/verbs/` is nowhere in this story's Code Map, the fix is a cross-verb contract change (the spec itself names S-12.5 as owning the cross-verb contract for `--reinstate`, and S-10.6 as owning the verb), and choosing between "filter the managed set" and "teach rung 6 about `opted_out`" is a design decision this story's frozen Never bullets place outside it. Unreachable in the shipped product today -- `cli/seed.py`'s six verbs are print-only stubs, so no caller reaches either gate -- but it is a live obligation on whoever wires the verb layer, because the two halves will otherwise contradict each other on the AC's own headline scenario.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/seed/verbs/preconditions.py: grep for 'opted_out' returns zero matches. The rung-6 divergence check (_region_divergences, ~line 400-462) flags 'recorded managed region is missing from the file' with no opt-out exemption; seed/verbs/adopt.py:1021-1022 now feeds state.opted_out into build_plan, but preconditions.py never consults it. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4991,6 +5556,8 @@ status: open
   evidence: station-unresolved: see the first `8-5` entry's note. Blind Hunter, review pass 2, re-raising as a FUNCTIONAL limit what review pass 1 had already established as a FACT and fixed only in prose. `SeedState.__post_init__` runs `_reject_duplicates` over `managed[].id`, so one artifact carries at most one `ManagedArtifact` and therefore at most one `inserted_region_span` (verified by execution in pass 1). `ManifestEntry` lets an artifact declare several regions, so `detect/optout.py`'s rung 3 can fire for the one claimed region and every sibling falls through to `MISSING` -- and `MISSING`'s shipped remedy re-inserts it. A maintainer who deletes the markers of two regions in one file therefore has one deletion honoured and one silently undone, which is the failure direction FR-112 exists to prevent. PRE-EXISTING: the one-span-per-artifact shape is what S-10.2 shipped, and `verbs/preconditions.py::ManagedRecord.region_shas` is already a PLURAL `(name, sha)` tuple, so the state schema is the outlier rather than the intended model. NOT fixed in this pass: the fix is a `schema.json` change plus a state migration, both named verbatim in this story's Never bullets ("No new state key, no `schema.json` edit, no state-schema migration"). Pass 1 documented the limit honestly in `record_opt_out` and `detect/optout.py` and retargeted two vacuous tests onto it (`test_state_records_at_most_one_region_span_per_artifact`, `test_the_one_recorded_span_retires_its_region_and_leaves_its_siblings_missing`), so the behaviour is pinned and visible -- what remains is the schema decision itself. A RECORDED opt-out (rung 2) has no such limit: `opted_out` is a flat list of keys, so once a verb records the pairs, every region of an artifact can be opted out independently.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+  severity: high
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/seed/state/schema.json:107 still requires exactly one nullable inserted_region_span per managed[] entry; store.py:326 _reject_duplicates enforces one managed[].id per artifact (store.py:609). A hybrid entry with 2+ manifest-declared regions can therefore only ever have one region's opt-out survive detection; the sibling region falls through to MISSING and is re-inserted. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5003,6 +5570,8 @@ status: open
   evidence: station-unresolved: see the first `8-5` entry's note. Edge Case Hunter, review pass 2. `seed/plan/types.py::RepoFingerprint` records `git_head`, `dirty`, and `artifact_hashes` for the artifacts a plan intends to touch (AD-57) -- a tamper-evident snapshot of the REPO state. `opted_out` is now a second input to `build_plan` and is not repo content, so a plan built while a region was opted out, followed by a `clear_opt_out` (the `--reinstate` path this story ships), yields a stale plan whose fingerprint still matches: the region has been reinstated but the plan carries no action for it, and nothing detects the mismatch. The inverse is worse -- an opt-out recorded after the plan was built leaves an insert action for a region the maintainer has since deliberately retired. NOT fixed in this pass: extending `RepoFingerprint` changes `Plan`'s frozen serialized JSON wire contract, which is `plan/types.py`'s surface (owned by S-9.6/S-10.4, consumed by S-10.5's renderer) and outside this story's declared Code Map -- the same wire-contract objection that deferred the first `8-5` entry. Unreachable today: no verb builds, persists, or re-verifies a plan, and nothing writes `opted_out` at all, so no plan can yet outlive a change to the set. Related but distinct from the first `8-5` entry, which is about a suppressed artifact leaving no trace IN the plan; this one is about the plan's own staleness check not seeing the input that suppressed it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/seed/plan/types.py class RepoFingerprint (line 220): grep for 'opted_out' inside that class/file returns no match -- it still records only git_head/dirty/artifact_hashes, not the opted_out set build_plan now also takes as input. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5015,6 +5584,8 @@ status: open
   evidence: station-unresolved: see the first `8-5` entry's note -- `python3 _bmad/scripts/resolve_config.py --key project` reports `pyforge-mason` from a stale `BMAD_ACTIVE_PROJECT`, while the active-project marker, the loop home, and this file's own `readlink -f` `projects/<slug>/` component all say `pyforge-marshal`; the disagreement forces the unknown-station id shape (which is identical to marshal's own). Blind Hunter, review pass 3, confirmed by execution. `pixi run -e local-recipes python -m pyforge.doctor.sources spec-surface` emits `drift-presumed: warn` for both `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/optout.py added` and `src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_optout.py added` under `pyforge-marshal/spec-pyforge-marshal`, with the note "the memlog moved but does not name this path". Unlike the six `ungoverned` findings review pass 2 reconciled, these two ARE this story's -- it created both files. NOT fixed in this pass, for three reasons. (1) It does not gate: `python scripts/spec_surface_reconcile.py` exits 0 ("every tracked file governed or allowlisted; no drift"), `drift-presumed` is warn-level, and the same run reports 114 such warns package-wide, so 112 of them are a pre-existing backlog this story neither created nor can responsibly clear. (2) The offered remedy is `--write-baseline --spec pyforge-marshal/spec-pyforge-marshal`, a baseline STAMP, and stamping a surface as reconciled is only honest after the memlog actually names the paths -- doing the stamp first would record an unreconciled surface as reconciled, which is the specific failure the warn exists to prevent. (3) The reconciliation itself is an edit to the tracked spec of record under `planning-artifacts/specs/spec-pyforge-marshal/`, which is nowhere in this story's Code Map and which a bmad-loop run worktree holds as a branch-point-frozen checkout rather than the live copy. The correct fix is to add both paths to the spec's memlog on the shared checkout and then stamp the scoped baseline, in one pass alongside whatever else has accumulated in that spec's warn backlog.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — grep -i 'optout' _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md -> zero matches (exit 1); the file exists (566KB, last touched 2026-09-30) but never names optout.py. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5027,6 +5598,8 @@ status: open
   evidence: station-unresolved: see the previous entry's note -- the active-project env var disagrees with this file's own resolved project directory, forcing the unknown-station id shape. Blind Hunter, review pass 3. `seed/detect/optout.py::_claims_region` and `seed/state/store.py::_without_region_claim` both answer "does `state.managed` record Genesis having installed this region of this artifact", and nothing pins them equal -- no shared helper, no test asserting agreement. Every docstring in this story argues against exactly this ("THE one spelling of that filter"; making `opt_out_key_or_none` public was justified as removing "one rule in two places, free to drift from the first"). Review pass 3 WIDENED the gap deliberately: `_claims_region` gained an `artifact.path == entry.path` conjunct, fixing a real defect (a manifest entry whose `path` moved while its stable `id` did not derived an opt-out from a claim describing a different file), and `_without_region_claim` could not follow, because `record_opt_out`/`clear_opt_out` take `(state, artifact_id, region)` and are handed no path to compare -- a signature the story's `<intent-contract>` freezes verbatim. So the derivation is now strictly stricter than the claim-drop. NOT fixed in this pass: unifying them needs either a path parameter on both mutators (an intent-contract change) or a shared predicate living in `state/`, whose import surface is AST-guarded and whose four-function public surface the contract enumerates. Latent rather than live today: nothing derives an opt-out across a moved path any more, so no caller can reach the disagreement, and nothing in the shipped product calls either mutator (`cli/seed.py` is six print-only stubs). It becomes live the moment a verb records a derived opt-out for an artifact whose manifest path has moved, or the moment the schema is widened to allow several `inserted_region_span`s per artifact (`DW-FU-8-5-6`), which both files' docstrings already anticipate and which would require updating both.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/seed/detect/optout.py:393 _claims_region compares id+region-name+path (with a documented review-pass fix for moved paths); src/pyforge/marshal/seed/state/store.py:899 _without_region_claim compares id+region-name only, and store.py:925's docstring says '...tracked as DW-FU-8-5-9'. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5039,6 +5612,8 @@ status: open
   evidence: station-unresolved: see the previous entries' note -- `python3 _bmad/scripts/resolve_config.py --key project` reports `pyforge-mason` from a stale `BMAD_ACTIVE_PROJECT`, while this file's own `readlink -f` `projects/<slug>/` component says `pyforge-marshal`; the disagreement forces the unknown-station id shape (identical to marshal's own). Blind Hunter, review pass 4, confirmed by execution. `seed/detect/optout.py::_marker_region_names` is rung 3's "the markers are GONE" test, and it asks `regions/markers.py::parse_marker_line`, which GUARANTEES recognition of the exact canonical single-space grammar and nothing else -- `_strip_delimiters` requires the literal `"<!-- "` / `" -->"` shape and returns `None` ("ordinary content") for anything else, so a non-canonical marker line is invisible to that gate AND to `parse_regions`. Rung 3 then reads a live, plainly-visible region as a deletion, classifies it `opted-out`, and `opt_outs_to_record` hands the pair over for PERMANENT recording; `record_opt_out` drops the `managed[]` claim and its `body_sha` with it, after which a later repair of the spacing makes `check_managed_region` report HARD `managed-region-modified` forever while `build_plan` plans no insertion to rebuild the claim. Verified by execution: for a `tiers` region fully present with markers and body, `parse_marker_line` returns `None` for a trailing space, a leading indent, a `>` blockquote prefix, and `<!--marshal-seed:begin ...-->` (inner spaces removed). PARTIALLY fixed in review pass 4: each line is now asked twice, raw and `str.strip()`ed, which closes the leading/trailing-whitespace variants (four parametrized regression tests; confirmed by reverting the second ask and watching all four fail). Re-asking the same grammar after whitespace normalization is what `markers.py` says S-8.2 will do wholesale, so it is not a second spelling of the grammar. NOT fixed: the inner-spacing and non-whitespace-line-prefix variants, which need a genuinely looser grammar. That grammar is S-8.2's declared surface -- `parse_marker_line`'s own docstring states that a line whose delimiter spacing varies is unspecified and that "recovering a hand-edited or otherwise non-canonical marker predictably is a future story's job (S-8.2), which re-normalizes a file before consulting this grammar" -- and hand-writing one inside `optout.py` is forbidden by this story's Always bullets ("asked through `markers.parse_marker_line`, never a hand-written substring or regex"). `regions/markers.py` is not in this story's Code Map. The residual is bounded and non-silent in one direction only: over-detecting a surviving marker merely re-offers the region, so the fix, whenever it lands, can be as liberal as S-8.2 wants without new risk.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/seed/regions/markers.py:249-296 parse_marker_line's own docstring: 'Only GUARANTEES recognition of the EXACT canonical, single-space grammar ... Recovering a hand-edited or otherwise non-canonical marker predictably is a future story's job (S-8.2)'. Story 8.2 (sprint-status-ledger.yaml:357, '8-2-region-parser...': done) shipped span discovery/fence-awareness, NOT marker-grammar recovery, so the gap is unclosed. seed/detect/optout.py:393-430 _claims_region/marker_region_names docstring explicitly says 'Closing that needs the looser grammar S-8.2 owns ... Tracked as DW-FU-8-5-10' -- the code itself still cites this DW id as open. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5051,6 +5626,8 @@ status: open
   evidence: station-unresolved: `resolve_config.py --key project` answered `pyforge-mason` while `readlink -f` of the destination puts it under `projects/pyforge-marshal/`, so the station is treated as unknown per the minting procedure (the id shape is the same for both branches, and every sibling id here already carries it). Confirmed by execution during review pass 5. `detect/optout.py::marker_region_names` asks `markers.parse_marker_line` of each line twice, raw and `str.strip()`ed, so rung 3 stands down whenever any marker line for the region survives. That normalization is what closes the trailing-space and indent variants, and it is deliberately conservative -- but it also normalizes a marker EXAMPLE written inside an ordinary four-space-indented Markdown code block straight into recognition, and `parse_regions` skips exactly such lines by design. So an artifact whose managed region documents the marker grammar in an indented block carries its own region name in `marker_region_names` on every run, and rung 3 can never fire for it: deleting those markers reports DRIFT `managed-region-missing` and is re-inserted on every `update`, forever, with nothing telling the operator why FR-112 is not being honoured there. The direction of the trade is right (the alternative, under-detection, silently retires a LIVE region and drops its `body_sha`), so this is a residual rather than a regression to revert -- and it is the OPPOSITE residual to `DW-FU-8-5-10`, which tracks the under-detection half. A real fix needs a scan that distinguishes a marker line from a rendering of one -- fence- and indent-awareness `regions/parse.py` already has and `parse_marker_line` does not -- which is the looser grammar `parse_marker_line`\s own docstring assigns to S-8.2. `regions/markers.py` is not in this story's Code Map, and hand-writing a second grammar in `optout.py` is an explicit Always-bullet violation.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+  severity: medium
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/seed/detect/optout.py:393-437 marker_region_names' own docstring: 'a marker-shaped line in ordinary prose that parse_regions skips (an INDENTED code block ... which str.strip() normalizes straight into recognition) puts the name here on every run ... the residual is tracked as DW-FU-8-5-11'. Implementation at :430-437 iterates {raw_line, raw_line.strip()} through parse_marker_line exactly as described. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5066,6 +5643,7 @@ status: open
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — cli/dispatch.py:4527-4560 _journal_fleet_cycle's intent payload is only {'mode': ...} and its outcome carries ok/complete/stations -- no station/stories scope. run_fleet_drain takes station and explicit_stories from argv on every invocation (:4710-4740); the resume check (:4783, is_resumed) reads nothing persisted. The supervisor re-supplies both flags (_spawn_campaign_supervisor, :4575-4600) and the MRS-DRAIN-007 recovery hint includes them (:4980-4994). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5081,6 +5659,7 @@ status: open
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — core/dispatch_fleet.py:804-816 campaign_complete is all(...) over results; cli/dispatch.py:4105-4118 returns FleetCycleReport(results=()) for an unknown --station, so the envelope says complete: true and unresolved: [] beside the MRS-DRAIN-013 ERROR; run_fleet_drain copies it at :4965 (data['complete'] = report.complete). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5095,7 +5674,9 @@ status: open
   origin: spec-deferred cb2a0ac6417d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — Story 33.3 (commit afbafc8a03, 2026-09-09, 'enable wire layer on factory spin via bmad-loop profile overlay'): cli/spin.py:1198-1236 resolves wire through attempt_spin_wire_layer, which writes a loop-home bmad-loop profile overlay when headroom resolves (adapters/harness_bmadloop.py); MRS-SPIN-017 now fires only when the layer is enabled and no overlay could be applied.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5110,7 +5691,9 @@ status: open
   origin: spec-deferred 9d09800ea2db — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — Story 33.8: data/harness_profiles/claude.toml [wrapper] argv is now ['wrap','claude','--code-memory','none','--port','{wire_port}','--'] with a per-worktree hash-derived port (8800-9799, the 'Operator caveat (updated Story 33.8)' comment above [wrapper]), so concurrent wrapped dispatches no longer attach to one 8787 proxy and its CCR store.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5125,7 +5708,9 @@ status: open
   origin: spec-deferred 12bd76fc5e13 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — cli/spin.py:596-617 _compose_spin_policy now folds read_repo_policy_defaults() into policy.compose(repo_defaults=...) (Story 22.8/33.3, commit afbafc8a03), matching dispatch.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5140,7 +5725,9 @@ status: open
   origin: spec-deferred 00cd291d6b65 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-01 — by design: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py:478-487 -- `bool(store_env) != bool(store_relpath)` raises only on the XOR case; both-absent passes. tests/unit/test_harness_profile.py:451 `test_wrapper_may_declare_neither_store_field` and :552 `test_every_packaged_wrapper_is_reversible_and_loop_home_scoped` both still exist and bless this.
+  verified: 2026-10-01 — BY-DESIGN — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5172,6 +5759,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py:292-293 -- `child_env["PATH"] = f"{binary_dir}{os.pathsep}{existing_path}"`; comment at :286-288 confirms the whole resolved binary's directory is prepended, not just the one binary. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5187,6 +5775,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py:331-337 -- `journal_payload()` returns exactly `{"applied", "reason", "store_dir", "aggressiveness"}`; no binary path or argv field. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5202,6 +5791,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/tests/meta/test_wire_store_ignored_not_the_seed_namespace.py:41 -- `_IGNORED = (".marshal/wire/ccr_store.db", "homes/acme/.marshal/wire/ccr_store.db")` is a bare module-level tuple, not read from wrapper.store_relpath. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/meta/test_wire_store_ignored_not_the_seed_namespace.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5214,9 +5804,10 @@ status: open
   evidence: `cli/wrap.py:658-661` forwards `HEADROOM_MODE` into `--mode` only inside the start-a-proxy path; the reuse path returns early after comparing only memory/learn/code-graph/backend/api-url, so the mode is never checked or reset. An operator with a `token`-mode proxy already listening gets marshal's wrapped session routed through the prompt-prefix-rewriting mode the spec lists under Block If (NFR-14). The same reuse path means `--code-memory none` does not prevent attaching to a proxy someone else started with `--memory`. Same root cause as the shared-proxy entry above.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml
   origin: spec-deferred ae350c33e269 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — claude.toml [wrapper.env] still pins HEADROOM_MODE = 'cache' only as an env var, and the installed headroom-ai is still 0.37.0 (.pixi/envs/pyforge-guild). But the wrapper now passes a per-worktree `--port {wire_port}` (Story 33.8), so marshal attaches to a pre-existing proxy only when something else already listens on that hash-derived port -- no longer the operator's default-8787 proxy. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5231,7 +5822,9 @@ status: open
   origin: spec-deferred 49edf666b08e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — Story 28.33 (commit 5363822028; marshal ledger 28-33 done) wired the agent integration through the skill instead of .mcp.json: .claude/skills/bmad-build-auto/step-01-clarify-and-route.md:54 tells every session to query .codegraph/codegraph.db with `codegraph context` / `codegraph explore` when present. Story 77.1 added codegraph to pyforge-guild (pixi.toml:902) and seeds dispatch worktrees' index.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5244,9 +5837,10 @@ status: open
   evidence: `run_kit` calls `build_codegraph_index` synchronously; `codegraph init -y` on a large repo is genuinely slow, and provisioning runs unattended so the call is made quiet. A timeout degrades into a named WARN rather than a hang (`INDEX_TIMEOUT_S`), and the layer ships disabled, so blast radius today is zero — but an operator who enables `structure-graph` on a big station will see preflight appear to stall. A background/incremental build, or deferring the first build to `marshal seed kit --apply` only, would fix it.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py
   origin: spec-deferred f0b59cf476b4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — seed/verbs/kit.py:115 INDEX_TIMEOUT_S = 900.0 and the build is synchronous (_apply_codegraph_index -> index_builder, :317-350); cli/init.py:1815-1890 runs it inside `marshal preflight` and prints the timeout note. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5262,6 +5856,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py:330-364 `_carve_out_state` compares the deployed region's sha only against `region_sha(articulate_region_body())` -- the currently-expected carve-out body Genesis itself would deploy -- never a hash of the file as it was actually deployed vs. the currently-installed `caveman-installer` payload; no `sha`/`hash` state is persisted across runs. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5293,6 +5888,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py:51-61,263-269 -- module docstring confirms kit writes go through `ports.FsPort`/`_guarded_target` (loop-home containment only), and the comment at :267 states 'this cannot fire today ... every relpath here is a module constant', confirming the gap is real but currently dormant. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/meta/test_ad11_write_boundary.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5308,6 +5904,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py:1464 -- `policy.compose(project_slug=slug, project=project_data, flags={})`, no `repo_defaults=` argument, unlike `cli/seed.py:239-241`'s `policy.compose(project_slug=slug, repo_defaults=repo_defaults, project=project, flags={})`. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5323,6 +5920,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py:380-405 `_codegraph_check` still does `if index_mtime < head_ts:` with no tolerance window. Narrowed since original report: Story 28.7 (done) made this finding INFO-level, never failing `marshal seed check` even under `--strict` (kit.py:24-29). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5338,6 +5936,8 @@ status: open
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — seed/verbs/kit.py:297-314 _apply_caveman_skill unconditionally write_text_atomic's the packaged body over the target; it runs whenever the check says MISSING, which covers both an absent file and one whose carve-out was edited out; no force flag, no backup, no 'modified' status. The output layer is now on fleet-wide (policy-defaults.toml:66-67), and Story 28.30 also deploys the skill into dispatch worktrees. (2026-09-30 deferral burn-down triage)
+  decision: Is a loop home's (or dispatch worktree's) deployed caveman SKILL.md operator-editable?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: docs/finding-remedy-reference.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5353,6 +5953,7 @@ status: open
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — seed/verbs/kit.py:352-440 run_kit acquires no lock before kit_checks and the per-item writes / codegraph init (no acquire_advisory_lock in the module). The entry's 'unreached today because the layers ship disabled' no longer holds: _bmad-output/policy-defaults.toml:66-79 (Story 46.4) enables output, structure-graph, derived-context and planning-graph fleet-wide. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5365,9 +5966,11 @@ status: open
   evidence: `kit_checks` probes the instrument before the artifact for all three items, so with the `wire` layer on and `headroom` absent from PATH, `<home>/.marshal/wire` is never created and the check reports `instrument-unavailable` rather than any verdict about the directory. This is consistent with AC 3 read literally ("the layer is skipped"), and in tension with AC 1 ("verifies ... the CCR store dir"). The module docstring's own justification for creating it eagerly — so a check before the first wrapped launch can tell "the store is provisioned" from "the wrapper silently fell back to a user-global cache" — describes precisely the case the gate prevents. Ungating just this item is a one-line change, but it makes the three items stop behaving uniformly, which is why it is a decision not a patch.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py
   origin: spec-deferred e218776cdd35 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — seed/detect/kit.py:430-458 kit_checks probes the instrument before the artifact for every item, so with headroom absent the CCR-store item is UNAVAILABLE (:188) and run_kit skips it (seed/verbs/kit.py:386-388); <home>/.marshal/wire is never created. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
+  decision: Should the CCR store directory be created even when headroom is not installed (breaking the uniform instrument-first rule), or is 'no instrument, no store' the intended behaviour?
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5383,6 +5986,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — .gitignore:904-905 still carries `**/.claude/skills/caveman/` and `**/.codegraph/` (this repo only); `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/files/model-ignores.gitignore.j2` has zero matches for `caveman|codegraph` (grep exit 1). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5398,6 +6002,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py:197-219 `_resolve_project_slug` reads the marker and returns its text verbatim with only a shape check downstream (`policy._is_valid_project_slug`), never an existence check against `_PROJECT_POLICY_RELPATH.format(slug=slug)`. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5413,6 +6018,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/kit.py:68,101,175 -- `CAVEMAN_SKILL_RELPATH = ".claude/skills/caveman/SKILL.md"` is a bare module constant with no adapter parameter or branch. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: .claude/skills/caveman/SKILL.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5425,9 +6031,10 @@ status: open
   evidence: Every populated `surface:` field found in this repo's own tracked specs (e.g. spec-marshal-token-economy/SPEC.md, spec-risk-tiered-review-depth/SPEC.md, spec-fleet-status-supervisor-fallback/SPEC.md) uses exact literal file paths, never glob syntax. `compute_effective_surface` does `set(policy_surface) & set(spec_surface)` -- exact string-set intersection, not glob-vs-literal matching -- so a glob-only policy_surface (declared OR auto-derived) never intersects with a literal-path spec_surface, and `effective_surface` comes out empty, meaning MRS-GATE-007 fires for every changed file regardless of the new fallback. This is a pre-existing property of the AD-27 combinator (Story 2.3), unchanged and out of scope for this story to fix (it would require modifying compute_effective_surface's intersection-only body, which this story's own boundaries and meta-test explicitly forbid touching) -- confirmed identical behavior already existed for any hand-declared glob-only `[epic_surfaces]` entry before this story. Severity raised medium -> high on review pass 2 (Blind Hunter): every populated `surface:` field found in this repo's tracked specs uses literal paths, so this is the COMMON case a real story hits, not a rare edge case -- it likely nullifies the "no manual per-story widening" promise for any story that also declares its own `surface:` field.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py::compute_effective_surface
   origin: spec-deferred 3c002bae8e2b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: high
+  severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — core/gate.py:424-447 compute_effective_surface still returns tuple(sorted(set(policy_surface) & set(spec_surface))). With no declared [epic_surfaces] entry, resolve_policy_surface falls back to default_epic_surface (core/gate.py:352-397), which is glob-only (src/shared/packages/{slug}/**, .../specs/**, .../implementation-artifacts/**, bookkeeping). 10 tracked story specs carry inline `surface: [...]` frontmatter, several literal-only (e.g. `surface: ["scripts/bmad_loop_baseline_drift_check.py"]`); a literal path inside a policy glob (src/shared/packages/pyforge-marshal/src/x.py vs src/shared/packages/pyforge-marshal/**) never intersects, so effective_surface drops it. Severity high -> medium by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5443,6 +6050,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/core/gate.py:352-377 default_epic_surface's own docstring confirms: 'This function does not validate project_slug's shape itself ... no existence check' -- pure string interpolation, matching the entry's description exactly. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5458,6 +6066,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/core/gate.py's default_epic_surface docstring states explicitly: 'cli/gate.py::_run_scope_check guards on policy._is_valid_project_slug before its own scope check ever runs ... dispatch_verify.py::evaluate_dispatch_verification has NO such guard yet'. grep for '_is_valid_project_slug' in dispatch_verify.py: zero matches; cli/gate.py has 6 call sites (lines 553, 661, 748, 829, 968, 1002). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5473,6 +6082,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml:106 ('22' = [...]) and :128 ('28' = [...]) still carry the full station-wide wildcards. The '28' entry's own comment says it is a stopgap 'until Story 28.15 ships the real per-station hard/warn/off flag (default warn) to replace it' -- Story 28.15 is done (sprint-status-ledger.yaml:132), so that comment is now itself stale on top of the wildcard never having been narrowed. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5488,6 +6098,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/dispatch_verify.py:305-312 data['scope_check'] dict keys: checked, story, mode, effective_surface, changed_files, violations -- no policy_surface key. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5503,6 +6114,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md:2 title still reads '...default unchanged (Story 28.15, Epic 28)'; the same file's own frontmatter deferred: block (line ~21-26) and epics.md:4449 ('Story 28.15: ...default warn') both already document this exact mismatch. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5518,6 +6130,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — grep -rn 'scope_violation_mode' --include='*.toml' across the repo: matches only as a comment in marshal-policy.toml:188 (per the latest_verified note) -- no TOML ever declares the key with a value; confirmed no station's marshal-policy.toml sets scope_violation_mode today. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5533,6 +6146,7 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — epics.md's Story 28.15 operational note attributes the 2026-08-31 stopgap to widening [epic_surfaces].'28' to a station-wide wildcard (28.14 territory); the 28.15 spec's warnings: block instead claims it was scope_violation_mode = off (28.15/CAP-17 territory) -- the marshal-policy.toml evidence for DW-FU-28-14-4/DW-FU-28-15-2 above confirms the epics.md account (wildcard) is the one actually reflected in the live policy file, while no scope_violation_mode key exists anywhere. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5547,7 +6161,9 @@ status: open
   origin: spec-deferred 88222e3fa512 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: high
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — Scribe now ships the caller-declaration surface: src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py:400-409 (_DECLARE_OPTION `--declare`) and :580 _index_refresh_declared, added by marshal Story 28.28/CAP-5 (commit 8ec6b89f7a, 2026-09-10). Marshal renders it at core/derived_context.py:375-377 (render_scribe_refresh_argv appends SCRIBE_DECLARE_OPTION + the manifest).
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5563,6 +6179,7 @@ status: open
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — cli/context.py:344-460 run_context_refresh writes no journal entry; the only journaling path is `marshal context advisory` (Story 46.6, cli/context.py:50-65, :927), which records a lapse only for a MISSING/STALE kit item or a scribe binary that does not resolve. Savings telemetry (core/layer_savings_sources.py:146-164) records a reason string such as 'cocoindex-index-missing', not a failed refresh. Likely live now: scribe resolves PATH-first (adapters/scribe_cli.py:154-171), the pyforge-guild env's scribe has no cocoindex (`.pixi/envs/pyforge-guild/bin/python -c 'import cocoindex'` -> ModuleNotFoundError), and _index_refresh_declared exits 2 when cocoindex is unavailable (pyforge-scribe cli… (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5594,6 +6211,7 @@ status: open
   severity: low
   promoted: 2026-09-01 — SCP intake
   status: open
+  verified: 2026-10-01 — STANDS — _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml:95-167 -- `[epic_surfaces]` block with per-epic (22, 28, ...) hardcoded path allowlists is still present and actively referenced by comments as a stopgap. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5620,7 +6238,9 @@ status: open
   origin: spec-deferred 36f069ae09e0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — Admission-time freshness is now handled by provisioning rather than a report: `marshal preflight` (cli/init.py:1815-1890) runs run_kit, whose codegraph check marks an index older than HEAD STALE and resyncs it (seed/verbs/kit.py:250, SYNC_TIMEOUT_S vs INDEX_TIMEOUT_S), and the derived-context layer is refreshed incrementally at every routing (bmad-build-auto step-01 -> `marshal context refresh`). `marshal check` keeps the advisory detector (pixi.toml:1338).
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5652,6 +6272,7 @@ status: open
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — core/dispatch_re_preflight.py:116-123 refuse_still_applies returns True for every MRS-GATE-* (MRS-GATE-010 is re-preflightable, :64); reconcile_station_re_preflight (:126-215) clears a MRS-GATE-* block only when verify_rerun_needed (the verify-command hash changed), so a story refused by MRS-GATE-010 whose spec later gains its Success-signal binding changes only spec_fingerprint and stays RATE_LIMITED for the rest of the campaign. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5667,6 +6288,7 @@ status: open
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_hotfix.py: grep for 'evaluate_dispatch_verification': zero matches. test_reconcile_rate_limits_verify_refuse_when_only_spec_changes exists (now at line 378) and asserts RATE_LIMITED at the reconcile layer only. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5682,6 +6304,7 @@ status: open
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/cli/dispatch.py:4463-4522 _campaign_blocked_from_journal iterates every KIND_FLEET_CYCLE OUTCOME entry and, for each row whose status == REFUSED, unconditionally does blocked.setdefault(slug, {})[story] = detail -- it never inspects or removes an entry when a later DISPATCHED/succeeded row for the same (slug, story) exists. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5697,6 +6320,7 @@ status: open
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/pyforge/marshal/cli/dispatch.py:4527-4569 _journal_fleet_cycle's intent payload is {'mode': ...} and its outcome payload is {'ok': True, 'complete': ..., 'stations': [...]} -- no 'findings' key in either; the findings parameter is used only to append a Finding on journal-write failure (MRS-DRAIN-009), never written into the journaled payload itself. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5712,6 +6336,7 @@ status: open
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:4414-4442 (current main) -- `refuse_predicate_payload` is only computed inside `if cycle_status is dispatch_fleet.StationCycleStatus.REFUSED and last_detail:`, one value per station/cycle keyed off the primary story; a DISPATCHED+REFUSED mixed wave still skips the predicate for refused non-primary members. Lines shifted (2847->3209->4414) but the shape is unchanged. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5727,6 +6352,7 @@ status: open
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_re_preflight.py:172-183 (current) -- the `if previous is None:` branch appends RATE_LIMITED with the comment 'First re-preflight after refuse: predicate unchanged, rate-limit', before the `gate.startswith("MRS-GATE-") and verify_rerun_needed(...)` clear-path is ever reached. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5742,6 +6368,7 @@ status: open
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — cli/dispatch.py:4410-4417 sets cycle_status DISPATCHED if any wave member dispatched, and refuse_predicate is computed only when cycle_status is REFUSED (:4418-4427); one StationCycleResult per station (story=primary_story). A refused member's block lives only in the in-memory campaign_blocked (:4366), while the next cycle rebuilds blocks from the journal and reads only rows whose status is REFUSED (_campaign_blocked_from_journal, :4503-4525), so the refusal is lost and re-preflight rate-limiting is bypassed. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5757,6 +6384,7 @@ status: open
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — cli/dispatch.py:4406-4427 parses the gate from last_detail (whichever member wrote a detail last) but computes the predicate for primary_story, and the single row records story=primary_story with that detail; with two refused members the predicate can describe another story's gate/spec, and the second story's block is not journaled at all. No test covers a mixed-refuse wave (refuse_predicate appears only in tests/unit/test_dispatch_fleet.py:957 and test_dispatch_hotfix.py, single-story). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5769,9 +6397,10 @@ status: open
   evidence: fleet_picture.py ATTENTION block (lines ~788–796) builds the needs string from live_row fields; only station_state() remedy projection is pinned in test_fleet_picture_missing_spec.py — not the ATTENTION aggregator.
   location: scripts/fleet_picture.py:788
   origin: spec-deferred 80a594b54f3f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — scripts/fleet_picture.py:1050-1059 builds the 'missing tracked spec for ... (MRS-DISP-005 refuse, not idle)' needs line from live_row['missing_spec_escalation_glob']; tests/meta/test_fleet_picture_missing_spec.py:30-34 pins only the state-column remedy, and both ATTENTION-branch tests (test_fleet_picture_attention_dispatch_refused.py:76, test_fleet_picture_landing_findings.py:77) set missing_spec_escalation_glob to None. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5784,9 +6413,10 @@ status: open
   evidence: gather_fleet_missing_spec_escalations and build_fleet_row are unit-tested in isolation; no test runs the fleet status sweep with a campaign journal fixture and asserts homes[].missing_spec_escalation_glob in JSON output.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py:1525
   origin: spec-deferred 5f2e0f3d0840 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — cli/status.py:1696-1771 wires gather_fleet_missing_spec_escalations into the fleet row; the only test is tests/unit/test_status.py:969-975 (build_fleet_row in isolation); no subprocess/CLI test drives a campaign-journal fixture through `marshal status --format json`. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5799,9 +6429,10 @@ status: open
   evidence: Intent approach mentions optional spec status union; implementation unions sprint-status-ledger.yaml only. No AC requires spec status healing.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py
   origin: spec-deferred a60b5d9b42dc — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — dispatch_land_heal.py:1-7 and :63-75: only the landing project's sprint-status-ledger.yaml is mechanical (three_way_ledger_statuses / union_sprint_ledger_maps, core/dispatch_landing.py:95); every other conflicted path, including a story spec's frontmatter status:, escalates by name. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -5814,9 +6445,10 @@ status: open
   evidence: `_redispatch_blocked_pending_supervisor_finalize` is tested in isolation; no test exercises the full dispatch launch path that emits MRS-DISP-039.
   location: src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_finalize.py
   origin: spec-deferred 7670c285b6cf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — MRS-DISP-039 is emitted at cli/dispatch.py:2465-2480 via _redispatch_blocked_pending_supervisor_finalize; tests hit the helper directly (tests/unit/test_dispatch_supervisor_finalize.py:147,192), the drain-plan path (tests/unit/test_drain_plan.py:1155) and the registry (test_findings.py); none drives dispatch_once end to end. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-05 — STANDS — `MRS-DISP-039` appears only in the findings registry test and the finalize-helper unit test; no end-to-end `dispatch_once` test.
 
@@ -5828,6 +6460,9 @@ status: open
   note: 2026-09-07 (marshal 31.6) -- `multi-repo-git-ops` does NOT cover this wish. Confirmed via `git submodule status` (empty output) and no `.gitmodules` file in the repo root: this repo has no git submodules at all. `multi-repo-git-ops`'s own SKILL.md scopes it to branching/committing/pushing/syncing across a parent repo and its git-submodule service repos, discovered from `.gitmodules` -- a structurally different concern from this wish's KEEP/PRUNE/DELETE worktree and merged-branch retirement heuristics (no submodules, no branch/worktree lifecycle classification in its scope). The coverage question is answered "no"; this does not resolve the wish itself, which stays a future station-verb story per this entry's own summary.
   location: scripts/worktree_sweep.py
   status: open
+  severity: medium
+  verified: 2026-10-01 — NEEDS-DECISION — scripts/worktree_sweep.py exists with its documented six-way classification (KEEP/PRUNE/DELETE/PRESERVE-THEN-DELETE/DELETE-WORKTREE-KEEP-BRANCH/INSPECT, lines 12-28). src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/retire.py:107-144 add_retire_subparser still only proposes branches named by 'the most recent bmad-loop run of an attached loop-home worktree' with no --worktrees flag (grep for '--worktrees' across cli/*.py: zero matches) and no marshal-sweep verb exists (no sweep.py under cli/). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
+  decision: Should scripts/worktree_sweep.py's fleet-wide six-way worktree/branch classification be folded into marshal retire (a --worktrees flag or a new marshal sweep verb) so the fleet has one journaled, self-service retirement authority, or is a standalone operator script an acceptable permanent split given it already exists, works, and is safety-gated (dry-run default, patch export before delete)?
 
   verified: 2026-09-08 — still-open — CONFIRMED present and unchanged: `scripts/worktree_sweep.py` exists with the six-way classification the entry describes. This is a standing operational tool + its 2026-09-05 sweep record, not a defect awaiting a fix, so 'open' here means 'the tool is live and the policy still applies', not 'work is owed'. A `location:` was added; it had none.
 
@@ -5841,6 +6476,7 @@ status: open
   severity: medium
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — .claude/skills/conda-forge-expert/tests/meta/test_no_retired_bmad_skill_ids.py:195-206 _collect_unguarded_catalog_renames reads only skill_renames[].from; RETIRED_SKILL_IDS (:80-107) has neither bmad-check-implementation-readiness nor bmad-agent-tech-writer. Live harm: _bmad-output/projects/pyforge-marshal/planning-artifacts/development-guide.md:461 lists `bmad-check-implementation-readiness` as a usable skill and planning-artifacts/index.md:76 names it as a generator. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED. `_collect_unguarded_catalog_renames` still reads only the catalog's `skill_renames[].from` ids and never its `removals` list, so fully-removed ids (`bmad-check-implementation-readiness`, `bmad-agent-tech-writer`) remain guarded by nothing. Unchanged since authoring.
 
@@ -5854,6 +6490,8 @@ status: open
   severity: low
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — `.claude/skills/conda-forge-expert/tests/meta/test_no_retired_bmad_skill_ids.py:135-141` `SCAN_GLOB_FLOORS` still only covers `epics.md`/`PRD.md` (glob across all projects), the marshal seed templates, `AGENTS.md` and `CLAUDE.md` -- no entry for `architecture-bmad-infra.md` or `development-guide.md`. (2026-09-30 deferral burn-down triage)
+  decision: Should architecture-bmad-infra.md and development-guide.md be added to the retired-id guard's SCAN_GLOBS to regression-protect them against a retired id being reintroduced, accepting the false-positive risk against normal prose -- the entry's own text frames this as a bigger design decision outside Story 30.1's AC.
 
   verified: 2026-09-08 — still-open — CONFIRMED. `architecture-bmad-infra.md` and `development-guide.md` are still outside the guard's `SCAN_GLOBS`, so a re-introduced retired id in either doc is not regression-protected.
 
@@ -5867,6 +6505,7 @@ status: open
   severity: low
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — Confirmed by grep -l: `project-context.md` still appears in `_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md`, `index.md`, and `PRD.md`. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED by direct read: `architecture-bmad-infra.md`, `index.md` and `PRD.md` still describe the retired per-station `project-context.md` rulebooks as live artifacts. The entry's own sequencing rationale (30.3 owns the architecture re-ground; PRD.md is on the never-rewrite list) still holds, so this stays open by design rather than by neglect.
 
@@ -5877,9 +6516,10 @@ status: open
   evidence: Reproduced directly: pytest -s on the unmodified fixture prints "[fleet] noDream: pyforge-marshal" and layers_cp.evidence["gaps"] == ["dream"], even though the loop at line 162 asserting "dream" in ev["present"] passes -- two different evidence shapes (chain-layers-audit's "present" list vs. chain-audit-checkpoint-layers' "gaps" list) disagree on the same fixture, suggesting a deeper inconsistency in how DREAMS_DIR/REPO_ROOT get resolved across the monkeypatched _install_generate seam. Worked around by scoping this story's own new assertions to "context" specifically rather than the full layers-checkpoint pass, so this story's fix doesn't depend on the pre-existing gap being resolved.
   location: src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_layers_audit.py::test_full_applicable_layers_reports_ok
   origin: spec-deferred 0fc7191440f0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — Reproduced 2026-09-30 by running the test body against a scratch dir and reading the verdict: the chain-audit-verdict layers checkpoint is {'pass': False, 'gaps': ['dream']} with '[fleet] noDream: pyforge-marshal', while chain-layers-audit lists dream as present. Cause: scripts/fleet_scan.py derives a stage from dated evidence (_stage_dates -> _artifact_dates, :1752-1815: path date, then frontmatter created:, then git); the fixture's docs/dreams/pyforge-marshal.md has no created: and the tmp dir is not a git repo, so the dream stage is empty. The test (pyforge-doctor tests/unit/test_sources_board_chain_layers_audit.py:148-160) only asserts 'context' is absent from gaps. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED as a cross-station fixture inconsistency: `test_full_applicable_layers_reports_ok` still exercises the two disagreeing evidence shapes (`chain-layers-audit`'s `present` list vs `chain-audit-checkpoint-layers`' `gaps` list) against the same fixture. Note this is a pyforge-DOCTOR test carried on MARSHAL's ledger -- a cross-project entry (CAP-5), which is why no marshal-only sweep would ever reach it.
 
@@ -5919,6 +6559,7 @@ status: open
   severity: low
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:729 -- `elif cat == "snapshot" and live is not None and (pin[0], pin[1]) < (live[0], live[1]):` -- major.minor only, patch discarded; finding is INFO severity (line 731), not HARD/FAIL as sometimes implied. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED against live code, precisely. `sources/factory.py`'s `check_pins` compares `(pin[0], pin[1]) < (live[0], live[1])` -- major.minor only, patch discarded -- so a stale-but-parseable `source_pin` at the same minor never fires `pin-behind`. This is not theoretical: the fleet's own current drift (pinned v8.86.1 vs live v8.87.1) fires only because the MINOR moved; a v8.86.1-vs-v8.86.4 gap would still pass silently.
 
@@ -5932,6 +6573,7 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — Trusted from the entry's own already-thorough 2026-09-08 re-measurement (heuristic unchanged; marshal's regenerated test-architecture.md now shows 394/404 'none observed' rows, up from the original 207/208) -- consistent with the heuristic function's own file location/shape cited (`_bmad/scripts/bmad_tea_playwright.py::_stories_linked_to_test`) which was not independently re-read this pass given low severity and prior direct confirmation. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED, re-measured after this session regenerated all eight documents. `_stories_linked_to_test`'s filename heuristic is unchanged, and marshal's regenerated `test-architecture.md` now reads **394 'none observed' rows out of 404** -- the entry recorded 207 of 208, so the matrix has roughly doubled in size while the unmatched ratio (~97%) held. Regeneration does not fix it; only teaching the heuristic this repo's real test-naming conventions would.
 
@@ -5944,7 +6586,9 @@ status: open
   origin: spec-deferred c121ec97eb21 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — Prior 2026-09-08 pass counted `^### Story ` headings directly in epics.md: pyforge-herald 64, pyforge-doctor 73 -- exactly matching the generator's reported story_count. The discrepancy was in the TEA subagent runs' own figures (50, 113), not in bmad_tea_playwright.py. No code defect; informational mismatch resolved by investigation.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — resolved — RESOLVED -- the discrepancy is explained, and the generator was the correct side. Counted `^### Story ` headings directly in each station's `epics.md`: pyforge-herald **64**, pyforge-doctor **73** -- exactly the generator's reported `story_count`. The TEA subagent runs' figures (50 and 113) were the wrong ones. The entry left root cause uninvestigated ('could be either side's parsing'); it is the TEA runs, not `bmad_tea_playwright.py`.
 
@@ -5957,7 +6601,9 @@ status: open
   origin: spec-deferred b36444e68b97 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-01 — by design: Prior pass's own proportionality judgment: no fleet-wide sweep of all 8 stations' ~250KB of TEA-generated prose for further internal cross-reference nits has been run, and is judged out of proportion for advisory documents whose core equivalence-coverage claim does not depend on such polish.
+  verified: 2026-10-01 — BY-DESIGN — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED as an accepted limit rather than a defect. No fleet-wide sweep of the eight stations' TEA prose for internal cross-reference nits has been run since; the entry's own proportionality argument (advisory documents whose core equivalence claim does not depend on such polish) still stands.
 
@@ -5971,6 +6617,7 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — architecture-bmad-infra.md still carries no FR-129/FR-132 retirement gloss (per the prior pass's direct read, re-confirmed as stronger since `tea-playwright-all` was re-run to regenerate all eight station docs after that check). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED. `architecture-bmad-infra.md` still carries no FR-129/FR-132 retirement gloss. The entry's reasoning holds and is now stronger, not weaker: the gloss was textually conditioned on 31.1's equivalence report passing 8/8, which did not happen, and the generator is demonstrably still in use -- this session re-ran `tea-playwright-all` to regenerate all eight documents, so glossing FR-129/FR-132 as 'retired' would now be false.
 
@@ -5983,7 +6630,9 @@ status: open
   origin: spec-deferred 0d9270177816 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-01 — by design: The lens's `instruction` is an LLM prompt, not code; no sibling `bmad-review` lens (edge-case-hunter et al.) carries a run-the-lens-and-check-output automated test either -- this is the established, repo-wide convention for review lenses, not a gap unique to tea-test-review.
+  verified: 2026-10-01 — BY-DESIGN — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED as an accepted convention rather than a gap unique to this lens. The lens's `instruction` remains an LLM prompt, not code, and no sibling `bmad-review` lens carries a run-the-lens-and-check-output test either. What is mechanically covered (lens merge, TOML parse, policy plumbing) is unchanged.
 
@@ -5996,7 +6645,9 @@ status: open
   origin: spec-deferred 6fae8734c2cf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-01 — by design: Prior pass grepped test_policy.py and confirmed `stream_capture_kb`'s own rejection tests are also project-layer only, matching `review_min_score`'s test depth -- an established, consistent convention across every sibling bmad-loop-adjacent policy knob, not a gap this story introduced.
+  verified: 2026-10-01 — BY-DESIGN — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED as matching the established convention: the `review_min_score` validator tests remain project-layer only, exactly as `stream_capture_kb`'s own rejection tests are. Not a gap this story introduced.
 
@@ -6009,7 +6660,9 @@ status: open
   origin: spec-deferred c0f2174ab7ff — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py:133-137 -- the comment above `_UNSETTABLE_KEYS` no longer restates a numeral; it reads '(the set below is the authority -- do NOT restate its size here. This comment read "these 9 keys" from Story 3.13 until 2026-09-08 while the set grew to 28 ... a growing collection is a defect waiting to recur, so the numeral is gone.)'. Live count is now 49 members and the comment still holds correctly (no restated number to go stale).
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — resolved — RESOLVED HERE, and made non-recurrent. Confirmed live first: `len(_UNSETTABLE_KEYS) == 28` while `cli/config.py:130` still read 'Naming any of these 9 keys'. Rather than bump 9->28 (which is what has failed three times -- Story 3.13 wrote 9, a 2026-09-05 pass observed 27, this entry observed 28), the numeral is REMOVED: the comment now points at `_UNSETTABLE_KEYS` as the authority and states why no size is restated. This also discharges the residual of `DW-3-13-1`, which had been re-verified repeatedly with 'not fixed here' each time.
 
@@ -6023,6 +6676,7 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — No fleet-wide audit script or record found for this; `.claude/skills/bmad-sprint-planning/scripts/sprint_plan.py:320` documents the wrap risk it now guards against going forward, but nothing sweeps already-materialized files. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED as unowned. No fleet-wide audit of already-materialized `sprint-status.yaml` files for pre-fix wrap corruption has been run; the entry's own scoping (the one known instance was hand-repaired at the time) is unchanged. Worth noting the risk is live, not historical: this session hand-inserted ledger keys precisely because `sprint_plan.py`'s writer would wrap a long key.
 
@@ -6035,7 +6689,9 @@ status: open
   origin: spec-deferred 5be8833906e2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: high
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — .claude/skills/bmad-retrospective/scripts/sprint_status.py:66-67 now sets yaml.width = 4096 and yaml.Emitter.MAX_SIMPLE_KEY_LENGTH = 4096 in _load_yaml (commit f2dccab2b9); regression test test_long_story_key_survives_update_and_fleet_scan_parse at .claude/skills/bmad-retrospective/scripts/tests/test_sprint_status.py:685.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-07 — resolved — `_load_yaml` in `.claude/skills/bmad-retrospective/scripts/sprint_status.py` now sets `yaml.width = 4096` and `yaml.Emitter.MAX_SIMPLE_KEY_LENGTH = 4096` immediately after `yaml.encoding = "utf-8"`, identically to `bmad-sprint-planning/scripts/sprint_plan.py::_make_yaml`'s own Story-22.11 fix, so the same `YAML` instance used to load and later dump the document no longer folds a long `key: value` line onto a continuation line or switches a >=128-char key to explicit block-mapping form. Added regression test `test_long_story_key_survives_update_and_fleet_scan_parse` to `.claude/skills/bmad-retrospective/scripts/tests/test_sprint_status.py`: seeds an 86-char story key (the exact live-reproduced width from this entry's own evidence), runs the `update` subcommand touching only `last_updated`/`--set-retro-done`, asserts the key survives on one line, and confirms the REAL downstream reader (`scripts/fleet_scan.py::parse_sprint_status`, loaded via `importlib` the same way `test_sprint_plan.py`'s sibling test does, not a reimplementation) still reads it back as `ready-for-dev`. Confirmed the test fails against the pre-fix `_load_yaml` (key folds onto a continuation line, `raw_line.strip()` no longer ends in `: ready-for-dev`) and passes with the fix. Full `bmad-retrospective` script suite green (92 passed, `uv run --with pytest --with ruamel.yaml -m pytest scripts/tests/test_sprint_status.py`); full `pyforge-marshal` unit/meta/contract suite unaffected (this fix lives outside that package) and confirmed green (7505 passed, 1 pre-existing unrelated failure -- see DW-FU-3-2-12's verified line above for detail).
 
@@ -6049,6 +6705,7 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/loop-home-cutover-readiness.md -- grep for sign-off/rollback/failure returns nothing; still carries none of the three. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED unchanged: `loop-home-cutover-readiness.md` still carries no sign-off log, no failure/rollback guidance, and no test wiring its code-shape citations. All three are the same class -- a docs-only story's acknowledged edges -- and all three remain pending on steward 44.12, which owns the mechanism they would attach to. Recorded as pending-on-precondition in substance: the blocker is a story that has not run, not a missing decision.
 
@@ -6062,6 +6719,7 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — Same file and grep as DW-FU-31-5 confirm no rollback/failure guidance present. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED unchanged: `loop-home-cutover-readiness.md` still carries no sign-off log, no failure/rollback guidance, and no test wiring its code-shape citations. All three are the same class -- a docs-only story's acknowledged edges -- and all three remain pending on steward 44.12, which owns the mechanism they would attach to. Recorded as pending-on-precondition in substance: the blocker is a story that has not run, not a missing decision.
 
@@ -6075,6 +6733,7 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — Same file confirmed to still carry no test wiring its code-shape citations. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED unchanged: `loop-home-cutover-readiness.md` still carries no sign-off log, no failure/rollback guidance, and no test wiring its code-shape citations. All three are the same class -- a docs-only story's acknowledged edges -- and all three remain pending on steward 44.12, which owns the mechanism they would attach to. Recorded as pending-on-precondition in substance: the blocker is a story that has not run, not a missing decision.
 
@@ -6087,7 +6746,9 @@ status: open
   origin: spec-deferred e2d68c5f9a2f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:2544-2564 -- `_KNOWN_FIELD_KEYS` now includes `"note"`, added 2026-09-08 per the inline comment referencing this DW id, still present and holding after later 2026-09-25 edits to the same file.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — resolved — RESOLVED HERE. Confirmed the defect first: `sources/chain.py`'s `_KNOWN_FIELD_KEYS` listed fifteen keys and no `note`, so a real `note:` field was silently folded into the preceding `evidence:` block -- exactly the mis-attribution the entry describes, reproducible against `DW-HYGIENE-2026-09-05-1`'s own `note:`. `note` is now in the vocabulary. Safe to extend: no test pins the tuple's exact contents (the only references are comments about `relayed:` deliberately staying out).
 
@@ -6201,6 +6862,7 @@ status: open
   severity: low
   promoted: 2026-09-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — Re-ran today: `pixi run --frozen -e pyforge-guild marshal status --project pyforge-steward` -> 'pyforge-steward (loop/pyforge-steward): stopped story=77.1 ...' -- state reads 'stopped', not 'unknown', confirming the fix still holds against the real home. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-12 — re-ran the manual check this entry names: `marshal status --project pyforge-steward` reports `state: stopped` (not `unknown`), confirming Story 5.11's fix holds against the real, live pyforge-steward home, not only the synthetic `tmp_path` fixtures the meta-tests use. Stays `open`/manual-check by design — the operator-local loop home this entry names cannot be encoded in CI, so this is a periodic re-confirmation, not a resolution.
 
@@ -6214,6 +6876,8 @@ status: open
   severity: medium
   promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — The exercise was never run: steward Story 49.8 is done (steward ledger :211) but its spec's Residual risks say the live CAP-17 criterion at a deployed namespace with no operator home 'was not manually exercised'; marshal spec-33-12 (:122, :266, :333) keeps it 'tracked separately', and docs/dreams/pyforge-marshal.md:4922 still quotes 'deployed egress-blocked proof unexercised'. (2026-09-30 deferral burn-down triage)
+  decision: Will the operator run the attended, egress-blocked deployed CRC proof, or accept the structural evidence and close CAP-3's deployed clause as documentary?
 
 ### DW-FU-33-12-2: CAP-5 deployed-profile device-code/PKCE login against a real IdP not implemented.
 
@@ -6224,7 +6888,9 @@ status: open
   origin: spec-deferred facc9c2dba3b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — Story 33.14 (marshal ledger 33-14-cap-5s-deployed-profile-a-real-device-code-pkce-pyforge-login: done): cli/login.py:1,12,33-46,124-146 adds `pyforge login --pkce --issuer <url>` backed by adapters/oidc_pkce.py (PkceLogin; file added in 8f8377cddc).
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-33-12-3: Platform MCP ASGI integration tests for held-loop tools not added in this pass.
 
@@ -6236,6 +6902,7 @@ status: open
   severity: medium
   promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — django_marshal_portal/mcp_asgi.py:91-175 registers the publish/heartbeat/complete/list/watch held-loop tools on build_marshal_mcp_asgi(); src/platform/tests/test_marshal_loop_homes_portal.py:147-160 only checks WATCH_TOOL registration on a fake server, test_held_run_lifecycle.py calls django_pyforge.supervisor functions directly, and test_seven_mcp_faces.py exercises initialize / tools/list only -- no tools/call JSON-RPC through the ASGI app for the held-loop tools. (2026-09-30 deferral burn-down triage)
 
 ### DW-VOCAB-2026-09-14-6: `epic-29` is a ledger row with no `## Epic 29` heading — and marshal's own frontmatter already admits it
 
@@ -6255,7 +6922,9 @@ status: open
   evidence: Found 2026-09-14 by a read-only investigation that was aimed somewhere else. The suspected surface — marshal's six-rung verdict lattice with its `GATE_FAILED` rung — was **cleared**: it judges the STORY's work (`core/gate.py:41-46` documents `GATE_FAILED` as *"a project's own gate failed"* against the `ERROR` tier's *"an internal Marshal operation failed"*, two subjects deliberately on separate rungs), and `marshal seed check`'s "(CI gate)" label is not literal here (zero hits for it in `.github/`). Doctor genuinely holds marshal's row with the estate's strongest independence (`doctor/sources/marshal.py` never imports `pyforge.marshal`, pinned by a meta-test). Charter §6's scope was ambiguous — its prohibition sits in a bullet about three named cross-cutting practices and coverage is not one — so the operator ruled it **broad** the same day: any check that can red a Marshal PR judges the Marshal. The bullet's own analogy settles it, since Mason's build is not one of the three either.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/coverage_gate.py, src/shared/packages/pyforge-marshal/src/pyforge/marshal/coverage_thresholds.toml, .github/workflows/coverage-gates.yml
   severity: medium
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — Doctor Story 24.1 (commit 7addfe5704, 2026-09-20) moved pyforge.marshal.coverage_gate + coverage_thresholds.toml to scripts/coverage_gate.py and docs/governance/coverage-thresholds.toml (scripts/coverage_gate.py:17-23 docstring); neither file exists under src/shared/packages/pyforge-marshal/src/pyforge/marshal/. pyforge-doctor sprint-status-ledger.yaml:83-85: 24-1, 24-2 (import-linter contract) and 24-3 (surface reconcile) all done.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
   raised: 2026-09-14 — Owner: doctor (holds the verdict on marshal's row), executing against `docs/dreams/coverage-gate-independence.md`. **The remedy is NOT the file move it first appears to be** and was deliberately not attempted inline: `pyforge-core` and `pyforge-testing-kit`, the two obvious homes, are **both governed by marshal's own planning tree**, so relocating there moves the violation one package over rather than ending it — and `pyforge.marshal.coverage_gate` is named in an AD-3/AD-4 import-linter contract, so the move amends a declared layering rule. The Dream carries five open questions including whether splitting the thresholds from the evaluator is sufficient, and whether the import-linter should gain a rule forbidding any `pyforge.<station>` module from evaluating that same station's CI gate — which would catch this class structurally instead of by investigation.
 
   scope-deepened: 2026-09-14 — **There is no neutral home under current ownership, and the recursion is deeper than this entry first recorded.** The obvious relocations were already ruled out (`pyforge-core` and `pyforge-testing-kit` are both governed by marshal's planning tree; doctor cannot host a blocking gate, being constitutionally advisory). The next candidate — move the evaluator out of any station package into `scripts/` — was measured this date and **also fails**: `scripts/coverage_gates_ci.py` and `scripts/run_station_coverage_gate.py` are BOTH inside `spec-pyforge-testing-charter`'s declared `surface:`, and that Spec lives in **`_bmad-output/projects/pyforge-marshal/`**. Marshal governs the package, the core, the testing-kit and the scripts.
@@ -6293,9 +6962,10 @@ status: open
   evidence: Real latent gap, but pre-existing (every non-Claude/Cursor harness had zero markers before this story too) and not caused by this diff. The Approach explicitly scoped this fix to Cursor's live text from the named 2026-09-18 incident, not to every configured harness. Close the next instance the same way this one was closed: from a real run journal, not a guess at wording.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_session.py:28
   origin: spec-deferred 983c65899fd1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — core/harness_session.py:29-42 _QUOTA_MARKERS_BY_HARNESS still has only 'claude' and 'cursor'; data/harness_profiles/ ships claude, copilot, cursor, devin and gemini (codex, antigravity, opencode have no profile). Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-50-3: The MRS-DISP-043 fails-safe guard is silent when a tier-mapped model isn't catalogued under ANY provider, so a genuinely foreign model could still reach a live launch uncaught.
 
@@ -6321,6 +6991,7 @@ status: open
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   note: 2026-09-19 (night) — Story 51.7 was minted to close this, then amended after run `…-0b70f736` blocked (intent gap): 51.7 now corroborates dispatch landings by tracked-spec status and leaves the retrospective scan unchanged, so this item is NOT closed by 51.7; stays open, low, its own item.
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py:330-349 -- `parse_story_direct_commit_subject`'s own docstring confirms 'defaulting to None refuses by default when a caller has no branch data ... which is safe for merged_story_keys' -- i.e. no caller today passes real branch data for the direct-commit-subject shape; the only production caller of branch-corroboration-adjacent code (dispatch_land.py:840 `merge_subject_is_marshal_native`) is a pre-flight self-check on a templated subject, not this retrospective scan shape. (2026-09-30 deferral burn-down triage)
   story: promoted to Story 51.7 (spec-pyforge-marshal CAP-255, Epic 51, minted 2026-09-19); close when 51.7 lands, citing its merge.
 
 ### DW-FU-50-5: Three sibling frontmatter parsers share the identical pre-banner-skip fence-check bug this story fixed in `promotion.py`/`spec_surface.py`. Of the three, `spec_low_risk.py::parse_declared_low_risk` is verified reachable via a promoted, banner-topped tracked spec and silently misreads its `declared_low_risk: true` as `False`; `dispatch_harness_done.py::parse_spec_status` and `spec_difficulty.py` are verified NOT reachable that way (both only ever read Tier-3/ worktree draft spec text, which never... [truncated, 529 chars total]
@@ -6360,6 +7031,7 @@ status: open
   severity: low
   promoted: 2026-09-19 — hand-ingested (see origin)
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py:524-530 `_skip_leading_banner` strips the BOM into a local `stripped` var only to test for a banner prefix; when no banner is found it `return text` UNCHANGED (BOM intact). `is_valid_spec_text` then does `text = _skip_leading_banner(text); if not text.startswith("---"): return False` -- a BOM-prefixed, bannerless text still starts with `\ufeff`, not `---`, so it returns False. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-51-2-1: Story 51.2's Auto Run Result set `followup_review_recommended: true` (two mediums patched on one pass) and nothing carries that forward.
 
@@ -6371,6 +7043,8 @@ status: open
   severity: medium
   promoted: 2026-09-19 — hand-filed
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — The flag is read only by core/dispatch_harness_done.py:121 followup_review_recommended(), used at cli/dispatch.py:2489 and cli/drain_plan.py:308 to gate a harness relaunch of a done spec -- which a done ledger row never receives. Wider than recorded: 218 tracked story specs across all stations are status done with followup_review_recommended: true (grep over _bmad-output/projects/*/planning-artifacts/specs/spec-*.md), and nothing turns any of them into review work. (2026-09-30 deferral burn-down triage)
+  decision: Should followup_review_recommended: true on a landed spec create review work (a DW row or scheduled bmad-review of the landing diff), and should the ~218 already-landed flagged specs be triaged, or is the flag advisory only?
   story: a follow-up review dispatch of 51.2 (`factory dispatch` of a `done` spec with the flag true is the mechanism bmad-build-auto defines) or a `spec-pyforge-marshal` CAP so the campaign schedules it; seeded on docs/dreams/pyforge-marshal.md 2026-09-19 item (5). Promoted 2026-09-28 to Stories 66.1 (spec-pyforge-marshal CAP-275, Epic 66: finalize carries a recommended follow-up review into this ledger as `DW-FRR-<story>`) and 66.2 (the one-time backfill, which mints `DW-FRR-51-2` to carry 51.2's own follow-up review from then on); close when 66.2 lands, citing both merges.
 
 ### DW-FU-51-9: A failed deploy_run.write mint/write inside finalize_dispatch_land can turn an already-successful land+promote into a reported failure.
@@ -6383,6 +7057,7 @@ status: open
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py -- `_promote_sprint_ledger` (called at :284) and `finalize_dispatch_land` both call `deploy_run.write(...)` (:316); the structural sharing the entry describes is confirmed present, unchanged since Story 51.3. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-51-1: The pre-existing "already landed" check in execute_dispatch_land reasons from local main while the new Story 51.1 merge-tree-preview check fetches and diffs against origin/main, leaving two different freshness assumptions about "main" side by side in the same function.
 
@@ -6394,6 +7069,7 @@ status: open
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — dispatch_land.py:689 reads commit_subjects of local_branch_ref('main') (refs/heads/main) with no fetch first, while _refuse_via_merge_tree_preview (:124-160) fetches and diffs origin/main (:147-148) and the heal path fetches at :967. The prepass 'gone' flag comes from the entry's short path; the file is src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-51-4: The supervisor-crash unsupervised-recovery path (dispatch_survival.py) cannot recognize a narration-only diff as no-progress because DispatchCompletionInput has no spec_relative_path field.
 
@@ -6405,6 +7081,7 @@ status: open
   severity: medium (unverified)
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — core/dispatch_completion.py:39-47 DispatchCompletionInput has no spec_relative_path, and judge_dispatch_completion (:80-86) calls has_git_progress(inp.git) without it, so is_spec_only_narration never applies there; core/dispatch_survival.py:99 and :121 (supervisor-crash recovery) build it with session_alive and git only, whereas dispatch_supervisor/__main__.py passes spec_relative_path at :1532, :1585, :1652, :1734 and :1888. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-51-4-2: KIND_DISPATCH_BLOCKED journal entries are write-only; nothing reads them back, so a block reason is unrecoverable once the worktree that backs the live spec re-read is already cleaned up.
 
@@ -6416,6 +7093,7 @@ status: open
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — dispatch_supervisor/__main__.py:577-613 writes intent+outcome entries (outcome payload carries 'reason'); grep for KIND_DISPATCH_BLOCKED / 'dispatch-blocked' finds only core/dispatch.py:62 and this writer, no by_kind reader; cli/dispatch.py gather_dispatch_journal_facts folds only LAUNCH/COMPLETION/LAND/VERIFICATION (~:1100-1144); station_story_block_facts (cli/dispatch.py:1776-1792) reads the spec only through the live worktree, so spec_text is None once it is removed. (2026-09-30 deferral burn-down triage)
 
 ### DW-OPS-2026-09-19-1: five stale August bmad-loop runs sit `paused — ESCALATED` in the loop homes and pollute `marshal watch --fleet`; every loop home is 447 commits behind `main`
 
@@ -6457,7 +7135,9 @@ status: open
   evidence: Claude Code session-start MCP failure notices, every session since ~2026-09-16.
   location: ~/.claude.json (mcpServers) / ~/.claude/settings.json
   severity: low
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — The documented symptom (headroom MCP posix_spawn ENOENT against a removed worktree's `local-recipes-wt-token-economy-claude-session-path/.pixi/envs/local-recipes/bin/python3.14`) is fixed: ~/.claude.json's `mcpServers.headroom` now points at `/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.pixi/envs/pyforge-guild/bin/python3.14`, which exists on disk (verified via ls, 36MB executable dated 2026-09-02) -- exactly the repointing the entry recommended.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
   raised: 2026-09-19 — Owner: marshal (token-economy kit). Operator-only.
 
 ### DW-FU-51-5: The spin-engine sibling guard in `adapters/harness_bmadloop.py::render_policy_toml` was not widened alongside this story's dispatch-engine guard, so a genuinely foreign or mistyped tier-mapped model can still reach a live spin-engine launch unwarned.
@@ -6470,6 +7150,7 @@ status: open
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — adapters/harness_bmadloop.py:629-640 skips a stage model override only when provider_declaring_model names a DIFFERENT provider; an uncatalogued non-default model under a declared catalog (provider None) is written unchanged. Compare cli/dispatch.py:2247-2300 (Story 51.5 widened guard, MRS-DISP-043 WARN). (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-46-7: An advisory (never gating) doctor detector that could flag a bare `bmad-build-auto` dispatch was named in the Approach line but left unimplemented.
 
@@ -6481,6 +7162,7 @@ status: open
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — grep across src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ for 'bare invocation'/'bare_invocation'/'bare dispatch'/'bare...bmad-build-auto' returns nothing; no existing signal to extend. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-1: reclassify_pre_existing_gate_findings can downgrade a genuine S-13.7 guard failure (MRS-GATE-001) to a non-blocking MRS-GATE-014 WARN when this story's own drift is on a non-.py governed file (invisible to extract_failure_paths_from_verify_output's four .py-only patterns) and the guard's combined output also names an unrelated, genuinely pre-existing drift finding on a .py file elsewhere in the repo -- that unrelated .py path is the only one extracted, it falls outside this story's blast radius,... [truncated, 604 chars total]
 
@@ -6492,6 +7174,7 @@ status: open
   severity: medium
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — core/dispatch_verification.py:21-29 all four _FAILURE_PATH_PATTERNS require .py and :88 keeps only endswith('.py'); :203-218 downgrades MRS-GATE-001 to MRS-GATE-014 when no extracted path is in blast radius; dispatch_verify.py:105-131 appends the S-13.7 guard and :315-323 routes every command report through reclassify_pre_existing_gate_findings. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-28-31-1: Dispatch structure-graph — shared index provisioning via sync-from-base was drafted after the 28.31 spike but never minted as a story.
 
@@ -6515,6 +7198,7 @@ status: open
   severity: medium
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — dispatch_land.py:862-887 runs the merge-tree preview on the pre-reconcile head; :889-951 reconciles, re-resolves head_sha, then forge.merge_pr at :954 with no second preview (unchanged by Story 78.1, whose only dispatch_land.py edit is at :1044). (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-2-2: `_reconcile_spec_surface_drift`'s in-process `sys.path.insert` + doctor import can serve a stale, first-imported doctor module across serial dispatches in the long-lived supervisor.
 
@@ -6523,9 +7207,10 @@ status: open
   evidence: The `sys.path.insert` + `from pyforge.doctor.sources.chain import gather_spec_surface` import (dispatch_land.py ~297-301) runs in-process inside the long-lived `dispatch_supervisor`, unlike `scripts/spec_surface_reconcile.py`'s identical pattern, which always runs as a fresh subprocess (that script's own docstring requires "ZERO environment" and is invoked per-call). A supervisor spanning a doctor-code deployment across serial dispatches would keep using the first-imported, now-stale module via `sys.modules` caching. The proper fix needs either subprocess-based invocation or explicit `importlib` reload handling, both larger than a direct correction; the risk window (a supervisor process outliving a doctor deploy) is narrow.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py:297-301
   origin: spec-deferred ce81bb640e2d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — dispatch_land.py:288-292 inserts <worktree>/src/shared/packages/pyforge-doctor/src into sys.path and imports pyforge.doctor.sources.chain in-process. But every landing runs in its own process: run_dispatch_supervisor (dispatch_supervisor/__main__.py:1357-1371) handles one run_id/worktree and is spawned per dispatch (cli/dispatch.py:2718-2737); the campaign supervisor re-runs published commands as subprocesses (dispatch_fleet_supervisor/__main__.py:18-20); 'factory dispatch land' (cli/dispatch.py:865) is one-shot. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-2-3: Doctor's per-path drift collapse keeps only the lowest-rank, alphabetically-first co-governing spec's row, so a second co-governor drifted on the identical path stays invisible to the reconcile.
 
@@ -6537,6 +7222,7 @@ status: open
   severity: high
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — pyforge-doctor/src/pyforge/doctor/sources/chain.py:2083-2092 still sorts each path's rows by (rank, spec) and keeps rows[0] only. pyforge-marshal/src/pyforge/marshal/dispatch_land.py:246-560 _reconcile_spec_surface_drift calls gather_spec_surface once (:317), builds by_spec from that collapsed output, memlog-appends and scoped-stamps only those specs, pushes, and returns -- no re-check before forge.merge_pr. spec-pyforge-core's surface (pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md:13-20) co-governs every station's src/**, and 'pyforge-marshal/spec-pyforge-core' sorts before every other station's spec, so for a station-src edit with no memlog on either spec only core is… (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-3: `supervisor_should_exit(...)` is inert at the supervisor's terminal return: both the True and the False arm return 0, so the predicate's result changes nothing and no test can observe it regressing.
 
@@ -6548,6 +7234,7 @@ status: open
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1901-1907 -- `if supervisor_should_exit(...): return 0` is immediately followed by a bare `return 0`; both arms return the identical value, confirmed via direct read. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-3-2: `verdict = DispatchSessionVerdict.FAILED` under `should_terminalize_verify_refusal` in the LIVE branch is unreachable dead defensive code, and therefore permanently uncoverable in the module whose floor this story restored.
 
@@ -6559,6 +7246,7 @@ status: open
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1588-1594 gates the call on `verdict == DispatchSessionVerdict.LIVE`; core/supervise.py's `resolve_terminal_session_verdict` (called immediately above with the same v_outcome/git_facts) already returns FAILED at its own refused+progress branch before reaching the marshal-initiated-stop branch that yields LIVE (core/supervise.py:709-718). (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-3-3: The package docstring's documented entry-point argv is one positional short of what `main()` actually parses: it omits `<merge_subject_template>`.
 
@@ -6570,6 +7258,7 @@ status: open
   severity: medium
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — dispatch_supervisor/__init__.py:9-13 lists eight positionals ending '<baseline_head_sha> <log_path>'; __main__.py:1910-1920 registers nine, merge_subject_template before log_path; both spawners pass nine (cli/dispatch.py:2721-2735, :2783-2797). (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-3-4: `main()` parses a ninth positional `log_path` and never forwards it to `run_dispatch_supervisor(...)`, so a caller-supplied supervisor log destination is silently ignored.
 
@@ -6578,9 +7267,10 @@ status: open
   evidence: `parser.add_argument("log_path")` is parsed into `args.log_path`; the `run_dispatch_supervisor(...)` call that follows passes eight keywords and `log_path` is not among them. This run pinned the current behaviour rather than changing it — `test_main_threads_every_supervisor_positional_and_ignores_the_log_path` asserts the whole eight-key call and asserts `"log_path" not in captured` — because the story's Approach forbids a production change without a proven defect, and "the argument is accepted for argv compatibility with the launcher" is a defensible reading nothing in the module contradicts.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1880-1891
   origin: spec-deferred 3312f0b6f635 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — __main__.py:1920 parses log_path and :1922-1931 never forwards it; both spawners pass str(supervisor_log) as argv AND log_path=supervisor_log to process.spawn_detached (cli/dispatch.py:2735-2737, :2797-2799), so output always lands at the argv path anyway. Pinned by tests/unit/test_dispatch_supervisor_main_loop.py:2461. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-3-5: The touched-module coverage gate re-measures nothing on a branch that changes only tests, so a station's restored floor is defended by no lane that runs on the change most likely to break it.
 
@@ -6592,6 +7282,7 @@ status: open
   severity: medium
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — scripts/coverage_gates_ci.py:252-259: _evaluate prints 'no touched source modules ... skipping evaluate' and returns 0 whenever _existing_touched_modules (:191) finds no changed src module, i.e. on every test-only branch. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-3-6: The `should_retry_stuck_land(...)` disjunct in the LIVE branch's landing condition is inert by construction, so `stuck_land_ticks` can never reach the threshold it guards.
 
@@ -6600,9 +7291,10 @@ status: open
   evidence: The `or should_retry_stuck_land(...)` arm's inputs are a subset of the first disjunct's conditions, so whenever the retry predicate could be True the first disjunct is already True; and `stuck_land_ticks` is reset to 0 in the same tick, immediately above, whenever those conditions do not hold. The counter therefore never accumulates to the `>= 5` the predicate requires. No unit test can drive it without a production change; a test that pretended to would be pinning a fiction.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1564-1578
   origin: spec-deferred c4f1cb5a30a5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — dispatch_supervisor/__main__.py:1596-1614 and :1682-1697: the first disjunct (verified and not merged and not landing-journaled) is a superset of should_retry_stuck_land's conditions (core/dispatch_supervisor_state.py:13-26), and the counter is reset after every land attempt (:1635, :1717), so the predicate never adds a True. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-3-7: `FakeFs.read_text` falls through to the real checkout on an overlay miss, so a unit result can depend on the state of the working tree rather than on the fixture alone.
 
@@ -6611,9 +7303,10 @@ status: open
   evidence: The overlay is consulted first and an unseeded path reaches the real filesystem. That is load-bearing today — the supervisor reads tracked repo files (the story spec, known story keys) that the fixtures deliberately do not stub — so closing it means seeding those files in every scenario, which is a rewrite of the fixture layer rather than a review patch. Until then an edit to a tracked file the supervisor reads can change a unit result with no test edit.
   location: src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_main_loop.py:101-110
   origin: spec-deferred d2625bcbb863 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — tests/unit/test_dispatch_supervisor_main_loop.py:102-115: after the fail-set and overlay checks, read_text falls through to key.read_text() on the real filesystem. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-3-8: The supervisor entrypoint has no `ClockPort`: its clock is faked by replacing the module's `time` attribute, the one seam in this suite that reaches past the ports contract the file advertises.
 
@@ -6625,6 +7318,7 @@ status: open
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — tests/unit/test_dispatch_supervisor_main_loop.py:1795-1797 still does `monkeypatch.setattr(supervisor_main, "time", fake)`. Note: a DIFFERENT, older module (`supervisor/__main__.py`, distinct from `dispatch_supervisor/__main__.py`) does hold a ClockPort reference per `ports/clock.py`'s own docstring -- confirming the gap is specific to the `dispatch_supervisor` entrypoint this entry cites, not the whole codebase. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-3-9: `.claude/skills/conda-forge-expert/tests/unit/test_inventory_channel_auth_host_gate.py::test_malformed_base_url_does_not_crash_the_allowlist_scan` fails in any session running behind the headroom wire-compression proxy.
 
@@ -6636,6 +7330,7 @@ status: open
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — .claude/skills/conda-forge-expert/tests/unit/test_inventory_channel_auth_host_gate.py:62-76 -- the test sets only `CONDA_FORGE_BASE_URL` and `PYPI_BASE_URL` via monkeypatch and asserts `== {"good.example.com"}` with no clearing of other ambient `*_BASE_URL` vars; would fail if e.g. `ANTHROPIC_BASE_URL` is set in the shell (as it is under a headroom wire-compression proxy). (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-53-3-10: `DW-FU-53-2-4` (dispatch finalize should promote the story spec from a tracked `done` copy) was recorded during Story 53.2 as a candidate for 53.3's sibling; this story neither addressed it nor re-recorded it, so it stays where 53.2 left it.
 
@@ -6647,6 +7342,7 @@ status: open
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — grep across the marshal deferred-work ledger finds no `### DW-FU-53-2-4:` heading -- the id is referenced only in prose (spec-53-3's own frontmatter/body, and the spec-pyforge-marshal .memlog.md 53.2 landing note), never promoted to its own ledger row. The underlying capability gap it describes is real per that memlog note. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-46-1: The substrate-nightly publisher is inert: .github/workflows/substrate-nightly.yml is not in actions-policy.toml allow_when_enabled, so it stays off even once GitHub Actions are re-enabled, and no release assets exist yet.
 
@@ -6658,6 +7354,8 @@ status: open
   severity: medium
   promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — .github/actions-policy.toml: enabled = false and allow_when_enabled = ['staged-recipes-linter.yml', 'detectors.yml']; .github/workflows/substrate-nightly.yml exists but is not listed, so scripts/apply_actions_policy.py --fix would keep it disabled even after Actions are re-enabled. (2026-09-30 deferral burn-down triage)
+  decision: When billing is restored, should the billed nightly substrate-nightly.yml join allow_when_enabled?
 
 ### DW-FU-46-1-2: bootstrap reports no freshness: it never compares the manifest's source_commit with the clone's HEAD, so a stale pack or release installs silently as fetched, and a present member is never refreshed.
 
@@ -6669,6 +7367,7 @@ status: open
   severity: medium
   promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — cli/context_bootstrap.py:210-237 _serve_from installs members from a verified pack and only copies manifest.source_commit into the report (:233-234); nothing compares it with the clone's HEAD (_source_commit, :260, is used only when writing a pack), and present members are never refreshed. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-46-1-3: The rebuild fallback cannot complete in the session-default pyforge-guild env: codegraph is in no guild lock, and scribe graph compile needs the pyforge-scribe extras.
 
@@ -6680,6 +7379,7 @@ status: open
   severity: medium
   promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — Half fixed: Story 77.1 added codegraph >=1.6.0 to the pyforge-guild feature (pixi.toml:902; .pixi/envs/pyforge-guild/bin/codegraph present). Still open: the planning-graph and derived-context members rebuild through scribe (core/substrate.py:149-160, SCRIBE_GRAPH_COMPILE_ARGV / SCRIBE_INDEX_REFRESH_ARGV), and the guild env has neither graphify nor cocoindex (both present only in .pixi/envs/pyforge-scribe: cocoindex-1.0.24, graphifyy-0.9.68). (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-46-1-4: No cloud-runner setup (the Copilot copilot-setup-steps.yml, Devin, Cursor background) calls marshal context bootstrap yet, so a bare cloud clone does not open already filled.
 
@@ -6688,9 +7388,10 @@ status: open
   evidence: Review 2026-09-24 (Intent). The Surface of Story 46.1 (epics.md) names only the publisher and the CLI. Wiring runner setup while the publisher is disabled would make every cloud session fail the fetch and pay a full local rebuild. Wire it once the substrate-nightly assets exist.
   location: .github/workflows/copilot-setup-steps.yml
   origin: spec-deferred f1c96e369819 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium
+  severity: low
   promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — No cloud-runner setup calls it: grep for 'context bootstrap' across .github/workflows/ (including copilot-setup-steps.yml) and .cursor/ finds only substrate-nightly.yml's own comments. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-46-1-5: The new pyforge context noun alias and the context bootstrap / context pack verbs are not documented in the marshal SKILL.md, the grammar reference, or the pyforge dispatcher usage text.
 
@@ -6702,6 +7403,7 @@ status: open
   severity: low
   promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — .claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md -- grep for 'context bootstrap'/'context pack'/'pyforge context' finds nothing; only a generic `[context]` layer mention at line 62. src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py:36-40 confirms the alias exists in code (`"context": "marshal"`) with a comment routing `pyforge context bootstrap` to `marshal context bootstrap`, but this routing/verb pair is undocumented in the skill. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-46-1-6: chain-currency-sweep-check reports a pyforge-marshal chain-audit-checkpoint-staleness fail, because this story's required memlog appends (dated 2026-09-24) are newer than the planning spine's last reconcile.
 
@@ -6712,7 +7414,9 @@ status: open
   origin: spec-deferred 19d46d5b1bba — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-01 — Live run: `pixi run --frozen -e pyforge-guild python scripts/chain_currency_sweep_check.py` -> '[chain-currency] pyforge-marshal: current' and 'all 8 station spine(s) current', exit clean. The reconciler has already run since the entry was recorded (2026-09-24); no fail state remains.
+  verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-46-6: Nothing yet documents running `marshal context advisory` as part of session close, so the AC's "session ends" trigger and epics.md's "session-close output" Surface are realized only as an on-demand capability, not as a close-time ritual.
 
@@ -6724,6 +7428,7 @@ status: open
   severity: medium
   promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — grep for 'context advisory' finds no hit in AGENTS.md, CLAUDE.md, docs/ or .claude/skills/pyforge-marshal and bmad-agent-marshal; only the 46.6 spec, this ledger and two memlogs mention it. The verb exists (cli/context.py:289 registers 'advisory'). (2026-09-30 deferral burn-down triage)
 
 ## DW-marshal-baseline-drift-supersession-2026-09-25 — `baseline-drift-check` reports three atlas defers as unrecovered forever, because its recovery rule only recognises the literal story key reading `done`
 
@@ -6734,6 +7439,7 @@ status: open
   severity: low
   fix: add a supersession rule — when the exact key is absent, match on the `N-M` prefix (doctor's `_STORY_ID_RE` convention) and accept `done` there; treat a key absent from the tracked ledger whose epic is closed/retired (or named in a `rekey-*.md` note) as recovered; add fixtures for the reminted-slug and retired-key cases so the finding cannot become permanent again.
   status: open
+  verified: 2026-10-01 — STANDS — scripts/bmad_loop_baseline_drift_check.py:207 and :252 both do `if status.get(story) == "done":` -- an exact-key lookup with no handling for a retired-and-removed key or a reminted key under a different slug at the same epic-seq number. (2026-09-30 deferral burn-down triage)
 
 ## DW-marshal-disp020-stale-refusal-2026-09-25 — `fleet-picture` keeps showing an `MRS-DISP-020` landing refusal after the story has landed by hand, because it reads the run's last `dispatch-land` OUTCOME and never reconciles it against the ledger
 
@@ -6766,6 +7472,7 @@ status: open
   severity: medium
   fix: split the feed at the `development_status:` block's end (the first following line that starts a top-level key), not only at its start, and write `head + block + tail`; add a regression test with trailing metadata. Home: Story 54.1, which names `scripts/promote_sprint_status.py`'s repair path in its Surface — land the fix there, in the same change that makes the bare sync repair by default.
   status: open
+  verified: 2026-10-01 — STANDS — scripts/promote_sprint_status.py:283-284 writes head + 'development_status:' + the sorted map, where head is only the text before the marker, so top-level keys after the map are dropped; callers are --repair-feed (:414) and pyforge-marshal cli/deploy.py:3542 (run_reconcile_completions). (2026-09-30 deferral burn-down triage)
 
 ## DW-marshal-disp020-two-meanings-2026-09-27 — `MRS-DISP-020` names two different failures: a PR that could not be merged, and a promote + ledger finalize that failed after the PR merged
 
@@ -6776,6 +7483,7 @@ status: open
   severity: low
   fix: register a new code (e.g. `MRS-DISP-0xx` "dispatch land finalize failed after merge") in `core/findings.py` + `core/verdict.py`, emit it from the finalize branch, and journal `merged` on the land outcome; `fleet-picture` can then name "finish the promote + ledger" from the code rather than from the ledger fallback. Needs its own Story (the 56.1 Boundaries forbid touching `dispatch_land.py`).
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py:1019 (merge failure: 'merge of PR #{pr.number} failed') and :1080 (post-merge finalize failure: 'dispatch land finalize (promote + ledger) failed for {key}') both append `code="MRS-DISP-020"`; no `merged` key appears anywhere in the outcome `data` dict built in dispatch_supervisor/__main__.py (only `pr_number`, `merge_sha`, `land_findings`). (2026-09-30 deferral burn-down triage)
 
 ## DW-marshal-slow-lane-red-2026-09-27 — `pyforge-marshal-test-slow` is red on two integration tests no CI lane runs
 
@@ -6786,6 +7494,7 @@ status: open
   severity: medium
   fix: (1) assert the harness version against the installed release (or `HARNESS_VERSION_RANGE_TEXT`), never a literal; (2) read the 21 planned actions — either the seed's AGENTS.md expectations moved with scribe 21.1 (update the seed) or the plan is right and the file drifted; then decide whether a CI lane should run `-m slow` on a schedule so the next one is caught.
   status: open
+  verified: 2026-10-01 — STANDS — tests/integration/test_init_worktree.py:294 still asserts 'harness_version: 0.11.0' while pixi.toml:681 pins bmad-loop >=0.12.0; neither slow test file changed since 6352cc067e (2026-09-20); no workflow runs pyforge-marshal-test-slow. (2026-09-30 deferral burn-down triage)
 
 ## DW-marshal-47-1-intent-gap-2026-09-20 — Story 47.1 is blocked on an intent gap in `spec-marshal-recall-in-the-loop` CAP-1; the whole of Epic 47 waits on an operator decision
 
@@ -6796,6 +7505,8 @@ status: open
   severity: medium
   fix: operator decides, then `bmad-spec` re-derives CAP-1 (memlog first): (a) grounding — add a `mode`/`kind` override to marshal's `ScribeCli.recall()` (marshal surface), drop the mandatory per-station scope for this query, or extend scribe's `_citation_in_scope()` to admit team-memory citations (scribe-owned); (b) whether CAP-1 ends at the `recall-feedback.md` artifact or also wires a reader into bmad-loop's session-context assembly, and at which step; (c) whether `run_resume` also injects. Then flip 47-1 back from `blocked` (operator-confirmed, AGENTS.md § Policy) and re-dispatch.
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — sprint-status-ledger.yaml:273 47-1 reads blocked, :274-276 47.2-47.4 backlog, :449 epic-47 backlog; spec-marshal-recall-in-the-loop/.memlog.md carries the recovered 2026-09-20 review entry naming both intent gaps, and SPEC.md's open question on the scope mechanism is still unanswered. (2026-09-30 deferral burn-down triage)
+  decision: For CAP-1, which recall path should the dev pass use so .claude/memory feedback can ground (for example --mode memory, or a scope rule that admits .claude/memory/** citations under a station scope), and what concrete surface folds the result into the session (a policy/prompt injection versus a file the dev skill is required to read)?
 
 ## DW-marshal-local-branch-short-names-2026-09-27 — marshal reads its local landing branch as the short name `main`, which a tag named `main` shadows
 
@@ -6850,6 +7561,7 @@ status: open
   severity: low
   fix: launch a timed command in its own process group (`start_new_session=True`) and kill the group on expiry, through `spec-pyforge-core`'s own chain (it co-governs every station's `src/`).
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-core/src/pyforge/core/process.py:157-178 -- `subprocess.run(list(argv), cwd=cwd, capture_output=True, text=True, ..., timeout=timeout_s, env=env)` with no `start_new_session`/process-group handling; on timeout, `subprocess.run` only terminates the direct child, leaving any grandchild (a hook's own spawned process) running unparented. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-68-1: The landing heal's local-main-advance push runs the full pre-push preflight under the same 120 s git timeout.
 
@@ -6861,6 +7573,7 @@ status: open
   severity: medium (unverified)
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — dispatch_land_heal.py:257-290 _try_local_main_advance calls vcs.push(git_repo_root, base) at :275 with no proven_on_main_sha, so adapters/vcs_git.py:562-670 pushes without PYFORGE_PREFLIGHT_SKIP under _GIT_PUSH_TIMEOUT_S = 120.0 (:121). scripts/pre_push_preflight.sh skips only branch deletes and refs/heads/dispatch/*, so a push of main runs the full 'pixi run --frozen -e pyforge-guild pr-preflight' (lint-types, detectors-ci, test-ci, all station suites, coverage gates: pixi.toml:1520). (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-68-1-2: A ledger publish rejected because origin/main moved between its fetch and its push is not retried.
 
@@ -6872,6 +7585,8 @@ status: open
   severity: medium
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — adapters/vcs_git.py:1340-1470 commit_paths_onto_remote_tip fetches once (~:1377), builds one commit, pushes once (~:1462) and raises VcsCommandError on rejection; its callers (cli/land.py:1506, dispatch_land_finalize/__main__.py:134, dispatch_supervisor/__main__.py:797) each call it once with no retry. (2026-09-30 deferral burn-down triage)
+  decision: Should the planning-artifacts publish retry a non-fast-forward rejection with a bounded re-fetch/rebuild (amending spec-pyforge-marshal CAP-277), given parallel drains finalize stations seconds apart and a lost race now REFUSES the landing via MRS-DISP-051?
 
 ### DW-marshal-77-1: The four real-binary codegraph integration tests for Story 77.1 run in no automated lane, so a codegraph release that changes the behavior the seed relies on turns nothing red.
 
@@ -6883,6 +7598,7 @@ status: open
   severity: medium
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — codegraph is pinned only in pyforge-guild (pixi.toml:902); no .github/workflows file or pixi task names test_dispatch_structure_graph_real.py (grep); substrate-nightly.yml installs codegraph via --spec (:84-87) but runs no marshal tests. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-77-1-2: Copying the primary checkout's base index file by file while another process writes it can produce a db, -wal and -shm set that do not belong together.
 
@@ -6891,9 +7607,10 @@ status: open
   evidence: Would settle it: run `_seed_dispatch_structure_graph` against a real base while a loop runs `codegraph sync -q` on that base (or `marshal context bootstrap` rebuilds it), then check whether the worktree's sync exits 0 on an inconsistent copy and whether `codegraph context` then answers wrongly. Today the failure ladder catches only a loud failure (a malformed db makes sync exit non-zero and the seed rebuilds with `init -y`); a torn set that syncs cleanly into a wrong index is not covered. Writers to the primary's `.codegraph/` are the operator-run `marshal context bootstrap` and any codegraph git hook, so the window is rare.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
   origin: spec-deferred d965b746e615 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: medium (unverified)
+  severity: low
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — cli/dispatch.py _seed_dispatch_structure_graph docstring (~:641-674) states the base is copied file by file with its -wal/-shm sidecars, and the failure ladder only catches a sync that exits non-zero. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-74-1: No CI lane or pr-preflight leg runs the pyforge-testing-kit suite, so the flags family, invoke_cli and the branch_diff_guard loud-failure tests are guarded only by the manual `pyforge-testing-kit-test` command.
 
@@ -6905,6 +7622,7 @@ status: open
   severity: medium
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — pixi.toml:3070 is the only definition of pyforge-testing-kit-test; pyforge-station-tests.yml's jobs are changes, core-test, the eight station jobs and guild-container (:75-337), none runs the kit suite (the kit path appears only as a shared-surface trigger at :37, :57, :112). (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-74-1-2: spec-pyforge-core's SPEC.md still calls the testing kit "a stdlib leaf by Q-26" and lists "Not pyforge-testing-kit" as a non-goal, after the 2026-09-30 operator ruling retired that premise.
 
@@ -6916,6 +7634,7 @@ status: open
   severity: low
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md -- text 'a stdlib leaf by Q-26' and 'Not `pyforge-testing-kit`. That is the testing charter's CAP-3 and stays there until Q2 decides whether the two are one package.' both still present verbatim. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-75-1: fleet_scan's per-chain Dream lookups still build only `docs/dreams/<slug>.md`, so a chain whose Dream sits under `archive/docs/dreams/` reads as having no Dream.
 
@@ -6927,6 +7646,7 @@ status: open
   severity: medium
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — scripts/fleet_scan.py:1962 and :1971 build only f'docs/dreams/{slug}.md'; :1723 _GIT_SCOPES names only 'docs/dreams'; :2141 _last_touched uses docs/dreams/{slug}.md; :2686 link likewise; meanwhile :951-958 _dream_files already reads archive/docs/dreams. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-75-1-2: `_generate()` in scripts/fleet_scan.py has no caller, and it alone reaches `scan_dreams`, `scan_specs`, `build_archived`, `scan_guild` and `scan_backlog`.
 
@@ -6938,6 +7658,8 @@ status: open
   severity: low
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — scripts/fleet_scan.py:3559-3568 -- `main()` immediately prints 'retired: Guildhall generate.py is gone (steward 30.2) ...' and `return 2`; `_generate(args)` is never called from `main()` or anywhere else in the file (grep for `_generate(` with parens finds only its own definition at :3568). (2026-09-30 deferral burn-down triage)
+  decision: Should the retired _generate() console generator and its downstream-only-test-exercised readers in scripts/fleet_scan.py be deleted outright, or rewired/repaired (fixing the dead docs/dreams/<slug>.md link in build_archived and the double-listed archived Dream in scan_backlog)? The entry's own text says this is not this story's decision to make.
 
 ### DW-marshal-75-1-3: Doctor's `chain-completeness --layers --json` stdout carries fleet_scan's `[fleet]` lines ahead of the JSON array, so the output cannot be parsed as JSON.
 
@@ -6949,6 +7671,7 @@ status: open
   severity: medium
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — pyforge-doctor sources/board.py:1274 calls gen.scan_fleet({}, None); scripts/fleet_scan.py:1704, :1707, :1908, :1919, :2058 print '[fleet] WARN' lines to stdout. The one consumer, scripts/chain_currency_sweep_check.py:56-72, works around it by scanning for a line that is exactly '['. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-75-1-4: Comments in doctor's board.py still say the loader imports `docs/dashboard/generate.py`, but the code loads `scripts/fleet_scan.py`.
 
@@ -6960,6 +7683,7 @@ status: open
   severity: low
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py -- the gather_chain_layers_audit comment block still says '...seeded from docs/dashboard/generate.py's FLEET_STAGES / scan_fleet / _chain_audit_verdict...', and `_load_dashboard_generate`'s own docstring/comment says 'imports docs/dashboard/generate.py, which is gone' while the actual load call targets `target/scripts/fleet_scan.py`. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-75-1-5: `scan_dreams()` does not strip an inline YAML comment from a Dream's frontmatter values, so a `status:` line with a trailing `# …` is read with the comment attached.
 
@@ -6971,6 +7695,7 @@ status: open
   severity: low
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — scripts/fleet_scan.py:1080-1095 `scan_dreams()`'s frontmatter loop still does bare `line.split(":", 1)[1].strip()` with no comment stripping, unlike `_frontmatter_scalars` (:1628+) whose own docstring says 'comments stripped'. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-65-1: The prose-park detector flags tracked specs and epics blocks that only quote or negate the marker, so a false match on a station's next story reads MRS-DRAINPLAN-001 (ERROR, exit 4).
 
@@ -6982,6 +7707,7 @@ status: open
   severity: medium
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — core/dispatch_prelaunch.py:62-63 match 'parked' / 'do not dispatch' anywhere on any line and :105-110 return the first hit; cli/drain_plan.py:354-360 refuses on it, feeding MRS-DRAINPLAN-001 (core/verdict.py:1288, ERROR). Live false positives confirmed: the markers appear in specs 65-2, 66-1 and 73-2, all backlog (ledger :332, :333, :348). (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-65-1-2: A serial station with a live session reads would_dispatch true in the plan, while the drain relays it as in-flight (MRS-DRAIN-006 WARN) after dispatch_once refuses with MRS-DISP-011/021.
 
@@ -6993,6 +7719,8 @@ status: open
   severity: medium
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — NEEDS-DECISION — cli/dispatch.py:3890 plan_station_cycle's serial path returns the queue head with no liveness read; cli/drain_plan.py never calls station_in_flight_conflict (grep: no hit), so a busy serial station reads would_dispatch true. (2026-09-30 deferral burn-down triage)
+  decision: How should 'factory drain --plan' report a serial station whose head is held only by a live in-flight session (MRS-DISP-011/021): would_dispatch false with an in-flight note, a WARN finding, or unchanged?
 
 ### DW-marshal-65-1-3: Pre-existing crash: with more than one story in flight allowed, an empty parallel wave makes execute_fleet_cycle raise ValueError from StationCycleStatus(plan.outcome.value).
 
@@ -7001,9 +7729,10 @@ status: open
   evidence: When the wave has no members (a missing spec, an unknown surface, or unmet Deps on every ready story), stories_to_dispatch is empty and the cycle builds StationCycleResult with StationCycleStatus("dispatch"), which is not a member of the enum. Reproduced on a marshal station, whose policy has max_parallel 2, and confirmed by reading the pre-change code. Which status an empty wave should report (in-flight keeps the supervisor ticking, blocked or all-skipped stops it) is a supervisor-semantics decision, and this story's Boundaries require the extraction to preserve cycle behaviour. The plan reports the same case as outcome held and does not crash.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:4317
   origin: spec-deferred e8ee69d75c54 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
-  severity: high
+  severity: critical
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  verified: 2026-10-01 — STANDS — cli/dispatch.py:4256-4264 already handles plan.next_story is None, so at :4313-4321 plan.outcome is StationQueueOutcome.DISPATCH ('dispatch', core/dispatch_fleet.py:217), and StationCycleStatus (core/dispatch_fleet.py:226-238) has no 'dispatch' member -> ValueError. The wave is empty whenever every eligible ready story is refused by build_wave_batch (cli/dispatch.py:4003-4039: a missing/unreadable spec sets surfaces[story]=None; unmet Deps). pyforge-marshal's marshal-policy.toml:473 sets max_parallel = 2. The call at cli/dispatch.py:4941 has no except for ValueError and cli/main.py does not turn it into an envelope, so the traceback aborts the whole fleet cycle (every station after the empt… Severity high -> critical by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-78-1: The heal reads refs/remotes/origin/main by name for its texts and conflict paths, then merge_ref_resolving resolves it again, so a concurrent fetch between the two makes a resolution stale.
 
@@ -7014,4 +7743,44 @@ status: open
   origin: spec-deferred 6662c70d12d1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-53-2-4: Dispatch finalize should promote the story spec from a tracked `done` copy: a session that commits its tracked spec itself and leaves no Tier-3 twin gets no spec promotion, so the spec can stay at `backlog` on main after landing.
+
+- source_spec: `planning-artifacts/specs/spec-53-2-the-landing-reconciles-from-git-facts-and-runs-intake.md`
+  summary: Dispatch finalize should promote the story spec from a tracked `done` copy: a session that commits its tracked spec itself and leaves no Tier-3 twin gets no spec promotion, so the spec can stay at `backlog` on main after landing.
+  evidence: Recorded by Story 53.2 as a candidate for its sibling and named by spec-53-3 (DW-FU-53-3-10) but never given a ledger row. Recurred 2026-09-30: scribe Story 25.1 landed (a1dbda7915) with its tracked spec still `backlog` and an empty Review Triage Log until a hand promotion.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize.py
+  severity: medium
+  promoted: 2026-10-01 — minted by the deferral burn-down
+  status: open
+
+### DW-OPS-2026-10-01-1: Landing finalize promotes the tracked twin but leaves the story's Tier-3 feed row at `backlog`, so the next plain sprint-ledger-sync refuses with 'feed would un-finish'.
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: Landing finalize promotes the tracked twin but leaves the story's Tier-3 feed row at `backlog`, so the next plain sprint-ledger-sync refuses with 'feed would un-finish'.
+  evidence: Seen on every automatic landing of 2026-09-30 (doctor 34.5, steward 76.2, scribe 25.1, marshal 74.2, 78.1): twin `done`, feed `backlog`, aligned by hand each time.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize.py
+  severity: medium
+  promoted: 2026-10-01 — minted by the deferral burn-down
+  status: open
+
+### DW-OPS-2026-10-01-2: Dispatch verification runs only the station suite, so a landing can leave `lint-types` red on main (the lane is outside the detectors-ci merge gate).
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: Dispatch verification runs only the station suite, so a landing can leave `lint-types` red on main (the lane is outside the detectors-ci merge gate).
+  evidence: Scribe Story 25.1 landed `except (OSError, subprocess.TimeoutExpired):`, which ruff format (py314, PEP 758) rewrites; lint-types was red on main from a1dbda7915 until PR #1690.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
+  severity: medium
+  promoted: 2026-10-01 — minted by the deferral burn-down
+  status: open
+
+### DW-OPS-2026-10-01-3: The `"28"` station-wide epic_surfaces wildcard was meant to last until Story 28.15 shipped; 28.15 is done and the wildcard is still in marshal-policy.toml.
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: The `"28"` station-wide epic_surfaces wildcard was meant to last until Story 28.15 shipped; 28.15 is done and the wildcard is still in marshal-policy.toml.
+  evidence: Found by the 2026-09-30 deferral burn-down (batch marshal-07) next to DW-FU-22-9-3 and DW-FU-28-14-4.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
+  severity: low
+  promoted: 2026-10-01 — minted by the deferral burn-down
   status: open
