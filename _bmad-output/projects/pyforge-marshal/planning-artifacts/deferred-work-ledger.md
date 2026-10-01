@@ -7806,3 +7806,25 @@ status: open
   severity: medium
   promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-73-1: The drain's campaign-block pruning still reads the whole origin/main, so a blocked follow-up review story would be pruned as merged once a drain can schedule follow-ups (Story 73.2).
+
+- source_spec: `planning-artifacts/specs/spec-73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch.md`
+  summary: The drain's campaign-block pruning still reads the whole origin/main, so a blocked follow-up review story would be pruned as merged once a drain can schedule follow-ups (Story 73.2).
+  evidence: `cli/dispatch.py::_reconcile_campaign_blocked` (def at line 3685) reads `commit_subjects(repo_root, _BASE_REF)` at line 3699, and `cli/drain_plan.py` `merged_keys` (def at line 182) reads `commit_subjects` at line 188, both without a launch-tip scope. A story whose first landing is on origin/main reads merged there, so a blocked follow-up review would be pruned. Not reachable today: a drain does not schedule follow-ups (this story's Never rule, Story 73.2), and a campaign block carries no run to read a marker from. Finalize's corroboration reads (`dispatch_land_finalize/__main__.py`), which the Intent Alignment layer also listed, were not examined by this review; settling them means reading what finalize writes for a story already `done` when a follow-up lands.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:3699
+  origin: spec-deferred 1cb4ed51a3d8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FRR-73-1: Follow-up review still recommended for story 73.1
+
+- source_spec: `planning-artifacts/specs/spec-73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch.md`
+  summary: Story 73.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 73.1 landed on origin/main with its tracked spec reading `status: done` and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-01 — dispatch-land finalize
+  status: open
