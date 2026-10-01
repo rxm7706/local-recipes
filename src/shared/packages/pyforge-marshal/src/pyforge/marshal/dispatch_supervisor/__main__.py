@@ -6,6 +6,8 @@ import argparse
 import os
 import sys
 import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -1025,6 +1027,54 @@ def _run_supervisor_finalize_sequence(
     return counter, True
 
 
+def _journal_heartbeat(
+    *,
+    fs: FsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    session_alive: bool,
+    git_facts: DispatchGitFacts,
+) -> int:
+    """Append the tick loop's heartbeat observation; return the next counter.
+
+    The one builder of that entry: the loop writes it once per tick, and (Story 80.1, CAP-284) the
+    landing's check wait writes it on every wait tick. A journal write failure is swallowed -- a
+    heartbeat is liveness evidence, never a reason to stop the run."""
+    heartbeat = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH,
+        phase=Phase.OBSERVATION,
+        payload={
+            "heartbeat": True,
+            "session_alive": session_alive,
+            "current_head_sha": git_facts.current_head_sha,
+            "changed_path_count": len(git_facts.changed_paths),
+        },
+    )
+    try:
+        _append_entry(fs, run_dir, heartbeat, fsync=False)
+    except FsError:
+        pass
+    return counter + 1
+
+
+@dataclass(frozen=True)
+class _WaitHeartbeat:
+    """What one tick of a landing's check wait does (Story 80.1, CAP-284): the journal heartbeat
+    observation (``session_alive`` and ``git_facts`` as the tick loop read them) and, when the run
+    is published, ``publish`` -- the publisher heartbeat. The portal's ``sweep_lost_runs`` marks a
+    live run ``heartbeat_lost`` once its heartbeat is older than the station time limit (300 s by
+    default), and the landing's wait can outlast that."""
+
+    session_alive: bool
+    git_facts: DispatchGitFacts
+    publish: Callable[[], None] | None = None
+
+
 def _run_and_journal_landing(
     *,
     fs: FsPort,
@@ -1040,8 +1090,29 @@ def _run_and_journal_landing(
     worktree: Path,
     verification_verdict: DispatchVerificationVerdict,
     merge_subject_template: str,
+    wait_heartbeat: _WaitHeartbeat | None = None,
 ) -> int:
-    """Land a verified dispatch via Epic 4 machinery and journal (Story 22.4)."""
+    """Land a verified dispatch via Epic 4 machinery and journal (Story 22.4).
+
+    ``wait_heartbeat`` (Story 80.1, CAP-284) is what the landing's check wait does on each tick; the
+    counter the ticks consume carries on into the landing's own intent and outcome entries."""
+
+    def _wait_tick() -> None:
+        nonlocal counter
+        if wait_heartbeat is None:
+            return
+        counter = _journal_heartbeat(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            session_alive=wait_heartbeat.session_alive,
+            git_facts=wait_heartbeat.git_facts,
+        )
+        if wait_heartbeat.publish is not None:
+            wait_heartbeat.publish()
+
     effective = compose_dispatch_policy(slug, repo_root)
     landing_result, envelope = execute_dispatch_land(
         project_slug=slug,
@@ -1051,6 +1122,7 @@ def _run_and_journal_landing(
         verification_verdict=verification_verdict,
         run_id=run_id,
         effective=effective,
+        on_wait_tick=_wait_tick if wait_heartbeat is not None else None,
         fs=fs,
         vcs=vcs,
         process=process,
@@ -1131,9 +1203,14 @@ def _land_or_journal_block(
     git_facts: DispatchGitFacts,
     verification_verdict: DispatchVerificationVerdict,
     merge_subject_template: str,
+    session_alive: bool = False,
+    publish_heartbeat: Callable[[], None] | None = None,
 ) -> int:
     """Land, unless the worktree spec is blocked/narration-only (Story 51.4,
     spec-pyforge-marshal CAP-252 -- defense in depth).
+
+    ``session_alive`` and ``publish_heartbeat`` (Story 80.1, CAP-284) feed the landing's wait tick:
+    the heartbeat observation as the tick loop would write it, and the run publisher's heartbeat.
 
     ``_run_supervisor_finalize_sequence`` already stops before verification
     is ever journaled "verified" for a blocked or narration-only spec, so
@@ -1175,6 +1252,11 @@ def _land_or_journal_block(
         worktree=worktree,
         verification_verdict=verification_verdict,
         merge_subject_template=merge_subject_template,
+        wait_heartbeat=_WaitHeartbeat(
+            session_alive=session_alive,
+            git_facts=git_facts,
+            publish=publish_heartbeat,
+        ),
     )
 
 
@@ -1461,6 +1543,10 @@ def run_dispatch_supervisor(
         )
     )
 
+    def _publish_heartbeat() -> None:
+        if run_publish_handle is not None:
+            _publisher.heartbeat(run_publish_handle)
+
     try:
         vcs.fetch(repo_root, "origin", "main")
     except VcsCommandError:
@@ -1635,6 +1721,8 @@ def run_dispatch_supervisor(
                         git_facts=git_facts,
                         verification_verdict=DispatchVerificationVerdict.VERIFIED,
                         merge_subject_template=merge_subject_template,
+                        session_alive=session_alive,
+                        publish_heartbeat=_publish_heartbeat,
                     )
                     text = fs.read_text(journal_path)
                     if text is not None:
@@ -1661,26 +1749,16 @@ def run_dispatch_supervisor(
                     except VcsCommandError, ValueError:
                         pass
             if verdict == DispatchSessionVerdict.LIVE:
-                heartbeat = build_entry(
-                    id=JournalEntryId(writer_id, counter),
-                    ts=_format_entry_ts(_now_utc()),
+                counter = _journal_heartbeat(
+                    fs=fs,
+                    run_dir=run_dir,
                     run_id=run_id,
-                    kind=dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH,
-                    phase=Phase.OBSERVATION,
-                    payload={
-                        "heartbeat": True,
-                        "session_alive": session_alive,
-                        "current_head_sha": git_facts.current_head_sha,
-                        "changed_path_count": len(git_facts.changed_paths),
-                    },
+                    writer_id=writer_id,
+                    counter=counter,
+                    session_alive=session_alive,
+                    git_facts=git_facts,
                 )
-                counter += 1
-                try:
-                    _append_entry(fs, run_dir, heartbeat, fsync=False)
-                except FsError:
-                    pass
-                if run_publish_handle is not None:
-                    _publisher.heartbeat(run_publish_handle)
+                _publish_heartbeat()
                 time.sleep(_TICK_SECONDS)
                 continue
 
@@ -1717,6 +1795,8 @@ def run_dispatch_supervisor(
                 git_facts=git_facts,
                 verification_verdict=DispatchVerificationVerdict.VERIFIED,
                 merge_subject_template=merge_subject_template,
+                session_alive=session_alive,
+                publish_heartbeat=_publish_heartbeat,
             )
             text = fs.read_text(journal_path)
             if text is not None:

@@ -583,13 +583,20 @@ _CHECKS_RED = "red"
 _CHECKS_TIMEOUT = "timeout"
 _CHECKS_READ_ERROR = "read-error"
 
+# Story 80.1 (CAP-284): the longest the wait goes without calling `on_wait_tick`. The portal's
+# `sweep_lost_runs` marks a published run FAILED `heartbeat_lost` once its heartbeat is older than
+# the station time limit (300 s by default), and a landing can wait 45 minutes -- so a wait that
+# sleeps `poll_seconds` in one piece must slice it, however large the operator sets that.
+_WAIT_TICK_SECONDS = 60.0
+
 
 @dataclass(frozen=True)
 class _LandingChecksOutcome:
     """The end of the landing's check wait (Story 80.1): ``finding`` is the
     refusal (``None`` when the merge may proceed) and ``record`` is the
-    plain-JSON account the landing journals -- outcome, polls, seconds waited
-    and every run last read with its status and conclusion."""
+    plain-JSON account the landing journals -- the ``head_sha`` waited on,
+    outcome, polls, seconds waited and every run last read with its status
+    and conclusion."""
 
     finding: Finding | None
     record: dict[str, object]
@@ -597,6 +604,27 @@ class _LandingChecksOutcome:
 
 def _describe_runs(runs: tuple[CheckRun, ...], *, field: str) -> str:
     return ", ".join(f"{run.name} ({getattr(run, field) or 'no conclusion'})" for run in runs)
+
+
+def _sleep_with_ticks(
+    seconds: float,
+    *,
+    sleep: Callable[[float], None],
+    on_wait_tick: Callable[[], None] | None,
+) -> None:
+    """Sleep ``seconds`` in slices of at most ``_WAIT_TICK_SECONDS``, calling
+    ``on_wait_tick`` between slices. No tick after the last slice: the poll
+    that follows ticks itself, so a wait of ``poll_seconds <= 60`` ticks once
+    per poll and a longer one every minute."""
+    remaining = seconds
+    while True:
+        piece = min(remaining, _WAIT_TICK_SECONDS)
+        sleep(piece)
+        remaining -= piece
+        if remaining <= 0:
+            return
+        if on_wait_tick is not None:
+            on_wait_tick()
 
 
 def _wait_for_landing_checks(
@@ -608,6 +636,7 @@ def _wait_for_landing_checks(
     settings: LandingCheckSettings,
     sleep: Callable[[float], None],
     monotonic: Callable[[], float],
+    on_wait_tick: Callable[[], None] | None = None,
 ) -> _LandingChecksOutcome:
     """Story 80.1 (CAP-284, AD-8): wait for ``head_sha``'s check runs before
     the merge. ``main`` has no branch protection and the landing never
@@ -626,6 +655,11 @@ def _wait_for_landing_checks(
     sleep ``min(poll, time left)`` and read again. The timeout therefore wins
     over a grace that outlasts it: an empty set never merges past the timeout.
 
+    ``on_wait_tick`` (the supervisor's heartbeat; ``None`` on the CLI landing path,
+    which has no run to keep alive) is called after every poll and, via
+    ``_sleep_with_ticks``, at least every ``min(poll_seconds, 60)`` seconds of
+    waiting -- this loop knows nothing about what a tick does.
+
     A refusal leaves the PR open -- this function closes and merges nothing --
     so re-running the landing merges once CI is green."""
     timeout_s = settings.timeout_seconds
@@ -636,6 +670,7 @@ def _wait_for_landing_checks(
 
     def _outcome(outcome: str, finding: Finding | None, **extra: object) -> _LandingChecksOutcome:
         record: dict[str, object] = {
+            "head_sha": head_sha,
             "outcome": outcome,
             "polls": polls,
             "waited_seconds": round(elapsed, 3),
@@ -663,6 +698,8 @@ def _wait_for_landing_checks(
                 error=str(exc),
             )
         elapsed = monotonic() - started
+        if on_wait_tick is not None:
+            on_wait_tick()
         verdict = classify_check_runs(runs)
         if verdict.state is CheckState.RED:
             return _outcome(
@@ -698,7 +735,11 @@ def _wait_for_landing_checks(
                     ),
                 ),
             )
-        sleep(min(settings.poll_seconds, timeout_s - elapsed))
+        _sleep_with_ticks(
+            min(settings.poll_seconds, timeout_s - elapsed),
+            sleep=sleep,
+            on_wait_tick=on_wait_tick,
+        )
 
 
 def execute_dispatch_land(
@@ -716,14 +757,20 @@ def execute_dispatch_land(
     process: ProcessPort | None = None,
     sleep: Callable[[float], None] | None = None,
     monotonic: Callable[[], float] | None = None,
+    on_wait_tick: Callable[[], None] | None = None,
 ) -> tuple[DispatchLandingResult, Envelope]:
     """Land a verified dispatch through existing marshal land/deploy semantics.
 
     Story 80.1 (CAP-284): immediately before ``forge.merge_pr`` the landing
     waits for the PR head's check runs (``_wait_for_landing_checks``) and
-    refuses on a red one or a timeout. ``sleep``/``monotonic`` default to
+    refuses on a red one or a timeout -- and so does the head a union heal
+    pushes after a failed merge (``try_heal_dispatch_land_merge``'s
+    ``await_checks``), which CI has not seen. ``sleep``/``monotonic`` default to
     ``time.sleep``/``time.monotonic``; they are keyword-only seams so a test
-    drives a fake clock."""
+    drives a fake clock. ``on_wait_tick`` is called after every poll and at
+    least every ``min(poll_seconds, 60)`` seconds of waiting -- the dispatch
+    supervisor passes its heartbeat so the portal does not sweep a live run as
+    ``heartbeat_lost`` mid-wait; the CLI landing path passes none."""
     sleep = sleep if sleep is not None else time.sleep
     monotonic = monotonic if monotonic is not None else time.monotonic
     process = process if process is not None else PosixProcess()
@@ -1097,14 +1144,16 @@ def execute_dispatch_land(
 
     # Story 80.1 (CAP-284): `head_sha` is final here (the reconcile refresh
     # above has run), so this is the commit whose checks gate the merge.
+    check_settings = resolve_landing_check_settings(effective)
     checks = _wait_for_landing_checks(
         forge=forge,
         repo_ref=repo_ref,
         head_sha=head_sha,
         pr_number=pr.number,
-        settings=resolve_landing_check_settings(effective),
+        settings=check_settings,
         sleep=sleep,
         monotonic=monotonic,
+        on_wait_tick=on_wait_tick,
     )
     data[LANDING_CHECKS_FIELD] = checks.record
     if checks.finding is not None:
@@ -1135,6 +1184,26 @@ def execute_dispatch_land(
             subject=ForgeRef(subject),
         )
     except ForgeCommandError as exc:
+        # Story 80.1 (CAP-284): the union heal pushes a NEW head (`origin/main` merged into the
+        # branch) that the wait above never read, so the heal waits for its checks before it
+        # retries the merge. Each head's record is journaled: `landing_checks` holds the first
+        # head's, with the healed head's under `heal`.
+        heal_waits: list[_LandingChecksOutcome] = []
+
+        def _await_healed_head_checks(new_sha: str) -> Finding | None:
+            healed_checks = _wait_for_landing_checks(
+                forge=forge,
+                repo_ref=repo_ref,
+                head_sha=new_sha,
+                pr_number=pr.number,
+                settings=check_settings,
+                sleep=sleep,
+                monotonic=monotonic,
+                on_wait_tick=on_wait_tick,
+            )
+            heal_waits.append(healed_checks)
+            return healed_checks.finding
+
         # Story 59.1 (CAP-269): the heal measures against what GitHub merges against, fetched now;
         # a failed fetch skips the heal and the landing refuses as before (MRS-DISP-020).
         heal_skipped = ""
@@ -1160,7 +1229,10 @@ def execute_dispatch_land(
                 vcs=vcs,
                 forge=forge,
                 probe_ref=_ORIGIN_MAIN,
+                await_checks=_await_healed_head_checks,
             )
+        if heal_waits:
+            data[LANDING_CHECKS_FIELD] = {**checks.record, "heal": heal_waits[-1].record}
         if heal.escalated_paths:
             paths = ", ".join(heal.escalated_paths)
             findings.append(
@@ -1174,6 +1246,25 @@ def execute_dispatch_land(
                     ),
                 )
             )
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
+        if heal.checks_refusal is not None:
+            # Story 80.1 (CAP-284): the healed head is red or still pending -- the retried merge never
+            # ran, so the wait's own finding (MRS-DISP-056/057) is the refusal, not MRS-DISP-020.
+            findings.append(heal.checks_refusal)
             envelope = build_envelope(
                 command="dispatch land",
                 verdict=compute_verdict(tuple(findings)),
