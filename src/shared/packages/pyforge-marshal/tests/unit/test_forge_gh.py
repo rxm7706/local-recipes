@@ -15,6 +15,7 @@ import pytest
 from pyforge.marshal.adapters import forge_gh as forge_gh_module
 from pyforge.marshal.adapters.forge_gh import GhForge
 from pyforge.marshal.core.egress import Redacted
+from pyforge.marshal.core.landing_checks import CheckRun
 from pyforge.marshal.ports.forge import ForgeCommandError, ForgeRef, PrInfo
 
 
@@ -293,6 +294,151 @@ def test_check_run_status_treats_a_missing_started_at_as_oldest(forge, monkeypat
     monkeypatch.setattr(forge_gh_module, "_run", run)
     status = forge.check_run_status(_REPO, ForgeRef("deadbeef"), ForgeRef("x"))
     assert status == "success"
+
+
+# --- check_runs (Story 80.1, CAP-284) ---------------------------------------
+
+
+def _recorded_check_run(
+    name: str, status: str, conclusion: str | None, *, run_id: int = 1, started_at: str = "2026-10-01T10:00:00Z"
+) -> dict[str, object]:
+    """One ``check_runs[]`` entry as the real endpoint returns it -- far more than the three
+    fields the adapter reads, so the parser is proven to ignore the rest, not require a trimmed shape."""
+    return {
+        "id": run_id,
+        "node_id": f"CR_kwDOAAAA{run_id}",
+        "head_sha": "deadbeefcafe",
+        "external_id": f"{run_id:08d}-0000-0000-0000-000000000000",
+        "url": f"https://api.github.com/repos/acme/widgets/check-runs/{run_id}",
+        "html_url": f"https://github.com/acme/widgets/actions/runs/{run_id}/job/{run_id}",
+        "details_url": f"https://github.com/acme/widgets/actions/runs/{run_id}/job/{run_id}",
+        "status": status,
+        "conclusion": conclusion,
+        "started_at": started_at,
+        "completed_at": None if conclusion is None else "2026-10-01T10:05:00Z",
+        "output": {"title": None, "summary": None, "text": None, "annotations_count": 0},
+        "name": name,
+        "check_suite": {"id": 9000 + run_id},
+        "app": {"id": 15368, "slug": "github-actions", "name": "GitHub Actions"},
+        "pull_requests": [],
+    }
+
+
+def test_check_runs_parses_a_recorded_response_into_check_runs(forge, monkeypatch):
+    """The recorded shape of ``GET repos/<repo>/commits/<sha>/check-runs`` (a head with one failed,
+    one in-progress, one skipped and one green run): every run comes back with its status and conclusion."""
+    recorded = {
+        "total_count": 4,
+        "check_runs": [
+            _recorded_check_run("Detectors / scripts-suite", "completed", "failure", run_id=11),
+            _recorded_check_run("Platform CI / platform-ci", "in_progress", None, run_id=12),
+            _recorded_check_run("Lint / ruff", "completed", "skipped", run_id=13),
+            _recorded_check_run("Station tests / marshal", "completed", "success", run_id=14),
+        ],
+    }
+    run = _ScriptedRun([_completed([], stdout=json.dumps(recorded))])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    assert forge.check_runs(_REPO, ForgeRef("deadbeefcafe")) == (
+        CheckRun(name="Detectors / scripts-suite", status="completed", conclusion="failure"),
+        CheckRun(name="Platform CI / platform-ci", status="in_progress", conclusion=None),
+        CheckRun(name="Lint / ruff", status="completed", conclusion="skipped"),
+        CheckRun(name="Station tests / marshal", status="completed", conclusion="success"),
+    )
+    (argv,) = run.calls
+    assert argv == ["gh", "api", "repos/acme/widgets/commits/deadbeefcafe/check-runs?per_page=100&page=1"]
+
+
+def test_check_runs_answers_empty_when_no_run_is_registered_yet(forge, monkeypatch):
+    run = _ScriptedRun([_completed([], stdout=json.dumps({"total_count": 0, "check_runs": []}))])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    assert forge.check_runs(_REPO, ForgeRef("deadbeef")) == ()
+
+
+def test_check_runs_follows_pagination_until_total_count_is_reached(forge, monkeypatch):
+    """A head with more runs than one page holds: every page is read, in order, and the tuple is the
+    complete set -- never the first page alone (a partial list could read as green)."""
+    first_page = [_recorded_check_run(f"job-{i}", "completed", "success", run_id=i) for i in range(1, 101)]
+    second_page = [_recorded_check_run("job-101", "completed", "failure", run_id=101)]
+    run = _ScriptedRun(
+        [
+            _completed([], stdout=json.dumps({"total_count": 101, "check_runs": first_page})),
+            _completed([], stdout=json.dumps({"total_count": 101, "check_runs": second_page})),
+        ]
+    )
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    runs = forge.check_runs(_REPO, ForgeRef("deadbeef"))
+    assert len(runs) == 101
+    assert runs[-1] == CheckRun(name="job-101", status="completed", conclusion="failure")
+    assert [argv[-1] for argv in run.calls] == [
+        "repos/acme/widgets/commits/deadbeef/check-runs?per_page=100&page=1",
+        "repos/acme/widgets/commits/deadbeef/check-runs?per_page=100&page=2",
+    ]
+
+
+def test_check_runs_raises_on_gh_failure(forge, monkeypatch):
+    run = _ScriptedRun([_completed([], returncode=1, stderr="HTTP 502")])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    with pytest.raises(ForgeCommandError, match="HTTP 502"):
+        forge.check_runs(_REPO, ForgeRef("deadbeef"))
+
+
+def test_check_runs_raises_when_a_later_page_fails_never_a_partial_list(forge, monkeypatch):
+    first_page = [_recorded_check_run(f"job-{i}", "completed", "success", run_id=i) for i in range(1, 101)]
+    run = _ScriptedRun(
+        [
+            _completed([], stdout=json.dumps({"total_count": 150, "check_runs": first_page})),
+            _completed([], returncode=1, stderr="rate limited"),
+        ]
+    )
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    with pytest.raises(ForgeCommandError, match="rate limited"):
+        forge.check_runs(_REPO, ForgeRef("deadbeef"))
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    [
+        "not json at all",
+        json.dumps([]),
+        json.dumps({"total_count": 1}),
+        json.dumps({"total_count": 1, "check_runs": "nope"}),
+        json.dumps({"check_runs": []}),
+        json.dumps({"total_count": "1", "check_runs": []}),
+        json.dumps({"total_count": True, "check_runs": []}),
+        json.dumps({"total_count": 1, "check_runs": ["not-an-object"]}),
+        json.dumps({"total_count": 1, "check_runs": [{"status": "completed", "conclusion": "success"}]}),
+        json.dumps({"total_count": 1, "check_runs": [{"name": "ci", "conclusion": "success"}]}),
+        json.dumps({"total_count": 1, "check_runs": [{"name": "ci", "status": "completed", "conclusion": 7}]}),
+    ],
+)
+def test_check_runs_raises_on_a_payload_it_cannot_read(forge, monkeypatch, stdout):
+    run = _ScriptedRun([_completed([], stdout=stdout)])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    with pytest.raises(ForgeCommandError):
+        forge.check_runs(_REPO, ForgeRef("deadbeef"))
+
+
+def test_check_runs_raises_when_a_page_ends_short_of_total_count(forge, monkeypatch):
+    first_page = [_recorded_check_run("job-1", "completed", "success")]
+    run = _ScriptedRun(
+        [
+            _completed([], stdout=json.dumps({"total_count": 5, "check_runs": first_page})),
+            _completed([], stdout=json.dumps({"total_count": 5, "check_runs": []})),
+        ]
+    )
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    with pytest.raises(ForgeCommandError, match="empty page"):
+        forge.check_runs(_REPO, ForgeRef("deadbeef"))
+
+
+def test_check_runs_stops_at_the_runaway_page_cap(forge, monkeypatch):
+    monkeypatch.setattr(forge_gh_module, "_CHECK_RUNS_MAX_PAGES", 3)
+    page = [_recorded_check_run("job", "completed", "success")]
+    run = _ScriptedRun([_completed([], stdout=json.dumps({"total_count": 10**6, "check_runs": page}))] * 3)
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    with pytest.raises(ForgeCommandError, match="more than 3 pages"):
+        forge.check_runs(_REPO, ForgeRef("deadbeef"))
+    assert len(run.calls) == 3
 
 
 # --- merge_pr (Story 4.8) --------------------------------------------------

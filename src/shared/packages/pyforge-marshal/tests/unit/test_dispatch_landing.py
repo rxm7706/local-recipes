@@ -23,6 +23,8 @@ from pyforge.marshal.core.dispatch_landing import (
 )
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.identity import normalize, render_merge_subject
+from pyforge.marshal.core.journal import resolve_landing_checks_from_payload
+from pyforge.marshal.core.landing_checks import CheckRun
 from pyforge.marshal.core.model import Severity, Status, status_for
 from pyforge.marshal.dispatch_land import (
     _SPEC_SURFACE_NAME_RE,
@@ -147,9 +149,20 @@ class FakeVcs:
         return 0
 
 
+# Story 80.1 (CAP-284): the landing reads the PR head's check runs before it merges. Every landing
+# fixture in this file answers green, so the wait ends on its first poll without ever sleeping.
+_GREEN_RUNS = (
+    CheckRun(name="Lint / ruff", status="completed", conclusion="success"),
+    CheckRun(name="Station tests / marshal", status="completed", conclusion="success"),
+)
+
+
 class FakeForge:
     def find_open_pr(self, repo, head_branch):
         return None
+
+    def check_runs(self, repo, ref):
+        return _GREEN_RUNS
 
     def create_pr(self, repo, base, head_branch, title, body):
         return PrInfo(number=42, url="https://example/pr/42", state="open", base="main")

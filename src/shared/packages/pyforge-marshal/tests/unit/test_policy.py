@@ -14,6 +14,7 @@ here.
 from __future__ import annotations
 
 import json
+import dataclasses
 import tomllib
 from pathlib import Path
 
@@ -654,6 +655,117 @@ def test_dispatch_max_parallel_two_on_real_marshal_policy_does_not_fire_scm_clam
     assert effective.dispatch.value == {"max_parallel": 2}
     codes = {f.code for f in findings}
     assert "MRS-POLICY-007" not in codes
+
+
+# --- Story 80.1 (CAP-284): the dispatch block's landing_check_* keys -----------
+
+_LANDING_CHECK_DEFAULTS = {
+    "landing_check_poll_seconds": 60,
+    "landing_check_timeout_minutes": 45,
+    "landing_check_grace_seconds": 120,
+}
+
+
+def test_dispatch_landing_check_keys_default_to_60_45_and_120():
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    assert effective.dispatch.layer is PolicyLayer.DEFAULT
+    assert dict(effective.dispatch.value) == {"max_parallel": 1, **_LANDING_CHECK_DEFAULTS}
+    assert policy.resolve_landing_check_settings(effective) == policy.LandingCheckSettings(
+        poll_seconds=60.0, timeout_minutes=45.0, grace_seconds=120.0
+    )
+    assert policy.resolve_landing_check_settings(effective).timeout_seconds == 2700.0
+
+
+def test_dispatch_block_declaring_only_max_parallel_reads_the_landing_check_defaults_at_the_consumer():
+    """``_merge_field`` replaces a block whole, and the tracked marshal-policy.toml declares only
+    ``max_parallel``: the block stays exactly what was declared, and the consumer fills the defaults."""
+    effective, findings = compose(project_slug="acme", project={"dispatch": {"max_parallel": 2}}, flags={})
+    assert findings == ()
+    assert dict(effective.dispatch.value) == {"max_parallel": 2}
+    assert policy.resolve_landing_check_settings(effective) == policy.LandingCheckSettings(
+        poll_seconds=60.0, timeout_minutes=45.0, grace_seconds=120.0
+    )
+
+
+def test_dispatch_block_may_declare_any_non_empty_subset_of_its_keys():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"dispatch": {"landing_check_poll_seconds": 5, "landing_check_grace_seconds": 0}},
+        flags={},
+    )
+    assert findings == ()
+    assert dict(effective.dispatch.value) == {"landing_check_poll_seconds": 5, "landing_check_grace_seconds": 0}
+    settings = policy.resolve_landing_check_settings(effective)
+    assert settings.poll_seconds == 5.0
+    assert settings.grace_seconds == 0.0  # 0 is a real "no grace", not "unset"
+    assert settings.timeout_minutes == 45.0
+
+
+def test_dispatch_block_accepts_fractional_poll_and_timeout():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"dispatch": {"landing_check_poll_seconds": 0.5, "landing_check_timeout_minutes": 1.5}},
+        flags={},
+    )
+    assert findings == ()
+    settings = policy.resolve_landing_check_settings(effective)
+    assert (settings.poll_seconds, settings.timeout_minutes, settings.timeout_seconds) == (0.5, 1.5, 90.0)
+
+
+@pytest.mark.parametrize(
+    "block",
+    [
+        {"landing_check_poll_seconds": 0},
+        {"landing_check_poll_seconds": -1},
+        {"landing_check_poll_seconds": True},
+        {"landing_check_poll_seconds": "60"},
+        {"landing_check_poll_seconds": float("inf")},
+        {"landing_check_timeout_minutes": 0},
+        {"landing_check_timeout_minutes": float("nan")},
+        {"landing_check_timeout_minutes": None},
+        {"landing_check_grace_seconds": -1},
+        {"landing_check_grace_seconds": 1.5},
+        {"landing_check_grace_seconds": False},
+        {"max_parallel": 0, "landing_check_poll_seconds": 5},
+        {"landing_check_poll_seconds": 5, "landing_check_unknown": 1},
+        {},
+    ],
+)
+def test_an_invalid_dispatch_block_is_a_named_policy_finding_and_falls_back_to_the_default(block):
+    """One bad value (or an unknown key, or an empty block) rejects the WHOLE block with MRS-POLICY-002
+    naming ``dispatch``; composition falls back to the layer below, here the Marshal default."""
+    effective, findings = compose(project_slug="acme", project={"dispatch": block}, flags={})
+    assert [f.code for f in findings] == ["MRS-POLICY-002"]
+    assert "dispatch" in findings[0].message
+    assert effective.dispatch.layer is PolicyLayer.DEFAULT
+    assert dict(effective.dispatch.value) == {"max_parallel": 1, **_LANDING_CHECK_DEFAULTS}
+
+
+def test_a_flag_layer_dispatch_block_wins_over_the_project_layer():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"dispatch": {"landing_check_timeout_minutes": 10}},
+        flags={"dispatch": {"landing_check_timeout_minutes": 3}},
+    )
+    assert findings == ()
+    assert effective.dispatch.layer is PolicyLayer.FLAG
+    assert policy.resolve_landing_check_settings(effective).timeout_minutes == 3.0
+
+
+def test_resolve_landing_check_settings_never_raises_on_a_value_that_bypassed_validation():
+    """The resolver is the consumer's read, bounded by policy: a stored value that fails its
+    validator (only reachable by constructing the field directly) reads as the default."""
+    garbage = PolicyField(
+        value={"landing_check_poll_seconds": 0, "landing_check_timeout_minutes": "x", "landing_check_grace_seconds": -5},
+        layer="project",
+        raw_source={},
+    )
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    forged = dataclasses.replace(effective, dispatch=garbage)
+    assert policy.resolve_landing_check_settings(forged) == policy.LandingCheckSettings(
+        poll_seconds=60.0, timeout_minutes=45.0, grace_seconds=120.0
+    )
 
 
 def test_the_real_pyforge_marshal_policy_declares_no_context_block():
