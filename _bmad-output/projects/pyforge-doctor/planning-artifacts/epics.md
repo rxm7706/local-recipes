@@ -2822,6 +2822,89 @@ mason, and any other)
 **And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
 **Status:** blocked
 
+## Epic 38: Doctor stops letting deferrals and dead checks pile up (spec-pyforge-doctor CAP-29, CAP-88, CAP-42, CAP-1)
+
+Minted 2026-10-01 from the station Dream's entry of the same date and the operator's rulings of that date: the deferral
+burn-down's "stop the inflow" changes run before its Phase 2, and `sources/hygiene.py` is wired in warn-only. Stories
+38.1, 38.3 and 38.4 realize shipped or in-progress capabilities (CAP-29, CAP-42/43, CAP-1); 38.2 is new (CAP-88). A new
+epic because Epic 37 is `done`. **HARD boundaries:** no existing `verified:` line is rewritten or reds the gate; the
+dead-glob finding and the hygiene sweep are warnings, never gating; the env-hygiene walk prunes only paths git does not
+track and still reports incomplete when the cap is truly hit.
+
+### Story 38.1: A `verified:` line written from now on cites what it read
+
+As the operator trusting a re-verified deferral,
+I want a new `verified:` line that cites no `file:line` and no measured fact refused by the deferred-work check,
+So that a verdict is evidence, not a restatement, as CAP-29 already says.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** CAP-29 (`spec-deferred-work-resolution-sweep` CAP-4) •
+DW-OPS-2026-10-01-4
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` (the deferred-work gather beside
+`_VERIFIED_RE`); doctor tests.
+**Given** CAP-29's success clause says every `verified:` line cites a `file:line` or a reproduced or measured fact, and
+the deferred-work check reads `verified:` lines only for their date
+**When** this story lands
+**Then** a `verified:` line dated on or after the landing date that contains neither a `path:line` reference nor a quoted
+command with its exit code is a FAIL finding naming the entry; earlier lines are counted in the OK finding's detail and
+never fail
+**And** tests cover a cited line, a bare line, a pre-cutoff bare line, a line citing only a command and exit code, and a
+`path:line-line` range; on `main` the check stays green; `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
+
+### Story 38.2: `spec-surface` names a Spec surface glob that matches nothing
+
+As the operator relying on `spec-surface` to say what each Spec governs,
+I want a `surface:` glob that matches no tracked file reported, as a stale allowlist entry already is,
+So that a retired or misspelt glob stops rotting silently.
+
+**Type:** feature • **Effort:** S • **Deps:** S-38.1 • **FR/AD:** CAP-88 (FR-21; extends `spec-regenerable-factory`
+CAP-2) • DW-OPS-2026-10-01-2 • **Flag:** flag-exempt: detector-or-gate
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` (`_check_spec_surface`, beside the
+`stale-allowlist` finding); doctor tests.
+**Given** a Spec `surface:` glob that matches no tracked file produces no finding, and 25 such globs sit in 7 Specs
+**When** this story lands
+**Then** each one is a `stale-surface` WARN naming the Spec and the glob; the check's exit code does not change for it;
+a glob in a Spec whose surface could not be read is not reported (the existing unevaluable path holds)
+**And** tests cover a matching glob, a dead glob, a trailing-slash directory glob, a brace glob and an unreadable surface;
+`pixi run -e pyforge-guild spec-surface-check` lists the dead globs and exits 0; `pixi run --frozen -e pyforge-doctor
+pyforge-doctor-test` green
+
+### Story 38.3: The fleet hygiene sweep runs with the other detectors, warn-only
+
+As the operator who wants Story 9.2's hygiene sweep to report,
+I want `sources/hygiene.py` dispatched and listed with the other detectors,
+So that its findings are seen and its four deferrals describe code that runs.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** CAP-42, CAP-43 (`spec-deferred-work-visibility` CAP-8, CAP-9);
+operator ruling 2026-10-01 • DW-OPS-2026-10-01-1
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py` (`DISPATCH`), `scripts/detectors.py`,
+`pixi.toml` (one `guild-tasks` task); doctor tests.
+**Given** `Source.BMAD_OUTPUT_HYGIENE` is registered but absent from `DISPATCH`, the detector list and `pixi.toml`
+**When** this story lands
+**Then** `python -m pyforge.doctor.sources bmad-output-hygiene` runs `hygiene.gather`, a pixi task runs it, and the
+detector aggregate runs it; its findings are WARN and never change an exit code
+**And** the four hygiene deferrals (DW-FU-9-2, DW-FU-9-2-2, DW-FU-9-2-3, DW-FU-9-3) are re-checked against the running
+source and closed or updated with evidence; `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
+
+### Story 38.4: `doctor check .` completes on the primary checkout
+
+As the operator running `doctor check .` where I work,
+I want the env-hygiene walk to skip directories git does not track,
+So that it finishes instead of reporting incomplete at its entry cap.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** CAP-1 (FR-3, the credential/env-hygiene check) •
+DW-OPS-2026-10-01-3
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py` (`_discover_python_files`);
+doctor tests.
+**Given** the walk visits untracked local directories and hits `_DISCOVERY_ENTRY_CAP` (57,142 entries against 50,000)
+on the primary checkout
+**When** this story lands
+**Then** in a git work tree the walk prunes directories git ignores or does not track (one `git` call per run, never one
+per directory), the cap and its incomplete report stay for a truly huge tracked tree, and outside a git work tree the walk
+is unchanged
+**And** tests cover an ignored directory pruned, a tracked file under it still scanned, a non-git target and the cap still
+tripping; on the primary checkout `doctor check .` reports complete; `pixi run --frozen -e pyforge-doctor
+pyforge-doctor-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

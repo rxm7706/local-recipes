@@ -36,7 +36,7 @@ sources:
   - ../../prds/prd-pyforge-doctor-2026-07-25/prd.md
   - ../../epics.md
 spec: pyforge-doctor
-updated: '2026-09-28'
+updated: '2026-10-01'
 covers-dreams:
   - docs/dreams/bmad-drift-new-artifact-shape.md
   - docs/dreams/bmad-method-version-drift.md
@@ -327,6 +327,9 @@ Four further capabilities (CAP-5..8) extend this v1 walking skeleton along a fro
 - **CAP-87 — capability-ledger's post-PIN check reads only live Specs** (minted 2026-09-28 (night), operator ruling; narrows `fcl:CAP-2`'s `--append` clause to the extract's own scope; extends CAP-36)
   - **intent:** the capability-ledger source (`sources/capability_ledger.py`, the `capability-ledger-check` task, in `detectors-ci`) warns `post-PIN Spec without a ledger row --append` only for a `SPEC.md` that was added after the ledger's `source_sha`, whose frontmatter `status` is live, and that no ledger row names. Live means the same `_LIVE_STATUSES` (`ready`, `in-progress`) the CAP extract reads, read through the same frontmatter reader `iter_live_specs` uses, so the two cannot disagree. A post-PIN Spec that is `absorbed`, `draft`, `shipped` or carries no status is not inventoried, has nothing to classify, and is not reported; once it goes live it warns until it is classified. Everything else is unchanged: the HARD findings (an unclassified live CAP, `A-only` without an expiry, `verified-in-foundry` without a 54.1 case id), the per-CAP post-PIN `--append` WARN, the finding's message and `kind: append`, and the source's read-only posture (it writes no ledger row).
   - **success:** on `main` the eight non-live post-PIN Specs (seven `absorbed`, one `draft`) report no WARN, and `capability-ledger-check` exits 0 with its OK finding; in a throwaway repository with a PIN commit, a post-PIN `status: absorbed` Spec and a post-PIN `status: draft` Spec with no rows report nothing, while a post-PIN `status: ready` Spec with no CAP heading and no row still reports one `--append` WARN naming its path; restoring the status-blind loop makes the absorbed and draft tests fail (mutation); `pyforge-doctor-test` green.
+- **CAP-88 — `spec-surface` names a Spec surface glob that matches nothing** (minted 2026-10-01, from the deferral burn-down; extends `spec-regenerable-factory` CAP-2)
+  - **intent:** `spec-surface` (`sources/chain.py::_check_spec_surface`, in `detectors-ci`) already reports an allowlist entry that matches no tracked file (`stale-allowlist`), but a Spec `surface:` glob that matches nothing produces no finding, so a retired or misspelt glob rots silently — the asymmetry `spec-regenerable-factory`'s memlog and Story 6.9 recorded. Each such glob becomes a `stale-surface` WARN naming the Spec and the glob. A WARN, never gating: 25 such globs sit in 7 Specs on 2026-10-01, and a Spec whose surface could not be read is not judged.
+  - **success:** a fixture repo with one matching and one dead glob reports exactly one `stale-surface` WARN; a trailing-slash directory glob and a brace glob are judged by what they really match; an unreadable surface reports no `stale-surface` row; on `main` `spec-surface-check` lists the dead globs and exits 0; `pyforge-doctor-test` green.
 
 ## Constraints
 

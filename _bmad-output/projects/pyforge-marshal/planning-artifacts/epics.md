@@ -7981,6 +7981,57 @@ truncated escalates by name with nothing committed or pushed; a frontmatter fiel
 differently on both sides escalates; any other conflicted file escalates as today; the landing journal names the healed
 memlogs; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
+## Epic 79: A landing leaves nothing for the operator to finish (spec-pyforge-marshal CAP-229, CAP-277, CAP-261 (a))
+
+Minted 2026-10-01 from the station Dream's entry of the same date and the operator's ruling of that date: the deferral
+burn-down's "stop the inflow" changes run before its Phase 2. Defects of shipped capabilities, so no CAP is minted; a new
+epic because Epic 78 is `done`. **HARD boundaries:** a promotion never moves a `done` or `blocked` row backwards and never
+writes the operator's checkout's tracked files (CAP-233); verification gains `lint-types` in one derived place for every
+station, never by editing eight `verify_commands` lists; no `epic_surfaces` entry a done story's follow-up review needs is
+removed.
+
+### Story 79.1: A landing promotes the story's Tier-3 feed row and its tracked spec, not only the ledger twin
+
+As the operator after an automatic landing,
+I want the story's Tier-3 feed row and tracked spec at `done` beside the ledger twin,
+So that the next plain `sprint-ledger-sync` reports `unchanged` instead of refusing, and no spec stays at `backlog` on `main`.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** CAP-229, CAP-277 (the landing's promotion); CAP-261 (b) (Story 53.2);
+CAP-233 • DW-OPS-2026-10-01-1, DW-FU-53-2-4
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` and the promotion
+helpers it calls; marshal tests.
+**Given** an automatic landing promotes the tracked `sprint-status-ledger.yaml` row to `done` but leaves the story's
+Tier-3 feed row (`implementation-artifacts/sprint-status.yaml`) at `backlog`, and promotes no tracked story spec the
+session committed itself
+**When** this story lands
+**Then** finalize also writes the feed row `done` (an atomic replace of the resolved feed file; a row already `done` or
+`blocked` is left as it is; a missing feed or row is a WARN finding, never a crash), and a corroborated landing whose
+tracked story spec is still at a pre-done status promotes that spec to `done`
+**And** a plain `sprint-ledger-sync -- --project <station>` right after a landing reports `unchanged`; tests with a real
+feed file cover backlog→done, already done, blocked untouched, missing feed, missing row and the tracked-spec-only
+session; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 79.2: Dispatch verification runs `lint-types`, and the "stopgap" surfaces stop calling themselves one
+
+As the operator whose `main` must stay green after every landing,
+I want a dispatch whose change fails `lint-types` refused before it merges,
+So that no landing reds a lane the merge gate does not run.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** CAP-261 (a) (Story 53.1, the derived verification guard); `spec-marshal-token-economy`
+CAP-17 (Story 28.15) • DW-OPS-2026-10-01-2, DW-OPS-2026-10-01-3, DW-FU-28-14-4
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` (beside
+`_verify_commands_with_surface_guard`); `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml` (the
+`"22"`/`"28"` comments only); marshal tests.
+**Given** a dispatch's verification runs only the station's `verify_commands` plus the derived surface guard, and the
+`"22"`/`"28"` entries still call themselves a stopgap awaiting Story 28.15, which is `done`
+**When** this story lands
+**Then** dispatch verification also runs `pixi run --frozen -e pyforge-guild lint-types`, derived in one place for every
+station; a red result refuses the landing with a finding that names the lane; the `"22"`/`"28"` comments say the
+station-wide surface is the convention every later epic declares, and their globs are unchanged
+**And** `gate.check_spec_binding` still passes for every tracked spec (an extra policy command is never a finding);
+tests cover a station with and without its own `verify_commands`, a lint-types failure refusing, and the derived command
+appearing exactly once; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

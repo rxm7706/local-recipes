@@ -787,6 +787,24 @@ verify_commands = [
   "docs/reference/environments.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"80" = [  # the chart tests run in Platform CI (deferral burn-down inflow), added 2026-10-01.
+          # The default surface, restated because a declared entry replaces it outright, plus the CI lane, the
+          # platform tests that carry requires_helm and every Spec memlog.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "scripts/.spec-surface-baseline.json",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  ".github/workflows/platform-ci.yml",
+  "src/platform/tests/**",
+  "src/platform/conftest.py",
+  "scripts/platform-ci-local.sh",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "79" = [  # the session check and the dispatch preamble read each other's real output (CAP-5 defect), added 2026-10-01.
           # The default surface, restated because a declared entry replaces it outright, plus marshal's dispatch
           # preamble and its test (Story 63.4's own surface), marshal's seed-check CLI test (the producer pin for

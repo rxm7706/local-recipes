@@ -86,6 +86,27 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-01** — **Found: four places Doctor lets deferrals and dead checks pile up.** The 2026-09-30 deferral
+  burn-down (937 open entries re-read against `main`) found Doctor's own checks letting the ledgers drift:
+  - **A `verified:` line can assert a verdict with no evidence.** CAP-29 says every line cites a `file:line` or a measured
+    fact, but nothing checks it: two lines said "still open" after the fix had landed (DW-FU-42-3-9, DW-FU-46-1-6) and one
+    checked the wrong file (DW-10-3-1) (DW-OPS-2026-10-01-4).
+  - **A Spec `surface:` glob that matches nothing is invisible.** `spec-surface` reports a stale allowlist entry but not a
+    stale surface glob, the asymmetry `spec-regenerable-factory`'s memlog recorded and Story 6.9 noted; 25 globs across
+    7 Specs match no tracked file while the check reports ok (DW-OPS-2026-10-01-2).
+  - **`sources/hygiene.py` never runs.** Story 9.2 built the fleet hygiene sweep (CAP-42) as a registered source, but
+    nothing dispatches it, so its four deferrals describe code nothing runs (DW-OPS-2026-10-01-1). Operator ruling
+    2026-10-01: wire it in, warn-only (CAP-43: reported, never auto-applied); it reports 5 orphan-file warnings today.
+  - **`doctor check .` never finishes on the primary checkout.** The env-hygiene walk hits its 50,000-entry cap (57,142)
+    on untracked local directories (`.cursor/cdao-p15-noarch-build`, `var/scribe-pg`, `var/platform-local`) and
+    reports incomplete (DW-OPS-2026-10-01-3).
+  **What it looks like when fixed:** a new `verified:` line with no citation reds the deferred-work check; a dead surface
+  glob is a named warning; the hygiene sweep runs with the other detectors, warn-only; `doctor check .` completes on the
+  primary checkout.
+  **Constraints:** lines already written are grandfathered by date, never rewritten; the dead-glob finding warns, so the
+  25 known globs do not red the merge gate; hygiene stays advisory; the walk prunes only what git does not track.
+  Owner `spec-pyforge-doctor`. → CAP-88 (the dead-glob finding) / Epic 38 / Stories 38.1–38.4, specced 2026-10-01.
+
 - **2026-09-28 (night)** — **Proposed: capability-ledger's post-PIN check reads only live Specs.** Found by the
   session coordinator and verified the same night on `main` (`0c8c07e6fc`). `capability-ledger-check` (Story 55.2,
   `fcl:CAP-2`, `sources/capability_ledger.py`) prints eight WARNs of the form `post-PIN Spec without a ledger row

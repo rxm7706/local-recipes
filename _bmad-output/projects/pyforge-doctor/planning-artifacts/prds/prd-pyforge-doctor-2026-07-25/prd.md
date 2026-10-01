@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-09-28'   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-01'   # RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -687,6 +687,18 @@ OK and `capability-ledger-check` exits 0; the source writes no ledger row.
 
 *Decomposed as Epic 35 — Story 35.1, a new epic because Epic 33's only story is `blocked` and Epic 34 is the Guild's relay.*
 
+## FR-21 — `spec-surface` names a Spec surface glob that matches nothing (spec-pyforge-doctor CAP-88)
+
+Added 2026-10-01 (deferral burn-down). `spec-surface` reports an allowlist entry that matches no tracked file, but not a
+Spec `surface:` glob that matches nothing, so a retired or misspelt glob stops governing anything without a word. On
+2026-10-01, 25 such globs sat in 7 Specs while the check reported ok.
+
+**Consequences (testable):** each dead `surface:` glob is one `stale-surface` WARN naming the Spec and the glob; a WARN
+never changes the exit code; a glob in a Spec whose surface could not be read is not reported; the existing
+`stale-allowlist`, drift and coverage findings do not change.
+
+*Decomposed as Epic 38 — Story 38.2 (Deps 38.1, the same module), a new epic because Epic 37 is `done`.*
+
 ## 9. Assumptions Index
 
 - §1/Brief carry-over — Doctor adds no new detection capability beyond credential
@@ -969,3 +981,11 @@ source, over files that source already reads. `updated:` bumped.*
 *Chain-currency cascade (spec → PRD): `spec-pyforge-doctor` minted CAP-87 on 2026-09-28 (night, operator ruling: the
 capability-ledger source's post-PIN WARN reads only live Specs). FR-20 registered above to cite it; decomposed as **Epic 35**
 (Story 35.1). No AD amended: one status test inside an existing source's existing loop. `updated:` bumped.*
+
+## Currency reconciliation — 2026-10-01
+
+*Chain-currency cascade (spec → PRD): `spec-pyforge-doctor` minted CAP-88 on 2026-10-01 (the deferral burn-down's "stop
+the inflow" changes, run before its Phase 2 by operator ruling). FR-21 registered above to cite it; decomposed as **Epic
+38**, whose other three stories realize existing capabilities (38.1: CAP-29's citation rule, enforced; 38.3: CAP-42/43,
+the hygiene sweep wired in warn-only by operator ruling; 38.4: CAP-1, the env-hygiene walk). No AD amended. `updated:`
+bumped.*

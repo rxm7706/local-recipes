@@ -309,6 +309,21 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"38" = [  # Doctor stops letting deferrals and dead checks pile up (CAP-29, CAP-88, CAP-42, CAP-1), added 2026-10-01
+  # 38.3 adds a pixi task and a detectors.py row; the rest is inside the default surface.
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/detectors.py",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+  # co-governor reconciles (spec-pyforge-core governs every station's src)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO
