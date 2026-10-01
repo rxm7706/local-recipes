@@ -5620,6 +5620,12 @@ capabilities:
     heading: "capability-ledger's post-PIN check reads only live Specs"
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-88
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`spec-surface` names a Spec surface glob that matches nothing"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   # herald one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-herald:CAP-1
     spec: pyforge-herald
