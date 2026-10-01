@@ -1841,11 +1841,12 @@ def run_dispatch_supervisor(
                 )
             except VcsCommandError, ValueError:
                 pass
-            # Story 67.1 (CAP-276): the repository facts read local `main`, which a
-            # primary that was not fast-forwarded still lacks, so the facts alone
-            # read a landed run `stopped_externally`. The journaled land decides the
-            # process verdict (the loop head's and the post-finalize re-read's rule);
-            # git keeps the facts the completion INTENT records (AD-33).
+            # Story 67.1 (CAP-276): the repository facts can lag a landing -- they
+            # read `origin/main` (Story 72.1), and a failed post-land fetch leaves
+            # that ref stale -- so the facts alone can read a landed run
+            # `stopped_externally`. The journaled land decides the process verdict
+            # (the loop head's and the post-finalize re-read's rule); git keeps the
+            # facts the completion INTENT records (AD-33).
             if _landing_succeeded(folded, run_id):
                 verdict = DispatchSessionVerdict.COMPLETED
 

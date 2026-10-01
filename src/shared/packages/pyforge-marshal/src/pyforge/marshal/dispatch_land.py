@@ -59,8 +59,9 @@ _FORGE_REPO = "rxm7706/local-recipes"
 _MERGE_BASE = "main"
 _MAINTENANCE_LABEL = "maintenance"
 # Story 51.1: `_ORIGIN_MAIN` (imported above from `core.refs`, Story 60.1) is
-# deliberately never `_MERGE_BASE` (the LOCAL landing base used everywhere
-# else in this file). Verifying against the local `main` would reproduce
+# deliberately never `_MERGE_BASE`, which since Story 72.1 is only the PR's
+# base branch, the fetch argument and the heal base -- every merge fact in
+# this file reads `_ORIGIN_MAIN`. Verifying against the local `main` would reproduce
 # the exact blind spot this story fixes: the 50.4/27.5 incident's
 # operator-composed merge commit landed against `origin/main`, not
 # whatever a stale local `main` happened to be.

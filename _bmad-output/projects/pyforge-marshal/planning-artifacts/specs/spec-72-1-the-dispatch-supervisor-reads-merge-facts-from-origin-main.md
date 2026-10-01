@@ -2,9 +2,9 @@
 title: '72.1: The dispatch supervisor reads merge facts from origin/main'
 type: 'fix'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: '464a1ad08a4568bfad3c506c270641bcd95b7523'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -131,6 +131,22 @@ Package root `src/shared/packages/pyforge-marshal/` (line anchors read at HEAD `
 ## Spec Change Log
 
 ## Review Triage Log
+
+Review 1 (2026-10-01, by hand): the dispatch session (run `pyforge-marshal-20261001T142824750Z-df41fdd4`) reached
+`in-review` and was killed by a host reboot at 15:47Z before its own review ran; marshal reads the run
+`stopped_externally`, and `dispatch-resume` recovers only a live session. An independent read-only reviewer read the
+diff (10 WIP checkpoints) against this spec and CAP-280: all 11 acceptance criteria implemented with named tests, the
+boundaries held, no debris, `pyforge-marshal-test` exit 0 (9440 passed, 5 skipped). No high or medium findings.
+
+- `[low]` `[patch]` `dispatch_supervisor/__main__.py`'s CAP-276 comment still said the repository facts read local
+  `main`. Fixed: they read `origin/main`, which a failed post-land fetch can leave stale.
+- `[low]` `[patch]` `dispatch_land.py` called `_MERGE_BASE` the local landing base used everywhere in the file. Fixed: it
+  is now only the PR base, the fetch argument and the heal base.
+- `[low]` `[patch]` The "never calls `_land_or_journal_block`" criterion was proven only through `execute_dispatch_land`.
+  Fixed: a direct recorder on `_land_or_journal_block`, asserted empty, and non-empty in the reverse fixture.
+- `[low]` `[reject]` `execute_dispatch_land` now fetches before the ALREADY_LANDED read and again in the preview: one
+  extra fetch per land. The spec requires the first; reusing it would couple the preview to the landing path for one
+  cheap network call.
 
 ## Source
 

@@ -2745,6 +2745,19 @@ def _spy(monkeypatch: pytest.MonkeyPatch, name: str) -> list[tuple[dict, object]
     return calls
 
 
+def _record_land_or_block(monkeypatch: pytest.MonkeyPatch) -> list[object]:
+    """Record every call of ``supervisor_main._land_or_journal_block`` (positional or keyword), calling through."""
+    real = supervisor_main._land_or_journal_block
+    calls: list[object] = []
+
+    def _wrapper(*args, **kwargs):
+        calls.append((args, kwargs))
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(supervisor_main, "_land_or_journal_block", _wrapper)
+    return calls
+
+
 def _log_landings_into(monkeypatch: pytest.MonkeyPatch, vcs: FakeVcs) -> None:
     """Put each land attempt into ``vcs.calls``, so a test can order it against the merge reads."""
     inner = supervisor_main.execute_dispatch_land
@@ -2762,6 +2775,7 @@ def test_supervisor_does_not_land_a_story_merged_on_origin_main_while_local_main
     repo_root = _repo(tmp_path)
     _seed_verified_run(repo_root)
     land_calls = _patch_landing(monkeypatch)
+    blocks = _record_land_or_block(monkeypatch)
     retries = _spy(monkeypatch, "should_retry_stuck_land")
     exits = _spy(monkeypatch, "supervisor_should_exit")
     publisher = FakePublisher()
@@ -2776,6 +2790,7 @@ def test_supervisor_does_not_land_a_story_merged_on_origin_main_while_local_main
 
     assert code == 0
     assert land_calls == []
+    assert blocks == []  # AC: `_land_or_journal_block` is never called (review 1: asserted directly)
     # The stuck-land retry reads the story as merged and never counts a tick.
     assert retries and all(kwargs["story_merged_on_main"] is True for kwargs, _ in retries)
     assert all(kwargs["stuck_land_ticks"] == 0 for kwargs, _ in retries)
@@ -2795,6 +2810,7 @@ def test_supervisor_lands_a_verified_story_that_only_local_main_shows_merged(
     repo_root = _repo(tmp_path)
     _seed_verified_run(repo_root)
     land_calls = _patch_landing(monkeypatch)
+    blocks = _record_land_or_block(monkeypatch)
 
     code = _run(
         repo_root,
@@ -2806,6 +2822,7 @@ def test_supervisor_lands_a_verified_story_that_only_local_main_shows_merged(
 
     assert code == 0
     assert len(land_calls) == 1
+    assert blocks  # the same recorder sees the land-or-block step here, so its silence above is meaningful
 
 
 def _seed_live_branch_land_run(repo_root: Path) -> None:
