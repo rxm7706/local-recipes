@@ -768,6 +768,25 @@ verify_commands = [
   # co-governor reconciles (spec-pyforge-core governs every station's src; the platform Specs co-govern src/platform)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"78" = [  # two platform auth controls stop failing open (security hotfix; CAP-99, unifying CAP-12, CAP-86), added 2026-10-01.
+          # The default surface, restated because a declared entry replaces it outright, plus the platform files
+          # the fix touches and every Spec memlog for the co-governor reconciles.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "scripts/.spec-surface-baseline.json",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/platform/config/**",
+  "src/platform/langflow_integration/**",
+  "src/platform/tests/**",
+  "src/platform/deploy/**",
+  "src/platform/compose/**",
+  "docs/reference/environments.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "76" = [  # the one flag tree can say what the flag rule needs (spec-feature-flag-governance CAP-5), added 2026-09-28 (night)
   "src/shared/packages/pyforge-steward/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
