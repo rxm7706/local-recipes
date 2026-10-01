@@ -2,9 +2,11 @@
 title: "79.1: A landing promotes the story's Tier-3 feed row and its tracked spec, not only the ledger twin"
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
+warnings:
+  - oversized
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - docs/dreams/pyforge-marshal.md
@@ -88,6 +90,38 @@ Type / Effort / Deps: fix / S / —.
 | uncorroborated | no merge evidence | nothing moves | — |
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` -- `finalize_dispatch_land`: the only caller; after `_landed_key_not_done_finding` it gains the feed and tracked-spec steps. Reuses `_parse_sprint_ledger_statuses` (cli/land.py) and `render_ledger_advancements` (core/status.py, a byte-preserving line rewrite over the same `development_status:` shape).
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py` -- `_promote_sprint_ledger` reads the feed at `root/_bmad-output/projects/<slug>/implementation-artifacts/sprint-status.yaml`, syncs it INTO the twin, advances the twin, and never writes the feed back; that is the defect. Read-only here.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py` -- `corroborated_merged_story_keys` (the gate: a `dispatch/<slug>/<key>` merge is trusted; a station-branch merge needs the spec at `done` on `origin/main`), `read_spec_status`, `SPEC_STATUS_DONE`. Gains the pre-done set and a pure `set_spec_status`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py` -- `spec_text_at_ref` resolves the tracked spec path then reads it at a ref; the path half is extracted as `story_spec_rel_path` for the publish.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py` -- `_scan_promotions` / `_execute_promotion_plan`: the Tier-3 scan; it finds no spec when the session committed the tracked one itself. Read-only here.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py` -- `commit_paths_onto_remote_tip`: publishes onto `origin/main` without touching the operator checkout (CAP-233); accepts only `planning-artifacts/` paths under a `preflight_skip_reason`.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize.py` -- `_StubVcs`, `_stub_finalize`, `_read_finalize_resync_entry`: the harness the new tests extend.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py` -- add `PRE_DONE_SPEC_STATUSES` and a pure `set_spec_status(text, status)` that mirrors `read_spec_status` -- one reader and one writer of the same frontmatter value
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py` -- extract `story_spec_rel_path`; `spec_text_at_ref` calls it -- the publish needs the path, not the text
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` -- compute corroboration whenever the scan has a plan; add `_promote_tier3_feed_row` and `_promote_tracked_spec`, called only when the landing is corroborated and `origin/main`'s ledger reads the key `done` -- AC 1-5
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize.py` -- real feed file in `tmp_path`: backlog to done, already done, blocked, missing feed, missing row, tracked-spec-only session, uncorroborated; plus unit tests for `set_spec_status` -- the I/O matrix
+- Run the mutation by hand (remove the feed write, expect the new tests red, restore) -- AC 6
+
+**Acceptance Criteria:**
+- Given the intent contract's six criteria, when `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` runs, then it passes and the mutation turns the new feed tests red
+
+## Spec Change Log
+
+## Design Notes
+
+- **One gate for both writes.** `corroborated` is computed whenever the scan has a plan (it was computed only when `to_promote` was non-empty), and `key in corroborated` plus `_landed_key_not_done_finding(...) is None` gates the feed row and the tracked spec. A scan with no plan (`MRS-DEPLOY-003`) fails closed: nothing moves, no WARN. The ledger twin promotion is unchanged and still unconditional.
+- **A converged twin still repairs the feed.** The gate reads `origin/main`'s ledger, not `_promote_sprint_ledger`'s return value (it is empty both for a failed publish and for an already-converged twin), so a re-run of finalize fixes a feed an earlier run left behind.
+- **Feed write.** Same path `_promote_sprint_ledger` reads. Rows are matched by `normalize(raw_key) == key`; only a row that is neither `done` nor `blocked` is rewritten, through `render_ledger_advancements`, written with `fs.write_text_atomic` (mkstemp in the same directory, then `os.replace`). It is gitignored Tier-3, so it is written in place and never published. No lock: a concurrent feed writer inside the read-to-replace window can lose one update; the feed is re-derivable and the window is one small file.
+- **WARN, never a crash.** A missing feed, a missing row, an unreadable or unwritable feed are `MRS-DISP-047` WARN findings naming the path (the tier this module's intake step already uses for post-merge bookkeeping); nothing is created.
+- **Tracked spec.** The path is resolved against `root`, then the dispatch `worktree` (the primary's local tree may not hold a spec the merged PR added until the resync below), and read at `ORIGIN_MAIN`. A status outside `PRE_DONE_SPEC_STATUSES` (`done`, `blocked`, unreadable) is left alone, silently. The write is a separate `commit_paths_onto_remote_tip` commit, since the ledger commit returns early whenever the twin is already converged; both land on `origin/main`, never the operator checkout.
 
 ## Binding
 
