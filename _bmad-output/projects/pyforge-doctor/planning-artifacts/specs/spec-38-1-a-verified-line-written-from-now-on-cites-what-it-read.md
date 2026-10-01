@@ -127,4 +127,77 @@ Minted 2026-10-01 by operator ruling: the deferral burn-down's "stop the inflow"
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+### 2026-10-01 — Review pass
+- verdicts: 36 findings — high 0, medium 7, low 27, false 2, maybe-false 0
+- findings:
+  - Blind Hunter
+    - `[medium]` `[defer]` The sanctioned writer `scripts/apply_verification_verdicts.py` has no citation check, so from 2026-10-02 it can append a bare `verified:` line the gate FAILs — verified: `_validate_project_batch` (:231) never tests citation and `_format_verified_line` (:298) writes the evidence as given. The writer predates the rule and this diff leaves it untouched; its docstring forbids importing `chain.py`. Deferred (frontmatter item 1).
+    - `[low]` `[reject]` `_VERIFIED_PATH_LINE_RE` is syntactic: `host.example.org:443` and an invented `a.b:1` count, and existence is never checked — verified by probe, but a bare verdict has to carry a deliberate host:port to slip through, the check is a discipline guard rather than a security control, and the fix adds URL, port and existence guards for a case nobody meets in everyday use.
+    - `[medium]` `[patch]` The predicate rejects real citations: `Dockerfile:12`, `.gitignore:3`, `chain.py:L4344`, `chain.py#L4344` and the command spellings `exited with code 1`, `Exit 0`, `exit_code 0` — verified. The command half is patched (case-insensitive `exit`, `exited with [code] N`, `exit_code N`; `returned` and `->` stay rejected); the path half is the grammar the intent fixes and is deferred with the E1 row (frontmatter item 2).
+    - `[low]` `[patch]` The grandfathered count is only in `evidence`, so the plain-text CLI line never shows it; it also vanishes whenever another finding exists, and reads beside `projects_scanned: 0` — the message now carries the count when it is above zero. The "only when clean" part stands: a red run reports the FAIL, and `projects_scanned` counting only projects with a Tier-3 file is pre-existing.
+    - `[low]` `[reject]` The cutoff is hardcoded 2026-10-02 where the intent says "this story's landing date", and "from now on" starts a day late — the deviation is forced: 937 lines carry 2026-10-01 and 374 cite nothing, so the literal reading makes "`main` exits 0" and "rewrite no ledger line" unsatisfiable together. The fix is to edit the intent, which this build may not do; the hazard of a bare line landing on or after 2026-10-02 is the deferral in item 1.
+    - `[low]` `[patch]` The documented count 373 is off by one — re-measured 374 of 937 with the shipped predicate; the code comment and the test docstring now say 374. The spec's Design Notes keep the planning-time figure and the earlier memlog line is append-only; the later memlog entry records 374.
+    - `[low]` `[reject]` The FAIL carries only `uncited_lines: N`, no line numbers — the spec asks for a FAIL "naming the project and entry id", which it does; entries are a few lines long, and line locators add an evidence surface nobody asked for.
+    - `[low]` `[patch]` Test gaps: fleet-wide sum, isolation of the new call, Tier-3 scope, a CLI exit-code test, the mutation record — the sum gap is real and now has a test (`test_grandfathered_count_sums_across_projects`). The new call shares the loop's existing `except`, already pinned by `test_one_unevaluable_project_does_not_hide_another_projects_real_fail`; Tier-3 is not in the intent; `deferred-work-check` itself exited 0 on this head. The mutation record is in Auto Run Result.
+    - `[low]` `[reject]` The live-ledger test couples the unit suite to ledger content — intentional per its docstring and the same house style as the existing live-tree tests in this file (`test_live_marshal_file_all_nine_identified_plain_headers_do_not_swallow`); a red there names the same entry the gate names.
+  - Edge Case Hunter
+    - `[medium]` `[defer]` Extensionless and dotfile citations (`Containerfile:146`, `.gitignore:948`, `scripts/container-gates:144`) FAIL — verified; 13 lines dated 2026-10-01 use the style and are grandfathered. The intent fixes the grammar as `<path>.<ext>:<n>`, so widening it is a spec change, not a patch. Deferred (frontmatter item 2).
+    - `[low]` `[reject]` `hostname:port` counts as a path:line — same as the Blind Hunter syntactic-grammar row; a deliberate edge, not met in everyday use, and the fix adds guards.
+    - `[low]` `[reject]` A `verified:` value wrapped onto a continuation line judges the first physical line only — 7 live lines wrap, but the sanctioned writer refuses multi-line evidence, and `_VERIFIED_RE` is the unmodified 11.1 reader; joining continuations adds a parser for a shape the writer forbids.
+    - `[low]` `[reject]` A leading date with punctuation or markup (`2026-10-02:`, `**2026-10-02**`) parses to `None` and escapes — such a line is not the ledger's `verified: <date> — ...` shape, reads as never-verified in 11.1 and is picked up by the due selector; the Design Notes make a date-less line neither failed nor counted.
+    - `[medium]` `[patch]` Exit-code phrasings `Exit 0`, `exited with code 0`, `exit_code 0` are judged bare — verified; patched in the regex with tests for each spelling.
+    - `[low]` `[reject]` Any `exit N` within 24 characters after any backtick span counts, whether or not it is that command's exit code (`` `helper()` never reaches exit 1 ``) — verified, but it needs an author to write exactly that sentence, and tightening it adds branching; the comment that overstated it is fixed (below).
+    - `[medium]` `[defer]` The writer can append a post-cutoff bare line — same root cause as the first Blind Hunter row. Deferred (frontmatter item 1).
+    - `[low]` `[reject]` The cutoff is not the landing date — same as the Blind Hunter cutoff row; the fix edits the intent.
+    - `[low]` `[patch]` The OK finding's count is only in `evidence` — same as the Blind Hunter count row; patched with the message.
+    - `[low]` `[patch]` The comment says the exit code "must belong to the quoted command it follows" but the regex only checks proximity — verified; the comment is reworded to "proximity heuristic".
+    - `[low]` `[patch]` 373 vs 374 — same as the Blind Hunter figure row; patched.
+  - Verification Gap Reviewer
+    - `[medium]` `[patch]` A counter that stops resetting per entry names every later entry as bare, and no test fails — reproduced by the reviewer; `test_each_entry_is_judged_on_its_own_lines_only` pins the exact `(project, id, uncited_lines)` list and fails under the mutation.
+    - `[low]` `[patch]` `grandfathered += ...` changed to `=` survives; the count would report one project's number — `test_grandfathered_count_sums_across_projects` (1 + 2 = 3) now fails under the mutation.
+    - `[medium]` `[defer]` The writer appends lines the rule FAILs — same root cause as the first Blind Hunter row. Deferred (frontmatter item 1).
+    - `[low]` `[patch]` The OK count lives only in `evidence` — same as the Blind Hunter count row; patched.
+    - `[low]` `[reject]` The OK finding exists only when no other finding does — a red run reports its FAIL; the count matters on a green run, which is where it now prints.
+    - `[low]` `[patch]` 373 vs 374 — same as the Blind Hunter figure row; patched.
+    - `[low]` `[defer]` The `pixi.toml` task descriptions do not state the citation requirement, and `due-for-verification-check` tells agents to append a `verified:` line with none — verified at `pixi.toml:1184`/`:1188`. A `pixi.toml` edit regenerates `environment.yaml` and fires every station suite. Deferred (frontmatter item 3).
+    - `[false]` `[reject]` The predicate rejects the burn-down's own prose styles (`:_declared_floors still returns`, `(now at line 796)`) — that is the intended enforcement: the ACs require a `path:line` or a command with its exit code, and nothing before 2026-10-02 is judged.
+    - `[low]` `[reject]` `example.com:443` accepted as a path:line — same as the Blind Hunter syntactic-grammar row.
+    - `[low]` `[reject]` The live-ledger test couples the unit suite to ledger data — same as the Blind Hunter row.
+    - `[low]` `[reject]` The new check shares the `try` with `_check_project_deferred_work`, so a raise there skips it — the project then reads as a named `deferred-work-unevaluable` WARN, never a silent pass, and the handler is already pinned by an existing test.
+  - Intent Alignment Auditor
+    - `[low]` `[reject]` The cutoff is the day after the landing day, not the landing day — same as the Blind Hunter cutoff row; the auditor itself notes the literal reading makes the ACs unsatisfiable together.
+    - `[low]` `[reject]` The tests call `gather_deferred_work`, not the CLI, and the mutation AC is not encoded as a test — the exit code is the one I read from `pixi run --frozen -e pyforge-guild deferred-work-check` (0, before and after the patches); the exit mapping is pre-existing; the mutation is run by hand per the AC and recorded in Auto Run Result.
+    - `[low]` `[patch]` "The OK detail counts them" lands only in `evidence` — same as the Blind Hunter count row; patched.
+    - `[low]` `[reject]` The command grammar is looser than the intent (a 24-character gap, extra spellings) and syntactic only — the intent leaves the spellings open; the gap is pinned by a reject row; same root cause as the proximity row.
+    - `[false]` `[reject]` The diff goes beyond the intent's list (judges every line, one FAIL per entry, memlog and story-spec edits) — the Design Notes record the every-line choice, the task requires the memlog reconcile, and none of it fails or changes a line the intent protects.
+
+## Auto Run Result
+
+Status: done
+
+**Summary.** A `verified:` line in a tracked deferred-work ledger dated on or after 2026-10-02 that cites neither a `path:line` (or `path:n-m`) nor a backtick-quoted command with its exit code is now a FAIL (`verified-line-uncited`), one per entry, naming the project and the entry id. Lines dated before the cutoff are never failed; the OK finding counts the bare ones in `evidence["grandfathered_uncited_verified_lines"]` and in its message. No ledger line is rewritten.
+
+**Files changed.**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` — `VERIFIED_CITATION_CUTOFF`, the citation predicate, the per-entry scan, the new FAIL kind and message, the count on the OK finding.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py` — a test per matrix row, the boundary, the per-entry reset, the fleet-wide sum, the spellings, and a live-ledger check.
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md` — two surface-reconcile entries naming both paths.
+- This story spec — status, Code Map, Design Notes, triage log, deferrals.
+
+**Cutoff is 2026-10-02, not the landing day.** 937 lines carry 2026-10-01 and 374 of them cite nothing; a 2026-10-01 cutoff would red `main` or force a ledger rewrite, and the intent forbids both.
+
+**Review.** 36 findings: patches applied 6 entries (13 finding rows; 2 medium, 4 low); deferred 3 items (4 medium rows, 1 low row); rejected 18 rows, each with its reason in the triage log; false 2 (inside the rejected count).
+
+**Verification (every verdict read from the exit code, none through a pipe).**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — exit 0, 3128 passed, 1 skipped (after the patches).
+- `pixi run --frozen -e pyforge-guild deferred-work-check` — exit 0 on this head; the plain-text line now reads `... (2484 pre-cutoff verified: lines cite nothing; grandfathered)`.
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+- `pixi run --frozen -e pyforge-guild spec-surface-check` — exit 0; `python scripts/spec_surface_reconcile.py` — exit 0. No baseline stamped.
+- Mutation, by hand, tree restored after each: rule removed from the loop (6 tests failed), predicate always true (15), no grandfathering (3), command citation ignored (8); after the review, hoisting the per-entry counter, `+=` to `=`, dropping the count from the message, a case-sensitive `exit`, and dropping the new spellings each failed only their new test.
+
+**Follow-up review recommended: true.** Two medium findings were patched (the per-entry reset test gap, the exit-code grammar). The unverified risk: the exit-code regex widening (`exited with code N`, `exit_code N`, scoped `(?i:...)`) and the OK-message change landed after the review layers ran and have had no second reviewer; the tests pin each spelling and both mutations, but a false accept in prose such as `` `cmd` exited with 3 retries `` is not covered.
+
+**Residual risks.**
+- From 2026-10-02 the sanctioned writer (`scripts/apply_verification_verdicts.py`) and the `due-for-verification-check` guidance can produce a bare line that reds `deferred-work-check`; the deferral list records both. The burn-down's Phase 2 is the likely first writer.
+- The grammar is a syntactic heuristic: it accepts `host:port` and proximity-matched exit tokens, and rejects extensionless paths.
+- The earlier memlog line still says 373; the later entry gives 374.
+- `pr-preflight`, `story-status-check` and the other planning detectors were not run; the ledger row stays `backlog` for the harness to reconcile.
