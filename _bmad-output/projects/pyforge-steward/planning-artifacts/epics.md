@@ -5166,6 +5166,38 @@ a secret, and a role revoked at the IdP is gone on the user's next request
 failure that denies; the Langflow test asserts the auto-login refusal through the real ASGI dispatch;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `platform-ci-local -- --test` green
 
+## Epic 79: The session check and the dispatch preamble read each other's real output
+
+Minted 2026-10-01 from the station Dream's entry of the same date, found while dispatching Story 78.1. A
+defect of CAP-5 (Story 63.4), so no CAP is minted; a new epic because Epic 63 is `done`. **HARD
+boundaries:** marshal calls the steward CLI and never imports `pyforge.steward`; steward's stream
+convention for a failed duty's report (stderr) does not change; AC5's strictness stays (a `layer-off`,
+missing or stale kit entry is a non-ok finding).
+
+### Story 79.1: The session check and the dispatch preamble read each other's real output
+
+As the operator dispatching stories,
+I want the session-precondition warning on a dispatch to name what actually failed,
+So that a real precondition gap is visible and a parse error never reads as one.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** CAP-5 (Story 63.4); AD-8
+**Surface:**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/session.py`: read the kit from `marshal seed check
+  --json`'s `{verb, ok, result}` envelope; an error envelope reports its own message.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`: `_surface_session_precondition_findings`
+  parses the report from stdout, else stderr.
+- Tests in both packages' `tests/unit/`.
+
+**Given** `marshal seed check --json` nests `kit` under `result`, and `steward session check --json` prints a failing
+report to stderr
+**When** this story lands
+**Then** `steward session check` reports each kit entry's real status, and a dispatch's MRS-DISP-049 names the non-ok
+findings
+**And** each side's tests fake the other side's real output (the envelope; the failing report on stderr), a steward
+test parses the real `marshal seed check --json` where marshal is installed, and
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-marshal
+pyforge-marshal-test` are green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
