@@ -1445,9 +1445,7 @@ def test_the_same_dead_glob_in_two_specs_is_one_row_per_spec(tmp_path: Path) -> 
     assert sorted(f.evidence["path"] for f in rows) == ["pyforge-x/spec-foo", "pyforge-y/spec-bar"]
 
 
-def test_dead_glob_keeps_the_ok_verdict_and_the_exit_code(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dead_glob_keeps_the_ok_verdict_and_the_exit_code(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A WARN beside an otherwise clean run: the OK row stays (the finding rides
     ``presumed``, never ``findings``) and the CLI still exits 0."""
     repo = tmp_path / "repo"
