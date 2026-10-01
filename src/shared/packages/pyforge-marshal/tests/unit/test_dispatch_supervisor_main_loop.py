@@ -1999,7 +1999,139 @@ def test_supervisor_finalizes_verifies_and_lands_a_finished_harness_session(
     journal = fs.journal_text(run_dir)
     assert dispatch_core.KIND_DISPATCH_FINALIZE in journal
     assert '"verdict": "landed"' in journal
-    assert publisher.completions
+    # Local `main` never shows the merge here (the fake primary was not
+    # fast-forwarded), so the repository facts alone read `stopped_externally`;
+    # the journaled land is what makes the run `completed` (Story 67.1).
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+
+
+class _LandedRepositoryReadFailsVcs(FakeVcs):
+    """``worktree_head_sha`` refuses once a successful land is journaled.
+
+    Keyed on journal state, like ``_HeadShaFailsOnceJournaledVcs``: the
+    repository re-read after the land raises, so only the journal can say the
+    run is done."""
+
+    def __init__(self, *, fs: FakeFs, run_dir: Path, **kwargs: object) -> None:
+        super().__init__(**kwargs)  # type: ignore[arg-type]
+        self._fs = fs
+        self._run_dir = run_dir
+
+    def worktree_head_sha(self, worktree_path: Path) -> str:
+        if dispatch_core.KIND_DISPATCH_LAND in self._fs.journal_text(self._run_dir):
+            raise VcsCommandError("git rev-parse failed (test double)")
+        return super().worktree_head_sha(worktree_path)
+
+
+def _completion_outcome(fs: FakeFs, run_dir: Path) -> dict:
+    """The payload of the run's ``dispatch-completion`` OUTCOME entry."""
+    for line in fs.journal_text(run_dir).splitlines():
+        entry = json.loads(line)
+        if entry["kind"] == dispatch_core.KIND_DISPATCH_COMPLETION and entry["phase"] == "outcome":
+            return entry["payload"]
+    raise AssertionError("no dispatch-completion outcome journaled")
+
+
+def _completion_intent(fs: FakeFs, run_dir: Path) -> dict:
+    """The payload of the run's ``dispatch-completion`` INTENT entry."""
+    for line in fs.journal_text(run_dir).splitlines():
+        entry = json.loads(line)
+        if entry["kind"] == dispatch_core.KIND_DISPATCH_COMPLETION and entry["phase"] == "intent":
+            return entry["payload"]
+    raise AssertionError("no dispatch-completion intent journaled")
+
+
+@pytest.mark.parametrize("branch_present", [False, True], ids=["branch-retired", "branch-present"])
+def test_a_landed_run_reads_completed_when_local_main_lacks_the_merge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, branch_present: bool
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    land_calls = _patch_landing(monkeypatch)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    branches = frozenset({branch}) if branch_present else frozenset()
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=fs,
+        vcs=FakeVcs(branches=branches, head_sha=_MOVED),
+        process=FakeProcess(alive=False),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    assert len(land_calls) == 1
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+    outcome = _completion_outcome(fs, run_dir)
+    assert outcome["verdict"] == DispatchSessionVerdict.COMPLETED.value
+    assert outcome["stop_reason"] is None
+    # The journal decides the process verdict; git keeps the repository facts
+    # as gathered, never overwritten from the journal (AD-33).
+    intent = _completion_intent(fs, run_dir)
+    assert intent["story_merged_on_main"] is False
+    assert intent["branch_merged"] is False
+
+
+def test_a_landed_run_reads_completed_when_the_repository_reread_after_the_land_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch)
+    fs = FakeFs()
+    vcs = _LandedRepositoryReadFailsVcs(fs=fs, run_dir=run_dir, head_sha=_MOVED)
+    publisher = FakePublisher()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+    assert _completion_outcome(fs, run_dir)["stop_reason"] is None
+
+
+@pytest.mark.parametrize(
+    "land_verdict",
+    [DispatchLandingVerdict.REFUSED, DispatchLandingVerdict.FAILED],
+    ids=lambda verdict: verdict.value,
+)
+def test_a_land_that_did_not_succeed_still_reads_from_repository_facts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, land_verdict: DispatchLandingVerdict
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch, verdict=land_verdict)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=fs,
+        vcs=FakeVcs(branches=frozenset({branch}), head_sha=_MOVED),
+        process=FakeProcess(alive=False),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    assert publisher.completions[0][1] != DispatchSessionVerdict.COMPLETED.value
+    assert _completion_outcome(fs, run_dir)["verdict"] != DispatchSessionVerdict.COMPLETED.value
 
 
 class _LandsDuringFinalizeFs(FakeFs):
