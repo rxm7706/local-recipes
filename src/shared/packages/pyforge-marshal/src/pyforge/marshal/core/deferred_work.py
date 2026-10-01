@@ -77,7 +77,13 @@ ledger's ROW HEADINGS (``_FOLLOWUP_REVIEW_HEADING_RE``): ``DW-FRR-51-20`` never
 hides ``DW-FRR-51-2``, and a prose mention of an id (the live marshal ledger
 names ``DW-FRR-51-2`` in the ``verified:`` line of the ``DW-FU-51-2-1`` row) is
 not the row. The status is read through the harness guard's own reader
-(``dispatch_harness_done.parse_spec_status``), the one that pairs with the flag."""
+(``dispatch_harness_done.parse_spec_status``), the one that pairs with the flag.
+
+The row's other end (Story 73.1, CAP-281): a launch on a ``done`` spec whose flag is still true is a
+follow-up review run, and ``open_followup_review_id`` reads the open row it serves from the same
+heading-anchored scan; when that run lands, ``close_followup_review_row`` renders the row closed
+(``status: closed`` with ``resolved:`` naming the landing). Both are pure -- the lock, the publish and
+the date stay in ``dispatch_land_finalize`` / ``cli/dispatch.py``."""
 
 from __future__ import annotations
 
