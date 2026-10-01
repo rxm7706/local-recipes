@@ -61,28 +61,14 @@ already-promoted ``DW-FU-1-1``). Mirrors
 convention, scoped to the ``DW-FU-`` prefix. ``render_ledger_entry``'s
 ``promoted:`` line separately repeats the bare Tier-3 id (``DW-<n>``)
 verbatim, giving that detector's OWN (differently-scoped) regex something
-to find too.
-
-**The dispatch twin (Story 66.1, CAP-275).** A dispatched ``bmad-build-auto``
-session that ends ``done`` with ``followup_review_recommended: true`` writes
-no damping block at all -- the flag is copied into the tracked spec and
-nothing reads it again. ``followup_review_candidate`` /
-``followup_review_to_promote`` / ``render_followup_review_entry`` carry it
-into the same tracked ledger as one ``### DW-FRR-<story>:`` row
-(``origin: dispatch-followup-review``). The prefix is deliberately not
-``DW-FU-``: that id already names the spec-deferred and loop rows of the same
-story (``DW-FU-51-9``), so reusing it would let one row hide the other.
-Idempotency is the same greedy tokenizer scoped to ``DW-FRR-``
-(``DW-FRR-51-20`` never hides ``DW-FRR-51-2``)."""
+to find too."""
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
 
-from .dispatch_harness_done import followup_review_recommended
 from .identity import MalformedStoryKeyError, StoryKey, normalize, render_filename_slug
-from .promotion import SPEC_STATUS_DONE, read_spec_status
 
 _ORIGIN_VALUE = "review-budget-followup"
 
@@ -288,100 +274,3 @@ def deferrals_to_promote(
         seen.add(pid)
         result.append(candidate)
     return tuple(result)
-
-
-# -- the dispatch twin: a recommended follow-up review (Story 66.1, CAP-275) -----------------------
-
-_FOLLOWUP_REVIEW_ORIGIN = "dispatch-followup-review"
-
-#: The loop twin's severity (a ``review-budget-followup`` block is written ``low``).
-_FOLLOWUP_REVIEW_SEVERITY = "low"
-
-# ``_PROMOTED_ID_TOKEN_RE``'s twin for the ``DW-FRR-`` prefix -- greedy, never a substring test.
-_FOLLOWUP_REVIEW_ID_TOKEN_RE = re.compile(r"\bDW-FRR-[A-Za-z0-9-]+")
-
-_PLANNING_ARTIFACTS_MARKER = "/planning-artifacts/"
-
-
-def followup_review_id(story_key: StoryKey) -> str:
-    """The dispatch twin's row id: ``DW-FRR-<epic>-<seq><suffix>`` (Story 66.1)."""
-    return f"DW-FRR-{render_filename_slug(story_key)}"
-
-
-def _tracked_followup_review_ids(tracked_text: str) -> frozenset[str]:
-    """Every complete ``DW-FRR-<story>`` token in ``tracked_text`` -- ``_tracked_promoted_ids``'s twin."""
-    return frozenset(match.group(0).rstrip("-") for match in _FOLLOWUP_REVIEW_ID_TOKEN_RE.finditer(tracked_text))
-
-
-@dataclass(frozen=True)
-class FollowupReviewCandidate:
-    """A landed story whose tracked spec asks for a follow-up review (Story 66.1): ``story_key``,
-    ``spec_path`` (the tracked spec, repo-relative -- the row's ``location:``) and ``source_spec``
-    (the same file in the ``planning-artifacts/specs/...`` form the ledger's ``source_spec:`` lines use)."""
-
-    story_key: StoryKey
-    spec_path: str
-    source_spec: str
-
-
-def followup_review_candidate(
-    spec_text: str | None, story_key: StoryKey, spec_path: str
-) -> FollowupReviewCandidate | None:
-    """``spec_text`` (the story's tracked spec as ``origin/main`` holds it) as a candidate, or ``None``
-    (Story 66.1): only a spec reading ``status: done`` whose ``followup_review_recommended`` is an
-    explicit truthy qualifies -- the one reader, ``core.dispatch_harness_done``'s, so the flag means here
-    what it means to the harness guard. Missing, ``false``, unreadable text and any other status are not
-    candidates."""
-    if spec_text is None or read_spec_status(spec_text) != SPEC_STATUS_DONE:
-        return None
-    if not followup_review_recommended(spec_text):
-        return None
-    _, marker, tail = spec_path.partition(_PLANNING_ARTIFACTS_MARKER)
-    source_spec = f"planning-artifacts/{tail}" if marker else spec_path
-    return FollowupReviewCandidate(story_key=story_key, spec_path=spec_path, source_spec=source_spec)
-
-
-def followup_review_to_promote(
-    candidate: FollowupReviewCandidate | None, tracked_text: str
-) -> FollowupReviewCandidate | None:
-    """``candidate`` when its ``DW-FRR-<story>`` id is not already a COMPLETE token in ``tracked_text``,
-    else ``None`` (Story 66.1) -- idempotent, and boundary-aware like ``deferrals_to_promote``: a ledger
-    holding ``DW-FRR-51-20`` does not hide ``DW-FRR-51-2``."""
-    if candidate is None:
-        return None
-    if followup_review_id(candidate.story_key) in _tracked_followup_review_ids(tracked_text):
-        return None
-    return candidate
-
-
-def render_followup_review_entry(candidate: FollowupReviewCandidate, *, promoted_date: str) -> str:
-    """The tracked ledger's row text for ``candidate`` (Story 66.1): the ``### DW-FRR-<story>:`` heading and
-    the bulleted ``source_spec:`` / ``summary:`` / ``evidence:`` / ``location:`` / ``origin:`` /
-    ``severity:`` / ``promoted:`` / ``status:`` shape the hand-filed follow-up rows already use
-    (``DW-FU-51-2-1``). Returns text ending in exactly one trailing newline."""
-    key = candidate.story_key
-    lines = [
-        f"### {followup_review_id(key)}: Follow-up review still recommended for story {key}",
-        "",
-        f"- source_spec: `{candidate.source_spec}`",
-        (
-            f"  summary: Story {key} landed with `followup_review_recommended: true`; the recommended "
-            "independent follow-up review has not run and nothing else carries the recommendation."
-        ),
-        (
-            f"  evidence: Story {key} landed on origin/main with its tracked spec reading `status: done` "
-            "and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation."
-        ),
-        f"  location: {candidate.spec_path}",
-        f"  origin: {_FOLLOWUP_REVIEW_ORIGIN}",
-        f"  severity: {_FOLLOWUP_REVIEW_SEVERITY}",
-        f"  promoted: {promoted_date} — dispatch-land finalize",
-        "  status: open",
-    ]
-    return "\n".join(lines) + "\n"
-
-
-def append_ledger_entry(ledger_text: str, entry_text: str) -> str:
-    """``entry_text`` after ``ledger_text``, one blank line between (``cli/land.py``'s own separation)."""
-    prefix = ledger_text.rstrip("\n")
-    return (prefix + "\n\n" if prefix else "") + entry_text
