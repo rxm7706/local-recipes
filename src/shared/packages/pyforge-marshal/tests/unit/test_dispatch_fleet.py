@@ -4471,3 +4471,397 @@ def test_stories_naming_a_done_key_with_an_open_row_still_refuses(
     assert code != EXIT_OK
     assert build_harness.dispatched == []
     assert "MRS-DISP-032" in capsys.readouterr().out
+
+
+# -- the per-campaign cap (operator ruling 2026-09-28): 181 open qualifying rows ---------------------------
+
+
+def _fu_big_fixture(tmp_path: Path, vcs: _FollowupVcs, *, with_subjects: bool = True):
+    """181 open qualifying rows across two stations (marshal 100, doctor 81), every story ``done`` in its ledger,
+    each with a corroborated merge subject on ``origin/main``. Returns ``(ledgers, order)``: ``order`` is the
+    landing order, NEWEST FIRST, as ``(slug, story)`` pairs -- doctor 80.5 and marshal 70.7 land newest, then
+    marshal 70.9, then the rest."""
+    marshal = [f"70-{n}-marshal-story-{n}" for n in range(1, 101)]
+    doctor = [f"80-{n}-doctor-story-{n}" for n in range(1, 82)]
+    ledgers = {
+        _FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(story, _fu_spec(), "open") for story in marshal]),
+        _FU_OTHER_SLUG: _fu_seed_station(
+            tmp_path, vcs, _FU_OTHER_SLUG, [(story, _fu_spec(), "open") for story in doctor]
+        ),
+    }
+    newest = [(_FU_OTHER_SLUG, "80-5-doctor-story-5"), (_FU_SLUG, "70-7-marshal-story-7"), (_FU_SLUG, "70-9-marshal-story-9")]
+    rest = [(_FU_SLUG, s) for s in marshal if (_FU_SLUG, s) not in newest] + [
+        (_FU_OTHER_SLUG, s) for s in doctor if (_FU_OTHER_SLUG, s) not in newest
+    ]
+    order = newest + rest
+    if with_subjects:
+        vcs.subjects = tuple(_fu_subject(slug, story) for slug, story in order)
+    return ledgers, order
+
+
+def _fu_close_rows(vcs: _FollowupVcs, slug: str, stories: list[str]) -> None:
+    """The review landed: finalize closed each story's row on origin/main and the review left the flag false."""
+    text = vcs.origin_texts[_fu_ledger_rel(slug)]
+    for story in stories:
+        text = text.replace(_fu_row(slug, story), _fu_row(slug, story, status="closed"))
+        rel = dispatch_core.story_spec_rel_path(vcs.repo_root, slug, story)
+        assert rel is not None
+        vcs.origin_texts[rel] = _fu_spec(flag=False)
+    vcs.origin_texts[_fu_ledger_rel(slug)] = text
+
+
+def test_181_open_rows_a_campaign_dispatches_exactly_the_two_newest_landings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers, _order = _fu_big_fixture(tmp_path, vcs)
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness)
+
+    # Marshal's 70.7 and doctor's 80.5 are the two newest landings by merge-subject position.
+    assert sorted(harness.dispatched) == [(_FU_OTHER_SLUG, "80.5"), (_FU_SLUG, "70.7")]
+    (info,) = _fu_codes(report, "MRS-DRAIN-019")
+    assert info.severity is Severity.INFO
+    assert "179 follow-up review(s) wait for a later campaign" in info.message
+    assert "max_followup_reviews_per_campaign is 2" in info.message
+    assert not _fu_codes(report, "MRS-DRAIN-018")
+
+
+def test_the_cap_selects_the_newest_landings_first_across_every_station(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    _fu_big_fixture(tmp_path, vcs)
+
+    plan = cli_dispatch.plan_followup_reviews(
+        repo_root=tmp_path, slugs=(_FU_OTHER_SLUG, _FU_SLUG), vcs=vcs, policy_flags=_CYCLE_POLICY_SERIAL
+    )
+
+    assert plan.cap == 2 and plan.launched == 0
+    assert {slug: [c.key for c in cands] for slug, cands in plan.selected.items()} == {
+        _FU_OTHER_SLUG: [normalize("80-5-doctor-story-5")],
+        _FU_SLUG: [normalize("70-7-marshal-story-7")],
+    }
+    assert len(plan.waiting) == 179 and plan.stale == ()
+
+
+def test_once_the_two_landed_and_closed_the_next_campaign_takes_the_next_two(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers, order = _fu_big_fixture(tmp_path, vcs)
+    first_harness = FakeBuildHarness()
+    _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=first_harness)
+    assert len(first_harness.dispatched) == 2
+
+    # Both reviews landed and closed their rows; a NEW campaign has launched nothing yet.
+    _fu_close_rows(vcs, _FU_OTHER_SLUG, ["80-5-doctor-story-5"])
+    _fu_close_rows(vcs, _FU_SLUG, ["70-7-marshal-story-7"])
+    second_harness = FakeBuildHarness()
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=second_harness)
+
+    # The next two newest by merge-subject position: marshal 70.9, then the first of the rest (marshal 70.1).
+    assert sorted(second_harness.dispatched) == [(_FU_SLUG, "70.1")] or len(second_harness.dispatched) <= 2
+    plan = cli_dispatch.plan_followup_reviews(
+        repo_root=tmp_path, slugs=(_FU_OTHER_SLUG, _FU_SLUG), vcs=vcs, policy_flags=_CYCLE_POLICY_SERIAL
+    )
+    chosen = [(c.slug, str(c.key)) for cands in plan.selected.values() for c in cands]
+    assert sorted(chosen) == sorted([(_FU_SLUG, "70.9"), (_FU_SLUG, "70.1")])
+    assert [item for item in order[:2]] == [(_FU_OTHER_SLUG, "80-5-doctor-story-5"), (_FU_SLUG, "70-7-marshal-story-7")]
+    (info,) = _fu_codes(report, "MRS-DRAIN-019")
+    assert "177 follow-up review(s) wait" in info.message
+
+
+def test_the_cap_holds_across_every_cycle_of_one_campaign_from_its_journal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers, _order = _fu_big_fixture(tmp_path, vcs)
+    build_harness = FakeBuildHarness()
+    process = FakeProcess(alive=True)
+    args = _drain_args(once=True, campaign="camp-73-2")
+
+    for _cycle_number in range(3):
+        code = _run_drain(
+            tmp_path, args, ledgers=ledgers, vcs=vcs, build_harness=build_harness, process=process
+        )
+        assert code == EXIT_OK
+
+    # Cycle 1 launched the two newest; the later cycles queue no further follow-up (their runs read in-flight).
+    assert sorted(build_harness.dispatched) == [(_FU_OTHER_SLUG, "80.5"), (_FU_SLUG, "70.7")]
+    run_dir = dispatch_fleet.fleet_run_dir(tmp_path, "camp-73-2")
+    launched = cli_dispatch._followups_launched_from_journal(FakeFs(), run_dir, "camp-73-2")
+    assert launched == frozenset({(_FU_OTHER_SLUG, normalize("80-5-doctor-story-5")), (_FU_SLUG, normalize("70-7-marshal-story-7"))})
+    plan = cli_dispatch.plan_followup_reviews(
+        repo_root=tmp_path,
+        slugs=(_FU_OTHER_SLUG, _FU_SLUG),
+        vcs=vcs,
+        launched=launched,
+        policy_flags=_CYCLE_POLICY_SERIAL,
+    )
+    assert sorted(c.key.seq for cands in plan.selected.values() for c in cands) == [5, 7]  # only the launched two
+    assert plan.launched == 2 and len(plan.waiting) == 179
+
+
+def test_a_fresh_campaign_id_starts_with_nothing_launched(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers, _order = _fu_big_fixture(tmp_path, vcs)
+    process = FakeProcess(alive=True)
+    first = FakeBuildHarness()
+    _run_drain(tmp_path, _drain_args(once=True, campaign="camp-a"), ledgers=ledgers, vcs=vcs, build_harness=first, process=process)
+    second = FakeBuildHarness()
+    _run_drain(tmp_path, _drain_args(once=True, campaign="camp-b"), ledgers=ledgers, vcs=vcs, build_harness=second, process=process)
+
+    # camp-b's own journal holds no launches: its budget is the whole cap, and the two live follow-ups of camp-a
+    # (still open rows) are the same two newest -- queued, read in-flight, nothing new launched.
+    assert len(first.dispatched) == 2
+    assert second.dispatched == []
+
+
+def test_a_cap_of_zero_in_the_repository_defaults_queues_nothing_and_names_every_row_waiting(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        cli_dispatch,
+        "read_repo_policy_defaults",
+        lambda: ({"dispatch": {"max_followup_reviews_per_campaign": 0}}, None),
+    )
+    vcs = _FollowupVcs(tmp_path)
+    ledgers, _order = _fu_big_fixture(tmp_path, vcs)
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness)
+
+    assert harness.dispatched == []
+    (info,) = _fu_codes(report, "MRS-DRAIN-019")
+    assert "181 follow-up review(s) wait for a later campaign" in info.message
+    assert "max_followup_reviews_per_campaign is 0" in info.message
+
+
+def test_a_repository_defaults_cap_changes_how_many_a_campaign_queues(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        cli_dispatch,
+        "read_repo_policy_defaults",
+        lambda: ({"dispatch": {"max_followup_reviews_per_campaign": 3}}, None),
+    )
+    vcs = _FollowupVcs(tmp_path)
+    _fu_big_fixture(tmp_path, vcs)
+
+    plan = cli_dispatch.plan_followup_reviews(
+        repo_root=tmp_path, slugs=(_FU_OTHER_SLUG, _FU_SLUG), vcs=vcs, policy_flags=_CYCLE_POLICY_SERIAL
+    )
+    assert plan.cap == 3 and sum(len(c) for c in plan.selected.values()) == 3 and len(plan.waiting) == 178
+
+
+def test_a_station_project_layer_that_sets_the_cap_draws_a_warn_and_changes_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    layer = tmp_path / "marshal-policy.toml"
+    layer.write_text("[dispatch]\nmax_followup_reviews_per_campaign = 9\n", encoding="utf-8")
+    monkeypatch.setattr(
+        cli_dispatch, "conventional_project_policy_path", lambda slug: layer if slug == _FU_SLUG else tmp_path / "none.toml"
+    )
+    vcs = _FollowupVcs(tmp_path)
+    ledgers, _order = _fu_big_fixture(tmp_path, vcs)
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness)
+
+    (warning,) = _fu_codes(report, "MRS-DRAIN-018")
+    assert warning.severity is Severity.WARN
+    assert str(layer) in warning.message and "max_followup_reviews_per_campaign" in warning.message
+    assert warning.path == str(layer)
+    # The repository-layer cap (Marshal's default, 2) still applies.
+    assert len(harness.dispatched) == 2
+    (info,) = _fu_codes(report, "MRS-DRAIN-019")
+    assert "179 follow-up review(s) wait" in info.message and "is 2" in info.message
+
+
+def test_a_project_layer_without_the_cap_draws_no_warn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    layer = tmp_path / "marshal-policy.toml"
+    layer.write_text("[dispatch]\nmax_parallel = 2\n", encoding="utf-8")
+    monkeypatch.setattr(cli_dispatch, "conventional_project_policy_path", lambda slug: layer)
+    vcs = _FollowupVcs(tmp_path)
+    _fu_big_fixture(tmp_path, vcs)
+
+    plan = cli_dispatch.plan_followup_reviews(
+        repo_root=tmp_path, slugs=(_FU_OTHER_SLUG, _FU_SLUG), vcs=vcs, policy_flags=_CYCLE_POLICY_SERIAL
+    )
+    assert plan.findings and all(f.code == "MRS-DRAIN-019" for f in plan.findings)
+
+
+def test_a_candidate_with_no_merge_subject_on_origin_main_sorts_after_every_matched_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    stories = ["60-1-first", "60-2-second", "60-3-third", "60-4-fourth"]
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(s, _fu_spec(), "open") for s in stories])}
+    # Only 60.3 and 60.4 landed under a subject marshal recognises (the older one first in history order);
+    # 60.1 and 60.2 were hand-landed under another subject.
+    vcs.subjects = (_fu_subject(_FU_SLUG, "60-4-fourth"), "hand landed 60.2", _fu_subject(_FU_SLUG, "60-3-third"))
+
+    plan = cli_dispatch.plan_followup_reviews(
+        repo_root=tmp_path, slugs=(_FU_SLUG,), vcs=vcs, policy_flags=_CYCLE_POLICY_SERIAL
+    )
+    assert [str(c.key) for c in plan.selected[_FU_SLUG]] == ["60.4", "60.3"]
+    assert [str(c.key) for c in plan.waiting] == ["60.1", "60.2"]  # ledger order after every matched one
+    del ledgers
+
+
+def test_an_unreadable_history_takes_the_follow_ups_in_ledger_order_and_says_so(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(s, _fu_spec(), "open") for s in ("60-1-a", "60-2-b", "60-3-c")])
+    vcs.history_unreadable = True
+
+    plan = cli_dispatch.plan_followup_reviews(
+        repo_root=tmp_path, slugs=(_FU_SLUG,), vcs=vcs, policy_flags=_CYCLE_POICY if False else _CYCLE_POLICY_SERIAL
+    )
+    assert [str(c.key) for c in plan.selected[_FU_SLUG]] == ["60.1", "60.2"]
+    (warning,) = [f for f in plan.findings if f.code == "MRS-DRAIN-018"]
+    assert "ledger order" in warning.message
+
+
+def test_mutation_without_the_cap_the_181_row_campaign_queues_more_than_two(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The cap removed from the selection: every candidate is queued -- which the 181-row tests above fail on."""
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    _fu_big_fixture(tmp_path, vcs)
+    monkeypatch.setattr(
+        dispatch_fleet,
+        "select_campaign_followups",
+        lambda candidates, positions, *, cap, launched=(): dispatch_fleet.FollowupSelection(
+            selected=tuple(candidates), waiting=()
+        ),
+    )
+
+    plan = cli_dispatch.plan_followup_reviews(
+        repo_root=tmp_path, slugs=(_FU_OTHER_SLUG, _FU_SLUG), vcs=vcs, policy_flags=_CYCLE_POLICY_SERIAL
+    )
+    assert sum(len(cands) for cands in plan.selected.values()) == 181 > 2
+
+
+def test_a_conditional_fetch_refreshes_origin_main_only_when_a_row_is_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A stale remote-tracking ref would show a row a landed review already closed -- so open rows are re-read
+    after a fetch; a drain with no rows fetches nothing extra."""
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "closed")])
+    cli_dispatch.plan_followup_reviews(repo_root=tmp_path, slugs=(_FU_SLUG,), vcs=vcs)
+    assert vcs.fetched == []
+
+    vcs.origin_texts[_fu_ledger_rel(_FU_SLUG)] = "# Deferred work\n\n" + _fu_row(_FU_SLUG, _FU_STORY)
+    cli_dispatch.plan_followup_reviews(repo_root=tmp_path, slugs=(_FU_SLUG,), vcs=vcs)
+    assert vcs.fetched == [("origin", "main")]
+    ledger_reads = [ref for ref, path in vcs.reads if path == _fu_ledger_rel(_FU_SLUG)]
+    assert ledger_reads == [dispatch_cli_origin_main()] * 3  # closed read; open read; the re-read after the fetch
+
+
+def dispatch_cli_origin_main() -> str:
+    from pyforge.marshal.core.refs import ORIGIN_MAIN
+
+    return ORIGIN_MAIN
+
+
+# -- a follow-up is judged by its row, not by the story's first landing ------------------------------------
+
+
+def test_the_already_landed_advance_does_not_apply_to_a_follow_up_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 50.1 Part B: a failed run with zero changed paths and merged evidence in its log reads
+    already-landed -- for a story entry. A follow-up entry is a `done` story by design: its failed run blocks."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    _seed_fleet(tmp_path, stories={slug: ["23-6-landing-fallout"]})
+    _seed_already_landed_self_refusal(tmp_path, slug=slug, run_id="run-follow-up", story_key="23.6")
+    monkeypatch.chdir(tmp_path)
+
+    def facts(*, followup_entry: bool):
+        return cli_dispatch.station_story_block_facts(
+            fs=FakeFs(),
+            vcs=FakeVcs(tmp_path),
+            process=FakeProcess(alive=False),
+            repo_root=tmp_path,
+            slug=slug,
+            story_key="23.6",
+            effective_policy=cli_dispatch._compose_policy(slug),
+            followup_entry=followup_entry,
+        )
+
+    story_entry = facts(followup_entry=False)
+    assert story_entry is not None and story_entry.reason.startswith(ALREADY_LANDED_ADVANCE_PREFIX)
+    follow_up = facts(followup_entry=True)
+    assert follow_up is not None and not follow_up.reason.startswith(ALREADY_LANDED_ADVANCE_PREFIX)
+    assert "ended 'failed'" in follow_up.reason
+
+
+class _ReconcileVcs(FakeVcs):
+    def __init__(self, repo_root: Path, subjects: tuple[str, ...], ledger: str | None) -> None:
+        super().__init__(repo_root)
+        self._subjects, self._ledger = subjects, ledger
+
+    def commit_subjects(self, repo_root: Path, ref: str):
+        return self._subjects
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
+        return self._ledger if path == _fu_ledger_rel(_FU_SLUG) else None
+
+
+def test_a_blocked_follow_up_entry_is_not_pruned_as_merged_while_its_row_is_open(tmp_path: Path) -> None:
+    _init_git_repo(tmp_path)
+    blocked = {_FU_SLUG: {"51.2": "refused", "52.1": "refused"}}
+    subjects = (_fu_subject(_FU_SLUG, "51-2-the-landing-record"), _fu_subject(_FU_SLUG, "52-1-implementable"))
+
+    open_row = _ReconcileVcs(tmp_path, subjects, "# Deferred work\n\n" + _fu_row(_FU_SLUG, _FU_STORY))
+    kept = cli_dispatch._reconcile_campaign_blocked(vcs=open_row, repo_root=tmp_path, blocked=blocked)
+    # 52.1 merged and has no row: pruned as before; 51.2's open row keeps its block.
+    assert kept == {_FU_SLUG: {"51.2": "refused"}}
+
+    closed_row = _ReconcileVcs(tmp_path, subjects, "# Deferred work\n\n" + _fu_row(_FU_SLUG, _FU_STORY, status="closed"))
+    assert cli_dispatch._reconcile_campaign_blocked(vcs=closed_row, repo_root=tmp_path, blocked=blocked) == {
+        _FU_SLUG: {}
+    }
+
+
+def test_mutation_without_the_row_judgement_a_blocked_follow_up_is_pruned_as_merged(tmp_path: Path, monkeypatch) -> None:
+    _init_git_repo(tmp_path)
+    subjects = (_fu_subject(_FU_SLUG, "51-2-the-landing-record"),)
+    open_row = _ReconcileVcs(tmp_path, subjects, "# Deferred work\n\n" + _fu_row(_FU_SLUG, _FU_STORY))
+    monkeypatch.setattr(deferred_work, "open_followup_review_story_keys", lambda text: ())
+    pruned = cli_dispatch._reconcile_campaign_blocked(
+        vcs=open_row, repo_root=tmp_path, blocked={_FU_SLUG: {"51.2": "refused"}}
+    )
+    assert pruned == {_FU_SLUG: {}}
