@@ -120,6 +120,11 @@ def run_git(
         raise CliBridgeError(f"git {' '.join(args[:2])} timed out after {timeout}s") from exc
     except OSError as exc:
         raise CliBridgeError(f"git failed to launch: {exc!r}") from exc
+    except UnicodeDecodeError as exc:
+        # `text=True` decodes stdout as UTF-8 inside subprocess.run; a path git
+        # prints verbatim under `-z` (a file named `bad\xff.log`) is not UTF-8
+        # and would otherwise escape as a bare UnicodeDecodeError.
+        raise CliBridgeError(f"git {' '.join(args[:2])} produced output that is not valid UTF-8: {exc}") from exc
 
     if result.returncode not in ok_exit_codes:
         raise CliBridgeError(f"git {' '.join(args[:2])} exited {result.returncode}: {result.stderr.strip()}")
