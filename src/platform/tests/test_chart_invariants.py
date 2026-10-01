@@ -14,25 +14,27 @@ Story 9.6's discipline applies: every real proof's assertion logic lives
 in a shared helper, and each of the eight assertion-bearing helpers has at
 least one "guard removed" companion that feeds it a synthetic violating
 input (pure dicts -- no helm, no yaml) and requires it to raise. The
-companions are deliberately UNGATED so the discipline runs even in the
-pip-only CI `test` job, which has neither helm nor PyYAML -- the real
-proofs gate per-test on helm (skip reason names the capability, the 11.4
-convention) and import yaml only after that gate via `pytest.importorskip`.
-The helm gate accepts ANY `helm` on PATH; the canonical invocation is via
-the `platform-dev` pixi env (AD-16), which is what the recorded
-verification used.
+companions are deliberately UNGATED so the discipline runs even on a machine
+with neither helm nor PyYAML -- the real proofs gate per-test on helm
+(`tests.helm_gate.requires_helm`, Story 80.1: skip with a reason naming the
+capability, the 11.4 convention, but FAIL under `CI`, where the Platform CI
+`test` job's `platform-ci-test` env provides helm) and import yaml only after
+that gate via `pytest.importorskip`. The helm gate accepts ANY `helm` on PATH;
+the canonical invocations are the `platform-ci-test` and `platform-dev` pixi
+envs (AD-16).
 """
 
 from __future__ import annotations
 
 import re
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
 from typing import cast
 
 import pytest
+
+from tests.helm_gate import requires_helm
 
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 _CORE_CHART = _PLATFORM_DIR / "deploy" / "charts" / "platform"
@@ -165,30 +167,21 @@ _FLAGS_RENDER_ARGS = [
     "flags.environment=dev",
 ]
 
-requires_helm = pytest.mark.skipif(
-    shutil.which("helm") is None,
-    reason=(
-        "helm not on PATH (AD-16: provided by the platform-dev pixi env) -- "
-        "chart render/lint tests need it"
-    ),
-)
-
-
 # ---------------------------------------------------------------------------
 # Render plumbing (helm-gated tests only)
 # ---------------------------------------------------------------------------
 
 
 def _import_yaml() -> Any:
-    """Import PyYAML AFTER the helm gate, never at module level: the
-    pip-only CI `test` job installs neither helm nor PyYAML, and this
-    module must still collect (and run the guard-removed companions) there.
+    """Import PyYAML AFTER the helm gate, never at module level: a machine
+    with neither helm nor PyYAML must still collect this module (and run the
+    guard-removed companions).
     """
     return pytest.importorskip(
         "yaml",
         reason=(
-            "PyYAML not installed (pip-only CI lane) -- chart render tests "
-            "parse `helm template` output with it"
+            "PyYAML not installed -- chart render tests parse "
+            "`helm template` output with it"
         ),
     )
 
@@ -3239,7 +3232,7 @@ def test_external_redis_overlay_toggle_off_matches_default_render():
 
 # ---------------------------------------------------------------------------
 # Guard-removed companions (9.6 discipline) -- UNGATED, pure dicts, no
-# helm/yaml, so they run in the pip-only CI lane too
+# helm/yaml, so they run on a machine without either
 # ---------------------------------------------------------------------------
 
 

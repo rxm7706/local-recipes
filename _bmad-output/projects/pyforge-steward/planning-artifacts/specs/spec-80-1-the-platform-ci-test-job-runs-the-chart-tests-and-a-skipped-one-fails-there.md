@@ -2,7 +2,8 @@
 title: "80.1: The Platform CI `test` job runs the chart tests, and a skipped one fails there"
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'done'
+baseline_revision: '423056819c2ecb0f2d244e3109edbe0df03621a4'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -13,7 +14,27 @@ context:
   - src/platform/tests/test_chart_invariants.py
   - src/platform/tests/test_openfeature_file_flags.py
   - scripts/platform-ci-local.sh
-deferred: []
+warnings:
+  - oversized
+deferred:
+  - summary: >-
+      The Platform CI `test` log has not been read, so the five chart-test deferrals stay open.
+    evidence: >-
+      Closing DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1 and DW-steward-78-1-3 needs a Platform CI `test` run of this change showing the chart tests ran, not skipped. That run exists only after a push, and this run did not push or open a PR. Local evidence (the `platform-ci-test` env running the chart modules with zero helm skips) is recorded in the Auto Run Result, not offered as the CI log. Settled by reading the PR's `test` job log for skip counts on `tests/test_chart_invariants.py` and `tests/test_openfeature_file_flags.py`.
+    location: .github/workflows/platform-ci.yml
+    severity: medium
+  - summary: >-
+      A missing PyYAML would still skip the chart tests silently under CI.
+    evidence: >-
+      `_import_yaml` and the flags module use `pytest.importorskip("yaml")`, which skips rather than fails when PyYAML is absent. PyYAML is in the `platform-ci-test` lock only as a transitive dependency, not a direct one in `[feature.platform-ci-test.dependencies]`. The same silent-skip class this story closes for helm, with no known trigger today. Settled by deciding whether `importorskip("yaml")` fails under `CI` too, or `pyyaml` becomes a direct dependency.
+    location: src/platform/tests/test_chart_invariants.py
+    severity: low
+  - summary: >-
+      Three more `importorskip` sites can skip chart-related tests silently under `CI`, beyond the one `DW-steward-80-1-2` names.
+    evidence: >-
+      `test_openfeature_file_flags.py` calls `pytest.importorskip("openfeature")` and `pytest.importorskip("openfeature.contrib.provider.flagd")` at module level (lines 48-49), so a missing package skips the whole module, including its 7 `requires_helm` tests. `pytest.importorskip("yaml")` is also called inline in `test_openfeature_file_flags.py` (line 102, `_render_core`) and in `test_story_48_4_eso_example_lists_required_platform_secret_keys` in `test_chart_invariants.py` (line 2753), which is not `requires_helm`-gated. No trigger is known today: `openfeature-sdk` and `openfeature-provider-flagd` are direct `platform-ci-test` dependencies, and PyYAML is locked there transitively; a local `platform-ci-test` run of both modules had zero skips. Making these fail under `CI` would change tests unrelated to helm and needs a decision between a `CI`-aware helper and a direct `pyyaml` dependency, which this story's intent (`requires_helm` only) does not make. Settled by that decision, taken together with `DW-steward-80-1-2`.
+    location: src/platform/tests/test_openfeature_file_flags.py
+    severity: low
 declared_low_risk: false
 ---
 
@@ -82,6 +103,37 @@ Type / Effort / Deps: fix / S / —.
 
 </intent-contract>
 
+## Code Map
+
+- `pixi.toml` -- `[feature.platform-ci-test.dependencies]` (~L408) gains `kubernetes-helm`; `platform-dev` (~L332) holds the pin `>=4.3.0`
+- `pixi.lock` -- moves with the manifest via `pixi lock` (never `pixi add`/`pixi update`: pre-shell hook denies them)
+- `environment.yaml` -- export of the `build` env; holds no `platform-ci-test` content, so a regenerated file is expected byte-identical
+- `src/platform/tests/test_chart_invariants.py` -- `requires_helm` (L168), 67 function-level uses (the contract's 66 is stale), `_import_yaml` (L182) `importorskip("yaml")`
+- `src/platform/tests/test_openfeature_file_flags.py` -- `requires_helm` (L57), 7 uses; module-level `importorskip("openfeature...")` L47-48
+- `src/platform/tests/__init__.py` -- present; there is no `conftest.py`, so the shared gate is a plain module
+- `.github/workflows/platform-ci.yml` -- `test` job (L168-254) installs via `platform-test-setup`, runs `python -m pytest -v` from `src/platform`; GitHub sets `CI=true`, so no workflow edit
+- `scripts/platform-ci-local.sh` -- L110 `PATH="$CIT:$DEV:$PATH"`, never sets `CI`; unchanged
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` -- the five rows (L3129, L3417, L3987, L5546, L5579); closing them needs the PR's CI log
+
+## Tasks & Acceptance
+
+**Execution:**
+- `pixi.toml` -- add `kubernetes-helm = ">=4.3.0"` to `[feature.platform-ci-test.dependencies]`; run `pixi lock`; regenerate `environment.yaml` -- helm becomes pixi-provisioned in the CI env (AD-16)
+- `src/platform/tests/helm_gate.py` -- new: one `requires_helm` decorator (helm present: test unchanged; absent and `CI` set: fails naming `helm`; absent: skip) -- replaces both `pytest.mark.skipif` definitions
+- `src/platform/tests/test_chart_invariants.py`, `src/platform/tests/test_openfeature_file_flags.py` -- import `requires_helm` from the gate, drop the local definition and the unused `shutil` import, fix the stale "pip-only CI lane" wording -- one definition, no drift
+- `src/platform/tests/test_helm_gate.py` -- new: the three branches with patched `PATH` and `CI`; mutation run removes the CI branch and the CI test must red -- covers the I/O matrix
+- Run the platform suite in the `platform-ci-test` env -- zero helm skips in `test_chart_invariants.py` and `test_openfeature_file_flags.py`
+
+**Acceptance Criteria:**
+- Given the `platform-ci-test` env, when it is installed from the lock, then `helm version` exits 0 inside it
+- Given `CI` is set and `helm` is absent, when a `requires_helm` test runs, then it fails with a message naming `helm`
+- Given `CI` is unset and `helm` is absent, when a `requires_helm` test runs, then it skips
+- Given `pixi.toml` changed, when `environment.yaml` is regenerated, then the committed file equals the export
+- Given the CI-fail branch is removed, when `test_helm_gate.py` runs, then it fails
+- Given the PR's Platform CI `test` run, when its log is read, then the chart tests ran, not skipped (post-push; recorded under `deferred:`, never claimed from local evidence)
+
+## Spec Change Log
+
 ## Binding
 
 Parent: Story 16.1's Platform CI lane (defect; no new CAP). DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1, DW-steward-78-1-3.
@@ -91,11 +143,98 @@ Ledger status at mint: `backlog`.
 Deps: —.
 Minted 2026-10-01 by operator ruling: the deferral burn-down's "stop the inflow" changes run before its Phase 2.
 
+## Design Notes
+
+- A mark cannot fail a test, so `requires_helm` becomes a decorator: helm on PATH returns the test unchanged; absent with `CI` set returns a stand-in that calls `pytest.fail` naming `helm`; absent otherwise applies `pytest.mark.skip`. It reads `shutil.which("helm")` and `os.environ` when built (import time, like the old `skipif(bool)`), so a test patches `PATH` and `CI` with `monkeypatch` and rebuilds it.
+- `CI` counts as set when non-empty; GitHub Actions exports `CI=true`.
+- One shared `helm_gate.py` replaces the two copies the contract calls "both definitions": same behaviour in each module, one place to test and mutate.
+- Latent, out of scope: `_import_yaml`'s `pytest.importorskip("yaml")` still skips silently under CI. PyYAML is in the `platform-ci-test` lock only transitively; recorded under `deferred:`.
+
 ## Verification
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`).
+- `pixi run --frozen -e platform-ci-test bash -c 'cd src/platform && python -m pytest tests/test_helm_gate.py tests/test_chart_invariants.py tests/test_openfeature_file_flags.py -rs -q'` — expected: pass, no `helm not on PATH` skip lines.
+- `pixi run --frozen -e platform-ci-test bash -c 'cd src/platform && ruff check . && ruff format --check . && mypy platformapp config tests'` — expected: exit 0.
 
 ## Review Triage Log
 
 - No independent review has run yet (implementation and review stay separate).
+
+### 2026-10-01 — Review pass
+- verdicts: 26 findings — high 0, medium 1, low 18, false 6, maybe-false 1
+- findings:
+  - `[low]` `[defer]` Blind Hunter: `importorskip("yaml")` in `_import_yaml` still skips silently under `CI`, and `DW-steward-80-1-2` understates the sites — real but latent: PyYAML is locked in `platform-ci-test` (a local run of both modules had zero skips) and no trigger is known; making it fail changes tests unrelated to helm and needs a `CI`-aware helper or a direct `pyyaml` dependency, a decision this story's intent (`requires_helm` only) does not make. Recorded as `DW-steward-80-1-2`, with the other sites in `DW-steward-80-1-3`.
+  - `[low]` `[defer]` Blind Hunter: module-level `importorskip("openfeature...")` skips all 7 flags chart tests and is not recorded — the same root cause as the row above; new deferred item, ingested as `DW-steward-80-1-3`, naming all four sites.
+  - `[low]` `[patch]` Blind Hunter: "pip-only CI `test` job" wording remains in `test_isolation_and_statelessness.py` (lines 37, 45, 634) — verified: that job runs the pixi `platform-ci-test` env; three comment lines now read "Platform CI `test` job", the file named on the `spec-pyforge-unifying-strategy` memlog.
+  - `[false]` `[reject]` Blind Hunter: pre-PR verification for a `pixi.toml`/`pixi.lock` change is incomplete — `pixi run -e pyforge-guild pyforge-station-tests` was run by the orchestrator after the implementer returned and exits 0 (every station suite passed); recorded under Verification performed.
+  - `[low]` `[reject]` Blind Hunter: `CI` is read as "non-empty", so `CI=false`/`CI=0` with no helm fails instead of skipping, with no note for contributors — the contract says "when `CI` is set", the failure is loud and names helm and `CI`, and treating `false`/`0` as unset would be a second reading the intent does not give; the fix adds branches.
+  - `[low]` `[reject]` Blind Hunter: the "chart tests ran, not skipped" criterion rests on one manual log read with no owner, and nothing asserts zero skips in CI — the open step is already recorded as `DW-steward-80-1` (severity medium); a CI-side zero-skip assertion is a new gate beyond this intent.
+  - `[low]` `[reject]` Blind Hunter: a missing helm under `CI` fails each of the 74 tests separately, burying the cause — every failure names helm and `CI`, so the cause is in each line; one session-level failure would need new hook machinery for a cosmetic gain.
+  - `[low]` `[reject]` Blind Hunter: `test_helm_gate.py` gaps (parametrize plus `functools.wraps` unproven, a loop inside one test, `assert gated() == "ran"`) — the Verification Gap reviewer ran `@requires_helm` over `@pytest.mark.parametrize` with `CI=true` and no helm and all three cases failed naming helm; the rest is style with no named harm.
+  - `[low]` `[patch]` Blind Hunter: the memlog entry says 73 chart tests and no correction is appended — the true count is 74; a correction entry was appended to the `spec-pyforge-unifying-strategy` memlog (the memlog is append-only, so the earlier entry stands). The 73 in this spec's own Problem line sits inside the read-only `<intent-contract>` and stays.
+  - `[low]` `[reject]` Edge Case Hunter: `CI` set to a falsy string (`false`, `0`) with helm absent fails instead of skipping — the same as the `CI=false` row above.
+  - `[low]` `[reject]` Edge Case Hunter: only an empty `CI` is tested as unset — pinning `false`/`0` would document a choice the intent does not make; see the `CI=false` row.
+  - `[low]` `[defer]` Edge Case Hunter: `_import_yaml` still importorskips with helm present and `CI` set — the same as the first row; `DW-steward-80-1-2`.
+  - `[low]` `[defer]` Edge Case Hunter: module-level `importorskip("openfeature...")` runs before the gate — the same as the second row; `DW-steward-80-1-3`.
+  - `[false]` `[reject]` Edge Case Hunter: only `pyforge-steward-test` and a partial `pr-preflight` were run against a `pixi.toml`/`pixi.lock` change — `pyforge-station-tests` was run and exits 0; see the pre-PR row above.
+  - `[low]` `[reject]` Edge Case Hunter: `platform-ci-local.sh` builds `PATH` as `$CIT:$DEV:$PATH`, so `platform-dev`'s helm can satisfy the gate and the twin passes without helm in `platform-ci-test` — real, but removing helm from `platform-ci-test` is caught loudly by the gate this story adds in the hosted `test` job (`CI=true`, stand-in fails naming helm), and the direct `-e platform-ci-test` runs prove the env; a guard in the script is extra scope in a separately governed file.
+  - `[low]` `[patch]` Edge Case Hunter: the memlog says 73 where the count is 74 — the same root cause and the same correction entry as the Blind Hunter memlog row.
+  - `[low]` `[defer]` Verification Gap (gap): the `CI`-only fail branch leaves `importorskip` of yaml and openfeature as silent skips, in four sites — the filed disposition is `defer`; recorded in `DW-steward-80-1-2` and `DW-steward-80-1-3`.
+  - `[low]` `[reject]` Verification Gap (other): the local twin masks the helm change because `platform-dev`'s helm is on `PATH` — see the `platform-ci-local.sh` row above.
+  - `[false]` `[reject]` Verification Gap (other): running the env's interpreter without activating it and without `CI` skips all chart tests — that is the specified behaviour (I/O matrix row "local without helm"); the CI job activates the env (`activate-environment: platform-ci-test`).
+  - `[medium]` `[defer]` Intent Alignment (1): the criterion "the PR's Platform CI `test` log shows the chart tests ran" is not satisfied by this diff — true by design: the dispatch pushes nothing and opens no PR (outward work needs the operator); recorded as `DW-steward-80-1`, blocked on a push and PR the operator asks for.
+  - `[maybe-false]` `[defer]` Intent Alignment (2): `CI` reaching the pytest process in the hosted job is not shown, only set by hand in tests — GitHub Actions exports `CI=true`, but no log has been read; settled by the same log read as `DW-steward-80-1` (a run where the chart tests ran, and a deliberately helm-less run failing, would show it). If true, medium (unverified).
+  - `[false]` `[reject]` Intent Alignment (3): "fails the test" is implemented at call time, not as a mark or hook — the subprocess case `test_a_real_pytest_run_reports_each_branch[helm-absent-under-ci]` runs real pytest and it reports `1 failed` and exit 1, so the stand-in is collected as a failure with fixtures resolved.
+  - `[false]` `[reject]` Intent Alignment (4): one shared gate replaces the intent's "both definitions" — both modules import it and both inherit the three-way behaviour; the behaviour the intent names holds in each.
+  - `[low]` `[patch]` Intent Alignment (5): counts differ from the intent (74, not 73; 67, not 66) — the same root cause and the same memlog correction as the Blind Hunter memlog row; the intent-contract stays read-only.
+  - `[low]` `[defer]` Intent Alignment (6): adjacent silent-skip surfaces (`importorskip` of yaml and openfeature) remain — the same as the first rows; `DW-steward-80-1-2`, `DW-steward-80-1-3`.
+  - `[false]` `[reject]` Intent Alignment (7): docstring and comment edits in `test_chart_invariants.py` go beyond the dependency and gate work — they fix the stale "pip-only CI lane" wording around the replaced gate and change no assertion.
+
+## Auto Run Result
+
+### Summary of implemented change
+
+- **helm in the CI env:** `kubernetes-helm = ">=4.3.0"` (the pin `platform-dev` holds) joins `[feature.platform-ci-test.dependencies]`; `pixi lock` added one line to `pixi.lock` (4.3.0 was already locked for `platform-dev`). `environment.yaml` regenerated byte-identical (it holds no `platform-ci-test` content).
+- **One gate:** `src/platform/tests/helm_gate.py` holds `requires_helm`, a decorator. helm on PATH: the test unchanged. Absent with `CI` set (non-empty): a `functools.wraps` stand-in that calls `pytest.fail` naming `helm`. Absent otherwise: `pytest.mark.skip`. Both old `pytest.mark.skipif` definitions are gone; the two modules import the gate. No chart test was touched, deleted or loosened (the contract's 66 uses is 67 in `test_chart_invariants.py`, plus 7 in `test_openfeature_file_flags.py`).
+- **Tests of the gate:** `src/platform/tests/test_helm_gate.py` pins the three branches (and an empty `CI` as unset) against a patched `PATH`/`CI`, then drives a real `pytest` subprocess per branch (passed / failed naming helm / skipped), so the stand-in is proven to be collected as a failure, with fixtures resolved.
+
+### Files changed
+
+- `pixi.toml`, `pixi.lock` -- helm in `platform-ci-test`
+- `src/platform/tests/helm_gate.py` (new), `src/platform/tests/test_helm_gate.py` (new)
+- `src/platform/tests/test_chart_invariants.py`, `src/platform/tests/test_openfeature_file_flags.py` -- import the gate; local definition and unused `shutil` import dropped; the "pip-only CI lane" wording fixed
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md` (surface reconcile + a correction entry; the baseline `scripts/.spec-surface-baseline.json` is NOT changed, see Residual risks), `.../deferred-work-ledger.md` (the three `deferred:` entries ingested as `DW-steward-80-1`, `DW-steward-80-1-2` and `DW-steward-80-1-3` by `deferred_work_intake.py --fix --project steward`)
+- `src/platform/tests/test_isolation_and_statelessness.py` -- review patch: three comment lines say "Platform CI `test` job" instead of "pip-only CI `test` job"; no code or assertion changed
+
+### Review findings breakdown
+
+One review pass, four layers (Blind Hunter, Edge Case Hunter, Verification Gap, Intent Alignment): 26 findings — high 0, medium 1, low 18, false 6, maybe-false 1 (full rows in the Review Triage Log).
+
+- **Patches applied (2 entries, 4 rows, both low):** the "pip-only CI `test` job" wording in `test_isolation_and_statelessness.py` (three comment lines); a correction entry for the 73 → 74 chart-test count on the `spec-pyforge-unifying-strategy` memlog.
+- **Deferred (3 entries):** the `importorskip` silent-skip sites (`DW-steward-80-1-2`, `DW-steward-80-1-3`); the open Platform CI `test` log read (`DW-steward-80-1`), which also settles the `maybe-false` finding on `CI` reaching the hosted job.
+- **Rejected:** `CI=false`/`CI=0` read as set (twice); the zero-skip CI assertion; the noisy per-test failure message; `test_helm_gate.py` style gaps; the local twin's `PATH` masking; the pre-PR station suites claim (twice, it ran and exits 0); the call-time implementation reading; the consolidated gate; the docstring edits; running the interpreter outside the env — each with its reason in the Review Triage Log.
+
+### Follow-up review recommendation
+
+`followup_review_recommended: false`. This pass patched two entries, both low (no high, fewer than two medium), so no named unverified risk calls for another pass. The stand-in in `helm_gate.py` relies on `functools.wraps` carrying the signature so pytest still injects fixtures; the subprocess test covers a fixture-taking test and the Verification Gap reviewer covered `parametrize`.
+
+### Verification performed
+
+- `pixi run --frozen -e platform-ci-test helm version` -- exit 0, `v4.3.0+conda-forge`, inside the worktree's own env installed from the updated lock.
+- `pixi run --frozen -e platform-ci-test bash -c 'cd src/platform && python -m pytest tests/test_helm_gate.py tests/test_chart_invariants.py tests/test_openfeature_file_flags.py -rs -q'` -- exit 0, 171 passed, no skips, no `helm not on PATH` line.
+- `ruff check .`, `ruff format --check .`, `mypy platformapp config tests` in `platform-ci-test` -- each exit 0.
+- `pixi run --frozen -e pyforge-guild platform-ci-local -- --test` (the local twin of the whole `test` job: system checks, ruff, mypy, policy, sqlmigrate, full suite) -- exit 0, 1100 passed, 13 skipped (none helm).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- exit 0, 1909 passed, 2 skipped.
+- Mutation, restored byte-for-byte: the `if os.environ.get("CI"):` branch replaced by `if False:` -- `test_helm_gate.py` fails `test_helm_absent_under_ci_fails_naming_helm` and `test_a_real_pytest_run_reports_each_branch[helm-absent-under-ci]` (2 failed, 5 passed).
+- Re-run by the orchestrator after the implementer returned (exit codes read directly): the three-module `pytest` command (171 passed, 0 skipped, no `helm not on PATH` line); `ruff check`, `ruff format --check` and `mypy platformapp config tests` (each 0); `pyforge-steward-test` (0, 1909 passed, 2 skipped); the mutation (2 failed, 5 passed, restored with `cmp` exit 0); `pixi lock --check` (0, lock up to date); `pixi project export conda-environment -e build` against `environment.yaml` (`cmp` exit 0, byte-identical); `python scripts/spec_surface_reconcile.py` (0) and `spec-surface-check` (0), both with the baseline file untouched, no stamp.
+- Orchestrator, after the review patch (exit codes read directly): the four-module `pytest` run in `platform-ci-test` (`test_helm_gate.py`, the two chart modules, `test_isolation_and_statelessness.py`: 174 passed, 3 skipped, none for helm; the 3 skips are that file's own opt-in langflow and docker tests); `ruff check`, `ruff format --check`, `mypy platformapp config tests` (each 0); `pyforge-steward-test` (0, 1909 passed, 2 skipped); `pixi run -e pyforge-guild pyforge-station-tests` (0, every station suite passed; run once, before the review patch, which touched comments only); `spec_surface_reconcile.py` and the detectors `spec-surface-check`, `deferred-work-check`, `story-status-check`, `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`, `ledger-regression-check`, `governance-currency`, `chain-currency-sweep-check`, `platform-ci-test-requirements-check` (each 0). `pr-preflight` was not run in full.
+- Exit codes 0 (implementer): `chain-currency-sweep-check`, `story-status-check`, `chain-completeness-check`, `deferred-work-check` (after the intake), `governance-currency`, `llms-full-check`, `platform-ci-test-requirements-check`, `pixi-version-check`, `scripts/spec_surface_reconcile.py`. `pr-preflight` was not run in full.
+
+### Residual risks
+
+- **Open, by design:** the PR's Platform CI `test` log has not been read; nothing was pushed. The five chart-test deferrals (DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1, DW-steward-78-1-3) stay open until it shows the chart tests ran.
+- `importorskip("yaml")` in `_import_yaml` (and the flags module's `importorskip("openfeature...")`) still skip silently under CI; PyYAML is only a transitive dependency of `platform-ci-test` (`DW-steward-80-1-2`).
+- `CI` unset on a CI-like runner that does not export it would skip rather than fail; GitHub Actions exports `CI=true`, and `platform-ci-local.sh` deliberately does not set it.
+- **Baseline stamp reverted.** The implementer ran a scoped `--write-baseline` for `spec-pyforge-unifying-strategy`. It re-stamped about 40 paths, of which only five are this story's (`pixi.toml`, the two new test files and the two edited modules); the rest were other stories' (78.1, 77.1, 76.2) pending drift, which a producer must not accept. This run's rule is never to pass `--write-baseline`, so the orchestrator restored `scripts/.spec-surface-baseline.json` to the baseline revision (`git restore --source=423056819c2ecb0f2d244e3109edbe0df03621a4`, that one path). Both `spec_surface_reconcile.py` and `spec-surface-check` exit 0 without it. The stamp stays the operator's, at landing, from a clean tree.
+- The `.memlog.md` entries (and the new-file docstrings before the orchestrator's edit) say 73 chart tests; the true count is 74 (67 in `test_chart_invariants.py`, 7 in `test_openfeature_file_flags.py`). The memlog is append-only: a correction entry (73 → 74) was appended and the earlier figure stands; the two new files no longer state a count. The 73 in this spec's Problem line is inside the read-only `<intent-contract>`.

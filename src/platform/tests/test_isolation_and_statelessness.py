@@ -34,7 +34,7 @@ Three claims, six tests:
    (`PLATFORM_DOCKER_COMPOSE_TESTS=1` + `docker` on PATH), matching this
    project's own precedent (spec-11-2's "Manual checks") of live
    docker-compose round trips being verified once, not wired into the
-   pip-only CI `test` job. Its guard-removed companion is NOT gated -- it
+   Platform CI `test` job. Its guard-removed companion is NOT gated -- it
    needs no docker/postgres and must always run.
 
 Claim 1's real Alembic bootstrap and claim 2's ASGI cycles require the
@@ -42,7 +42,7 @@ Claim 1's real Alembic bootstrap and claim 2's ASGI cycles require the
 gated PER TEST via `requires_langflow` below, deliberately NOT via the
 module-level `pytest.importorskip` that `test_asgi_seam.py`/
 `test_langflow_mount.py` use: a module-level skip would silently take the
-three guard-removed companions down with it in the pip-only CI `test` job
+three guard-removed companions down with it in the Platform CI `test` job
 (no langflow there -- review finding on this story), and the whole point
 of leaving the companions ungated is that the 9.6 discipline runs
 everywhere the suite is collected.
@@ -631,7 +631,7 @@ def test_pattern_b_sidecar_kill_and_restart_preserves_shared_dbgpt_schema_state(
 
 def test_pattern_b_statelessness_check_fails_if_state_were_tied_to_the_sidecar_containers_own_storage():  # noqa: E501
     """AC6 (9.6 discipline, always-on -- NOT gated behind docker/opt-in, so
-    it still runs in the pip-only CI `test` job where Tier 2 is
+    it still runs in the Platform CI `test` job where Tier 2 is
     unavailable): reuses `_InProcessOnlyStore` -- it already correctly
     models "state tied to one compute unit's lifetime, wiped when that unit
     is replaced", which applies to a sidecar container being replaced
