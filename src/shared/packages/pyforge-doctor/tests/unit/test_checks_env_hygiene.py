@@ -5,6 +5,8 @@ no-match empty-tuple case, and ``gather_one``'s filter-equivalence."""
 
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -16,6 +18,7 @@ from pyforge.doctor.checks.env_hygiene import (
     gather,
 )
 from pyforge.doctor.checks.registry import gather_one
+from pyforge.doctor.cli_bridge import CliBridgeError
 from pyforge.doctor.models import DoctorStatus, Finding, Source
 
 # Six levels up from tests/unit/<this file> lands at the monorepo root --
@@ -23,6 +26,29 @@ from pyforge.doctor.models import DoctorStatus, Finding, Source
 # test_bundled_registry_matches_the_cfe_canonical_source_when_present.
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 _HTTP_PY_DIR = _REPO_ROOT / ".claude" / "skills" / "conda-forge-expert" / "scripts"
+
+# The discovery walk now asks git which directories it ignores (Story 38.4,
+# via `cli_bridge.run_git`, which does `env = dict(os.environ)` at call time).
+# A hook-set GIT_DIR/GIT_WORK_TREE would retarget that call at the wrong
+# repository, and a contributor's global excludes file would change what git
+# calls ignored -- same rationale, and same autouse-fixture-on-os.environ
+# shape, as test_sources_frozen_path.py's own `_isolate_git_env`.
+_LEAKY_GIT_VARS = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for var in _LEAKY_GIT_VARS:
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
 
 
 def _write(tmp_path: Path, name: str, source: str) -> None:
@@ -465,6 +491,227 @@ def test_gather_on_a_single_file_target_returns_empty_tuple(tmp_path: Path):
     file_target.write_text('import os\nheaders["Y"] = os.environ["X"]\n', encoding="utf-8")
 
     assert gather(file_target) == ()
+
+
+# --- discovery-walk git-ignore pruning (Story 38.4) ----------------------
+#
+# On the primary checkout the walk spent its whole entry cap inside the
+# untracked, gitignored `.cursor/cdao-p15-noarch-build`, `var/scribe-pg` and
+# `var/platform-local` and reported INCOMPLETE (DW-OPS-2026-10-01-3). In a git
+# work tree the walk now asks git ONCE which directories it ignores and never
+# enters them. Every test below drives a REAL throwaway git repository (never a
+# mocked git), and uses `scratch_local` -- a name `_PRUNED_DIR_NAMES` does not
+# carry -- so only the git-driven prune can explain a directory being skipped.
+
+
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True)
+
+
+def _init_repo(repo: Path, *, gitignore: str = "scratch_local/\n") -> Path:
+    repo.mkdir(parents=True, exist_ok=True)
+    _git(repo, "init", "-q", "--initial-branch=main")
+    (repo / ".gitignore").write_text(gitignore, encoding="utf-8")
+    return repo
+
+
+def _put(root: Path, rel: str, source: str = "x = 1\n") -> Path:
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(source, encoding="utf-8")
+    return path
+
+
+def _relative_files(root: Path, files: list[Path]) -> list[str]:
+    return sorted(f.relative_to(root).as_posix() for f in files)
+
+
+def _spy_walk(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
+    """Record every directory ``os.walk`` actually yields (the ones the walk
+    ENTERS) -- a pruned directory never appears here."""
+    real_walk = os.walk
+    entered: list[Path] = []
+
+    def _spy(top, **kwargs):
+        for dirpath, dirnames, filenames in real_walk(top, **kwargs):
+            entered.append(Path(dirpath))
+            yield dirpath, dirnames, filenames
+
+    monkeypatch.setattr(env_hygiene.os, "walk", _spy)
+    return entered
+
+
+def test_discover_python_files_does_not_enter_a_git_ignored_directory(monkeypatch, tmp_path: Path):
+    repo = _init_repo(tmp_path)
+    _put(repo, "mine.py")
+    _put(repo, "scratch_local/junk.py")
+    _put(repo, "scratch_local/deep/more.py")
+    entered = _spy_walk(monkeypatch)
+
+    files, incomplete = env_hygiene._discover_python_files(repo)
+
+    assert _relative_files(repo, files) == ["mine.py"]
+    assert incomplete is False
+    assert repo / "scratch_local" not in entered
+    assert repo / "scratch_local" / "deep" not in entered
+
+
+def test_git_ignored_dirs_lists_only_ignored_directory_entries(tmp_path: Path):
+    repo = _init_repo(tmp_path, gitignore="scratch_local/\n*.log\n")
+    _put(repo, "scratch_local/junk.py")
+    _put(repo, "noise.log", "not python\n")  # an ignored FILE: never a prune entry
+    _put(repo, "fresh_pkg/new.py")  # untracked but NOT ignored: never a prune entry
+
+    assert env_hygiene._git_ignored_dirs(repo) == frozenset({os.path.abspath(repo / "scratch_local")})
+
+
+def test_the_git_prune_is_what_skips_an_ignored_directory(monkeypatch, tmp_path: Path):
+    # Mutation check: with the pruning removed (the git call reporting nothing
+    # ignored) the very same tree walks the ignored directory, so the test
+    # above fails if and only if the prune is gone.
+    repo = _init_repo(tmp_path)
+    _put(repo, "mine.py")
+    _put(repo, "scratch_local/junk.py")
+    monkeypatch.setattr(env_hygiene, "_git_ignored_dirs", lambda _target: frozenset())
+
+    files, _incomplete = env_hygiene._discover_python_files(repo)
+
+    assert _relative_files(repo, files) == ["mine.py", "scratch_local/junk.py"]
+
+
+def test_discover_python_files_still_scans_a_tracked_file_under_an_ignored_directory(tmp_path: Path):
+    # `.cursor/` is gitignored in this repo yet holds tracked files: git omits
+    # such a directory from the wholly-ignored listing, so it is walked and the
+    # tracked file is scanned. Only its genuinely ignored child directory goes.
+    repo = _init_repo(tmp_path, gitignore="vendor/\n")
+    _put(repo, "vendor/keep.py")
+    _git(repo, "add", "-f", "vendor/keep.py")
+    _put(repo, "vendor/junk.py")  # ignored FILE in a mixed directory: directories only are pruned
+    _put(repo, "vendor/cache/blob.py")  # wholly ignored child directory
+
+    files, incomplete = env_hygiene._discover_python_files(repo)
+
+    assert _relative_files(repo, files) == ["vendor/junk.py", "vendor/keep.py"]
+    assert incomplete is False
+
+
+def test_discover_python_files_walks_a_plain_directory_as_before(monkeypatch, tmp_path: Path):
+    # Not a git work tree: no ceiling above tmp_path may leak a parent repo in.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+    _put(tmp_path, ".gitignore", "scratch_local/\n")  # inert: there is no repository to read it
+    _put(tmp_path, "mine.py")
+    _put(tmp_path, "scratch_local/junk.py")
+    _put(tmp_path, "build/vendored.py")  # the by-name prune still applies
+
+    assert env_hygiene._git_ignored_dirs(tmp_path) == frozenset()
+    files, incomplete = env_hygiene._discover_python_files(tmp_path)
+
+    assert _relative_files(tmp_path, files) == ["mine.py", "scratch_local/junk.py"]
+    assert incomplete is False
+
+
+def test_discover_python_files_walks_unchanged_when_git_fails(monkeypatch, tmp_path: Path):
+    repo = _init_repo(tmp_path)
+    _put(repo, "mine.py")
+    _put(repo, "scratch_local/junk.py")
+
+    def _git_down(*_args, **_kwargs):
+        raise CliBridgeError("git failed to launch")
+
+    monkeypatch.setattr(env_hygiene, "run_git", _git_down)
+
+    files, incomplete = env_hygiene._discover_python_files(repo)
+
+    assert _relative_files(repo, files) == ["mine.py", "scratch_local/junk.py"]
+    assert incomplete is False
+
+
+def test_discover_python_files_walks_unchanged_when_the_target_is_inside_an_ignored_directory(tmp_path: Path):
+    # git exits 128 (fatal) when run from inside an ignored directory; the
+    # walk then falls back to today's behaviour rather than failing.
+    repo = _init_repo(tmp_path)
+    _put(repo, "scratch_local/junk.py")
+    _put(repo, "scratch_local/deep/more.py")
+
+    files, incomplete = env_hygiene._discover_python_files(repo / "scratch_local")
+
+    assert _relative_files(repo / "scratch_local", files) == ["deep/more.py", "junk.py"]
+    assert incomplete is False
+
+
+def test_discover_python_files_prunes_for_a_subdirectory_target(tmp_path: Path):
+    # git reports paths relative to its cwd (the target), so a target below
+    # the repository root must still line up with the walk's own paths.
+    repo = _init_repo(tmp_path)
+    _put(repo, "pkg/mine.py")
+    _put(repo, "pkg/scratch_local/junk.py")
+
+    files, _incomplete = env_hygiene._discover_python_files(repo / "pkg")
+
+    assert _relative_files(repo / "pkg", files) == ["mine.py"]
+
+
+def test_discover_python_files_prunes_for_a_relative_target(monkeypatch, tmp_path: Path):
+    repo = _init_repo(tmp_path)
+    _put(repo, "mine.py")
+    _put(repo, "scratch_local/junk.py")
+    monkeypatch.chdir(repo)
+
+    files, _incomplete = env_hygiene._discover_python_files(Path("."))
+
+    assert sorted(f.name for f in files) == ["mine.py"]
+
+
+def test_discovery_asks_git_exactly_once_per_run(monkeypatch, tmp_path: Path):
+    repo = _init_repo(tmp_path)
+    for rel in ("a/one.py", "a/b/two.py", "a/b/c/three.py", "d/four.py", "scratch_local/junk.py"):
+        _put(repo, rel)
+    real_run_git = env_hygiene.run_git
+    calls: list[list[str]] = []
+
+    def _counting(cwd, args, **kwargs):
+        calls.append(list(args))
+        return real_run_git(cwd, args, **kwargs)
+
+    monkeypatch.setattr(env_hygiene, "run_git", _counting)
+
+    gather(repo)
+
+    assert len(calls) == 1
+    assert calls[0][0] == "ls-files"
+
+
+def test_discover_python_files_still_reports_incomplete_for_a_tracked_tree_over_the_cap(monkeypatch, tmp_path: Path):
+    # The cap and its incomplete report stay for a truly huge TRACKED tree --
+    # the prune lifts the cap only from what git ignores, never from source.
+    monkeypatch.setattr(env_hygiene, "_DISCOVERY_ENTRY_CAP", 5)
+    repo = _init_repo(tmp_path)
+    for i in range(8):
+        _put(repo, f"src/f{i}.py")
+    _git(repo, "add", "-A")
+
+    _files, incomplete = env_hygiene._discover_python_files(repo)
+
+    assert incomplete is True
+
+
+def test_gather_completes_when_the_only_bulk_is_a_git_ignored_directory(monkeypatch, tmp_path: Path):
+    # The primary checkout's shape in miniature: far more ignored entries than
+    # the cap, a handful of tracked files. Pruned before counting, the ignored
+    # bulk costs no entries, so the scan is COMPLETE -- and a leaky file inside
+    # the ignored directory is (correctly) never reported.
+    monkeypatch.setattr(env_hygiene, "_DISCOVERY_ENTRY_CAP", 5)
+    repo = _init_repo(tmp_path)
+    _put(repo, "mine.py")
+    _put(repo, "other.py")
+    _put(repo, "scratch_local/leak.py", 'import os\nheaders["Y"] = os.environ["X"]\n')
+    for i in range(30):
+        _put(repo, f"scratch_local/pg/f{i}.py")
+
+    result = gather(repo)
+
+    assert result == ()
+    assert not any(f.check == SCAN_INCOMPLETE_CHECK_NAME for f in result)
 
 
 def test_gather_on_a_nonexistent_target_returns_empty_tuple(tmp_path: Path):
