@@ -385,6 +385,30 @@ class _FakeVcsForSpecTextAtRef:
         return self._content.get((ref, path))
 
 
+def test_story_spec_rel_path_is_the_repo_relative_posix_path_of_the_resolved_spec(tmp_path: Path) -> None:
+    """Story 79.1: the path half of `spec_text_at_ref`, for a caller that publishes the spec."""
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / "spec-79-1-a-landing-promotes.md").write_text("---\nstatus: backlog\n---\n", encoding="utf-8")
+
+    assert (
+        dispatch_core.story_spec_rel_path(tmp_path, slug, "79.1")
+        == "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-79-1-a-landing-promotes.md"
+    )
+
+
+def test_story_spec_rel_path_is_none_for_a_missing_spec_a_bad_key_or_another_story(tmp_path: Path) -> None:
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / "spec-79-1-a-landing-promotes.md").write_text("---\nstatus: backlog\n---\n", encoding="utf-8")
+
+    assert dispatch_core.story_spec_rel_path(tmp_path, slug, "79.2") is None
+    assert dispatch_core.story_spec_rel_path(tmp_path, slug, "not-a-key") is None
+    assert dispatch_core.story_spec_rel_path(tmp_path / "elsewhere", slug, "79.1") is None
+
+
 def test_spec_text_at_ref_reads_the_resolved_path_at_the_given_ref(tmp_path: Path) -> None:
     """The local working tree only resolves the spec's stable PATH; the
     CONTENT returned is whatever the ref holds there -- proving the two
