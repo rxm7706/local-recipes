@@ -261,10 +261,6 @@ def _try_union_heal(
     except VcsCommandError:
         return False, None
 
-    if await_checks is not None:
-        refusal = await_checks(new_sha)
-        if refusal is not None:
-            return False, refusal
 
     try:
         forge.merge_pr(
