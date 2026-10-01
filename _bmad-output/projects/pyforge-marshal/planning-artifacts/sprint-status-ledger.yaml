@@ -330,7 +330,7 @@ development_status:
   64-1-the-dispatch-worktree-carries-its-own-scope-never-the-shared-marker: done
   65-1-a-drain-plan-reports-every-refusal-it-can-decide-before-launch: done
   65-2-a-story-whose-spec-cannot-bind-is-refused-before-a-session-is-spent: backlog
-  66-1-finalize-carries-a-recommended-follow-up-review-into-the-deferred-work-ledger: backlog
+  66-1-finalize-carries-a-recommended-follow-up-review-into-the-deferred-work-ledger: done
   66-2-every-landed-follow-up-recommendation-is-backfilled-and-held-by-a-meta-test: backlog
   67-1-a-landed-dispatch-reads-completed-when-the-primary-checkout-cannot-be-fast-forwarded: done
   68-1-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent: done
