@@ -84,7 +84,7 @@ Deps: S-38.3.
 ## Review Triage Log
 
 - No independent review ran: an XS hand-landed fix restoring `main`'s red `scripts-suite` lane (a test-guard and one CI
-  step, no production code). `followup_review_recommended: true` puts it in the follow-up review queue (marshal CAP-281).
+  step, no production code). `followup_review_recommended: true` puts it in the follow-up review queue (`spec-pyforge-marshal:CAP-281`).
 
 ## Auto Run Result
 
