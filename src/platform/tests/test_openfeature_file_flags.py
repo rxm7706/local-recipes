@@ -12,7 +12,6 @@ agree for every key in every environment.
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 import sys
 import time
@@ -53,12 +52,6 @@ _OVERLAYS_JSON = _PLATFORM_DIR / "config" / "flag-overlays.json"
 _ENVIRONMENTS = ("dev", "staging", "production")
 _ENV_ENVIRONMENT = "PYFORGE_ENVIRONMENT"
 _CORE_CHART = _PLATFORM_DIR / "deploy" / "charts" / "platform"
-
-requires_helm = pytest.mark.skipif(
-    shutil.which("helm") is None,
-    reason="helm not on PATH (AD-16: platform-dev pixi env)",
-)
-
 
 _TEST_IMAGE_DIGEST = "sha256:" + ("a" * 64)
 

@@ -26,7 +26,6 @@ verification used.
 from __future__ import annotations
 
 import re
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -165,30 +164,21 @@ _FLAGS_RENDER_ARGS = [
     "flags.environment=dev",
 ]
 
-requires_helm = pytest.mark.skipif(
-    shutil.which("helm") is None,
-    reason=(
-        "helm not on PATH (AD-16: provided by the platform-dev pixi env) -- "
-        "chart render/lint tests need it"
-    ),
-)
-
-
 # ---------------------------------------------------------------------------
 # Render plumbing (helm-gated tests only)
 # ---------------------------------------------------------------------------
 
 
 def _import_yaml() -> Any:
-    """Import PyYAML AFTER the helm gate, never at module level: the
-    pip-only CI `test` job installs neither helm nor PyYAML, and this
-    module must still collect (and run the guard-removed companions) there.
+    """Import PyYAML AFTER the helm gate, never at module level: a machine
+    with neither helm nor PyYAML must still collect this module (and run the
+    guard-removed companions).
     """
     return pytest.importorskip(
         "yaml",
         reason=(
-            "PyYAML not installed (pip-only CI lane) -- chart render tests "
-            "parse `helm template` output with it"
+            "PyYAML not installed -- chart render tests parse "
+            "`helm template` output with it"
         ),
     )
 
