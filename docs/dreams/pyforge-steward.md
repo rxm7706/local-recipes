@@ -510,6 +510,13 @@ Drift — orphaned between stations.
   still shells marshal's CLI and never imports it. Out of scope: `seed check` reading `"auto"` as off where dispatch
   resolves it on for Claude (marshal Story 46.4 has no harness-profile seam there).
   Owner: steward. → Epic 81 / Story 81.1, specced 2026-10-01.
+- **2026-10-01 (evening) — Found: the session check's kit remedy changes nothing.** When `token-kit` or
+  `codegraph-index` is non-ok, the check prints the remedy `pixi run -e pyforge-guild marshal seed kit`. That command is
+  a dry run: it reports "kit: dry-run; re-run with --apply" and leaves a stale codegraph index stale. Followed on the
+  primary checkout on 2026-10-01, it fixed nothing; `--apply` resynced the index and the check went green.
+  **What it looks like when fixed:** the printed remedy is the command that fixes the finding.
+  **Constraints:** no new CAP (a defect of the session check's remedy text, CAP-5 / Story 63.4). Operator ruling 2026-10-01: fix it now.
+  Owner: steward. → Epic 82 / Story 82.1, specced 2026-10-01.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

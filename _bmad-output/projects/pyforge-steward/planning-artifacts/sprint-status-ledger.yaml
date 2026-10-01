@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 475
+# stories: 478
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -320,6 +320,7 @@ development_status:
   8-7-assignee-and-identity-link-propagation: done
   80-1-the-platform-ci-test-job-runs-the-chart-tests-and-a-skipped-one-fails-there: done
   81-1-the-session-check-reads-a-declared-off-kit-layer-as-silent: done
+  82-1-the-session-check-s-kit-remedy-applies-the-kit: done
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
@@ -487,5 +488,7 @@ development_status:
   epic-80-retrospective: optional
   epic-81: done
   epic-81-retrospective: optional
+  epic-82: done
+  epic-82-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
