@@ -2,7 +2,7 @@
 title: "38.3: The fleet hygiene sweep runs with the other detectors, warn-only"
 type: 'fix'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '0a93bd41a886326ba18faf6f05bba4caa946649d'
 review_loop_iteration: 0
 followup_review_recommended: false
