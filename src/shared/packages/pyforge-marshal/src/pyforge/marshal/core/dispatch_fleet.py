@@ -25,6 +25,7 @@ from pathlib import Path
 from pyforge.core.errors import PyforgeError
 
 from .dispatch import canonical_repo_root, find_declared_surface_overlaps
+from .deferred_work import followup_review_id
 from .dispatch_harness_done import is_followup_review_spec, parse_spec_status
 from .identity import MalformedStoryKeyError, StoryKey, normalize, render_feed_key
 from .promotion import SPEC_STATUS_DONE, SpecStatusReader, corroborated_merged_story_keys
@@ -808,7 +809,7 @@ def station_followup_queue(
     candidates: list[FollowupCandidate] = []
     stale: list[StaleFollowupRow] = []
     for key in row_keys:
-        row_id = f"DW-FRR-{key.epic}-{key.seq}{key.suffix}"
+        row_id = followup_review_id(key)
         text = spec_texts.get(key)
         if text is not None and is_followup_review_spec(text):
             candidates.append(FollowupCandidate(slug=slug, key=key, row_id=row_id))
