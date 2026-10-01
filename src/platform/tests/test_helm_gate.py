@@ -20,12 +20,15 @@ import stat
 import subprocess
 import sys
 import textwrap
-from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from tests.helm_gate import requires_helm
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 
