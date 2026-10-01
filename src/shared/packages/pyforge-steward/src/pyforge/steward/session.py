@@ -161,12 +161,28 @@ def _seed_check_kit(payload: object) -> tuple[list[Any] | None, str]:
     return kit, ""
 
 
+#: Kit statuses that raise no finding. Marshal's kit contract makes ``ok`` and
+#: ``layer-off`` its two silent outcomes (``seed/detect/kit.py``: ``KitStatus``'s "two
+#: silent outcomes"; a layer read as off is "declared-off, not missing"), and findings (3)
+#: and (5) reuse that verdict rather than re-derive it. Any other status -- ``missing``,
+#: ``stale``, ``instrument-unavailable``, one this module does not know, or a value that
+#: is not a string -- is non-ok (Story 81.1, spec-pyforge-steward CAP-162 amended 2026-10-01).
+_SILENT_KIT_STATUSES = frozenset({"ok", "layer-off"})
+
+
+def _kit_status_is_silent(item: dict[str, Any]) -> bool:
+    """Whether a kit entry's status is one of marshal's silent outcomes; fails closed."""
+    status = item.get("status")
+    return isinstance(status, str) and status in _SILENT_KIT_STATUSES
+
+
 def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
     """Findings (3) token-kit and (5) codegraph-index — ONE ``marshal seed check --json`` call.
 
-    AC5: any of the three ``kit`` entries at layer-off/missing/stale surfaces as a
-    non-ok token-kit finding; the same call's ``codegraph-index`` entry drives the
-    codegraph-index finding.
+    Any ``kit`` entry whose status is not silent (``_SILENT_KIT_STATUSES``) surfaces as a
+    non-ok token-kit finding naming it; a ``layer-off`` entry is reported in the detail
+    but never fails the finding (Story 81.1). The same call's ``codegraph-index`` entry
+    drives the codegraph-index finding by the same rule.
     """
     kit_remedy = f"pixi run -e {_DEFAULT_PIXI_ENV} marshal seed kit"
     try:
@@ -192,12 +208,12 @@ def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
         return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
 
     try:
-        non_ok = [item for item in kit if item.get("status") != "ok"]
+        non_ok = [item for item in kit if not _kit_status_is_silent(item)]
         if non_ok:
             detail = "; ".join(f"{item.get('item')}: {item.get('status')}" for item in non_ok)
             kit_finding = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
         else:
-            detail = "; ".join(f"{item.get('item')}: ok" for item in kit) or "no kit items reported"
+            detail = "; ".join(f"{item.get('item')}: {item.get('status')}" for item in kit) or "no kit items reported"
             kit_finding = SessionFinding(name="token-kit", ok=True, detail=detail)
 
         codegraph_item = next((item for item in kit if item.get("item") == "codegraph-index"), None)
@@ -208,19 +224,22 @@ def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
                 detail="marshal seed check --json reported no codegraph-index entry",
                 remedy=kit_remedy,
             )
-        elif codegraph_item.get("status") != "ok":
+        elif not _kit_status_is_silent(codegraph_item):
+            item_detail = codegraph_item.get("detail") or ""
+            status_text = f"codegraph-index: {codegraph_item.get('status')}"
             codegraph_finding = SessionFinding(
                 name="codegraph-index",
                 ok=False,
-                detail=f"codegraph-index: {codegraph_item.get('status')} -- {codegraph_item.get('detail', '')}".strip(),
+                detail=f"{status_text} -- {item_detail}" if item_detail else status_text,
                 remedy=kit_remedy,
             )
         else:
-            codegraph_finding = SessionFinding(
-                name="codegraph-index",
-                ok=True,
-                detail=codegraph_item.get("detail") or "codegraph-index: ok",
-            )
+            item_detail = codegraph_item.get("detail") or ""
+            if codegraph_item.get("status") == "ok":
+                detail = item_detail or "codegraph-index: ok"
+            else:
+                detail = f"codegraph-index: layer-off -- {item_detail}" if item_detail else "codegraph-index: layer-off"
+            codegraph_finding = SessionFinding(name="codegraph-index", ok=True, detail=detail)
     except AttributeError:
         detail = f"{' '.join(_SEED_CHECK_ARGV)} returned a malformed kit entry"
         unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)

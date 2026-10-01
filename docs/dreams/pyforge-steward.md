@@ -496,6 +496,20 @@ Drift — orphaned between stations.
   pixi-provisioned (canopy:AD-16), never a runner install; outside CI a missing helm still skips. Operator ruling
   2026-10-01: one of the deferral burn-down's "stop the inflow" changes, run before its Phase 2.
   Owner: steward. → Epic 80 / Story 80.1, specced 2026-10-01.
+- **2026-10-01 (later) — Found: every dispatch reports a `token-kit` failure that is not one.** Each `marshal factory dispatch`
+  journals MRS-DISP-049 ("steward session check reported a non-ok
+  session-precondition verdict: non-ok findings: token-kit, ..."). The kit item behind it is `ccr-store: layer-off`:
+  the dispatch worktree's policy leaves the `wire` layer at the repo default `"auto"`, which `marshal seed check` reads
+  as off. Marshal's own kit contract makes `ok` and `layer-off` its two silent outcomes (`seed/detect/kit.py`:
+  `KitStatus`'s "two silent outcomes"; "the kit is declared-off, not missing"), and the session check says it reuses that verdict, yet it counts `layer-off` as a
+  failure (CAP-162's success line, Story 73.1). A warning that fires on every launch teaches everyone to skip
+  MRS-DISP-049, which also carries the real kit failures (`missing`, `stale`, `instrument-unavailable`, a seed error).
+  **What it looks like when fixed:** a `layer-off` item is reported in the detail and never fails `token-kit` or
+  `codegraph-index`; every other non-`ok` status, including one steward does not know, still fails both.
+  **Constraints:** no new CAP; CAP-162 is amended (operator ruling 2026-10-01: fix it now, not in Phase 2). Steward
+  still shells marshal's CLI and never imports it. Out of scope: `seed check` reading `"auto"` as off where dispatch
+  resolves it on for Claude (marshal Story 46.4 has no harness-profile seam there).
+  Owner: steward. → Epic 81 / Story 81.1, specced 2026-10-01.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

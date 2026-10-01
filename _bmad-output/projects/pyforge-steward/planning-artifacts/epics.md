@@ -5223,6 +5223,29 @@ test (naming the missing binary) when the `CI` environment variable is set and `
 evidence; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local --
 --test` green
 
+## Epic 81: The session check reads a declared-off kit layer as silent
+
+Minted 2026-10-01 from the station Dream's entry of the same date (later) and the operator's ruling of that date. A
+defect of CAP-162's per-item rule, which contradicted the marshal verdict it says it reuses; CAP-162 is amended, no CAP
+is minted. A new epic because Epic 80 is `done`. **HARD boundaries:** steward shells `marshal seed check --json` and
+never imports `pyforge.marshal`; an unknown status fails closed.
+
+### Story 81.1: The session check reads a declared-off kit layer as silent
+
+As the operator reading a dispatch's journal,
+I want `steward session check` to treat a `layer-off` kit item as marshal does, silent,
+So that MRS-DISP-049 fires only on a real kit failure.
+
+**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** CAP-162 (amended 2026-10-01), FR-35 • **Surface:**
+`src/shared/packages/pyforge-steward/src/pyforge/steward/session.py` (`_seed_kit_findings`),
+`src/shared/packages/pyforge-steward/tests/unit/test_session.py`
+**Given** `marshal seed check --json` reports a kit item at `layer-off` (its silent outcome for a layer it reads as off:
+declared off, or the repo default `"auto"`, which the seed check does not resolve) and every other item `ok`
+**When** `steward session check` runs
+**Then** `token-kit` and `codegraph-index` are ok, and the `token-kit` detail names the item with its status
+**And** an item at `missing`, `stale`, `instrument-unavailable`, a status steward does not know, or a status that is not
+a string still fails both findings, named; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
