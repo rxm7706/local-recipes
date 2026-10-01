@@ -32,6 +32,7 @@ from pyforge.marshal.dispatch_supervisor.__main__ import (
     _land_or_journal_block,
     _run_and_journal_landing,
     _spec_land_block_reason,
+    _WaitHeartbeat,
     _worktree_story_spec,
 )
 
@@ -565,3 +566,142 @@ def test_an_oversized_landing_checks_record_is_offloaded_and_the_refusal_stays_v
     assert resolve_landing_checks_from_payload(payload, sidecars=sidecars) == record
     facts = gather_dispatch_journal_facts(LocalFs(), run_dir, "run-80-1")
     assert [f["code"] for f in facts.landing_findings] == ["MRS-DISP-056"]
+
+
+# --------------------------------------------------------------------------
+# The landing's check wait ticks the run's heartbeat (Story 80.1, CAP-284)
+# --------------------------------------------------------------------------
+
+
+def _land_with_ticks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, ticks: int, wait_heartbeat: _WaitHeartbeat | None
+) -> tuple[int, Path, dict[str, object]]:
+    """Run ``_run_and_journal_landing`` over a fake ``execute_dispatch_land`` that calls the
+    ``on_wait_tick`` it was handed ``ticks`` times -- a check wait that polled that often."""
+    seen: dict[str, object] = {}
+
+    def _fake_execute(**kwargs: object):
+        seen.update(kwargs)
+        on_wait_tick = kwargs["on_wait_tick"]
+        for _ in range(ticks):
+            on_wait_tick()  # type: ignore[operator]
+        envelope = build_envelope(command="dispatch land", verdict=compute_verdict(()), data={}, findings=())
+        return DispatchLandingResult(verdict=DispatchLandingVerdict.LANDED, pr_number=42), envelope
+
+    monkeypatch.setattr(supervisor_main, "execute_dispatch_land", _fake_execute)
+    run_dir = tmp_path / "run"
+    run_dir.mkdir(parents=True)
+    counter = _run_and_journal_landing(
+        fs=LocalFs(),
+        vcs=object(),
+        process=object(),
+        run_dir=run_dir,
+        run_id="run-80-1",
+        writer_id="test-writer",
+        counter=4,
+        repo_root=tmp_path,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        worktree=_worktree(tmp_path),
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        merge_subject_template=_MERGE_SUBJECT_TEMPLATE,
+        wait_heartbeat=wait_heartbeat,
+    )
+    return counter, run_dir, seen
+
+
+def test_a_wait_tick_journals_the_heartbeat_observation_and_calls_the_publisher(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each tick appends the tick loop's heartbeat observation (the one builder) and calls the
+    publisher heartbeat; the counter the ticks consume carries on into the landing's own intent and
+    outcome entries -- no journal id is reused."""
+    published: list[str] = []
+    wait_heartbeat = _WaitHeartbeat(
+        session_alive=False,
+        git_facts=_git_facts(changed_paths=("src/a.py", "src/b.py")),
+        publish=lambda: published.append("beat"),
+    )
+
+    counter, run_dir, seen = _land_with_ticks(tmp_path, monkeypatch, ticks=3, wait_heartbeat=wait_heartbeat)
+
+    assert callable(seen["on_wait_tick"])
+    assert published == ["beat"] * 3
+    entries = [json.loads(line) for line in (run_dir / "journal.jsonl").read_text(encoding="utf-8").splitlines()]
+    beats = [entry for entry in entries if entry["payload"].get("heartbeat") is True]
+    assert len(beats) == 3
+    for beat in beats:
+        assert beat["kind"] == dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH
+        assert beat["phase"] == "observation"
+        assert beat["payload"] == {
+            "heartbeat": True,
+            "session_alive": False,
+            "current_head_sha": "story0002",
+            "changed_path_count": 2,
+        }
+    assert [entry["kind"] for entry in entries] == [dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH] * 3 + [
+        dispatch_core.KIND_DISPATCH_LAND
+    ] * 2
+    ids = [json.dumps(entry["id"], sort_keys=True) for entry in entries]
+    assert len(set(ids)) == len(ids)  # 3 ticks + intent + outcome, each its own id
+    assert counter == 4 + 3 + 2
+
+
+def test_a_wait_tick_without_a_publish_handle_still_journals_the_heartbeat(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wait_heartbeat = _WaitHeartbeat(session_alive=True, git_facts=_git_facts(), publish=None)
+    counter, run_dir, _ = _land_with_ticks(tmp_path, monkeypatch, ticks=1, wait_heartbeat=wait_heartbeat)
+    lines = (run_dir / "journal.jsonl").read_text(encoding="utf-8").splitlines()
+    assert json.loads(lines[0])["payload"]["session_alive"] is True
+    assert counter == 4 + 1 + 2
+
+
+def test_a_landing_without_a_wait_heartbeat_passes_no_tick(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A direct caller (and any landing that is not the supervisor's) behaves as before the wait:
+    no tick is handed to the landing, no heartbeat entry is written."""
+    counter, run_dir, seen = _land_with_ticks(tmp_path, monkeypatch, ticks=0, wait_heartbeat=None)
+    assert seen["on_wait_tick"] is None
+    assert counter == 4 + 2
+    entries = [json.loads(line) for line in (run_dir / "journal.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert [entry["kind"] for entry in entries] == [dispatch_core.KIND_DISPATCH_LAND] * 2
+
+
+def test_land_or_journal_block_builds_the_wait_heartbeat_from_the_loops_own_facts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    recorded: dict[str, object] = {}
+
+    def _fake_land(**kwargs: object) -> int:
+        recorded.update(kwargs)
+        return 9
+
+    monkeypatch.setattr(supervisor_main, "_run_and_journal_landing", _fake_land)
+    worktree = _worktree(tmp_path)
+    relative = _seed_spec(
+        repo_root=tmp_path, worktree=worktree, slug=_SLUG, story_key=_STORY_KEY, text="---\nstatus: in-progress\n---\n"
+    )
+    facts = _git_facts(changed_paths=(relative, "src/real_change.py"))
+    publish = lambda: None  # noqa: E731
+
+    counter = _land_or_journal_block(
+        fs=FakeFs(),
+        vcs=None,
+        process=None,
+        run_dir=tmp_path / "run",
+        run_id="run-80-1",
+        writer_id="test-writer",
+        counter=0,
+        repo_root=tmp_path,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        worktree=worktree,
+        git_facts=facts,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        merge_subject_template=_MERGE_SUBJECT_TEMPLATE,
+        session_alive=True,
+        publish_heartbeat=publish,
+    )
+
+    assert counter == 9
+    assert recorded["wait_heartbeat"] == _WaitHeartbeat(session_alive=True, git_facts=facts, publish=publish)

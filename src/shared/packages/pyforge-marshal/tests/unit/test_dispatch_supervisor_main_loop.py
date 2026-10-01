@@ -2612,9 +2612,7 @@ def test_supervisor_without_a_publish_handle_still_journals_the_wait_heartbeat(
     fs = FakeFs()
     publisher = FakePublisher(handle=None)
 
-    code = _run(
-        repo_root, fs=fs, vcs=FakeVcs(head_sha=_MOVED), process=FakeProcess(alive=False), publisher=publisher
-    )
+    code = _run(repo_root, fs=fs, vcs=FakeVcs(head_sha=_MOVED), process=FakeProcess(alive=False), publisher=publisher)
 
     assert code == 0
     assert publisher.heartbeats == []
