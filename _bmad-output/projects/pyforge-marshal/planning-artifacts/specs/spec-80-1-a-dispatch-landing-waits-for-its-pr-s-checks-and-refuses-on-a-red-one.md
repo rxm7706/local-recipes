@@ -328,6 +328,57 @@ Flag: `flag-exempt: detector-or-gate`.
     - `[low]` `[reject]` the tracked policy's `dispatch` value lacks the three keys — AC 8 holds for the composed defaults; for a project block (`max_parallel` only; `_merge_field` replaces the field whole) the resolver fills the defaults, and that is tested.
     - `[low]` `[reject]` the contract is "every reported run" — same as the partial-registration row.
 
+### 2026-10-01 — Review pass (loop 1, after the re-derivation)
+- verdicts: 41 findings — high 0, medium 1, low 36, false 3, maybe-false 1
+- routing: no `bad_spec` and no `intent_gap` this pass; six `patch` entries (seven rows) sent to the same implementer; every other row is `reject`. Rows marked `carried` repeat a pass-1 row (same location, same claim); their verdict and route are kept and nothing is verified again. The Intent Alignment report reached me wire-compressed first and was resent in full by its reviewer; the rows below use the full text.
+- real-world checks run for this pass (read-only `gh api` GETs, authenticated, 5000/5000 core quota): a real `check-runs` page for `origin/main` (4 runs, all completed/success) parses through the real `GhForge.check_runs` and classifies green; `filter=all` and the default returned the same `total_count` on each of the 12 most recent `main` commits (none had a same-name rerun).
+- findings:
+  - Blind Hunter
+    - `[low]` `[reject]` carried: a partial set of runs reads green — documented limit (Design Notes); the intent defines green over the runs reported.
+    - `[low]` `[reject]` an empty set merges silently after the grace — the intent says that set "counts as green"; the journal record carries `outcome: "no-runs"`, the polls and the seconds waited. A WARN finding is beyond the contract.
+    - `[low]` `[reject]` carried: Checks API only — the intent names the `check-runs` endpoint.
+    - `[low]` `[reject]` carried: no ignore list or opt-out — the intent says "every run"; the refusal leaves the PR open for a hand merge.
+    - `[low]` `[reject]` the CLI harness-done path hides the finding text (`land_fail_operator_message` takes a verdict and a named target) — unchanged for every landing finding since before this story (MRS-DISP-047/048 are hidden the same way) and the refusal names the PR; a fix changes that function's contract.
+    - `[low]` `[patch]` the CLI path drops the `landing_checks` record — verified: `_land_envelope` is discarded at `cli/dispatch.py:2564`, and this is the path a refused landing is re-run through. Patched: copy the record into the command's data, with a test.
+    - `[low]` `[reject]` the CLI path blocks silently for up to 45 minutes — an operator-run command in a terminal, with no run to keep alive; the amended Design Notes say it passes no tick.
+    - `[low]` `[reject]` carried: `resolve_landing_checks_from_payload` has no production caller — the reader the round-trip test uses; no harm named.
+    - `[low]` `[reject]` the journal records no in-progress state (the intent entry follows the landing; the heartbeat names no pending run; `_WaitHeartbeat` freezes `git_facts`) — the heartbeat is liveness evidence, the intent asks only for the runs waited on, and a killed supervisor leaves an open PR a re-run lands.
+    - `[low]` `[reject]` carried: a tiny poll interval hammers the API — operator-set policy value typed "positive number" by the spec.
+    - `[low]` `[reject]` carried: the tick guarantee ignores one read's duration — a read is one 30 s `gh` call per page in practice.
+    - `[low]` `[reject]` carried: a single transient read error aborts the wait — the contract says a read error refuses.
+    - `[low]` `[reject]` the adapter's error messages echo `{data!r}` / `{entry!r}` — the same idiom as `_pr_info_from_json` and `pr_merge_state` in the same module; the journal offload bounds the payload.
+    - `[low]` `[reject]` `landing_check_grace_seconds` is int-only and a bad value rejects the whole `dispatch` block, `max_parallel` included — `_merge_field` poisons a layer's field on one bad entry for every mapping-typed key; the spec's contract is a named finding, and `MRS-POLICY-002` names `dispatch`.
+    - `[low]` `[patch]` a 138-character docstring line in `_valid_dispatch_block` — verified at `core/policy.py:957` (ruff's E501 is off in this package, so the gate does not see it). Patched: re-wrap.
+    - `[low]` `[patch]` after a union heal the result and `data["head_sha"]` keep the pre-heal head — verified: `merge_sha=head_sha` and `data["head_sha"]` are untouched after the heal at the baseline revision too, but this story now records the healed head in `landing_checks.heal.head_sha`, so the two disagree on one landing. Patched: follow the healed head, with a test.
+    - `[false]` `[reject]` worst-case waiting is two timeouts with no documented budget — the amended Design Notes state it ("total waiting is bounded by two timeouts, never open") and each wait is bounded by `settings.timeout_seconds`.
+    - `[low]` `[reject]` `heal_waits` is a list read with `[-1]` — a closure appends to a list instead of a `nonlocal` rebinding; one element in practice, no harm.
+    - `[low]` `[reject]` carried: the in-suite mutation tests patch private names — they are the committed form of the mutation criterion; the by-hand counts are under Auto Run Result.
+    - `[low]` `[reject]` carried: `_BrokenChecksForge` is defined after its test — resolves at call time.
+    - `[low]` `[reject]` `_GuardedClock` counts reads through a `getattr` hack — test-helper style; it guards against an unbounded loop and fails loudly.
+    - `[low]` `[reject]` carried: no test for the partial-registration race or a page shift — the spec fixes neither as a contract.
+    - `[false]` `[reject]` `_sleep_with_ticks` has no test of its own — verified: `test_a_poll_interval_shorter_than_a_minute_ticks_at_that_interval` and `test_a_long_poll_interval_is_sliced_so_the_wait_still_ticks_every_minute` drive it through the wait, and the by-hand mutation that removes the between-slice tick turns one test red.
+    - `[low]` `[reject]` carried: the `ForgeRef` / `PrInfo` tests are unrelated — the 80% touched-module floor on `ports/forge.py` needs them.
+  - Edge Case Hunter
+    - `[low]` `[reject]` a healed head reads empty past the grace although the first head had runs — the intent's empty-set rule applies per head; GitHub registers a pushed head's workflows within seconds, against a 120 s grace; the guard changes the empty-set contract.
+    - `[low]` `[reject]` `origin/main` moves again during the healed head's wait and the single-shot retried merge fails — fails safe (`MRS-DISP-020`, PR open, a re-run heals again); a heal-and-wait loop needs a retry budget the intent does not supply.
+    - `[low]` `[reject]` the first merge error is not recorded when the healed head's checks refuse — `landing_checks.heal` records the pushed head and its runs; the first error is the reason the heal ran, not an outcome.
+    - `[maybe-false]` `[reject]` carried: same-name reruns reported side by side — documented default is `filter=latest`; probed 12 recent `main` commits, `filter=all` equals the default on every one, none had a rerun. Settle with a commit that has a rerun; if true it is low and fails safe.
+  - Verification Gap
+    - `[medium]` `[patch]` the terminal-verdict `_land_or_journal_block` call can lose `session_alive` / `publish_heartbeat` with no test failing — pre-verified. Patched: a twin of `test_supervisor_heartbeats_the_run_through_the_landing_wait` on the terminal path, turned red by hand.
+    - `[low]` `[patch]` `resolve_max_parallel` on a `dispatch` block with no `max_parallel` is unpinned — pre-verified: the validator now accepts that shape and no test composes it against the wave cap. Patched: one test.
+    - `[low]` `[reject]` carried: `resolve_landing_checks_from_payload` has no production caller.
+    - `[low]` `[reject]` carried: the mutation tests stub private names.
+    - `[false]` `[reject]` three marshal import-linter meta tests fail without the env's `bin` on `PATH` — an environment artifact of the reviewer's shell, not the change; `pyforge-marshal-test` runs them green.
+  - Intent Alignment
+    - `[low]` `[reject]` carried: the tracked policy's `dispatch` value lacks the three keys — AC 8 holds for the composed defaults and a project block is filled at the consumer, tested.
+    - `[low]` `[patch]` the CLI re-entry discards the envelope, so no journal record — same root and patch as the Blind Hunter CLI row; the no-tick half is the silent-block row above (rejected).
+    - `[low]` `[reject]` the diff gates two merges and the local-`main` advance none — by design: that advance merges the head the pre-merge wait cleared.
+    - `[low]` `[reject]` surfaces beyond the intent's list (heartbeat, offload read-back, comments) — all in scope through the loop-1 amendment, each tied to a verified finding.
+    - `[low]` `[patch]` the adapter's "recorded response" is hand-built — Task 4 says recorded; a real page now exists and parses (see the checks above). Patched: commit the real payload as a fixture with one test.
+    - `[low]` `[reject]` the re-run test takes `create_pr` both times, not the update path — the two paths converge before the wait, and the update path is covered by the pre-existing landing tests.
+    - `[low]` `[reject]` no committed proof that other tests turn red without the wait — by-hand mutations on the final tree are recorded under Auto Run Result (34 red with the wait removed; 10 with the heal's call removed; the default-clock, tick and supervisor mutations each red).
+    - `[low]` `[reject]` carried: four classifier states and the empty-set rule in the loop, not `core/` — the loop owns the clock and the grace (AD-4).
+
 ## Auto Run Result
 
 Status: in-review (review loop 1 re-derivation; ready for the independent review pass)

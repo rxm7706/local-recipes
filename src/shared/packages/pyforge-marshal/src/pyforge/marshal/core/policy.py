@@ -954,9 +954,10 @@ def _valid_dispatch_block(value: object) -> dict[str, object] | None:
     and the landing's check-wait knobs ``landing_check_poll_seconds`` and
     ``landing_check_timeout_minutes`` (``_valid_positive_number``) and
     ``landing_check_grace_seconds`` (``_valid_landing_grace_seconds``: ``0`` is a real
-    "no grace", and a magnitude too large for ``float()`` is rejected). Any NON-EMPTY subset of the four keys is valid -- ``_merge_field``
-    replaces a block whole, and the tracked ``marshal-policy.toml`` declares only
-    ``max_parallel``, so a key a block omits reads as its default at the consumer
+    "no grace", and a magnitude too large for ``float()`` is rejected). Any NON-EMPTY
+    subset of the four keys is valid -- ``_merge_field`` replaces a block whole, and
+    the tracked ``marshal-policy.toml`` declares only ``max_parallel``, so a key a
+    block omits reads as its default at the consumer
     (``resolve_landing_check_settings``), never as a validation failure. An unknown
     key, an empty block or one invalid value rejects the whole block."""
     if not isinstance(value, Mapping):
