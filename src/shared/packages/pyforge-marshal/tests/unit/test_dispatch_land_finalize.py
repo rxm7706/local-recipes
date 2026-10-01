@@ -548,7 +548,7 @@ def test_finalize_appends_deferred_work_intake_finding_into_the_gating_findings_
         lambda *args, **kwargs: True,
     )
 
-    def _fake_intake(process, fs, vcs, root, project_slug, story_key):
+    def _fake_intake(process, fs, vcs, root, project_slug, story_key, **_kwargs):
         seen["intake_args"] = (root, project_slug, story_key)
         return Finding(code="MRS-DISP-047", severity=Severity.ERROR, message="forced for test")
 
@@ -593,7 +593,7 @@ def test_finalize_stays_green_when_intake_returns_no_finding(tmp_path: Path, mon
         lambda *args, **kwargs: True,
     )
 
-    def _fake_intake(process, fs, vcs, root, project_slug, story_key):
+    def _fake_intake(process, fs, vcs, root, project_slug, story_key, **_kwargs):
         seen["called"] = True
         return None
 
@@ -637,7 +637,7 @@ def test_finalize_journals_the_intake_finding_into_the_resync_payload(tmp_path: 
         lambda *args, **kwargs: True,
     )
 
-    def _fake_intake(process, fs, vcs, root, project_slug, story_key):
+    def _fake_intake(process, fs, vcs, root, project_slug, story_key, **_kwargs):
         return Finding(code="MRS-DISP-047", severity=Severity.WARN, message="forced for test")
 
     monkeypatch.setattr(
@@ -685,7 +685,7 @@ def test_finalize_journals_a_null_intake_finding_when_intake_is_clean(tmp_path: 
     )
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__._run_deferred_work_intake",
-        lambda process, fs, vcs, root, project_slug, story_key: None,
+        lambda process, fs, vcs, root, project_slug, story_key, **_kwargs: None,
     )
 
     assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
@@ -1521,7 +1521,9 @@ def test_finalize_warns_naming_the_path_when_it_cannot_promote_a_tracked_spec(
 
     assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
 
-    [finding] = _journaled_findings_79(tmp_path)
+    # Story 66.1: the follow-up carry reads the same spec and warns about a failed read in its own words;
+    # this test is about the promotion's finding.
+    [finding] = [f for f in _journaled_findings_79(tmp_path) if "follow-up review" not in f["message"]]
     assert (finding["code"], finding["severity"]) == ("MRS-DISP-047", "warn")
     assert _SPEC_REL_79 in finding["message"] and needle in finding["message"]
     assert finding["path"] == _SPEC_REL_79
@@ -1566,7 +1568,9 @@ def test_a_key_the_tier3_route_promoted_this_run_is_not_promoted_again_as_a_trac
     assert copied.read_text(encoding="utf-8") == twin.read_text(encoding="utf-8")
     [(targets, _message)] = vcs.local_commits
     assert targets == (copied,)
-    assert [path for _root, _ref, path in vcs.read_calls if path == _SPEC_REL_79] == []
+    # The tracked-spec step reads nothing here; the one read is Story 66.1's follow-up carry, which finds no
+    # spec at origin/main yet and says nothing.
+    assert [path for _root, _ref, path in vcs.read_calls if path == _SPEC_REL_79] == [_SPEC_REL_79]
     assert vcs.publishes == []
     assert _journaled_findings_79(tmp_path) == []
     assert feed.read_text(encoding="utf-8") == _FEED_DONE_79
