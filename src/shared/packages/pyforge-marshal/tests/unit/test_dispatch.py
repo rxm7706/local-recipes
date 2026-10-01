@@ -295,6 +295,7 @@ def test_surface_session_precondition_findings_reads_the_report_from_stderr(tmp_
         ("UserWarning: something deprecated\n", ""),
         ("", "WARN trailing line\n"),
         ("warning one\nwarning two\n", "trailer\n"),
+        ('{"level": "warning", "msg": "a JSON log line"}\n', ""),
     ],
 )
 def test_surface_session_precondition_findings_finds_the_report_among_other_lines(

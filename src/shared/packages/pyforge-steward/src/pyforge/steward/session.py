@@ -44,9 +44,6 @@ _GUILD_ENV_RELATIVE_PATH = Path(".pixi/envs") / _DEFAULT_PIXI_ENV
 _ACTIVE_PROJECT_MARKER_RELATIVE_PATH = Path("_bmad/custom/.active-project")
 _SEED_CHECK_ARGV = ("pixi", "run", "--frozen", "-e", _DEFAULT_PIXI_ENV, "marshal", "seed", "check", "--json")
 _SEED_CHECK_TIMEOUT_S = 60.0
-#: The three context layers AC5 names; ``marshal seed check`` reports one kit entry per
-#: layer, so an absent layer is as non-ok as a missing item (Story 79.1 review).
-_KIT_LAYERS = ("output", "wire", "structure-graph")
 _GH_TIMEOUT_S = 20.0
 _TIER3_FEED_REMEDY = "cp planning-artifacts/sprint-status-ledger.yaml implementation-artifacts/sprint-status.yaml"
 
@@ -140,22 +137,27 @@ def _seed_check_kit(payload: object) -> tuple[list[Any] | None, str]:
 
     Every ``marshal seed`` verb wraps its report in the schema-stable ``{verb, ok, result}``
     envelope, and a failed verb answers ``{verb, ok: false, error}`` instead (marshal's
-    ``cli/seed.py``, Story 12.5). So ``kit`` sits under ``result``, never at the top level:
-    reading it there made every real run look unparseable (Story 79.1).
+    ``cli/seed.py``, Story 12.5 / FR-123). So ``kit`` sits under ``result``, never at the top
+    level: reading it there made every real run look unparseable (Story 73.1, CAP-162). The
+    seed check's exit code is never read here; it exits 1 whenever its own report fails,
+    whatever the kit says.
     """
     if not isinstance(payload, dict):
-        return None, "returned JSON that is not an object"
+        return None, f"returned no kit report: the document is a JSON {type(payload).__name__}, not an object"
     if payload.get("ok") is False:
         error = payload.get("error")
         if not isinstance(error, dict):
-            return None, "reported an error with no message"
-        message = error.get("message") or error.get("type") or "no message"
-        remedy = error.get("remedy")
-        return None, f"reported an error: {message}" + (f" (remedy: {remedy})" if remedy else "")
+            return None, "reported a seed error with no detail"
+        kind = error.get("type") or "SeedError"
+        message = error.get("message") or "no message"
+        return None, f"reported a seed error: {kind}: {message}"
     envelope_result = payload.get("result")
     kit = envelope_result.get("kit") if isinstance(envelope_result, dict) else None
     if not isinstance(kit, list):
-        return None, "returned no result.kit array"
+        found = ", ".join(sorted(payload)) or "none"
+        if isinstance(envelope_result, dict):
+            found += f"; result keys: {', '.join(sorted(envelope_result)) or 'none'}"
+        return None, f"returned no kit report (keys found: {found})"
     return kit, ""
 
 
@@ -190,13 +192,12 @@ def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
         return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
 
     try:
-        reported_layers = {item.get("layer") for item in kit}
-        problems = [f"{item.get('item')}: {item.get('status')}" for item in kit if item.get("status") != "ok"]
-        problems += [f"no {layer} layer entry reported" for layer in _KIT_LAYERS if layer not in reported_layers]
-        if problems:
-            kit_finding = SessionFinding(name="token-kit", ok=False, detail="; ".join(problems), remedy=kit_remedy)
+        non_ok = [item for item in kit if item.get("status") != "ok"]
+        if non_ok:
+            detail = "; ".join(f"{item.get('item')}: {item.get('status')}" for item in non_ok)
+            kit_finding = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
         else:
-            detail = "; ".join(f"{item.get('item')}: ok" for item in kit)
+            detail = "; ".join(f"{item.get('item')}: ok" for item in kit) or "no kit items reported"
             kit_finding = SessionFinding(name="token-kit", ok=True, detail=detail)
 
         codegraph_item = next((item for item in kit if item.get("item") == "codegraph-index"), None)

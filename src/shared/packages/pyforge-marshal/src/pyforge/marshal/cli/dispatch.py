@@ -462,8 +462,9 @@ def _session_report_payload(stdout: str | None, stderr: str | None) -> dict[str,
     (``steward``'s ``cli.py::main``), so the non-ok report this caller acts on arrives
     on stderr. Reading stdout alone fell back to the last stderr line, ``}``, on every
     real run (Story 79.1). Stdout is read first. Within a stream the report is the first
-    JSON object that opens at the start of a line, so a warning printed before it or a
-    line after it does not hide it; a stream with no such object is skipped.
+    JSON object that opens at the start of a line and carries ``findings``, so a warning
+    (even a JSON log line) printed before it, or a line after it, does not hide it; a
+    stream with no such object is skipped.
     """
     decoder = json.JSONDecoder()
     for stream in (stdout, stderr):
@@ -476,7 +477,7 @@ def _session_report_payload(stdout: str | None, stderr: str | None) -> dict[str,
                     payload, _end = decoder.raw_decode(stream, offset)
                 except json.JSONDecodeError:
                     payload = None
-                if isinstance(payload, dict):
+                if isinstance(payload, dict) and "findings" in payload:
                     return payload
             offset += len(line)
     return None

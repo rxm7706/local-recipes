@@ -2,8 +2,8 @@
 title: "73.1: `steward session check` reads `marshal seed check`'s envelope, whatever its exit code"
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
-review_loop_iteration: 0
+status: 'done'
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -11,6 +11,7 @@ context:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/session.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/check.py
+  - src/shared/packages/pyforge-steward/tests/fixtures/marshal_seed_check_envelope.json
 deferred: []
 declared_low_risk: false
 ---
@@ -121,3 +122,33 @@ Ledger status at mint: `backlog`.
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new findings.
 
 ## Review Triage Log
+
+### 2026-10-01 — Independent review (with Story 79.1, which found this story's defect again and landed beside it)
+
+A separate agent reviewed the change in two passes against this spec and Story 79.1's. Its findings on this half:
+
+- `[high]` `[patch]` The first cut was minted as Story 79.1 and never cited this story or CAP-162. Fixed: this story's
+  contract is the one realized here, and 79.1 is narrowed to the dispatch preamble and the cross-station pins.
+- `[medium]` `[patch]` Tests faked a bare `{"kit": ...}`. Fixed: every fake uses the envelope, plus the recorded document.
+- `[low]` `[reject]` An empty or partial kit reads `token-kit` ok. Not reachable through the CLI (marshal always reports
+  three entries; Story 79.1 pins that in marshal's suite), and this spec's Always keeps Story 63.4's per-item rules.
+- `[low]` `[patch]` The malformed-kit-entry guard had no test. Fixed: a parametrized case.
+
+**Deviation (recorded, not silent):** AC1 names the statuses of the 2026-09-28 recording (`codegraph-index:
+instrument-unavailable`). The fixture was recorded from the live CLI on 2026-10-01 (8,263 bytes, exit 1, stderr
+empty, no absolute paths), where the worktree's kit reads `caveman-skill: missing`, `ccr-store: layer-off`,
+`codegraph-index: missing`; the test derives its expectations from the recorded document rather than restating them.
+
+**Also found while here:** the two bmad-method fallback tests assumed the `pyforge-steward` env (no doctor) and failed
+under `-e pyforge-guild`; they now hide `pyforge.doctor` themselves (`_hide_doctor`).
+
+## Auto Run Result
+
+Hand-built in an interactive session together with Story 79.1. Verification:
+
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: green (counts in the landing PR).
+- `pixi run --frozen -e pyforge-guild python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_session.py`:
+  green, including the real `marshal seed check --json` parse.
+- `pixi run --frozen -e pyforge-guild steward session check --json`: `token-kit` reads `caveman-skill: missing;
+  ccr-store: layer-off; codegraph-index: missing` and `codegraph-index` reads `missing`; no "unparseable"; exit 1.
+- Mutation (AC6): restoring the top-level `payload["kit"]` read fails the recorded-document test and 11 others.
