@@ -3852,3 +3852,618 @@ def test_mutation_stubbing_already_landed_false_re_blocks_the_fixture(
     assert harness.dispatched == []
     assert _status_by_station(report)[slug] is StationCycleStatus.BLOCKED
     assert any(f.code == "MRS-DRAIN-005" for f in report.findings)
+
+
+# --------------------------------------------------------------------------
+# Story 73.2 (spec-pyforge-marshal CAP-281): a drain schedules the follow-up review a landed story recommended
+# --------------------------------------------------------------------------
+#
+# An open `DW-FRR-<story>` row (CAP-275) gates the review, the story's spec on `origin/main` is the second
+# condition, and a campaign queues at most `dispatch.max_followup_reviews_per_campaign` of them (default 2),
+# newest landing first. The ledger key stays `done` throughout.
+
+_FU_SLUG = "pyforge-marshal"
+_FU_OTHER_SLUG = "pyforge-doctor"
+_FU_STORY = "51-2-the-landing-record"
+_FU_TEMPLATE = "Merge {slug}/{key} into main"
+_FU_TIP = "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334"
+
+
+def _fu_spec(status: str = "done", flag: bool = True) -> str:
+    return f'---\nstatus: {status}\nfollowup_review_recommended: {str(flag).lower()}\ndifficulty: medium\n---\n# spec\n'
+
+
+def _fu_ledger_rel(slug: str) -> str:
+    return f"_bmad-output/projects/{slug}/planning-artifacts/deferred-work-ledger.md"
+
+
+def _fu_row(slug: str, story: str, *, status: str = "open") -> str:
+    """One ``DW-FRR`` row exactly as finalize's carry renders it (Story 66.1)."""
+    candidate = deferred_work.followup_review_candidate(
+        _fu_spec(),
+        normalize(story),
+        f"_bmad-output/projects/{slug}/planning-artifacts/specs/spec-{story}.md",
+    )
+    assert candidate is not None
+    return deferred_work.render_followup_review_entry(candidate, promoted_date="2026-09-28").replace(
+        "status: open", f"status: {status}"
+    )
+
+
+class _FollowupVcs(FakeVcs):
+    """``FakeVcs`` with what a follow-up drain reads at ``origin/main``: texts by path (the stations'
+    deferred-work ledgers and story specs), the commit subjects, and the launch tip a follow-up launch records."""
+
+    def __init__(self, repo_root: Path) -> None:
+        super().__init__(repo_root)
+        self.origin_texts: dict[str, str] = {}
+        self.subjects: tuple[str, ...] = ()
+        self.unreadable: set[str] = set()
+        self.history_unreadable = False
+        self.reads: list[tuple[str, str]] = []
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
+        self.reads.append((ref, path))
+        if path in self.unreadable:
+            raise VcsCommandError(f"git show {ref}:{path} failed (test double)")
+        if path in self.origin_texts:
+            return self.origin_texts[path]
+        return super().file_text_at_ref(repo_root, ref, path)
+
+    def commit_subjects(self, repo_root: Path, ref: str):
+        if self.history_unreadable:
+            raise VcsCommandError(f"git log {ref} failed (test double)")
+        return self.subjects
+
+    def merge_base(self, repo_root: Path, a: str, b: str) -> str:
+        return _FU_TIP
+
+
+def _fu_seed_station(
+    tmp_path: Path,
+    vcs: _FollowupVcs,
+    slug: str,
+    entries: list[tuple[str, str, str | None]],
+) -> tuple[tuple[str, str], ...]:
+    """Seed one station: ``entries`` is ``(story, spec text on origin/main, row status or None for no row)``.
+
+    The primary checkout carries every story's tracked spec as a qualifying follow-up (``done``, flag true) --
+    what ``dispatch_once`` reads -- while ``origin/main`` holds ``entries``' own text. Returns the station's
+    sprint-ledger statuses: every story ``done``, never flipped."""
+    _seed_fleet(tmp_path, stories={slug: []})
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    rows: list[str] = []
+    for story, origin_text, row_status in entries:
+        (specs / f"spec-{story}.md").write_text(_fu_spec(), encoding="utf-8")
+        rel = dispatch_core.story_spec_rel_path(tmp_path, slug, story)
+        assert rel is not None
+        vcs.origin_texts[rel] = origin_text
+        if row_status is not None:
+            rows.append(_fu_row(slug, story, status=row_status))
+    vcs.origin_texts[_fu_ledger_rel(slug)] = "# Deferred work\n\n" + "\n".join(rows)
+    return tuple((story, "done") for story, _text, _row in entries)
+
+
+def _fu_subject(slug: str, story: str) -> str:
+    template = cli_dispatch._compose_policy(slug).merge_subject_template.value
+    return render_merge_subject(normalize(story), template, slug)
+
+
+def _fu_cycle(tmp_path: Path, *, ledgers, vcs: _FollowupVcs, harness: FakeBuildHarness | None = None, **kwargs):
+    kwargs.setdefault("process", FakeProcess(alive=False))
+    return _cycle(
+        tmp_path,
+        mode=kwargs.pop("mode", FleetCampaignMode.DRAIN_TO_ZERO),
+        ledgers=ledgers,
+        vcs=vcs,
+        build_harness=harness if harness is not None else FakeBuildHarness(),
+        **kwargs,
+    )
+
+
+def _fu_codes(report, code: str):
+    return [f for f in report.findings if f.code == code]
+
+
+@pytest.fixture(autouse=True)
+def _fu_repository_layers(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """The drain reads the repository's own policy layers; pin them to "none" so a fixture composes Marshal's
+    default cap (2) whatever this checkout's `_bmad-output/policy-defaults.toml` or any station layer says."""
+    monkeypatch.setattr(cli_dispatch, "read_repo_policy_defaults", lambda: ({}, None))
+    monkeypatch.setattr(cli_dispatch, "conventional_project_policy_path", lambda slug: tmp_path / f"{slug}-none.toml")
+
+
+# -- the pure core --------------------------------------------------------------------------------------
+
+
+def test_the_station_followup_queue_gates_on_the_row_and_the_spec() -> None:
+    k2, k3, k4, k5, k9 = (StoryKey(51, n) for n in (2, 3, 4, 5, 9))
+    texts = {
+        k2: _fu_spec(),
+        k3: _fu_spec(flag=False),
+        k4: _fu_spec(status="review"),
+        k5: None,
+        k9: _fu_spec(),  # a `done` spec with the flag true -- but no open row below
+    }
+    candidates, stale = dispatch_fleet.station_followup_queue(_FU_SLUG, (k2, k3, k4, k5), texts)
+
+    assert [(c.slug, c.key, c.row_id) for c in candidates] == [(_FU_SLUG, k2, "DW-FRR-51-2")]
+    assert [row.row_id for row in stale] == ["DW-FRR-51-3", "DW-FRR-51-4", "DW-FRR-51-5"]
+    assert "followup_review_recommended" in stale[0].reason
+    assert "'review'" in stale[1].reason and "not 'done'" in stale[1].reason
+    assert "cannot be read" in stale[2].reason
+    assert all(row.slug == _FU_SLUG for row in stale)
+    # No row, no gate: 51.9's qualifying spec is neither a candidate nor stale.
+    assert k9 not in {c.key for c in candidates} and all(r.row_id != "DW-FRR-51-9" for r in stale)
+
+
+def test_a_story_without_an_open_row_is_never_a_candidate() -> None:
+    assert dispatch_fleet.station_followup_queue(_FU_SLUG, (), {StoryKey(51, 2): _fu_spec()}) == ((), ())
+
+
+def test_landing_positions_are_newest_first_by_the_corroborated_merge_subject() -> None:
+    k2, k3, k9 = StoryKey(51, 2), StoryKey(51, 3), StoryKey(51, 9)
+    subjects = (
+        "docs: unrelated",
+        "Merge pyforge-marshal/51-3 into main",
+        f"Merge {_DOCTOR_FU}/51-2 into main",  # another station's landing of the same key: not this station's
+        "Merge pyforge-marshal/51-2 into main",
+    )
+    positions = dispatch_fleet.landing_positions(
+        subjects, _FU_TEMPLATE, _FU_SLUG, wanted={k2, k3, k9}, spec_status_for=lambda key: "done"
+    )
+    assert positions == {k3: 1, k2: 3}  # 51.9 has no merge subject: absent
+
+
+_DOCTOR_FU = "pyforge-doctor"
+
+
+def test_landing_positions_use_the_corroborating_classifier_not_a_second_one() -> None:
+    """A mint PR (a station branch merged at `ready`) is not a landing -- the same gate every other reader uses."""
+    key = StoryKey(27, 4)
+    subjects = ("Merge pull request #1477 from rxm7706/doctor/27-4-mint",)
+    assert dispatch_fleet.landing_positions(
+        subjects, _FU_TEMPLATE, _DOCTOR_FU, wanted={key}, spec_status_for=lambda k: "ready"
+    ) == {}
+    assert dispatch_fleet.landing_positions(
+        subjects, _FU_TEMPLATE, _DOCTOR_FU, wanted={key}, spec_status_for=lambda k: "done"
+    ) == {key: 0}
+
+
+def test_landing_positions_stop_scanning_once_every_wanted_story_has_one() -> None:
+    seen: list[str] = []
+
+    def _subjects():
+        for subject in ("Merge pyforge-marshal/51-2 into main", "Merge pyforge-marshal/51-3 into main"):
+            seen.append(subject)
+            yield subject
+
+    positions = dispatch_fleet.landing_positions(
+        tuple(_subjects()), _FU_TEMPLATE, _FU_SLUG, wanted={StoryKey(51, 2)}, spec_status_for=lambda key: "done"
+    )
+    assert positions == {StoryKey(51, 2): 0}
+
+
+def _candidates(slug: str, *numbers: int) -> list[dispatch_fleet.FollowupCandidate]:
+    return [
+        dispatch_fleet.FollowupCandidate(slug=slug, key=StoryKey(60, n), row_id=f"DW-FRR-60-{n}") for n in numbers
+    ]
+
+
+def test_select_campaign_followups_takes_the_newest_landings_up_to_the_cap() -> None:
+    candidates = _candidates(_FU_SLUG, 1, 2, 3, 4)
+    positions = {(_FU_SLUG, StoryKey(60, 1)): 40, (_FU_SLUG, StoryKey(60, 2)): 3, (_FU_SLUG, StoryKey(60, 3)): 17}
+    selection = dispatch_fleet.select_campaign_followups(candidates, positions, cap=2)
+
+    assert [c.key.seq for c in selection.selected] == [2, 3]  # newest two by merge-subject position
+    # 60.1 is older; 60.4 has no merge subject and sorts after every matched candidate.
+    assert [c.key.seq for c in selection.waiting] == [1, 4]
+
+
+def test_a_candidate_with_no_merge_subject_sorts_after_every_matched_one_in_ledger_order() -> None:
+    candidates = _candidates(_FU_SLUG, 1, 2, 3, 4)
+    positions = {(_FU_SLUG, StoryKey(60, 4)): 9999}
+    selection = dispatch_fleet.select_campaign_followups(candidates, positions, cap=3)
+    assert [c.key.seq for c in selection.selected] == [4, 1, 2]
+    assert [c.key.seq for c in selection.waiting] == [3]
+
+
+def test_the_cap_orders_across_stations_not_per_station() -> None:
+    candidates = _candidates(_FU_SLUG, 1, 2) + _candidates(_FU_OTHER_SLUG, 1, 2)
+    positions = {
+        (_FU_SLUG, StoryKey(60, 1)): 5,
+        (_FU_SLUG, StoryKey(60, 2)): 6,
+        (_FU_OTHER_SLUG, StoryKey(60, 1)): 1,
+        (_FU_OTHER_SLUG, StoryKey(60, 2)): 2,
+    }
+    selection = dispatch_fleet.select_campaign_followups(candidates, positions, cap=2)
+    assert [(c.slug, c.key.seq) for c in selection.selected] == [(_FU_OTHER_SLUG, 1), (_FU_OTHER_SLUG, 2)]
+
+
+def test_a_cap_of_zero_selects_nothing_and_everything_waits() -> None:
+    candidates = _candidates(_FU_SLUG, 1, 2, 3)
+    selection = dispatch_fleet.select_campaign_followups(candidates, {}, cap=0)
+    assert selection.selected == ()
+    assert [c.key.seq for c in selection.waiting] == [1, 2, 3]
+
+
+def test_the_cap_minus_the_launched_is_the_budget_and_a_launched_follow_up_stays_queued() -> None:
+    candidates = _candidates(_FU_SLUG, 1, 2, 3, 4)
+    positions = {(_FU_SLUG, StoryKey(60, n)): n for n in (1, 2, 3, 4)}
+    launched = {(_FU_SLUG, StoryKey(60, 3))}
+
+    selection = dispatch_fleet.select_campaign_followups(candidates, positions, cap=2, launched=launched)
+    # 60.3 was launched this campaign: it stays queued (a live one reads in-flight, a failed one blocks) and
+    # costs no further cap; one new follow-up (2 - 1) joins it, the newest of the rest.
+    assert [c.key.seq for c in selection.selected] == [1, 3]
+    assert [c.key.seq for c in selection.waiting] == [2, 4]
+
+    spent = dispatch_fleet.select_campaign_followups(
+        candidates, positions, cap=2, launched={(_FU_SLUG, StoryKey(60, 3)), (_FU_SLUG, StoryKey(61, 1))}
+    )
+    # Two launched (one of them already landed and closed): the budget is spent, nothing new is queued.
+    assert [c.key.seq for c in spent.selected] == [3]
+
+
+def test_followup_backlog_entries_use_the_ledgers_key_else_the_feed_key_and_never_double_queue() -> None:
+    candidates = _candidates(_FU_SLUG, 1, 2, 3)
+    statuses = (("60-1-first-story", "done"), ("60-3-third-story", "backlog"), ("not-a-key", "done"))
+    entries = dispatch_fleet.followup_backlog_entries(candidates, statuses, backlog=("60-3-third-story",))
+    # 60.1 -> the ledger's own key; 60.2 -> no ledger row, the canonical feed key; 60.3 is already queued.
+    assert entries == ("60-1-first-story", "60.2")
+
+
+def test_followups_launched_reads_the_journalled_station_rows() -> None:
+    rows = [
+        {"station": _FU_SLUG, "status": "dispatched", "followup_reviews": ["51-2-the-landing-record", "60.1"]},
+        {"station": _FU_OTHER_SLUG, "status": "dispatched"},
+        {"station": _FU_OTHER_SLUG, "followup_reviews": ["not-a-key", 7]},
+        {"station": 3, "followup_reviews": ["60.9"]},
+        "garbage",
+    ]
+    assert dispatch_fleet.followups_launched(rows) == frozenset(
+        {(_FU_SLUG, StoryKey(51, 2)), (_FU_SLUG, StoryKey(60, 1))}
+    )
+
+
+def test_a_cycle_result_journals_followup_reviews_only_when_it_launched_one() -> None:
+    plain = dispatch_fleet.StationCycleResult(
+        slug=_FU_SLUG, status=StationCycleStatus.DISPATCHED, remaining=1, story="22.7"
+    )
+    assert dispatch_fleet.FOLLOWUP_REVIEWS_PAYLOAD_KEY not in plain.to_payload()
+    launched = dispatch_fleet.StationCycleResult(
+        slug=_FU_SLUG, status=StationCycleStatus.DISPATCHED, remaining=1, story="22.7", followup_reviews=("22.7",)
+    )
+    assert launched.to_payload()["followup_reviews"] == ["22.7"]
+
+
+def test_a_done_key_is_still_never_an_implementable_backlog_entry() -> None:
+    """The row, never the ledger, gates a follow-up: `station_backlog` keeps dropping `done`."""
+    assert station_backlog((("51-2-the-landing-record", "done"),)) == ()
+
+
+# -- the drain cycle: the I/O matrix ----------------------------------------------------------------------
+
+
+def test_an_empty_backlog_and_an_open_row_dispatch_one_follow_up_review(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+
+    assert harness.dispatched == [(_FU_SLUG, "51.2")]
+    assert _status_by_station(report)[_FU_SLUG] is StationCycleStatus.DISPATCHED
+    (row,) = report.results
+    assert row.followup_reviews == (_FU_STORY,)
+    assert row.to_payload()["followup_reviews"] == [_FU_STORY]
+    assert row.remaining == 1  # the follow-up is a queue entry
+    assert _fu_codes(report, "MRS-DRAIN-018") == [] and _fu_codes(report, "MRS-DRAIN-019") == []
+
+
+def test_the_launch_is_a_follow_up_review_run_through_dispatch_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The launch is Story 73.1's: the INTENT carries the marker and the row it serves."""
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
+
+    _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, station=_FU_SLUG)
+
+    journals = sorted((tmp_path / "_bmad-output" / "projects" / _FU_SLUG).rglob("dispatch-runs/*/journal.jsonl"))
+    assert len(journals) == 1
+    intent = next(
+        json.loads(line)
+        for line in journals[0].read_text(encoding="utf-8").splitlines()
+        if '"kind":"dispatch-launch"' in line.replace(" ", "") and '"phase":"intent"' in line.replace(" ", "")
+    )
+    assert intent["payload"]["followup_review"]["dw_id"] == "DW-FRR-51-2"
+    assert intent["payload"]["launch_origin_main_sha"] == _FU_TIP
+
+
+def test_once_the_review_landed_and_its_row_closed_nothing_is_dispatched(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "closed")])}
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+
+    assert harness.dispatched == []
+    assert _status_by_station(report)[_FU_SLUG] is StationCycleStatus.DRAINED
+    # A closed row is not a stale open one: nothing to name.
+    assert _fu_codes(report, "MRS-DRAIN-018") == []
+
+
+def test_the_second_cycle_after_the_row_closes_dispatches_nothing_for_the_story(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC1 then AC2 on one fixture: the first cycle launches, the landing closes the row, the next dispatches nothing."""
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
+    harness = FakeBuildHarness()
+
+    first = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+    assert _status_by_station(first)[_FU_SLUG] is StationCycleStatus.DISPATCHED
+
+    # The review landed: finalize closed the row on origin/main and the review left the flag false.
+    vcs.origin_texts[_fu_ledger_rel(_FU_SLUG)] = "# Deferred work\n\n" + _fu_row(_FU_SLUG, _FU_STORY, status="closed")
+    second = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+
+    assert harness.dispatched == [(_FU_SLUG, "51.2")]  # still only the first launch
+    assert _status_by_station(second)[_FU_SLUG] is StationCycleStatus.DRAINED
+
+
+def test_mutation_without_the_row_gate_the_second_cycle_dispatches_the_story_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Candidates taken from specs alone: the row closed, the spec still reads done/true -- and 51.2 launches
+    again, which is exactly the failure `test_the_second_cycle_after_the_row_closes_...` pins."""
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "closed")])}
+    harness = FakeBuildHarness()
+    monkeypatch.setattr(deferred_work, "open_followup_review_story_keys", lambda text: (normalize(_FU_STORY),))
+
+    _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+
+    assert harness.dispatched == [(_FU_SLUG, "51.2")]
+
+
+def test_a_non_empty_backlog_dispatches_first_and_the_follow_up_queues_after_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    done_statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])
+    _seed_fleet(tmp_path, stories={_FU_SLUG: ["52-1-implementable"]})
+    ledgers = {_FU_SLUG: (("52-1-implementable", "backlog"), *done_statuses)}
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+
+    # The implementable story goes first; the follow-up waits behind it in the same station queue.
+    assert harness.dispatched == [(_FU_SLUG, "52.1")]
+    (row,) = report.results
+    assert row.followup_reviews == ()
+    assert row.remaining == 2
+    plan = cli_dispatch.plan_station_cycle(
+        repo_root=tmp_path,
+        slug=_FU_SLUG,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        leave_remaining=1,
+        campaign_blocked={},
+        order_override=None,
+        station_skips={},
+        explicit_stories=None,
+        policy_flags=_CYCLE_POLICY_SERIAL,
+        max_in_flight=None,
+        retry_environment_blocks=False,
+        fs=FakeFs(),
+        vcs=vcs,
+        process=FakeProcess(alive=False),
+        harness=FakeHarness(ledgers),
+        mint_wave_id=lambda: "w",
+        followups=(
+            dispatch_fleet.FollowupCandidate(slug=_FU_SLUG, key=normalize(_FU_STORY), row_id="DW-FRR-51-2"),
+        ),
+    )
+    assert plan.backlog == ("52-1-implementable", _FU_STORY)
+    assert plan.followup_stories == (_FU_STORY,)
+    assert plan.queue is not None and plan.queue.next_story == "52-1-implementable"
+
+
+def test_a_stale_open_row_and_a_row_less_spec_dispatch_nothing_and_the_stale_row_is_named(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {
+        _FU_SLUG: _fu_seed_station(
+            tmp_path,
+            vcs,
+            _FU_SLUG,
+            [
+                ("51-2-flag-turned-false", _fu_spec(flag=False), "open"),  # open row, flag now false: stale
+                ("51-3-no-row-at-all", _fu_spec(), None),  # a done/true spec with no row: no gate
+                ("51-4-row-closed", _fu_spec(), "closed"),  # a closed row: never dispatched
+            ],
+        )
+    }
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+
+    assert harness.dispatched == []
+    (stale,) = _fu_codes(report, "MRS-DRAIN-018")
+    assert stale.severity is Severity.WARN
+    assert "DW-FRR-51-2" in stale.message and _FU_SLUG in stale.message and "followup_review_recommended" in stale.message
+    assert _fu_codes(report, "MRS-DRAIN-019") == []
+
+
+def test_a_follow_up_whose_run_failed_is_a_campaign_block_like_any_story(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
+    harness = FakeBuildHarness()
+
+    first = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+    assert _status_by_station(first)[_FU_SLUG] is StationCycleStatus.DISPATCHED
+
+    # The session died with the worktree at its baseline: CAP-2's own facts read the run `failed`.
+    second = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+
+    assert harness.dispatched == [(_FU_SLUG, "51.2")]  # not re-dispatched
+    assert _status_by_station(second)[_FU_SLUG] is StationCycleStatus.BLOCKED
+    assert _fu_codes(second, "MRS-DRAIN-005")
+
+
+def test_a_follow_up_refused_this_campaign_is_blocked_from_the_journal_not_retried(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(
+        tmp_path,
+        ledgers=ledgers,
+        vcs=vcs,
+        harness=harness,
+        station=_FU_SLUG,
+        campaign_blocked={_FU_SLUG: {_FU_STORY: "dispatch refused: test"}},
+    )
+
+    assert harness.dispatched == []
+    assert _status_by_station(report)[_FU_SLUG] is StationCycleStatus.BLOCKED
+
+
+def test_the_sprint_ledger_twin_reads_done_before_during_and_after(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No ledger key is added, flipped or re-queued: the tracked twin is byte-identical across a launch."""
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])
+    twin = dispatch_fleet.station_ledger_path(tmp_path, _FU_SLUG)
+    twin.write_text(f"development_status:\n  {_FU_STORY}: done\n", encoding="utf-8")
+    before = twin.read_bytes()
+    ledgers = {_FU_SLUG: statuses}
+    harness = FakeHarness(ledgers)
+
+    first = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, station=_FU_SLUG, harness_port=harness)
+    second = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, station=_FU_SLUG, harness_port=harness)
+
+    assert _status_by_station(first)[_FU_SLUG] is StationCycleStatus.DISPATCHED
+    assert second is not None
+    assert twin.read_bytes() == before
+    assert harness.ledgers == ledgers and ledgers[_FU_SLUG] == ((_FU_STORY, "done"),)
+
+
+def test_an_unreadable_deferred_work_ledger_queues_nothing_for_that_station_and_names_the_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {
+        _FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")]),
+        _FU_OTHER_SLUG: _fu_seed_station(tmp_path, vcs, _FU_OTHER_SLUG, [("14-1-canary", _fu_spec(), "open")]),
+    }
+    vcs.unreadable.add(_fu_ledger_rel(_FU_SLUG))
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness)
+
+    # The unreadable station queues nothing; the readable one is unaffected.
+    assert harness.dispatched == [(_FU_OTHER_SLUG, "14.1")]
+    (warning,) = _fu_codes(report, "MRS-DRAIN-018")
+    assert warning.severity is Severity.WARN
+    assert _fu_ledger_rel(_FU_SLUG) in warning.message and warning.path == _fu_ledger_rel(_FU_SLUG)
+
+
+def test_an_absent_deferred_work_ledger_is_no_rows_and_no_finding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    _seed_fleet(tmp_path, stories={_FU_SLUG: ["52-1-implementable"]})
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(
+        tmp_path,
+        ledgers={_FU_SLUG: (("52-1-implementable", "backlog"),)},
+        vcs=_FollowupVcs(tmp_path),
+        harness=harness,
+        station=_FU_SLUG,
+    )
+
+    assert harness.dispatched == [(_FU_SLUG, "52.1")]
+    assert not [f for f in report.findings if f.code in {"MRS-DRAIN-018", "MRS-DRAIN-019"}]
+    assert dispatch_fleet.FOLLOWUP_REVIEWS_PAYLOAD_KEY not in report.results[0].to_payload()
+
+
+def test_stories_never_queues_a_follow_up(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`--stories` is unchanged: the caller's own sequence, and no deferred-work ledger is even read."""
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])
+    _seed_fleet(tmp_path, stories={_FU_SLUG: ["52-1-implementable"]})
+    ledgers = {_FU_SLUG: (("52-1-implementable", "backlog"), *statuses)}
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(
+        tmp_path,
+        ledgers=ledgers,
+        vcs=vcs,
+        harness=harness,
+        station=_FU_SLUG,
+        explicit_stories=("52-1-implementable",),
+    )
+
+    assert harness.dispatched == [(_FU_SLUG, "52.1")]
+    assert report.results[0].remaining == 1
+    assert _fu_ledger_rel(_FU_SLUG) not in {path for _ref, path in vcs.reads}
+
+
+def test_stories_naming_a_done_key_with_an_open_row_still_refuses(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
+    build_harness = FakeBuildHarness()
+
+    code = _run_drain(
+        tmp_path,
+        _drain_args(station=_FU_SLUG, stories=_FU_STORY),
+        ledgers=ledgers,
+        vcs=vcs,
+        build_harness=build_harness,
+    )
+
+    assert code != EXIT_OK
+    assert build_harness.dispatched == []
+    assert "MRS-DISP-032" in capsys.readouterr().out
