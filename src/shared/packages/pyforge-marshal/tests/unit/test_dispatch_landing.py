@@ -12,6 +12,7 @@ from pyforge.core.process import ProcessError, ProcessResult
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import policy, promotion
+from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.dispatch_landing import (
     DispatchLandingVerdict,
     blocked_twin_promotion_text,
@@ -23,7 +24,6 @@ from pyforge.marshal.core.dispatch_landing import (
     refuse_unverified_landing,
     union_sprint_ledger_maps,
 )
-from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.identity import normalize, render_merge_subject
 from pyforge.marshal.core.journal import resolve_landing_checks_from_payload
@@ -1536,9 +1536,7 @@ def test_a_follow_up_landing_refuses_when_it_cannot_read_its_own_ancestry(tmp_pa
     vcs = _OwnHeadVcs(merged_at=frozenset({ORIGIN_MAIN}), own_head_on_origin_main=False, merge_base_fails=True)
     forge = _CreatePrSpyForge()
 
-    result, envelope = _land_followup(
-        tmp_path, vcs, followup_review=FollowupReview(dw_id="DW-FRR-22-4"), forge=forge
-    )
+    result, envelope = _land_followup(tmp_path, vcs, followup_review=FollowupReview(dw_id="DW-FRR-22-4"), forge=forge)
 
     assert result.verdict == DispatchLandingVerdict.REFUSED
     [refusal] = [finding for finding in envelope.findings if finding.code == "MRS-DISP-017"]

@@ -540,7 +540,9 @@ def test_append_ledger_entry_separates_with_one_blank_line_and_ends_in_one_newli
 
 def _open_row_ledger(*, other_rows: str = "") -> str:
     """A ledger whose ``DW-FRR-51-2`` row was rendered by the carry (Story 66.1), plus ``other_rows``."""
-    return "# Ledger\n\nold\n\n" + render_followup_review_entry(_frr_candidate(), promoted_date="2026-10-01") + other_rows
+    return (
+        "# Ledger\n\nold\n\n" + render_followup_review_entry(_frr_candidate(), promoted_date="2026-10-01") + other_rows
+    )
 
 
 def test_open_followup_review_id_names_the_open_row():
@@ -624,9 +626,7 @@ def test_close_followup_review_row_closes_a_bulleted_status_at_its_own_indent():
     closed = close_followup_review_row(
         "### DW-FRR-51-2: x\n\n- status: open\n", "DW-FRR-51-2", resolved_date="2026-10-02", landing="L"
     )
-    assert closed == (
-        "### DW-FRR-51-2: x\n\n  resolved: 2026-10-02 (dispatch-land finalize: L)\n- status: closed\n"
-    )
+    assert closed == ("### DW-FRR-51-2: x\n\n  resolved: 2026-10-02 (dispatch-land finalize: L)\n- status: closed\n")
 
 
 def test_close_followup_review_row_collapses_a_multi_line_landing_onto_one_line():

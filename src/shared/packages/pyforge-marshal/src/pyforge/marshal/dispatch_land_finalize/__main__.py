@@ -359,14 +359,26 @@ def _run_deferred_work_intake(
             return intake_finding
         intake_rows = new_text != original_text
         if closed_id is not None:
-            parts = [
-                *(["deferred-work intake"] if intake_rows else []),
-                *([f"follow-up review row {row_id}"] if row_id is not None else []),
-                f"closure of follow-up review row {closed_id}",
+            # Story 73.1: the closure names every edit this one publish carries.
+            actions = [
+                *(["promote deferred-work intake"] if intake_rows else []),
+                *([f"carry follow-up review row {row_id}"] if row_id is not None else []),
+                f"close follow-up review row {closed_id}",
             ]
-            commit_message = f"marshal: promote {' and '.join(parts)} for {short_slug!r}"
-            skip_reason = f"marshal deferred-work {' and '.join(parts)} for {short_slug!r}, story {story_key}"
-            published = " and ".join(parts)
+            kinds = [
+                *(["intake"] if intake_rows else []),
+                *(["follow-up review carry"] if row_id is not None else []),
+                "follow-up review closure",
+            ]
+            commit_message = f"marshal: {' and '.join(actions)} for {short_slug!r}"
+            skip_reason = f"marshal deferred-work {' and '.join(kinds)} for {short_slug!r}, story {story_key}"
+            published = " and ".join(
+                [
+                    *(["deferred-work intake"] if intake_rows else []),
+                    *([f"follow-up review row {row_id}"] if row_id is not None else []),
+                    f"closure of follow-up review row {closed_id}",
+                ]
+            )
         elif row_id is None:
             commit_message = f"marshal: promote deferred-work intake for {short_slug!r}"
             skip_reason = f"marshal deferred-work intake for {short_slug!r}, story {story_key}"

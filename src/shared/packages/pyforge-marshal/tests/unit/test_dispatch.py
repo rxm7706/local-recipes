@@ -1943,7 +1943,9 @@ def test_a_follow_up_review_launch_does_not_name_a_closed_row(tmp_path: Path, mo
     assert _launch_intent(fs)["followup_review"] == {"dw_id": None}
 
 
-def test_a_follow_up_review_launch_survives_an_unreadable_ledger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_follow_up_review_launch_survives_an_unreadable_ledger(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
     _seed_followup_ledger(_seed_followup_spec(tmp_path))
 
