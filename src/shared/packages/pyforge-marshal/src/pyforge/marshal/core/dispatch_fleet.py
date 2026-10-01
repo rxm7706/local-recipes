@@ -24,8 +24,8 @@ from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
 
-from .dispatch import canonical_repo_root, find_declared_surface_overlaps
 from .deferred_work import followup_review_id
+from .dispatch import canonical_repo_root, find_declared_surface_overlaps
 from .dispatch_harness_done import is_followup_review_spec, parse_spec_status
 from .identity import MalformedStoryKeyError, StoryKey, normalize, render_feed_key
 from .promotion import SPEC_STATUS_DONE, SpecStatusReader, corroborated_merged_story_keys
@@ -863,9 +863,7 @@ def select_campaign_followups(
     ordered = sorted(
         enumerate(candidates),
         key=lambda pair: (
-            (0, positions[(pair[1].slug, pair[1].key)])
-            if (pair[1].slug, pair[1].key) in positions
-            else (1, pair[0])
+            (0, positions[(pair[1].slug, pair[1].key)]) if (pair[1].slug, pair[1].key) in positions else (1, pair[0])
         ),
     )
     already = frozenset(launched)
