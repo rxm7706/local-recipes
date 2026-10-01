@@ -62,6 +62,19 @@ _EMPHASIS_RE = re.compile(r"[*`~]+|(?<![A-Za-z0-9])_+|_+(?![A-Za-z0-9])")
 _PARKED_RE = re.compile(r"(?<![A-Za-z0-9_])(?<!un-)parked\b", re.IGNORECASE)
 _DO_NOT_DISPATCH_RE = re.compile(r"\bdo\s+not\s+dispatch\b", re.IGNORECASE)
 _EXCERPT_LIMIT = 200
+# A spec's ``<intent-contract>`` block holds the rules of the feature it builds
+# ("Do not dispatch a follow-up whose row is closed..."), not a decision to hold
+# the story -- so the tracked-spec scan skips it (Story 81.2). Each tag counts
+# only as a whole line of its own: a backticked or mid-line mention of either
+# tag in prose never opens or closes a block. Non-greedy, so a park between two
+# blocks survives. An own-line opening tag with no own-line closing tag after it
+# matches nothing, so a malformed spec is still scanned whole rather than
+# silenced (AD-8: unevaluable is never clean); a stray own-line opening tag
+# before the real block pairs with the next closing line.
+_INTENT_CONTRACT_RE = re.compile(
+    r"^[ \t]*<intent-contract>[ \t]*$.*?^[ \t]*</intent-contract>[ \t]*$",
+    re.MULTILINE | re.DOTALL,
+)
 
 # The `N` of `### Story E.N:` -- digits plus an optional lowercase suffix.
 _STORY_NUMBER_RE = re.compile(r"(\d+)([a-z]?)")
@@ -120,12 +133,16 @@ def find_prose_park(
     """The prose park marker of ``story`` that no ``skip_policies`` entry mirrors.
 
     "Parked" or "do not dispatch" (case-insensitive, emphasis stripped) in the
-    story's ``epics.md`` block or in its tracked spec. ``None`` when the story
-    carries no marker, or when ``station_skips`` already names it -- a park
-    that lives in code is the one mechanism, so it is not a finding. Pure."""
+    story's ``epics.md`` block or in its tracked spec. The tracked spec's
+    ``<intent-contract>`` block (each tag a line of its own) is skipped -- it
+    holds the feature's own rules, not a hold decision (Story 81.2); every other
+    spec line and the whole ``epics.md`` block are scanned. ``None`` when the
+    story carries no marker, or when ``station_skips`` already names it -- a
+    park that lives in code is the one mechanism, so it is not a finding. Pure."""
     if story in station_skips:
         return None
-    for source, text in (("epics.md", epics_block), ("tracked spec", spec_text)):
+    scanned_spec = _INTENT_CONTRACT_RE.sub("\n", spec_text) if spec_text else spec_text
+    for source, text in (("epics.md", epics_block), ("tracked spec", scanned_spec)):
         if not text:
             continue
         line = _park_line(text)
