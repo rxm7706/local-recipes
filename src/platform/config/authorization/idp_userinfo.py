@@ -129,7 +129,8 @@ def _access_token_for(user: object) -> str | None:
 def _json_request(
     request: urllib.request.Request,
     *,
-    event: str,
+    failed_event: str,
+    invalid_json_event: str,
 ) -> dict[str, Any] | None:
     """Send ``request``; the JSON object it answers, or None on any failure.
 
@@ -146,15 +147,15 @@ def _json_request(
     except urllib.error.HTTPError as exc:
         if exc.code == HTTPStatus.UNAUTHORIZED:
             raise _AccessTokenRejectedError from exc
-        logger.warning(f"{event}_failed", error=str(exc))
+        logger.warning(failed_event, error=str(exc))
         return None
     except (OSError, http.client.HTTPException, ValueError) as exc:
-        logger.warning(f"{event}_failed", error=str(exc))
+        logger.warning(failed_event, error=str(exc))
         return None
     try:
         payload = json.loads(body)
     except json.JSONDecodeError:
-        logger.warning(f"{event}_invalid_json")
+        logger.warning(invalid_json_event)
         return None
     if isinstance(payload, dict):
         return payload
@@ -173,7 +174,11 @@ def _fetch_userinfo_http(access_token: str) -> dict[str, Any] | None:
         },
         method="GET",
     )
-    return _json_request(request, event="authorization.userinfo_fetch")
+    return _json_request(
+        request,
+        failed_event="authorization.userinfo_fetch_failed",
+        invalid_json_event="authorization.userinfo_invalid_json",
+    )
 
 
 def _oidc_client() -> tuple[str, str] | None:
@@ -223,7 +228,11 @@ def _refresh_access_token(user: object) -> str | None:
         method="POST",
     )
     try:
-        payload = _json_request(request, event="authorization.token_refresh")
+        payload = _json_request(
+            request,
+            failed_event="authorization.token_refresh_failed",
+            invalid_json_event="authorization.token_refresh_invalid_json",
+        )
     except _AccessTokenRejectedError:
         # The IdP refused the client or the grant outright: a failed refresh.
         logger.warning("authorization.token_refresh_refused")
