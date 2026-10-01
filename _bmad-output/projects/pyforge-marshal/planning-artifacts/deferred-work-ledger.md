@@ -7795,3 +7795,14 @@ status: open
   severity: medium
   promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-66-1: When the deferred-work intake changes a primary ledger copy that differs from origin/main's ledger, its own publish still writes that text over the tip, dropping rows another finalize published since.
+
+- source_spec: `planning-artifacts/specs/spec-66-1-finalize-carries-a-recommended-follow-up-review-into-the-deferred-work-ledger.md`
+  summary: When the deferred-work intake changes a primary ledger copy that differs from origin/main's ledger, its own publish still writes that text over the tip, dropping rows another finalize published since.
+  evidence: `commit_paths_onto_remote_tip` writes the caller's whole text over the fetched tip (vcs_git.py, `dest.write_text(content)`), and `_run_deferred_work_intake` has always published the primary's post-`--fix` copy. The primary's copy is stale whenever finalize skips its resync (dirty or non-main primary). Story 66.1 protects only the follow-up row (it is skipped with a WARN in that state); it cannot protect the intake's own rows without a text-merge policy for the append-only ledger, and the script that writes them (`scripts/deferred_work_intake.py`, governed by spec-pyforge-doctor) is on this story's Never list. Found by the Edge Case Hunter and the Intent Alignment Auditor at review pass 2; pre-existing, not caused by this story.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py
+  origin: spec-deferred b71701f3f021 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
