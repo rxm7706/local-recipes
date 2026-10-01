@@ -2336,7 +2336,7 @@ def _check_spec_surface(target: Path, files: list[str]) -> tuple[list[dict], lis
 
     # A WARN, so it rides `presumed`: a row in `findings` would make
     # `gather_spec_surface` drop its OK verdict, changing an existing finding.
-    presumed.extend(_stale_surface_findings(specs, files))
+    # MUTATION-CHECK presumed.extend(_stale_surface_findings(specs, files))
 
     return findings, presumed
 
