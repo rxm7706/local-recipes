@@ -2,7 +2,7 @@
 id: SPEC-pyforge-marshal
 spec: pyforge-marshal
 status: ready
-updated: "2026-09-30"
+updated: "2026-10-01"
 owner-dream: docs/dreams/pyforge-marshal.md
 covers-dreams:
   - docs/dreams/pyforge-marshal.md
@@ -1079,6 +1079,9 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **CAP-283 — a landing unions append-only memlogs instead of refusing** ← spec-pyforge-marshal CAP-283 (ready 2026-09-30)
   - **intent:** CAP-269's heal gains one more mechanical path class: a conflicted `.memlog.md` anywhere in the tree (the owning Spec's or a co-governor's) whose body each side only appended to since the merge base. Its resolution is `main`'s frontmatter and body followed by the branch's new entries in their order (an entry already on `main` is not repeated), with `updated:` the later of the two stamps; it joins the ledger's in the same `merge_ref_resolving` map, so one real merge of `refs/remotes/origin/main` heals both. A memlog either side edited, reordered or truncated, or whose other frontmatter field both sides changed differently, escalates by name with nothing committed or pushed. The landing journal records the healed memlog paths beside `ledger_union_heal`. Amends CAP-269's "any other conflicted path aborts the merge" for this one class only. (Operator direction 2026-09-30, after four wave-1 landings were refused on memlog appends.)
   - **success:** with a bare remote, the real `GitVcs` and Story 59.1's forge fake: a landing whose only conflicts are memlogs both sides appended to heals — the pushed head is a merge commit whose second parent is `origin/main`, each memlog holds every base, main and branch entry exactly once, main's first, and `updated:` is the later stamp — and the retried forge merge succeeds; memlog plus ledger conflicts heal in one merge; a branch that rewrote a base entry escalates that path with nothing committed or pushed; a `topic:` both sides changed differently escalates; a memlog plus any other conflicted file escalates the other file; the pure resolver is table-tested (both sides appended, one side only, an entry on both sides, a rewritten entry, a truncated body, a frontmatter-only change, no frontmatter); `pyforge-marshal-test` green.
+- **CAP-284 — a dispatch landing waits for its PR's checks and refuses on a red one** ← spec-pyforge-marshal CAP-284 (ready 2026-10-01)
+  - **intent:** before `forge.merge_pr`, the dispatch landing waits for the check runs GitHub reports on the PR head to conclude: it polls them at a policy interval up to a policy timeout, merges only when every run has concluded `success`, `skipped` or `neutral`, and refuses with a named finding that names each run otherwise (any other conclusion), or names the still-pending runs at the timeout. The PR stays open, so a later re-run of the landing merges once CI is green. `main` has no branch protection and `landing_rules` declare no CI check, so until now a dispatch merged the moment its own session verification passed and every CI lane reported after the merge. (Operator direction 2026-10-01, after doctor 38.3 reddened `main`'s `scripts-suite` and steward 80.1 merged with Platform CI and Detectors still pending.)
+  - **success:** against Story 59.1's forge fake: a head whose runs are all `success`/`skipped`/`neutral` merges; one `failure` refuses naming that run and nothing merges; runs still `in_progress` at the timeout refuse naming them; runs that conclude between polls merge on the next poll; a head with no runs yet waits at least the registration grace before treating the set as empty; the policy keys are validated and defaulted; `pyforge-marshal-test` green.
 
 ## Constraints
 
