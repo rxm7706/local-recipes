@@ -2,9 +2,9 @@
 title: "38.5: The detector-aggregate tests run where Doctor's run-deps are installed"
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-38-3-the-fleet-hygiene-sweep-runs-with-the-other-detectors-warn-only.md
@@ -83,4 +83,19 @@ Deps: S-38.3.
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+- No independent review ran: an XS hand-landed fix restoring `main`'s red `scripts-suite` lane (a test-guard and one CI
+  step, no production code). `followup_review_recommended: true` puts it in the follow-up review queue (marshal CAP-281).
+
+## Auto Run Result
+
+Hand-built in an interactive session after `main`'s Detectors `scripts-suite` went red at `d6b0a85992` (run
+36844391956) on Story 38.3's landing. Verification:
+
+- `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` — exit 0: 1102 passed, 18 skipped (the three guarded
+  tests among them).
+- `pixi run --frozen -e pyforge-doctor python -m pytest tests/scripts/test_detectors_doctor_sources.py -q` — exit 0:
+  19 passed, none skipped.
+
+**Found while here (not fixed by this story):** the dispatch supervisor merged PR #1709 while its `Detectors /
+scripts-suite` check was failing, because that check is not required on `main`; and `pr-preflight` has no twin for the
+`scripts-suite` lane. Both are reported to the operator (a branch-protection setting and a preflight leg).
