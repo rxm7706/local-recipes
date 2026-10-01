@@ -19,6 +19,7 @@ next time a story appends an entry.
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -39,6 +40,7 @@ from pyforge.doctor.sources import (
     factory,
     frozen_path,
     general_docs_consistency,
+    hygiene,
     ledger,
     live_proof_surfaces,
     marshal,
@@ -90,6 +92,9 @@ _EXPECTED_DISPATCH = {
     # Story 26.1 (spec-pyforge-doctor CAP-77) -- a touched surface
     # catalogued in live-proof-surfaces.md gets an advisory finding naming it.
     "live-proof-surface": live_proof_surfaces.gather,
+    # Story 38.3 (spec-pyforge-doctor CAP-42 / CAP-43; DW-OPS-2026-10-01-1) --
+    # the fleet hygiene sweep, registered since Story 9.2, dispatched here.
+    "bmad-output-hygiene": hygiene.gather,
 }
 
 
@@ -268,3 +273,82 @@ def test_no_findings_exits_zero(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setitem(dispatch.DISPATCH, "ledger-regression", lambda target: ())
 
     assert dispatch.main(["ledger-regression"]) == 0
+
+
+# --- Story 38.3: the fleet hygiene sweep runs through the dispatcher, warn-only --
+#
+# The parametrized tests above stub `DISPATCH[name]`, so they prove the row
+# exists and that `main` calls whatever sits in it. These two run the REAL
+# `hygiene.gather` through `main` over a throwaway git repo (the orphan-file
+# class drives `git grep`), so deleting the `DISPATCH` row fails them: argparse
+# then rejects the name (SystemExit 2) before any finding prints.
+
+_LEAKY_GIT_VARS = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
+)
+
+
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True)
+
+
+def _orphan_repo(root: Path) -> Path:
+    """A committed one-station repo whose only hygiene finding is one
+    orphan-file WARN (`planning-artifacts/orphan-notes.md`, referenced by
+    nothing and not a conventional name)."""
+    repo = root / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "--initial-branch=main")
+    _git(repo, "config", "user.email", "doctor-test@example.com")
+    _git(repo, "config", "user.name", "Doctor Test")
+    _git(repo, "config", "commit.gpgsign", "false")
+    _git(repo, "config", "core.hooksPath", "/dev/null")
+    station = repo / "_bmad-output" / "projects" / "pyforge-acme"
+    (station / "planning-artifacts").mkdir(parents=True)
+    (station / "README.md").write_text("acme is a real station with real prose.\n", encoding="utf-8")
+    (station / "planning-artifacts" / "sprint-status-ledger.yaml").write_text(
+        "development_status:\n  1-1-foo: done\n", encoding="utf-8"
+    )
+    (station / "planning-artifacts" / "orphan-notes.md").write_text("never linked from anywhere.\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "seed one orphan candidate")
+    return repo
+
+
+def test_bmad_output_hygiene_runs_gather_and_prints_its_findings_with_a_warn_leaving_exit_zero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    """AC 1 + AC 3: `bmad-output-hygiene` reaches `hygiene.gather`, prints each
+    finding, and a WARN-only result exits 0 (CAP-43: advisory, never a gate)."""
+    for var in _LEAKY_GIT_VARS:
+        monkeypatch.delenv(var, raising=False)
+    repo = _orphan_repo(tmp_path)
+    monkeypatch.chdir(repo)
+
+    exit_code = dispatch.main(["bmad-output-hygiene"])
+
+    out = capsys.readouterr().out
+    assert "[bmad-output-hygiene] orphan-file: warn" in out
+    assert "acme: planning-artifacts/orphan-notes.md" in out
+    assert exit_code == 0
+
+
+def test_bmad_output_hygiene_json_carries_the_warn_finding_and_exits_zero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    for var in _LEAKY_GIT_VARS:
+        monkeypatch.delenv(var, raising=False)
+    repo = _orphan_repo(tmp_path)
+    monkeypatch.chdir(repo)
+
+    exit_code = dispatch.main(["bmad-output-hygiene", "--json"])
+
+    findings = json.loads(capsys.readouterr().out)
+    assert [f["check"] for f in findings] == ["orphan-file"]
+    assert {f["status"] for f in findings} == {DoctorStatus.WARN.value}
+    assert exit_code == 0
