@@ -24,7 +24,12 @@ import pytest
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
-from pyforge.marshal.core.dispatch_completion import DispatchGitFacts, DispatchSessionVerdict
+from pyforge.marshal.core.dispatch_completion import (
+    DispatchCompletionInput,
+    DispatchGitFacts,
+    DispatchSessionVerdict,
+    judge_dispatch_completion,
+)
 from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
@@ -3370,11 +3375,17 @@ def test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_th
             followup_review=followup_review,
         )
 
+    def verdict(followup_review: FollowupReview | None) -> DispatchSessionVerdict:
+        """The completion judgment of a run whose session is still alive."""
+        return judge_dispatch_completion(DispatchCompletionInput(session_alive=True, git=facts(followup_review)))
+
     # The premise: the reused worktree's baseline range still holds the first merge, and a normal run reads it.
     assert first_merge in _git(clone, "log", "--format=%s", f"{pre_merge_baseline}..{ORIGIN_MAIN}")
     assert facts(None).story_merged_on_main is True
+    assert verdict(None) is DispatchSessionVerdict.COMPLETED
     # The follow-up is not fooled by it ...
     assert facts(marker).story_merged_on_main is False
+    assert verdict(marker) is DispatchSessionVerdict.LIVE
     # ... and still sees its own merge, which reaches origin/main after the launch tip.
     (worktree / "review.md").write_text("reviewed\n", encoding="utf-8")
     _git(worktree, "add", "-A")
@@ -3384,6 +3395,7 @@ def test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_th
     own_merge = facts(marker)
     assert own_merge.story_merged_on_main is True
     assert own_merge.branch_merged is True
+    assert verdict(marker) is DispatchSessionVerdict.COMPLETED
 
 
 # -- _spec_land_block_reason: a follow-up's spec-only diff is its record -------------------------------
