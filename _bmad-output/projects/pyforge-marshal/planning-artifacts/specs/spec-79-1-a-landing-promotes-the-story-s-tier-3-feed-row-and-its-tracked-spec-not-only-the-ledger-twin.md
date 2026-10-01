@@ -17,12 +17,12 @@ context:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py
 deferred:
   - summary: >-
-      Finalize's spec-status corroboration read may raise something other than VcsCommandError on a real checkout, which would crash finalize after the merge.
+      The Tier-3 spec promotion in finalize classifies its candidates from the scan's pre-fetch commit subjects, so on the normal GitHub-merge path it probably never fires.
     evidence: |-
-      Edge Case Hunter, review pass 1 (2026-10-01): `_spec_status_for` catches only VcsCommandError; it is unverified whether `dispatch_core.spec_text_at_ref` can raise another exception type while the scan runs. If it can, finalize exits non-zero and the landing is reported REFUSED after the PR has merged. Settle by running finalize against a checkout whose tracked specs directory is unreadable.
+      Blind Hunter, review pass 2 (2026-10-01); the ordering was reproduced with real git in pass 1: `commit_subjects(origin/main)` lacks the merge subject until the fetch finalize makes later, and `to_promote` is classified from the same `merged_keys`. Journals: 6 of 38 finalize runs carry a `deploy-promote-commit` entry, none of the last 8. Not caused by Story 79.1, which fixes its own gate. Widening the Tier-3 gate would let `_execute_promotion_plan`'s `commit_paths` commit onto the primary checkout (CAP-233), so it needs its own Spec decision.
     location: >-
       src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py
-    severity: medium (unverified)
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -204,6 +204,47 @@ Minted 2026-10-01 by operator ruling: the deferral burn-down's "stop the inflow"
   - `[false]` `[reject]` The feed is read and written under `root`, not the worktree -- it is the exact path `_promote_sprint_ledger` reads and `sprint-ledger-sync` reads, and the worktree's directory is a link to the same store
   - `[false]` `[reject]` An uncorroborated landing still leaves the twin `done` and the feed `backlog` -- AC 5 requires that, and the twin promotion's unconditionality is pre-existing and outside the contract
   - `[false]` `[reject]` A `blocked` feed row leaves a plain sync refusing -- AC 2 and the Always boundary require `blocked` untouched; the sync's done-to-blocked refusal is its own guard working as designed
+
+### 2026-10-01 -- Review pass (loop 1, after the re-derivation)
+- verdicts: 31 findings -- high 0, medium 5, low 23, false 3, maybe-false 0
+- carried rows (marked `carried`) were resolved by the loop-1 amendments and are not re-processed; the `bad_spec` ones among them owe no further re-derivation
+- findings:
+  - Blind Hunter
+  - `[medium]` `[defer]` The Tier-3 promotion gate is fed the scan's pre-fetch subjects, the same stale evidence this story fixed for its own gate -- the ordering was reproduced with real git in pass 1, and `to_promote` is classified from the same `merged_keys`, so that promotion probably never fires on the normal path (journals: 6 of 38 finalize runs carry a `deploy-promote-commit`, none of the last 8); not caused by this change, and widening it would let `commit_paths` commit onto the primary checkout (CAP-233), a named blocker outside an S-sized fix; recorded in `deferred:`
+  - `[low]` `[patch]` The `deferred:` entry from pass 1 contradicts the Auto Run Result -- probed myself: with the specs directory `chmod 000` on Python 3.14, `story_spec_rel_path` returns `None` and does not raise, so the pass-1 deferral is refuted; the entry is withdrawn (it would mint a false open DW row on landing) and the entry from row 1 replaces it; groups with row 19
+  - `[false]` `[reject]` No independent re-review of the redesign -- this pass is that review: four fresh reviewers read the redesigned diff after loop 1
+  - `[low]` `[reject]` The spec points at a gitignored patch and says "attempt 1" -- the fix is to edit this build's spec; the Spec Change Log is a dated record and labels the patch as gitignored Tier-3
+  - `[low]` `[bad_spec]` carried: AC 4 says "the promotion commit", the code publishes a second commit -- amended in loop 1 (the Design Notes state the reading and why); not re-processed; the operator's ratification of that reading is named as a residual risk under Auto Run Result
+  - `[low]` `[reject]` "A re-run repairs it" has no trigger -- a failed publish or unwritable feed is an `MRS-DISP-047` WARN on the journal; the Design Notes say a re-run repairs it, not that one happens unprompted, and an automatic retry is machinery beyond an S-sized fix
+  - `[medium]` `[patch]` The new gate is correct only because `_landed_key_not_done_finding` happens to fetch, named in a comment alone -- an edit there would silently reopen the stale-gate defect; the gate must fetch `origin/main` itself
+  - `[low]` `[patch]` Two status sets live apart (`_TERMINAL_SPEC_STATUSES` in `__main__.py`, `PRE_DONE_SPEC_STATUSES` in `promotion.py`) -- a status in neither set would drift between the two; the terminal set moves beside the other; `_origin_main_spec_status` stays a deliberate copy of the inline Tier-3 reader because that block is left byte-identical (its docstring says so)
+  - `[low]` `[reject]` carried: the feed guard is a denylist, the spec guard an allowlist -- carried from loop 1 (the contract names done and blocked only and the twin does the same for a landed key); checked now: ledgers carry done 1398, optional 297, backlog 123, blocked 22, in-progress 15 and no `superseded`, so an `optional` row under a corroborated landing is a story that landed; `_landed_key_not_done_finding` is unchanged baseline code
+  - `[low]` `[reject]` The journal booleans cannot say why nothing moved -- a failed write carries its finding, and a done or blocked row and a story with no local spec are intentional silent no-ops; a reason enum is new payload surface
+  - `[low]` `[reject]` No INTENT/OUTCOME pair around the spec publish -- the publish is idempotent (a re-run reads `done` and does nothing), the commit is itself the durable record, and the module's other post-merge publish (`_run_deferred_work_intake`) writes no pair either
+  - `[low]` `[reject]` carried: concurrent writers can lose a feed update -- carried from loop 1: one small file between read and `os.replace`, a writer outside marshal would not honour an advisory lock, and the feed is re-derivable
+  - `[low]` `[patch]` Reproduced defects rejected as pre-existing -- the wrong-line feed write is this change's own defect (the new call site applies `render_ledger_advancements` to the feed; reproduced in loop 1), so that rejection is reversed: re-parse the rewritten text and require the row to read `done` before writing, else a WARN; the stale-named local spec stays rejected because, since loop 1, a miss at `origin/main` is a WARN naming the path
+  - `[medium]` `[patch]` Test gaps -- the central stale-scan defect is pinned only by a hand-written model of git, and the adapter's planning-artifacts-only proof never runs against the path `story_spec_rel_path` yields; one real-git test is added (a bare origin, the real `GitVcs` and `commit_paths_onto_remote_tip`); the vacuous `other.is_file()` assertion goes; the `blocked  # note` guard and the fail-closed status read join the mutation list; the other nits (a literal ref in an assertion, `tuple = ()` on a test stub, the sync test reading the script's output) follow the file's existing style
+  - `[low]` `[patch]` carried: dead code and bookkeeping owed -- carried from loop 1: the memlog entries naming the governed paths on `spec-pyforge-marshal` and `spec-pyforge-core` are written at Finalize and the guard re-run (it passes now because older entries already contain the path strings, so it proves nothing about this change); the `story_spec_rel_path` ValueError branch is `spec_text_at_ref`'s own logic moved verbatim and stays untested; the journal fields are not CLI grammar, so SKILL.md is untouched
+  - Edge Case Hunter
+  - `[low]` `[reject]` A station-branch merge whose PR added the spec is never corroborated from the primary's local tree -- `spec_status_for` is called only for the station-branch shape, and finalize runs only after `dispatch_land` merges the `dispatch/<slug>/<key>` branch, a shape trusted without a spec read; the Tier-3 gate has the same limit
+  - `[low]` `[reject]` A quoted feed status keeps its quotes in the token -- every ledger row is a bare token (probed: done, blocked, backlog, optional, in-progress), and the twin parser and rewriter treat quotes as part of the token everywhere
+  - `[low]` `[reject]` CRLF, bare CR or non-UTF-8 spec bytes would not round-trip -- CRLF carried from loop 1 (a documented limit); probed all 1227 tracked specs: 0 fail strict UTF-8 and 0 are CRLF
+  - `[low]` `[patch]` Claim: the deferred item is settled yet still in `deferred:` -- the same finding as row 2; withdrawn there
+  - `[low]` `[bad_spec]` carried: claim that the spec is promoted "in the promotion commit" but a second commit is made -- the same defect as row 5; amended in loop 1; not re-processed
+  - `[low]` `[patch]` Claim: `set_spec_status` says every line ending comes back byte for byte, but production text arrives LF-normalised -- the docstring gains the sentence; no behaviour change
+  - Verification Gap
+  - `[low]` `[patch]` The Tier-3 route and the new tracked-spec step are never run together -- read from code: `_execute_promotion_plan` copies the Tier-3 spec into the primary's `specs/` and commits it locally, so `story_spec_rel_path` resolves that copy while `origin/main` may not hold it, giving a misleading "does not exist at origin/main" WARN or a second status-only publish; AC 4 says "no Tier-3 twin exists" and nothing enforces it; the step is skipped for a key the Tier-3 route promoted this run, with a test through the real executor
+  - Intent Alignment (its divergences, one row each)
+  - `[low]` `[reject]` Two corroboration verdicts in one finalize -- deliberate and documented in the Design Notes; the disagreement they can produce is row 1's deferral
+  - `[low]` `[bad_spec]` carried: the tracked spec is published in its own commit -- the same defect as row 5; amended in loop 1; not re-processed
+  - `[false]` `[reject]` "After the twin's promotion succeeds" is judged on `origin/main`'s ledger, not the call's success -- that is a defensible reading the contract allows, and a failed promotion exits 1 with `MRS-DISP-051` and moves nothing
+  - `[medium]` `[patch]` carried: an uncorroborated landing leaves the incident state and only a boolean says so -- carried from loop 1 (the `landing_corroborated` payload field is the implemented signal; AC 5's test keeps asserting no findings)
+  - `[low]` `[reject]` `marshal land` and `deploy` do not write the feed row -- the contract scopes the fix to finalize and its automatic landings; no defect is shown for those paths
+  - `[low]` `[reject]` carried: spec status coverage (denylist against allowlist, nine specs with a commented status) -- carried from rows 9 and loop 1; those nine specs now get a WARN naming the path
+  - `[medium]` `[patch]` The tests run in-process on a fake `GitVcs`, and the real-git reproduction exists only as prose -- the same root as row 14; the real-git test covers it
+  - `[low]` `[patch]` The spec publish is asserted on the recorded `writes`, not on a git ref -- covered by the same real-git test: `origin/main`'s spec blob reads `done` and the primary's working tree is untouched
+  - `[false]` `[reject]` AC 6's mutation is by hand and recorded as prose -- the contract and Tasks say "run the mutation by hand"
+
 
 ## Auto Run Result
 
