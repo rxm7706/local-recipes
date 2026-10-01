@@ -2669,8 +2669,9 @@ def _uncited(findings: tuple) -> list:
 
 def test_verified_citation_cutoff_is_the_day_after_the_burn_down() -> None:
     """Design Notes: 937 lines are dated 2026-10-01 (the burn-down's bulk
-    pass) and 373 of them cite nothing -- a 2026-10-01 cutoff would red
-    ``main``. Pinned so moving it is a deliberate, reviewed act."""
+    pass) and 374 of them cite nothing (measured with the shipped predicate)
+    -- a 2026-10-01 cutoff would red ``main``. Pinned so moving it is a
+    deliberate, reviewed act."""
     assert date(2026, 10, 2) == chain.VERIFIED_CITATION_CUTOFF
 
 
@@ -2790,6 +2791,56 @@ def test_the_fail_names_the_entry_that_owns_the_bare_line(tmp_path: Path) -> Non
     ]
 
 
+def test_each_entry_is_judged_on_its_own_lines_only(tmp_path: Path) -> None:
+    """The per-entry bare-line counter resets at every heading: DW-1's one bare
+    line is not carried into DW-2 (cited) or DW-3 (no ``verified:`` at all)."""
+    findings = _gather_verified(
+        tmp_path,
+        f"## DW-1\nstatus: open\nverified: {_POST} STANDS\n"
+        f"## DW-2\nstatus: open\nverified: {_POST} STANDS `chain.py:4344`\n"
+        "## DW-3\nstatus: open\nsummary: never re-checked\n",
+    )
+
+    assert [(f.evidence["project"], f.evidence["id"], f.evidence["uncited_lines"]) for f in _uncited(findings)] == [
+        ("proj", "DW-1", 1)
+    ]
+
+
+def test_grandfathered_count_sums_across_projects(tmp_path: Path) -> None:
+    """The OK finding carries the FLEET-wide grandfathered count: one project's
+    bare pre-cutoff lines are added to the next's, never replaced by them."""
+    _write_baseline(tmp_path, {})
+    _write_tracked(tmp_path, "alpha", f"## DW-a-1\nstatus: open\nverified: {_PRE} STANDS\n")
+    _write_tracked(
+        tmp_path,
+        "beta",
+        f"## DW-b-1\nstatus: open\nverified: {_PRE} STANDS\n## DW-b-2\nstatus: open\nverified: {_PRE} still-open\n",
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].check == "deferred-work"
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence["grandfathered_uncited_verified_lines"] == 3
+
+
+def test_ok_message_carries_the_grandfathered_count_only_when_nonzero(tmp_path: Path) -> None:
+    """The plain-text CLI line prints ``message`` alone, so the count must be
+    in it -- and a clean tree's message stays byte-identical."""
+    clean = _gather_verified(tmp_path, f"## DW-x-1\nstatus: open\nverified: {_POST} STANDS `chain.py:4344`\n")
+    assert clean[0].message == "every Tier-3 deferral has a tracked twin"
+
+    grandfathered = _gather_verified(
+        tmp_path,
+        f"## DW-x-1\nstatus: open\nverified: {_PRE} STANDS\n## DW-x-2\nstatus: open\nverified: {_PRE} STANDS\n",
+    )
+    assert grandfathered[0].status is DoctorStatus.OK
+    assert grandfathered[0].message == (
+        "every Tier-3 deferral has a tracked twin (2 pre-cutoff verified: lines cite nothing; grandfathered)"
+    )
+
+
 def test_a_line_with_no_leading_date_is_neither_failed_nor_counted(tmp_path: Path) -> None:
     """Design Notes: it already reads as never-verified in 11.1 -- the live
     ledgers carry ``verified: Story ...`` and ``verified: The ...`` lines."""
@@ -2836,6 +2887,11 @@ def test_a_bare_post_cutoff_line_does_not_hide_another_findings_kind(tmp_path: P
         "FIXED `cmd` exit status 3",
         "FIXED `cmd` rc=0",
         "FIXED `a` and `b` exit 0",
+        "FIXED `cmd`. Exit 0",
+        "FIXED `cmd` EXIT CODE 1",
+        "FIXED `cmd` exited with code 1",
+        "FIXED `cmd` exited with 1",
+        "FIXED `cmd` exit_code 0",
     ],
 )
 def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code(raw: str) -> None:
@@ -2853,6 +2909,8 @@ def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code
         "FIXED `pytest -q`",
         "FIXED `pytest -q` exit",
         "FIXED exit 0 with no quoted command",
+        "FIXED `cmd` returned 0",
+        "FIXED `cmd` returns 0",
         "FIXED `pytest -q` was run; see `notes` for the outcome and a long gap before the final exit 0",
     ],
 )

@@ -4182,12 +4182,15 @@ def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
                 ),
             )
         scanned = [p.name for p in projects_dir.iterdir() if p.is_dir() and (p / TIER3_REL).is_file()]
+        message = "every Tier-3 deferral has a tracked twin"
+        if grandfathered:
+            message += f" ({grandfathered} pre-cutoff verified: lines cite nothing; grandfathered)"
         return (
             Finding(
                 source=Source.DEFERRED_WORK,
                 check="deferred-work",
                 status=DoctorStatus.OK,
-                message="every Tier-3 deferral has a tracked twin",
+                message=message,
                 evidence={
                     "projects_scanned": len(scanned),
                     "grandfathered_uncited_verified_lines": grandfathered,
@@ -4413,8 +4416,9 @@ def _parse_verified_date(raw: str) -> date | None:
 #: never failed (no ledger line is rewritten). It is 2026-10-02, not the
 #: story's landing day: measured 2026-10-01 over the eight tracked ledgers,
 #: 937 `verified:` lines carry that date (the deferral burn-down's bulk pass)
-#: and 373 of them cite nothing, so a 2026-10-01 cutoff would red `main`. The
-#: first day after the burn-down is the earliest cutoff that does not.
+#: and 374 of them cite nothing (measured with the shipped predicate), so a
+#: 2026-10-01 cutoff would red `main`. The first day after the burn-down is
+#: the earliest cutoff that does not.
 VERIFIED_CITATION_CUTOFF = date(2026, 10, 2)
 
 #: A `path:line` reference -- `<path>.<ext>:<n>` or `<path>.<ext>:<n>-<m>` --
@@ -4425,12 +4429,18 @@ VERIFIED_CITATION_CUTOFF = date(2026, 10, 2)
 _VERIFIED_PATH_LINE_RE = re.compile(r"(?<!\w)[\w./-]*\w\.[A-Za-z][A-Za-z0-9]*:\d+(?:-\d+)?")
 
 #: A backtick-quoted command followed (within a short gap, so `` `cmd` -> exit
-#: 0 `` and `` `cmd` (exit code 1) `` both count) by its exit code: `exit 0`,
-#: `exits 2`, `exited 1`, `exit code 1`, `exit status 0`, `exit=0`, `rc=0` or
-#: `returncode 1`. The gap and the command span never cross a backtick or a
-#: newline, so the exit code must belong to the quoted command it follows.
+#: 0 `` and `` `cmd` (exit code 1) `` both count) by an exit code: `exit 0`,
+#: `exits 2`, `exited 1`, `exited with 1`, `exited with code 1`, `exit code 1`,
+#: `exit_code 1`, `exit status 0`, `exit=0` (any letter case; scoped `(?i:...)`
+#: around the `exit` forms only), `rc=0` or `returncode 1` (both
+#: case-sensitive). This is a PROXIMITY heuristic, not a proof that the code
+#: belongs to the quoted command: the gap and the command span never cross a
+#: backtick or a newline, and the exit token must sit within 24 characters of
+#: a closing backtick, but nothing ties it to that span's command.
 _VERIFIED_COMMAND_EXIT_RE = re.compile(
-    r"`[^`\n]+`[^`\n]{0,24}?\b(?:exit(?:ed|s)?(?:[ -]?(?:code|status))?|rc|returncode)\b\s*[=:]?\s*\d+"
+    r"`[^`\n]+`[^`\n]{0,24}?\b"
+    r"(?:(?i:exit(?:ed\s+with(?:\s+code)?|ed|s)?(?:[ _-]?(?:code|status))?)|rc|returncode)"
+    r"\b\s*[=:]?\s*\d+"
 )
 
 
