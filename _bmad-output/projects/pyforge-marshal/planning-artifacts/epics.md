@@ -8112,6 +8112,23 @@ block, is still reported
 **And** `drain --plan` for 73.2 reports no MRS-DRAINPLAN-002; scanning the intent contract again fails the new test
 (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
+### Story 81.3: The campaign supervisor keeps --retry-environment-blocks across its cycles
+
+As the operator who launched a campaign with `--retry-environment-blocks`,
+I want every later cycle the detached supervisor runs to keep skipping environment-classified blocks,
+So that one transient launch failure does not stop the whole campaign after its first cycle.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 22.11 (FR-193 CAP-10: a campaign's scoping flags are threaded
+through every supervised tick) • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`
+(`_spawn_campaign_supervisor`, `run_fleet_drain`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/`
+(the argv it parses), `src/shared/packages/pyforge-marshal/tests/unit/` (the campaign-supervisor tests)
+**Given** a campaign launched with `--retry-environment-blocks` whose first cycle skipped an environment-blocked story
+**When** the detached campaign supervisor runs its next cycle
+**Then** that cycle runs with `retry_environment_blocks` true and skips the same story again, and the campaign goes on to the
+next eligible story
+**And** a campaign launched without the flag is unchanged; dropping the flag from the spawn argv again fails the new test
+(mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
