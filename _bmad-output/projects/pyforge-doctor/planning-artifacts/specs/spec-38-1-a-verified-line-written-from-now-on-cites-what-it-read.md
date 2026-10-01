@@ -2,16 +2,37 @@
 title: "38.1: A `verified:` line written from now on cites what it read"
 type: 'fix'
 created: '2026-10-01'
-status: 'in-review'
+status: 'done'
 baseline_revision: '731f299611bd290e1d3d7040e7a30d864b00b6b1'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - docs/dreams/pyforge-doctor.md
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
-deferred: []
+deferred:
+  - summary: >-
+      The sanctioned `verified:` writer appends lines the new rule FAILs: it has no citation check.
+    evidence: |-
+      `_validate_project_batch` checks verdict vocabulary, non-empty single-line evidence, id existence and a verbatim restatement of the entry's own prose, nothing else; `_format_verified_line` then writes `verified: <date> — <verdict> — <evidence>`. From 2026-10-02 a verdicts file whose evidence is `STANDS` applies cleanly and the next `deferred-work-check` FAILs on that entry. The writer predates the rule and this diff leaves it untouched. Its own docstring forbids importing `chain.py` (it duplicates the one regex it needs), so aligning it means a duplicated predicate or a reviewed change to that convention, plus its own tests and surface reconcile.
+    location: >-
+      scripts/apply_verification_verdicts.py:231
+    severity: medium
+  - summary: >-
+      The `path:line` grammar rejects extensionless and anchor-style citations that the ledgers already use.
+    evidence: |-
+      `_VERIFIED_PATH_LINE_RE` requires `<path>.<ext>:<n>`, as the intent states, so `Containerfile:146`, `.gitignore:948`, `scripts/container-gates:144`, `chain.py:L4344` and `chain.py#L4344` read as bare; 13 lines dated 2026-10-01 use the extensionless style and are grandfathered by date, but a post-cutoff line written that way FAILs. Widening it changes the grammar the intent fixes, so it needs a spec change by someone who owns the contract, not a patch here. The FAIL message names the accepted forms and a command with its exit code is a ready workaround.
+    location: >-
+      src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:4429
+    severity: medium
+  - summary: >-
+      The `deferred-work-check` and `due-for-verification-check` task descriptions do not say a `verified:` line must cite what it read.
+    evidence: |-
+      The `due-for-verification-check` description tells an agent to append a fresh `verified: <date> — ...` line with no citation requirement, and the `deferred-work-check` description does not mention the new FAIL, so an agent that follows either verbatim writes a line the gate rejects from 2026-10-02. A `pixi.toml` edit regenerates `environment.yaml` and fires every station suite, so it is not folded into a `fix` of this size.
+    location: >-
+      pixi.toml:1184
+    severity: low
 declared_low_risk: false
 ---
 
