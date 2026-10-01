@@ -21,6 +21,7 @@ than a collection error wherever `langflow` isn't installed.
 from __future__ import annotations
 
 import asyncio
+import os
 from http import HTTPStatus
 
 import pytest
@@ -132,6 +133,54 @@ def test_lifespan_keeps_langflow_services_live_across_requests():
     # down before this request ever landed, so both calls would fail.
     assert second.status_code == HTTPStatus.OK, second.text
     assert second.json()["status"] == "ok"
+
+
+def test_auto_login_hands_out_no_token_through_the_platform():
+    """Story 78.1 / CAP-99 (DW-FU-11-1): `config/asgi.py` forwards every
+    `/langflow/...` request into Langflow with no platform-side gate, and
+    Langflow's own default (`AUTO_LOGIN=True`) answers
+    `GET /api/v1/auto_login` with a bearer token for the bootstrap superuser,
+    no credentials needed. Settings force auto-login off, so through the real
+    `config.asgi.application` dispatch and a real lifespan (the route needs
+    Langflow's database service) the probe must be refused -- and the same
+    stack must still honour the credentialed login, so the refusal is the
+    setting and not a dead app.
+    """
+    from langflow_integration.asgi import _LifespanManager  # noqa: PLC0415
+
+    async def _call():
+        async with _LifespanManager(application):
+            transport = ASGITransport(app=application)
+            base_url = "http://testserver"
+            async with AsyncClient(transport=transport, base_url=base_url) as client:
+                probe = await client.get("/langflow/api/v1/auto_login")
+                wrong = await client.post(
+                    "/langflow/api/v1/login",
+                    data={"username": _superuser(), "password": "not-the-password"},
+                )
+                right = await client.post(
+                    "/langflow/api/v1/login",
+                    data={
+                        "username": _superuser(),
+                        "password": os.environ["LANGFLOW_SUPERUSER_PASSWORD"],
+                    },
+                )
+                return probe, wrong, right
+
+    probe, wrong, right = asyncio.run(_call())
+
+    assert probe.status_code == HTTPStatus.FORBIDDEN, probe.text
+    assert "access_token" not in probe.text
+    assert "access_token_lf" not in probe.cookies
+    assert probe.json()["detail"]["auto_login"] is False
+    assert wrong.status_code == HTTPStatus.UNAUTHORIZED, wrong.text
+    assert right.status_code == HTTPStatus.OK, right.text
+    assert right.json()["access_token"]
+
+
+def _superuser() -> str:
+    # Langflow's own default username when LANGFLOW_SUPERUSER is not configured.
+    return os.environ.get("LANGFLOW_SUPERUSER", "langflow")
 
 
 def test_lifespan_startup_failure_rolls_back_already_started_subapp(monkeypatch):

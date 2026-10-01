@@ -37,6 +37,7 @@ physical database they're looking at, regardless of test execution order.
 from __future__ import annotations
 
 import asyncio
+import os
 from http import HTTPStatus
 
 import pytest
@@ -149,10 +150,12 @@ async def _run_flow_over_http() -> str:
     """Drive a real `/api/v1/run/<flow-id>` call through Langflow's own ASGI
     app and return the flow id, so the caller can inspect what it wrote.
 
-    Auth: `LANGFLOW_AUTO_LOGIN` defaults to `True` (dev-mode bootstrap), so
-    `GET /api/v1/auto_login` mints a real bearer token for the default
-    superuser with no password needed -- used to create the flow and mint a
-    real API key, which is what `/api/v1/run/<flow-id>` itself requires
+    Auth: `config/settings/base.py` forces `LANGFLOW_AUTO_LOGIN` off (Story
+    78.1 -- auto-login hands any caller a superuser token), so the token comes
+    from a real `POST /api/v1/login` as the env-configured superuser
+    (`LANGFLOW_SUPERUSER` / `LANGFLOW_SUPERUSER_PASSWORD`; the password is
+    required for Langflow to start at all). It is used to create the flow and
+    mint a real API key, which is what `/api/v1/run/<flow-id>` itself requires
     (it's API-key-secured, a different dependency than the cookie/bearer
     session auth the rest of the API uses).
     """
@@ -167,7 +170,14 @@ async def _run_flow_over_http() -> str:
         transport = ASGITransport(app=langflow_application)
         base_url = "http://testserver"
         async with AsyncClient(transport=transport, base_url=base_url) as client:
-            login = await client.get("/api/v1/auto_login")
+            login = await client.post(
+                "/api/v1/login",
+                data={
+                    # Langflow's own default username when none is configured.
+                    "username": os.environ.get("LANGFLOW_SUPERUSER", "langflow"),
+                    "password": os.environ["LANGFLOW_SUPERUSER_PASSWORD"],
+                },
+            )
             assert login.status_code == HTTPStatus.OK, login.text
             access_token = login.json()["access_token"]
             headers = {"Authorization": f"Bearer {access_token}"}

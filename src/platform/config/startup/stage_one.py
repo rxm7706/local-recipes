@@ -100,6 +100,16 @@ REQUIRED_SETTINGS: Final[tuple[RequiredSetting, ...]] = (
             "tokens (often the OIDC client id)."
         ),
     ),
+    RequiredSetting(
+        name="LANGFLOW_SUPERUSER_PASSWORD",
+        remedy=(
+            "Set LANGFLOW_SUPERUSER_PASSWORD to the mounted Langflow's superuser "
+            "password (the chart wires it from the existingSecret key of the same "
+            "name; compose from the LANGFLOW_SUPERUSER_PASSWORD env file). Langflow "
+            "auto-login is forced off, so this is the only way in, and Langflow "
+            "refuses an empty or its legacy default password."
+        ),
+    ),
 )
 
 _INVALID_ADMIN_URLS: Final[frozenset[str]] = frozenset(

@@ -60,6 +60,7 @@ def required_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "https://idp.example/realms/platform/protocol/openid-connect/certs",
     )
     monkeypatch.setenv("COMPONENT_OIDC_AUDIENCE", "platform-web")
+    monkeypatch.setenv("LANGFLOW_SUPERUSER_PASSWORD", "unit-test-langflow-password")
 
 
 def _refusal_message() -> str:

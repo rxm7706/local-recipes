@@ -318,6 +318,17 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
     secretKeyRef:
       name: {{ include "platform.existingSecretName" . | quote }}
       key: {{ required "redis.passwordSecretKey is required" .Values.redis.passwordSecretKey | quote }}
+{{- /* Story 78.1 / CAP-99 (DW-FU-11-1): Langflow auto-login is forced off in
+       settings, so the mounted Langflow only starts with a superuser password,
+       and stage 1 refuses a deployed boot without one. NOT optional: a release
+       whose existingSecret lacks the key fails at pod creation instead of
+       booting an app that cannot start its Langflow. A reference, never a value
+       (canopy AD-19). */}}
+- name: LANGFLOW_SUPERUSER_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: LANGFLOW_SUPERUSER_PASSWORD
 {{- /* CAP-18 host assertion signing keypair -- optional: true so a pod
        without them still boots; mint_assertion()/verify_assertion() raise
        AssertionRefusedError until they're present (found running the CAP-3

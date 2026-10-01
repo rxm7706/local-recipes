@@ -483,12 +483,22 @@ requires_docker_compose = pytest.mark.skipif(
 
 
 def _compose(*args: str, timeout: int = 180) -> subprocess.CompletedProcess[str]:
+    # compose.yml demands LANGFLOW_SUPERUSER_PASSWORD (Story 78.1) for every
+    # command, even one aimed at the dbgpt service alone; a throwaway is enough.
+    env = {
+        **os.environ,
+        "LANGFLOW_SUPERUSER_PASSWORD": os.environ.get(
+            "LANGFLOW_SUPERUSER_PASSWORD",
+            "compose-test-throwaway-langflow-pw",
+        ),
+    }
     return subprocess.run(  # noqa: S603 -- fixed argv, no shell, no untrusted input
         ["docker", "compose", "-f", str(_COMPOSE_FILE), *args],  # noqa: S607
         check=False,
         capture_output=True,
         text=True,
         timeout=timeout,
+        env=env,
     )
 
 

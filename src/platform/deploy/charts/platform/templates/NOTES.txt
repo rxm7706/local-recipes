@@ -14,6 +14,8 @@ REQUIRED PRE-CREATED SECRET (this chart never renders one -- AD-12):
     REDIS_PASSWORD     Redis AUTH password (Story 12.6); wired into
                        REDIS_BROKER_URL / REDIS_CACHE_URL / REDIS_URL
                        (broker alias) and --requirepass on both Redis pods.
+    LANGFLOW_SUPERUSER_PASSWORD  The mounted Langflow's superuser password
+                       (Story 78.1; auto-login is off). Required on every platform pod.
 {{- if eq .Values.oidc.profile "bundled" }}
     KEYCLOAK_ADMIN_PASSWORD  Keycloak bootstrap admin (Story 48.9 bundled OIDC).
 {{- end }}

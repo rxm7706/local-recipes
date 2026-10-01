@@ -13,6 +13,11 @@ import pytest
 
 os.environ.setdefault("COMPONENT_RUNTIME", "local")
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")
+# Story 78.1: Langflow auto-login is forced off, so the mounted app only starts
+# with a superuser password from the environment (a deployed boot gets it from a
+# Secret). A throwaway for the lanes that boot Langflow -- a harness value, never
+# a settings default; the stage-1 refusal tests delete it to prove the absence.
+os.environ.setdefault("LANGFLOW_SUPERUSER_PASSWORD", "pytest-throwaway-langflow-pw")
 
 
 @pytest.fixture(autouse=True)
