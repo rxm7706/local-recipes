@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import json
 import subprocess
+from pathlib import Path
 
 import pytest
 
 from pyforge.marshal.adapters import forge_gh as forge_gh_module
 from pyforge.marshal.adapters.forge_gh import GhForge
 from pyforge.marshal.core.egress import Redacted
-from pyforge.marshal.core.landing_checks import CheckRun
+from pyforge.marshal.core.landing_checks import CheckRun, CheckState, classify_check_runs
 from pyforge.marshal.ports.forge import ForgeCommandError, ForgeRef, PrInfo
 
 
@@ -350,8 +351,9 @@ def _recorded_check_run(
 
 
 def test_check_runs_parses_a_recorded_response_into_check_runs(forge, monkeypatch):
-    """The recorded shape of ``GET repos/<repo>/commits/<sha>/check-runs`` (a head with one failed,
-    one in-progress, one skipped and one green run): every run comes back with its status and conclusion."""
+    """A hand-built payload in the real shape of ``GET repos/<repo>/commits/<sha>/check-runs`` (a head
+    with one failed, one in-progress, one skipped and one green run -- the states no real green head
+    records): every run comes back with its status and conclusion. The next test reads a real recording."""
     recorded = {
         "total_count": 4,
         "check_runs": [
@@ -371,6 +373,26 @@ def test_check_runs_parses_a_recorded_response_into_check_runs(forge, monkeypatc
     )
     (argv,) = run.calls
     assert argv == ["gh", "api", "repos/acme/widgets/commits/deadbeefcafe/check-runs?per_page=100&page=1"]
+
+
+def test_check_runs_reads_the_real_github_response_recorded_on_main(forge, monkeypatch):
+    """``tests/fixtures/check_runs_main_2026-10-01.json`` is the unedited answer GitHub gave for
+    ``GET repos/rxm7706/local-recipes/commits/68b35f7e1c.../check-runs`` on 2026-10-01 (4 runs, all
+    completed/success): the adapter reads the real payload, not a hand-built shape, and the
+    classifier calls that head green."""
+    fixture = Path(__file__).resolve().parent.parent / "fixtures" / "check_runs_main_2026-10-01.json"
+    run = _ScriptedRun([_completed([], stdout=fixture.read_text(encoding="utf-8"))])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    runs = forge.check_runs(ForgeRef("rxm7706/local-recipes"), ForgeRef("68b35f7e1cb04295f729647c2d0ee4ff060ab417"))
+    assert [r.name for r in runs] == ["deploy", "scripts-suite", "detectors", "lint-types"]
+    assert all((r.status, r.conclusion) == ("completed", "success") for r in runs)
+    assert classify_check_runs(runs).state is CheckState.GREEN
+    (argv,) = run.calls
+    assert argv == [
+        "gh",
+        "api",
+        "repos/rxm7706/local-recipes/commits/68b35f7e1cb04295f729647c2d0ee4ff060ab417/check-runs?per_page=100&page=1",
+    ]
 
 
 def test_check_runs_answers_empty_when_no_run_is_registered_yet(forge, monkeypatch):
