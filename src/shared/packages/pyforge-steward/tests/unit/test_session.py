@@ -293,7 +293,7 @@ def test_seed_kit_findings_probe_could_not_run(tmp_path: Path, monkeypatch: pyte
     assert kit_finding.ok is False
     assert codegraph_finding.ok is False
     assert "could not run" in kit_finding.detail
-    assert kit_finding.remedy == "pixi run -e pyforge-guild marshal seed kit"
+    assert kit_finding.remedy == "pixi run -e pyforge-guild marshal seed kit --apply"
 
 
 def test_seed_kit_findings_unparseable_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -336,7 +336,7 @@ def test_seed_kit_findings_non_ok_item_fails_kit(tmp_path: Path, monkeypatch: py
     kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
     assert kit_finding.ok is False
     assert "caveman-skill: missing" in kit_finding.detail
-    assert kit_finding.remedy == "pixi run -e pyforge-guild marshal seed kit"
+    assert kit_finding.remedy == "pixi run -e pyforge-guild marshal seed kit --apply"
     # codegraph-index item itself is ok -- independent of the other kit items
     assert codegraph_finding.ok is True
 
@@ -363,7 +363,7 @@ def test_seed_kit_findings_codegraph_stale(tmp_path: Path, monkeypatch: pytest.M
     _kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
     assert codegraph_finding.ok is False
     assert "stale" in codegraph_finding.detail
-    assert codegraph_finding.remedy == "pixi run -e pyforge-guild marshal seed kit"
+    assert codegraph_finding.remedy == "pixi run -e pyforge-guild marshal seed kit --apply"
 
 
 def test_seed_kit_findings_stale_is_named_and_layer_off_is_silent(
@@ -480,7 +480,7 @@ def test_seed_kit_findings_error_envelope_reports_its_message(tmp_path: Path, mo
     assert codegraph_finding.ok is False
     assert "reported a seed error: ManifestError: bad manifest" in kit_finding.detail
     assert kit_finding.detail == codegraph_finding.detail
-    assert kit_finding.remedy == "pixi run -e pyforge-guild marshal seed kit"
+    assert kit_finding.remedy == "pixi run -e pyforge-guild marshal seed kit --apply"
 
 
 @pytest.mark.parametrize(

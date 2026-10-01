@@ -184,7 +184,7 @@ def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
     but never fails the finding (Story 81.1). The same call's ``codegraph-index`` entry
     drives the codegraph-index finding by the same rule.
     """
-    kit_remedy = f"pixi run -e {_DEFAULT_PIXI_ENV} marshal seed kit"
+    kit_remedy = f"pixi run -e {_DEFAULT_PIXI_ENV} marshal seed kit --apply"
     try:
         result = _run_seed_check(root)
     except (OSError, subprocess.TimeoutExpired) as exc:

@@ -5246,6 +5246,26 @@ declared off, or the repo default `"auto"`, which the seed check does not resolv
 **And** an item at `missing`, `stale`, `instrument-unavailable`, a status steward does not know, or a status that is not
 a string still fails both findings, named; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 
+## Epic 82: The session check's kit remedy applies the kit
+
+Minted 2026-10-01 (evening) from the station Dream's entry of the same date and the operator's ruling to fix it now. A
+defect of the session check's remedy text (CAP-5, Story 63.4), so no CAP is minted; a new epic because Epic 81 is `done`.
+
+### Story 82.1: The session check's kit remedy applies the kit
+
+As the operator following a session check's printed remedy,
+I want the `token-kit` and `codegraph-index` remedy to be the command that provisions the kit,
+So that running it clears the finding instead of printing a dry-run plan.
+
+**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** CAP-5 (Story 63.4), CAP-162 • **Surface:**
+`src/shared/packages/pyforge-steward/src/pyforge/steward/session.py` (`_seed_kit_findings`),
+`src/shared/packages/pyforge-steward/tests/unit/test_session.py`
+**Given** a kit item at `missing` or `stale` (the states `marshal seed kit --apply` provisions; an
+`instrument-unavailable` item needs its instrument installed, which `--apply` skips)
+**When** `steward session check` reports `token-kit` or `codegraph-index` non-ok
+**Then** the finding's remedy reads `pixi run -e pyforge-guild marshal seed kit --apply`
+**And** `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
