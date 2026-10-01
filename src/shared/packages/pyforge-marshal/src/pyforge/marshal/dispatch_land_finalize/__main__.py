@@ -2,7 +2,9 @@
 
 Spawned as a subprocess by ``dispatch_land`` so ``dispatch_supervisor`` never
 imports ``cli/`` (AD-9). Composes ``deploy promote`` + ``land``'s sprint
-ledger promotion machinery.
+ledger promotion machinery, then (Story 79.1) carries the promotion to the two
+files that machinery never reached: the story's Tier-3 feed row and its
+tracked spec.
 """
 
 from __future__ import annotations
@@ -338,7 +340,8 @@ def finalize_dispatch_land(
     ``worktree`` (Story 51.2), when given, is the dispatch worktree the
     session actually ran in -- its own Tier-3 ``implementation-artifacts/``
     is scanned alongside the primary checkout's, in case the session wrote
-    its spec there instead. ``None`` (the default) scans only the primary."""
+    its spec there instead; it is also the second place the tracked spec is
+    looked for (Story 79.1). ``None`` (the default) scans only the primary."""
     root = repo_root()
     fs = LocalFs()
     vcs = GitVcs()
