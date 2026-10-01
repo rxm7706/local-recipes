@@ -148,7 +148,7 @@ def _json_request(
         ) as response:
             body = response.read().decode()
     except urllib.error.HTTPError as exc:
-        if exc.code == HTTPStatus.UNAUTHORIZED:
+        if exc.code >= 400:
             raise _AccessTokenRejectedError from exc
         logger.warning(failed_event, error=str(exc))
         return None
@@ -205,7 +205,8 @@ def _refresh_access_token(user: object) -> str | None:
     stored (winner's) token serves the next request.
     """
     row = _latest_token_row(user)
-    if row is None:
+    if row is None or not row.token_secret:
+        logger.warning("authorization.token_refresh_unavailable")
         return None
     client = _oidc_client()
     url = token_endpoint_url()
