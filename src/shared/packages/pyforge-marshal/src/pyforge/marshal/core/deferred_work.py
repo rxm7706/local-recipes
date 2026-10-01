@@ -449,9 +449,11 @@ def open_followup_review_id(ledger_text: str, story_key: StoryKey | str) -> str 
 
 def close_followup_review_row(ledger_text: str, dw_id: str, *, resolved_date: str, landing: str) -> str | None:
     """``ledger_text`` with the open ``DW-FRR-<story>`` row ``dw_id`` rendered closed (Story 73.1): its
-    ``status: open`` line becomes ``resolved: <date> (dispatch-land finalize: <landing>)`` above
-    ``status: closed`` (the order the ledger's closed rows already use), at the status line's own indent.
-    ``landing`` is the merge sha or subject that closed it, collapsed onto one line.
+    ``status: open`` line becomes the two lines ``resolved: <date> (dispatch-land finalize: <landing>)`` and
+    ``status: closed``, both at the status line's own indent. The contract prescribes the two fields, not
+    their order (the ledger's other closed rows put ``status:`` first and name the closure ``resolution:``,
+    its ``status: resolved`` rows put ``resolved:`` first); ``resolved:`` leads here. ``landing`` is the
+    merge sha or subject that closed it, collapsed onto one line.
 
     ``None`` when no row headed ``dw_id`` reads ``open`` -- absent, already closed or only mentioned in
     prose -- so a re-run of finalize closes nothing twice. Only the first open row of that id is closed.

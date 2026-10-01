@@ -928,10 +928,10 @@ def execute_dispatch_land(
             return None
         return promotion.read_spec_status(spec_text)
 
-    merged_keys = promotion.corroborated_merged_story_keys(
-        main_subjects, template, project_slug, spec_status_for=_spec_status_for
-    )
     if followup_review is None:
+        merged_keys = promotion.corroborated_merged_story_keys(
+            main_subjects, template, project_slug, spec_status_for=_spec_status_for
+        )
         already_landed = key in merged_keys
     else:
         # Story 73.1 (CAP-281): the story's own merge subject is on `origin/main` from its FIRST landing, so

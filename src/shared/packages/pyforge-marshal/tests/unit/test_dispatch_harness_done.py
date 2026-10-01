@@ -139,22 +139,38 @@ def test_is_followup_review_spec_is_the_pairing_the_relaunch_gate_lets_through()
     assert is_followup_review_spec(text) is True
 
 
+_TIP = "0123456789abcdef0123456789abcdef01234567"
+
+
 def test_followup_review_round_trips_through_the_launch_intent_payload() -> None:
-    marker = FollowupReview(dw_id="DW-FRR-51-2")
-    assert marker.to_intent_payload() == {"followup_review": {"dw_id": "DW-FRR-51-2"}}
+    marker = FollowupReview(dw_id="DW-FRR-51-2", launch_origin_main_sha=_TIP)
+    assert marker.to_intent_payload() == {
+        "followup_review": {"dw_id": "DW-FRR-51-2"},
+        "launch_origin_main_sha": _TIP,
+    }
     assert FollowupReview.from_intent_payload({"story_key": "51.2", **marker.to_intent_payload()}) == marker
 
 
 def test_followup_review_without_a_row_round_trips_a_null_id() -> None:
-    marker = FollowupReview(dw_id=None)
-    assert marker.to_intent_payload() == {"followup_review": {"dw_id": None}}
-    assert FollowupReview.from_intent_payload(marker.to_intent_payload()) == FollowupReview(dw_id=None)
-    assert FollowupReview() == FollowupReview(dw_id=None)
+    marker = FollowupReview(dw_id=None, launch_origin_main_sha=_TIP)
+    assert marker.to_intent_payload() == {"followup_review": {"dw_id": None}, "launch_origin_main_sha": _TIP}
+    assert FollowupReview.from_intent_payload(marker.to_intent_payload()) == marker
+    assert FollowupReview() == FollowupReview(dw_id=None, launch_origin_main_sha=None)
+
+
+def test_followup_review_records_the_launch_tip_beside_the_marker_not_inside_it() -> None:
+    """The launch tip is its own INTENT key (the spec's wording), read back into the one marker type."""
+    payload = FollowupReview(dw_id="DW-FRR-51-2", launch_origin_main_sha=_TIP).to_intent_payload()
+    assert payload["followup_review"] == {"dw_id": "DW-FRR-51-2"}
+    assert payload["launch_origin_main_sha"] == _TIP
+    assert FollowupReview.from_intent_payload(payload) == FollowupReview("DW-FRR-51-2", _TIP)
 
 
 def test_a_launch_payload_without_the_marker_is_a_normal_run() -> None:
     assert FollowupReview.from_intent_payload({"story_key": "51.2", "model": "x"}) is None
     assert FollowupReview.from_intent_payload({}) is None
+    # A tip alone is not a marker: only a mapping under `followup_review` marks a follow-up run.
+    assert FollowupReview.from_intent_payload({"launch_origin_main_sha": _TIP}) is None
 
 
 def test_a_malformed_marker_never_reads_a_row_id_out_of_a_non_string() -> None:
@@ -163,3 +179,9 @@ def test_a_malformed_marker_never_reads_a_row_id_out_of_a_non_string() -> None:
     assert FollowupReview.from_intent_payload({"followup_review": {"dw_id": 7}}) == FollowupReview(dw_id=None)
     assert FollowupReview.from_intent_payload({"followup_review": {"dw_id": ""}}) == FollowupReview(dw_id=None)
     assert FollowupReview.from_intent_payload({"followup_review": {}}) == FollowupReview(dw_id=None)
+
+
+def test_a_malformed_launch_tip_reads_as_unrecorded() -> None:
+    for tip in (7, "", None, ["x"]):
+        marker = FollowupReview.from_intent_payload({"followup_review": {"dw_id": None}, "launch_origin_main_sha": tip})
+        assert marker == FollowupReview(dw_id=None, launch_origin_main_sha=None)
