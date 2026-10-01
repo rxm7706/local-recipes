@@ -16,12 +16,13 @@ verdict raises ``_LoopGuard`` instead of hanging the suite.
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.adapters.fs_local import FsError
-from pyforge.marshal.adapters.vcs_git import VcsCommandError
+from pyforge.marshal.adapters.fs_local import FsError, LocalFs
+from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import DispatchGitFacts, DispatchSessionVerdict
 from pyforge.marshal.core.dispatch_harness_done import FollowupReview
@@ -3130,31 +3131,42 @@ def test_journal_heartbeat_returns_the_next_counter_and_survives_a_journal_failu
 # ==========================================================================
 
 _FOLLOWUP_DW_ID = "DW-FRR-51-11"
+#: ``origin/main``'s tip the run's launch INTENT recorded -- the story's first merge is at or before it.
+_LAUNCH_TIP = "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d"
+_TIP_RANGE = f"{_LAUNCH_TIP}..{ORIGIN_MAIN}"
 _BASELINE_RANGE = f"{_BASELINE}..{ORIGIN_MAIN}"
+_FOLLOWUP = FollowupReview(dw_id=_FOLLOWUP_DW_ID, launch_origin_main_sha=_LAUNCH_TIP)
 _DONE_SPEC_TEXT = "---\nstatus: done\nfollowup_review_recommended: false\n---\n\n## Intent\n\nReviewed.\n"
 
 
-def _followup_launch_line(dw_id: str | None = _FOLLOWUP_DW_ID, *, run_id: str = _RUN_ID) -> str:
+def _followup_launch_line(
+    dw_id: str | None = _FOLLOWUP_DW_ID, *, run_id: str = _RUN_ID, tip: str | None = _LAUNCH_TIP
+) -> str:
     """The launch INTENT ``dispatch_once`` journals for a follow-up review run (the marker beside the usual facts)."""
     return _line(
         kind=dispatch_core.KIND_DISPATCH_LAUNCH,
         phase=Phase.INTENT,
-        payload={"story_key": _STORY_KEY, **FollowupReview(dw_id=dw_id).to_intent_payload()},
+        payload={
+            "story_key": _STORY_KEY,
+            **FollowupReview(dw_id=dw_id, launch_origin_main_sha=tip).to_intent_payload(),
+        },
         counter=0,
         run_id=run_id,
     )
 
 
 def _first_landing_vcs(*, own_merge: bool = False, **kwargs: object) -> FakeVcs:
-    """``origin/main`` carries the story's FIRST merge (it is in the whole history, and an ancestor of the
-    run's baseline, so it is not in ``<baseline>..origin/main``); the run's own merge shows there only when
-    ``own_merge``. The run's branch is never reported merged by ancestry."""
+    """The reused pre-merge worktree (attempt 1's G1): ``origin/main`` carries the story's FIRST merge, and so
+    does ``<baseline>..origin/main``, because the surviving worktree's baseline predates that merge. Only
+    ``<launch tip>..origin/main`` is free of it -- and holds the run's own merge when ``own_merge``. The run's
+    branch is never reported merged by ancestry."""
     branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
     return FakeVcs(
         branches=frozenset({branch}),
         subjects_by_ref={
             ORIGIN_MAIN: (_PR_MERGE_SUBJECT,),
-            _BASELINE_RANGE: (_PR_MERGE_SUBJECT,) if own_merge else (),
+            _BASELINE_RANGE: (_PR_MERGE_SUBJECT,),
+            _TIP_RANGE: (_PR_MERGE_SUBJECT,) if own_merge else (),
         },
         merged_into_refs=frozenset(),
         spec_at_ref=_SPEC_DONE,
@@ -3188,13 +3200,24 @@ def _folded(tmp_path: Path, lines: tuple[str, ...]):
 def test_followup_review_is_read_off_the_launch_intent(tmp_path: Path) -> None:
     folded = _folded(tmp_path, (_followup_launch_line(),))
 
-    assert supervisor_main._followup_review_from_launch(folded, _RUN_ID) == FollowupReview(dw_id=_FOLLOWUP_DW_ID)
+    assert supervisor_main._followup_review_from_launch(folded, _RUN_ID) == _FOLLOWUP
+
+
+def test_followup_review_carries_the_launch_tip_the_intent_recorded(tmp_path: Path) -> None:
+    folded = _folded(tmp_path, (_followup_launch_line(tip="f" * 40),))
+
+    marker = supervisor_main._followup_review_from_launch(folded, _RUN_ID)
+
+    assert marker is not None
+    assert marker.launch_origin_main_sha == "f" * 40
 
 
 def test_followup_review_without_a_row_is_still_a_marker(tmp_path: Path) -> None:
     folded = _folded(tmp_path, (_followup_launch_line(None),))
 
-    assert supervisor_main._followup_review_from_launch(folded, _RUN_ID) == FollowupReview(dw_id=None)
+    assert supervisor_main._followup_review_from_launch(folded, _RUN_ID) == FollowupReview(
+        dw_id=None, launch_origin_main_sha=_LAUNCH_TIP
+    )
 
 
 def test_a_launch_without_the_marker_is_a_normal_run(tmp_path: Path) -> None:
@@ -3209,10 +3232,12 @@ def test_another_runs_marker_is_not_this_runs(tmp_path: Path) -> None:
     assert supervisor_main._followup_review_from_launch(folded, _RUN_ID) is None
 
 
-# -- gather_dispatch_git_facts: the baseline scope ---------------------------------------------------
+# -- gather_dispatch_git_facts: the launch-tip scope -------------------------------------------------
 
 
-def _gather_followup(repo_root: Path, worktree: Path, vcs: FakeVcs, *, followup_review: bool) -> DispatchGitFacts:
+def _gather_followup(
+    repo_root: Path, worktree: Path, vcs: FakeVcs, *, followup_review: FollowupReview | None
+) -> DispatchGitFacts:
     return supervisor_main.gather_dispatch_git_facts(
         vcs,
         fs=FakeFs(),
@@ -3226,16 +3251,21 @@ def _gather_followup(repo_root: Path, worktree: Path, vcs: FakeVcs, *, followup_
     )
 
 
+def _commit_subject_reads(vcs: FakeVcs) -> list[tuple[str, ...]]:
+    return [call for call in vcs.calls if call[0] == "commit_subjects"]
+
+
 def test_gather_git_facts_for_a_follow_up_ignores_the_stories_first_merge(tmp_path: Path) -> None:
     repo_root = _repo(tmp_path)
     worktree = _worktree(repo_root)
     _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
     vcs = _first_landing_vcs(head_sha=_MOVED)
 
-    facts = _gather_followup(repo_root, worktree, vcs, followup_review=True)
+    facts = _gather_followup(repo_root, worktree, vcs, followup_review=_FOLLOWUP)
 
     assert facts.story_merged_on_main is False
-    assert [call for call in vcs.calls if call[0] == "commit_subjects"] == [("commit_subjects", _BASELINE_RANGE)]
+    # Scoped to the launch tip: neither the whole ref nor the (stale) baseline range is ever asked for.
+    assert _commit_subject_reads(vcs) == [("commit_subjects", _TIP_RANGE)]
 
 
 def test_gather_git_facts_for_a_follow_up_counts_its_own_merge(tmp_path: Path) -> None:
@@ -3244,10 +3274,23 @@ def test_gather_git_facts_for_a_follow_up_counts_its_own_merge(tmp_path: Path) -
     _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
 
     facts = _gather_followup(
-        repo_root, worktree, _first_landing_vcs(own_merge=True, head_sha=_MOVED), followup_review=True
+        repo_root, worktree, _first_landing_vcs(own_merge=True, head_sha=_MOVED), followup_review=_FOLLOWUP
     )
 
     assert facts.story_merged_on_main is True
+
+
+def test_gather_git_facts_for_a_follow_up_with_no_recorded_tip_counts_no_merge(tmp_path: Path) -> None:
+    """An INTENT that recorded no tip cannot scope the read, so nothing is countable (never the whole ref)."""
+    repo_root = _repo(tmp_path)
+    worktree = _worktree(repo_root)
+    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
+    vcs = _first_landing_vcs(head_sha=_MOVED)
+
+    facts = _gather_followup(repo_root, worktree, vcs, followup_review=FollowupReview(dw_id=_FOLLOWUP_DW_ID))
+
+    assert facts.story_merged_on_main is False
+    assert _commit_subject_reads(vcs) == []
 
 
 def test_gather_git_facts_for_a_normal_run_reads_origin_main_whole(tmp_path: Path) -> None:
@@ -3257,10 +3300,10 @@ def test_gather_git_facts_for_a_normal_run_reads_origin_main_whole(tmp_path: Pat
     _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
     vcs = _first_landing_vcs(head_sha=_MOVED)
 
-    facts = _gather_followup(repo_root, worktree, vcs, followup_review=False)
+    facts = _gather_followup(repo_root, worktree, vcs, followup_review=None)
 
     assert facts.story_merged_on_main is True
-    assert [call for call in vcs.calls if call[0] == "commit_subjects"] == [("commit_subjects", ORIGIN_MAIN)]
+    assert _commit_subject_reads(vcs) == [("commit_subjects", ORIGIN_MAIN)]
 
 
 def test_gather_git_facts_defaults_to_a_normal_run(tmp_path: Path) -> None:
@@ -3270,13 +3313,85 @@ def test_gather_git_facts_defaults_to_a_normal_run(tmp_path: Path) -> None:
     vcs = _first_landing_vcs(head_sha=_MOVED)
 
     assert _gather(repo_root, worktree, vcs).story_merged_on_main is True
-    assert [call for call in vcs.calls if call[0] == "commit_subjects"] == [("commit_subjects", ORIGIN_MAIN)]
+    assert _commit_subject_reads(vcs) == [("commit_subjects", ORIGIN_MAIN)]
+
+
+# -- gather_dispatch_git_facts against real git: attempt 1's G1 reproduction ---------------------------
+
+
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True).stdout.strip()
+
+
+def test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_the_launch_tip_against_real_git(
+    tmp_path: Path,
+) -> None:
+    """The story landed once, its dispatch worktree survived at the PRE-merge tip, and a follow-up review run
+    was launched into it. Its ``baseline_head_sha`` is not a descendant of the first merge, so a baseline scope
+    would count that merge and read the run COMPLETED on its first tick. The launch tip does not."""
+    remote, clone = tmp_path / "remote.git", tmp_path / "clone"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(remote)], check=True)
+    subprocess.run(["git", "clone", "-q", str(remote), str(clone)], check=True, capture_output=True)
+    _git(clone, "config", "user.email", "t@example.com")
+    _git(clone, "config", "user.name", "T")
+    (clone / "README.md").write_text("base\n", encoding="utf-8")
+    _git(clone, "add", "-A")
+    _git(clone, "commit", "-qm", "base")
+    _git(clone, "push", "-q", "origin", "main")
+    # The templated merge subject corroborates through the station's own ledger (Story 35.1).
+    ledger = clone / "_bmad-output" / "projects" / _SLUG / "planning-artifacts" / "sprint-status-ledger.yaml"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text("development_status:\n  51-11-halt: done\n", encoding="utf-8")
+
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    worktree = dispatch_core.dispatch_worktree_path(clone, _SLUG, _STORY_KEY)
+    worktree.parent.mkdir(parents=True, exist_ok=True)
+    _git(clone, "worktree", "add", "-q", "-b", branch, str(worktree), "main")
+    pre_merge_baseline = _git(worktree, "rev-parse", "HEAD")
+
+    # The story's FIRST landing reaches origin/main; the surviving worktree stays behind it.
+    first_merge = _TEMPLATE.format(slug=_SLUG, key=_STORY_KEY)
+    _git(clone, "commit", "--allow-empty", "-qm", first_merge)
+    _git(clone, "push", "-q", "origin", "main")
+    launch_tip = _git(clone, "rev-parse", ORIGIN_MAIN)
+    marker = FollowupReview(dw_id=_FOLLOWUP_DW_ID, launch_origin_main_sha=launch_tip)
+    vcs = GitVcs()
+
+    def facts(followup_review: FollowupReview | None) -> DispatchGitFacts:
+        return supervisor_main.gather_dispatch_git_facts(
+            vcs,
+            fs=LocalFs(),
+            repo_root=clone,
+            worktree=worktree,
+            story_key=_STORY_KEY,
+            project_slug=_SLUG,
+            baseline_head_sha=pre_merge_baseline,
+            merge_subject_template=_TEMPLATE,
+            followup_review=followup_review,
+        )
+
+    # The premise: the reused worktree's baseline range still holds the first merge, and a normal run reads it.
+    assert first_merge in _git(clone, "log", "--format=%s", f"{pre_merge_baseline}..{ORIGIN_MAIN}")
+    assert facts(None).story_merged_on_main is True
+    # The follow-up is not fooled by it ...
+    assert facts(marker).story_merged_on_main is False
+    # ... and still sees its own merge, which reaches origin/main after the launch tip.
+    (worktree / "review.md").write_text("reviewed\n", encoding="utf-8")
+    _git(worktree, "add", "-A")
+    _git(worktree, "commit", "-qm", "review: patch")
+    _git(clone, "merge", "--no-ff", "-q", branch, "-m", first_merge)
+    _git(clone, "push", "-q", "origin", "main")
+    own_merge = facts(marker)
+    assert own_merge.story_merged_on_main is True
+    assert own_merge.branch_merged is True
 
 
 # -- _spec_land_block_reason: a follow-up's spec-only diff is its record -------------------------------
 
 
-def _followup_block_reason(repo_root: Path, worktree: Path, git: DispatchGitFacts, *, followup_review: bool):
+def _followup_block_reason(
+    repo_root: Path, worktree: Path, git: DispatchGitFacts, *, followup_review: FollowupReview | None
+):
     return supervisor_main._spec_land_block_reason(
         fs=FakeFs(),
         repo_root=repo_root,
@@ -3294,10 +3409,10 @@ def test_spec_land_block_reason_lets_a_follow_up_review_land_a_spec_only_diff(tm
     relative = _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
     spec_only = _git_facts(changed=(relative,))
 
-    assert _followup_block_reason(repo_root, worktree, spec_only, followup_review=True) is None
+    assert _followup_block_reason(repo_root, worktree, spec_only, followup_review=_FOLLOWUP) is None
     # The same diff on a normal run is still narration (Story 51.4).
     assert (
-        _followup_block_reason(repo_root, worktree, spec_only, followup_review=False)
+        _followup_block_reason(repo_root, worktree, spec_only, followup_review=None)
         == "harness produced no changes beyond the tracked spec"
     )
 
@@ -3307,7 +3422,7 @@ def test_spec_land_block_reason_still_blocks_a_follow_up_whose_spec_reads_blocke
     worktree = _worktree(repo_root)
     relative = _seed_spec(repo_root, worktree, primary=_BLOCKED_SPEC_TEMPLATE.format(baseline=_BASELINE))
 
-    reason = _followup_block_reason(repo_root, worktree, _git_facts(changed=(relative,)), followup_review=True)
+    reason = _followup_block_reason(repo_root, worktree, _git_facts(changed=(relative,)), followup_review=_FOLLOWUP)
 
     assert reason == "an intent gap the harness could not close"
 
@@ -3318,8 +3433,9 @@ def test_spec_land_block_reason_still_blocks_a_follow_up_whose_spec_reads_blocke
 def test_a_follow_up_run_stays_live_while_only_the_stories_first_merge_is_on_origin_main(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
 ) -> None:
-    """Mutation proof for the baseline scope: with the scope removed (``merge_subject_ref`` answering the
-    whole ref) the first tick reads COMPLETED -- no heartbeat, a ``completed`` publish -- and this fails."""
+    """The reused-worktree fixture: the story's first merge is on ``origin/main`` and in the (stale) baseline
+    range, the run's own branch has not merged, and the first tick is LIVE -- a heartbeat and a sleep, no
+    completion. Removing the launch-tip scope fails this (``test_without_the_launch_tip_scope_...`` below)."""
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
@@ -3340,7 +3456,42 @@ def test_a_follow_up_run_stays_live_while_only_the_stories_first_merge_is_on_ori
     # The run's own branch never merged and it did no work: it ends FAILED, never COMPLETED.
     assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.FAILED.value]
     assert all(kwargs["story_merged_on_main"] is False for kwargs, _ in exits)
-    assert all(ref != ORIGIN_MAIN for kind, ref in (c for c in vcs.calls if c[0] == "commit_subjects"))
+    assert _commit_subject_reads(vcs)
+    assert all(read == ("commit_subjects", _TIP_RANGE) for read in _commit_subject_reads(vcs))
+
+
+@pytest.mark.parametrize(
+    "scope",
+    [
+        pytest.param(lambda ref, *, followup_review: ref, id="scope-removed"),
+        pytest.param(lambda ref, *, followup_review: f"{_BASELINE}..{ref}", id="scope-replaced-by-the-baseline"),
+    ],
+)
+def test_without_the_launch_tip_scope_the_reused_worktree_fixture_reads_completed_on_its_first_tick(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, scope
+) -> None:
+    """Mutation proof for the launch-tip scope: with ``merge_subject_ref`` answering the whole ref, or the run's
+    baseline range, the SAME fixture as the LIVE test above reads the story's first merge as the run's own --
+    COMPLETED on the first tick, no heartbeat -- so that test fails under either mutation."""
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_followup_launch_line(),))
+    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
+    monkeypatch.setattr(supervisor_main, "merge_subject_ref", scope)
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=FakeFs(),
+        vcs=_first_landing_vcs(head_sha=_BASELINE),
+        process=FakeProcess(alive=[True, False]),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    assert publisher.heartbeats == []
+    assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.COMPLETED.value]
 
 
 def test_a_follow_up_run_completes_once_its_own_merge_reaches_origin_main(
@@ -3384,7 +3535,7 @@ def test_the_same_run_without_the_marker_reads_completed_on_the_stories_first_me
     assert code == 0
     assert publisher.heartbeats == []
     assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.COMPLETED.value]
-    assert [call for call in vcs.calls if call[0] == "commit_subjects"] == [("commit_subjects", ORIGIN_MAIN)]
+    assert _commit_subject_reads(vcs) == [("commit_subjects", ORIGIN_MAIN)]
 
 
 def _seed_spec_only_run(repo_root: Path, launch_line: str) -> str:
@@ -3412,7 +3563,7 @@ def test_a_follow_up_run_whose_only_change_is_its_own_spec_lands(
     assert code == 0
     assert len(land_calls) == 1
     # The landing is told it is a follow-up, and which row it serves.
-    assert land_calls[0]["followup_review"] == FollowupReview(dw_id=_FOLLOWUP_DW_ID)
+    assert land_calls[0]["followup_review"] == _FOLLOWUP
     journal = fs.journal_text(_run_dir(repo_root))
     assert dispatch_core.KIND_DISPATCH_BLOCKED not in journal
     assert '"verdict": "landed"' in journal
@@ -3462,8 +3613,8 @@ def test_a_normal_run_passes_the_landing_no_follow_up_marker(
     assert code == 0
     assert len(land_calls) == 1
     assert "followup_review" not in land_calls[0]
-    assert [call for call in vcs.calls if call[0] == "commit_subjects"]
-    assert all(call == ("commit_subjects", ORIGIN_MAIN) for call in vcs.calls if call[0] == "commit_subjects")
+    assert _commit_subject_reads(vcs)
+    assert all(call == ("commit_subjects", ORIGIN_MAIN) for call in _commit_subject_reads(vcs))
 
 
 def _spy_terminal_verdicts(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, object]]:
@@ -3545,3 +3696,71 @@ def test_a_failed_follow_up_run_with_a_spec_only_diff_preserves_it(
     assert land_calls == []
     assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.FAILED.value]
     assert dispatch_core.KIND_DISPATCH_PRESERVE in fs.journal_text(_run_dir(repo_root))
+
+
+# -- both land sites hand a follow-up run to the landing, and re-gather with its marker (BH-6 / VG-1 / VG-2)
+
+
+def _seed_followup_live_branch_land_run(repo_root: Path) -> None:
+    """The first land site: verification ``verified`` while a marshal-initiated stop keeps the run ``LIVE``."""
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(
+        run_dir,
+        (
+            _followup_launch_line(),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                payload={"verdict": "verified", "ok": True},
+                counter=1,
+            ),
+        ),
+    )
+    (run_dir / "session.log").write_text("budget-stop reached; idle-defer\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
+
+
+def _seed_followup_terminal_branch_land_run(repo_root: Path) -> None:
+    """The second land site: the session ended unverified, so finalize verifies, then the terminal branch lands."""
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_followup_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
+
+
+@pytest.mark.parametrize(
+    ("seed", "verdict"),
+    [
+        pytest.param(_seed_followup_live_branch_land_run, DispatchLandingVerdict.LANDED, id="live-branch-landed"),
+        pytest.param(_seed_followup_terminal_branch_land_run, DispatchLandingVerdict.LANDED, id="terminal-branch-landed"),
+        pytest.param(
+            _seed_followup_terminal_branch_land_run, DispatchLandingVerdict.REFUSED, id="terminal-branch-refused"
+        ),
+    ],
+)
+def test_each_land_site_hands_a_follow_up_run_to_the_landing_and_regathers_with_its_marker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, seed, verdict: DispatchLandingVerdict
+) -> None:
+    repo_root = _repo(tmp_path)
+    seed(repo_root)
+    _patch_verification(monkeypatch, _clean_envelope)
+    land_calls = _patch_landing(monkeypatch, verdict=verdict)
+    blocks = _record_land_or_block(monkeypatch)
+    vcs = _first_landing_vcs(head_sha=_MOVED)
+    _log_landings_into(monkeypatch, vcs)
+
+    code = _run(repo_root, fs=FakeFs(), vcs=vcs, process=FakeProcess(alive=False), publisher=FakePublisher())
+
+    assert code == 0
+    # The site's own call into `_land_or_journal_block` carries the marker, and so does the landing it makes.
+    assert blocks
+    assert all(kwargs["followup_review"] == _FOLLOWUP for _args, kwargs in blocks)
+    assert land_calls
+    assert all(call["followup_review"] == _FOLLOWUP for call in land_calls)
+    # The re-gather right after the landing is scoped to the launch tip too, never the whole ref.
+    reads = [call for call in vcs.calls if call[0] in {"land", "commit_subjects"}]
+    after_land = reads[reads.index(("land",)) + 1 :]
+    assert after_land
+    assert after_land[0] == ("commit_subjects", _TIP_RANGE)
+    assert ("commit_subjects", ORIGIN_MAIN) not in reads
