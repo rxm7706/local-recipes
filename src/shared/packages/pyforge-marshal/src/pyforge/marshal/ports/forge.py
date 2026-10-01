@@ -38,6 +38,10 @@ story's own Spec Change Log for the full record.
   declared name" -- the one mechanism that works for ANY future
   project-declared rule without Marshal ever knowing what the check
   actually verifies (see the story's own Design Notes).
+- ``check_runs`` (Story 80.1, CAP-284) -- EVERY check run reported on a
+  commit (name, status, conclusion): the read a dispatch landing polls before
+  it merges, as ``check_run_status`` answers "is THIS named check green" for
+  ``marshal land``'s declared ``landing_rules``.
 - ``merge_pr`` (Story 4.8, FR-60/AD-40) -- merges a PR and, in the SAME
   forge-side write, optionally retires its head branch: ``marshal land``'s
   one merge+retire primitive, never a separate ``delete_branch``-only call
@@ -52,6 +56,7 @@ from typing import Protocol
 from pyforge.core.errors import PyforgeError
 
 from ..core.egress import Redacted
+from ..core.landing_checks import CheckRun
 
 
 @dataclass(frozen=True)
@@ -144,6 +149,17 @@ class ForgePort(Protocol):
         or branch) on ``repo`` -- e.g. ``"success"``/``"failure"`` -- or
         ``None`` if no such check has run at all against ``ref``. Raises
         ``ForgeCommandError`` on any ``gh`` failure."""
+        ...
+
+    def check_runs(self, repo: ForgeRef, ref: ForgeRef) -> tuple[CheckRun, ...]:
+        """Story 80.1 (CAP-284): every check run the forge reports on ``ref``
+        (a commit sha) on ``repo`` -- name, status and conclusion -- across
+        ALL pages, one entry per run (the forge's own default collapses a
+        rerun to its latest run). ``()`` is a real answer: no run has been
+        registered against ``ref`` (yet). Raises ``ForgeCommandError`` on any
+        ``gh`` failure, a payload that is not the expected shape, or paging
+        that does not terminate -- never a partial list: a caller must be
+        able to treat a returned tuple as the complete set."""
         ...
 
     def merge_pr(
