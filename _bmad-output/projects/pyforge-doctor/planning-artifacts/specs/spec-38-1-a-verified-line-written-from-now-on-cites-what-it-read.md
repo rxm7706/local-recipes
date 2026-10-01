@@ -2,7 +2,7 @@
 title: "38.1: A `verified:` line written from now on cites what it read"
 type: 'fix'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '731f299611bd290e1d3d7040e7a30d864b00b6b1'
 review_loop_iteration: 0
 followup_review_recommended: false
