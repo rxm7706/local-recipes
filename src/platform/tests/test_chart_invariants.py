@@ -118,6 +118,7 @@ _SECRET_ENV_NAMES = frozenset(
         "PYFORGE_ASSERTION_PRIVATE_KEY",
         "OBJECT_STORAGE_ACCESS_KEY",
         "OBJECT_STORAGE_SECRET_KEY",
+        "LANGFLOW_SUPERUSER_PASSWORD",
     },
 )
 _SECRETISH_ENV_NAME = re.compile(
@@ -1831,6 +1832,106 @@ def test_platform_pods_wire_optional_object_storage_consumption_seam():
             assert secret_ref.get("optional") is True, (
                 f"{component} {key_name} must be optional: true, got {secret_ref!r}"
             )
+
+
+_LANGFLOW_PASSWORD_ENV = "LANGFLOW_SUPERUSER_PASSWORD"  # noqa: S105 -- an env var NAME
+
+
+def _assert_langflow_password_is_a_required_secret_ref(
+    entry: dict[str, Any] | None,
+    *,
+    where: str,
+    secret_name: str,
+) -> None:
+    """Story 78.1 / CAP-99: the Langflow superuser password reaches a pod ONLY
+    as a REQUIRED secretKeyRef into the existingSecret -- present, never a
+    literal, never `optional` (a Secret without the key must fail at pod
+    creation, not boot an app whose Langflow cannot start)."""
+    assert entry is not None, f"{where} missing {_LANGFLOW_PASSWORD_ENV}"
+    assert entry.get("value") in (None, ""), (
+        f"{where} {_LANGFLOW_PASSWORD_ENV} carries a literal value, not a "
+        f"secretKeyRef (canopy AD-19): {entry!r}"
+    )
+    secret_ref = (entry.get("valueFrom") or {}).get("secretKeyRef") or {}
+    assert secret_ref.get("name") == secret_name, (
+        f"{where} {_LANGFLOW_PASSWORD_ENV} secretKeyRef name mismatch: {secret_ref!r}"
+    )
+    assert secret_ref.get("key") == _LANGFLOW_PASSWORD_ENV, (
+        f"{where} {_LANGFLOW_PASSWORD_ENV} secretKeyRef key mismatch: {secret_ref!r}"
+    )
+    assert not secret_ref.get("optional"), (
+        f"{where} {_LANGFLOW_PASSWORD_ENV} must be required (no optional: true): "
+        f"{secret_ref!r}"
+    )
+
+
+@pytest.mark.parametrize(
+    ("entry", "why"),
+    [
+        (None, "missing"),
+        ({"name": _LANGFLOW_PASSWORD_ENV, "value": "hunter2"}, "literal value"),
+        (
+            {
+                "name": _LANGFLOW_PASSWORD_ENV,
+                "valueFrom": {
+                    "secretKeyRef": {
+                        "name": "platform-secrets",
+                        "key": _LANGFLOW_PASSWORD_ENV,
+                        "optional": True,
+                    },
+                },
+            },
+            "must be required",
+        ),
+        (
+            {
+                "name": _LANGFLOW_PASSWORD_ENV,
+                "valueFrom": {
+                    "secretKeyRef": {"name": "platform-secrets", "key": "OTHER"},
+                },
+            },
+            "key mismatch",
+        ),
+    ],
+    ids=["missing", "literal", "optional", "wrong-key"],
+)
+def test_langflow_password_guard_reds_a_violating_pod(
+    entry: dict[str, Any] | None,
+    why: str,
+) -> None:
+    """Guard-removed companion (ungated: no helm, no PyYAML)."""
+    with pytest.raises(AssertionError, match=why):
+        _assert_langflow_password_is_a_required_secret_ref(
+            entry,
+            where="web",
+            secret_name="platform-secrets",  # noqa: S106 -- a Secret NAME, not a value
+        )
+
+
+@requires_helm
+def test_platform_pods_require_the_langflow_superuser_password_from_the_secret():
+    """Story 78.1 / CAP-99 (DW-FU-11-1): Langflow auto-login is forced off in
+    settings, so every pod that boots the production leaf needs the superuser
+    password -- stage 1 refuses a deployed boot without it. Wired from the
+    existingSecret into the SHARED djangoEnv, so web, worker, builds worker,
+    beat, migrate and every consume-events pod carry it as a required
+    secretKeyRef, never a literal.
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    by_component = _pod_specs_by_component(docs)
+    for component in sorted(_PLATFORM_COMPONENTS | _CONSUME_EVENTS_COMPONENTS):
+        env = _collect_env_by_name(by_component[component])
+        _assert_langflow_password_is_a_required_secret_ref(
+            env.get(_LANGFLOW_PASSWORD_ENV),
+            where=component,
+            secret_name=values["existingSecret"],
+        )
+        assert "LANGFLOW_AUTO_LOGIN" not in env, (
+            f"{component}: auto-login is forced off in settings; the chart must "
+            f"not carry a knob for it"
+        )
 
 
 @requires_helm
