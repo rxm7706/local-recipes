@@ -33,9 +33,8 @@ from pyforge.marshal.cli.land import (
     _promote_sprint_ledger,
     _resync_home_branch,
 )
-from pyforge.marshal.core import deferred_work
+from pyforge.marshal.core import deferred_work, promotion
 from pyforge.marshal.core import dispatch as dispatch_core
-from pyforge.marshal.core import promotion
 from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
@@ -212,7 +211,9 @@ def _run_deferred_work_intake(
             skip_reason = f"marshal deferred-work intake for {short_slug!r}, story {story_key}"
             published = "deferred-work intake"
         else:
-            commit_message = f"marshal: carry follow-up review row {row_id} into the deferred-work ledger for {short_slug!r}"
+            commit_message = (
+                f"marshal: carry follow-up review row {row_id} into the deferred-work ledger for {short_slug!r}"
+            )
             skip_reason = f"marshal deferred-work follow-up review carry for {short_slug!r}, story {story_key}"
             published = f"deferred-work ledger update (follow-up review row {row_id})"
         commit_finding: Finding | None = None

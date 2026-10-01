@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -1882,3 +1883,290 @@ def test_against_real_git_a_stale_scan_is_corroborated_after_the_gates_own_fetch
     assert _git_79(primary, "status", "--porcelain") == ""
     assert not (primary / _SPEC_REL_79).exists()
     assert _git_79(primary, "worktree", "list", "--porcelain").count("worktree ") == 1
+
+
+# -- Story 66.1 (spec-pyforge-marshal CAP-275): a recommended follow-up review rides into the ledger --------
+#
+# The REAL `_run_deferred_work_intake` runs here (a fake process for the script, the real `LocalFs` over a real
+# ledger file in `tmp_path`); only git is a fake, and `_PublishVcs` records what is published onto origin/main.
+
+_FRR_KEY = "51.2"
+_FRR_NAME = "spec-51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory.md"
+_FRR_SPEC_REL = f"_bmad-output/projects/{_SLUG_79}/planning-artifacts/specs/{_FRR_NAME}"
+_FRR_LEDGER_REL = f"_bmad-output/projects/{_SLUG_79}/planning-artifacts/deferred-work-ledger.md"
+_FRR_ID = "DW-FRR-51-2"
+_FRR_SPEC = (
+    "---\ntitle: '51.2: x'\nstatus: 'done'\nreview_loop_iteration: 1\nfollowup_review_recommended: true\n---\n\n"
+    "## Auto Run Result\n"
+)
+#: The hand-filed row for the same story: a `DW-FU-` id, never the dispatch twin's `DW-FRR-`.
+_FRR_BASE_LEDGER = "# Deferred Work Ledger\n\n### DW-FU-51-2-1: hand-filed\n\n- source_spec: `x`\n  status: open\n"
+_FRR_DONE_TWIN = (
+    "development_status:\n  epic-51: in-progress\n  51-2-the-landing-record-follows-the-session-s-write: done\n"
+)
+
+
+class _FixedClock:
+    def now(self) -> datetime:
+        return datetime(2026, 10, 1, 12, 0, tzinfo=timezone.utc)
+
+    def monotonic(self) -> float:
+        return 0.0
+
+
+def _frr_ledger_path(root: Path) -> Path:
+    return root / _FRR_LEDGER_REL
+
+
+def _frr_setup(root: Path, ledger: str | None = _FRR_BASE_LEDGER) -> Path:
+    """The primary checkout's own files: the story's tracked spec (the path resolves locally) and the ledger."""
+    _write_tracked_spec_79(root, text=_FRR_SPEC, name=_FRR_NAME)
+    path = _frr_ledger_path(root)
+    if ledger is not None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(ledger, encoding="utf-8")
+    return path
+
+
+def _frr_vcs(spec_text: str | None = _FRR_SPEC, **kwargs) -> _PublishVcs:
+    return _PublishVcs(ledger_text=_FRR_DONE_TWIN, spec_text=spec_text, **kwargs)
+
+
+def _frr_finalize(monkeypatch, root: Path, vcs, process=None) -> int:
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}.repo_root", lambda: root)
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}.GitVcs", lambda: vcs)
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}._scan_promotions", lambda *a, **k: _PlannedScan())
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}._promote_sprint_ledger", lambda *a, **k: ())
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}._resync_home_branch", lambda *a, **k: True)
+    process = process if process is not None else _FakeIntakeProcess(returncode=0)
+    return finalize_dispatch_land(_SLUG_79, _FRR_KEY, process=process, clock=_FixedClock())
+
+
+def _frr_published_ledger(vcs: _PublishVcs) -> str:
+    [publish] = vcs.publishes
+    [(path, text)] = publish["writes"]
+    assert path == _FRR_LEDGER_REL
+    return text
+
+
+def _frr_promoted_id(root: Path) -> str | None:
+    return _observation_79(root)["followup_review_promoted_id"]
+
+
+def test_finalize_publishes_one_followup_review_row_for_a_flagged_landing(tmp_path: Path, monkeypatch) -> None:
+    """AC 1: the landed story's spec on origin/main reads `done` with the flag true and the ledger carries no
+    `DW-FRR-51-2` -> exactly one row is published, the ledger's own rows are untouched, the payload names it, and
+    the primary's working copy is back to what it was."""
+    ledger = _frr_setup(tmp_path)
+    vcs = _frr_vcs()
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert published.startswith(_FRR_BASE_LEDGER)
+    assert published.count(f"### {_FRR_ID}:") == 1
+    row = published[len(_FRR_BASE_LEDGER) :]
+    assert f"- source_spec: `planning-artifacts/specs/{_FRR_NAME}`" in row
+    assert f"  location: {_FRR_SPEC_REL}" in row
+    assert "  origin: dispatch-followup-review" in row
+    assert "  severity: low" in row
+    assert "  status: open" in row
+    assert "  promoted: 2026-10-01 \u2014 dispatch-land finalize" in row
+    [publish] = vcs.publishes
+    assert (publish["remote"], publish["ref"]) == ("origin", "main")
+    assert _FRR_ID in publish["message"] and _FRR_KEY in publish["preflight_skip_reason"]
+    assert ledger.read_text(encoding="utf-8") == _FRR_BASE_LEDGER
+    assert _frr_promoted_id(tmp_path) == _FRR_ID
+    assert _journaled_findings_79(tmp_path) == []
+
+
+def test_finalize_adds_nothing_when_the_ledger_it_published_already_carries_the_row(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """AC 2: the ledger the first run published, seeded as the primary's copy (what the next resync leaves),
+    makes a second finalize for the same story add nothing and publish nothing."""
+    _frr_setup(tmp_path)
+    first = _frr_vcs()
+    assert _frr_finalize(monkeypatch, tmp_path, first) == 0
+    published = _frr_published_ledger(first)
+
+    second_root = tmp_path / "second"
+    _frr_setup(second_root, ledger=published)
+    second = _frr_vcs()
+    assert _frr_finalize(monkeypatch, second_root, second) == 0
+
+    assert second.publishes == []
+    assert _frr_promoted_id(second_root) is None
+    assert _frr_ledger_path(second_root).read_text(encoding="utf-8") == published
+
+
+@pytest.mark.parametrize(
+    "spec_text",
+    [
+        _FRR_SPEC.replace("followup_review_recommended: true", "followup_review_recommended: false"),
+        _FRR_SPEC.replace("followup_review_recommended: true", "followup_review_recommended: no"),
+        _FRR_SPEC.replace("followup_review_recommended: true\n", ""),
+        _FRR_SPEC.replace("status: 'done'", "status: 'in-review'"),
+        _FRR_SPEC.replace("status: 'done'", "status: 'backlog'"),
+        None,
+    ],
+    ids=["flag-false", "flag-no", "flag-absent", "in-review", "backlog", "spec-absent-at-origin-main"],
+)
+def test_finalize_adds_no_row_unless_the_spec_is_done_and_explicitly_flagged(
+    tmp_path: Path, monkeypatch, spec_text: str | None
+) -> None:
+    """AC 3: a flag `false`/`no`/absent, a status other than `done`, or a spec origin/main does not hold yet adds
+    no row, publishes nothing and reports a null id -- silently."""
+    ledger = _frr_setup(tmp_path)
+    vcs = _frr_vcs(spec_text=spec_text)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    assert vcs.publishes == []
+    assert _frr_promoted_id(tmp_path) is None
+    assert _journaled_findings_79(tmp_path) == []
+    assert ledger.read_text(encoding="utf-8") == _FRR_BASE_LEDGER
+
+
+def test_finalize_adds_the_row_when_the_ledger_holds_a_longer_sibling_id(tmp_path: Path, monkeypatch) -> None:
+    """AC 4: `DW-FRR-51-20` is a different story's row, never a hit for `DW-FRR-51-2`."""
+    sibling = _FRR_BASE_LEDGER + "\n### DW-FRR-51-20: Follow-up review still recommended for story 51.20\n"
+    _frr_setup(tmp_path, ledger=sibling)
+    vcs = _frr_vcs()
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert published.startswith(sibling)
+    assert published.count("### DW-FRR-51-20:") == 1 and published.count(f"### {_FRR_ID}:") == 1
+    assert _frr_promoted_id(tmp_path) == _FRR_ID
+
+
+class _AddingIntakeProcess:
+    """The intake script as it runs when it files a row of its own: appends to the primary's ledger file."""
+
+    def __init__(self, ledger: Path, *, returncode: int = 0) -> None:
+        self.ledger = ledger
+        self.returncode = returncode
+        self.calls: list[list[str]] = []
+
+    def run(self, tokens, *, cwd: Path):
+        self.calls.append(list(tokens))
+        self.ledger.write_text(
+            self.ledger.read_text(encoding="utf-8") + "\n### DW-INTAKE-1: filed by intake\n", encoding="utf-8"
+        )
+        return ProcessResult(returncode=self.returncode, stdout="", stderr="intake exploded" if self.returncode else "")
+
+
+def test_finalize_publishes_the_intakes_rows_and_the_followup_row_together(tmp_path: Path, monkeypatch) -> None:
+    """AC 5: an intake that also adds rows in the same finalize -> ONE publish holds the intake's row and the new
+    row, so neither can drop the other; the primary's copy is restored to its pre-intake text."""
+    ledger = _frr_setup(tmp_path)
+    vcs = _frr_vcs()
+    process = _AddingIntakeProcess(ledger)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs, process) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert "### DW-INTAKE-1: filed by intake" in published
+    assert published.count(f"### {_FRR_ID}:") == 1
+    assert published.index("### DW-INTAKE-1:") < published.index(f"### {_FRR_ID}:")
+    assert ledger.read_text(encoding="utf-8") == _FRR_BASE_LEDGER
+    assert _frr_promoted_id(tmp_path) == _FRR_ID
+    assert _journaled_findings_79(tmp_path) == []
+
+
+def test_a_refused_intake_still_publishes_the_followup_row(tmp_path: Path, monkeypatch) -> None:
+    """An intake refusal is its own WARN; the row is still published, from the text the ledger read before the
+    script -- anything a refused run half-wrote is not carried."""
+    ledger = _frr_setup(tmp_path)
+    vcs = _frr_vcs()
+    process = _AddingIntakeProcess(ledger, returncode=1)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs, process) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert "DW-INTAKE-1" not in published
+    assert published.count(f"### {_FRR_ID}:") == 1
+    assert _frr_promoted_id(tmp_path) == _FRR_ID
+    [finding] = _journaled_findings_79(tmp_path)
+    assert finding["code"] == "MRS-DISP-047" and "refused (exit 1)" in finding["message"]
+
+
+def test_finalize_warns_when_the_followup_publish_fails_and_keeps_its_exit_code(tmp_path: Path, monkeypatch) -> None:
+    """AC 6: `commit_paths_onto_remote_tip` raising `VcsCommandError` is an `MRS-DISP-047` WARN naming the
+    failure and the row, the payload's id is null (nothing landed), the exit code is the one the landing would
+    have had without the flag (0), and the primary's copy is untouched."""
+    ledger = _frr_setup(tmp_path)
+    vcs = _frr_vcs(publish_raises=True)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    [finding] = _journaled_findings_79(tmp_path)
+    assert (finding["code"], finding["severity"]) == ("MRS-DISP-047", "warn")
+    assert "not a fast-forward" in finding["message"] and _FRR_ID in finding["message"]
+    assert _frr_promoted_id(tmp_path) is None
+    assert ledger.read_text(encoding="utf-8") == _FRR_BASE_LEDGER
+
+
+def test_a_failed_publish_after_a_refused_intake_reports_both_warns(tmp_path: Path, monkeypatch) -> None:
+    """Only the follow-up row is published after a refused intake, so its publish failure is a second WARN
+    beside the refusal's, never swallowed by it."""
+    ledger = _frr_setup(tmp_path)
+    vcs = _frr_vcs(publish_raises=True)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs, _AddingIntakeProcess(ledger, returncode=1)) == 0
+
+    messages = [finding["message"] for finding in _journaled_findings_79(tmp_path)]
+    assert len(messages) == 2
+    assert any("refused (exit 1)" in message for message in messages)
+    assert any("not a fast-forward" in message and _FRR_ID in message for message in messages)
+    assert _frr_promoted_id(tmp_path) is None
+
+
+def test_finalize_warns_and_adds_nothing_when_the_spec_cannot_be_read_at_origin_main(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The I/O matrix row: a `VcsCommandError` reading the spec at origin/main -> nothing added, an
+    `MRS-DISP-047` WARN naming the spec path in the payload, the landing's exit code unchanged."""
+    ledger = _frr_setup(tmp_path)
+    vcs = _frr_vcs(spec_read_raises=True)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    [finding] = _journaled_findings_79(tmp_path)
+    assert (finding["code"], finding["severity"]) == ("MRS-DISP-047", "warn")
+    assert _FRR_SPEC_REL in finding["message"] and "follow-up review" in finding["message"]
+    assert finding["path"] == _FRR_SPEC_REL
+    assert vcs.publishes == []
+    assert _frr_promoted_id(tmp_path) is None
+    assert ledger.read_text(encoding="utf-8") == _FRR_BASE_LEDGER
+
+
+def test_finalize_never_creates_a_ledger_for_a_followup_row(tmp_path: Path, monkeypatch) -> None:
+    """No tracked ledger in the primary's tree: a WARN naming it, no publish, no file created."""
+    ledger = _frr_setup(tmp_path, ledger=None)
+    vcs = _frr_vcs()
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    [finding] = _journaled_findings_79(tmp_path)
+    assert (finding["code"], finding["severity"]) == ("MRS-DISP-047", "warn")
+    assert "no tracked deferred-work ledger" in finding["message"]
+    assert vcs.publishes == []
+    assert not ledger.exists()
+    assert _frr_promoted_id(tmp_path) is None
+
+
+def test_the_followup_row_depends_on_finalizes_own_carry_call(tmp_path: Path, monkeypatch) -> None:
+    """AC 7 (mutation): with the carry call answering nothing -- what removing it from `finalize_dispatch_land`
+    leaves -- the 51.2 fixture adds no row, so `test_finalize_publishes_one_followup_review_row_for_a_flagged_landing`
+    cannot pass without it."""
+    _frr_setup(tmp_path)
+    vcs = _frr_vcs()
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}._followup_review_carry", lambda *a, **k: None)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    assert vcs.publishes == []
+    assert _frr_promoted_id(tmp_path) is None

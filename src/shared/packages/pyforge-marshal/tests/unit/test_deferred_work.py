@@ -5,9 +5,9 @@ plain string or value.
 
 from __future__ import annotations
 
-from pyforge.marshal.core import gate
 import pytest
 
+from pyforge.marshal.core import gate
 from pyforge.marshal.core.deferred_work import (
     DeferralCandidate,
     FollowupReviewCandidate,
