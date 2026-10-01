@@ -295,7 +295,7 @@ def fetch_current_userinfo(request: HttpRequest) -> dict[str, Any] | None:
     if user is None:
         return None
 
-    remembered = getattr(request, _REQUEST_MEMO, _UNSET)
+    remembered = _UNSET
     if remembered is not _UNSET:
         memo = cast("dict[str, Any] | None", remembered)
         return None if memo is None else dict(memo)
