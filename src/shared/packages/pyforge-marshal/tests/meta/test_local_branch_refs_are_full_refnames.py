@@ -56,6 +56,7 @@ _REVISION_ARGS: dict[str, tuple[tuple[int | None, str], ...]] = {
     "commits_behind": ((1, "tip_ref"),),
     "merge_branch": ((1, "branch"),),
     "merge_ref_resolving": ((1, "ref"),),
+    "is_branch_merged": ((None, "into_ref"),),  # Story 72.1: a full ref, used verbatim in place of `into`
     "add_worktree": ((None, "base"),),
     "add_worktree_for_tree": ((2, "tree_oid"), (None, "parent")),
     "worktree_unified_patch": ((None, "baseline_sha"),),

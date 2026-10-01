@@ -2,14 +2,19 @@
 title: '72.1: The dispatch supervisor reads merge facts from origin/main'
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: '464a1ad08a4568bfad3c506c270641bcd95b7523'
+review_loop_iteration: 1
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-67-1-a-landed-dispatch-reads-completed-when-the-primary-checkout-cannot-be-fast-forwarded.md
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
-warnings: []
+warnings:
+  - oversized
 deferred: []
+declared_low_risk: false
 ---
 
 <intent-contract>
@@ -89,6 +94,59 @@ Co-governing Specs: `spec-pyforge-marshal` (owner of `src/shared/packages/pyforg
 | `dispatch land`, `origin/main` unreadable | `VcsCommandError` from `commit_subjects` | REFUSED | `MRS-DISP-016` naming `origin/main` |
 
 </intent-contract>
+
+## Code Map
+
+Package root `src/shared/packages/pyforge-marshal/` (line anchors read at HEAD `464a1ad08a`, after 67.1; the contract's own anchors predate it and have drifted).
+
+- `src/pyforge/marshal/dispatch_supervisor/__main__.py` -- `_BASE_REF` / `_MERGE_INTO` (`:99-100`); `_maybe_fetch_origin_main` (`:141`); `gather_dispatch_git_facts` reads `is_branch_merged(..., into=_MERGE_INTO)` (`:376`) and `commit_subjects(.., local_branch_ref(_MERGE_INTO))` (`:381`); two `_land_or_journal_block(...)` call sites (`:1709`, `:1783`), each followed by a journal re-read and a re-gather. `local_branch_ref` is imported at `:77` and used only at `:381`, so the import leaves with the read.
+- `src/pyforge/marshal/ports/vcs.py` -- `VcsPort.is_branch_merged` (`:240`): gains keyword-only `into_ref: str | None = None` and its docstring.
+- `src/pyforge/marshal/adapters/vcs_git.py` -- `GitVcs.is_branch_merged` (`:394`): builds `refs/heads/{into}` into a local named `into_ref`, which the new parameter shadows; rename the local `target_ref`.
+- `src/pyforge/marshal/dispatch_land.py` -- `_MERGE_BASE` (`:59`, stays the PR base, fetch argument and heal base); `_ORIGIN_MAIN` / `ORIGIN_MAIN_SHORT` already imported; the ALREADY_LANDED read `commit_subjects(.., local_branch_ref(_MERGE_BASE))` and its `MRS-DISP-016` (`:881-887`); the preview's own fetch (`:157`) and the heal's (`:1211`) stay. `local_branch_ref` (`:47`) is used only at `:881`.
+- `src/pyforge/marshal/core/refs.py` -- `ORIGIN_MAIN` / `ORIGIN_MAIN_SHORT` (read-only).
+- `tests/meta/test_local_branch_refs_are_full_refnames.py` -- classifies every `str` parameter of every `VcsPort` method (`_REVISION_ARGS`, `_NAME_ARGS`, `_NOT_A_REF`); the new `into_ref` goes in `_REVISION_ARGS` (`is_branch_merged`, keyword `into_ref`), else `test_every_str_parameter_of_every_port_method_is_classified` reds.
+- Fakes implementing `is_branch_merged(self, repo_root, branch, *, into)` (accept `into_ref`): `tests/meta/test_ad11_write_boundary.py:124`, `tests/unit/test_dispatch_supervisor_main_loop.py:221`, `test_dispatch_stop_retry.py:183`, `test_dispatch_completion.py:426`, `test_dispatch_fleet.py:467`, `test_init.py:181`, `test_retire.py:164`, `test_dispatch_station_guard.py` (six), `test_dispatch.py:1162,1274`.
+- `tests/unit/test_dispatch_supervisor_main_loop.py` -- `FakeVcs` (`:148`) ignores `ref` in `commit_subjects`; needs a ref-aware mode and a call log. Reuse `_gather`, `_run`, `_seed_journal`, `_ledger_path`, `_launch_line`; model the exit test on `test_supervisor_exits_completed_once_the_story_is_merged_on_main`. 67.1's fixtures (`test_a_landed_run_reads_completed_when_local_main_lacks_the_merge`, the re-read-fails twin) run unchanged.
+- `tests/unit/test_dispatch_landing.py` -- `FakeVcs` (`:96`) answers one subject for any ref; `_HealFetchFailsVcs` (`:1233`) counts fetches (the new fetch before the ALREADY_LANDED read moves its counts by one); `MergeTreePreviewVcs.fetch_calls` (`:1618`); model the new cases on `test_execute_dispatch_land_skips_when_already_on_main` (`:1276`) and `..._pushes_branch_when_verified` (`:1293`).
+- `tests/unit/test_vcs_git.py` -- real-repo `is_branch_merged` fixtures (`:441-665`); the bare-remote fixture goes here.
+- Read-only, never touched: `cli/retire.py:362`, `cli/init.py:2438`, `dispatch_land_finalize/__main__.py`, `core/dispatch_supervisor_state.py`, `core/dispatch_completion.py`.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/pyforge/marshal/ports/vcs.py` -- add keyword-only `into_ref: str | None = None` to `is_branch_merged`; document that a given full ref replaces `refs/heads/{into}` -- the port cannot otherwise take a remote-tracking ref
+- `src/pyforge/marshal/adapters/vcs_git.py` -- `GitVcs.is_branch_merged` uses `into_ref` verbatim, when given, for the ancestry check, the merge-base and the `git cherry` patch-id fallback; rename the local to `target_ref` -- the branch-name form stays for `retire` and `init`
+- `src/pyforge/marshal/dispatch_supervisor/__main__.py` -- gather reads `is_branch_merged(..., into="main", into_ref=ORIGIN_MAIN)` and `commit_subjects(repo_root, ORIGIN_MAIN)`; remove `_MERGE_INTO` and the `local_branch_ref` import; extract the swallowed fetch into one helper that `_maybe_fetch_origin_main` calls on its cadence, and call it right after each `_land_or_journal_block(...)` returns, before the re-gather -- every merge fact reads `origin/main`, freshly fetched after the supervisor's own land
+- `src/pyforge/marshal/dispatch_land.py` -- before the ALREADY_LANDED read, `vcs.fetch(git_repo_root, _ORIGIN_REMOTE, _MERGE_BASE)` with `VcsCommandError` swallowed; read `commit_subjects(git_repo_root, _ORIGIN_MAIN)`; the `MRS-DISP-016` message names `ORIGIN_MAIN_SHORT`; drop the `local_branch_ref` import -- a story merged on GitHub must not be pushed and PR'd again
+- `tests/meta/test_local_branch_refs_are_full_refnames.py` -- classify `is_branch_merged` `into_ref` in `_REVISION_ARGS` -- the completeness meta-test
+- every fake `is_branch_merged` listed in the Code Map -- accept `into_ref=None`
+- `tests/unit/test_dispatch_supervisor_main_loop.py` -- ref-aware `FakeVcs` (per-ref subjects, per-ref merged answer, a call log, a per-ref unreadable switch); cases for the I/O matrix rows: lagging local `main`, the reverse, fetch-before-re-gather at both land sites, unreadable `origin/main`, plus both mutations
+- `tests/unit/test_vcs_git.py` -- real repository + bare remote: merged into `origin/main` only; `into_ref` reads true and the branch-name form reads false
+- `tests/unit/test_dispatch_landing.py` -- ref-aware `FakeVcs` (merged-at refs, call log, fetch/read failure switches); ALREADY_LANDED at `ORIGIN_MAIN` only, the reverse, fetch failure tolerated, unreadable `origin/main` refused naming `origin/main`; fix `_HealFetchFailsVcs` and any other fetch-count assertion the new fetch moves
+
+**Acceptance Criteria:**
+- Given the contract's eleven Given/When/Then lines above, when the station suite runs, then each is observed by a named test, and the two mutation lines (the gather and `dispatch land` reverted to local `main`) fail those tests when applied by hand
+- Given `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` and `pyforge-deps-test`, when run from the worktree root, then both exit 0
+
+## Spec Change Log
+
+## Review Triage Log
+
+Review 1 (2026-10-01, by hand): the dispatch session (run `pyforge-marshal-20261001T142824750Z-df41fdd4`) reached
+`in-review` and was killed by a host reboot at 15:47Z before its own review ran; marshal reads the run
+`stopped_externally`, and `dispatch-resume` recovers only a live session. An independent read-only reviewer read the
+diff (10 WIP checkpoints) against this spec and CAP-280: all 11 acceptance criteria implemented with named tests, the
+boundaries held, no debris, `pyforge-marshal-test` exit 0 (9440 passed, 5 skipped). No high or medium findings.
+
+- `[low]` `[patch]` `dispatch_supervisor/__main__.py`'s CAP-276 comment still said the repository facts read local
+  `main`. Fixed: they read `origin/main`, which a failed post-land fetch can leave stale.
+- `[low]` `[patch]` `dispatch_land.py` called `_MERGE_BASE` the local landing base used everywhere in the file. Fixed: it
+  is now only the PR base, the fetch argument and the heal base.
+- `[low]` `[patch]` The "never calls `_land_or_journal_block`" criterion was proven only through `execute_dispatch_land`.
+  Fixed: a direct recorder on `_land_or_journal_block`, asserted empty, and non-empty in the reverse fixture.
+- `[low]` `[reject]` `execute_dispatch_land` now fetches before the ALREADY_LANDED read and again in the preview: one
+  extra fetch per land. The spec requires the first; reusing it would couple the preview to the landing path for one
+  cheap network call.
 
 ## Source
 

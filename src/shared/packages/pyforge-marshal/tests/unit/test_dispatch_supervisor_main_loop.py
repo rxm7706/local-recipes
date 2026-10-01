@@ -34,6 +34,7 @@ from pyforge.marshal.core.journal import (
     prepare_for_write,
 )
 from pyforge.marshal.core.model import Finding, Severity, build_envelope
+from pyforge.marshal.core.refs import ORIGIN_MAIN, local_branch_ref
 from pyforge.marshal.dispatch_land import DispatchLandingResult
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 
@@ -171,7 +172,17 @@ class FakeVcs:
         push_raises: bool = False,
         patch_raises: bool = False,
         remote_tip_raises: bool = False,
+        subjects_by_ref: dict[str, tuple[str, ...]] | None = None,
+        merged_into_refs: frozenset[str] | None = None,
+        unreadable_refs: dict[str, int] | None = None,
     ) -> None:
+        """``subjects_by_ref`` / ``merged_into_refs`` / ``unreadable_refs`` (Story 72.1, CAP-280) make the
+        merge reads ref-aware: ``commit_subjects`` answers per full ref (an unlisted ref is an empty
+        history), ``is_branch_merged`` answers true only for a target in ``merged_into_refs`` (the full
+        ref given as ``into_ref``, else ``refs/heads/{into}``), and ``unreadable_refs`` maps a ref to how
+        many ``commit_subjects`` reads of it raise ``VcsCommandError`` before it reads again. Left unset,
+        ``subjects`` / ``branch_merged`` answer for any ref, as before. ``calls`` logs every merge read
+        and every fetch, in order."""
         self._head_shas = list(head_shas) if head_shas is not None else None
         self.head_sha = head_sha
         self.changed = changed
@@ -197,6 +208,10 @@ class FakeVcs:
         self.pushes: list[tuple[Path, str]] = []
         self.remote_tip_writes: list[tuple[str, ...]] = []
         self.remote_tip_reasons: list[str | None] = []
+        self.subjects_by_ref = subjects_by_ref
+        self.merged_into_refs = merged_into_refs
+        self._unreadable_refs = dict(unreadable_refs or {})
+        self.calls: list[tuple[str, ...]] = []
 
     # -- reads ------------------------------------------------------------
     def worktree_head_sha(self, worktree_path: Path) -> str:
@@ -218,10 +233,20 @@ class FakeVcs:
     def worktree_path_for_branch(self, repo_root: Path, branch: str) -> Path | None:
         return self.branch_worktrees.get(branch)
 
-    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+        target = into_ref if into_ref is not None else f"refs/heads/{into}"
+        self.calls.append(("is_branch_merged", target))
+        if self.merged_into_refs is not None:
+            return target in self.merged_into_refs
         return self.branch_merged
 
     def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
+        self.calls.append(("commit_subjects", ref))
+        if self._unreadable_refs.get(ref, 0) > 0:
+            self._unreadable_refs[ref] -= 1
+            raise VcsCommandError(f"git log {ref} failed (test double)")
+        if self.subjects_by_ref is not None:
+            return self.subjects_by_ref.get(ref, ())
         return self.subjects
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
@@ -241,6 +266,7 @@ class FakeVcs:
 
     # -- writes -----------------------------------------------------------
     def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
+        self.calls.append(("fetch", remote, ref))
         if self._fetch_raises:
             raise VcsCommandError("git fetch failed (test double)")
         self.fetches.append((repo_root, remote, ref))
@@ -878,6 +904,66 @@ def test_gather_git_facts_corroborates_a_station_branch_pr_against_the_tracked_s
     assert merged.story_merged_on_main is True
     assert not_merged.story_merged_on_main is False
     assert unreadable.story_merged_on_main is False
+
+
+# -- Story 72.1 (CAP-280): every merge fact reads `origin/main`, never local `main` ----------------
+
+_LOCAL_MAIN = local_branch_ref("main")
+_PR_MERGE_SUBJECT = "Merge pull request #1477 from rxm7706/marshal/51-11-halt"
+_SPEC_DONE = "---\nstatus: done\n---\n"
+
+
+def _merge_vcs(*, on_origin: bool, on_local: bool, **kwargs: object) -> FakeVcs:
+    """A ``FakeVcs`` whose story merge shows on ``origin/main``, on local ``main``, on both or on neither."""
+    refs = ([ORIGIN_MAIN] if on_origin else []) + ([_LOCAL_MAIN] if on_local else [])
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    return FakeVcs(
+        branches=frozenset({branch}),
+        head_sha=_MOVED,
+        subjects_by_ref={ref: (_PR_MERGE_SUBJECT,) for ref in refs},
+        merged_into_refs=frozenset(refs),
+        spec_at_ref=_SPEC_DONE,
+        **kwargs,  # type: ignore[arg-type]
+    )
+
+
+def test_gather_git_facts_reads_the_merge_from_origin_main_when_local_main_lags(tmp_path: Path) -> None:
+    repo_root = _repo(tmp_path)
+    worktree = _worktree(repo_root)
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    vcs = _merge_vcs(on_origin=True, on_local=False)
+
+    facts = _gather(repo_root, worktree, vcs)
+
+    assert facts.story_merged_on_main is True
+    assert facts.branch_merged is True
+    # The branch is asked about through the full remote-tracking ref, and the subjects are read from
+    # it -- local `main` is never consulted.
+    assert ("is_branch_merged", ORIGIN_MAIN) in vcs.calls
+    assert ("commit_subjects", ORIGIN_MAIN) in vcs.calls
+    assert not any(_LOCAL_MAIN in call for call in vcs.calls)
+
+
+def test_gather_git_facts_ignores_a_merge_only_local_main_carries(tmp_path: Path) -> None:
+    repo_root = _repo(tmp_path)
+    worktree = _worktree(repo_root)
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+
+    facts = _gather(repo_root, worktree, _merge_vcs(on_origin=False, on_local=True))
+
+    assert facts.story_merged_on_main is False
+    assert facts.branch_merged is False
+
+
+def test_gather_git_facts_raises_when_origin_main_is_unreadable(tmp_path: Path) -> None:
+    repo_root = _repo(tmp_path)
+    worktree = _worktree(repo_root)
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    # Local `main` carries the merge: an unreadable `origin/main` is neither merged nor read from local.
+    vcs = _merge_vcs(on_origin=False, on_local=True, unreadable_refs={ORIGIN_MAIN: 1})
+
+    with pytest.raises(VcsCommandError):
+        _gather(repo_root, worktree, vcs)
 
 
 # ==========================================================================
@@ -2618,6 +2704,209 @@ def test_supervisor_exits_completed_once_the_story_is_merged_on_main(tmp_path: P
     )
 
     assert code == 0
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+
+
+# -- Story 72.1 (CAP-280): the tick loop judges a merge from `origin/main` ---------------------------
+
+
+def _seed_verified_run(repo_root: Path) -> tuple[Path, Path]:
+    """A run whose session ended and whose verification journaled ``verified``: the land trigger's
+    precondition. Returns ``(run_dir, worktree)``."""
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(
+        run_dir,
+        (
+            _launch_line(),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                payload={"verdict": "verified", "ok": True},
+                counter=1,
+            ),
+        ),
+    )
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    return run_dir, worktree
+
+
+def _spy(monkeypatch: pytest.MonkeyPatch, name: str) -> list[tuple[dict, object]]:
+    """Record every ``(kwargs, result)`` of ``supervisor_main.<name>``, calling through."""
+    real = getattr(supervisor_main, name)
+    calls: list[tuple[dict, object]] = []
+
+    def _wrapper(**kwargs):
+        result = real(**kwargs)
+        calls.append((kwargs, result))
+        return result
+
+    monkeypatch.setattr(supervisor_main, name, _wrapper)
+    return calls
+
+
+def _record_land_or_block(monkeypatch: pytest.MonkeyPatch) -> list[object]:
+    """Record every call of ``supervisor_main._land_or_journal_block`` (positional or keyword), calling through."""
+    real = supervisor_main._land_or_journal_block
+    calls: list[object] = []
+
+    def _wrapper(*args, **kwargs):
+        calls.append((args, kwargs))
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(supervisor_main, "_land_or_journal_block", _wrapper)
+    return calls
+
+
+def _log_landings_into(monkeypatch: pytest.MonkeyPatch, vcs: FakeVcs) -> None:
+    """Put each land attempt into ``vcs.calls``, so a test can order it against the merge reads."""
+    inner = supervisor_main.execute_dispatch_land
+
+    def _logged(**kwargs):
+        vcs.calls.append(("land",))
+        return inner(**kwargs)
+
+    monkeypatch.setattr(supervisor_main, "execute_dispatch_land", _logged)
+
+
+def test_supervisor_does_not_land_a_story_merged_on_origin_main_while_local_main_lags(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    _seed_verified_run(repo_root)
+    land_calls = _patch_landing(monkeypatch)
+    blocks = _record_land_or_block(monkeypatch)
+    retries = _spy(monkeypatch, "should_retry_stuck_land")
+    exits = _spy(monkeypatch, "supervisor_should_exit")
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=FakeFs(),
+        vcs=_merge_vcs(on_origin=True, on_local=False),
+        process=FakeProcess(alive=False),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    assert land_calls == []
+    assert blocks == []  # AC: `_land_or_journal_block` is never called (review 1: asserted directly)
+    # The stuck-land retry reads the story as merged and never counts a tick.
+    assert retries and all(kwargs["story_merged_on_main"] is True for kwargs, _ in retries)
+    assert all(kwargs["stuck_land_ticks"] == 0 for kwargs, _ in retries)
+    # The exit decision sees the merge.
+    assert exits
+    exit_kwargs, exit_result = exits[-1]
+    assert exit_kwargs["story_merged_on_main"] is True
+    assert exit_result is True
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+
+
+def test_supervisor_lands_a_verified_story_that_only_local_main_shows_merged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """The reverse fixture: a merge local `main` carries and `origin/main` lacks is no merge, so the
+    land trigger fires -- the twin of the lagging-local-`main` test, and its mutation proof."""
+    repo_root = _repo(tmp_path)
+    _seed_verified_run(repo_root)
+    land_calls = _patch_landing(monkeypatch)
+    blocks = _record_land_or_block(monkeypatch)
+
+    code = _run(
+        repo_root,
+        fs=FakeFs(),
+        vcs=_merge_vcs(on_origin=False, on_local=True),
+        process=FakeProcess(alive=False),
+        publisher=FakePublisher(),
+    )
+
+    assert code == 0
+    assert len(land_calls) == 1
+    assert blocks  # the same recorder sees the land-or-block step here, so its silence above is meaningful
+
+
+def _seed_live_branch_land_run(repo_root: Path) -> None:
+    """The first land site: verification ``verified`` while a marshal-initiated stop keeps the run ``LIVE``."""
+    run_dir, _worktree_path = _seed_verified_run(repo_root)
+    (run_dir / "session.log").write_text("budget-stop reached; idle-defer\n", encoding="utf-8")
+
+
+def _seed_terminal_branch_land_run(repo_root: Path) -> None:
+    """The second land site: the session ended unverified, so finalize verifies, then the terminal branch lands."""
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+
+
+@pytest.mark.parametrize(
+    "seed",
+    [_seed_live_branch_land_run, _seed_terminal_branch_land_run],
+    ids=["live-branch-land-site", "terminal-branch-land-site"],
+)
+def test_supervisor_fetches_origin_main_between_its_own_land_and_the_regather(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, seed
+) -> None:
+    repo_root = _repo(tmp_path)
+    seed(repo_root)
+    _patch_verification(monkeypatch, _clean_envelope)
+    land_calls = _patch_landing(monkeypatch)
+    vcs = FakeVcs(head_sha=_MOVED)
+    _log_landings_into(monkeypatch, vcs)
+
+    code = _run(repo_root, fs=FakeFs(), vcs=vcs, process=FakeProcess(alive=False), publisher=FakePublisher())
+
+    assert code == 0
+    assert len(land_calls) == 1
+    after_land = vcs.calls[vcs.calls.index(("land",)) + 1 :]
+    first_read = next(index for index, call in enumerate(after_land) if call[0] == "commit_subjects")
+    assert ("fetch", "origin", "main") in after_land[:first_read]
+    assert after_land[first_read] == ("commit_subjects", ORIGIN_MAIN)
+
+
+def test_supervisor_tolerates_a_failed_fetch_after_its_own_land(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    _seed_terminal_branch_land_run(repo_root)
+    _patch_verification(monkeypatch, _clean_envelope)
+    land_calls = _patch_landing(monkeypatch)
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=FakeFs(),
+        vcs=FakeVcs(head_sha=_MOVED, fetch_raises=True),
+        process=FakeProcess(alive=False),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    assert len(land_calls) == 1
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+
+
+def test_supervisor_continues_without_landing_or_exiting_while_origin_main_is_unreadable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo_root = _repo(tmp_path)
+    _seed_verified_run(repo_root)
+    land_calls = _patch_landing(monkeypatch)
+    publisher = FakePublisher()
+    # `origin/main` is unreadable on the first tick and carries the merge on the second; local `main`
+    # never does -- an unreadable `origin/main` is neither merged nor a reason to read local `main`.
+    vcs = _merge_vcs(on_origin=True, on_local=False, unreadable_refs={ORIGIN_MAIN: 1})
+
+    code = _run(repo_root, fs=FakeFs(), vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert "git fact gather failed" in capsys.readouterr().err
+    # One skipped tick (the loop slept once and carried on), nothing landed, and the run completed only
+    # once `origin/main` read again.
+    assert clock.sleeps == [supervisor_main._TICK_SECONDS]
+    assert land_calls == []
+    assert len(publisher.completions) == 1
     assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
 
 

@@ -391,7 +391,14 @@ class GitVcs:
             raise VcsCommandError(f"git status --porcelain failed in {worktree_path}: {result.stderr.strip()}")
         return bool(result.stdout.strip())
 
-    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+    def is_branch_merged(
+        self,
+        repo_root: Path,
+        branch: str,
+        *,
+        into: str,
+        into_ref: str | None = None,
+    ) -> bool:
         """Tries cheap ancestry first (``git merge-base --is-ancestor``,
         exactly ``branch_exists``'s own exit-code discipline: only exit 1
         means "not an ancestor" specifically, any other non-zero exit is a
@@ -403,23 +410,30 @@ class GitVcs:
         matching -- confirmed live to correctly read this repo's own
         single-parent SQUASH-merge convention as merged, even after
         ``into`` has since advanced further (see this story's spec Design
-        Notes for the live-verified walkthrough)."""
-        branch_ref = f"refs/heads/{branch}"
-        into_ref = f"refs/heads/{into}"
+        Notes for the live-verified walkthrough).
 
-        ancestry = _run(["git", "-C", str(repo_root), "merge-base", "--is-ancestor", branch_ref, into_ref])
+        ``into_ref`` (Story 72.1, CAP-280): a full refname used verbatim in
+        place of ``refs/heads/{into}`` for every step above."""
+        branch_ref = f"refs/heads/{branch}"
+        # Story 72.1 (CAP-280): a full ref given as ``into_ref`` (e.g. a
+        # remote-tracking ``refs/remotes/origin/main``) replaces
+        # ``refs/heads/{into}`` verbatim for the ancestry check, the
+        # merge-base and the ``git cherry`` patch-id fallback below.
+        target_ref = into_ref if into_ref is not None else f"refs/heads/{into}"
+
+        ancestry = _run(["git", "-C", str(repo_root), "merge-base", "--is-ancestor", branch_ref, target_ref])
         if ancestry.returncode == 0:
             return True
         if ancestry.returncode != 1:
             raise VcsCommandError(
-                f"git merge-base --is-ancestor failed for {branch_ref}..{into_ref} "
+                f"git merge-base --is-ancestor failed for {branch_ref}..{target_ref} "
                 f"(exit {ancestry.returncode}): {ancestry.stderr.strip()}"
             )
 
-        merge_base_result = _run(["git", "-C", str(repo_root), "merge-base", branch_ref, into_ref])
+        merge_base_result = _run(["git", "-C", str(repo_root), "merge-base", branch_ref, target_ref])
         if merge_base_result.returncode != 0:
             raise VcsCommandError(
-                f"cannot find a merge base for {branch_ref} and {into_ref}: {merge_base_result.stderr.strip()}"
+                f"cannot find a merge base for {branch_ref} and {target_ref}: {merge_base_result.stderr.strip()}"
             )
         merge_base = merge_base_result.stdout.strip()
 
@@ -482,12 +496,12 @@ class GitVcs:
         # large-repo reasoning remove_worktree's own extended timeout
         # already applies).
         cherry_result = _run(
-            ["git", "-C", str(repo_root), "cherry", into_ref, virtual_commit],
+            ["git", "-C", str(repo_root), "cherry", target_ref, virtual_commit],
             timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
         )
         if cherry_result.returncode != 0:
             raise VcsCommandError(
-                f"git cherry failed comparing {branch_ref} against {into_ref}: {cherry_result.stderr.strip()}"
+                f"git cherry failed comparing {branch_ref} against {target_ref}: {cherry_result.stderr.strip()}"
             )
         # "-" = a commit on `into` already carries an equivalent patch
         # (merged); "+" = no equivalent found on `into` (genuinely
@@ -503,7 +517,7 @@ class GitVcs:
         if not lines:
             raise VcsCommandError(
                 f"git cherry produced no output comparing the virtual commit "
-                f"for {branch_ref} against {into_ref} -- expected exactly one "
+                f"for {branch_ref} against {target_ref} -- expected exactly one "
                 "line for the one virtual commit; refusing to guess"
             )
         return all(line.startswith("-") for line in lines)

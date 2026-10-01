@@ -237,7 +237,14 @@ class VcsPort(Protocol):
         Constraints). Raises ``VcsCommandError`` on any git failure."""
         ...
 
-    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+    def is_branch_merged(
+        self,
+        repo_root: Path,
+        branch: str,
+        *,
+        into: str,
+        into_ref: str | None = None,
+    ) -> bool:
         """``True`` if ``branch``'s content is already safely captured on
         ``into`` -- patch-CONTENT equivalence, never bare commit-SHA
         ancestry (Story 1.8, AD-29's F-14 amendment): tries the cheap
@@ -248,8 +255,14 @@ class VcsPort(Protocol):
         cherry``'s patch-id matching, which correctly reads a SQUASH-merged
         branch (this repo's own landing convention: a single-parent "merge"
         commit whose tip is never an ancestor of ``into``) as merged even
-        after ``into`` has since advanced further. Raises
-        ``VcsCommandError`` on any git failure."""
+        after ``into`` has since advanced further.
+
+        ``into_ref`` (Story 72.1, CAP-280; keyword-only): a FULL refname --
+        e.g. the remote-tracking ``refs/remotes/origin/main`` -- that, when
+        given, replaces ``refs/heads/{into}`` verbatim for the ancestry check
+        and the patch-id fallback; the branch-name ``into`` form alone keeps
+        reading the local branch. Raises ``VcsCommandError`` on any git
+        failure."""
         ...
 
     def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:

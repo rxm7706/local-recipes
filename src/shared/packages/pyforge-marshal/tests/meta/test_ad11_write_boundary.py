@@ -121,7 +121,7 @@ class _RecordingVcs:
         # run_teardown's own refusal path never blocks this guard's run.
         return False
 
-    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
         # Story 1.8: a read -- never recorded. Merged by construction, for
         # the same reason as has_uncommitted_changes above.
         return True

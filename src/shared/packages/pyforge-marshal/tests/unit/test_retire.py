@@ -161,7 +161,7 @@ class _FakeVcs:
             raise VcsCommandError("fatal: bad revision")
         return ()
 
-    def is_branch_merged(self, repo_root, branch, *, into):
+    def is_branch_merged(self, repo_root, branch, *, into, into_ref=None):
         self.merged_calls.append(branch)
         if branch in self.merged_raises_for:
             raise VcsCommandError("git cherry failed")

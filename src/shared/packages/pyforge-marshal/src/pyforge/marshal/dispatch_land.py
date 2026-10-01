@@ -44,7 +44,7 @@ from .core.landing_checks import CheckRun, CheckState, classify_check_runs
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy, LandingCheckSettings, resolve_landing_check_settings
 from .core.refs import ORIGIN_MAIN as _ORIGIN_MAIN
-from .core.refs import ORIGIN_MAIN_SHORT, local_branch_ref
+from .core.refs import ORIGIN_MAIN_SHORT
 from .core.verdict import compute_verdict
 from .dispatch_land_heal import DispatchLandHealResult, try_heal_dispatch_land_merge
 from .dispatch_verify import (
@@ -59,8 +59,9 @@ _FORGE_REPO = "rxm7706/local-recipes"
 _MERGE_BASE = "main"
 _MAINTENANCE_LABEL = "maintenance"
 # Story 51.1: `_ORIGIN_MAIN` (imported above from `core.refs`, Story 60.1) is
-# deliberately never `_MERGE_BASE` (the LOCAL landing base used everywhere
-# else in this file). Verifying against the local `main` would reproduce
+# deliberately never `_MERGE_BASE`, which since Story 72.1 is only the PR's
+# base branch, the fetch argument and the heal base -- every merge fact in
+# this file reads `_ORIGIN_MAIN`. Verifying against the local `main` would reproduce
 # the exact blind spot this story fixes: the 50.4/27.5 incident's
 # operator-composed merge commit landed against `origin/main`, not
 # whatever a stale local `main` happened to be.
@@ -877,14 +878,25 @@ def execute_dispatch_land(
         )
         return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
 
+    # Story 72.1 (CAP-280): the ALREADY_LANDED read judges a merge from
+    # `origin/main`, never local `main` -- local `main` moves only when
+    # finalize can fast-forward the primary checkout, so a story merged on
+    # GitHub would read unlanded and be pushed and PR'd again. A failed
+    # fetch is tolerated (the read then uses the last-fetched remote-tracking
+    # ref); the merge-tree preview's own fetch still refuses a landing it
+    # cannot preview.
     try:
-        main_subjects = vcs.commit_subjects(git_repo_root, local_branch_ref(_MERGE_BASE))
+        vcs.fetch(git_repo_root, _ORIGIN_REMOTE, _MERGE_BASE)
+    except VcsCommandError:
+        pass
+    try:
+        main_subjects = vcs.commit_subjects(git_repo_root, _ORIGIN_MAIN)
     except VcsCommandError as exc:
         findings.append(
             Finding(
                 code="MRS-DISP-016",
                 severity=Severity.ERROR,
-                message=f"cannot read {_MERGE_BASE!r} history for landing: {exc}",
+                message=f"cannot read {ORIGIN_MAIN_SHORT!r} history for landing: {exc}",
             )
         )
         envelope = build_envelope(

@@ -178,7 +178,7 @@ class FakeVcs:
             raise self.fail_has_uncommitted_changes
         return worktree_path in self.dirty_worktrees
 
-    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
         self.calls.append("is_branch_merged")
         if self.fail_is_branch_merged:
             raise self.fail_is_branch_merged

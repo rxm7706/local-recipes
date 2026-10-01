@@ -28,6 +28,7 @@ from pyforge.marshal.core.identity import normalize, render_merge_subject
 from pyforge.marshal.core.journal import resolve_landing_checks_from_payload
 from pyforge.marshal.core.landing_checks import CheckRun
 from pyforge.marshal.core.model import Severity, Status, status_for
+from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT, local_branch_ref
 from pyforge.marshal.dispatch_land import (
     _SPEC_SURFACE_NAME_RE,
     _reconcile_spec_surface_drift,
@@ -101,8 +102,19 @@ class FakeVcs:
         branches: set[str] | None = None,
         worktrees: dict[str, Path] | None = None,
         conflict_paths: tuple[str, ...] | None = None,
+        merged_at: frozenset[str] | None = None,
+        fetch_fails: bool = False,
+        unreadable_refs: frozenset[str] = frozenset(),
     ) -> None:
+        """``merged_at`` (Story 72.1, CAP-280) makes ``commit_subjects`` ref-aware: the story's merge subject
+        shows only at the full refs listed, never at another. Left ``None``, ``merged`` answers for any ref.
+        ``fetch_fails`` makes ``fetch`` raise; ``unreadable_refs`` makes ``commit_subjects`` raise for a ref.
+        ``calls`` logs the fetches, merge reads and pushes in order."""
         self._merged = merged
+        self.merged_at = merged_at
+        self.fetch_fails = fetch_fails
+        self.unreadable_refs = unreadable_refs
+        self.calls: list[tuple[str, ...]] = []
         self.pushed: list[str] = []
         # Story 22.9: branch resolution reads which branches exist and where
         # git has each checked out.
@@ -117,7 +129,11 @@ class FakeVcs:
         return None
 
     def commit_subjects(self, repo_root: Path, ref: str):
-        if self._merged:
+        self.calls.append(("commit_subjects", ref))
+        if ref in self.unreadable_refs:
+            raise VcsCommandError(f"git log {ref} failed (test double)")
+        merged_here = self._merged if self.merged_at is None else ref in self.merged_at
+        if merged_here:
             effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
             key = normalize("22-4-example")
             subject = render_merge_subject(key, effective.merge_subject_template.value, "pyforge-marshal")
@@ -131,6 +147,7 @@ class FakeVcs:
         return self.worktrees.get(branch)
 
     def push(self, repo_root: Path, branch: str) -> None:
+        self.calls.append(("push", branch))
         self.pushed.append(branch)
 
     def resolve_ref(self, repo_root: Path, ref: str) -> str:
@@ -140,7 +157,9 @@ class FakeVcs:
         """Story 51.1: safe no-op default so every pre-existing ``FakeVcs()``
         construction keeps working now that ``execute_dispatch_land``
         unconditionally fetches ``origin/main`` before landing."""
-        return None
+        self.calls.append(("fetch", remote, ref))
+        if self.fetch_fails:
+            raise VcsCommandError("could not read from remote repository")
 
     def commits_behind(self, worktree_path: Path, tip_ref: str) -> int:
         """Story 51.1: ``0`` by default -- "already even with origin/main",
@@ -1231,7 +1250,8 @@ def test_execute_dispatch_land_records_no_memlog_paths_for_a_ledger_only_heal(tm
 
 
 class _HealFetchFailsVcs(HealCapableVcs):
-    """The landing's first fetch (the 51.1 preview gate) succeeds; the heal's fetch fails."""
+    """The landing's first two fetches (the ALREADY_LANDED read's, Story 72.1, then the 51.1 preview
+    gate's) succeed; the heal's fetch fails."""
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -1239,7 +1259,7 @@ class _HealFetchFailsVcs(HealCapableVcs):
 
     def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
         self.fetches += 1
-        if self.fetches > 1:
+        if self.fetches > 2:
             raise VcsCommandError("could not read from remote repository")
 
 
@@ -1268,7 +1288,7 @@ def test_execute_dispatch_land_skips_the_heal_when_its_fetch_fails(tmp_path: Pat
     assert result.verdict == DispatchLandingVerdict.REFUSED
     refusal = [f for f in envelope.findings if f.code == "MRS-DISP-020"]
     assert refusal and "heal skipped: could not fetch origin/main" in refusal[0].message
-    assert vcs.fetches == 2
+    assert vcs.fetches == 3
     assert vcs.probed == [] and vcs.merges == []
     assert forge.merge_calls == 1
 
@@ -1288,6 +1308,84 @@ def test_execute_dispatch_land_skips_when_already_on_main(tmp_path: Path) -> Non
     )
     assert result.verdict == DispatchLandingVerdict.ALREADY_LANDED
     assert envelope.data.get("already_landed") is True
+
+
+class _CreatePrSpyForge(FakeForge):
+    def __init__(self) -> None:
+        self.created: list[str] = []
+
+    def create_pr(self, repo, base, head_branch, title, body):
+        self.created.append(head_branch)
+        return super().create_pr(repo, base, head_branch, title, body)
+
+
+def _land_example(tmp_path: Path, vcs: FakeVcs, forge: FakeForge | None = None):
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    return execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=forge if forge is not None else FakeForge(),
+        process=FakeProcess(),
+    )
+
+
+def test_execute_dispatch_land_answers_already_landed_from_origin_main_while_local_main_lags(tmp_path: Path) -> None:
+    """Story 72.1 (CAP-280): a story merged on GitHub reads landed from `origin/main`, after a fetch,
+    though local `main` (the primary checkout, not yet fast-forwarded) lacks the merge -- no push, no PR."""
+    vcs = FakeVcs(merged_at=frozenset({ORIGIN_MAIN}))
+    forge = _CreatePrSpyForge()
+
+    result, envelope = _land_example(tmp_path, vcs, forge)
+
+    assert result.verdict == DispatchLandingVerdict.ALREADY_LANDED
+    assert envelope.data.get("already_landed") is True
+    assert vcs.pushed == []
+    assert forge.created == []
+    assert vcs.calls.index(("fetch", "origin", "main")) < vcs.calls.index(("commit_subjects", ORIGIN_MAIN))
+    assert ("commit_subjects", local_branch_ref("main")) not in vcs.calls
+
+
+def test_execute_dispatch_land_does_not_read_a_merge_only_local_main_carries_as_landed(tmp_path: Path) -> None:
+    """The reverse: a merge at `refs/heads/main` alone is no merge on `origin/main`, so the landing proceeds."""
+    vcs = FakeVcs(merged_at=frozenset({local_branch_ref("main")}))
+
+    result, envelope = _land_example(tmp_path, vcs)
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert envelope.data.get("already_landed") is not True
+    assert vcs.pushed == ["dispatch/pyforge-marshal/22.4"]
+
+
+def test_execute_dispatch_land_still_reads_origin_main_when_its_fetch_fails(tmp_path: Path) -> None:
+    vcs = FakeVcs(merged_at=frozenset({ORIGIN_MAIN}), fetch_fails=True)
+
+    result, _envelope = _land_example(tmp_path, vcs)
+
+    assert result.verdict == DispatchLandingVerdict.ALREADY_LANDED
+    assert ("fetch", "origin", "main") in vcs.calls
+    assert ("commit_subjects", ORIGIN_MAIN) in vcs.calls
+    assert vcs.pushed == []
+
+
+def test_execute_dispatch_land_refuses_naming_origin_main_when_its_history_is_unreadable(tmp_path: Path) -> None:
+    # Local `main` carries the merge: an unreadable `origin/main` is neither landed nor read from local.
+    vcs = FakeVcs(merged_at=frozenset({local_branch_ref("main")}), unreadable_refs=frozenset({ORIGIN_MAIN}))
+    forge = _CreatePrSpyForge()
+
+    result, envelope = _land_example(tmp_path, vcs, forge)
+
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    refusal = [finding for finding in envelope.findings if finding.code == "MRS-DISP-016"]
+    assert len(refusal) == 1
+    assert ORIGIN_MAIN_SHORT in refusal[0].message
+    assert "'main' history" not in refusal[0].message
+    assert vcs.pushed == []
+    assert forge.created == []
 
 
 def test_execute_dispatch_land_pushes_branch_when_verified(tmp_path: Path) -> None:
@@ -1760,7 +1858,8 @@ def test_execute_dispatch_land_skips_merge_tree_check_when_even_with_origin_main
     assert vcs.merge_tree_write_calls == []
     assert vcs.add_worktree_for_tree_calls == []
     assert vcs.removed_worktrees == []
-    assert vcs.fetch_calls == [("origin", "main")]
+    # The ALREADY_LANDED read's fetch (Story 72.1), then the preview gate's own.
+    assert vcs.fetch_calls == [("origin", "main"), ("origin", "main")]
     assert not any(f.code == "MRS-DISP-044" for f in envelope.findings)
 
 
