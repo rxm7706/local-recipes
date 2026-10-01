@@ -204,3 +204,28 @@ Minted 2026-10-01 by operator ruling: the deferral burn-down's "stop the inflow"
   - `[false]` `[reject]` The feed is read and written under `root`, not the worktree -- it is the exact path `_promote_sprint_ledger` reads and `sprint-ledger-sync` reads, and the worktree's directory is a link to the same store
   - `[false]` `[reject]` An uncorroborated landing still leaves the twin `done` and the feed `backlog` -- AC 5 requires that, and the twin promotion's unconditionality is pre-existing and outside the contract
   - `[false]` `[reject]` A `blocked` feed row leaves a plain sync refusing -- AC 2 and the Always boundary require `blocked` untouched; the sync's done-to-blocked refusal is its own guard working as designed
+
+## Auto Run Result
+
+Implementation pass 2 (after review pass 1, `bad_spec`). Status line and follow-up recommendation are the review step's.
+
+Files changed (all under `src/shared/packages/pyforge-marshal/`):
+- `src/pyforge/marshal/core/promotion.py` -- `PRE_DONE_SPEC_STATUSES` (seven members) and the pure `set_spec_status` (KEEP from attempt 1).
+- `src/pyforge/marshal/core/dispatch.py` -- `story_spec_rel_path`, called by `spec_text_at_ref` (KEEP from attempt 1).
+- `src/pyforge/marshal/dispatch_land_finalize/__main__.py` -- `_landing_corroboration` (fresh `origin/main` subjects joined with the scan's, judged by `corroborated_merged_story_keys`), `_promote_tier3_feed_row` (status-token guard, atomic write, WARN paths), `_promote_tracked_spec` (WARN for an absent spec, an unreadable or commented status, an unknown status; separate publish), and the three additive observation fields `landing_corroborated`, `feed_row_promoted`, `tracked_spec_promoted`. The Tier-3 promotion block is byte-identical to the baseline revision.
+- `tests/unit/test_dispatch_land_finalize.py`, `tests/unit/test_promotion.py`, `tests/unit/test_dispatch.py` -- the test list in Tasks (a)-(g); `_StubVcs` gained `commit_subjects`.
+
+AC 6 -- mutations run by hand on the final tree (the three touched test files, 273 tests; the source file restored and `cmp`-checked after each):
+- remove the feed write (`fs.write_text_atomic(feed_path, new_text)` -> `pass`): 19 failed
+- drop the corroboration gate (`_landing_corroboration` returns `True`): 5 failed
+- remove the spec publish (`commit_paths_onto_remote_tip` call replaced by a no-op): 4 failed
+- feed the gate from `scan.combined_subjects` alone: 33 failed
+
+Verification performed:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- 9248 passed, 1 skipped, 12 deselected, exit 0.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- 130 passed, 3 skipped, exit 0.
+- `pixi run --frozen -e pyforge-guild lint-types` -- exit 0 (ruff, ruff format, mypy over the ten packages, target-version, precommit-config).
+- `pixi run --frozen -e pyforge-guild spec-surface-check` -- exit 0.
+- Coverage of the touched source over the three test files: `dispatch_land_finalize/__main__.py` 99% (the two uncovered lines are the pre-existing intake `unlink` and the `__main__` guard), `core/promotion.py` 94% with every new line covered.
+
+Deferred item settled (`deferred:` in the frontmatter, Edge Case Hunter): on the pixi interpreter (Python 3.14.7, the package's `requires-python >= 3.14`) `dispatch_core.story_spec_rel_path` over a `specs/` directory made unreadable (`chmod 000`) returns `None` instead of raising, because `Path.is_file()` swallows the error; `GitVcs` wraps its git failures in `VcsCommandError`. Neither new gate read can raise anything else there, so no extra guard was added.
