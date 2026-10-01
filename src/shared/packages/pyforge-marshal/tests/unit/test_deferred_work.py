@@ -12,12 +12,10 @@ from pyforge.marshal.core.deferred_work import (
     DeferralCandidate,
     FollowupReviewCandidate,
     append_ledger_entry,
-    close_followup_review_row,
     deferrals_to_promote,
     followup_review_candidate,
     followup_review_id,
     followup_review_to_promote,
-    open_followup_review_id,
     parse_followup_deferrals,
     promoted_id,
     render_followup_review_entry,
@@ -533,124 +531,3 @@ def test_render_followup_review_entry_matches_the_golden_shape():
 def test_append_ledger_entry_separates_with_one_blank_line_and_ends_in_one_newline():
     assert append_ledger_entry("# Ledger\n\nold\n\n\n", "### new\n") == "# Ledger\n\nold\n\n### new\n"
     assert append_ledger_entry("", "### new\n") == "### new\n"
-
-
-# --- the row, read open and closed (Story 73.1, CAP-281) ----------------------------
-
-
-def _open_row_ledger(*, other_rows: str = "") -> str:
-    """A ledger whose ``DW-FRR-51-2`` row was rendered by the carry (Story 66.1), plus ``other_rows``."""
-    return (
-        "# Ledger\n\nold\n\n" + render_followup_review_entry(_frr_candidate(), promoted_date="2026-10-01") + other_rows
-    )
-
-
-def test_open_followup_review_id_names_the_open_row():
-    assert open_followup_review_id(_open_row_ledger(), normalize("51.2")) == "DW-FRR-51-2"
-
-
-def test_open_followup_review_id_takes_the_story_key_as_text_too():
-    assert open_followup_review_id(_open_row_ledger(), "51.2") == "DW-FRR-51-2"
-    assert open_followup_review_id(_open_row_ledger(), "51-2-the-landing-record") == "DW-FRR-51-2"
-    assert open_followup_review_id(_open_row_ledger(), "51.3") is None
-
-
-def test_open_followup_review_id_is_none_without_a_row():
-    assert open_followup_review_id("# Ledger\n\nold\n", normalize("51.2")) is None
-    assert open_followup_review_id("", normalize("51.2")) is None
-
-
-def test_open_followup_review_id_is_none_for_a_closed_row():
-    closed = close_followup_review_row(
-        _open_row_ledger(), "DW-FRR-51-2", resolved_date="2026-10-02", landing="Merge pyforge-marshal/51-2 into main"
-    )
-    assert closed is not None
-    assert open_followup_review_id(closed, normalize("51.2")) is None
-
-
-def test_open_followup_review_id_is_not_fooled_by_a_prefix_collision():
-    sibling = _open_row_ledger().replace("DW-FRR-51-2:", "DW-FRR-51-20:")
-    assert open_followup_review_id(sibling, normalize("51.2")) is None
-    assert open_followup_review_id(sibling, normalize("51.20")) == "DW-FRR-51-20"
-
-
-def test_open_followup_review_id_ignores_an_id_that_only_appears_in_prose():
-    prose = (
-        "### DW-FU-51-2-1: a hand-filed row\n\n- source_spec: `x`\n  verified: DW-FRR-51-2 is the carry\n"
-        "  status: open\n"
-    )
-    assert open_followup_review_id(prose, normalize("51.2")) is None
-
-
-def test_open_followup_review_id_reads_the_status_of_its_own_row_only():
-    """Another row's open ``status:`` after a closed ``DW-FRR`` row is not this row's status."""
-    closed_row = _open_row_ledger().replace("  status: open", "  status: closed")
-    next_row = "\n### DW-X-1: other\n\n- source_spec: `x`\n  status: open\n"
-    assert open_followup_review_id(closed_row + next_row, normalize("51.2")) is None
-
-
-def test_open_followup_review_id_tolerates_a_status_comment_and_a_bullet():
-    bulleted = "### DW-FRR-51-2: x\n\n- status: open  # still to do\n"
-    assert open_followup_review_id(bulleted, normalize("51.2")) == "DW-FRR-51-2"
-
-
-def test_close_followup_review_row_renders_the_row_closed_in_place():
-    ledger = _open_row_ledger(other_rows="\n### DW-X-1: other\n\n- source_spec: `x`\n  status: open\n")
-    closed = close_followup_review_row(
-        ledger, "DW-FRR-51-2", resolved_date="2026-10-02", landing="Merge pyforge-marshal/51-2 into main"
-    )
-    assert closed == ledger.replace(
-        "  status: open\n\n### DW-X-1",
-        "  resolved: 2026-10-02 (dispatch-land finalize: Merge pyforge-marshal/51-2 into main)\n"
-        "  status: closed\n\n### DW-X-1",
-    )
-    # Only the FRR row moved: the neighbouring row is still open.
-    assert closed is not None
-    assert closed.endswith("  status: open\n")
-
-
-def test_close_followup_review_row_is_a_no_op_for_a_closed_or_absent_row():
-    ledger = _open_row_ledger()
-    closed = close_followup_review_row(ledger, "DW-FRR-51-2", resolved_date="2026-10-02", landing="L")
-    assert closed is not None
-    assert close_followup_review_row(closed, "DW-FRR-51-2", resolved_date="2026-10-03", landing="L") is None
-    assert close_followup_review_row(ledger, "DW-FRR-9-9", resolved_date="2026-10-02", landing="L") is None
-    assert close_followup_review_row("", "DW-FRR-51-2", resolved_date="2026-10-02", landing="L") is None
-
-
-def test_close_followup_review_row_is_not_fooled_by_a_prefix_collision():
-    sibling = _open_row_ledger().replace("DW-FRR-51-2:", "DW-FRR-51-20:")
-    assert close_followup_review_row(sibling, "DW-FRR-51-2", resolved_date="2026-10-02", landing="L") is None
-
-
-def test_close_followup_review_row_leaves_prose_mentions_of_the_id_alone():
-    prose = "### DW-FU-51-2-1: x\n\n  verified: DW-FRR-51-2\n  status: open\n"
-    assert close_followup_review_row(prose, "DW-FRR-51-2", resolved_date="2026-10-02", landing="L") is None
-
-
-def test_close_followup_review_row_closes_a_bulleted_status_at_its_own_indent():
-    closed = close_followup_review_row(
-        "### DW-FRR-51-2: x\n\n- status: open\n", "DW-FRR-51-2", resolved_date="2026-10-02", landing="L"
-    )
-    assert closed == ("### DW-FRR-51-2: x\n\n  resolved: 2026-10-02 (dispatch-land finalize: L)\n- status: closed\n")
-
-
-def test_close_followup_review_row_collapses_a_multi_line_landing_onto_one_line():
-    closed = close_followup_review_row(
-        _open_row_ledger(), "DW-FRR-51-2", resolved_date="2026-10-02", landing="Merge a\n  into   main\n"
-    )
-    assert closed is not None
-    assert "  resolved: 2026-10-02 (dispatch-land finalize: Merge a into main)\n  status: closed\n" in closed
-
-
-def test_close_followup_review_row_names_a_blank_landing():
-    closed = close_followup_review_row(_open_row_ledger(), "DW-FRR-51-2", resolved_date="2026-10-02", landing="  ")
-    assert closed is not None
-    assert "(dispatch-land finalize: the follow-up review landed)" in closed
-
-
-def test_close_then_carry_adds_no_second_row():
-    """A closed ``DW-FRR`` row still heads the ledger, so the carry (Story 66.1) never re-adds it."""
-    closed = close_followup_review_row(_open_row_ledger(), "DW-FRR-51-2", resolved_date="2026-10-02", landing="L")
-    assert closed is not None
-    assert followup_review_to_promote(_frr_candidate(), closed) is None

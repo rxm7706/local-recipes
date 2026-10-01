@@ -17,11 +17,7 @@ from pyforge.marshal.core.dispatch_completion import (
     DispatchCompletionInput,
     DispatchGitFacts,
     DispatchSessionVerdict,
-    has_git_progress,
-    is_spec_only_narration,
     judge_dispatch_completion,
-    merge_subject_ref,
-    narration_spec_path,
     zombie_redispatch_evidence,
 )
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
@@ -449,47 +445,3 @@ def test_live_dispatch_conflict_refuses_marshal_initiated_zombie_redispatch(
     )
     assert evidence is not None
     assert "git facts" in evidence
-
-
-# --- a follow-up review run's two scopes (Story 73.1, CAP-281) ----------------
-
-
-def test_merge_subject_ref_is_the_whole_ref_for_a_normal_run() -> None:
-    assert merge_subject_ref("abc123", "refs/remotes/origin/main", followup_review=False) == "refs/remotes/origin/main"
-
-
-def test_merge_subject_ref_is_the_range_since_the_baseline_for_a_follow_up() -> None:
-    assert (
-        merge_subject_ref("abc123", "refs/remotes/origin/main", followup_review=True)
-        == "abc123..refs/remotes/origin/main"
-    )
-
-
-_SPEC_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-2-x.md"
-
-
-def test_narration_spec_path_keeps_the_path_for_a_normal_run_and_drops_it_for_a_follow_up() -> None:
-    assert narration_spec_path(_SPEC_REL, followup_review=False) == _SPEC_REL
-    assert narration_spec_path(_SPEC_REL, followup_review=True) is None
-    assert narration_spec_path(None, followup_review=False) is None
-    assert narration_spec_path(None, followup_review=True) is None
-
-
-def _spec_only_facts() -> DispatchGitFacts:
-    return DispatchGitFacts(
-        baseline_head_sha="aaa",
-        current_head_sha="bbb",
-        changed_paths=(_SPEC_REL,),
-        branch_merged=False,
-        story_merged_on_main=False,
-    )
-
-
-def test_a_spec_only_diff_is_narration_for_a_normal_run_and_progress_for_a_follow_up() -> None:
-    git = _spec_only_facts()
-    normal = narration_spec_path(_SPEC_REL, followup_review=False)
-    followup = narration_spec_path(_SPEC_REL, followup_review=True)
-    assert is_spec_only_narration(git.changed_paths, normal) is True
-    assert has_git_progress(git, spec_relative_path=normal) is False
-    assert is_spec_only_narration(git.changed_paths, followup) is False
-    assert has_git_progress(git, spec_relative_path=followup) is True

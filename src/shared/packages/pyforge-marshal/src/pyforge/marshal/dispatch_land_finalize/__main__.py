@@ -78,21 +78,6 @@ class _FollowupReviewCarry:
     finding: Finding | None = None
 
 
-@dataclass
-class _FollowupReviewClose:
-    """Story 73.1 (spec-pyforge-marshal CAP-281): the open ``DW-FRR-<story>`` row a landed follow-up review
-    run served, to be rendered closed in the same locked publish. ``dw_id``, ``landing`` (the merge subject
-    the landing rendered) and ``resolved_date`` go in; ``closed_id`` (set only once the closure is on
-    ``origin/main``) and ``finding`` (the WARN the intake's single return value has no room for) come
-    back -- ``_FollowupReviewCarry``'s own in/out shape."""
-
-    dw_id: str
-    landing: str
-    resolved_date: str
-    closed_id: str | None = None
-    finding: Finding | None = None
-
-
 def _run_intake_script(process: ProcessPort, root: Path, short_slug: str) -> Finding | None:
     """Run ``scripts/deferred_work_intake.py --fix`` (Story 53.2): ``None`` on a clean run, an
     ``MRS-DISP-047`` WARN when it cannot launch or refuses."""
@@ -131,45 +116,6 @@ def _restore_ledger_copy(fs: FsPort, path: Path, text: str | None) -> None:
         fs.write_text_atomic(path, text)
 
 
-def _ledger_publish_base(
-    vcs: VcsPort,
-    root: Path,
-    ledger_rel: str,
-    original_text: str | None,
-    new_text: str | None,
-    *,
-    retry: str,
-) -> tuple[str | None, str | None]:
-    """The ledger text a row edit is built on (Story 66.1's base-text rule, shared by Story 73.1's closure):
-    ``(base, None)``, or ``(None, reason)`` when the edit must be skipped. ``retry`` is the verb the skip
-    reason's re-run hint uses (``carries`` / ``closes``).
-
-    ``commit_paths_onto_remote_tip`` writes the caller's text over the fetched ``origin/main`` tip, so the
-    base is the tip's ledger -- fetched and read here, under the lock the caller holds -- never the primary's
-    possibly stale copy: ``remote_text`` when the intake changed nothing (``new_text == original_text``);
-    ``new_text`` when the intake changed a primary copy that was the tip's text
-    (``original_text == remote_text``); otherwise no base, because two texts are never merged. A tip that
-    cannot be fetched or read, and a ledger absent at the tip (one row never creates it), give no base."""
-    try:
-        vcs.fetch(root, "origin", "main")
-        remote_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, ledger_rel)
-    except VcsCommandError as exc:
-        return None, f"cannot read the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT}: {exc}"
-    if remote_text is None:
-        return (
-            None,
-            f"the deferred-work ledger {ledger_rel!r} does not exist at {ORIGIN_MAIN_SHORT} (one row never creates it)",
-        )
-    if new_text == original_text:
-        return remote_text, None
-    if original_text == remote_text:
-        return new_text or "", None
-    return None, (
-        f"the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT} is not the copy the intake just "
-        f"changed, so the two are not merged; a re-run of finalize {retry} it"
-    )
-
-
 def _carry_followup_row(
     vcs: VcsPort,
     root: Path,
@@ -199,59 +145,39 @@ def _carry_followup_row(
     the intake's own publish."""
     story = followup.candidate.story_key
     row_id = deferred_work.followup_review_id(story)
-    base, skip_reason = _ledger_publish_base(vcs, root, ledger_rel, original_text, new_text, retry="carries")
-    if base is None:
+
+    def _skip(reason: str) -> tuple[str | None, None]:
         followup.finding = Finding(
             code="MRS-DISP-047",
             severity=Severity.WARN,
-            message=f"story {story}'s recommended follow-up review row ({row_id}) was not carried: {skip_reason}",
+            message=f"story {story}'s recommended follow-up review row ({row_id}) was not carried: {reason}",
             path=ledger_rel,
         )
         return new_text, None
+
+    try:
+        vcs.fetch(root, "origin", "main")
+        remote_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, ledger_rel)
+    except VcsCommandError as exc:
+        return _skip(f"cannot read the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT}: {exc}")
+    if remote_text is None:
+        return _skip(
+            f"the deferred-work ledger {ledger_rel!r} does not exist at {ORIGIN_MAIN_SHORT} (one row never creates it)"
+        )
+    if new_text == original_text:
+        base = remote_text
+    elif original_text == remote_text:
+        base = new_text or ""
+    else:
+        return _skip(
+            f"the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT} is not the copy the intake just "
+            "changed, so the two are not merged; a re-run of finalize carries it"
+        )
     row = deferred_work.followup_review_to_promote(followup.candidate, base)
     if row is None:
         return new_text, None
     entry = deferred_work.render_followup_review_entry(row, promoted_date=followup.promoted_date)
     return deferred_work.append_ledger_entry(base, entry), row_id
-
-
-def _close_followup_row(
-    vcs: VcsPort,
-    root: Path,
-    ledger_rel: str,
-    original_text: str | None,
-    new_text: str | None,
-    publish_text: str | None,
-    carried: bool,
-    close: _FollowupReviewClose,
-) -> tuple[str | None, str | None]:
-    """Story 73.1 (CAP-281): the ledger text to publish with ``close``'s ``DW-FRR-<story>`` row rendered closed,
-    and that row's id -- or ``(publish_text, None)`` when there is nothing to close (the row is absent or no
-    longer ``open``, so a re-run closes nothing twice) or the closure was skipped with a WARN on
-    ``close.finding``. A skip never touches the text already built for the intake's own publish.
-
-    It rides the same base as the carry (``_ledger_publish_base``): ``publish_text`` itself when the carry
-    just built it on the tip's ledger (``carried``), else the tip's ledger the closure fetches and reads."""
-    row_id = close.dw_id
-    if carried:
-        base: str | None = publish_text
-        skip_reason: str | None = None
-    else:
-        base, skip_reason = _ledger_publish_base(vcs, root, ledger_rel, original_text, new_text, retry="closes")
-    if base is None:
-        close.finding = Finding(
-            code="MRS-DISP-047",
-            severity=Severity.WARN,
-            message=f"the follow-up review row ({row_id}) was not closed: {skip_reason}",
-            path=ledger_rel,
-        )
-        return publish_text, None
-    closed = deferred_work.close_followup_review_row(
-        base, row_id, resolved_date=close.resolved_date, landing=close.landing
-    )
-    if closed is None:
-        return publish_text, None
-    return closed, row_id
 
 
 def _run_deferred_work_intake(
@@ -263,7 +189,6 @@ def _run_deferred_work_intake(
     story_key: str,
     *,
     followup: _FollowupReviewCarry | None = None,
-    close: _FollowupReviewClose | None = None,
 ) -> Finding | None:
     """Story 53.2 (spec-pyforge-marshal CAP-261b): promote this landing's
     story spec's own frontmatter ``deferred:`` entries into the project's
@@ -304,12 +229,7 @@ def _run_deferred_work_intake(
     put back). Any failure to carry the row is a WARN on ``followup.finding``
     and never touches the intake's own publish; a publish that fails after a
     refused intake has no return slot of its own (the refusal holds it) and
-    lands there too.
-
-    Story 73.1 (CAP-281): ``close``, when given, is the open ``DW-FRR-<story>`` row a landed follow-up review
-    run served. It is rendered ``status: closed`` (``resolved:`` naming the landing) on the same
-    ``origin/main``-based text, inside the same lock and the same single publish, by ``_close_followup_row``;
-    its failures are a WARN on ``close.finding`` and never touch the intake's own publish."""
+    lands there too."""
     short_slug = project_slug.removeprefix(_PROJECT_SLUG_PREFIX)
     tracked_path = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "deferred-work-ledger.md"
     tracked_rel = f"_bmad-output/projects/{project_slug}/planning-artifacts/deferred-work-ledger.md"
@@ -323,8 +243,6 @@ def _run_deferred_work_intake(
                 f"; story {story}'s recommended follow-up review row "
                 f"({deferred_work.followup_review_id(story)}) was not carried"
             )
-        if close is not None:
-            not_carried += f"; the follow-up review row ({close.dw_id}) was not closed"
         return Finding(
             code="MRS-DISP-047",
             severity=Severity.WARN,
@@ -350,36 +268,10 @@ def _run_deferred_work_intake(
         publish_text, row_id = new_text, None
         if followup is not None:
             publish_text, row_id = _carry_followup_row(vcs, root, tracked_rel, original_text, new_text, followup)
-        closed_id: str | None = None
-        if close is not None:
-            publish_text, closed_id = _close_followup_row(
-                vcs, root, tracked_rel, original_text, new_text, publish_text, row_id is not None, close
-            )
-        if row_id is None and closed_id is None and publish_text == original_text:
+        if row_id is None and publish_text == original_text:
             return intake_finding
         intake_rows = new_text != original_text
-        if closed_id is not None:
-            # Story 73.1: the closure names every edit this one publish carries.
-            actions = [
-                *(["promote deferred-work intake"] if intake_rows else []),
-                *([f"carry follow-up review row {row_id}"] if row_id is not None else []),
-                f"close follow-up review row {closed_id}",
-            ]
-            kinds = [
-                *(["intake"] if intake_rows else []),
-                *(["follow-up review carry"] if row_id is not None else []),
-                "follow-up review closure",
-            ]
-            commit_message = f"marshal: {' and '.join(actions)} for {short_slug!r}"
-            skip_reason = f"marshal deferred-work {' and '.join(kinds)} for {short_slug!r}, story {story_key}"
-            published = " and ".join(
-                [
-                    *(["deferred-work intake"] if intake_rows else []),
-                    *([f"follow-up review row {row_id}"] if row_id is not None else []),
-                    f"closure of follow-up review row {closed_id}",
-                ]
-            )
-        elif row_id is None:
+        if row_id is None:
             commit_message = f"marshal: promote deferred-work intake for {short_slug!r}"
             skip_reason = f"marshal deferred-work intake for {short_slug!r}, story {story_key}"
             published = "deferred-work intake"
@@ -422,18 +314,13 @@ def _run_deferred_work_intake(
         else:
             if followup is not None and row_id is not None:
                 followup.promoted_id = row_id
-            if close is not None and closed_id is not None:
-                close.closed_id = closed_id
         finally:
             _restore_ledger_copy(fs, tracked_path, original_text)
         if intake_finding is None:
             return commit_finding
-        # A refused run publishes only the follow-up rows, so a failed publish has no other place to go.
-        if commit_finding is not None:
-            if followup is not None:
-                followup.finding = commit_finding
-            elif close is not None:
-                close.finding = commit_finding
+        # A refused run publishes only the follow-up row, so a failed publish has no other place to go.
+        if commit_finding is not None and followup is not None:
+            followup.finding = commit_finding
         return intake_finding
     finally:
         fs.release_advisory_lock(lock)
@@ -743,8 +630,6 @@ def finalize_dispatch_land(
     worktree: Path | None = None,
     process: ProcessPort | None = None,
     clock: ClockPort | None = None,
-    followup_review_id: str | None = None,
-    landing: str | None = None,
 ) -> int:
     """Run the post-merge finalize sequence for ``story_key``.
 
@@ -754,10 +639,7 @@ def finalize_dispatch_land(
     its spec there instead; it is also the second place the tracked spec is
     looked for (Story 79.1). ``None`` (the default) scans only the primary.
     ``clock`` (Story 66.1) dates the follow-up review row; ``None`` is the
-    system clock. ``followup_review_id`` and ``landing`` (Story 73.1, CAP-281)
-    are the open ``DW-FRR-<story>`` row a landed follow-up review run served and
-    the merge subject that landed it: the row is closed in the intake step's own
-    locked publish. ``None`` (every normal landing) closes nothing."""
+    system clock."""
     root = repo_root()
     fs = LocalFs()
     vcs = GitVcs()
@@ -877,26 +759,11 @@ def finalize_dispatch_land(
     # publish, read after the resync so the primary holds the spec the merged PR may have added. Every
     # failure is a WARN: the PR has already merged.
     followup = _followup_review_carry(vcs, root, project_slug, key, worktree, clock, findings)
-    # Story 73.1 (CAP-281): the follow-up review run that just landed closes the row it served, in the
-    # same locked publish as the carry above -- a normal landing passes no row id and closes nothing.
-    close = (
-        _FollowupReviewClose(
-            dw_id=followup_review_id,
-            landing=landing or "",
-            resolved_date=clock.now().date().isoformat(),
-        )
-        if followup_review_id is not None
-        else None
-    )
-    intake_finding = _run_deferred_work_intake(
-        process, fs, vcs, root, project_slug, str(key), followup=followup, close=close
-    )
+    intake_finding = _run_deferred_work_intake(process, fs, vcs, root, project_slug, str(key), followup=followup)
     if intake_finding is not None:
         findings.append(intake_finding)
     if followup is not None and followup.finding is not None:
         findings.append(followup.finding)
-    if close is not None and close.finding is not None:
-        findings.append(close.finding)
     deploy_run.write(
         findings,
         kind=_FINALIZE_RESYNC_KIND,
@@ -914,9 +781,6 @@ def finalize_dispatch_land(
             # Story 66.1 (CAP-275): the `DW-FRR-<story>` row THIS run published onto origin/main, else null
             # (not flagged, already carried, or a failed read/publish -- the WARN names which).
             "followup_review_promoted_id": followup.promoted_id if followup is not None else None,
-            # Story 73.1 (CAP-281): the `DW-FRR-<story>` row THIS run closed on origin/main, else null (a
-            # normal landing, a row already closed or absent, or a failed publish -- the WARN names which).
-            "followup_review_closed_id": close.closed_id if close is not None else None,
             # Story 68.1 (CAP-277): every finding this run collected, all severities -- the
             # promotion's MRS-LAND-011, the resync's MRS-LAND-009, MRS-DISP-051 -- so a failed
             # step is on the journal, not only in a stderr nobody reads.
@@ -936,20 +800,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("project_slug")
     parser.add_argument("story_key")
     parser.add_argument("worktree", nargs="?", default=None)
-    # Story 73.1 (CAP-281): a follow-up review run's landing names the row it closes and the merge subject.
-    parser.add_argument("--followup-review-id", dest="followup_review_id", default=None)
-    parser.add_argument("--landing-subject", dest="landing_subject", default=None)
     args = parser.parse_args(argv)
     worktree = Path(args.worktree) if args.worktree is not None else None
-    if args.followup_review_id is None:
-        return finalize_dispatch_land(args.project_slug, args.story_key, worktree)
-    return finalize_dispatch_land(
-        args.project_slug,
-        args.story_key,
-        worktree,
-        followup_review_id=args.followup_review_id,
-        landing=args.landing_subject,
-    )
+    return finalize_dispatch_land(args.project_slug, args.story_key, worktree)
 
 
 if __name__ == "__main__":

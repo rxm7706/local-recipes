@@ -51,16 +51,8 @@ from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core import (
-    deferred_work,
-    dispatch_flag_gate,
-    dispatch_fleet,
-    dispatch_re_preflight,
-    gate,
-    harness_profile,
-    policy,
-)
 from ..core import dispatch as dispatch_core
+from ..core import dispatch_flag_gate, dispatch_fleet, dispatch_re_preflight, gate, harness_profile, policy
 from ..core import promotion as promotion_core
 from ..core.dispatch_completion import (
     DispatchGitFacts,
@@ -69,10 +61,8 @@ from ..core.dispatch_completion import (
     zombie_redispatch_evidence,
 )
 from ..core.dispatch_harness_done import (
-    FollowupReview,
     blocks_harness_relaunch,
     followup_review_recommended,
-    is_followup_review_spec,
     land_fail_operator_message,
     parse_blocking_condition,
     parse_spec_status,
@@ -868,27 +858,6 @@ def _seed_dispatch_structure_graph(
         seconds=_elapsed(),
         findings=tuple(findings),
     )
-
-
-def _derive_followup_review(
-    *, fs: FsPort, repo_root: Path, slug: str, story_key: StoryKey, spec_text: str
-) -> FollowupReview | None:
-    """Story 73.1 (spec-pyforge-marshal CAP-281): the follow-up review marker of a launch, or ``None``.
-
-    A launch is a follow-up review run when the story's tracked spec (``spec_text``, the primary's) reads
-    ``status: done`` with ``followup_review_recommended`` an explicit truthy -- the pairing Story 29.2 lets
-    through to a fresh review. The marker is derived, never declared: ``dw_id`` is the open
-    ``DW-FRR-<story>`` row the station's tracked ``deferred-work-ledger.md`` holds for the story (``None``
-    when it holds none, or cannot be read -- the launch proceeds either way)."""
-    if not is_followup_review_spec(spec_text):
-        return None
-    ledger_path = dispatch_core.planning_specs_dir(repo_root, slug).parent / "deferred-work-ledger.md"
-    try:
-        ledger_text = fs.read_text(ledger_path)
-    except FsError:
-        ledger_text = None
-    dw_id = deferred_work.open_followup_review_id(ledger_text, story_key) if ledger_text is not None else None
-    return FollowupReview(dw_id=dw_id)
 
 
 def _spec_text_prefer_worktree(spec_path: Path, repo_root: Path, worktree: Path, main_text: str) -> str:
@@ -2648,12 +2617,6 @@ def dispatch_once(
         )
         return _done()
 
-    # Story 73.1 (CAP-281): a launch on a `done` spec whose flag is still true is a follow-up review run --
-    # derived here, journaled on the launch INTENT below, and read back by the supervisor and the landing.
-    followup_review = _derive_followup_review(
-        fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, spec_text=spec_text
-    )
-
     writer_id = _writer_id()
     mint_moment = _now_utc()
     run_id = mint_run_id(slug, _format_utc_compact(mint_moment), _random_token())
@@ -2698,7 +2661,6 @@ def dispatch_once(
                 if escalated
                 else {}
             ),
-            **(followup_review.to_intent_payload() if followup_review is not None else {}),
         },
     )
     try:
