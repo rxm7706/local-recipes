@@ -171,7 +171,17 @@ class FakeVcs:
         push_raises: bool = False,
         patch_raises: bool = False,
         remote_tip_raises: bool = False,
+        subjects_by_ref: dict[str, tuple[str, ...]] | None = None,
+        merged_into_refs: frozenset[str] | None = None,
+        unreadable_refs: dict[str, int] | None = None,
     ) -> None:
+        """``subjects_by_ref`` / ``merged_into_refs`` / ``unreadable_refs`` (Story 72.1, CAP-280) make the
+        merge reads ref-aware: ``commit_subjects`` answers per full ref (an unlisted ref is an empty
+        history), ``is_branch_merged`` answers true only for a target in ``merged_into_refs`` (the full
+        ref given as ``into_ref``, else ``refs/heads/{into}``), and ``unreadable_refs`` maps a ref to how
+        many ``commit_subjects`` reads of it raise ``VcsCommandError`` before it reads again. Left unset,
+        ``subjects`` / ``branch_merged`` answer for any ref, as before. ``calls`` logs every merge read
+        and every fetch, in order."""
         self._head_shas = list(head_shas) if head_shas is not None else None
         self.head_sha = head_sha
         self.changed = changed
@@ -197,6 +207,10 @@ class FakeVcs:
         self.pushes: list[tuple[Path, str]] = []
         self.remote_tip_writes: list[tuple[str, ...]] = []
         self.remote_tip_reasons: list[str | None] = []
+        self.subjects_by_ref = subjects_by_ref
+        self.merged_into_refs = merged_into_refs
+        self._unreadable_refs = dict(unreadable_refs or {})
+        self.calls: list[tuple[str, ...]] = []
 
     # -- reads ------------------------------------------------------------
     def worktree_head_sha(self, worktree_path: Path) -> str:
@@ -219,9 +233,19 @@ class FakeVcs:
         return self.branch_worktrees.get(branch)
 
     def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+        target = into_ref if into_ref is not None else f"refs/heads/{into}"
+        self.calls.append(("is_branch_merged", target))
+        if self.merged_into_refs is not None:
+            return target in self.merged_into_refs
         return self.branch_merged
 
     def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
+        self.calls.append(("commit_subjects", ref))
+        if self._unreadable_refs.get(ref, 0) > 0:
+            self._unreadable_refs[ref] -= 1
+            raise VcsCommandError(f"git log {ref} failed (test double)")
+        if self.subjects_by_ref is not None:
+            return self.subjects_by_ref.get(ref, ())
         return self.subjects
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
@@ -241,6 +265,7 @@ class FakeVcs:
 
     # -- writes -----------------------------------------------------------
     def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
+        self.calls.append(("fetch", remote, ref))
         if self._fetch_raises:
             raise VcsCommandError("git fetch failed (test double)")
         self.fetches.append((repo_root, remote, ref))
