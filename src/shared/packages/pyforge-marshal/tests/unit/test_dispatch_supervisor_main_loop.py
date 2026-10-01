@@ -3464,3 +3464,84 @@ def test_a_normal_run_passes_the_landing_no_follow_up_marker(
     assert "followup_review" not in land_calls[0]
     assert [call for call in vcs.calls if call[0] == "commit_subjects"]
     assert all(call == ("commit_subjects", ORIGIN_MAIN) for call in vcs.calls if call[0] == "commit_subjects")
+
+
+def _spy_terminal_verdicts(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, object]]:
+    """The keyword arguments of every ``resolve_terminal_session_verdict`` call the loop makes, calling through."""
+    real = supervisor_main.resolve_terminal_session_verdict
+    calls: list[dict[str, object]] = []
+
+    def _wrapper(**kwargs):
+        calls.append(kwargs)
+        return real(**kwargs)
+
+    monkeypatch.setattr(supervisor_main, "resolve_terminal_session_verdict", _wrapper)
+    return calls
+
+
+def test_every_terminal_verdict_read_of_a_follow_up_run_takes_no_narration_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    relative = _seed_spec_only_run(repo_root, _followup_launch_line())
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch)
+    verdict_reads = _spy_terminal_verdicts(monkeypatch)
+
+    _run(
+        repo_root,
+        fs=FakeFs(),
+        vcs=_first_landing_vcs(head_sha=_MOVED, changed=(relative,)),
+        process=FakeProcess(alive=False),
+        publisher=FakePublisher(),
+    )
+
+    assert len(verdict_reads) >= 3  # the loop head, the post-finalize re-read and the post-land re-read
+    assert all(read["spec_relative_path"] is None for read in verdict_reads)
+
+
+def test_every_terminal_verdict_read_of_a_normal_run_still_takes_the_spec_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    relative = _seed_spec_only_run(repo_root, _launch_line())
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch)
+    verdict_reads = _spy_terminal_verdicts(monkeypatch)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+
+    _run(
+        repo_root,
+        fs=FakeFs(),
+        vcs=FakeVcs(branches=frozenset({branch}), head_sha=_MOVED, changed=(relative,)),
+        process=FakeProcess(alive=False),
+        publisher=FakePublisher(),
+    )
+
+    assert verdict_reads
+    assert all(read["spec_relative_path"] == relative for read in verdict_reads)
+
+
+def test_a_failed_follow_up_run_with_a_spec_only_diff_preserves_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """A follow-up's spec-only diff is progress, so a verification the run then fails still preserves it."""
+    repo_root = _repo(tmp_path)
+    relative = _seed_spec_only_run(repo_root, _followup_launch_line())
+    _patch_verification(monkeypatch, _refused_envelope)
+    land_calls = _patch_landing(monkeypatch)
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=fs,
+        vcs=_first_landing_vcs(head_sha=_MOVED, changed=(relative,), patch="diff --git a/spec b/spec\n"),
+        process=FakeProcess(alive=False),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    assert land_calls == []
+    assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.FAILED.value]
+    assert dispatch_core.KIND_DISPATCH_PRESERVE in fs.journal_text(_run_dir(repo_root))
