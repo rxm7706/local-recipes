@@ -2,8 +2,7 @@
 title: '73.1: A follow-up review run is judged and landed by its own branch'
 type: 'fix'
 created: '2026-09-28'
-status: 'blocked'
-baseline_revision: '26028262eb1275a516c451b3362d48616e96bd44'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -28,9 +27,12 @@ declared_low_risk: false
 - Nothing closes the `DW-FRR` row.
 
 **Approach:**
-- **The marker is derived, not declared.** `dispatch_once` reads the story's tracked spec (the primary's, as it does today) and, when `parse_spec_status` is `done` and `core/dispatch_harness_done.followup_review_recommended` is true, marks the run a follow-up review run: the launch INTENT payload carries `followup_review: {"dw_id": "<DW-FRR-…>" | null}` (the open row's id read from the station's tracked deferred-work ledger, `null` when none). No CLI flag.
-- **Judged by its own branch.** For a follow-up run (read from its own launch INTENT), the supervisor's `story_merged_on_main` counts only merge subjects on `origin/main` that are not ancestors of the run's `baseline_head_sha` (for example `commit_subjects` over `<baseline>..refs/remotes/origin/main`); `branch_merged` already requires divergence from the baseline. A diff limited to the story's own spec counts as progress for a follow-up run (it is the review's record). A normal run is judged exactly as today.
+- **The marker is derived, not declared.** `dispatch_once` reads the story's tracked spec (the primary's, as it does today) and, when `parse_spec_status` is `done` and `core/dispatch_harness_done.followup_review_recommended` is true, marks the run a follow-up review run: the launch INTENT payload carries `followup_review: {"dw_id": "<DW-FRR-…>" | null}` (the open row's id read from the station's deferred-work ledger at `refs/remotes/origin/main`, after the launch's fetch,
+  `null` when none or unreadable — operator ruling 2026-10-01; the primary's working copy can lag a carry's publish). The
+  same INTENT records `launch_origin_main_sha`, `origin/main`'s resolved tip at launch. No CLI flag.
+- **Judged by its own branch.** For a follow-up run (read from its own launch INTENT), the supervisor's `story_merged_on_main` counts only merge subjects that reached `origin/main` after the launch: `commit_subjects` over `<launch_origin_main_sha>..refs/remotes/origin/main`. *(Amended 2026-10-01, operator ruling on attempt 1's intent gap G1:)* never the run's `baseline_head_sha` — `_ensure_dispatch_worktree` reuses a story's surviving dispatch worktree, so the baseline can be the pre-merge tip and `<baseline>..origin/main` would still hold the story's first merge. `branch_merged` already requires divergence from the baseline. A diff limited to the story's own spec counts as progress for a follow-up run (it is the review's record). A normal run is judged exactly as today.
 - **Landed by its own head.** For a follow-up run, `execute_dispatch_land` does not answer ALREADY_LANDED from the story key's merge subject; it answers ALREADY_LANDED only when the run's own head is an ancestor of `origin/main`, and otherwise merges the branch through the existing path (merge subject as the template renders it).
+- **Every reader carries the marker.** *(Amended 2026-10-01, operator ruling: the readers attempt 1's review deferred as R1 and R2 join this story.)* The CAP-4 land-only retry (`cli/dispatch.py::_attempt_harness_done_cap4`) passes the run's marker to `execute_dispatch_land`; `resolve_dispatch_session_verdict` and `station_story_block_facts` (`cli/dispatch.py`) and `cli/status.py` read a run's marker from its launch INTENT and gather its merge facts with the launch-tip scope, so no reader judges a live follow-up run completed or already landed by the story's first merge.
 - **The row closes when the review lands.** After a follow-up run's landing, finalize renders the row closed — `status: closed` and `resolved: <date> (dispatch-land finalize: <merge sha or subject>)` — through a pure function in `core/deferred_work.py`, inside the same advisory lock and `commit_paths_onto_remote_tip` publish CAP-275's carry uses. The review's own landing leaves the flag `false` on `origin/main`, so CAP-275 adds no new row. A failed close is a non-gating `MRS-DISP-047` WARN in the resync payload, as the carry's failures are.
 
 Ledger key: `73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch`.
@@ -55,7 +57,10 @@ Type / Effort / Deps: fix / M / 66.1, 72.1.
 - Given a follow-up run that landed When finalize runs Then `DW-FRR-51-2` is published `status: closed` with `resolved:` naming the landing, and no new `DW-FRR` row is added
 - Given a publish failure while closing When finalize runs Then an `MRS-DISP-047` WARN names it and finalize's exit code is unchanged
 - Given a normal (non-follow-up) run When the supervisor and `dispatch land` run Then both behave exactly as today
-- Given the baseline scope removed When the follow-up supervisor fixture runs Then it reads COMPLETED on its first tick and the test fails (mutation)
+- Given a follow-up run launched into the story's surviving pre-merge dispatch worktree (its `baseline_head_sha` is not a descendant of the story's first merge) When the supervisor ticks Then `story_merged_on_main` reads false and the verdict is LIVE, against real git (attempt 1's G1 reproduction)
+- Given a live follow-up run When the CAP-4 land-only retry, `resolve_dispatch_session_verdict`, `station_story_block_facts` or `marshal status` judges it Then each reads the marker from the launch INTENT, and none reads the run completed or already landed by the story's first merge
+- Given an open `DW-FRR` row on `origin/main` that the primary's working copy does not yet carry When `dispatch_once` launches Then `dw_id` names it
+- Given the launch-tip scope removed (or replaced by the baseline) When the follow-up supervisor fixtures run Then the reused-worktree fixture reads COMPLETED on its first tick and the test fails (mutation)
 
 ## Boundaries & Constraints
 
@@ -79,6 +84,8 @@ Co-governing Specs: `spec-pyforge-marshal` (owner of `src/shared/packages/pyforg
 | follow-up launch, no row | spec `done`, flag true, no row | INTENT `dw_id: null`; launched | none |
 | flag false | spec `done`, flag false | Story 29.2 land-only, unchanged | as today |
 | first landing on `origin/main` | follow-up branch unmerged | LIVE; no exit | none |
+| reused pre-merge worktree | baseline predates the first merge | LIVE until its own merge | none |
+| status / block / CAP-4 readers | live follow-up run | judged by the launch-tip scope | none |
 | follow-up merged | own merge after baseline | COMPLETED | none |
 | spec-only review | diff = own spec | counted as progress; lands | none |
 | land, head not on `origin/main` | follow-up run | merged through the existing path | as today |
@@ -113,6 +120,8 @@ Paths below sit under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/`
 - `<pkg>/dispatch_supervisor/__main__.py` -- read the marker from the launch INTENT; `gather_dispatch_git_facts(..., followup_review=False)` reads ranged subjects; route every narration check through `narration_spec_path`; thread the marker into `execute_dispatch_land`.
 - `<pkg>/dispatch_land.py` -- `execute_dispatch_land(..., followup_review=None)`: a follow-up skips the key-based ALREADY_LANDED and answers it only when `merge_base(head, ORIGIN_MAIN) == head`; when `dw_id` is set, pass it and the rendered merge subject to the finalize subprocess.
 - `<pkg>/dispatch_land_finalize/__main__.py` -- two optional argv flags; after the intake step, close the row under the same lock and publish; a failure is an `MRS-DISP-047` WARN naming it; the resync payload gains `followup_review_closed_id`.
+- Restored start (re-run, 2026-10-01): attempt 1's code is on the branch already; change its baseline scope to the launch tip, read `dw_id` from `origin/main`, and wire the four readers below.
+- `<pkg>/cli/dispatch.py::_attempt_harness_done_cap4`, `resolve_dispatch_session_verdict`, `station_story_block_facts`, and `<pkg>/cli/status.py` -- read the marker from the launch INTENT; gather with the launch-tip scope; the CAP-4 retry threads it into `execute_dispatch_land`.
 - Tests (`src/shared/packages/pyforge-marshal/tests/unit/`): `test_deferred_work.py`, `test_dispatch_completion.py`, `test_dispatch.py`, `test_dispatch_supervisor_main_loop.py`, `test_dispatch_landing.py`, `test_dispatch_land_finalize.py` -- every I/O-matrix row, the baseline-scope mutation fixture, and a normal-run regression for each judged surface.
 - Spec memlogs -- name every governed path on `spec-pyforge-marshal`'s `.memlog.md` and on each co-governor `spec-surface` names (`uv run _bmad/scripts/memlog.py append`); never `--write-baseline`.
 
@@ -122,6 +131,14 @@ Paths below sit under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/`
 - Given the change, when `lint-types` and the station suite run, then both are green and the touched modules keep their coverage floors
 
 ## Spec Change Log
+
+- 2026-10-01 (evening), operator rulings on attempt 1's intent gap (`spec-pyforge-marshal` memlog decision entry of the same
+  date; CAP-281 amended): (1) G1 — a follow-up counts only merges that reach `origin/main` after the tip its launch INTENT
+  records, not the run's baseline; (2) R1 and R2 — the CAP-4 land-only retry, `resolve_dispatch_session_verdict`,
+  `station_story_block_facts` and `cli/status.py` join the Surface; (3) EC-2 — the open row id is read from `origin/main`.
+  Status `blocked` → `ready-for-dev`. Attempt 1's code is restored on this story's dispatch branch as one commit before the
+  re-run (the saved patch, `git apply`), so the re-run changes it rather than starting over; its review rows BH-6, VG-1 and
+  VG-2 (`patch`, moot in attempt 1) apply to the re-run.
 
 ## Review Triage Log
 
@@ -165,8 +182,8 @@ Paths below sit under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/`
 ## Design Notes
 
 - The follow-up marker travels as data, never as a flag: the INTENT carries it, the supervisor reads it, `execute_dispatch_land` takes it as a keyword, and finalize (a subprocess the landing starts) takes the row id and the merge subject on argv. A normal run passes nothing, so every normal-run path is byte-identical.
-- Baseline scope: `git log <baseline>..refs/remotes/origin/main --format=%s` lists only what reached `origin/main` after the run forked. The story's first merge is an ancestor of the baseline, so it drops out; the run's own merge does not.
-- Not covered, by contract: the harness-done CAP-4 relaunch of a follow-up worktree (its spec already reads the flag `false`) and a landing retry after the merge but before finalize carry no marker, so neither closes the row.
+- Launch-tip scope (amended 2026-10-01): `git log <launch_origin_main_sha>..refs/remotes/origin/main --format=%s` lists only what reached `origin/main` after the launch. The story's first merge is on `origin/main` before any follow-up launches, so it drops out whatever the worktree's baseline; the run's own merge does not.
+- The CAP-4 land-only retry, the session verdict, the drain's block facts and `marshal status` now carry the marker (amended 2026-10-01); attempt 1's Design Note that they were "not covered, by contract" is withdrawn.
 
 ## Source
 
@@ -177,7 +194,8 @@ Contract authored from the operator's 2026-09-28 direction, `docs/dreams/pyforge
 Parent Spec capability: `spec-pyforge-marshal` CAP-281 (FR-228).
 Ledger key: `73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch`.
 Ledger status at mint: `backlog`.
-Deps: Story 66.1 (the `DW-FRR` rows this story closes) and Story 72.1 (the supervisor's merge reads on `origin/main`, which this story scopes to the run's baseline).
+Deps: Story 66.1 (the `DW-FRR` rows this story closes) and Story 72.1 (the supervisor's merge reads on `origin/main`, which this story scopes to the launch tip).
+Amended 2026-10-01 (operator rulings on attempt 1's intent gap): launch-tip scope, the four readers joined, `dw_id` from `origin/main`.
 Policy: no `[epic_surfaces]` entry; the Surface is inside marshal's default surface.
 
 ## Verification
@@ -185,10 +203,10 @@ Policy: no `[epic_surfaces]` entry; the Surface is inside marshal's default surf
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
-- `pixi run -e pyforge-guild lint-types` — expected: exit 0 (ruff, `ruff format --check`, mypy over the touched package).
+- `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0 (ruff, `ruff format --check`, mypy over the touched package).
 - `python scripts/spec_surface_reconcile.py` — expected: exit 0 once every governed path is named on the owning Spec's `.memlog.md` and each co-governor's (never `--write-baseline`).
 
-## Auto Run Result
+## Attempt 1 result (2026-10-01, blocked; superseded by the 2026-10-01 rulings above)
 
 Status: blocked
 Blocking condition: intent gap
