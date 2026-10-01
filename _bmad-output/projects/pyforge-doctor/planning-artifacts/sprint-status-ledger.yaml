@@ -114,7 +114,7 @@ development_status:
   37-1-docs-specs-and-docs-intake-empty-and-the-legacy-tier-s-index-and-check-retire: blocked
   38-1-a-verified-line-written-from-now-on-cites-what-it-read: done
   38-2-spec-surface-names-a-spec-surface-glob-that-matches-nothing: done
-  38-3-the-fleet-hygiene-sweep-runs-with-the-other-detectors-warn-only: backlog
+  38-3-the-fleet-hygiene-sweep-runs-with-the-other-detectors-warn-only: done
   38-4-doctor-check-completes-on-the-primary-checkout: backlog
   4-1-health-scoring-fr-10: done
   4-2-persistent-fleet-health-surface-fr-11: done
