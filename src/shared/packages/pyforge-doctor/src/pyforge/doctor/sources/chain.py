@@ -2188,6 +2188,45 @@ def _collect_surfaces(target: Path) -> tuple[dict[str, dict], list[dict]]:
     return specs, unsound
 
 
+def _stale_surface_findings(specs: dict[str, dict], files: list[str]) -> list[dict]:
+    """One non-gating ``stale-surface`` item per distinct ``surface:`` glob of
+    a READABLE Spec that matches no tracked file (doctor Story 38.2, CAP-88) --
+    the mirror of ``stale-allowlist``, which judged only the allowlist, so a
+    retired or misspelt glob stopped governing anything without a word.
+
+    ``specs`` holds only the Specs whose SPEC.md parsed (``_collect_surfaces``
+    never admits an unreadable one), so a Spec whose surface is unknown is
+    never judged here; the existing ``spec-surface-unevaluable`` WARN names
+    it. Judged by ``_glob_to_re``'s own compiled regex -- the matcher
+    governance itself uses -- so a glob this reports dead really governs
+    nothing: a trailing-slash directory glob or a brace glob is dead, not
+    "live by directory existence" or "live by brace expansion". A match is
+    independent of every OTHER Spec's surface, so (like ``stale-allowlist``)
+    an unreadable sibling Spec cannot make this a false positive."""
+    items: list[dict] = []
+    for name, s in sorted(specs.items()):
+        seen: set[str] = set()
+        for glob, rx in zip(s["globs"], s["res"], strict=True):
+            if glob in seen:
+                continue
+            seen.add(glob)
+            if any(rx.match(f) for f in files):
+                continue
+            items.append(
+                {
+                    "kind": "stale-surface",
+                    "path": name,
+                    "detail": (
+                        f"{name}: surface glob {glob!r} matches no tracked file "
+                        "(a trailing '/' or a '{a,b}' brace is not expanded; write "
+                        "'dir/**', one glob per name) — fix it in the owning Spec, "
+                        "re-derived with bmad-spec, never hand-edited"
+                    ),
+                }
+            )
+    return items
+
+
 def _check_spec_surface(target: Path, files: list[str]) -> tuple[list[dict], list[dict]]:
     """(gating findings, presumed-but-non-gating findings) -- the full
     coverage + blindness + drift check, minus ``git ls-files`` (``files`` is
@@ -2296,6 +2335,10 @@ def _check_spec_surface(target: Path, files: list[str]) -> tuple[list[dict], lis
     drift_findings, presumed = _drift_findings(target, specs, current, skipped)
     findings.extend(drift_findings)
 
+    # A WARN, so it rides `presumed`: a row in `findings` would make
+    # `gather_spec_surface` drop its OK verdict, changing an existing finding.
+    presumed.extend(_stale_surface_findings(specs, files))
+
     return findings, presumed
 
 
@@ -2311,7 +2354,9 @@ def gather_spec_surface(target: Path) -> tuple[Finding, ...]:
     original's own "informational" framing) -- they are still returned, but
     a run with drift-presumed items and nothing else still reports the
     coverage/drift OK verdict, exactly as the original prints "OK" while
-    still surfacing its own DRIFT-PRESUMED section.
+    still surfacing its own DRIFT-PRESUMED section. ``stale-surface`` (a
+    Spec ``surface:`` glob matching no tracked file, Story 38.2) is the same
+    kind of WARN: reported beside the OK verdict, never changing the exit code.
     """
     return degrade_on_exception(Source.SPEC_SURFACE, "spec-surface", lambda: _gather_spec_surface(target))
 

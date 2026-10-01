@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.doctor.models import DoctorStatus, Source
+from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import chain
 
 # Same git-env scrub as test_sources_ledger_independence.py's sibling ledger
@@ -651,7 +652,10 @@ def test_spec_governing_no_files_is_not_drift_blind(tmp_path: Path) -> None:
     # then raise `KeyError` on `governed[name]`, which `degrade_on_exception`
     # turns into a lone `spec-surface` WARN -- also a run with no drift-blind
     # in it, which the weaker assertion would have called a pass.
-    assert {f.check for f in findings} == {"no-baseline"}, (
+    # `stale-surface` (Story 38.2) is expected here and only here: this
+    # fixture's one glob matches no tracked file, which is exactly what that
+    # WARN reports -- it is not a drift row and never reaches `drift-blind`.
+    assert {f.check for f in findings} == {"no-baseline", "stale-surface"}, (
         f"a spec governing zero files did not produce the clean shape: {findings}"
     )
 
@@ -1307,3 +1311,179 @@ def test_overlap_keeps_strongest_severity_when_one_spec_never_moved(tmp_path: Pa
     assert len(drifted) == 1, drifted
     assert drifted[0].check == "drift"
     assert drifted[0].status is DoctorStatus.FAIL
+
+
+# --- Story 38.2 (CAP-88): a Spec `surface:` glob that matches nothing -------------
+
+
+def _stale_surface(findings) -> list:
+    return [f for f in findings if f.check == "stale-surface"]
+
+
+def test_dead_glob_reports_exactly_one_stale_surface_warn_naming_spec_and_glob(
+    tmp_path: Path,
+) -> None:
+    """A Spec with one matching and one dead glob: the live glob is silent and
+    the dead one is exactly one WARN naming the Spec and the glob."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["governed.py", "retired/**"], drift="exempt")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else, to keep this test on the surface rows")])
+    _add_commit(repo)
+
+    rows = _stale_surface(chain.gather_spec_surface(repo))
+
+    assert len(rows) == 1, rows
+    row = rows[0]
+    assert row.source is Source.SPEC_SURFACE
+    assert row.status is DoctorStatus.WARN
+    assert row.evidence["path"] == "pyforge-x/spec-foo"
+    assert "pyforge-x/spec-foo" in row.message
+    assert "retired/**" in row.message
+    assert "governed.py" not in row.message
+
+
+def test_live_globs_report_no_stale_surface_row(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["governed.py", "pkg/**/*.py", "pkg/?.txt"], drift="exempt")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    (repo / "pkg" / "sub").mkdir(parents=True)
+    (repo / "pkg" / "sub" / "mod.py").write_text("y = 1\n", encoding="utf-8")
+    (repo / "pkg" / "a.txt").write_text("z\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    assert _stale_surface(chain.gather_spec_surface(repo)) == []
+
+
+def test_trailing_slash_and_brace_globs_are_judged_by_what_they_match(
+    tmp_path: Path,
+) -> None:
+    """``_glob_to_re`` is the one governing matcher: a trailing ``/`` matches no
+    file and ``{a,b}`` is not expanded, so both govern nothing and are dead --
+    even though the directory exists and ``a.py``/``b.py`` are tracked. A brace
+    glob that equals a tracked file's literal name does match it, so it is live."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(
+        repo,
+        "pyforge-x",
+        "spec-foo",
+        surface=["src/", "src/{a,b}.py", "src/*.py", "lit/x{1,2}.txt"],
+        drift="exempt",
+    )
+    (repo / "src").mkdir()
+    (repo / "src" / "a.py").write_text("a = 1\n", encoding="utf-8")
+    (repo / "src" / "b.py").write_text("b = 1\n", encoding="utf-8")
+    (repo / "lit").mkdir()
+    (repo / "lit" / "x{1,2}.txt").write_text("literal\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    rows = _stale_surface(chain.gather_spec_surface(repo))
+
+    messages = " | ".join(f.message for f in rows)
+    assert len(rows) == 2, rows
+    assert "'src/'" in messages
+    assert "'src/{a,b}.py'" in messages
+    assert "'src/*.py'" not in messages
+    assert "lit/x{1,2}.txt" not in messages
+
+
+def test_unreadable_spec_surface_is_not_judged_stale(tmp_path: Path) -> None:
+    """A Spec whose SPEC.md cannot be read has an UNKNOWN surface, not an empty
+    or dead one: the existing unevaluable WARN names it and no
+    ``stale-surface`` row is reported for it -- while a readable sibling's dead
+    glob is still reported (a match is independent of every other Spec)."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    dark = _write_spec(repo, "pyforge-x", "spec-dark", surface=["governed.py"])
+    _write_spec(repo, "pyforge-y", "spec-bar", surface=["other.py", "retired/**"], drift="exempt")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    (repo / "other.py").write_text("y = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    # Non-UTF-8 bytes: read_text(encoding="utf-8") raises UnicodeDecodeError, the
+    # same class a permissions failure would take through OSError. The glob in
+    # the unreadable file is dead (no such file), so a wrongly-judged surface
+    # would show up as a stale-surface row for pyforge-x/spec-dark.
+    (dark / "SPEC.md").write_bytes(b"---\nsurface:\n  - nowhere.py\n# caf\xe9\n---\n")
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo)
+
+    unevaluable = [f for f in findings if f.check == "spec-surface-unevaluable"]
+    assert any(f.evidence["path"] == "pyforge-x/spec-dark" for f in unevaluable), findings
+    rows = _stale_surface(findings)
+    assert [f.evidence["path"] for f in rows] == ["pyforge-y/spec-bar"], rows
+    assert not any("nowhere.py" in f.message for f in rows)
+
+
+def test_a_glob_listed_twice_in_one_spec_is_one_row(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["governed.py", "retired/**", "retired/**"], drift="exempt")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    assert len(_stale_surface(chain.gather_spec_surface(repo))) == 1
+
+
+def test_the_same_dead_glob_in_two_specs_is_one_row_per_spec(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["governed.py", "retired/**"], drift="exempt")
+    _write_spec(repo, "pyforge-y", "spec-bar", surface=["governed.py", "retired/**"], drift="exempt")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    rows = _stale_surface(chain.gather_spec_surface(repo))
+
+    assert sorted(f.evidence["path"] for f in rows) == ["pyforge-x/spec-foo", "pyforge-y/spec-bar"]
+
+
+def test_dead_glob_keeps_the_ok_verdict_and_the_exit_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A WARN beside an otherwise clean run: the OK row stays (the finding rides
+    ``presumed``, never ``findings``), the CLI lists the dead glob and still
+    exits 0."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["**", "retired/**"], drift="exempt")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [])
+    _write_baseline(repo, {"pyforge-x/spec-foo": {"memlog": "", "files": {}}})
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo)
+
+    assert len(_stale_surface(findings)) == 1
+    ok = [f for f in findings if f.check == "spec-surface"]
+    assert len(ok) == 1 and ok[0].status is DoctorStatus.OK
+    assert not any(f.status is DoctorStatus.FAIL for f in findings), findings
+
+    monkeypatch.chdir(repo)
+    assert dispatch.main(["spec-surface"]) == 0
+    listing = capsys.readouterr().out
+    assert "stale-surface" in listing and "retired/**" in listing, listing
+
+
+def test_dead_glob_does_not_change_an_existing_gating_finding(tmp_path: Path) -> None:
+    """The new row is additive: ``stale-allowlist`` stays a FAIL beside it."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["governed.py", "retired/**"], drift="exempt")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("nowhere/**", "used to exist"), ("**", "everything else")])
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo)
+
+    stale_allow = [f for f in findings if f.check == "stale-allowlist"]
+    assert [f.evidence["path"] for f in stale_allow] == ["nowhere/**"]
+    assert stale_allow[0].status is DoctorStatus.FAIL
+    assert len(_stale_surface(findings)) == 1
