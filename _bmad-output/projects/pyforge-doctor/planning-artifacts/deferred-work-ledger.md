@@ -2353,3 +2353,14 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-doctor-38-2: `_tracked_files` reads `git ls-files` with git's default path quoting, so a tracked path with non-ASCII bytes arrives quoted and octal-escaped and no literal glob can match it.
+
+- source_spec: `planning-artifacts/specs/spec-38-2-spec-surface-names-a-spec-surface-glob-that-matches-nothing.md`
+  summary: `_tracked_files` reads `git ls-files` with git's default path quoting, so a tracked path with non-ASCII bytes arrives quoted and octal-escaped and no literal glob can match it.
+  evidence: Reproduced 2026-10-01 in a tmp repo: `git ls-files` printed `"docs/caf\303\251.md"`, and a Spec surface listing `docs/café.md` got a `stale-surface` WARN although the file is tracked. The cause predates this story: the same quoted string reaches `ungoverned` and drift matching, so such a file is not governed by that glob today either. One tracked path in this tree has non-ASCII bytes (the Story 22.4 spec file) and none of the 25 live `stale-surface` rows names a non-ASCII path. Fixing it means reading the listing with `core.quotepath=off` or `-z`, which changes how existing coverage and drift findings read paths; the intent's Never list forbids changing those here.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:1822
+  origin: spec-deferred e48d734d8578 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
