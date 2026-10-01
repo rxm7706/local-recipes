@@ -1718,7 +1718,9 @@ def test_a_station_branch_merge_whose_spec_cannot_be_read_is_not_a_landing(tmp_p
 
     assert feed.read_text(encoding="utf-8") == _FEED_BACKLOG_79
     assert vcs.publishes == []
-    assert _journaled_findings_79(tmp_path) == []
+    # The gate itself stays silent; the only finding is Story 66.1's follow-up carry failing the same read.
+    [finding] = _journaled_findings_79(tmp_path)
+    assert finding["code"] == "MRS-DISP-047" and "follow-up review" in finding["message"]
     assert _promotion_flags_79(tmp_path) == (False, False, False)
 
 
