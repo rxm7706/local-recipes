@@ -2,7 +2,8 @@
 title: "79.2: Dispatch verification runs `lint-types`, and the \"stopgap\" surfaces stop calling themselves one"
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '6701b2b15a70fa9df0f8ea0287e2edc4fbeca66a'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -58,7 +59,7 @@ Type / Effort / Deps: fix / S / —.
 
 ## Tasks
 
-1. Read `core/dispatch_verify.py` (`_verify_commands_with_surface_guard` and its callers) and `core/gate.py::check_spec_binding`.
+1. Read `dispatch_verify.py` (`_verify_commands_with_surface_guard` and its callers) and `core/gate.py::check_spec_binding`.
 2. Derive the `lint-types` command beside the surface guard; dedupe against a station's own list.
 3. Name the lane in the refusal finding.
 4. Rewrite the `"22"`/`"28"` comments in marshal-policy.toml; leave the globs.
@@ -85,6 +86,14 @@ Type / Effort / Deps: fix / S / —.
 | binding | every tracked spec | no new MRS-GATE-011 | — |
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` -- `_verify_commands_with_surface_guard` (the one derived-commands site: three callers, `run_verify_commands_only`, `evaluate_dispatch_verification`, `cli/drain_plan.py::verify_commands`); the guard constant is imported from `adapters/harness_bmadloop.py::_SURFACE_RECONCILE_COMMAND`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py` -- `classify_outcome` already emits `MRS-GATE-001` with `verify command '<command>' exited N`, so a red lane names `lint-types` with no new finding code; `check_spec_binding` is one-directional (read-only evidence).
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py`, `tests/unit/test_dispatch_verify_merge_tree.py` -- assert the exact derived command lists; both widen by one entry.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml` -- the `"22"` (line ~107) and `"28"` (line ~129) comments; the `"79"` surface already lists this file.
+- `pixi.toml` `[feature.guild-tasks.tasks.lint-types]` -- the task the derived command runs (read-only).
 
 ## Binding
 
