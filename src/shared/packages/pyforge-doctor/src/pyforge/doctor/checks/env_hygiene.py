@@ -100,7 +100,10 @@ instrument precedent has an unproven false-positive rate on arbitrary
 scanned trees, so it reports without gating ``doctor check``'s exit code by
 itself in v1.
 
-This module parses source as DATA: no subprocess, no network, no exec.
+This module parses source as DATA: no network, no exec, and no subprocess of
+its own -- the discovery walk's single ``git ls-files`` call (Story 38.4, see
+``_git_ignored_dirs``) goes through ``cli_bridge.run_git``, the package's sole
+subprocess site (AD-5).
 """
 
 from __future__ import annotations
@@ -111,6 +114,7 @@ import re
 from pathlib import Path
 from typing import Iterator
 
+from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 
 # The one check this module produces -- registered in checks.registry's
@@ -204,10 +208,49 @@ _DISCOVERY_ENTRY_CAP = 50_000
 _HOST_LIKE_TOKENS = frozenset({"host", "netloc", "hostname", "domain"})
 
 
+def _git_ignored_dirs(target: Path) -> frozenset[str]:
+    """Absolute, normalized paths of every directory git IGNORES under
+    ``target`` -- the one git call per discovery walk (Story 38.4).
+
+    ``git ls-files --others --ignored --exclude-standard --directory -z``
+    lists a wholly ignored directory as one ``dir/`` entry without descending
+    into it, and omits a directory that holds a tracked file (listing that
+    directory's ignored children instead), so pruning exactly these entries
+    never hides a tracked file. Only directory entries (a trailing ``/``) are
+    kept: an ignored ``.py`` file inside a mixed directory is still scanned,
+    and a directory git merely does not track yet is first-party code the scan
+    must still reach -- ``--ignored`` selects what git deliberately ignores,
+    not every untracked path.
+
+    Outside a git work tree, when ``target`` sits inside an ignored directory
+    (git exits 128 there), or when git is absent or times out, the call
+    raises ``CliBridgeError`` and this returns an empty set -- the walk is
+    then exactly the by-name-pruned walk it was before this function existed.
+    """
+    try:
+        listing = run_git(
+            target,
+            ["ls-files", "--others", "--ignored", "--exclude-standard", "--directory", "-z"],
+        )
+    except CliBridgeError:
+        return frozenset()
+    root = os.path.abspath(target)
+    return frozenset(
+        os.path.normpath(os.path.join(root, entry)) for entry in listing.split("\0") if entry.endswith("/")
+    )
+
+
 def _discover_python_files(target: Path) -> tuple[list[Path], bool]:
     """A bounded, ``.git``-etc-pruning ``os.walk`` collecting every ``*.py``
     file under ``target``, sorted (both dir traversal and file collection)
     for a deterministic scan order.
+
+    In a git work tree it also never enters a directory git ignores (see
+    ``_git_ignored_dirs``): an ignored directory is local scratch or build
+    output, not first-party source, and on the primary checkout the untracked
+    ones (``.cursor/``, ``var/``) alone overran the entry cap. They are pruned
+    BEFORE their names are counted, so they neither cost entries nor trip the
+    cap -- which still bounds a truly huge tracked tree.
 
     Returns ``(files, incomplete)`` -- ``incomplete`` is ``True`` when the
     walk hit the entry cap or ``os.walk`` could not descend into some
@@ -228,12 +271,16 @@ def _discover_python_files(target: Path) -> tuple[list[Path], bool]:
     discovered: list[Path] = []
     entries_visited = 0
     incomplete = False
+    ignored_dirs = _git_ignored_dirs(target)
 
     def _on_error(_exc: OSError) -> None:
         nonlocal incomplete
         incomplete = True
 
     for dirpath, dirnames, filenames in os.walk(target, onerror=_on_error):
+        if ignored_dirs:
+            here = os.path.abspath(dirpath)
+            dirnames[:] = [name for name in dirnames if os.path.join(here, name) not in ignored_dirs]
         dirnames[:] = sorted(name for name in dirnames if name not in _PRUNED_DIR_NAMES)
         entries_visited += len(dirnames)
         if entries_visited >= _DISCOVERY_ENTRY_CAP:
