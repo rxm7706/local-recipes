@@ -83,7 +83,10 @@ The row's other end (Story 73.1, CAP-281): a launch on a ``done`` spec whose fla
 follow-up review run, and ``open_followup_review_id`` reads the open row it serves from the same
 heading-anchored scan; when that run lands, ``close_followup_review_row`` renders the row closed
 (``status: closed`` with ``resolved:`` naming the landing). Both are pure -- the lock, the publish and
-the date stay in ``dispatch_land_finalize`` / ``cli/dispatch.py``."""
+the date stay in ``dispatch_land_finalize`` / ``cli/dispatch.py``.
+
+The row is also the drain's gate (Story 73.2, CAP-281): ``open_followup_review_story_keys`` reads EVERY open
+row of the ledger, so a drain queues a follow-up review only for a story whose row is still open."""
 
 from __future__ import annotations
 
@@ -445,6 +448,44 @@ def open_followup_review_id(ledger_text: str, story_key: StoryKey | str) -> str 
     key = normalize(story_key) if isinstance(story_key, str) else story_key
     row_id = followup_review_id(key)
     return row_id if _open_followup_review_rows(ledger_text, row_id) else None
+
+
+#: A row's own ``origin:`` field line -- the same indent / bullet tolerance as ``_ROW_STATUS_LINE_RE``.
+_ROW_ORIGIN_LINE_RE = re.compile(r"^[ \t]*(?:-[ \t]+)?origin:[ \t]*(?P<value>[^\n]*)$", re.MULTILINE)
+
+_ROW_ID_PREFIX = "DW-FRR-"
+
+
+def open_followup_review_story_keys(ledger_text: str) -> tuple[StoryKey, ...]:
+    """The story key of every open dispatch-twin row of ``ledger_text``, in ledger order (Story 73.2, CAP-281).
+
+    A row counts when its heading is ``DW-FRR-<story>`` (heading-anchored and boundary-aware like
+    ``open_followup_review_id``: a prose mention of an id is not a row, ``DW-FRR-51-20`` is never
+    ``DW-FRR-51-2``), its ``origin:`` field reads ``dispatch-followup-review`` and its ``status:`` field reads
+    ``open`` -- the row gate a drain applies before it queues a follow-up review. A closed row, a row of another
+    origin, an id that does not read back as the canonical ``DW-FRR-<story>`` of a story key and a repeated id
+    are skipped; a story appears once. No clock, no I/O (AD-4)."""
+    keys: list[StoryKey] = []
+    seen: set[StoryKey] = set()
+    for heading in _FOLLOWUP_REVIEW_HEADING_RE.finditer(ledger_text):
+        row_id = heading.group("id").rstrip("-")
+        try:
+            key = normalize(row_id.removeprefix(_ROW_ID_PREFIX))
+        except MalformedStoryKeyError:
+            continue
+        if followup_review_id(key) != row_id or key in seen:
+            continue
+        next_heading = _NEXT_HEADING_RE.search(ledger_text, heading.end())
+        block_end = next_heading.start() if next_heading is not None else len(ledger_text)
+        status_line = _ROW_STATUS_LINE_RE.search(ledger_text, heading.end(), block_end)
+        origin_line = _ROW_ORIGIN_LINE_RE.search(ledger_text, heading.end(), block_end)
+        if status_line is None or _status_token(status_line.group("value")) != _STATUS_OPEN:
+            continue
+        if origin_line is None or _status_token(origin_line.group("value")) != _FOLLOWUP_REVIEW_ORIGIN:
+            continue
+        seen.add(key)
+        keys.append(key)
+    return tuple(keys)
 
 
 def close_followup_review_row(ledger_text: str, dw_id: str, *, resolved_date: str, landing: str) -> str | None:
