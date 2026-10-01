@@ -2,7 +2,8 @@
 title: "38.1: A `verified:` line written from now on cites what it read"
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '731f299611bd290e1d3d7040e7a30d864b00b6b1'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -76,6 +77,18 @@ Type / Effort / Deps: fix / S / —.
 | command | post-cutoff, command + exit code | no finding | — |
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` -- `_VERIFIED_RE` and `_parse_verified_date` (reuse; the line regex and the date parse stay unmodified), `_deferred_work_findings` (per-project loop: the new check joins it), `_gather_deferred_work` (OK finding: carries the grandfathered count), `_deferred_work_message` (one new kind branch).
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py` -- the matrix rows; two OK-shape pins (`evidence == {"projects_scanned": N}`) gain the new key. `_check_project_deferred_work` keeps its four-argument signature (a monkeypatch test wraps it).
+- Read-only evidence: `scripts/deferred_work_check.py` delegates to `python -m pyforge.doctor.sources deferred-work`; the `deferred-work-check` pixi task is the exit-code verdict.
+
+## Design Notes
+
+- **Cutoff is 2026-10-02, not the landing day.** Measured 2026-10-01 over the eight tracked ledgers: 937 `verified:` lines are dated 2026-10-01 (the burn-down's bulk pass) and 373 of them carry no citation. A cutoff of 2026-10-01 would red `main` and break the AC "`main` exits 0" and "no ledger line is rewritten". The first day after the burn-down is the earliest cutoff that satisfies all three; "from now on" starts there.
+- One FAIL per entry (not per line) with an `uncited_lines` count; every `verified:` line in an entry is judged, since reconciliation appends rather than replaces.
+- A line whose leading token is not a `YYYY-MM-DD` date is neither failed nor counted (it already reads as never-verified in 11.1).
 
 ## Binding
 
