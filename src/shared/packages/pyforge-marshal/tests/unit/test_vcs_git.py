@@ -15,6 +15,7 @@ import pytest
 
 from pyforge.marshal.adapters import vcs_git as vcs_git_module
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
+from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
 
@@ -663,6 +664,63 @@ def test_is_branch_merged_raises_on_empty_cherry_output(vcs, repo, monkeypatch):
     monkeypatch.setattr(vcs_git_module, "_run", _fake_run)
     with pytest.raises(VcsCommandError, match="no output"):
         vcs.is_branch_merged(repo, "loop/emptycherry", into="main")
+
+
+def _repo_with_origin(tmp_path: Path, repo: Path) -> Path:
+    """Give ``repo`` a bare ``origin`` carrying ``main``; returns the bare repository."""
+    origin = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "--bare", "-b", "main", str(origin)], capture_output=True, text=True, check=True)
+    _git(repo, "remote", "add", "origin", str(origin))
+    _git(repo, "push", "origin", "main")
+    return origin
+
+
+def test_is_branch_merged_into_ref_reads_the_remote_tracking_main_a_lagging_local_main_lacks(vcs, repo, tmp_path):
+    """Story 72.1 (CAP-280): the branch is merged into `origin/main` and not into local `main` (the
+    primary checkout was never fast-forwarded). The full-ref target reads the remote-tracking ref; the
+    branch-name form still reads `refs/heads/main` and says unmerged."""
+    _repo_with_origin(tmp_path, repo)
+    _git(repo, "checkout", "-b", "loop/remote-only")
+    (repo / "remote-only.txt").write_text("merged elsewhere\n", encoding="utf-8")
+    _git(repo, "add", "remote-only.txt")
+    _git(repo, "commit", "-m", "remote-only content")
+    _git(repo, "checkout", "main")
+    # The story merges on the remote by another route; local `main` stays where it was.
+    _git(repo, "push", "origin", "loop/remote-only:main")
+    _git(repo, "fetch", "origin", "main")
+
+    assert vcs.is_branch_merged(repo, "loop/remote-only", into="main", into_ref=ORIGIN_MAIN) is True
+    assert vcs.is_branch_merged(repo, "loop/remote-only", into="main") is False
+
+
+def test_is_branch_merged_into_ref_reads_a_squash_merge_on_the_remote_tracking_main(vcs, repo, tmp_path):
+    """The patch-id fallback honours `into_ref` too: a branch squash-merged on `origin/main` (a single-
+    parent commit, never an ancestor) reads merged through it and unmerged through local `main`."""
+    origin = _repo_with_origin(tmp_path, repo)
+    _git(repo, "checkout", "-b", "loop/squash-remote")
+    (repo / "squash-remote.txt").write_text("squashed elsewhere\n", encoding="utf-8")
+    _git(repo, "add", "squash-remote.txt")
+    _git(repo, "commit", "-m", "squash-remote content")
+    _git(repo, "push", "origin", "loop/squash-remote")
+    _git(repo, "checkout", "main")
+
+    other = tmp_path / "other"
+    subprocess.run(["git", "clone", "-q", str(origin), str(other)], capture_output=True, text=True, check=True)
+    _git(other, "config", "user.email", "test@example.com")
+    _git(other, "config", "user.name", "Test")
+    _git(other, "merge", "--squash", "origin/loop/squash-remote")
+    _git(other, "commit", "-m", "Merge loop/squash-remote into main")
+    _git(other, "push", "origin", "main")
+    _git(repo, "fetch", "origin", "main")
+
+    assert vcs.is_branch_merged(repo, "loop/squash-remote", into="main", into_ref=ORIGIN_MAIN) is True
+    assert vcs.is_branch_merged(repo, "loop/squash-remote", into="main") is False
+
+
+def test_is_branch_merged_into_ref_raises_on_an_unresolvable_ref(vcs, repo):
+    _git(repo, "branch", "loop/noref", "main")
+    with pytest.raises(VcsCommandError):
+        vcs.is_branch_merged(repo, "loop/noref", into="main", into_ref="refs/remotes/origin/main")
 
 
 # --- remove_worktree (Story 1.8) --------------------------------------------------
