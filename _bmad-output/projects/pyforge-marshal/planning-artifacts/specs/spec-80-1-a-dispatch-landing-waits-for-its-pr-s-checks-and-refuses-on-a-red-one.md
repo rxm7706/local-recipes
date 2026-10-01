@@ -2,9 +2,12 @@
 title: "80.1: A dispatch landing waits for its PR's checks and refuses on a red one"
 type: 'feature'
 created: '2026-10-01'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '68b35f7e1cb04295f729647c2d0ee4ff060ab417'
 review_loop_iteration: 0
 followup_review_recommended: false
+warnings:
+  - oversized
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -15,7 +18,17 @@ context:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py
-deferred: []
+deferred:
+  - summary: >-
+      The two heal paths that merge after `forge.merge_pr` fails (`_try_union_heal`'s retried merge on a freshly pushed
+      union commit, and `_try_local_main_advance`) still land without waiting on checks; Story 80.1 waits only at the
+      first `forge.merge_pr` call.
+    evidence: |-
+      Planning read of dispatch_land_heal.py: the union heal pushes a new head and calls forge.merge_pr(new_sha) at once,
+      so that head's checks never ran; the local-main advance skips the PR entirely. Plumbing the wait into the heal
+      changes try_heal_dispatch_land_merge's signature and every heal fake (CAP-269 / CAP-283 surface), a separate story.
+    location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -102,6 +115,54 @@ Type / Effort / Deps: feature / M / —.
 | forge error | the read fails | refuse | never merge |
 
 </intent-contract>
+
+## Code Map
+
+All paths under `src/shared/packages/pyforge-marshal/` (`PKG`); `M` = `PKG/src/pyforge/marshal`, `T` = `PKG/tests`.
+
+- `M/core/landing_checks.py` -- NEW, pure (AD-4: no I/O, no clock). `CheckRun` (frozen: `name`, `status`, `conclusion`),
+  `classify_check_runs(runs)` -> verdict with `state` in `green | red | pending | empty`, the `red` runs and the
+  `pending` runs. Red beats pending (a red run refuses at once). `status != "completed"` is pending; a completed run
+  is green only on `success`/`skipped`/`neutral`, any other or missing conclusion is red (AD-8). `CheckRun` lives in
+  `core/` because `ports/` already imports `core/` (`ports/forge.py` imports `..core.egress`), never the reverse.
+- `M/ports/forge.py:142` -- `check_run_status` is the neighbour; add `check_runs(repo: ForgeRef, ref: ForgeRef) ->
+  tuple[CheckRun, ...]`. `ForgeRef` parameters only: `T/meta/test_ad34_egress_registry_completeness.py` flags a bare `str`.
+- `M/adapters/forge_gh.py:247` -- `check_run_status` already calls `repos/<repo>/commits/<ref>/check-runs`. The new
+  method pages it by hand (`?per_page=100&page=N` until `total_count` is reached; not `gh api --paginate`, whose
+  concatenated-objects output differs across `gh` versions). GitHub's default `filter=latest` already collapses
+  reruns to one run per name. A non-object payload, a missing `check_runs` list, a malformed run, a non-zero exit or
+  runaway paging raises `ForgeCommandError`.
+- `M/dispatch_land.py:953` -- the `forge.merge_pr` call. The reconcile head refresh at `:917-951` leaves `head_sha`
+  final, so the wait goes between them. New `_wait_for_landing_checks(...)` polls `forge.check_runs`; the loop,
+  not the classifier, owns the clock. `execute_dispatch_land` (`:569`) gains keyword-only `sleep` / `monotonic`
+  (defaults `time.sleep` / `time.monotonic`) so tests drive a fake clock. Outcome lands in `data["landing_checks"]`.
+- `M/core/findings.py:1807` (registry; docstring `:835-890`) and `M/core/verdict.py:1203` -- `MRS-DISP-056` (a red
+  run, ERROR) and `MRS-DISP-057` (runs still pending at the timeout, ERROR); 050-055 are taken. A forge read error
+  reuses `MRS-DISP-018` (the landing's own forge-lookup refusal) so no third code is minted.
+- `M/core/policy.py:626` (`DEFAULT_POLICY["dispatch"]`) and `:921` (`_valid_dispatch_block`, a closed key set today).
+  Reuse `_valid_positive_number` (`:1420`) for poll seconds and timeout minutes and `_valid_attempt_count` (`:1380`)
+  for grace seconds. Consumer reads, like `cli/dispatch.py:1434`, take `dispatch.value.get(key, default)`.
+- `M/dispatch_supervisor/__main__.py:1090` and `M/core/journal.py:150` -- the landing outcome payload gains the
+  `landing_checks` record; the new field joins `offload_fields` beside `land_findings`.
+- Read-only: `M/cli/land.py::_evaluate_required_checks` (`marshal land`'s single poll), `landing_rules`,
+  `M/dispatch_land_heal.py` (see the deferred entry), `sprint-status-ledger.yaml`, every `SPEC.md`.
+- Tests: `T/unit/test_landing_checks.py` NEW; `T/unit/test_dispatch_landing.py` (`FakeForge` at `:150` gains a green
+  `check_runs`; every other `execute_dispatch_land` fake follows); `T/unit/test_forge_gh.py` (adapter on a recorded
+  response); `T/unit/test_policy.py` (`:654` pins `{"max_parallel": 2}`); `T/unit/test_findings.py`, `test_verdict.py`,
+  `T/meta/test_finding_remedy_reference_sync.py` for the two codes.
+
+## Design Notes
+
+- **The three keys are optional in a project's block.** `_merge_field` replaces a block whole, and the tracked
+  `marshal-policy.toml` declares only `max_parallel`. The validator accepts any non-empty subset of the four keys; a
+  missing key reads as its default at the consumer. An invalid value rejects the whole block with `MRS-POLICY-002`
+  naming `dispatch`, and composition falls back to the layer below.
+- **Order inside one poll:** read; red refuses; green merges; the empty set merges only once `grace` has elapsed;
+  otherwise the timeout check; otherwise sleep `min(poll, time left)`. The timeout wins over the grace (a grace longer
+  than the timeout refuses at the timeout, never merges on an empty set).
+- **Known limit:** GitHub reports a commit's runs as workflows register, so a poll can see only the runs created so
+  far. The grace bounds the empty case only; a head with two of six workflows registered and concluded reads green.
+  The spec fixes the contract at "every reported run concluded"; hardening it needs the PR's expected check set.
 
 ## Binding
 
