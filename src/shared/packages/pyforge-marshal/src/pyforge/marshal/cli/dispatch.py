@@ -4681,7 +4681,7 @@ def execute_fleet_cycle(
         # What `complete` does NOT mean: `complete` is "this campaign can do
         # nothing more", and these stations still have work marshal could not
         # take (unreadable ledger, blocked head story, everything skipped,
-        # `leave_one`'s deliberate tail).
+        # `leave_one`'s deliberate tail, a parallel wave that held every candidate).
         "unresolved": [{"station": r.slug, "status": r.status.value, "remaining": r.remaining} for r in unresolved],
     }
     return FleetCycleReport(results=tuple(results), findings=tuple(findings), data=data)

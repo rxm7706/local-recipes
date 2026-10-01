@@ -456,9 +456,9 @@ def _finding_for_refusal(slug: str, refusal: Refusal, *, is_next: bool) -> Findi
     )
 
 
-def _held_reason(reads: _StationReads, head: str, deps_graph: Mapping[str, tuple[StoryKey, ...]]) -> str:
+def _held_reason(reads: _StationReads, story: str, deps_graph: Mapping[str, tuple[StoryKey, ...]]) -> str:
     cycle = reads.cycle
-    return dispatch_prelaunch.held_reason(head, cycle.statuses, deps_graph, cycle.wave)
+    return dispatch_prelaunch.held_reason(story, cycle.statuses, deps_graph, cycle.wave)
 
 
 def _station_row(

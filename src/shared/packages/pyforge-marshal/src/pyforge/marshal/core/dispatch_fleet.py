@@ -834,8 +834,8 @@ def campaign_complete(results: Iterable[StationCycleResult]) -> bool:
 
     This is the SUPERVISOR'S STOP SIGNAL -- "nothing more this campaign can
     do", not "everything drained". A station whose ledger will not read, or
-    whose head story is blocked, is terminal *for this campaign* precisely
-    because marshal cannot fix it by ticking again; ``unresolved_stations``
+    whose head story is blocked or held out of the wave, is terminal *for this
+    campaign* precisely because marshal cannot fix it by ticking again; ``unresolved_stations``
     below is what keeps that honest in the operator's report.
 
     An empty fleet counts as complete (nothing to drain). A station that was

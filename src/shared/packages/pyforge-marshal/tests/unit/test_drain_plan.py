@@ -1721,6 +1721,50 @@ def test_dispatch_stories_on_a_held_wave_reports_the_held_stories(
     assert code == 0  # WARN never changes the exit
 
 
+def test_dispatch_stories_on_a_held_wave_says_why_in_text_mode(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """The operator's surface is the text report, not the envelope: the held story and its Dep must be on it."""
+    ledgers = _seed_held_wave(tmp_path)
+    args = argparse.Namespace(slug=_STEWARD, story=None, stories=_K_FOLD, format="text", harness=None, max_in_flight=2)
+
+    code = dispatch_cli.run_dispatch(
+        args,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(alive=False),
+        harness=FakeHarness(ledgers),
+    )
+
+    out = capsys.readouterr().out
+    assert "held" in out and _K_FOLD in out and "declared Deps not all done: 44.3" in out
+    assert "ValueError" not in out and code == 0
+
+
+def test_a_wave_that_refuses_its_only_story_reports_held_and_names_it_once(
+    tmp_path: Path,
+) -> None:
+    """The refusal loop already names a story the wave itself refused; the held block must not name it again."""
+    _write_epics(tmp_path, _STEWARD, _DEPS_EPICS)
+    specs = dispatch_core.planning_specs_dir(tmp_path, _STEWARD)
+    specs.mkdir(parents=True, exist_ok=True)
+    # A multi-line `surface:` block is unsupported, so the wave never fans the story out (CAP-5).
+    block_surface = "---\nstatus: backlog\nsurface:\n  - src/kernel/**\n---\n" + _BOUND_SPEC_BODY
+    (specs / f"spec-{_K_KERNEL}.md").write_text(block_surface, encoding="utf-8")
+
+    report = _run_one_cycle(tmp_path, {_STEWARD: ((_K_KERNEL, "backlog"),)}, station=_STEWARD, max_in_flight=2)
+
+    (result,) = report.results
+    assert result.status is dispatch_fleet.StationCycleStatus.HELD
+    assert result.detail == f"{_K_KERNEL}: refused from the wave: unknown-surface"
+    (warn,) = [f for f in report.findings if f.code == "MRS-DRAIN-016"]
+    assert "refused" in warn.message and "unknown-surface" in warn.message
+
+
+def test_wave_held_stories_is_empty_without_a_wave(tmp_path: Path) -> None:
+    cycle = dispatch_cli.StationCyclePlan(slug=_STEWARD, ledger_path=tmp_path / "ledger.yaml")
+    assert dispatch_cli.wave_held_stories(cycle) == ()
+
+
 def test_a_wave_that_admits_a_story_still_reports_dispatched(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     ledgers = _seed_unmet_deps(tmp_path)  # the head (44.4) is held by 44.3, but the wave admits 44.3 itself
     launches = _record_launches(monkeypatch)

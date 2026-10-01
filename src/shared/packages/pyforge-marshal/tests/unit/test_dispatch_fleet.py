@@ -2375,6 +2375,17 @@ def test_a_held_station_is_terminal_but_unresolved() -> None:
     assert dispatch_fleet.unresolved_stations([held]) == (held,)
 
 
+@pytest.mark.parametrize("working", [StationCycleStatus.DISPATCHED, StationCycleStatus.IN_FLIGHT])
+def test_a_held_station_does_not_stop_a_campaign_another_station_is_still_working(
+    working: StationCycleStatus,
+) -> None:
+    """A Dep may land through the station that is still working, so the campaign keeps ticking."""
+    held = dispatch_fleet.StationCycleResult(slug="pyforge-marshal", status=StationCycleStatus.HELD, remaining=3)
+    busy = dispatch_fleet.StationCycleResult(slug="pyforge-doctor", status=working, remaining=2)
+    assert dispatch_fleet.campaign_complete([held, busy]) is False
+    assert dispatch_fleet.unresolved_stations([held, busy]) == (held,)
+
+
 def test_a_path_shaped_campaign_id_is_refused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
