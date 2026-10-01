@@ -99,7 +99,7 @@ def run_git(
     other ``git`` call site becoming newly tolerant of a non-zero exit too.
 
     Raises :class:`CliBridgeError` on every failure mode (git absent, an exit code
-    outside ``ok_exit_codes``, timeout). Callers degrade that into a ``Finding``;
+    outside ``ok_exit_codes``, timeout, stdout that is not valid UTF-8). Callers degrade that into a ``Finding``;
     this module has no opinion on Doctor's ``Finding`` shape.
     """
     env = dict(os.environ)

@@ -1,7 +1,9 @@
 """Unit tests for ``pyforge.doctor.checks.env_hygiene`` (Story 1.4, FR-3) --
 covers the story spec's I/O & Edge-Case Matrix: the direct positive case,
 the real ``_http.py`` golden fixture, the host-scoped negative case, the
-no-match empty-tuple case, and ``gather_one``'s filter-equivalence."""
+no-match empty-tuple case, and ``gather_one``'s filter-equivalence. It also
+covers the discovery walk's pruning: by directory name (Story 6.1) and of
+git-ignored directories (Story 38.4)."""
 
 from __future__ import annotations
 
@@ -30,9 +32,17 @@ _HTTP_PY_DIR = _REPO_ROOT / ".claude" / "skills" / "conda-forge-expert" / "scrip
 # The discovery walk now asks git which directories it ignores (Story 38.4,
 # via `cli_bridge.run_git`, which does `env = dict(os.environ)` at call time).
 # A hook-set GIT_DIR/GIT_WORK_TREE would retarget that call at the wrong
-# repository, and a contributor's global excludes file would change what git
-# calls ignored -- same rationale, and same autouse-fixture-on-os.environ
-# shape, as test_sources_frozen_path.py's own `_isolate_git_env`.
+# repository, and a contributor's own git configuration would change what git
+# calls ignored. The fixture below neutralises exactly these inputs: the six
+# repository-retargeting variables, the global and system git config
+# (GIT_CONFIG_GLOBAL / GIT_CONFIG_NOSYSTEM, so a `core.excludesFile` set there
+# is not read), and the default global ignore file
+# (`$XDG_CONFIG_HOME/git/ignore`, else `~/.config/git/ignore`), which
+# GIT_CONFIG_GLOBAL does NOT stop git reading -- XDG_CONFIG_HOME is pointed at
+# the null device so that file is never found. It does not touch the repo's own
+# `.git/info/exclude` (a fresh `git init` carries only git's stock template).
+# Same autouse-fixture-on-os.environ shape as test_sources_frozen_path.py's own
+# `_isolate_git_env`.
 _LEAKY_GIT_VARS = (
     "GIT_DIR",
     "GIT_WORK_TREE",
@@ -49,6 +59,7 @@ def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    monkeypatch.setenv("XDG_CONFIG_HOME", os.devnull)
 
 
 def _write(tmp_path: Path, name: str, source: str) -> None:
@@ -636,6 +647,27 @@ def test_discover_python_files_walks_unchanged_when_the_target_is_inside_an_igno
     files, incomplete = env_hygiene._discover_python_files(repo / "scratch_local")
 
     assert _relative_files(repo / "scratch_local", files) == ["deep/more.py", "junk.py"]
+    assert incomplete is False
+
+
+def test_discover_python_files_walks_unchanged_when_git_prints_a_non_utf8_path(tmp_path: Path):
+    # git prints a path verbatim under `-z`, so an ignored file named
+    # `bad\xff.log` makes the listing non-UTF-8. `run_git` raises
+    # CliBridgeError for that, `_git_ignored_dirs` returns nothing, and the walk
+    # is the unpruned walk it was before Story 38.4 -- never an exception (the
+    # old walk tolerated such names; `doctor check --env` once exited 2 on one).
+    repo = _init_repo(tmp_path, gitignore="scratch_local/\n*.log\n")
+    _put(repo, "mine.py")
+    _put(repo, "scratch_local/junk.py")
+    try:
+        with open(os.path.join(os.fsencode(repo), b"bad\xff.log"), "wb") as handle:
+            handle.write(b"x\n")
+    except (OSError, UnicodeError) as exc:
+        pytest.skip(f"this filesystem refuses a non-UTF-8 file name: {exc!r}")
+
+    files, incomplete = env_hygiene._discover_python_files(repo)
+
+    assert _relative_files(repo, files) == ["mine.py", "scratch_local/junk.py"]
     assert incomplete is False
 
 
