@@ -2005,40 +2005,13 @@ def test_supervisor_finalizes_verifies_and_lands_a_finished_harness_session(
     assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
 
 
-class _LandedRepositoryReadFailsVcs(FakeVcs):
-    """``worktree_head_sha`` refuses once a successful land is journaled.
-
-    Keyed on journal state, like ``_HeadShaFailsOnceJournaledVcs``: the
-    repository re-read after the land raises, so only the journal can say the
-    run is done."""
-
-    def __init__(self, *, fs: FakeFs, run_dir: Path, **kwargs: object) -> None:
-        super().__init__(**kwargs)  # type: ignore[arg-type]
-        self._fs = fs
-        self._run_dir = run_dir
-
-    def worktree_head_sha(self, worktree_path: Path) -> str:
-        if dispatch_core.KIND_DISPATCH_LAND in self._fs.journal_text(self._run_dir):
-            raise VcsCommandError("git rev-parse failed (test double)")
-        return super().worktree_head_sha(worktree_path)
-
-
-def _completion_outcome(fs: FakeFs, run_dir: Path) -> dict:
-    """The payload of the run's ``dispatch-completion`` OUTCOME entry."""
+def _completion_payload(fs: FakeFs, run_dir: Path, phase: Phase) -> dict[str, object]:
+    """The payload of the run's ``dispatch-completion`` entry for ``phase``."""
     for line in fs.journal_text(run_dir).splitlines():
         entry = json.loads(line)
-        if entry["kind"] == dispatch_core.KIND_DISPATCH_COMPLETION and entry["phase"] == "outcome":
+        if entry["kind"] == dispatch_core.KIND_DISPATCH_COMPLETION and entry["phase"] == phase.value:
             return entry["payload"]
-    raise AssertionError("no dispatch-completion outcome journaled")
-
-
-def _completion_intent(fs: FakeFs, run_dir: Path) -> dict:
-    """The payload of the run's ``dispatch-completion`` INTENT entry."""
-    for line in fs.journal_text(run_dir).splitlines():
-        entry = json.loads(line)
-        if entry["kind"] == dispatch_core.KIND_DISPATCH_COMPLETION and entry["phase"] == "intent":
-            return entry["payload"]
-    raise AssertionError("no dispatch-completion intent journaled")
+    raise AssertionError(f"no dispatch-completion {phase.value} journaled")
 
 
 @pytest.mark.parametrize("branch_present", [False, True], ids=["branch-retired", "branch-present"])
@@ -2069,12 +2042,12 @@ def test_a_landed_run_reads_completed_when_local_main_lacks_the_merge(
     assert code == 0
     assert len(land_calls) == 1
     assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
-    outcome = _completion_outcome(fs, run_dir)
+    outcome = _completion_payload(fs, run_dir, Phase.OUTCOME)
     assert outcome["verdict"] == DispatchSessionVerdict.COMPLETED.value
     assert outcome["stop_reason"] is None
     # The journal decides the process verdict; git keeps the repository facts
     # as gathered, never overwritten from the journal (AD-33).
-    intent = _completion_intent(fs, run_dir)
+    intent = _completion_payload(fs, run_dir, Phase.INTENT)
     assert intent["story_merged_on_main"] is False
     assert intent["branch_merged"] is False
 
@@ -2091,22 +2064,35 @@ def test_a_landed_run_reads_completed_when_the_repository_reread_after_the_land_
     _patch_verification(monkeypatch, _clean_envelope)
     _patch_landing(monkeypatch)
     fs = FakeFs()
-    vcs = _LandedRepositoryReadFailsVcs(fs=fs, run_dir=run_dir, head_sha=_MOVED)
+    # Refuses every repository re-read once the land is journaled: only the
+    # journal can say the run is done.
+    vcs = _HeadShaFailsOnceJournaledVcs(
+        fs=fs, run_dir=run_dir, marker=dispatch_core.KIND_DISPATCH_LAND, head_sha=_MOVED
+    )
     publisher = FakePublisher()
 
     code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
 
     assert code == 0
+    assert vcs.refused >= 1
     assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
-    assert _completion_outcome(fs, run_dir)["stop_reason"] is None
+    assert _completion_payload(fs, run_dir, Phase.OUTCOME)["stop_reason"] is None
+    # The facts recorded are the ones gathered before the land.
+    intent = _completion_payload(fs, run_dir, Phase.INTENT)
+    assert intent["baseline_head_sha"] == _BASELINE
+    assert intent["current_head_sha"] == _MOVED
+    assert intent["story_merged_on_main"] is False
+    assert intent["branch_merged"] is False
 
 
 class _AlreadyLandedOkFs(FakeFs):
     """Journals the supervisor's ``already_landed`` land OUTCOME as ``ok``.
 
-    The supervisor's own journaling writes ``ok`` only for ``landed``; an
-    ``already_landed`` outcome journaled ``ok`` comes from another writer
-    (the dispatch CLI). This stands in for that writer."""
+    The supervisor's own journaling writes ``ok`` only for ``landed``, so an
+    ``already_landed`` outcome reading ``ok`` is a journal shape the
+    supervisor does not itself produce; the verdict predicate
+    (``landing_journal_indicates_complete``) accepts it, and this pins that the
+    terminal re-read honours it."""
 
     def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
         if dispatch_core.KIND_DISPATCH_LAND in line and '"verdict": "already_landed"' in line:
@@ -2139,7 +2125,7 @@ def test_an_already_landed_run_reads_completed_when_local_main_lacks_the_merge(
 
     assert code == 0
     assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
-    assert _completion_outcome(fs, run_dir)["stop_reason"] is None
+    assert _completion_payload(fs, run_dir, Phase.OUTCOME)["stop_reason"] is None
 
 
 @pytest.mark.parametrize(
@@ -2171,8 +2157,12 @@ def test_a_land_that_did_not_succeed_still_reads_from_repository_facts(
     )
 
     assert code == 0
-    assert publisher.completions[0][1] != DispatchSessionVerdict.COMPLETED.value
-    assert _completion_outcome(fs, run_dir)["verdict"] != DispatchSessionVerdict.COMPLETED.value
+    # Exactly the verdict the repository facts give today (local `main` lacks
+    # the merge): the journal override does not fire for a land that is not `ok`.
+    assert publisher.completions[0][1] == DispatchSessionVerdict.STOPPED_EXTERNALLY.value
+    outcome = _completion_payload(fs, run_dir, Phase.OUTCOME)
+    assert outcome["verdict"] == DispatchSessionVerdict.STOPPED_EXTERNALLY.value
+    assert outcome["stop_reason"] == "external-operator-stop"
 
 
 class _LandsDuringFinalizeFs(FakeFs):
