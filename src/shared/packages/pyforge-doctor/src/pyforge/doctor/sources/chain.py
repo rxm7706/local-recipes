@@ -4043,8 +4043,11 @@ def _check_project_deferred_work(
         )
 
 
-def _deferred_work_findings(target: Path) -> list[dict]:
-    """Every project's deferred-work findings. Each project is evaluated
+def _deferred_work_findings(target: Path) -> tuple[list[dict], int]:
+    """``(findings, grandfathered)``: every project's deferred-work findings,
+    plus the fleet-wide count of pre-cutoff ``verified:`` lines that cite
+    nothing (Story 38.1 -- never failed, carried on the OK finding's
+    evidence). Each project is evaluated
     inside its own try/except: one project's unreadable Tier-3/tracked
     ledger must not discard another, ALREADY-COMPUTED project's real
     findings -- the same isolation discipline as ``_sharded_findings`` above,
@@ -4057,15 +4060,17 @@ def _deferred_work_findings(target: Path) -> list[dict]:
     passed ``baseline=None``, which skips its own Tier-3-anonymous check
     rather than guessing count 0."""
     findings: list[dict] = []
+    grandfathered = 0
     projects_dir = target / "_bmad-output" / "projects"
     if not _is_dir(projects_dir):
-        return findings
+        return findings, grandfathered
     baseline, baseline_finding = _load_deferred_work_baseline(target)
     if baseline_finding is not None:
         findings.append(baseline_finding)
     for proj in sorted(p for p in projects_dir.iterdir() if p.is_dir()):
         try:
             _check_project_deferred_work(target, proj, findings, baseline)
+            grandfathered += _check_project_verified_citations(target, proj, findings)
         except Exception as exc:  # noqa: BLE001 -- one project's unreadable
             # ledger must not discard findings already appended for a
             # different project.
@@ -4078,7 +4083,7 @@ def _deferred_work_findings(target: Path) -> list[dict]:
                     "warn": True,
                 }
             )
-    return findings
+    return findings, grandfathered
 
 
 def _deferred_work_message(item: dict) -> str:
@@ -4129,6 +4134,14 @@ def _deferred_work_message(item: dict) -> str:
             f"{hint} — run `python scripts/deferred_work_intake.py --fix` "
             f"(Story 21.8 refuses deferrals with no resolvable repo path)"
         )
+    if kind == "verified-line-uncited":
+        return (
+            f"{item['project']}/{item['id']}: {item['uncited_lines']} `verified:` "
+            f"line(s) dated {item['cutoff']} or later in {item['tracked']} cite "
+            f"neither a `path:line` nor a backtick-quoted command with its exit "
+            f"code — a verdict written from now on says what it read "
+            f"(spec-deferred-work-resolution-sweep CAP-4)"
+        )
     if kind == "no-deferred-work-baseline":
         return item["detail"]
     return item.get("detail", f"{item['project']}: {kind}")
@@ -4146,7 +4159,7 @@ def gather_deferred_work(target: Path) -> tuple[Finding, ...]:
 
 
 def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
-    raw = _deferred_work_findings(target)
+    raw, grandfathered = _deferred_work_findings(target)
     if not raw:
         projects_dir = target / "_bmad-output" / "projects"
         # No projects tree at all: `target` is not a monorepo root (same
@@ -4175,7 +4188,10 @@ def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
                 check="deferred-work",
                 status=DoctorStatus.OK,
                 message="every Tier-3 deferral has a tracked twin",
-                evidence={"projects_scanned": len(scanned)},
+                evidence={
+                    "projects_scanned": len(scanned),
+                    "grandfathered_uncited_verified_lines": grandfathered,
+                },
             ),
         )
     return tuple(
@@ -4380,6 +4396,108 @@ def _parse_verified_date(raw: str) -> date | None:
         return date.fromisoformat(token)
     except ValueError:
         return None
+
+
+# --- Story 38.1: a `verified:` line written from now on cites what it read ----
+#
+# CAP-29's success clause says every `verified:` line cites a `file:line` or a
+# reproduced/measured fact, but 11.1 reads the line only for its DATE
+# (`_parse_verified_date`). Re-verification passes wrote "still open" after the
+# fix had landed (DW-FU-42-3-9, DW-FU-46-1-6) and checked the wrong file
+# (DW-10-3-1) -- DW-OPS-2026-10-01-4. This section is the check that was
+# missing; it joins `_deferred_work_findings`'s per-project loop (the
+# deferred-work gather FAILs on it) and leaves 11.1's "due" selector alone.
+
+#: The first date a `verified:` line must cite what it read. A module
+#: constant, not a policy knob: lines dated BEFORE it are grandfathered and
+#: never failed (no ledger line is rewritten). It is 2026-10-02, not the
+#: story's landing day: measured 2026-10-01 over the eight tracked ledgers,
+#: 937 `verified:` lines carry that date (the deferral burn-down's bulk pass)
+#: and 373 of them cite nothing, so a 2026-10-01 cutoff would red `main`. The
+#: first day after the burn-down is the earliest cutoff that does not.
+VERIFIED_CITATION_CUTOFF = date(2026, 10, 2)
+
+#: A `path:line` reference -- `<path>.<ext>:<n>` or `<path>.<ext>:<n>-<m>` --
+#: anywhere in a `verified:` line's value. The extension must start with a
+#: letter so a version or an address (`3.14:5`, `127.0.0.1:8080`) is not read
+#: as a file; `(?<!\w)` keeps a match from starting mid-word, while a leading
+#: `./`, `../` or `.github/` is part of the path.
+_VERIFIED_PATH_LINE_RE = re.compile(r"(?<!\w)[\w./-]*\w\.[A-Za-z][A-Za-z0-9]*:\d+(?:-\d+)?")
+
+#: A backtick-quoted command followed (within a short gap, so `` `cmd` -> exit
+#: 0 `` and `` `cmd` (exit code 1) `` both count) by its exit code: `exit 0`,
+#: `exits 2`, `exited 1`, `exit code 1`, `exit status 0`, `exit=0`, `rc=0` or
+#: `returncode 1`. The gap and the command span never cross a backtick or a
+#: newline, so the exit code must belong to the quoted command it follows.
+_VERIFIED_COMMAND_EXIT_RE = re.compile(
+    r"`[^`\n]+`[^`\n]{0,24}?\b(?:exit(?:ed|s)?(?:[ -]?(?:code|status))?|rc|returncode)\b\s*[=:]?\s*\d+"
+)
+
+
+def _verified_line_cites(raw: str) -> bool:
+    """Does a raw ``verified:`` value cite what it read -- a ``path:line``
+    (or ``path:n-m``) reference, or a backtick-quoted command followed by its
+    exit code (Story 38.1)?"""
+    return bool(_VERIFIED_PATH_LINE_RE.search(raw) or _VERIFIED_COMMAND_EXIT_RE.search(raw))
+
+
+def _verified_citation_scan(path: Path) -> tuple[list[tuple[str, int]], int]:
+    """``([(id, uncited_lines)], grandfathered)`` for a tracked ledger.
+
+    EVERY ``verified:`` line in an entry is judged, not just the latest
+    (``_verification``'s choice): reconciliation appends a fresh line rather
+    than replacing the old one, so a bare post-cutoff line stays a bare line
+    even once a cited one lands below it. A line dated on or after
+    ``VERIFIED_CITATION_CUTOFF`` that cites nothing counts toward its entry's
+    ``uncited_lines``; one dated BEFORE the cutoff that cites nothing is only
+    counted in ``grandfathered`` (the OK finding's evidence), never failed. A
+    line whose leading token is not a ``YYYY-MM-DD`` date is neither failed
+    nor counted -- it already reads as never-verified in 11.1. Duplicates
+    ``_verification()``'s boundary walk rather than extracting a shared
+    primitive (that function stays untouched)."""
+    if not _is_file(path):
+        return [], 0
+    text = path.read_text(encoding="utf-8", errors="replace")
+    marks = [(m.start(), m.group(1)) for m in _ENTRY_RE.finditer(text)]
+    uncited: list[tuple[str, int]] = []
+    grandfathered = 0
+    for i, (pos, ident) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
+        bare = 0
+        for m in _VERIFIED_RE.finditer(text[pos:end]):
+            raw = m.group(1).strip()
+            verified_on = _parse_verified_date(raw)
+            if verified_on is None or _verified_line_cites(raw):
+                continue
+            if verified_on >= VERIFIED_CITATION_CUTOFF:
+                bare += 1
+            else:
+                grandfathered += 1
+        if bare:
+            uncited.append((ident, bare))
+    return uncited, grandfathered
+
+
+def _check_project_verified_citations(target: Path, proj: Path, findings: list[dict]) -> int:
+    """Append one ``verified-line-uncited`` finding per tracked-ledger entry
+    of ``proj`` that carries a post-cutoff ``verified:`` line citing nothing
+    (Story 38.1); return the project's grandfathered (pre-cutoff, bare) line
+    count for the OK finding's evidence."""
+    tracked_path = proj / TRACKED_REL
+    uncited, grandfathered = _verified_citation_scan(tracked_path)
+    for entry_id, count in uncited:
+        findings.append(
+            {
+                "kind": "verified-line-uncited",
+                "project": proj.name,
+                "id": entry_id,
+                "tracked": str(tracked_path.relative_to(target)),
+                "uncited_lines": count,
+                "cutoff": VERIFIED_CITATION_CUTOFF.isoformat(),
+                "generic_id": False,
+            }
+        )
+    return grandfathered
 
 
 # --- Story 11.2: churn-based cost filtering ------------------------------------
