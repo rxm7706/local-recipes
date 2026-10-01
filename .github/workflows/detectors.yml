@@ -83,10 +83,15 @@ jobs:
           fetch-depth: 0
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
-          environments: pyforge-ci
+          environments: pyforge-ci pyforge-doctor
           cache: true
       - name: tests/scripts (pyforge-doctor-scripts-test)
         run: pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test
+      # The detector-aggregate tests that load Doctor's dispatch table skip above
+      # (pyforge-ci has no jsonschema/yaml, by design); they run for real here,
+      # where Doctor's run-deps are installed (doctor Story 38.5).
+      - name: tests/scripts/test_detectors_doctor_sources.py (pyforge-doctor)
+        run: pixi run --frozen -e pyforge-doctor python -m pytest tests/scripts/test_detectors_doctor_sources.py -q
 
   detectors:
     runs-on: ubuntu-latest

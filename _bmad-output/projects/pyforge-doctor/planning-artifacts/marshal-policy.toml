@@ -317,6 +317,8 @@ verify_commands = [
   "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
   "scripts/.spec-surface-baseline.json",
   "scripts/detectors.py",
+  "tests/scripts/test_detectors_doctor_sources.py",
+  ".github/workflows/detectors.yml",
   "pixi.toml",
   "pixi.lock",
   "environment.yaml",

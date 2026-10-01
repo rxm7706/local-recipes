@@ -2905,6 +2905,23 @@ is unchanged
 tripping; on the primary checkout `doctor check .` reports complete; `pixi run --frozen -e pyforge-doctor
 pyforge-doctor-test` green
 
+### Story 38.5: The detector-aggregate tests run where Doctor's run-deps are installed
+
+As the operator reading Detectors on `main`,
+I want Story 38.3's aggregate tests to skip in the stdlib-only scripts lane and run where Doctor's run-deps exist,
+So that `scripts-suite` is green and the name-to-dispatch check still runs in CI.
+
+**Type:** fix • **Effort:** XS • **Deps:** S-38.3 • **FR/AD:** CAP-42, CAP-43 (Story 38.3) • **Surface:**
+`tests/scripts/test_detectors_doctor_sources.py`, `.github/workflows/detectors.yml`
+**Given** three tests 38.3 added import `pyforge.doctor.sources.__main__`, which needs `jsonschema` and `yaml`, and the
+`scripts-suite` job runs them in `pyforge-ci`, which has neither
+**When** this story lands
+**Then** each of the three skips with a reason naming the missing module when the dispatch table cannot import, and the
+Detectors workflow's `scripts-suite` job runs `tests/scripts/test_detectors_doctor_sources.py` a second time under
+`pyforge-doctor` (pytest plus Doctor's run-deps), where all of them run
+**And** `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` exits 0; the file passes with no skip under
+`pyforge-doctor`; `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
