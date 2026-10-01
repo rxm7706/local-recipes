@@ -2,7 +2,8 @@
 title: '73.2: A drain schedules the follow-up review a landed story recommended'
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'bb577e29a1159de67ab0b71b55eca5b4673a6304'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
