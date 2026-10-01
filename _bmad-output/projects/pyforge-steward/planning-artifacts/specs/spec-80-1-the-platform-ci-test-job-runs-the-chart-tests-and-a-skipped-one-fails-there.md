@@ -2,7 +2,7 @@
 title: "80.1: The Platform CI `test` job runs the chart tests, and a skipped one fails there"
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'draft'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
