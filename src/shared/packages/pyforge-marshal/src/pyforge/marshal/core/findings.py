@@ -878,6 +878,25 @@ rather than absorbing it. Neither code changes what a self-reconciled
 session does: a branch whose own memlog already names every changed path
 produces no entry, no stamp, and neither finding.
 
+Story 80.1 ("a dispatch landing waits for its PR's checks", spec-pyforge-marshal
+CAP-284) adds two more codes to ``dispatch_land.py``'s ``MRS-DISP-*`` area, closing
+the gap the 2026-10-01 landings exposed (doctor 38.3 merged with
+``Detectors / scripts-suite`` already failing; steward 80.1 merged with Platform CI
+and Detectors still pending): ``main`` has no branch protection, and the landing
+never evaluated ``landing_rules`` at all, so nothing made a landing wait for CI.
+Immediately before ``forge.merge_pr`` (after the spec-surface reconcile has left the
+head sha final) the landing now polls the head's check runs under the
+``dispatch.landing_check_*`` policy bounds. ``MRS-DISP-056`` names each check run
+that concluded anything but ``success``/``skipped``/``neutral`` -- red beats pending,
+so one red run refuses at once without waiting for the rest. ``MRS-DISP-057`` names
+the runs still pending when ``dispatch.landing_check_timeout_minutes`` elapsed (or
+states that no run was ever reported, when the empty set outlasts the timeout without
+the grace having let it count as green). Both classify ``Verdict.ERROR``, the same
+tier as ``MRS-DISP-044``/``048``: they fire immediately before the merge, stop the
+land attempt cold, and leave the PR open so re-running the landing merges once CI is
+green. A forge read failure while polling reuses ``MRS-DISP-018`` (the landing's own
+forge-lookup refusal) -- no third code, and it refuses, never passes (AD-8).
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -1847,6 +1866,17 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # one code one rung. (053/054 are Story 77.1's, 050 Story 65.2's.)
         "MRS-DISP-052",
         "MRS-DISP-055",
+        # Story 80.1 (spec-pyforge-marshal CAP-284): a dispatch landing waits for
+        # its PR head's check runs before `forge.merge_pr`. 056: at least one run
+        # concluded anything but success/skipped/neutral (failure, cancelled,
+        # timed_out, action_required, ...) -- the message names each; the PR
+        # stays open. 057: runs were still pending when
+        # `dispatch.landing_check_timeout_minutes` elapsed (or none was ever
+        # reported and the grace outlasted the timeout) -- the message names
+        # them; the PR stays open. Both ERROR: they stop the land attempt cold
+        # immediately before the merge, the tier of MRS-DISP-044/048.
+        "MRS-DISP-056",
+        "MRS-DISP-057",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

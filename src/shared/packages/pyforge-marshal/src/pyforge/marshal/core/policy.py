@@ -289,6 +289,8 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # ``max_parallel`` knob, independent of bmad-loop scm ``max_parallel``
         # (SEED). STATIC for the identical reason ``context`` is: declared
         # project policy, never narrowed at runtime by a journal entry.
+        # Story 80.1 (CAP-284) widens the closed key set with the landing's
+        # three ``landing_check_*`` knobs (see ``_valid_dispatch_block``).
         "dispatch",
     }
 )
@@ -405,6 +407,26 @@ _CONTEXT_DEFAULT_AGGRESSIVENESS = "medium"
 # ladder actions on a tick (see ``core.supervise.ACTION_PRECEDENCE``).
 CONTEXT_ESCALATION_THRESHOLD_KEY = "escalation_threshold"
 _DEFAULT_COMPRESSION_ESCALATION_THRESHOLD = 0.8
+# Story 80.1 (spec-pyforge-marshal CAP-284): the factory-dispatch landing's wait
+# for its PR head's check runs, three keys of the `dispatch` block beside
+# `max_parallel`. Poll every 60s, give up (refuse, PR left open) after 45
+# minutes -- a typical Guild CI lane finishes well inside that -- and let a
+# head that reports NO runs wait 120s before the empty set counts as green
+# (workflows register a little after a push; an empty read straight after one
+# is not "this commit has no checks"). Read at the consumer
+# (`resolve_landing_check_settings`): a project block that declares only
+# `max_parallel` -- `_merge_field` replaces a block whole -- reads these.
+DEFAULT_LANDING_CHECK_POLL_SECONDS = 60
+DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES = 45
+DEFAULT_LANDING_CHECK_GRACE_SECONDS = 120
+_DISPATCH_BLOCK_KEYS: frozenset[str] = frozenset(
+    {
+        "max_parallel",
+        "landing_check_poll_seconds",
+        "landing_check_timeout_minutes",
+        "landing_check_grace_seconds",
+    }
+)
 # Story 4.7's closed vocabulary for `landing_merge_strategy` -- "merge" is
 # the default because it matches this repo's own observed real practice
 # (`git log --merges` shows real, non-squash merge commits throughout).
@@ -623,7 +645,14 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # Story 33.8's `dispatch` (CAP-6): serial factory drain when absent --
     # ``max_parallel = 1`` matches Story 28.16's conservative default and
     # keeps pre-33.8 behavior byte-identical until a project declares more.
-    "dispatch": {"max_parallel": 1},
+    # Story 80.1 (CAP-284) adds the three `landing_check_*` knobs: the landing
+    # waits for its PR head's check runs (see DEFAULT_LANDING_CHECK_* above).
+    "dispatch": {
+        "max_parallel": 1,
+        "landing_check_poll_seconds": DEFAULT_LANDING_CHECK_POLL_SECONDS,
+        "landing_check_timeout_minutes": DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES,
+        "landing_check_grace_seconds": DEFAULT_LANDING_CHECK_GRACE_SECONDS,
+    },
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -919,18 +948,34 @@ def _valid_harness_preference(value: object) -> tuple[str, ...] | None:
 
 
 def _valid_dispatch_block(value: object) -> dict[str, object] | None:
-    """``dispatch`` (Story 33.8, CAP-6): ``Mapping[str, int]`` with a closed
-    ``max_parallel`` knob only -- the factory-dispatch wave cap, independent
-    of bmad-loop scm ``max_parallel`` (SEED). Unknown keys reject the whole
-    block; ``max_parallel`` is validated via ``_valid_parallel_count``."""
+    """``dispatch`` (Story 33.8, CAP-6; Story 80.1, CAP-284): a ``Mapping`` over
+    a closed key set -- ``max_parallel`` (the factory-dispatch wave cap,
+    independent of bmad-loop scm ``max_parallel`` (SEED); ``_valid_parallel_count``)
+    and the landing's check-wait knobs ``landing_check_poll_seconds`` and
+    ``landing_check_timeout_minutes`` (``_valid_positive_number``) and
+    ``landing_check_grace_seconds`` (``_valid_attempt_count``: ``0`` is a real
+    "no grace"). Any NON-EMPTY subset of the four keys is valid -- ``_merge_field``
+    replaces a block whole, and the tracked ``marshal-policy.toml`` declares only
+    ``max_parallel``, so a key a block omits reads as its default at the consumer
+    (``resolve_landing_check_settings``), never as a validation failure. An unknown
+    key, an empty block or one invalid value rejects the whole block."""
     if not isinstance(value, Mapping):
         return None
-    if set(value.keys()) != {"max_parallel"}:
+    if not value or not set(value.keys()) <= _DISPATCH_BLOCK_KEYS:
         return None
-    max_parallel = _valid_parallel_count(value.get("max_parallel"))
-    if max_parallel is None:
-        return None
-    return {"max_parallel": max_parallel}
+    validators: dict[str, _Validator] = {
+        "max_parallel": _valid_parallel_count,
+        "landing_check_poll_seconds": _valid_positive_number,
+        "landing_check_timeout_minutes": _valid_positive_number,
+        "landing_check_grace_seconds": _valid_attempt_count,
+    }
+    validated: dict[str, object] = {}
+    for key in value:
+        coerced = validators[key](value[key])
+        if coerced is None:
+            return None
+        validated[key] = coerced
+    return validated
 
 
 def _valid_context_block(value: object) -> dict[str, object] | None:
@@ -1924,6 +1969,40 @@ def resolve_context_layers(effective: EffectivePolicy) -> dict[str, dict[str, ob
             "aggressiveness": layer_declared.get("aggressiveness", _CONTEXT_DEFAULT_AGGRESSIVENESS),
         }
     return resolved
+
+
+@dataclass(frozen=True)
+class LandingCheckSettings:
+    """Story 80.1 (CAP-284): the dispatch landing's check-wait bounds, resolved
+    from ``effective.dispatch.value`` -- ``poll_seconds`` between reads,
+    ``timeout_minutes`` before a still-pending head refuses, and
+    ``grace_seconds`` an empty set waits before it counts as green."""
+
+    poll_seconds: float
+    timeout_minutes: float
+    grace_seconds: float
+
+    @property
+    def timeout_seconds(self) -> float:
+        return self.timeout_minutes * 60.0
+
+
+def resolve_landing_check_settings(effective: EffectivePolicy) -> LandingCheckSettings:
+    """Story 80.1 (CAP-284): the landing's check-wait bounds. A key the
+    ``dispatch`` block omits -- or one that fails its validator, which
+    ``compose`` already refused (``MRS-POLICY-002``) so it cannot normally
+    reach here -- reads as its ``DEFAULT_LANDING_CHECK_*`` default; never
+    raises. The wait is bounded by policy, never by an unvalidated value."""
+    declared = effective.dispatch.value
+    block: Mapping[str, object] = declared if isinstance(declared, Mapping) else {}
+    poll = _valid_positive_number(block.get("landing_check_poll_seconds", DEFAULT_LANDING_CHECK_POLL_SECONDS))
+    timeout = _valid_positive_number(block.get("landing_check_timeout_minutes", DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES))
+    grace = _valid_attempt_count(block.get("landing_check_grace_seconds", DEFAULT_LANDING_CHECK_GRACE_SECONDS))
+    return LandingCheckSettings(
+        poll_seconds=float(poll if poll is not None else DEFAULT_LANDING_CHECK_POLL_SECONDS),
+        timeout_minutes=float(timeout if timeout is not None else DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES),
+        grace_seconds=float(grace if grace is not None else DEFAULT_LANDING_CHECK_GRACE_SECONDS),
+    )
 
 
 def resolve_compression_escalation_threshold(effective: EffectivePolicy) -> float:

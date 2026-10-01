@@ -1201,6 +1201,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # red a dispatch that proceeds.
     "MRS-DISP-052": Verdict.ERROR,
     "MRS-DISP-055": Verdict.WARN,
+    # Story 80.1 (spec-pyforge-marshal CAP-284): the landing's check wait. 056 a
+    # run concluded red; 057 runs still pending at the timeout. Both ERROR, the
+    # tier of MRS-DISP-044/048 above: each fires immediately before
+    # `forge.merge_pr`, stops the land attempt cold and leaves the PR open for a
+    # re-run -- a pending or red signal is never passing (AD-8).
+    "MRS-DISP-056": Verdict.ERROR,
+    "MRS-DISP-057": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

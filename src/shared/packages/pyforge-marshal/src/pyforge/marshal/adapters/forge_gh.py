@@ -44,6 +44,7 @@ from pathlib import Path
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 from ..core.egress import Redacted
+from ..core.landing_checks import CheckRun
 from ..ports.forge import ForgeCommandError, ForgeRef, PrInfo
 
 # A read (list/view) is a bounded, single-round-trip GitHub API call --
@@ -53,6 +54,12 @@ from ..ports.forge import ForgeCommandError, ForgeRef, PrInfo
 # are network round-trips, not local-process budgets.
 _GH_READ_TIMEOUT_S = 30.0
 _GH_WRITE_TIMEOUT_S = 120.0
+
+# Story 80.1: `check_runs` pages `commits/<ref>/check-runs` by hand (GitHub's
+# own page-size ceiling is 100). The page cap is a runaway guard, not a
+# policy: 50 pages is 5,000 runs on one commit, far beyond any real head.
+_CHECK_RUNS_PER_PAGE = 100
+_CHECK_RUNS_MAX_PAGES = 50
 
 
 def _run(args: list[str], *, timeout_s: float) -> ProcessResult:
@@ -104,6 +111,24 @@ def _pr_info_from_json(entry: object, *, context: str) -> PrInfo:
     if not isinstance(base, str) or not base:
         raise ForgeCommandError(f"{context}: gh returned a PR entry missing a baseRefName: {entry!r}")
     return PrInfo(number=number, url=url, state=state.lower(), base=base)
+
+
+def _check_run_from_json(entry: object, *, context: str) -> CheckRun:
+    """One ``check_runs[]`` entry -> ``CheckRun``; any shape this module does
+    not understand is a ``ForgeCommandError`` (Story 80.1: a run the landing
+    cannot read is a run it cannot call green)."""
+    if not isinstance(entry, Mapping):
+        raise ForgeCommandError(f"{context}: gh returned a non-object check run: {entry!r}")
+    name = entry.get("name")
+    status = entry.get("status")
+    conclusion = entry.get("conclusion")
+    if not isinstance(name, str) or not name:
+        raise ForgeCommandError(f"{context}: gh returned a check run with no name: {entry!r}")
+    if not isinstance(status, str) or not status:
+        raise ForgeCommandError(f"{context}: gh returned check run {name!r} with no status: {entry!r}")
+    if conclusion is not None and not isinstance(conclusion, str):
+        raise ForgeCommandError(f"{context}: gh returned check run {name!r} with a non-string conclusion: {entry!r}")
+    return CheckRun(name=name, status=status, conclusion=conclusion)
 
 
 def _require_redacted(title: object, body: object) -> None:
@@ -283,6 +308,48 @@ class GhForge:
         matching.sort(key=_started_at, reverse=True)
         conclusion = matching[0].get("conclusion")
         return conclusion if isinstance(conclusion, str) else None
+
+    def check_runs(self, repo: ForgeRef, ref: ForgeRef) -> tuple[CheckRun, ...]:
+        """Story 80.1 (CAP-284): every check run on ``ref``, all pages.
+
+        Pages ``commits/<ref>/check-runs?per_page=100&page=N`` by hand until
+        ``total_count`` is reached -- not ``gh api --paginate``, whose
+        concatenated-objects output differs across ``gh`` versions. GitHub's
+        default ``filter=latest`` already collapses a rerun to one run per
+        check name. Anything that stops the read being the COMPLETE set (a
+        non-zero exit, a non-object payload, a missing ``check_runs`` list or
+        ``total_count``, a malformed run, a page that ends before
+        ``total_count`` is met, or paging past the runaway guard) raises
+        ``ForgeCommandError`` -- never a partial tuple a caller could read as
+        green (AD-8)."""
+        repo_value, ref_value = repo.value, ref.value
+        base = f"repos/{repo_value}/commits/{ref_value}/check-runs"
+        runs: list[CheckRun] = []
+        for page in range(1, _CHECK_RUNS_MAX_PAGES + 1):
+            endpoint = f"{base}?per_page={_CHECK_RUNS_PER_PAGE}&page={page}"
+            context = f"gh api {endpoint}"
+            result = _run(["gh", "api", endpoint], timeout_s=_GH_READ_TIMEOUT_S)
+            if result.returncode != 0:
+                raise ForgeCommandError(f"{context} failed: {result.stderr.strip()}")
+            data = _parse_json(result.stdout, context=context)
+            if not isinstance(data, Mapping):
+                raise ForgeCommandError(f"{context}: gh returned a non-object payload: {data!r}")
+            entries = data.get("check_runs")
+            if not isinstance(entries, list):
+                raise ForgeCommandError(f"{context}: gh returned a payload with no check_runs list: {data!r}")
+            total = data.get("total_count")
+            if not isinstance(total, int) or isinstance(total, bool) or total < 0:
+                raise ForgeCommandError(f"{context}: gh returned a payload with no usable total_count: {data!r}")
+            runs.extend(_check_run_from_json(entry, context=context) for entry in entries)
+            if len(runs) >= total:
+                return tuple(runs)
+            if not entries:
+                raise ForgeCommandError(
+                    f"{context}: gh returned an empty page after {len(runs)} of {total} check runs"
+                )
+        raise ForgeCommandError(
+            f"gh api {base}: more than {_CHECK_RUNS_MAX_PAGES} pages of check runs -- refusing to page further"
+        )
 
     def merge_pr(
         self,
