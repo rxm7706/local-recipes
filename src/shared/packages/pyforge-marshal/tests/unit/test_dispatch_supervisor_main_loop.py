@@ -3778,3 +3778,44 @@ def test_each_land_site_hands_a_follow_up_run_to_the_landing_and_regathers_with_
     assert after_land
     assert after_land[0] == ("commit_subjects", _TIP_RANGE)
     assert ("commit_subjects", ORIGIN_MAIN) not in reads
+
+
+def test_a_follow_up_runs_blocked_halt_regathers_with_the_launch_tip_scope(tmp_path: Path, clock: _FakeClock) -> None:
+    """The twin of ``test_supervisor_commits_and_promotes_a_blocked_halt`` for a follow-up run on a story whose
+    first merge is already on ``origin/main``: the re-gather after the committed halt keeps the launch-tip
+    scope, so the completion INTENT never records the story's first merge as this run's."""
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(
+        run_dir,
+        (
+            _followup_launch_line(),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_FINALIZE,
+                payload={"story_key": _STORY_KEY, "trigger": "harness-done", "ok": True},
+                counter=1,
+            ),
+        ),
+    )
+    _seed_spec(
+        repo_root,
+        worktree,
+        primary=_DONE_SPEC_TEXT,
+        worktree_text=_BLOCKED_SPEC_TEMPLATE.format(baseline=_BASELINE),
+    )
+    vcs = _first_landing_vcs(head_sha=_MOVED)
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    reads = _commit_subject_reads(vcs)
+    assert reads and all(read == ("commit_subjects", _TIP_RANGE) for read in reads)
+    entries = [json.loads(line) for line in fs.journal_text(run_dir).splitlines() if line]
+    [completion_intent] = [
+        e for e in entries if e["kind"] == dispatch_core.KIND_DISPATCH_COMPLETION and e["phase"] == Phase.INTENT.value
+    ]
+    assert completion_intent["payload"]["verdict"] == DispatchSessionVerdict.BLOCKED.value
+    assert completion_intent["payload"]["story_merged_on_main"] is False
