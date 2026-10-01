@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import ast
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
 
 _FRONTMATTER_DELIMITER = "---"
 _STATUS_KEY = "status:"
@@ -133,6 +135,46 @@ def followup_review_recommended(text: str) -> bool:
 def blocks_harness_relaunch(status: str | None, followup: bool) -> bool:
     """True when a further ``bmad-build-auto`` must not start."""
     return status == "done" and not followup
+
+
+#: The launch INTENT payload key that marks a follow-up review run (Story 73.1, CAP-281).
+FOLLOWUP_REVIEW_PAYLOAD_KEY = "followup_review"
+
+
+@dataclass(frozen=True)
+class FollowupReview:
+    """The marker of a follow-up review run (Story 73.1, spec-pyforge-marshal CAP-281): a launch on a
+    story whose tracked spec already reads ``done`` with ``followup_review_recommended`` an explicit
+    truthy (``is_followup_review_spec``). ``dw_id`` is the open ``DW-FRR-<story>`` row the review
+    serves, ``None`` when the ledger holds none.
+
+    The marker is derived and journaled, never a CLI flag: ``dispatch_once`` writes it onto the launch
+    INTENT (``to_intent_payload``), and the supervisor and the landing read it back from that same
+    INTENT (``from_intent_payload``) -- one shape for the writer and every reader. A normal run carries
+    no marker at all, so every normal-run path stays exactly as it was."""
+
+    dw_id: str | None = None
+
+    def to_intent_payload(self) -> dict[str, object]:
+        """The launch INTENT payload fragment: ``{"followup_review": {"dw_id": <id> | None}}``."""
+        return {FOLLOWUP_REVIEW_PAYLOAD_KEY: {"dw_id": self.dw_id}}
+
+    @classmethod
+    def from_intent_payload(cls, payload: Mapping[str, object]) -> FollowupReview | None:
+        """The marker a launch INTENT ``payload`` carries, or ``None`` for a normal run. Only a mapping
+        under ``followup_review`` is a marker; a ``dw_id`` that is not a non-empty string reads ``None``."""
+        raw = payload.get(FOLLOWUP_REVIEW_PAYLOAD_KEY)
+        if not isinstance(raw, Mapping):
+            return None
+        dw_id = raw.get("dw_id")
+        return cls(dw_id=dw_id if isinstance(dw_id, str) and dw_id else None)
+
+
+def is_followup_review_spec(text: str) -> bool:
+    """True when ``text`` (a story's tracked spec) reads ``status: done`` with ``followup_review_recommended``
+    an explicit truthy -- the one pairing ``blocks_harness_relaunch`` lets through to a fresh review
+    (Story 29.2), and the one that makes a launch a follow-up review run (Story 73.1)."""
+    return parse_spec_status(text) == "done" and followup_review_recommended(text)
 
 
 def parse_blocking_condition(text: str) -> str | None:
