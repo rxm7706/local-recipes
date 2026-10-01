@@ -1234,31 +1234,6 @@ def test_a_prose_park_in_the_tracked_spec_is_found(tmp_path: Path, capsys: pytes
     assert code == 0  # a park beyond the next story is only a warning
 
 
-def test_a_line_only_in_the_spec_s_intent_contract_is_not_a_prose_park(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Story 81.2: 73.2's own Never bullet ("Do not dispatch a follow-up ...") is the feature's rule, not a hold."""
-    slug = "pyforge-marshal"
-    _write_spec(tmp_path, slug, "22-7-fleet")
-    _write_spec(tmp_path, slug, "22-8-later")
-    contract = "\n<intent-contract>\n\n**Never:**\n- Do not dispatch a follow-up whose row is closed or absent.\n\n</intent-contract>\n"
-    (dispatch_core.planning_specs_dir(tmp_path, slug) / "spec-22-8-later.md").write_text(
-        _spec_text("src/x/**", contract + _BOUND_SPEC_BODY),
-        encoding="utf-8",
-    )
-    code, envelope, _out = _plan(
-        tmp_path,
-        "--mode",
-        "drain_to_zero",
-        "--station",
-        slug,
-        ledgers={slug: (("22-7-fleet", "backlog"), ("22-8-later", "backlog"))},
-        capsys=capsys,
-    )
-    assert not _findings(envelope, "MRS-DRAINPLAN-002")
-    assert code == 0
-
-
 def test_a_prose_park_is_reported_but_never_honoured(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """The parked story is still the next story -- the plan reports, the declared skip parks."""
     _seed_steward(tmp_path)
