@@ -40,6 +40,17 @@ Configure OIDC via `COMPONENT_OIDC_*` environment variables (see
 `config/settings/base.py`). Default local claim names: identity `sub`, groups
 `groups`, staff group `platform-staff`, superuser group `platform-superuser`.
 
+**An IdP revocation lands on the next request (Story 78.1).** allauth stores the
+login's access and refresh token (`SOCIALACCOUNT_STORE_TOKENS`), and each request
+re-reads the IdP's userinfo with it (cached for `COMPONENT_IDP_CLAIMS_CACHE_SECONDS`,
+default 30). An expired access token is refreshed once with the stored refresh
+token and retried. Every other outcome — no stored token, a failed refresh, an
+unreachable or erroring IdP — denies: the login-time claims in the session are
+never served in its place. A session that began before this change holds no stored
+token, so its roles are denied until the user signs in again. The userinfo and token
+endpoints are derived from the issuer as `<issuer>/protocol/openid-connect/userinfo`
+and `<issuer>/protocol/openid-connect/token` (the Keycloak layout).
+
 ### Type checks
 
 Running type checks with mypy:

@@ -536,15 +536,10 @@ application dependency (canopy:AD-19).
    | `MIGRATION_DATABASE_URL` | Migration-role DDL URL (Liquibase Job) |
    | `POSTGRES_PASSWORD` | Postgres container bootstrap password |
    | `REDIS_PASSWORD` | Redis AUTH (Story 12.6) |
-   | `LANGFLOW_SUPERUSER_PASSWORD` | Mounted Langflow's superuser password (Story 78.1; required, auto-login is off) |
    | `KEYCLOAK_ADMIN_PASSWORD` | Keycloak bootstrap admin (bundled OIDC profile only; Story 48.9) |
    | `COMPONENT_OIDC_CLIENT_SECRET` | BYO IdP client secret (`oidc.profile=byo` only) |
    | `PYFORGE_ASSERTION_PRIVATE_KEY` | RS256 assertion minter (optional env; inject when mint path is live) |
    | `PYFORGE_ASSERTION_PUBLIC_KEY` | RS256 assertion verifier (optional env) |
-
-   `LANGFLOW_SUPERUSER` (optional, defaults to `langflow`, not a secret so the
-   chart does not wire it) names the Langflow superuser that
-   `LANGFLOW_SUPERUSER_PASSWORD` belongs to.
 
    Remote Vault paths in the example are placeholders (`secret/data/platform/…`);
    replace them with your mount layout before apply.
@@ -596,16 +591,6 @@ hand-set issuer/JWKS for bundled installs.
 **Co-decision with Story 49.6:** this story names the **provider**;
 49.6 sets `IDP_CLAIMS_SNAPSHOT` / `IDP_USERINFO` for per-request role
 re-read. Neither story may contradict the other's deployment choice.
-
-**Revocation lands on the next request (Story 78.1).** allauth stores the
-login's access and refresh token (`SOCIALACCOUNT_STORE_TOKENS`), and each
-request re-reads the IdP's userinfo with it (cached for
-`COMPONENT_IDP_CLAIMS_CACHE_SECONDS`, default 30). An expired access token is
-refreshed once with the stored refresh token and retried. Every other outcome —
-no stored token, a failed refresh, an unreachable or erroring IdP — denies: the
-login-time claims in the session are never served in its place. A session that
-began before this change holds no stored token, so its roles are denied until
-the user signs in again.
 
 ### 8.2 BYO IdP escape hatch (`oidc.profile=byo`)
 
