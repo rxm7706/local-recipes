@@ -373,6 +373,12 @@ def test_registered_codes_contains_the_real_codes():
             # script is absent (the dispatch proceeds).
             "MRS-DISP-052",
             "MRS-DISP-055",
+            # Story 80.1 (spec-pyforge-marshal CAP-284): the dispatch landing's check
+            # wait -- 056 a check run on the PR head concluded red, 057 runs still
+            # pending at `dispatch.landing_check_timeout_minutes`. Both ERROR: the
+            # landing refuses before `forge.merge_pr` and leaves the PR open.
+            "MRS-DISP-056",
+            "MRS-DISP-057",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",
@@ -575,3 +581,24 @@ def test_mrs_disp_052_is_registered_once_at_the_error_tier_and_055_at_warn():
     warned = Finding(code="MRS-DISP-055", severity=Severity.WARN, message="a pre-rule spec")
     assert verdict.compute_verdict((refused,)) is verdict.Verdict.ERROR
     assert verdict.compute_verdict((warned,)) is verdict.Verdict.WARN
+
+
+def test_mrs_disp_056_and_057_are_registered_once_at_the_error_tier():
+    """Story 80.1 (spec-pyforge-marshal CAP-284): a red check run and a check run still pending at
+    the timeout are two codes (AD-31 -- classified by code alone), both ERROR so the landing
+    refuses; each appears exactly once in the registry source and the classification table (AD-15)."""
+    import inspect
+    import re
+
+    from pyforge.marshal.core import verdict
+    from pyforge.marshal.core.model import Finding, Severity
+
+    registry_source = inspect.getsource(findings)
+    table_source = inspect.getsource(verdict)
+    for code in ("MRS-DISP-056", "MRS-DISP-057"):
+        assert code in findings.REGISTERED_CODES
+        assert verdict.classify(code) is verdict.Verdict.ERROR
+        assert len(re.findall(rf'^\s+"{code}",\s*$', registry_source, re.MULTILINE)) == 1
+        assert len(re.findall(rf'^\s+"{code}":', table_source, re.MULTILINE)) == 1
+        refused = Finding(code=code, severity=Severity.ERROR, message="a check run blocks the landing")
+        assert verdict.compute_verdict((refused,)) is verdict.Verdict.ERROR

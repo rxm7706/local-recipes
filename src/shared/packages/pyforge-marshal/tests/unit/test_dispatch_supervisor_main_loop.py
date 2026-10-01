@@ -479,11 +479,16 @@ def _patch_landing(
     *,
     verdict: DispatchLandingVerdict = DispatchLandingVerdict.LANDED,
     findings: tuple[Finding, ...] = (),
+    wait_ticks: int = 0,
 ) -> list[dict]:
+    """``wait_ticks``: how many times the fake landing calls the ``on_wait_tick`` it was handed --
+    standing in for a check wait that polled that many times (Story 80.1, CAP-284)."""
     calls: list[dict] = []
 
     def _fake_execute(**kwargs):
         calls.append(kwargs)
+        for _ in range(wait_ticks):
+            kwargs["on_wait_tick"]()
         envelope = build_envelope(
             command="dispatch land",
             verdict="warn" if findings else "clean",
@@ -2518,3 +2523,150 @@ def test_main_refuses_a_missing_positional(monkeypatch: pytest.MonkeyPatch) -> N
     # i.e. on a `main()` that quietly ran the supervisor with defaults. The
     # refusal this pins is argparse's usage error.
     assert excinfo.value.code == 2
+
+
+# ==========================================================================
+# The landing's check wait keeps the run alive (Story 80.1, CAP-284)
+# ==========================================================================
+#
+# The portal marks a published run FAILED `heartbeat_lost` once its heartbeat is older than the
+# station time limit (300 s by default). The landing can now wait 45 minutes for CI, and the tick
+# loop writes its heartbeat only after the landing returns -- so the wait ticks the heartbeat itself.
+
+
+def _heartbeat_entries(fs: FakeFs) -> list[dict]:
+    return [
+        entry
+        for entry in (json.loads(line) for line in fs.journal_text(_run_dir_of(fs)).splitlines() if line)
+        if entry.get("payload", {}).get("heartbeat") is True
+    ]
+
+
+def _run_dir_of(fs: FakeFs) -> Path:
+    return next(path.parent for path in fs.files if path.name == "journal.jsonl")
+
+
+def test_supervisor_heartbeats_the_run_through_the_landing_wait(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """Each tick of the landing's wait writes the loop's own heartbeat observation AND calls the run
+    publisher's heartbeat -- two ticks here, plus the loop's one after the landing returns."""
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(
+        run_dir,
+        (
+            _launch_line(),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                payload={"verdict": "verified", "ok": True},
+                counter=1,
+            ),
+        ),
+    )
+    (run_dir / "session.log").write_text("budget-stop reached; idle-defer\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    land_calls = _patch_landing(monkeypatch, wait_ticks=2)
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=fs,
+        vcs=FakeVcs(head_sha=_MOVED),
+        process=FakeProcess(alive=False),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    assert len(land_calls) == 1
+    assert publisher.heartbeats == ["handle-1"] * 3
+    beats = _heartbeat_entries(fs)
+    assert len(beats) == 3
+    assert all(beat["payload"]["current_head_sha"] == _MOVED for beat in beats)
+    ids = [json.dumps(json.loads(line)["id"], sort_keys=True) for line in fs.journal_text(run_dir).splitlines() if line]
+    assert len(ids) == len(set(ids))  # the ticks and the landing's own entries never reuse a journal id
+
+
+def test_supervisor_heartbeats_the_run_through_the_landing_wait_on_the_terminal_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """The tick loop's SECOND landing call site (a finished harness session: finalize verifies, the
+    verdict is terminal, then it lands) hands the landing the same wait heartbeat -- two wait ticks
+    write two heartbeat observations and call the publisher heartbeat twice. No loop heartbeat
+    follows: the verdict is terminal, so the run completes instead."""
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    land_calls = _patch_landing(monkeypatch, wait_ticks=2)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    vcs = FakeVcs(branches=frozenset({branch}), head_sha=_MOVED)
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert len(land_calls) == 1
+    assert publisher.heartbeats == ["handle-1"] * 2
+    beats = _heartbeat_entries(fs)
+    assert len(beats) == 2
+    assert all(beat["payload"]["session_alive"] is False for beat in beats)
+    assert all(beat["payload"]["current_head_sha"] == _MOVED for beat in beats)
+    assert '"verdict": "landed"' in fs.journal_text(run_dir)
+    assert publisher.completions
+
+
+def test_supervisor_without_a_publish_handle_still_journals_the_wait_heartbeat(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(
+        run_dir,
+        (
+            _launch_line(),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                payload={"verdict": "verified", "ok": True},
+                counter=1,
+            ),
+        ),
+    )
+    (run_dir / "session.log").write_text("budget-stop reached; idle-defer\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_landing(monkeypatch, wait_ticks=2)
+    fs = FakeFs()
+    publisher = FakePublisher(handle=None)
+
+    code = _run(repo_root, fs=fs, vcs=FakeVcs(head_sha=_MOVED), process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert publisher.heartbeats == []
+    assert len(_heartbeat_entries(fs)) == 3
+
+
+def test_journal_heartbeat_returns_the_next_counter_and_survives_a_journal_failure(tmp_path: Path) -> None:
+    """A heartbeat is liveness evidence, never a reason to stop: a refused journal write is swallowed
+    and the counter still advances (the next entry must not reuse the id)."""
+    run_dir = _run_dir(_repo(tmp_path))
+    kwargs = dict(
+        run_dir=run_dir,
+        run_id=_RUN_ID,
+        writer_id="dispatch-supervisor-1",
+        counter=7,
+        session_alive=True,
+        git_facts=_git_facts(),
+    )
+    ok_fs = FakeFs()
+    assert supervisor_main._journal_heartbeat(fs=ok_fs, **kwargs) == 8
+    assert len(ok_fs.appended) == 1
+    failing_fs = FakeFs(append_fails_for=frozenset({"journal.jsonl"}))
+    assert supervisor_main._journal_heartbeat(fs=failing_fs, **kwargs) == 8
+    assert failing_fs.appended == []

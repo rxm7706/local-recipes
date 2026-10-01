@@ -1776,6 +1776,50 @@ def test_harness_done_lands_via_cap4_without_second_session(tmp_path: Path, monk
     assert all(f.code != "MRS-DISP-040" for f in attempt.findings)
 
 
+def test_harness_done_land_carries_the_landing_checks_record_into_the_command_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 80.1 (CAP-284): a refused landing is re-run through the harness-done path, so the check
+    wait's record on the landing envelope must reach this command's data -- not be discarded."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core.model import build_envelope
+    from pyforge.marshal.core.verdict import compute_verdict
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "80-1-checks-record"
+    _write_worktree_spec(tmp_path, slug, story, _DONE_SPEC)
+    record = {
+        "head_sha": "abc123",
+        "outcome": "green",
+        "polls": 2,
+        "waited_seconds": 60.0,
+        "runs": [{"name": "Lint / ruff", "status": "completed", "conclusion": "success"}],
+    }
+    envelope = build_envelope(
+        command="dispatch land",
+        verdict=compute_verdict(()),
+        data={"landing_checks": record},
+        findings=(),
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.LANDED, "PR #9", envelope),
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data["land_verdict"] == "landed"
+    assert attempt.data["landing_checks"] == record
+
+
 def test_followup_true_still_launches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)

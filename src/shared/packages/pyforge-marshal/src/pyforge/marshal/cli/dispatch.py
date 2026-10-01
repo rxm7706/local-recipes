@@ -91,6 +91,7 @@ from ..core.identity import (
     render_feed_key,
 )
 from ..core.journal import (
+    LANDING_CHECKS_FIELD,
     JournalEntryId,
     Phase,
     build_entry,
@@ -101,7 +102,7 @@ from ..core.journal import (
     resolve_scope_violation_advisories_from_payload,
     sidecar_texts_for_lines,
 )
-from ..core.model import Finding, Severity, build_envelope
+from ..core.model import Envelope, Finding, Severity, build_envelope
 from ..core.model_cost import (
     adapter_provider,
     catalog_declared,
@@ -1202,7 +1203,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
                     landing_verdict = verdict_val
             # Story 53.2 review (I1): read regardless of `ok` -- a refused
             # landing (MRS-DISP-048) is exactly the case this must surface.
-            landing_findings = resolve_land_findings_from_payload(entry.payload)
+            landing_findings = resolve_land_findings_from_payload(entry.payload, sidecars=sidecars)
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION):
         if entry.phase == Phase.OUTCOME:
             vval = entry.payload.get("verdict")
@@ -2561,7 +2562,7 @@ def dispatch_once(
         followup_review_recommended(live_spec_text),
     ):
         data["harness_done_land_only"] = True
-        land_verdict, named_target, _land_envelope = _attempt_harness_done_cap4(
+        land_verdict, named_target, land_envelope = _attempt_harness_done_cap4(
             slug=slug,
             story_key=story_key,
             worktree=worktree,
@@ -2574,6 +2575,10 @@ def dispatch_once(
         )
         data["land_verdict"] = land_verdict.value
         data["land_named_target"] = named_target
+        # Story 80.1 (CAP-284): the check wait's record -- a refused landing is re-run through this path.
+        land_checks = land_envelope.data.get(LANDING_CHECKS_FIELD) if isinstance(land_envelope, Envelope) else None
+        if land_checks is not None:
+            data[LANDING_CHECKS_FIELD] = land_checks
         if land_verdict in {
             DispatchLandingVerdict.LANDED,
             DispatchLandingVerdict.ALREADY_LANDED,

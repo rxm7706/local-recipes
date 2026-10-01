@@ -8,7 +8,7 @@ outside ``core/`` so it may import ``adapters`` (AD-4), mirroring
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,6 +22,7 @@ from .core.dispatch_landing import (
     union_memlog_texts,
     unknown_conflict_paths,
 )
+from .core.model import Finding
 from .core.refs import local_branch_ref
 from .ports.forge import ForgeCommandError, ForgePort, ForgeRef, PrInfo
 from .ports.fs import FsPort
@@ -42,6 +43,10 @@ class DispatchLandHealResult:
     retried_forge_merge: bool = False
     escalated_paths: tuple[str, ...] = ()
     healed_memlog_paths: tuple[str, ...] = ()
+    # Story 80.1 (CAP-284): the finding ``await_checks`` returned for the head the union heal pushed
+    # (a red run or runs still pending) -- the retried merge never ran, so the caller reports THIS
+    # finding, never the first merge's failure.
+    checks_refusal: Finding | None = None
 
 
 def _ledger_path(project_slug: str) -> str:
@@ -65,6 +70,7 @@ def try_heal_dispatch_land_merge(
     vcs: VcsPort,
     forge: ForgePort,
     probe_ref: str | None = None,
+    await_checks: Callable[[str], Finding | None] | None = None,
 ) -> DispatchLandHealResult:
     """Attempt a ledger and memlog union or a local main advance after ``merge_pr`` fails.
 
@@ -75,7 +81,15 @@ def try_heal_dispatch_land_merge(
     ``head_branch`` names ``refs/heads/<branch>``, so a tag of the same name cannot stand in
     (Story 61.1). Only the landing project's own sprint ledger and append-only Spec memlogs
     (``.memlog.md``, Story 78.1) are mechanical; any other conflicted path, and any memlog that
-    is not append-only on both sides, escalates by name."""
+    is not append-only on both sides, escalates by name.
+
+    ``await_checks`` (Story 80.1, CAP-284) is the landing's wait for a head's check runs, handed
+    in as ``head_sha -> Finding | None`` (``None``: the head's runs are green, merge). The union
+    heal pushes a NEW head -- ``probe`` merged into the branch -- whose runs the landing's own
+    pre-merge wait never read, so ``_try_union_heal`` calls it with that head before its retried
+    merge and, on a finding, merges nothing and returns it on ``checks_refusal``. The local-``main``
+    advance merges the SAME head the pre-merge wait already cleared, so it takes no wait. ``None``
+    (the default) skips the wait: a direct caller behaves as before."""
     del head_sha, fs
     probe = probe_ref if probe_ref is not None else local_branch_ref(base)
     ledger_rel = _ledger_path(project_slug)
@@ -118,7 +132,7 @@ def try_heal_dispatch_land_merge(
         # pre-heal read, so falling through to the local-`main` advance would land the branch
         # on `main` past whatever made the forge refuse (a red check, a rejected push). The
         # #985 recovery still runs on the NEXT landing attempt, with a fresh probe and state.
-        healed = _try_union_heal(
+        healed, checks_refusal = _try_union_heal(
             project_slug=project_slug,
             git_repo_root=git_repo_root,
             worktree=worktree,
@@ -134,11 +148,13 @@ def try_heal_dispatch_land_merge(
             has_memlogs=bool(memlog_paths),
             vcs=vcs,
             forge=forge,
+            await_checks=await_checks,
         )
         return DispatchLandHealResult(
             healed=healed,
             retried_forge_merge=healed,
             healed_memlog_paths=memlog_paths if healed else (),
+            checks_refusal=checks_refusal,
         )
 
     if not conflict_paths and merge_state in _STALE_GITHUB_MERGE_STATES:
@@ -224,13 +240,18 @@ def _try_union_heal(
     has_memlogs: bool,
     vcs: VcsPort,
     forge: ForgePort,
-) -> bool:
+    await_checks: Callable[[str], Finding | None] | None = None,
+) -> tuple[bool, Finding | None]:
     """Story 59.1 (CAP-269): heal a ledger-only conflict with a real merge of ``probe`` into the
     dispatch branch -- a single-parent union commit (the Story 28.20 original) cleared a same-row
     status conflict but never adjacent added rows, since the retried three-way merge still saw
     both sides change the same lines. Story 78.1 (CAP-283) puts every conflicted memlog's
     resolution in the same ``resolutions`` map, so one merge heals them all. Any other conflicted
-    path aborts the merge inside ``merge_ref_resolving``: nothing is committed or pushed."""
+    path aborts the merge inside ``merge_ref_resolving``: nothing is committed or pushed.
+
+    Returns ``(healed, checks_refusal)``. Story 80.1 (CAP-284): the pushed union head is a commit CI
+    has not seen, so ``await_checks(new_sha)`` runs before the retried merge; a finding from it
+    means the merge is NOT retried (``(False, finding)``) and the PR stays open on the pushed head."""
     what = " and ".join(name for name, present in (("sprint ledger", has_ledger), ("memlogs", has_memlogs)) if present)
     message = f"marshal: union {what} for {project_slug!r} while merging the base (CAP-4 heal)"
     try:
@@ -238,7 +259,12 @@ def _try_union_heal(
         vcs.push(git_repo_root, head_branch)
         new_sha = vcs.resolve_ref(git_repo_root, head_branch)
     except VcsCommandError:
-        return False
+        return False, None
+
+    if await_checks is not None:
+        refusal = await_checks(new_sha)
+        if refusal is not None:
+            return False, refusal
 
     try:
         forge.merge_pr(
@@ -250,8 +276,8 @@ def _try_union_heal(
             subject=ForgeRef(subject),
         )
     except ForgeCommandError:
-        return False
-    return True
+        return False, None
+    return True, None
 
 
 def _try_local_main_advance(

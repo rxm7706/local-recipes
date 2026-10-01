@@ -18,6 +18,7 @@ from pyforge.marshal.core.dispatch_landing import (
     union_sprint_ledger_maps,
     unknown_conflict_paths,
 )
+from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.dispatch_land_heal import (
     DispatchLandHealResult,
     try_heal_dispatch_land_merge,
@@ -431,7 +432,7 @@ def _landing(
     return remote, clone, wt
 
 
-def _heal(clone: Path, wt: Path, forge: _HonestForge) -> DispatchLandHealResult:
+def _heal(clone: Path, wt: Path, forge: _HonestForge, *, await_checks=None) -> DispatchLandHealResult:
     return try_heal_dispatch_land_merge(
         project_slug="pyforge-marshal",
         git_repo_root=clone,
@@ -448,6 +449,7 @@ def _heal(clone: Path, wt: Path, forge: _HonestForge) -> DispatchLandHealResult:
         vcs=GitVcs(),
         forge=forge,
         probe_ref=_ORIGIN_MAIN,
+        await_checks=await_checks,
     )
 
 
@@ -1009,3 +1011,111 @@ def test_heal_refuses_cleanly_when_a_resolution_read_fails(
     assert result == DispatchLandHealResult(healed=False)
     assert vcs.merges == [] and vcs.pushed == [] and vcs.commits == []
     assert forge.merge_calls == 0 and forge.closed == []
+
+
+# --- Story 80.1 (CAP-284): the union heal waits for the head it pushes ------------------------------
+
+_RED_FINDING = Finding(code="MRS-DISP-056", severity=Severity.ERROR, message="the pushed head has a red check run")
+
+
+def _union_heal(tmp_path: Path, vcs: FakeVcsHeal, forge: FakeForgeHeal, **kwargs):
+    worktree = tmp_path / "wt"
+    worktree.mkdir(exist_ok=True)
+    return try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        base="main",
+        head_branch="dispatch/pyforge-marshal/80.1",
+        head_sha="abc123",
+        subject="Merge 80.1 into main",
+        merge_strategy="merge",
+        delete_branch=True,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=PrInfo(number=80, url="https://example/pr/80", state="open", base="main"),
+        fs=FakeFsHeal(),
+        vcs=vcs,
+        forge=forge,
+        **kwargs,
+    )
+
+
+def _ledger_conflict_vcs() -> FakeVcsHeal:
+    return FakeVcsHeal(
+        conflict_paths=(_LEDGER,),
+        main_ledger=_ledger_yaml(("28-19-x", "done")),
+        branch_ledger=_ledger_yaml(("28-20-y", "backlog")),
+    )
+
+
+def test_union_heal_hands_the_pushed_head_to_await_checks_before_the_retried_merge(tmp_path: Path) -> None:
+    events: list[str] = []
+
+    class _Forge(FakeForgeHeal):
+        def merge_pr(self, _repo, number, strategy, *, expected_head_sha, delete_branch, subject):
+            events.append(f"merge:{expected_head_sha.value}")
+
+    def await_checks(sha: str) -> None:
+        events.append(f"await:{sha}")
+
+    result = _union_heal(tmp_path, _ledger_conflict_vcs(), _Forge(), await_checks=await_checks)
+
+    assert result == DispatchLandHealResult(healed=True, retried_forge_merge=True)
+    assert events == ["await:healed222", "merge:healed222"]  # the PUSHED union head, then its merge
+
+
+def test_union_heal_merges_nothing_when_await_checks_refuses_and_reports_its_finding(tmp_path: Path) -> None:
+    vcs, forge = _ledger_conflict_vcs(), FakeForgeHeal()
+
+    result = _union_heal(tmp_path, vcs, forge, await_checks=lambda _sha: _RED_FINDING)
+
+    assert result == DispatchLandHealResult(healed=False, checks_refusal=_RED_FINDING)
+    assert result.checks_refusal is _RED_FINDING
+    assert forge.merge_calls == 0  # no retried merge ...
+    assert forge.closed == []  # ... and the PR stays open
+    assert vcs.pushed == ["dispatch/pyforge-marshal/80.1"]  # the union head itself was pushed
+    assert vcs.merged == []  # nor did the fallback advance `main`
+
+
+def test_the_local_main_advance_takes_no_wait(tmp_path: Path) -> None:
+    """It merges the SAME head the landing's pre-merge wait already cleared -- a second wait there
+    would only delay it."""
+
+    def await_checks(sha: str):
+        raise AssertionError(f"the local-main advance must not wait ({sha})")
+
+    result = _union_heal(
+        tmp_path, FakeVcsHeal(conflict_paths=()), FakeForgeHeal(merge_state="DIRTY"), await_checks=await_checks
+    )
+
+    assert result == DispatchLandHealResult(healed=True, landed_via_local_merge=True)
+
+
+def test_real_heal_pushes_the_union_head_but_never_merges_it_when_await_checks_refuses(tmp_path: Path) -> None:
+    """Over real git: the head `await_checks` is asked about is the one on the remote, and a refusal
+    leaves it there for CI -- a later landing merges it once green."""
+    remote, clone, wt = _landing(tmp_path, **_ADJACENT)
+    main_before = _run_git(remote, "rev-parse", "main").strip()
+    forge = _HonestForge(clone)
+    asked: list[str] = []
+
+    def await_checks(sha: str) -> Finding:
+        asked.append(sha)
+        return _RED_FINDING
+
+    result = _heal(clone, wt, forge, await_checks=await_checks)
+
+    assert result == DispatchLandHealResult(healed=False, checks_refusal=_RED_FINDING)
+    assert forge.merge_calls == 0 and forge.closed == []
+    assert asked == [_run_git(remote, "rev-parse", _HEAD).strip()]
+    assert _run_git(remote, "rev-parse", "main").strip() == main_before
+
+
+def test_real_heal_merges_the_union_head_once_await_checks_clears_it(tmp_path: Path) -> None:
+    remote, clone, wt = _landing(tmp_path, **_ADJACENT)
+    forge = _HonestForge(clone)
+
+    result = _heal(clone, wt, forge, await_checks=lambda _sha: None)
+
+    assert result == DispatchLandHealResult(healed=True, retried_forge_merge=True)
+    assert forge.merge_calls == 1
