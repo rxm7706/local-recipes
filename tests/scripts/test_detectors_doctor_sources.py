@@ -197,10 +197,11 @@ def test_doctor_source_tasks_include_bmad_output_hygiene_and_a_matching_pixi_tas
 
 
 def _doctor_dispatch():
-    """Doctor's dispatch table, or a skip naming what is missing. It imports every source module, and
-    `sources/docs_currency.py` needs `jsonschema` and `yaml`; the Detectors workflow's `scripts-suite` job runs this
-    file in the stdlib-only `pyforge-ci` env, which has neither (Story 38.5). The `detectors` job runs it again under
-    `pyforge-guild`, where these tests run for real."""
+    """Doctor's dispatch table, or a skip naming what is missing. It imports every source module and Doctor's
+    run-deps (`pyforge.core`, `jsonschema`, `yaml`); the Detectors `scripts-suite` job's first step runs this file in
+    the stdlib-only `pyforge-ci` env, which has none of them (Story 38.5). Its second step, and `pr-preflight`, run it
+    again through `pyforge-doctor-aggregate-scripts-test` in `pyforge-doctor`, where these tests run for real
+    (Story 39.1)."""
     return pytest.importorskip("pyforge.doctor.sources.__main__").DISPATCH
 
 

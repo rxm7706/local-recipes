@@ -86,6 +86,18 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-01 (evening)** — **Found: the step Story 38.5 added to CI has no `pr-preflight` leg.** 38.5 moved the
+  three aggregate tests of `tests/scripts/test_detectors_doctor_sources.py` onto a second Detectors `scripts-suite` step
+  under `-e pyforge-doctor`, because they skip in `pyforge-ci`. `pr-preflight` runs the first step
+  (`pyforge-doctor-scripts-test`, in `pyforge-ci`) but not the second, so locally those tests only ever skip.
+  Correction to the 38.5 entry below: `pr-preflight` does run the scripts lane; what it lacked was this step. 38.3 got
+  past CI because `dispatch/*` branches skip `pr-preflight` and the landing did not wait for checks, which marshal 80.1
+  (`spec-pyforge-marshal:CAP-284`) has since closed.
+  **What it looks like when fixed:** the second step is a named task that the `scripts-suite` job and `pr-preflight`
+  both call, and a meta-test reds any `scripts-suite` step that `pr-preflight` does not run.
+  **Constraints:** `pyforge-ci` stays stdlib-only; the CI step keeps running the same tests. Operator ruling 2026-10-01:
+  fix it now. Owner `spec-pyforge-doctor`. → Epic 39 / Story 39.1, specced 2026-10-01.
+
 - **2026-10-01 (later)** — **Found: Story 38.3's aggregate tests need Doctor's run-deps, and the scripts lane has
   none.** 38.3 added three tests to `tests/scripts/test_detectors_doctor_sources.py` that import Doctor's dispatch table
   (`pyforge.doctor.sources.__main__`), which imports `docs_currency` (`jsonschema`, `yaml`). The Detectors workflow's

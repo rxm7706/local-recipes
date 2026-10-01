@@ -2922,6 +2922,30 @@ Detectors workflow's `scripts-suite` job runs `tests/scripts/test_detectors_doct
 **And** `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` exits 0; the file passes with no skip under
 `pyforge-doctor`; `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
 
+## Epic 39: `pr-preflight` runs every step of the Detectors scripts lane (spec-pyforge-doctor CAP-42, CAP-43)
+
+Minted 2026-10-01 from the station Dream's entry of the same date (evening) and the operator's ruling of that date. A
+defect of Story 38.5's CI step, so no CAP is minted; a new epic because Epic 38 is `done`. **HARD boundaries:**
+`pyforge-ci` stays stdlib-only; no test is weakened or deleted.
+
+### Story 39.1: `pr-preflight` runs the detector-aggregate tests where Doctor's run-deps are installed
+
+As an author running `pr-preflight` before a push,
+I want it to run the `scripts-suite` step Story 38.5 added, and to be told when a new step has no leg,
+So that a green local run still means a green Detectors run.
+
+**Type:** fix • **Effort:** XS • **Deps:** S-38.5 • **FR/AD:** CAP-42, CAP-43 (Stories 38.3, 38.5) • **Surface:**
+`pixi.toml` (`[feature.pyforge-doctor.tasks]`, `pr-preflight`), `.github/workflows/detectors.yml`,
+`src/shared/packages/pyforge-doctor/tests/meta/test_preflight_mirrors_scripts_suite.py`
+**Given** the Detectors `scripts-suite` job runs `tests/scripts/test_detectors_doctor_sources.py` under
+`-e pyforge-doctor` as a raw command, and `pr-preflight` has no leg for it
+**When** this story lands
+**Then** the step calls a named task, `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`), that `pr-preflight`
+also depends on, and a doctor meta-test reds any `scripts-suite` step that is not
+`pixi run --frozen -e <env> <task>` with `(task, env)` among `pr-preflight`'s legs
+**And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test` passes with no skip; `environment.yaml`
+is unchanged (a task-only `pixi.toml` change); `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
