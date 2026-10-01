@@ -63,6 +63,11 @@ class _StubVcs:
             raise VcsCommandError(f"git show {ref}:{path} failed: bad object")
         return self.ledger_text
 
+    def commit_subjects(self, _repo_root: Path, _ref: str) -> tuple[str, ...]:
+        """Story 79.1: a scan with a plan makes finalize re-read ``origin/main``'s history for the
+        landing gate; this fake has none (the tests that need one use ``_PublishVcs``)."""
+        return ()
+
 
 def _read_finalize_resync_entry(tmp_path: Path, slug: str) -> dict:
     """Read back the single ``_FINALIZE_RESYNC_KIND`` journal entry written
