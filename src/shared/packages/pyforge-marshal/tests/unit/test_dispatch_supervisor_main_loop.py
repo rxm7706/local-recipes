@@ -3733,7 +3733,9 @@ def _seed_followup_terminal_branch_land_run(repo_root: Path) -> None:
     ("seed", "verdict"),
     [
         pytest.param(_seed_followup_live_branch_land_run, DispatchLandingVerdict.LANDED, id="live-branch-landed"),
-        pytest.param(_seed_followup_terminal_branch_land_run, DispatchLandingVerdict.LANDED, id="terminal-branch-landed"),
+        pytest.param(
+            _seed_followup_terminal_branch_land_run, DispatchLandingVerdict.LANDED, id="terminal-branch-landed"
+        ),
         pytest.param(
             _seed_followup_terminal_branch_land_run, DispatchLandingVerdict.REFUSED, id="terminal-branch-refused"
         ),
