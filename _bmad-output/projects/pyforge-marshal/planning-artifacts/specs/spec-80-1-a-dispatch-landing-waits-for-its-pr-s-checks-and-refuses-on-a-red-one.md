@@ -327,3 +327,54 @@ Flag: `flag-exempt: detector-or-gate`.
     - `[low]` `[reject]` mutation is a private-name stub with no record in the diff — the committed test exists; the by-hand run is recorded under Auto Run Result at finalize.
     - `[low]` `[reject]` the tracked policy's `dispatch` value lacks the three keys — AC 8 holds for the composed defaults; for a project block (`max_parallel` only; `_merge_field` replaces the field whole) the resolver fills the defaults, and that is tested.
     - `[low]` `[reject]` the contract is "every reported run" — same as the partial-registration row.
+
+## Auto Run Result
+
+Status: in-review (review loop 1 re-derivation; ready for the independent review pass)
+Blocking condition: none.
+
+### Summary of implemented change
+
+Attempt 1's diff was re-applied whole (the KEEP list) and the Tasks & Acceptance AMEND items were done on top.
+
+- **Wait and classifier (KEEP).** `core/landing_checks.py` (pure), `ForgePort.check_runs` and the hand-paged `GhForge.check_runs`, `_wait_for_landing_checks` before `forge.merge_pr`, `MRS-DISP-056` / `MRS-DISP-057` (ERROR), the three `dispatch.landing_check_*` keys, the journal record.
+- **(a) the record names its head.** `landing_checks.head_sha`; when a union heal re-waits, the healed head's record is nested under `landing_checks.heal` (one offloaded field, both heads journaled).
+- **(b) the wait keeps the run alive.** `execute_dispatch_land(on_wait_tick=...)`: called after every poll and, through `_sleep_with_ticks`, at least every `min(poll_seconds, 60)` s (a long poll is sliced into 60 s pieces). The supervisor extracts `_journal_heartbeat` (the one builder of the heartbeat observation) and passes a tick that journals it and calls `_publisher.heartbeat`; the tick shares the landing's journal counter so no id is reused. The CLI landing path passes none.
+- **(c) the heal re-waits.** `try_heal_dispatch_land_merge` / `_try_union_heal` take `await_checks: Callable[[str], Finding | None] | None = None`; `_try_union_heal` calls it with the pushed head before its retried `merge_pr` and returns the finding on `DispatchLandHealResult.checks_refusal`; `dispatch_land.py` reports `MRS-DISP-056` / `057` / `018` instead of `MRS-DISP-020`. `_try_local_main_advance` takes no wait (same head the pre-merge wait cleared).
+- **Overflow.** `_valid_landing_grace_seconds` (magnitude probe) in the dispatch block validator and the resolver: `10**400` is `MRS-POLICY-002` naming `dispatch`, nothing raises.
+- **One reader.** `resolve_scope_violation_advisories_from_payload` uses `_offloaded_payload_field`.
+- **Comments.** The three `cli/config.py` `dispatch` comments describe the four-key block; the `MRS-DISP-056/057` docstring names the healed head.
+
+### Files changed
+
+Under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/`): `core/landing_checks.py` (new), `core/policy.py`, `core/findings.py`, `core/verdict.py`, `core/journal.py`, `schemas/policy.json`, `ports/forge.py`, `adapters/forge_gh.py`, `dispatch_land.py`, `dispatch_land_heal.py`, `dispatch_supervisor/__main__.py`, `cli/dispatch.py`, `cli/config.py`. Tests (`tests/unit/`): `test_landing_checks.py` (new), `test_dispatch_landing.py`, `test_dispatch_land_heal.py`, `test_dispatch_supervisor_spec_block.py`, `test_dispatch_supervisor_main_loop.py`, `test_forge_gh.py`, `test_findings.py`, `test_policy.py`.
+
+### Verification
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: 9416 passed, 1 skipped, 12 deselected, exit 0.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: 130 passed, 3 skipped, exit 0.
+- `pyforge-marshal-coverage-gate` (touched modules, 80% floor): OK, 11 modules; `dispatch_land_heal.py` 90%, `dispatch_supervisor/__main__.py` 96%.
+- `ruff check`, `ruff format --check`, `mypy -p pyforge.marshal` on the package: clean (exit 0).
+
+### Mutations, by hand on the final tree (each restored; `cmp` against a saved copy clean)
+
+Over the five landing test files (310 tests; 34 + 276 etc. = failed + passed):
+
+| Mutation | Result |
+|---|---|
+| wait removed (`_wait_for_landing_checks` returns green at once) | 34 failed, 276 passed |
+| the heal's `await_checks` call removed from `_try_union_heal` | 10 failed, 300 passed |
+| default `sleep` made a no-op | 1 failed, 309 passed (`test_without_clock_seams_the_real_time_sleep_receives_the_poll_interval`) |
+| after-poll tick removed | 4 failed, 306 passed |
+| between-slice tick removed | 1 failed, 309 passed |
+| `on_wait_tick` not passed on by `execute_dispatch_land` | 4 failed, 306 passed |
+| supervisor passes no tick to the landing | 5 failed, 305 passed |
+| supervisor tick forgets to advance the counter (id reuse) | 3 failed, 307 passed |
+| supervisor tick skips the publisher heartbeat | 2 failed, 308 passed |
+| heal refusal reported as `MRS-DISP-020` again | 6 failed, 304 passed |
+
+### Risks and notes
+
+- The spec-surface reconcile for the governed files this story touches is NOT stamped here (AGENTS.md pre-PR item 5 needs a clean tree and `git add`); `execute_dispatch_land` reconciles the landing's own drift when it lands.
+- `landing_checks` is still a dict; the second head lives under its `heal` key rather than a list, so attempt 1's reader and round-trip tests are unchanged.
+- Known limit, unchanged: GitHub reports runs as workflows register, so a head with only some workflows registered and concluded reads green (Design Notes).
