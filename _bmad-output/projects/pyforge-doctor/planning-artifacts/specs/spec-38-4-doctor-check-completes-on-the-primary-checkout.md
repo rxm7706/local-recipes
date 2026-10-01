@@ -2,13 +2,16 @@
 title: "38.4: `doctor check .` completes on the primary checkout"
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'd6b0a85992a698f49ab2a3158c1a24b06ecbd7d6'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - docs/dreams/pyforge-doctor.md
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py
+warnings:
+  - oversized
 deferred: []
 declared_low_risk: false
 ---
@@ -75,6 +78,31 @@ Type / Effort / Deps: fix / S / —.
 
 </intent-contract>
 
+## Code Map
+
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py` -- `_discover_python_files` (L207-251) is the walk; `_DISCOVERY_ENTRY_CAP` (L202, 50_000) counts dir names plus files; `_PRUNED_DIR_NAMES` (L153) is the by-name prune; the module docstring (L103) says "no subprocess", which goes stale.
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/cli_bridge.py` -- `run_git(cwd, args, *, timeout=30.0, ok_exit_codes)` (L71-126) raises `CliBridgeError` on every failure. AD-5: the sole subprocess site (`tests/meta/test_cli_bridge_sole_subprocess.py`), so the walk calls it, never `subprocess`. Sources import `from ..cli_bridge import CliBridgeError, run_git`.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_checks_env_hygiene.py` -- walk tests at L331-454 (`_write`, non-git `tmp_path`, `_DISCOVERY_ENTRY_CAP` monkeypatch); the new matrix tests go beside them.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_frozen_path.py` -- L25-64: the `_LEAKY_GIT_VARS` env scrub and `_init_repo` idiom to copy (a hook-set `GIT_DIR` would retarget `git`).
+- `src/shared/packages/pyforge-doctor/tests/meta/test_env_hygiene_no_execution.py` -- pins exec/eval/importlib only; read-only here.
+- Git probe, measured 2026-10-01 in a scratch repo: `git ls-files --others --ignored --exclude-standard --directory -z` lists a wholly ignored dir as `dir/` (one entry, no descent), omits a dir holding a tracked file (lists its ignored children instead), and exits 128 (`fatal`) both outside a work tree and when run from inside an ignored dir. `var/` and `.cursor/` are gitignored (`git check-ignore -v`).
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py` -- add `_git_ignored_dirs(target)`: one `run_git(target, [...], -z)` per walk, keep entries ending `/`, return normalized absolute paths; `CliBridgeError` returns an empty set. `_discover_python_files` skips those dirs in `dirnames` before counting. Fix the L103 docstring line.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_checks_env_hygiene.py` -- one test per I/O matrix row in throwaway `tmp_path` git repos, plus a one-call-per-run pin and a mutation check on the pruning.
+
+**Acceptance Criteria:**
+- Given the intent-contract matrix and ACs above, when the new tests run, then each row passes and each fails with the pruning removed.
+- Given this checkout's three gitignored dirs filled past the cap, when `doctor check .` runs, then env-hygiene reports complete.
+
+## Spec Change Log
+
+## Design Notes
+
+Prune only what git IGNORES, not what it merely does not track: a new, not-yet-added source directory is first-party code the scan must still reach. Directories only, so an ignored `.py` file inside a mixed directory is still scanned. A target inside an ignored directory makes git exit 128; that falls back to today's walk.
+
 ## Binding
 
 Parent capability: CAP-1 (FR-3; defect, no new CAP). DW-OPS-2026-10-01-3.
@@ -88,6 +116,11 @@ Minted 2026-10-01 by operator ruling: the deferral burn-down's "stop the inflow"
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`).
+- `pixi run -e pyforge-guild lint-types` — expected: exit 0 (a dispatch landing can red it; it is not in the merge gate's `verify_commands`).
+- `python scripts/spec_surface_reconcile.py` — expected: exit 0, after naming every governed path on the owning Spec's `.memlog.md` and each co-governor's.
+
+**Manual checks (if no CLI):**
+- Fill this worktree's gitignored `var/scribe-pg`, `var/platform-local` and `.cursor/cdao-p15-noarch-build` past the cap, run `doctor check .`, and read the exit code and the env-hygiene finding; remove the fill afterwards.
 
 ## Review Triage Log
 
