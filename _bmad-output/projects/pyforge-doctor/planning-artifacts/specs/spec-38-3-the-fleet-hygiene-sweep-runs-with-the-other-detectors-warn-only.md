@@ -140,4 +140,4 @@ All doctor paths below are under `src/shared/packages/pyforge-doctor/`.
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`).
 - `python scripts/spec_surface_reconcile.py` — expected: exit 0 after the memlog entries name every governed path changed.
-- `python scripts/detectors.py --scope repo` — expected: exit code 0, with a `bmad-output-hygiene` row (read `$?`, never through a pipe).
+- `pixi run --frozen -e pyforge-guild python scripts/detectors.py --scope repo` — expected: a `bmad-output-hygiene` row reading `pass` (read the exit code from a file, never through a pipe). The aggregate's own exit code is not this story's verdict: it covers 42 detectors, and on 2026-10-01 it exits 1 because `ledger-direction` reds on pyforge-marshal 79.1 (landed-but-unpromoted), a marshal ledger state this diff cannot touch.
