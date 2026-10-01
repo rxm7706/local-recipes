@@ -758,7 +758,7 @@ def finalize_dispatch_land(
     # Story 66.1 (CAP-275): the landed story's recommended follow-up review rides the intake's own locked
     # publish, read after the resync so the primary holds the spec the merged PR may have added. Every
     # failure is a WARN: the PR has already merged.
-    followup = None
+    followup = _followup_review_carry(vcs, root, project_slug, key, worktree, clock, findings)
     intake_finding = _run_deferred_work_intake(process, fs, vcs, root, project_slug, str(key), followup=followup)
     if intake_finding is not None:
         findings.append(intake_finding)
