@@ -4916,3 +4916,79 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium (unverified)
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-78-1: The platform edge still forwards every `/langflow/...` request into Langflow with no platform-side auth gate; after this story Langflow's own login (the env superuser) is the only gate.
+
+- source_spec: `planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md`
+  summary: The platform edge still forwards every `/langflow/...` request into Langflow with no platform-side auth gate; after this story Langflow's own login (the env superuser) is the only gate.
+  evidence: `_dispatch_http` in `config/asgi.py` routes `/langflow/` paths straight to `langflow_application` without checking the IdP session or a role. This story only stops Langflow handing out a token without credentials. Read in the installed Langflow 1.11.4 (`lfx/services/settings/auth.py`, not exercised here): `ENABLE_SIGNUP` defaults on, so `POST /api/v1/users/` may still create (inactive, `NEW_USER_IS_ACTIVE=False`) accounts. Putting `/langflow/` behind an IdP role is a design decision (which role, how the Langflow session follows it), so it needs its own Dream append and Story rather than a fix inside a security hotfix.
+  location: src/platform/config/asgi.py
+  origin: spec-deferred 5427dace0b3c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-78-1-2: The Wagtail-admin and staff gates still read login-synced Django groups, so an IdP revocation of those groups waits for the next sign-in even though station roles now follow the IdP per request.
+
+- source_spec: `planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md`
+  summary: The Wagtail-admin and staff gates still read login-synced Django groups, so an IdP revocation of those groups waits for the next sign-in even though station roles now follow the IdP per request.
+  evidence: `holds_wagtail_admin_group` reads `user.groups.filter(name=settings.WAGTAIL_ADMIN_IDP_GROUP)`, the database groups the OIDC adapter syncs at login; it never consults `fetch_current_userinfo`. This story did not touch that path (pre-existing). Unverified: whether any code re-syncs those groups outside login. Settled by tracing every writer of `User.groups` under `src/platform/`.
+  location: src/platform/platformapp/front_door/middleware.py
+  origin: spec-deferred 27bf7c2a371b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-78-1-3: The new chart wiring test for the Langflow password is skipped in the GitHub Platform CI `test` job, because every `@requires_helm` chart test is.
+
+- source_spec: `planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md`
+  summary: The new chart wiring test for the Langflow password is skipped in the GitHub Platform CI `test` job, because every `@requires_helm` chart test is.
+  evidence: `test_platform_pods_require_the_langflow_superuser_password_from_the_secret` carries `requires_helm`; the `test` job installs only `platform-ci-test`, which has no `helm` binary (`platform-dev` does, so `platform-ci-local` runs it). The same gating covers every pre-existing chart invariant, so closing it means giving that job helm, a separate story.
+  location: .github/workflows/platform-ci.yml
+  origin: spec-deferred 125b3e7f3b6e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-78-1-4: An existing deployment's Langflow database and the tokens minted while `/auto_login` was open are not addressed: no rotation, audit or upgrade note ships with the fix.
+
+- source_spec: `planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md`
+  summary: An existing deployment's Langflow database and the tokens minted while `/auto_login` was open are not addressed: no rotation, audit or upgrade note ships with the fix.
+  evidence: Bearer tokens and API keys issued by the open endpoint stay valid until they expire or the Langflow secret key rotates; whether changing `LANGFLOW_SUPERUSER_PASSWORD` changes an existing superuser's password was not exercised (the live test runs on a fresh database). A `helm upgrade` against a Secret without the new key fails pod creation, and `keys-runbook.md` has no row for this secret. Settled by reading Langflow's token lifetime and `get_or_create_super_user` for an existing user.
+  location: docs/explanation/enterprise-deployment.md
+  origin: spec-deferred b0b645562a79 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-78-1-5: allauth now stores the IdP refresh token in plaintext in `SocialToken.token_secret`, and nothing deletes the row at logout or encrypts it at rest.
+
+- source_spec: `planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md`
+  summary: allauth now stores the IdP refresh token in plaintext in `SocialToken.token_secret`, and nothing deletes the row at logout or encrypts it at rest.
+  evidence: The contract requires storing the refresh token, and allauth's `SocialToken` is the sanctioned store; its plaintext column and its lack of deletion on logout are allauth's behaviour. A database reader gets long-lived IdP credentials. Hardening (encrypt at rest, revoke at logout, retention) is a separate design decision, so it needs its own Dream append and Story.
+  location: src/platform/config/settings/base.py
+  origin: spec-deferred 03394e7a6d12 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-78-1-6: The userinfo and token endpoints are derived from the issuer in the Keycloak layout only, so a BYO IdP with another layout is denied everywhere once tokens are stored.
+
+- source_spec: `planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md`
+  summary: The userinfo and token endpoints are derived from the issuer in the Keycloak layout only, so a BYO IdP with another layout is denied everywhere once tokens are stored.
+  evidence: `userinfo_endpoint_url` (pre-existing) and the new `token_endpoint_url` build `<issuer>/protocol/openid-connect/{userinfo,token}`, and the refresh reads its client from `SOCIALACCOUNT_PROVIDERS` only. The BYO example in the deployment docs uses the same layout, and the bundled realm is Keycloak. Unverified: whether any estate runs a BYO IdP with another layout. Settled by asking the operator which IdPs are in use; the fix is OIDC discovery or settings.
+  location: src/platform/config/authorization/idp_userinfo.py
+  origin: spec-deferred a064dd01cedb — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-78-1-7: Two requests that both see a 401 at access-token expiry refresh with the same refresh token, with no lock across them.
+
+- source_spec: `planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md`
+  summary: Two requests that both see a 401 at access-token expiry refresh with the same refresh token, with no lock across them.
+  evidence: `_refresh_access_token` rotates the stored refresh token without a row lock; the docstring accepts that a racing request is denied once. The bundled realm sets no refresh-token revocation, so Keycloak reuse is allowed and the race is benign there. Unverified: a BYO IdP that rotates with reuse detection could refuse the loser or end the session. Settled by that IdP's refresh-token settings; the fix is a row lock held across the HTTP call.
+  location: src/platform/config/authorization/idp_userinfo.py
+  origin: spec-deferred 5ee4d066360b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
