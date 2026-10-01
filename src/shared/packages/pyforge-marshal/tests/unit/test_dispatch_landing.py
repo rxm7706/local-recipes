@@ -132,7 +132,8 @@ class FakeVcs:
         self.calls.append(("commit_subjects", ref))
         if ref in self.unreadable_refs:
             raise VcsCommandError(f"git log {ref} failed (test double)")
-        if ref in self.merged_at if self.merged_at is not None else self._merged:
+        merged_here = self._merged if self.merged_at is None else ref in self.merged_at
+        if merged_here:
             effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
             key = normalize("22-4-example")
             subject = render_merge_subject(key, effective.merge_subject_template.value, "pyforge-marshal")
