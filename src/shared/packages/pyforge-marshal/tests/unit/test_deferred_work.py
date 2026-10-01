@@ -6,14 +6,22 @@ plain string or value.
 from __future__ import annotations
 
 from pyforge.marshal.core import gate
+import pytest
+
 from pyforge.marshal.core.deferred_work import (
     DeferralCandidate,
+    FollowupReviewCandidate,
+    append_ledger_entry,
     deferrals_to_promote,
+    followup_review_candidate,
+    followup_review_id,
+    followup_review_to_promote,
     parse_followup_deferrals,
     promoted_id,
+    render_followup_review_entry,
     render_ledger_entry,
 )
-from pyforge.marshal.core.identity import StoryKey
+from pyforge.marshal.core.identity import StoryKey, normalize
 
 # --- parse_followup_deferrals -------------------------------------------
 
@@ -359,3 +367,103 @@ def test_review_budget_followup_capture_is_identical_regardless_of_review_tier()
     # guarantee -- never silently dropped for either.
     assert low_promoted == low_candidates
     assert standard_promoted == standard_candidates
+
+
+# --- the dispatch twin: a recommended follow-up review (Story 66.1, CAP-275) --------
+
+_FRR_SPEC_PATH = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-2-the-landing-record.md"
+_FRR_SPEC = "---\ntitle: '51.2: x'\nstatus: 'done'\nfollowup_review_recommended: true\n---\n\nbody\n"
+
+
+def _frr_candidate() -> FollowupReviewCandidate:
+    candidate = followup_review_candidate(_FRR_SPEC, normalize("51.2"), _FRR_SPEC_PATH)
+    assert candidate is not None
+    return candidate
+
+
+def test_followup_review_id_form():
+    assert followup_review_id(normalize("51.2")) == "DW-FRR-51-2"
+    assert followup_review_id(normalize("6.1a")) == "DW-FRR-6-1a"
+
+
+def test_followup_review_candidate_carries_both_path_forms():
+    candidate = _frr_candidate()
+    assert candidate.story_key == normalize("51.2")
+    assert candidate.spec_path == _FRR_SPEC_PATH
+    assert candidate.source_spec == "planning-artifacts/specs/spec-51-2-the-landing-record.md"
+
+
+def test_followup_review_candidate_keeps_a_path_outside_planning_artifacts_whole():
+    candidate = followup_review_candidate(_FRR_SPEC, normalize("51.2"), "specs/spec-51-2-x.md")
+    assert candidate is not None and candidate.source_spec == "specs/spec-51-2-x.md"
+
+
+@pytest.mark.parametrize("flag", ["true", "yes", "1", "True"])
+def test_followup_review_candidate_accepts_every_explicit_truthy(flag: str):
+    text = _FRR_SPEC.replace("followup_review_recommended: true", f"followup_review_recommended: {flag}")
+    assert followup_review_candidate(text, normalize("51.2"), _FRR_SPEC_PATH) is not None
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        _FRR_SPEC.replace("followup_review_recommended: true", "followup_review_recommended: false"),
+        _FRR_SPEC.replace("followup_review_recommended: true", "followup_review_recommended: no"),
+        _FRR_SPEC.replace("followup_review_recommended: true\n", ""),
+        _FRR_SPEC.replace("status: 'done'", "status: 'in-review'"),
+        _FRR_SPEC.replace("status: 'done'", "status: 'backlog'"),
+        _FRR_SPEC.replace("status: 'done'\n", ""),
+        "no frontmatter at all\nfollowup_review_recommended: true\n",
+        "",
+        None,
+    ],
+)
+def test_followup_review_candidate_is_none_unless_done_and_explicitly_flagged(text):
+    assert followup_review_candidate(text, normalize("51.2"), _FRR_SPEC_PATH) is None
+
+
+def test_followup_review_to_promote_passes_a_candidate_the_ledger_does_not_carry():
+    candidate = _frr_candidate()
+    # DW-FU-51-2-1 is the hand-filed row for the same story: a different prefix, never the dispatch twin.
+    ledger = "### DW-FU-51-2-1: hand-filed\n\n- source_spec: `x`\n"
+    assert followup_review_to_promote(candidate, ledger) is candidate
+    assert followup_review_to_promote(candidate, "") is candidate
+
+
+def test_followup_review_to_promote_is_idempotent():
+    candidate = _frr_candidate()
+    ledger = append_ledger_entry("# Ledger\n", render_followup_review_entry(candidate, promoted_date="2026-10-01"))
+    assert followup_review_to_promote(candidate, ledger) is None
+
+
+def test_followup_review_to_promote_is_not_fooled_by_a_prefix_collision():
+    candidate = _frr_candidate()
+    assert followup_review_to_promote(candidate, "### DW-FRR-51-20: later story\n") is candidate
+    assert followup_review_to_promote(candidate, "### DW-FRR-51-2a: suffixed story\n") is candidate
+    assert followup_review_to_promote(candidate, "### DW-FRR-51-20: a\n\n### DW-FRR-51-2: b\n") is None
+
+
+def test_followup_review_to_promote_none_candidate_is_none():
+    assert followup_review_to_promote(None, "") is None
+
+
+def test_render_followup_review_entry_matches_the_golden_shape():
+    assert render_followup_review_entry(_frr_candidate(), promoted_date="2026-10-01") == (
+        "### DW-FRR-51-2: Follow-up review still recommended for story 51.2\n"
+        "\n"
+        "- source_spec: `planning-artifacts/specs/spec-51-2-the-landing-record.md`\n"
+        "  summary: Story 51.2 landed with `followup_review_recommended: true`; the recommended independent "
+        "follow-up review has not run and nothing else carries the recommendation.\n"
+        "  evidence: Story 51.2 landed on origin/main with its tracked spec reading `status: done` and "
+        "`followup_review_recommended: true`; dispatch-land finalize carried the recommendation.\n"
+        f"  location: {_FRR_SPEC_PATH}\n"
+        "  origin: dispatch-followup-review\n"
+        "  severity: low\n"
+        "  promoted: 2026-10-01 \u2014 dispatch-land finalize\n"
+        "  status: open\n"
+    )
+
+
+def test_append_ledger_entry_separates_with_one_blank_line_and_ends_in_one_newline():
+    assert append_ledger_entry("# Ledger\n\nold\n\n\n", "### new\n") == "# Ledger\n\nold\n\n### new\n"
+    assert append_ledger_entry("", "### new\n") == "### new\n"
