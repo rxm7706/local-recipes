@@ -119,7 +119,7 @@ from ..core.model_cost import (
     is_harness_default_model,
     provider_declaring_model,
 )
-from ..core.refs import ORIGIN_MAIN
+from ..core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT
 from ..core.spec_deps import story_deps_from_epics, story_transitively_depends_on
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_verdict
@@ -871,24 +871,36 @@ def _seed_dispatch_structure_graph(
 
 
 def _derive_followup_review(
-    *, fs: FsPort, repo_root: Path, slug: str, story_key: StoryKey, spec_text: str
+    *, vcs: VcsPort, repo_root: Path, slug: str, story_key: StoryKey, spec_text: str
 ) -> FollowupReview | None:
     """Story 73.1 (spec-pyforge-marshal CAP-281): the follow-up review marker of a launch, or ``None``.
 
     A launch is a follow-up review run when the story's tracked spec (``spec_text``, the primary's) reads
     ``status: done`` with ``followup_review_recommended`` an explicit truthy -- the pairing Story 29.2 lets
-    through to a fresh review. The marker is derived, never declared: ``dw_id`` is the open
-    ``DW-FRR-<story>`` row the station's tracked ``deferred-work-ledger.md`` holds for the story (``None``
-    when it holds none, or cannot be read -- the launch proceeds either way)."""
+    through to a fresh review. The marker is derived, never declared, from two ``origin/main`` reads made
+    after the launch's own fetch (best effort, as ``dispatch land`` and the supervisor fetch it; a stale
+    remote-tracking ref reads an older tip and ledger, never a newer one):
+
+    * ``launch_origin_main_sha`` -- ``origin/main``'s resolved tip, the point after which a merge is this
+      run's own (``core.dispatch_completion.merge_subject_ref``). Raises ``VcsCommandError`` when it cannot
+      be resolved: a follow-up run with no launch tip could not be judged by its own branch.
+    * ``dw_id`` -- the open ``DW-FRR-<story>`` row the station's deferred-work ledger holds AT
+      ``origin/main``, not the primary's working copy, which lags a carry's publish until the next resync.
+      ``None`` when it holds none or cannot be read -- the launch proceeds either way."""
     if not is_followup_review_spec(spec_text):
         return None
-    ledger_path = dispatch_core.planning_specs_dir(repo_root, slug).parent / "deferred-work-ledger.md"
     try:
-        ledger_text = fs.read_text(ledger_path)
-    except FsError:
+        vcs.fetch(repo_root, "origin", "main")
+    except VcsCommandError:
+        pass
+    launch_tip = vcs.resolve_ref(repo_root, ORIGIN_MAIN)
+    ledger_rel = f"_bmad-output/projects/{slug}/planning-artifacts/deferred-work-ledger.md"
+    try:
+        ledger_text = vcs.file_text_at_ref(repo_root, ORIGIN_MAIN, ledger_rel)
+    except VcsCommandError:
         ledger_text = None
     dw_id = deferred_work.open_followup_review_id(ledger_text, story_key) if ledger_text is not None else None
-    return FollowupReview(dw_id=dw_id)
+    return FollowupReview(dw_id=dw_id, launch_origin_main_sha=launch_tip)
 
 
 def _spec_text_prefer_worktree(spec_path: Path, repo_root: Path, worktree: Path, main_text: str) -> str:
@@ -1185,6 +1197,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     worktree_path: str | None = None
     launched_at: datetime | None = None
     baseline_head_sha: str | None = None
+    followup_review: FollowupReview | None = None
     supervisor_pid: int | None = None
     completion_verdict: str | None = None
     completion_stop_reason: str | None = None
@@ -1193,6 +1206,9 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     verification_scope_advisories: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
         if entry.phase == Phase.INTENT:
+            # Story 73.1 (CAP-281): the follow-up review marker rides the launch INTENT, read back here for
+            # every reader of this run's merge facts.
+            followup_review = FollowupReview.from_intent_payload(entry.payload)
             raw_story = entry.payload.get("story_key")
             story_key = raw_story if isinstance(raw_story, str) else None
             model_val = entry.payload.get("model")
@@ -1285,6 +1301,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         launched_at=launched_at,
         worktree_path=worktree_path,
         baseline_head_sha=baseline_head_sha,
+        followup_review=followup_review,
         supervisor_pid=supervisor_pid,
         completion_verdict=completion_verdict,
         completion_stop_reason=completion_stop_reason,
@@ -2649,10 +2666,24 @@ def dispatch_once(
         return _done()
 
     # Story 73.1 (CAP-281): a launch on a `done` spec whose flag is still true is a follow-up review run --
-    # derived here, journaled on the launch INTENT below, and read back by the supervisor and the landing.
-    followup_review = _derive_followup_review(
-        fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, spec_text=spec_text
-    )
+    # derived here, journaled on the launch INTENT below, and read back by the supervisor, the landing and
+    # every other reader of the run's merge facts.
+    try:
+        followup_review = _derive_followup_review(
+            vcs=vcs, repo_root=repo_root, slug=slug, story_key=story_key, spec_text=spec_text
+        )
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DISP-016",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot resolve {ORIGIN_MAIN_SHORT!r} to scope the follow-up review run of story "
+                    f"{render_feed_key(story_key)!r} to its own branch: {exc}"
+                ),
+            )
+        )
+        return _done()
 
     writer_id = _writer_id()
     mint_moment = _now_utc()

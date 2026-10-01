@@ -361,12 +361,13 @@ def gather_dispatch_git_facts(
     project_slug: str,
     baseline_head_sha: str,
     merge_subject_template: str,
-    followup_review: bool = False,
+    followup_review: FollowupReview | None = None,
 ) -> DispatchGitFacts:
-    """``followup_review`` (Story 73.1, CAP-281): the run is a follow-up review of a story that already
-    landed, so ``story_merged_on_main`` counts only the merge subjects that reached ``origin/main`` after
-    the run's baseline (``merge_subject_ref``) -- the story's first merge is not this run's. A normal run
-    (the default) reads ``origin/main`` whole, as before."""
+    """``followup_review`` (Story 73.1, CAP-281): the run's follow-up review marker, read off its launch
+    INTENT. The run reviews a story that already landed, so ``story_merged_on_main`` counts only the merge
+    subjects that reached ``origin/main`` after ``origin/main``'s tip at launch (``merge_subject_ref``) --
+    the story's first merge is not this run's, whatever the worktree's baseline is. A normal run (the
+    default, ``None``) reads ``origin/main`` whole, as before."""
     current_head_sha = vcs.worktree_head_sha(worktree)
     changed_paths = vcs.changed_files(repo_root, worktree, base=_BASE_REF)
     # Story 22.9: the ONE branch derivation, station-scoped, with the
@@ -409,9 +410,8 @@ def gather_dispatch_git_facts(
         else False
     )
     branch_merged = raw_branch_merged and current_head_sha != baseline_head_sha
-    subjects = vcs.commit_subjects(
-        repo_root, merge_subject_ref(baseline_head_sha, ORIGIN_MAIN, followup_review=followup_review)
-    )
+    subject_ref = merge_subject_ref(ORIGIN_MAIN, followup_review=followup_review)
+    subjects = vcs.commit_subjects(repo_root, subject_ref) if subject_ref is not None else ()
     known_keys = _load_known_story_keys(fs, repo_root=repo_root, project_slug=project_slug)
 
     def _spec_status_for(candidate_key: StoryKey) -> str | None:
@@ -586,7 +586,7 @@ def _spec_land_block_reason(
     story_key: str,
     worktree: Path,
     git_facts: DispatchGitFacts,
-    followup_review: bool = False,
+    followup_review: FollowupReview | None = None,
 ) -> str | None:
     """Non-``None`` when the worktree spec blocks verify/land (Story 51.4).
 
@@ -940,7 +940,7 @@ def _run_supervisor_finalize_sequence(
             project_slug=slug,
             baseline_head_sha=git_facts.baseline_head_sha,
             merge_subject_template=merge_subject_template,
-            followup_review=followup_review is not None,
+            followup_review=followup_review,
         )
     except VcsCommandError, ValueError:
         pass
@@ -1017,7 +1017,7 @@ def _run_supervisor_finalize_sequence(
         story_key=story_key,
         worktree=worktree,
         git_facts=git_facts,
-        followup_review=followup_review is not None,
+        followup_review=followup_review,
     )
     if block_reason is not None:
         counter = _journal_dispatch_blocked(
@@ -1284,7 +1284,7 @@ def _land_or_journal_block(
         story_key=story_key,
         worktree=worktree,
         git_facts=git_facts,
-        followup_review=followup_review is not None,
+        followup_review=followup_review,
     )
     if block_reason is not None:
         return _journal_dispatch_blocked(
@@ -1541,7 +1541,6 @@ def run_dispatch_supervisor(
     # Story 73.1 (CAP-281): a follow-up review run is judged by its own branch, never by the story's
     # first landing -- the marker is the one `dispatch_once` journaled on this run's launch INTENT.
     followup_review = _followup_review_from_launch(folded, run_id)
-    followup_run = followup_review is not None
 
     writer_id = _writer_id()
     counter = 0
@@ -1633,7 +1632,7 @@ def run_dispatch_supervisor(
     )
     # Story 73.1 (CAP-281): a follow-up review run's spec-only diff is its record, so every narration
     # read below takes the path through `narration_spec_path` (None for that run, the spec path otherwise).
-    narration_path = narration_spec_path(spec_relative_path, followup_review=followup_run)
+    narration_path = narration_spec_path(spec_relative_path, followup_review=followup_review)
 
     while True:
         tick_count += 1
@@ -1648,7 +1647,7 @@ def run_dispatch_supervisor(
                 project_slug=slug,
                 baseline_head_sha=baseline_head_sha,
                 merge_subject_template=merge_subject_template,
-                followup_review=followup_run,
+                followup_review=followup_review,
             )
         except (VcsCommandError, ValueError) as exc:
             print(
@@ -1732,7 +1731,7 @@ def run_dispatch_supervisor(
                     project_slug=slug,
                     baseline_head_sha=baseline_head_sha,
                     merge_subject_template=merge_subject_template,
-                    followup_review=followup_run,
+                    followup_review=followup_review,
                 )
             except VcsCommandError, ValueError:
                 pass
@@ -1812,7 +1811,7 @@ def run_dispatch_supervisor(
                             project_slug=slug,
                             baseline_head_sha=baseline_head_sha,
                             merge_subject_template=merge_subject_template,
-                            followup_review=followup_run,
+                            followup_review=followup_review,
                         )
                         verdict = resolve_terminal_session_verdict(
                             session_alive=session_alive,
@@ -1891,7 +1890,7 @@ def run_dispatch_supervisor(
                     project_slug=slug,
                     baseline_head_sha=baseline_head_sha,
                     merge_subject_template=merge_subject_template,
-                    followup_review=followup_run,
+                    followup_review=followup_review,
                 )
                 verdict = resolve_terminal_session_verdict(
                     session_alive=session_alive,
@@ -1951,7 +1950,7 @@ def run_dispatch_supervisor(
                             project_slug=slug,
                             baseline_head_sha=baseline_head_sha,
                             merge_subject_template=merge_subject_template,
-                            followup_review=followup_run,
+                            followup_review=followup_review,
                         )
                     except VcsCommandError, ValueError:
                         pass
