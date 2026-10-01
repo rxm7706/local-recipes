@@ -2415,8 +2415,16 @@ def test_the_live_evidence_of_a_normal_run_reads_origin_main_whole(tmp_path: Pat
     assert vcs.reads == [ORIGIN_MAIN]
 
 
-def _seed_reader_run(tmp_path: Path, *, followup_review: FollowupReview | None, story_key: str = _READER_STORY) -> None:
-    """A dispatch run for story 51.11 whose session is dead, with no git progress and no verdict journaled."""
+def _seed_reader_run(
+    tmp_path: Path,
+    *,
+    followup_review: FollowupReview | None,
+    story_key: str = _READER_STORY,
+    verification_verdict: str | None = None,
+    session_log: str | None = None,
+) -> None:
+    """A dispatch run for story 51.11 whose session is dead, with no git progress and no verdict journaled --
+    unless ``verification_verdict`` journals a verification outcome, or ``session_log`` writes the session's log."""
     from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 
     run_id = "pyforge-marshal-20261001T000000000Z-cafebabe"
@@ -2446,9 +2454,32 @@ def _seed_reader_run(tmp_path: Path, *, followup_review: FollowupReview | None, 
         intent_id=JournalEntryId("w", 0),
         payload={"session_pid": 999999},
     )
+    entries = [intent, outcome]
+    if verification_verdict is not None:
+        entries += [
+            build_entry(
+                id=JournalEntryId("w", 2),
+                ts="2026-10-01T00:00:02.000Z",
+                run_id=run_id,
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                phase=Phase.INTENT,
+                payload={"verdict": verification_verdict},
+            ),
+            build_entry(
+                id=JournalEntryId("w", 3),
+                ts="2026-10-01T00:00:03.000Z",
+                run_id=run_id,
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                phase=Phase.OUTCOME,
+                intent_id=JournalEntryId("w", 2),
+                payload={"verdict": verification_verdict, "ok": True},
+            ),
+        ]
     (run_dir / "journal.jsonl").write_text(
-        "".join(prepare_for_write(entry).line.rstrip("\n") + "\n" for entry in (intent, outcome)), encoding="utf-8"
+        "".join(prepare_for_write(entry).line.rstrip("\n") + "\n" for entry in entries), encoding="utf-8"
     )
+    if session_log is not None:
+        (run_dir / "session.log").write_text(session_log, encoding="utf-8")
 
 
 def _block_facts(tmp_path: Path, vcs: _ReaderVcs):
@@ -2485,6 +2516,34 @@ def test_the_drains_block_facts_still_read_a_normal_run_completed_by_the_stories
 
     assert _block_facts(tmp_path, vcs) is None
     assert vcs.reads == [ORIGIN_MAIN]
+
+
+@pytest.mark.parametrize(
+    ("followup_review", "blocked"),
+    [pytest.param(_READER_MARKER, True, id="follow-up"), pytest.param(None, False, id="normal")],
+)
+def test_the_drains_block_facts_read_a_follow_up_runs_spec_only_diff_as_progress(
+    tmp_path: Path, followup_review: FollowupReview | None, blocked: bool
+) -> None:
+    """A dead session, a refused verification and a diff that is only the story's own spec, with a transient
+    harness outcome in the session log. A normal run's spec-only diff is narration (zero changed paths), so the
+    transient outcome makes it re-dispatchable and nothing blocks the station; a follow-up run's is its record
+    (one changed path), so the same facts are a block."""
+    _seed_reader_spec(tmp_path)
+    _seed_reader_run(
+        tmp_path,
+        followup_review=followup_review,
+        verification_verdict="refused",
+        session_log="background tasks still running\n",
+    )
+
+    facts = _block_facts(tmp_path, _SpecOnlyVcs(tmp_path))
+
+    if blocked:
+        assert facts is not None
+        assert "ended 'failed'" in facts.reason
+    else:
+        assert facts is None
 
 
 def test_the_cap4_retry_hands_a_follow_up_runs_marker_to_the_landing(
