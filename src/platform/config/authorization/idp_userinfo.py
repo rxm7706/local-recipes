@@ -148,7 +148,7 @@ def _json_request(
         ) as response:
             body = response.read().decode()
     except urllib.error.HTTPError as exc:
-        if exc.code >= 400:
+        if exc.code == HTTPStatus.UNAUTHORIZED:
             raise _AccessTokenRejectedError from exc
         logger.warning(failed_event, error=str(exc))
         return None
