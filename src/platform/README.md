@@ -28,6 +28,12 @@ realm-as-code Keycloak import) and sign in through the IdP:
 
     $ docker compose -f src/platform/compose/compose.yml up keycloak platform
 
+The `platform` service needs `LANGFLOW_SUPERUSER_PASSWORD` (Story 78.1: Langflow
+auto-login is forced off, so the mounted Langflow only starts with a superuser
+password). Compose reads it from `src/platform/compose/.env` (git-ignored) or your
+shell and refuses to start the stack without it; the same variable is what any
+other local boot that starts Langflow (gunicorn/uvicorn on `config.asgi`) needs.
+
 Configure OIDC via `COMPONENT_OIDC_*` environment variables (see
 `config/settings/base.py`). Default local claim names: identity `sub`, groups
 `groups`, staff group `platform-staff`, superuser group `platform-superuser`.
