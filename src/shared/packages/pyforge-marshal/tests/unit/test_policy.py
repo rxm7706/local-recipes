@@ -727,6 +727,7 @@ def test_dispatch_block_accepts_fractional_poll_and_timeout():
         {"landing_check_grace_seconds": -1},
         {"landing_check_grace_seconds": 1.5},
         {"landing_check_grace_seconds": False},
+        {"landing_check_grace_seconds": 10**400},
         {"max_parallel": 0, "landing_check_poll_seconds": 5},
         {"landing_check_poll_seconds": 5, "landing_check_unknown": 1},
         {},
@@ -740,6 +741,28 @@ def test_an_invalid_dispatch_block_is_a_named_policy_finding_and_falls_back_to_t
     assert "dispatch" in findings[0].message
     assert effective.dispatch.layer is PolicyLayer.DEFAULT
     assert dict(effective.dispatch.value) == {"max_parallel": 1, **_LANDING_CHECK_DEFAULTS}
+
+
+def test_a_huge_grace_is_a_named_policy_finding_and_nothing_raises():
+    """`10**400` is a valid non-negative int, but `float()` of it raises OverflowError -- before the
+    block validator probed magnitude it composed cleanly and the landing's settings read crashed.
+    Now it is the ordinary MRS-POLICY-002 naming ``dispatch`` (reachable only by a direct
+    `compose()` call: tomllib's own digit limit stops a TOML file first), and the resolver reads
+    the defaults."""
+    effective, findings = compose(
+        project_slug="acme", project={"dispatch": {"landing_check_grace_seconds": 10**400}}, flags={}
+    )
+    assert [f.code for f in findings] == ["MRS-POLICY-002"]
+    assert "dispatch" in findings[0].message
+    assert effective.dispatch.layer is PolicyLayer.DEFAULT
+    assert policy.resolve_landing_check_settings(effective).grace_seconds == 120.0
+
+
+def test_the_settings_resolver_does_not_raise_on_a_huge_grace_that_bypassed_validation():
+    garbage = PolicyField(value={"landing_check_grace_seconds": 10**400}, layer="project", raw_source={})
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    forged = dataclasses.replace(effective, dispatch=garbage)
+    assert policy.resolve_landing_check_settings(forged).grace_seconds == 120.0
 
 
 def test_a_flag_layer_dispatch_block_wins_over_the_project_layer():
