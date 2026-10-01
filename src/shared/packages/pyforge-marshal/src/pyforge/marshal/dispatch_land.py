@@ -666,7 +666,7 @@ def _wait_for_landing_checks(
                     severity=Severity.ERROR,
                     message=(
                         f"PR #{pr_number}'s head {head_sha!r} has red check run(s): "
-                        f"{_describe_runs(verify_red := verdict.red, field='conclusion')} -- refusing to merge; "
+                        f"{_describe_runs(verdict.red, field='conclusion')} -- refusing to merge; "
                         "the PR stays open, re-run the landing once CI is green"
                     ),
                 ),
@@ -708,8 +708,18 @@ def execute_dispatch_land(
     vcs: VcsPort | None = None,
     forge: ForgePort | None = None,
     process: ProcessPort | None = None,
+    sleep: Callable[[float], None] | None = None,
+    monotonic: Callable[[], float] | None = None,
 ) -> tuple[DispatchLandingResult, Envelope]:
-    """Land a verified dispatch through existing marshal land/deploy semantics."""
+    """Land a verified dispatch through existing marshal land/deploy semantics.
+
+    Story 80.1 (CAP-284): immediately before ``forge.merge_pr`` the landing
+    waits for the PR head's check runs (``_wait_for_landing_checks``) and
+    refuses on a red one or a timeout. ``sleep``/``monotonic`` default to
+    ``time.sleep``/``time.monotonic``; they are keyword-only seams so a test
+    drives a fake clock."""
+    sleep = sleep if sleep is not None else time.sleep
+    monotonic = monotonic if monotonic is not None else time.monotonic
     process = process if process is not None else PosixProcess()
     fs = fs if fs is not None else LocalFs()
     vcs = vcs if vcs is not None else GitVcs()
@@ -1078,6 +1088,36 @@ def execute_dispatch_land(
                 envelope,
             )
         data["head_sha"] = head_sha
+
+    # Story 80.1 (CAP-284): `head_sha` is final here (the reconcile refresh
+    # above has run), so this is the commit whose checks gate the merge.
+    checks = _wait_for_landing_checks(
+        forge=forge,
+        repo_ref=repo_ref,
+        head_sha=head_sha,
+        pr_number=pr.number,
+        settings=resolve_landing_check_settings(effective),
+        sleep=sleep,
+        monotonic=monotonic,
+    )
+    data[LANDING_CHECKS_FIELD] = checks.record
+    if checks.finding is not None:
+        findings.append(checks.finding)
+        envelope = build_envelope(
+            command="dispatch land",
+            verdict=compute_verdict(tuple(findings)),
+            data=data,
+            findings=tuple(findings),
+        )
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.REFUSED,
+                pr_number=pr.number,
+                subject=subject,
+                marshal_native=True,
+            ),
+            envelope,
+        )
 
     try:
         forge.merge_pr(
