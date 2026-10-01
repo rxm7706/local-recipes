@@ -893,6 +893,17 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   and `"28"` `epic_surfaces` entries stay: their station-wide globs are what every later epic declares, and Epic 73's
   follow-up reviews of done 22.x/28.x stories need them; only their stale "stopgap" comments go (DW-FU-28-14-4,
   DW-OPS-2026-10-01-3). Owner `spec-pyforge-marshal`. → Epic 79 / Stories 79.1–79.2, specced 2026-10-01.
+- **2026-10-01 (later)** — **Found: a dispatch landing never waits for CI.** `main` has no branch protection, and the
+  landing policy's `landing_rules` declare only the `maintenance` label and an ungated `linter` check, so a dispatch
+  merges as soon as its own session verification passes and every CI lane reports after the merge. Doctor 38.3 merged
+  with its `Detectors / scripts-suite` check already failing and reddened `main` (fixed by doctor 38.5); steward 80.1
+  merged with Platform CI and Detectors still pending.
+  **What it looks like when fixed:** the landing waits, up to a policy timeout, for every check run GitHub reports on
+  the PR head; it merges only when all are green, and refuses by name on a red one or at the timeout, leaving the PR
+  open to land on a re-run.
+  **Constraints:** a pending check is never treated as passing (AD-8); the wait is bounded; `marshal land`'s
+  `landing_rules` contract is unchanged. Operator ruling 2026-10-01: gate landings before the follow-up review chain
+  runs. Owner `spec-pyforge-marshal`. → CAP-284 / Epic 80 / Story 80.1 (FR-231), specced 2026-10-01.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

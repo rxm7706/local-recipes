@@ -8032,6 +8032,36 @@ station-wide surface is the convention every later epic declares, and their glob
 tests cover a station with and without its own `verify_commands`, a lint-types failure refusing, and the derived command
 appearing exactly once; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
+## Epic 80: A dispatch landing waits for its PR's checks (spec-pyforge-marshal CAP-284)
+
+Minted 2026-10-01 from the station Dream's entry of the same date and the operator's ruling of that date: gate
+landings before the follow-up review chain runs. A new epic because Epic 79 is `done`. **HARD boundaries:** a pending
+or unreadable check is never passing (AD-8); the wait is bounded by policy; `landing_rules` and `marshal land` are
+unchanged; a refusal leaves the PR open and merges nothing.
+
+### Story 80.1: A dispatch landing waits for its PR's checks and refuses on a red one
+
+As the operator whose `main` must stay green,
+I want a dispatch landing to merge only after its PR's CI has finished green,
+So that a red lane is a refused landing, not a red `main`.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-284 (FR-231); AD-4, AD-8, AD-40 •
+**Flag:** flag-exempt: detector-or-gate
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` (before `forge.merge_pr`), a pure
+classifier in `core/`, `ports/forge.py` and `adapters/forge_gh.py` (a commit's check runs), `core/policy.py` (two
+`dispatch` keys), `core/findings.py` (two codes); marshal tests.
+**Given** a dispatch landing that reaches `forge.merge_pr` while the PR's check runs are still running or have failed
+**When** this story lands
+**Then** the landing polls the check runs on the PR head every `dispatch.landing_check_poll_seconds` (default 60) for at
+most `dispatch.landing_check_timeout_minutes` (default 45); it merges only when every run has concluded `success`,
+`skipped` or `neutral`; a run with any other conclusion refuses with a finding naming it; the timeout refuses naming the
+runs still pending; a head reporting no runs waits at least `dispatch.landing_check_grace_seconds` (default 120) before
+the empty set counts as green; the PR stays open after a refusal
+**And** tests against the forge fake cover all-green, one failure, pending at the timeout, concluding between polls, an
+empty set inside and past the grace, a forge read error (refuse, never pass) and the policy keys' validation and
+defaults; the landing journal records the runs it waited on and their conclusions; `pixi run --frozen -e
+pyforge-marshal pyforge-marshal-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

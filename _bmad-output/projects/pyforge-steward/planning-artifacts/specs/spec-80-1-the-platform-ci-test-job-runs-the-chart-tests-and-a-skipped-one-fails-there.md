@@ -118,7 +118,7 @@ Type / Effort / Deps: fix / S / —.
 ## Tasks & Acceptance
 
 **Execution:**
-- `pixi.toml` -- add `kubernetes-helm = ">=4.3.0"` to `[feature.platform-ci-test.dependencies]`; run `pixi lock`; regenerate `environment.yaml` -- helm becomes pixi-provisioned in the CI env (AD-16)
+- `pixi.toml` -- add `kubernetes-helm = ">=4.3.0"` to `[feature.platform-ci-test.dependencies]`; run `pixi lock`; regenerate `environment.yaml` -- helm becomes pixi-provisioned in the CI env (canopy:AD-16)
 - `src/platform/tests/helm_gate.py` -- new: one `requires_helm` decorator (helm present: test unchanged; absent and `CI` set: fails naming `helm`; absent: skip) -- replaces both `pytest.mark.skipif` definitions
 - `src/platform/tests/test_chart_invariants.py`, `src/platform/tests/test_openfeature_file_flags.py` -- import `requires_helm` from the gate, drop the local definition and the unused `shutil` import, fix the stale "pip-only CI lane" wording -- one definition, no drift
 - `src/platform/tests/test_helm_gate.py` -- new: the three branches with patched `PATH` and `CI`; mutation run removes the CI branch and the CI test must red -- covers the I/O matrix
