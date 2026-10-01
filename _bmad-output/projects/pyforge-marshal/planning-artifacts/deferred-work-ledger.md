@@ -7064,7 +7064,7 @@ status: open
 - source_spec: `planning-artifacts/specs/spec-51-1-verification-sees-the-merge-result.md`
   summary: The pre-existing "already landed" check in execute_dispatch_land reasons from local main while the new Story 51.1 merge-tree-preview check fetches and diffs against origin/main, leaving two different freshness assumptions about "main" side by side in the same function.
   evidence: vcs.commit_subjects(git_repo_root, _MERGE_BASE) (_MERGE_BASE = "main", the local branch) is unchanged by this story and never fetches; the new _refuse_via_merge_tree_preview check explicitly fetches origin/main first. If the local main ref is stale, the already-landed check could give a wrong answer. This predates Story 51.1 and is outside its intent (fixing merge-result verification, not the already-landed check), so it was not fixed here.
-  location: src/pyforge/marshal/dispatch_land.py (the commit_subjects/_MERGE_BASE check)
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py (the commit_subjects/_MERGE_BASE check) (location updated 2026-10-01: was `src/pyforge/marshal/dispatch_land.py`, path written relative to its package)
   origin: spec-deferred 1feedfb59a16 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -7750,7 +7750,7 @@ status: open
 - source_spec: `planning-artifacts/specs/spec-53-2-the-landing-reconciles-from-git-facts-and-runs-intake.md`
   summary: Dispatch finalize should promote the story spec from a tracked `done` copy: a session that commits its tracked spec itself and leaves no Tier-3 twin gets no spec promotion, so the spec can stay at `backlog` on main after landing.
   evidence: Recorded by Story 53.2 as a candidate for its sibling and named by spec-53-3 (DW-FU-53-3-10) but never given a ledger row. Recurred 2026-09-30: scribe Story 25.1 landed (a1dbda7915) with its tracked spec still `backlog` and an empty Review Triage Log until a hand promotion.
-  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize.py
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py
   severity: medium
   promoted: 2026-10-01 — minted by the deferral burn-down
   status: open
@@ -7760,7 +7760,7 @@ status: open
 - source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
   summary: Landing finalize promotes the tracked twin but leaves the story's Tier-3 feed row at `backlog`, so the next plain sprint-ledger-sync refuses with 'feed would un-finish'.
   evidence: Seen on every automatic landing of 2026-09-30 (doctor 34.5, steward 76.2, scribe 25.1, marshal 74.2, 78.1): twin `done`, feed `backlog`, aligned by hand each time.
-  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize.py
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py
   severity: medium
   promoted: 2026-10-01 — minted by the deferral burn-down
   status: open

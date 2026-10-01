@@ -1424,7 +1424,7 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 - source_spec: `planning-artifacts/specs/spec-16-2-startup-refuses-misconfiguration-two-stage-and-named.md`
   summary: Operator-facing deploy README / NOTES still omit COMPONENT_RUNTIME and the invalid DJANGO_ADMIN_URL set beyond the chart values change.
   evidence: Blind-hunter noted docs/NOTES still describe required env without CAP-3 locality or admin-URL validity rules. Chart default was patched; prose docs were not fully rewritten this story.
-  location: src/platform/deploy/README.md
+  location: docs/explanation/platform-deployment-architecture.md (location updated 2026-10-01: was `src/platform/deploy/README.md`, moved in 3b02298785)
   origin: spec-deferred 3d536d29639e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -3291,7 +3291,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 - source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
   summary: The Helm chart still wires plaintext redis://, so no deployed component takes the new code path and nothing refuses unencrypted broker traffic.
   evidence: deploy/charts/platform/templates/_helpers.tpl templates redis:// for REDIS_BROKER_URL, REDIS_CACHE_URL and REDIS_URL, with no TLS key and no COMPONENT_BROKER_CA_BUNDLE; tests/test_chart_invariants.py is unchanged. This story makes TLS honest when it is used; it does not turn it on. Red-team X-2 / directive R-14 is only half-discharged until the chart moves to rediss:// and a deployed plaintext broker is itself refused.
-  location: deploy/charts/platform/templates/_helpers.tpl
+  location: src/platform/deploy/charts/platform/templates/_helpers.tpl (location updated 2026-10-01: was `deploy/charts/platform/templates/_helpers.tpl`, path written relative to its package)
   origin: spec-deferred 5652c1016bee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -4269,7 +4269,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 - source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: `MCP_PROXY_TIMEOUT_SECONDS` is documented only in a source comment.
   evidence: The new env var appears in no `values.yaml`, no chart template, and not in `src/platform/deploy/overlays/ocp/cluster-bringup.md`, which already carries an mcp-host readiness checklist. An operator raising the sidecar budget has to read `mcp_http.py` to learn the name exists.
-  location: src/platform/deploy/overlays/ocp/cluster-bringup.md
+  location: docs/how-to/ocp-cluster-bringup.md (location updated 2026-10-01: was `src/platform/deploy/overlays/ocp/cluster-bringup.md`, moved in 3b02298785)
   origin: spec-deferred 5095bc3a8325 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -4665,7 +4665,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 - source_spec: `planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md`
   summary: A new test (`test_provision_installer_missing_non_nested_skill_after_successful_flatten_raises`) hand-rolls its own installer stand-in instead of reusing the shared `_fake_installer_run`, risking drift as the real TEA share shape evolves.
   evidence: Real test-hygiene nit, no functional risk to production code.
-  location: src/shared/packages/pyforge-steward/tests/conformance/test_provision_module_installers.py
+  location: src/shared/packages/pyforge-steward/tests/unit/test_provision_module_installers.py (location updated 2026-10-01: was `tests/conformance/test_provision_module_installers.py`, moved in aec4c74f6e)
   origin: spec-deferred 959e81a0aef0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -4735,7 +4735,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 - source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
   summary: The "collision check passes against the live 16 skf-* dirs" claim is only verified by a one-time manual run recorded in .memlog.md; no test fixture populates skf-*-shaped directories.
   evidence: The registry-level `test_supported_installer_modules_have_disjoint_skill_names` and `test_live_share_skill_names_are_disjoint_across_installer_modules` tests already cover the structural cross-module-collision invariant generically; a bmb-specific skf-* fixture would be redundant coverage of the same mechanism.
-  location: src/shared/packages/pyforge-steward/tests/conformance/test_provision_module.py
+  location: src/shared/packages/pyforge-steward/tests/unit/test_provision_module.py (location updated 2026-10-01: was `tests/conformance/test_provision_module.py`, moved in aec4c74f6e)
   origin: spec-deferred e57c0bc2fe95 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -4764,7 +4764,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 - source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
   summary: "bmad-builder is provisioned beside skf" is tested only against synthetic fixtures (four fabricated sibling skill dirs), never the real installed skf-* tree or a real bmad-builder share tree, in any automated test.
   evidence: Matches this project's own established pattern (Stories 46.2/46.3) of pairing synthetic-fixture unit tests with a documented, dated live-verification run recorded in .memlog.md for the real-tree half of a claim.
-  location: src/shared/packages/pyforge-steward/tests/conformance/test_provision_module.py
+  location: src/shared/packages/pyforge-steward/tests/unit/test_provision_module.py (location updated 2026-10-01: was `tests/conformance/test_provision_module.py`, moved in aec4c74f6e)
   origin: spec-deferred 897a8931eb9c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -4778,7 +4778,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 - source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
   summary: "The cleanup-legacy guard proven" relies on the pre-existing Story 6.1 argv-assertion test rather than a new, story-owned assertion specific to the new copy code path.
   evidence: The existing test re-runs against the CURRENT, updated `_provision_setup_skill` (including the new copy step) on every suite run -- confirmed still green after this story's changes -- so it is current, live coverage, not stale inherited evidence, even though its own assertion text was not modified by this diff.
-  location: src/shared/packages/pyforge-steward/tests/conformance/test_provision_module.py
+  location: src/shared/packages/pyforge-steward/tests/unit/test_provision_module.py (location updated 2026-10-01: was `tests/conformance/test_provision_module.py`, moved in aec4c74f6e)
   origin: spec-deferred d95308717000 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
