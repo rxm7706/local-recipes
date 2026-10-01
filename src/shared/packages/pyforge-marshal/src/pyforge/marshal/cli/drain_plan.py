@@ -456,17 +456,9 @@ def _finding_for_refusal(slug: str, refusal: Refusal, *, is_next: bool) -> Findi
     )
 
 
-def _held_reason(reads: _StationReads, head: str, deps_graph: Mapping[str, tuple[StoryKey, ...]]) -> str:
+def _held_reason(reads: _StationReads, story: str, deps_graph: Mapping[str, tuple[StoryKey, ...]]) -> str:
     cycle = reads.cycle
-    unmet = dispatch_prelaunch.unmet_deps(head, cycle.statuses, deps_graph)
-    if unmet:
-        return "declared Deps not all done: " + ", ".join(render_feed_key(dep) for dep in unmet)
-    wave = cycle.wave
-    if wave is not None:
-        for refused in wave.refused:
-            if refused.story == head:
-                return f"refused from the wave: {refused.reason}"
-    return "not selected for this wave"
+    return dispatch_prelaunch.held_reason(story, cycle.statuses, deps_graph, cycle.wave)
 
 
 def _station_row(
@@ -639,10 +631,10 @@ def _plan_station(
             # it from the ready set, and every story the wave itself refused.
             held = payload["held"]
             assert isinstance(held, list)
-            held_stories = [refused.story for refused in cycle.wave.refused]
-            if head not in targets and head not in held_stories:
-                held_stories.insert(0, head)
-            held.extend({"story": story, "reason": _held_reason(reads, story, deps_graph)} for story in held_stories)
+            held.extend(
+                {"story": story, "reason": _held_reason(reads, story, deps_graph)}
+                for story in dispatch_cli.wave_held_stories(cycle)
+            )
 
     # Which stories get the full evaluation: what the cycle would hand
     # `dispatch_once` (the first of them is "the next story"), and every queued

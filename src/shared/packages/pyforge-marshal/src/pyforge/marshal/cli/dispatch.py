@@ -55,6 +55,7 @@ from ..core import (
     deferred_work,
     dispatch_flag_gate,
     dispatch_fleet,
+    dispatch_prelaunch,
     dispatch_re_preflight,
     gate,
     harness_profile,
@@ -4230,6 +4231,23 @@ def plan_station_cycle(
     )
 
 
+def wave_held_stories(cycle: StationCyclePlan) -> tuple[str, ...]:
+    """Every story a parallel wave holds out of this cycle (pure, Story 81.1).
+
+    Each story the wave itself refused, and the queue head when the wave neither
+    admitted nor refused it (its Deps are not all done, so it never reached the
+    ready set) -- the stories ``factory drain --plan`` lists as ``held`` and the
+    cycle's ``held`` result and ``MRS-DRAIN-016`` name."""
+    wave = cycle.wave
+    if wave is None:
+        return ()
+    held = [refused.story for refused in wave.refused]
+    head = cycle.queue.next_story if cycle.queue is not None else None
+    if head is not None and head not in cycle.stories_to_dispatch and head not in held:
+        held.insert(0, head)
+    return tuple(held)
+
+
 def skip_basis(
     *,
     story: str,
@@ -4447,7 +4465,7 @@ def execute_fleet_cycle(
             results.append(
                 dispatch_fleet.StationCycleResult(
                     slug=slug,
-                    status=dispatch_fleet.StationCycleStatus(plan.outcome.value),
+                    status=dispatch_fleet.idle_station_status(plan.outcome),
                     remaining=len(backlog),
                     skipped=plan.skipped,
                 )
@@ -4501,11 +4519,30 @@ def execute_fleet_cycle(
                 wave_detail = f"wave {wave.wave_id}: {', '.join(wave.members)} (max_parallel={parallel_cap})"
 
         if not stories_to_dispatch:
+            # Story 81.1: the queue walk named an eligible story and the wave then held every candidate out.
+            held_wave = cycle.wave
+            assert held_wave is not None
+            refused_stories = {ref.story for ref in held_wave.refused}
+            held_detail: list[str] = []
+            for held_story in wave_held_stories(cycle):
+                reason = dispatch_prelaunch.held_reason(held_story, cycle.statuses, cycle.deps_graph or {}, held_wave)
+                held_detail.append(f"{held_story}: {reason}")
+                if held_story in refused_stories:
+                    continue  # the refusal loop above already named it
+                findings.append(
+                    Finding(
+                        code="MRS-DRAIN-016",
+                        severity=Severity.WARN,
+                        message=f"station {slug!r}: wave {held_wave.wave_id} holds {held_story!r} out: {reason}",
+                    )
+                )
             results.append(
                 dispatch_fleet.StationCycleResult(
                     slug=slug,
-                    status=dispatch_fleet.StationCycleStatus(plan.outcome.value),
+                    status=dispatch_fleet.idle_station_status(plan.outcome),
                     remaining=len(backlog),
+                    story=plan.next_story,
+                    detail="; ".join(held_detail),
                     skipped=plan.skipped,
                 )
             )
@@ -4644,7 +4681,7 @@ def execute_fleet_cycle(
         # What `complete` does NOT mean: `complete` is "this campaign can do
         # nothing more", and these stations still have work marshal could not
         # take (unreadable ledger, blocked head story, everything skipped,
-        # `leave_one`'s deliberate tail).
+        # `leave_one`'s deliberate tail, a parallel wave that held every candidate).
         "unresolved": [{"station": r.slug, "status": r.status.value, "remaining": r.remaining} for r in unresolved],
     }
     return FleetCycleReport(results=tuple(results), findings=tuple(findings), data=data)

@@ -2356,6 +2356,36 @@ def test_complete_is_reported_alongside_what_it_does_not_cover(tmp_path: Path, m
     assert any(f.code == "MRS-DRAIN-003" for f in report.findings)
 
 
+@pytest.mark.parametrize("outcome", list(StationQueueOutcome))
+def test_every_queue_outcome_has_an_explicit_idle_status(outcome: StationQueueOutcome) -> None:
+    """Story 81.1: `StationCycleStatus(outcome.value)` crashed on DISPATCH, the one outcome with no twin.
+
+    A new `StationQueueOutcome` member with no row in the mapping fails here, not in a live cycle."""
+    status = dispatch_fleet.idle_station_status(outcome)
+    if outcome is StationQueueOutcome.DISPATCH:
+        assert status is StationCycleStatus.HELD
+    else:
+        assert status is StationCycleStatus(outcome.value)
+
+
+def test_a_held_station_is_terminal_but_unresolved() -> None:
+    """Nothing is in flight and nothing launches, so ticking cannot move it -- yet its backlog is still named."""
+    held = dispatch_fleet.StationCycleResult(slug="pyforge-marshal", status=StationCycleStatus.HELD, remaining=3)
+    assert dispatch_fleet.campaign_complete([held]) is True
+    assert dispatch_fleet.unresolved_stations([held]) == (held,)
+
+
+@pytest.mark.parametrize("working", [StationCycleStatus.DISPATCHED, StationCycleStatus.IN_FLIGHT])
+def test_a_held_station_does_not_stop_a_campaign_another_station_is_still_working(
+    working: StationCycleStatus,
+) -> None:
+    """A Dep may land through the station that is still working, so the campaign keeps ticking."""
+    held = dispatch_fleet.StationCycleResult(slug="pyforge-marshal", status=StationCycleStatus.HELD, remaining=3)
+    busy = dispatch_fleet.StationCycleResult(slug="pyforge-doctor", status=working, remaining=2)
+    assert dispatch_fleet.campaign_complete([held, busy]) is False
+    assert dispatch_fleet.unresolved_stations([held, busy]) == (held,)
+
+
 def test_a_path_shaped_campaign_id_is_refused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

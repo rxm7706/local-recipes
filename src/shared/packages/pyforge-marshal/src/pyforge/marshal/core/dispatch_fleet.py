@@ -236,12 +236,19 @@ class StationCycleStatus(StrEnum):
     IN_FLIGHT = "in-flight"
     #: Dispatch was refused for a reason that is not liveness.
     REFUSED = "refused"
+    #: A story was eligible, but the parallel wave held every candidate out
+    #: (declared Deps not all done, or refused): nothing launched, nothing is
+    #: in flight -- the status ``factory drain --plan`` reports as ``held``.
+    HELD = "held"
 
 
 #: Statuses from which this campaign can make no further progress on a
 #: station. ``IN_FLIGHT``/``DISPATCHED`` are deliberately absent: those
 #: stations are working, and the next cycle chains their next story once
-#: merge-through-finalize advances the tracked ledger.
+#: merge-through-finalize advances the tracked ledger. ``HELD`` is terminal:
+#: it only moves once a Dep lands outside this station's own drain, which a
+#: supervisor tick cannot cause (another station still working keeps the
+#: campaign going, and every cycle re-plans every station).
 TERMINAL_STATION_STATUSES: frozenset[StationCycleStatus] = frozenset(
     {
         StationCycleStatus.DRAINED,
@@ -249,8 +256,29 @@ TERMINAL_STATION_STATUSES: frozenset[StationCycleStatus] = frozenset(
         StationCycleStatus.BLOCKED,
         StationCycleStatus.ALL_SKIPPED,
         StationCycleStatus.LEDGER_UNREADABLE,
+        StationCycleStatus.HELD,
     }
 )
+
+#: The cycle status of a station whose queue walk dispatched nothing, one row
+#: per outcome. ``DISPATCH`` has no twin -- "a story is eligible" is a decision,
+#: not something that happened to the station -- and reaches this table only
+#: when the parallel wave then held every candidate out.
+_IDLE_STATION_STATUS: dict[StationQueueOutcome, StationCycleStatus] = {
+    StationQueueOutcome.DRAINED: StationCycleStatus.DRAINED,
+    StationQueueOutcome.LEFT_REMAINING: StationCycleStatus.LEFT_REMAINING,
+    StationQueueOutcome.BLOCKED: StationCycleStatus.BLOCKED,
+    StationQueueOutcome.ALL_SKIPPED: StationCycleStatus.ALL_SKIPPED,
+    StationQueueOutcome.DISPATCH: StationCycleStatus.HELD,
+}
+
+
+def idle_station_status(outcome: StationQueueOutcome) -> StationCycleStatus:
+    """What one station's cycle reports when its queue walk dispatched nothing (pure).
+
+    Explicit per outcome, never ``StationCycleStatus(outcome.value)``: the two
+    enums are not twins, and that lookup raised ``ValueError`` on ``DISPATCH``."""
+    return _IDLE_STATION_STATUS[outcome]
 
 
 @dataclass(frozen=True)
@@ -806,8 +834,8 @@ def campaign_complete(results: Iterable[StationCycleResult]) -> bool:
 
     This is the SUPERVISOR'S STOP SIGNAL -- "nothing more this campaign can
     do", not "everything drained". A station whose ledger will not read, or
-    whose head story is blocked, is terminal *for this campaign* precisely
-    because marshal cannot fix it by ticking again; ``unresolved_stations``
+    whose head story is blocked or held out of the wave, is terminal *for this
+    campaign* precisely because marshal cannot fix it by ticking again; ``unresolved_stations``
     below is what keeps that honest in the operator's report.
 
     An empty fleet counts as complete (nothing to drain). A station that was
@@ -826,7 +854,7 @@ def unresolved_stations(
     operator on its own: a fleet whose last unread ledger went terminal
     reports complete while real backlog goes unattended. Every station here
     still has work, and every one of them is already named by its own
-    ``MRS-DRAIN-003``/``-004``/``-005`` finding.
+    ``MRS-DRAIN-003``/``-004``/``-005``/``-016`` finding.
     """
     return tuple(
         result

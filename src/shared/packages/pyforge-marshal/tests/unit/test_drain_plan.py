@@ -36,6 +36,7 @@ from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import dispatch_fleet, policy, verdict
 from pyforge.marshal.core.dispatch_fleet import FleetCampaignMode
 from pyforge.marshal.core.identity import normalize, render_feed_key
+from pyforge.marshal.core.model import Severity
 
 _STEWARD = "pyforge-steward"
 
@@ -1646,6 +1647,137 @@ def test_held_reason_names_unmet_deps_then_the_wave_rule_then_falls_back(tmp_pat
     assert drain_plan._held_reason(reads, "1-1-alpha", {}) == "not selected for this wave"
     unmet = drain_plan._held_reason(reads, "44-4-fold", {"44.4": (normalize("44.3"),)})
     assert unmet == "declared Deps not all done: 44.3"
+
+
+# -- Story 81.1: a wave that holds every story is `held`, never a traceback ----
+
+
+def _seed_held_wave(repo: Path) -> dict[str, tuple[tuple[str, str], ...]]:
+    """44.4 is the only backlog story and its Dep 44.3 is not done: the queue walk answers DISPATCH, the wave admits none."""
+    _write_epics(repo, _STEWARD, _DEPS_EPICS)
+    _write_spec(repo, _STEWARD, _K_FOLD, surface="src/fold/**")
+    return {_STEWARD: ((_K_FOLD, "backlog"),)}
+
+
+def test_a_cycle_whose_wave_holds_every_story_reports_held_instead_of_crashing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ledgers = _seed_held_wave(tmp_path)
+
+    report = _run_one_cycle(tmp_path, ledgers, station=_STEWARD, max_in_flight=2)
+
+    (result,) = report.results
+    assert result.status is dispatch_fleet.StationCycleStatus.HELD
+    assert result.story == _K_FOLD and result.remaining == 1
+    (warn,) = [f for f in report.findings if f.code == "MRS-DRAIN-016"]
+    assert warn.severity is Severity.WARN
+    assert _K_FOLD in warn.message
+    # Nothing is in flight and nothing launches: ticking again cannot move it, so the campaign is complete.
+    assert report.complete is True
+    assert report.data["unresolved"] == [{"station": _STEWARD, "status": "held", "remaining": 1}]
+
+    # The plan reads the same state as `held`, in the same words.
+    _code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        _STEWARD,
+        "--max-in-flight",
+        "2",
+        ledgers=ledgers,
+        capsys=capsys,
+    )
+    row = _station(envelope)
+    assert row["outcome"] == "held"
+    (held,) = row["held"]
+    assert held["story"] == _K_FOLD and held["reason"] == "declared Deps not all done: 44.3"
+    assert warn.message.endswith(held["reason"]) and result.detail == f"{_K_FOLD}: {held['reason']}"
+
+
+def test_dispatch_stories_on_a_held_wave_reports_the_held_stories(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ledgers = _seed_held_wave(tmp_path)
+    process = FakeProcess(alive=False)
+    args = argparse.Namespace(slug=_STEWARD, story=None, stories=_K_FOLD, format="json", harness=None, max_in_flight=2)
+
+    code = dispatch_cli.run_dispatch(
+        args,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=process,
+        harness=FakeHarness(ledgers),
+    )
+
+    envelope = json.loads(capsys.readouterr().out)
+    (row,) = envelope["data"]["stations"]
+    assert row["status"] == "held" and row["story"] == _K_FOLD
+    assert envelope["data"]["complete"] is True
+    assert process.spawned == []  # a held station is terminal: no campaign supervisor to poll it
+    held = _findings(envelope, "MRS-DRAIN-016")
+    assert len(held) == 1 and "44.3" in held[0]["message"]
+    assert code == 0  # WARN never changes the exit
+
+
+def test_dispatch_stories_on_a_held_wave_says_why_in_text_mode(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The operator's surface is the text report, not the envelope: the held story and its Dep must be on it."""
+    ledgers = _seed_held_wave(tmp_path)
+    args = argparse.Namespace(slug=_STEWARD, story=None, stories=_K_FOLD, format="text", harness=None, max_in_flight=2)
+
+    code = dispatch_cli.run_dispatch(
+        args,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(alive=False),
+        harness=FakeHarness(ledgers),
+    )
+
+    out = capsys.readouterr().out
+    assert "held" in out and _K_FOLD in out and "declared Deps not all done: 44.3" in out
+    assert "ValueError" not in out and code == 0
+
+
+def test_a_wave_that_refuses_its_only_story_reports_held_and_names_it_once(
+    tmp_path: Path,
+) -> None:
+    """The refusal loop already names a story the wave itself refused; the held block must not name it again."""
+    _write_epics(tmp_path, _STEWARD, _DEPS_EPICS)
+    specs = dispatch_core.planning_specs_dir(tmp_path, _STEWARD)
+    specs.mkdir(parents=True, exist_ok=True)
+    # A multi-line `surface:` block is unsupported, so the wave never fans the story out (CAP-5).
+    block_surface = "---\nstatus: backlog\nsurface:\n  - src/kernel/**\n---\n" + _BOUND_SPEC_BODY
+    (specs / f"spec-{_K_KERNEL}.md").write_text(block_surface, encoding="utf-8")
+
+    report = _run_one_cycle(tmp_path, {_STEWARD: ((_K_KERNEL, "backlog"),)}, station=_STEWARD, max_in_flight=2)
+
+    (result,) = report.results
+    assert result.status is dispatch_fleet.StationCycleStatus.HELD
+    assert result.detail == f"{_K_KERNEL}: refused from the wave: unknown-surface"
+    (warn,) = [f for f in report.findings if f.code == "MRS-DRAIN-016"]
+    assert "refused" in warn.message and "unknown-surface" in warn.message
+
+
+def test_wave_held_stories_is_empty_without_a_wave(tmp_path: Path) -> None:
+    cycle = dispatch_cli.StationCyclePlan(slug=_STEWARD, ledger_path=tmp_path / "ledger.yaml")
+    assert dispatch_cli.wave_held_stories(cycle) == ()
+
+
+def test_a_wave_that_admits_a_story_still_reports_dispatched(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    ledgers = _seed_unmet_deps(tmp_path)  # the head (44.4) is held by 44.3, but the wave admits 44.3 itself
+    launches = _record_launches(monkeypatch)
+    monkeypatch.setattr(dispatch_cli, "_journal_dispatch_wave", lambda *a, **k: None)
+
+    report = _run_one_cycle(tmp_path, ledgers, station=_STEWARD, max_in_flight=2)
+
+    (result,) = report.results
+    assert result.status is dispatch_fleet.StationCycleStatus.DISPATCHED
+    assert launches == [(_STEWARD, _K_KERNEL)]
+    assert not [f for f in report.findings if f.code == "MRS-DRAIN-016"]
 
 
 # -- a verify command the gate cannot even tokenize ---------------------------

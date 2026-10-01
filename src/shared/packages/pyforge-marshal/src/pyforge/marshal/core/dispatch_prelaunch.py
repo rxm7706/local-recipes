@@ -24,7 +24,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from . import gate, spec_binding
-from .dispatch_fleet import DONE_STATUS
+from .dispatch_fleet import DONE_STATUS, WaveBatch
 from .identity import MalformedStoryKeyError, StoryKey, normalize, render_feed_key
 from .model import Finding
 from .spec_deps import STORY_HEADING_RE
@@ -205,3 +205,24 @@ def unmet_deps(
         except MalformedStoryKeyError:
             continue
     return tuple(dep for dep in graph.get(feed, ()) if dep not in done)
+
+
+def held_reason(
+    story: str,
+    statuses: Iterable[tuple[str, str]],
+    graph: Mapping[str, tuple[StoryKey, ...]],
+    wave: WaveBatch | None,
+) -> str:
+    """Why the parallel wave holds ``story`` out of this cycle (pure).
+
+    The one wording ``factory drain --plan`` reports in its ``held`` rows and the
+    cycle's own ``MRS-DRAIN-016`` repeats: unmet Deps first, then the wave's own
+    refusal, else the story simply was not selected."""
+    unmet = unmet_deps(story, statuses, graph)
+    if unmet:
+        return "declared Deps not all done: " + ", ".join(render_feed_key(dep) for dep in unmet)
+    if wave is not None:
+        for refused in wave.refused:
+            if refused.story == story:
+                return f"refused from the wave: {refused.reason}"
+    return "not selected for this wave"

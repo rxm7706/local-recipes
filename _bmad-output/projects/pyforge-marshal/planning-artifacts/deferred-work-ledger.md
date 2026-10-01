@@ -7731,7 +7731,8 @@ status: open
   origin: spec-deferred e8ee69d75c54 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: critical
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  resolution: RESOLVED 2026-10-01 — Story 81.1: `StationCycleStatus.HELD` (terminal) and the explicit `dispatch_fleet.idle_station_status` mapping replace `StationCycleStatus(plan.outcome.value)` at both idle sites of `execute_fleet_cycle`; an empty wave reads `held`, with a `MRS-DRAIN-016` WARN naming the head and its unmet Deps in `drain --plan`'s words. The supervisor-semantics question this row names is answered as terminal (the `BLOCKED` precedent: nothing more the campaign can do by ticking).
+  status: resolved
   verified: 2026-10-01 — STANDS — cli/dispatch.py:4256-4264 already handles plan.next_story is None, so at :4313-4321 plan.outcome is StationQueueOutcome.DISPATCH ('dispatch', core/dispatch_fleet.py:217), and StationCycleStatus (core/dispatch_fleet.py:226-238) has no 'dispatch' member -> ValueError. The wave is empty whenever every eligible ready story is refused by build_wave_batch (cli/dispatch.py:4003-4039: a missing/unreadable spec sets surfaces[story]=None; unmet Deps). pyforge-marshal's marshal-policy.toml:473 sets max_parallel = 2. The call at cli/dispatch.py:4941 has no except for ValueError and cli/main.py does not turn it into an envelope, so the traceback aborts the whole fleet cycle (every station after the empt… Severity high -> critical by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
 ### DW-marshal-78-1: The heal reads refs/remotes/origin/main by name for its texts and conflict paths, then merge_ref_resolving resolves it again, so a concurrent fetch between the two makes a resolution stale.
