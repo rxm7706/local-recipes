@@ -2,7 +2,7 @@
 title: '73.1: A follow-up review run is judged and landed by its own branch'
 type: 'fix'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '26028262eb1275a516c451b3362d48616e96bd44'
 review_loop_iteration: 0
 followup_review_recommended: false
