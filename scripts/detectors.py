@@ -275,6 +275,11 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # (docs/MAP.md), authored-page staleness, skill-dir hygiene -- offline,
     # deterministic, beside docs-map-hygiene above.
     ("docs-currency", "docs-currency-check"),
+    # Story 38.3 (spec-pyforge-doctor CAP-42 / CAP-43; DW-OPS-2026-10-01-1):
+    # the fleet hygiene sweep, registered since Story 9.2 but never run.
+    # Warn-only (every finding is WARN or OK, so it reads `pass` here, never
+    # `FINDINGS`), offline apart from one `git grep` per candidate.
+    ("bmad-output-hygiene", "bmad-output-hygiene-check"),
 )
 
 

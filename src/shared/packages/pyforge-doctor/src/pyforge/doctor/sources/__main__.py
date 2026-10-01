@@ -61,6 +61,7 @@ from . import (
     factory,
     frozen_path,
     general_docs_consistency,
+    hygiene,
     ledger,
     live_proof_surfaces,
     marshal,
@@ -153,6 +154,11 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # catalogued in live-proof-surfaces.md gets an advisory finding naming
     # it; same shape as DOCS_SHELF_OCCUPANCY above.
     Source.LIVE_PROOF_SURFACE.value: live_proof_surfaces.gather,
+    # Story 38.3 (spec-pyforge-doctor CAP-42 / CAP-43; DW-OPS-2026-10-01-1) --
+    # the fleet hygiene sweep, registered since Story 9.2 but never run.
+    # Warn-only by construction (every finding is WARN or the single OK, so
+    # `exit_code_for` is 0), same shape as LIVE_PROOF_SURFACE above.
+    Source.BMAD_OUTPUT_HYGIENE.value: hygiene.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six
