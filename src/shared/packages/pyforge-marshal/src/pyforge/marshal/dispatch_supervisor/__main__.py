@@ -1950,7 +1950,7 @@ def run_dispatch_supervisor(
                             project_slug=slug,
                             baseline_head_sha=baseline_head_sha,
                             merge_subject_template=merge_subject_template,
-                            followup_review=None,
+                            followup_review=followup_review,
                         )
                     except VcsCommandError, ValueError:
                         pass
