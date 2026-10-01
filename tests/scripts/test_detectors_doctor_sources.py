@@ -175,6 +175,106 @@ def test_doctor_source_tasks_include_docs_shelf_occupancy():
     assert tasks["docs-shelf-occupancy"] == "docs-shelf-occupancy-check"
 
 
+def test_doctor_source_tasks_include_bmad_output_hygiene_and_a_matching_pixi_task():
+    """Story 38.3 (DW-OPS-2026-10-01-1): the fleet hygiene sweep must be in the
+    detectors sweep, backed by a declared `guild-tasks` pixi task that runs the
+    same `python -m pyforge.doctor.sources <name>` the dispatcher serves."""
+    import tomllib
+
+    from pyforge.doctor.models import Source
+    from pyforge.doctor.sources import scope_for
+
+    tasks = dict(detectors._DOCTOR_SOURCE_TASKS)
+    assert tasks["bmad-output-hygiene"] == "bmad-output-hygiene-check"
+    # Repo scope, so `detectors.py --scope repo` (detectors-ci) runs it.
+    assert scope_for(Source.BMAD_OUTPUT_HYGIENE) == "repo"
+
+    manifest = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    declared = manifest["feature"]["guild-tasks"]["tasks"]["bmad-output-hygiene-check"]
+    assert declared["cmd"] == "python -m pyforge.doctor.sources bmad-output-hygiene"
+
+
+def test_every_doctor_source_task_name_is_a_dispatch_entry():
+    """Every name in `_DOCTOR_SOURCE_TASKS` is a `DISPATCH` key -- the NAME half
+    of the name -> pixi-task pairing (DW-FU-6-9-3) only. A name absent from
+    `DISPATCH` reads `unknown` (KeyError in `_run_doctor_sources`), never green;
+    this fails it at test time. The pixi-task half is NOT checked here: it is
+    pinned for the `bmad-output-hygiene` row alone, by the test above."""
+    from pyforge.doctor.sources.__main__ import DISPATCH
+
+    assert {name for name, _task in detectors._DOCTOR_SOURCE_TASKS} <= set(DISPATCH)
+
+
+def _hygiene_stub(status: str):
+    from pyforge.doctor.models import DoctorStatus, Finding, Source
+
+    return lambda _target: (
+        Finding(
+            source=Source.BMAD_OUTPUT_HYGIENE,
+            check="orphan-file",
+            status=DoctorStatus(status),
+            message="acme: planning-artifacts/orphan-notes.md is unreferenced",
+            evidence={"station": "acme"},
+        ),
+    )
+
+
+def test_a_warn_only_hygiene_source_reads_pass_and_leaves_the_exit_code(monkeypatch):
+    """AC 3 (CAP-43): WARN findings never change the aggregate's verdict -- the
+    row reads `pass`/rc 0. A FAIL stub is the control: the same path reads
+    `FINDINGS`/rc 1, so the `pass` above is the WARN projection, not a path that
+    cannot go red."""
+    from pyforge.doctor.sources.__main__ import DISPATCH
+
+    only = (("bmad-output-hygiene", "bmad-output-hygiene-check"),)
+    monkeypatch.setattr(detectors, "_DOCTOR_SOURCE_TASKS", only)
+
+    monkeypatch.setitem(DISPATCH, "bmad-output-hygiene", _hygiene_stub("warn"))
+    (warn_row,) = detectors._run_doctor_sources("repo")
+    assert (warn_row["status"], warn_row["rc"]) == ("pass", 0)
+    assert "orphan-file: warn" in warn_row["output"]
+
+    monkeypatch.setitem(DISPATCH, "bmad-output-hygiene", _hygiene_stub("fail"))
+    (fail_row,) = detectors._run_doctor_sources("repo")
+    assert (fail_row["status"], fail_row["rc"]) == ("FINDINGS", 1)
+
+
+def test_the_real_hygiene_gather_runs_through_the_aggregate_and_reads_pass(monkeypatch, tmp_path: Path):
+    """AC 2 + AC 3 + the DISPATCH mutation: NO stub, so deleting the
+    `DISPATCH` row turns this row `unknown` (KeyError), not `pass`. The
+    throwaway repo carries exactly one orphan-file WARN."""
+    for var in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                "GIT_CEILING_DIRECTORIES", "GIT_COMMON_DIR"):
+        monkeypatch.delenv(var, raising=False)
+
+    def git(*args: str) -> None:
+        subprocess.run(["git", *args], cwd=tmp_path, capture_output=True, text=True, check=True)
+
+    git("init", "-q", "--initial-branch=main")
+    git("config", "user.email", "doctor-test@example.com")
+    git("config", "user.name", "Doctor Test")
+    git("config", "commit.gpgsign", "false")
+    git("config", "core.hooksPath", "/dev/null")
+    planning = tmp_path / "_bmad-output" / "projects" / "pyforge-acme" / "planning-artifacts"
+    planning.mkdir(parents=True)
+    (planning / "orphan-notes.md").write_text("never linked from anywhere.\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-q", "-m", "seed one orphan candidate")
+
+    monkeypatch.setattr(detectors, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        detectors, "_DOCTOR_SOURCE_TASKS", (("bmad-output-hygiene", "bmad-output-hygiene-check"),)
+    )
+
+    (row,) = detectors._run_doctor_sources("repo")
+
+    assert row["name"] == "bmad-output-hygiene"
+    assert row["task"] == "bmad-output-hygiene-check"
+    assert row["scope"] == "repo"
+    assert (row["status"], row["rc"]) == ("pass", 0), row["output"]
+    assert "orphan-file: warn" in row["output"]
+
+
 def test_main_scope_repo_reports_unknown_rows_and_never_exits_zero_when_unimportable(
     monkeypatch, tmp_path: Path, capsys,
 ):

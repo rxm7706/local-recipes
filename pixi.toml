@@ -1402,6 +1402,10 @@ cmd = "python -m pyforge.doctor.sources docs-shelf-occupancy"
 description = "Detector: a touched surface catalogued in live-proof-surfaces.md gets an advisory finding naming it (Story 26.1, spec-pyforge-doctor CAP-77). Matches ONLY the catalog's hand-authored Surface globs column against origin/main..HEAD -- never a keyword pulled from prose (the first attempt's substring fallback matched unrelated real files; amended 2026-09-20). Quotes the catalog's own 'how to prove it live' cell verbatim, including the atlas Chromium/DuckDB/WASM row's honest named gap. Warn-only, read-only, fail-open -- never a second PR gate."
 cmd = "python -m pyforge.doctor.sources live-proof-surface"
 
+[feature.guild-tasks.tasks.bmad-output-hygiene-check]
+description = "Detector: the fleet hygiene sweep over every station's own planning artifacts (Story 38.3, spec-pyforge-doctor CAP-42 / CAP-43; Story 9.2 built it, 38.3 wired it). Reports dead test scaffolding, a hollow sprint-status.yaml, an unfilled README stub, a stale Dream status and an orphan file (non-conventional name, no inbound reference), each classified by hygiene_definitions' own predicates. Warn-only and read-only -- reported, never auto-applied, never a second PR gate."
+cmd = "python -m pyforge.doctor.sources bmad-output-hygiene"
+
 [feature.guild-tasks.tasks.chain-completeness-check]
 description = "Detector: a station's board tells the truth about what it OWNS and what it has DONE. INV-A every open Spec a station owns is decomposed into its chain, or is registered in DEFERRED_SPECS with a reason (Marshal's PRD decomposed 2 of 24; Steward rendered 18/18 while owning three undecomposed drafts). INV-B epics.md story ids == the tracked ledger's keys, both directions (Doctor rendered complete 16/16 while carrying a story with no ledger key). INV-C the Guildhall build line == the ledger (Herald rendered 12/19 against a ledger of 47/47). Reports UNMEASURABLE rather than inventing orphans for projects keying stories non-numerically by design. Every one of these needed a human to notice."
 cmd = "python -m pyforge.doctor.sources chain-completeness"
