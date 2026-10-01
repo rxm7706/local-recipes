@@ -332,7 +332,7 @@ development_status:
   65-2-a-story-whose-spec-cannot-bind-is-refused-before-a-session-is-spent: backlog
   66-1-finalize-carries-a-recommended-follow-up-review-into-the-deferred-work-ledger: backlog
   66-2-every-landed-follow-up-recommendation-is-backfilled-and-held-by-a-meta-test: backlog
-  67-1-a-landed-dispatch-reads-completed-when-the-primary-checkout-cannot-be-fast-forwarded: backlog
+  67-1-a-landed-dispatch-reads-completed-when-the-primary-checkout-cannot-be-fast-forwarded: done
   68-1-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent: done
   69-1-the-switch-script-runs-where-it-is-documented-to-run: backlog
   7-1-the-seed-module-tree-inside-pyforge-marshal: done
