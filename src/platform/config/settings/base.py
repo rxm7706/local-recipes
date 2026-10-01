@@ -607,8 +607,10 @@ SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
 # so no SocialToken row was ever saved, `config.authorization.idp_userinfo` had no
 # access token to re-check the IdP with, and a revocation waited for the next
 # login. Forced, not an env knob: nothing may switch revocation-on-the-next-
-# request off. The access token is the only credential stored; the refresh token
-# (token_secret) is what renews it.
+# request off. allauth stores both tokens of the login in one SocialToken row,
+# plaintext: the access token (`token`), presented to the IdP's userinfo endpoint
+# on every request, and the refresh token (`token_secret`), used once to renew
+# the access token when userinfo answers 401.
 SOCIALACCOUNT_STORE_TOKENS = True
 
 OIDC_ISSUER = env.str("COMPONENT_OIDC_ISSUER", default="")

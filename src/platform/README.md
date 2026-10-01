@@ -33,6 +33,8 @@ auto-login is forced off, so the mounted Langflow only starts with a superuser
 password). Compose reads it from `src/platform/compose/.env` (git-ignored) or your
 shell and refuses to start the stack without it; the same variable is what any
 other local boot that starts Langflow (gunicorn/uvicorn on `config.asgi`) needs.
+`LANGFLOW_SUPERUSER` (optional, defaults to `langflow`, not a secret so the chart
+does not wire it) names the Langflow superuser that password belongs to.
 
 Configure OIDC via `COMPONENT_OIDC_*` environment variables (see
 `config/settings/base.py`). Default local claim names: identity `sub`, groups

@@ -542,6 +542,10 @@ application dependency (canopy:AD-19).
    | `PYFORGE_ASSERTION_PRIVATE_KEY` | RS256 assertion minter (optional env; inject when mint path is live) |
    | `PYFORGE_ASSERTION_PUBLIC_KEY` | RS256 assertion verifier (optional env) |
 
+   `LANGFLOW_SUPERUSER` (optional, defaults to `langflow`, not a secret so the
+   chart does not wire it) names the Langflow superuser that
+   `LANGFLOW_SUPERUSER_PASSWORD` belongs to.
+
    Remote Vault paths in the example are placeholders (`secret/data/platform/…`);
    replace them with your mount layout before apply.
 
