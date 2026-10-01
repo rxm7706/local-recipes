@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -394,7 +395,7 @@ def test_project_with_no_tier3_ledger_reports_ok(tmp_path: Path) -> None:
     assert finding.source is Source.DEFERRED_WORK
     assert finding.check == "deferred-work"
     assert finding.status is DoctorStatus.OK
-    assert finding.evidence == {"projects_scanned": 0}
+    assert finding.evidence == {"projects_scanned": 0, "grandfathered_uncited_verified_lines": 0}
 
 
 def test_target_with_no_projects_tree_reports_unevaluable_warn(
@@ -426,7 +427,7 @@ def test_fully_promoted_project_reports_ok(tmp_path: Path) -> None:
     assert len(findings) == 1
     finding = findings[0]
     assert finding.status is DoctorStatus.OK
-    assert finding.evidence == {"projects_scanned": 1}
+    assert finding.evidence == {"projects_scanned": 1, "grandfathered_uncited_verified_lines": 0}
 
 
 # --- Multi-project isolation ------------------------------------------------------
@@ -2639,3 +2640,234 @@ def test_intake_entry_citing_only_a_dotted_symbol_is_not_resolvable() -> None:
 def test_intake_entry_source_spec_path_does_not_count_as_a_citation() -> None:
     finding = _finding("a thing", "no code named here at all")
     assert not chain.finding_has_resolvable_location(finding)
+
+
+# --- Story 38.1: a `verified:` line written from now on cites what it read -----------
+#
+# CAP-29's success clause: every `verified:` line cites a `file:line` or a
+# reproduced/measured fact. The deferred-work source FAILs a `verified:` line
+# dated on or after `chain.VERIFIED_CITATION_CUTOFF` that cites neither a
+# `path:line` nor a backtick-quoted command with its exit code; earlier lines
+# are grandfathered and only counted on the OK finding.
+
+_CUTOFF = chain.VERIFIED_CITATION_CUTOFF
+_POST = _CUTOFF.isoformat()
+_PRE = (_CUTOFF - timedelta(days=1)).isoformat()
+
+
+def _gather_verified(tmp_path: Path, ledger: str) -> tuple:
+    """Gather the deferred-work source over a single ``proj`` whose tracked
+    ledger is ``ledger`` (no Tier-3 file, a clean ``{}`` baseline)."""
+    _write_baseline(tmp_path, {})
+    _write_tracked(tmp_path, "proj", ledger)
+    return chain.gather_deferred_work(tmp_path)
+
+
+def _uncited(findings: tuple) -> list:
+    return [f for f in findings if f.check == "verified-line-uncited"]
+
+
+def test_verified_citation_cutoff_is_the_day_after_the_burn_down() -> None:
+    """Design Notes: 937 lines are dated 2026-10-01 (the burn-down's bulk
+    pass) and 373 of them cite nothing -- a 2026-10-01 cutoff would red
+    ``main``. Pinned so moving it is a deliberate, reviewed act."""
+    assert date(2026, 10, 2) == chain.VERIFIED_CITATION_CUTOFF
+
+
+def test_post_cutoff_line_citing_path_and_line_reports_no_finding(tmp_path: Path) -> None:
+    findings = _gather_verified(
+        tmp_path,
+        f"## DW-x-1\nstatus: open\nverified: {_POST} STANDS `chain.py:4344` still keys on the date alone\n",
+    )
+
+    assert len(findings) == 1
+    assert findings[0].check == "deferred-work"
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_post_cutoff_bare_line_reports_one_fail_naming_the_entry(tmp_path: Path) -> None:
+    findings = _gather_verified(
+        tmp_path,
+        f"## DW-x-1\nstatus: open\nverified: {_POST} STANDS\n",
+    )
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.source is Source.DEFERRED_WORK
+    assert finding.check == "verified-line-uncited"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["project"] == "proj"
+    assert finding.evidence["id"] == "DW-x-1"
+    assert finding.evidence["uncited_lines"] == 1
+    assert "proj/DW-x-1" in finding.message
+    assert _POST in finding.message
+
+
+def test_pre_cutoff_bare_line_is_grandfathered_and_counted_on_the_ok_finding(tmp_path: Path) -> None:
+    findings = _gather_verified(
+        tmp_path,
+        f"## DW-x-1\nstatus: open\nverified: {_PRE} STANDS\n"
+        f"## DW-x-2\nstatus: open\nverified: {_PRE} still-open\n"
+        f"## DW-x-3\nstatus: open\nverified: {_PRE} STANDS `chain.py:4344`\n",
+    )
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "deferred-work"
+    assert finding.status is DoctorStatus.OK
+    # Two bare pre-cutoff lines; the cited one is not "grandfathered", it is fine.
+    assert finding.evidence["grandfathered_uncited_verified_lines"] == 2
+
+
+def test_post_cutoff_line_citing_a_command_and_its_exit_code_reports_no_finding(tmp_path: Path) -> None:
+    findings = _gather_verified(
+        tmp_path,
+        f"## DW-x-1\nstatus: open\n"
+        f"verified: {_POST} FIXED `pixi run -e pyforge-guild lint-types` exit 0 on this head\n",
+    )
+
+    assert [f.check for f in findings] == ["deferred-work"]
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_post_cutoff_line_citing_a_path_line_range_reports_no_finding(tmp_path: Path) -> None:
+    findings = _gather_verified(
+        tmp_path,
+        f"## DW-x-1\nstatus: open\nverified: {_POST} STANDS .github/workflows/platform-ci.yml:168-236 reads it\n",
+    )
+
+    assert [f.check for f in findings] == ["deferred-work"]
+
+
+def test_cutoff_day_itself_is_judged_and_the_day_before_is_not(tmp_path: Path) -> None:
+    """The boundary row: ``>= cutoff`` is judged, ``< cutoff`` is grandfathered."""
+    findings = _gather_verified(
+        tmp_path,
+        f"## DW-x-1\nstatus: open\nverified: {_PRE} STANDS\n## DW-x-2\nstatus: open\nverified: {_POST} STANDS\n",
+    )
+
+    uncited = _uncited(findings)
+    assert [f.evidence["id"] for f in uncited] == ["DW-x-2"]
+
+
+def test_a_later_cited_line_does_not_launder_an_earlier_bare_post_cutoff_line(tmp_path: Path) -> None:
+    """Reconciliation APPENDS a fresh ``verified:`` line, so every line in the
+    entry is judged -- not just the latest one (11.1's ``_verification``)."""
+    findings = _gather_verified(
+        tmp_path,
+        f"## DW-x-1\nstatus: open\n"
+        f"verified: {_POST} STANDS\n"
+        f"verified: {_POST} STANDS\n"
+        f"verified: {_POST} STANDS `chain.py:4344`\n",
+    )
+
+    uncited = _uncited(findings)
+    assert len(uncited) == 1, "one FAIL per entry, not per line"
+    assert uncited[0].evidence["uncited_lines"] == 2
+
+
+def test_the_fail_names_the_entry_that_owns_the_bare_line(tmp_path: Path) -> None:
+    """Entry boundaries: a bare line is attributed to ITS heading, and a
+    project/id pair is named per entry."""
+    _write_baseline(tmp_path, {})
+    _write_tracked(
+        tmp_path,
+        "alpha",
+        f"## DW-a-1\nstatus: open\nverified: {_POST} STANDS `chain.py:4344`\n"
+        f"## DW-a-2\nstatus: open\nverified: {_POST} STANDS\n",
+    )
+    _write_tracked(
+        tmp_path,
+        "beta",
+        f"## DW-b-1\nstatus: open\nverified: {_POST} STANDS\n",
+    )
+
+    uncited = _uncited(chain.gather_deferred_work(tmp_path))
+
+    assert sorted((f.evidence["project"], f.evidence["id"]) for f in uncited) == [
+        ("alpha", "DW-a-2"),
+        ("beta", "DW-b-1"),
+    ]
+
+
+def test_a_line_with_no_leading_date_is_neither_failed_nor_counted(tmp_path: Path) -> None:
+    """Design Notes: it already reads as never-verified in 11.1 -- the live
+    ledgers carry ``verified: Story ...`` and ``verified: The ...`` lines."""
+    findings = _gather_verified(
+        tmp_path,
+        "## DW-x-1\nstatus: open\nverified: Story 3.1 reads this as done\n"
+        "## DW-x-2\nstatus: open\nverified: not-a-date STANDS\n",
+    )
+
+    assert [f.check for f in findings] == ["deferred-work"]
+    assert findings[0].evidence["grandfathered_uncited_verified_lines"] == 0
+
+
+def test_an_entry_with_no_verified_line_reports_no_finding(tmp_path: Path) -> None:
+    findings = _gather_verified(tmp_path, "## DW-x-1\nstatus: open\nsummary: never re-checked\n")
+
+    assert [f.check for f in findings] == ["deferred-work"]
+
+
+def test_a_bare_post_cutoff_line_does_not_hide_another_findings_kind(tmp_path: Path) -> None:
+    """The new check joins the per-project loop: it neither replaces nor
+    suppresses a sibling kind in the same project."""
+    findings = _gather_verified(
+        tmp_path,
+        f"## DW-x-1\nstatus: open\nverified: {_POST} STANDS\n## DW-x-2\nno status line here\n",
+    )
+
+    assert {f.check for f in findings} == {"verified-line-uncited", "ledger-entry-unstatused"}
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "STANDS `chain.py:4344`",
+        "STANDS chain.py:4344",
+        "STANDS src/a/b/chain.py:4344-4350",
+        "STANDS `supervisor/__main__.py:1648`: not deferred",
+        "STANDS ../tests/test_x.py:9",
+        "STANDS .github/workflows/platform-ci.yml:168-236",
+        "FIXED `pixi run -e pyforge-guild lint-types` exit 0",
+        "FIXED `pytest -q` exit code 1",
+        "FIXED `pytest -q` -> exits 2",
+        "FIXED `cmd` (exit=0)",
+        "FIXED `cmd` exit status 3",
+        "FIXED `cmd` rc=0",
+        "FIXED `a` and `b` exit 0",
+    ],
+)
+def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code(raw: str) -> None:
+    assert chain._verified_line_cites(raw), raw
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "STANDS",
+        "still-open",
+        "STANDS `chain.py` (no line given)",
+        "STANDS chain.py: reads it",
+        "STANDS on python 3.14:5 and 127.0.0.1:8080",
+        "FIXED `pytest -q`",
+        "FIXED `pytest -q` exit",
+        "FIXED exit 0 with no quoted command",
+        "FIXED `pytest -q` was run; see `notes` for the outcome and a long gap before the final exit 0",
+    ],
+)
+def test_verified_line_cites_rejects_a_bare_verdict(raw: str) -> None:
+    assert not chain._verified_line_cites(raw), raw
+
+
+def test_the_live_tracked_ledgers_carry_no_uncited_post_cutoff_verified_line() -> None:
+    """The AC "given ``main``, ``deferred-work-check`` exits 0", for this
+    check: the cutoff is chosen so no committed ledger line is rewritten."""
+    if _REPO_ROOT is None:
+        pytest.skip("not running inside a monorepo checkout (parents[6] out of range)")
+    if not (_REPO_ROOT / "_bmad-output" / "projects").is_dir():
+        pytest.skip("no _bmad-output/projects tree here")
+
+    uncited = _uncited(chain.gather_deferred_work(_REPO_ROOT))
+
+    assert not uncited, [(f.evidence["project"], f.evidence["id"]) for f in uncited]

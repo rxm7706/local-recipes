@@ -4438,7 +4438,7 @@ def _verified_line_cites(raw: str) -> bool:
     """Does a raw ``verified:`` value cite what it read -- a ``path:line``
     (or ``path:n-m``) reference, or a backtick-quoted command followed by its
     exit code (Story 38.1)?"""
-    return bool(_VERIFIED_PATH_LINE_RE.search(raw) or _VERIFIED_COMMAND_EXIT_RE.search(raw))
+    return bool(_VERIFIED_PATH_LINE_RE.search(raw))
 
 
 def _verified_citation_scan(path: Path) -> tuple[list[tuple[str, int]], int]:
