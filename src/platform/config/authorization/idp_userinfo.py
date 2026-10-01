@@ -22,6 +22,7 @@ from datetime import timedelta
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import cast
 
 import structlog
 from django.conf import settings
@@ -296,7 +297,8 @@ def fetch_current_userinfo(request: HttpRequest) -> dict[str, Any] | None:
 
     remembered = getattr(request, _REQUEST_MEMO, _UNSET)
     if remembered is not _UNSET:
-        return None if remembered is None else dict(remembered)
+        memo = cast("dict[str, Any] | None", remembered)
+        return None if memo is None else dict(memo)
 
     claims = _cached_or_confirmed_claims(user)
     setattr(request, _REQUEST_MEMO, claims)

@@ -390,7 +390,7 @@ def test_request_roles_come_from_userinfo_before_the_view_runs(
 
     response = client.get(_STATION_URL)
 
-    assert response.wsgi_request.idp_roles == [_STATION_ROLE]
+    assert getattr(response.wsgi_request, "idp_roles", None) == [_STATION_ROLE]
 
 
 @pytest.mark.django_db
@@ -452,7 +452,7 @@ def test_a_failed_refresh_denies_and_never_serves_the_login_time_claims(
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert len(idp.token_calls) == 1  # refreshed once, never retried
-    assert response.wsgi_request.idp_roles == []
+    assert getattr(response.wsgi_request, "idp_roles", None) == []
 
 
 @pytest.mark.django_db
