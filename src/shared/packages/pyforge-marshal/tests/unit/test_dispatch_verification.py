@@ -463,11 +463,15 @@ _STORY_22_3 = "22-3-verification-is-the-product-no-landing-on-a-self-report"
 
 class FakeProcessLintFails:
     """Every command succeeds EXCEPT ``lint-types`` -- isolates a lint failure
-    from the station's own commands and the S-13.7 guard."""
+    from the station's own commands and the S-13.7 guard. ``output`` is the
+    lane's captured stdout; the default carries no file path at all."""
+
+    def __init__(self, output: str = "") -> None:
+        self._output = output
 
     def run(self, tokens, *, cwd: Path):
         if tokens and tokens[-1] == "lint-types":
-            return ProcessResult(returncode=1, stdout="", stderr="would reformat scribe/catalog.py")
+            return ProcessResult(returncode=1, stdout=self._output, stderr="")
         return ProcessResult(returncode=0, stdout="ok", stderr="")
 
 
@@ -477,23 +481,25 @@ def _verify_with(
     verify_commands: list[str],
     process,
     spec_text: str | None = None,
+    slug: str = "pyforge-marshal",
+    vcs: FakeVcs | None = None,
 ):
     worktree = tmp_path / "wt"
     worktree.mkdir(parents=True, exist_ok=True)
     effective, _ = policy.compose(
-        project_slug="pyforge-marshal",
+        project_slug=slug,
         project={"verify_commands": verify_commands},
         flags={},
     )
     return evaluate_dispatch_verification(
-        project_slug="pyforge-marshal",
+        project_slug=slug,
         story_key=normalize(_STORY_22_3),
         worktree=worktree,
         repo_root=tmp_path,
         effective=effective,
         spec_text=spec_text,
         process=process,
-        vcs=FakeVcs(),
+        vcs=vcs or FakeVcs(),
     )
 
 
@@ -531,6 +537,42 @@ def test_evaluate_dispatch_verification_lint_types_failure_refuses_naming_the_la
     assert len(lint_findings) == 1, envelope.findings
     assert LINT_TYPES in lint_findings[0].message
     assert primary_gate_failure(envelope.findings) is not None
+
+
+# The three real `lint-types` output shapes. `scripts/lint_types.py` runs ruff/mypy
+# with cwd = the package dir, so every path is PACKAGE-relative -- it can never equal
+# the story's repo-relative changed file below.
+_SCRIBE_CHANGED = ("src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",)
+_LINT_OUTPUTS = {
+    "ruff-format": "Would reformat: src/pyforge/scribe/catalog.py\n1 file would be reformatted\n",
+    "ruff-check": "src/pyforge/scribe/catalog.py:12:5: E501 Line too long (121 > 120)\nFound 1 error.\n",
+    "mypy": "src/pyforge/scribe/catalog.py:12: error: Incompatible types in assignment  [assignment]\n",
+}
+
+
+@pytest.mark.parametrize("output", _LINT_OUTPUTS.values(), ids=_LINT_OUTPUTS.keys())
+def test_evaluate_dispatch_verification_lint_types_red_on_the_story_own_file_is_never_pre_existing(
+    tmp_path: Path, output: str
+) -> None:
+    """Story 79.2, AC2 (review finding): a lint-types red whose output names the
+    story's OWN changed file -- as a package-relative path -- must refuse as
+    MRS-GATE-001 and never be downgraded to MRS-GATE-014 by the 28.22
+    pre-existing reclassifier, which cannot match package-relative paths against
+    repo-relative changed files and would call every lint failure "outside the
+    story's blast radius" (verdict ``verified``)."""
+    envelope = _verify_with(
+        tmp_path,
+        slug="pyforge-scribe",
+        verify_commands=["true"],
+        process=FakeProcessLintFails(output),
+        vcs=FakeVcs(changed=_SCRIBE_CHANGED),
+    )
+    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
+        DispatchVerificationVerdict.REFUSED
+    )
+    lint_findings = [f for f in envelope.findings if f.code == "MRS-GATE-001" and "lint-types" in f.message]
+    assert len(lint_findings) == 1, envelope.findings
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings), envelope.findings
 
 
 def test_evaluate_dispatch_verification_lint_types_green_is_not_a_finding(tmp_path: Path) -> None:
