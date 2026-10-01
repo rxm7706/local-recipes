@@ -1999,7 +1999,170 @@ def test_supervisor_finalizes_verifies_and_lands_a_finished_harness_session(
     journal = fs.journal_text(run_dir)
     assert dispatch_core.KIND_DISPATCH_FINALIZE in journal
     assert '"verdict": "landed"' in journal
-    assert publisher.completions
+    # Local `main` never shows the merge here (the fake primary was not
+    # fast-forwarded), so the repository facts alone read `stopped_externally`;
+    # the journaled land is what makes the run `completed` (Story 67.1).
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+
+
+def _completion_payload(fs: FakeFs, run_dir: Path, phase: Phase) -> dict[str, object]:
+    """The payload of the run's ``dispatch-completion`` entry for ``phase``."""
+    for line in fs.journal_text(run_dir).splitlines():
+        entry = json.loads(line)
+        if entry["kind"] == dispatch_core.KIND_DISPATCH_COMPLETION and entry["phase"] == phase.value:
+            return entry["payload"]
+    raise AssertionError(f"no dispatch-completion {phase.value} journaled")
+
+
+@pytest.mark.parametrize("branch_present", [False, True], ids=["branch-retired", "branch-present"])
+def test_a_landed_run_reads_completed_when_local_main_lacks_the_merge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, branch_present: bool
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    land_calls = _patch_landing(monkeypatch)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    branches = frozenset({branch}) if branch_present else frozenset()
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=fs,
+        vcs=FakeVcs(branches=branches, head_sha=_MOVED),
+        process=FakeProcess(alive=False),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    assert len(land_calls) == 1
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+    outcome = _completion_payload(fs, run_dir, Phase.OUTCOME)
+    assert outcome["verdict"] == DispatchSessionVerdict.COMPLETED.value
+    assert outcome["stop_reason"] is None
+    # The journal decides the process verdict; git keeps the repository facts
+    # as gathered, never overwritten from the journal (AD-33).
+    intent = _completion_payload(fs, run_dir, Phase.INTENT)
+    assert intent["story_merged_on_main"] is False
+    assert intent["branch_merged"] is False
+
+
+def test_a_landed_run_reads_completed_when_the_repository_reread_after_the_land_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch)
+    fs = FakeFs()
+    # Refuses every repository re-read once the land is journaled: only the
+    # journal can say the run is done.
+    vcs = _HeadShaFailsOnceJournaledVcs(
+        fs=fs, run_dir=run_dir, marker=dispatch_core.KIND_DISPATCH_LAND, head_sha=_MOVED
+    )
+    publisher = FakePublisher()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert vcs.refused >= 1
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+    assert _completion_payload(fs, run_dir, Phase.OUTCOME)["stop_reason"] is None
+    # The facts recorded are the ones gathered before the land.
+    intent = _completion_payload(fs, run_dir, Phase.INTENT)
+    assert intent["baseline_head_sha"] == _BASELINE
+    assert intent["current_head_sha"] == _MOVED
+    assert intent["story_merged_on_main"] is False
+    assert intent["branch_merged"] is False
+
+
+class _AlreadyLandedOkFs(FakeFs):
+    """Journals the supervisor's ``already_landed`` land OUTCOME as ``ok``.
+
+    The supervisor's own journaling writes ``ok`` only for ``landed``, so an
+    ``already_landed`` outcome reading ``ok`` is a journal shape the
+    supervisor does not itself produce; the verdict predicate
+    (``landing_journal_indicates_complete``) accepts it, and this pins that the
+    terminal re-read honours it."""
+
+    def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+        if dispatch_core.KIND_DISPATCH_LAND in line and '"verdict": "already_landed"' in line:
+            line = line.replace('"ok": false', '"ok": true')
+        super().append_line(path, line, fsync=fsync)
+
+
+def test_an_already_landed_run_reads_completed_when_local_main_lacks_the_merge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch, verdict=DispatchLandingVerdict.ALREADY_LANDED)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    fs = _AlreadyLandedOkFs()
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=fs,
+        vcs=FakeVcs(branches=frozenset({branch}), head_sha=_MOVED),
+        process=FakeProcess(alive=False),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+    assert _completion_payload(fs, run_dir, Phase.OUTCOME)["stop_reason"] is None
+
+
+@pytest.mark.parametrize(
+    "land_verdict",
+    [DispatchLandingVerdict.REFUSED, DispatchLandingVerdict.SKIPPED_UNVERIFIED],
+    ids=lambda verdict: verdict.value,
+)
+def test_a_land_that_did_not_succeed_still_reads_from_repository_facts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, land_verdict: DispatchLandingVerdict
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch, verdict=land_verdict)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=fs,
+        vcs=FakeVcs(branches=frozenset({branch}), head_sha=_MOVED),
+        process=FakeProcess(alive=False),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    # Exactly the verdict the repository facts give today (local `main` lacks
+    # the merge): the journal override does not fire for a land that is not `ok`.
+    assert publisher.completions[0][1] == DispatchSessionVerdict.STOPPED_EXTERNALLY.value
+    outcome = _completion_payload(fs, run_dir, Phase.OUTCOME)
+    assert outcome["verdict"] == DispatchSessionVerdict.STOPPED_EXTERNALLY.value
+    assert outcome["stop_reason"] == "external-operator-stop"
 
 
 class _LandsDuringFinalizeFs(FakeFs):
