@@ -2,13 +2,17 @@
 title: '73.2: A drain schedules the follow-up review a landed story recommended'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
+review_loop_iteration: 0
+followup_review_recommended: false
+declared_low_risk: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch.md
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py
 warnings:
+  - oversized
   - 'Story 66.2 backfills a DW-FRR row for every landed story still carrying the flag (181 uncarried of 210 measured on 2026-09-28). The wave size, left open at the mint, was ruled by the operator on 2026-09-28: at most dispatch.max_followup_reviews_per_campaign (default 2) follow-ups per drain campaign, newest landings first; the rest wait for later campaigns, so the backlog drains in about 91 campaigns at the default.'
 deferred: []
 ---
@@ -89,6 +93,46 @@ Co-governing Specs: `spec-pyforge-marshal` (owner of `src/shared/packages/pyforg
 | no merge subject on `origin/main` | hand-landed under another subject | sorts after every matched candidate, in ledger order | none |
 
 </intent-contract>
+
+## Code Map
+
+Paths sit under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/` (`<pkg>/`); tests under `src/shared/packages/pyforge-marshal/tests/unit/`. The contract's line numbers are stale (re-measured 2026-10-01); anchors here are symbols. Story 73.1 is on this branch.
+
+- `<pkg>/core/policy.py` -- `_DISPATCH_BLOCK_KEYS`, `DEFAULT_POLICY["dispatch"]`, `_valid_dispatch_block`; `_valid_landing_grace_seconds` is the non-negative-int validator with the magnitude probe the new key reuses; `resolve_landing_check_settings` is the pattern for a consumer-side default (`_merge_field` replaces a `dispatch` block whole, so a block omitting the key reads 2 at the consumer). The contract's "carries only `max_parallel`" is stale: Story 80.1 added three `landing_check_*` keys.
+- `<pkg>/core/deferred_work.py` -- `_FOLLOWUP_REVIEW_HEADING_RE`, `_open_followup_review_rows`, `open_followup_review_id`, `followup_review_id` (row id `DW-FRR-<hyphen key>`; `normalize` reads it back). The all-rows read joins them (pure, AD-4).
+- `<pkg>/core/dispatch_fleet.py` -- `NON_IMPLEMENT_STATUSES` and `station_backlog` stay untouched; `StationCycleResult.to_payload` (journal row), `plan_station_queue` (mode accounting, advance reasons), `FleetCampaignMode`; the candidate, cap-selection and landing-order functions join here (pure).
+- `<pkg>/core/promotion.py::corroborated_merged_story_keys` -- one subject in, at most one key out; reuse it per subject to get a key's position (never re-implement the classifier).
+- `<pkg>/cli/dispatch.py` -- `plan_station_cycle` (read-only per-station planner shared with `drain --plan`; `backlog` is built here), `StationCyclePlan`, `execute_fleet_cycle` (findings, results, dispatch loop), `_campaign_blocked_from_journal` (the journal-fold pattern for the launched count), `_reconcile_campaign_blocked` (merged prune, reads the whole `origin/main`: Story 73.1's deferred D1), `station_story_block_facts` (Story 50.1 Part B already-landed advance), `_station_blocked_map`, `_compose_policy`, `run_fleet_drain` (`--stories` refusal `MRS-DISP-032` stays), `_derive_followup_review` (Story 73.1: the ledger read at `ORIGIN_MAIN` through `vcs.file_text_at_ref`).
+- `<pkg>/cli/drain_plan.py` -- `run_drain_plan` calls `plan_station_cycle` per station; `evaluate_story` refuses `already-landed` from `_StationReads.merged_keys()` (wrong for a follow-up); `_plan_station` payload row and `render_plan_text`.
+- `<pkg>/cli/config.py` -- `read_repo_policy_defaults`, `conventional_project_policy_path`, `_read_project_policy`: the repository layer and a station's project layer.
+- `<pkg>/core/findings.py` -- registered finding codes; any new code is registered here (prefer an existing `MRS-DRAIN-*` code if one fits).
+- `tests/unit/test_dispatch_fleet.py` (fleet fakes, `execute_fleet_cycle`, `run_fleet_drain`), `test_drain_plan.py`, `test_policy.py`, `test_deferred_work.py`.
+- Read-only: `sprint-status-ledger.yaml`, `deferred-work-ledger.md`, every `SPEC.md`, `.claude/skills/bmad-build-auto/`.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `<pkg>/core/policy.py` -- `dispatch.max_followup_reviews_per_campaign` (default 2, non-negative int; `_valid_followup_review_cap` over `_valid_landing_grace_seconds`), `resolve_followup_review_cap(effective)` (default when absent) -- the operator's per-campaign cap.
+- `<pkg>/core/deferred_work.py` -- `open_followup_review_story_keys(ledger_text)`: story keys of rows headed `DW-FRR-<story>` with `origin: dispatch-followup-review` and `status: open`, ledger order -- the row gate.
+- `<pkg>/core/dispatch_fleet.py` -- `FollowupCandidate`, `StaleFollowupRow`, `station_followup_queue` (row gate x spec `done` + flag true; the rest of the open rows are stale), `landing_positions` (newest-first position of each corroborated merge subject), `select_campaign_followups` (newest landing first, unmatched after, in ledger order; cap minus launched; the waiting remainder), `StationCycleResult.followup_reviews` (payload key only when non-empty) -- all pure.
+- `<pkg>/cli/dispatch.py` -- `plan_followup_reviews` (reads each cycle station's ledger and specs at `origin/main`, the repository-layer cap, the journal's launched count, a project-layer WARN, an unreadable-ledger WARN, the INFO and stale WARN facts), `plan_station_cycle(..., followups=())` appends a station's selected follow-ups after its implementable backlog (never under `--stories`), `execute_fleet_cycle` emits the findings and records the follow-ups it dispatched on the station result, `_followups_launched_from_journal` folds the campaign's fleet-cycle outcomes, `station_story_block_facts` skips the Part B already-landed advance for a follow-up, `_reconcile_campaign_blocked` never prunes a follow-up entry as merged.
+- `<pkg>/cli/drain_plan.py` -- `run_drain_plan` plans the same follow-ups, lists them on the station row, names stale rows and the waiting count, and `evaluate_story` no longer refuses a follow-up as `already-landed`.
+- Tests (`tests/unit/`): `test_policy.py` (cap default, validation, `[dispatch]` with only `max_parallel`), `test_deferred_work.py` (all-rows read), `test_dispatch_fleet.py` (pure functions, every I/O-matrix row, the 181-row fixture, both mutations, the two-campaign and cap-spent scenarios, the campaign block, the ledger twin), `test_drain_plan.py` (the `--plan` row) -- no ledger key added or flipped in any fixture.
+- Spec memlogs -- name every governed path on `spec-pyforge-marshal`'s `.memlog.md` and on each co-governor `spec-surface` names (`uv run _bmad/scripts/memlog.py append`); never `--write-baseline`.
+
+**Acceptance Criteria:**
+- Given the change, when the station suite, `lint-types` and `spec_surface_reconcile.py` run, then all pass and the touched modules keep their coverage floors
+- Given a normal drain (no `DW-FRR` rows), when a cycle runs, then its findings, results and journal payload are byte-identical to before this story
+
+## Spec Change Log
+
+## Review Triage Log
+
+## Design Notes
+
+- Selection is two-phase: one campaign-wide read (`plan_followup_reviews`) before the per-station loop, then each station's planner receives only its own selected follow-ups. `drain --plan` makes the same read, so the plan cannot drift from the drain.
+- A follow-up this campaign already launched stays queued while its row is open and costs no further cap: a live one then reads `in-flight` and a failed one blocks, exactly as any story's. Only new follow-ups spend `cap - launched`.
+- Landing order reuses `corroborated_merged_story_keys` one subject at a time; the first index at which a key appears is its newest landing.
 
 ## Source
 
