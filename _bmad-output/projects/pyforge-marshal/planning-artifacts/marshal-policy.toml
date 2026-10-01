@@ -100,12 +100,14 @@ verify_commands = [
 # station to hit this: Story 21.3 was the first story on ANY station to reach
 # marshal's fully-automated dispatch->verify->land path). Story 28.1 (2026-08-30)
 # was pyforge-marshal's own first story through that path and hit the same wall.
-# Scoped to what 28.1 actually touches, not a wildcard; widen per-story as later
-# Epic 28 stories land, same pattern atlas used.
+# Every entry below declares the station-wide surface -- the convention each later
+# marshal epic restates, not a per-story allowlist and not a stopgap. A declared
+# entry replaces the default outright (never merged with it), so each one repeats
+# the default surface and adds only what its own epic touches.
 [epic_surfaces]
 "22" = [
-  # Widened 2026-08-31 for consistency with the epic-28 stopgap and atlas's
-  # own epic-21/22/23 convention -- see epic-28's comment for why.
+  # Widened 2026-08-31 for consistency with epic 28's station-wide surface and
+  # atlas's own epic-21/22/23 convention -- see epic 28's comment for why.
   "src/shared/packages/pyforge-marshal/**",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
@@ -126,12 +128,15 @@ verify_commands = [
 ]
 
 "28" = [
-  # Stopgap (2026-08-31): MRS-GATE-007 stalled Stories 21.7/28.2 for over an
-  # hour apiece with no self-service recovery -- this station-wide wildcard is
-  # the operator-directed "off for now" until Story 28.15 ships the real
-  # per-station hard/warn/off flag (default warn) to replace it. Individual
-  # entries below are kept as documentation of what each landed story
-  # actually touched, not because the wildcard needs narrowing.
+  # The station-wide surface is the convention every later marshal epic declares
+  # (each entry below restates it), not a stopgap. It was written
+  # 2026-08-31 because MRS-GATE-007 stalled Stories 21.7/28.2 for over an hour
+  # apiece with no self-service recovery; Story 28.15 (done) then shipped the
+  # per-station hard/warn/off `scope_violation_mode` (default warn), and the
+  # globs stayed: Epic 73's follow-up reviews of done 22.x/28.x stories
+  # dispatch against them. Individual entries below are kept as documentation
+  # of what each landed story actually touched, not because the wildcard needs
+  # narrowing.
   "src/shared/packages/pyforge-marshal/**",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",

@@ -26,6 +26,10 @@ from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from pyforge.marshal.core import policy
 from pyforge.marshal.dispatch_verify import run_verify_commands_only
 
+# Story 79.2 (spec-79-2): the derived hygiene lane, pinned as a literal so
+# deleting the derivation fails these tests rather than silently updating them.
+LINT_TYPES = "pixi run --frozen -e pyforge-guild lint-types"
+
 
 class FakeProcess:
     def __init__(self) -> None:
@@ -52,6 +56,7 @@ def test_run_verify_commands_only_reports_pass_and_fail(tmp_path: Path) -> None:
         "true",
         "false",
         _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
     ]
     assert reports[0]["returncode"] == 0
     assert reports[1]["returncode"] == 1
@@ -65,11 +70,11 @@ def test_run_verify_commands_only_all_green_has_no_findings(tmp_path: Path) -> N
     worktree.mkdir()
     process = FakeProcess()
     reports, findings = run_verify_commands_only(_effective(["true", "echo ok"]), process=process, worktree=worktree)
-    assert len(reports) == 3
+    assert len(reports) == 4
     assert findings == ()
 
 
-def test_run_verify_commands_only_empty_commands_still_runs_the_surface_guard(
+def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands(
     tmp_path: Path,
 ) -> None:
     """Story 53.1: a merge-tree preview is gated on S-13.7 exactly like a
@@ -79,8 +84,9 @@ def test_run_verify_commands_only_empty_commands_still_runs_the_surface_guard(
     worktree.mkdir()
     process = FakeProcess()
     reports, findings = run_verify_commands_only(_effective([]), process=process, worktree=worktree)
-    assert [report["command"] for report in reports] == [_SURFACE_RECONCILE_COMMAND]
+    assert [report["command"] for report in reports] == [_SURFACE_RECONCILE_COMMAND, LINT_TYPES]
     assert findings == ()
     assert process.calls == [
         (_SURFACE_RECONCILE_COMMAND.split(), worktree),
+        (LINT_TYPES.split(), worktree),
     ]

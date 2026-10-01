@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from pyforge.core.process import ProcessResult
 
 from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
@@ -31,6 +32,11 @@ from pyforge.marshal.dispatch_verify import (
     compose_dispatch_policy,
     evaluate_dispatch_verification,
 )
+
+# Story 79.2 (spec-79-2): the derived hygiene lane, pinned as a literal (not
+# imported from `dispatch_verify`) so deleting or renaming the derivation fails
+# these tests rather than silently updating them.
+LINT_TYPES = "pixi run --frozen -e pyforge-guild lint-types"
 
 
 def test_compose_dispatch_policy_reads_a_real_project_toml(tmp_path: Path) -> None:
@@ -302,6 +308,7 @@ def test_evaluate_dispatch_verification_appends_surface_guard_after_declared_com
     assert [report["command"] for report in reports] == [
         "true",
         _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
     ]
 
 
@@ -410,6 +417,7 @@ def test_evaluate_dispatch_verification_dedupes_an_already_declared_guard(
     assert [report["command"] for report in reports] == [
         "true",
         _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
     ]
 
 
@@ -444,7 +452,222 @@ def test_evaluate_dispatch_verification_dedupes_a_guard_declared_with_different_
     assert [report["command"] for report in reports] == [
         "true",
         _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
     ]
+
+
+# --- Story 79.2 (spec-79-2): `lint-types` is a derived verification command ---
+
+_STORY_22_3 = "22-3-verification-is-the-product-no-landing-on-a-self-report"
+
+
+class FakeProcessLintFails:
+    """Every command succeeds EXCEPT ``lint-types`` -- isolates a lint failure
+    from the station's own commands and the S-13.7 guard. ``output`` is the
+    lane's captured stdout; the default carries no file path at all."""
+
+    def __init__(self, output: str = "") -> None:
+        self._output = output
+
+    def run(self, tokens, *, cwd: Path):
+        if tokens and tokens[-1] == "lint-types":
+            return ProcessResult(returncode=1, stdout=self._output, stderr="")
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+def _verify_with(
+    tmp_path: Path,
+    *,
+    verify_commands: list[str],
+    process,
+    spec_text: str | None = None,
+    slug: str = "pyforge-marshal",
+    vcs: FakeVcs | None = None,
+):
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True, exist_ok=True)
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={"verify_commands": verify_commands},
+        flags={},
+    )
+    return evaluate_dispatch_verification(
+        project_slug=slug,
+        story_key=normalize(_STORY_22_3),
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=spec_text,
+        process=process,
+        vcs=vcs or FakeVcs(),
+    )
+
+
+def test_evaluate_dispatch_verification_runs_lint_types_once_after_the_station_commands(
+    tmp_path: Path,
+) -> None:
+    """Story 79.2, AC1: whatever a station's own ``verify_commands`` say, the
+    hygiene lane runs exactly once, after them."""
+    envelope = _verify_with(tmp_path, verify_commands=["true", "echo ok"], process=FakeProcess())
+    commands = [report["command"] for report in envelope.data["commands"]]
+    assert commands == ["true", "echo ok", _SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+    assert commands.count(LINT_TYPES) == 1
+    assert envelope.findings == ()
+
+
+def test_evaluate_dispatch_verification_lint_types_runs_for_a_station_with_no_commands(
+    tmp_path: Path,
+) -> None:
+    """Story 79.2, AC1: a bare ``verify_commands = []`` station is gated on
+    ``lint-types`` too -- it is derived, never read from the station's list."""
+    envelope = _verify_with(tmp_path, verify_commands=[], process=FakeProcess())
+    assert [report["command"] for report in envelope.data["commands"]] == [_SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+
+
+def test_evaluate_dispatch_verification_lint_types_failure_refuses_naming_the_lane(
+    tmp_path: Path,
+) -> None:
+    """Story 79.2, AC2 / Edge-Case Matrix row 2: a change that is green on the
+    station's own commands and the guard but red on ``lint-types`` is REFUSED,
+    and the finding names ``lint-types`` (an ordinary MRS-GATE-001)."""
+    envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcessLintFails())
+    inp = DispatchVerificationInput(findings=envelope.findings)
+    assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
+    lint_findings = [f for f in envelope.findings if f.code == "MRS-GATE-001" and "lint-types" in f.message]
+    assert len(lint_findings) == 1, envelope.findings
+    assert LINT_TYPES in lint_findings[0].message
+    assert primary_gate_failure(envelope.findings) is not None
+
+
+# The three real `lint-types` output shapes. `scripts/lint_types.py` runs ruff/mypy
+# with cwd = the package dir, so every path is PACKAGE-relative -- it can never equal
+# the story's repo-relative changed file below.
+_SCRIBE_CHANGED = ("src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py",)
+_LINT_OUTPUTS = {
+    "ruff-format": "Would reformat: src/pyforge/scribe/catalog.py\n1 file would be reformatted\n",
+    "ruff-check": "src/pyforge/scribe/catalog.py:12:5: E501 Line too long (121 > 120)\nFound 1 error.\n",
+    "mypy": "src/pyforge/scribe/catalog.py:12: error: Incompatible types in assignment  [assignment]\n",
+}
+
+
+@pytest.mark.parametrize("output", _LINT_OUTPUTS.values(), ids=_LINT_OUTPUTS.keys())
+def test_evaluate_dispatch_verification_lint_types_red_on_the_story_own_file_is_never_pre_existing(
+    tmp_path: Path, output: str
+) -> None:
+    """Story 79.2, AC2 (review finding): a lint-types red whose output names the
+    story's OWN changed file -- as a package-relative path -- must refuse as
+    MRS-GATE-001 and never be downgraded to MRS-GATE-014 by the 28.22
+    pre-existing reclassifier, which cannot match package-relative paths against
+    repo-relative changed files and would call every lint failure "outside the
+    story's blast radius" (verdict ``verified``)."""
+    envelope = _verify_with(
+        tmp_path,
+        slug="pyforge-scribe",
+        verify_commands=["true"],
+        process=FakeProcessLintFails(output),
+        vcs=FakeVcs(changed=_SCRIBE_CHANGED),
+    )
+    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
+        DispatchVerificationVerdict.REFUSED
+    )
+    lint_findings = [f for f in envelope.findings if f.code == "MRS-GATE-001" and "lint-types" in f.message]
+    assert len(lint_findings) == 1, envelope.findings
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings), envelope.findings
+
+
+def test_evaluate_dispatch_verification_lint_types_green_is_not_a_finding(tmp_path: Path) -> None:
+    """Story 79.2, Edge-Case Matrix row 1: a clean change verifies."""
+    envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcess())
+    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
+        DispatchVerificationVerdict.VERIFIED
+    )
+
+
+def test_evaluate_dispatch_verification_dedupes_an_already_declared_lint_types(
+    tmp_path: Path,
+) -> None:
+    """Story 79.2, AC3 / Edge-Case Matrix row 3: a station that already lists
+    ``lint-types`` still runs it once -- moved after its own commands, never
+    twice."""
+    envelope = _verify_with(tmp_path, verify_commands=[LINT_TYPES, "true"], process=FakeProcess())
+    commands = [report["command"] for report in envelope.data["commands"]]
+    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+
+
+def test_evaluate_dispatch_verification_dedupes_a_lint_types_declared_with_different_spacing(
+    tmp_path: Path,
+) -> None:
+    """Story 79.2, AC3: the dedupe collapses whitespace the way the surface
+    guard's does (and ``gate.check_spec_binding`` does)."""
+    respaced = LINT_TYPES.replace(" ", "  ", 1)
+    envelope = _verify_with(tmp_path, verify_commands=["true", respaced], process=FakeProcess())
+    commands = [report["command"] for report in envelope.data["commands"]]
+    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+
+
+def test_evaluate_dispatch_verification_a_declared_lint_types_failure_still_refuses_once(
+    tmp_path: Path,
+) -> None:
+    """Story 79.2, AC3 + AC2: the de-duplicated lane still refuses, with ONE
+    finding, not one per spelling."""
+    envelope = _verify_with(tmp_path, verify_commands=["true", LINT_TYPES], process=FakeProcessLintFails())
+    lint_findings = [f for f in envelope.findings if f.code == "MRS-GATE-001" and "lint-types" in f.message]
+    assert len(lint_findings) == 1, envelope.findings
+
+
+def test_evaluate_dispatch_verification_spec_binding_unchanged_by_the_derived_lint_types(
+    tmp_path: Path,
+) -> None:
+    """Story 79.2, AC4 / Edge-Case Matrix row 4: a spec that names only the
+    station's own commands binds clean with ``lint-types`` widened in (an
+    undeclared extra is never a finding), and a spec that DOES declare
+    ``lint-types`` binds clean too. A genuinely removed command still reds."""
+    station = ["false", "true"]
+    own_only = "## Verification\n\n**Commands:**\n- `false` -- expected: exit 0\n- `true` -- expected: exit 0\n"
+    with_lint = own_only + f"- `{LINT_TYPES}` -- expected: exit 0\n"
+    removed = own_only + "- `echo gone` -- expected: exit 0\n"
+    clean_own = _verify_with(tmp_path / "a", verify_commands=station, process=FakeProcess(), spec_text=own_only)
+    clean_lint = _verify_with(tmp_path / "b", verify_commands=station, process=FakeProcess(), spec_text=with_lint)
+    reds = _verify_with(tmp_path / "c", verify_commands=station, process=FakeProcess(), spec_text=removed)
+    assert clean_own.data["spec_binding"]["violations"] == 0
+    assert clean_lint.data["spec_binding"]["violations"] == 0
+    assert reds.data["spec_binding"]["violations"] == 1
+    assert not any(f.code == "MRS-GATE-011" for f in clean_own.findings + clean_lint.findings)
+
+
+def test_every_tracked_story_spec_binds_the_same_with_lint_types_widened() -> None:
+    """Story 79.2, AC4, against the live tree: for every tracked story spec
+    of every station, widening the policy's commands with the derived
+    ``lint-types`` lane adds no ``MRS-GATE-010``/``MRS-GATE-011`` finding the
+    pre-79.2 widening (station commands + the S-13.7 guard) did not already
+    report -- ``gate.check_spec_binding`` is one-directional."""
+    import tomllib
+
+    from pyforge.marshal.core import spec_binding
+    from pyforge.marshal.dispatch_verify import _verify_commands_with_surface_guard
+
+    repo_root = Path(__file__).resolve().parents[6]
+    spec_paths = sorted(repo_root.glob("_bmad-output/projects/*/planning-artifacts/specs/spec-*.md"))
+    if not spec_paths:
+        pytest.skip("no tracked story specs in this checkout")
+    effective_by_slug: dict[str, policy.EffectivePolicy] = {}
+    checked = 0
+    for spec_path in spec_paths:
+        slug = spec_path.parents[2].name
+        if slug not in effective_by_slug:
+            policy_path = spec_path.parents[1] / "marshal-policy.toml"
+            project = tomllib.loads(policy_path.read_text(encoding="utf-8")) if policy_path.is_file() else {}
+            effective_by_slug[slug], _ = policy.compose(project_slug=slug, project=dict(project), flags={})
+        effective = effective_by_slug[slug]
+        declared = spec_binding.parse_success_signal(spec_path.read_text(encoding="utf-8"))
+        before = (*effective.verify_commands.value, _SURFACE_RECONCILE_COMMAND)
+        widened = _verify_commands_with_surface_guard(effective)
+        assert LINT_TYPES in widened
+        before_messages = {f.message for f in gate.check_spec_binding(declared, before)}
+        after_messages = {f.message for f in gate.check_spec_binding(declared, widened)}
+        assert after_messages <= before_messages, (spec_path.name, after_messages - before_messages)
+        checked += 1
+    assert checked == len(spec_paths)
 
 
 def test_evaluate_dispatch_verification_unconfigured_epic_still_denies_outside_default(

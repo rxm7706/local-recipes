@@ -354,9 +354,10 @@ def default_epic_surface(project_slug: str) -> tuple[str, ...]:
     declared ``[epic_surfaces]`` entry (Story 28.14, CAP-16) -- the toil
     ``MRS-GATE-007`` otherwise forces onto an operator, who must hand-widen
     the policy TOML per story just to let legitimate within-station work
-    land (the live 2026-08-31 ``"28"`` station-wide-wildcard stopgap in
-    ``pyforge-marshal``'s own ``marshal-policy.toml`` exists only because of
-    this).
+    land (``pyforge-marshal``'s own ``marshal-policy.toml`` hand-declared a
+    ``"28"`` station-wide surface on 2026-08-31 for exactly this reason; it
+    stays as the convention every later marshal epic restates, no longer a
+    stopgap; a declared entry replaces this default outright).
 
     Pure, GENERATED from ``project_slug`` alone -- no filesystem I/O, no
     existence check -- mirroring ``core/policy.py::_base_worktree_seed_

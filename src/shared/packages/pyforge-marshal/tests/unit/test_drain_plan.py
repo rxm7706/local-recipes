@@ -740,6 +740,35 @@ def test_a_declared_command_outside_verify_commands_is_gate_011(
     assert code == 4
 
 
+def test_a_declared_lint_types_command_binds_clean_through_the_derived_widening(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Story 79.2: ``_StationReads.verify_commands`` is the third caller of
+    ``_verify_commands_with_surface_guard`` -- its widened tuple carries the
+    derived ``lint-types`` lane, so a spec that declares it is NOT a
+    MRS-GATE-011 (the station's own ``verify_commands`` never list it), while
+    a genuinely undeclared command still is."""
+    slug = "pyforge-marshal"
+    _write_spec(
+        tmp_path,
+        slug,
+        "22-7-fleet",
+        body="\n## Verification\n\n**Commands:**\n- `pixi run --frozen -e pyforge-guild lint-types` -- expected: pass\n",
+    )
+    code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        slug,
+        ledgers={slug: (("22-7-fleet", "backlog"),)},
+        capsys=capsys,
+    )
+    assert [f for f in _findings(envelope, "MRS-DRAINPLAN-001") if "MRS-GATE-011" in f["message"]] == []
+    assert "MRS-GATE-011" not in _out
+    assert code == 0
+
+
 # --------------------------------------------------------------------------
 # AC 8 -- the environment is probed only behind --check-env
 # --------------------------------------------------------------------------
