@@ -2024,6 +2024,8 @@ def _land_waiting(
     dispatch: dict | None = None,
     vcs=None,
     surface: tuple = (),
+    on_wait_tick=None,
+    seams: bool = True,
 ):
     """Run the real landing. The spec-surface verdict is faked (``surface``, clean by default): the
     marshal env has no `pyforge.doctor`, so an unfaked reconcile adds a WARN MRS-DISP-047 to every
@@ -2045,8 +2047,8 @@ def _land_waiting(
         vcs=vcs if vcs is not None else FakeVcs(merged=False),
         forge=forge,
         process=FakeProcess(),
-        sleep=clock.sleep,
-        monotonic=clock.monotonic,
+        **({"sleep": clock.sleep, "monotonic": clock.monotonic} if seams else {}),
+        on_wait_tick=on_wait_tick,
     )
 
 
@@ -2065,6 +2067,7 @@ def test_landing_merges_when_every_check_run_is_green_and_journals_the_runs(tmp_
     assert clock.sleeps == []
     assert _codes(envelope) == []
     assert envelope.data["landing_checks"] == {
+        "head_sha": "abc123",
         "outcome": "green",
         "polls": 1,
         "waited_seconds": 0.0,
@@ -2175,7 +2178,13 @@ def test_an_empty_head_keeps_waiting_through_the_grace_then_counts_as_green(tmp_
     assert len(forge.reads) == 3
     assert clock.sleeps == [60.0, 60.0]
     assert forge.merge_calls == ["abc123"]
-    assert envelope.data["landing_checks"] == {"outcome": "no-runs", "polls": 3, "waited_seconds": 120.0, "runs": []}
+    assert envelope.data["landing_checks"] == {
+        "head_sha": "abc123",
+        "outcome": "no-runs",
+        "polls": 3,
+        "waited_seconds": 120.0,
+        "runs": [],
+    }
 
 
 def test_an_empty_head_inside_the_grace_never_merges(tmp_path: Path, monkeypatch) -> None:
