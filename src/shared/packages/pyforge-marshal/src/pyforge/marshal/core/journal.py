@@ -491,23 +491,10 @@ def resolve_scope_violation_advisories_from_payload(
 ) -> tuple[dict[str, object], ...]:
     """Read scope advisories from an inline list or an offloaded sidecar ref."""
     inline = payload.get(SCOPE_VIOLATION_ADVISORIES_FIELD)
+    if not isinstance(inline, list):
+        inline = _offloaded_payload_field(payload, SCOPE_VIOLATION_ADVISORIES_FIELD, sidecars)
     if isinstance(inline, list):
         return tuple(item for item in inline if isinstance(item, dict))
-    ref = payload.get(SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF)
-    if not isinstance(ref, str):
-        return ()
-    blob = sidecars.get(ref)
-    if not isinstance(blob, str):
-        return ()
-    try:
-        parsed = json.loads(blob)
-    except ValueError, TypeError, RecursionError:
-        return ()
-    if not isinstance(parsed, Mapping):
-        return ()
-    offloaded = parsed.get(SCOPE_VIOLATION_ADVISORIES_FIELD)
-    if isinstance(offloaded, list):
-        return tuple(item for item in offloaded if isinstance(item, dict))
     return ()
 
 

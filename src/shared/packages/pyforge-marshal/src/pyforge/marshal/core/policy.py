@@ -953,8 +953,8 @@ def _valid_dispatch_block(value: object) -> dict[str, object] | None:
     independent of bmad-loop scm ``max_parallel`` (SEED); ``_valid_parallel_count``)
     and the landing's check-wait knobs ``landing_check_poll_seconds`` and
     ``landing_check_timeout_minutes`` (``_valid_positive_number``) and
-    ``landing_check_grace_seconds`` (``_valid_attempt_count``: ``0`` is a real
-    "no grace"). Any NON-EMPTY subset of the four keys is valid -- ``_merge_field``
+    ``landing_check_grace_seconds`` (``_valid_landing_grace_seconds``: ``0`` is a real
+    "no grace", and a magnitude too large for ``float()`` is rejected). Any NON-EMPTY subset of the four keys is valid -- ``_merge_field``
     replaces a block whole, and the tracked ``marshal-policy.toml`` declares only
     ``max_parallel``, so a key a block omits reads as its default at the consumer
     (``resolve_landing_check_settings``), never as a validation failure. An unknown
@@ -967,7 +967,7 @@ def _valid_dispatch_block(value: object) -> dict[str, object] | None:
         "max_parallel": _valid_parallel_count,
         "landing_check_poll_seconds": _valid_positive_number,
         "landing_check_timeout_minutes": _valid_positive_number,
-        "landing_check_grace_seconds": _valid_attempt_count,
+        "landing_check_grace_seconds": _valid_landing_grace_seconds,
     }
     validated: dict[str, object] = {}
     for key in value:
@@ -1460,6 +1460,25 @@ def _valid_parallel_count(value: object) -> int | None:
     except OverflowError:
         return None
     return value
+
+
+def _valid_landing_grace_seconds(value: object) -> int | None:
+    """``dispatch.landing_check_grace_seconds`` (Story 80.1, CAP-284): a plain
+    ``int``, not ``bool``, ``>= 0`` (``0`` is a real "no grace") --
+    ``_valid_attempt_count``'s shape plus the magnitude probe
+    ``_valid_parallel_count`` documents. ``_valid_attempt_count`` has none, so
+    ``10**400`` would compose cleanly and ``float()`` would then raise
+    ``OverflowError`` in ``resolve_landing_check_settings``; ``float(value)`` here
+    rejects it first, and an oversized value is the ordinary ``MRS-POLICY-002``
+    finding naming ``dispatch`` instead of a crash."""
+    grace = _valid_attempt_count(value)
+    if grace is None:
+        return None
+    try:
+        float(grace)
+    except OverflowError:
+        return None
+    return grace
 
 
 def _valid_positive_number(value: object) -> int | float | None:
@@ -1997,7 +2016,7 @@ def resolve_landing_check_settings(effective: EffectivePolicy) -> LandingCheckSe
     block: Mapping[str, object] = declared if isinstance(declared, Mapping) else {}
     poll = _valid_positive_number(block.get("landing_check_poll_seconds", DEFAULT_LANDING_CHECK_POLL_SECONDS))
     timeout = _valid_positive_number(block.get("landing_check_timeout_minutes", DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES))
-    grace = _valid_attempt_count(block.get("landing_check_grace_seconds", DEFAULT_LANDING_CHECK_GRACE_SECONDS))
+    grace = _valid_landing_grace_seconds(block.get("landing_check_grace_seconds", DEFAULT_LANDING_CHECK_GRACE_SECONDS))
     return LandingCheckSettings(
         poll_seconds=float(poll if poll is not None else DEFAULT_LANDING_CHECK_POLL_SECONDS),
         timeout_minutes=float(timeout if timeout is not None else DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES),
