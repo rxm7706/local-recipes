@@ -1164,7 +1164,9 @@ def _run_and_journal_landing(
             wait_heartbeat.publish()
 
     effective = compose_dispatch_policy(slug, repo_root)
-    followup_kwargs: dict[str, FollowupReview] = {"followup_review": followup_review} if followup_review else {}
+    followup_kwargs: dict[str, FollowupReview] = (
+        {"followup_review": followup_review} if followup_review is not None else {}
+    )
     landing_result, envelope = execute_dispatch_land(
         project_slug=slug,
         story_key=story_key,
