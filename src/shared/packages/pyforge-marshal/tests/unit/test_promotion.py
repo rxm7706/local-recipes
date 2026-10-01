@@ -5,8 +5,13 @@ disk or git; every input is a plain value.
 
 from __future__ import annotations
 
+import pytest
+
 from pyforge.marshal.core.identity import StoryKey, render_merge_subject
 from pyforge.marshal.core.promotion import (
+    PRE_DONE_SPEC_STATUSES,
+    SPEC_STATUS_DONE,
+    TERMINAL_SPEC_STATUSES,
     SpecCandidate,
     classify_promotion_candidates,
     corroborated_merged_story_keys,
@@ -17,6 +22,7 @@ from pyforge.marshal.core.promotion import (
     marshal_native_merged_keys,
     merged_story_keys,
     read_spec_status,
+    set_spec_status,
 )
 
 _TEMPLATE = "Merge {key} into main"
@@ -744,6 +750,77 @@ def test_read_spec_status_tolerates_a_leading_banner():
     per Story 51.8/CAP-256."""
     text = "<!-- Promoted from implementation-artifacts/ -->\n" + _VALID_SPEC
     assert read_spec_status(text) == "shipped"
+
+
+# --- set_spec_status / PRE_DONE_SPEC_STATUSES (Story 79.1) ---------------------
+
+
+def test_set_spec_status_rewrites_only_the_value_token_and_keeps_the_quote_style():
+    text = "---\ntitle: 'x'\nstatus: 'backlog'\nother: 1\n---\n\nbody status: backlog\n"
+    assert set_spec_status(text, "done") == "---\ntitle: 'x'\nstatus: 'done'\nother: 1\n---\n\nbody status: backlog\n"
+    assert set_spec_status('---\nstatus: "ready"\n---\n', "done") == '---\nstatus: "done"\n---\n'
+    assert set_spec_status("---\nstatus: ready\n---\n", "done") == "---\nstatus: done\n---\n"
+
+
+def test_set_spec_status_is_the_inverse_of_read_spec_status():
+    for original in ("backlog", "ready-for-dev", "in-review", "done"):
+        text = f"---\ntitle: 'x'\nstatus: '{original}'\n---\n"
+        assert read_spec_status(text) == original
+        assert read_spec_status(set_spec_status(text, "in-progress")) == "in-progress"
+        assert read_spec_status(set_spec_status(text, SPEC_STATUS_DONE)) == SPEC_STATUS_DONE
+
+
+def test_set_spec_status_keeps_a_provenance_banner_blank_lines_and_crlf_endings_verbatim():
+    banner = "<!-- Promoted from implementation-artifacts/ -->\n"
+    text = banner + "---\r\ntitle: 'x'\r\nstatus: 'backlog'  \r\n---\r\n\r\nbody\r\n"
+    assert set_spec_status(text, "done") == banner + "---\r\ntitle: 'x'\r\nstatus: 'done'  \r\n---\r\n\r\nbody\r\n"
+    spaced = "\n  " + banner + "---\nstatus: backlog\n---\n"
+    assert set_spec_status(spaced, "done") == "\n  " + banner + "---\nstatus: done\n---\n"
+
+
+def test_set_spec_status_rewrites_the_line_read_spec_status_reads_the_first_one():
+    text = "---\nstatus: 'backlog'\nstatus: 'ready'\n---\n"
+    assert read_spec_status(text) == "backlog"
+    assert set_spec_status(text, "done") == "---\nstatus: 'done'\nstatus: 'ready'\n---\n"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "",
+        "   \n",
+        "no frontmatter\nstatus: backlog\n",
+        "---\nstatus: backlog\nno closing fence\n",
+        "---\ntitle: 'x'\n---\n\nstatus: backlog\n",
+        "---\ntitle: 'x'\nsubstatus: 'draft'\n---\n",
+        "<!-- never closed\n---\nstatus: backlog\n---\n",
+        "---\nstatus: 'backlog' # a trailing comment\n---\n",
+    ],
+)
+def test_set_spec_status_returns_text_unchanged_when_there_is_nothing_to_rewrite(text):
+    assert read_spec_status(text) is None
+    assert set_spec_status(text, "done") == text
+
+
+@pytest.mark.parametrize("bad", ["", "do ne", "done\nstatus: x", "done: 1", "'done'"])
+def test_set_spec_status_refuses_a_value_that_would_corrupt_the_frontmatter(bad):
+    with pytest.raises(ValueError):
+        set_spec_status("---\nstatus: backlog\n---\n", bad)
+
+
+def test_pre_done_and_terminal_spec_statuses_are_disjoint_and_pre_done_is_every_status_a_landing_advances():
+    assert PRE_DONE_SPEC_STATUSES == {
+        "backlog",
+        "draft",
+        "ready",
+        "ready-for-dev",
+        "in-progress",
+        "in-review",
+        "review",
+    }
+    assert TERMINAL_SPEC_STATUSES == {SPEC_STATUS_DONE, "blocked", "superseded"}
+    # One status is never both advanceable and final: the two sets cannot drift into overlap.
+    assert PRE_DONE_SPEC_STATUSES.isdisjoint(TERMINAL_SPEC_STATUSES)
 
 
 # --- classify_promotion_candidates -------------------------------------------
