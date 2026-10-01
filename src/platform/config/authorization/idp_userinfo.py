@@ -116,7 +116,7 @@ def _latest_token_row(user: object) -> SocialToken | None:
     from allauth.socialaccount.models import SocialToken  # noqa: PLC0415
 
     return (
-        SocialToken.objects.filter(account__user_id=getattr(user, "pk", None))
+        SocialToken.objects.all()
         .order_by("-expires_at", "-id")
         .first()
     )
