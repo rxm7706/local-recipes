@@ -318,7 +318,7 @@ development_status:
   8-5-fail-loud-fail-alone: done
   8-6-explicit-status-vocabulary-translation: done
   8-7-assignee-and-identity-link-propagation: done
-  80-1-the-platform-ci-test-job-runs-the-chart-tests-and-a-skipped-one-fails-there: backlog
+  80-1-the-platform-ci-test-job-runs-the-chart-tests-and-a-skipped-one-fails-there: done
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
