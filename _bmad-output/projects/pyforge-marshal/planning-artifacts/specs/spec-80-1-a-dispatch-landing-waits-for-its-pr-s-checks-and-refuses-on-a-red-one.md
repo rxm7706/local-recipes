@@ -2,7 +2,7 @@
 title: "80.1: A dispatch landing waits for its PR's checks and refuses on a red one"
 type: 'feature'
 created: '2026-10-01'
-status: 'in-review'
+status: 'done'
 baseline_revision: '68b35f7e1cb04295f729647c2d0ee4ff060ab417'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -381,51 +381,70 @@ Flag: `flag-exempt: detector-or-gate`.
 
 ## Auto Run Result
 
-Status: in-review (review loop 1 re-derivation; ready for the independent review pass)
+Status: done
 Blocking condition: none.
 
 ### Summary of implemented change
 
-Attempt 1's diff was re-applied whole (the KEEP list) and the Tasks & Acceptance AMEND items were done on top.
+A dispatch landing now waits for its PR head's check runs before it merges, and refuses on a red run, at the timeout, or when the forge cannot be read. The PR stays open after every refusal, so a re-run lands once CI is green.
 
-- **Wait and classifier (KEEP).** `core/landing_checks.py` (pure), `ForgePort.check_runs` and the hand-paged `GhForge.check_runs`, `_wait_for_landing_checks` before `forge.merge_pr`, `MRS-DISP-056` / `MRS-DISP-057` (ERROR), the three `dispatch.landing_check_*` keys, the journal record.
-- **(a) the record names its head.** `landing_checks.head_sha`; when a union heal re-waits, the healed head's record is nested under `landing_checks.heal` (one offloaded field, both heads journaled).
-- **(b) the wait keeps the run alive.** `execute_dispatch_land(on_wait_tick=...)`: called after every poll and, through `_sleep_with_ticks`, at least every `min(poll_seconds, 60)` s (a long poll is sliced into 60 s pieces). The supervisor extracts `_journal_heartbeat` (the one builder of the heartbeat observation) and passes a tick that journals it and calls `_publisher.heartbeat`; the tick shares the landing's journal counter so no id is reused. The CLI landing path passes none.
-- **(c) the heal re-waits.** `try_heal_dispatch_land_merge` / `_try_union_heal` take `await_checks: Callable[[str], Finding | None] | None = None`; `_try_union_heal` calls it with the pushed head before its retried `merge_pr` and returns the finding on `DispatchLandHealResult.checks_refusal`; `dispatch_land.py` reports `MRS-DISP-056` / `057` / `018` instead of `MRS-DISP-020`. `_try_local_main_advance` takes no wait (same head the pre-merge wait cleared).
-- **Overflow.** `_valid_landing_grace_seconds` (magnitude probe) in the dispatch block validator and the resolver: `10**400` is `MRS-POLICY-002` naming `dispatch`, nothing raises.
-- **One reader.** `resolve_scope_violation_advisories_from_payload` uses `_offloaded_payload_field`.
-- **Comments.** The three `cli/config.py` `dispatch` comments describe the four-key block; the `MRS-DISP-056/057` docstring names the healed head.
+- **Classifier.** `core/landing_checks.py` (pure): `CheckRun`, `CheckState` (green / red / pending / empty), `classify_check_runs`. Red beats pending; a completed run with no conclusion is red; a run not `completed` is pending.
+- **Port and adapter.** `ForgePort.check_runs` and the hand-paged `GhForge.check_runs` (`?per_page=100&page=N`, a 50-page runaway guard); any non-zero exit, malformed payload, short page or runaway paging raises `ForgeCommandError`, never a partial list.
+- **The wait.** `_wait_for_landing_checks` in `dispatch_land.py`, between the post-reconcile head refresh and `forge.merge_pr`. Order inside one poll: read; read error refuses (`MRS-DISP-018`); red refuses (`MRS-DISP-056`); green merges; an empty set merges only past the grace; the timeout refuses (`MRS-DISP-057`); else sleep `min(poll, time left)`. `sleep` / `monotonic` are keyword-only seams.
+- **Policy.** `DEFAULT_POLICY["dispatch"]` gains `landing_check_poll_seconds` (60), `landing_check_timeout_minutes` (45) and `landing_check_grace_seconds` (120). The block validator accepts any non-empty subset of its four keys; `resolve_landing_check_settings` fills an omitted key at the consumer, so the tracked `marshal-policy.toml` (which declares only `max_parallel`) still composes. A bad value is `MRS-POLICY-002` naming `dispatch`; a huge grace int (`10**400`) is rejected, never a crash.
+- **Journal.** `data["landing_checks"]` names the `head_sha`, outcome, polls, seconds waited and each run's status and conclusion; the supervisor journals it in the landing outcome and offloads it beside `land_findings`; `resolve_land_findings_from_payload` now reads an offloaded `land_findings` back, so a refusal stays visible to `marshal status`. The CLI harness-done path copies the record into its command data.
+- **Review-loop additions (loop 1).** The union heal re-waits on the head it pushes (`await_checks` on `try_heal_dispatch_land_merge`; a red or pending healed head merges nothing and reports `MRS-DISP-056` / `057` through `DispatchLandHealResult.checks_refusal`); a union-healed landing reports the healed head as `merge_sha` and `data["head_sha"]`; the wait ticks (`on_wait_tick`, at least every `min(poll_seconds, 60)` s) so the supervisor writes its heartbeat observation and calls the publisher heartbeat during a wait the portal would otherwise sweep as `heartbeat_lost`.
 
 ### Files changed
 
-Under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/`): `core/landing_checks.py` (new), `core/policy.py`, `core/findings.py`, `core/verdict.py`, `core/journal.py`, `schemas/policy.json`, `ports/forge.py`, `adapters/forge_gh.py`, `dispatch_land.py`, `dispatch_land_heal.py`, `dispatch_supervisor/__main__.py`, `cli/dispatch.py`, `cli/config.py`. Tests (`tests/unit/`): `test_landing_checks.py` (new), `test_dispatch_landing.py`, `test_dispatch_land_heal.py`, `test_dispatch_supervisor_spec_block.py`, `test_dispatch_supervisor_main_loop.py`, `test_forge_gh.py`, `test_findings.py`, `test_policy.py`.
+Under `src/shared/packages/pyforge-marshal/`.
 
-### Verification
+- `src/pyforge/marshal/core/landing_checks.py` (new) -- the pure classifier.
+- `src/pyforge/marshal/ports/forge.py`, `adapters/forge_gh.py` -- `check_runs` on the port and the paged `gh` read.
+- `src/pyforge/marshal/dispatch_land.py` -- the wait, the tick, the healed-head wait and head reporting.
+- `src/pyforge/marshal/dispatch_land_heal.py` -- `await_checks`, `checks_refusal`.
+- `src/pyforge/marshal/dispatch_supervisor/__main__.py` -- the one heartbeat builder, the wait tick, the `landing_checks` outcome field and its offload.
+- `src/pyforge/marshal/core/policy.py`, `schemas/policy.json`, `cli/config.py` -- the three keys, the validator, the resolver, the comments.
+- `src/pyforge/marshal/core/findings.py`, `core/verdict.py` -- `MRS-DISP-056` / `057` (ERROR).
+- `src/pyforge/marshal/core/journal.py`, `cli/dispatch.py` -- the field, the sidecar read-back, the CLI record pass-through.
+- Tests under `tests/unit/`: `test_landing_checks.py` (new), `test_dispatch_landing.py`, `test_dispatch_land_heal.py`, `test_dispatch_supervisor_spec_block.py`, `test_dispatch_supervisor_main_loop.py`, `test_forge_gh.py`, `test_findings.py`, `test_policy.py`, `test_dispatch.py`, `test_dispatch_stop_retry.py`; fixture `tests/fixtures/check_runs_main_2026-10-01.json` (a real GitHub response for `main` at `68b35f7e1c`).
+- Tracked planning: this story spec; the `.memlog.md` of `spec-pyforge-marshal` (three surface-reconcile events) and `spec-pyforge-core` (two, the co-governor the detector named). No baseline was stamped; the ledger and every `SPEC.md` are untouched.
 
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: 9416 passed, 1 skipped, 12 deselected, exit 0.
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: 130 passed, 3 skipped, exit 0.
-- `pyforge-marshal-coverage-gate` (touched modules, 80% floor): OK, 11 modules; `dispatch_land_heal.py` 90%, `dispatch_supervisor/__main__.py` 96%.
-- `ruff check`, `ruff format --check`, `mypy -p pyforge.marshal` on the package: clean (exit 0).
+### Review findings breakdown
 
-### Mutations, by hand on the final tree (each restored; `cmp` against a saved copy clean)
+Two review passes, four layers each. Attempt 1's diff is at `_bmad-output/projects/pyforge-marshal/implementation-artifacts/80-1-attempt-1.patch` (gitignored). Every row and its evidence are in `## Review Triage Log`.
 
-Over the five landing test files (310 tests; 34 + 276 etc. = failed + passed):
+- **Pass 1 (40 findings: medium 9, low 28, false 1, maybe-false 2).** Two `bad_spec` roots forced loop 1: the union heal merged a pushed head with no wait, and the wait could block the supervisor past the portal's 300 s `heartbeat_lost` limit. Seven rows were `patch` (carried into the re-derivation: the record names its head, one sidecar reader, a magnitude probe on the grace key, stale `cli/config.py` comments, the default-clock test). Twenty-five were rejected.
+- **Pass 2 (41 findings: medium 1, low 36, false 3, maybe-false 1).** No `bad_spec`, no `intent_gap`. Patches applied: 6 entries (7 rows) -- medium 1 (the terminal-verdict supervisor call site could lose its heartbeat wiring unnoticed; a twin test now pins it, and turns red when the kwargs are dropped), low 5 (the CLI harness-done path discarded the `landing_checks` record; a union-healed landing reported the pre-heal head; a 138-column docstring line; `resolve_max_parallel` on a block with no `max_parallel` was unpinned; the "recorded" adapter response was hand-built, a real one is now a fixture). Thirty-four rows rejected.
+- **Deferred: none.** The planning-time `deferred:` entry for the heal paths was removed when the heal was brought into scope (a separate story was never a named blocker).
+- **Rejected, by reason** (per-row evidence in the log):
+  - **The intent's own contract:** a read error refuses with no retry budget; green is defined over the reported runs (partial workflow registration reads green -- a documented limit); the empty set merges past the grace and journals `no-runs`; only the Checks API is read, with no ignore list (the intent names the endpoint and says "every run"); the heal and CLI-path journal surfaces beyond the record.
+  - **Operator-set policy values:** a tiny poll interval or huge timeout (the spec types them as positive numbers); an int-only grace poisoning the `dispatch` block (every mapping-typed key behaves so).
+  - **Already covered or false:** `_sleep_with_ticks` has no test (two tests and a mutation cover it); a serial drain stalls on a red PR (red refuses at once); two timeouts with no documented budget (documented in Design Notes); three import-linter meta failures (the reviewer's `PATH`, green under the pixi task).
+  - **Idiom and test style:** duplicated validation (the `PrInfo` split), a private-name mutation test (the committed form of the mutation criterion), the `ForgeRef` / `PrInfo` tests (needed by the 80% touched-module floor), `heal_waits` as a list, `_GuardedClock`, `resolve_landing_checks_from_payload` with no production caller.
+  - **Unlikely and fail-safe:** a vanished run set after runs were seen; a page shift past 100 runs; `origin/main` moving during a healed head's wait (refuses `MRS-DISP-020`, the PR stays open); same-name reruns (the maybe-false row: `filter=all` equals the default on the 12 most recent `main` commits, and a false refusal is the safe direction).
+  - **Spec text:** stale Code Map anchors (fixed inside the loop-1 amendment).
+- **Follow-up review recommended: `false`.** Pass 2 patched no `high` and one `medium` (patched counts: high 0, medium 1, low 5).
 
-| Mutation | Result |
-|---|---|
-| wait removed (`_wait_for_landing_checks` returns green at once) | 34 failed, 276 passed |
-| the heal's `await_checks` call removed from `_try_union_heal` | 10 failed, 300 passed |
-| default `sleep` made a no-op | 1 failed, 309 passed (`test_without_clock_seams_the_real_time_sleep_receives_the_poll_interval`) |
-| after-poll tick removed | 4 failed, 306 passed |
-| between-slice tick removed | 1 failed, 309 passed |
-| `on_wait_tick` not passed on by `execute_dispatch_land` | 4 failed, 306 passed |
-| supervisor passes no tick to the landing | 5 failed, 305 passed |
-| supervisor tick forgets to advance the counter (id reuse) | 3 failed, 307 passed |
-| supervisor tick skips the publisher heartbeat | 2 failed, 308 passed |
-| heal refusal reported as `MRS-DISP-020` again | 6 failed, 304 passed |
+### Verification performed
 
-### Risks and notes
+Every verdict below was read from an exit code or a log file, never through a pipe, on the final tree.
 
-- The spec-surface reconcile for the governed files this story touches is NOT stamped here (AGENTS.md pre-PR item 5 needs a clean tree and `git add`); `execute_dispatch_land` reconciles the landing's own drift when it lands.
-- `landing_checks` is still a dict; the second head lives under its `heal` key rather than a list, so attempt 1's reader and round-trip tests are unchanged.
-- Known limit, unchanged: GitHub reports runs as workflows register, so a head with only some workflows registered and concluded reads green (Design Notes).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0, 9422 passed, 1 skipped, 12 deselected.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 0, 130 passed, 3 skipped.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate`: exit 0, 11 touched modules at or above the 80% floor.
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0 (ruff, ruff format, mypy over the ten packages, target-version, precommit-config).
+- `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0, no `drift-presumed` line after the memlog entries; `python scripts/spec_surface_reconcile.py`: exit 0, "no drift". Re-checked after each memlog append.
+- Matrix test audit: every row of the I/O & Edge-Case Matrix has a covering test that ran and passed -- all green, one red (four reasons), still running at the timeout, goes green between polls, empty inside the grace, empty past the grace, forge read error (also mid-wait), plus the re-run after a refusal.
+- Mutations by hand on the final tree, each restored and confirmed with `cmp` (nine test files, 893 tests): the wait replaced by a green stub -- 26 failed; the terminal-verdict supervisor call site stripped of `session_alive` / `publish_heartbeat` -- 1 failed. The implementer's ten mutations on the re-derived tree before the patch pass (five landing files, 310 tests): wait removed 34 failed; the heal's `await_checks` call removed 10; the default `sleep` a no-op 1; the after-poll tick removed 4; the between-slice tick removed 1; `on_wait_tick` not passed on 4; supervisor passes no tick 5; supervisor tick forgets the counter 3; supervisor tick skips the publisher heartbeat 2; a heal refusal reported as `MRS-DISP-020` 6.
+- A real `check-runs` page for `main` (4 runs) parses through the real `GhForge.check_runs` and classifies green; it is the committed fixture.
+- Not run: `pr-preflight` (the full local lane set) and the container, herald-browser and scribe-Postgres lanes -- the diff touches none of the last three; `pr-preflight` is the operator's step before any push.
+
+### Residual risks
+
+- **Partial registration.** A head whose workflows have registered only in part reads green once the registered ones conclude (Design Notes). Closing it needs the PR's expected check set.
+- **Two timeouts.** A union heal gives the pushed head its own wait, so one landing can wait up to twice `landing_check_timeout_minutes`.
+- **A silent CLI wait.** The CLI harness-done path passes no tick and prints no progress during a wait of up to 45 minutes; it has no run to keep alive.
+- **Re-run is a re-dispatch.** The supervisor does not re-land after a journaled refusal; a re-dispatch of the story reaches the CLI landing path, which calls the same function.
+- **`filter=latest`.** The adapter relies on GitHub's documented default for same-name reruns (a wrong answer is a false refusal, the safe direction).
+- **Heal paths.** The local-`main` advance takes no second wait by design (it merges the head already cleared).
