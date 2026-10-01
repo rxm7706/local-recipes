@@ -86,6 +86,18 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-01 (later)** — **Found: Story 38.3's aggregate tests need Doctor's run-deps, and the scripts lane has
+  none.** 38.3 added three tests to `tests/scripts/test_detectors_doctor_sources.py` that import Doctor's dispatch table
+  (`pyforge.doctor.sources.__main__`), which imports `docs_currency` (`jsonschema`, `yaml`). The Detectors workflow's
+  `scripts-suite` job runs `tests/scripts` in the stdlib-only `pyforge-ci` env, so all three fail there
+  (`ModuleNotFoundError: jsonschema`), and `main` went red on that lane at `d6b0a85992`. The dispatch landed regardless:
+  `scripts-suite` is not a required check, and `pr-preflight` has no twin for it.
+  **What it looks like when fixed:** the three tests skip where the dispatch table cannot import, as the file's existing
+  unimportable-Doctor test already allows, and run for real in a second `scripts-suite` step under `pyforge-doctor`, so the
+  name-to-dispatch check 38.3 added keeps CI coverage.
+  **Constraints:** `pyforge-ci` stays stdlib-only (its purpose); no test is weakened or deleted. Owner
+  `spec-pyforge-doctor`. → Epic 38 / Story 38.5, specced 2026-10-01.
+
 - **2026-10-01** — **Found: four places Doctor lets deferrals and dead checks pile up.** The 2026-09-30 deferral
   burn-down (937 open entries re-read against `main`) found Doctor's own checks letting the ledgers drift:
   - **A `verified:` line can assert a verdict with no evidence.** CAP-29 says every line cites a `file:line` or a measured

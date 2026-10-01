@@ -26,6 +26,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # `pyforge.doctor` isn't installed in every env this test might run under
@@ -194,13 +196,21 @@ def test_doctor_source_tasks_include_bmad_output_hygiene_and_a_matching_pixi_tas
     assert declared["cmd"] == "python -m pyforge.doctor.sources bmad-output-hygiene"
 
 
+def _doctor_dispatch():
+    """Doctor's dispatch table, or a skip naming what is missing. It imports every source module, and
+    `sources/docs_currency.py` needs `jsonschema` and `yaml`; the Detectors workflow's `scripts-suite` job runs this
+    file in the stdlib-only `pyforge-ci` env, which has neither (Story 38.5). The `detectors` job runs it again under
+    `pyforge-guild`, where these tests run for real."""
+    return pytest.importorskip("pyforge.doctor.sources.__main__").DISPATCH
+
+
 def test_every_doctor_source_task_name_is_a_dispatch_entry():
     """Every name in `_DOCTOR_SOURCE_TASKS` is a `DISPATCH` key -- the NAME half
     of the name -> pixi-task pairing (DW-FU-6-9-3) only. A name absent from
     `DISPATCH` reads `unknown` (KeyError in `_run_doctor_sources`), never green;
     this fails it at test time. The pixi-task half is NOT checked here: it is
     pinned for the `bmad-output-hygiene` row alone, by the test above."""
-    from pyforge.doctor.sources.__main__ import DISPATCH
+    DISPATCH = _doctor_dispatch()
 
     assert {name for name, _task in detectors._DOCTOR_SOURCE_TASKS} <= set(DISPATCH)
 
@@ -224,7 +234,7 @@ def test_a_warn_only_hygiene_source_reads_pass_and_leaves_the_exit_code(monkeypa
     row reads `pass`/rc 0. A FAIL stub is the control: the same path reads
     `FINDINGS`/rc 1, so the `pass` above is the WARN projection, not a path that
     cannot go red."""
-    from pyforge.doctor.sources.__main__ import DISPATCH
+    DISPATCH = _doctor_dispatch()
 
     only = (("bmad-output-hygiene", "bmad-output-hygiene-check"),)
     monkeypatch.setattr(detectors, "_DOCTOR_SOURCE_TASKS", only)
@@ -243,6 +253,7 @@ def test_the_real_hygiene_gather_runs_through_the_aggregate_and_reads_pass(monke
     """AC 2 + AC 3 + the DISPATCH mutation: NO stub, so deleting the
     `DISPATCH` row turns this row `unknown` (KeyError), not `pass`. The
     throwaway repo carries exactly one orphan-file WARN."""
+    _doctor_dispatch()
     for var in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
                 "GIT_CEILING_DIRECTORIES", "GIT_COMMON_DIR"):
         monkeypatch.delenv(var, raising=False)
