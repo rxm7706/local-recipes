@@ -2339,6 +2339,21 @@ def test_finalize_warns_and_adds_nothing_when_the_ledger_cannot_be_read_at_origi
     assert _frr_promoted_id(tmp_path) is None
 
 
+def test_a_primary_with_no_ledger_copy_still_publishes_the_row_and_gains_no_file(tmp_path: Path, monkeypatch) -> None:
+    """The primary's tree holds no ledger (nothing checked out there yet) but origin/main does: the row is built
+    on origin/main's text and published, and the primary is left with no ledger file it never had."""
+    ledger = _frr_setup(tmp_path, ledger=None)
+    vcs = _FrrVcs()
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert published.startswith(_FRR_BASE_LEDGER) and published.count(f"### {_FRR_ID}:") == 1
+    assert not ledger.exists()
+    assert _frr_promoted_id(tmp_path) == _FRR_ID
+    assert _journaled_findings_79(tmp_path) == []
+
+
 def test_finalize_never_creates_a_ledger_for_a_followup_row(tmp_path: Path, monkeypatch) -> None:
     """No ledger at origin/main: a WARN naming it, no publish, and nothing created in the primary's tree."""
     ledger = _frr_setup(tmp_path, ledger=None)
