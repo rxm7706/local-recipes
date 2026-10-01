@@ -604,6 +604,53 @@ def read_spec_status(text: str | None) -> str | None:
     return None
 
 
+#: The tracked-spec ``status:`` values a landing may still advance to ``done`` (Story 79.1,
+#: spec-pyforge-marshal CAP-229/CAP-261b): every value the story lifecycle (``draft -> ready-for-dev ->
+#: in-progress -> in-review -> done``) and the ledger vocabulary (``backlog``/``ready``/``review``) can
+#: leave a spec at once its PR has merged. ``done`` is already there; ``blocked`` and ``superseded`` are
+#: deliberate states a landing never overrides; an unreadable status is in no set at all.
+PRE_DONE_SPEC_STATUSES = frozenset({"backlog", "draft", "ready", "ready-for-dev", "in-progress", "in-review", "review"})
+
+_STATUS_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]+")
+
+
+def set_spec_status(text: str, status: str) -> str:
+    """``text`` with its frontmatter ``status:`` VALUE replaced by ``status`` (Story 79.1) -- the one
+    writer of the value ``read_spec_status`` is the one reader of, so it finds the same line (the first
+    ``status:`` line in the leading ``---`` fence, banner-tolerant through ``_skip_leading_banner``).
+
+    A targeted rewrite of that one token: the provenance banner, the line's indentation, its quote
+    character and its trailing whitespace, every other frontmatter line, the body and every line ending
+    come back byte for byte. ``text`` is returned UNCHANGED -- never ``None``, never raised -- when
+    there is nothing to rewrite (empty text, no fence, no ``status:`` line), so a caller tests "did it
+    move" with ``new == text``. ``status`` must be a bare token (``[A-Za-z0-9_-]+``, the shape the reader
+    accepts); anything else raises ``ValueError``, since a value with a colon or a newline would corrupt
+    the frontmatter instead of setting it.
+
+    Pure (AD-4): no I/O."""
+    if _STATUS_TOKEN_RE.fullmatch(status) is None:
+        raise ValueError(f"a spec status must match [A-Za-z0-9_-]+, got {status!r}")
+    body = _skip_leading_banner(text)
+    # `_skip_leading_banner` returns `text` itself or a suffix of it, so what it dropped is a prefix.
+    prefix = text[: len(text) - len(body)]
+    if not body.startswith("---"):
+        return text
+    end = body.find("\n---", 3)
+    if end == -1:
+        return text
+    offset = 3
+    for line in body[3:end].splitlines(keepends=True):
+        stripped = line.strip()
+        match = _STATUS_VALUE_RE.match(stripped)
+        if match is not None:
+            lead = line[: len(line) - len(line.lstrip())]
+            trail = line[len(line.rstrip()) :]
+            rewritten = f"{lead}{stripped[: match.start(2)]}{status}{stripped[match.end(2) :]}{trail}"
+            return f"{prefix}{body[:offset]}{rewritten}{body[offset + len(line) :]}"
+        offset += len(line)
+    return text
+
+
 def classify_promotion_candidates(
     candidates: tuple[SpecCandidate, ...],
     merged_keys: frozenset[StoryKey],
