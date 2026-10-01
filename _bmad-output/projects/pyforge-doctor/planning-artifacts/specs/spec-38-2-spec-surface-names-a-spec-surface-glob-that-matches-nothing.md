@@ -2,7 +2,9 @@
 title: "38.2: `spec-surface` names a Spec surface glob that matches nothing"
 type: 'feature'
 created: '2026-10-01'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '5b6a82b4c7a038dbcef39d8592bb08d20719e8d1'
+warnings: [oversized]
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
@@ -75,6 +77,29 @@ Type / Effort / Deps: feature / S / S-38.1.
 | unreadable surface | surface parse failed | no `stale-surface` row | existing unevaluable WARN |
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` -- `_collect_surfaces` (l.2096) fills `specs[name]` with `globs` and a parallel compiled `res`; a Spec whose SPEC.md fails to parse never enters `specs`, so it is never judged. `_check_spec_surface` (l.2191) returns `(findings, presumed)`; `gather_spec_surface` emits `presumed` as WARN rows and still emits the OK verdict when `findings` is empty. `_glob_to_re` (l.1663) is the one governing matcher: no brace expansion, a trailing `/` matches no file.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py` -- real tmp-git-repo fixtures (`_write_spec`, `_write_allowlist`, `_add_commit`); `test_stale_allowlist_entry_reports_fail` (l.169) is the sibling to mirror.
+- `pixi.toml` l.1357 -- `spec-surface-check` runs `python -m pyforge.doctor.sources spec-surface`, so AC 4 exercises this code. `scripts/spec_surface_check.py` is the mutation-only baseline script: out of scope.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` -- add `_stale_surface_findings(specs, files)`: per readable Spec, each distinct glob whose compiled regex matches no tracked file is one `stale-surface` item naming Spec and glob; call it from `_check_spec_surface` and append to `presumed` -- non-gating WARN, the OK verdict and every existing finding stay unchanged.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py` -- one test per matrix row and AC row (live and dead glob; trailing-slash and brace globs; unreadable SPEC.md; OK verdict kept); confirm they fail with the call removed.
+
+**Acceptance Criteria:**
+- Given the `## Acceptance Criteria` in the contract above, when the station suite and `spec-surface-check` run, then each holds and `spec-surface-check` exits 0 (read from `$?`, never a pipe).
+
+## Spec Change Log
+
+## Design Notes
+
+A glob is dead exactly when `_glob_to_re` rejects every tracked path: the same regex governance uses, so the WARN never disagrees with what a Spec actually governs. A trailing-slash or brace glob therefore reports dead (it governs nothing); judging it live by directory-existence or brace expansion would be a lie.
+
+`presumed`, not `findings`: a WARN in `findings` makes `gather_spec_surface` drop the OK row, changing an existing finding.
 
 ## Binding
 
