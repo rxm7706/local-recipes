@@ -2,7 +2,7 @@
 title: "38.4: `doctor check .` completes on the primary checkout"
 type: 'fix'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'd6b0a85992a698f49ab2a3158c1a24b06ecbd7d6'
 review_loop_iteration: 0
 followup_review_recommended: false
