@@ -354,7 +354,13 @@ def finalize_dispatch_land(
     deploy_run = _DeployRun(fs, root, project_slug, _deploy_writer_id("dispatch-land-finalize"))
     scan = _scan_promotions(root, project_slug, vcs=vcs, fs=fs, worktree=worktree)
     findings.extend(scan.findings)
-    if scan.plan is not None and scan.plan.to_promote:
+    # Story 79.1: corroboration is computed whenever the scan has a plan -- it used to be computed only when
+    # `to_promote` was non-empty -- because it now also gates the landed key's Tier-3 feed row and tracked
+    # spec below, and a session that committed the tracked spec itself leaves `to_promote` empty. A scan
+    # with no plan (`MRS-DEPLOY-003`) corroborates nothing: it fails closed, so neither write happens.
+    corroborated: frozenset[StoryKey] = frozenset()
+    to_promote: tuple = ()
+    if scan.plan is not None:
 
         def _spec_status_for(candidate_key: StoryKey) -> str | None:
             # Story 51.7/CAP-255: `_scan_promotions` (cli/deploy.py) still
@@ -379,8 +385,6 @@ def finalize_dispatch_land(
             spec_status_for=_spec_status_for,
         )
         to_promote = tuple(candidate for candidate in scan.plan.to_promote if candidate.story_key in corroborated)
-    else:
-        to_promote = ()
     if to_promote:
         specs_dir = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
         _execute_promotion_plan(
@@ -406,6 +410,19 @@ def finalize_dispatch_land(
     not_done = _landed_key_not_done_finding(vcs, root, project_slug, key)
     if not_done is not None:
         findings.append(not_done)
+    elif key in corroborated:
+        # Story 79.1 (DW-OPS-2026-10-01-1, DW-FU-53-2-4): the twin reads `done` on `origin/main` and the
+        # landing is corroborated -- so the two files that promotion never reached follow it: the story's
+        # Tier-3 feed row (else the next plain `sprint-ledger-sync` refuses "feed would un-finish") and
+        # its tracked spec (when the session committed it itself and left no Tier-3 twin to promote). The
+        # gate reads `origin/main`, never `_promote_sprint_ledger`'s return value, so a re-run of finalize
+        # repairs a feed an earlier run left behind. Both are WARN-only: the PR has already merged.
+        feed_finding = _promote_tier3_feed_row(fs, root, project_slug, key)
+        if feed_finding is not None:
+            findings.append(feed_finding)
+        spec_finding = _promote_tracked_spec(vcs, root, project_slug, key, worktree)
+        if spec_finding is not None:
+            findings.append(spec_finding)
     # Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger` deliberately
     # never touches the primary checkout's own working tree (CAP-5) -- so
     # nothing else picked up that promotion either, and the fleet
