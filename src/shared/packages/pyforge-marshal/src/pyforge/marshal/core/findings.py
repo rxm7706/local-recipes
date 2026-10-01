@@ -886,7 +886,9 @@ and Detectors still pending): ``main`` has no branch protection, and the landing
 never evaluated ``landing_rules`` at all, so nothing made a landing wait for CI.
 Immediately before ``forge.merge_pr`` (after the spec-surface reconcile has left the
 head sha final) the landing now polls the head's check runs under the
-``dispatch.landing_check_*`` policy bounds. ``MRS-DISP-056`` names each check run
+``dispatch.landing_check_*`` policy bounds -- and, when a failed merge is healed by a
+union commit, polls the pushed union head the same way before the retried merge (a
+commit CI has not seen). ``MRS-DISP-056`` names each check run
 that concluded anything but ``success``/``skipped``/``neutral`` -- red beats pending,
 so one red run refuses at once without waiting for the rest. ``MRS-DISP-057`` names
 the runs still pending when ``dispatch.landing_check_timeout_minutes`` elapsed (or
