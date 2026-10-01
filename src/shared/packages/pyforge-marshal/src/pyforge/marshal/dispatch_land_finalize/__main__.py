@@ -162,8 +162,7 @@ def _carry_followup_row(
         return _skip(f"cannot read the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT}: {exc}")
     if remote_text is None:
         return _skip(
-            f"the deferred-work ledger {ledger_rel!r} does not exist at {ORIGIN_MAIN_SHORT} "
-            "(one row never creates it)"
+            f"the deferred-work ledger {ledger_rel!r} does not exist at {ORIGIN_MAIN_SHORT} (one row never creates it)"
         )
     if new_text == original_text:
         base = remote_text
@@ -277,7 +276,9 @@ def _run_deferred_work_intake(
             skip_reason = f"marshal deferred-work intake for {short_slug!r}, story {story_key}"
             published = "deferred-work intake"
         elif intake_rows:
-            commit_message = f"marshal: promote deferred-work intake and carry follow-up review row {row_id} for {short_slug!r}"
+            commit_message = (
+                f"marshal: promote deferred-work intake and carry follow-up review row {row_id} for {short_slug!r}"
+            )
             skip_reason = (
                 f"marshal deferred-work intake and follow-up review carry for {short_slug!r}, story {story_key}"
             )
