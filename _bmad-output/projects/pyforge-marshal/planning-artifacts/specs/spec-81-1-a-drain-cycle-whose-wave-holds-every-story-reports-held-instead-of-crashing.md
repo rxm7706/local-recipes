@@ -2,7 +2,7 @@
 title: '81.1: A drain cycle whose wave holds every story reports held instead of crashing'
 type: 'fix'
 created: '2026-10-01'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'f73e1f3680068a50352326b7848ba17638756f87'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -128,3 +128,35 @@ Minted 2026-10-01 by operator ruling: fix the defect now.
   - `[low]` `[reject]` Intent Alignment: the intent is silent on whether `held` stops the campaign — carried with the terminal-`held` row above (same decision, same residual risk).
   - `[false]` `[reject]` Intent Alignment: the mutation criterion is only pinned by the table-level test — the cycle-level tests fail with the original `ValueError` when the call site is reverted (run: 2 failed), and the parametrized test pins the table.
   - `[false]` `[reject]` Intent Alignment: "held" could mean unmet Deps only, or also a wave refusal — the diff handles both (Deps-held head and wave-refused head), each with its own test.
+
+## Auto Run Result
+
+Status: done
+
+**Summary.** A drain cycle whose parallel wave holds every candidate out now reports `held` instead of raising `ValueError: 'dispatch' is not a valid StationCycleStatus`. `StationCycleStatus.HELD` is terminal. `dispatch_fleet.idle_station_status` maps every `StationQueueOutcome` explicitly (`DISPATCH` -> `HELD`) and replaces `StationCycleStatus(plan.outcome.value)` at both idle sites of `execute_fleet_cycle`. The held station's result carries the head story and each held story's reason in `detail`, and a `MRS-DRAIN-016` WARN names each held story the refusal loop has not already named, in the words `drain --plan` uses. `drain --plan`'s output is unchanged.
+
+**Files changed** (under `src/shared/packages/pyforge-marshal/` unless noted)
+- `src/pyforge/marshal/core/dispatch_fleet.py` -- `HELD`, its terminal membership, `idle_station_status`
+- `src/pyforge/marshal/core/dispatch_prelaunch.py` -- `held_reason`, the shared wording
+- `src/pyforge/marshal/cli/dispatch.py` -- `wave_held_stories`, both idle sites mapped, the empty-wave held result and WARN
+- `src/pyforge/marshal/cli/drain_plan.py` -- delegates to the shared helpers
+- `tests/unit/test_drain_plan.py`, `tests/unit/test_dispatch_fleet.py` -- tests per criterion, the mapping's totality, terminal and mixed-fleet behaviour, the refused-head dedupe, text-mode output
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/fleet-drain-playbook.md` -- `held` among the terminal statuses
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` -- `DW-marshal-65-1-3` resolved
+- `.memlog.md` of `spec-pyforge-marshal` and `spec-pyforge-core` -- surface reconcile entries naming every governed path
+
+**Review findings.** 22 findings: 11 triaged `patch` (all low; applied), 0 deferred, 11 rejected with the reason on each row above (7 `false`, 4 `low`). Patched by verdict: high 0, medium 0, low 11.
+
+**Follow-up review recommendation.** `false`: no high and fewer than two medium findings were patched.
+
+**Verification performed.**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- exit 0, 9664 passed, 1 skipped
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- exit 0, 130 passed, 3 skipped
+- `pixi run --frozen -e pyforge-guild lint-types` -- exit 0
+- `pixi run --frozen -e pyforge-guild spec-surface-check`, `python scripts/spec_surface_reconcile.py`, `pixi run --frozen -e pyforge-guild deferred-work-check` -- exit 0
+- Mutation: `StationCycleStatus(plan.outcome.value)` restored at the empty-wave site -> the two held-wave tests fail with the original `ValueError`; the dedupe `continue` removed -> the refused-head test fails.
+
+**Residual risks.**
+- **Judgement call for the operator:** `held` is terminal (the `BLOCKED` precedent). A campaign whose every remaining station is held ends as `complete`, lists the stations under `unresolved`, and spawns no supervisor; a Dep that lands later is picked up by re-running. The alternative, a non-terminal `held`, would poll an unbounded campaign for a Dep nothing in it can land. The intent is silent on this and `DW-marshal-65-1-3` called it a supervisor-semantics decision; flip it by removing `HELD` from `TERMINAL_STATION_STATUSES` (and its two tests).
+- `MRS-DRAIN-016` is reused rather than a new finding code, so a held head and a wave refusal share a code and differ in wording.
+- The epics.md Surface line for 81.1 was left as minted and is narrower than the files changed.
