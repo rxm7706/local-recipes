@@ -205,8 +205,7 @@ def _refresh_access_token(user: object) -> str | None:
     stored (winner's) token serves the next request.
     """
     row = _latest_token_row(user)
-    if row is None or not row.token_secret:
-        logger.warning("authorization.token_refresh_unavailable")
+    if row is None:
         return None
     client = _oidc_client()
     url = token_endpoint_url()
@@ -295,7 +294,7 @@ def fetch_current_userinfo(request: HttpRequest) -> dict[str, Any] | None:
     if user is None:
         return None
 
-    remembered = _UNSET
+    remembered = getattr(request, _REQUEST_MEMO, _UNSET)
     if remembered is not _UNSET:
         memo = cast("dict[str, Any] | None", remembered)
         return None if memo is None else dict(memo)
