@@ -156,8 +156,11 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     Source.LIVE_PROOF_SURFACE.value: live_proof_surfaces.gather,
     # Story 38.3 (spec-pyforge-doctor CAP-42 / CAP-43; DW-OPS-2026-10-01-1) --
     # the fleet hygiene sweep, registered since Story 9.2 but never run.
-    # Warn-only by construction (every finding is WARN or the single OK, so
-    # `exit_code_for` is 0), same shape as LIVE_PROOF_SURFACE above.
+    # Its FINDINGS are WARN or the single OK, so `exit_code_for` is 0. But
+    # `hygiene.gather` has no top-level exception net (DW-FU-9-2): a raise
+    # escaping it (an unreadable `_bmad-output/projects`) is NOT degraded to a
+    # WARN, so the CLI dies with a traceback and `scripts/detectors.py` reads
+    # the row `unknown`, never green.
     Source.BMAD_OUTPUT_HYGIENE.value: hygiene.gather,
 }
 
@@ -258,9 +261,10 @@ def main(argv: list[str] | None = None) -> int:
         try:
             gt = factory.ground_truth(target)
         except Exception as exc:
-            # Unlike every DISPATCH entry (wrapped by `gather()`'s own
-            # degrade_on_exception), this call goes straight through --
-            # a bad-but-present pixi.toml/CHANGELOG.md/SKILL.md raises
+            # Most DISPATCH entries are wrapped by `gather()`'s own
+            # degrade_on_exception (`bmad-output-hygiene` is the exception:
+            # no top-level net, DW-FU-9-2). This call goes straight through
+            # -- a bad-but-present pixi.toml/CHANGELOG.md/SKILL.md raises
             # rather than degrading. Never a raw traceback here.
             print(f"could not gather ground truth: {exc}", file=sys.stderr)
             return 2

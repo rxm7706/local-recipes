@@ -277,8 +277,10 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     ("docs-currency", "docs-currency-check"),
     # Story 38.3 (spec-pyforge-doctor CAP-42 / CAP-43; DW-OPS-2026-10-01-1):
     # the fleet hygiene sweep, registered since Story 9.2 but never run.
-    # Warn-only (every finding is WARN or OK, so it reads `pass` here, never
-    # `FINDINGS`), offline apart from one `git grep` per candidate.
+    # Its findings are WARN or OK, so they read `pass` here, never `FINDINGS`.
+    # `hygiene.gather` has no top-level exception net (DW-FU-9-2), so a raise
+    # escaping it reads `unknown` (rc 2), not pass. Offline apart from one
+    # `git grep` per candidate.
     ("bmad-output-hygiene", "bmad-output-hygiene-check"),
 )
 

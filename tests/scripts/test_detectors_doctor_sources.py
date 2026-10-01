@@ -195,9 +195,11 @@ def test_doctor_source_tasks_include_bmad_output_hygiene_and_a_matching_pixi_tas
 
 
 def test_every_doctor_source_task_name_is_a_dispatch_entry():
-    """DW-FU-6-9-3: the name -> task pairing is otherwise unvalidated. A name
-    absent from `DISPATCH` reads `unknown` (KeyError in `_run_doctor_sources`),
-    never green -- this fails it at test time instead of at detectors time."""
+    """Every name in `_DOCTOR_SOURCE_TASKS` is a `DISPATCH` key -- the NAME half
+    of the name -> pixi-task pairing (DW-FU-6-9-3) only. A name absent from
+    `DISPATCH` reads `unknown` (KeyError in `_run_doctor_sources`), never green;
+    this fails it at test time. The pixi-task half is NOT checked here: it is
+    pinned for the `bmad-output-hygiene` row alone, by the test above."""
     from pyforge.doctor.sources.__main__ import DISPATCH
 
     assert {name for name, _task in detectors._DOCTOR_SOURCE_TASKS} <= set(DISPATCH)

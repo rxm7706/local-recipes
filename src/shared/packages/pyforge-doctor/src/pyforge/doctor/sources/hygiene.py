@@ -44,13 +44,11 @@ story spec's own I/O matrix names:
   and every other station, unaffected -- the story spec's own I/O matrix
   names this as a narrower isolation than the per-station default.
 
-**Wiring.** Story 9.2 shipped this module with no dispatch (mirroring
-``Source.ADOPTION``'s "registered, not yet dispatched" precedent), so
-``gather`` ran only in its own tests. Story 38.3 (DW-OPS-2026-10-01-1) wired
-it into ``sources/__main__.py``'s ``DISPATCH``, ``scripts/detectors.py``'s
-``_DOCTOR_SOURCE_TASKS`` and the ``bmad-output-hygiene-check`` pixi task;
-the sweep stays advisory (CAP-43), every finding a WARN, so it never moves an
-exit code. The ``doctor check``/``monitor`` verbs remain unwired.
+**Wiring.** Story 9.2 shipped this with no dispatch; Story 38.3
+(DW-OPS-2026-10-01-1) wired it into ``sources/__main__.py``'s ``DISPATCH``,
+``scripts/detectors.py`` and the ``bmad-output-hygiene-check`` pixi task.
+Findings stay advisory (CAP-43): WARN or OK, never an exit code. The
+``doctor check``/``monitor`` verbs remain unwired.
 """
 
 from __future__ import annotations
