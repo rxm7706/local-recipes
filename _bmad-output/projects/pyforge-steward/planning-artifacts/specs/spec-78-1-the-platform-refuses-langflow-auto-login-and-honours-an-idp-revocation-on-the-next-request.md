@@ -17,7 +17,20 @@ context:
   - src/platform/langflow_integration/tests.py
   - src/platform/tests/test_langflow_mount.py
   - src/platform/tests/test_idp_revoke_next_request.py
-deferred: []
+warnings: [multiple-goals, oversized]
+deferred:
+  - summary: >-
+      The platform edge still forwards every `/langflow/...` request into Langflow with no platform-side
+      auth gate; after this story Langflow's own login (the env superuser) is the only gate.
+    evidence: |-
+      `_dispatch_http` in `config/asgi.py` routes `/langflow/` paths straight to `langflow_application`
+      without checking the IdP session or a role. This story only stops Langflow handing out a token
+      without credentials. Read in the installed Langflow 1.11.4 (`lfx/services/settings/auth.py`,
+      not exercised here): `ENABLE_SIGNUP` defaults on, so `POST /api/v1/users/` may still create
+      (inactive, `NEW_USER_IS_ACTIVE=False`) accounts. Putting `/langflow/` behind an IdP role is a
+      design decision (which role, how the Langflow session follows it), so it needs its own Dream
+      append and Story rather than a fix inside a security hotfix.
+    location: src/platform/config/asgi.py
 declared_low_risk: false
 ---
 
