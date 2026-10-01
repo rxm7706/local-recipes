@@ -620,7 +620,7 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: resolved
-  resolution: 2026-10-01 — Ran `pixi run --frozen -e pyforge-doctor python -m pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py::test_live_repo_gather_surfaces_at_least_one_true_positive_naming_a_non_warden_station -q` -- 1 passed. Also `git grep -l --fixed-strings 'deckcraft-board-epics-displaced-2026-08-08.json'` finds no reference outside the test file itself, so the fixture is unreferenced again and the test's own pre-check (test_sources_hygiene.py:407-431) no longer trips.
+  resolution: 2026-10-01 — Ran `pixi run --frozen -e pyforge-doctor python -m pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py::test_live_repo_gather_surfaces_at_least_one_true_positive_naming_a_non_warden_station -q` -- 1 passed. Also `git grep -l --fixed-strings on the herald fixture's basename (deckcraft-board-epics-displaced-2026-08-08, JSON; spelled out in full only in the test, which this line must not become a second reference to)` finds no reference outside the test file itself, so the fixture is unreferenced again and the test's own pre-check (test_sources_hygiene.py:407-431) no longer trips.
   verified: 2026-10-01 — RESOLVED — evidence in resolution. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
