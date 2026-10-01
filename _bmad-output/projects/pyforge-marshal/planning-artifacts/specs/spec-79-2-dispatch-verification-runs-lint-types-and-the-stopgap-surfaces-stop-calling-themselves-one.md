@@ -2,7 +2,7 @@
 title: "79.2: Dispatch verification runs `lint-types`, and the \"stopgap\" surfaces stop calling themselves one"
 type: 'fix'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '6701b2b15a70fa9df0f8ea0287e2edc4fbeca66a'
 review_loop_iteration: 0
 followup_review_recommended: false
