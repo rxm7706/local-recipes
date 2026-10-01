@@ -11,10 +11,12 @@ from __future__ import annotations
 
 import argparse
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
+from pyforge.marshal.adapters.clock_system import SystemClock
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.cli.config import repo_root
@@ -31,13 +33,14 @@ from pyforge.marshal.cli.land import (
     _promote_sprint_ledger,
     _resync_home_branch,
 )
+from pyforge.marshal.core import deferred_work, promotion
 from pyforge.marshal.core import dispatch as dispatch_core
-from pyforge.marshal.core import promotion
 from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT
 from pyforge.marshal.core.status import render_ledger_advancements
+from pyforge.marshal.ports.clock import ClockPort
 from pyforge.marshal.ports.fs import FsPort
 from pyforge.marshal.ports.vcs import VcsPort
 
