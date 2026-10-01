@@ -2,10 +2,10 @@
 title: '78.1: The platform refuses Langflow auto-login and honours an IdP revocation on the next request'
 type: 'fix'
 created: '2026-10-01'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'cc3a9c0b9d5c397986318518320f7d4eb1546ec5'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
