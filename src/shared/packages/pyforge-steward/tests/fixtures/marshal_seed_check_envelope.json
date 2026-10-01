@@ -1,0 +1,188 @@
+{
+  "verb": "check",
+  "ok": true,
+  "result": {
+    "strict": false,
+    "findings": [
+      {
+        "severity": "HARD",
+        "type": "artifact-missing",
+        "path": "docs/dreams/{{ slug }}.md",
+        "message": "docs/dreams/{{ slug }}.md: 'starter-dream' is declared by the manifest but absent from the repo",
+        "remedy": "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+      },
+      {
+        "severity": "HARD",
+        "type": "artifact-missing",
+        "path": "_bmad-output/projects/{{ slug }}/.bmad-config.toml",
+        "message": "_bmad-output/projects/{{ slug }}/.bmad-config.toml: 'project-config' is declared by the manifest but absent from the repo",
+        "remedy": "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+      },
+      {
+        "severity": "HARD",
+        "type": "artifact-missing",
+        "path": "_bmad-output/projects/{{ slug }}/planning-artifacts/specs/README.md",
+        "message": "_bmad-output/projects/{{ slug }}/planning-artifacts/specs/README.md: 'specs-readme' is declared by the manifest but absent from the repo",
+        "remedy": "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+      },
+      {
+        "severity": "HARD",
+        "type": "artifact-missing",
+        "path": "presentations/{{ slug }}/",
+        "message": "presentations/{{ slug }}/: 'deck-scaffolding' is declared by the manifest but absent from the repo",
+        "remedy": "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+      },
+      {
+        "severity": "HARD",
+        "type": "artifact-missing",
+        "path": ".bmad-loop/policy.toml",
+        "message": ".bmad-loop/policy.toml: 'bmad-loop-policy' is declared by the manifest but absent from the repo",
+        "remedy": "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+      },
+      {
+        "severity": "HARD",
+        "type": "artifact-missing",
+        "path": "_bmad-output/planning-artifacts",
+        "message": "_bmad-output/planning-artifacts: 'planning-artifacts-symlink' is declared by the manifest but absent from the repo",
+        "remedy": "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+      },
+      {
+        "severity": "HARD",
+        "type": "artifact-missing",
+        "path": "_bmad-output/implementation-artifacts",
+        "message": "_bmad-output/implementation-artifacts: 'implementation-artifacts-symlink' is declared by the manifest but absent from the repo",
+        "remedy": "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+      },
+      {
+        "severity": "HARD",
+        "type": "artifact-missing",
+        "path": "_bmad-output/projects/{{ slug }}/",
+        "message": "_bmad-output/projects/{{ slug }}/: 'project-subtree' is declared by the manifest but absent from the repo",
+        "remedy": "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "managed-region-missing",
+        "path": "_bmad-output/PROJECTS.md",
+        "message": "_bmad-output/PROJECTS.md#projects-table: declared managed region is not present",
+        "remedy": "Run `marshal seed update` to re-insert the region at its declared anchor."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "managed-region-missing",
+        "path": "AGENTS.md",
+        "message": "AGENTS.md#tiers: declared managed region is not present",
+        "remedy": "Run `marshal seed update` to re-insert the region at its declared anchor."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "managed-region-missing",
+        "path": "AGENTS.md",
+        "message": "AGENTS.md#portability-contract: declared managed region is not present",
+        "remedy": "Run `marshal seed update` to re-insert the region at its declared anchor."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "managed-region-missing",
+        "path": "AGENTS.md",
+        "message": "AGENTS.md#dream-first-workflow: declared managed region is not present",
+        "remedy": "Run `marshal seed update` to re-insert the region at its declared anchor."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "managed-region-missing",
+        "path": "CLAUDE.md",
+        "message": "CLAUDE.md#tiers: declared managed region is not present",
+        "remedy": "Run `marshal seed update` to re-insert the region at its declared anchor."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "managed-region-missing",
+        "path": "CLAUDE.md",
+        "message": "CLAUDE.md#bmad-multiproject: declared managed region is not present",
+        "remedy": "Run `marshal seed update` to re-insert the region at its declared anchor."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "managed-region-missing",
+        "path": ".gitignore",
+        "message": ".gitignore#model-ignores: declared managed region is not present",
+        "remedy": "Run `marshal seed update` to re-insert the region at its declared anchor."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "managed-region-missing",
+        "path": "README.md",
+        "message": "README.md#model-badge: declared managed region is not present",
+        "remedy": "Run `marshal seed update` to re-insert the region at its declared anchor."
+      },
+      {
+        "severity": "HARD",
+        "type": "artifact-missing",
+        "path": ".claude/skills/**",
+        "message": ".claude/skills/**: 'claude-skills' is declared by the manifest but absent from the repo",
+        "remedy": "Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "referenced-dep-missing",
+        "path": "bmad-method-wds-expansion",
+        "message": "bmad-method-wds-expansion: referenced dependency is not installed (manifest pin '>=0.4.3')",
+        "remedy": "Install the missing dependency at or above its declared floor (`marshal doctor check` can do this where available)."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "kit-item-missing",
+        "path": ".claude/skills/caveman/SKILL.md",
+        "message": "[output] caveman-skill: the caveman skill is not deployed at .claude/skills/caveman/SKILL.md",
+        "remedy": "Run `marshal seed kit --apply` in the loop home to provision it, or turn its `[context]` layer off if this home does not want it."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "kit-item-missing",
+        "path": ".codegraph/codegraph.db",
+        "message": "[structure-graph] codegraph-index: no codegraph index at .codegraph/codegraph.db",
+        "remedy": "Run `marshal seed kit --apply` in the loop home to provision it, or turn its `[context]` layer off if this home does not want it."
+      },
+      {
+        "severity": "DRIFT",
+        "type": "model-behind",
+        "path": ".marshal/seed-state.yml",
+        "message": "repo is at no recorded model_version (never adopted); the bundled seed manifest is at model_version 1.0.0",
+        "remedy": "Run `marshal seed update` to upgrade the repo to the currently installed model version."
+      }
+    ],
+    "model_version": {
+      "manifest": "1.0.0",
+      "state": null,
+      "status": "model-behind"
+    },
+    "kit": [
+      {
+        "item": "caveman-skill",
+        "layer": "output",
+        "instrument": "caveman",
+        "path": ".claude/skills/caveman/SKILL.md",
+        "status": "missing",
+        "detail": "the caveman skill is not deployed at .claude/skills/caveman/SKILL.md"
+      },
+      {
+        "item": "ccr-store",
+        "layer": "wire",
+        "instrument": "headroom-ai",
+        "path": ".marshal/wire",
+        "status": "layer-off",
+        "detail": "the 'wire' context layer is declared off"
+      },
+      {
+        "item": "codegraph-index",
+        "layer": "structure-graph",
+        "instrument": "codegraph",
+        "path": ".codegraph/codegraph.db",
+        "status": "missing",
+        "detail": "no codegraph index at .codegraph/codegraph.db"
+      }
+    ],
+    "failing": true
+  }
+}

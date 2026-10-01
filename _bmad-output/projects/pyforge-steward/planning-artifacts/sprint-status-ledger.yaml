@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 466
+# stories: 469
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -300,7 +300,7 @@ development_status:
   71-7-the-one-minute-budget-is-a-check-that-reads-the-journal: backlog
   72-1-the-guild-environment-answers-pyforge-mason: backlog
   72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: blocked
-  73-1-steward-session-check-reads-marshal-seed-check-s-envelope-whatever-its-exit-code: backlog
+  73-1-steward-session-check-reads-marshal-seed-check-s-envelope-whatever-its-exit-code: done
   74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it: done
   74-2-the-chart-names-the-bucket-and-prefix-per-environment-and-reaches-only-the-consumed-store: backlog
   75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity: done
@@ -310,6 +310,7 @@ development_status:
   76-4-the-pyforge-three-surfaces-demo-flag-leaves-the-tree: backlog
   77-1-the-console-lists-tier-2-specs-and-the-archived-dreams: done
   78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request: backlog
+  79-1-the-session-check-and-the-dispatch-preamble-read-each-others-real-output: done
   8-1-bidirectional-propagation: done
   8-2-zero-loop-guarantee: done
   8-3-idempotent-update-processing: done
@@ -464,7 +465,7 @@ development_status:
   epic-71-retrospective: optional
   epic-72: backlog
   epic-72-retrospective: optional
-  epic-73: backlog
+  epic-73: done
   epic-73-retrospective: optional
   epic-74: in-progress
   epic-74-retrospective: optional
@@ -476,6 +477,8 @@ development_status:
   epic-77-retrospective: optional
   epic-78: backlog
   epic-78-retrospective: optional
+  epic-79: done
+  epic-79-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
   epic-9: done

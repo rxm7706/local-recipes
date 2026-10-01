@@ -34,6 +34,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .bootstrap import repo_root
 from .interfaces import DutyResult
@@ -131,6 +132,35 @@ def _run_seed_check(root: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _seed_check_kit(payload: object) -> tuple[list[Any] | None, str]:
+    """The ``kit`` array from ``marshal seed check --json``, or why there is none.
+
+    Every ``marshal seed`` verb wraps its report in the schema-stable ``{verb, ok, result}``
+    envelope, and a failed verb answers ``{verb, ok: false, error}`` instead (marshal's
+    ``cli/seed.py``, Story 12.5 / FR-123). So ``kit`` sits under ``result``, never at the top
+    level: reading it there made every real run look unparseable (Story 73.1, CAP-162). The
+    seed check's exit code is never read here; it exits 1 whenever its own report fails,
+    whatever the kit says.
+    """
+    if not isinstance(payload, dict):
+        return None, f"returned no kit report: the document is a JSON {type(payload).__name__}, not an object"
+    if payload.get("ok") is False:
+        error = payload.get("error")
+        if not isinstance(error, dict):
+            return None, "reported a seed error with no detail"
+        kind = error.get("type") or "SeedError"
+        message = error.get("message") or "no message"
+        return None, f"reported a seed error: {kind}: {message}"
+    envelope_result = payload.get("result")
+    kit = envelope_result.get("kit") if isinstance(envelope_result, dict) else None
+    if not isinstance(kit, list):
+        found = ", ".join(sorted(payload)) or "none"
+        if isinstance(envelope_result, dict):
+            found += f"; result keys: {', '.join(sorted(envelope_result)) or 'none'}"
+        return None, f"returned no kit report (keys found: {found})"
+    return kit, ""
+
+
 def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
     """Findings (3) token-kit and (5) codegraph-index — ONE ``marshal seed check --json`` call.
 
@@ -148,11 +178,16 @@ def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
 
     try:
         payload = json.loads(result.stdout)
-        kit = payload["kit"]
-    except json.JSONDecodeError, KeyError, TypeError:
+    except json.JSONDecodeError, TypeError:
         tail_lines = (result.stderr or result.stdout or "").strip().splitlines()
         tail = "; ".join(tail_lines[-3:]) if tail_lines else "no output"
         detail = f"{' '.join(_SEED_CHECK_ARGV)} returned unparseable output: {tail}"
+        unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
+        return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
+
+    kit, problem = _seed_check_kit(payload)
+    if kit is None:
+        detail = f"{' '.join(_SEED_CHECK_ARGV)} {problem}"
         unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
         return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
 

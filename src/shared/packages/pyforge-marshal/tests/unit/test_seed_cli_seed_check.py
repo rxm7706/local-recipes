@@ -217,6 +217,25 @@ def test_json_flag_emits_valid_json_to_stdout(clean_repo, capsys):
     assert payload["result"]["failing"] is True
 
 
+def test_json_kit_entries_carry_the_fields_steward_reads(clean_repo, capsys):
+    """Producer pin for a cross-station reader. ``steward session check`` (CAP-5) reads
+    ``result.kit`` from this envelope and each entry's ``item``/``layer``/``status``;
+    it read a top-level ``kit`` until steward Story 79.1 because nothing here named the
+    shape it depends on. Change this shape together with steward's
+    ``session.py::_seed_check_kit``."""
+    manifest = _manifest(_whole_file("whole", "WHOLE.md"))
+
+    seed_cli.run_check(_args(repo_root=str(clean_repo), json_flag=True), manifest=manifest)
+
+    kit = json.loads(capsys.readouterr().out)["result"]["kit"]
+    assert [(entry["item"], entry["layer"]) for entry in kit] == [
+        ("caveman-skill", "output"),
+        ("ccr-store", "wire"),
+        ("codegraph-index", "structure-graph"),
+    ]
+    assert all(isinstance(entry["status"], str) and entry["status"] for entry in kit)
+
+
 def test_json_flag_is_honored_on_the_usage_error_path(tmp_path, capsys):
     """Review finding: ``--json`` was previously ignored on the
     ``UsageError``/``InternalError`` error paths -- a plain ``print(str(...))``

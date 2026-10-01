@@ -219,6 +219,9 @@ def test_surface_session_precondition_findings_ok_returns_none(tmp_path: Path) -
 
 
 def test_surface_session_precondition_findings_names_non_ok_findings(tmp_path: Path) -> None:
+    """The stdout path: a report on stdout is read from there. Steward itself prints a
+    failing report to stderr; the stderr tests below cover that real shape (Story 79.1)."""
+
     class Proc:
         def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
             payload = json.dumps(
@@ -263,6 +266,67 @@ def test_surface_session_precondition_findings_process_error_warns(tmp_path: Pat
     assert "could not run" in finding.message
 
 
+def _steward_failing_report_on_stderr(*non_ok: str) -> ProcessResult:
+    """``steward session check --json``'s real non-ok output: steward prints a failed
+    duty's report to stderr (its ``cli.py::main``), indented, with stdout empty. Story
+    79.1: the fakes above put it on stdout, so the tests passed while every real
+    dispatch read the last stderr line, ``}``."""
+    findings = [{"name": name, "ok": False, "detail": "broken", "remedy": "fix"} for name in non_ok]
+    findings.append({"name": "pixi-guild", "ok": True, "detail": "fine", "remedy": None})
+    report = json.dumps({"ok": False, "findings": findings}, indent=2)
+    return ProcessResult(returncode=1, stdout="", stderr=report + "\n")
+
+
+def test_surface_session_precondition_findings_reads_the_report_from_stderr(tmp_path: Path) -> None:
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            return _steward_failing_report_on_stderr("token-kit", "codegraph-index")
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
+    assert finding.message.endswith("non-ok findings: token-kit, codegraph-index")
+    assert "pixi-guild" not in finding.message
+
+
+@pytest.mark.parametrize(
+    ("before", "after"),
+    [
+        ("UserWarning: something deprecated\n", ""),
+        ("", "WARN trailing line\n"),
+        ("warning one\nwarning two\n", "trailer\n"),
+        ('{"level": "warning", "msg": "a JSON log line"}\n', ""),
+    ],
+)
+def test_surface_session_precondition_findings_finds_the_report_among_other_lines(
+    tmp_path: Path, before: str, after: str
+) -> None:
+    """Review finding (Story 79.1): a warning printed before the report, or a line after
+    it, must not bring back the bare ``}`` detail."""
+    report = _steward_failing_report_on_stderr("gh-auth")
+
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            return ProcessResult(returncode=1, stdout="", stderr=before + report.stderr + after)
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path)
+    assert finding is not None
+    assert finding.message.endswith("non-ok findings: gh-auth")
+
+
+def test_surface_session_precondition_findings_prefers_a_stdout_report(tmp_path: Path) -> None:
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            stdout = json.dumps({"ok": False, "findings": [{"name": "gh-auth", "ok": False}]})
+            stderr = json.dumps({"ok": False, "findings": [{"name": "tier3-feed", "ok": False}]})
+            return ProcessResult(returncode=1, stdout=stdout, stderr=stderr)
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path)
+    assert finding is not None
+    assert "gh-auth" in finding.message
+    assert "tier3-feed" not in finding.message
+
+
 def test_dispatch_once_surfaces_mrs_disp_049_when_session_check_non_ok(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -271,7 +335,8 @@ def test_dispatch_once_surfaces_mrs_disp_049_when_session_check_non_ok(
     the call site an operator actually drives -- was never exercised
     end-to-end. This proves a non-ok ``steward session check`` verdict
     reaches ``attempt.findings`` through the real ``dispatch_once`` call,
-    not only through the isolated helper."""
+    not only through the isolated helper. Story 79.1: the report arrives the way
+    steward really sends a failing one, on stderr with stdout empty."""
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     story = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
@@ -279,8 +344,7 @@ def test_dispatch_once_surfaces_mrs_disp_049_when_session_check_non_ok(
     class NonOkSessionProcess(FakeProcess):
         def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
             self.run_calls.append(list(argv))
-            payload = json.dumps({"ok": False, "findings": [{"name": "gh-auth", "ok": False}]})
-            return ProcessResult(returncode=1, stdout=payload, stderr="")
+            return _steward_failing_report_on_stderr("gh-auth")
 
     monkeypatch.chdir(tmp_path)
     attempt = dispatch_once(
@@ -293,7 +357,7 @@ def test_dispatch_once_surfaces_mrs_disp_049_when_session_check_non_ok(
     )
     [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-049"]
     assert finding.severity is Severity.WARN
-    assert "gh-auth" in finding.message
+    assert finding.message.endswith("non-ok findings: gh-auth")
 
 
 def test_resolve_story_spec_path_finds_tracked_spec(tmp_path: Path) -> None:

@@ -455,6 +455,34 @@ _SESSION_CHECK_ARGV = ("pixi", "run", "--frozen", "-e", "pyforge-guild", "stewar
 _SESSION_CHECK_TIMEOUT_S = 60.0
 
 
+def _session_report_payload(stdout: str | None, stderr: str | None) -> dict[str, Any] | None:
+    """``steward session check --json``'s report, from whichever stream carries it.
+
+    Steward prints a passing duty's summary to stdout and a failed one's to stderr
+    (``steward``'s ``cli.py::main``), so the non-ok report this caller acts on arrives
+    on stderr. Reading stdout alone fell back to the last stderr line, ``}``, on every
+    real run (Story 79.1). Stdout is read first. Within a stream the report is the first
+    JSON object that opens at the start of a line and carries ``findings``, so a warning
+    (even a JSON log line) printed before it, or a line after it, does not hide it; a
+    stream with no such object is skipped.
+    """
+    decoder = json.JSONDecoder()
+    for stream in (stdout, stderr):
+        if not stream:
+            continue
+        offset = 0
+        for line in stream.splitlines(keepends=True):
+            if line.startswith("{"):
+                try:
+                    payload, _end = decoder.raw_decode(stream, offset)
+                except json.JSONDecodeError:
+                    payload = None
+                if isinstance(payload, dict) and "findings" in payload:
+                    return payload
+            offset += len(line)
+    return None
+
+
 def _surface_session_precondition_findings(*, process: ProcessPort, repo_root: Path) -> Finding | None:
     """Story 63.4 (spec-pyforge-steward CAP-5): shell ``steward session check
     --json`` right after ``repo_root`` resolves and fold a non-ok
@@ -475,12 +503,15 @@ def _surface_session_precondition_findings(*, process: ProcessPort, repo_root: P
         )
     if result.returncode == 0:
         return None
-    detail: str
-    try:
-        payload = json.loads(result.stdout)
-        non_ok = [row.get("name", "?") for row in payload.get("findings", []) if not row.get("ok", True)]
-        detail = f"non-ok findings: {', '.join(non_ok)}" if non_ok else "reported findings"
-    except json.JSONDecodeError, AttributeError, TypeError:
+    detail: str | None = None
+    payload = _session_report_payload(result.stdout, result.stderr)
+    if payload is not None:
+        try:
+            non_ok = [row.get("name", "?") for row in payload.get("findings", []) if not row.get("ok", True)]
+            detail = f"non-ok findings: {', '.join(non_ok)}" if non_ok else "reported findings"
+        except AttributeError, TypeError:
+            detail = None
+    if detail is None:
         tail_lines = (result.stderr or result.stdout or "").strip().splitlines()
         detail = tail_lines[-1] if tail_lines else "steward session check reported findings"
     return Finding(
