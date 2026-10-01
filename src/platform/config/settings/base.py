@@ -611,7 +611,7 @@ SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
 # (token_secret) is what renews it.
 SOCIALACCOUNT_STORE_TOKENS = True
 
-OIDC_ISSUER =env.str("COMPONENT_OIDC_ISSUER", default="")
+OIDC_ISSUER = env.str("COMPONENT_OIDC_ISSUER", default="")
 OIDC_CLIENT_ID = env.str("COMPONENT_OIDC_CLIENT_ID", default="")
 OIDC_JWKS_URL = env.str("COMPONENT_OIDC_JWKS_URL", default="")
 OIDC_AUDIENCE = env.str("COMPONENT_OIDC_AUDIENCE", default="") or OIDC_CLIENT_ID
