@@ -139,6 +139,8 @@ def blocks_harness_relaunch(status: str | None, followup: bool) -> bool:
 
 #: The launch INTENT payload key that marks a follow-up review run (Story 73.1, CAP-281).
 FOLLOWUP_REVIEW_PAYLOAD_KEY = "followup_review"
+#: The launch INTENT payload key that records ``origin/main``'s resolved tip at launch (Story 73.1, CAP-281).
+LAUNCH_ORIGIN_MAIN_SHA_PAYLOAD_KEY = "launch_origin_main_sha"
 
 
 @dataclass(frozen=True)
@@ -146,28 +148,43 @@ class FollowupReview:
     """The marker of a follow-up review run (Story 73.1, spec-pyforge-marshal CAP-281): a launch on a
     story whose tracked spec already reads ``done`` with ``followup_review_recommended`` an explicit
     truthy (``is_followup_review_spec``). ``dw_id`` is the open ``DW-FRR-<story>`` row the review
-    serves, ``None`` when the ledger holds none.
+    serves, ``None`` when the ledger holds none. ``launch_origin_main_sha`` is ``origin/main``'s tip at
+    launch: the story's first landing is on ``origin/main`` before this run exists, so the run's own
+    merge is whatever reaches ``origin/main`` *after* that tip (``core.dispatch_completion.merge_subject_ref``)
+    -- never anything scoped to the run's ``baseline_head_sha``, which a reused pre-merge dispatch worktree
+    leaves behind the first landing. ``None`` (an INTENT that recorded no tip) counts no merge at all.
 
     The marker is derived and journaled, never a CLI flag: ``dispatch_once`` writes it onto the launch
-    INTENT (``to_intent_payload``), and the supervisor and the landing read it back from that same
-    INTENT (``from_intent_payload``) -- one shape for the writer and every reader. A normal run carries
+    INTENT (``to_intent_payload``), and every reader -- the supervisor, the landing, the CAP-4 retry, the
+    session verdict, the drain's block facts and ``marshal status`` -- reads it back from that same
+    INTENT (``from_intent_payload``): one shape for the writer and every reader. A normal run carries
     no marker at all, so every normal-run path stays exactly as it was."""
 
     dw_id: str | None = None
+    launch_origin_main_sha: str | None = None
 
     def to_intent_payload(self) -> dict[str, object]:
-        """The launch INTENT payload fragment: ``{"followup_review": {"dw_id": <id> | None}}``."""
-        return {FOLLOWUP_REVIEW_PAYLOAD_KEY: {"dw_id": self.dw_id}}
+        """The launch INTENT payload fragment: ``{"followup_review": {"dw_id": <id> | None},
+        "launch_origin_main_sha": <sha> | None}``."""
+        return {
+            FOLLOWUP_REVIEW_PAYLOAD_KEY: {"dw_id": self.dw_id},
+            LAUNCH_ORIGIN_MAIN_SHA_PAYLOAD_KEY: self.launch_origin_main_sha,
+        }
 
     @classmethod
     def from_intent_payload(cls, payload: Mapping[str, object]) -> FollowupReview | None:
         """The marker a launch INTENT ``payload`` carries, or ``None`` for a normal run. Only a mapping
-        under ``followup_review`` is a marker; a ``dw_id`` that is not a non-empty string reads ``None``."""
+        under ``followup_review`` is a marker; a ``dw_id`` or ``launch_origin_main_sha`` that is not a
+        non-empty string reads ``None``."""
         raw = payload.get(FOLLOWUP_REVIEW_PAYLOAD_KEY)
         if not isinstance(raw, Mapping):
             return None
         dw_id = raw.get("dw_id")
-        return cls(dw_id=dw_id if isinstance(dw_id, str) and dw_id else None)
+        tip = payload.get(LAUNCH_ORIGIN_MAIN_SHA_PAYLOAD_KEY)
+        return cls(
+            dw_id=dw_id if isinstance(dw_id, str) and dw_id else None,
+            launch_origin_main_sha=tip if isinstance(tip, str) and tip else None,
+        )
 
 
 def is_followup_review_spec(text: str) -> bool:

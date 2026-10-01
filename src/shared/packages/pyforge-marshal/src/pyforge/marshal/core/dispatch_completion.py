@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from .dispatch_harness_done import FollowupReview
+
 
 class DispatchSessionVerdict(StrEnum):
     """Terminal and non-terminal completion states for a dispatch session."""
@@ -62,18 +64,25 @@ def is_spec_only_narration(changed_paths: tuple[str, ...], spec_relative_path: s
     return set(changed_paths) == {spec_relative_path}
 
 
-def merge_subject_ref(baseline_head_sha: str, ref: str, *, followup_review: bool) -> str:
-    """The git revision whose commit subjects a run's merge reads are scoped to (Story 73.1, CAP-281).
+def merge_subject_ref(ref: str, *, followup_review: FollowupReview | None) -> str | None:
+    """The git revision whose commit subjects a run's merge reads are scoped to (Story 73.1, CAP-281), or
+    ``None`` when there is nothing to read.
 
-    A normal run reads every subject reachable from ``ref`` (``origin/main``). A follow-up review run
-    (``core.dispatch_harness_done.FollowupReview``) runs on a story that already landed once, so the
-    story's own merge subject is already on ``ref``; it counts only what reached ``ref`` after the run
-    forked -- ``<baseline>..<ref>`` -- where that first merge is an ancestor of the baseline and drops
-    out, and the run's own merge does not."""
-    return f"{baseline_head_sha}..{ref}" if followup_review else ref
+    A normal run (``followup_review is None``) reads every subject reachable from ``ref``
+    (``origin/main``), exactly as before. A follow-up review run runs on a story that already landed
+    once, so the story's own merge subject is on ``ref`` before the run exists; it counts only what
+    reached ``ref`` after ``origin/main``'s tip at launch -- ``<launch_origin_main_sha>..<ref>``. Never
+    the run's ``baseline_head_sha``: ``_ensure_dispatch_worktree`` reuses a story's surviving dispatch
+    worktree, so the baseline can be the pre-merge tip, and ``<baseline>..<ref>`` would still hold the
+    story's first merge. A follow-up marker that recorded no tip counts nothing (``None``) -- the run's
+    own landing is still seen through ``branch_merged``."""
+    if followup_review is None:
+        return ref
+    tip = followup_review.launch_origin_main_sha
+    return f"{tip}..{ref}" if tip else None
 
 
-def narration_spec_path(spec_relative_path: str | None, *, followup_review: bool) -> str | None:
+def narration_spec_path(spec_relative_path: str | None, *, followup_review: FollowupReview | None) -> str | None:
     """The spec path a narration check (``is_spec_only_narration`` / ``has_git_progress``) is given
     (Story 73.1, CAP-281): ``spec_relative_path`` for a normal run, ``None`` for a follow-up review run.
 
@@ -81,7 +90,7 @@ def narration_spec_path(spec_relative_path: str | None, *, followup_review: bool
     its review log -- and for that run that diff is its record, not narration (Story 51.4's rule is for a
     harness that only rewrote its spec instead of doing the work). ``None`` makes both checks read a
     spec-only diff as progress."""
-    return None if followup_review else spec_relative_path
+    return None if followup_review is not None else spec_relative_path
 
 
 def has_git_progress(git: DispatchGitFacts, *, spec_relative_path: str | None = None) -> bool:
