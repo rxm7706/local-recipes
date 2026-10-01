@@ -2,7 +2,8 @@
 title: "81.2: The drain plan reads a prose park only where one is written, never in a story's own rules"
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '70c074d58076180ce75919a4ee3bcde1a7244f00'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -52,7 +53,7 @@ Type / Effort / Deps: fix / XS / —.
 ## Code Map
 
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_prelaunch.py` -- `find_prose_park` (the one change site) scans `epics_block` then `spec_text` through `_park_line`; `_PARKED_RE` / `_DO_NOT_DISPATCH_RE` are read-only (Never: no regex change). Core is pure (AD-4): no I/O.
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/drain_plan.py` -- callers at `_evaluate_story` (~l.354) and `_scan_prose_park` (~l.722) pass the raw spec text in; read-only, no change needed.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/drain_plan.py` -- callers at `evaluate_story` (~l.354) and `_scan_prose_park` (~l.722) pass the raw spec text in; read-only, no change needed.
 - `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_prelaunch.py` -- `find_prose_park` tests (~l.63-136); add the contract-skip tests beside them.
 - `src/shared/packages/pyforge-marshal/tests/unit/test_drain_plan.py` -- `test_a_prose_park_in_the_tracked_spec_is_found` (~l.1215) is the plan-level twin; add the no-finding twin for a contract-only line.
 - `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-73-2-a-drain-schedules-the-follow-up-review-a-landed-story-recommended.md` -- read-only evidence: its only park-matching line (l.65) sits inside its `<intent-contract>` (l.16-91); never edit it.
@@ -61,7 +62,7 @@ Type / Effort / Deps: fix / XS / —.
 
 **Execution:**
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_prelaunch.py` -- strip each `<intent-contract>` ... `</intent-contract>` block from `spec_text` (not `epics_block`) before `_park_line`; update the docstring -- the contract holds a feature's own rules, not a hold decision
-- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_prelaunch.py` -- tests for the five contract ACs: contract-only line is `None`; a line outside the contract still reports `source == "tracked spec"`; a contract line in an `epics_block` still reports; an unclosed tag scans the whole spec -- mutation-style, each fails with the skip removed
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_prelaunch.py` -- tests for the contract ACs: a contract-only line is `None` (mutation: this test fails with the skip removed); a line outside the contract still reports `source == "tracked spec"`; a contract line in an `epics_block` still reports; an unclosed tag scans the whole spec
 - `src/shared/packages/pyforge-marshal/tests/unit/test_drain_plan.py` -- a plan over a spec whose only "do not dispatch" line is in its contract raises no MRS-DRAINPLAN-002
 - `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` -- append the surface-reconcile entry naming the changed governed paths (via `_bmad/scripts/memlog.py`, never hand-edit `SPEC.md`), and on each co-governor `spec-surface` names
 
