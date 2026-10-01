@@ -2015,7 +2015,20 @@ _GREEN = (_run("Lint / ruff"), _run("Station tests / marshal"))
 _PENDING = (_run("Lint / ruff"), _run("Platform CI / platform-ci", "in_progress", None))
 
 
-def _land_waiting(tmp_path: Path, forge: FakeForge, clock: _FakeClock, *, dispatch: dict | None = None, vcs=None):
+def _land_waiting(
+    tmp_path: Path,
+    forge: FakeForge,
+    clock: _FakeClock,
+    monkeypatch,
+    *,
+    dispatch: dict | None = None,
+    vcs=None,
+    surface: tuple = (),
+):
+    """Run the real landing. The spec-surface verdict is faked (``surface``, clean by default): the
+    marshal env has no `pyforge.doctor`, so an unfaked reconcile adds a WARN MRS-DISP-047 to every
+    landing -- noise these tests' exact finding-code assertions must not depend on."""
+    _install_fake_spec_surface(monkeypatch, surface)
     worktree = tmp_path / "wt"
     worktree.mkdir(exist_ok=True)
     effective, findings = policy.compose(
@@ -2041,11 +2054,11 @@ def _codes(envelope) -> list[str]:
     return [f.code for f in envelope.findings]
 
 
-def test_landing_merges_when_every_check_run_is_green_and_journals_the_runs(tmp_path: Path) -> None:
+def test_landing_merges_when_every_check_run_is_green_and_journals_the_runs(tmp_path: Path, monkeypatch) -> None:
     """AC1: every run `success`/`skipped`/`neutral` -> it merges and the record lists the runs."""
     runs = (_run("Lint / ruff"), _run("Docs", conclusion="skipped"), _run("Optional", conclusion="neutral"))
     forge, clock = _ChecksForge(runs), _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert forge.merge_calls == ["abc123"]
     assert forge.reads == ["abc123"]
@@ -2064,11 +2077,11 @@ def test_landing_merges_when_every_check_run_is_green_and_journals_the_runs(tmp_
 
 
 @pytest.mark.parametrize("conclusion", ["failure", "cancelled", "timed_out", "action_required"])
-def test_landing_refuses_on_a_red_run_names_it_and_leaves_the_pr_open(tmp_path: Path, conclusion: str) -> None:
+def test_landing_refuses_on_a_red_run_names_it_and_leaves_the_pr_open(tmp_path: Path, monkeypatch, conclusion: str) -> None:
     """AC2: a red run refuses with a finding naming it, merges nothing, and leaves the PR open."""
     forge = _ChecksForge((_run("Lint / ruff"), _run("Detectors / scripts-suite", conclusion=conclusion)))
     clock = _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert result.merge_sha is None
     assert result.pr_number == 42
@@ -2085,21 +2098,21 @@ def test_landing_refuses_on_a_red_run_names_it_and_leaves_the_pr_open(tmp_path: 
     assert "merged" not in envelope.data
 
 
-def test_landing_refuses_on_a_red_run_at_once_even_with_other_runs_still_pending(tmp_path: Path) -> None:
+def test_landing_refuses_on_a_red_run_at_once_even_with_other_runs_still_pending(tmp_path: Path, monkeypatch) -> None:
     forge = _ChecksForge(_PENDING + (_run("Detectors / scripts-suite", conclusion="failure"),))
     clock = _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert _codes(envelope) == ["MRS-DISP-056"]
     assert clock.sleeps == []
     assert forge.reads == ["abc123"]
 
 
-def test_landing_refuses_when_runs_are_still_pending_at_the_timeout_and_names_them(tmp_path: Path) -> None:
+def test_landing_refuses_when_runs_are_still_pending_at_the_timeout_and_names_them(tmp_path: Path, monkeypatch) -> None:
     """AC3: still in progress at `landing_check_timeout_minutes` -> refuse naming the pending runs;
     the defaults poll every 60s for 45 minutes (46 reads, 45 sleeps of 60s)."""
     forge, clock = _ChecksForge(_PENDING), _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert forge.merge_calls == []
     assert forge.closed == []
@@ -2116,19 +2129,19 @@ def test_landing_refuses_when_runs_are_still_pending_at_the_timeout_and_names_th
     assert [r["status"] for r in record["runs"]] == ["completed", "in_progress"]
 
 
-def test_the_last_sleep_is_clipped_to_the_time_left(tmp_path: Path) -> None:
+def test_the_last_sleep_is_clipped_to_the_time_left(tmp_path: Path, monkeypatch) -> None:
     """A timeout that is not a multiple of the poll: the wait never overshoots it (60 + 30 = 90s)."""
     forge, clock = _ChecksForge(_PENDING), _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock, dispatch={"landing_check_timeout_minutes": 1.5})
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch, dispatch={"landing_check_timeout_minutes": 1.5})
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert clock.sleeps == [60.0, 30.0]
     assert _codes(envelope) == ["MRS-DISP-057"]
 
 
-def test_landing_merges_on_the_next_poll_once_the_runs_go_green(tmp_path: Path) -> None:
+def test_landing_merges_on_the_next_poll_once_the_runs_go_green(tmp_path: Path, monkeypatch) -> None:
     """AC4: runs that conclude green between two polls -> merge on the next poll."""
     forge, clock = _ChecksForge(_PENDING, _PENDING, _GREEN), _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert forge.merge_calls == ["abc123"]
     assert len(forge.reads) == 3
@@ -2139,21 +2152,21 @@ def test_landing_merges_on_the_next_poll_once_the_runs_go_green(tmp_path: Path) 
     assert [r["conclusion"] for r in record["runs"]] == ["success", "success"]
 
 
-def test_landing_refuses_when_a_pending_run_turns_red_while_waiting(tmp_path: Path) -> None:
+def test_landing_refuses_when_a_pending_run_turns_red_while_waiting(tmp_path: Path, monkeypatch) -> None:
     red = (_run("Lint / ruff"), _run("Platform CI / platform-ci", conclusion="failure"))
     forge, clock = _ChecksForge(_PENDING, red), _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert _codes(envelope) == ["MRS-DISP-056"]
     assert clock.sleeps == [60.0]
     assert forge.merge_calls == []
 
 
-def test_an_empty_head_keeps_waiting_through_the_grace_then_counts_as_green(tmp_path: Path) -> None:
+def test_an_empty_head_keeps_waiting_through_the_grace_then_counts_as_green(tmp_path: Path, monkeypatch) -> None:
     """AC5: no runs and less than `landing_check_grace_seconds` (120) elapsed -> keep waiting; at the
     grace the empty set counts as green (the polls land at 0s, 60s, 120s)."""
     forge, clock = _ChecksForge(()), _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert len(forge.reads) == 3
     assert clock.sleeps == [60.0, 60.0]
@@ -2161,7 +2174,7 @@ def test_an_empty_head_keeps_waiting_through_the_grace_then_counts_as_green(tmp_
     assert envelope.data["landing_checks"] == {"outcome": "no-runs", "polls": 3, "waited_seconds": 120.0, "runs": []}
 
 
-def test_an_empty_head_inside_the_grace_never_merges(tmp_path: Path) -> None:
+def test_an_empty_head_inside_the_grace_never_merges(tmp_path: Path, monkeypatch) -> None:
     """The grace is a floor: with a timeout shorter than it, the empty set refuses at the timeout
     (the timeout wins over a grace that outlasts it -- an empty set never merges past it)."""
     forge, clock = _ChecksForge(()), _FakeClock()
@@ -2169,6 +2182,7 @@ def test_an_empty_head_inside_the_grace_never_merges(tmp_path: Path) -> None:
         tmp_path,
         forge,
         clock,
+        monkeypatch,
         dispatch={"landing_check_grace_seconds": 600, "landing_check_timeout_minutes": 2},
     )
     assert result.verdict == DispatchLandingVerdict.REFUSED
@@ -2179,29 +2193,29 @@ def test_an_empty_head_inside_the_grace_never_merges(tmp_path: Path) -> None:
     assert envelope.data["landing_checks"]["outcome"] == "timeout"
 
 
-def test_a_zero_grace_merges_an_empty_head_on_the_first_poll(tmp_path: Path) -> None:
+def test_a_zero_grace_merges_an_empty_head_on_the_first_poll(tmp_path: Path, monkeypatch) -> None:
     forge, clock = _ChecksForge(()), _FakeClock()
-    result, _ = _land_waiting(tmp_path, forge, clock, dispatch={"landing_check_grace_seconds": 0})
+    result, _ = _land_waiting(tmp_path, forge, clock, monkeypatch, dispatch={"landing_check_grace_seconds": 0})
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert clock.sleeps == []
     assert len(forge.reads) == 1
 
 
-def test_runs_registering_during_the_grace_are_judged_not_waved_through(tmp_path: Path) -> None:
+def test_runs_registering_during_the_grace_are_judged_not_waved_through(tmp_path: Path, monkeypatch) -> None:
     """An empty first read then a red run: the grace never turns a head with real checks into a pass."""
     red = (_run("Detectors / scripts-suite", conclusion="failure"),)
     forge, clock = _ChecksForge((), red), _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert _codes(envelope) == ["MRS-DISP-056"]
     assert forge.merge_calls == []
 
 
-def test_landing_refuses_when_the_forge_read_fails_and_never_merges(tmp_path: Path) -> None:
+def test_landing_refuses_when_the_forge_read_fails_and_never_merges(tmp_path: Path, monkeypatch) -> None:
     """AC6: an unreadable head is not a green head. Reuses MRS-DISP-018, the landing's own forge refusal."""
     forge = _ChecksForge(ForgeCommandError("gh api ... failed: HTTP 502"))
     clock = _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert result.pr_number == 42
     assert forge.merge_calls == []
@@ -2213,10 +2227,10 @@ def test_landing_refuses_when_the_forge_read_fails_and_never_merges(tmp_path: Pa
     assert "HTTP 502" in record["error"]
 
 
-def test_landing_refuses_when_the_forge_read_fails_mid_wait(tmp_path: Path) -> None:
+def test_landing_refuses_when_the_forge_read_fails_mid_wait(tmp_path: Path, monkeypatch) -> None:
     forge = _ChecksForge(_PENDING, ForgeCommandError("rate limited"))
     clock = _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert _codes(envelope) == ["MRS-DISP-018"]
     assert forge.merge_calls == []
@@ -2226,27 +2240,28 @@ def test_landing_refuses_when_the_forge_read_fails_mid_wait(tmp_path: Path) -> N
     assert [r["name"] for r in record["runs"]] == ["Lint / ruff", "Platform CI / platform-ci"]
 
 
-def test_a_refused_landing_merges_when_rerun_once_its_ci_is_green(tmp_path: Path) -> None:
+def test_a_refused_landing_merges_when_rerun_once_its_ci_is_green(tmp_path: Path, monkeypatch) -> None:
     """AC7: a refusal leaves the PR open, so re-running the landing merges once CI is green."""
     forge = _ChecksForge((_run("Detectors / scripts-suite", conclusion="failure"),))
-    first, first_envelope = _land_waiting(tmp_path, forge, _FakeClock())
+    first, first_envelope = _land_waiting(tmp_path, forge, _FakeClock(), monkeypatch)
     assert first.verdict == DispatchLandingVerdict.REFUSED
     assert forge.merge_calls == [] and forge.closed == []
 
     forge.steps = [(_run("Detectors / scripts-suite"),)]
-    second, second_envelope = _land_waiting(tmp_path, forge, _FakeClock())
+    second, second_envelope = _land_waiting(tmp_path, forge, _FakeClock(), monkeypatch)
     assert second.verdict == DispatchLandingVerdict.LANDED
     assert forge.merge_calls == ["abc123"]
     assert _codes(first_envelope) == ["MRS-DISP-056"]
     assert _codes(second_envelope) == []
 
 
-def test_the_wait_uses_the_policy_declared_bounds(tmp_path: Path) -> None:
+def test_the_wait_uses_the_policy_declared_bounds(tmp_path: Path, monkeypatch) -> None:
     forge, clock = _ChecksForge(_PENDING), _FakeClock()
     result, envelope = _land_waiting(
         tmp_path,
         forge,
         clock,
+        monkeypatch,
         dispatch={"landing_check_poll_seconds": 5, "landing_check_timeout_minutes": 0.25},
     )
     assert result.verdict == DispatchLandingVerdict.REFUSED
@@ -2258,39 +2273,46 @@ def test_the_wait_uses_the_policy_declared_bounds(tmp_path: Path) -> None:
 def test_the_wait_reads_the_post_reconcile_head_not_the_stale_one(tmp_path: Path, monkeypatch) -> None:
     """The spec-surface reconcile pushes a new commit, so the head whose checks gate the merge is the
     POST-reconcile tip -- the wait must read that sha, the one `forge.merge_pr` is pinned to."""
-    _install_fake_spec_surface(
-        monkeypatch,
-        (_SurfaceFinding("drift", "--write-baseline --spec pyforge-marshal/spec-alpha", "src/a.py"),),
-    )
     forge, clock = _ChecksForge(_GREEN), _FakeClock()
-    result, _ = _land_waiting(tmp_path, forge, clock, vcs=_ReconcileVcs(merged=False, changed=("src/a.py",)))
+    result, envelope = _land_waiting(
+        tmp_path,
+        forge,
+        clock,
+        monkeypatch,
+        vcs=_ReconcileVcs(merged=False, changed=("src/a.py",)),
+        surface=(_SurfaceFinding("drift", "--write-baseline --spec pyforge-marshal/spec-alpha", "src/a.py"),),
+    )
     assert result.verdict == DispatchLandingVerdict.LANDED
+    assert _codes(envelope) == ["MRS-DISP-047"]  # the reconcile ran: it pushed the commit whose checks gate the merge
     assert forge.reads == ["post-reconcile-sha"]
     assert forge.merge_calls == ["post-reconcile-sha"]
 
 
-def test_a_refused_check_wait_runs_after_the_other_pre_merge_refusals_not_before(tmp_path: Path, monkeypatch) -> None:
+def test_the_wait_runs_after_the_other_pre_merge_refusals_not_before(tmp_path: Path, monkeypatch) -> None:
     """The wait sits immediately before `forge.merge_pr`: a landing the spec-surface reconcile already
     refuses (MRS-DISP-048) never polls the forge for checks."""
-    _install_fake_spec_surface(
+    forge, clock = _ChecksForge(_GREEN), _FakeClock()
+    result, envelope = _land_waiting(
+        tmp_path,
+        forge,
+        clock,
         monkeypatch,
-        (
+        vcs=_ReconcileVcs(merged=False, changed=("src/mine.py",)),
+        surface=(
             _SurfaceFinding("drift", "--write-baseline --spec pyforge-marshal/spec-shared", "src/mine.py"),
             _SurfaceFinding("drift", "--write-baseline --spec pyforge-marshal/spec-shared", "src/not-mine.py"),
         ),
     )
-    forge, clock = _ChecksForge(_GREEN), _FakeClock()
-    result, envelope = _land_waiting(tmp_path, forge, clock, vcs=_ReconcileVcs(merged=False, changed=("src/mine.py",)))
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert _codes(envelope) == ["MRS-DISP-048"]
     assert forge.reads == []
     assert "landing_checks" not in envelope.data
 
 
-def test_the_checks_record_survives_a_failed_merge_and_a_heal(tmp_path: Path) -> None:
-    """A merge that fails AFTER a green wait still reports what was waited on."""
+def test_the_checks_record_survives_a_failed_merge(tmp_path: Path, monkeypatch) -> None:
+    """A merge that fails AFTER a green wait (MRS-DISP-020) still reports what was waited on."""
     forge = _BrokenChecksForge(_GREEN)
-    result, envelope = _land_waiting(tmp_path, forge, _FakeClock())
+    result, envelope = _land_waiting(tmp_path, forge, _FakeClock(), monkeypatch)
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert "MRS-DISP-020" in _codes(envelope)
     assert envelope.data["landing_checks"]["outcome"] == "green"
@@ -2301,7 +2323,7 @@ class _BrokenChecksForge(_ChecksForge):
         raise ForgeCommandError("merge blocked")
 
 
-def test_default_clock_is_real_time_but_a_green_head_never_sleeps(tmp_path: Path) -> None:
+def test_default_clock_is_real_time_but_a_green_head_never_sleeps(tmp_path: Path, monkeypatch) -> None:
     """No injected clock: a green head returns on its first poll, never reaching `time.sleep`."""
     worktree = tmp_path / "wt"
     worktree.mkdir()
@@ -2319,9 +2341,9 @@ def test_default_clock_is_real_time_but_a_green_head_never_sleeps(tmp_path: Path
     assert envelope.data["landing_checks"]["outcome"] == "green"
 
 
-def test_the_landing_checks_record_round_trips_through_the_journal_resolver(tmp_path: Path) -> None:
+def test_the_landing_checks_record_round_trips_through_the_journal_resolver(tmp_path: Path, monkeypatch) -> None:
     forge, clock = _ChecksForge(_PENDING, _GREEN), _FakeClock()
-    _, envelope = _land_waiting(tmp_path, forge, clock)
+    _, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
     payload = {"landing_checks": envelope.to_json_dict()["data"]["landing_checks"]}
     assert resolve_landing_checks_from_payload(payload) == envelope.data["landing_checks"]
 
@@ -2338,7 +2360,7 @@ def test_mutation_without_the_wait_a_red_head_lands_green(tmp_path: Path, monkey
         lambda **_kwargs: dispatch_land._LandingChecksOutcome(finding=None, record={}),
     )
     forge = _ChecksForge((_run("Detectors / scripts-suite", conclusion="failure"),))
-    result, envelope = _land_waiting(tmp_path, forge, _FakeClock())
+    result, envelope = _land_waiting(tmp_path, forge, _FakeClock(), monkeypatch)
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert forge.merge_calls == ["abc123"]
     assert "MRS-DISP-056" not in _codes(envelope)

@@ -17,11 +17,12 @@ from pathlib import Path
 import pytest
 
 from pyforge.marshal.adapters.fs_local import LocalFs
+from pyforge.marshal.cli.dispatch import gather_dispatch_journal_facts
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import DispatchGitFacts
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
-from pyforge.marshal.core.journal import Phase
+from pyforge.marshal.core.journal import Phase, resolve_landing_checks_from_payload, sidecar_texts_for_lines
 from pyforge.marshal.core.model import Finding, Severity, build_envelope
 from pyforge.marshal.core.verdict import compute_verdict
 from pyforge.marshal.dispatch_land import DispatchLandingResult
@@ -470,3 +471,97 @@ def test_run_and_journal_landing_journals_envelope_findings(tmp_path: Path, monk
             "message": "cannot resolve ref",
         }
     ]
+
+
+def _landing_outcome_payload(run_dir: Path) -> dict[str, object]:
+    lines = (run_dir / "journal.jsonl").read_text(encoding="utf-8").splitlines()
+    return next(
+        json.loads(line)["payload"]
+        for line in lines
+        if json.loads(line).get("kind") == dispatch_core.KIND_DISPATCH_LAND
+        and json.loads(line).get("phase") == "outcome"
+    )
+
+
+def _journal_landing_with(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, findings: tuple[Finding, ...], data: dict[str, object]
+) -> Path:
+    def _fake_execute(**kwargs: object):
+        envelope = build_envelope(
+            command="dispatch land", verdict=compute_verdict(findings), data=data, findings=findings
+        )
+        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED, pr_number=42), envelope
+
+    monkeypatch.setattr(supervisor_main, "execute_dispatch_land", _fake_execute)
+    run_dir = tmp_path / "run"
+    run_dir.mkdir(parents=True)
+    _run_and_journal_landing(
+        fs=LocalFs(),
+        vcs=object(),
+        process=object(),
+        run_dir=run_dir,
+        run_id="run-80-1",
+        writer_id="test-writer",
+        counter=0,
+        repo_root=tmp_path,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        worktree=_worktree(tmp_path),
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        merge_subject_template=_MERGE_SUBJECT_TEMPLATE,
+    )
+    return run_dir
+
+
+def test_run_and_journal_landing_journals_the_landing_checks_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 80.1 (CAP-284): the check runs the landing waited on, and their conclusions, reach the
+    outcome entry's ``landing_checks`` payload key -- the journal says what the landing waited for."""
+    record = {
+        "outcome": "red",
+        "polls": 2,
+        "waited_seconds": 60.0,
+        "runs": [
+            {"name": "Detectors / scripts-suite", "status": "completed", "conclusion": "failure"},
+            {"name": "Lint / ruff", "status": "completed", "conclusion": "success"},
+        ],
+    }
+    finding = Finding(code="MRS-DISP-056", severity=Severity.ERROR, message="red check run")
+    run_dir = _journal_landing_with(tmp_path, monkeypatch, findings=(finding,), data={"landing_checks": record})
+    payload = _landing_outcome_payload(run_dir)
+    assert payload["landing_checks"] == record
+    assert [f["code"] for f in payload["land_findings"]] == ["MRS-DISP-056"]
+
+
+def test_run_and_journal_landing_omits_the_landing_checks_key_when_the_landing_never_waited(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = _journal_landing_with(tmp_path, monkeypatch, findings=(), data={})
+    assert "landing_checks" not in _landing_outcome_payload(run_dir)
+
+
+def test_an_oversized_landing_checks_record_is_offloaded_and_the_refusal_stays_visible(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A head with dozens of check runs pushes the outcome payload past the sidecar threshold, so
+    `landing_checks` joins `land_findings` in the offload -- and the refusal's findings must still read
+    back (`marshal status`/fleet-picture read `land_findings` through the sidecar), never vanish."""
+    runs = [
+        {"name": f"Workflow {index:02d} / a-long-enough-job-name", "status": "completed", "conclusion": "success"}
+        for index in range(80)
+    ]
+    runs[7]["conclusion"] = "failure"
+    record = {"outcome": "red", "polls": 1, "waited_seconds": 0.0, "runs": runs}
+    finding = Finding(code="MRS-DISP-056", severity=Severity.ERROR, message="red check run: Workflow 07")
+    run_dir = _journal_landing_with(tmp_path, monkeypatch, findings=(finding,), data={"landing_checks": record})
+
+    payload = _landing_outcome_payload(run_dir)
+    assert "landing_checks" not in payload and "land_findings" not in payload  # offloaded together
+    assert payload["verdict"] == "refused" and payload["pr_number"] == 42  # verdict-driving keys stay inline
+
+    lines = (run_dir / "journal.jsonl").read_text(encoding="utf-8").splitlines()
+    sidecars = sidecar_texts_for_lines(lines, read_sidecar=lambda ref: (run_dir / ref).read_text(encoding="utf-8"))
+    assert resolve_landing_checks_from_payload(payload, sidecars=sidecars) == record
+    facts = gather_dispatch_journal_facts(LocalFs(), run_dir, "run-80-1")
+    assert [f["code"] for f in facts.landing_findings] == ["MRS-DISP-056"]
