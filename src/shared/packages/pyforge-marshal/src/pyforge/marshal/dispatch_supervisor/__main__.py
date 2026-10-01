@@ -1536,6 +1536,10 @@ def run_dispatch_supervisor(
             file=sys.stderr,
         )
         return 0
+    # Story 73.1 (CAP-281): a follow-up review run is judged by its own branch, never by the story's
+    # first landing -- the marker is the one `dispatch_once` journaled on this run's launch INTENT.
+    followup_review = _followup_review_from_launch(folded, run_id)
+    followup_run = followup_review is not None
 
     writer_id = _writer_id()
     counter = 0
@@ -1625,6 +1629,9 @@ def run_dispatch_supervisor(
         story_key=story_key,
         worktree=worktree,
     )
+    # Story 73.1 (CAP-281): a follow-up review run's spec-only diff is its record, so every narration
+    # read below takes the path through `narration_spec_path` (None for that run, the spec path otherwise).
+    narration_path = narration_spec_path(spec_relative_path, followup_review=followup_run)
 
     while True:
         tick_count += 1
@@ -1639,6 +1646,7 @@ def run_dispatch_supervisor(
                 project_slug=slug,
                 baseline_head_sha=baseline_head_sha,
                 merge_subject_template=merge_subject_template,
+                followup_review=followup_run,
             )
         except (VcsCommandError, ValueError) as exc:
             print(
@@ -1680,7 +1688,7 @@ def run_dispatch_supervisor(
                 git=git_facts,
                 verification_verdict=v_outcome,
                 session_log=session_log,
-                spec_relative_path=spec_relative_path,
+                spec_relative_path=narration_path,
             )
         landing_done = _landing_succeeded(folded, run_id)
         if supervisor_should_finalize_harness_work(
@@ -1706,6 +1714,7 @@ def run_dispatch_supervisor(
                 session_log=session_log,
                 merge_subject_template=merge_subject_template,
                 folded=folded,
+                followup_review=followup_review,
             )
             text = fs.read_text(journal_path)
             if text is not None:
@@ -1721,6 +1730,7 @@ def run_dispatch_supervisor(
                     project_slug=slug,
                     baseline_head_sha=baseline_head_sha,
                     merge_subject_template=merge_subject_template,
+                    followup_review=followup_run,
                 )
             except VcsCommandError, ValueError:
                 pass
@@ -1733,7 +1743,7 @@ def run_dispatch_supervisor(
                     git=git_facts,
                     verification_verdict=v_outcome,
                     session_log=session_log,
-                    spec_relative_path=spec_relative_path,
+                    spec_relative_path=narration_path,
                 )
         if verdict == DispatchSessionVerdict.LIVE:
             if _session_awaits_verification(session_alive, git_facts):
@@ -1781,6 +1791,7 @@ def run_dispatch_supervisor(
                         merge_subject_template=merge_subject_template,
                         session_alive=session_alive,
                         publish_heartbeat=_publish_heartbeat,
+                        followup_review=followup_review,
                     )
                     # Story 72.1 (CAP-280): fetch `origin main` so the re-gather
                     # reads the supervisor's own land, never a stale remote-tracking ref.
@@ -1799,13 +1810,14 @@ def run_dispatch_supervisor(
                             project_slug=slug,
                             baseline_head_sha=baseline_head_sha,
                             merge_subject_template=merge_subject_template,
+                            followup_review=followup_run,
                         )
                         verdict = resolve_terminal_session_verdict(
                             session_alive=session_alive,
                             git=git_facts,
                             verification_verdict=v_outcome,
                             session_log=session_log,
-                            spec_relative_path=spec_relative_path,
+                            spec_relative_path=narration_path,
                         )
                     except VcsCommandError, ValueError:
                         pass
@@ -1858,6 +1870,7 @@ def run_dispatch_supervisor(
                 merge_subject_template=merge_subject_template,
                 session_alive=session_alive,
                 publish_heartbeat=_publish_heartbeat,
+                followup_review=followup_review,
             )
             # Story 72.1 (CAP-280): fetch `origin main` so the re-gather reads
             # the supervisor's own land, never a stale remote-tracking ref.
@@ -1876,13 +1889,14 @@ def run_dispatch_supervisor(
                     project_slug=slug,
                     baseline_head_sha=baseline_head_sha,
                     merge_subject_template=merge_subject_template,
+                    followup_review=followup_run,
                 )
                 verdict = resolve_terminal_session_verdict(
                     session_alive=session_alive,
                     git=git_facts,
                     verification_verdict=v_outcome,
                     session_log=session_log,
-                    spec_relative_path=spec_relative_path,
+                    spec_relative_path=narration_path,
                 )
             except VcsCommandError, ValueError:
                 pass
@@ -1935,6 +1949,7 @@ def run_dispatch_supervisor(
                             project_slug=slug,
                             baseline_head_sha=baseline_head_sha,
                             merge_subject_template=merge_subject_template,
+                            followup_review=followup_run,
                         )
                     except VcsCommandError, ValueError:
                         pass
@@ -2044,7 +2059,7 @@ def run_dispatch_supervisor(
             final_revision=git_facts.current_head_sha,
         )
         if verdict == DispatchSessionVerdict.FAILED and has_git_progress(
-            git_facts, spec_relative_path=spec_relative_path
+            git_facts, spec_relative_path=narration_path
         ):
             counter = _journal_dispatch_preserve(
                 fs=fs,

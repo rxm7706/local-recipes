@@ -36,6 +36,7 @@ from .core.dispatch_landing import (
     merge_subject_is_marshal_native,
     refuse_unverified_landing,
 )
+from .core.dispatch_harness_done import FollowupReview
 from .core.dispatch_verification import DispatchVerificationVerdict
 from .core.egress import Redacted
 from .core.identity import StoryKey, normalize, render_feed_key
@@ -759,8 +760,16 @@ def execute_dispatch_land(
     sleep: Callable[[float], None] | None = None,
     monotonic: Callable[[], float] | None = None,
     on_wait_tick: Callable[[], None] | None = None,
+    followup_review: FollowupReview | None = None,
 ) -> tuple[DispatchLandingResult, Envelope]:
     """Land a verified dispatch through existing marshal land/deploy semantics.
+
+    Story 73.1 (CAP-281): ``followup_review`` marks the run a follow-up review of a story that already
+    landed, so the story key's own merge subject on ``origin/main`` (its FIRST landing) is not evidence the
+    review landed. Such a run answers ALREADY_LANDED only when its own head is an ancestor of
+    ``origin/main``, and otherwise merges its branch through the path below; when the marker names an open
+    ``DW-FRR-<story>`` row, that id and the rendered merge subject go to the finalize subprocess, which
+    closes the row. ``None`` (every normal run) is judged exactly as before.
 
     Story 80.1 (CAP-284): immediately before ``forge.merge_pr`` the landing
     waits for the PR head's check runs (``_wait_for_landing_checks``) and
@@ -922,7 +931,35 @@ def execute_dispatch_land(
     merged_keys = promotion.corroborated_merged_story_keys(
         main_subjects, template, project_slug, spec_status_for=_spec_status_for
     )
-    if key in merged_keys:
+    if followup_review is None:
+        already_landed = key in merged_keys
+    else:
+        # Story 73.1 (CAP-281): the story's own merge subject is on `origin/main` from its FIRST landing, so
+        # a follow-up review run is judged by its OWN head -- an ancestor of `origin/main` is landed, and
+        # anything else merges through the path below.
+        try:
+            run_head = vcs.resolve_ref(git_repo_root, head_branch)
+            already_landed = vcs.merge_base(git_repo_root, run_head, _ORIGIN_MAIN) == run_head
+        except VcsCommandError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-017",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot judge whether the follow-up review branch {head_branch!r} reached "
+                        f"{ORIGIN_MAIN_SHORT!r}: {exc}"
+                    ),
+                )
+            )
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+        data["followup_review"] = True
+    if already_landed:
         data["already_landed"] = True
         envelope = build_envelope(
             command="dispatch land",
@@ -1331,18 +1368,19 @@ def execute_dispatch_land(
     data["merged"] = True
 
     finalize_failure: str | None = None
+    finalize_argv = [
+        sys.executable,
+        "-m",
+        "pyforge.marshal.dispatch_land_finalize",
+        project_slug,
+        render_feed_key(key),
+        str(worktree),
+    ]
+    if followup_review is not None and followup_review.dw_id is not None:
+        # Story 73.1 (CAP-281): finalize closes the row this follow-up review served, naming this landing.
+        finalize_argv += ["--followup-review-id", followup_review.dw_id, "--landing-subject", subject]
     try:
-        finalize_result = process.run(
-            [
-                sys.executable,
-                "-m",
-                "pyforge.marshal.dispatch_land_finalize",
-                project_slug,
-                render_feed_key(key),
-                str(worktree),
-            ],
-            cwd=git_repo_root,
-        )
+        finalize_result = process.run(finalize_argv, cwd=git_repo_root)
     except ProcessError as exc:
         finalize_failure = str(exc)
     else:

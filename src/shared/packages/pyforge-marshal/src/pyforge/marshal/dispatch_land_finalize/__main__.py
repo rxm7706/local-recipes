@@ -78,6 +78,21 @@ class _FollowupReviewCarry:
     finding: Finding | None = None
 
 
+@dataclass
+class _FollowupReviewClose:
+    """Story 73.1 (spec-pyforge-marshal CAP-281): the open ``DW-FRR-<story>`` row a landed follow-up review
+    run served, to be rendered closed in the same locked publish. ``dw_id``, ``landing`` (the merge subject
+    the landing rendered) and ``resolved_date`` go in; ``closed_id`` (set only once the closure is on
+    ``origin/main``) and ``finding`` (the WARN the intake's single return value has no room for) come
+    back -- ``_FollowupReviewCarry``'s own in/out shape."""
+
+    dw_id: str
+    landing: str
+    resolved_date: str
+    closed_id: str | None = None
+    finding: Finding | None = None
+
+
 def _run_intake_script(process: ProcessPort, root: Path, short_slug: str) -> Finding | None:
     """Run ``scripts/deferred_work_intake.py --fix`` (Story 53.2): ``None`` on a clean run, an
     ``MRS-DISP-047`` WARN when it cannot launch or refuses."""
@@ -116,6 +131,45 @@ def _restore_ledger_copy(fs: FsPort, path: Path, text: str | None) -> None:
         fs.write_text_atomic(path, text)
 
 
+def _ledger_publish_base(
+    vcs: VcsPort,
+    root: Path,
+    ledger_rel: str,
+    original_text: str | None,
+    new_text: str | None,
+    *,
+    retry: str,
+) -> tuple[str | None, str | None]:
+    """The ledger text a row edit is built on (Story 66.1's base-text rule, shared by Story 73.1's closure):
+    ``(base, None)``, or ``(None, reason)`` when the edit must be skipped. ``retry`` is the verb the skip
+    reason's re-run hint uses (``carries`` / ``closes``).
+
+    ``commit_paths_onto_remote_tip`` writes the caller's text over the fetched ``origin/main`` tip, so the
+    base is the tip's ledger -- fetched and read here, under the lock the caller holds -- never the primary's
+    possibly stale copy: ``remote_text`` when the intake changed nothing (``new_text == original_text``);
+    ``new_text`` when the intake changed a primary copy that was the tip's text
+    (``original_text == remote_text``); otherwise no base, because two texts are never merged. A tip that
+    cannot be fetched or read, and a ledger absent at the tip (one row never creates it), give no base."""
+    try:
+        vcs.fetch(root, "origin", "main")
+        remote_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, ledger_rel)
+    except VcsCommandError as exc:
+        return None, f"cannot read the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT}: {exc}"
+    if remote_text is None:
+        return (
+            None,
+            f"the deferred-work ledger {ledger_rel!r} does not exist at {ORIGIN_MAIN_SHORT} (one row never creates it)",
+        )
+    if new_text == original_text:
+        return remote_text, None
+    if original_text == remote_text:
+        return new_text or "", None
+    return None, (
+        f"the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT} is not the copy the intake just "
+        f"changed, so the two are not merged; a re-run of finalize {retry} it"
+    )
+
+
 def _carry_followup_row(
     vcs: VcsPort,
     root: Path,
@@ -145,34 +199,15 @@ def _carry_followup_row(
     the intake's own publish."""
     story = followup.candidate.story_key
     row_id = deferred_work.followup_review_id(story)
-
-    def _skip(reason: str) -> tuple[str | None, None]:
+    base, skip_reason = _ledger_publish_base(vcs, root, ledger_rel, original_text, new_text, retry="carries")
+    if base is None:
         followup.finding = Finding(
             code="MRS-DISP-047",
             severity=Severity.WARN,
-            message=f"story {story}'s recommended follow-up review row ({row_id}) was not carried: {reason}",
+            message=f"story {story}'s recommended follow-up review row ({row_id}) was not carried: {skip_reason}",
             path=ledger_rel,
         )
         return new_text, None
-
-    try:
-        vcs.fetch(root, "origin", "main")
-        remote_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, ledger_rel)
-    except VcsCommandError as exc:
-        return _skip(f"cannot read the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT}: {exc}")
-    if remote_text is None:
-        return _skip(
-            f"the deferred-work ledger {ledger_rel!r} does not exist at {ORIGIN_MAIN_SHORT} (one row never creates it)"
-        )
-    if new_text == original_text:
-        base = remote_text
-    elif original_text == remote_text:
-        base = new_text or ""
-    else:
-        return _skip(
-            f"the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT} is not the copy the intake just "
-            "changed, so the two are not merged; a re-run of finalize carries it"
-        )
     row = deferred_work.followup_review_to_promote(followup.candidate, base)
     if row is None:
         return new_text, None
