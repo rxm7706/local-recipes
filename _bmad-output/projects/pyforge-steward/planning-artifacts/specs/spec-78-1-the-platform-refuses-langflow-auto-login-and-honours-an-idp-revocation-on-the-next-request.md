@@ -32,6 +32,69 @@ deferred:
       design decision (which role, how the Langflow session follows it), so it needs its own Dream
       append and Story rather than a fix inside a security hotfix.
     location: src/platform/config/asgi.py
+  - summary: >-
+      The Wagtail-admin and staff gates still read login-synced Django groups, so an IdP revocation of
+      those groups waits for the next sign-in even though station roles now follow the IdP per request.
+    evidence: |-
+      `holds_wagtail_admin_group` reads `user.groups.filter(name=settings.WAGTAIL_ADMIN_IDP_GROUP)`, the
+      database groups the OIDC adapter syncs at login; it never consults `fetch_current_userinfo`. This
+      story did not touch that path (pre-existing). Unverified: whether any code re-syncs those groups
+      outside login. Settled by tracing every writer of `User.groups` under `src/platform/`.
+    location: src/platform/platformapp/front_door/middleware.py
+    severity: medium (unverified)
+  - summary: >-
+      The new chart wiring test for the Langflow password is skipped in the GitHub Platform CI `test`
+      job, because every `@requires_helm` chart test is.
+    evidence: |-
+      `test_platform_pods_require_the_langflow_superuser_password_from_the_secret` carries
+      `requires_helm`; the `test` job installs only `platform-ci-test`, which has no `helm` binary
+      (`platform-dev` does, so `platform-ci-local` runs it). The same gating covers every pre-existing
+      chart invariant, so closing it means giving that job helm, a separate story.
+    location: .github/workflows/platform-ci.yml
+    severity: low
+  - summary: >-
+      An existing deployment's Langflow database and the tokens minted while `/auto_login` was open are
+      not addressed: no rotation, audit or upgrade note ships with the fix.
+    evidence: |-
+      Bearer tokens and API keys issued by the open endpoint stay valid until they expire or the Langflow
+      secret key rotates; whether changing `LANGFLOW_SUPERUSER_PASSWORD` changes an existing superuser's
+      password was not exercised (the live test runs on a fresh database). A `helm upgrade` against a
+      Secret without the new key fails pod creation, and `keys-runbook.md` has no row for this secret.
+      Settled by reading Langflow's token lifetime and `get_or_create_super_user` for an existing user.
+    location: docs/explanation/enterprise-deployment.md
+    severity: medium (unverified)
+  - summary: >-
+      allauth now stores the IdP refresh token in plaintext in `SocialToken.token_secret`, and nothing
+      deletes the row at logout or encrypts it at rest.
+    evidence: |-
+      The contract requires storing the refresh token, and allauth's `SocialToken` is the sanctioned
+      store; its plaintext column and its lack of deletion on logout are allauth's behaviour. A database
+      reader gets long-lived IdP credentials. Hardening (encrypt at rest, revoke at logout, retention)
+      is a separate design decision, so it needs its own Dream append and Story.
+    location: src/platform/config/settings/base.py
+    severity: medium
+  - summary: >-
+      The userinfo and token endpoints are derived from the issuer in the Keycloak layout only, so a BYO
+      IdP with another layout is denied everywhere once tokens are stored.
+    evidence: |-
+      `userinfo_endpoint_url` (pre-existing) and the new `token_endpoint_url` build
+      `<issuer>/protocol/openid-connect/{userinfo,token}`, and the refresh reads its client from
+      `SOCIALACCOUNT_PROVIDERS` only. The BYO example in the deployment docs uses the same layout, and
+      the bundled realm is Keycloak. Unverified: whether any estate runs a BYO IdP with another layout.
+      Settled by asking the operator which IdPs are in use; the fix is OIDC discovery or settings.
+    location: src/platform/config/authorization/idp_userinfo.py
+    severity: medium (unverified)
+  - summary: >-
+      Two requests that both see a 401 at access-token expiry refresh with the same refresh token, with no
+      lock across them.
+    evidence: |-
+      `_refresh_access_token` rotates the stored refresh token without a row lock; the docstring accepts
+      that a racing request is denied once. The bundled realm sets no refresh-token revocation, so
+      Keycloak reuse is allowed and the race is benign there. Unverified: a BYO IdP that rotates with
+      reuse detection could refuse the loser or end the session. Settled by that IdP's refresh-token
+      settings; the fix is a row lock held across the HTTP call.
+    location: src/platform/config/authorization/idp_userinfo.py
+    severity: medium (unverified)
 declared_low_risk: false
 ---
 
