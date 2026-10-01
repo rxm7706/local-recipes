@@ -2,7 +2,7 @@
 title: '73.1: A follow-up review run is judged and landed by its own branch'
 type: 'fix'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'd8d0ac4469861f6ea58fa22b7dcae01c9eeaee3d'
 review_loop_iteration: 0
 followup_review_recommended: true
@@ -277,3 +277,44 @@ Blocking condition: intent gap
 **Verification performed.** On the attempted tree, before review: `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` passed (9597 passed, 1 skipped); `pixi run --frozen -e pyforge-ci pyforge-deps-test` passed (130 passed, 3 skipped); `pixi run -e pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0. During triage: the criterion's baseline-scope mutation made `test_gather_git_facts_for_a_follow_up_ignores_the_stories_first_merge` fail, as required, and G1 was reproduced against real git as described above. After the revert: `python scripts/spec_surface_reconcile.py` exit 0. No `--write-baseline` was run, the sprint-status ledger and every `SPEC.md` are untouched, and nothing under `implementation-artifacts/` is tracked.
 
 **Residual risks.** Until question 1 is answered, any follow-up run for a story whose dispatch worktree survives would read COMPLETED on its first tick without landing, and Story 73.2's drain would schedule exactly those runs. The attempted design is otherwise sound; the review's other findings were low or moot.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Summary of implemented change.** The re-run took attempt 1's restored code to the operator's 2026-10-01 rulings. A launch on a `done` spec whose `followup_review_recommended` is true now writes `followup_review: {"dw_id": …}` and `launch_origin_main_sha` (`origin/main`'s tip, read after a best-effort `origin main` fetch) on the launch INTENT; `dw_id` is read from the ledger at `origin/main`, not the primary's copy. Every reader takes the marker from that INTENT and counts only merge subjects in `<launch_origin_main_sha>..refs/remotes/origin/main`, never the run's baseline: the supervisor, `resolve_dispatch_session_verdict`, the live-run evidence, `station_story_block_facts`, `marshal status` (`_landing_superseded`) and the CAP-4 land-only retry, which also passes it to `execute_dispatch_land`. A follow-up run's spec-only diff counts as progress, it lands as ALREADY_LANDED only when its own head is an ancestor of `origin/main`, and finalize closes its `DW-FRR` row. One behaviour beyond the contract: `dispatch_once` refuses the launch with `MRS-DISP-016` when `origin/main` cannot be resolved (rows P2-BH-10 and P2-IA-8, rejected as low).
+
+**Files changed** (net against `main`: 22 files, +3099/−82; paths under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/` unless noted):
+- `core/dispatch_harness_done.py` — `FollowupReview` carries `launch_origin_main_sha` beside `dw_id`; one INTENT round trip for the writer and every reader.
+- `core/dispatch_completion.py` — `merge_subject_ref` (the launch-tip range, `None` when no tip) and `narration_spec_path` take the marker.
+- `core/dispatch.py`, `core/status.py` — `DispatchJournalFacts.followup_review` and `FleetHomeFacts.dispatch_followup_review`.
+- `core/deferred_work.py` — `open_followup_review_id` and `close_followup_review_row`, pure; the BH-6 docstring reworded.
+- `cli/dispatch.py` — `dispatch_once` derives the marker (fetch, tip via `merge_base`, `dw_id` at `origin/main`, the refusal); journal facts, session verdict, live evidence, block facts and the CAP-4 retry read or pass it.
+- `cli/status.py` — `_landing_superseded` reads the launch-tip range for a follow-up row.
+- `dispatch_supervisor/__main__.py` — the marker object, not a boolean, through the git facts, the narration checks and the land sites.
+- `dispatch_land.py`, `dispatch_land_finalize/__main__.py` — the ancestor-only ALREADY_LANDED for a follow-up run and the row close with its `MRS-DISP-047` WARN (attempt 1's restored code; the re-run moved the corroboration read inside the normal-run branch).
+- `tests/unit/` — `test_deferred_work.py`, `test_dispatch.py`, `test_dispatch_completion.py`, `test_dispatch_harness_done.py`, `test_dispatch_land_finalize.py`, `test_dispatch_landing.py`, `test_dispatch_supervisor_main_loop.py`, `test_status.py`, `test_status_landing_superseded.py` (new).
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` and `…/spec-pyforge-core/.memlog.md` — surface reconcile entries naming every governed path; no baseline stamped.
+- This story spec — status, triage log, `deferred:`, this section.
+
+**Review findings breakdown.** 37 findings (high 0, medium 4, low 26, false 7). Patches applied: 2, both medium — P2-VG-1 and P2-VG-2, each a missing test that let a one-line mutation survive; no production code changed in the patch round. Deferred: 1 entry (campaign-block pruning, rows P2-EC-5 and P2-IA-11). Rejected: 33 (26 low, six of them carried from the first pass, and 7 false), each with its reason in the Review Triage Log. No `intent_gap`, no `bad_spec`; `review_loop_iteration` stays 0.
+
+**Follow-up review recommendation.** `true` (first pass; two medium entries were patched, high 0, medium 2). The specific unverified risk: a follow-up review that patches nothing. Build-auto step 04 restores the spec when a pass applies no patch, which leaves the run with head equal to its baseline and no changed path. `judge_dispatch_completion` returns FAILED for a dead session with no git progress that has not merged, and no test covers this end state, so whether a clean follow-up review reads as a failed run, and whether its `DW-FRR` row ever closes, is untraced.
+
+**Verification performed** (all on the final tree unless noted):
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — exit 0, 9638 passed, 1 skipped, 12 deselected (9635 before the patch round, plus its 3 new tests).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — exit 0, 130 passed, 3 skipped.
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0 (ruff, `ruff format --check`, mypy over the ten packages, target-version and pre-commit checks).
+- `python scripts/spec_surface_reconcile.py` — exit 0; `pixi run --frozen -e pyforge-guild spec-surface-check` — exit 0 (warn-only `stale-surface` globs that match no tracked file, none of them a path this change touched). No `--write-baseline` was run.
+- Matrix audit: before the patch round, the follow-up tests selected by name ran verbosely — 142 passed, 0 failed, 0 skipped — and named tests covering the launch with and without a row, the flag-false `done` spec, the reused-worktree real-git case, the CAP-4 retry, the session verdict, the block facts, `marshal status` and the spec-only diff all passed.
+- Mutations, run on a copy of the package so the worktree stayed untouched: the criterion's scope mutation (whole ref in place of the launch-tip range) fails 10 follow-up supervisor tests, including the LIVE test and the real-git reused-worktree test; the P2-VG-1 and P2-VG-2 sites fail their new tests; dropping the marker at the CAP-4 retry (`cli/dispatch.py:998`), at the land-only call (`:2666`), at the status overlay (`cli/status.py:944`) and forcing the follow-up branch of `execute_dispatch_land` back to the key-based answer each fail at least one follow-up test. The unmutated copy passed each time.
+
+**Residual risks.**
+- The clean-review end state above.
+- Deferred D1: a blocked follow-up story would be pruned as merged by the drain's campaign-block readers once Story 73.2 schedules follow-ups; finalize's corroboration reads were not examined.
+- A launch now refuses where `origin/main` cannot be resolved; the contract is silent on that case.
+- A failed fetch leaves the tip to a stale remote-tracking ref; judged not reachable through the landing flow (P2-BH-1), not guarded.
+- The land-only retry now reads run journals unguarded, like the other callers of `_latest_story_run_dir`; a corrupt journal was not tested.
+
+**Process note.** The Agent tool ran every subagent (the implementation, the four reviewers and the patch round) as a detached task with a completion notice, where the workflow asks for blocking calls. Each result was used only after its completion notice, and the implementation and patch work were checked against the diff and the runs above, not the subagent's report.
