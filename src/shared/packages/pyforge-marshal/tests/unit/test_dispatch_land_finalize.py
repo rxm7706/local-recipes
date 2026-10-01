@@ -1922,23 +1922,49 @@ class _FixedClock:
 
 class _FrrVcs(_PublishVcs):
     """`_PublishVcs` for story 51.2 (spec `done` and flagged at `origin/main`) that also serves the deferred-work
-    ledger at `origin/main` (`origin_ledger`, `None` = absent) and applies a published ledger to it."""
+    ledger at `origin/main` (`origin_ledger`, `None` = absent) and applies a published ledger to it.
+
+    The carry's own fetch is observable: the carry reads the spec at `origin/main` first and fetches second, so
+    a fetch after that read is the carry's (`carry_fetched`). `stale_until_carry_fetch` is the ledger the tip
+    shows until that fetch has run (a clone that has not yet fetched); `carry_fetch_raises` makes that fetch fail."""
 
     def __init__(
-        self, *, origin_ledger: str | None = _FRR_BASE_LEDGER, origin_ledger_raises: bool = False, **kwargs
+        self,
+        *,
+        origin_ledger: str | None = _FRR_BASE_LEDGER,
+        origin_ledger_raises: bool = False,
+        stale_until_carry_fetch: str | None = None,
+        carry_fetch_raises: bool = False,
+        **kwargs,
     ) -> None:
         kwargs.setdefault("ledger_text", _FRR_DONE_TWIN)
         kwargs.setdefault("spec_text", _FRR_SPEC)
         super().__init__(**kwargs)
         self.origin_ledger = origin_ledger
         self.origin_ledger_raises = origin_ledger_raises
+        self.stale_until_carry_fetch = stale_until_carry_fetch
+        self.carry_fetch_raises = carry_fetch_raises
+        self.carry_fetched = False
         self.ledger_refs: list[str] = []
+
+    def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
+        if self._carry_started():
+            if self.carry_fetch_raises:
+                self.fetch_calls.append((repo_root, remote, ref))
+                raise VcsCommandError("git fetch origin refs/heads/main failed: could not read from remote")
+            self.carry_fetched = True
+        super().fetch(repo_root, remote, ref)
+
+    def _carry_started(self) -> bool:
+        return any(path == _FRR_SPEC_REL for _root, _ref, path in self.read_calls)
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
         if path == _FRR_LEDGER_REL:
             self.ledger_refs.append(ref)
             if self.origin_ledger_raises:
                 raise VcsCommandError(f"git show {ref}:{path} failed: bad object")
+            if self.stale_until_carry_fetch is not None and not self.carry_fetched:
+                return self.stale_until_carry_fetch
             return self.origin_ledger
         return super().file_text_at_ref(repo_root, ref, path)
 
@@ -2385,16 +2411,103 @@ def test_a_contended_ledger_lock_names_the_row_that_was_not_carried(tmp_path: Pa
     assert ledger.read_text(encoding="utf-8") == _FRR_BASE_LEDGER
 
 
-def test_the_followup_row_depends_on_finalizes_own_carry_call(tmp_path: Path, monkeypatch) -> None:
-    """AC 7 (mutation): with the carry call answering nothing -- what removing it from `finalize_dispatch_land`
-    leaves -- the 51.2 fixture adds no row, so `test_finalize_publishes_one_followup_review_row_for_a_flagged_landing`
-    cannot pass without it."""
-    _frr_setup(tmp_path)
-    vcs = _FrrVcs()
-    monkeypatch.setattr(f"{_FINALIZE_MOD_79}._followup_review_carry", lambda *a, **k: None)
+def test_the_live_ledger_shape_a_prose_mention_of_the_id_is_not_the_row(tmp_path: Path, monkeypatch) -> None:
+    """Review pass 2, on the shape the live marshal ledger has today: the hand-filed `DW-FU-51-2-1` row's
+    `verified:` line names `DW-FRR-51-2` in prose. That is not the row, so 51.2 -- the story this feature exists
+    for -- is carried; a real `### DW-FRR-51-2:` heading (the second finalize) still is not added again."""
+    live = (
+        _FRR_BASE_LEDGER
+        + "  verified: 2026-09-28 -- carried by `DW-FRR-51-2` once Story 66.1 lands (placeholder: DW-FRR-<story>).\n"
+    )
+    _frr_setup(tmp_path, ledger=live)
+    vcs = _FrrVcs(origin_ledger=live)
 
     assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
 
+    published = _frr_published_ledger(vcs)
+    assert published.startswith(live)
+    assert published.count(f"### {_FRR_ID}:") == 1
+    assert _frr_promoted_id(tmp_path) == _FRR_ID
+
+    again = tmp_path / "again"
+    _frr_setup(again, ledger=live)
+    assert _frr_finalize(monkeypatch, again, vcs) == 0
+    assert len(vcs.publishes) == 1
+    assert _frr_promoted_id(again) is None
+
+
+@pytest.mark.parametrize(
+    "status_line",
+    ["status: done  # landed via dispatch", "status: Done", 'status: "done"', "status: done"],
+)
+def test_finalize_carries_a_done_spec_whose_status_line_the_strict_reader_cannot_parse(
+    tmp_path: Path, monkeypatch, status_line: str
+) -> None:
+    """Review pass 2: the status is read through the harness guard's own reader, so the `done  # note` and
+    capitalised shapes (3 of the 224 flagged tracked specs) are carried, not dropped silently."""
+    _frr_setup(tmp_path)
+    vcs = _FrrVcs(spec_text=_FRR_SPEC.replace("status: 'done'", status_line))
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    assert _frr_published_ledger(vcs).count(f"### {_FRR_ID}:") == 1
+    assert _frr_promoted_id(tmp_path) == _FRR_ID
+
+
+def test_the_carrys_own_fetch_runs_before_it_reads_the_ledger_at_origin_main(tmp_path: Path, monkeypatch) -> None:
+    """Review pass 2: the tip shows a stale ledger until the carry's own `fetch` has run. The row must be built
+    on the fetched text, so the row a concurrent finalize published since survives; deleting the fetch, or moving
+    it after the read, builds the row on the stale tip and drops that row."""
+    fresh = _FRR_BASE_LEDGER + _FRR_CONCURRENT_ROW
+    _frr_setup(tmp_path)
+    vcs = _FrrVcs(origin_ledger=fresh, stale_until_carry_fetch=_FRR_BASE_LEDGER)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs) == 0
+
+    assert vcs.carry_fetched
+    published = _frr_published_ledger(vcs)
+    assert published.startswith(fresh)
+    assert "### DW-CONCURRENT-1:" in published and published.count(f"### {_FRR_ID}:") == 1
+
+
+def test_a_failing_carry_fetch_skips_the_row_with_a_warn_and_the_intakes_publish_stands(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Review pass 2: the carry's own fetch raising is the "cannot read the ledger" skip -- a WARN naming the
+    ledger and the cause, no row, and the intake's own publish goes out as it always has. A carry that swallowed
+    the error would publish a row built on an unfetched tip."""
+    ledger = _frr_setup(tmp_path)
+    vcs = _FrrVcs(carry_fetch_raises=True)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs, _AddingIntakeProcess(ledger)) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert published == _FRR_BASE_LEDGER + "\n### DW-INTAKE-1: filed by intake\n"
+    [message] = _frr_messages(tmp_path)
+    assert _FRR_LEDGER_REL in message and "could not read from remote" in message and _FRR_ID in message
+    assert _frr_promoted_id(tmp_path) is None
+    assert ledger.read_text(encoding="utf-8") == _FRR_BASE_LEDGER
+
+
+def test_the_followup_row_depends_on_finalizes_own_carry_call(tmp_path: Path, monkeypatch) -> None:
+    """AC 7 (mutation): with the carry call answering nothing -- what removing it from `finalize_dispatch_land`
+    leaves -- the 51.2 fixture adds no row, so `test_finalize_publishes_one_followup_review_row_for_a_flagged_landing`
+    cannot pass without it. The stub records that finalize called it, once, for this story and worktree, so the
+    test cannot pass by never reaching the seam."""
+    _frr_setup(tmp_path)
+    worktree = tmp_path / "dispatch-worktree"
+    worktree.mkdir()
+    vcs = _FrrVcs()
+    calls: list[tuple[str, str, Path | None]] = []
+
+    def _no_carry(_vcs, _root, project_slug, key, carry_worktree, _clock, _findings):
+        calls.append((project_slug, str(key), carry_worktree))
+
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}._followup_review_carry", _no_carry)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs, worktree=worktree) == 0
+
+    assert calls == [(_SLUG_79, _FRR_KEY, worktree)]
     assert vcs.publishes == []
     assert _frr_promoted_id(tmp_path) is None
 
