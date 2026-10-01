@@ -2024,7 +2024,9 @@ def _frr_setup(root: Path, ledger: str | None = _FRR_BASE_LEDGER, *, spec: bool 
     return path
 
 
-def _frr_finalize(monkeypatch, root: Path, vcs, process=None, *, worktree: Path | None = None, fs=None) -> int:
+def _frr_finalize(
+    monkeypatch, root: Path, vcs, process=None, *, worktree: Path | None = None, fs=None, with_clock: bool = True
+) -> int:
     monkeypatch.setattr(f"{_FINALIZE_MOD_79}.repo_root", lambda: root)
     monkeypatch.setattr(f"{_FINALIZE_MOD_79}.GitVcs", lambda: vcs)
     if fs is not None:
@@ -2033,7 +2035,8 @@ def _frr_finalize(monkeypatch, root: Path, vcs, process=None, *, worktree: Path 
     monkeypatch.setattr(f"{_FINALIZE_MOD_79}._promote_sprint_ledger", lambda *a, **k: ())
     monkeypatch.setattr(f"{_FINALIZE_MOD_79}._resync_home_branch", lambda *a, **k: True)
     process = process if process is not None else _FakeIntakeProcess(returncode=0)
-    return finalize_dispatch_land(_SLUG_79, _FRR_KEY, worktree=worktree, process=process, clock=_FixedClock())
+    clock = _FixedClock() if with_clock else None
+    return finalize_dispatch_land(_SLUG_79, _FRR_KEY, worktree=worktree, process=process, clock=clock)
 
 
 def _frr_published_ledger(vcs: _PublishVcs) -> str:
@@ -2444,7 +2447,7 @@ def test_finalize_carries_a_done_spec_whose_status_line_the_strict_reader_cannot
     tmp_path: Path, monkeypatch, status_line: str
 ) -> None:
     """Review pass 2: the status is read through the harness guard's own reader, so the `done  # note` and
-    capitalised shapes (3 of the 224 flagged tracked specs) are carried, not dropped silently."""
+    capitalised shapes are carried, not dropped silently."""
     _frr_setup(tmp_path)
     vcs = _FrrVcs(spec_text=_FRR_SPEC.replace("status: 'done'", status_line))
 
@@ -2510,6 +2513,20 @@ def test_the_followup_row_depends_on_finalizes_own_carry_call(tmp_path: Path, mo
     assert calls == [(_SLUG_79, _FRR_KEY, worktree)]
     assert vcs.publishes == []
     assert _frr_promoted_id(tmp_path) is None
+
+
+def test_finalize_dates_the_row_through_its_own_default_clock(tmp_path: Path, monkeypatch) -> None:
+    """`main()` passes no clock, so every production flagged landing runs on `finalize_dispatch_land`'s own
+    default. With none injected the row is dated by the module's `SystemClock` (swapped here for the fixed one,
+    so the date is deterministic); a default that is not wired fails the carry instead of dating the row."""
+    _frr_setup(tmp_path)
+    vcs = _FrrVcs()
+    monkeypatch.setattr(f"{_FINALIZE_MOD_79}.SystemClock", _FixedClock)
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs, with_clock=False) == 0
+
+    assert "  promoted: 2026-10-01 \u2014 dispatch-land finalize" in _frr_published_ledger(vcs)
+    assert _frr_promoted_id(tmp_path) == _FRR_ID
 
 
 def test_against_real_git_the_row_is_published_onto_origin_mains_ledger_while_the_primary_copy_is_stale(
