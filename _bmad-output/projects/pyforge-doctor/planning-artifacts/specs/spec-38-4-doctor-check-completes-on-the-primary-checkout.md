@@ -2,10 +2,10 @@
 title: "38.4: `doctor check .` completes on the primary checkout"
 type: 'fix'
 created: '2026-10-01'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'd6b0a85992a698f49ab2a3158c1a24b06ecbd7d6'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - docs/dreams/pyforge-doctor.md
@@ -152,3 +152,35 @@ Minted 2026-10-01 by operator ruling: the deferral burn-down's "stop the inflow"
   - `[low]` `[reject]` Intent Alignment 5: tracked-under-ignored is tested at one nesting level — git omits any directory holding a tracked file from the wholly-ignored listing (measured in the Code Map probe); no counter-example at greater depth was shown.
   - `[low]` `[reject]` Intent Alignment 6: the production `run_git` call does not scrub the environment, only the tests do — as Edge Case Hunter 2.
   - `[low]` `[reject]` Intent Alignment 7: the production-mutation measurement existed only as memlog prose — measured now (Blind Hunter 6 row) and recorded in this log and in Auto Run Result; nothing to change in code.
+
+## Auto Run Result
+
+Status: done
+
+**Summary of the implemented change.** `_discover_python_files` no longer enters a directory git ignores. In a git work tree `_git_ignored_dirs(target)` makes one `git ls-files --others --ignored --exclude-standard --directory -z` call per walk, through `cli_bridge.run_git` (the package's sole subprocess site), keeps only the directory entries and returns their normalised absolute paths; the walk drops those directories before it counts them, so they cost no entries against `_DISCOVERY_ENTRY_CAP`. Outside a work tree, inside an ignored directory (git exits 128), when git is absent or times out, or when git prints non-UTF-8, `run_git` raises `CliBridgeError`, `_git_ignored_dirs` returns an empty set and the walk is the one it was before. The cap and its INCOMPLETE report stay for a huge tracked tree; the cap was not raised. Only directories git IGNORES are pruned, so a directory that holds a tracked file is still walked and an untracked, not-ignored directory is still scanned.
+
+**Files changed.**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py` -- `_git_ignored_dirs`, the prune in the walk, the import of `run_git`, the corrected "no subprocess" docstring line.
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/cli_bridge.py` -- `run_git` raises `CliBridgeError` when git's stdout is not valid UTF-8 (review fix); its docstring names the case.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_checks_env_hygiene.py` -- 13 new tests over real throwaway git repos (one per matrix row, a subdirectory target, a relative target, one git call per run, git failing, a non-UTF-8 path), an autouse git-environment scrub that also neutralises the default global ignore file, and the module docstring.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_cli_bridge.py` -- one `run_git` test on a real non-UTF-8 blob.
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md` -- `DW-OPS-2026-10-01-3` closed with the measured evidence.
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md` and `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` -- surface-reconcile entries (two each) naming every governed path and its reason, appended with `memlog.py`; the detector names `spec-pyforge-core` as co-governor of the doctor package source. No `SPEC.md` was edited and no baseline was stamped.
+
+**Review breakdown.** 25 findings: 4 high, 0 medium, 19 low, 2 false. Patches applied: 4 grouped entries (7 rows) — the non-UTF-8 crash (4 rows, all high, one root cause), the test fixture's global-ignore leak, the open ledger row, the stale test docstring. Deferred: 0. Rejected: 18 (16 low, 2 false), each with its recorded reason in the Review Triage Log above.
+
+**Follow-up review recommendation.** `true`. A high finding was patched, and the patch changes a shared helper: `run_git` is also called by `sources/marshal.py`, `sources/frozen_path.py`, `sources/pixi_currency.py`, `sources/live_proof_surfaces.py`, `sources/capability_effect.py` and `bare_merge.py`. Each of them already catches `CliBridgeError`, so a non-UTF-8 stdout now degrades into their own Finding where it used to crash, but none of their own tests feeds them a non-UTF-8 stdout; that path is exercised only by the new `run_git` test and the walk test.
+
+**Verification performed** (every verdict read from a captured exit code, never a pipe; re-run at the final HEAD where a check reads the tree):
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- exit 0, 3154 passed, 1 skipped (3152 before the review patches).
+- `pixi run -e pyforge-guild lint-types` -- exit 0.
+- `python scripts/spec_surface_reconcile.py` -- exit 0 ("every tracked file governed or allowlisted; no drift"); `pixi run -e pyforge-guild spec-surface-check` -- exit 0; `pixi run -e pyforge-guild deferred-work-check` -- exit 0.
+- Mutation, measured: with the prune filter deleted from `_discover_python_files` 5 of the new tests fail and the file was restored byte-identical; with `_git_ignored_dirs` stubbed to return nothing, the walk over this worktree with 60,000 ignored files finds 20,735 files and is incomplete, against 2,415 files and complete with the pruning. (A second measurement of the same walk read 20,717; the count under the cap moves by a few with the tree's directory count.) Removing the `UnicodeDecodeError` handler fails the two non-UTF-8 tests.
+- Manual check (AC 5): filled `var/scribe-pg`, `var/platform-local` and `.cursor/cdao-p15-noarch-build` with 60,000 gitignored `.py` files; `doctor check . --env --json` exited 0 with no INCOMPLETE finding; the fill was removed. `doctor check <primary checkout> --env --json` also exited 0 with 4 findings and no INCOMPLETE finding.
+- Matrix Test Audit: ignored dir -- `test_discover_python_files_does_not_enter_a_git_ignored_directory`; tracked under ignored -- `test_discover_python_files_still_scans_a_tracked_file_under_an_ignored_directory`; not a work tree -- `test_discover_python_files_walks_a_plain_directory_as_before`; git failure -- `test_discover_python_files_walks_unchanged_when_git_fails` and the non-UTF-8 test; huge tracked tree -- `test_discover_python_files_still_reports_incomplete_for_a_tracked_tree_over_the_cap`. Each ran and passed in the doctor-test run above.
+
+**Residual risks.**
+- The intent's Approach says "prune directories git ignores or does not track"; the example command, the ACs and the matrix name only ignored directories, so this change prunes only ignored ones. A large untracked, not-ignored directory still counts against the cap and still yields an honest INCOMPLETE report. If the operator meant the wider reading, that is a follow-up change, not a bug in this one.
+- A non-UTF-8 name under the target now makes the whole walk unpruned (the fallback), so such a checkout can report INCOMPLETE again, but never crashes.
+- A nested repository's own `.gitignore` is not applied (one git call per run, by the spec).
+- The spec-surface baseline hashes for `env_hygiene.py`, `cli_bridge.py` and their tests are not re-stamped: the loop must not stamp its own baseline. A scoped `--write-baseline --spec pyforge-doctor/spec-pyforge-doctor` and `--spec pyforge-marshal/spec-pyforge-core` after the final commit remains for the landing.
