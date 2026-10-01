@@ -2,7 +2,7 @@
 title: '78.1: The platform refuses Langflow auto-login and honours an IdP revocation on the next request'
 type: 'fix'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'cc3a9c0b9d5c397986318518320f7d4eb1546ec5'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -148,18 +148,26 @@ All paths under `src/platform/` unless prefixed. Line anchors are `main` at `a96
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `config/settings/base.py` -- set `SOCIALACCOUNT_STORE_TOKENS = True`; force `LANGFLOW_AUTO_LOGIN` off in settings and `os.environ`; read `LANGFLOW_SUPERUSER`, `LANGFLOW_SUPERUSER_PASSWORD` from the environment, no default password -- closes both findings at the settings seam
-- [ ] `config/startup/stage_one.py` + the six production-leaf env fixtures -- add the required key and its remedy; one absence case -- production refuses to start without it, named
-- [ ] `config/authorization/idp_userinfo.py` -- tell a 401 from other failures; refresh once with the stored refresh token (update the `SocialToken` row), retry once; every other outcome denies -- revocation honoured, no stale grant
-- [ ] `config/authorization/current_claims.py` -- a wired hook is authoritative: a non-mapping answer returns `None`, never the session claims -- removes the fail-open
-- [ ] `deploy/charts/platform/templates/_helpers.tpl`, `values.yaml`, ESO example, `compose/compose.yml` -- password by secret reference only; document the key where the other secrets are documented
-- [ ] tests -- replace the mocked revocation test with a real `SocialToken` (stored through allauth's `SocialLogin.save`) against a local HTTP stub of the userinfo and token endpoints, covering every I/O-matrix row; add the auto-login refusal through the real `config.asgi` dispatch; move `_run_flow_over_http` to password login; chart and compose "no literal" checks
-- [ ] verification -- run both mutations by hand, the station and platform suites, then reconcile every Spec `spec-surface-check` names (memlog first, `git add`, scoped stamp) -- note the run's own guard is `python scripts/spec_surface_reconcile.py`, and a stamp is never passed by this run
+- [x] `config/settings/base.py` -- set `SOCIALACCOUNT_STORE_TOKENS = True`; force `LANGFLOW_AUTO_LOGIN` off in settings and `os.environ`; read `LANGFLOW_SUPERUSER`, `LANGFLOW_SUPERUSER_PASSWORD` from the environment, no default password -- closes both findings at the settings seam
+- [x] `config/startup/stage_one.py` + the six production-leaf env fixtures -- add the required key and its remedy; one absence case -- production refuses to start without it, named
+- [x] `config/authorization/idp_userinfo.py` -- tell a 401 from other failures; refresh once with the stored refresh token (update the `SocialToken` row), retry once; every other outcome denies -- revocation honoured, no stale grant
+- [x] `config/authorization/current_claims.py` -- a wired hook is authoritative: a non-mapping answer returns `None`, never the session claims -- removes the fail-open
+- [x] `deploy/charts/platform/templates/_helpers.tpl`, `values.yaml`, ESO example, `compose/compose.yml` -- password by secret reference only; document the key where the other secrets are documented
+- [x] tests -- replace the mocked revocation test with a real `SocialToken` (stored through allauth's `SocialLogin.save`) against a local HTTP stub of the userinfo and token endpoints, covering every I/O-matrix row; add the auto-login refusal through the real `config.asgi` dispatch; move `_run_flow_over_http` to password login; chart and compose "no literal" checks
+- [x] verification -- run both mutations by hand, the station and platform suites, then reconcile every Spec `spec-surface-check` names (memlog first, `git add`, scoped stamp) -- note the run's own guard is `python scripts/spec_surface_reconcile.py`, and a stamp is never passed by this run
 
 **Acceptance Criteria:**
 - The seven Given/When/Then criteria in the intent contract above are the acceptance criteria; this story adds none.
 
 ## Spec Change Log
+
+- 2026-10-01 (implementation, deviations from the Design Notes; none changes an acceptance criterion):
+  - **`request.user` at middleware time.** `TokenRolesMiddleware` sits right after `SessionMiddleware`, before `AuthenticationMiddleware`, so on its call `request.user` is not set and the hook could never find a token. With the hook authoritative that left `request.idp_roles` empty for every request (`django-marshal`'s `watch_report` reads it directly). `fetch_current_userinfo` now resolves the user from the session (`django.contrib.auth.middleware.get_user`, which caches on the request); the new test `test_request_roles_come_from_userinfo_before_the_view_runs` fails without it.
+  - **One IdP exchange per request.** A denial is not cached across requests (positive-only cache, unchanged), and the roles are read several times per request, so each read repeated userinfo and the refresh. The outcome, a denial included, is remembered on the request, which is what makes "refreshed once" true per request.
+  - **Env wiring beyond the chart and compose.** The container job, `scripts/platform-ci-local.sh` and the three kind/OCP/air-gap smoke Secrets in `.github/workflows/platform-ci.yml` boot the platform image or the chart, so they now carry `LANGFLOW_SUPERUSER_PASSWORD`; the built image is also probed for a 403 at `/langflow/api/v1/auto_login`, because the pytest lane for it needs `langflow`, which `platform-ci-test` does not carry.
+  - **Docs.** Besides `values.yaml`, the ESO example and NOTES: the ESO README table, `enterprise-deployment.md` (Secrets table and a revocation paragraph), `platform-deployment-architecture.md`, `ocp-cluster-bringup.md`, `src/platform/README.md` and the local-development tutorial.
+  - **Fixtures.** Four production-leaf env fixtures needed the key (`test_startup_required_settings`, `test_idp_revoke_next_request`, `test_agent_rate_limits_and_run_bounds`, `test_broker_tls_verified`); `test_mcp_host_sidecar` and `test_mcp_transport_auth` only set `MCP_HOST_SIDECAR_BASE_URL` for the proxy and never load the production leaf, so they are unchanged.
+- Operator-visible: every IdP session that began before this ships holds no stored token and is denied its roles until the user signs in again (fail closed, by the "no stored token" row).
 
 ## Design Notes
 
