@@ -2,7 +2,7 @@
 title: '66.1: Finalize carries a recommended follow-up review into the deferred-work ledger'
 type: 'fix'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'a240511f5b149a47d6972d4a335f591419d0d840'
 review_loop_iteration: 2
 followup_review_recommended: false
