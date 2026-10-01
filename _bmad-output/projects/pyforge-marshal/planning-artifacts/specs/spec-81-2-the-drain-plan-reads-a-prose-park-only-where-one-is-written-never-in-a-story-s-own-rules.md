@@ -2,7 +2,7 @@
 title: "81.2: The drain plan reads a prose park only where one is written, never in a story's own rules"
 type: 'fix'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '70c074d58076180ce75919a4ee3bcde1a7244f00'
 review_loop_iteration: 1
 followup_review_recommended: false
