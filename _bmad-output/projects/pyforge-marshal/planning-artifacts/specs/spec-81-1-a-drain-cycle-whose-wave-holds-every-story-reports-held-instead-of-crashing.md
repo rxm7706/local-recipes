@@ -2,7 +2,7 @@
 title: '81.1: A drain cycle whose wave holds every story reports held instead of crashing'
 type: 'fix'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'f73e1f3680068a50352326b7848ba17638756f87'
 review_loop_iteration: 0
 followup_review_recommended: false
