@@ -361,7 +361,7 @@ development_status:
   8-4-anchor-resolution-and-region-insertion: done
   8-5-marker-deletion-as-a-sanctioned-opt-out: done
   80-1-a-dispatch-landing-waits-for-its-pr-s-checks-and-refuses-on-a-red-one: done
-  81-1-a-drain-cycle-whose-wave-holds-every-story-reports-held-instead-of-crashing: backlog
+  81-1-a-drain-cycle-whose-wave-holds-every-story-reports-held-instead-of-crashing: done
   81-2-the-drain-plan-reads-a-prose-park-only-where-one-is-written-never-in-a-story-s-own-rules: done
   81-3-the-campaign-supervisor-keeps-retry-environment-blocks-across-its-cycles: backlog
   9-1-findings-model-severity-types-remedies: done
