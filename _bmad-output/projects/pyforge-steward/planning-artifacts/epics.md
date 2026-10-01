@@ -5196,6 +5196,33 @@ So that a real precondition gap is visible and a parse error never reads as one.
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-marshal
 pyforge-marshal-test` are green
 
+## Epic 80: The chart tests run in Platform CI (deferral burn-down inflow)
+
+Minted 2026-10-01 from the station Dream's entry of the same date and the operator's ruling of that date. A defect of the
+Platform CI lane, so no CAP is minted; a new epic because Epic 79 is `done`. **HARD boundaries:** helm is a pixi
+dependency of the `platform-ci-test` feature (canopy:AD-16), never a runner install; a `pixi.toml` change regenerates
+`environment.yaml` in the same change; outside CI a missing helm still skips.
+
+### Story 80.1: The Platform CI `test` job runs the chart tests, and a skipped one fails there
+
+As the operator relying on Platform CI's chart invariants,
+I want the `test` job to have helm, and a chart test that would skip there to fail,
+So that 73 helm-gated tests stop passing by not running.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 16.1 (the `platform-ci-test` env); canopy:AD-16 •
+DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1, DW-steward-78-1-3
+**Surface:** `pixi.toml` (`[feature.platform-ci-test.dependencies]`), `pixi.lock`, `environment.yaml`,
+`.github/workflows/platform-ci.yml`, `src/platform/tests/` (the `requires_helm` markers in `test_chart_invariants.py` and
+`test_openfeature_file_flags.py`), `scripts/platform-ci-local.sh` if it names the env.
+**Given** every chart test is `@requires_helm` and the CI `test` job's `platform-ci-test` env has no `kubernetes-helm`
+**When** this story lands
+**Then** `kubernetes-helm` is a `platform-ci-test` dependency at the pin `platform-dev` uses, and `requires_helm` fails a
+test (naming the missing binary) when the `CI` environment variable is set and `helm` is absent, skipping only outside CI
+**And** a Platform CI `test` run on the PR reports the chart tests as run, not skipped; `environment.yaml` is regenerated
+(`pixi project export conda-environment -e build > environment.yaml`); the five deferrals are closed with that run's
+evidence; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local --
+--test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

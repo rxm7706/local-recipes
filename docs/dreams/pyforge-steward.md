@@ -485,6 +485,17 @@ Drift — orphaned between stations.
   for a failed duty stays; marshal calls the steward CLI, never imports it. The seed check's literal
   `{{ slug }}` findings on a never-adopted repo are marshal Story 70.1's, already specced.
   Owner: steward. → Epic 79 / Story 79.1, specced 2026-10-01; lands with Story 73.1.
+- **2026-10-01 — Found: the chart tests never run in Platform CI.** Every chart invariant carries `requires_helm`
+  (skip when `helm` is not on PATH), and the Platform CI `test` job installs only the slim `platform-ci-test` pixi env,
+  which has no `kubernetes-helm` (only `platform-dev` does). So 73 helm-gated tests (66 chart invariants, 7 flag
+  renders) skip there without a word; only `platform-ci-local` runs them. Five deferrals record the same cause (DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2,
+  DW-steward-76-1, DW-steward-78-1-3), the newest from Story 78.1's own Langflow-password chart test.
+  **What it looks like when fixed:** the CI `test` job has helm, and a chart test that would skip there fails instead,
+  so a missing tool can never again read as a pass.
+  **Constraints:** no new CAP (a defect of the Platform CI lane, Story 16.1's `platform-ci-test` env); helm stays
+  pixi-provisioned (canopy:AD-16), never a runner install; outside CI a missing helm still skips. Operator ruling
+  2026-10-01: one of the deferral burn-down's "stop the inflow" changes, run before its Phase 2.
+  Owner: steward. → Epic 80 / Story 80.1, specced 2026-10-01.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

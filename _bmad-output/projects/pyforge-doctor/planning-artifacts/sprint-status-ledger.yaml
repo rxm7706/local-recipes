@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 204
+# stories: 210
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -112,6 +112,10 @@ development_status:
   36-1-a-fold-complete-check-proves-each-archived-dream-s-body-is-in-its-station-dream: done
   36-2-the-sibling-drift-check-reads-acknowledged-dreams-under-the-archive: done
   37-1-docs-specs-and-docs-intake-empty-and-the-legacy-tier-s-index-and-check-retire: blocked
+  38-1-a-verified-line-written-from-now-on-cites-what-it-read: backlog
+  38-2-spec-surface-names-a-spec-surface-glob-that-matches-nothing: backlog
+  38-3-the-fleet-hygiene-sweep-runs-with-the-other-detectors-warn-only: backlog
+  38-4-doctor-check-completes-on-the-primary-checkout: backlog
   4-1-health-scoring-fr-10: done
   4-2-persistent-fleet-health-surface-fr-11: done
   4-3-adoption-tracking-watch-axis-fr-12: done
@@ -206,6 +210,8 @@ development_status:
   epic-36-retrospective: optional
   epic-37: backlog
   epic-37-retrospective: optional
+  epic-38: backlog
+  epic-38-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

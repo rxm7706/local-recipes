@@ -407,6 +407,19 @@ verify_commands = [
   # co-governor reconciles (spec-pyforge-testing-charter governs the kit)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"79" = [  # a landing leaves nothing for the operator to finish (deferral burn-down inflow), added 2026-10-01
+  # The default surface, plus this file (79.2 corrects the "22"/"28" comments) and every Spec memlog.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "78" = [  # a landing unions append-only memlogs (spec-pyforge-marshal CAP-283), added 2026-09-30. The default
           # surface, restated because a declared entry replaces it outright, plus every Spec memlog: the
           # co-governor reconcile writes `spec-pyforge-unifying-strategy`'s, which lives under pyforge-steward.

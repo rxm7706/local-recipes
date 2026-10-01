@@ -875,6 +875,24 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   Kinships: CAP-4 (Story 28.20), CAP-269 (Story 59.1), `_bmad/scripts/memlog.py` (the append-only format), the
   S-13.7 surface-reconcile guard (why every story writes memlogs); owner `spec-pyforge-marshal`. → CAP-283 /
   Epic 78 / Story 78.1 (FR-230), specced 2026-09-30.
+- **2026-10-01** — **Found: two landing gaps that keep growing the ledgers.** The 2026-09-30 deferral burn-down
+  traced recurring hand work after dispatch landings to two gaps:
+  - **Finalize promotes the ledger twin but not the Tier-3 feed row, nor a spec the session tracked itself.** Every
+    automatic landing on 2026-09-30 (doctor 34.5, steward 76.2, scribe 25.1, marshal 74.2 and 78.1) left the story's
+    feed row at `backlog`, so the next plain `sprint-ledger-sync` refused ("feed would un-finish") until a hand
+    alignment (DW-OPS-2026-10-01-1). A session that commits its tracked spec and leaves no Tier-3 twin gets no spec
+    promotion: scribe 25.1 landed with its spec at `backlog` (DW-FU-53-2-4).
+  - **Dispatch verification never runs `lint-types`.** `dispatch/*` branches skip `pr-preflight` because the supervisor
+    gates them, but the supervisor verifies only the station suite and the surface guard. Scribe 25.1 landed a format
+    `ruff format` rewrites, and `lint-types` stayed red on `main` until #1690 (DW-OPS-2026-10-01-2).
+  **What it looks like when fixed:** a landing leaves the feed row and the tracked spec `done` beside the twin; a
+  dispatch whose change fails `lint-types` is refused before it merges.
+  **Constraints:** no new CAP (defects of the landing promotion, CAP-229 and CAP-277, and of the derived verification
+  guard, CAP-261 (a)); `lint-types` joins verification in one place, as the surface guard did (Story 53.1), never by
+  editing eight `verify_commands` lists; the feed write is atomic and never moves a `done` or `blocked` row. The `"22"`
+  and `"28"` `epic_surfaces` entries stay: their station-wide globs are what every later epic declares, and Epic 73's
+  follow-up reviews of done 22.x/28.x stories need them; only their stale "stopgap" comments go (DW-FU-28-14-4,
+  DW-OPS-2026-10-01-3). Owner `spec-pyforge-marshal`. → Epic 79 / Stories 79.1–79.2, specced 2026-10-01.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
