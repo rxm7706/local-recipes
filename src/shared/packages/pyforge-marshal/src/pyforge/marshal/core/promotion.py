@@ -611,6 +611,10 @@ def read_spec_status(text: str | None) -> str | None:
 #: deliberate states a landing never overrides; an unreadable status is in no set at all.
 PRE_DONE_SPEC_STATUSES = frozenset({"backlog", "draft", "ready", "ready-for-dev", "in-progress", "in-review", "review"})
 
+#: The tracked-spec ``status:`` values that are final -- a landing leaves them alone, silently (Story 79.1).
+#: Disjoint from ``PRE_DONE_SPEC_STATUSES`` (a test pins it); a status in neither is not silent, it is a WARN.
+TERMINAL_SPEC_STATUSES = frozenset({SPEC_STATUS_DONE, "blocked", "superseded"})
+
 _STATUS_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]+")
 
 
@@ -621,9 +625,10 @@ def set_spec_status(text: str, status: str) -> str:
 
     A targeted rewrite of that one token: the provenance banner, the line's indentation, its quote
     character and its trailing whitespace, every other frontmatter line, the body and every line ending
-    come back byte for byte. ``text`` is returned UNCHANGED -- never ``None``, never raised -- when
-    there is nothing to rewrite (empty text, no fence, no ``status:`` line), so a caller tests "did it
-    move" with ``new == text``. ``status`` must be a bare token (``[A-Za-z0-9_-]+``, the shape the reader
+    come back byte for byte. That holds for the text this function is handed: production text arrives
+    through text-mode reads (``git show``, ``FsPort``), already LF-normalised, so a CRLF file comes back
+    LF. ``text`` is returned UNCHANGED -- never ``None``, never raised -- when there is nothing to rewrite
+    (empty text, no fence, no ``status:`` line), so a caller tests "did it move" with ``new == text``. ``status`` must be a bare token (``[A-Za-z0-9_-]+``, the shape the reader
     accepts); anything else raises ``ValueError``, since a value with a colon or a newline would corrupt
     the frontmatter instead of setting it.
 
