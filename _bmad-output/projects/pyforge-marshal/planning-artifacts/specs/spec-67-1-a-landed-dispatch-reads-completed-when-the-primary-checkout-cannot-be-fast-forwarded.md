@@ -2,7 +2,10 @@
 title: '67.1: A landed dispatch reads completed when the primary checkout cannot be fast-forwarded'
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-review'
+baseline_revision: 'dfe299d099c11500a0fbfa46abe2c1727a5ac5d0'
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -62,6 +65,25 @@ Type / Effort / Deps: fix / XS / —.
 | repository read fails after land | land OUTCOME `landed`, `ok`; `VcsCommandError` on the re-read | `completed` (the journal check needs no repository read) | the repository facts recorded are the ones gathered before the land |
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` -- `run_dispatch_supervisor`: the terminal-branch land site (`_land_or_journal_block` → re-fold → `gather_dispatch_git_facts` → `resolve_terminal_session_verdict`) is the one changed site. The loop head and the post-finalize re-read already read `_landing_succeeded(folded, run_id)` first; the LIVE-branch land site is left alone.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` -- `_landing_outcome_verdict` / `_landing_succeeded`: the one rule reused (→ `core/dispatch_supervisor_state.landing_journal_indicates_complete`); `_run_and_journal_landing` journals `ok = (verdict == LANDED)`, so refused / skipped / already-landed supervisor lands journal `ok: false` and fall to repository facts.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_main_loop.py` -- supervisor main-loop tests over fakes (`FakeVcs`, `FakeFs`, `FakePublisher`, `_patch_landing`); the land-shape test and the three new tests live here.
+- Read-only: `gather_dispatch_git_facts`, `_MERGE_INTO`, `core/supervise.py::resolve_terminal_session_verdict`, `cli/dispatch.py::resolve_dispatch_session_verdict`.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` -- after the terminal-site re-read (outside its `try`), a `_landing_succeeded(folded, run_id)` journal wins as `COMPLETED` -- the journal decides the process verdict, git keeps the facts
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_main_loop.py` -- assert `completed` in the land-shape test; add landed (branch retired / present), repository-re-read-fails and not-ok-land (refused / skipped) tests covering every matrix row
+
+Acceptance Criteria: as stated in the `<intent-contract>` above.
+
+## Spec Change Log
+
+## Review Triage Log
 
 ## Source
 

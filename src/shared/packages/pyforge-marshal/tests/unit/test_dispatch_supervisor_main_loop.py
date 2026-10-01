@@ -2101,6 +2101,47 @@ def test_a_landed_run_reads_completed_when_the_repository_reread_after_the_land_
     assert _completion_outcome(fs, run_dir)["stop_reason"] is None
 
 
+class _AlreadyLandedOkFs(FakeFs):
+    """Journals the supervisor's ``already_landed`` land OUTCOME as ``ok``.
+
+    The supervisor's own journaling writes ``ok`` only for ``landed``; an
+    ``already_landed`` outcome journaled ``ok`` comes from another writer
+    (the dispatch CLI). This stands in for that writer."""
+
+    def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+        if dispatch_core.KIND_DISPATCH_LAND in line and '"verdict": "already_landed"' in line:
+            line = line.replace('"ok": false', '"ok": true')
+        super().append_line(path, line, fsync=fsync)
+
+
+def test_an_already_landed_run_reads_completed_when_local_main_lacks_the_merge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch, verdict=DispatchLandingVerdict.ALREADY_LANDED)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    fs = _AlreadyLandedOkFs()
+    publisher = FakePublisher()
+
+    code = _run(
+        repo_root,
+        fs=fs,
+        vcs=FakeVcs(branches=frozenset({branch}), head_sha=_MOVED),
+        process=FakeProcess(alive=False),
+        publisher=publisher,
+    )
+
+    assert code == 0
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
+    assert _completion_outcome(fs, run_dir)["stop_reason"] is None
+
+
 @pytest.mark.parametrize(
     "land_verdict",
     [DispatchLandingVerdict.REFUSED, DispatchLandingVerdict.SKIPPED_UNVERIFIED],
