@@ -2,7 +2,8 @@
 title: "80.1: The Platform CI `test` job runs the chart tests, and a skipped one fails there"
 type: 'fix'
 created: '2026-10-01'
-status: 'draft'
+status: 'in-progress'
+baseline_revision: '423056819c2ecb0f2d244e3109edbe0df03621a4'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -13,6 +14,8 @@ context:
   - src/platform/tests/test_chart_invariants.py
   - src/platform/tests/test_openfeature_file_flags.py
   - scripts/platform-ci-local.sh
+warnings:
+  - oversized
 deferred:
   - summary: >-
       The Platform CI `test` log has not been read, so the five chart-test deferrals stay open.
