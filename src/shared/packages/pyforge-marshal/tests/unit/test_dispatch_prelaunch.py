@@ -116,6 +116,122 @@ def test_a_park_in_the_tracked_spec_is_found_when_the_epics_block_is_clean() -> 
     assert park.source == "tracked spec"
 
 
+# --- find_prose_park: a spec's intent contract is the feature's rules, not a hold (Story 81.2) ---
+
+_CONTRACT_ONLY_SPEC = (
+    "---\nstatus: backlog\n---\n\n"
+    "<intent-contract>\n\n"
+    "**Never:**\n"
+    "- Do not dispatch a follow-up whose row is closed or absent.\n"
+    "- A story parked in code is never run.\n\n"
+    "</intent-contract>\n\n"
+    "## Verification\n"
+)
+
+
+def _spec_park(spec_text: str) -> prelaunch.ProsePark | None:
+    return prelaunch.find_prose_park(story="1-1-x", station_skips={}, epics_block=None, spec_text=spec_text)
+
+
+def test_a_line_only_inside_the_intent_contract_is_not_a_park() -> None:
+    """A feature's own rules are not a hold decision (mutation: skip removed -> found)."""
+    assert _spec_park(_CONTRACT_ONLY_SPEC) is None
+
+
+def test_a_park_after_the_intent_contract_is_still_found() -> None:
+    park = _spec_park(_CONTRACT_ONLY_SPEC + "\nParked 2026-10-01: do not dispatch until 22.7 lands.\n")
+    assert park is not None
+    assert park.source == "tracked spec"
+    assert "Parked 2026-10-01" in park.excerpt
+
+
+def test_a_park_before_the_intent_contract_is_still_found() -> None:
+    park = _spec_park(
+        "---\nstatus: backlog\n---\n\nParked: hold this.\n\n<intent-contract>\nrules\n</intent-contract>\n"
+    )
+    assert park is not None
+    assert park.source == "tracked spec"
+    assert "Parked: hold this." in park.excerpt
+
+
+def test_a_park_between_two_intent_contract_blocks_is_still_found() -> None:
+    """Non-greedy: the first block ends at its own closing line, so the line between the blocks is scanned."""
+    spec = (
+        "<intent-contract>\nDo not dispatch a.\n</intent-contract>\n"
+        "Parked until 22.7 lands.\n"
+        "<intent-contract>\nParked b.\n</intent-contract>\n"
+    )
+    park = _spec_park(spec)
+    assert park is not None
+    assert park.source == "tracked spec"
+    assert park.excerpt == "Parked until 22.7 lands."
+
+
+def test_every_intent_contract_block_is_skipped() -> None:
+    spec = (
+        "<intent-contract>\nDo not dispatch a.\n</intent-contract>\n"
+        "<intent-contract>\nParked b.\n</intent-contract>\n"
+        "an ordinary line\n"
+    )
+    assert _spec_park(spec) is None
+
+
+def test_a_contract_line_in_the_epics_block_is_still_a_park() -> None:
+    """The skip is the tracked spec's only -- `epics.md` is scanned whole, as before."""
+    park = prelaunch.find_prose_park(
+        story="1-1-x",
+        station_skips={},
+        epics_block="### Story 1.1: x\n\n<intent-contract>\nDo not dispatch this one.\n</intent-contract>\n",
+        spec_text=None,
+    )
+    assert park is not None
+    assert park.source == "epics.md"
+
+
+def test_an_opening_tag_line_with_no_closing_tag_line_scans_the_whole_spec() -> None:
+    """A malformed spec reports a park rather than silencing one (AD-8)."""
+    park = _spec_park("<intent-contract>\nDo not dispatch a follow-up whose row is closed.\n\n## Verification\n")
+    assert park is not None
+    assert park.source == "tracked spec"
+
+
+def test_a_contract_that_mentions_both_tags_in_prose_is_skipped_to_its_real_closing_line() -> None:
+    """The shape of this story's own spec: backticked tags inside the contract delimit nothing."""
+    spec = (
+        "<intent-contract>\n\n"
+        "**Approach:** skip the `<intent-contract>` ... `</intent-contract>` block.\n"
+        "- Do not dispatch a follow-up whose row is closed.\n\n"
+        "</intent-contract>\n\n"
+        "## Verification\n"
+    )
+    assert _spec_park(spec) is None
+    park = _spec_park(spec + "Parked until 22.7 lands.\n")
+    assert park is not None
+    assert park.excerpt == "Parked until 22.7 lands."
+
+
+def test_a_mid_line_opening_tag_mention_does_not_hide_a_park() -> None:
+    """Prose that names the opening tag opens nothing; the park after it is reported, not stripped."""
+    spec = (
+        "The `<intent-contract>` block is skipped.\n"
+        "Parked until 22.7 lands.\n"
+        "<intent-contract>\nrules\n</intent-contract>\n"
+    )
+    park = _spec_park(spec)
+    assert park is not None
+    assert park.excerpt == "Parked until 22.7 lands."
+
+
+def test_a_mid_line_closing_tag_mention_does_not_end_a_contract_early() -> None:
+    spec = "<intent-contract>\nThe `</intent-contract>` line closes it.\nDo not dispatch the follow-up.\n</intent-contract>\n"
+    assert _spec_park(spec) is None
+
+
+def test_a_stripped_block_never_joins_the_lines_around_it() -> None:
+    """The lines before and after a stripped block stay two lines ("do not " + "dispatch it" is no park)."""
+    assert _spec_park("do not \n<intent-contract>\nrules\n</intent-contract>\ndispatch it\n") is None
+
+
 def test_a_skip_policies_entry_mirrors_the_park_so_it_is_not_a_finding() -> None:
     park = prelaunch.find_prose_park(
         story="44-4-fold-the-packages",
