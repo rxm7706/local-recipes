@@ -2,7 +2,7 @@
 title: "81.2: The drain plan reads a prose park only where one is written, never in a story's own rules"
 type: 'fix'
 created: '2026-10-01'
-status: 'in-review'
+status: 'done'
 baseline_revision: '70c074d58076180ce75919a4ee3bcde1a7244f00'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -146,3 +146,39 @@ Minted 2026-10-01 by operator ruling: fix the defect now.
   - `[low]` `[reject]` Intent Alignment 4: carried from the first pass — this story's own spec still reads as a park through a line outside its contract, narrower than the title — evidence: AC 2 and AC 3 require lines outside the contract and in `epics.md` to stay parks, and the fix would edit this build's spec.
   - `[false]` `[reject]` Intent Alignment 5: carried from the first pass — AC 5 is claimed by a docstring, not a committed harness — evidence: the mutation runs are recorded in this log: with the skip removed 7 tests fail, with the old unanchored rule 3 fail, with a greedy match 1 fails.
   - `[false]` `[reject]` Intent Alignment 6: carried from the first pass — files outside the intent's stated surface changed — evidence: the workflow and the reconcile rule require each of them; no bad outcome.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Summary of implemented change.** `find_prose_park` no longer reads a tracked spec's `<intent-contract>` block, so a feature's own rules stop registering as a park. Each tag counts only as a whole line of its own; a backticked or mid-line mention of a tag delimits nothing. The match is non-greedy, so a park between two blocks survives, and an own-line opening tag with no closing line after it matches nothing, so a malformed spec is scanned whole. Only `spec_text` is stripped; the `epics.md` block and every other spec line are scanned as before, the park regexes are unchanged, and the function stays pure.
+
+**Files changed.**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_prelaunch.py` -- `_INTENT_CONTRACT_RE` (whole-line, non-greedy, `MULTILINE | DOTALL`) and the strip inside `find_prose_park`, with the comment and docstring stating the rule.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_prelaunch.py` -- eleven tests: a contract-only line is no park; a park before, after and between blocks is still found; every block is skipped; a contract line in an `epics_block` is still a park; an opening tag line with no closing line scans the whole spec; tags mentioned in prose neither end a contract early nor hide a park; the lines around a stripped block stay apart.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_drain_plan.py` -- a plan over a spec whose only trigger line is inside its contract raises no MRS-DRAINPLAN-002.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` and `.../spec-pyforge-core/.memlog.md` -- surface-reconcile entries naming the changed governed paths, plus a corrective entry for the whole-line rule. No baseline was stamped.
+- This story spec -- Code Map, Tasks, Design Notes, Spec Change Log, Review Triage Log and this section; the `<intent-contract>` block is byte-identical to the baseline.
+
+**Review findings.** Two passes.
+- Pass 1: 24 findings (high 4, medium 7, low 9, false 4). The unanchored regex let a tag mentioned in prose act as a block delimiter, in both directions, and failed on this story's own spec. That was a `bad_spec` loopback: code reverted, Design Notes and Tasks amended, code re-derived. The one `patch` row (a test pinning the non-greedy match) was met by the amended Tasks.
+- Pass 2: 19 findings (low 15, false 4). Patches applied: 1 (low, three rows, one root cause) — the join test could not fail on the property it names; its fixture now ends a line with a trailing space so a join would read as a park, and a joining mutation fails it. Deferred: 0.
+- Rejected, each with its recorded reason in the Review Triage Log: a spec edit as the only fix (stale spec wording, this story's own spec carrying trigger phrases, 81.2 still reading as a park); a shape or input that occurs in 0 of 1234 specs (a second own-line opener, a tag inside a code fence, a BOM or NBSP tag line, an indented or trailing-space tag line, tag-name variants); CRLF (false, the reader normalises it); the synthetic AC 4 fixture and the single-branch plan test (the real plan and the unit tests cover them); the missing CAP-274 text change (a defect needs none); and four descriptive audit rows with no bad outcome.
+- Follow-up review recommended: `false`. Patched this pass: low 1, medium 0, high 0.
+
+**Verification performed (exit codes read from files, not pipes).**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0, 9650 passed, 1 skipped.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 0, 130 passed, 3 skipped.
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0.
+- `python scripts/spec_surface_reconcile.py`: exit 0, no drift. `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0.
+- Mutation runs against the new tests: skip removed fails 7; the old unanchored rule fails 3; a greedy match fails 1; a joining strip fails the join test.
+- `marshal factory drain --plan --all-stories --mode drain_to_zero --station pyforge-marshal` on the final tree: exit 0, 73.2 evaluated, no MRS-DRAINPLAN-002 names it.
+- Corpus probe over 1234 tracked specs: 15 move from park to clear (73.2 is one), 0 move from clear to park, 18 still read as a park from a line outside their contract.
+
+**Residual risks.**
+- A park written inside an `<intent-contract>` block is now invisible to the plan; that is the intent, and `skip_policies` stays the one mechanism that parks a story.
+- A stray own-line opening tag before the real block pairs with the next closing line and hides what lies between; 0 specs have that shape.
+- 40 specs have one opening and two closing tag lines and 5 have an opening with no closing line; none moves from clear to park.
+- This story's own spec and its `epics.md` block still read as a park to the plan until it leaves the queue, as AC 2 and AC 3 require.
+- `pr-preflight` was not run; the story's three verify commands, the reconcile guard and `spec-surface-check` were.
