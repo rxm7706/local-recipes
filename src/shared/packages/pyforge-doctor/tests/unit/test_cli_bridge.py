@@ -185,6 +185,29 @@ def test_run_git_default_ok_exit_codes_is_unchanged(tmp_path: Path) -> None:
         run_git(repo, ["rev-parse", "--verify", "--quiet", "HEAD"])
 
 
+def test_run_git_raises_cli_bridge_error_when_stdout_is_not_utf8(tmp_path: Path) -> None:
+    """``run_git``'s contract is ``CliBridgeError`` on EVERY failure mode:
+    ``subprocess.run(text=True)`` decodes stdout as UTF-8, so a blob holding
+    non-UTF-8 bytes must not escape as a bare ``UnicodeDecodeError`` (it
+    broke ``env_hygiene``'s ``git ls-files -z`` over an ignored file named
+    ``bad\\xff.log``). The raw bytes come from a real ``git cat-file``."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    stored = subprocess.run(
+        ["git", "hash-object", "-w", "--stdin"],
+        cwd=repo,
+        input=b"\xff\xfe not utf-8\n",
+        capture_output=True,
+        check=True,
+    )
+    blob = stored.stdout.decode("ascii").strip()
+
+    with pytest.raises(CliBridgeError, match="not valid UTF-8") as excinfo:
+        run_git(repo, ["cat-file", "blob", blob])
+
+    assert isinstance(excinfo.value.__cause__, UnicodeDecodeError)
+
+
 # --- run_pytest (retro action item 3, 2026-09-05) --------------------------
 
 
