@@ -63,6 +63,12 @@ resources:
 #   REDIS_PASSWORD    -- Redis AUTH password (Story 12.6); consumed by the
 #                        redis container and wired into platform pods'
 #                        REDIS_URL via secretKeyRef + env expansion
+#   LANGFLOW_SUPERUSER_PASSWORD -- the mounted Langflow's superuser password
+#                        (Story 78.1 / CAP-99). Langflow auto-login is forced off,
+#                        so this is the only way into /langflow/. REQUIRED, never
+#                        optional: a Secret without it fails at pod creation
+#                        (fail closed). Langflow refuses an empty value or its
+#                        legacy default password.
 # Two more keys are wired OPTIONALLY (secretKeyRef optional: true -- their
 # absence never blocks a pod from starting): PYFORGE_ASSERTION_PRIVATE_KEY /
 # PYFORGE_ASSERTION_PUBLIC_KEY, the host's RS256 keypair for signing/verifying

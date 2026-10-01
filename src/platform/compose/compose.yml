@@ -177,6 +177,12 @@ services:
       COMPONENT_OIDC_AUDIENCE: platform-web
       COMPONENT_OIDC_PROVIDER_NAME: Platform Keycloak
       MCP_HOST_SIDECAR_BASE_URL: http://mcp-host:8090
+      # Story 78.1 / CAP-99: Langflow auto-login is forced off in settings, so the
+      # mounted Langflow only starts with a superuser password -- and this is a
+      # REFERENCE, never a literal: compose reads it from the env file next to this
+      # one (`.env`, git-ignored) or your shell, and refuses to bring the stack up
+      # without it. Langflow itself rejects an empty or its legacy default password.
+      LANGFLOW_SUPERUSER_PASSWORD: ${LANGFLOW_SUPERUSER_PASSWORD:?set LANGFLOW_SUPERUSER_PASSWORD in src/platform/compose/.env or your shell}
     depends_on:
       postgres:
         condition: service_healthy

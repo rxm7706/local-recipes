@@ -32,6 +32,7 @@ _DEPLOYED_REQUIRED_ENV = {
     "COMPONENT_OIDC_ISSUER": "https://idp.invalid/realms/platform",
     "COMPONENT_OIDC_JWKS_URL": "https://idp.invalid/realms/platform/certs",
     "COMPONENT_OIDC_AUDIENCE": "platform-web",
+    "LANGFLOW_SUPERUSER_PASSWORD": "unit-test-langflow-password",
 }
 
 
