@@ -893,6 +893,23 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   and `"28"` `epic_surfaces` entries stay: their station-wide globs are what every later epic declares, and Epic 73's
   follow-up reviews of done 22.x/28.x stories need them; only their stale "stopgap" comments go (DW-FU-28-14-4,
   DW-OPS-2026-10-01-3). Owner `spec-pyforge-marshal`. → Epic 79 / Stories 79.1–79.2, specced 2026-10-01.
+- **2026-10-01 (evening)** — **Found: Story 73.1's own rule cannot judge a follow-up run in a reused
+  worktree, and three dispatch defects surfaced while relaunching it.** 73.1's dispatch implemented the whole
+  story, then its review stopped it on an intent gap: `_ensure_dispatch_worktree` reuses a story's surviving
+  dispatch worktree, so a follow-up run's baseline can be the pre-merge tip, `<baseline>..origin/main` still
+  holds the story's first merge, and the run reads COMPLETED on its first tick, the very bug the story fixes.
+  The same misreading sits in four readers outside its named Surface (the CAP-4 land-only retry, the session
+  verdict, the drain's block facts, `marshal status`). Separately: a campaign whose only eligible story is held
+  by unmet Deps crashed (`'dispatch' is not a valid StationCycleStatus`, latent since 2026-09-01) instead of
+  saying so, which hid 73.1's undeclared-in-the-queue dependency on 66.1; and `drain --plan` reported 73.2's own
+  feature rule ("Do not dispatch a follow-up whose row is closed…") as a prose park.
+  **Operator rulings 2026-10-01:** (1) the launch INTENT records `origin/main`'s tip at launch, and a follow-up
+  counts only merges that reach `origin/main` after it; (2) the four readers join Story 73.1; (3) the open row
+  id is read from `origin/main`; (4) fix the three defects now.
+  **What it looks like when fixed:** a follow-up run is LIVE until its own branch merges, whichever worktree it
+  reuses, in every reader; a held wave reports `held` with its unmet Deps; a story's own boundary text is never
+  read as a park. Owner `spec-pyforge-marshal`. → CAP-281 amended / Story 73.1 re-specced; Epic 81 / Stories
+  81.1, 81.2, specced 2026-10-01.
 - **2026-10-01 (later)** — **Found: a dispatch landing never waits for CI.** `main` has no branch protection, and the
   landing policy's `landing_rules` declare only the `maintenance` label and an ungated `linter` check, so a dispatch
   merges as soon as its own session verification passes and every CI lane reports after the merge. Doctor 38.3 merged

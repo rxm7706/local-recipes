@@ -7629,8 +7629,14 @@ AD-42, AD-75 • CAP-275 (the row), CAP-280 (the supervisor's merge reads)
   (the story's tracked spec reads `done` and `followup_review_recommended` is an explicit truthy) and journals `followup_review`
   with the open `DW-FRR` row id, when one exists, on its launch INTENT.
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` and `core/dispatch_completion.py`: for
-  a follow-up run, `story_merged_on_main` counts only merge subjects newer than the run's baseline; a diff limited to the story's
-  own spec counts as progress.
+  a follow-up run, `story_merged_on_main` counts only merge subjects that reached `origin/main` after the tip the launch INTENT
+  recorded (amended 2026-10-01, operator ruling: not the worktree's baseline, which a reused pre-merge worktree makes stale); a
+  diff limited to the story's own spec counts as progress.
+- Amended 2026-10-01 (operator ruling: the same misreading's other readers join this story):
+  `cli/dispatch.py::_attempt_harness_done_cap4` passes the run's marker to `execute_dispatch_land`;
+  `cli/dispatch.py::resolve_dispatch_session_verdict` and `station_story_block_facts`, and `cli/status.py`, read a run's
+  marker from its launch INTENT and gather its merge facts with the same scope; `dispatch_once` reads the open `DW-FRR` row id
+  from the deferred-work ledger at `refs/remotes/origin/main`.
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py`: for a follow-up run, ALREADY_LANDED is judged by
   the run's own head reaching `origin/main`, never by the story's first merge.
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/deferred_work.py` (pure: parse open `DW-FRR` rows; render a row
@@ -7645,8 +7651,11 @@ already on `origin/main`
 **When** `marshal factory dispatch pyforge-marshal 51.2` launches, the review commits and verifies, and the supervisor lands it
 **Then** the launch INTENT carries `followup_review` naming `DW-FRR-51-2`; the supervisor stays LIVE until the run's own branch
 merges; `dispatch land` merges the follow-up branch instead of answering ALREADY_LANDED; finalize closes `DW-FRR-51-2`
-**And** a follow-up whose only change is its spec lands; a normal (non-follow-up) run is judged exactly as today; the ledger's
-`51-2` row reads `done` throughout; removing the baseline scope makes the fixture read COMPLETED on its first tick (mutation);
+**And** a follow-up whose only change is its spec lands; a follow-up launched into the story's surviving pre-merge dispatch
+worktree stays LIVE until its own branch merges; the CAP-4 retry, the session verdict, the drain's block facts and
+`marshal status` never read a live follow-up run completed or already landed; a normal (non-follow-up) run is judged exactly as
+today; the ledger's `51-2` row reads `done` throughout; removing the launch-tip scope makes the fixture read COMPLETED on its
+first tick (mutation);
 `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ### Story 73.2: A drain schedules the follow-up review a landed story recommended
@@ -8061,6 +8070,47 @@ the empty set counts as green; the PR stays open after a refusal
 empty set inside and past the grace, a forge read error (refuse, never pass) and the policy keys' validation and
 defaults; the landing journal records the runs it waited on and their conclusions; `pixi run --frozen -e
 pyforge-marshal pyforge-marshal-test` green
+
+## Epic 81: A drain says why it dispatched nothing, and reads a park only where one is written
+
+Minted 2026-10-01 (evening) from the station Dream's entry of the same date and the operator's ruling to fix both defects
+now. Defects of shipped drain behaviour (Story 22.7's fleet cycle; Story 65.1's `drain --plan`), so no CAP is minted; a new
+epic because the epics that shipped them are `done`. **HARD boundaries:** a held story is reported, never dispatched early;
+`skip_policies` remains the one park mechanism.
+
+### Story 81.1: A drain cycle whose wave holds every story reports held instead of crashing
+
+As the operator launching `marshal factory dispatch --stories` or a drain,
+I want a cycle whose only eligible story is held out of the wave by unmet Deps to say so,
+So that I learn which dependency to run first instead of reading a `ValueError` traceback.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 22.7 (the fleet cycle), Story 65.1 (`drain --plan`'s
+`held` outcome, MRS-DRAINPLAN-004) • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`
+(`execute_fleet_cycle`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py`
+(`StationCycleStatus`), `src/shared/packages/pyforge-marshal/tests/unit/` (the fleet-cycle tests)
+**Given** a station whose queue walk picks a story (`StationQueueOutcome.DISPATCH`) and a parallel wave that holds every
+candidate out because their declared Deps are not all done
+**When** a drain cycle or `marshal factory dispatch --stories` runs
+**Then** the station's cycle result reads `held`, a WARN finding names each held story and its unmet Deps (the reason
+`drain --plan` gives), and the command exits through its normal verdict, never a `ValueError`
+**And** a wave that admits at least one story is unchanged; mapping the outcome straight into `StationCycleStatus` again
+fails the new test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 81.2: The drain plan reads a prose park only where one is written, never in a story's own rules
+
+As the operator reading `drain --plan`,
+I want a story's own intent-contract rules ("Do not dispatch a follow-up whose row is closed…") not reported as a park,
+So that MRS-DRAINPLAN-002 names only stories someone actually parked in prose.
+
+**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** Story 65.1 (`spec-pyforge-marshal` CAP-274) • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_prelaunch.py` (`find_prose_park`, `_park_line`),
+`src/shared/packages/pyforge-marshal/tests/unit/` (the prelaunch tests)
+**Given** a tracked spec whose only "do not dispatch" line sits inside its `<intent-contract>` block (a rule of the feature)
+**When** `find_prose_park` scans it
+**Then** it returns no park; a "parked" or "do not dispatch" line outside the intent contract, or in the story's `epics.md`
+block, is still reported
+**And** `drain --plan` for 73.2 reports no MRS-DRAINPLAN-002; scanning the intent contract again fails the new test
+(mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
