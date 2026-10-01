@@ -11,10 +11,12 @@ from __future__ import annotations
 
 import argparse
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
+from pyforge.marshal.adapters.clock_system import SystemClock
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.cli.config import repo_root
@@ -31,13 +33,14 @@ from pyforge.marshal.cli.land import (
     _promote_sprint_ledger,
     _resync_home_branch,
 )
+from pyforge.marshal.core import deferred_work, promotion
 from pyforge.marshal.core import dispatch as dispatch_core
-from pyforge.marshal.core import promotion
 from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT
 from pyforge.marshal.core.status import render_ledger_advancements
+from pyforge.marshal.ports.clock import ClockPort
 from pyforge.marshal.ports.fs import FsPort
 from pyforge.marshal.ports.vcs import VcsPort
 
@@ -61,8 +64,131 @@ _PROJECT_SLUG_PREFIX = "pyforge-"
 _LEDGER_BLOCKED_STATUS = "blocked"
 
 
+@dataclass
+class _FollowupReviewCarry:
+    """Story 66.1 (spec-pyforge-marshal CAP-275): the one ``DW-FRR-<story>`` row ``_run_deferred_work_intake``
+    publishes beside the intake's own rows, and what came of it. ``candidate`` and ``promoted_date`` go in;
+    ``promoted_id`` (set only once the row is on ``origin/main``) and ``finding`` (a WARN the intake's own
+    single return value has no room for) come back -- the out-parameter shape ``_execute_promotion_plan``'s
+    ``findings`` / ``data`` already use."""
+
+    candidate: deferred_work.FollowupReviewCandidate
+    promoted_date: str
+    promoted_id: str | None = None
+    finding: Finding | None = None
+
+
+def _run_intake_script(process: ProcessPort, root: Path, short_slug: str) -> Finding | None:
+    """Run ``scripts/deferred_work_intake.py --fix`` (Story 53.2): ``None`` on a clean run, an
+    ``MRS-DISP-047`` WARN when it cannot launch or refuses."""
+    try:
+        result = process.run(
+            [
+                sys.executable,
+                str(root / "scripts" / "deferred_work_intake.py"),
+                "--fix",
+                "--project",
+                short_slug,
+            ],
+            cwd=root,
+        )
+    except ProcessError as exc:
+        return Finding(
+            code="MRS-DISP-047",
+            severity=Severity.WARN,
+            message=f"deferred-work intake could not run for {short_slug!r}: {exc}",
+        )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        return Finding(
+            code="MRS-DISP-047",
+            severity=Severity.WARN,
+            message=(f"deferred-work intake refused (exit {result.returncode}) for {short_slug!r}: {detail}"),
+        )
+    return None
+
+
+def _restore_ledger_copy(fs: FsPort, path: Path, text: str | None) -> None:
+    """Put ``path`` back to ``text`` -- the file is removed when it did not exist (``None``)."""
+    if text is None:
+        path.unlink(missing_ok=True)
+    else:
+        fs.write_text_atomic(path, text)
+
+
+def _carry_followup_row(
+    vcs: VcsPort,
+    root: Path,
+    ledger_rel: str,
+    original_text: str | None,
+    new_text: str | None,
+    followup: _FollowupReviewCarry,
+) -> tuple[str | None, str | None]:
+    """Story 66.1 (CAP-275): the ledger text to publish with ``followup``'s ``DW-FRR-<story>`` row appended,
+    and that row's id -- or ``(new_text, None)`` when there is no row to publish (already carried, or skipped
+    with a WARN on ``followup.finding``).
+
+    The row is built on the ledger the publish REPLACES, never on the primary's working copy:
+    ``commit_paths_onto_remote_tip`` writes the caller's whole text over the fetched ``origin/main`` tip, and
+    the primary's copy is stale whenever finalize skipped its resync (a dirty or non-``main`` primary) or a
+    concurrent finalize published since. So the tip is fetched and its ledger read here, under the lock the
+    caller holds, and the base is:
+
+    * ``remote_text`` when the intake changed nothing (``new_text == original_text``);
+    * ``new_text`` when the intake changed the primary's copy and that copy was the tip's text
+      (``original_text == remote_text``) -- a faithful successor of the tip;
+    * neither otherwise: the intake changed a copy that is not the tip's, and merging two texts is never
+      attempted -- the row is skipped (a re-run of finalize carries it).
+
+    A tip that cannot be fetched or read, and a ledger absent at the tip (one row never creates it), skip the
+    row the same way. Idempotency (``followup_review_to_promote``) is judged on the base. A skip never touches
+    the intake's own publish."""
+    story = followup.candidate.story_key
+    row_id = deferred_work.followup_review_id(story)
+
+    def _skip(reason: str) -> tuple[str | None, None]:
+        followup.finding = Finding(
+            code="MRS-DISP-047",
+            severity=Severity.WARN,
+            message=f"story {story}'s recommended follow-up review row ({row_id}) was not carried: {reason}",
+            path=ledger_rel,
+        )
+        return new_text, None
+
+    try:
+        vcs.fetch(root, "origin", "main")
+        remote_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, ledger_rel)
+    except VcsCommandError as exc:
+        return _skip(f"cannot read the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT}: {exc}")
+    if remote_text is None:
+        return _skip(
+            f"the deferred-work ledger {ledger_rel!r} does not exist at {ORIGIN_MAIN_SHORT} (one row never creates it)"
+        )
+    if new_text == original_text:
+        base = remote_text
+    elif original_text == remote_text:
+        base = new_text or ""
+    else:
+        return _skip(
+            f"the deferred-work ledger {ledger_rel!r} at {ORIGIN_MAIN_SHORT} is not the copy the intake just "
+            "changed, so the two are not merged; a re-run of finalize carries it"
+        )
+    row = deferred_work.followup_review_to_promote(followup.candidate, base)
+    if row is None:
+        return new_text, None
+    entry = deferred_work.render_followup_review_entry(row, promoted_date=followup.promoted_date)
+    return deferred_work.append_ledger_entry(base, entry), row_id
+
+
 def _run_deferred_work_intake(
-    process: ProcessPort, fs: FsPort, vcs: VcsPort, root: Path, project_slug: str, story_key: str
+    process: ProcessPort,
+    fs: FsPort,
+    vcs: VcsPort,
+    root: Path,
+    project_slug: str,
+    story_key: str,
+    *,
+    followup: _FollowupReviewCarry | None = None,
 ) -> Finding | None:
     """Story 53.2 (spec-pyforge-marshal CAP-261b): promote this landing's
     story spec's own frontmatter ``deferred:`` entries into the project's
@@ -90,13 +216,33 @@ def _run_deferred_work_intake(
     never a commit on ``root`` itself) and restores ``root``'s own working
     -tree copy back to its pre-``--fix`` text. The authoritative write now
     lives on ``origin/main``; a later resync picks it up the normal way, and
-    ``root`` is never left dirty by this step."""
+    ``root`` is never left dirty by this step.
+
+    Story 66.1 (CAP-275): ``followup``, when given, is the landed story's
+    recommended follow-up review. Its ``DW-FRR-<story>`` row is added to the
+    text this step publishes, in ONE publish with the intake's own rows, so
+    neither can drop the other, and a refused or no-op intake still
+    publishes the row. ``_carry_followup_row`` builds it on ``origin/main``'s
+    ledger -- the text the publish replaces -- never on the primary's
+    possibly stale copy. A script that refused or could not launch leaves the
+    primary's copy as it read before the script (a half-written ledger is
+    put back). Any failure to carry the row is a WARN on ``followup.finding``
+    and never touches the intake's own publish; a publish that fails after a
+    refused intake has no return slot of its own (the refusal holds it) and
+    lands there too."""
     short_slug = project_slug.removeprefix(_PROJECT_SLUG_PREFIX)
     tracked_path = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "deferred-work-ledger.md"
     tracked_rel = f"_bmad-output/projects/{project_slug}/planning-artifacts/deferred-work-ledger.md"
     try:
         lock = fs.acquire_advisory_lock(tracked_path, timeout_s=_FINALIZE_DEFERRED_WORK_LOCK_TIMEOUT_S)
     except FsError as exc:
+        not_carried = ""
+        if followup is not None:
+            story = followup.candidate.story_key
+            not_carried = (
+                f"; story {story}'s recommended follow-up review row "
+                f"({deferred_work.followup_review_id(story)}) was not carried"
+            )
         return Finding(
             code="MRS-DISP-047",
             severity=Severity.WARN,
@@ -105,66 +251,77 @@ def _run_deferred_work_intake(
                 f"{str(tracked_path)!r} within "
                 f"{_FINALIZE_DEFERRED_WORK_LOCK_TIMEOUT_S}s -- another "
                 f"finalize is plausibly running concurrently for "
-                f"{short_slug!r}; deferred-work intake skipped this run: {exc}"
+                f"{short_slug!r}; deferred-work intake skipped this run: {exc}{not_carried}"
             ),
         )
     try:
         original_text = fs.read_text(tracked_path)
-        try:
-            result = process.run(
-                [
-                    sys.executable,
-                    str(root / "scripts" / "deferred_work_intake.py"),
-                    "--fix",
-                    "--project",
-                    short_slug,
-                ],
-                cwd=root,
+        intake_finding = _run_intake_script(process, root, short_slug)
+        if intake_finding is None:
+            new_text = fs.read_text(tracked_path)
+        else:
+            # A refused or unlaunchable run leaves the ledger as it read before the script: a script that
+            # wrote before it failed must not leave the primary dirty, nor feed a half-written ledger on.
+            new_text = original_text
+            if fs.read_text(tracked_path) != original_text:
+                _restore_ledger_copy(fs, tracked_path, original_text)
+        publish_text, row_id = new_text, None
+        if followup is not None:
+            publish_text, row_id = _carry_followup_row(vcs, root, tracked_rel, original_text, new_text, followup)
+        if row_id is None and publish_text == original_text:
+            return intake_finding
+        intake_rows = new_text != original_text
+        if row_id is None:
+            commit_message = f"marshal: promote deferred-work intake for {short_slug!r}"
+            skip_reason = f"marshal deferred-work intake for {short_slug!r}, story {story_key}"
+            published = "deferred-work intake"
+        elif intake_rows:
+            commit_message = (
+                f"marshal: promote deferred-work intake and carry follow-up review row {row_id} for {short_slug!r}"
             )
-        except ProcessError as exc:
-            return Finding(
-                code="MRS-DISP-047",
-                severity=Severity.WARN,
-                message=f"deferred-work intake could not run for {short_slug!r}: {exc}",
+            skip_reason = (
+                f"marshal deferred-work intake and follow-up review carry for {short_slug!r}, story {story_key}"
             )
-        if result.returncode != 0:
-            detail = (result.stderr or result.stdout or "").strip()
-            return Finding(
-                code="MRS-DISP-047",
-                severity=Severity.WARN,
-                message=(f"deferred-work intake refused (exit {result.returncode}) for {short_slug!r}: {detail}"),
+            published = f"deferred-work intake and follow-up review row {row_id}"
+        else:
+            commit_message = (
+                f"marshal: carry follow-up review row {row_id} into the deferred-work ledger for {short_slug!r}"
             )
-        new_text = fs.read_text(tracked_path)
-        if new_text == original_text:
-            return None
+            skip_reason = f"marshal deferred-work follow-up review carry for {short_slug!r}, story {story_key}"
+            published = f"deferred-work ledger update (follow-up review row {row_id})"
         commit_finding: Finding | None = None
         try:
             vcs.commit_paths_onto_remote_tip(
                 root,
                 remote="origin",
                 ref="main",
-                writes=((tracked_rel, new_text or ""),),
-                message=f"marshal: promote deferred-work intake for {short_slug!r}",
+                writes=((tracked_rel, publish_text or ""),),
+                message=commit_message,
                 # Story 68.1 (CAP-277): a planning-artifacts-only publish, named by its story;
                 # the adapter proves the commit's paths before it sets the journaled opt-out.
-                preflight_skip_reason=f"marshal deferred-work intake for {short_slug!r}, story {story_key}",
+                preflight_skip_reason=skip_reason,
             )
         except VcsCommandError as exc:
             commit_finding = Finding(
                 code="MRS-DISP-047",
                 severity=Severity.WARN,
                 message=(
-                    f"deferred-work intake for {short_slug!r} wrote "
-                    f"{str(tracked_path)!r} but could not be published to "
-                    f"'origin/main': {exc}"
+                    f"{published} for {short_slug!r} wrote "
+                    f"{str(tracked_path)!r} but could not be "
+                    f"published to 'origin/main': {exc}"
                 ),
             )
+        else:
+            if followup is not None and row_id is not None:
+                followup.promoted_id = row_id
         finally:
-            if original_text is None:
-                tracked_path.unlink(missing_ok=True)
-            else:
-                fs.write_text_atomic(tracked_path, original_text)
-        return commit_finding
+            _restore_ledger_copy(fs, tracked_path, original_text)
+        if intake_finding is None:
+            return commit_finding
+        # A refused run publishes only the follow-up row, so a failed publish has no other place to go.
+        if commit_finding is not None and followup is not None:
+            followup.finding = commit_finding
+        return intake_finding
     finally:
         fs.release_advisory_lock(lock)
 
@@ -351,6 +508,60 @@ def _promote_tier3_feed_row(fs: FsPort, root: Path, project_slug: str, key: Stor
     return True, None
 
 
+def _local_spec_rel_path(root: Path, worktree: Path | None, project_slug: str, key: StoryKey) -> str | None:
+    """Story 66.1 (lifted out of ``_promote_tracked_spec``, Story 79.1): the landed story's tracked spec path,
+    repo-relative, resolved against ``root`` and then the dispatch ``worktree`` -- the primary's local tree may
+    not hold a spec the merged PR added until the resync later in a finalize run. ``None`` when neither does."""
+    for base in (root, worktree):
+        if base is None:
+            continue
+        rel = dispatch_core.story_spec_rel_path(base, project_slug, str(key))
+        if rel is not None:
+            return rel
+    return None
+
+
+def _followup_review_carry(
+    vcs: VcsPort,
+    root: Path,
+    project_slug: str,
+    key: StoryKey,
+    worktree: Path | None,
+    clock: ClockPort,
+    findings: list[Finding],
+) -> _FollowupReviewCarry | None:
+    """Story 66.1 (spec-pyforge-marshal CAP-275): the landed story's recommended follow-up review, ready for
+    ``_run_deferred_work_intake`` to publish -- or ``None``. The spec is read at ``ORIGIN_MAIN`` (the ref the
+    landing's own bookkeeping reads) through the two halves ``dispatch_core.spec_text_at_ref`` is made of
+    (``_local_spec_rel_path`` + ``file_text_at_ref``), so the path resolves through the dispatch worktree too.
+    A story with no local spec, a spec absent at ``ORIGIN_MAIN``, a spec that does not read ``status: done``
+    and an absent, ``false`` or unreadable flag all answer ``None`` silently. A spec that cannot be read at
+    ``ORIGIN_MAIN`` is an ``MRS-DISP-047`` WARN appended to ``findings`` -- the post-merge bookkeeping tier,
+    never a landing refusal this far past the merge."""
+    rel = _local_spec_rel_path(root, worktree, project_slug, key)
+    if rel is None:
+        return None
+    try:
+        spec_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, rel)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DISP-047",
+                severity=Severity.WARN,
+                message=(
+                    f"cannot read story {key}'s tracked spec {rel!r} at {ORIGIN_MAIN_SHORT} to carry its "
+                    f"recommended follow-up review: {exc}"
+                ),
+                path=rel,
+            )
+        )
+        return None
+    candidate = deferred_work.followup_review_candidate(spec_text, key, rel)
+    if candidate is None:
+        return None
+    return _FollowupReviewCarry(candidate=candidate, promoted_date=clock.now().date().isoformat())
+
+
 def _promote_tracked_spec(
     vcs: VcsPort, root: Path, project_slug: str, key: StoryKey, worktree: Path | None
 ) -> tuple[bool, Finding | None]:
@@ -375,13 +586,7 @@ def _promote_tracked_spec(
 
     Returns ``(True, None)`` when it published, ``(False, None)`` for a no-op and ``(False, finding)`` for
     a WARN."""
-    rel: str | None = None
-    for base in (root, worktree):
-        if base is None:
-            continue
-        rel = dispatch_core.story_spec_rel_path(base, project_slug, str(key))
-        if rel is not None:
-            break
+    rel = _local_spec_rel_path(root, worktree, project_slug, key)
     if rel is None:
         return False, None
 
@@ -424,6 +629,7 @@ def finalize_dispatch_land(
     story_key: str,
     worktree: Path | None = None,
     process: ProcessPort | None = None,
+    clock: ClockPort | None = None,
 ) -> int:
     """Run the post-merge finalize sequence for ``story_key``.
 
@@ -431,11 +637,14 @@ def finalize_dispatch_land(
     session actually ran in -- its own Tier-3 ``implementation-artifacts/``
     is scanned alongside the primary checkout's, in case the session wrote
     its spec there instead; it is also the second place the tracked spec is
-    looked for (Story 79.1). ``None`` (the default) scans only the primary."""
+    looked for (Story 79.1). ``None`` (the default) scans only the primary.
+    ``clock`` (Story 66.1) dates the follow-up review row; ``None`` is the
+    system clock."""
     root = repo_root()
     fs = LocalFs()
     vcs = GitVcs()
     process = process if process is not None else PosixProcess()
+    clock = clock if clock is not None else SystemClock()
     try:
         key = normalize(story_key)
     except MalformedStoryKeyError as exc:
@@ -546,9 +755,15 @@ def finalize_dispatch_land(
         resynced = False
     else:
         resynced = _resync_home_branch(vcs, True, "merge", root, root, "main", "main", findings)
-    intake_finding = _run_deferred_work_intake(process, fs, vcs, root, project_slug, str(key))
+    # Story 66.1 (CAP-275): the landed story's recommended follow-up review rides the intake's own locked
+    # publish, read after the resync so the primary holds the spec the merged PR may have added. Every
+    # failure is a WARN: the PR has already merged.
+    followup = _followup_review_carry(vcs, root, project_slug, key, worktree, clock, findings)
+    intake_finding = _run_deferred_work_intake(process, fs, vcs, root, project_slug, str(key), followup=followup)
     if intake_finding is not None:
         findings.append(intake_finding)
+    if followup is not None and followup.finding is not None:
+        findings.append(followup.finding)
     deploy_run.write(
         findings,
         kind=_FINALIZE_RESYNC_KIND,
@@ -563,6 +778,9 @@ def finalize_dispatch_land(
             "landing_corroborated": landing_corroborated,
             "feed_row_promoted": feed_row_promoted,
             "tracked_spec_promoted": tracked_spec_promoted,
+            # Story 66.1 (CAP-275): the `DW-FRR-<story>` row THIS run published onto origin/main, else null
+            # (not flagged, already carried, or a failed read/publish -- the WARN names which).
+            "followup_review_promoted_id": followup.promoted_id if followup is not None else None,
             # Story 68.1 (CAP-277): every finding this run collected, all severities -- the
             # promotion's MRS-LAND-011, the resync's MRS-LAND-009, MRS-DISP-051 -- so a failed
             # step is on the journal, not only in a stderr nobody reads.

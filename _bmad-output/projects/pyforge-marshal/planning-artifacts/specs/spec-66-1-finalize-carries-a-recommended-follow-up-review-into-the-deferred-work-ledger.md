@@ -2,13 +2,29 @@
 title: '66.1: Finalize carries a recommended follow-up review into the deferred-work ledger'
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: 'a240511f5b149a47d6972d4a335f591419d0d840'
+review_loop_iteration: 2
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - docs/dreams/pyforge-marshal.md
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      When the deferred-work intake changes a primary ledger copy that differs from origin/main's ledger, its own
+      publish still writes that text over the tip, dropping rows another finalize published since.
+    evidence: |-
+      `commit_paths_onto_remote_tip` writes the caller's whole text over the fetched tip (vcs_git.py, `dest.write_text(content)`),
+      and `_run_deferred_work_intake` has always published the primary's post-`--fix` copy. The primary's copy is stale whenever
+      finalize skips its resync (dirty or non-main primary). Story 66.1 protects only the follow-up row (it is skipped with a WARN
+      in that state); it cannot protect the intake's own rows without a text-merge policy for the append-only ledger, and the
+      script that writes them (`scripts/deferred_work_intake.py`, governed by spec-pyforge-doctor) is on this story's Never list.
+      Found by the Edge Case Hunter and the Intent Alignment Auditor at review pass 2; pre-existing, not caused by this story.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py
+    severity: medium
 ---
 
 <intent-contract>
@@ -67,6 +83,192 @@ Type / Effort / Deps: fix / S / —.
 | publish fails | `VcsCommandError` from the publish | nothing lands on `origin/main`; primary copy restored | `MRS-DISP-047` WARN; exit code unchanged |
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/deferred_work.py` -- Story 4.13's pure loop twin; the dispatch twin sits beside it: `followup_review_id` (`DW-FRR-<epic>-<seq><suffix>` via `render_filename_slug`), `followup_review_candidate` (spec text -> candidate, status through `promotion.read_spec_status`, flag through `dispatch_harness_done.followup_review_recommended`), `followup_review_to_promote` (greedy `DW-FRR-` token idempotency over the text it is given), `render_followup_review_entry`, `append_ledger_entry`. No I/O, no clock (AD-4).
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` -- the carry read (`_followup_review_carry`), an in/out holder (`_FollowupReviewCarry`: `candidate`, `promoted_date` in; `promoted_id`, `finding` out), the intake script run split out unchanged (`_run_intake_script`), the base-text rule below, and `_run_deferred_work_intake(..., followup=)` publishing intake rows and the row in ONE `commit_paths_onto_remote_tip`; `finalize_dispatch_land` gains `clock: ClockPort | None` and the payload key `followup_review_promoted_id`. `_local_spec_rel_path` is lifted out of `_promote_tracked_spec` (behaviour unchanged) so the carry resolves the spec through the dispatch worktree the same way.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py` -- read-only: `story_spec_rel_path` / `spec_text_at_ref` are the spec reader's two halves.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py` -- read-only: `_promote_deferred_work` is the loop twin's impure edge (date from `ClockPort`, blank-line separation) this story mirrors.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` -- read-only: `commit_paths_onto_remote_tip` fetches the remote tip and writes the caller's whole-file text over it (`dest.write_text(content)`) -- which is why the base text below matters.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_deferred_work.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize.py` -- the tests. Existing finalize tests that stub `_run_deferred_work_intake` with a fixed signature need `**_kwargs`; existing tests that assert an exact finding list or spec-read count around a spec read failure need narrowing, because the carry reads the spec once more and warns on the same failed read (both are required by the contract).
+- `scripts/deferred_work_intake.py` -- read-only (governed by spec-pyforge-doctor; the Never list).
+- PRIOR DERIVATIONS of this story (reverted at review passes 1 and 2, see the Spec Change Log) are saved as unified diffs; the NEWEST is `/tmp/claude-1000/-home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes--worktrees-dispatch-pyforge-marshal-66-1/df646cb7-b0d8-4037-837b-9bbf25e1b6de/scratchpad/prior-derivation-66-1-pass2.patch` (it holds everything pass 1's KEEP list names, the pass-1 amendments and the real-git test). The working tree starts at the baseline; reuse what the Spec Change Log's KEEP lists name, and change what each amendment names.
+
+## Tasks & Acceptance
+
+- [x] `core/deferred_work.py` -- the pure candidate / selection / rendering / append functions above (AD-4).
+- [x] `dispatch_land_finalize/__main__.py` -- the carry read after the resync, the base-text rule, one locked publish holding intake rows and the row, the payload id, WARN-only failures.
+- [x] `tests/unit/test_deferred_work.py`, `tests/unit/test_dispatch_land_finalize.py` -- one test per acceptance criterion and I/O-matrix row, plus a test per rule in Design Notes (each base-text branch, the lock-contended WARN, the refused-intake restore, the both-published labels, the dispatch-worktree-only spec, the heading-only idempotency scan including the live-ledger shape, the status-reader shapes, and the carry's own fetch pinned both ways) and ONE real-git test (the `_git_79` helpers) that finalizes a flagged landing against a real bare `origin`, proving the published ledger is `origin/main`'s text plus the row while the primary's copy is stale. The mutation (carry call removed) must turn the 51.2 fixture red.
+
+## Spec Change Log
+
+### 2026-10-01 -- review pass 1 (bad_spec, `review_loop_iteration` 0 -> 1)
+
+- **Triggering finding** (four review layers converged: Blind Hunter, Edge Case Hunter, Verification Gap, Intent Alignment): the prior derivation built the row and judged idempotency from the PRIMARY's working-copy ledger, then published that whole text. `commit_paths_onto_remote_tip` writes the caller's text over the fetched `origin/main` tip wholesale, so when the primary's copy is stale -- finalize skips its resync on a dirty or non-`main` primary (`vcs.has_uncommitted_changes`, `_resync_home_branch` answering False), or a concurrent finalize published between the resync and the lock -- the publish silently drops every row that landed on `origin/main` since, and a re-run before a resync appends a duplicate row. The contract says the text is "computed from the ledger text that publish replaces"; the Design Notes this spec carried ("Base text") blessed the working copy instead.
+- **Amended** (outside the intent-contract): Design Notes -- the base-text rule below replaces "Base text"; Tasks -- the real-git test and one test per rule; Code Map -- the adapter's whole-file write and the prior-derivation pointer. Folded in so the re-derivation carries them (all verified, all small): the lock-contended WARN names the dropped row; a refused or unlaunchable intake script restores a ledger it half-wrote; the commit message, the preflight opt-out reason and the publish-failure WARN name BOTH the intake and the row when both are published; a test where only the dispatch worktree holds the spec.
+- **Known-bad state avoided**: base text or idempotency read from the primary's working-tree ledger when the publish replaces `origin/main`'s.
+- **KEEP** (worked, survive re-derivation; all in the prior patch): the pure functions' names, shapes and the golden row text; the `_FollowupReviewCarry` in/out holder and `_run_deferred_work_intake`'s unchanged `Finding | None` return; `_run_intake_script` and `_local_spec_rel_path` as extractions; the read after the resync, through `_local_spec_rel_path` + `vcs.file_text_at_ref(ORIGIN_MAIN, ...)` (the two halves of `spec_text_at_ref`, so the dispatch worktree resolves); no gating on landing corroboration (the precondition is the spec on `origin/main` reading done and flagged, which is itself the landing's proof); the payload key `followup_review_promoted_id` (null unless THIS run published the row); the `clock` parameter defaulting to `SystemClock`; the test fixtures (`_frr_*` helpers, `_AddingIntakeProcess`, `_FixedClock`) and the pure-function tests; the narrowing of the four existing tests and the `**_kwargs` on the intake stubs.
+
+### 2026-10-01 -- review pass 2 (bad_spec, `review_loop_iteration` 1 -> 2)
+
+- **Triggering findings** (verified by running the real functions over live data, not from the reviewers' claims): (1) idempotency scanned the whole ledger text for `DW-FRR-` tokens, and the live marshal ledger already holds `DW-FRR-51-2` in PROSE (the `verified:` line of the `DW-FU-51-2-1` row, line 7048), so `followup_review_to_promote` answered None for 51.2 itself -- the story this feature exists for -- and finalize would never carry it; (2) the candidate's status was read through `promotion.read_spec_status`, a strict reader that answers None for 3 of the 224 tracked specs whose flag is true, while the harness guard's own pairing of status and flag (`cli/drain_plan.py:307`, `cli/dispatch.py:2561`) uses `dispatch_harness_done.parse_spec_status` and reads those 3 `done`; the Design Notes left both choices unstated.
+- **Amended** (outside the intent-contract): Design Notes gain "Idempotency scope" and "Status reader" below; Tasks name the tests for both, for the carry's own fetch, and for the AC 7 seam; the Code Map points at the newest prior derivation. The contract's "greedy token match over the ledger text" is read as a greedy, boundary-aware match over the ledger's ROW HEADINGS: that is the only reading consistent with the same contract's "row already present" (I/O matrix, AC 2) and with its Problem (51.2 must be carried), and it is the same entry form Doctor's `deferred-work` source parses (`_ENTRY_RE`, `^#{2,4}\s+(DW-...)`). One pre-existing issue found alongside is deferred, not fixed (frontmatter `deferred:`).
+- **Known-bad state avoided**: a prose mention of a row id counting as the row; a flagged-and-done spec whose status the strict reader cannot parse being silently dropped.
+- **KEEP** (worked in the pass-2 derivation, all in `prior-derivation-66-1-pass2.patch`; survive re-derivation unchanged unless an amendment names them): everything pass 1's KEEP list names; the base-text rule exactly as the Design Notes state it (`_carry_followup_row` with its three branches and its skip WARNs, `_restore_ledger_copy`, `_run_intake_script`); the lock-contended WARN naming the row; the both-published labels; the refused-intake restore; `_local_spec_rel_path`; the `_FrrVcs` / `_AddingIntakeProcess` / `_LedgerLockedFs` fixtures and every test in the pass-2 patch, plus its real-git test.
+
+## Review Triage Log
+
+### 2026-10-01 -- Review pass
+- verdicts: 31 findings -- high 6, medium 2, low 15, false 8, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Blind Hunter 1: the idempotency token scan matches `DW-FRR-51-2` in ledger prose -- the only `DW-FRR` mention in the real ledger (line 7048) is the placeholder `DW-FRR-<story>`, which tokenizes to `DW-FRR` (`<` is outside the token class) and never equals a real id; the whole-text token scan is the contract's stated convention and `deferred_work_check`'s own.
+  - `[high]` `[bad_spec]` Blind Hunter 2: the published text derives from a stale primary copy when the resync is skipped, overwriting newer `origin/main` rows or double-adding the row -- verified against `vcs_git.py:1424-1432` (whole-file write over the fetched tip) and `finalize_dispatch_land` (`has_uncommitted_changes` skips the resync); group G1. Amendment: the base-text rule.
+  - `[false]` `[reject]` Blind Hunter 3: the carry is not gated on landing corroboration -- its precondition is the spec on `origin/main` reading `status: done` with the flag true, which cannot hold for a story that never landed; the contract names no gate.
+  - `[low]` `[reject]` Blind Hunter 4: the Code Map miscounted the narrowed tests and changed stubs -- the fix is to edit this build's spec (rejected by rule); the Code Map is reworded in this amendment anyway.
+  - `[low]` `[patch]` Blind Hunter 5: a refused intake script that wrote before failing leaves the primary's ledger as it left it -- real, and pre-existing in the early return; folded into the re-derivation (restore the pre-script text); group G2, moot until re-derived.
+  - `[low]` `[patch]` Blind Hunter 6: the lock-contended WARN does not name the dropped follow-up row -- verified in `_run_deferred_work_intake`'s lock `Finding`; folded in (name the row when a carry is pending); G2.
+  - `[low]` `[reject]` Blind Hunter 7: `evidence:` names the story key but not the merge subject or sha -- the contract says "when known", and finalize holds no per-story merge sha at that point; the fix would add a subject-matching surface.
+  - `[false]` `[reject]` Blind Hunter 8: `summary:` asserts the follow-up review has not run without checking -- a done spec whose flag is still true is exactly the state no follow-up pass has cleared (a follow-up pass leaves it false), and the token check is the "nothing else carries it" check.
+  - `[false]` `[reject]` Blind Hunter 9: the mutation criterion is shown by stubbing the carry seam -- the real removal of the call was run (11 tests red incl. the 51.2 fixture); the seam test is a redundant extra, not a substitute.
+  - `[low]` `[patch]` Blind Hunter 10: a combined publish is labelled only as the follow-up row (commit message, opt-out reason, failure WARN) -- cosmetic audit-trail error; folded in (name both); G2.
+  - `[low]` `[patch]` Blind Hunter 11: untested shapes (a real-git publish of the carry; banner-prefixed or quoted-truthy specs) plus a duplicated fake clock, an out-parameter with two channels, governance loose ends -- the real-git test is added to Tasks; the banner/quoted shapes belong to the mandated readers; the rest is not harmful; memlog entries are written at finalize.
+  - `[high]` `[bad_spec]` Edge Case Hunter 1: the carry runs on a stale primary copy when the resync was skipped or failed -- same defect as Blind Hunter 2; G1.
+  - `[high]` `[bad_spec]` Edge Case Hunter 2: idempotency is tested against the primary's restored copy, so a second finalize before a resync re-publishes the row -- verified: the copy is restored to its pre-publish text after every publish; G1.
+  - `[low]` `[patch]` Edge Case Hunter 3: lock acquisition failure with a carry pending drops the row with only an "intake skipped" WARN -- same as Blind Hunter 6; G2.
+  - `[low]` `[patch]` Edge Case Hunter 4: a script that writes the ledger then exits non-zero, with no row publishable, leaves a half-written primary copy -- same as Blind Hunter 5; G2.
+  - `[low]` `[reject]` Edge Case Hunter 5: `read_spec_status` is case-sensitive and rejects a trailing comment while the flag parser is tolerant -- it is the one status reader every finalize gate uses; `status: Done` / `done # note` specs are not produced here and the fix would fork the reader.
+  - `[false]` `[reject]` Edge Case Hunter 6: a flagged spec not yet done loses its row silently -- the I/O matrix row "not done" says nothing added with no error handling; a WARN would contradict the contract.
+  - `[false]` `[reject]` Edge Case Hunter 7: not gated on `landing_corroborated` / the not-done ERROR -- same as Blind Hunter 3.
+  - `[low]` `[reject]` Edge Case Hunter 8: `evidence:` carries no landing commit -- same as Blind Hunter 7.
+  - `[high]` `[bad_spec]` Edge Case Hunter 9 (claim): "computed from the ledger text that publish replaces" -- the code computes from the primary's copy; G1.
+  - `[medium]` `[bad_spec]` Edge Case Hunter 10 (claim): the second-run test hand-seeds the primary copy, hiding that the real flow restores the pre-publish copy -- verified in the test; G1 (the re-derived test seeds `origin/main`'s ledger).
+  - `[low]` `[patch]` Edge Case Hunter 11 (claim): the "a refused run leaves the ledger as it read before it" comment is untrue when the script wrote first -- same as Blind Hunter 5; G2.
+  - `[low]` `[patch]` Verification Gap 1: no test where only the dispatch worktree holds the spec, though the carry resolves through it -- verified (`_frr_finalize` passes no `worktree`); folded into Tasks; G2.
+  - `[high]` `[bad_spec]` Verification Gap 2: idempotency is judged on the primary's working copy, not `origin/main`'s ledger -- G1.
+  - `[false]` `[reject]` Verification Gap 3: the mutation test is redundant -- accurate and harmless (see Blind Hunter 9); not a defect.
+  - `[high]` `[bad_spec]` Intent Alignment 1: the ledger text the diff reads and its tests exercise is the primary's working-tree file; `origin/main`'s ledger blob is never read -- G1.
+  - `[medium]` `[bad_spec]` Intent Alignment 2: the fake read path never serves the ledger at `origin/main`, and the second-run test assumes a resync -- G1.
+  - `[low]` `[patch]` Intent Alignment 3: stubbed scan, promotion and resync, and no real-git test of the carry -- folded into Tasks (one real-git test); G2.
+  - `[low]` `[reject]` Intent Alignment 4: the spec is read through `_local_spec_rel_path` + `vcs.file_text_at_ref` rather than `spec_text_at_ref` itself -- those are `spec_text_at_ref`'s two halves; the dispatch-worktree fallback is Story 79.1's precedent and the added test covers it.
+  - `[false]` `[reject]` Intent Alignment 5: the mutation criterion is met by seam stubbing -- see Blind Hunter 9.
+  - `[low]` `[patch]` Intent Alignment 6: failure paths outside the matrix (lock timeout, extra WARNs) -- the lock timeout names the row in the re-derivation (G2); the other WARNs are additive and non-gating.
+
+### 2026-10-01 -- Review pass (pass 2)
+- verdicts: 33 findings -- high 3, medium 6, low 20, false 4, maybe-false 0
+- correction to pass 1: the row "Blind Hunter 1 `[false]`" (idempotency matches the id in ledger prose) is WRONG. Pass 1 refuted it from a truncated grep of line 7048 that showed only the placeholder `DW-FRR-<story>`. Re-verified this pass by running `followup_review_to_promote` over the live 51.2 spec and the live ledger: it answers None, because line 7048 also holds the literal `DW-FRR-51-2`. That row is superseded by G-A below.
+- findings:
+  - `[medium]` `[bad_spec]` Blind Hunter 1: status read through `read_spec_status`, flag through the harness reader -- two parsers that disagree; verified over all 224 flagged tracked specs: 3 read None strictly and `done` leniently (`spec-16-1-…`, `spec-16-2-…`, `spec-21-10-…`); G-B. Amendment: Design Notes "Status reader".
+  - `[low]` `[reject]` Blind Hunter 2: a ledger row published from another clone between the carry's fetch and the publish's own fetch is overwritten -- real but a millisecond window across hosts, the advisory lock is local by design (the intake's own pre-existing publish has the same window), and closing it means an expected-tip parameter on `commit_paths_onto_remote_tip`, outside this story's surface.
+  - `[false]` `[reject]` Blind Hunter 3: the carry is not gated on landing corroboration -- the contract names the exact condition (the spec on origin/main reads `done` and the flag is an explicit truthy), which a mint or fallout PR's spec cannot satisfy; the same refutation as pass 1 for this claim stands (only the idempotency claim above was wrong).
+  - `[low]` `[reject]` Blind Hunter 4: a Tier-3-promoted key's spec is not on origin/main yet, so the carry finds none and says nothing -- real for that rarer route (dispatch sessions write the tracked spec), but a WARN here needs a new branch for a state the contract's matrix does not list; not worth the added complexity.
+  - `[low]` `[reject]` Blind Hunter 5: `followup_review_promoted_id: null` cannot tell "checked, nothing to do" from "could not check" -- the contract says "null when none"; every could-not-check case carries a WARN.
+  - `[low]` `[patch]` Blind Hunter 6: the AC 7 seam test passes whether or not finalize calls the carry -- harmless (the real removal turns 20 tests red) but misleading; fix: record the stub's call and assert it ran once with the story key and worktree.
+  - `[low]` `[reject]` Blind Hunter 7: existing tests were loosened (a message-substring filter, `read_calls == [_SPEC_REL_79]`) -- required by the contract (the carry reads the spec once more and warns on the same failed read); isolating them by stubbing the carry would be a larger edit for no behavioural gain.
+  - `[low]` `[reject]` Blind Hunter 8: remaining test gaps (an unreachable `base = new_text or ""` branch, flag-value shapes, the `SystemClock` default) -- the readers own the flag shapes, mypy owns the default; the fetch-in-carry gap is logged as Verification Gap 1.
+  - `[low]` `[reject]` Blind Hunter 9: `append_ledger_entry` duplicates `cli/land.py`'s inline separation -- making `land.py` call it edits the loop twin's promotion, which the Never list forbids.
+  - `[low]` `[reject]` Blind Hunter 10: the row's `evidence:` carries no merge sha and `status: open` has no closer -- "when known" (finalize holds no per-story sha here) and Story 73.1 closes rows.
+  - `[false]` `[reject]` Blind Hunter 11: no memlog entry or scoped stamp on the branch -- the surface reconcile is written at finalize (AGENTS pre-PR item 5, this run's instructions), after review; not part of the reviewed code diff.
+  - `[high]` `[bad_spec]` Edge Case Hunter 1: the token scan matches a prose mention -- verified live (see the correction); G-A. Amendment: Design Notes "Idempotency scope".
+  - `[medium]` `[bad_spec]` Edge Case Hunter 2: status `done # note` / `Done` is silently never carried -- same as Blind Hunter 1; G-B.
+  - `[medium]` `[defer]` Edge Case Hunter 3: when the intake changed a primary copy that is not the tip's, the row is skipped but the intake's own publish still writes the stale-based text over the tip -- verified in `_run_deferred_work_intake`; pre-existing (the old publish always did this) and fixing it needs a text-merge policy plus the doctor-governed script; deferred in frontmatter (G-D).
+  - `[low]` `[reject]` Edge Case Hunter 4: the carry-fetch-to-publish-fetch window -- same as Blind Hunter 2.
+  - `[low]` `[reject]` Edge Case Hunter 5: an `FsError` from the post-refusal re-read or restore escapes finalize -- the same function already reads the ledger (`original_text`) and restores it in its `finally` through the same unguarded calls; no new failure class.
+  - `[false]` `[reject]` Edge Case Hunter 6: carry not gated on corroboration -- same as Blind Hunter 3.
+  - `[low]` `[reject]` Edge Case Hunter 7: `base = new_text or ""` could replace the ledger with one row if the script deleted the file -- reachable only if `--fix` removes the ledger it just read; the old publish carried the same `or ""`.
+  - `[low]` `[reject]` Edge Case Hunter 8 (claim): the spec is read through `_local_spec_rel_path` + `file_text_at_ref`, not `spec_text_at_ref` itself -- those are its two halves; the dispatch-worktree fallback is Story 79.1's precedent and a test covers it.
+  - `[high]` `[bad_spec]` Edge Case Hunter 9 (claim): "the `DW-FRR-` prefix is used by no ledger" is false -- the live ledger holds the token in prose; G-A.
+  - `[medium]` `[patch]` Verification Gap 1: the carry's own `vcs.fetch` is unpinned -- verified by the reviewer: deleting it, moving it after the read, or swallowing its error each leave all 146 tests green; fix: a fake that serves a stale ledger until `fetch` has run, and a test where the carry's fetch (index 3) raises.
+  - `[high]` `[bad_spec]` Verification Gap 2: idempotency matches the id anywhere in the ledger -- verified live; G-A.
+  - `[low]` `[patch]` Verification Gap 3: the AC 7 seam test cannot fail on its own -- same as Blind Hunter 6.
+  - `[low]` `[reject]` Intent Alignment 1: the spec is read through the two halves of `spec_text_at_ref` -- same as Edge Case Hunter 8.
+  - `[low]` `[patch]` Intent Alignment 2: the AC 7 criterion is met by seam stubbing, not call removal -- same as Blind Hunter 6.
+  - `[false]` `[reject]` Intent Alignment 3: the carry runs outside the corroboration gate -- same as Blind Hunter 3.
+  - `[medium]` `[defer]` Intent Alignment 4: AC 5 ("the published ledger holds the intake's rows and the new row") holds when the primary's copy equals the tip; when it differs and the intake changed it, the row is skipped with a WARN and the intake publishes as it always did -- the same pre-existing issue as Edge Case Hunter 3; G-D.
+  - `[low]` `[reject]` Intent Alignment 5: a ledger absent at origin/main skips the row with a WARN -- one row never creates a ledger; no tracked ledger exists in no station.
+  - `[low]` `[reject]` Intent Alignment 6: `evidence:` carries only the story key -- same as Blind Hunter 10.
+  - `[low]` `[reject]` Intent Alignment 7: no test runs the subprocess entry `main()` with the real process and clock -- `main()` passing no process or clock is covered by the existing argv test; the real-git test covers the publish.
+  - `[medium]` `[bad_spec]` Intent Alignment 8: status is read through `read_spec_status`, not the harness's `parse_spec_status` -- same as Blind Hunter 1; G-B.
+  - `[low]` `[reject]` Intent Alignment 9: the tip is fetched in `_carry_followup_row` rather than inside the publish -- same as Blind Hunter 2.
+  - `[low]` `[reject]` Intent Alignment 10: five existing finalize tests' assertions were edited -- same as Blind Hunter 7.
+
+### 2026-10-01 -- Review pass (pass 3)
+- verdicts: 34 findings -- high 0, medium 5, low 25, false 4, maybe-false 0
+- correction to pass 1: its Verification Gap report also carried a bullet that no row of that pass logged -- a follow-up-row publish failure is journaled under `deferred_work_intake_finding` when the intake itself was clean. It is logged now (Intent Alignment 7 below, re-reported this pass) and rejected: the finding is also in `findings`, and that key has always held the intake STEP's finding, which is the step that publishes the row.
+- note: the Edge Case Hunter report arrived with its opening lines collapsed by the tooling; the eleven items below are every item that was visible.
+- findings:
+  - `[medium]` `[defer]` Blind Hunter 1: the intake's own publish still writes a stale primary copy over the tip when the carry skipped -- `carried` (pass 2, Edge Case Hunter 3); already in frontmatter `deferred:`, not added again.
+  - `[low]` `[reject]` Blind Hunter 2: the skip WARN's "a re-run of finalize carries it" does not hold while the primary stays stale -- the wording is the Design Notes' own, the state needs a skipped resync AND an intake that changed the copy, and the WARN is advisory.
+  - `[low]` `[reject]` Blind Hunter 3: the carry's fetch and the publish's fetch are two fetches (the window, the local lock, a fetch under the lock) -- `carried` (pass 2, Blind Hunter 2); the intake's own publish has always fetched under the lock.
+  - `[low]` `[reject]` Blind Hunter 4: `evidence:` carries no merge subject or sha -- `carried` (pass 2, Blind Hunter 10).
+  - `[low]` `[reject]` Blind Hunter 5: `append_ledger_entry` duplicates `cli/land.py`'s separation, and leaves a stray `\r` on a CRLF ledger -- `carried` for the duplicate (the Never list forbids editing the loop twin); the CRLF shape is not produced by any writer of this ledger.
+  - `[low]` `[reject]` Blind Hunter 6: `MRS-DISP-047` means several failure classes and the tests tell them apart by message text; an unreadable spec warns twice -- the contract names that code for every such failure, and a distinct code or a shared read is more machinery than the harm.
+  - `[false]` `[reject]` Blind Hunter 7: the carry is not gated on `landing_corroborated` -- `carried` (pass 1, Blind Hunter 3, pass 2, Blind Hunter 3).
+  - `[low]` `[reject]` Blind Hunter 8: existing assertions were weakened to fit the carry's extra read -- `carried` (pass 2, Blind Hunter 7).
+  - `[low]` `[reject]` Blind Hunter 9: the seam test, `_FrrVcs._carry_started` and the golden row copy verify the harness more than the behaviour -- the seam test now records its call and the real removal is run as the mutation; `_carry_started` is the pin for the carry's own fetch.
+  - `[low]` `[reject]` Blind Hunter 10: `followup_review_promoted_id` cannot tell the null cases apart -- `carried` (pass 2, Blind Hunter 5).
+  - `[low]` `[patch]` Blind Hunter 11: `_run_deferred_work_intake` carries narrative and a live count (`3 of the 224 flagged tracked specs`) that goes stale; `_restore_ledger_copy` takes `fs` and unlinks directly -- the count is a direct correction, removed from the test docstring (patch); the direct `unlink` is the intake's pre-existing restore, kept; the review-history wording matches the module's own convention (`Review pass 2026-09-20 ...`).
+  - `[low]` `[reject]` Blind Hunter 12: no test for a `ProcessError` with a row to carry, a CRLF ledger, or a failed carry fetch with an unchanged intake -- the refusal path is `test_a_refused_intake_still_publishes_the_followup_row...`; a failed carry fetch is pinned; the rest is not harmful.
+  - `[low]` `[reject]` Edge Case Hunter 1: the carry-fetch-to-publish-fetch window -- `carried` (Blind Hunter 3 above).
+  - `[medium]` `[defer]` Edge Case Hunter 2: row skipped, `new_text` still published over the tip, and a test pins it -- `carried` (Blind Hunter 1 above).
+  - `[low]` `[reject]` Edge Case Hunter 3: an intake that removes the ledger yields a one-row publish -- `carried` (pass 2, Edge Case Hunter 7).
+  - `[low]` `[reject]` Edge Case Hunter 4: an `FsError` from the post-refusal re-read escapes -- `carried` (pass 2, Edge Case Hunter 5).
+  - `[false]` `[reject]` Edge Case Hunter 5: a carry-only publish rewrites an untouched ledger in `finally` -- `write_text_atomic` writes the identical bytes (read from `adapters/fs_local.py`), so git sees no change; the old code restored the same way.
+  - `[low]` `[reject]` Edge Case Hunter 6: the spec is read before the carry's own fetch, so a stale ref could read the spec as absent -- `_landed_key_not_done_finding` fetches earlier in the same run (and a failed fetch there is an ERROR, exit 1); a silent skip needs that fetch to have been stale and passed.
+  - `[false]` `[reject]` Edge Case Hunter 7: not gated on corroboration -- `carried` (Blind Hunter 7 above).
+  - `[low]` `[reject]` Edge Case Hunter 8 (claim): the heading-anchored match recognises no decorated heading -- the renderer always writes `### DW-FRR-<id>:`; only a hand-edited row could differ.
+  - `[medium]` `[defer]` Edge Case Hunter 9 (claim): "neither the intake's rows nor the new row can drop the other" does not hold when the copy is stale -- `carried` (Blind Hunter 1 above); the Design Notes state the limit.
+  - `[low]` `[reject]` Edge Case Hunter 10 (claim): `spec_text_at_ref` is not called -- `carried` (pass 2, Edge Case Hunter 8).
+  - `[low]` `[reject]` Edge Case Hunter 11 (claim): `evidence:` names no sha -- `carried` (Blind Hunter 4 above).
+  - `[medium]` `[patch]` Verification Gap 1: `finalize_dispatch_land`'s own default clock is unverified -- every test injects a clock, `main()` never does, and `clock = clock` left the suite green (verified by the reviewer and again here: the new test fails under it); patched: `test_finalize_dates_the_row_through_its_own_default_clock`, a `with_clock` opt-out on the `_frr_finalize` helper.
+  - `[low]` `[reject]` Verification Gap 2 (other): two mutations were not caught, a strictness-only status-reader change the reviewer judged unobservable, and the intake-only commit message (unasserted before this story) -- the three status shapes that differ between the readers are pinned; the message is the old code's.
+  - `[low]` `[reject]` Intent Alignment 1: the carry reads through `_local_spec_rel_path` and `file_text_at_ref`, not `spec_text_at_ref` -- `carried` (pass 2, Edge Case Hunter 8).
+  - `[low]` `[reject]` Intent Alignment 2: idempotency is heading-anchored where the contract says a token match over the text -- the contract's premise ("no ledger uses `DW-FRR-`") is false (see pass 2); the Design Notes state the reading.
+  - `[low]` `[reject]` Intent Alignment 3: the carry's status reader is not the corroboration gate's -- `carried` (pass 2, G-B, resolved by the amendment).
+  - `[medium]` `[defer]` Intent Alignment 4: AC 5 holds only while the primary's copy is the tip's, and the skip WARN fires before the idempotency check -- the AC 5 limit is `carried` (Blind Hunter 1 above); the WARN ordering is Blind Hunter 2 above.
+  - `[low]` `[reject]` Intent Alignment 5: the tests call finalize in-process and stub the scan, the promotion and the resync, including the real-git test -- the real-git test exercises the real publish, and `main()`'s argv is covered by the existing test.
+  - `[false]` `[reject]` Intent Alignment 6: the carry sits after the resync and runs when the landed key is not `done` -- `carried` (Blind Hunter 7 above).
+  - `[low]` `[reject]` Intent Alignment 7: the payload key name, and a publish failure routed through `deferred_work_intake_finding` or `followup.finding` -- see the correction above.
+  - `[low]` `[reject]` Intent Alignment 8: footprint beyond the carry (two signatures, the intake refactor, the restore on refusal, edited existing tests, an extra spec read) -- all inside the four Surface files; the restore and the extra read are Design Notes rules.
+  - `[low]` `[reject]` Intent Alignment 9: the AC 7 test shows the row depends on the seam, not on a deleted line -- `carried` (pass 2, Blind Hunter 6); the real removal is run as the mutation.
+
+## Auto Run Result
+
+Status: done
+
+**Summary of implemented change.** `finalize_dispatch_land` now carries a landed story's recommended follow-up review into the station's tracked `deferred-work-ledger.md`. After the resync it reads the story's tracked spec at `origin/main`; a spec reading `status: done` with `followup_review_recommended` an explicit truthy becomes one `### DW-FRR-<story>:` row (`origin: dispatch-followup-review`, `severity: low`, `status: open`, `location:` the spec path). The row rides the intake step's own advisory lock and its single `commit_paths_onto_remote_tip` publish, built on `origin/main`'s ledger -- the text that publish replaces -- never on the primary's possibly stale copy. The `dispatch-land-finalize-resync` payload gains `followup_review_promoted_id` (null unless this run published the row). Every failure is an `MRS-DISP-047` WARN; the exit code is unchanged.
+
+**Files changed.**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/deferred_work.py` -- the pure dispatch twin: id, candidate (status through `parse_spec_status`, flag through `followup_review_recommended`), heading-anchored idempotency, row renderer, `append_ledger_entry`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` -- the carry read, the base-text rule, one publish for the intake's rows and the row, the refused-intake restore, the payload key, a `clock` parameter.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_deferred_work.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize.py` -- one test per acceptance criterion, matrix row and Design Notes rule, a real-git test against a bare `origin`, and the default-clock test.
+
+**Review findings.** Three review passes. Pass 1 and pass 2 each routed to `bad_spec` (the row's base text and idempotency were judged on the primary's copy and on a whole-text scan; the live marshal ledger already names `DW-FRR-51-2` in prose, so the first design would never have carried 51.2) and the code was re-derived each time. Pass 3: 2 patches applied (1 medium: the default clock was untested; 1 low: a stale live count in a test docstring), 1 item deferred (frontmatter `deferred:`, medium: the intake's own publish can overwrite newer tip rows from a stale primary -- pre-existing), and every other finding rejected with its reason in the Review Triage Log. Patched counts this pass: high 0, medium 1, low 1.
+
+**Follow-up review recommendation: `false`.** This pass patched no `high` and one `medium`.
+
+**Verification performed.** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` (9518 passed, 1 skipped); `pixi run --frozen -e pyforge-ci pyforge-deps-test` (130 passed, 3 skipped); `pixi run --frozen -e pyforge-guild lint-types` (exit 0); `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` (exit 0, both touched modules at or above 80%); `python scripts/spec_surface_reconcile.py` (exit 0). Mutations, each turning tests red and then restored: the carry call removed (28 finalize tests), the carry's fetch deleted, moved or swallowed, the whole-text idempotency scan, the strict status reader, the base built on the primary's copy, and the default clock. The live check: against the real marshal ledger and 51.2's real spec the carry now selects 51.2.
+
+**Residual risks.**
+- The intake's own publish writes the primary's post-`--fix` copy over the tip; when the primary is stale (finalize skipped its resync) it can drop rows another finalize published since. Pre-existing; only the new row is protected (it is skipped with a WARN in that state). Closing it needs a text-merge policy for the append-only ledger and a change to `scripts/deferred_work_intake.py`, which spec-pyforge-doctor governs and this story's Never list excludes.
+- The carry's fetch and the publish's own fetch are two fetches, and the advisory lock is local to the primary checkout: a row published from another clone between them is overwritten. The same window the intake's publish has always had.
+- The `DW-FRR-` idempotency match is heading-anchored: a hand-edited row whose heading is decorated is not recognised and would be carried again.
+- Not run: `pyforge-marshal-test-coverage` (the full-package evaluate; its integration floor reads the two touched modules as unit-only, and it is not the lane CI runs) and `pr-preflight` as a whole.
+- Surface reconcile: entries naming the four changed source and test paths and this story spec are appended to the `.memlog.md` of `spec-pyforge-marshal` (the owner) and `spec-pyforge-core` (the co-governor `spec-surface-check` named for `core/deferred_work.py`). No baseline was stamped (this run's instructions forbid it); `spec_surface_reconcile.py` and `spec-surface-check` both exit 0 and the earlier `drift-presumed` warning for `spec-pyforge-core` is gone.
+- The deferred item has its ledger twin, `DW-marshal-66-1`, filed by `scripts/deferred_work_intake.py --fix --project marshal` (the command finalize runs after landing), so `deferred-work-check` stays green on the branch.
+
+## Design Notes
+
+- **Where the row is built.** The spec is read in `finalize_dispatch_land` after the resync, so the primary holds a spec the merged PR added; the row is built and appended INSIDE `_run_deferred_work_intake`'s advisory lock. One `commit_paths_onto_remote_tip` therefore holds the intake's rows and the row, and a refused or no-op intake still publishes the row.
+- **Base text -- the ledger the publish replaces (review pass 1).** `commit_paths_onto_remote_tip` fetches the remote tip and writes the caller's text over it, so the row is built on `origin/main`'s ledger, never on the primary's possibly stale copy. Under the lock, when a carry is pending and after the intake script has run: `vcs.fetch(root, "origin", "main")`, then `remote_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, <ledger rel path>)`. A `VcsCommandError`, or `remote_text is None` (the ledger is never created for one row), is an `MRS-DISP-047` WARN on `followup.finding` naming the ledger path and the cause, the row is skipped, and the intake's own publish proceeds exactly as it always has. Otherwise the base is: `remote_text` when the intake changed nothing (`new_text == original_text`); `new_text` when the intake changed the primary's copy AND `original_text == remote_text` (its text is a faithful successor of the tip); in the remaining case (the intake changed a primary copy that differs from the tip) the row is skipped with a WARN saying the ledger moved and a re-run of finalize re-carries it -- never a merge of two texts. `followup_review_to_promote` judges idempotency on THAT base; the published text is `append_ledger_entry(base, entry)`; nothing is published when there is nothing to add. The primary's copy is restored exactly as before.
+- **Idempotency scope (review pass 2).** `followup_review_to_promote` judges "already carried" on the ledger's ROW HEADINGS only: a greedy, boundary-aware match of `DW-FRR-<id>` on lines shaped `^#{2,4}\s+DW-FRR-[A-Za-z0-9-]+` (the entry form Doctor's `deferred-work` source parses), trailing separators stripped, never a scan of the whole text. The live marshal ledger already carries `DW-FRR-51-2` inside another row's `verified:` prose (line 7048, the `DW-FU-51-2-1` row), and a whole-text scan counted that as the row: 51.2 was never carried. A prose mention, a placeholder (`DW-FRR-<story>`) and a longer sibling heading (`DW-FRR-51-20`) are all "not carried". Tests: a ledger with the id only in a `verified:` line adds the row; the live shape (a `### DW-FU-51-2-1:` row whose body names `DW-FRR-51-2`) adds the row; a `### DW-FRR-51-2:` heading, at level 2, 3 or 4, does not.
+- **Status reader (review pass 2).** `followup_review_candidate` reads the spec's status through `dispatch_harness_done.parse_spec_status` (lower-cased, comment-tolerant) -- the reader the harness guard pairs with the flag (`cli/drain_plan.py:307`, `cli/dispatch.py:2561`) -- not `promotion.read_spec_status`, a strict reader that answers None for 3 of the 224 flagged tracked specs (`status: done  # note` shapes) and would drop them silently. The flag stays `dispatch_harness_done.followup_review_recommended`. Tests: `status: done # note`, `status: Done` and `status: 'done'` qualify; `in-review`, `backlog`, absent and unreadable do not.
+- **The carry's fetch is pinned (review pass 2).** The carry's own `vcs.fetch(root, "origin", "main")` must precede its read of the ledger at `ORIGIN_MAIN`, and a fetch that raises there is the "cannot read the ledger" skip WARN: one test serves a stale ledger until `fetch` has run (the row must be built on the fetched text), one makes the carry's own fetch raise (a WARN, no row, the intake's publish intact). The AC 7 seam test records the stubbed carry's call and asserts it ran once with the story key and the dispatch worktree.
+- **The out-parameter.** `_run_deferred_work_intake` keeps its `Finding | None` return (every existing stub and caller depends on it); `_FollowupReviewCarry` carries the id (set only once the row is published) and the one WARN that return has no room for -- the shape `_execute_promotion_plan`'s `findings` / `data` already use.
+- **A refused intake.** A refused or unlaunchable script leaves the ledger as the row's pre-script text: if the file now differs from `original_text`, restore it before continuing. The intake's own WARN is returned as before; a publish failure after a refusal goes to `followup.finding`.
+- **Lock contention.** When the advisory lock cannot be acquired and a carry is pending, the returned WARN also says the follow-up review row for that story was not carried.
+- **Labels.** When both the intake's rows and the row are published, the commit message, the preflight opt-out reason and the publish-failure WARN name both; the opt-out reason keeps naming the story key.
+- **Reader.** `dispatch_core.spec_text_at_ref` is `story_spec_rel_path` + `file_text_at_ref`; the carry calls those two halves so the path resolves through the dispatch worktree as `_promote_tracked_spec` does.
 
 ## Source
 
