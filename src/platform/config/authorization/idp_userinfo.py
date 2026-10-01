@@ -42,6 +42,8 @@ __all__ = [
 logger: structlog.stdlib.BoundLogger = structlog.get_logger(__name__)
 
 _CACHE_KEY_PREFIX = "idp-userinfo:"
+_REQUEST_MEMO = "_idp_userinfo_memo"
+_UNSET = object()
 DEFAULT_CLAIMS_CACHE_SECONDS = 30
 _HTTP_TIMEOUT_SECONDS = 5
 
@@ -282,11 +284,26 @@ def fetch_current_userinfo(request: HttpRequest) -> dict[str, Any] | None:
 
     None means the claims could not be confirmed, and the caller must treat that
     as "no claims" -- never as a cue to read the login-time session claims.
+
+    The answer, a denial included, is remembered on the request: the roles are
+    read several times per request (the middleware, the view's role check, the
+    chrome), and a failure is not cached across requests, so without this each
+    read would repeat the IdP exchange -- and the refresh -- on its own.
     """
     user = _authenticated_user(request)
     if user is None:
         return None
 
+    remembered = getattr(request, _REQUEST_MEMO, _UNSET)
+    if remembered is not _UNSET:
+        return None if remembered is None else dict(remembered)
+
+    claims = _cached_or_confirmed_claims(user)
+    setattr(request, _REQUEST_MEMO, claims)
+    return None if claims is None else dict(claims)
+
+
+def _cached_or_confirmed_claims(user: Any) -> dict[str, Any] | None:
     cache_key = _cache_key(user.pk)
     cached = cache.get(cache_key)
     if isinstance(cached, dict):
@@ -299,4 +316,4 @@ def fetch_current_userinfo(request: HttpRequest) -> dict[str, Any] | None:
     timeout = _cache_timeout()
     if timeout > 0:
         cache.set(cache_key, claims, timeout=timeout)
-    return dict(claims)
+    return claims

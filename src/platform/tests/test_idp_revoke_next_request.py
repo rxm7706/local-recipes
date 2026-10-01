@@ -206,67 +206,75 @@ class _IdPStub:
         self.claims_by_access_token[access_token] = {"sub": _SUB, "groups": groups}
 
 
-def _handler_for(stub: _IdPStub) -> type[BaseHTTPRequestHandler]:
-    class Handler(BaseHTTPRequestHandler):
-        def log_message(self, *args: object) -> None:  # silence the test run
-            pass
+class _IdPHandler(BaseHTTPRequestHandler):
+    stub: _IdPStub  # bound per test by the `idp` fixture's subclass
 
-        def _answer(self, status: int, body: dict[str, object]) -> None:
-            payload = json.dumps(body).encode()
-            self.send_response(status)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(payload)))
-            self.end_headers()
-            self.wfile.write(payload)
+    def log_message(self, *args: object) -> None:  # silence the test run
+        pass
 
-        def do_GET(self) -> None:  # http.server dispatches on this name
-            time.sleep(stub.delay_seconds)
-            bearer = self.headers.get("Authorization", "").removeprefix("Bearer ")
-            stub.userinfo_calls.append(bearer)
-            if self.path != _USERINFO_PATH:
-                self._answer(HTTPStatus.NOT_FOUND, {})
-            elif stub.userinfo_status is not None:
-                self._answer(stub.userinfo_status, {"error": "forced"})
-            elif bearer in stub.claims_by_access_token:
-                self._answer(HTTPStatus.OK, stub.claims_by_access_token[bearer])
-            else:
-                self._answer(HTTPStatus.UNAUTHORIZED, {"error": "invalid_token"})
+    def _answer(self, status: int, body: dict[str, object]) -> None:
+        payload = json.dumps(body).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
 
-        def do_POST(self) -> None:  # http.server dispatches on this name
-            length = int(self.headers.get("Content-Length", "0"))
-            raw = parse_qs(self.rfile.read(length).decode())
-            form = {key: values[0] for key, values in raw.items()}
-            stub.token_calls.append(form)
-            grant = stub.refresh_grants.pop(form.get("refresh_token", ""), None)
-            if self.path != _TOKEN_PATH:
-                self._answer(HTTPStatus.NOT_FOUND, {})
-            elif stub.token_status is not None:
-                self._answer(stub.token_status, {"error": "forced"})
-            elif (
-                form.get("grant_type") != "refresh_token"
-                or form.get("client_id") != _CLIENT_ID
-                or form.get("client_secret") != _CLIENT_SECRET
-                or grant is None
-            ):
-                self._answer(HTTPStatus.BAD_REQUEST, {"error": "invalid_grant"})
-            else:
-                new_access, new_refresh = grant
-                body: dict[str, object] = {
-                    "access_token": new_access,
-                    "expires_in": 300,
-                }
-                if new_refresh:
-                    body["refresh_token"] = new_refresh
-                self._answer(HTTPStatus.OK, body)
+    def do_GET(self) -> None:  # http.server dispatches on this name
+        stub = self.stub
+        time.sleep(stub.delay_seconds)
+        bearer = self.headers.get("Authorization", "").removeprefix("Bearer ")
+        stub.userinfo_calls.append(bearer)
+        if self.path != _USERINFO_PATH:
+            self._answer(HTTPStatus.NOT_FOUND, {})
+        elif stub.userinfo_status is not None:
+            self._answer(stub.userinfo_status, {"error": "forced"})
+        elif bearer in stub.claims_by_access_token:
+            self._answer(HTTPStatus.OK, stub.claims_by_access_token[bearer])
+        else:
+            self._answer(HTTPStatus.UNAUTHORIZED, {"error": "invalid_token"})
 
-    return Handler
+    def do_POST(self) -> None:  # http.server dispatches on this name
+        stub = self.stub
+        length = int(self.headers.get("Content-Length", "0"))
+        raw = parse_qs(self.rfile.read(length).decode())
+        form = {key: values[0] for key, values in raw.items()}
+        stub.token_calls.append(form)
+        grant = stub.refresh_grants.pop(form.get("refresh_token", ""), None)
+        if self.path != _TOKEN_PATH:
+            self._answer(HTTPStatus.NOT_FOUND, {})
+        elif stub.token_status is not None:
+            self._answer(stub.token_status, {"error": "forced"})
+        elif not _refresh_request_is_valid(form, grant):
+            self._answer(HTTPStatus.BAD_REQUEST, {"error": "invalid_grant"})
+        else:
+            assert grant is not None
+            new_access, new_refresh = grant
+            body: dict[str, object] = {"access_token": new_access, "expires_in": 300}
+            if new_refresh:
+                body["refresh_token"] = new_refresh
+            self._answer(HTTPStatus.OK, body)
+
+
+def _refresh_request_is_valid(
+    form: dict[str, str],
+    grant: tuple[str, str | None] | None,
+) -> bool:
+    """A refresh_token grant from the configured client, for a live refresh token."""
+    return (
+        grant is not None
+        and form.get("grant_type") == "refresh_token"
+        and form.get("client_id") == _CLIENT_ID
+        and form.get("client_secret") == _CLIENT_SECRET
+    )
 
 
 @pytest.fixture
 def idp(settings, monkeypatch):
     """A local IdP the platform's userinfo hook talks to over real HTTP."""
     stub = _IdPStub()
-    server = ThreadingHTTPServer(("127.0.0.1", 0), _handler_for(stub))
+    handler = type("Handler", (_IdPHandler,), {"stub": stub})
+    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     server.daemon_threads = True
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
