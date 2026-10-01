@@ -2,7 +2,7 @@
 title: '72.1: The dispatch supervisor reads merge facts from origin/main'
 type: 'fix'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '464a1ad08a4568bfad3c506c270641bcd95b7523'
 review_loop_iteration: 0
 followup_review_recommended: false
