@@ -2320,3 +2320,36 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: medium
   promoted: 2026-10-01 — minted by the deferral burn-down
   status: open
+
+### DW-doctor-38-1: The sanctioned `verified:` writer appends lines the new rule FAILs: it has no citation check.
+
+- source_spec: `planning-artifacts/specs/spec-38-1-a-verified-line-written-from-now-on-cites-what-it-read.md`
+  summary: The sanctioned `verified:` writer appends lines the new rule FAILs: it has no citation check.
+  evidence: `_validate_project_batch` checks verdict vocabulary, non-empty single-line evidence, id existence and a verbatim restatement of the entry's own prose, nothing else; `_format_verified_line` then writes `verified: <date> — <verdict> — <evidence>`. From 2026-10-02 a verdicts file whose evidence is `STANDS` applies cleanly and the next `deferred-work-check` FAILs on that entry. The writer predates the rule and this diff leaves it untouched. Its own docstring forbids importing `chain.py` (it duplicates the one regex it needs), so aligning it means a duplicated predicate or a reviewed change to that convention, plus its own tests and surface reconcile.
+  location: scripts/apply_verification_verdicts.py:231
+  origin: spec-deferred c4572e3eb6e2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-doctor-38-1-2: The `path:line` grammar rejects extensionless and anchor-style citations that the ledgers already use.
+
+- source_spec: `planning-artifacts/specs/spec-38-1-a-verified-line-written-from-now-on-cites-what-it-read.md`
+  summary: The `path:line` grammar rejects extensionless and anchor-style citations that the ledgers already use.
+  evidence: `_VERIFIED_PATH_LINE_RE` requires `<path>.<ext>:<n>`, as the intent states, so `Containerfile:146`, `.gitignore:948`, `scripts/container-gates:144`, `chain.py:L4344` and `chain.py#L4344` read as bare; 13 lines dated 2026-10-01 use the extensionless style and are grandfathered by date, but a post-cutoff line written that way FAILs. Widening it changes the grammar the intent fixes, so it needs a spec change by someone who owns the contract, not a patch here. The FAIL message names the accepted forms and a command with its exit code is a ready workaround.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:4429
+  origin: spec-deferred 02eb3575d50a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-doctor-38-1-3: The `deferred-work-check` and `due-for-verification-check` task descriptions do not say a `verified:` line must cite what it read.
+
+- source_spec: `planning-artifacts/specs/spec-38-1-a-verified-line-written-from-now-on-cites-what-it-read.md`
+  summary: The `deferred-work-check` and `due-for-verification-check` task descriptions do not say a `verified:` line must cite what it read.
+  evidence: The `due-for-verification-check` description tells an agent to append a fresh `verified: <date> — ...` line with no citation requirement, and the `deferred-work-check` description does not mention the new FAIL, so an agent that follows either verbatim writes a line the gate rejects from 2026-10-02. A `pixi.toml` edit regenerates `environment.yaml` and fires every station suite, so it is not folded into a `fix` of this size.
+  location: pixi.toml:1184
+  origin: spec-deferred 6898f6209546 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
