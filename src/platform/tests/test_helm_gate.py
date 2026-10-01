@@ -23,6 +23,7 @@ import textwrap
 from pathlib import Path
 
 import pytest
+
 from tests.helm_gate import requires_helm
 
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
@@ -120,22 +121,20 @@ _PYTEST_SESSION_TEST = textwrap.dedent(
 
 
 @pytest.mark.parametrize(
-    ("helm_on_path", "ci", "exit_code", "outcome"),
+    "scenario",
     [
-        (True, "true", 0, "1 passed"),
-        (False, "true", 1, "1 failed"),
-        (False, None, 0, "1 skipped"),
+        pytest.param((True, "true", 0, "1 passed"), id="helm-present"),
+        pytest.param((False, "true", 1, "1 failed"), id="helm-absent-under-ci"),
+        pytest.param((False, None, 0, "1 skipped"), id="helm-absent-outside-ci"),
     ],
-    ids=["helm-present", "helm-absent-under-ci", "helm-absent-outside-ci"],
 )
-def test_a_real_pytest_run_reports_each_branch(  # noqa: PLR0913
-    helm_on_path: bool,  # noqa: FBT001
-    ci: str | None,
-    exit_code: int,
-    outcome: str,
+def test_a_real_pytest_run_reports_each_branch(
+    scenario: tuple[bool, str | None, int, str],
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Scenario: (helm on PATH, value of CI or None, exit code, pytest summary)."""
+    helm_on_path, ci, exit_code, outcome = scenario
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     (tmp_path / "test_session.py").write_text(
