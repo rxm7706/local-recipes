@@ -106,8 +106,8 @@ def _bare_shell_metacharacters(command: str) -> list[str]:
 #: verification runs, whatever a station's own ``verify_commands`` say.
 #: ``dispatch/*`` branches skip ``pr-preflight`` (the supervisor gates them),
 #: and ``lint-types`` is in neither a station's ``verify_commands`` nor the
-#: ``detectors-ci`` merge gate -- so scribe Story 25.1 landed code
-#: ``ruff format`` rewrites and ``lint-types`` stayed red on ``main``
+#: ``detectors-ci`` merge gate -- so scribe Story 25.1 landed code that
+#: ``ruff format`` rewrites, and ``lint-types`` stayed red on ``main``
 #: (DW-OPS-2026-10-01-2). The same "derive, don't declare" rule as
 #: ``_SURFACE_RECONCILE_COMMAND``: one constant, folded in at use time, never
 #: written into eight stations' ``marshal-policy.toml``. Only ``pyforge-guild``
