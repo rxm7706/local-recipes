@@ -893,6 +893,12 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   and `"28"` `epic_surfaces` entries stay: their station-wide globs are what every later epic declares, and Epic 73's
   follow-up reviews of done 22.x/28.x stories need them; only their stale "stopgap" comments go (DW-FU-28-14-4,
   DW-OPS-2026-10-01-3). Owner `spec-pyforge-marshal`. → Epic 79 / Stories 79.1–79.2, specced 2026-10-01.
+- **2026-10-01 (night)** — **Found: a campaign forgets `--retry-environment-blocks` after its first cycle.**
+  `_spawn_campaign_supervisor` hands the detached supervisor the station, the story list, the harness and the in-flight
+  cap, but not `retry_environment_blocks`. A campaign launched with the flag skipped 81.1 (an OAuth-refresh race at
+  launch, classified an environment block) in its first cycle, then stopped on that same block in its second.
+  **What it looks like when fixed:** every supervised cycle of a campaign runs with the flags it was launched with.
+  Owner `spec-pyforge-marshal`. → Epic 81 / Story 81.3, specced 2026-10-01.
 - **2026-10-01 (evening)** — **Found: Story 73.1's own rule cannot judge a follow-up run in a reused
   worktree, and three dispatch defects surfaced while relaunching it.** 73.1's dispatch implemented the whole
   story, then its review stopped it on an intent gap: `_ensure_dispatch_worktree` reuses a story's surviving
