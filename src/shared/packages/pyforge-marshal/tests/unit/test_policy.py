@@ -664,13 +664,15 @@ _LANDING_CHECK_DEFAULTS = {
     "landing_check_timeout_minutes": 45,
     "landing_check_grace_seconds": 120,
 }
+#: The whole composed Marshal default `dispatch` block: Story 73.2 adds the per-campaign follow-up review cap.
+_DISPATCH_DEFAULTS = {"max_parallel": 1, **_LANDING_CHECK_DEFAULTS, "max_followup_reviews_per_campaign": 2}
 
 
 def test_dispatch_landing_check_keys_default_to_60_45_and_120():
     effective, findings = compose(project_slug="acme", project={}, flags={})
     assert findings == ()
     assert effective.dispatch.layer is PolicyLayer.DEFAULT
-    assert dict(effective.dispatch.value) == {"max_parallel": 1, **_LANDING_CHECK_DEFAULTS}
+    assert dict(effective.dispatch.value) == _DISPATCH_DEFAULTS
     assert policy.resolve_landing_check_settings(effective) == policy.LandingCheckSettings(
         poll_seconds=60.0, timeout_minutes=45.0, grace_seconds=120.0
     )
@@ -740,7 +742,7 @@ def test_an_invalid_dispatch_block_is_a_named_policy_finding_and_falls_back_to_t
     assert [f.code for f in findings] == ["MRS-POLICY-002"]
     assert "dispatch" in findings[0].message
     assert effective.dispatch.layer is PolicyLayer.DEFAULT
-    assert dict(effective.dispatch.value) == {"max_parallel": 1, **_LANDING_CHECK_DEFAULTS}
+    assert dict(effective.dispatch.value) == _DISPATCH_DEFAULTS
 
 
 def test_a_huge_grace_is_a_named_policy_finding_and_nothing_raises():
@@ -793,6 +795,97 @@ def test_resolve_landing_check_settings_never_raises_on_a_value_that_bypassed_va
     assert policy.resolve_landing_check_settings(forged) == policy.LandingCheckSettings(
         poll_seconds=60.0, timeout_minutes=45.0, grace_seconds=120.0
     )
+
+
+# --- Story 73.2 (CAP-281): the dispatch block's per-campaign follow-up review cap -----------------------
+
+
+def test_the_follow_up_review_cap_defaults_to_two_per_campaign():
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    assert dict(effective.dispatch.value)["max_followup_reviews_per_campaign"] == 2
+    assert policy.DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN == 2
+    assert policy.resolve_followup_review_cap(effective) == 2
+
+
+def test_a_dispatch_block_declaring_only_max_parallel_composes_with_the_cap_at_two():
+    """``_merge_field`` replaces a block whole, and the tracked marshal-policy.toml declares only
+    ``max_parallel``: the block stays what was declared and the consumer reads the default cap."""
+    effective, findings = compose(project_slug="acme", project={"dispatch": {"max_parallel": 3}}, flags={})
+    assert findings == ()
+    assert dict(effective.dispatch.value) == {"max_parallel": 3}
+    assert policy.resolve_followup_review_cap(effective) == 2
+
+
+@pytest.mark.parametrize("cap", [0, 1, 2, 7, 181])
+def test_the_follow_up_review_cap_admits_any_non_negative_integer(cap):
+    effective, findings = compose(
+        project_slug="acme", project={"dispatch": {"max_followup_reviews_per_campaign": cap}}, flags={}
+    )
+    assert findings == ()
+    assert dict(effective.dispatch.value) == {"max_followup_reviews_per_campaign": cap}
+    assert policy.resolve_followup_review_cap(effective) == cap  # 0 is a real "off", not "unset"
+
+
+def test_the_follow_up_review_cap_composes_beside_max_parallel():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"dispatch": {"max_parallel": 2, "max_followup_reviews_per_campaign": 5}},
+        flags={},
+    )
+    assert findings == ()
+    assert policy.resolve_followup_review_cap(effective) == 5
+
+
+def test_the_repo_defaults_layer_sets_the_follow_up_review_cap():
+    effective, findings = compose(
+        project_slug="acme",
+        repo_defaults={"dispatch": {"max_followup_reviews_per_campaign": 0}},
+        project={},
+        flags={},
+    )
+    assert findings == ()
+    assert effective.dispatch.layer is PolicyLayer.REPO_DEFAULTS
+    assert policy.resolve_followup_review_cap(effective) == 0
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [-1, 1.5, "2", True, False, None, 10**400],
+    ids=["negative", "float", "string", "true", "false", "none", "huge"],
+)
+def test_an_invalid_follow_up_review_cap_rejects_the_dispatch_block_as_a_bad_max_parallel_does(bad):
+    """One bad value rejects the WHOLE block with MRS-POLICY-002 naming ``dispatch``; composition falls back to
+    the layer below -- here Marshal's default -- exactly as ``{"max_parallel": 0}`` does."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={"dispatch": {"max_parallel": 2, "max_followup_reviews_per_campaign": bad}},
+        flags={},
+    )
+    assert [f.code for f in findings] == ["MRS-POLICY-002"]
+    assert "dispatch" in findings[0].message
+    assert effective.dispatch.layer is PolicyLayer.DEFAULT
+    assert dict(effective.dispatch.value) == _DISPATCH_DEFAULTS
+    _, parallel_findings = compose(project_slug="acme", project={"dispatch": {"max_parallel": 0}}, flags={})
+    assert [f.code for f in parallel_findings] == [f.code for f in findings]
+
+
+def test_an_invalid_follow_up_review_cap_in_the_repo_defaults_is_rejected_too():
+    effective, findings = compose(
+        project_slug="acme", repo_defaults={"dispatch": {"max_followup_reviews_per_campaign": -1}}, project={}, flags={}
+    )
+    assert [f.code for f in findings] == ["MRS-POLICY-002"]
+    assert policy.resolve_followup_review_cap(effective) == 2
+
+
+def test_the_follow_up_review_cap_resolver_never_raises_on_a_value_that_bypassed_validation():
+    for garbage_value in (-3, "x", True, None, 10**400):
+        garbage = PolicyField(
+            value={"max_followup_reviews_per_campaign": garbage_value}, layer="project", raw_source={}
+        )
+        effective, _ = compose(project_slug="acme", project={}, flags={})
+        forged = dataclasses.replace(effective, dispatch=garbage)
+        assert policy.resolve_followup_review_cap(forged) == 2
 
 
 def test_the_real_pyforge_marshal_policy_declares_no_context_block():
