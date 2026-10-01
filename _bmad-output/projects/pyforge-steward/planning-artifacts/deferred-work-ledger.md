@@ -5630,3 +5630,25 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium (unverified)
   promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-80-1: The Platform CI `test` log has not been read, so the five chart-test deferrals stay open.
+
+- source_spec: `planning-artifacts/specs/spec-80-1-the-platform-ci-test-job-runs-the-chart-tests-and-a-skipped-one-fails-there.md`
+  summary: The Platform CI `test` log has not been read, so the five chart-test deferrals stay open.
+  evidence: Closing DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1 and DW-steward-78-1-3 needs a Platform CI `test` run of this change showing the chart tests ran, not skipped. That run exists only after a push, and this run did not push or open a PR. Local evidence (the `platform-ci-test` env running the chart modules with zero helm skips) is recorded in the Auto Run Result, not offered as the CI log. Settled by reading the PR's `test` job log for skip counts on `tests/test_chart_invariants.py` and `tests/test_openfeature_file_flags.py`.
+  location: .github/workflows/platform-ci.yml
+  origin: spec-deferred 84438f226907 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-80-1-2: A missing PyYAML would still skip the chart tests silently under CI.
+
+- source_spec: `planning-artifacts/specs/spec-80-1-the-platform-ci-test-job-runs-the-chart-tests-and-a-skipped-one-fails-there.md`
+  summary: A missing PyYAML would still skip the chart tests silently under CI.
+  evidence: `_import_yaml` and the flags module use `pytest.importorskip("yaml")`, which skips rather than fails when PyYAML is absent. PyYAML is in the `platform-ci-test` lock only as a transitive dependency, not a direct one in `[feature.platform-ci-test.dependencies]`. The same silent-skip class this story closes for helm, with no known trigger today. Settled by deciding whether `importorskip("yaml")` fails under `CI` too, or `pyyaml` becomes a direct dependency.
+  location: src/platform/tests/test_chart_invariants.py
+  origin: spec-deferred b0c8adde2ef3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
