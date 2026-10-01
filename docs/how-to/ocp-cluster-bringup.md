@@ -326,7 +326,8 @@ kubectl create secret generic platform-secrets \
   --from-literal=DJANGO_SECRET_KEY='…' \
   --from-literal=DATABASE_URL='postgres://platform_app:…@platform-postgres:5432/platform' \
   --from-literal=MIGRATION_DATABASE_URL='postgres://platform:…@platform-postgres:5432/platform' \
-  --from-literal=POSTGRES_PASSWORD='…'
+  --from-literal=POSTGRES_PASSWORD='…' \
+  --from-literal=LANGFLOW_SUPERUSER_PASSWORD='…'
 
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
   -f src/platform/deploy/overlays/ocp/core-overrides.yaml \

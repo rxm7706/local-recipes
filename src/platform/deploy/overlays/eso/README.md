@@ -48,6 +48,7 @@ pixi run -e platform-dev helm install platform src/platform/deploy/charts/platfo
 | `MIGRATION_DATABASE_URL` | Liquibase migrate Job | `secret/data/platform/postgres` → `migration_database_url` |
 | `POSTGRES_PASSWORD` | postgres StatefulSet | `secret/data/platform/postgres` → `password` |
 | `REDIS_PASSWORD` | redis + platform pods | `secret/data/platform/redis` → `password` |
+| `LANGFLOW_SUPERUSER_PASSWORD` | platform pods (required; Langflow auto-login is off) | `secret/data/platform/langflow` → `superuser_password` |
 | `PYFORGE_ASSERTION_PRIVATE_KEY` | optional env (mint path) | `secret/data/platform/assertion` → `private_pem` |
 | `PYFORGE_ASSERTION_PUBLIC_KEY` | optional env (verify path) | `secret/data/platform/assertion` → `public_pem` |
 

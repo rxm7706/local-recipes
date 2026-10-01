@@ -468,6 +468,7 @@ jobs:
             -e DJANGO_SECURE_SSL_REDIRECT=False \
             -e DATABASE_URL=postgres://platform:platform@platform-ci-postgres-${{ matrix.engine }}:5432/platform \
             -e REDIS_URL=redis://platform-ci-redis-${{ matrix.engine }}:6379/0 \
+            -e LANGFLOW_SUPERUSER_PASSWORD=ci-placeholder-not-a-real-secret \
             platform-ci-${{ matrix.engine }}
 
       # 120s, not 60: a cold runner has already spent its budget on the
@@ -584,6 +585,21 @@ jobs:
           code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/health || true)"
           if [ "$code" != "200" ]; then
             echo "::error::GET /health returned $code, expected 200 (${{ matrix.engine }})"
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          fi
+
+      # Story 78.1 / CAP-99 (DW-FU-11-1): Langflow's own default (AUTO_LOGIN=True)
+      # hands any caller a bearer token for the bootstrap superuser, and the
+      # platform edge forwards /langflow/ with no auth gate of its own. Settings
+      # force AUTO_LOGIN off; the pytest lane that proves it needs `langflow`,
+      # which platform-ci-test does not carry, so the BUILT image is where this
+      # is proven on CI. Langflow answers 403 ("Auto login is disabled").
+      - name: Smoke-test Langflow auto-login is refused (/langflow/api/v1/auto_login)
+        run: |
+          code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/langflow/api/v1/auto_login || true)"
+          if [ "$code" != "403" ]; then
+            echo "::error::GET /langflow/api/v1/auto_login returned $code, expected 403 (${{ matrix.engine }})"
             ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
             exit 1
           fi
@@ -1162,7 +1178,8 @@ jobs:
             --from-literal=DJANGO_SECRET_KEY=ci-gke-smoke-placeholder-not-a-real-secret \
             --from-literal=DATABASE_URL=postgres://platform:ci-gke-smoke-not-a-real-secret@platform-postgres:5432/platform \
             --from-literal=MIGRATION_DATABASE_URL=postgres://platform:ci-gke-smoke-not-a-real-secret@platform-postgres:5432/platform \
-            --from-literal=POSTGRES_PASSWORD=ci-gke-smoke-not-a-real-secret
+            --from-literal=POSTGRES_PASSWORD=ci-gke-smoke-not-a-real-secret \
+            --from-literal=LANGFLOW_SUPERUSER_PASSWORD=ci-gke-smoke-not-a-real-secret
 
       # ONLY scalar --set value overrides -- never a second chart/overlay/
       # values file (AD-11: GKE is a profile, not a parallel implementation).
@@ -1381,7 +1398,8 @@ jobs:
             --from-literal=DATABASE_URL=postgres://platform:ci-ocp-smoke-not-a-real-secret@platform-postgres:5432/platform \
             --from-literal=MIGRATION_DATABASE_URL=postgres://platform:ci-ocp-smoke-not-a-real-secret@platform-postgres:5432/platform \
             --from-literal=POSTGRES_PASSWORD=ci-ocp-smoke-not-a-real-secret \
-            --from-literal=REDIS_PASSWORD=ci-ocp-smoke-not-a-real-secret
+            --from-literal=REDIS_PASSWORD=ci-ocp-smoke-not-a-real-secret \
+            --from-literal=LANGFLOW_SUPERUSER_PASSWORD=ci-ocp-smoke-not-a-real-secret
 
       # AD-11: OCP deltas ONLY via the checked-in overlay values file --
       # never a second chart or OCP kinds in the core templates. Image
@@ -1649,7 +1667,8 @@ jobs:
             --from-literal=DJANGO_SECRET_KEY=ci-airgap-smoke-placeholder-not-a-real-secret \
             --from-literal=DATABASE_URL=postgres://platform:ci-airgap-smoke-not-a-real-secret@platform-postgres:5432/platform \
             --from-literal=MIGRATION_DATABASE_URL=postgres://platform:ci-airgap-smoke-not-a-real-secret@platform-postgres:5432/platform \
-            --from-literal=POSTGRES_PASSWORD=ci-airgap-smoke-not-a-real-secret
+            --from-literal=POSTGRES_PASSWORD=ci-airgap-smoke-not-a-real-secret \
+            --from-literal=LANGFLOW_SUPERUSER_PASSWORD=ci-airgap-smoke-not-a-real-secret
 
       # Builds the mirror BEFORE the egress block goes up -- network is
       # still on here, exactly like the `docker build` step above. Reads
