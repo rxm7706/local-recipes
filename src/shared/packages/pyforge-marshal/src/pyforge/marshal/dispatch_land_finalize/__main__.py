@@ -2,7 +2,9 @@
 
 Spawned as a subprocess by ``dispatch_land`` so ``dispatch_supervisor`` never
 imports ``cli/`` (AD-9). Composes ``deploy promote`` + ``land``'s sprint
-ledger promotion machinery.
+ledger promotion machinery, then (Story 79.1) carries the promotion to the two
+files that machinery never reached: the story's Tier-3 feed row and its
+tracked spec.
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ from pyforge.marshal.cli.deploy import (
     _deploy_writer_id,
     _DeployRun,
     _execute_promotion_plan,
+    _PromotionScan,
     _scan_promotions,
 )
 from pyforge.marshal.cli.land import (
@@ -34,6 +37,7 @@ from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, norm
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT
+from pyforge.marshal.core.status import render_ledger_advancements
 from pyforge.marshal.ports.fs import FsPort
 from pyforge.marshal.ports.vcs import VcsPort
 
@@ -51,6 +55,14 @@ _FINALIZE_RESYNC_KIND = "dispatch-land-finalize-resync"
 #: (`_project_slug_map` strips this prefix) -- never the full
 #: `_bmad-output/projects/<slug>` directory name.
 _PROJECT_SLUG_PREFIX = "pyforge-"
+
+#: Story 79.1: a Tier-3 feed row that reads this is a deliberate state the landing never moves
+#: (`_LEDGER_DONE_STATUS`, imported above, is the other one).
+_LEDGER_BLOCKED_STATUS = "blocked"
+
+#: Story 79.1: tracked-spec statuses that are final -- a landing leaves them alone, silently. A
+#: status in neither this set nor `promotion.PRE_DONE_SPEC_STATUSES` is not silent (a WARN).
+_TERMINAL_SPEC_STATUSES = frozenset({promotion.SPEC_STATUS_DONE, "blocked", "superseded"})
 
 
 def _run_deferred_work_intake(
