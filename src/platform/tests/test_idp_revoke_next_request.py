@@ -246,7 +246,7 @@ class _IdPHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # http.server dispatches on this name
         stub = self.stub
         length = int(self.headers.get("Content-Length", "0"))
-        raw = parse_qs(self.rfile.read(length).decode())
+        raw = parse_qs(self.rfile.read(length).decode(), keep_blank_values=True)
         form = {key: values[0] for key, values in raw.items()}
         stub.token_calls.append(form)
         grant = stub.refresh_grants.pop(form.get("refresh_token", ""), None)
