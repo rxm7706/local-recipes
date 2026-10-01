@@ -11,6 +11,7 @@ from pyforge.marshal.core.identity import StoryKey, render_merge_subject
 from pyforge.marshal.core.promotion import (
     PRE_DONE_SPEC_STATUSES,
     SPEC_STATUS_DONE,
+    TERMINAL_SPEC_STATUSES,
     SpecCandidate,
     classify_promotion_candidates,
     corroborated_merged_story_keys,
@@ -807,7 +808,7 @@ def test_set_spec_status_refuses_a_value_that_would_corrupt_the_frontmatter(bad)
         set_spec_status("---\nstatus: backlog\n---\n", bad)
 
 
-def test_pre_done_spec_statuses_is_every_status_a_landing_may_advance_and_no_terminal_one():
+def test_pre_done_and_terminal_spec_statuses_are_disjoint_and_pre_done_is_every_status_a_landing_advances():
     assert PRE_DONE_SPEC_STATUSES == {
         "backlog",
         "draft",
@@ -817,7 +818,9 @@ def test_pre_done_spec_statuses_is_every_status_a_landing_may_advance_and_no_ter
         "in-review",
         "review",
     }
-    assert not PRE_DONE_SPEC_STATUSES & {"done", "blocked", "superseded"}
+    assert TERMINAL_SPEC_STATUSES == {SPEC_STATUS_DONE, "blocked", "superseded"}
+    # One status is never both advanceable and final: the two sets cannot drift into overlap.
+    assert PRE_DONE_SPEC_STATUSES.isdisjoint(TERMINAL_SPEC_STATUSES)
 
 
 # --- classify_promotion_candidates -------------------------------------------

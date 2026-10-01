@@ -10,8 +10,10 @@ from pyforge.core.process import ProcessError, ProcessResult
 
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
+from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
+from pyforge.marshal.core.promotion import PRE_DONE_SPEC_STATUSES, TERMINAL_SPEC_STATUSES
 from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.core.status import render_ledger_advancements
 from pyforge.marshal.dispatch_land_finalize.__main__ import (
@@ -731,7 +733,6 @@ def test_promotion_plan_is_regated_through_spec_status_corroboration(monkeypatch
     promoted only when its spec status at `origin/main` corroborates the
     merge; the corroboration reads the spec through `spec_text_at_ref` and
     fails closed on a git read error."""
-    from pyforge.marshal.core.identity import normalize
     from pyforge.marshal.dispatch_land_finalize import __main__ as mod
 
     good, bad = normalize("53.2"), normalize("53.9")
@@ -1041,9 +1042,11 @@ class _PublishVcs(_StubVcs):
         publish_raises: bool = False,
         merge_subjects: tuple[str, ...] = (_DISPATCH_MERGE_79,),
         history_raises: bool = False,
+        fail_fetch_from: int | None = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
+        self.fail_fetch_from = fail_fetch_from
         self.spec_text = spec_text
         self.spec_read_raises = spec_read_raises
         self.publish_raises = publish_raises
@@ -1055,6 +1058,8 @@ class _PublishVcs(_StubVcs):
 
     def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
         super().fetch(repo_root, remote, ref)
+        if self.fail_fetch_from is not None and len(self.fetch_calls) >= self.fail_fetch_from:
+            raise VcsCommandError("git fetch origin refs/heads/main failed: could not read from remote")
         self.fetched = True
 
     def commit_subjects(self, _repo_root: Path, ref: str) -> tuple[str, ...]:
@@ -1261,6 +1266,28 @@ def test_finalize_warns_about_a_feed_row_the_rewrite_cannot_match(tmp_path: Path
     assert _promotion_flags_79(tmp_path) == (True, False, False)
 
 
+def test_finalize_warns_when_the_key_also_sits_outside_the_development_status_block(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """`render_ledger_advancements` rewrites the FIRST line carrying the key, wherever it is: here a `notes:`
+    line, which would take the rewrite and leave the real row at `backlog` with no finding. The rewritten
+    text is re-parsed with the sync's own parser and judged -- the feed keeps its bytes, one WARN."""
+    original = (
+        f"{_FEED_HEADER_79}notes:\n  {_FEED_KEY_79}: see the thread\n"
+        f"development_status:\n  epic-79: in-progress\n  {_FEED_KEY_79}: backlog\n"
+    )
+    feed = _write_feed_79(tmp_path, original)
+    _stub_planned_finalize(monkeypatch, tmp_path, _PublishVcs(ledger_text=_DONE_LEDGER_79))
+
+    assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
+
+    assert feed.read_text(encoding="utf-8") == original
+    [finding] = _journaled_findings_79(tmp_path)
+    assert (finding["code"], finding["severity"]) == ("MRS-DISP-047", "warn")
+    assert str(feed) in finding["message"] and "outside the development_status block" in finding["message"]
+    assert _promotion_flags_79(tmp_path) == (True, False, False)
+
+
 def test_finalize_warns_when_the_feed_cannot_be_written_and_still_completes(tmp_path: Path, monkeypatch) -> None:
     """An unwritable feed is a WARN naming the path, never a crash: the feed keeps its bytes, exit 0."""
 
@@ -1374,10 +1401,24 @@ def test_finalize_promotes_a_tracked_spec_the_session_committed_itself(tmp_path:
     assert _promotion_flags_79(tmp_path) == (True, True, True)
 
 
-@pytest.mark.parametrize("status", ["done", "blocked", "superseded"])
-def test_finalize_leaves_a_done_blocked_or_superseded_tracked_spec_untouched(
-    tmp_path: Path, monkeypatch, status: str
-) -> None:
+@pytest.mark.parametrize("status", sorted(PRE_DONE_SPEC_STATUSES))
+def test_finalize_promotes_a_tracked_spec_at_every_pre_done_status(tmp_path: Path, monkeypatch, status: str) -> None:
+    _write_tracked_spec_79(tmp_path)
+    _write_feed_79(tmp_path)
+    vcs = _PublishVcs(
+        ledger_text=_DONE_LEDGER_79, spec_text=_TRACKED_SPEC_79.replace("status: 'backlog'", f"status: '{status}'")
+    )
+    _stub_planned_finalize(monkeypatch, tmp_path, vcs)
+
+    assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
+
+    [publish] = vcs.publishes
+    assert publish["writes"] == ((_SPEC_REL_79, _TRACKED_SPEC_79.replace("status: 'backlog'", "status: 'done'")),)
+    assert _promotion_flags_79(tmp_path) == (True, True, True)
+
+
+@pytest.mark.parametrize("status", sorted(TERMINAL_SPEC_STATUSES))
+def test_finalize_leaves_a_terminal_tracked_spec_untouched(tmp_path: Path, monkeypatch, status: str) -> None:
     _write_tracked_spec_79(tmp_path)
     _write_feed_79(tmp_path)
     vcs = _PublishVcs(
@@ -1485,6 +1526,49 @@ def test_finalize_warns_naming_the_path_when_it_cannot_promote_a_tracked_spec(
     assert _promotion_flags_79(tmp_path) == (True, True, False)
 
 
+class _Tier3Vcs(_PublishVcs):
+    """`_PublishVcs` for a landing whose merge subject local `main` ALREADY holds when the scan reads (so the
+    Tier-3 route finds the key durable), recording the executor's local `commit_paths`."""
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.local_commits: list[tuple[tuple[Path, ...], str]] = []
+
+    def commit_subjects(self, _repo_root: Path, ref: str) -> tuple[str, ...]:
+        return (_DISPATCH_MERGE_79, "base")
+
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
+        self.local_commits.append((tuple(paths), message))
+        return "cafebabecafebabe"
+
+
+def test_a_key_the_tier3_route_promoted_this_run_is_not_promoted_again_as_a_tracked_spec(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """AC 4 is for a session that left NO Tier-3 twin. Here one exists: the REAL `_execute_promotion_plan`
+    copies it into the primary's `specs/` and commits it locally, so the tracked-spec path now resolves while
+    `origin/main` does not hold the copy yet. That route owns the spec: no "absent at origin/main" WARN, no
+    read of the spec at origin/main, no second status-only publish."""
+    twin = tmp_path / "_bmad-output" / "projects" / _SLUG_79 / "implementation-artifacts" / _SPEC_NAME_79
+    twin.parent.mkdir(parents=True)
+    twin.write_text(_TRACKED_SPEC_79.replace("'backlog'", "'done'"), encoding="utf-8")
+    feed = _write_feed_79(tmp_path)
+    vcs = _Tier3Vcs(ledger_text=_DONE_LEDGER_79, spec_text=None)
+    _stub_real_scan_finalize(monkeypatch, tmp_path, vcs)
+
+    assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
+
+    copied = tmp_path / _SPEC_REL_79
+    assert copied.read_text(encoding="utf-8") == twin.read_text(encoding="utf-8")
+    [(targets, _message)] = vcs.local_commits
+    assert targets == (copied,)
+    assert [path for _root, _ref, path in vcs.read_calls if path == _SPEC_REL_79] == []
+    assert vcs.publishes == []
+    assert _journaled_findings_79(tmp_path) == []
+    assert feed.read_text(encoding="utf-8") == _FEED_DONE_79
+    assert _promotion_flags_79(tmp_path) == (True, True, False)
+
+
 # -- the gate (AC 5): fed FRESH evidence --------------------------------------------------------
 
 
@@ -1528,9 +1612,13 @@ def test_the_gate_stays_shut_when_the_history_it_reads_never_shows_the_merge(tmp
     assert _promotion_flags_79(tmp_path) == (False, False, False)
 
 
-def test_the_gate_stays_shut_when_origin_main_was_never_fetched(tmp_path: Path, monkeypatch) -> None:
-    """Pins WHY the gate re-reads after the fetch: handed the pre-fetch history alone (the readback that
-    fetches skipped), the real scan's evidence does not corroborate the landing, so nothing moves."""
+def test_the_gate_fetches_origin_main_for_itself_instead_of_leaning_on_the_readback(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The gate must not depend on `_landed_key_not_done_finding` happening to fetch: with that readback
+    stubbed out (nothing before the gate fetches), the real scan's pre-fetch evidence alone would not
+    corroborate the landing -- and the gate still opens, because it fetched `origin/main` itself and read the
+    history after that."""
     feed = _write_feed_79(tmp_path)
     vcs = _PublishVcs(ledger_text=_DONE_LEDGER_79, spec_text=_TRACKED_SPEC_79)
     _stub_real_scan_finalize(monkeypatch, tmp_path, vcs)
@@ -1538,7 +1626,28 @@ def test_the_gate_stays_shut_when_origin_main_was_never_fetched(tmp_path: Path, 
 
     assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
 
-    assert vcs.fetch_calls == []
+    assert vcs.fetch_calls == [(tmp_path, "origin", "main")]  # the gate's own, and the only one
+    assert vcs.subject_reads[-1] == (ORIGIN_MAIN, True)
+    assert feed.read_text(encoding="utf-8") == _FEED_DONE_79
+    assert _promotion_flags_79(tmp_path) == (True, True, False)
+
+
+def test_a_gate_fetch_that_fails_is_a_warn_naming_the_ref_and_nothing_moves(tmp_path: Path, monkeypatch) -> None:
+    """The readback's fetch (the first) succeeds and `origin/main` reads `done`; the gate's own fetch (the
+    second) fails -> an `MRS-DISP-047` WARN naming the ref, no history read, nothing moves, exit 0."""
+    _write_tracked_spec_79(tmp_path)
+    feed = _write_feed_79(tmp_path)
+    vcs = _PublishVcs(ledger_text=_DONE_LEDGER_79, spec_text=_TRACKED_SPEC_79, fail_fetch_from=2)
+    _stub_planned_finalize(monkeypatch, tmp_path, vcs)
+
+    assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
+
+    assert len(vcs.fetch_calls) == 2
+    assert vcs.subject_reads == []
+    [finding] = _journaled_findings_79(tmp_path)
+    assert (finding["code"], finding["severity"]) == ("MRS-DISP-047", "warn")
+    assert "cannot fetch" in finding["message"] and ORIGIN_MAIN in finding["message"]
+    assert "could not read from remote" in finding["message"]
     assert feed.read_text(encoding="utf-8") == _FEED_BACKLOG_79
     assert vcs.publishes == []
     assert _promotion_flags_79(tmp_path) == (False, False, False)
@@ -1611,7 +1720,7 @@ def test_a_station_branch_merge_with_a_done_spec_is_a_landing_and_only_its_own_k
     """The positive CAP-255 case: the spec reads `done` on origin/main, so the station-branch merge counts.
     The history also holds ANOTHER story's station-branch merge; the gate reads only the landed key's spec."""
     _write_tracked_spec_79(tmp_path, _TRACKED_SPEC_79.replace("'backlog'", "'done'"))
-    other = _write_tracked_spec_79(tmp_path, _TRACKED_SPEC_79.replace("79.1", "79.2"), "spec-79-2-another-story.md")
+    _write_tracked_spec_79(tmp_path, _TRACKED_SPEC_79.replace("79.1", "79.2"), "spec-79-2-another-story.md")
     feed = _write_feed_79(tmp_path)
     vcs = _PublishVcs(
         ledger_text=_DONE_LEDGER_79,
@@ -1622,7 +1731,6 @@ def test_a_station_branch_merge_with_a_done_spec_is_a_landing_and_only_its_own_k
 
     assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
 
-    assert other.is_file()
     assert feed.read_text(encoding="utf-8") == _FEED_DONE_79
     assert [path for _root, _ref, path in vcs.read_calls if "79-2-another-story.md" in path] == []
     assert vcs.publishes == []  # the spec already reads done: nothing to publish
