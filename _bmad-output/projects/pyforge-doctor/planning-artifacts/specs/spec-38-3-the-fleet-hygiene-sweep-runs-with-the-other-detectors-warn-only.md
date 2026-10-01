@@ -2,7 +2,8 @@
 title: "38.3: The fleet hygiene sweep runs with the other detectors, warn-only"
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '0a93bd41a886326ba18faf6f05bba4caa946649d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -13,6 +14,7 @@ context:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py
   - scripts/detectors.py
   - pixi.toml
+warnings: [oversized]
 deferred: []
 declared_low_risk: false
 ---
@@ -87,11 +89,55 @@ Ledger status at mint: `backlog`.
 Deps: —.
 Minted 2026-10-01 by operator ruling: the deferral burn-down's "stop the inflow" changes run before its Phase 2.
 
-## Verification
+## Code Map
 
-**Commands:**
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`).
+All doctor paths below are under `src/shared/packages/pyforge-doctor/`.
+
+- `src/pyforge/doctor/sources/__main__.py` -- `DISPATCH` (line 84) lacks the row; import block (line 50) lacks `hygiene`. `main()` already prints each finding and returns `exit_code_for(findings)`, so no logic change.
+- `src/pyforge/doctor/sources/hygiene.py` -- `gather(target)` is the `Callable[[Path], tuple[Finding, ...]]` shape `DISPATCH` wants; every finding is `DoctorStatus.WARN` or the single `OK`. Module docstring (line 47) says "no dispatch wiring in this story": stale once wired.
+- `src/pyforge/doctor/sources/__init__.py` -- `REGISTRY` row for `BMAD_OUTPUT_HYGIENE` already has `scope="repo"`; `scripts/detectors.py::_run_doctor_sources` reads it via `scope_for`. Read-only.
+- `src/pyforge/doctor/verdict.py` -- `exit_code_for`: any FAIL -> 2, else 0; a WARN never moves it. Read-only reuse.
+- `scripts/detectors.py` -- `_DOCTOR_SOURCE_TASKS` (line 204) pairs each dispatched name with its pixi task; `_run_doctor_sources` turns `exit_code_for != 0` into `FINDINGS`, else `pass`. Needs one row.
+- `pixi.toml` -- `[feature.guild-tasks.tasks.*-check]` siblings, e.g. `live-proof-surface-check` (line 1401): `description` + `cmd = "python -m pyforge.doctor.sources <name>"`. Needs `bmad-output-hygiene-check`.
+- `docs/how-to/pixi-tasks.md`, `docs/map.yaml` -- generated from `pixi.toml` by `scripts/docs_pixi_tasks.py`; a new task makes the page stale (`docs-currency` reds) until regenerated.
+- `tests/unit/test_sources_dispatch.py` (doctor) -- `_EXPECTED_DISPATCH` pins the roster by name and identity. `tests/unit/test_sources_hygiene.py` -- fixture-repo helpers (`_init_repo`, `_git`, leaky-git-env scrub) to reuse.
+- `tests/scripts/test_detectors_doctor_sources.py` (repo root) -- pins `_DOCTOR_SOURCE_TASKS` rows; DW-FU-6-9-3 notes the name -> task mapping is otherwise unvalidated.
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md` -- `DW-OPS-2026-10-01-1` (line 2284); `DW-FU-9-2` (1592), `DW-FU-9-2-2` (1604), `DW-FU-9-2-3` (1616), `DW-FU-9-3` (1640). Each already carries a `verified: 2026-10-01 — STANDS` line from the burn-down.
+- Live baseline, 2026-10-01 in this worktree: `hygiene.gather(Path('.'))` returns 5 `orphan-file` WARNs (herald 1, marshal 2, steward 2) and `exit_code_for` = 0.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/pyforge/doctor/sources/__main__.py` -- import `hygiene`; add `Source.BMAD_OUTPUT_HYGIENE.value: hygiene.gather` with a Story 38.3 comment -- AC 1
+- `src/pyforge/doctor/sources/hygiene.py` -- rewrite the stale "no dispatch wiring" docstring paragraph: dispatch, detectors and pixi wiring landed in 38.3; `doctor check`/`monitor` verbs stay unwired -- healed tissue, no code change
+- `scripts/detectors.py` -- append `("bmad-output-hygiene", "bmad-output-hygiene-check")` to `_DOCTOR_SOURCE_TASKS` with a comment -- AC 2
+- `pixi.toml` -- add `[feature.guild-tasks.tasks.bmad-output-hygiene-check]` beside `live-proof-surface-check`; then `docs_pixi_tasks.py` regenerates `docs/how-to/pixi-tasks.md` + `docs/map.yaml`, and `environment.yaml` is re-exported only if it differs -- AC 1, repo rule
+- `tests/unit/test_sources_dispatch.py` -- add the row to `_EXPECTED_DISPATCH`; add an in-process `main(["bmad-output-hygiene"])` run over a `tmp_path` repo (cwd switched) asserting `gather`'s WARN lines print and the return is 0 -- AC 1, AC 3, AC 5
+- `tests/scripts/test_detectors_doctor_sources.py` -- assert the `_DOCTOR_SOURCE_TASKS` row, that `pixi.toml` declares that task with the expected `cmd`, and that a WARN-only stub through `_run_doctor_sources("repo")` yields `status == "pass"`, `rc == 0` -- AC 2, AC 3, AC 5
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md` -- probe each of the four deferrals against the running source and append one `verified:` line with that output; resolve `DW-OPS-2026-10-01-1` -- AC 4
+- Mutation: delete the `DISPATCH` row, run the new tests, record that they fail, restore the row -- AC 5
+
+**Acceptance Criteria:**
+- Given `python -m pyforge.doctor.sources bmad-output-hygiene` run from the repo root, when it exits, then it printed its findings and the exit code is 0
+- Given `python scripts/detectors.py --scope repo`, when it lists rows, then `bmad-output-hygiene` is one of them with status `pass`
+- Given the full verification set below, when it runs, then every command exits 0
+
+## Spec Change Log
 
 ## Review Triage Log
 
 - No independent review has run yet (implementation and review stay separate).
+
+## Design Notes
+
+- Warn-only needs no new code: `verdict.exit_code_for` already projects WARN to 0, and `_run_doctor_sources` maps that to `pass`. The work is registration plus tests that pin it.
+- The CLI path has no `degrade_on_exception` net, and `hygiene.gather` has none either; `DW-FU-9-2` is exactly an unguarded `iterdir()`. Under `detectors.py` a raise reads `unknown` (exit 2), never green. Record that in the deferral evidence; do not widen this story into a `hygiene.py` hardening pass.
+- The four deferrals are re-checked, not fixed: 9-2 and 9-2-2 mirror `board.py`'s shape (a two-file design call), 9-2-3 is the spec'd protocol, 9-3 would change a frozen evidence shape. Each stays `open` with new evidence from a live probe; only `DW-OPS-2026-10-01-1` closes.
+- A probe fixture lives in the scratchpad or a `tmp_path`, never in the tracked tree.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`).
+- `python scripts/spec_surface_reconcile.py` — expected: exit 0 after the memlog entries name every governed path changed.
+- `python scripts/detectors.py --scope repo` — expected: exit code 0, with a `bmad-output-hygiene` row (read `$?`, never through a pipe).
