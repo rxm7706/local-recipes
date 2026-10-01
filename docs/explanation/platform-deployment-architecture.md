@@ -36,6 +36,7 @@ not `DR.md`/`restore.md`, for that datastore.
   | `MIGRATION_DATABASE_URL` | migration-role DDL URL for the Liquibase Job, e.g. `postgres://platform:<password>@<release>-postgres:5432/platform` (postgres Service DNS, not a pooler) |
   | `POSTGRES_PASSWORD` | the same `<password>`, consumed by the postgres container |
   | `REDIS_PASSWORD` | Redis AUTH password (Story 12.6); consumed by redis and wired into platform pods' `REDIS_URL` |
+  | `LANGFLOW_SUPERUSER_PASSWORD` | The mounted Langflow's superuser password (Story 78.1); required on every platform pod, Langflow auto-login is forced off |
   | `KEYCLOAK_ADMIN_PASSWORD` | Keycloak bootstrap admin (Story 48.9 bundled OIDC profile only) |
   | `COMPONENT_OIDC_CLIENT_SECRET` | BYO IdP client secret (`oidc.profile=byo` only; bundled default uses PKCE public client) |
 
@@ -64,6 +65,7 @@ kubectl create secret generic platform-secrets \
     --from-literal=MIGRATION_DATABASE_URL=postgres://platform:...@platform-postgres:5432/platform \
     --from-literal=POSTGRES_PASSWORD=... \
     --from-literal=REDIS_PASSWORD=... \
+    --from-literal=LANGFLOW_SUPERUSER_PASSWORD=... \
     --from-literal=KEYCLOAK_ADMIN_PASSWORD=...
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
     --set-file flags.tree=src/platform/config/flags.json \

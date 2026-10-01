@@ -28,9 +28,28 @@ realm-as-code Keycloak import) and sign in through the IdP:
 
     $ docker compose -f src/platform/compose/compose.yml up keycloak platform
 
+The `platform` service needs `LANGFLOW_SUPERUSER_PASSWORD` (Story 78.1: Langflow
+auto-login is forced off, so the mounted Langflow only starts with a superuser
+password). Compose reads it from `src/platform/compose/.env` (git-ignored) or your
+shell and refuses to start the stack without it; the same variable is what any
+other local boot that starts Langflow (gunicorn/uvicorn on `config.asgi`) needs.
+`LANGFLOW_SUPERUSER` (optional, defaults to `langflow`, not a secret so the chart
+does not wire it) names the Langflow superuser that password belongs to.
+
 Configure OIDC via `COMPONENT_OIDC_*` environment variables (see
 `config/settings/base.py`). Default local claim names: identity `sub`, groups
 `groups`, staff group `platform-staff`, superuser group `platform-superuser`.
+
+**An IdP revocation lands on the next request (Story 78.1).** allauth stores the
+login's access and refresh token (`SOCIALACCOUNT_STORE_TOKENS`), and each request
+re-reads the IdP's userinfo with it (cached for `COMPONENT_IDP_CLAIMS_CACHE_SECONDS`,
+default 30). An expired access token is refreshed once with the stored refresh
+token and retried. Every other outcome — no stored token, a failed refresh, an
+unreachable or erroring IdP — denies: the login-time claims in the session are
+never served in its place. A session that began before this change holds no stored
+token, so its roles are denied until the user signs in again. The userinfo and token
+endpoints are derived from the issuer as `<issuer>/protocol/openid-connect/userinfo`
+and `<issuer>/protocol/openid-connect/token` (the Keycloak layout).
 
 ### Type checks
 

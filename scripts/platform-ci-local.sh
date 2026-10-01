@@ -181,13 +181,15 @@ stage_container() {
   step container "Migrate the database (the image's CMD deliberately doesn't)" \
     "$ENGINE" run --rm --network host "${common[@]}" "platform:$TAG" python manage.py migrate --noinput &&
   step container "Run platform container ($ENGINE)" "$ENGINE" run -d --name "$APP" --network host "${common[@]}" \
-    -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 -e DJANGO_SECURE_SSL_REDIRECT=False "platform:$TAG" &&
+    -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 -e DJANGO_SECURE_SSL_REDIRECT=False \
+    -e LANGFLOW_SUPERUSER_PASSWORD=ci-placeholder-not-a-real-secret "platform:$TAG" &&
   step container "Poll /ht/ for 200" poll_ht &&
   step container "Smoke-test an ORM-backed page (proves migrations ran)" expect_code /admin/login/ 200 &&
   step container "Smoke-test a real template page (static manifest + offline compression)" expect_code / 200 &&
   step container "Fetch every static asset the home page references" static_assets &&
   step container "Smoke-test the FastAPI seam (/api/, the other half of the ASGI dispatcher)" expect_code /api/health 200 &&
   step container "Smoke-test the Langflow mount (bare /health, unchanged forward per AD-4)" expect_code /health 200 &&
+  step container "Smoke-test Langflow auto-login is refused (/langflow/api/v1/auto_login)" expect_code /langflow/api/v1/auto_login 403 &&
   step container "manage.py check inside the running container" "$ENGINE" exec "$APP" /app/entrypoint.sh python manage.py check &&
   step container "Confirm non-root UID (arbitrary uid honored)" non_root
   local rc=$?

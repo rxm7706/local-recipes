@@ -43,7 +43,7 @@ Identity is OIDC-delegated: there is no local password login and no `createsuper
 cd src/platform
 COMPONENT_RUNTIME=local pixi run -e platform-dev python -m config.local_dev.mint staff
 ```
-To sign in through a real IdP instead, start the compose stack's Keycloak (`docker compose -f src/platform/compose/compose.yml up keycloak platform`) and configure the `COMPONENT_OIDC_*` variables described in `src/platform/README.md`.
+To sign in through a real IdP instead, start the compose stack's Keycloak (`docker compose -f src/platform/compose/compose.yml up keycloak platform`) and configure the `COMPONENT_OIDC_*` variables described in `src/platform/README.md`. The compose `platform` service also needs `LANGFLOW_SUPERUSER_PASSWORD` (set it in `src/platform/compose/.env` or your shell): Langflow auto-login is forced off, so the mounted Langflow only starts with a superuser password.
 
 ## Step 4: Run the Local Development Server
 Start the Django development server:

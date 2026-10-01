@@ -34,6 +34,19 @@ def _compose_cmd() -> list[str]:
     return [engine, "compose", "-f", str(COMPOSE_FILE)]
 
 
+def _compose_env() -> dict[str, str]:
+    """compose.yml demands LANGFLOW_SUPERUSER_PASSWORD (Story 78.1) for every
+    command, even one that starts only keycloak; without it `up` fails and the
+    fixture below would skip silently. A throwaway: keycloak never reads it."""
+    return {
+        **os.environ,
+        "LANGFLOW_SUPERUSER_PASSWORD": os.environ.get(
+            "LANGFLOW_SUPERUSER_PASSWORD",
+            "pkce-test-throwaway-langflow-pw",
+        ),
+    }
+
+
 def _docker_available() -> bool:
     engine = os.environ.get("PLATFORM_CI_LOCAL_ENGINE", "docker")
     return shutil.which(engine) is not None
@@ -59,6 +72,7 @@ def keycloak_stack():
     up = subprocess.run(
         [*_compose_cmd(), "up", "-d", "keycloak"],
         cwd=REPO_ROOT,
+        env=_compose_env(),
         check=False,
         capture_output=True,
         text=True,
@@ -66,10 +80,20 @@ def keycloak_stack():
     if up.returncode != 0:
         pytest.skip(f"could not start keycloak: {up.stderr or up.stdout}")
     if not _keycloak_ready():
-        subprocess.run([*_compose_cmd(), "down", "keycloak"], cwd=REPO_ROOT, check=False)
+        subprocess.run(
+            [*_compose_cmd(), "down", "keycloak"],
+            cwd=REPO_ROOT,
+            env=_compose_env(),
+            check=False,
+        )
         pytest.skip("keycloak did not become ready in time")
     yield
-    subprocess.run([*_compose_cmd(), "down", "keycloak"], cwd=REPO_ROOT, check=False)
+    subprocess.run(
+        [*_compose_cmd(), "down", "keycloak"],
+        cwd=REPO_ROOT,
+        env=_compose_env(),
+        check=False,
+    )
 
 
 def _follow_keycloak_login(auth_url: str) -> None:

@@ -2,6 +2,10 @@
 
 Live authority is the token on the request: a test snapshot, a userinfo hook,
 or the claims document stored at login. The login-time role *list* is not used.
+
+A wired userinfo hook is authoritative (Story 78.1): when it cannot confirm the
+claims it answers "none", and the login-time session claims are *not* read in its
+place -- they are exactly what an IdP revocation has made stale.
 """
 
 from __future__ import annotations
@@ -29,6 +33,7 @@ def fetch_current_idp_claims(request: HttpRequest) -> dict[str, Any] | None:
         got = userinfo(request)
         if isinstance(got, Mapping):
             return dict(got)
+        return None
     session = getattr(request, "session", None)
     if session is not None:
         stored = session.get(IDP_TOKEN_CLAIMS_SESSION_KEY)
