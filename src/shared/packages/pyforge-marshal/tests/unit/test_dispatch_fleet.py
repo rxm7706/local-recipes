@@ -4871,3 +4871,37 @@ def test_mutation_without_the_row_judgement_a_blocked_follow_up_is_pruned_as_mer
         vcs=open_row, repo_root=tmp_path, blocked={_FU_SLUG: {"51.2": "refused"}}
     )
     assert pruned == {_FU_SLUG: {}}
+
+
+def test_a_follow_up_landed_but_not_yet_closed_reads_in_flight_and_is_not_launched_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 50.1 Part A for a follow-up: the review landed and its supervisor is still finalizing, so the
+    row is not closed yet. The queue entry is in the station's backlog, so the finalize window reads
+    in-flight -- the cycle must not launch the same review a second time."""
+    _fu_env(tmp_path, monkeypatch)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
+    _seed_finalize_pending_journal(
+        tmp_path,
+        slug=_FU_SLUG,
+        run_id=f"{_FU_SLUG}-20261001T161945000Z-82ce96c8",
+        story_key="51.2",
+        session_pid=42,
+        supervisor_pid=99,
+        landing_verdict="landed",
+    )
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(
+        tmp_path,
+        ledgers=ledgers,
+        vcs=vcs,
+        harness=harness,
+        station=_FU_SLUG,
+        process=FakeProcess(alive_pids=frozenset({99})),
+    )
+
+    assert harness.dispatched == []
+    assert _status_by_station(report)[_FU_SLUG] is StationCycleStatus.IN_FLIGHT
+    assert _fu_codes(report, "MRS-DRAIN-006")
