@@ -22,10 +22,12 @@ from pyforge.core.process import ProcessResult
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
+from pyforge.marshal.cli import dispatch as cli_dispatch
 from pyforge.marshal.cli.dispatch import (
     execute_fleet_cycle,
     run_fleet_drain,
 )
+from pyforge.marshal.core import deferred_work, policy
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import dispatch_fleet
 from pyforge.marshal.core.dispatch_fleet import (
@@ -50,7 +52,7 @@ from pyforge.marshal.core.dispatch_fleet import (
     plan_station_queue,
     station_backlog,
 )
-from pyforge.marshal.core.identity import StoryKey
+from pyforge.marshal.core.identity import StoryKey, normalize, render_merge_subject
 from pyforge.marshal.core.journal import (
     JournalEntryId,
     Phase,
