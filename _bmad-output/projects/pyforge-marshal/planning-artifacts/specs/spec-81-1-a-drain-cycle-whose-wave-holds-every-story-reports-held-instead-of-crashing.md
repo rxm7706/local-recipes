@@ -2,7 +2,8 @@
 title: '81.1: A drain cycle whose wave holds every story reports held instead of crashing'
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'f73e1f3680068a50352326b7848ba17638756f87'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -52,6 +53,37 @@ Type / Effort / Deps: fix / S / —.
 **Never:** Do not change which stories a wave admits. Do not change `drain --plan`'s output.
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` -- `execute_fleet_cycle`: two sites built the cycle status as `StationCycleStatus(plan.outcome.value)` (no next story; empty wave). The empty-wave one crashes on `DISPATCH`. `plan_station_cycle` / `StationCyclePlan` hold the facts (`wave`, `deps_graph`, `statuses`, `stories_to_dispatch`); `skip_basis` is the precedent for a helper the cycle and `drain --plan` share.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py` -- `StationQueueOutcome`, `StationCycleStatus`, `TERMINAL_STATION_STATUSES`, `campaign_complete` / `unresolved_stations` (the only status consumers: a terminal status stops the campaign supervisor).
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_prelaunch.py` -- `unmet_deps` (pure Deps readiness); the home of the shared held-reason wording.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/drain_plan.py` -- `_held_reason` and the `held` rows: read-only evidence of the wording to keep; its output must not change.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py` / `core/verdict.py` -- `MRS-DRAIN-016` (a story refused from a wave, dep-unmet included) is `WARN`; reused, so no new code to register.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_drain_plan.py` / `test_dispatch_fleet.py` -- cycle fixtures (`_run_one_cycle`, `_seed_unmet_deps`, `_plan`) and the core-level status tests.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `core/dispatch_fleet.py` -- add `StationCycleStatus.HELD`, make it terminal, and add `idle_station_status(outcome)`, an explicit total mapping from every `StationQueueOutcome` (`DISPATCH` -> `HELD`) -- the enum lookup is the defect
+- `core/dispatch_prelaunch.py` -- add `held_reason(story, statuses, graph, wave)`, the one wording of why the wave holds a story out -- `drain --plan` and the cycle must not drift
+- `cli/dispatch.py` -- add `wave_held_stories(cycle)`; map both idle sites through `idle_station_status`; on an empty wave report `held`, with one `MRS-DRAIN-016` WARN per held story the refusal loop has not already named, and the held stories and reasons in `detail`
+- `cli/drain_plan.py` -- delegate `_held_reason` and the held-story selection to the shared helpers, output unchanged
+- `tests/unit/test_drain_plan.py`, `tests/unit/test_dispatch_fleet.py` -- tests for each Acceptance Criterion, the mapping's totality and the terminal status
+- `spec-marshal-single-story-dispatch/fleet-drain-playbook.md` -- the campaign exit criteria list `held` among the terminal statuses
+
+**Acceptance Criteria:**
+- Given an empty wave on an eligible head, when `execute_fleet_cycle` runs, then the station reads `held`, a WARN names the story and its unmet Deps, and no exception escapes
+- Given the same state, when `factory dispatch <slug> --stories <keys>` runs, then it exits through its normal verdict, spawns no campaign supervisor, and reports the held stories
+- Given a wave that admits a story, when the cycle runs, then it reads `dispatched` with no held finding
+- Given the enum lookup restored at the empty-wave site, when the new tests run, then they fail
+
+## Spec Change Log
+
+## Design Notes
+
+`held` is terminal. A held station only moves once a Dep lands outside its own drain, which a supervisor tick cannot cause; left non-terminal, the campaign would poll a station that cannot progress. A station still working elsewhere in the fleet keeps the campaign going, and every cycle re-plans every station, so a Dep that lands is picked up. `MRS-DRAIN-016` is reused rather than minting a code: its registry text already covers a story held from a wave for unmet Deps.
 
 ## Binding
 

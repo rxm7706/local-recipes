@@ -113,7 +113,8 @@ recovery playbooks) survives at `.cursor/pyforge-fleet-drain/PLAN.md` as histori
 ## Exit criteria (campaign)
 
 Every station terminal for this campaign — `drained` (zero non-`done` keys in its tracked ledger),
-`left-remaining` (the `leave_one` target), `blocked`, `all-skipped`, or `ledger-unreadable`. That is
+`left-remaining` (the `leave_one` target), `blocked`, `all-skipped`, `ledger-unreadable`, or `held`
+(a story is eligible but the parallel wave holds every candidate out for unmet Deps). That is
 exactly `data.complete` in the cycle envelope, and it is what stops the campaign supervisor; a busy or
 just-dispatched station is progress, never terminal. Post-drain: optional epics retrospective; the
 marshal journal becomes source for the dashboard-velocity Dream.
