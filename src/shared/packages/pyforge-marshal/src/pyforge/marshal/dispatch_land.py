@@ -4,6 +4,12 @@ Impure edge for the dispatch supervisor: after independent verification
 passes, land through ``cli/land.py``/``deploy`` composition (PR merge with
 FR-187 subject, Story 4.1 spec promotion, Epic 15 ledger). Lives outside
 ``cli/`` so ``dispatch_supervisor`` may import it (AD-9).
+
+Story 80.1 (CAP-284): immediately before ``forge.merge_pr`` the landing waits
+for the PR head's check runs and refuses on a red one or at the timeout
+(``_wait_for_landing_checks``, bounded by the ``dispatch.landing_check_*``
+policy keys) -- ``main`` has no branch protection, so nothing else makes a
+landing wait for CI.
 """
 
 from __future__ import annotations

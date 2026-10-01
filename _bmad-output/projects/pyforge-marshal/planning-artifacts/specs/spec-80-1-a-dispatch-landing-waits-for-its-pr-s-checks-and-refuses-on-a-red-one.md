@@ -2,7 +2,7 @@
 title: "80.1: A dispatch landing waits for its PR's checks and refuses on a red one"
 type: 'feature'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '68b35f7e1cb04295f729647c2d0ee4ff060ab417'
 review_loop_iteration: 0
 followup_review_recommended: false
