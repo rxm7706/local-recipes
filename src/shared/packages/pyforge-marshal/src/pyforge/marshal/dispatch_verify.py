@@ -116,14 +116,6 @@ def _bare_shell_metacharacters(command: str) -> list[str]:
 _LINT_TYPES_COMMAND = "pixi run --frozen -e pyforge-guild lint-types"
 
 
-def _same_command_key(command: str) -> str:
-    """The comparison key two spellings of one command share: whitespace
-    collapsed (the ``gate.check_spec_binding`` normalization) and ``--frozen``
-    dropped, so a station that declared ``pixi run -e pyforge-guild
-    lint-types`` still de-duplicates against ``_LINT_TYPES_COMMAND``."""
-    return " ".join(token for token in command.split() if token != "--frozen")
-
-
 def _verify_commands_with_surface_guard(
     effective: EffectivePolicy,
 ) -> tuple[str, ...]:
@@ -147,8 +139,8 @@ def _verify_commands_with_surface_guard(
     the station already lists it. A red result is an ordinary
     ``MRS-GATE-001`` (``verify command '<command>' exited N``), so the refusal
     names ``lint-types`` with no new finding code. The name stays
-    ``_verify_commands_with_surface_guard`` (three callers import it); it now
-    returns every derived-commands list, not the guard alone.
+    ``_verify_commands_with_surface_guard`` (three callers use it); it now
+    folds in every derived command, not the guard alone.
 
     Unlike the loop adapter, this is not a rendered file an operator can
     read before a run starts -- it is folded in at USE time, right before
@@ -157,8 +149,8 @@ def _verify_commands_with_surface_guard(
     session even though nothing in ``marshal-policy.toml`` ever declares
     it."""
     derived = (_SURFACE_RECONCILE_COMMAND, _LINT_TYPES_COMMAND)
-    derived_keys = {_same_command_key(command) for command in derived}
-    verify = [c for c in effective.verify_commands.value if _same_command_key(c) not in derived_keys]
+    normalized_derived = {" ".join(command.split()) for command in derived}
+    verify = [c for c in effective.verify_commands.value if " ".join(c.split()) not in normalized_derived]
     verify.extend(derived)
     return tuple(verify)
 

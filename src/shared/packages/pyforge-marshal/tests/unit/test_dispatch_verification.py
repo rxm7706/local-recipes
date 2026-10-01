@@ -33,6 +33,12 @@ from pyforge.marshal.dispatch_verify import (
 )
 
 
+# Story 79.2 (spec-79-2): the derived hygiene lane, pinned as a literal (not
+# imported from `dispatch_verify`) so deleting or renaming the derivation fails
+# these tests rather than silently updating them.
+LINT_TYPES = "pixi run --frozen -e pyforge-guild lint-types"
+
+
 def test_compose_dispatch_policy_reads_a_real_project_toml(tmp_path: Path) -> None:
     """Regression: `tomllib.loads` takes `str`, not the `bytes` `read_bytes()`
     returns -- a live TypeError crashed the dispatch supervisor for any
@@ -302,6 +308,7 @@ def test_evaluate_dispatch_verification_appends_surface_guard_after_declared_com
     assert [report["command"] for report in reports] == [
         "true",
         _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
     ]
 
 
@@ -410,6 +417,7 @@ def test_evaluate_dispatch_verification_dedupes_an_already_declared_guard(
     assert [report["command"] for report in reports] == [
         "true",
         _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
     ]
 
 
@@ -444,6 +452,7 @@ def test_evaluate_dispatch_verification_dedupes_a_guard_declared_with_different_
     assert [report["command"] for report in reports] == [
         "true",
         _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
     ]
 
 
