@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import time
 import types
 from pathlib import Path
 
@@ -2376,4 +2377,257 @@ def test_mutation_without_the_wait_a_red_head_lands_green(tmp_path: Path, monkey
     result, envelope = _land_waiting(tmp_path, forge, _FakeClock(), monkeypatch)
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert forge.merge_calls == ["abc123"]
+    assert "MRS-DISP-056" not in _codes(envelope)
+
+
+# --------------------------------------------------------------------------
+# Review loop 1 (Story 80.1): the real default clock, the wait tick, the union-healed head
+# --------------------------------------------------------------------------
+
+
+class _GuardedClock(_FakeClock):
+    """A fake clock that fails loudly instead of hanging: a wait whose sleep does nothing never
+    reaches its timeout, so a mutation of the sleep must read as a red test, not a stuck suite."""
+
+    def monotonic(self) -> float:
+        self.reads = getattr(self, "reads", 0) + 1
+        if self.reads > 500:
+            raise AssertionError("the check wait did not terminate -- nothing advanced the clock")
+        return super().monotonic()
+
+
+def test_without_clock_seams_the_real_time_sleep_receives_the_poll_interval(tmp_path: Path, monkeypatch) -> None:
+    """No `sleep`/`monotonic` injected: the defaults are `time.sleep`/`time.monotonic`. The module's
+    own clock functions are swapped for a fake for the duration, so a pending head waits through
+    the DEFAULT sleep -- a default that sleeps nothing (the mutation) turns this red."""
+    forge, clock = _ChecksForge(_PENDING), _GuardedClock()
+    with monkeypatch.context() as patched:
+        patched.setattr(time, "sleep", clock.sleep)
+        patched.setattr(time, "monotonic", clock.monotonic)
+        result, envelope = _land_waiting(
+            tmp_path,
+            forge,
+            clock,
+            monkeypatch,
+            dispatch={"landing_check_poll_seconds": 20, "landing_check_timeout_minutes": 1},
+            seams=False,
+        )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert clock.sleeps == [20.0, 20.0, 20.0]
+    assert _codes(envelope) == ["MRS-DISP-057"]
+
+
+def _ticking(clock: _FakeClock) -> tuple[list[float], object]:
+    """``(ticks, on_wait_tick)``: every tick records the fake clock's reading."""
+    ticks: list[float] = []
+    return ticks, lambda: ticks.append(clock.now)
+
+
+def test_the_wait_ticks_after_every_poll(tmp_path: Path, monkeypatch) -> None:
+    """The supervisor's heartbeat rides this tick: with the default 60 s poll it fires once per
+    poll -- after each read, none extra in between."""
+    forge, clock = _ChecksForge(_PENDING), _FakeClock()
+    ticks, on_wait_tick = _ticking(clock)
+    _land_waiting(
+        tmp_path, forge, clock, monkeypatch, dispatch={"landing_check_timeout_minutes": 3}, on_wait_tick=on_wait_tick
+    )
+    assert len(forge.reads) == 4
+    assert ticks == [5_000.0, 5_060.0, 5_120.0, 5_180.0]
+
+
+def test_a_poll_interval_shorter_than_a_minute_ticks_at_that_interval(tmp_path: Path, monkeypatch) -> None:
+    forge, clock = _ChecksForge(_PENDING), _FakeClock()
+    ticks, on_wait_tick = _ticking(clock)
+    _land_waiting(
+        tmp_path,
+        forge,
+        clock,
+        monkeypatch,
+        dispatch={"landing_check_poll_seconds": 20, "landing_check_timeout_minutes": 1},
+        on_wait_tick=on_wait_tick,
+    )
+    assert [b - a for a, b in zip(ticks, ticks[1:])] == [20.0, 20.0, 20.0]
+
+
+def test_a_long_poll_interval_is_sliced_so_the_wait_still_ticks_every_minute(tmp_path: Path, monkeypatch) -> None:
+    """`landing_check_poll_seconds = 150` would sleep 150 s in one piece -- past the portal's 300 s
+    heartbeat limit within two polls. The sleep is sliced and ticks between the slices: a tick at
+    least every `min(poll_seconds, 60)` seconds, whatever the operator sets."""
+    forge, clock = _ChecksForge(_PENDING), _FakeClock()
+    ticks, on_wait_tick = _ticking(clock)
+    result, _ = _land_waiting(
+        tmp_path,
+        forge,
+        clock,
+        monkeypatch,
+        dispatch={"landing_check_poll_seconds": 150, "landing_check_timeout_minutes": 5},
+        on_wait_tick=on_wait_tick,
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert clock.sleeps == [60.0, 60.0, 30.0, 60.0, 60.0, 30.0]
+    assert len(forge.reads) == 3  # the polls themselves still land every 150 s
+    assert ticks == [5_000.0, 5_060.0, 5_120.0, 5_150.0, 5_210.0, 5_270.0, 5_300.0]
+    assert max(b - a for a, b in zip(ticks, ticks[1:])) <= 60.0
+
+
+def test_a_landing_driven_without_a_tick_waits_exactly_as_before(tmp_path: Path, monkeypatch) -> None:
+    """The CLI landing path has no run to keep alive and passes no tick."""
+    forge, clock = _ChecksForge(_PENDING, _GREEN), _FakeClock()
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch)
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert clock.sleeps == [60.0]
+    assert envelope.data["landing_checks"]["polls"] == 2
+
+
+# --- the head a union heal pushes ---------------------------------------------------------------------
+
+_LEDGER_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+_FAILED_SCRIPTS = (_run("Detectors / scripts-suite", conclusion="failure"),)
+
+
+def _heal_vcs() -> HealCapableVcs:
+    """`origin/main` and the branch each added a ledger row: the first merge fails, the union heal
+    pushes `healed222` (a head CI has never seen) and retries the merge on it."""
+    return HealCapableVcs(
+        conflict_paths=(_LEDGER_REL,),
+        main_ledger=_ledger_yaml(("28-19-x", "done")),
+        branch_ledger=_ledger_yaml(("28-20-y", "backlog")),
+    )
+
+
+class _HealChecksForge(HealRetryForge):
+    """The first merge fails (so the landing heals); `check_runs` answers per head sha, one scripted
+    step per read, the last repeating. Records every read, merge and close."""
+
+    def __init__(self, **by_head: list[object]) -> None:
+        super().__init__()
+        self.by_head = by_head
+        self.reads: list[str] = []
+        self.merged_heads: list[str] = []
+        self.closed: list[int] = []
+
+    def check_runs(self, repo, ref):
+        self.reads.append(ref.value)
+        steps = self.by_head[ref.value]
+        step = steps.pop(0) if len(steps) > 1 else steps[0]
+        if isinstance(step, Exception):
+            raise step
+        return step
+
+    def merge_pr(self, repo, number, strategy, *, expected_head_sha, delete_branch, subject):
+        self.merged_heads.append(expected_head_sha.value)
+        super().merge_pr(
+            repo, number, strategy, expected_head_sha=expected_head_sha, delete_branch=delete_branch, subject=subject
+        )
+
+    def close_pr(self, repo, number):
+        self.closed.append(number)
+
+
+def test_the_union_healed_head_is_waited_on_before_the_retried_merge(tmp_path: Path, monkeypatch) -> None:
+    """The head the heal pushes is a new commit: its runs are read (here pending, then green) and
+    only then does the retried merge run -- on THAT sha. The journal records both heads."""
+    forge = _HealChecksForge(abc123=[_GREEN], healed222=[_PENDING, _GREEN])
+    clock = _FakeClock()
+    ticks, on_wait_tick = _ticking(clock)
+    result, envelope = _land_waiting(tmp_path, forge, clock, monkeypatch, vcs=_heal_vcs(), on_wait_tick=on_wait_tick)
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert _codes(envelope) == []
+    assert envelope.data["ledger_union_heal"] is True
+    assert forge.reads == ["abc123", "healed222", "healed222"]
+    assert forge.merged_heads == ["abc123", "healed222"]
+    assert clock.sleeps == [60.0]
+    assert len(ticks) == 3  # one per poll, across both heads
+    record = envelope.data["landing_checks"]
+    assert (record["head_sha"], record["outcome"], record["polls"]) == ("abc123", "green", 1)
+    heal = record["heal"]
+    assert (heal["head_sha"], heal["outcome"], heal["polls"], heal["waited_seconds"]) == ("healed222", "green", 2, 60.0)
+    assert [run["conclusion"] for run in heal["runs"]] == ["success", "success"]
+
+
+@pytest.mark.parametrize("conclusion", ["failure", "cancelled", "timed_out", "action_required"])
+def test_a_red_union_healed_head_refuses_with_the_checks_finding_and_never_retries_the_merge(
+    tmp_path: Path, monkeypatch, conclusion: str
+) -> None:
+    forge = _HealChecksForge(abc123=[_GREEN], healed222=[(_run("Detectors / scripts-suite", conclusion=conclusion),)])
+    result, envelope = _land_waiting(tmp_path, forge, _FakeClock(), monkeypatch, vcs=_heal_vcs())
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert result.pr_number == 42
+    assert _codes(envelope) == ["MRS-DISP-056"]  # not MRS-DISP-020: the first merge's failure is not the story
+    assert f"Detectors / scripts-suite ({conclusion})" in envelope.findings[0].message
+    assert "healed222" in envelope.findings[0].message
+    assert forge.merged_heads == ["abc123"]  # the retried merge never ran
+    assert forge.closed == []
+    assert "merged" not in envelope.data
+    record = envelope.data["landing_checks"]
+    assert (record["outcome"], record["heal"]["outcome"]) == ("green", "red")
+
+
+def test_a_union_healed_head_still_pending_at_the_timeout_refuses_and_never_retries_the_merge(
+    tmp_path: Path, monkeypatch
+) -> None:
+    forge = _HealChecksForge(abc123=[_GREEN], healed222=[_PENDING])
+    clock = _FakeClock()
+    result, envelope = _land_waiting(
+        tmp_path, forge, clock, monkeypatch, vcs=_heal_vcs(), dispatch={"landing_check_timeout_minutes": 2}
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert _codes(envelope) == ["MRS-DISP-057"]
+    assert "Platform CI / platform-ci (in_progress)" in envelope.findings[0].message
+    assert forge.merged_heads == ["abc123"]
+    assert forge.closed == []
+    assert clock.sleeps == [60.0, 60.0]  # the healed head's own 2-minute timeout
+    assert envelope.data["landing_checks"]["heal"]["outcome"] == "timeout"
+
+
+def test_a_union_healed_head_whose_checks_cannot_be_read_refuses_and_never_retries_the_merge(
+    tmp_path: Path, monkeypatch
+) -> None:
+    forge = _HealChecksForge(abc123=[_GREEN], healed222=[ForgeCommandError("HTTP 502")])
+    result, envelope = _land_waiting(tmp_path, forge, _FakeClock(), monkeypatch, vcs=_heal_vcs())
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert _codes(envelope) == ["MRS-DISP-018"]
+    assert forge.merged_heads == ["abc123"]
+    assert envelope.data["landing_checks"]["heal"]["outcome"] == "read-error"
+
+
+class _DirtyChecksForge(DirtyHealForge):
+    """The merge always fails and GitHub reads DIRTY: the heal advances `main` locally with the head
+    the pre-merge wait already cleared. Counts the check reads."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.reads: list[str] = []
+
+    def check_runs(self, repo, ref):
+        self.reads.append(ref.value)
+        return _GREEN_RUNS
+
+
+def test_the_local_main_advance_merges_the_head_already_cleared_and_waits_no_second_time(
+    tmp_path: Path, monkeypatch
+) -> None:
+    forge = _DirtyChecksForge()
+    result, envelope = _land_waiting(tmp_path, forge, _FakeClock(), monkeypatch, vcs=DirtyHealVcs())
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert envelope.data["local_main_advance"] is True
+    assert forge.reads == ["abc123"]  # one wait: the pre-merge one
+    assert "heal" not in envelope.data["landing_checks"]
+
+
+def test_mutation_without_the_heals_wait_a_red_union_head_lands(tmp_path: Path, monkeypatch) -> None:
+    """Mutation test: the heal's `await_checks` hook is what gates the retried merge. Handing the
+    heal no hook (the pre-review code) lets the red union head merge."""
+    from pyforge.marshal import dispatch_land
+
+    real_heal = dispatch_land.try_heal_dispatch_land_merge
+    monkeypatch.setattr(
+        dispatch_land,
+        "try_heal_dispatch_land_merge",
+        lambda **kwargs: real_heal(**{**kwargs, "await_checks": None}),
+    )
+    forge = _HealChecksForge(abc123=[_GREEN], healed222=[_FAILED_SCRIPTS])
+    result, envelope = _land_waiting(tmp_path, forge, _FakeClock(), monkeypatch, vcs=_heal_vcs())
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert forge.merged_heads == ["abc123", "healed222"]
     assert "MRS-DISP-056" not in _codes(envelope)
