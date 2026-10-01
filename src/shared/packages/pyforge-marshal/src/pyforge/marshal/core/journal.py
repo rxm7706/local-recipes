@@ -149,6 +149,14 @@ SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF = "scope_violation_advisories_sidecar_ref
 # is needed unlike the scope-advisories field above.
 LAND_FINDINGS_FIELD = "land_findings"
 
+# Story 80.1 (CAP-284): the landing's check-wait record -- the check runs it
+# waited on and their conclusions (`dispatch_land._wait_for_landing_checks`).
+# One entry per run on the PR head, so it can be the bulk of the outcome
+# payload; it joins `LAND_FINDINGS_FIELD` in the supervisor's `offload_fields`,
+# and `resolve_land_findings_from_payload` reads an offloaded `land_findings`
+# back so a refusal stays visible to `marshal status` either way.
+LANDING_CHECKS_FIELD = "landing_checks"
+
 # Story 2.3's two new observation kinds (AD-26/AD-27): "registered" here in
 # the same sense every OTHER kind this module's own docstring names is --
 # this module keeps no closed kind-registry/enum (`kind` is any non-blank
@@ -503,14 +511,60 @@ def resolve_scope_violation_advisories_from_payload(
     return ()
 
 
+def _offloaded_payload_field(
+    payload: Mapping[str, object],
+    name: str,
+    sidecars: Mapping[str, str | None],
+) -> object | None:
+    """``name``'s value from the sidecar blob ``prepare_for_write_offloading_fields``
+    moved it to (the blob path rides inline under
+    ``SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF`` for every offloaded field);
+    ``None`` when there is no ref, no blob, or the blob does not carry ``name``."""
+    ref = payload.get(SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF)
+    if not isinstance(ref, str):
+        return None
+    blob = sidecars.get(ref)
+    if not isinstance(blob, str):
+        return None
+    try:
+        parsed = json.loads(blob)
+    except ValueError, TypeError, RecursionError:
+        return None
+    if not isinstance(parsed, Mapping):
+        return None
+    return parsed.get(name)
+
+
 def resolve_land_findings_from_payload(
     payload: Mapping[str, object],
+    *,
+    sidecars: Mapping[str, str | None] = MappingProxyType({}),
 ) -> tuple[dict[str, object], ...]:
-    """Read landing findings (MRS-DISP-047/048) from an outcome payload."""
+    """Read landing findings (MRS-DISP-047/048/056/057...) from an outcome
+    payload: inline, else (Story 80.1) from the sidecar the outcome entry's
+    oversized payload offloaded them to -- the landing's check-wait record
+    (``LANDING_CHECKS_FIELD``) can push the payload over the threshold, and a
+    refusal's findings must not vanish from ``marshal status`` when it does."""
     inline = payload.get(LAND_FINDINGS_FIELD)
+    if not isinstance(inline, list):
+        inline = _offloaded_payload_field(payload, LAND_FINDINGS_FIELD, sidecars)
     if isinstance(inline, list):
         return tuple(item for item in inline if isinstance(item, dict))
     return ()
+
+
+def resolve_landing_checks_from_payload(
+    payload: Mapping[str, object],
+    *,
+    sidecars: Mapping[str, str | None] = MappingProxyType({}),
+) -> dict[str, object] | None:
+    """Story 80.1 (CAP-284): the landing's check-wait record from an outcome
+    payload -- inline, else from the offload sidecar; ``None`` when the entry
+    carries none (a landing that refused before it reached the wait)."""
+    inline = payload.get(LANDING_CHECKS_FIELD)
+    if not isinstance(inline, dict):
+        inline = _offloaded_payload_field(payload, LANDING_CHECKS_FIELD, sidecars)
+    return inline if isinstance(inline, dict) else None
 
 
 def prepare_for_write_offloading_fields(

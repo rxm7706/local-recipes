@@ -60,6 +60,7 @@ from ..core.dispatch_verification import (
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
     LAND_FINDINGS_FIELD,
+    LANDING_CHECKS_FIELD,
     SCOPE_VIOLATION_ADVISORIES_FIELD,
     JournalEntryId,
     Phase,
@@ -1069,6 +1070,24 @@ def _run_and_journal_landing(
         },
     )
     counter += 1
+    outcome_payload: dict[str, object] = {
+        "verdict": landing_result.verdict.value,
+        "ok": landing_result.verdict == DispatchLandingVerdict.LANDED,
+        "envelope_verdict": envelope.verdict.value,
+        "pr_number": landing_result.pr_number,
+        "merge_sha": landing_result.merge_sha,
+        "marshal_native": landing_result.marshal_native,
+        # Story 53.2 review (I1): `envelope.findings` (MRS-DISP-047/048)
+        # must reach the journal payload, not just the coarse verdict
+        # strings above -- mirrors `scope_violation_advisories` (Story
+        # 28.15) so `marshal status`/`fleet-picture` can render it too.
+        "land_findings": [f.to_json_dict() for f in envelope.findings],
+    }
+    # Story 80.1 (CAP-284): the check runs the landing waited on and their
+    # conclusions -- absent when the landing never reached the wait.
+    landing_checks = envelope.data.get(LANDING_CHECKS_FIELD)
+    if landing_checks is not None:
+        outcome_payload[LANDING_CHECKS_FIELD] = landing_checks
     outcome_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
         ts=_format_entry_ts(_now_utc()),
@@ -1076,19 +1095,7 @@ def _run_and_journal_landing(
         kind=dispatch_core.KIND_DISPATCH_LAND,
         phase=Phase.OUTCOME,
         intent_id=intent_entry.id,
-        payload={
-            "verdict": landing_result.verdict.value,
-            "ok": landing_result.verdict == DispatchLandingVerdict.LANDED,
-            "envelope_verdict": envelope.verdict.value,
-            "pr_number": landing_result.pr_number,
-            "merge_sha": landing_result.merge_sha,
-            "marshal_native": landing_result.marshal_native,
-            # Story 53.2 review (I1): `envelope.findings` (MRS-DISP-047/048)
-            # must reach the journal payload, not just the coarse verdict
-            # strings above -- mirrors `scope_violation_advisories` (Story
-            # 28.15) so `marshal status`/`fleet-picture` can render it too.
-            "land_findings": [f.to_json_dict() for f in envelope.findings],
-        },
+        payload=outcome_payload,
     )
     counter += 1
     try:
@@ -1098,7 +1105,7 @@ def _run_and_journal_landing(
             run_dir,
             outcome_entry,
             fsync=False,
-            offload_fields=frozenset({LAND_FINDINGS_FIELD}),
+            offload_fields=frozenset({LAND_FINDINGS_FIELD, LANDING_CHECKS_FIELD}),
         )
     except FsError as exc:
         print(

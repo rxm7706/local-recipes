@@ -12,6 +12,8 @@ import re
 import shutil
 import sys
 import tempfile
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -31,8 +33,10 @@ from .core.dispatch_landing import (
 from .core.dispatch_verification import DispatchVerificationVerdict
 from .core.egress import Redacted
 from .core.identity import StoryKey, normalize, render_feed_key
+from .core.journal import LANDING_CHECKS_FIELD
+from .core.landing_checks import CheckRun, CheckState, classify_check_runs
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
-from .core.policy import EffectivePolicy
+from .core.policy import EffectivePolicy, LandingCheckSettings, resolve_landing_check_settings
 from .core.refs import ORIGIN_MAIN as _ORIGIN_MAIN
 from .core.refs import ORIGIN_MAIN_SHORT, local_branch_ref
 from .core.verdict import compute_verdict
@@ -564,6 +568,131 @@ def _reconcile_spec_surface_drift(
         ),
         refuse=False,
     )
+
+
+# Story 80.1 (CAP-284): `data["landing_checks"]["outcome"]` -- how the wait ended.
+_CHECKS_GREEN = "green"
+_CHECKS_NO_RUNS = "no-runs"
+_CHECKS_RED = "red"
+_CHECKS_TIMEOUT = "timeout"
+_CHECKS_READ_ERROR = "read-error"
+
+
+@dataclass(frozen=True)
+class _LandingChecksOutcome:
+    """The end of the landing's check wait (Story 80.1): ``finding`` is the
+    refusal (``None`` when the merge may proceed) and ``record`` is the
+    plain-JSON account the landing journals -- outcome, polls, seconds waited
+    and every run last read with its status and conclusion."""
+
+    finding: Finding | None
+    record: dict[str, object]
+
+
+def _describe_runs(runs: tuple[CheckRun, ...], *, field: str) -> str:
+    return ", ".join(f"{run.name} ({getattr(run, field) or 'no conclusion'})" for run in runs)
+
+
+def _wait_for_landing_checks(
+    *,
+    forge: ForgePort,
+    repo_ref: ForgeRef,
+    head_sha: str,
+    pr_number: int,
+    settings: LandingCheckSettings,
+    sleep: Callable[[float], None],
+    monotonic: Callable[[], float],
+) -> _LandingChecksOutcome:
+    """Story 80.1 (CAP-284, AD-8): wait for ``head_sha``'s check runs before
+    the merge. ``main`` has no branch protection and the landing never
+    evaluated ``landing_rules``, so nothing else made a landing wait for CI
+    (doctor 38.3 merged over a failing ``Detectors / scripts-suite``).
+
+    Polls ``forge.check_runs`` every ``settings.poll_seconds`` for at most
+    ``settings.timeout_seconds``. The classifier (``core/landing_checks``) is
+    pure; THIS loop owns the clock (``sleep``/``monotonic`` are injected so a
+    test drives a fake one). Order inside one poll: read; a read error
+    refuses (MRS-DISP-018, never passes); red refuses (MRS-DISP-056, at once,
+    even with runs still pending); green proceeds; the empty set proceeds only
+    once ``settings.grace_seconds`` have elapsed (workflows register a little
+    after a push -- an empty read straight after one is not "no checks");
+    otherwise the timeout refuses (MRS-DISP-057, naming the pending runs); else
+    sleep ``min(poll, time left)`` and read again. The timeout therefore wins
+    over a grace that outlasts it: an empty set never merges past the timeout.
+
+    A refusal leaves the PR open -- this function closes and merges nothing --
+    so re-running the landing merges once CI is green."""
+    timeout_s = settings.timeout_seconds
+    started = monotonic()
+    polls = 0
+    elapsed = 0.0
+    runs: tuple[CheckRun, ...] = ()
+
+    def _outcome(outcome: str, finding: Finding | None, **extra: object) -> _LandingChecksOutcome:
+        record: dict[str, object] = {
+            "outcome": outcome,
+            "polls": polls,
+            "waited_seconds": round(elapsed, 3),
+            "runs": [run.to_json_dict() for run in runs],
+        }
+        record.update(extra)
+        return _LandingChecksOutcome(finding=finding, record=record)
+
+    while True:
+        polls += 1
+        try:
+            runs = forge.check_runs(repo_ref, ForgeRef(head_sha))
+        except ForgeCommandError as exc:
+            elapsed = monotonic() - started
+            return _outcome(
+                _CHECKS_READ_ERROR,
+                Finding(
+                    code="MRS-DISP-018",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot read the check runs on {head_sha!r} for PR #{pr_number} before landing: "
+                        f"{exc} -- refusing to land; the PR stays open"
+                    ),
+                ),
+                error=str(exc),
+            )
+        elapsed = monotonic() - started
+        verdict = classify_check_runs(runs)
+        if verdict.state is CheckState.RED:
+            return _outcome(
+                _CHECKS_RED,
+                Finding(
+                    code="MRS-DISP-056",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"PR #{pr_number}'s head {head_sha!r} has red check run(s): "
+                        f"{_describe_runs(verify_red := verdict.red, field='conclusion')} -- refusing to merge; "
+                        "the PR stays open, re-run the landing once CI is green"
+                    ),
+                ),
+            )
+        if verdict.state is CheckState.GREEN:
+            return _outcome(_CHECKS_GREEN, None)
+        if verdict.state is CheckState.EMPTY and elapsed >= settings.grace_seconds:
+            return _outcome(_CHECKS_NO_RUNS, None)
+        if elapsed >= timeout_s:
+            if verdict.state is CheckState.PENDING:
+                reason = f"check run(s) still pending: {_describe_runs(verdict.pending, field='status')}"
+            else:
+                reason = "no check run was reported"
+            return _outcome(
+                _CHECKS_TIMEOUT,
+                Finding(
+                    code="MRS-DISP-057",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"PR #{pr_number}'s head {head_sha!r}: {reason} after waiting "
+                        f"{settings.timeout_minutes:g} minute(s) -- refusing to merge; "
+                        "the PR stays open, re-run the landing once CI has finished"
+                    ),
+                ),
+            )
+        sleep(min(settings.poll_seconds, timeout_s - elapsed))
 
 
 def execute_dispatch_land(

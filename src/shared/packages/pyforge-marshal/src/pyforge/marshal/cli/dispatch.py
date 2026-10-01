@@ -1202,7 +1202,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
                     landing_verdict = verdict_val
             # Story 53.2 review (I1): read regardless of `ok` -- a refused
             # landing (MRS-DISP-048) is exactly the case this must surface.
-            landing_findings = resolve_land_findings_from_payload(entry.payload)
+            landing_findings = resolve_land_findings_from_payload(entry.payload, sidecars=sidecars)
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION):
         if entry.phase == Phase.OUTCOME:
             vval = entry.payload.get("verdict")
