@@ -146,7 +146,9 @@ def test_a_park_after_the_intent_contract_is_still_found() -> None:
 
 
 def test_a_park_before_the_intent_contract_is_still_found() -> None:
-    park = _spec_park("---\nstatus: backlog\n---\n\nParked: hold this.\n\n<intent-contract>\nrules\n</intent-contract>\n")
+    park = _spec_park(
+        "---\nstatus: backlog\n---\n\nParked: hold this.\n\n<intent-contract>\nrules\n</intent-contract>\n"
+    )
     assert park is not None
     assert park.source == "tracked spec"
     assert "Parked: hold this." in park.excerpt
