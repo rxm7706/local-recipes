@@ -5652,3 +5652,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-80-1-3: Three more `importorskip` sites can skip chart-related tests silently under `CI`, beyond the one `DW-steward-80-1-2` names.
+
+- source_spec: `planning-artifacts/specs/spec-80-1-the-platform-ci-test-job-runs-the-chart-tests-and-a-skipped-one-fails-there.md`
+  summary: Three more `importorskip` sites can skip chart-related tests silently under `CI`, beyond the one `DW-steward-80-1-2` names.
+  evidence: `test_openfeature_file_flags.py` calls `pytest.importorskip("openfeature")` and `pytest.importorskip("openfeature.contrib.provider.flagd")` at module level (lines 48-49), so a missing package skips the whole module, including its 7 `requires_helm` tests. `pytest.importorskip("yaml")` is also called inline in `test_openfeature_file_flags.py` (line 102, `_render_core`) and in `test_story_48_4_eso_example_lists_required_platform_secret_keys` in `test_chart_invariants.py` (line 2753), which is not `requires_helm`-gated. No trigger is known today: `openfeature-sdk` and `openfeature-provider-flagd` are direct `platform-ci-test` dependencies, and PyYAML is locked there transitively; a local `platform-ci-test` run of both modules had zero skips. Making these fail under `CI` would change tests unrelated to helm and needs a decision between a `CI`-aware helper and a direct `pyyaml` dependency, which this story's intent (`requires_helm` only) does not make. Settled by that decision, taken together with `DW-steward-80-1-2`.
+  location: src/platform/tests/test_openfeature_file_flags.py
+  origin: spec-deferred 6e8a9f736d4a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

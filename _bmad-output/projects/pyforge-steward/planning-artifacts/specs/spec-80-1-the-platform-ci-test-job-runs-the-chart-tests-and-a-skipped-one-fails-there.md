@@ -29,6 +29,12 @@ deferred:
       `_import_yaml` and the flags module use `pytest.importorskip("yaml")`, which skips rather than fails when PyYAML is absent. PyYAML is in the `platform-ci-test` lock only as a transitive dependency, not a direct one in `[feature.platform-ci-test.dependencies]`. The same silent-skip class this story closes for helm, with no known trigger today. Settled by deciding whether `importorskip("yaml")` fails under `CI` too, or `pyyaml` becomes a direct dependency.
     location: src/platform/tests/test_chart_invariants.py
     severity: low
+  - summary: >-
+      Three more `importorskip` sites can skip chart-related tests silently under `CI`, beyond the one `DW-steward-80-1-2` names.
+    evidence: >-
+      `test_openfeature_file_flags.py` calls `pytest.importorskip("openfeature")` and `pytest.importorskip("openfeature.contrib.provider.flagd")` at module level (lines 48-49), so a missing package skips the whole module, including its 7 `requires_helm` tests. `pytest.importorskip("yaml")` is also called inline in `test_openfeature_file_flags.py` (line 102, `_render_core`) and in `test_story_48_4_eso_example_lists_required_platform_secret_keys` in `test_chart_invariants.py` (line 2753), which is not `requires_helm`-gated. No trigger is known today: `openfeature-sdk` and `openfeature-provider-flagd` are direct `platform-ci-test` dependencies, and PyYAML is locked there transitively; a local `platform-ci-test` run of both modules had zero skips. Making these fail under `CI` would change tests unrelated to helm and needs a decision between a `CI`-aware helper and a direct `pyyaml` dependency, which this story's intent (`requires_helm` only) does not make. Settled by that decision, taken together with `DW-steward-80-1-2`.
+    location: src/platform/tests/test_openfeature_file_flags.py
+    severity: low
 declared_low_risk: false
 ---
 
