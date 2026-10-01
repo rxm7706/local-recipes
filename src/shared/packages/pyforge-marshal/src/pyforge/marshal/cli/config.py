@@ -115,8 +115,9 @@ _PROJECT_POLICY_ONLY_KEYS = frozenset(
         # Story 28.10's `model_cost_catalog` (SPEC-marshal-token-economy
         # CAP-11) -- mapping-typed declared price table; project layer only.
         "model_cost_catalog",
-        # Story 33.8's `dispatch` (CAP-6) -- mapping-typed factory wave cap;
-        # project layer only.
+        # Story 33.8's `dispatch` (CAP-6; Story 80.1, CAP-284) -- mapping-typed
+        # factory-dispatch block: the wave cap `max_parallel` and the three
+        # `landing_check_*` knobs; project layer only.
         "dispatch",
     }
 )
@@ -208,7 +209,8 @@ _UNSETTABLE_KEYS = frozenset(
         # Story 28.10's `model_cost_catalog` (CAP-11) -- nested mapping of
         # provider/model prices, same exclusion reason as `context`.
         "model_cost_catalog",
-        # Story 33.8's `dispatch` (CAP-6) -- nested mapping with one int knob,
+        # Story 33.8's `dispatch` (CAP-6; Story 80.1, CAP-284) -- nested mapping
+        # of four knobs (`max_parallel` and the three `landing_check_*` ones),
         # same exclusion reason as `context`.
         "dispatch",
     }
@@ -258,7 +260,8 @@ _FIELD_ORDER: tuple[str, ...] = (
     # Story 28.10's `model_cost_catalog` (CAP-11) -- declared price table,
     # `marshal-policy.toml`/repo-defaults only, no `--set` surface.
     "model_cost_catalog",
-    # Story 33.8's `dispatch` (CAP-6) -- factory wave cap,
+    # Story 33.8's `dispatch` (CAP-6; Story 80.1, CAP-284) -- the factory wave
+    # cap and the landing's check-wait bounds (a four-key block),
     # `marshal-policy.toml`/repo-defaults only, no `--set` surface.
     "dispatch",
     "gate_mode",
