@@ -469,6 +469,22 @@ Drift — orphaned between stations.
   **Constraints:** no new CAP (both are defects of shipped capabilities); credentials never in code
   or CLI flags (canopy:AD-19); a userinfo failure must not grant access it could not confirm.
   Owner: steward. → Epic 78 / Story 78.1, specced 2026-10-01.
+- **2026-10-01 — Found: the dispatch preamble reads the session verdict from the wrong stream.**
+  Dispatching Story 78.1 printed `MRS-DISP-049: steward session check reported a non-ok
+  session-precondition verdict: }`. Half of that is already specced: the session check misreads
+  marshal's seed envelope (CAP-162 / Story 73.1, the 2026-09-28 (later) entry above). The other half
+  is not: steward prints a failed duty's report to stderr (`cli.py::main`, a convention several
+  duties' tests pin), but marshal's dispatch preamble, written by Story 63.4 (CAP-5), parses only
+  stdout and falls back to the last stderr line, which is `}`. Its tests fake the failing report on
+  stdout, and nothing on either side pins what the other reads.
+  **What it looks like when fixed:** a dispatch's MRS-DISP-049 names the failing preconditions
+  (today on the primary checkout: the wire layer declared off and a stale codegraph index, both
+  non-ok as AC5 says) instead of `}`. Each side pins the output the other reads: marshal's seed-check
+  CLI test pins `result.kit`'s entries, steward's CLI test pins a failing `--json` report on stderr.
+  **Constraints:** no new CAP (a defect of CAP-5's dispatch wiring); steward's stream convention
+  for a failed duty stays; marshal calls the steward CLI, never imports it. The seed check's literal
+  `{{ slug }}` findings on a never-adopted repo are marshal Story 70.1's, already specced.
+  Owner: steward. → Epic 79 / Story 79.1, specced 2026-10-01; lands with Story 73.1.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

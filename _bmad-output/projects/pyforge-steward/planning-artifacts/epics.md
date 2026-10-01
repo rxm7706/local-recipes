@@ -5166,6 +5166,36 @@ a secret, and a role revoked at the IdP is gone on the user's next request
 failure that denies; the Langflow test asserts the auto-login refusal through the real ASGI dispatch;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `platform-ci-local -- --test` green
 
+## Epic 79: The session check and the dispatch preamble read each other's real output
+
+Minted 2026-10-01 from the station Dream's entry of the same date, found while dispatching Story 78.1. The steward
+half (the session check reads marshal's seed envelope) is Story 73.1, CAP-162; this epic is the other half, a defect
+in Story 63.4's dispatch wiring (CAP-5), so no CAP is minted. A new epic because Epic 63 is `done`. **HARD
+boundaries:** marshal calls the steward CLI and never imports `pyforge.steward`; steward's stream convention for a
+failed duty's report (stderr) does not change; AC5's strictness stays.
+
+### Story 79.1: The session check and the dispatch preamble read each other's real output
+
+As the operator dispatching stories,
+I want the session-precondition warning on a dispatch to name what actually failed,
+So that a real precondition gap is visible and a parse error never reads as one.
+
+**Type:** fix • **Effort:** S • **Deps:** — (lands with S-73.1) • **FR/AD:** CAP-5 (Story 63.4); AD-8
+**Surface:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`: `_surface_session_precondition_findings`
+  reads the report from stdout, else stderr: the first JSON object with `findings` that opens a line.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py` and `test_seed_cli_seed_check.py` (the producer pin
+  for `result.kit`'s entries); `src/shared/packages/pyforge-steward/tests/unit/test_session.py` (a failing `--json`
+  report pinned on stderr).
+
+**Given** `steward session check --json` prints a failing report to stderr with stdout empty
+**When** this story lands
+**Then** a dispatch's MRS-DISP-049 names the non-ok findings, also when a warning line precedes the report
+**And** marshal's tests fake the report on stderr; marshal's seed-check CLI test pins `result.kit`'s entries
+(`item`, `layer`, `status`) and steward's CLI test pins the failing report on stderr;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-marshal
+pyforge-marshal-test` are green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

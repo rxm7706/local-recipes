@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import enum
 import json
+import shutil
 import subprocess
 import sys
 import types
@@ -70,9 +71,25 @@ def test_pixi_guild_finding_ok(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 # --------------------------------------------------------------------------
 
 
+def _hide_doctor(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make ``pyforge.doctor`` unimportable for one test, whatever env runs it. The
+    fallback tests assumed the ``pyforge-steward`` env (no doctor) and failed under
+    ``-e pyforge-guild``, where doctor is installed (found by Story 79.1). Every
+    submodule is masked too: a cached ``pyforge.doctor.models`` would import without
+    its parent."""
+    for name in (
+        "pyforge.doctor",
+        "pyforge.doctor.models",
+        "pyforge.doctor.sources",
+        "pyforge.doctor.sources.bmad_method",
+    ):
+        monkeypatch.setitem(sys.modules, name, None)
+
+
 def test_bmad_method_finding_fallback_ok(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """``pyforge.doctor`` is not installed in the pyforge-steward test env, so this
-    exercises the real AC4 fallback path (``upgrade.run_bmad_drift_integrity``)."""
+    """With ``pyforge.doctor`` unimportable, the real AC4 fallback path
+    (``upgrade.run_bmad_drift_integrity``) runs."""
+    _hide_doctor(monkeypatch)
     calls: dict[str, Path] = {}
 
     def fake_run_bmad_drift_integrity(repo: Path) -> types.SimpleNamespace:
@@ -88,6 +105,7 @@ def test_bmad_method_finding_fallback_ok(tmp_path: Path, monkeypatch: pytest.Mon
 
 
 def test_bmad_method_finding_fallback_fail_names_remedy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _hide_doctor(monkeypatch)
     monkeypatch.setattr(
         "pyforge.steward.upgrade.run_bmad_drift_integrity",
         lambda repo: types.SimpleNamespace(ok=False, detail="2 HARD finding(s)"),
@@ -209,6 +227,54 @@ def _completed(stdout: str = "", stderr: str = "", returncode: int = 0) -> subpr
     return subprocess.CompletedProcess(args=[], returncode=returncode, stdout=stdout, stderr=stderr)
 
 
+def _seed_envelope(kit: list[dict[str, str]]) -> str:
+    """``marshal seed check --json``'s real stdout: the schema-stable ``{verb, ok, result}``
+    envelope every seed verb shares (marshal ``cli/seed.py::_json_ok_envelope``, Story 12.5),
+    with ``kit`` under ``result``. Story 73.1 (CAP-162): these fakes used a bare ``{"kit": ...}``
+    that marshal never emits, so the tests passed while every real run read as unparseable."""
+    return json.dumps({"verb": "check", "ok": True, "result": {"strict": False, "findings": [], "kit": kit}})
+
+
+#: One ``marshal seed check --json`` document recorded from the live CLI (Story 73.1): exit 1
+#: (its own report is failing), the kit under ``result``, no absolute paths.
+_RECORDED_ENVELOPE = Path(__file__).resolve().parent.parent / "fixtures" / "marshal_seed_check_envelope.json"
+
+
+def test_seed_kit_findings_read_the_recorded_live_document(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """73.1 AC1: the recorded document, returned with exit 1, names every non-ok kit item
+    with its status; nothing reads "unparseable"."""
+    text = _RECORDED_ENVELOPE.read_text(encoding="utf-8")
+    kit = json.loads(text)["result"]["kit"]
+    non_ok = [f"{entry['item']}: {entry['status']}" for entry in kit if entry["status"] != "ok"]
+    codegraph = next(entry for entry in kit if entry["item"] == "codegraph-index")
+    assert non_ok, "the recorded document must carry a non-ok kit to prove this path"
+    monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=text, returncode=1))
+    kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
+    assert kit_finding.ok is False
+    assert kit_finding.detail == "; ".join(non_ok)
+    assert codegraph_finding.ok is (codegraph["status"] == "ok")
+    assert codegraph["status"] in codegraph_finding.detail
+    assert "unparseable" not in kit_finding.detail + codegraph_finding.detail
+
+
+@pytest.mark.parametrize("returncode", [0, 1])
+def test_seed_kit_findings_an_all_ok_kit_is_ok_whatever_the_exit_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, returncode: int
+) -> None:
+    """73.1 AC2: the seed check exits 1 whenever its own report fails; the exit code is
+    never the kit's verdict."""
+    document = json.loads(_RECORDED_ENVELOPE.read_text(encoding="utf-8"))
+    for entry in document["result"]["kit"]:
+        entry["status"] = "ok"
+    monkeypatch.setattr(
+        "pyforge.steward.session._run_seed_check",
+        lambda _root: _completed(stdout=json.dumps(document), returncode=returncode),
+    )
+    kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
+    assert kit_finding.ok is True
+    assert codegraph_finding.ok is True
+
+
 def test_seed_kit_findings_probe_could_not_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     def raise_oserror(_root: Path) -> subprocess.CompletedProcess[str]:
         raise OSError("no such file")
@@ -237,7 +303,9 @@ def test_seed_kit_findings_all_ok(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
             {"item": "codegraph-index", "layer": "structure-graph", "status": "ok", "detail": "fresh"},
         ]
     }
-    monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=json.dumps(payload)))
+    monkeypatch.setattr(
+        "pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=_seed_envelope(payload["kit"]))
+    )
     kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
     assert kit_finding.ok is True
     assert kit_finding.remedy is None
@@ -253,7 +321,9 @@ def test_seed_kit_findings_non_ok_item_fails_kit(tmp_path: Path, monkeypatch: py
             {"item": "codegraph-index", "layer": "structure-graph", "status": "ok"},
         ]
     }
-    monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=json.dumps(payload)))
+    monkeypatch.setattr(
+        "pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=_seed_envelope(payload["kit"]))
+    )
     kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
     assert kit_finding.ok is False
     assert "caveman-skill: missing" in kit_finding.detail
@@ -264,7 +334,9 @@ def test_seed_kit_findings_non_ok_item_fails_kit(tmp_path: Path, monkeypatch: py
 
 def test_seed_kit_findings_missing_codegraph_entry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     payload = {"kit": [{"item": "caveman-skill", "layer": "output", "status": "ok"}]}
-    monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=json.dumps(payload)))
+    monkeypatch.setattr(
+        "pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=_seed_envelope(payload["kit"]))
+    )
     _kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
     assert codegraph_finding.ok is False
     assert "no codegraph-index entry" in codegraph_finding.detail
@@ -276,11 +348,107 @@ def test_seed_kit_findings_codegraph_stale(tmp_path: Path, monkeypatch: pytest.M
             {"item": "codegraph-index", "layer": "structure-graph", "status": "stale", "detail": "6 days old"},
         ]
     }
-    monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=json.dumps(payload)))
+    monkeypatch.setattr(
+        "pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=_seed_envelope(payload["kit"]))
+    )
     _kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
     assert codegraph_finding.ok is False
     assert "stale" in codegraph_finding.detail
     assert codegraph_finding.remedy == "pixi run -e pyforge-guild marshal seed kit"
+
+
+def test_seed_kit_findings_layer_off_and_stale_name_the_items(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 73.1: the kit this repo's primary checkout reports today -- the wire layer
+    declared off, the codegraph index stale -- surfaces both as non-ok, named (AC5)."""
+    kit = [
+        {"item": "caveman-skill", "layer": "output", "status": "ok"},
+        {"item": "ccr-store", "layer": "wire", "status": "layer-off"},
+        {"item": "codegraph-index", "layer": "structure-graph", "status": "stale", "detail": "predates HEAD"},
+    ]
+    monkeypatch.setattr(
+        "pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=_seed_envelope(kit), returncode=1)
+    )
+    kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
+    assert kit_finding.ok is False
+    assert "ccr-store: layer-off" in kit_finding.detail
+    assert "codegraph-index: stale" in kit_finding.detail
+    assert "caveman-skill" not in kit_finding.detail
+    assert codegraph_finding.ok is False
+    assert codegraph_finding.detail == "codegraph-index: stale -- predates HEAD"
+
+
+def test_seed_kit_findings_error_envelope_reports_its_message(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """73.1 AC3: an ``ok: false`` envelope names the seed error's type and message."""
+    payload = {
+        "verb": "check",
+        "ok": False,
+        "error": {"type": "ManifestError", "message": "bad manifest", "remedy": "reinstall marshal"},
+    }
+    monkeypatch.setattr(
+        "pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=json.dumps(payload), returncode=1)
+    )
+    kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
+    assert kit_finding.ok is False
+    assert codegraph_finding.ok is False
+    assert "reported a seed error: ManifestError: bad manifest" in kit_finding.detail
+    assert kit_finding.detail == codegraph_finding.detail
+    assert kit_finding.remedy == "pixi run -e pyforge-guild marshal seed kit"
+
+
+@pytest.mark.parametrize(
+    ("stdout", "expected"),
+    [
+        (json.dumps({"kit": [{"item": "codegraph-index", "status": "ok"}]}), "no kit report (keys found: kit)"),
+        (
+            json.dumps({"verb": "check", "ok": True, "result": {}}),
+            "no kit report (keys found: ok, result, verb; result keys: none)",
+        ),
+        (json.dumps({"verb": "check", "ok": True, "result": {"kit": "not a list"}}), "no kit report"),
+        (json.dumps(["not", "an", "object"]), "no kit report: the document is a JSON list"),
+        (json.dumps({"verb": "check", "ok": False}), "reported a seed error with no detail"),
+        (json.dumps({"verb": "check", "ok": True, "result": {"kit": ["x"]}}), "returned a malformed kit entry"),
+    ],
+)
+def test_seed_kit_findings_payload_without_an_envelope_kit_is_non_ok(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, stdout: str, expected: str
+) -> None:
+    """73.1 AC5: a JSON document with no ``result.kit`` reads "no kit report", naming the
+    keys it found -- never "unparseable". A bare top-level ``kit`` (the shape the pre-73.1
+    fakes used) is not marshal's output and is not read as if it were."""
+    monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=stdout))
+    kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
+    assert kit_finding.ok is False
+    assert codegraph_finding.ok is False
+    assert expected in kit_finding.detail
+    assert "unparseable" not in kit_finding.detail
+
+
+def test_seed_kit_findings_parse_the_real_marshal_seed_check(repo_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stories 73.1 / 79.1: the halves of CAP-5 drifted because each side's tests faked
+    the other's output. Where the ``marshal`` CLI is installed (``-e pyforge-guild``), run
+    the real ``marshal seed check --json`` against this repo and parse its stdout;
+    skips in ``-e pyforge-steward``, which has no marshal. Calls the CLI, never
+    imports ``pyforge.marshal``."""
+    marshal = shutil.which("marshal")
+    if marshal is None:
+        pytest.skip("the marshal CLI is not installed in this environment")
+    real = subprocess.run(
+        [marshal, "seed", "check", "--json"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: real)
+    kit_finding, codegraph_finding = _seed_kit_findings(repo_root)
+    for finding in (kit_finding, codegraph_finding):
+        assert "unparseable" not in finding.detail, finding.detail
+        assert "no kit report" not in finding.detail, finding.detail
+        assert "seed error" not in finding.detail, finding.detail
+    assert "no codegraph-index entry" not in codegraph_finding.detail
+    # the detail names real kit items, whichever of them are ok today
+    assert any(item in kit_finding.detail for item in ("caveman-skill", "ccr-store", "codegraph-index"))
 
 
 # --------------------------------------------------------------------------
@@ -604,3 +772,22 @@ def test_cli_session_check_accepts_project_and_json_flags(
     out = capsys.readouterr().out
     payload = json.loads(out)
     assert payload["ok"] is True
+
+
+def test_cli_session_check_json_failure_report_goes_to_stderr(
+    repo_root: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Story 79.1: pins the stream marshal's dispatch preamble reads. A failed duty's
+    report goes to stderr (``cli.py::main``), so a non-ok ``--json`` verdict is a JSON
+    object on stderr with nothing on stdout."""
+    monkeypatch.chdir(repo_root)
+    monkeypatch.setattr(
+        "pyforge.steward.session.gather_session_findings",
+        lambda *, root, project=None: (SessionFinding(name="gh-auth", ok=False, detail="0 calls left", remedy="wait"),),
+    )
+    assert main(["session", "check", "--json"]) == EXIT_FAILED
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    payload = json.loads(captured.err)
+    assert payload["ok"] is False
+    assert [f["name"] for f in payload["findings"] if not f["ok"]] == ["gh-auth"]

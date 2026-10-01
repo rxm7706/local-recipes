@@ -787,6 +787,23 @@ verify_commands = [
   "docs/reference/environments.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"79" = [  # the session check and the dispatch preamble read each other's real output (CAP-5 defect), added 2026-10-01.
+          # The default surface, restated because a declared entry replaces it outright, plus marshal's dispatch
+          # preamble and its test (Story 63.4's own surface), marshal's seed-check CLI test (the producer pin for
+          # the kit shape steward reads) and every Spec memlog for the co-governor reconciles.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "scripts/.spec-surface-baseline.json",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_check.py",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "76" = [  # the one flag tree can say what the flag rule needs (spec-feature-flag-governance CAP-5), added 2026-09-28 (night)
   "src/shared/packages/pyforge-steward/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
