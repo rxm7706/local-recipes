@@ -239,20 +239,29 @@ def _seed_envelope(kit: list[dict[str, str]]) -> str:
 #: (its own report is failing), the kit under ``result``, no absolute paths.
 _RECORDED_ENVELOPE = Path(__file__).resolve().parent.parent / "fixtures" / "marshal_seed_check_envelope.json"
 
+#: Marshal's two silent kit outcomes (``seed/detect/kit.py::KitStatus``: OK and OFF), written
+#: out here rather than read from the module under test (Story 81.1).
+_MARSHAL_SILENT = {"ok", "layer-off"}
+
 
 def test_seed_kit_findings_read_the_recorded_live_document(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """73.1 AC1: the recorded document, returned with exit 1, names every non-ok kit item
-    with its status; nothing reads "unparseable"."""
+    with its status; nothing reads "unparseable". Story 81.1: its ``layer-off`` item is
+    silent, as marshal's kit contract makes it, so it is not among the named items."""
     text = _RECORDED_ENVELOPE.read_text(encoding="utf-8")
     kit = json.loads(text)["result"]["kit"]
-    non_ok = [f"{entry['item']}: {entry['status']}" for entry in kit if entry["status"] != "ok"]
+    non_ok = [f"{entry['item']}: {entry['status']}" for entry in kit if entry["status"] not in _MARSHAL_SILENT]
     codegraph = next(entry for entry in kit if entry["item"] == "codegraph-index")
     assert non_ok, "the recorded document must carry a non-ok kit to prove this path"
+    assert any(entry["status"] == "layer-off" for entry in kit), "the recorded document carries a layer-off item"
     monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=text, returncode=1))
     kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
     assert kit_finding.ok is False
     assert kit_finding.detail == "; ".join(non_ok)
-    assert codegraph_finding.ok is (codegraph["status"] == "ok")
+    # Story 81.1 AC4, stated literally for the document recorded on 2026-10-01.
+    assert kit_finding.detail == "caveman-skill: missing; codegraph-index: missing"
+    assert "ccr-store" not in kit_finding.detail
+    assert codegraph_finding.ok is (codegraph["status"] in _MARSHAL_SILENT)
     assert codegraph["status"] in codegraph_finding.detail
     assert "unparseable" not in kit_finding.detail + codegraph_finding.detail
 
@@ -357,9 +366,12 @@ def test_seed_kit_findings_codegraph_stale(tmp_path: Path, monkeypatch: pytest.M
     assert codegraph_finding.remedy == "pixi run -e pyforge-guild marshal seed kit"
 
 
-def test_seed_kit_findings_layer_off_and_stale_name_the_items(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Story 73.1: the kit this repo's primary checkout reports today -- the wire layer
-    declared off, the codegraph index stale -- surfaces both as non-ok, named (AC5)."""
+def test_seed_kit_findings_stale_is_named_and_layer_off_is_silent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 73.1's kit -- the wire layer declared off, the codegraph index stale. Story 81.1:
+    only the stale index fails the finding; the declared-off layer is marshal's silent
+    outcome and is not named among the failures."""
     kit = [
         {"item": "caveman-skill", "layer": "output", "status": "ok"},
         {"item": "ccr-store", "layer": "wire", "status": "layer-off"},
@@ -370,11 +382,87 @@ def test_seed_kit_findings_layer_off_and_stale_name_the_items(tmp_path: Path, mo
     )
     kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
     assert kit_finding.ok is False
-    assert "ccr-store: layer-off" in kit_finding.detail
-    assert "codegraph-index: stale" in kit_finding.detail
-    assert "caveman-skill" not in kit_finding.detail
+    assert kit_finding.detail == "codegraph-index: stale"
     assert codegraph_finding.ok is False
     assert codegraph_finding.detail == "codegraph-index: stale -- predates HEAD"
+
+
+def test_seed_kit_findings_a_layer_off_item_is_silent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 81.1 AC1: a kit whose only non-``ok`` item is ``layer-off`` -- the wire layer at
+    the repo default ``"auto"``, which ``seed check`` reads as off in every dispatch
+    worktree -- reads ok, and the detail still names the item with its status."""
+    kit = [
+        {"item": "caveman-skill", "layer": "output", "status": "ok"},
+        {
+            "item": "ccr-store",
+            "layer": "wire",
+            "status": "layer-off",
+            "detail": "the 'wire' context layer is declared off",
+        },
+        {"item": "codegraph-index", "layer": "structure-graph", "status": "ok", "detail": "fresh"},
+    ]
+    monkeypatch.setattr(
+        "pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=_seed_envelope(kit), returncode=1)
+    )
+    kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
+    assert kit_finding.ok is True
+    assert kit_finding.remedy is None
+    assert kit_finding.detail == "caveman-skill: ok; ccr-store: layer-off; codegraph-index: ok"
+    assert codegraph_finding.ok is True
+    assert codegraph_finding.detail == "fresh"
+
+
+def test_seed_kit_findings_a_layer_off_codegraph_index_is_silent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 81.1 AC2: a ``codegraph-index`` entry at ``layer-off`` (the structure-graph layer
+    declared off) reads ok in both findings, its detail naming the status."""
+    kit = [
+        {
+            "item": "codegraph-index",
+            "layer": "structure-graph",
+            "status": "layer-off",
+            "detail": "the 'structure-graph' context layer is declared off",
+        },
+    ]
+    monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=_seed_envelope(kit)))
+    kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
+    assert kit_finding.ok is True
+    assert codegraph_finding.ok is True
+    assert codegraph_finding.remedy is None
+    assert codegraph_finding.detail == (
+        "codegraph-index: layer-off -- the 'structure-graph' context layer is declared off"
+    )
+
+
+@pytest.mark.parametrize("status", ["missing", "stale", "instrument-unavailable", "no-such-status"])
+def test_seed_kit_findings_every_other_status_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: str
+) -> None:
+    """Story 81.1 AC3: only ``ok`` and ``layer-off`` are silent. Marshal's three finding
+    statuses, and a status this module does not know, fail both findings."""
+    kit = [{"item": "codegraph-index", "layer": "structure-graph", "status": status}]
+    monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=_seed_envelope(kit)))
+    kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
+    assert kit_finding.ok is False
+    assert kit_finding.detail == f"codegraph-index: {status}"
+    assert codegraph_finding.ok is False
+    assert codegraph_finding.detail.startswith(f"codegraph-index: {status}")
+
+
+@pytest.mark.parametrize("status", [["ok"], {"state": "ok"}, None, 0])
+def test_seed_kit_findings_a_status_that_is_not_a_string_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: object
+) -> None:
+    """Story 81.1 review 1: an unhashable or missing status fails both findings instead of
+    raising ``TypeError`` out of the silent-status lookup."""
+    kit = [{"item": "codegraph-index", "layer": "structure-graph", "status": status}]
+    payload = json.dumps({"verb": "check", "ok": True, "result": {"kit": kit}})
+    monkeypatch.setattr("pyforge.steward.session._run_seed_check", lambda _root: _completed(stdout=payload))
+    kit_finding, codegraph_finding = _seed_kit_findings(tmp_path)
+    assert kit_finding.ok is False
+    assert codegraph_finding.ok is False
+    assert codegraph_finding.detail == f"codegraph-index: {status}"
 
 
 def test_seed_kit_findings_error_envelope_reports_its_message(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

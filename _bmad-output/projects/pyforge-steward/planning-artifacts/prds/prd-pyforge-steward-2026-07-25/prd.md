@@ -2348,6 +2348,10 @@ ok whether the seed check exited 0 or 1; an `ok: false` envelope names the seed 
 "unparseable output"; a JSON document with no `result.kit` reads "no kit report". Steward shells marshal's CLI and never
 imports it. Story 73.1.
 
+**Amended 2026-10-01 (Story 81.1, CAP-162):** a kit item at `layer-off` is silent, as marshal's kit contract makes it:
+it is named in the `token-kit` detail and fails neither finding. Every other non-`ok` status, including an unknown one,
+still fails both.
+
 ### FR-34: a dated note (2026-09-28, later)
 
 `pyforge-atlas` is not added to the Guild, and `pixi.toml`'s Guild section records why beside warden's (the memlog's
