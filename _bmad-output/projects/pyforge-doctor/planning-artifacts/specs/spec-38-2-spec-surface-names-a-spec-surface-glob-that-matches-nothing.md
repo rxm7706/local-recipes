@@ -118,3 +118,9 @@ Minted 2026-10-01 by operator ruling: the deferral burn-down's "stop the inflow"
 ## Review Triage Log
 
 - No independent review has run yet (implementation and review stay separate).
+- Implementation 2026-10-01: `pixi run -e pyforge-guild spec-surface-check` (run from this worktree, whose tracked tree equals
+  `main` plus this change) lists 25 `stale-surface` WARN rows across 7 Specs (atlas, doctor, herald, marshal, pyforge-testing-charter,
+  scribe, steward) beside the OK verdict and exits 0 (read from `$?`, no pipe) - the 25 globs in 7 Specs DW-OPS-2026-10-01-2 recorded.
+  No Spec `surface:` list was edited. The existing `test_spec_governing_no_files_is_not_drift_blind` fixture glob is itself dead, so
+  its exact check set now includes `stale-surface`; no other existing test moved. Removing the `presumed.extend(...)` call fails
+  8 of the spec-surface tests (mutation confirmed).
