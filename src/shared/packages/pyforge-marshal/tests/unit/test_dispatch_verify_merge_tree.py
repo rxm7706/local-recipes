@@ -26,7 +26,6 @@ from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from pyforge.marshal.core import policy
 from pyforge.marshal.dispatch_verify import run_verify_commands_only
 
-
 # Story 79.2 (spec-79-2): the derived hygiene lane, pinned as a literal so
 # deleting the derivation fails these tests rather than silently updating them.
 LINT_TYPES = "pixi run --frozen -e pyforge-guild lint-types"

@@ -33,7 +33,6 @@ from pyforge.marshal.dispatch_verify import (
     evaluate_dispatch_verification,
 )
 
-
 # Story 79.2 (spec-79-2): the derived hygiene lane, pinned as a literal (not
 # imported from `dispatch_verify`) so deleting or renaming the derivation fails
 # these tests rather than silently updating them.
