@@ -4302,13 +4302,18 @@ class StationCyclePlan:
       everything skipped;
     * ``live_stories`` -- a parallel wave is still in flight;
     * otherwise ``stories_to_dispatch`` -- serial: the queue head; parallel:
-      ``wave.members`` (possibly empty)."""
+      ``wave.members`` (possibly empty).
+
+    ``backlog`` is the implementable backlog followed by ``followup_stories`` (Story 73.2, CAP-281): the
+    follow-up reviews of already-landed stories the campaign selected for this station, newest landing first.
+    They are queue entries only -- their ledger rows stay ``done``."""
 
     slug: str
     ledger_path: Path
     ledger_error: str | None = None
     statuses: tuple[tuple[str, str], ...] = ()
     backlog: tuple[str, ...] = ()
+    followup_stories: tuple[str, ...] = ()
     effective_policy: policy.EffectivePolicy | None = None
     station_skips: Mapping[str, str] = field(default_factory=dict)
     finalize_pending: tuple[str, str] | None = None
@@ -4342,6 +4347,7 @@ def plan_station_cycle(
     process: ProcessPort,
     harness: HarnessPort,
     mint_wave_id: Callable[[], str],
+    followups: Sequence[dispatch_fleet.FollowupCandidate] = (),
 ) -> StationCyclePlan:
     """One station's per-cycle queue computation -- READ-ONLY (Story 65.1).
 
@@ -4353,7 +4359,13 @@ def plan_station_cycle(
     the plan cannot drift from the drain. It reads (ledger, journals, git,
     process liveness) and never writes: the wave id is minted through
     ``mint_wave_id`` only when a wave is actually built, and journaling that
-    wave stays the caller's."""
+    wave stays the caller's.
+
+    ``followups`` (Story 73.2, CAP-281) are this station's selected follow-up reviews
+    (``plan_followup_reviews``): each is appended to the queue AFTER the implementable backlog, in the order
+    given (newest landing first), before ``plan_station_queue`` runs -- so mode accounting, declared skips, the
+    blocked map and campaign blocks apply to it as to any story. Never under ``explicit_stories``
+    (``--stories`` is unchanged)."""
     ledger_path = dispatch_fleet.station_ledger_path(repo_root, slug)
     try:
         statuses = _station_ledger_statuses(harness=harness, vcs=vcs, repo_root=repo_root, ledger_path=ledger_path)
@@ -4369,6 +4381,10 @@ def plan_station_cycle(
             deps_by_story=(None if order_override else _load_station_story_deps(fs, repo_root, slug)),
         )
     )
+    followup_stories: tuple[str, ...] = ()
+    if explicit_stories is None and followups:
+        followup_stories = dispatch_fleet.followup_backlog_entries(followups, statuses, backlog)
+        backlog = backlog + followup_stories
     effective_policy = _compose_policy(slug, flags=policy_flags)
     # Story 50.1 Part A: the ~45 s window between session exit and ledger
     # promotion. Reported IN_FLIGHT (deliberately absent from
@@ -4388,6 +4404,7 @@ def plan_station_cycle(
         ledger_path=ledger_path,
         statuses=tuple(statuses),
         backlog=backlog,
+        followup_stories=followup_stories,
         effective_policy=effective_policy,
         station_skips=station_skips,
     )
@@ -4403,6 +4420,7 @@ def plan_station_cycle(
         configured_skips=station_skips,
         campaign_blocked=campaign_blocked,
         effective_policy=effective_policy,
+        followups=frozenset(followup_stories),
     )
     queue = dispatch_fleet.plan_station_queue(
         slug=slug,
@@ -4533,6 +4551,7 @@ def execute_fleet_cycle(
     policy_flags: dict[str, object] | None = None,
     max_in_flight: int | None = None,
     retry_environment_blocks: bool = False,
+    followups_launched: frozenset[tuple[str, StoryKey]] = frozenset(),
 ) -> FleetCycleReport:
     """One fleet-drain cycle: plan every station, dispatch the eligible ones.
 
@@ -4544,6 +4563,12 @@ def execute_fleet_cycle(
     backlog with the caller's own ordered sequence (re-filtered to
     not-yet-``done`` every cycle) instead of reordering the full backlog
     the way ``order_override`` does.
+
+    Story 73.2 (CAP-281): ``followups_launched`` is every ``(station, story)`` follow-up review the campaign's
+    earlier cycles launched (``_followups_launched_from_journal``). With it, ``plan_followup_reviews`` decides
+    which open ``DW-FRR`` rows this cycle queues after each station's backlog -- the per-campaign cap minus
+    those already launched -- and the cycle records the follow-ups it launches on the station result, which is
+    what the next cycle's count is folded from. ``explicit_stories`` (``--stories``) queues none.
     """
     if explicit_stories is not None and station is None:
         # Story 22.11 patch pass (review finding): `explicit_stories` is
@@ -4571,6 +4596,16 @@ def execute_fleet_cycle(
                     "unresolved": [],
                 },
             )
+    followup_plan = FollowupPlan()
+    if explicit_stories is None and cycle_slugs.slugs:
+        followup_plan = plan_followup_reviews(
+            repo_root=repo_root,
+            slugs=cycle_slugs.slugs,
+            vcs=vcs,
+            launched=followups_launched,
+            policy_flags=policy_flags,
+        )
+        findings.extend(followup_plan.findings)
     for slug in cycle_slugs.slugs:
         # Story 65.1: the per-station queue computation lives in ONE read-only
         # planner that `factory drain --plan` calls too; everything below
@@ -4592,6 +4627,7 @@ def execute_fleet_cycle(
             process=process,
             harness=harness,
             mint_wave_id=lambda: _mint_wave_id(slug),
+            followups=followup_plan.selected.get(slug, ()),
         )
         if cycle.ledger_error is not None:
             findings.append(
@@ -4797,6 +4833,7 @@ def execute_fleet_cycle(
         dispatched_any = False
         in_flight_any = False
         refused_any = False
+        followup_dispatched: list[str] = []
         last_detail: str | None = wave_detail
         primary_story = stories_to_dispatch[0]
         pending = list(stories_to_dispatch)
@@ -4850,6 +4887,7 @@ def execute_fleet_cycle(
                         configured_skips=station_skips,
                         campaign_blocked=campaign_blocked.get(slug, {}),
                         effective_policy=effective_policy,
+                        followups=frozenset(cycle.followup_stories),
                     )
                     follow = dispatch_fleet.plan_station_queue(
                         slug=slug,
@@ -4878,6 +4916,8 @@ def execute_fleet_cycle(
                         )
             elif status is dispatch_fleet.StationCycleStatus.DISPATCHED:
                 dispatched_any = True
+                if story in cycle.followup_stories:
+                    followup_dispatched.append(story)
             elif status is dispatch_fleet.StationCycleStatus.IN_FLIGHT:
                 in_flight_any = True
             if detail:
@@ -4913,6 +4953,7 @@ def execute_fleet_cycle(
                 detail=last_detail,
                 skipped=plan.skipped,
                 refuse_predicate=refuse_predicate_payload,
+                followup_reviews=tuple(followup_dispatched),
             )
         )
 
@@ -5426,6 +5467,7 @@ def run_fleet_drain(
 
     try:
         campaign_blocked, prior_predicates = _campaign_blocked_from_journal(fs, run_dir, run_id)
+        followups_launched = _followups_launched_from_journal(fs, run_dir, run_id)
         campaign_blocked = _reconcile_campaign_blocked(
             vcs=vcs,
             repo_root=repo_root,
@@ -5453,6 +5495,7 @@ def run_fleet_drain(
             policy_flags=policy_flags or None,
             max_in_flight=getattr(args, "max_in_flight", None),
             retry_environment_blocks=bool(getattr(args, "retry_environment_blocks", False)),
+            followups_launched=followups_launched,
         )
         _journal_fleet_cycle(fs, run_dir, run_id, report, findings)
     finally:

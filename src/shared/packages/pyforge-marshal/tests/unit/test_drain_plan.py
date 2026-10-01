@@ -1398,6 +1398,7 @@ _STATION_ROW_KEYS = (
     "stories",
     "wave",
     "held",
+    "followups",
     "would_dispatch",
     "land_only",
     "refusals",

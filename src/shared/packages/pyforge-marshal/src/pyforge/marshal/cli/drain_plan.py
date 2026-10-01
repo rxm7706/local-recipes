@@ -344,7 +344,9 @@ def evaluate_story(reads: _StationReads, story: str) -> StoryEvaluation:
             f"-- landing would be refused{detail}",
         )
 
-    if key in reads.merged_keys():
+    # A follow-up review entry (Story 73.2, CAP-281) is a `done` story BY DESIGN: it is judged by its open
+    # `DW-FRR` row, so the story's first landing on `main` is not "already landed" for it.
+    if story not in reads.cycle.followup_stories and key in reads.merged_keys():
         refuse(
             CODE_ALREADY_LANDED,
             f"{feed!r} is corroborated merged on {dispatch_cli._BASE_REF} while its tracked ledger row is not done "
@@ -482,6 +484,7 @@ def _station_row(
         "stories": [],
         "wave": None,
         "held": [],
+        "followups": [],
         "would_dispatch": False,
         "land_only": [],
         "refusals": [],
@@ -508,6 +511,7 @@ def _plan_station(
     slug = reads.slug
     findings: list[Finding] = []
     payload = _station_row(slug, mode, parallel_cap=cycle.parallel_cap, backlog=cycle.backlog, env_checked=check_env)
+    payload["followups"] = list(cycle.followup_stories)
 
     queue = cycle.queue
     station_skips = cycle.station_skips
@@ -782,6 +786,8 @@ def render_plan_text(verdict: str, data: Mapping[str, object], findings: Sequenc
             lines.append(f"      held {held['story']}: {held['reason']}")
         for story in row.get("land_only") or []:
             lines.append(f"      land-only {story} (MRS-DISP-040 path: lands finished work, launches no session)")
+        for story in row.get("followups") or []:
+            lines.append(f"      follow-up review {story} (an open DW-FRR row; queued after the backlog)")
         for skip in row.get("skipped") or []:
             lines.append(f"      skipped {skip['story']} ({skip['basis']}): {skip['reason']}")
     for finding in findings:
@@ -831,6 +837,15 @@ def run_drain_plan(
     if cycle_slugs.finding is not None:
         findings.append(cycle_slugs.finding)
 
+    # Story 73.2 (CAP-281): the follow-up reviews a fresh campaign's first cycle would queue -- the very read
+    # `execute_fleet_cycle` makes (`--plan` has no campaign, so nothing is launched yet), and never under `--stories`.
+    followup_plan = dispatch_cli.FollowupPlan()
+    if explicit_stories is None and cycle_slugs.slugs:
+        followup_plan = dispatch_cli.plan_followup_reviews(
+            repo_root=repo_root, slugs=cycle_slugs.slugs, vcs=vcs, policy_flags=policy_flags
+        )
+        findings.extend(followup_plan.findings)
+
     for slug in cycle_slugs.slugs:
         try:
             cycle = dispatch_cli.plan_station_cycle(
@@ -850,6 +865,7 @@ def run_drain_plan(
                 process=process,
                 harness=harness,
                 mint_wave_id=lambda: _PLAN_WAVE_ID,
+                followups=followup_plan.selected.get(slug, ()),
             )
             if cycle.ledger_error is not None:
                 payload, finding = _unevaluable(

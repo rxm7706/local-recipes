@@ -381,6 +381,11 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DISP-057",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
+            # Story 73.2 (spec-pyforge-marshal CAP-281): follow-up review scheduling -- 018
+            # WARN (stale row, unreadable ledger/history, a station layer's ignored cap), 019
+            # INFO-severity (follow-ups waiting on the per-campaign cap), both classified WARN.
+            "MRS-DRAIN-018",
+            "MRS-DRAIN-019",
             "MRS-DRAIN-013",
             "MRS-DRAIN-014",
             "MRS-DRAIN-015",
