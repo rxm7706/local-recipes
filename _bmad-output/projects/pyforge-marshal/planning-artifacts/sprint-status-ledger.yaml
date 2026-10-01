@@ -354,7 +354,7 @@ development_status:
   77-1-dispatch-seeds-each-worktree-s-codegraph-index-from-the-shared-base-and-syncs-it: done
   78-1-a-landing-unions-append-only-memlogs-instead-of-refusing: done
   79-1-a-landing-promotes-the-story-s-tier-3-feed-row-and-its-tracked-spec-not-only-the-ledger-twin: done
-  79-2-dispatch-verification-runs-lint-types-and-the-stopgap-surfaces-stop-calling-themselves-one: backlog
+  79-2-dispatch-verification-runs-lint-types-and-the-stopgap-surfaces-stop-calling-themselves-one: done
   8-1-marker-grammar-and-the-per-format-registry: done
   8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: done
   8-3-span-substitution-the-update-primitive: done
