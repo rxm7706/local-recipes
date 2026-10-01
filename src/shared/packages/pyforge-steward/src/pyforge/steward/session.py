@@ -34,6 +34,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .bootstrap import repo_root
 from .interfaces import DutyResult
@@ -43,6 +44,9 @@ _GUILD_ENV_RELATIVE_PATH = Path(".pixi/envs") / _DEFAULT_PIXI_ENV
 _ACTIVE_PROJECT_MARKER_RELATIVE_PATH = Path("_bmad/custom/.active-project")
 _SEED_CHECK_ARGV = ("pixi", "run", "--frozen", "-e", _DEFAULT_PIXI_ENV, "marshal", "seed", "check", "--json")
 _SEED_CHECK_TIMEOUT_S = 60.0
+#: The three context layers AC5 names; ``marshal seed check`` reports one kit entry per
+#: layer, so an absent layer is as non-ok as a missing item (Story 79.1 review).
+_KIT_LAYERS = ("output", "wire", "structure-graph")
 _GH_TIMEOUT_S = 20.0
 _TIER3_FEED_REMEDY = "cp planning-artifacts/sprint-status-ledger.yaml implementation-artifacts/sprint-status.yaml"
 
@@ -131,6 +135,30 @@ def _run_seed_check(root: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _seed_check_kit(payload: object) -> tuple[list[Any] | None, str]:
+    """The ``kit`` array from ``marshal seed check --json``, or why there is none.
+
+    Every ``marshal seed`` verb wraps its report in the schema-stable ``{verb, ok, result}``
+    envelope, and a failed verb answers ``{verb, ok: false, error}`` instead (marshal's
+    ``cli/seed.py``, Story 12.5). So ``kit`` sits under ``result``, never at the top level:
+    reading it there made every real run look unparseable (Story 79.1).
+    """
+    if not isinstance(payload, dict):
+        return None, "returned JSON that is not an object"
+    if payload.get("ok") is False:
+        error = payload.get("error")
+        if not isinstance(error, dict):
+            return None, "reported an error with no message"
+        message = error.get("message") or error.get("type") or "no message"
+        remedy = error.get("remedy")
+        return None, f"reported an error: {message}" + (f" (remedy: {remedy})" if remedy else "")
+    envelope_result = payload.get("result")
+    kit = envelope_result.get("kit") if isinstance(envelope_result, dict) else None
+    if not isinstance(kit, list):
+        return None, "returned no result.kit array"
+    return kit, ""
+
+
 def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
     """Findings (3) token-kit and (5) codegraph-index — ONE ``marshal seed check --json`` call.
 
@@ -148,21 +176,27 @@ def _seed_kit_findings(root: Path) -> tuple[SessionFinding, SessionFinding]:
 
     try:
         payload = json.loads(result.stdout)
-        kit = payload["kit"]
-    except json.JSONDecodeError, KeyError, TypeError:
+    except json.JSONDecodeError, TypeError:
         tail_lines = (result.stderr or result.stdout or "").strip().splitlines()
         tail = "; ".join(tail_lines[-3:]) if tail_lines else "no output"
         detail = f"{' '.join(_SEED_CHECK_ARGV)} returned unparseable output: {tail}"
         unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
         return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
 
+    kit, problem = _seed_check_kit(payload)
+    if kit is None:
+        detail = f"{' '.join(_SEED_CHECK_ARGV)} {problem}"
+        unreachable = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
+        return unreachable, SessionFinding(name="codegraph-index", ok=False, detail=detail, remedy=kit_remedy)
+
     try:
-        non_ok = [item for item in kit if item.get("status") != "ok"]
-        if non_ok:
-            detail = "; ".join(f"{item.get('item')}: {item.get('status')}" for item in non_ok)
-            kit_finding = SessionFinding(name="token-kit", ok=False, detail=detail, remedy=kit_remedy)
+        reported_layers = {item.get("layer") for item in kit}
+        problems = [f"{item.get('item')}: {item.get('status')}" for item in kit if item.get("status") != "ok"]
+        problems += [f"no {layer} layer entry reported" for layer in _KIT_LAYERS if layer not in reported_layers]
+        if problems:
+            kit_finding = SessionFinding(name="token-kit", ok=False, detail="; ".join(problems), remedy=kit_remedy)
         else:
-            detail = "; ".join(f"{item.get('item')}: ok" for item in kit) or "no kit items reported"
+            detail = "; ".join(f"{item.get('item')}: ok" for item in kit)
             kit_finding = SessionFinding(name="token-kit", ok=True, detail=detail)
 
         codegraph_item = next((item for item in kit if item.get("item") == "codegraph-index"), None)

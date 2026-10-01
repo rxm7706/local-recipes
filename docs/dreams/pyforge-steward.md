@@ -488,7 +488,7 @@ Drift — orphaned between stations.
   `}`. Each side's tests fake the other side's real output.
   **Constraints:** no new CAP (defects of CAP-5); steward's stream convention for a failed duty
   stays; marshal calls the steward CLI, never imports it. The seed check's literal `{{ slug }}`
-  findings on a never-adopted repo are a separate marshal seed gap, recorded on marshal's ledger.
+  findings on a never-adopted repo are marshal Story 70.1's, already specced.
   Owner: steward. → Epic 79 / Story 79.1, specced 2026-10-01.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)

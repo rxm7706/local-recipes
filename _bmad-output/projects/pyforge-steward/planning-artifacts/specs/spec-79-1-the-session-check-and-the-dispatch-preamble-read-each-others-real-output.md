@@ -14,6 +14,7 @@ context:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py
   - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_check.py
 deferred: []
 declared_low_risk: false
 ---
@@ -41,14 +42,17 @@ other half never writes. Found 2026-10-01 while dispatching Story 78.1; verified
 **Approach:**
 
 - **Steward:** read `kit` from the envelope's `result`. When the envelope reports `ok: false`, report its
-  `error.message` (and remedy) as the detail. A payload with no envelope or no `kit` stays "unparseable", naming
-  what was missing. AC5's strictness is unchanged: `layer-off`, missing or stale entries are non-ok.
-- **Marshal:** parse the report from stdout; when stdout holds no JSON object, parse stderr. Only when neither parses
-  does the finding fall back to the tail line.
+  `error.message` (and remedy) as the detail. A payload with no envelope or no `kit` is non-ok, naming what was
+  missing. AC5's strictness is unchanged: `layer-off`, missing or stale entries are non-ok, and so is a context
+  layer (`output`, `wire`, `structure-graph`) with no entry at all.
+- **Marshal:** parse the report from stdout, else stderr: the first JSON object opening at the start of a line, so
+  a warning before it or a line after it does not hide it. Only when neither stream holds one does the finding
+  fall back to the tail line.
 - **Tests** fake the other side's real output: steward's fakes use the envelope; marshal's fakes put a failing
-  report on stderr with an empty stdout. A steward test parses the real `marshal seed check --json` output when the
-  `marshal` CLI is on PATH (the `pyforge-guild` env) and skips otherwise, so the two halves cannot drift silently
-  again.
+  report on stderr with an empty stdout. Each side pins what the other reads: marshal's seed-check CLI test pins
+  the envelope's `result.kit` entries (`item`, `layer`, `status`), and steward's CLI test pins a failing
+  `--json` report on stderr; both run in their station's own suite. A steward test also parses the real
+  `marshal seed check --json` output where the `marshal` CLI is on PATH (`-e pyforge-guild`) and skips elsewhere.
 
 Ledger key: `79-1-the-session-check-and-the-dispatch-preamble-read-each-others-real-output`.
 Type / Effort / Deps: fix / S / —.
@@ -64,9 +68,12 @@ Type / Effort / Deps: fix / S / —.
 - Given the envelope's kit reports `ccr-store: layer-off` and `codegraph-index: stale` When the session check runs Then token-kit is non-ok naming `ccr-store: layer-off`, and codegraph-index is non-ok naming `stale`
 - Given the envelope reports `ok: false` with an `error` When the session check runs Then both kit findings are non-ok and carry the error's message
 - Given stdout that is not JSON, or JSON with no `result.kit` When the session check runs Then both kit findings are non-ok and say what was missing
+- Given the envelope's kit has no entry for a context layer (an empty or partial kit) When the session check runs Then token-kit is non-ok naming each absent layer
+- Given `marshal seed check --json` runs When its envelope is read Then `result.kit` holds three entries, `caveman-skill`/`output`, `ccr-store`/`wire`, `codegraph-index`/`structure-graph`, each with a `status` (pinned in marshal's suite)
 - Given the `marshal` CLI is installed When the real `marshal seed check --json` runs against this repo Then the session check's kit findings carry real kit statuses, never "unparseable"
 - Given `steward session check --json` exits 1 with its report on stderr and an empty stdout When the dispatch preamble runs Then MRS-DISP-049 names each non-ok finding
 - Given a report on stdout When the dispatch preamble runs Then it is read from stdout as before
+- Given a warning line before the report, or a line after it When the dispatch preamble runs Then MRS-DISP-049 still names the non-ok findings
 - Given neither stream holds a JSON report When the dispatch preamble runs Then MRS-DISP-049 carries the tail line as before
 - Given either fix is reverted When its new tests run Then they fail (mutation)
 
@@ -98,6 +105,8 @@ Type / Effort / Deps: fix / S / —.
 | seed error | envelope `ok: false`, `error` | both non-ok, error message | — |
 | bare payload | `{"kit": [...]}` (no envelope) | both non-ok, "no result.kit" | — |
 | failing session report | exit 1, JSON on stderr, stdout empty | MRS-DISP-049 names the non-ok findings | — |
+| noisy stderr | a warning line, then the report, then a trailer | MRS-DISP-049 names the non-ok findings | — |
+| absent layer | envelope, kit missing the `wire` entry | token-kit non-ok, "no wire layer entry reported" | — |
 | passing report on stdout | exit 1, JSON on stdout | read from stdout | — |
 | garbage | neither stream parses | MRS-DISP-049 with the tail line | — |
 
@@ -112,8 +121,10 @@ Ledger key: `79-1-the-session-check-and-the-dispatch-preamble-read-each-others-r
 Ledger status at mint: `backlog`.
 Deps: —.
 Flag: none. This is a `fix` (`spec-feature-flag-governance` Q1).
-Out of scope, recorded on marshal's deferred-work ledger: `marshal seed check` on a repo with no seed state reports
-the manifest's init-only `{{ slug }}` entries as HARD `artifact-missing` under their literal, unrendered paths.
+Out of scope: `marshal seed check` on a repo with no seed state reports the manifest's init-only `{{ slug }}` entries
+as HARD `artifact-missing` under their literal paths. That is marshal Story 70.1
+(`spec-70-1-seed-check-judges-the-paths-the-manifest-means-never-its-placeholders.md`, `backlog`), which already names
+steward's session check as a reader; no second record is added.
 
 ## Verification
 
