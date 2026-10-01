@@ -47,6 +47,31 @@ def forge() -> GhForge:
 _REPO = ForgeRef("acme/widgets")
 
 
+# --- the port's value types (ports/forge.py) -------------------------------------
+
+
+@pytest.mark.parametrize("value", ["", None, 7])
+def test_forge_ref_refuses_a_value_that_is_not_a_non_empty_str(value):
+    with pytest.raises(ValueError, match="value must be a non-empty str"):
+        ForgeRef(value)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"number": 0}, "number must be a positive int"),
+        ({"number": True}, "number must be a positive int"),
+        ({"url": ""}, "url must be a non-empty str"),
+        ({"state": ""}, "state must be a non-empty str"),
+        ({"base": ""}, "base must be a non-empty str"),
+    ],
+)
+def test_pr_info_refuses_a_malformed_field(kwargs, message):
+    fields = {"number": 42, "url": "https://example/pr/42", "state": "open", "base": "main", **kwargs}
+    with pytest.raises(ValueError, match=message):
+        PrInfo(**fields)
+
+
 # --- find_open_pr -------------------------------------------------------------
 
 
