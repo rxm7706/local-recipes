@@ -2,7 +2,7 @@
 title: '66.1: Finalize carries a recommended follow-up review into the deferred-work ledger'
 type: 'fix'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'a240511f5b149a47d6972d4a335f591419d0d840'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -84,9 +84,9 @@ Type / Effort / Deps: fix / S / —.
 
 ## Tasks & Acceptance
 
-- [ ] `core/deferred_work.py` -- the pure candidate / selection / rendering / append functions above (AD-4).
-- [ ] `dispatch_land_finalize/__main__.py` -- the carry read after the resync, the base-text rule, one locked publish holding intake rows and the row, the payload id, WARN-only failures.
-- [ ] `tests/unit/test_deferred_work.py`, `tests/unit/test_dispatch_land_finalize.py` -- one test per acceptance criterion and I/O-matrix row, plus a test per rule in Design Notes (each base-text branch, the lock-contended WARN, the refused-intake restore, the both-published labels, the dispatch-worktree-only spec) and ONE real-git test (the `_git_79` helpers) that finalizes a flagged landing against a real bare `origin`, proving the published ledger is `origin/main`'s text plus the row while the primary's copy is stale. The mutation (carry call removed) must turn the 51.2 fixture red.
+- [x] `core/deferred_work.py` -- the pure candidate / selection / rendering / append functions above (AD-4).
+- [x] `dispatch_land_finalize/__main__.py` -- the carry read after the resync, the base-text rule, one locked publish holding intake rows and the row, the payload id, WARN-only failures.
+- [x] `tests/unit/test_deferred_work.py`, `tests/unit/test_dispatch_land_finalize.py` -- one test per acceptance criterion and I/O-matrix row, plus a test per rule in Design Notes (each base-text branch, the lock-contended WARN, the refused-intake restore, the both-published labels, the dispatch-worktree-only spec) and ONE real-git test (the `_git_79` helpers) that finalizes a flagged landing against a real bare `origin`, proving the published ledger is `origin/main`'s text plus the row while the primary's copy is stale. The mutation (carry call removed) must turn the 51.2 fixture red.
 
 ## Spec Change Log
 
