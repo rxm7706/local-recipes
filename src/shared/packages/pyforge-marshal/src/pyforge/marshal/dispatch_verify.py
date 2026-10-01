@@ -178,7 +178,8 @@ def run_verify_commands_only(
     that excludes those layers from a merge-tree preview does not extend to
     it: a merge-tree preview worktree is exactly the tree the guard needs to
     check before landing. As a result this can no longer return two empty
-    tuples -- the guard is always present."""
+    tuples -- the derived guard (and, Story 79.2, ``lint-types``) is always
+    present."""
     command_reports: list[dict[str, object]] = []
     findings: list[Finding] = []
     for command in _verify_commands_with_surface_guard(effective):
@@ -245,9 +246,9 @@ def evaluate_dispatch_verification(
     scope_changed_files: tuple[str, ...] = ()
     scope_effective_surface: tuple[str, ...] = ()
     scope_check_completed = False
-    # Story 53.1: `commands` can no longer be empty -- the S-13.7 guard is
-    # unconditionally appended above, so a station with a bare
-    # `verify_commands = []` now runs the guard alone rather than nothing.
+    # Story 53.1 / 79.2: `commands` can no longer be empty -- the S-13.7 guard
+    # and `lint-types` are unconditionally appended above, so a station with a
+    # bare `verify_commands = []` now runs those two alone rather than nothing.
     # This mirrors `harness_bmadloop.render_policy_toml`, which has never
     # checked for emptiness before appending it either. The `not commands`
     # branch stays as defensive dead code (never reachable today) rather
@@ -337,10 +338,21 @@ def evaluate_dispatch_verification(
             }
 
     if command_reports and scope_check_completed:
+        # Story 79.2: the derived `lint-types` lane never reaches the 28.22
+        # pre-existing reclassifier -- dropping its report leaves the reclassifier
+        # no output to read for that command, so its MRS-GATE-001 stands. The
+        # lane runs ruff/mypy per package (cwd = the package dir), so every path
+        # in its output is package-relative (`src/pyforge/scribe/catalog.py`) and
+        # can never match the story's repo-relative changed files: "outside the
+        # story's blast radius" is meaningless here, and a red `lint-types` must
+        # refuse the landing (spec-79-2 AC2), never downgrade to MRS-GATE-014.
+        reclassifiable_reports = tuple(
+            report for report in command_reports if report.get("command") != _LINT_TYPES_COMMAND
+        )
         findings = list(
             reclassify_pre_existing_gate_findings(
                 tuple(findings),
-                command_reports=tuple(command_reports),
+                command_reports=reclassifiable_reports,
                 changed_files=scope_changed_files,
                 effective_surface=scope_effective_surface,
                 project_slug=project_slug,
@@ -349,15 +361,14 @@ def evaluate_dispatch_verification(
 
     if spec_text is not None:
         declared_commands = spec_binding.parse_success_signal(spec_text)
-        # Story 53.1: bind against the SAME widened `commands` the loop
+        # Story 53.1 / 79.2: bind against the SAME widened `commands` the loop
         # above actually ran, not the bare station policy -- the derived
-        # S-13.7 guard is an extra `policy_commands` entry no tracked spec
-        # declares, and `check_spec_binding`'s one-directional comparison
-        # already treats an undeclared extra as implicit, never a finding
-        # (see its own docstring). Binding against the narrower
-        # `effective.verify_commands.value` would work too (the guard is
-        # never in `declared_commands` either), but this keeps "what ran"
-        # and "what was checked" the same tuple.
+        # S-13.7 guard and `lint-types` are extra `policy_commands` entries no
+        # tracked spec has to declare, and `check_spec_binding`'s
+        # one-directional comparison already treats an undeclared extra as
+        # implicit, never a finding (see its own docstring). A spec that does
+        # declare one of them still binds: it is among the widened commands.
+        # This keeps "what ran" and "what was checked" the same tuple.
         binding_findings = gate.check_spec_binding(declared_commands, commands)
         findings.extend(binding_findings)
         data["spec_binding"] = {

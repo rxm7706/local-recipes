@@ -164,7 +164,7 @@ class _StationReads:
         return str(self.effective_policy.merge_subject_template.value)
 
     def verify_commands(self) -> tuple[str, ...]:
-        """The commands the post-session gate runs: policy widened with the guard."""
+        """The commands the post-session gate runs: policy widened with the S-13.7 guard and ``lint-types``."""
         return _verify_commands_with_surface_guard(self.effective_policy)
 
     def epics_block(self, key: StoryKey) -> str | None:

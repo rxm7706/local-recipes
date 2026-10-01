@@ -100,8 +100,10 @@ verify_commands = [
 # station to hit this: Story 21.3 was the first story on ANY station to reach
 # marshal's fully-automated dispatch->verify->land path). Story 28.1 (2026-08-30)
 # was pyforge-marshal's own first story through that path and hit the same wall.
-# Scoped to what 28.1 actually touches, not a wildcard; widen per-story as later
-# Epic 28 stories land, same pattern atlas used.
+# Every entry below declares the station-wide surface -- the convention each later
+# marshal epic restates, not a per-story allowlist and not a stopgap. A declared
+# entry replaces the default outright (never merged with it), so each one repeats
+# the default surface and adds only what its own epic touches.
 [epic_surfaces]
 "22" = [
   # Widened 2026-08-31 for consistency with epic 28's station-wide surface and
