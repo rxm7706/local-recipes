@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from pyforge.marshal.core.dispatch_harness_done import (
+    FollowupReview,
     blocks_harness_relaunch,
     followup_review_recommended,
     has_auto_run_result,
+    is_followup_review_spec,
     land_fail_operator_message,
     parse_baseline_revision,
     parse_spec_status,
@@ -115,3 +117,49 @@ def test_operator_message_names_pr_and_chain() -> None:
     assert "CHAIN" in message
     assert "1017" in message
     assert "41-2-query-plane" in message
+
+
+# --- the follow-up review marker (Story 73.1, CAP-281) ----------------------
+
+
+def test_is_followup_review_spec_needs_done_and_an_explicit_truthy_flag() -> None:
+    assert is_followup_review_spec("---\nstatus: done\nfollowup_review_recommended: true\n---\n") is True
+    assert is_followup_review_spec("---\nstatus: done  # landed\nfollowup_review_recommended: yes\n---\n") is True
+    assert is_followup_review_spec("---\nstatus: done\nfollowup_review_recommended: false\n---\n") is False
+    assert is_followup_review_spec("---\nstatus: done\n---\n") is False
+    assert is_followup_review_spec("---\nstatus: in-progress\nfollowup_review_recommended: true\n---\n") is False
+    assert is_followup_review_spec("no frontmatter at all") is False
+
+
+def test_is_followup_review_spec_is_the_pairing_the_relaunch_gate_lets_through() -> None:
+    """Story 29.2's gate and the marker read the same two facts: a `done` spec the gate does NOT block is
+    exactly one the marker marks."""
+    text = "---\nstatus: done\nfollowup_review_recommended: true\n---\n"
+    assert blocks_harness_relaunch(parse_spec_status(text), followup_review_recommended(text)) is False
+    assert is_followup_review_spec(text) is True
+
+
+def test_followup_review_round_trips_through_the_launch_intent_payload() -> None:
+    marker = FollowupReview(dw_id="DW-FRR-51-2")
+    assert marker.to_intent_payload() == {"followup_review": {"dw_id": "DW-FRR-51-2"}}
+    assert FollowupReview.from_intent_payload({"story_key": "51.2", **marker.to_intent_payload()}) == marker
+
+
+def test_followup_review_without_a_row_round_trips_a_null_id() -> None:
+    marker = FollowupReview(dw_id=None)
+    assert marker.to_intent_payload() == {"followup_review": {"dw_id": None}}
+    assert FollowupReview.from_intent_payload(marker.to_intent_payload()) == FollowupReview(dw_id=None)
+    assert FollowupReview() == FollowupReview(dw_id=None)
+
+
+def test_a_launch_payload_without_the_marker_is_a_normal_run() -> None:
+    assert FollowupReview.from_intent_payload({"story_key": "51.2", "model": "x"}) is None
+    assert FollowupReview.from_intent_payload({}) is None
+
+
+def test_a_malformed_marker_never_reads_a_row_id_out_of_a_non_string() -> None:
+    assert FollowupReview.from_intent_payload({"followup_review": True}) is None
+    assert FollowupReview.from_intent_payload({"followup_review": "DW-FRR-51-2"}) is None
+    assert FollowupReview.from_intent_payload({"followup_review": {"dw_id": 7}}) == FollowupReview(dw_id=None)
+    assert FollowupReview.from_intent_payload({"followup_review": {"dw_id": ""}}) == FollowupReview(dw_id=None)
+    assert FollowupReview.from_intent_payload({"followup_review": {}}) == FollowupReview(dw_id=None)

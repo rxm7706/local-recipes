@@ -77,7 +77,13 @@ ledger's ROW HEADINGS (``_FOLLOWUP_REVIEW_HEADING_RE``): ``DW-FRR-51-20`` never
 hides ``DW-FRR-51-2``, and a prose mention of an id (the live marshal ledger
 names ``DW-FRR-51-2`` in the ``verified:`` line of the ``DW-FU-51-2-1`` row) is
 not the row. The status is read through the harness guard's own reader
-(``dispatch_harness_done.parse_spec_status``), the one that pairs with the flag."""
+(``dispatch_harness_done.parse_spec_status``), the one that pairs with the flag.
+
+The row's other end (Story 73.1, CAP-281): a launch on a ``done`` spec whose flag is still true is a
+follow-up review run, and ``open_followup_review_id`` reads the open row it serves from the same
+heading-anchored scan; when that run lands, ``close_followup_review_row`` renders the row closed
+(``status: closed`` with ``resolved:`` naming the landing). Both are pure -- the lock, the publish and
+the date stay in ``dispatch_land_finalize`` / ``cli/dispatch.py``."""
 
 from __future__ import annotations
 
@@ -393,3 +399,70 @@ def append_ledger_entry(ledger_text: str, entry_text: str) -> str:
     """``entry_text`` after ``ledger_text``, one blank line between (``cli/land.py``'s own separation)."""
     prefix = ledger_text.rstrip("\n")
     return (prefix + "\n\n" if prefix else "") + entry_text
+
+
+# -- the dispatch twin's row, read and closed (Story 73.1, CAP-281) -----------------------------------
+
+#: A row's own ``status:`` field line -- the rendered ``  status: open`` (two-space indent), a bullet
+#: ``- status: open`` and a column-0 ``status: open`` alike. ``lead`` is everything before the key.
+_ROW_STATUS_LINE_RE = re.compile(r"^(?P<lead>[ \t]*(?:-[ \t]+)?)status:[ \t]*(?P<value>[^\n]*)$", re.MULTILINE)
+
+_STATUS_OPEN = "open"
+_STATUS_CLOSED = "closed"
+
+#: ``resolved:`` text when a landing names nothing (a blank subject) -- the line must still say what closed it.
+_UNNAMED_LANDING = "the follow-up review landed"
+
+
+def _status_token(raw_value: str) -> str:
+    """A ``status:`` value's TOKEN: the text before any ``#`` comment, stripped."""
+    return raw_value.partition("#")[0].strip()
+
+
+def _open_followup_review_rows(ledger_text: str, row_id: str) -> tuple[re.Match[str], ...]:
+    """The ``status:`` line of every ``### DW-FRR-<story>:`` row headed ``row_id`` whose status reads ``open``.
+
+    Heading-anchored and boundary-aware, exactly like ``_tracked_followup_review_ids`` (``DW-FRR-51-20`` is
+    never ``DW-FRR-51-2``; a prose mention is not a row). A row's block runs from its heading to the next
+    heading of any level, and its status is the first ``status:`` field line inside it."""
+    found: list[re.Match[str]] = []
+    for heading in _FOLLOWUP_REVIEW_HEADING_RE.finditer(ledger_text):
+        if heading.group("id").rstrip("-") != row_id:
+            continue
+        next_heading = _NEXT_HEADING_RE.search(ledger_text, heading.end())
+        block_end = next_heading.start() if next_heading is not None else len(ledger_text)
+        status_line = _ROW_STATUS_LINE_RE.search(ledger_text, heading.end(), block_end)
+        if status_line is not None and _status_token(status_line.group("value")) == _STATUS_OPEN:
+            found.append(status_line)
+    return tuple(found)
+
+
+def open_followup_review_id(ledger_text: str, story_key: StoryKey | str) -> str | None:
+    """``DW-FRR-<story>`` when ``ledger_text`` holds a row headed that id whose ``status:`` reads ``open``,
+    else ``None`` (Story 73.1): the row a follow-up review run serves. ``story_key`` is a ``StoryKey`` or
+    the story key as text (``"51.2"``). A closed row, an absent one and a prose mention of the id are all
+    ``None``; no clock, no I/O (AD-4)."""
+    key = normalize(story_key) if isinstance(story_key, str) else story_key
+    row_id = followup_review_id(key)
+    return row_id if _open_followup_review_rows(ledger_text, row_id) else None
+
+
+def close_followup_review_row(ledger_text: str, dw_id: str, *, resolved_date: str, landing: str) -> str | None:
+    """``ledger_text`` with the open ``DW-FRR-<story>`` row ``dw_id`` rendered closed (Story 73.1): its
+    ``status: open`` line becomes ``resolved: <date> (dispatch-land finalize: <landing>)`` above
+    ``status: closed`` (the order the ledger's closed rows already use), at the status line's own indent.
+    ``landing`` is the merge sha or subject that closed it, collapsed onto one line.
+
+    ``None`` when no row headed ``dw_id`` reads ``open`` -- absent, already closed or only mentioned in
+    prose -- so a re-run of finalize closes nothing twice. Only the first open row of that id is closed.
+    Pure: the caller supplies the date and decides what to publish (AD-4)."""
+    rows = _open_followup_review_rows(ledger_text, dw_id)
+    if not rows:
+        return None
+    status_line = rows[0]
+    lead = status_line.group("lead")
+    named = " ".join(landing.split()) or _UNNAMED_LANDING
+    replacement = (
+        f"{' ' * len(lead)}resolved: {resolved_date} (dispatch-land finalize: {named})\n{lead}status: {_STATUS_CLOSED}"
+    )
+    return ledger_text[: status_line.start()] + replacement + ledger_text[status_line.end() :]

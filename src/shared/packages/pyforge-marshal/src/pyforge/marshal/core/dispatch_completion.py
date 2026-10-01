@@ -62,6 +62,28 @@ def is_spec_only_narration(changed_paths: tuple[str, ...], spec_relative_path: s
     return set(changed_paths) == {spec_relative_path}
 
 
+def merge_subject_ref(baseline_head_sha: str, ref: str, *, followup_review: bool) -> str:
+    """The git revision whose commit subjects a run's merge reads are scoped to (Story 73.1, CAP-281).
+
+    A normal run reads every subject reachable from ``ref`` (``origin/main``). A follow-up review run
+    (``core.dispatch_harness_done.FollowupReview``) runs on a story that already landed once, so the
+    story's own merge subject is already on ``ref``; it counts only what reached ``ref`` after the run
+    forked -- ``<baseline>..<ref>`` -- where that first merge is an ancestor of the baseline and drops
+    out, and the run's own merge does not."""
+    return f"{baseline_head_sha}..{ref}" if followup_review else ref
+
+
+def narration_spec_path(spec_relative_path: str | None, *, followup_review: bool) -> str | None:
+    """The spec path a narration check (``is_spec_only_narration`` / ``has_git_progress``) is given
+    (Story 73.1, CAP-281): ``spec_relative_path`` for a normal run, ``None`` for a follow-up review run.
+
+    A review that patches nothing changes only its own story spec -- the flag, ``review_loop_iteration``,
+    its review log -- and for that run that diff is its record, not narration (Story 51.4's rule is for a
+    harness that only rewrote its spec instead of doing the work). ``None`` makes both checks read a
+    spec-only diff as progress."""
+    return None if followup_review else spec_relative_path
+
+
 def has_git_progress(git: DispatchGitFacts, *, spec_relative_path: str | None = None) -> bool:
     """True when git shows work beyond the launch baseline.
 

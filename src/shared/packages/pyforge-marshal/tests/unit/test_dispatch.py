@@ -1839,6 +1839,177 @@ def test_followup_true_still_launches(tmp_path: Path, monkeypatch: pytest.Monkey
     assert harness.calls
 
 
+# --- Story 73.1 (CAP-281): a launch on a `done` spec that still recommends a review is a follow-up run ---
+
+_FOLLOWUP_SLUG = "pyforge-marshal"
+_FOLLOWUP_STORY = "51-2-the-landing-record"
+_FOLLOWUP_SPEC = "---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\n---\n# spec\n"
+
+
+def _seed_followup_spec(repo: Path, text: str = _FOLLOWUP_SPEC) -> Path:
+    """The story's tracked spec in the primary checkout; returns the station's planning-artifacts dir."""
+    specs = dispatch_core.planning_specs_dir(repo, _FOLLOWUP_SLUG)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{_FOLLOWUP_STORY}.md").write_text(text, encoding="utf-8")
+    return specs.parent
+
+
+def _seed_followup_ledger(planning_artifacts: Path, *, status: str = "open") -> None:
+    """A station ledger holding the ``DW-FRR-51-2`` row exactly as finalize's carry renders it (Story 66.1)."""
+    from pyforge.marshal.core import deferred_work
+
+    candidate = deferred_work.followup_review_candidate(
+        _FOLLOWUP_SPEC,
+        dispatch_core.normalize(_FOLLOWUP_STORY),
+        f"_bmad-output/projects/{_FOLLOWUP_SLUG}/planning-artifacts/specs/spec-{_FOLLOWUP_STORY}.md",
+    )
+    assert candidate is not None
+    row = deferred_work.render_followup_review_entry(candidate, promoted_date="2026-09-28")
+    (planning_artifacts / "deferred-work-ledger.md").write_text(
+        "# Deferred work\n\n" + row.replace("status: open", f"status: {status}"), encoding="utf-8"
+    )
+
+
+def _launch_intent(fs: FakeFs) -> dict:
+    """The payload of the launch INTENT the fake fs journaled."""
+    for _path, line, _fsync in fs.appended:
+        entry = json.loads(line)
+        if entry["kind"] == "dispatch-launch" and entry["phase"] == "intent":
+            return entry["payload"]
+    raise AssertionError("no dispatch-launch INTENT was journaled")
+
+
+def _launch_followup_story(repo: Path, monkeypatch: pytest.MonkeyPatch, fs: FakeFs | None = None):
+    _init_git_repo(repo, scope_slug=_FOLLOWUP_SLUG)
+    monkeypatch.chdir(repo)
+    fs = fs if fs is not None else FakeFs()
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=_FOLLOWUP_SLUG,
+        story=_FOLLOWUP_STORY,
+        fs=fs,
+        vcs=FakeVcs(repo),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    return fs, harness, attempt
+
+
+def test_a_follow_up_review_launch_journals_the_marker_with_the_open_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_ledger(_seed_followup_spec(tmp_path))
+
+    fs, harness, attempt = _launch_followup_story(tmp_path, monkeypatch)
+
+    # `bmad-build-auto` is launched on the `done` spec, and the INTENT names the row it serves.
+    assert len(harness.calls) == 1
+    assert attempt.data["session_pid"] == 4242
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": "DW-FRR-51-2"}
+
+
+def test_a_follow_up_review_launch_without_a_row_journals_a_null_row_id(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    planning = _seed_followup_spec(tmp_path)
+    (planning / "deferred-work-ledger.md").write_text("# Deferred work\n\nnothing carried\n", encoding="utf-8")
+
+    fs, harness, _attempt = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert len(harness.calls) == 1
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": None}
+
+
+def test_a_follow_up_review_launch_without_a_ledger_file_still_launches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+
+    fs, harness, _attempt = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert len(harness.calls) == 1
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": None}
+
+
+def test_a_follow_up_review_launch_does_not_name_a_closed_row(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_ledger(_seed_followup_spec(tmp_path), status="closed")
+
+    fs, _harness, _attempt = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": None}
+
+
+def test_a_follow_up_review_launch_survives_an_unreadable_ledger(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_ledger(_seed_followup_spec(tmp_path))
+
+    class UnreadableLedgerFs(FakeFs):
+        def read_text(self, path: Path) -> str | None:
+            if path.name == "deferred-work-ledger.md":
+                raise FsError(f"read refused (test double): {path}")
+            return super().read_text(path)
+
+    fs, harness, _attempt = _launch_followup_story(tmp_path, monkeypatch, UnreadableLedgerFs())
+
+    assert len(harness.calls) == 1
+    assert _launch_intent(fs)["followup_review"] == {"dw_id": None}
+
+
+def test_a_done_spec_with_the_flag_false_journals_no_marker_and_stays_land_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 29.2's land-only path is unchanged: no harness launch, so no launch INTENT and no marker."""
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_ledger(_seed_followup_spec(tmp_path, _DONE_SPEC))
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.LANDED, "PR #9", None),
+    )
+
+    fs, harness, attempt = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert harness.calls == []
+    assert attempt.data["land_verdict"] == "landed"
+    assert [line for _path, line, _fsync in fs.appended if "dispatch-launch" in line] == []
+
+
+def test_a_normal_launch_journals_no_follow_up_marker(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    # Even with an open row for the story in the ledger, a spec that is not `done` is a normal run.
+    _seed_followup_ledger(_seed_followup_spec(tmp_path, _READY_SPEC))
+
+    fs, harness, _attempt = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert len(harness.calls) == 1
+    assert "followup_review" not in _launch_intent(fs)
+
+
+def test_a_done_spec_that_never_asked_for_a_review_is_not_a_follow_up_even_with_a_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The marker is derived from the spec's own frontmatter: a spec reading `status: done` with the flag
+    absent is blocked by Story 29.2's gate, never launched as a review."""
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_ledger(_seed_followup_spec(tmp_path, "---\nstatus: done\ndifficulty: medium\n---\n# spec\n"))
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.LANDED, "PR #9", None),
+    )
+
+    fs, harness, _attempt = _launch_followup_story(tmp_path, monkeypatch)
+
+    assert harness.calls == []
+    assert [line for _path, line, _fsync in fs.appended if "dispatch-launch" in line] == []
+
+
 def test_relocated_spec_path_maps_primary_tree_onto_worktree(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     wt = tmp_path / "wt"

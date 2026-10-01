@@ -25,8 +25,11 @@ from ..core.dispatch_completion import (
     DispatchSessionVerdict,
     has_git_progress,
     is_spec_only_narration,
+    merge_subject_ref,
+    narration_spec_path,
 )
 from ..core.dispatch_harness_done import (
+    FollowupReview,
     has_auto_run_result,
     parse_baseline_revision,
     parse_blocking_condition,
@@ -183,6 +186,16 @@ def _launch_story_started_ts(folded, run_id: str) -> str | None:
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
         if entry.run_id == run_id and entry.phase == Phase.INTENT:
             return entry.ts
+    return None
+
+
+def _followup_review_from_launch(folded, run_id: str) -> FollowupReview | None:
+    """The follow-up review marker this run's own launch INTENT carries (Story 73.1, CAP-281), or ``None``
+    for a normal run -- the marker is read back from the journal, never re-derived from a spec the run
+    itself rewrites (the review flips its own flag to ``false``)."""
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
+        if entry.run_id == run_id and entry.phase == Phase.INTENT:
+            return FollowupReview.from_intent_payload(entry.payload)
     return None
 
 
@@ -348,7 +361,12 @@ def gather_dispatch_git_facts(
     project_slug: str,
     baseline_head_sha: str,
     merge_subject_template: str,
+    followup_review: bool = False,
 ) -> DispatchGitFacts:
+    """``followup_review`` (Story 73.1, CAP-281): the run is a follow-up review of a story that already
+    landed, so ``story_merged_on_main`` counts only the merge subjects that reached ``origin/main`` after
+    the run's baseline (``merge_subject_ref``) -- the story's first merge is not this run's. A normal run
+    (the default) reads ``origin/main`` whole, as before."""
     current_head_sha = vcs.worktree_head_sha(worktree)
     changed_paths = vcs.changed_files(repo_root, worktree, base=_BASE_REF)
     # Story 22.9: the ONE branch derivation, station-scoped, with the
@@ -391,7 +409,9 @@ def gather_dispatch_git_facts(
         else False
     )
     branch_merged = raw_branch_merged and current_head_sha != baseline_head_sha
-    subjects = vcs.commit_subjects(repo_root, ORIGIN_MAIN)
+    subjects = vcs.commit_subjects(
+        repo_root, merge_subject_ref(baseline_head_sha, ORIGIN_MAIN, followup_review=followup_review)
+    )
     known_keys = _load_known_story_keys(fs, repo_root=repo_root, project_slug=project_slug)
 
     def _spec_status_for(candidate_key: StoryKey) -> str | None:
@@ -566,13 +586,16 @@ def _spec_land_block_reason(
     story_key: str,
     worktree: Path,
     git_facts: DispatchGitFacts,
+    followup_review: bool = False,
 ) -> str | None:
     """Non-``None`` when the worktree spec blocks verify/land (Story 51.4).
 
     A deliberate ``status: blocked`` always blocks (the 27.3 incident); so
     does a diff that collapses to the tracked spec file itself -- narration,
     not work (the 51.3 incident: a harness-ceiling termination that only
-    ever rewrote its own spec's ``ready -> in-progress`` flip).
+    ever rewrote its own spec's ``ready -> in-progress`` flip). A follow-up
+    review run (Story 73.1, CAP-281) is the exception to the second: a review
+    that patches nothing changes only its own spec, which is its record.
     """
     spec_relative_path, spec_text = _worktree_story_spec(
         fs=fs,
@@ -584,7 +607,10 @@ def _spec_land_block_reason(
     if spec_text is None:
         return None
     if not (
-        parse_spec_status(spec_text) == "blocked" or is_spec_only_narration(git_facts.changed_paths, spec_relative_path)
+        parse_spec_status(spec_text) == "blocked"
+        or is_spec_only_narration(
+            git_facts.changed_paths, narration_spec_path(spec_relative_path, followup_review=followup_review)
+        )
     ):
         return None
     return parse_blocking_condition(spec_text) or ("harness produced no changes beyond the tracked spec")
@@ -863,8 +889,12 @@ def _run_supervisor_finalize_sequence(
     session_log: str | None,
     merge_subject_template: str,
     folded,
+    followup_review: FollowupReview | None = None,
 ) -> tuple[int, bool]:
-    """Commit, push, and verify harness-leftover work (Story 28.24)."""
+    """Commit, push, and verify harness-leftover work (Story 28.24).
+
+    ``followup_review`` (Story 73.1, CAP-281) is the run's follow-up review marker, or ``None``: it scopes
+    the repository facts this sequence re-gathers and the spec-only block check to the run's own branch."""
     trigger = classify_finalize_trigger(session_log).value
     committed = False
     pushed = False
@@ -910,6 +940,7 @@ def _run_supervisor_finalize_sequence(
             project_slug=slug,
             baseline_head_sha=git_facts.baseline_head_sha,
             merge_subject_template=merge_subject_template,
+            followup_review=followup_review is not None,
         )
     except VcsCommandError, ValueError:
         pass
@@ -986,6 +1017,7 @@ def _run_supervisor_finalize_sequence(
         story_key=story_key,
         worktree=worktree,
         git_facts=git_facts,
+        followup_review=followup_review is not None,
     )
     if block_reason is not None:
         counter = _journal_dispatch_blocked(
@@ -1104,8 +1136,13 @@ def _run_and_journal_landing(
     verification_verdict: DispatchVerificationVerdict,
     merge_subject_template: str,
     wait_heartbeat: _WaitHeartbeat | None = None,
+    followup_review: FollowupReview | None = None,
 ) -> int:
     """Land a verified dispatch via Epic 4 machinery and journal (Story 22.4).
+
+    ``followup_review`` (Story 73.1, CAP-281), when the run is a follow-up review, is handed to
+    ``execute_dispatch_land`` so it judges ALREADY_LANDED by the run's own head and closes the row; a
+    normal run passes the landing nothing.
 
     ``wait_heartbeat`` (Story 80.1, CAP-284) is what the landing's check wait does on each tick; the
     counter the ticks consume carries on into the landing's own intent and outcome entries."""
@@ -1127,6 +1164,9 @@ def _run_and_journal_landing(
             wait_heartbeat.publish()
 
     effective = compose_dispatch_policy(slug, repo_root)
+    followup_kwargs: dict[str, FollowupReview] = (
+        {"followup_review": followup_review} if followup_review is not None else {}
+    )
     landing_result, envelope = execute_dispatch_land(
         project_slug=slug,
         story_key=story_key,
@@ -1139,6 +1179,7 @@ def _run_and_journal_landing(
         fs=fs,
         vcs=vcs,
         process=process,
+        **followup_kwargs,
     )
     intent_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
@@ -1218,9 +1259,13 @@ def _land_or_journal_block(
     merge_subject_template: str,
     session_alive: bool = False,
     publish_heartbeat: Callable[[], None] | None = None,
+    followup_review: FollowupReview | None = None,
 ) -> int:
     """Land, unless the worktree spec is blocked/narration-only (Story 51.4,
     spec-pyforge-marshal CAP-252 -- defense in depth).
+
+    ``followup_review`` (Story 73.1, CAP-281) is the run's follow-up review marker, or ``None``: a spec-only
+    diff is that run's record, not narration, and the landing is told it is a follow-up.
 
     ``session_alive`` and ``publish_heartbeat`` (Story 80.1, CAP-284) feed the landing's wait tick:
     the heartbeat observation as the tick loop would write it, and the run publisher's heartbeat.
@@ -1239,6 +1284,7 @@ def _land_or_journal_block(
         story_key=story_key,
         worktree=worktree,
         git_facts=git_facts,
+        followup_review=followup_review is not None,
     )
     if block_reason is not None:
         return _journal_dispatch_blocked(
@@ -1270,6 +1316,7 @@ def _land_or_journal_block(
             git_facts=git_facts,
             publish=publish_heartbeat,
         ),
+        followup_review=followup_review,
     )
 
 
@@ -1491,6 +1538,10 @@ def run_dispatch_supervisor(
             file=sys.stderr,
         )
         return 0
+    # Story 73.1 (CAP-281): a follow-up review run is judged by its own branch, never by the story's
+    # first landing -- the marker is the one `dispatch_once` journaled on this run's launch INTENT.
+    followup_review = _followup_review_from_launch(folded, run_id)
+    followup_run = followup_review is not None
 
     writer_id = _writer_id()
     counter = 0
@@ -1580,6 +1631,9 @@ def run_dispatch_supervisor(
         story_key=story_key,
         worktree=worktree,
     )
+    # Story 73.1 (CAP-281): a follow-up review run's spec-only diff is its record, so every narration
+    # read below takes the path through `narration_spec_path` (None for that run, the spec path otherwise).
+    narration_path = narration_spec_path(spec_relative_path, followup_review=followup_run)
 
     while True:
         tick_count += 1
@@ -1594,6 +1648,7 @@ def run_dispatch_supervisor(
                 project_slug=slug,
                 baseline_head_sha=baseline_head_sha,
                 merge_subject_template=merge_subject_template,
+                followup_review=followup_run,
             )
         except (VcsCommandError, ValueError) as exc:
             print(
@@ -1635,7 +1690,7 @@ def run_dispatch_supervisor(
                 git=git_facts,
                 verification_verdict=v_outcome,
                 session_log=session_log,
-                spec_relative_path=spec_relative_path,
+                spec_relative_path=narration_path,
             )
         landing_done = _landing_succeeded(folded, run_id)
         if supervisor_should_finalize_harness_work(
@@ -1661,6 +1716,7 @@ def run_dispatch_supervisor(
                 session_log=session_log,
                 merge_subject_template=merge_subject_template,
                 folded=folded,
+                followup_review=followup_review,
             )
             text = fs.read_text(journal_path)
             if text is not None:
@@ -1676,6 +1732,7 @@ def run_dispatch_supervisor(
                     project_slug=slug,
                     baseline_head_sha=baseline_head_sha,
                     merge_subject_template=merge_subject_template,
+                    followup_review=followup_run,
                 )
             except VcsCommandError, ValueError:
                 pass
@@ -1688,7 +1745,7 @@ def run_dispatch_supervisor(
                     git=git_facts,
                     verification_verdict=v_outcome,
                     session_log=session_log,
-                    spec_relative_path=spec_relative_path,
+                    spec_relative_path=narration_path,
                 )
         if verdict == DispatchSessionVerdict.LIVE:
             if _session_awaits_verification(session_alive, git_facts):
@@ -1736,6 +1793,7 @@ def run_dispatch_supervisor(
                         merge_subject_template=merge_subject_template,
                         session_alive=session_alive,
                         publish_heartbeat=_publish_heartbeat,
+                        followup_review=followup_review,
                     )
                     # Story 72.1 (CAP-280): fetch `origin main` so the re-gather
                     # reads the supervisor's own land, never a stale remote-tracking ref.
@@ -1754,13 +1812,14 @@ def run_dispatch_supervisor(
                             project_slug=slug,
                             baseline_head_sha=baseline_head_sha,
                             merge_subject_template=merge_subject_template,
+                            followup_review=followup_run,
                         )
                         verdict = resolve_terminal_session_verdict(
                             session_alive=session_alive,
                             git=git_facts,
                             verification_verdict=v_outcome,
                             session_log=session_log,
-                            spec_relative_path=spec_relative_path,
+                            spec_relative_path=narration_path,
                         )
                     except VcsCommandError, ValueError:
                         pass
@@ -1813,6 +1872,7 @@ def run_dispatch_supervisor(
                 merge_subject_template=merge_subject_template,
                 session_alive=session_alive,
                 publish_heartbeat=_publish_heartbeat,
+                followup_review=followup_review,
             )
             # Story 72.1 (CAP-280): fetch `origin main` so the re-gather reads
             # the supervisor's own land, never a stale remote-tracking ref.
@@ -1831,13 +1891,14 @@ def run_dispatch_supervisor(
                     project_slug=slug,
                     baseline_head_sha=baseline_head_sha,
                     merge_subject_template=merge_subject_template,
+                    followup_review=followup_run,
                 )
                 verdict = resolve_terminal_session_verdict(
                     session_alive=session_alive,
                     git=git_facts,
                     verification_verdict=v_outcome,
                     session_log=session_log,
-                    spec_relative_path=spec_relative_path,
+                    spec_relative_path=narration_path,
                 )
             except VcsCommandError, ValueError:
                 pass
@@ -1890,6 +1951,7 @@ def run_dispatch_supervisor(
                             project_slug=slug,
                             baseline_head_sha=baseline_head_sha,
                             merge_subject_template=merge_subject_template,
+                            followup_review=followup_run,
                         )
                     except VcsCommandError, ValueError:
                         pass
@@ -1998,9 +2060,7 @@ def run_dispatch_supervisor(
             baseline_revision=git_facts.baseline_head_sha,
             final_revision=git_facts.current_head_sha,
         )
-        if verdict == DispatchSessionVerdict.FAILED and has_git_progress(
-            git_facts, spec_relative_path=spec_relative_path
-        ):
+        if verdict == DispatchSessionVerdict.FAILED and has_git_progress(git_facts, spec_relative_path=narration_path):
             counter = _journal_dispatch_preserve(
                 fs=fs,
                 vcs=vcs,
