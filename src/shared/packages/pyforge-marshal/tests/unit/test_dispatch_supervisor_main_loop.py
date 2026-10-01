@@ -218,7 +218,7 @@ class FakeVcs:
     def worktree_path_for_branch(self, repo_root: Path, branch: str) -> Path | None:
         return self.branch_worktrees.get(branch)
 
-    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
         return self.branch_merged
 
     def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:

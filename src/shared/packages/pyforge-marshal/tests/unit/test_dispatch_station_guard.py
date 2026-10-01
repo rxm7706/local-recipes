@@ -216,7 +216,7 @@ def test_serial_mode_still_refuses_unrelated_live_story(tmp_path: Path) -> None:
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
             return ("src/changed.py",)
 
-        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
             return False
 
         def commit_subjects(self, repo_root: Path, ref: str):
@@ -252,7 +252,7 @@ def test_unrelated_live_story_allowed_without_surface_data(
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
             return ("src/changed.py",)
 
-        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
             return False
 
         def commit_subjects(self, repo_root: Path, ref: str):
@@ -300,7 +300,7 @@ def test_surface_overlap_refuses_second_dispatch(tmp_path: Path) -> None:
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
             return ("src/changed.py",)
 
-        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
             return False
 
         def commit_subjects(self, repo_root: Path, ref: str):
@@ -371,7 +371,7 @@ def test_redispatch_allowed_when_session_dead_and_verification_refused(
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
             return ("src/shared/packages/pyforge-atlas/tools/bootstrap.py",)
 
-        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
             return False
 
         def commit_subjects(self, repo_root: Path, ref: str):
@@ -417,7 +417,7 @@ def test_cross_station_dispatch_allowed_when_other_station_busy(
                 return ("src/changed.py",)
             return ()
 
-        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
             return False
 
         def commit_subjects(self, repo_root: Path, ref: str):
@@ -477,7 +477,7 @@ def test_overlap_advisory_is_warn_and_dispatch_proceeds(tmp_path: Path, monkeypa
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
             return ()
 
-        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
             return False
 
         def commit_subjects(self, repo_root: Path, ref: str):

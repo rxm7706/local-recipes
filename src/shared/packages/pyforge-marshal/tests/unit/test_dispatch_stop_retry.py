@@ -180,7 +180,7 @@ class FakeVcs:
     def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
         return ("src/changed.py",)
 
-    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
         return False
 
     def commit_subjects(self, repo_root: Path, ref: str):

@@ -1159,7 +1159,7 @@ class RecordingVcs(FakeVcs):
     def changed_files(self, _repo_root: Path, _worktree: Path, *, base: str):
         return ()
 
-    def is_branch_merged(self, _repo_root: Path, branch: str, *, into: str) -> bool:
+    def is_branch_merged(self, _repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
         self.merge_checked.append(branch)
         return False
 
@@ -1271,7 +1271,7 @@ class AlwaysMergedVcs(RecordingVcs):
         super().__init__(repo_root)
         self._head_sha = head_sha
 
-    def is_branch_merged(self, _repo_root: Path, branch: str, *, into: str) -> bool:
+    def is_branch_merged(self, _repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
         self.merge_checked.append(branch)
         return True
 

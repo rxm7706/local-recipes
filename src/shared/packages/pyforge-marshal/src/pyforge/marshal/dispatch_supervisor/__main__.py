@@ -74,7 +74,7 @@ from ..core.journal import (
 )
 from ..core.model import Finding, Severity
 from ..core.publish import dispatch_complete_result, shape_dispatch_publish
-from ..core.refs import ORIGIN_MAIN, local_branch_ref
+from ..core.refs import ORIGIN_MAIN
 from ..core.supervise import resolve_terminal_session_verdict
 from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
@@ -97,7 +97,6 @@ _SESSION_LOG_FILENAME = "session.log"
 _TICK_SECONDS = 60
 _FETCH_EVERY_N_TICKS = 5
 _BASE_REF = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
-_MERGE_INTO = "main"
 
 
 def _writer_id() -> str:
@@ -138,13 +137,22 @@ def _fold_dispatch_journal(fs: FsPort, run_dir: Path, text: str):
     return fold(lines, sidecars=sidecars)
 
 
-def _maybe_fetch_origin_main(vcs: VcsPort, repo_root: Path, *, tick: int) -> None:
-    if tick % _FETCH_EVERY_N_TICKS != 0:
-        return
+def _fetch_origin_main(vcs: VcsPort, repo_root: Path) -> None:
+    """Fetch ``origin main``, tolerating a failed fetch (Story 72.1, CAP-280).
+
+    Every merge fact the supervisor judges reads ``origin/main``; a failed
+    fetch leaves the last-fetched remote-tracking ref in place, never local
+    ``main``."""
     try:
         vcs.fetch(repo_root, "origin", "main")
     except VcsCommandError:
         pass
+
+
+def _maybe_fetch_origin_main(vcs: VcsPort, repo_root: Path, *, tick: int) -> None:
+    if tick % _FETCH_EVERY_N_TICKS != 0:
+        return
+    _fetch_origin_main(vcs, repo_root)
 
 
 def _commit_pre_verify_wip(
@@ -372,13 +380,18 @@ def gather_dispatch_git_facts(
     # happened yet. Ask the question regardless (existing branch-derivation
     # callers rely on the ask itself), but only trust a "yes" once the
     # branch has actually diverged from its own launch baseline.
+    #
+    # Story 72.1 (CAP-280): every merge fact reads `origin/main`
+    # (`ORIGIN_MAIN`, the full refname), never local `main` -- local `main`
+    # moves only when finalize can fast-forward the primary checkout, so a
+    # story merged by another route would read unmerged and be landed again.
     raw_branch_merged = (
-        vcs.is_branch_merged(repo_root, resolution.resolved, into=_MERGE_INTO)
+        vcs.is_branch_merged(repo_root, resolution.resolved, into="main", into_ref=ORIGIN_MAIN)
         if resolution.resolved is not None
         else False
     )
     branch_merged = raw_branch_merged and current_head_sha != baseline_head_sha
-    subjects = vcs.commit_subjects(repo_root, local_branch_ref(_MERGE_INTO))
+    subjects = vcs.commit_subjects(repo_root, ORIGIN_MAIN)
     known_keys = _load_known_story_keys(fs, repo_root=repo_root, project_slug=project_slug)
 
     def _spec_status_for(candidate_key: StoryKey) -> str | None:
@@ -1724,6 +1737,9 @@ def run_dispatch_supervisor(
                         session_alive=session_alive,
                         publish_heartbeat=_publish_heartbeat,
                     )
+                    # Story 72.1 (CAP-280): fetch `origin main` so the re-gather
+                    # reads the supervisor's own land, never a stale remote-tracking ref.
+                    _fetch_origin_main(vcs, repo_root)
                     text = fs.read_text(journal_path)
                     if text is not None:
                         folded = _fold_dispatch_journal(fs, run_dir, text)
@@ -1798,6 +1814,9 @@ def run_dispatch_supervisor(
                 session_alive=session_alive,
                 publish_heartbeat=_publish_heartbeat,
             )
+            # Story 72.1 (CAP-280): fetch `origin main` so the re-gather reads
+            # the supervisor's own land, never a stale remote-tracking ref.
+            _fetch_origin_main(vcs, repo_root)
             text = fs.read_text(journal_path)
             if text is not None:
                 folded = _fold_dispatch_journal(fs, run_dir, text)

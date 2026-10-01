@@ -44,7 +44,7 @@ from .core.landing_checks import CheckRun, CheckState, classify_check_runs
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy, LandingCheckSettings, resolve_landing_check_settings
 from .core.refs import ORIGIN_MAIN as _ORIGIN_MAIN
-from .core.refs import ORIGIN_MAIN_SHORT, local_branch_ref
+from .core.refs import ORIGIN_MAIN_SHORT
 from .core.verdict import compute_verdict
 from .dispatch_land_heal import DispatchLandHealResult, try_heal_dispatch_land_merge
 from .dispatch_verify import (
@@ -877,14 +877,25 @@ def execute_dispatch_land(
         )
         return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
 
+    # Story 72.1 (CAP-280): the ALREADY_LANDED read judges a merge from
+    # `origin/main`, never local `main` -- local `main` moves only when
+    # finalize can fast-forward the primary checkout, so a story merged on
+    # GitHub would read unlanded and be pushed and PR'd again. A failed
+    # fetch is tolerated (the read then uses the last-fetched remote-tracking
+    # ref); the merge-tree preview's own fetch still refuses a landing it
+    # cannot preview.
     try:
-        main_subjects = vcs.commit_subjects(git_repo_root, local_branch_ref(_MERGE_BASE))
+        vcs.fetch(git_repo_root, _ORIGIN_REMOTE, _MERGE_BASE)
+    except VcsCommandError:
+        pass
+    try:
+        main_subjects = vcs.commit_subjects(git_repo_root, _ORIGIN_MAIN)
     except VcsCommandError as exc:
         findings.append(
             Finding(
                 code="MRS-DISP-016",
                 severity=Severity.ERROR,
-                message=f"cannot read {_MERGE_BASE!r} history for landing: {exc}",
+                message=f"cannot read {ORIGIN_MAIN_SHORT!r} history for landing: {exc}",
             )
         )
         envelope = build_envelope(
