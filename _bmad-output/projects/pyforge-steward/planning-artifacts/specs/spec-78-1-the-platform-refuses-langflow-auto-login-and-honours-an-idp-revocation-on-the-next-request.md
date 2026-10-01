@@ -2,7 +2,8 @@
 title: '78.1: The platform refuses Langflow auto-login and honours an IdP revocation on the next request'
 type: 'fix'
 created: '2026-10-01'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'cc3a9c0b9d5c397986318518320f7d4eb1546ec5'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -119,6 +120,54 @@ Type / Effort / Deps: fix / M / —.
 | userinfo down | 5xx or timeout | denied | never login-time claims |
 
 </intent-contract>
+
+## Code Map
+
+All paths under `src/platform/` unless prefixed. Line anchors are `main` at `a9636014f5`.
+
+- `config/settings/base.py:603-628` -- allauth block: add `SOCIALACCOUNT_STORE_TOKENS = True` beside `SOCIALACCOUNT_*`. `SOCIALACCOUNT_PROVIDERS["openid_connect"]["APPS"][0]` holds the client id/secret the refresh call reuses.
+- `config/settings/base.py:635-699` -- Langflow block. Its values reach `os.environ` before `config/asgi.py` imports `langflow_integration.asgi` (`create_app()` reads them then). Force `LANGFLOW_AUTO_LOGIN` by assignment (`os.environ[...] = "False"`, never `env()`/`setdefault`, so a deployer cannot switch it off); mirror `LANGFLOW_SUPERUSER` / `LANGFLOW_SUPERUSER_PASSWORD` from `env(...)` (`env.read_env(.env)` at line 75 also fills `os.environ`).
+- `config/startup/stage_one.py:57-103,130-152` -- `REQUIRED_SETTINGS` of `RequiredSetting(name, remedy)`; deployed-only, reads `os.environ`. Add `LANGFLOW_SUPERUSER_PASSWORD` here (the named production refusal). `tests/test_startup_required_settings.py` is "one case per name".
+- `config/settings/production.py:24,172-177` -- calls `refuse_required_settings()`; wires `IDP_USERINFO = fetch_current_userinfo` unconditionally.
+- `config/authorization/idp_userinfo.py:55-123` -- `_access_token_for` (latest `SocialToken`; always `None` today), `_fetch_userinfo_http` (returns `None` for every failure, so a 401 is indistinguishable), `fetch_current_userinfo` (cache, token, HTTP; `None` on any failure). `userinfo_endpoint_url()` uses the Keycloak `/protocol/openid-connect/userinfo` shape; the refresh endpoint is its `/token` sibling.
+- `config/authorization/current_claims.py:22-37` -- the fail-open: a wired `IDP_USERINFO` returning `None` falls through to `session[IDP_TOKEN_CLAIMS_SESSION_KEY]` (login-time claims).
+- `config/authorization/adapters.py:56-89` -- the only writer of session claims (`pre_social_login`). Allauth stores a `SocialToken` on `SocialLogin.save` only when `SOCIALACCOUNT_STORE_TOKENS` (allauth `socialaccount/models.py:314`); the refresh token lands in `token_secret`.
+- `config/asgi.py:130-153` -- `_dispatch_http`; `/langflow/...` forwards with `root_path` extended. Not changed here (see `deferred`). `langflow_integration/asgi.py:44` -- `create_app()` at import reads Langflow's auth settings from `os.environ`.
+- Langflow 1.11.4, read-only evidence (primary checkout `.pixi/envs/platform-dev`): `langflow/api/v1/login.py:108-166` -- `GET /auto_login` mints tokens when `AUTO_LOGIN`, else HTTP 403 `{"detail": {"message": "Auto login is disabled.", "auto_login": false}}`; `lfx/services/settings/auth.py:83` -- default `AUTO_LOGIN=True`; `langflow/services/utils.py::setup_superuser` -- with `AUTO_LOGIN` off it needs a non-empty `SUPERUSER` and `SUPERUSER_PASSWORD` and rejects the legacy default `langflow`, so startup fails without an env password.
+- `langflow_integration/tests.py:~143-175` -- `_run_flow_over_http` mints its token through `GET /api/v1/auto_login`; it must log in with the env superuser (`POST /api/v1/login`) instead, and its docstring (the auto-login default) goes stale.
+- `tests/test_langflow_mount.py:37-44,94-134` -- `_get` helper and the lifespan test show how to drive `config.asgi.application` and `_LifespanManager(application)`; `pytest.importorskip("langflow")` (needs the `platform-dev` env, Postgres, Redis).
+- `tests/test_idp_revoke_next_request.py:153-186` -- the mocked test to replace (it monkeypatches `_access_token_for` and `_fetch_userinfo_http`). `test_login_time_session_claims_hide_idp_revoke` pins hook=`None` reading the session; that stays true.
+- Production-leaf env fixtures that need the new key: `tests/test_startup_required_settings.py` (`required_env`), `tests/test_idp_revoke_next_request.py` (`_DEPLOYED_REQUIRED_ENV`), `test_agent_rate_limits_and_run_bounds.py`, `test_broker_tls_verified.py`, `test_mcp_host_sidecar.py`, `test_mcp_transport_auth.py` (find with `grep -rn MCP_HOST_SIDECAR_BASE_URL tests`).
+- `deploy/charts/platform/templates/_helpers.tpl:298-379` -- `platform.djangoEnv`, shared by web, worker, worker-builds, beat, consume-events and the migrate Job. Add `LANGFLOW_SUPERUSER_PASSWORD` as a `secretKeyRef` into `existingSecret` (not `optional`). mcp-host runs `mcp_host.settings`, not the production leaf, so it is unaffected.
+- `deploy/charts/platform/values.yaml:55-82` -- the `existingSecret` key list to extend; `deploy/overlays/eso/externalsecret-platform-secrets.example.yaml` -- add the key.
+- `tests/test_chart_invariants.py:107-126,617-652` -- `_SECRETISH_ENV_NAME` already requires a `secretKeyRef` for any `PASSWORD` env; add an explicit "present and referenced" assertion.
+- `compose/compose.yml:148-152` (`platform`) -- literal placeholders under `environment:`; the Langflow password goes in as a `${LANGFLOW_SUPERUSER_PASSWORD:?...}` reference, not a literal. `tests/test_isolation_and_statelessness.py:83-84` parses this file.
+- `conftest.py:12-17` -- `os.environ.setdefault` for test env; the throwaway password for lanes that boot Langflow goes here (a harness fixture, not a settings default).
+- `docs/reference/environments.md` -- GENERATED pixi-environments table (`scripts/docs_environments.py`, "do not hand-edit"); not a place for runtime variables. See Design Notes.
+
+## Tasks & Acceptance
+
+**Execution:**
+- [ ] `config/settings/base.py` -- set `SOCIALACCOUNT_STORE_TOKENS = True`; force `LANGFLOW_AUTO_LOGIN` off in settings and `os.environ`; read `LANGFLOW_SUPERUSER`, `LANGFLOW_SUPERUSER_PASSWORD` from the environment, no default password -- closes both findings at the settings seam
+- [ ] `config/startup/stage_one.py` + the six production-leaf env fixtures -- add the required key and its remedy; one absence case -- production refuses to start without it, named
+- [ ] `config/authorization/idp_userinfo.py` -- tell a 401 from other failures; refresh once with the stored refresh token (update the `SocialToken` row), retry once; every other outcome denies -- revocation honoured, no stale grant
+- [ ] `config/authorization/current_claims.py` -- a wired hook is authoritative: a non-mapping answer returns `None`, never the session claims -- removes the fail-open
+- [ ] `deploy/charts/platform/templates/_helpers.tpl`, `values.yaml`, ESO example, `compose/compose.yml` -- password by secret reference only; document the key where the other secrets are documented
+- [ ] tests -- replace the mocked revocation test with a real `SocialToken` (stored through allauth's `SocialLogin.save`) against a local HTTP stub of the userinfo and token endpoints, covering every I/O-matrix row; add the auto-login refusal through the real `config.asgi` dispatch; move `_run_flow_over_http` to password login; chart and compose "no literal" checks
+- [ ] verification -- run both mutations by hand, the station and platform suites, then reconcile every Spec `spec-surface-check` names (memlog first, `git add`, scoped stamp) -- note the run's own guard is `python scripts/spec_surface_reconcile.py`, and a stamp is never passed by this run
+
+**Acceptance Criteria:**
+- The seven Given/When/Then criteria in the intent contract above are the acceptance criteria; this story adds none.
+
+## Spec Change Log
+
+## Design Notes
+
+- **Authority of a wired hook.** `current_claims.fetch_current_idp_claims` keeps its order (snapshot, hook, session). The change: when `IDP_USERINFO` is callable and answers anything but a mapping, the answer is "no claims", not "try the session". Hook unset (local/test) still reads the session, which `test_login_time_session_claims_hide_idp_revoke` pins. Session claims are only written by the OIDC login adapter and the local-dev personas mint bearer tokens, so only IdP-logged-in users are affected, and after this change they have a stored token.
+- **Refresh shape.** `grant_type=refresh_token` to `<issuer>/protocol/openid-connect/token` with the app's client id and secret; keep the rotated refresh token if the IdP returns one; a missing `token_secret` is a failed refresh. Positive-only caching stays (`IDP_CLAIMS_CACHE_SECONDS`); there is no negative cache, so a downed IdP costs each request its bounded timeouts, which is the price of failing closed.
+- **Forced, not defaulted.** `LANGFLOW_AUTO_LOGIN` is assigned, so a deployer's `LANGFLOW_AUTO_LOGIN=true` cannot revive it. The password has no settings default; an empty value is "unset", never a credential. Deployed boots refuse it by name in stage 1; local and test boots that start Langflow get it from the environment (compose reference, `.env`, or the `conftest.py` fixture), and Langflow itself refuses an empty or legacy-default password.
+- **Operator-visible break.** The chart now requires a `LANGFLOW_SUPERUSER_PASSWORD` key in the `existingSecret`; a release whose Secret lacks it fails at pod creation. Intended (fail closed), and called out in `values.yaml` and the ESO example.
+- **Deviation: documentation target.** The contract names `docs/reference/environments.md`, which is a generated pixi-environments table. The two names are documented where the other platform secrets already are (`values.yaml`, the ESO example, the compose header, and the deployment how-to/explanation docs that list them) instead.
 
 ## Binding
 
