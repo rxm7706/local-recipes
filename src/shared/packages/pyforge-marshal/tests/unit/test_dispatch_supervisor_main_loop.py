@@ -2103,7 +2103,7 @@ def test_a_landed_run_reads_completed_when_the_repository_reread_after_the_land_
 
 @pytest.mark.parametrize(
     "land_verdict",
-    [DispatchLandingVerdict.REFUSED, DispatchLandingVerdict.FAILED],
+    [DispatchLandingVerdict.REFUSED, DispatchLandingVerdict.SKIPPED_UNVERIFIED],
     ids=lambda verdict: verdict.value,
 )
 def test_a_land_that_did_not_succeed_still_reads_from_repository_facts(
