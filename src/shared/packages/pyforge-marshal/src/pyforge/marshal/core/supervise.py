@@ -712,9 +712,10 @@ def evaluate_escalation(
 # decision this module hosts, for the identical "no port, no clock call, no
 # I/O" reason evaluate_idle/evaluate_ceiling/evaluate_escalation above are
 # pure: the caller (cli/spin.py::run_resume) gathers `deferred` from a
-# HarnessPort.run_status_snapshot result and the two ceilings from its own
-# on-disk policy.toml read, and this function makes no decision from
-# anything but the values it is handed.
+# HarnessPort.run_status_snapshot result and the two ceilings from the ones
+# the resumed run's own launch journaled (Story 82.6) -- else, for a launch
+# that recorded none, from its own on-disk policy.toml read -- and this
+# function makes no decision from anything but the values it is handed.
 # =============================================================================
 
 
@@ -749,8 +750,10 @@ def evaluate_retry_escalation(deferred: Sequence[DeferredStory], max_dev_attempt
     with no special-cased early return needed. ``max_dev_attempts``/
     ``max_review_cycles`` carry no type/value guard beyond the plain ``>=``
     comparison (unlike ``evaluate_ceiling``'s ``limit``): both are declared
-    plain ``int`` here, read by the caller straight off an on-disk
-    ``policy.toml``'s own ``[limits]`` table -- the SAME two SEED keys
+    plain ``int`` here, read by the caller from the ceilings the resumed run's
+    own launch journaled (Story 82.6), or -- for a launch that recorded none
+    -- straight off an on-disk ``policy.toml``'s own ``[limits]`` table --
+    the SAME two SEED keys
     ``render_policy_toml`` already floors at load time to ``>= 1``
     (``bmad_loop`` 0.9.0 itself refuses to load a lower value), so a
     well-formed on-disk file this function is ever handed real values from
