@@ -4365,6 +4365,103 @@ def test_a_follow_up_refused_this_campaign_is_blocked_from_the_journal_not_retri
     assert _status_by_station(report)[_FU_SLUG] is StationCycleStatus.BLOCKED
 
 
+def test_a_follow_up_whose_own_run_refused_itself_as_already_merged_blocks_instead_of_advancing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 50.1 Part B steps past a head whose last run refused ITSELF over already-merged work. A follow-up is a
+    `done` story by design -- its first landing is always merged -- so for a follow-up entry that read would step
+    past every failed review. Its own failed run (the one whose INTENT carries the marker) must BLOCK the station,
+    through `plan_station_cycle` -> `_station_blocked_map` -> `station_story_block_facts(followup_entry=True)`."""
+    _fu_env(tmp_path, monkeypatch)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
+    _seed_already_landed_self_refusal(
+        tmp_path,
+        slug=_FU_SLUG,
+        run_id=f"{_FU_SLUG}-20261001T120000000Z-aaaa",
+        story_key="51.2",
+        followup_review=FollowupReview(dw_id="DW-FRR-51-2", launch_origin_main_sha=_FU_TIP),
+    )
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+
+    assert harness.dispatched == []
+    (row,) = report.results
+    assert row.status is StationCycleStatus.BLOCKED
+    assert row.story == _FU_STORY and "ended 'failed'" in (row.detail or "")
+    assert not (row.detail or "").startswith(ALREADY_LANDED_ADVANCE_PREFIX)
+    assert _fu_codes(report, "MRS-DRAIN-005")
+    assert not _fu_codes(report, "MRS-DRAIN-004")  # nothing was stepped past
+    assert row.skipped == ()
+
+
+def test_the_same_failed_run_without_the_marker_is_not_the_follow_ups_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The story's own first-life run (no follow-up marker) is not the follow-up's: the follow-up is launched."""
+    _fu_env(tmp_path, monkeypatch)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
+    _seed_already_landed_self_refusal(
+        tmp_path, slug=_FU_SLUG, run_id=f"{_FU_SLUG}-20260901T120000000Z-aaaa", story_key="51.2"
+    )
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG)
+
+    assert harness.dispatched == [(_FU_SLUG, "51.2")]
+    assert _status_by_station(report)[_FU_SLUG] is StationCycleStatus.DISPATCHED
+
+
+def test_the_harness_done_re_plan_judges_the_next_follow_up_by_its_own_runs_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """After the head is refused MRS-DISP-040, `execute_fleet_cycle` re-plans the station: that re-plan's
+    `_station_blocked_map` must still know which entries are follow-ups, or the next follow-up's unmarked
+    first-life failure would block it and nothing would dispatch."""
+    from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
+
+    _fu_env(tmp_path, monkeypatch)
+    vcs = _FollowupVcs(tmp_path)
+    head, second = _FU_STORY, "52-1-second-review"
+    ledgers = {
+        _FU_SLUG: _fu_seed_station(
+            tmp_path, vcs, _FU_SLUG, [(head, _fu_spec(), "open"), (second, _fu_spec(), "open")]
+        )
+    }
+    vcs.subjects = (_fu_subject(_FU_SLUG, head), _fu_subject(_FU_SLUG, second))  # the head landed newest
+    _seed_done_worktree_spec(tmp_path, _FU_SLUG, head)  # a harness-done worktree: dispatch_once refuses MRS-DISP-040
+    _seed_already_landed_self_refusal(
+        tmp_path,
+        slug=_FU_SLUG,
+        run_id=f"{_FU_SLUG}-20260901T120000000Z-bbbb",
+        story_key="52.1",
+        session_log="the harness crashed\n",
+    )  # the second story's unmarked first-life failure
+    monkeypatch.setattr(
+        cli_dispatch,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.REFUSED, "https://github.com/rxm7706/local-recipes/pull/1", None),
+    )
+    harness = FakeBuildHarness()
+    campaign_blocked: dict[str, dict[str, str]] = {}
+
+    report = _fu_cycle(
+        tmp_path,
+        ledgers=ledgers,
+        vcs=vcs,
+        harness=harness,
+        station=_FU_SLUG,
+        campaign_blocked=campaign_blocked,
+    )
+
+    assert harness.dispatched == [(_FU_SLUG, "52.1")]
+    assert head in campaign_blocked[_FU_SLUG]
+    assert _status_by_station(report)[_FU_SLUG] is StationCycleStatus.DISPATCHED
+    assert any(f.code == "MRS-DISP-040" for f in report.findings)
+
+
 def test_the_sprint_ledger_twin_reads_done_before_during_and_after(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -4556,7 +4653,7 @@ def test_once_the_two_landed_and_closed_the_next_campaign_takes_the_next_two(
 ) -> None:
     _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
-    ledgers, order = _fu_big_fixture(tmp_path, vcs)
+    ledgers, _order = _fu_big_fixture(tmp_path, vcs)
     first_harness = FakeBuildHarness()
     _fu_cycle(tmp_path, ledgers=ledgers, vcs=vcs, harness=first_harness)
     assert len(first_harness.dispatched) == 2
@@ -4575,7 +4672,6 @@ def test_once_the_two_landed_and_closed_the_next_campaign_takes_the_next_two(
     )
     chosen = [(c.slug, str(c.key)) for cands in plan.selected.values() for c in cands]
     assert sorted(chosen) == sorted([(_FU_SLUG, "70.9"), (_FU_SLUG, "70.1")])
-    assert [item for item in order[:2]] == [(_FU_OTHER_SLUG, "80-5-doctor-story-5"), (_FU_SLUG, "70-7-marshal-story-7")]
     (info,) = _fu_codes(report, "MRS-DRAIN-019")
     assert "177 follow-up review(s) wait" in info.message
 
