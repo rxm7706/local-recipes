@@ -208,6 +208,10 @@ class FakeProcess:
     def is_alive(self, _pid: int) -> bool:
         return self.alive
 
+    def process_start_time(self, _pid: int) -> float | None:
+        # Return None to indicate the start time is unavailable, which should degrade gracefully
+        return None
+
 
 def test_externally_stopped_story_not_blocked_for_drain(tmp_path: Path) -> None:
     from pyforge.marshal.cli.dispatch import _compose_policy
