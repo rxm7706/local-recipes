@@ -445,7 +445,7 @@ def _hand_edited_managed_repo(repo: Path) -> Manifest:
                     path="WHOLE.md",
                     artifact_class="copied-managed",
                     body_sha="abc12345",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             )
         ),

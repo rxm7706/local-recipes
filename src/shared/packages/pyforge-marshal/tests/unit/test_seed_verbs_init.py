@@ -652,7 +652,7 @@ def test_init_never_reads_prior_state_even_if_one_exists(tmp_path):
                     path="UNRELATED.md",
                     artifact_class="copied-managed",
                     body_sha="deadbeef",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
             skips=(),

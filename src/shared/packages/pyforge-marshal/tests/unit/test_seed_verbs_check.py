@@ -264,14 +264,18 @@ def test_fully_conformant_adopted_repo_reports_zero_findings(clean_repo):
                 path="WHOLE.md",
                 artifact_class="copied-managed",
                 body_sha=hash_content(whole_body),
-                inserted_region_span=None,
+                inserted_region_spans=(),
             ),
             ManagedArtifact(
                 id="hybrid",
                 path="HYBRID.md",
                 artifact_class="hybrid-managed-region",
                 body_sha=hash_content(region_body),
-                inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=len(region_body)),
+                inserted_region_spans=(
+                    RegionSpanRecord(
+                        name="tiers", start=0, end=len(region_body), body_sha=hash_content(region_body)
+                    ),
+                ),
             ),
         )
     )
@@ -314,7 +318,7 @@ def test_hand_edited_managed_file_is_one_hard_finding(clean_repo):
                 path="WHOLE.md",
                 artifact_class="copied-managed",
                 body_sha=hash_content("original\n"),
-                inserted_region_span=None,
+                inserted_region_spans=(),
             ),
         )
     )
@@ -345,7 +349,9 @@ def test_hand_edited_hybrid_region_body_is_one_hard_finding(clean_repo):
                 path="HYBRID.md",
                 artifact_class="hybrid-managed-region",
                 body_sha=hash_content("original\n"),
-                inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=1),
+                inserted_region_spans=(
+                    RegionSpanRecord(name="tiers", start=0, end=1, body_sha=hash_content("original\n")),
+                ),
             ),
         )
     )
@@ -362,7 +368,7 @@ def test_hand_edited_hybrid_region_body_is_one_hard_finding(clean_repo):
 
 def test_stale_record_span_is_not_hashed_against_a_reclassified_entrys_whole_file(clean_repo):
     """Review finding: the hash-check primitive must be selected by
-    ``record.inserted_region_span``, never by the manifest entry's CURRENT
+    ``record.inserted_region_spans``, never by the manifest entry's CURRENT
     ``artifact_class`` alone -- an entry's class can be reclassified across
     model versions while ``state.managed[]``'s record still describes what
     was actually recorded (module docstring). Here the manifest currently
@@ -372,7 +378,7 @@ def test_stale_record_span_is_not_hashed_against_a_reclassified_entrys_whole_fil
     on the CURRENT class) and hashed the whole file against a body_sha that
     was recorded for a REGION, producing a near-guaranteed spurious
     ``managed-file-modified`` HARD finding. The fixed code selects on
-    ``record.inserted_region_span`` first, finds ``entry.format is None``
+    ``record.inserted_region_spans`` first, finds ``entry.format is None``
     (a whole-file entry declares no region format), and correctly runs no
     hash check at all rather than compare across an incompatible shape."""
     (clean_repo / "WHOLE.md").write_text("current whole-file content, never hand-edited\n", encoding="utf-8")
@@ -386,7 +392,14 @@ def test_stale_record_span_is_not_hashed_against_a_reclassified_entrys_whole_fil
                 path="WHOLE.md",
                 artifact_class="hybrid-managed-region",
                 body_sha=hash_content("a stale region body, unrelated to the whole file"),
-                inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=5),
+                inserted_region_spans=(
+                    RegionSpanRecord(
+                        name="tiers",
+                        start=0,
+                        end=5,
+                        body_sha=hash_content("a stale region body, unrelated to the whole file"),
+                    ),
+                ),
             ),
         )
     )
@@ -423,7 +436,7 @@ def test_record_at_a_stale_path_is_never_hashed_against_the_current_path(clean_r
                 path="OLD_WHOLE.md",  # stale -- the manifest entry's path has since moved
                 artifact_class="copied-managed",
                 body_sha=hash_content("stale content, unrelated to the current file"),
-                inserted_region_span=None,
+                inserted_region_spans=(),
             ),
         )
     )
@@ -600,7 +613,7 @@ def test_present_legacy_entry_reports_only_the_legacy_finding(clean_repo):
                 path="OLD.md",
                 artifact_class="copied-managed",
                 body_sha="deadbeef",
-                inserted_region_span=None,
+                inserted_region_spans=(),
             ),
         )
     )

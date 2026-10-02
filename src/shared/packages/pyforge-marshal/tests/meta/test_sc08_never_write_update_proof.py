@@ -221,7 +221,7 @@ def test_malicious_manifest_wholesale_regenerate_cannot_write_to_dreams(seeded_r
                     path="docs/dreams/protected.md",
                     artifact_class="generated-derived",
                     body_sha=hash_content(before),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),

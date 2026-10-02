@@ -279,7 +279,7 @@ def test_a_whole_file_claim_on_the_same_artifact_never_retires_a_region():
         path="AGENTS.md",
         artifact_class="copied-managed",
         body_sha="0123abcd",
-        inserted_region_span=None,
+        inserted_region_spans=(),
     )
     state = _state(managed=(whole_file_claim,))
 

@@ -283,14 +283,14 @@ def test_a_previously_managed_entry_that_became_an_escaping_symlink_is_left_out_
                     path="ESCAPER.md",
                     artifact_class="copied-managed",
                     body_sha=hash_content("elsewhere\n"),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
                 ManagedArtifact(
                     id="good",
                     path="GOOD.md",
                     artifact_class="copied-managed",
                     body_sha=hash_content("good\n"),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             )
         ),
@@ -343,7 +343,7 @@ def test_wholesale_regenerate_action_produced_for_a_conformant_hybrid_entry(clea
                     path="WHOLE.md",
                     artifact_class="hybrid-managed-region",
                     body_sha=hash_content("old body\n"),
-                    inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=0),
+                    inserted_region_spans=(RegionSpanRecord(name="tiers", start=0, end=0, body_sha=hash_content("old body\n")),),
                 ),
             ),
         ),
@@ -359,11 +359,12 @@ def test_wholesale_regenerate_action_produced_for_a_conformant_hybrid_entry(clea
 
 
 def test_multi_region_hybrid_entry_does_not_refuse_a_plain_dry_run(clean_repo):
-    """Review finding, HIGH/blocking: ``state/store.py``'s own pre-existing
-    schema limit means ``state.managed[]`` can record at most ONE region
-    per hybrid entry, even though the packaged manifest declares several
-    for ``AGENTS.md`` (3) and ``CLAUDE.md`` (2) -- exactly what a real
-    ``adopt`` produces today for a multi-region entry. Before the fix,
+    """Review finding, HIGH/blocking: a state file written before Story
+    82.13 records at most ONE region per hybrid entry (its one-span shape,
+    which ``read_state`` still loads as a one-region list), even though the
+    packaged manifest declares several for ``AGENTS.md`` (3) and
+    ``CLAUDE.md`` (2) -- exactly what a real ``adopt`` produced then for a
+    multi-region entry. Before the fix,
     ``_managed_records`` built ``region_shas`` with only the one recorded
     region, so rung 6 (``verbs/preconditions.py::_region_divergences``)
     flagged every OTHER declared-and-present region as "present in the file
@@ -389,10 +390,12 @@ def test_multi_region_hybrid_entry_does_not_refuse_a_plain_dry_run(clean_repo):
                     path="WHOLE.md",
                     artifact_class="hybrid-managed-region",
                     body_sha=hash_content("tiers body\n"),
-                    # Only ONE region recorded, matching a real adopt's own
-                    # `state/store.py` limitation -- "portability-contract"
-                    # has no recorded entry at all here.
-                    inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=0),
+                    # Only ONE region recorded, as a state file written before
+                    # Story 82.13 holds -- "portability-contract" has no
+                    # recorded entry at all here.
+                    inserted_region_spans=(
+                        RegionSpanRecord(name="tiers", start=0, end=0, body_sha=hash_content("tiers body\n")),
+                    ),
                 ),
             ),
         ),
@@ -426,7 +429,7 @@ def test_hybrid_wholesale_regenerate_replaces_only_the_marked_span_not_the_whole
                     path="WHOLE.md",
                     artifact_class="hybrid-managed-region",
                     body_sha=hash_content("old body\n"),
-                    inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=0),
+                    inserted_region_spans=(RegionSpanRecord(name="tiers", start=0, end=0, body_sha=hash_content("old body\n")),),
                 ),
             ),
         ),
@@ -474,7 +477,7 @@ def test_wholesale_regenerate_skips_copied_seeded_and_referenced_records(clean_r
                     path="SEEDED.md",
                     artifact_class="copied-seeded",
                     body_sha=hash_content("hello\n"),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),
@@ -498,7 +501,7 @@ def test_wholesale_regenerate_skips_a_record_whose_entry_was_retired(clean_repo)
                     path="GONE.md",
                     artifact_class="copied-managed",
                     body_sha="abc12345",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),
@@ -541,7 +544,7 @@ def test_three_source_merge_appears_correctly_merged_and_sorted(clean_repo, monk
                     path="A_WHOLESALE.md",
                     artifact_class="copied-managed",
                     body_sha=hash_content("current\n"),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),
@@ -648,7 +651,7 @@ def test_run_with_yes_against_an_already_adopted_repo_updates_state(clean_repo):
                     path="WHOLE.md",
                     artifact_class="copied-managed",
                     body_sha=hash_content("current\n"),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),
@@ -690,7 +693,7 @@ def test_hand_edited_managed_content_refuses_apply_without_force(clean_repo):
                     path="WHOLE.md",
                     artifact_class="copied-managed",
                     body_sha="abc12345",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),
@@ -721,7 +724,7 @@ def test_force_bypasses_the_hand_edited_managed_content_precondition(clean_repo)
                     path="WHOLE.md",
                     artifact_class="copied-managed",
                     body_sha="abc12345",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),
@@ -754,7 +757,7 @@ def test_force_without_run_is_still_a_dry_run(clean_repo):
                     path="WHOLE.md",
                     artifact_class="copied-managed",
                     body_sha="abc12345",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),
@@ -919,7 +922,7 @@ def _managed_record(artifact_id: str, path: str) -> ManagedArtifact:
         path=path,
         artifact_class="copied-managed",
         body_sha="abc12345",
-        inserted_region_span=None,
+        inserted_region_spans=(),
     )
 
 
@@ -1111,7 +1114,7 @@ def test_skip_of_a_hand_edit_in_a_run_that_applies_something_else_keeps_the_stat
                     path="B.md",
                     artifact_class="copied-managed",
                     body_sha=hash_content("current B\n"),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             )
         ),
@@ -1221,7 +1224,7 @@ def test_never_write_target_from_wholesale_regenerate_refused_at_plan_time(clean
                     path="PROTECTED.md",
                     artifact_class="generated-derived",
                     body_sha=hash_content("current\n"),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),
@@ -1261,7 +1264,7 @@ def test_sc01_check_update_run_check_end_to_end(clean_repo, monkeypatch):
                     path="old-name.txt",
                     artifact_class="copied-managed",
                     body_sha=hash_content("v1 content\n"),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),
@@ -1326,7 +1329,7 @@ def test_default_commit_materializes_a_whole_file_entry_via_a_custom_template(cl
                     path=".bmad-config.user.toml",
                     artifact_class="copied-managed",
                     body_sha=hash_content('[project]\nname = "v1"\n'),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),
@@ -1380,7 +1383,7 @@ def test_default_commit_substitutes_a_hybrid_region_via_the_real_packaged_fragme
                     path="CLAUDE.md",
                     artifact_class="hybrid-managed-region",
                     body_sha=hash_content("stale tiers content\n"),
-                    inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=0),
+                    inserted_region_spans=(RegionSpanRecord(name="tiers", start=0, end=0, body_sha=hash_content("stale tiers content\n")),),
                 ),
             ),
         ),
@@ -1420,7 +1423,7 @@ def test_default_commit_wholesale_regenerates_an_adapter_composition_entry(clean
                     path="GEMINI.md",
                     artifact_class="generated-derived",
                     body_sha=hash_content("stale, pre-refresh content\n"),
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             ),
         ),

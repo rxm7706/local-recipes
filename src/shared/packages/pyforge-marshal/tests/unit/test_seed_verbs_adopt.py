@@ -357,7 +357,7 @@ def test_a_previously_adopted_entry_that_became_an_escaping_symlink_is_left_out_
                     path="ESCAPER.md",
                     artifact_class="copied-managed",
                     body_sha="deadbeef",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             )
         ),
@@ -526,7 +526,7 @@ def test_first_claim_reclaims_when_a_stale_record_names_a_different_path(clean_r
                     path="OLD.md",  # stale -- the manifest entry's path has since moved
                     artifact_class="generated-derived",
                     body_sha="deadbeef",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             )
         ),
