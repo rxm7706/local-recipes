@@ -2,7 +2,7 @@
 title: '82.10: A parallel wave journals each member''s own outcome and refuse predicate'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 baseline_revision: '719fee16261b0a3b0e454a3f78f5d85a51a05b9a'
 review_loop_iteration: 0
 followup_review_recommended: false
