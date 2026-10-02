@@ -128,10 +128,10 @@ Read-only evidence driving the design:
 - Window: `max(idle_threshold_minutes, RENDERED_SESSION_TIMEOUT_MIN)`, passed as an optional eleventh argv value and an
   optional `run_supervisor` parameter. When omitted the supervisor derives the same floor itself, so a direct caller never
   regains the 25-minute trap.
-- Per-story breach: one `budget-story-breach` observation per (story, metric), `MRS-SUPV-011` WARN, no stop, no detach.
+- Per-story breach: one `budget-story-breach` observation per (story, metric), `MRS-SUPV-014` WARN, no stop, no detach.
   Per-run breach is unchanged.
 - Unobservable: a sample is dark when neither channel was observed. A dark tick holds `last_acted_rung`, appends no sample,
-  and journals one `idle-unobservable` WARN (`MRS-SUPV-012`) per dark episode. Pane-dark with a live log keeps today's
+  and journals one `idle-unobservable` WARN (`MRS-SUPV-015`) per dark episode. Pane-dark with a live log keeps today's
   behaviour exactly.
 - Volatile redraws: `normalise_pane` strips digit runs and spinner glyphs (Braille U+2800-28FF, U+25D0-25D3, U+25F4-25F7,
   U+2722-274B) before the pane comparison; the log mtime comparison is unchanged. The supervisor's history trim uses the
@@ -149,7 +149,7 @@ Read-only evidence driving the design:
 - `supervisor/__main__.py` -- accept the optional window (argv and `run_supervisor`), replace the wall-clock gate with
   `judge_usage_freshness`, make a per-story breach an observation, hold on a dark tick and journal it once, use
   `shows_fresh_output` in the trim -- ACs 1-7
-- `core/findings.py`, `core/verdict.py` -- register `MRS-SUPV-011` (story budget breach) and `MRS-SUPV-012` (idle channels
+- `core/findings.py`, `core/verdict.py` -- register `MRS-SUPV-014` (story budget breach) and `MRS-SUPV-015` (idle channels
   unobservable), both WARN -- boundary rule
 - `tests/unit/test_supervise.py`, `tests/unit/test_supervisor.py`, `tests/unit/test_spin.py`, `tests/unit/test_cli.py`,
   `tests/unit/test_policy.py` -- one failing-on-revert test per fix; `FakeObserver` default moves off `inf`; argv

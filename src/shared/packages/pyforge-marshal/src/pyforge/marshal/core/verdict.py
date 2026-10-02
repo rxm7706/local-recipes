@@ -520,8 +520,8 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # so folding the genuinely-lost case back into 008 would rebuild the very
 # ambiguity that cost an operator an hour on 2026-08-09. WARN, not ERROR,
 # because AD-46 forbids durability becoming a new refusal gate.
-# Story 82.5's supervisor/__main__.py adds MRS-SUPV-011 (a per-story budget
-# ceiling was breached; the run continues) and MRS-SUPV-012 (neither idle
+# Story 82.5's supervisor/__main__.py adds MRS-SUPV-014 (a per-story budget
+# ceiling was breached; the run continues) and MRS-SUPV-015 (neither idle
 # channel could be observed, so the ladder holds its rung), both WARN: each is
 # a reported condition the run survives, like this area's own 001-010.
 # Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008 at
@@ -881,8 +881,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SUPV-008": Verdict.WARN,
     "MRS-SUPV-009": Verdict.WARN,
     "MRS-SUPV-010": Verdict.WARN,
-    "MRS-SUPV-011": Verdict.WARN,
-    "MRS-SUPV-012": Verdict.WARN,
+    "MRS-SUPV-014": Verdict.WARN,
+    "MRS-SUPV-015": Verdict.WARN,
     "MRS-GATE-007": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-008": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-009": Verdict.UNEVALUABLE,

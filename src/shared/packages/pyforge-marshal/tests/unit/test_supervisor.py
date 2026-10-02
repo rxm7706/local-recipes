@@ -2927,7 +2927,7 @@ def test_story_wall_clock_ceiling_breach_is_observed_and_the_run_continues():
     assert breach["payload"]["story_key"] == "3.6"
     assert breach["payload"]["observed"] >= 1.5
     assert breach["payload"]["limit"] == 1.5
-    assert breach["payload"]["finding"]["code"] == "MRS-SUPV-011"
+    assert breach["payload"]["finding"]["code"] == "MRS-SUPV-014"
     assert breach["payload"]["finding"]["severity"] == "warn"
     # The loop carried on past the breach and ended its own way.
     assert kinds[kinds.index("budget-story-breach") :].count("supervisor-heartbeat") >= 3
@@ -3023,7 +3023,7 @@ def test_story_token_ceiling_breach_is_observed_and_the_run_continues():
     assert breach["payload"]["story_key"] == "3.6"
     assert breach["payload"]["observed"] == 150
     assert breach["payload"]["limit"] == 100.0
-    assert breach["payload"]["finding"]["code"] == "MRS-SUPV-011"
+    assert breach["payload"]["finding"]["code"] == "MRS-SUPV-014"
     # Four live ticks, every one over the ceiling (plus the tick that finds
     # the watched process gone) -- and still one breach entry.
     assert kinds.count("supervisor-heartbeat") == 5
@@ -6371,7 +6371,7 @@ def test_ticks_with_neither_channel_observable_hold_the_ladder_and_journal_one_w
     assert observer.send_text_calls == []
     [unobservable] = [e for e in entries if e["kind"] == "idle-unobservable"]
     assert unobservable["phase"] == "observation"
-    assert unobservable["payload"]["finding"]["code"] == "MRS-SUPV-012"
+    assert unobservable["payload"]["finding"]["code"] == "MRS-SUPV-015"
     assert unobservable["payload"]["finding"]["severity"] == "warn"
     assert entries[-1]["payload"]["reason"] == "watched-process-exited"
 

@@ -139,7 +139,7 @@ killed HEALTHY run. Story 82.5 (DW-FU-3-5-6) makes that explicit: the tick is
 an unobservable ``core.supervise.Sample``, appends nothing to the history,
 HOLDS ``last_acted_rung`` (resetting it to ``NONE`` re-fired a nudge the moment
 observation resumed) and journals ONE ``"idle-unobservable"`` observation
-(``MRS-SUPV-012``) per dark episode. A dark PANE with a live log keeps its
+(``MRS-SUPV-015``) per dark episode. A dark PANE with a live log keeps its
 older shape exactly (sample dropped, ladder at rest). The ladder acts only on
 evidence it actually has.
 
@@ -210,7 +210,7 @@ ladder's own ``MRS-SUPV-002``), and the tick loop ends via the SAME
 not (Story 82.5, DW-FU-3-6-8): ``HarnessPort.stop`` ends the whole bmad-loop
 run, so stopping on one outlier story abandoned every remaining story of an
 overnight wave under a story-scoped reason. It journals one
-``"budget-story-breach"`` observation (``MRS-SUPV-011``: the story, the
+``"budget-story-breach"`` observation (``MRS-SUPV-014``: the story, the
 metric, the observed and the limit values), once per (story, metric), and the
 run continues -- bmad-loop exposes run-level stop only, so the per-run
 ceilings stay the binding constraint. On a story-key transition, one
@@ -449,7 +449,7 @@ _STOP_AND_RETRY_KIND = "idle-stop-and-retry"
 _DEFER_KIND = "idle-defer"
 _HARNESS_RUN_ID_UNAVAILABLE_KIND = "idle-harness-run-id-unavailable"
 # Story 82.5: neither the pane nor the harness log could be observed on a tick
-# (MRS-SUPV-012) -- one Phase.OBSERVATION per unobservable episode.
+# (MRS-SUPV-015) -- one Phase.OBSERVATION per unobservable episode.
 _IDLE_UNOBSERVABLE_KIND = "idle-unobservable"
 
 # Story 3.6's own budget-ceiling journal kinds. "budget-stop" fires as one
@@ -460,7 +460,7 @@ _BUDGET_WARN_KIND = "budget-warn"
 _BUDGET_STOP_KIND = "budget-stop"
 _BUDGET_USAGE_KIND = "budget-usage"
 _BUDGET_USAGE_STALE_KIND = "budget-usage-stale"
-# Story 82.5: a per-STORY ceiling breach (MRS-SUPV-011) -- a single
+# Story 82.5: a per-STORY ceiling breach (MRS-SUPV-014) -- a single
 # Phase.OBSERVATION per (story, metric); the run continues.
 _BUDGET_STORY_BREACH_KIND = "budget-story-breach"
 
@@ -1575,7 +1575,7 @@ def run_supervisor(
             ``MRS-SUPV-005``), and ending the tick loop via the SAME
             ``detach_reason``/``deferred`` mechanism the idle ladder uses.
             A per-STORY breach (Story 82.5) journals one
-            ``"budget-story-breach"`` observation (``MRS-SUPV-011``) and
+            ``"budget-story-breach"`` observation (``MRS-SUPV-014``) and
             leaves the run going.
             A second ceiling breaching -- or merely approaching -- in the
             SAME tick after a DIFFERENT ceiling already breached is a no-op
@@ -1654,7 +1654,7 @@ def run_supervisor(
                     return
                 reported_story_breaches.add(breach_key)
                 breach_finding = Finding(
-                    code="MRS-SUPV-011",
+                    code="MRS-SUPV-014",
                     severity=Severity.WARN,
                     message=(
                         f"story budget ceiling breached: {scope}/{metric} at "
@@ -2191,7 +2191,7 @@ def run_supervisor(
                     if not idle_unobservable:
                         idle_unobservable = True
                         unobservable_finding = Finding(
-                            code="MRS-SUPV-012",
+                            code="MRS-SUPV-015",
                             severity=Severity.WARN,
                             message=(
                                 f"neither the pane of session {session_name!r} nor "
