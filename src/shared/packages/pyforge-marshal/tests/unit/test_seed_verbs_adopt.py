@@ -341,6 +341,52 @@ def test_an_escaping_entry_is_reported_on_a_dry_run_and_a_declined_apply_too(cle
     assert declined.declined is True
 
 
+def test_a_previously_adopted_entry_that_became_an_escaping_symlink_is_left_out_not_refused(clean_repo):
+    """Rung 6 refuses a ``state.managed`` record whose path does not resolve
+    inside the repo, so an entry adopted earlier whose path LATER became an
+    in-repo symlink pointing outside refused the WHOLE run
+    (``managed-content-modified``) and its ``escape_findings`` entry was never
+    reached. Its record is no longer handed to rung 6: only the ordinary entry
+    is applied, the escaping one is named, and the outside file is untouched."""
+    outside_file = _escaping_symlink(clean_repo, "ESCAPER.md")
+    write_state(
+        _state(
+            managed=(
+                ManagedArtifact(
+                    id="bad",
+                    path="ESCAPER.md",
+                    artifact_class="copied-managed",
+                    body_sha="deadbeef",
+                    inserted_region_span=None,
+                ),
+            )
+        ),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+    calls: list[str] = []
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    assert [action.artifact_id for action in result.plan.actions] == ["good"]
+    assert calls == ["good"]
+    assert set(result.applied) == {"good"}
+    assert (clean_repo / "GOOD.md").read_text() == "materialized good\n"
+    assert [finding.path for finding in result.escape_findings] == ["ESCAPER.md"]
+    assert "bad:" in result.escape_findings[0].message
+    assert outside_file.read_text() == "elsewhere\n"
+    assert (clean_repo / "ESCAPER.md").is_symlink()
+
+
 def test_a_manifest_with_no_escaping_entry_carries_no_escape_finding(clean_repo):
     manifest = _manifest(_copied_managed("good", "GOOD.md"))
     assert run_adopt(clean_repo, manifest, confirm=_unreachable_confirm).escape_findings == ()
