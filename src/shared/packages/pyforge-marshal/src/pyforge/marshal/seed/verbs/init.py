@@ -476,10 +476,33 @@ def run_init(
     ``run_adopt``'s identical stance)."""
     _refuse_if_unsuitable(path, force=force)
     resolved_slug = slug if slug is not None else path.resolve().name
+    # Before the bootstrap, not after (Story 82.11): `_manifest_for_init` reads
+    # only `manifest` and the slug -- never the repo -- and a `--slug` that
+    # renders a non-repo-relative path is a `UsageError` that must leave the
+    # target exactly as it was, not created and `git init`-ed.
+    filtered_manifest = _manifest_for_init(manifest, resolved_slug)
     _bootstrap_git_repo(path)
 
-    filtered_manifest = _manifest_for_init(manifest, resolved_slug)
     inventory = classify(filtered_manifest, path)
+    if inventory.escaping:
+        # `--force` into a non-empty target can hold an in-repo symlink that
+        # points outside the repo at a manifest path. `build_plan` plans
+        # nothing for such an entry, so without this the run would exit 0
+        # having silently dropped it, where rung 3 used to refuse it. `init`
+        # carries no finding field, so it refuses (exit 3) -- same wording as
+        # `detect.inventory.escape_findings`, minus its "no action is planned"
+        # tail, which is not true of a refusal.
+        detail = "; ".join(
+            f"{record.entry_id}: {record.path!r} resolves to {record.resolves_to!r}, outside the repository"
+            for record in inventory.escaping
+        )
+        raise PreconditionFailure(
+            f"target-escapes-repo: {detail}",
+            remedy=(
+                "fix the manifest entry's path, or the in-repo symlink it resolves through,"
+                " so it stays inside the repository, then re-run `marshal seed init`"
+            ),
+        )
     plan = build_plan(filtered_manifest, inventory, opted_out=frozenset())
 
     never_write = fs.NeverWrite(
