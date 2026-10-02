@@ -50,7 +50,7 @@ from pyforge.core import atomic_write as core_atomic_write
 import pyforge.marshal.seed.state as state_package
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.errors import InternalError, NeverWriteViolation, SeedError, StateInvalid
-from pyforge.marshal.seed.model.manifest import ArtifactClass
+from pyforge.marshal.seed.model.manifest import ARTIFACT_ID_PATTERN, ArtifactClass
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.state import store
 from pyforge.marshal.seed.state.store import (
@@ -212,22 +212,82 @@ def test_schema_couples_the_region_span_to_the_hybrid_class():
     READ time, before any dataclass is constructed."""
     entry = store._load_schema()["$defs"]["managedArtifact"]
     assert entry["if"]["properties"]["class"]["const"] == "hybrid-managed-region"
+    # The new shape (Story 82.13): a non-empty array for a hybrid, `[]` for
+    # every other class...
+    assert entry["then"]["properties"]["inserted_region_spans"]["minItems"] == 1
+    assert entry["else"]["properties"]["inserted_region_spans"]["maxItems"] == 0
+    # ...and the old one-span key, read-only, coupled exactly as it always was.
     assert entry["then"]["properties"]["inserted_region_span"]["type"] == "object"
     assert entry["else"]["properties"]["inserted_region_span"]["type"] == "null"
+    # Exactly one of the two keys is present.
+    assert entry["oneOf"] == [{"required": ["inserted_region_spans"]}, {"required": ["inserted_region_span"]}]
 
 
-def test_schema_opt_out_artifact_half_is_as_permissive_as_a_managed_id():
-    """``managed[].id`` is a ``nonBlankString`` (``model/manifest.py``
-    imposes no kebab rule on entry ids), so the opt-out's artifact half
-    must not be stricter -- a legally-named entry with an unrepresentable
-    opt-out is the defect this pairing exists to prevent."""
+#: One probe set for the three spellings of the artifact-id grammar (Story
+#: 82.13): the schema's ``$defs/artifactId``, the artifact half of the
+#: ``opted_out`` item pattern, and ``model.manifest.ARTIFACT_ID_PATTERN``.
+#: Each probe is paired with whether the grammar admits it -- one token, no
+#: whitespace of any kind, no ``#`` (the opt-out key's separator).
+_ARTIFACT_ID_PROBES = (
+    ("agents-md", True),
+    ("bmad.method", True),
+    ("AGENTS.md", True),
+    ("a_b", True),
+    ("10.2", True),
+    ("x", True),
+    ("caf\u00e9", True),
+    ("has a space", False),
+    ("a#b", False),
+    ("#", False),
+    ("a #b", False),
+    ("tab\tid", False),
+    ("line\nbreak", False),
+    ("trailing\n", False),
+    (" leading", False),
+    ("", False),
+    (" ", False),
+)
+
+
+@pytest.mark.parametrize(("probe", "admitted"), _ARTIFACT_ID_PROBES)
+def test_the_three_spellings_of_the_artifact_id_grammar_agree(probe, admitted):
+    """DW-FU-8-5-2: ``managed[].id`` was a ``nonBlankString`` while the
+    opt-out's artifact half was stricter, so a legally-named artifact could be
+    claimed but never opted out of. All three now carry one grammar, and this
+    is the pin that keeps them from drifting apart: the schema's
+    ``artifactId``, the artifact half of the ``opted_out`` item pattern, and
+    the manifest's ``ARTIFACT_ID_PATTERN`` answer every probe the same way.
+    (``jsonschema`` applies ``pattern`` with ``re.search``; the anchors in the
+    pattern itself make that a whole-string match.)"""
     schema = store._load_schema()
-    assert schema["$defs"]["managedArtifact"]["properties"]["id"]["$ref"] == ("#/$defs/nonBlankString")
-    pattern = schema["properties"]["opted_out"]["items"]["pattern"]
-    for accepted in ("bmad.method#tiers", "AGENTS.md#tiers", "a_b#t", "10.2#region-1"):
-        assert re.search(pattern, accepted), accepted
-    for rejected in ("agents-md", "agents-md#Tiers", "agents md#tiers", "a#b#c", "#tiers"):
-        assert not re.search(pattern, rejected), rejected
+    schema_spelling = re.search(schema["$defs"]["artifactId"]["pattern"], probe) is not None
+    opt_out_spelling = re.search(schema["properties"]["opted_out"]["items"]["pattern"], f"{probe}#tiers") is not None
+    manifest_spelling = ARTIFACT_ID_PATTERN.fullmatch(probe) is not None
+    assert (schema_spelling, opt_out_spelling, manifest_spelling) == (admitted, admitted, admitted)
+
+
+def test_the_managed_id_refs_the_one_artifact_id_grammar():
+    """``managed[].id`` is the artifact grammar itself, no longer a looser
+    ``nonBlankString``; ``legacy[].id`` keeps its own."""
+    schema = store._load_schema()
+    assert schema["$defs"]["managedArtifact"]["properties"]["id"]["$ref"] == "#/$defs/artifactId"
+    assert schema["$defs"]["legacyArtifact"]["properties"]["id"]["$ref"] == "#/$defs/nonBlankString"
+
+
+@pytest.mark.parametrize("bad_id", ["has a space", "a#b", "tab\tid"])
+def test_a_managed_id_the_opt_out_grammar_cannot_spell_is_state_invalid(tmp_path, bad_id):
+    """The state never holds an id an opt-out cannot name: a file carrying one
+    reads as ``StateInvalid`` naming the field, as any schema violation does
+    -- and ``write_state`` refuses to emit it."""
+    document = _valid_document()
+    document["managed"][0]["id"] = bad_id
+    _write_raw(tmp_path, yaml.safe_dump(document, sort_keys=False))
+    with pytest.raises(StateInvalid, match=r"managed\[0\]\.id"):
+        read_state(tmp_path)
+
+    state = _sample_state(managed=(dataclasses.replace(_sample_state().managed[0], id=bad_id),))
+    with pytest.raises(StateInvalid, match=r"managed\[0\]\.id"):
+        write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
 
 
 # --- the packaged schema's own failure modes (a broken installation) --------
@@ -364,7 +424,7 @@ def test_from_json_dict_rejects_a_bool_where_a_byte_offset_belongs():
     """`bool` is a subtype of `int` in Python, so `True` would otherwise
     load as the byte offset `1`."""
     with pytest.raises(ValueError, match="expected an int"):
-        RegionSpanRecord.from_json_dict({"name": "tiers", "start": True, "end": 20})
+        RegionSpanRecord.from_json_dict({"name": "tiers", "start": True, "end": 20, "body_sha": "0123abcd"})
 
 
 # --- frozen means frozen: coercion + the cross-entry invariants -------------
@@ -446,28 +506,28 @@ def test_an_inverted_region_span_is_rejected_at_construction():
     ``doc[:start] + doc[end:]`` -- DUPLICATES bytes instead of stripping a
     region."""
     with pytest.raises(ValueError, match="0 <= start <= end"):
-        RegionSpanRecord(name="tiers", start=100, end=5)
+        RegionSpanRecord(name="tiers", start=100, end=5, body_sha="0123abcd")
 
 
 def test_a_negative_region_offset_is_rejected_at_construction():
     with pytest.raises(ValueError, match="0 <= start <= end"):
-        RegionSpanRecord(name="tiers", start=-1, end=5)
+        RegionSpanRecord(name="tiers", start=-1, end=5, body_sha="0123abcd")
 
 
 def test_an_empty_region_body_is_still_a_legal_span():
-    assert RegionSpanRecord(name="tiers", start=7, end=7).end == 7
+    assert RegionSpanRecord(name="tiers", start=7, end=7, body_sha="0123abcd").end == 7
 
 
 def test_a_hybrid_claim_without_a_span_is_rejected():
     """AD-58's eject needs the byte offsets; a hybrid claim with no span is
     one it cannot withdraw at all."""
-    with pytest.raises(ValueError, match="requires an inserted_region_span"):
+    with pytest.raises(ValueError, match="requires an inserted_region_spans entry"):
         ManagedArtifact(
             id="agents-md",
             path="AGENTS.md",
             artifact_class="hybrid-managed-region",
             body_sha="0123abcd",
-            inserted_region_span=None,
+            inserted_region_spans=(),
         )
 
 
@@ -480,7 +540,7 @@ def test_a_whole_file_claim_carrying_a_span_is_rejected():
             path="AGENTS.md",
             artifact_class="referenced",
             body_sha="0123abcd",
-            inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=1),
+            inserted_region_spans=(RegionSpanRecord(name="tiers", start=0, end=1, body_sha="0123abcd"),),
         )
 
 
@@ -627,9 +687,19 @@ def test_read_state_reports_a_directory_at_the_state_path_as_invalid(tmp_path):
             id="non-rfc3339-timestamp",
         ),
         pytest.param(
-            lambda doc: doc["managed"][0]["inserted_region_span"].update(start=-1),
+            lambda doc: doc["managed"][0]["inserted_region_spans"][0].update(start=-1),
             "start",
             id="negative-byte-offset",
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0]["inserted_region_spans"][0].update(body_sha="ZZ"),
+            "body_sha",
+            id="bad-region-body-sha",
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0]["inserted_region_spans"][0].pop("body_sha"),
+            "body_sha",
+            id="region-span-without-its-own-body-sha",
         ),
         pytest.param(lambda doc: doc.update(agents=["Claude Code"]), "agents", id="non-kebab-agent-id"),
         pytest.param(lambda doc: doc.update(opted_out=["agents-md"]), "opted_out", id="opt-out-without-region"),
@@ -641,19 +711,54 @@ def test_read_state_reports_a_directory_at_the_state_path_as_invalid(tmp_path):
         pytest.param(lambda doc: doc["managed"][0].update(extra="x"), "extra", id="unknown-managed-key"),
         pytest.param(lambda doc: doc.update(model_version="1.2"), "model_version", id="non-semver-version"),
         pytest.param(
-            lambda doc: doc["managed"][0].update(inserted_region_span=None),
-            "inserted_region_span",
+            lambda doc: doc["managed"][0].update(inserted_region_spans=[]),
+            "inserted_region_spans",
             id="hybrid-claim-without-a-span",
         ),
         pytest.param(
-            lambda doc: doc["managed"][1].update(inserted_region_span={"name": "tiers", "start": 0, "end": 1}),
-            "inserted_region_span",
+            lambda doc: doc["managed"][1].update(
+                inserted_region_spans=[{"name": "tiers", "start": 0, "end": 1, "body_sha": "deadbeef"}]
+            ),
+            "inserted_region_spans",
             id="whole-file-claim-carrying-a-span",
         ),
         pytest.param(
-            lambda doc: doc["managed"][0]["inserted_region_span"].update(name="Tiers"),
+            lambda doc: doc["managed"][0]["inserted_region_spans"][0].update(name="Tiers"),
             "name",
             id="non-marker-safe-region-name",
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0].pop("inserted_region_spans"),
+            "managed[0]",
+            id="hybrid-claim-with-no-span-key-at-all",
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0].update(
+                inserted_region_span={"name": "tiers", "start": 7, "end": 20},
+            ),
+            "managed[0]",
+            id="both-span-shapes-at-once",
+        ),
+        pytest.param(
+            lambda doc: (
+                doc["managed"][0].pop("inserted_region_spans"),
+                doc["managed"][0].update(inserted_region_span=None),
+            ),
+            "inserted_region_span",
+            id="old-shape-hybrid-claim-with-a-null-span",
+        ),
+        pytest.param(
+            lambda doc: (
+                doc["managed"][1].pop("inserted_region_spans"),
+                doc["managed"][1].update(inserted_region_span={"name": "tiers", "start": 0, "end": 1}),
+            ),
+            "inserted_region_span",
+            id="old-shape-whole-file-claim-carrying-a-span",
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0]["inserted_region_spans"][0].update(extra="x"),
+            "extra",
+            id="unknown-region-span-key",
         ),
         pytest.param(
             lambda doc: doc.update(opted_out=["agents-md#Tiers"]),
@@ -687,7 +792,7 @@ def test_schema_violations_raise_state_invalid_naming_the_field(tmp_path, mutate
             id="body-sha",
         ),
         pytest.param(
-            lambda doc: doc["managed"][0]["inserted_region_span"].update(name="tiers\n"),
+            lambda doc: doc["managed"][0]["inserted_region_spans"][0].update(name="tiers\n"),
             "name",
             id="region-name",
         ),
@@ -1025,12 +1130,12 @@ def test_a_repo_root_that_is_not_a_directory_raises_the_documented_value_error(t
 def test_managed_entries_alone_reconstruct_the_removal_set():
     state = _sample_state()
     removal_set = [
-        (artifact.path, artifact.artifact_class, artifact.body_sha, artifact.inserted_region_span)
+        (artifact.path, artifact.artifact_class, artifact.body_sha, artifact.inserted_region_spans)
         for artifact in state.managed
     ]
     assert removal_set == [
-        ("AGENTS.md", "hybrid-managed-region", "0123abcd", RegionSpanRecord("tiers", 7, 20)),
-        ("docs/dreams/example.md", "copied-seeded", "deadbeef", None),
+        ("AGENTS.md", "hybrid-managed-region", "0123abcd", (RegionSpanRecord("tiers", 7, 20, "0123abcd"),)),
+        ("docs/dreams/example.md", "copied-seeded", "deadbeef", ()),
     ]
 
 
@@ -1046,10 +1151,11 @@ def test_a_hybrid_entrys_span_strips_its_region_without_touching_the_rest():
         path="AGENTS.md",
         artifact_class="hybrid-managed-region",
         body_sha="0123abcd",
-        inserted_region_span=RegionSpanRecord(name="tiers", start=len(prefix), end=len(prefix) + len(body)),
+        inserted_region_spans=(
+            RegionSpanRecord(name="tiers", start=len(prefix), end=len(prefix) + len(body), body_sha="0123abcd"),
+        ),
     )
-    span = artifact.inserted_region_span
-    assert span is not None
+    (span,) = artifact.inserted_region_spans
     assert document[span.start : span.end] == body
     assert document[: span.start] + document[span.end :] == prefix + suffix
     assert span.name == "tiers"
@@ -1059,8 +1165,8 @@ def test_a_region_span_survives_the_file_round_trip(tmp_path):
     write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
     loaded = read_state(tmp_path)
     assert loaded is not None
-    assert loaded.managed[0].inserted_region_span == RegionSpanRecord("tiers", 7, 20)
-    assert loaded.managed[1].inserted_region_span is None
+    assert loaded.managed[0].inserted_region_spans == (RegionSpanRecord("tiers", 7, 20, "0123abcd"),)
+    assert loaded.managed[1].inserted_region_spans == ()
 
 
 # --- AC: the error taxonomy stays closed ------------------------------------
@@ -1602,32 +1708,89 @@ def test_record_opt_out_leaves_a_whole_file_claim_on_a_different_id_untouched():
     after = record_opt_out(_clean_state(), "agents-md", "tiers")
     (survivor,) = after.managed
     assert survivor.id == "dream-template"
-    assert survivor.inserted_region_span is None
+    assert survivor.inserted_region_spans == ()
 
 
-def test_state_records_at_most_one_region_span_per_artifact():
-    """What replaced a VACUOUS test. This slot used to assert that
-    ``record_opt_out`` leaves a claim on a DIFFERENT region of the same id
-    untouched -- a state ``SeedState`` cannot be built in, so the assertion
-    passed by construction and proved nothing about the filter it named.
-
-    The real, now-documented constraint is this one: ``__post_init__``
-    rejects duplicate ``managed[].id``, so one artifact carries at most one
-    ``ManagedArtifact`` and therefore at most ONE ``inserted_region_span``.
-    State can record a single installed region per hybrid artifact however
-    many its manifest entry declares -- a pre-existing property of the
-    schema S-10.2 shipped, and the reason ``record_opt_out``'s docstring
-    calls the span half of its filter defence in depth rather than a
-    selective match."""
+def test_state_records_one_span_per_region_and_still_refuses_two_entries_for_one_id():
+    """What replaced a VACUOUS test, and then the one-span limit it pinned
+    (Story 82.13, DW-FU-8-5-6). A hybrid artifact is ONE ``managed[]`` entry
+    holding a span per installed region, so ``record_opt_out``'s span filter
+    is now a selective match it can exercise (the tests below). What stays
+    refused is a SECOND ENTRY for one artifact id: ``__post_init__`` keys the
+    recorded-hash lookup on the id, and two entries would make it
+    order-dependent."""
     region_claim = _sample_state().managed[0]
-    assert region_claim.inserted_region_span is not None
+    assert region_claim.inserted_region_spans
     sibling = dataclasses.replace(
         region_claim,
         path="AGENTS-2.md",
-        inserted_region_span=RegionSpanRecord(name="model-badge", start=30, end=40),
+        inserted_region_spans=(RegionSpanRecord(name="model-badge", start=30, end=40, body_sha="0123abcd"),),
     )
     with pytest.raises(ValueError, match=r"SeedState\.managed\[\]\.id: must be unique"):
         _clean_state(managed=(region_claim, sibling))
+
+
+def _two_region_claim() -> ManagedArtifact:
+    """One hybrid ``managed[]`` entry recording TWO regions, each with its own
+    hash -- the first span's is the artifact's, as ``ManagedArtifact``
+    requires."""
+    return ManagedArtifact(
+        id="agents-md",
+        path="AGENTS.md",
+        artifact_class="hybrid-managed-region",
+        body_sha="0123abcd",
+        inserted_region_spans=(
+            RegionSpanRecord(name="tiers", start=7, end=20, body_sha="0123abcd"),
+            RegionSpanRecord(name="model-badge", start=40, end=60, body_sha="feedbeef"),
+        ),
+    )
+
+
+def test_record_opt_out_of_one_region_keeps_the_claim_on_its_sibling():
+    """DW-FU-8-5-6: opting out of ``tiers`` drops only ``tiers``' span; the
+    entry stays, rebuilt with the span that is left, and its ``body_sha``
+    follows the new first span (so ``ManagedArtifact``'s own invariant
+    holds). Before 82.13 the sibling was never recorded at all."""
+    before = _clean_state(managed=(_two_region_claim(),))
+
+    after = record_opt_out(before, "agents-md", "tiers")
+
+    (claim,) = after.managed
+    assert [span.name for span in claim.inserted_region_spans] == ["model-badge"]
+    assert claim.body_sha == "feedbeef" == claim.inserted_region_spans[0].body_sha
+    assert after.opted_out == ("agents-md#tiers",)
+
+
+def test_record_opt_out_of_the_last_recorded_region_drops_the_whole_entry():
+    """A hybrid claim with no span is not constructible, so the entry goes
+    when its last span does."""
+    after = record_opt_out(record_opt_out(_clean_state(managed=(_two_region_claim(),)), "agents-md", "tiers"), "agents-md", "model-badge")
+    assert after.managed == ()
+    assert after.opted_out == ("agents-md#model-badge", "agents-md#tiers")
+
+
+def test_record_opt_out_of_a_region_the_entry_does_not_record_changes_no_claim():
+    before = _clean_state(managed=(_two_region_claim(),))
+    after = record_opt_out(before, "agents-md", "portability-contract")
+    assert after.managed == before.managed
+    assert after.opted_out == ("agents-md#portability-contract",)
+
+
+def test_clear_opt_out_mirrors_record_opt_out_for_one_of_two_regions():
+    """The reinstate side of the same per-region drop: clearing one region of
+    a multi-region entry withdraws that region's claim and no other's."""
+    before = _clean_state(managed=(_two_region_claim(),))
+
+    cleared = clear_opt_out(before, "agents-md", "model-badge")
+
+    (claim,) = cleared.managed
+    assert [span.name for span in claim.inserted_region_spans] == ["tiers"]
+    assert claim.body_sha == "0123abcd"
+    # Record-then-clear of the FIRST region leaves exactly what clearing it
+    # directly does.
+    assert clear_opt_out(record_opt_out(before, "agents-md", "tiers"), "agents-md", "tiers").managed == (
+        clear_opt_out(before, "agents-md", "tiers").managed
+    )
 
 
 def test_record_opt_out_leaves_a_region_claim_on_a_different_artifact_untouched():
@@ -1653,7 +1816,7 @@ def test_record_opt_out_leaves_a_whole_file_claim_on_the_same_id_untouched():
         path="AGENTS.md",
         artifact_class="copied-managed",
         body_sha="0123abcd",
-        inserted_region_span=None,
+        inserted_region_spans=(),
     )
     before = _clean_state(managed=(whole_file_claim,))
     after = record_opt_out(before, "agents-md", "tiers")
@@ -1774,7 +1937,7 @@ def test_clear_opt_out_drops_a_live_claim_too_which_is_the_callers_to_prevent():
     that guard to S-10.6, where the verb exists to hold it."""
     live = _clean_state()
     (claim,) = [artifact for artifact in live.managed if artifact.id == "agents-md"]
-    assert claim.inserted_region_span is not None
+    assert claim.inserted_region_spans
     assert claim.body_sha
 
     cleared = clear_opt_out(live, "agents-md", "tiers")
@@ -1791,7 +1954,7 @@ def test_clear_opt_out_leaves_a_whole_file_claim_on_the_same_id_untouched():
         path="AGENTS.md",
         artifact_class="copied-managed",
         body_sha="0123abcd",
-        inserted_region_span=None,
+        inserted_region_spans=(),
     )
     before = _clean_state(managed=(whole_file_claim,))
     assert clear_opt_out(before, "agents-md", "tiers").managed == (whole_file_claim,)
