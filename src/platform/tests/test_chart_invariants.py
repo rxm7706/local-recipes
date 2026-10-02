@@ -46,6 +46,10 @@ _EXTERNAL_POSTGRES_OVERLAY = (
 _EXTERNAL_REDIS_OVERLAY = (
     _PLATFORM_DIR / "deploy" / "overlays" / "external-redis" / "values.yaml"
 )
+_COMPOSE_FILE = _PLATFORM_DIR / "compose" / "compose.yml"
+# Story 83.3: the bundled PostgreSQL image -- official PostgreSQL 17 plus the
+# `vector` extension the changelog's `pyforge-scribe:1` creates.
+_PGVECTOR_IMAGE = "pgvector/pgvector:pg17"
 
 # The plain kinds AD-11 allows the core chart to render -- anything else
 # (Route, DeploymentConfig, ImageStream, BuildConfig, ...) is a finding.
@@ -1412,6 +1416,36 @@ def _assert_postgres_backup_disabled(docs: list[dict[str, Any]]) -> None:
     assert "archive_mode=on" not in joined, args
 
 
+def _assert_postgres_statefulset_image(
+    docs: list[dict[str, Any]],
+    expected: str,
+) -> None:
+    """Story 83.3: the bundled PostgreSQL StatefulSet runs exactly `expected`.
+
+    The Liquibase hook Job applies `pyforge-scribe:1` (`CREATE EXTENSION
+    vector`) on every install and upgrade, so the in-cluster database image
+    must carry `vector.control` -- stock `postgres:17` does not (DW-FU-41-3-9).
+    """
+    postgres = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "StatefulSet"
+        and (doc.get("metadata") or {})
+        .get("labels", {})
+        .get(
+            "app.kubernetes.io/component",
+        )
+        == "postgres"
+    ]
+    assert len(postgres) == 1, postgres
+    containers = postgres[0]["spec"]["template"]["spec"]["containers"]
+    images = [container.get("image") for container in containers]
+    assert images == [expected], (
+        f"the postgres StatefulSet must run {expected!r} (the bundled "
+        f"PostgreSQL has to carry pgvector), got {images}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Real proofs (helm-gated)
 # ---------------------------------------------------------------------------
@@ -2282,6 +2316,47 @@ def test_ocp_overlay_postgres_backup_cronjob_restricted_v2():
         by_component["postgres-backup"],
         where="postgres-backup",
     )
+
+
+@requires_helm
+def test_postgres_statefulset_runs_the_pgvector_image():
+    """AC (Story 83.3 / DW-FU-41-3-9): the bundled PostgreSQL carries pgvector.
+
+    The Liquibase hook Job applies `pyforge-scribe:1` (`CREATE EXTENSION
+    vector`) on every install and upgrade; stock `postgres:17` has no
+    `vector.control`, so the release failed for every estate. The default
+    render must run `pgvector/pgvector:pg17`, and `postgres.image.registry`
+    must still relocate that same image to a mirror (air-gapped estates).
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    _assert_postgres_statefulset_image(docs, _PGVECTOR_IMAGE)
+
+    mirrored = _render(
+        _CORE_CHART,
+        "--set",
+        "postgres.image.registry=registry.mirror.internal",
+        release="platform",
+    )
+    _assert_postgres_statefulset_image(
+        mirrored,
+        f"registry.mirror.internal/{_PGVECTOR_IMAGE}",
+    )
+
+
+def test_compose_postgres_service_runs_the_pgvector_image():
+    """AC (Story 83.3): the dev stack's `postgres` service runs the pgvector
+    image, and the chart's `postgres.image` default composes to the same
+    reference (so a revert of `values.yaml` reds this even where helm is
+    absent) -- PyYAML only, no helm.
+    """
+    yaml = _import_yaml()
+    compose = yaml.safe_load(_COMPOSE_FILE.read_text())
+    assert compose["services"]["postgres"]["image"] == _PGVECTOR_IMAGE
+
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    chart_image = values["postgres"]["image"]
+    assert not chart_image["registry"], chart_image
+    assert f"{chart_image['repository']}:{chart_image['tag']}" == _PGVECTOR_IMAGE
 
 
 @requires_helm
@@ -3950,6 +4025,38 @@ def test_postgres_backup_check_fails_when_archive_mode_missing():
     ]
     with pytest.raises(AssertionError, match="archive_mode"):
         _assert_postgres_backup_cronjob_present(docs)
+
+
+def _postgres_statefulset_doc(image: str) -> dict[str, Any]:
+    return {
+        "kind": "StatefulSet",
+        "metadata": {
+            "name": "platform-postgres",
+            "labels": {"app.kubernetes.io/component": "postgres"},
+        },
+        "spec": {
+            "template": {
+                "spec": {"containers": [{"name": "postgres", "image": image}]}
+            },
+        },
+    }
+
+
+def test_postgres_image_check_fails_on_the_stock_postgres_image():
+    """The guard-removed companion of `test_postgres_statefulset_runs_the_
+    pgvector_image`: the stock image -- the one with no `vector.control` --
+    fed to the same helper must raise, and the pgvector image must pass.
+    """
+    with pytest.raises(AssertionError, match="pgvector"):
+        _assert_postgres_statefulset_image(
+            [_postgres_statefulset_doc("postgres:17")],
+            _PGVECTOR_IMAGE,
+        )
+
+    _assert_postgres_statefulset_image(
+        [_postgres_statefulset_doc(_PGVECTOR_IMAGE)],
+        _PGVECTOR_IMAGE,
+    )
 
 
 # ---------------------------------------------------------------------------

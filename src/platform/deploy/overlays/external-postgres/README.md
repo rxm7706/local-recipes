@@ -3,7 +3,11 @@
 **Prerequisite:** an operator-managed PostgreSQL instance reachable from the
 cluster and a pre-created Secret holding `DATABASE_URL` and
 `MIGRATION_DATABASE_URL` for that endpoint — see `../../README.md` §
-Prerequisites for the full key contract.
+Prerequisites for the full key contract. That instance must provide the
+pgvector `vector` extension: the Liquibase hook applies `pyforge-scribe:1`
+(`CREATE EXTENSION IF NOT EXISTS vector`, a superuser or trusted-extension
+step — see `../../../db/README.md`) on every install and upgrade, and fails
+the release without it.
 
 This overlay skips the in-cluster postgres `StatefulSet`, its `Service`s,
 and the backup `PersistentVolumeClaim`. Platform pods still read
