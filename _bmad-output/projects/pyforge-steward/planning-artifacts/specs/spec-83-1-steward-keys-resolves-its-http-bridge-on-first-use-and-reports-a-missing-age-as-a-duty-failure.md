@@ -2,7 +2,7 @@
 title: "83.1: `steward keys` resolves its `_http` bridge on first use and reports a missing `age` as a duty failure"
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'e537a533144fd0b5f65586ddb5a42b74eb65b62c'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -176,3 +176,40 @@ Minted 2026-10-02 by operator ruling: start Phase 2 of the deferral burn-down af
   - `[low]` `[reject]` Intent Alignment: clause placement (`KeysDuty.run`, discriminated by `exc.filename`) versus the Never's "around the subprocess calls" — same root cause and same reason as the second row.
   - `[low]` `[patch]` Intent Alignment: reading B (every verb works outside a checkout) is only partly implemented — grouped with the Edge Case Hunter ledger row; the Design Notes already scope `repo_root()` out, and the ledger now states the residual.
   - `[false]` `[reject]` Intent Alignment: the diff changes the ledger, memlog and story status, which no acceptance criterion names — the spec's Execution tasks and Binding prescribe each.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Summary.** `keys.py` no longer runs the `_http.py` bridge at import time: `http_bridge()` is a `functools.cache`d function that locates `_http.py`, puts its directory on `sys.path` once and imports `_http` at first use. `resolve_headers`, `enterprise_host` and `sync.py`'s `_default_transport` call it, so `import pyforge.steward.keys` and `import pyforge.steward.sync` succeed with no `_http.py` reachable and in any import order, and outside a checkout the first call raises the `RuntimeError` naming `.claude/skills/conda-forge-expert/scripts/_http.py`. `KeysDuty.run` reports an absent `age` or `age-keygen` as `DutyResult(ok=False, ...)` naming the binary (exit 1, no traceback); a `FileNotFoundError` for any other name propagates. `DW-1-3-14` and `DW-1-3-5` are closed in the tracked ledger.
+
+**Files changed** (all under `src/shared/packages/pyforge-steward/` unless noted)
+- `src/pyforge/steward/keys.py` — `http_bridge()` replaces the import-time block; `KeysDuty.run` gains the `FileNotFoundError` clause and `_AGE_BINARIES`.
+- `src/pyforge/steward/sync.py` — drops the module-level `from _http import open_url`; `_default_transport` calls `http_bridge().open_url`.
+- `src/pyforge/steward/cli.py`, `src/pyforge/steward/deploy.py` — comments reworded to match the lazy bridge; no behaviour change.
+- `tests/unit/test_keys_http_bridge.py` (new) — fresh-interpreter imports with `_http.py` hidden, `sync` before `keys`, the named `RuntimeError`, located-once / `sys.path`-once, the transport through the bridge, and the real bridge's three delegate names.
+- `tests/unit/test_keys_encrypt_decrypt.py`, `tests/unit/test_keys_rotate.py` — missing `age` (encrypt, decrypt) and missing `age-keygen` (rotate) through `main()` with `PATH` at an empty directory; a non-age `FileNotFoundError` propagates; the lazy-import test renamed.
+- `tests/packaging/test_dependency_completeness.py` (repo root `tests/`) — the `_http` entry of `BASELINE_UNDECLARED_IMPORTS["pyforge-steward"]` deleted, and the `django_pyforge` entry no longer points at it.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` — `DW-1-3-14` and `DW-1-3-5` closed, each with a `resolution:` and a `verified:` line citing `path:line`; the `DW-1-3-14` resolution states the residual.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` — two `Surface reconcile 2026-10-02` entries naming every governed path changed; no baseline stamp.
+
+**Review findings.** 28 findings, one pass. Patches applied: 5 entries, high 1 and low 4 (medium 0) — the stale `tests/packaging` baseline entry (high), the missing real-bridge test, the stale test name, the `DW-1-3-14` residual note, and the stale `deploy.py` comment. Deferred: none (`deferred: []`). Rejected: 8 `low` findings (the `exc.filename` discriminator, the unmapped outside-a-checkout `RuntimeError`, `http_bridge()` shadowing, the rotate leftover identity, `PermissionError`) and 11 `false` findings, each with its recorded reason in the Review Triage Log.
+
+**Follow-up review recommendation: `false`.** This is a first pass and one patched entry was `high`, so the score would be `true` only if a specific unverified risk remained. None does: the high finding was a red `tests/packaging` lane the station suite does not run; after the fix the whole lane passes (`pyforge-deps-test`, 130 passed, 3 skipped), the only red detector in `detectors-ci` is the unrelated `ledger-direction` (below), and nothing else in the repo keys on the removed import. Patched counts by verdict: high 1, medium 0, low 4.
+
+**Verification performed** (every verdict read from the exit code)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0, 1929 passed, 2 skipped (after the last edit).
+- `pixi run -e pyforge-guild lint-types` — exit 0.
+- `python scripts/spec_surface_reconcile.py` — exit 0; `pixi run -e pyforge-guild spec-surface-check` — exit 0; `deferred-work-check` — exit 0.
+- `pixi run --frozen -e pyforge-steward python -c "import pyforge.steward.sync"` — exit 0 (it failed with `ModuleNotFoundError: No module named '_http'` before the change).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-coverage-gate` — exit 0, touched modules at or above the 80% unit floor.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — exit 0, 130 passed, 3 skipped.
+- Mutation check (AC 7): with the clause renamed to `except KeyError`, the three missing-binary tests fail (3 failed); `keys.py` restored byte-identical.
+- `pixi run -e pyforge-guild pr-preflight` — exit 1, and not clean: see the first residual.
+
+**Residual risks**
+- `pr-preflight` exits 1 on one detector, `ledger-direction`, naming `pyforge-marshal/82-1-gate-evaluate-finds-the-real-repository-under-an-installed-package-and-never-passes-having-run-nothing` as `landed-but-unpromoted`. It is not caused by this change: that merge is on `main` (`6d4de8e484`) but not in this branch, `main`'s tracked marshal ledger already reads `done`, this branch's older copy reads `backlog`, and the detector compares `main`'s merge history with the branch's ledger. It should clear when this branch is merged with `main`; this run did not touch another station's ledger, which is harness-owned. The red lane stopped `pr-preflight` before its remaining station lanes, so I ran the lanes this diff can affect individually (above).
+- `repo_root()` and `default_inventory_path()` still raise the `RuntimeError` outside a checkout, so `keys list|rotate|revoke|audit` without `--inventory` still need one; the spec scopes this out and the ledger row states it.
+- The clause matches on `exc.filename`, so a missing relative file literally named `age` or `age-keygen` in a non-spawn path would be reported as a missing binary; the spec's Design Notes choose this shape.
+- The harness checkpointed the work as `wip: 83.1` commits; the history wants a proper merge subject at landing (`Merge pyforge-steward/83.1 into main`).
