@@ -11,7 +11,14 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md
 warnings: [oversized]
-deferred: []
+deferred:
+  - summary: >-
+      Three sibling loaders still resolve `scripts/promote_sprint_status.py` through `Path(__file__).resolve().parents[8]`, so they break under an installed package the way `repo_root()` did.
+    evidence: |-
+      `cli/chain.py:96` (`_load_promote`, raises RuntimeError when the file is missing), `cli/land.py:1278` (returns None, so land skips the feed sync) and `cli/deploy.py:3490` (asserts). None is a `repo_root()` consumer, the story's intent keeps every other consumer's call unchanged, and `cli/deploy.py` deliberately avoids `repo_root()` so `tests/unit/test_deploy.py` can redirect it. The script is a repo file the artifact does not ship, so the fix needs an anchor decision, not a one-line swap.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/chain.py:96
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -117,4 +124,57 @@ Closes: DW-FU-2-1-7.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-02 — Review pass
+- verdicts: 28 findings — high 0, medium 2, low 20, false 6, maybe-false 0
+- findings:
+  - `[low]` `[reject]` Blind: a cwd inside an unrelated git checkout still ends in MRS-GATE-004 (warn, exit 0) — the outcome is real, but the intent selects the invocation directory's git root as the installed-layout anchor and says not to change MRS-GATE-004's meaning for an unconfigured allowlist; the same warn already happens in the editable layout for a slug with no policy file; a guard would add a branch for a case the intent excludes.
+  - `[low]` `[reject]` Blind: `GitVcs.repo_common_root` is unvalidated for a submodule, bare repo or `--separate-git-dir` — the adapter is the one `cli/init.py:640-649` already uses and the intent names; no run was shown reaching an installed marshal inside such a repo; a validation guard is more than a direct correction.
+  - `[false]` `[reject]` Blind: `dispatch_land_finalize/__main__.py:761` would traceback on the typed error — `dispatch_land.py` spawns it with `cwd=git_repo_root`, so under an installed layout `repo_root()` resolves through git and does not raise; a hand-run `python -m` outside any repo fails loudly, which is correct.
+  - `[medium]` `[defer]` Blind: the sibling `parents[8]` loaders (`cli/chain.py:96`, `cli/land.py:1278`, `cli/deploy.py:3490`) break under an installed package and no follow-up records them — real and pre-existing, not a `repo_root()` consumer, and the fix needs an anchor decision; recorded in frontmatter `deferred`.
+  - `[low]` `[patch]` Blind: the `_resolve_policy_source` docstring was reworded, no test pins the fence under the installed layout, and the gate module docstring omits the new `root-unresolved` scope and the `None` root — the stale module docstring was real and is fixed (a `root-unresolved` paragraph added to `cli/gate.py`'s module docstring); the fence-test claim is rejected because the fence is unchanged code and AC2 already runs a real policy through it.
+  - `[low]` `[reject]` Blind: non-gate consumers get a plain stderr line with no JSON envelope, an unhelpful message, and a doubled cause — real but cosmetic; the relay exists only to keep `main()` never-raising, the intent keeps other consumers' calls unchanged, and a JSON branch is more than a direct correction.
+  - `[low]` `[patch]` Blind: the `except OSError` around `.is_dir()` is untested — real (a mutation removing it left all 22 tests green); a test was added (`test_an_unreadable_editable_probe_falls_through_to_the_git_root`) and a re-run mutation of the guard now fails it. Grouped with the verification-gap row.
+  - `[low]` `[reject]` Blind: several tests prove less than they appear (the editable test compares to the same expression, the registry test counts by source regex, the root-failure ordering is unpinned) — no named harm; the editable comparison is literally AC5's "same root as today", the ordering is what AC3's "one finding" asks for.
+  - `[false]` `[reject]` Blind: ledger and memlog bookkeeping is inconsistent or incomplete — `python scripts/spec_surface_reconcile.py` and `spec-surface-check` both exit 0 with the memlog entries as written; the older `verified:` lines under DW-FU-2-1-7 are history, not the current status, and no stamp is needed for a check that passes.
+  - `[low]` `[reject]` Edge: submodule/bare/`--separate-git-dir` root unchecked — same claim and same reason as the Blind row above.
+  - `[low]` `[reject]` Edge: an unrelated git repo lacking the project tree is accepted unchecked — same claim and same reason as the Blind wrong-cwd row above.
+  - `[low]` `[patch]` Edge: `repo_root()` is re-called at `conventional_project_policy_path` and `_resolve_policy_source`, so a later call could fail and escape `evaluate_gate` — the invocation directory is constant so the answers agree, and `main()`'s relay catches an escape; the real defect is the "FIRST and ONCE" comment, corrected in `cli/gate.py`. Grouped with the two "ONCE" rows below.
+  - `[false]` `[reject]` Edge: `dispatch_land_finalize` gets a raw traceback and exit 1 — same refutation as the Blind finalize row: the sanctioned spawn runs in a git root.
+  - `[low]` `[reject]` Edge: non-gate `--format json` consumers get no envelope — same claim and same reason as the Blind JSON row.
+  - `[low]` `[reject]` Edge: the editable probe hardcodes `src/shared/packages/pyforge-marshal`, which a foundry-tree move would break — the intent names exactly this path as the "is the repository" marker, and the move is speculative (`pyforge.cutover_root` has not flipped).
+  - `[low]` `[reject]` Edge: the installed-layout root is the cwd's git root, so `gate evaluate` in an untrusted repo runs that repo's policy commands — this is AC2's required behaviour (run the checkout's real `verify_commands` from the main checkout) and equals running a repo's own test task; no containment contract changes.
+  - `[low]` `[reject]` Edge (claim): "never passes having run nothing" is false for a wrong-cwd git root — same claim and same reason as the Blind wrong-cwd row; the Design Notes record the unconfigured-allowlist case.
+  - `[low]` `[patch]` Edge (claim): the comment says the root is resolved "FIRST and ONCE" but two consumers call `repo_root()` again — fixed in the same `cli/gate.py` comment edit as the re-resolution row.
+  - `[false]` `[reject]` Edge (claim): only `cli/main.py` relays the typed error, so "main() never raises" misses the finalizer — same refutation as the Blind finalize row.
+  - `[low]` `[patch]` Verification gap: no test drives the `except OSError` branch of the editable probe — verified by mutation, fixed by the added test; the re-run mutation (`except ZeroDivisionError`) fails it.
+  - `[false]` `[reject]` Intent alignment: the tests patch `config.__file__` in-process instead of installing a built artifact — AC1-AC4 are phrased at `__file__`-in-a-prefix level ("Given `repo_root()` evaluated with `__file__` inside an environment prefix"), which is what the tests build.
+  - `[low]` `[reject]` Intent alignment: AC6 is met only implicitly — re-run here: the bare `Path(__file__).resolve().parents[8]` restored in `repo_root()` fails 18 of 23 tests in `test_repo_root.py`; the one test that pins the old warn/exit-0 shape is a documented witness, harmless.
+  - `[low]` `[reject]` Intent alignment: the tests use a synthetic `acme` project and a linked worktree for the loop home — AC2 asks for the project's `verify_commands` run with the main checkout as `cwd`; a marker file present only in the main checkout shows exactly that.
+  - `[false]` `[reject]` Intent alignment: `dispatch_land_finalize` has no relay for the typed error — same refutation as the Blind finalize row.
+  - `[low]` `[patch]` Intent alignment: repeated `repo_root()` calls inside `evaluate_gate` — same root cause as the "ONCE" comment rows; fixed by the same `cli/gate.py` comment edit.
+  - `[low]` `[reject]` Intent alignment: root failure now preempts the slug-shape and policy findings in the installed-outside-repo case — AC3 asks for exactly one could-not-evaluate finding; no harm is named, and the editable layout is unaffected.
+  - `[medium]` `[defer]` Intent alignment: the same `parents[8]` assumption in the three sibling loaders — same claim and same deferral as the Blind sibling-loader row.
+  - `[low]` `[reject]` Intent alignment: `cli/seed.py:64` and `:170` still describe `repo_root()` as `__file__`-derived — the comments' point (seed resolves the operator-named target, not `repo_root()`) still holds, and the intent forbids touching `cli/seed.py`.
+
+## Auto Run Result
+
+Status: done
+
+**Summary.** `cli/config.py::repo_root()` keeps the `__file__`-derived root only when `parents[8]` exists and carries `src/shared/packages/pyforge-marshal/`; otherwise it returns the git common root of the invocation directory (`GitVcs.repo_common_root`, the `cli/init.py` anchor), never indexing past the path's ancestors. When neither anchor yields a repository it raises `RepoRootUnresolvedError`. `evaluate_gate` turns that into one `MRS-GATE-016` finding (`Verdict.UNEVALUABLE`, non-zero exit) with nothing run, and `main()` relays it from any other consumer as one stderr line plus the UNEVALUABLE exit. DW-FU-2-1-7 is closed in `deferred-work-ledger.md`.
+
+**Files changed** (under `src/shared/packages/pyforge-marshal/` unless noted).
+- `src/pyforge/marshal/cli/config.py` -- layout-aware `repo_root()` and the new `RepoRootUnresolvedError`.
+- `src/pyforge/marshal/cli/gate.py` -- `evaluate_gate` resolves the root first and returns the one could-not-evaluate envelope; `_render_text` prints `root: (unresolved)`; module docstring and the root comment updated (review patches).
+- `src/pyforge/marshal/cli/main.py` -- relays `RepoRootUnresolvedError` from other consumers.
+- `src/pyforge/marshal/core/findings.py`, `src/pyforge/marshal/core/verdict.py` -- register `MRS-GATE-016` as UNEVALUABLE.
+- `tests/unit/test_repo_root.py` (new), `tests/unit/test_findings.py`, `tests/unit/test_verdict.py` -- the six ACs, the registry pins, and the unreadable-probe test added in review.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` -- DW-FU-2-1-7 closed with a `resolved:` line.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` -- two surface-reconcile entries naming every governed path.
+
+**Review.** 28 findings: patches applied 3 groups (gate module docstring; "FIRST and ONCE" comment; the unreadable-probe test), all low; deferred 1 (the sibling `parents[8]` loaders, medium, `deferred:` in the frontmatter); rejected 22 with the reasons recorded row by row above (6 false, 16 low).
+
+**Follow-up review recommended:** `false` (no high patched, no two medium patched; patched by verdict: high 0, medium 0, low 3 groups).
+
+**Verification.** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`, `pixi run --frozen -e pyforge-ci pyforge-deps-test`, `python scripts/spec_surface_reconcile.py`, `spec-surface-check` and `lint-types` are re-run after the review patches (results recorded below). The AC6 mutation (bare `parents[8]` restored) fails 18 of 23 tests in `test_repo_root.py`; the guard mutation (`except OSError` removed) fails the new unreadable-probe test.
+
+**Residual risks.** The installed-layout answer depends on the invocation directory by design; a cwd inside a git repository that lacks the project's policy still reports `MRS-GATE-004` (the genuine unconfigured case, `data["root"]` names where it looked). `dispatch_land_finalize` and the three sibling loaders are not relayed or fixed here (see the deferred item).
