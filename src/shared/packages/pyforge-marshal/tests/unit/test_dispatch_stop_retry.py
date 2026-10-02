@@ -504,7 +504,7 @@ def test_is_dispatch_session_alive_false_when_no_session_pid() -> None:
     journal = dispatch_core.DispatchJournalFacts(
         story_key="test",
         session_pid=None,
-        model="test-model", 
+        model="test-model",
         launched_at=datetime.fromisoformat("2026-10-02T12:00:00+00:00"),
         worktree_path="/tmp/test-worktree",
     )
@@ -542,7 +542,7 @@ def test_is_dispatch_session_alive_true_when_process_start_time_matches() -> Non
     """Should return True when process start time is within tolerance of launch time."""
     launch_time = datetime.fromisoformat("2026-10-02T12:00:00+00:00")  # 1696248000.0
     journal = dispatch_core.DispatchJournalFacts(
-        story_key="test", 
+        story_key="test",
         session_pid=12345,
         model="test-model",
         launched_at=launch_time,
@@ -559,7 +559,7 @@ def test_is_dispatch_session_alive_false_when_process_started_too_late() -> None
     launch_time = datetime.fromisoformat("2026-10-02T12:00:00+00:00")
     journal = dispatch_core.DispatchJournalFacts(
         story_key="test",
-        session_pid=12345, 
+        session_pid=12345,
         model="test-model",
         launched_at=launch_time,
         worktree_path="/tmp/test-worktree",
@@ -576,7 +576,7 @@ def test_is_dispatch_session_alive_false_when_process_started_too_early() -> Non
     journal = dispatch_core.DispatchJournalFacts(
         story_key="test",
         session_pid=12345,
-        model="test-model", 
+        model="test-model",
         launched_at=launch_time,
         worktree_path="/tmp/test-worktree",
     )
@@ -591,7 +591,7 @@ def test_is_dispatch_session_alive_true_when_start_time_unavailable() -> None:
     journal = dispatch_core.DispatchJournalFacts(
         story_key="test",
         session_pid=12345,
-        model="test-model", 
+        model="test-model",
         launched_at=datetime.fromisoformat("2026-10-02T12:00:00+00:00"),
         worktree_path="/tmp/test-worktree",
     )

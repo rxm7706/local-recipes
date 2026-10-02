@@ -283,12 +283,13 @@ class PosixProcess:
 
             # Calculate boot time
             import time
+
             boot_time = time.time() - uptime_seconds
 
             # Convert start ticks to actual start time
             start_time = boot_time + (start_ticks / clock_ticks_per_sec)
             return start_time
-        except (OSError, IOError, ValueError, IndexError, KeyError):
+        except OSError, IOError, ValueError, IndexError, KeyError:
             # Any failure reading /proc files or parsing values -> degrade gracefully
             return None
         except ZeroDivisionError:
@@ -307,10 +308,10 @@ class PosixProcess:
                     elif line.startswith("Pid:"):
                         actual_pid = int(line.split()[1])
                         # If we have both values, check if they match
-                        if 'tgid' in locals():
+                        if "tgid" in locals():
                             return tgid == actual_pid
             return False  # Couldn't find both Tgid and Pid
-        except (OSError, IOError, ValueError, IndexError):
+        except OSError, IOError, ValueError, IndexError:
             # If we can't read /proc files, degrade to True (assume it's a process)
             # to maintain backward compatibility
             return True

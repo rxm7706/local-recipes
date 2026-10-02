@@ -341,6 +341,7 @@ def test_process_start_time_returns_float_for_this_process(process):
     assert start_time > 0
     # Should be within the last hour (reasonable for a test process)
     import time
+
     now = time.time()
     assert start_time < now
     assert start_time > now - 3600
@@ -356,13 +357,14 @@ def test_process_start_time_none_for_nonexistent_process(process):
 def test_process_start_time_none_on_proc_read_failure(process, monkeypatch):
     """Should return None when /proc files can't be read."""
     import builtins
-    
+
     original_open = builtins.open
+
     def _mock_open_failure(path, *args, **kwargs):
         if "/proc/" in str(path):
             raise OSError("Permission denied")
         return original_open(path, *args, **kwargs)
-    
+
     monkeypatch.setattr(builtins, "open", _mock_open_failure)
     assert process.process_start_time(os.getpid()) is None
 
@@ -378,13 +380,14 @@ def test_is_thread_group_leader_true_for_process_leader(process):
 def test_is_thread_group_leader_degrades_to_true_on_proc_failure(process, monkeypatch):
     """When /proc files can't be read, assume it's a process leader for backward compatibility."""
     import builtins
-    
+
     original_open = builtins.open
+
     def _mock_open_failure(path, *args, **kwargs):
         if "/proc/" in str(path):
-            raise OSError("Permission denied") 
+            raise OSError("Permission denied")
         return original_open(path, *args, **kwargs)
-        
+
     monkeypatch.setattr(builtins, "open", _mock_open_failure)
     assert process._is_thread_group_leader(12345) is True
 

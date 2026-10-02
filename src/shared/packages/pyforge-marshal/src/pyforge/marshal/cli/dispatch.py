@@ -1366,35 +1366,33 @@ def _is_dispatch_session_alive(
     journal: dispatch_core.DispatchJournalFacts,
 ) -> bool:
     """Check if a dispatch session is genuinely alive, not just a reused PID.
-    
+
     Returns True only if:
     1. The journal has a session PID
-    2. That PID is alive according to ProcessPort.is_alive (which now checks it's a process, not thread)  
+    2. That PID is alive according to ProcessPort.is_alive (which now checks it's a process, not thread)
     3. The process start time is consistent with the journal launch time (within tolerance)
-    
+
     Story 83.1: Fix the defect where a reused PID or thread ID can hold a wave
     on a story that finished weeks ago.
     """
     if journal.session_pid is None:
         return False
-        
+
     if not process.is_alive(journal.session_pid):
         return False
-        
+
     # Additional verification: check process start time matches launch time within tolerance
     if journal.launched_at is not None:
         process_start_time = process.process_start_time(journal.session_pid)
         if process_start_time is not None:
-            from datetime import timedelta
-            
-            # Convert journal launch time to timestamp 
+            # Convert journal launch time to timestamp
             journal_timestamp = journal.launched_at.timestamp()
-            
+
             # Allow up to 30 seconds tolerance for the process to start after the journal entry
             # This accounts for the time between journaling the launch and the process actually starting
             tolerance_seconds = 30.0
             time_diff = process_start_time - journal_timestamp
-            
+
             # Process should have started within tolerance after the journal launch time
             # But not significantly before it (which would indicate PID reuse)
             if time_diff < -tolerance_seconds or time_diff > tolerance_seconds:
