@@ -1575,7 +1575,7 @@ class BmadLoopHarness:
         keeps the old degrade: ``None``."""
         deadline = time.monotonic() + _SPIN_LOG_POLL_TIMEOUT_S
         while True:
-            exited = _child_exited(pid)
+            exited = False
             try:
                 text = log_path.read_text(encoding="utf-8", errors="replace")
             except OSError:
