@@ -121,7 +121,8 @@ from ..adapters.harness_bmadloop import (
 )
 from ..core import policy as policy_core
 from ..core.context import MarshalContext
-from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
+from ..core.model import Verdict
+from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES, exit_code_for
 from . import adapters as adapters_cli
 from . import chain as chain_cli
 from . import check as check_cli
@@ -382,6 +383,20 @@ def main(argv: list[str] | None = None) -> int:
         # success. The docstring's frozen-domain claim is enforced, not
         # merely expected.
         return EXIT_USAGE
+    except config_cli.RepoRootUnresolvedError as exc:
+        # Story 82.1 (DW-FU-2-1-7): `cli/config.py::repo_root()` -- the one
+        # anchor every policy/gate/loop-home consumer reads -- found neither a
+        # source checkout above this package nor a git repository around the
+        # invocation directory (an installed package run outside any
+        # checkout). `gate evaluate` turns it into its own envelope finding;
+        # any other consumer lands here, so the invariant that `main()`
+        # never raises (and never exits 0 having resolved nothing) holds:
+        # one stderr line carrying the registered code, the UNEVALUABLE exit.
+        try:
+            print(f"marshal: {exc.finding.code} [{exc.finding.severity.value}] {exc.finding.message}", file=sys.stderr)
+        except OSError:
+            pass
+        return exit_code_for(Verdict.UNEVALUABLE)
     except SystemExit as exc:
         # argparse exits itself: --version/--help -> 0, a usage error -> 2
         # (never 0). Surface its code as a return value, never re-raised --

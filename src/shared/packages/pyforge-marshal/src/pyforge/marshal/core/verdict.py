@@ -1245,6 +1245,12 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # verify command ran and failed -- GATE_FAILED, same rung as MRS-GATE-001,
     # never WARN or downgraded to advisory.
     "MRS-GATE-015": Verdict.GATE_FAILED,
+    # Story 82.1 (DW-FU-2-1-7): the repository root could not be resolved
+    # (an installed package invoked outside any git checkout) -- UNEVALUABLE,
+    # the same tier as MRS-GATE-002/003/005/009: Marshal could not say WHICH
+    # tree to gate, so there is no gate answer to report either way, and it
+    # is never the bare-defaults MRS-GATE-004 warn (exit 0) false green.
+    "MRS-GATE-016": Verdict.UNEVALUABLE,
     # Story 28.8 (derived context recomputes only on source change,
     # SPEC-marshal-token-economy CAP-5). 001 is UNEVALUABLE for the same
     # reason MRS-POLICY-001 is: marshal could not determine WHAT the

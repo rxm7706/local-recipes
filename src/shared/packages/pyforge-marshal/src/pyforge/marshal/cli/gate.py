@@ -390,8 +390,10 @@ def _resolve_policy_source(candidate: Path, project_slug: str) -> tuple[Path | N
     ``real_projects_root`` the out-of-tree directory too, so containment
     trivially held and an out-of-repo policy's commands ran ``clean``, exit
     0. The project directory is therefore also required to resolve inside
-    ``repo_root()`` itself -- the one anchor that is not attacker-relocatable
-    (it is derived from ``__file__``).
+    ``repo_root()`` itself -- the one anchor that is not relocatable from
+    inside the tree (derived from ``__file__`` in the source layout, from the
+    invocation directory's git common root under an installed package --
+    Story 82.1).
 
     Returns the RESOLVED path (recorded in the envelope as
     ``data["policy_source"]``, so a contained-but-symlinked policy is still
@@ -828,8 +830,9 @@ def evaluate_gate(
     findings: list[Finding] = [*io_findings, *policy_findings]
 
     # PROVENANCE (review finding). `slug` alone does not say what was
-    # evaluated: `repo_root()` is derived from `__file__`, so WHICH tree
-    # gets gated depends on which copy of the package is importable, and the
+    # evaluated: `repo_root()` is derived from `__file__` (from the
+    # invocation directory's git root under an installed package), so WHICH
+    # tree gets gated depends on which copy of the package is importable, and the
     # conventional path can be a symlink, so the slug plus the convention do
     # NOT determine the file that was read. An envelope asserting `clean`
     # must say where and from what. Both are recorded here and rendered by
