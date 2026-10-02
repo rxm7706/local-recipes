@@ -1434,8 +1434,12 @@ def test_override_flag_short_circuits_the_liveness_gather_even_when_not_live(tmp
     live. Proven here with `_ExplosiveHarness`/`_ExplosiveProcess` (the SAME
     doubles `test_policy_already_off_skips_liveness_gather_entirely` uses
     below): if the gate were ever consulted despite the flag, this test
-    would fail on the explosion, not merely on a wrong assertion."""
-    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    would fail on the explosion, not merely on a wrong assertion.
+
+    `landing_resync = false` (Story 82.2): the post-merge home resync now
+    shares the same liveness verdict, so it would gather too -- switching it
+    off keeps this test proving the RETIREMENT gate alone."""
+    policy_path = _write_project_policy(tmp_path, "landing_resync = false\n" + _rule_policy(required_check=None))
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     home_root = tmp_path / "loops"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
@@ -1475,9 +1479,14 @@ def test_override_flag_short_circuits_the_liveness_gather_even_when_not_live(tmp
 def test_policy_already_off_skips_liveness_gather_entirely(tmp_path, capsys, monkeypatch):
     """The Always bullet's short-circuit: `delete_branch` already `False`
     from policy means NO liveness gather at all -- proven here with fakes
-    that raise if ever consulted, not merely by asserting the outcome."""
+    that raise if ever consulted, not merely by asserting the outcome.
+
+    `landing_resync = false` (Story 82.2): the post-merge home resync now
+    shares the same liveness verdict, so it would gather too -- switching it
+    off keeps this test proving the RETIREMENT gate alone."""
     policy_path = _write_project_policy(
-        tmp_path, "landing_branch_retirement = false\n" + _rule_policy(required_check=None)
+        tmp_path,
+        "landing_branch_retirement = false\nlanding_resync = false\n" + _rule_policy(required_check=None),
     )
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
 
