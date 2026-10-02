@@ -18,6 +18,7 @@ needs a synthetic migration."""
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 from pathlib import Path
 
@@ -207,6 +208,33 @@ def test_exit_code_0_on_a_dry_run_with_no_managed_content(clean_repo, capsys):
     out = capsys.readouterr().out
     assert code == 0
     assert "empty" in out
+
+
+def test_an_escaping_entry_is_named_in_the_printed_plan_and_the_json_envelope(clean_repo, capsys):
+    """Story 82.11 (DW-10-3-9): ``update`` names the entry left out of the
+    plan because its path resolves outside the repo, in text and ``--json``
+    alike, and the run still exits 0 with the ordinary entry planned."""
+    outside = clean_repo.parent / f"{clean_repo.name}-outside"
+    outside.mkdir()
+    (outside / "target.md").write_text("elsewhere\n", encoding="utf-8")
+    (clean_repo / "ESCAPER.md").symlink_to(outside / "target.md")
+    write_state(_seed_state(), repo_root=clean_repo, never_write=NeverWrite(patterns=()))
+    _commit_all(clean_repo)
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+
+    code = seed_cli.run_update(_args(repo_root=str(clean_repo)), manifest=manifest)
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "good (GOOD.md)" in out
+    assert "entries left out of the plan (1 target-escapes-repo finding(s))" in out
+    assert "ESCAPER.md: bad:" in out
+
+    args = _args(repo_root=str(clean_repo))
+    args.json = True
+    assert seed_cli.run_update(args, manifest=manifest) == 0
+    result = json.loads(capsys.readouterr().out)["result"]
+    assert [finding["type"] for finding in result["escape_findings"]] == ["target-escapes-repo"]
+    assert [action["artifact_id"] for action in result["plan"]["actions"]] == ["good"]
 
 
 def test_exit_code_0_on_an_applied_run(clean_repo, capsys):

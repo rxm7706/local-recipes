@@ -202,6 +202,39 @@ def test_never_adopted_repo_reports_every_materializable_entry_absent(clean_repo
     assert report.failing is True
 
 
+def test_an_escaping_entry_is_one_hard_finding_and_is_never_read(clean_repo, monkeypatch):
+    """Story 82.11 (DW-10-3-9): an entry whose path resolves outside the repo
+    (an in-repo symlink pointing out) is no longer ``absent`` -- ``check``
+    reports it as HARD ``target-escapes-repo`` naming the entry and where it
+    resolves, and never reads the escaped location."""
+    outside = clean_repo.parent / f"{clean_repo.name}-outside"
+    outside.mkdir()
+    secret = outside / "secret.md"
+    secret.write_text("outside the repo\n", encoding="utf-8")
+    (clean_repo / "ESCAPER.md").symlink_to(secret)
+    manifest = _manifest(_whole_file("bad", "ESCAPER.md"), _whole_file("good", "GOOD.md"))
+    read_paths: list[Path] = []
+    real_read = check_module._read_text_or_blank
+
+    def spy(target: Path) -> str:
+        read_paths.append(target)
+        return real_read(target)
+
+    monkeypatch.setattr(check_module, "_read_text_or_blank", spy)
+
+    report = run_check(clean_repo, manifest)
+
+    escapes = [finding for finding in report.findings if finding.type is FindingType.TARGET_ESCAPES_REPO]
+    assert [(finding.severity, finding.path) for finding in escapes] == [(Severity.HARD, "ESCAPER.md")]
+    assert "bad:" in escapes[0].message
+    assert str(secret.resolve()) in escapes[0].message
+    # Not ALSO "missing": the entry is not absent, it is not ours to read.
+    missing = {f.path for f in report.findings if f.type is FindingType.ARTIFACT_MISSING}
+    assert missing == {"GOOD.md"}
+    assert clean_repo / "ESCAPER.md" not in read_paths
+    assert report.failing is True
+
+
 def test_referenced_entries_are_never_reported_absent(clean_repo):
     manifest = _manifest(_referenced("ref", path="https://example.com/not-a-real-file"))
 
