@@ -7907,3 +7907,14 @@ status: open
   severity: low
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-82-4: A journal that is not valid UTF-8 makes run_supervisor exit 0 inert on a Marshal-started run, the same silent unsupervised outcome DW-FU-3-4-3 described for a quarantined launch line.
+
+- source_spec: `planning-artifacts/specs/spec-82-4-the-supervisor-attaches-despite-a-quarantined-launch-journals-its-spawn-and-every-stop-and-fails-closed-on-tampering.md`
+  summary: A journal that is not valid UTF-8 makes run_supervisor exit 0 inert on a Marshal-started run, the same silent unsupervised outcome DW-FU-3-4-3 described for a quarantined launch line.
+  evidence: LocalFs.read_text raises FsError on UnicodeDecodeError (adapters/fs_local.py:129-138), and run_supervisor treats every read failure as "cannot prove ownership, stay inert" (return 0, one stderr line, no journal write) before fold runs, so the quarantine rescue added in Story 82.4 never sees the line. The read-failure branch is unchanged by 82.4 (it is Story 3.4's recorded policy for an unreadable journal) and no test writes invalid bytes through a real LocalFs (test_inert_when_the_journal_read_itself_fails uses FakeFs.fail_read_text). Settling it needs a decision first: whether a readable but undecodable journal counts as unproven ownership (attach, MRS-SUPV-011) or stays inert, which reverses the recorded 3.4 policy for unreadable journals, plus either a decode-tolerant FsPort read or a second read path.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py:1061
+  origin: spec-deferred fcb9ea29653c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
