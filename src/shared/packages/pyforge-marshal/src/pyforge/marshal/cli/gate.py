@@ -238,6 +238,10 @@ _SCOPE_CHECK_BASE_BRANCH = "main"
 # canonical UTC form, seconds precision, a `Z` offset.
 _GATE_RECORD_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
+# The WARN a gate evaluation appends when its record could not be written. `land-story` reads the
+# code to keep it out of its own findings (the landing never reads the record).
+GATE_RECORD_FINDING_CODE = "MRS-GATE-017"
+
 
 def add_gate_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register the ``gate`` subcommand on ``main.py``'s subparser tree, with
@@ -1184,7 +1188,7 @@ def _write_gate_record(
         return (
             {"written": False, "reason": reason, "run_id": run_id},
             Finding(
-                code="MRS-GATE-017",
+                code=GATE_RECORD_FINDING_CODE,
                 severity=Severity.WARN,
                 message=f"no gate record was written for story {story_key}: {reason}",
             ),

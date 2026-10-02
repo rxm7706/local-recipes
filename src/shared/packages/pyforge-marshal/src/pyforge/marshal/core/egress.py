@@ -195,10 +195,13 @@ _TOKEN_SHAPE_PATTERNS: tuple[re.Pattern[str], ...] = (
 # methods now live on `CommitPort` (`ports/commit.py`), classified `True` --
 # the message is `Redacted` and every other text parameter a typed `VcsRef`, so
 # the completeness meta-test covers commit text with no change of its own.
-# `VcsPort` is non-egress because it now carries only reads and ref operations
-# (and `push`/`fetch`, which move git objects the callers already hold); the
-# commit text is the reason a second port exists, not an exemption `VcsPort`
-# keeps.
+# `VcsPort` stays non-egress because its reads and ref operations carry no
+# session text (and `push`/`fetch` move git objects the callers already hold);
+# the commit text is the reason a second port exists, not an exemption `VcsPort`
+# keeps. One commit-text parameter is still a bare `str` on `VcsPort`:
+# `merge_branch`'s `subject`, rendered from the policy template by
+# `core.identity.render_merge_subject`, never from session text -- a recorded
+# deferral (it belongs on `CommitPort` with a `Redacted` subject).
 EGRESS_PORTS: Mapping[str, bool] = {
     "ProcessPort": False,
     "FsPort": False,

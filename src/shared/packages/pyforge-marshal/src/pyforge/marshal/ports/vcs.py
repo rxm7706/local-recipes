@@ -1,12 +1,17 @@
 """``VcsPort`` -- the git-worktree seam ``cli/init.py`` depends on (Story
 1.4, architecture spine AD-11). A Protocol definition only (Structural
 Seed: ``ports/`` declares shapes, never implementations); implemented
-solely by ``adapters/vcs_git.py`` (AD-4). Not an egress port, because it
-carries only reads and ref operations -- and ``push``/``fetch``, which move git
-objects its callers already hold, never free text this port itself forwards.
-Commit text is declared egress (AD-34: "VCS commit and PR text"), so the three
-commit-writing methods live on ``ports/commit.py``'s ``CommitPort`` (Story
-82.9), which takes the message as ``Redacted``; ``GitVcs`` implements both ports.
+solely by ``adapters/vcs_git.py`` (AD-4). Classified non-egress because its
+reads and ref operations carry no session text -- and ``push``/``fetch`` move git
+objects its callers already hold. Commit text IS declared egress (AD-34: "VCS
+commit and PR text"), so the three commit-writing methods (``commit_paths``,
+``merge_ref_resolving``, ``commit_paths_onto_remote_tip``) live on
+``ports/commit.py``'s ``CommitPort`` (Story 82.9, DW-FU-2-6-4), which takes the
+message as ``Redacted``; ``GitVcs`` implements both ports. One commit-text
+parameter stays a bare ``str`` here: ``merge_branch``'s ``subject``, which
+``core.identity.render_merge_subject`` renders from the policy template, never
+from session text (a recorded deferral: it belongs on ``CommitPort`` with a
+``Redacted`` subject).
 
 Four methods are a direct port of one piece of ``scripts/bmad-loop-worktree``'s
 ``provision()`` logic (the design reference named by Story 1.4's spec) --

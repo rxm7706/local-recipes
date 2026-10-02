@@ -1416,7 +1416,7 @@ class GitVcs:
         before any git invocation."""
         remote_name = _require_vcs_ref(remote, "remote")
         ref_name = _require_vcs_ref(ref, "ref")
-        commit_text = _require_redacted(message, "message")
+        checked_message = _require_redacted(message, "message")
         skip_reason = (
             _require_redacted(preflight_skip_reason, "preflight_skip_reason").text
             if preflight_skip_reason is not None
@@ -1476,7 +1476,7 @@ class GitVcs:
                 except OSError as exc:
                     raise VcsCommandError(f"cannot write {dest} in the publish worktree: {exc}") from exc
                 paths.append(dest)
-            new_sha = self.commit_paths(tmp_path, tuple(paths), commit_text)
+            new_sha = self.commit_paths(tmp_path, tuple(paths), checked_message)
             ancestor = _run(
                 [
                     "git",
