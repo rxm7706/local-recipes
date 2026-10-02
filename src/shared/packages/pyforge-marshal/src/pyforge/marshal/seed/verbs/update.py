@@ -413,7 +413,12 @@ def _region_shas_for_record(
     return tuple(region_shas)
 
 
-def _managed_records(state: SeedState | None, manifest: Manifest, repo_root: Path) -> tuple[ManagedRecord, ...]:
+def _managed_records(
+    state: SeedState | None,
+    manifest: Manifest,
+    repo_root: Path,
+    escaping_ids: frozenset[str] | set[str] = frozenset(),
+) -> tuple[ManagedRecord, ...]:
     """Mirrors ``verbs/adopt.py``'s identical helper, EXTENDED (review
     finding): translates ``state.managed`` into rung 6's own input shape,
     excluding a record whose manifest entry has since been retired or
@@ -422,12 +427,20 @@ def _managed_records(state: SeedState | None, manifest: Manifest, repo_root: Pat
     OTHER region the CURRENT manifest entry declares via
     ``_region_shas_for_record`` (see that function's own docstring for why
     ``adopt.py``'s recorded-spans-only shape is not enough for a state file
-    written before Story 82.13)."""
+    written before Story 82.13).
+
+    A record in ``escaping_ids`` (its path resolves outside the repo, Story
+    82.11) is dropped BEFORE anything is read for it: ``_region_shas_for_record``
+    reads the file of any region state does not record, and an escaped target
+    is never read -- for a state in the pre-82.13 one-span shape too, where
+    every sibling of the one recorded region is such a region."""
     if state is None:
         return ()
     entries_by_id = {entry.id: entry for entry in manifest.entries}
     records: list[ManagedRecord] = []
     for artifact in state.managed:
+        if artifact.id in escaping_ids:
+            continue
         entry = entries_by_id.get(artifact.id)
         if artifact.inserted_region_spans:
             if entry is None or entry.format is None:
@@ -908,7 +921,7 @@ def _read_materialized_text(target: Path, artifact_id: str) -> str:
 
 def _managed_artifact_after_apply(
     action: Action, entry: ManifestEntry, repo_root: Path, prior: ManagedArtifact | None = None
-) -> ManagedArtifact:
+) -> ManagedArtifact | None:
     """Mirrors ``verbs/adopt.py``'s identical helper -- re-reads the
     JUST-MATERIALIZED target from disk rather than trusting anything the
     ``commit`` callback might have returned (it returns nothing), via
@@ -916,23 +929,37 @@ def _managed_artifact_after_apply(
     ``target.read_text()``).
 
     A hybrid entry records every declared region that is present in the file
-    after the write and that ``action.chosen_anchor`` named or ``prior`` (the
-    record this one replaces, while it describes the same ``path``) already
-    recorded -- each with its own offsets and body hash (Story 82.13; see
-    ``verbs/adopt.py``'s helper for the full reasoning). ``update``'s own
-    wholesale-regenerate ``chosen_anchor`` names every declared region that is
-    not opted out, so a record in the pre-82.13 one-span shape is rewritten to
-    the full set of those here, and an opted-out region (its markers are gone)
-    is never recorded."""
+    after the write when ``prior`` -- the record this one replaces, from the
+    state AS READ, while it describes the same ``path`` -- exists, and
+    otherwise only the regions ``action.chosen_anchor`` named; each with its
+    own offsets and body hash (Story 82.13; see ``verbs/adopt.py``'s helper for
+    the full reasoning, including the pass-2 wedge an old-shape record caused).
+    ``update``'s own wholesale-regenerate ``chosen_anchor`` names every
+    declared region that is not opted out, so a record in the pre-82.13
+    one-span shape is rewritten to the full set of those here, and an
+    opted-out region (its markers are gone) is never recorded.
+
+    ``InternalError`` when a region the action NAMED is absent after the write;
+    ``None`` when nothing is named and no declared region is present -- the
+    artifact is no longer claimed and the caller omits it from state."""
     target = repo_root / action.target_path
     if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
         assert entry.format is not None
         text = _read_materialized_text(target, entry.id)
         spans = {span.name: span for span in parse_regions(text, entry.format)}
-        action_named = {name for name, _anchor in action.chosen_anchor}
-        named = set(action_named)
-        if prior is not None and prior.path == entry.path:
-            named |= {recorded.name for recorded in prior.inserted_region_spans}
+        named = {name for name, _anchor in action.chosen_anchor}
+        missing = named - spans.keys()
+        if missing:
+            raise InternalError(
+                f"managed region(s) {sorted(missing)!r} of {entry.path!r} were not found immediately after"
+                f" update (action named {sorted(named)!r})",
+                remedy=(
+                    "this indicates the region write silently failed to insert/substitute"
+                    " the region it was asked to -- a broken installation, not a problem"
+                    " with the repository being updated"
+                ),
+            )
+        installed_by_the_tool = prior is not None and prior.path == entry.path
         recorded_spans = tuple(
             RegionSpanRecord(
                 name=region.name,
@@ -941,18 +968,10 @@ def _managed_artifact_after_apply(
                 body_sha=hash_content(region_body_text(text, spans[region.name])),
             )
             for region in entry.regions
-            if region.name in named and region.name in spans
+            if region.name in spans and (installed_by_the_tool or region.name in named)
         )
         if not recorded_spans:
-            raise InternalError(
-                f"no managed region of {entry.path!r} was found to record immediately after update"
-                f" (action named {sorted(action_named)!r})",
-                remedy=(
-                    "this indicates the region write silently failed to insert/substitute"
-                    " the region it was asked to -- a broken installation, not a problem"
-                    " with the repository being updated"
-                ),
-            )
+            return None
         return ManagedArtifact(
             id=entry.id,
             path=entry.path,
@@ -994,6 +1013,7 @@ def _build_state_after_apply(
     *,
     plan: Plan,
     state: SeedState,
+    state_as_read: SeedState,
     inventory: Inventory,
     entries_by_id: dict[str, ManifestEntry],
     repo_root: Path,
@@ -1013,11 +1033,22 @@ def _build_state_after_apply(
     registry.chain`` either found the repo already there or successfully
     walked every step to it. ``migrations_applied`` gains every migration
     JUST applied this run (``migrations``'s own ``to_version``s), unioned
-    with what was already recorded, sorted by parsed version."""
+    with what was already recorded, sorted by parsed version.
+
+    Two states are in play (Story 82.13, review pass 2; see ``verbs/adopt.py``'s
+    builder). ``state`` is the run's in-memory state, WITH every derived opt-out
+    recorded: it supplies the records carried over untouched and ``opted_out``.
+    ``state_as_read`` is the state exactly as ``read_state`` returned it and
+    supplies the REPLACED records, because recording an opt-out drops a hybrid
+    record's span -- the whole record, for a state in the pre-82.13 one-span
+    shape -- and the siblings of a deleted region would have nothing left to be
+    claimed by. A record ``_managed_artifact_after_apply`` returns ``None`` for
+    (every region deleted, nothing named) is omitted: the artifact is no longer
+    claimed."""
     touched_ids = frozenset(action.artifact_id for action in plan.actions)
     carried_over = tuple(record for record in state.managed if record.id not in touched_ids)
-    prior_by_id = {record.id: record for record in state.managed}
-    new_records = tuple(
+    prior_by_id = {record.id: record for record in state_as_read.managed}
+    built = (
         _managed_artifact_after_apply(
             action,
             _entry_or_raise(entries_by_id, action.artifact_id),
@@ -1026,6 +1057,7 @@ def _build_state_after_apply(
         )
         for action in plan.actions
     )
+    new_records = tuple(record for record in built if record is not None)
     managed = tuple(sorted((*carried_over, *new_records), key=lambda record: record.id))
     legacy = tuple(
         LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of) for record in inventory.legacy
@@ -1105,13 +1137,17 @@ def run_update(
     filtered_manifest = _manifest_for_update(manifest)
     ref_findings = referenced_dep_findings(filtered_manifest, repo_root)
     state = read_state(repo_root)
+    # The state exactly as read: the post-apply state takes the records it
+    # REPLACES from here, after `state` below has had derived opt-outs recorded
+    # (and, for an old-shape record, been stripped of it).
+    state_as_read = state
     inventory = classify(filtered_manifest, repo_root)
     escapes = escape_findings(inventory)
     # Rung 6 refuses a record whose path does not resolve inside the repo, so a
     # previously managed entry that is now an escaping symlink would still
     # refuse the whole run there (Story 82.11) -- it is already reported in
     # `escape_findings` and planned for nothing, so it is neither handed to
-    # rung 6 nor read for opt-outs.
+    # rung 6 nor read for opt-outs or for the hashes of its unrecorded regions.
     escaping_ids = {escape.entry_id for escape in inventory.escaping}
     # From here `state` is the run's state WITH the derived opt-outs recorded
     # (in memory; see `_state_with_opt_outs`), so the plan, the wholesale pass,
@@ -1206,8 +1242,7 @@ def run_update(
     managed_records = managed_after_skips(
         tuple(
             record
-            for record in _managed_records(state, filtered_manifest, repo_root)
-            if record.artifact_id not in escaping_ids
+            for record in _managed_records(state, filtered_manifest, repo_root, escaping_ids)
         ),
         plan,
         skip,
@@ -1266,10 +1301,11 @@ def run_update(
 
     result: ApplyResult = run_apply(apply_plan, repo_root=repo_root, never_write=never_write, commit=effective_commit)
 
-    if state is not None and plan.actions:
+    if state is not None and state_as_read is not None and plan.actions:
         new_state = _build_state_after_apply(
             plan=plan,
             state=state,
+            state_as_read=state_as_read,
             inventory=inventory,
             entries_by_id=entries_by_id,
             repo_root=repo_root,

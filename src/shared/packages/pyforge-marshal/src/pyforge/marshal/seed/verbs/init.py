@@ -421,15 +421,12 @@ def _build_state_after_init(
     state to carry anything over FROM. ``legacy[]`` mirrors ``inventory.
     legacy`` for shape parity with ``adopt``'s own state (see the module
     docstring)."""
-    managed = tuple(
-        sorted(
-            (
-                _managed_artifact_after_apply(action, entries_by_id[action.artifact_id], repo_root)
-                for action in plan.actions
-            ),
-            key=lambda record: record.id,
-        )
+    built = (
+        _managed_artifact_after_apply(action, entries_by_id[action.artifact_id], repo_root) for action in plan.actions
     )
+    # A hybrid action that names no region records nothing (`None`): an artifact
+    # with no region of its own is not claimed.
+    managed = tuple(sorted((record for record in built if record is not None), key=lambda record: record.id))
     legacy = tuple(
         LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of) for record in inventory.legacy
     )
