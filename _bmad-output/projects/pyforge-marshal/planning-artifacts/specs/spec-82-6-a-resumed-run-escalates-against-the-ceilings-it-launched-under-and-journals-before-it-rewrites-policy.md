@@ -2,7 +2,7 @@
 title: '82.6: A resumed run escalates against the ceilings it launched under and journals before it rewrites policy'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '1a2ef172558d19a460e24731cc1eed9856444c0c'
 review_loop_iteration: 0
 followup_review_recommended: false
