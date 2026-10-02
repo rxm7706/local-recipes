@@ -2,7 +2,7 @@
 title: '82.7: Factory spin refuses a second live run and reports a child that dies before it starts'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'ac91b861aa4ea00f976b370299461fd99f8bc487'
 review_loop_iteration: 0
 followup_review_recommended: false
