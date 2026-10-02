@@ -40,7 +40,11 @@
 
 services:
   postgres:
-    image: postgres:17
+    # pgvector/pgvector:pg17 = official PostgreSQL 17 + the `vector` extension
+    # the changelog's `pyforge-scribe:1` creates (stock `postgres:17` has no
+    # vector.control -- DW-FU-41-3-9). Same image the chart's postgres.image
+    # defaults to.
+    image: pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: platform
       POSTGRES_PASSWORD: platform

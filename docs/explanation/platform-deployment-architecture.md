@@ -104,9 +104,11 @@ readiness), Celery worker Deployment (the general pool), a `worker-builds`
 Deployment (the builds pool) and a single-replica `beat` Deployment (Story
 42.4), one `consume-events-<station>`
 Deployment per station in `events.consumers` (Story 42.3), migrate hook Job
-(`post-install,pre-upgrade` — the image CMD never migrates), postgres:17
-StatefulSet + PVC, redis:7 Deployment, Services, ServiceAccounts, and an
-Ingress on `ingress.host` (default `platform.internal`).
+(`post-install,pre-upgrade` — the image CMD never migrates), a
+pgvector/pgvector:pg17 StatefulSet + PVC (PostgreSQL 17 plus the `vector`
+extension the Liquibase changelog creates), redis:7 Deployment, Services,
+ServiceAccounts, and an Ingress on `ingress.host` (default
+`platform.internal`).
 
 **TLS:** the default values assume a TLS-terminating ingress controller —
 `ingress.tls` supplies the cert blocks, and `django.secureSslRedirect:
