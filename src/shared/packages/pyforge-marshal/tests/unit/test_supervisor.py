@@ -152,13 +152,18 @@ class _ExitTrackingProcess(FakeProcess):
         return self.last_alive
 
 
+# The instant every fake clock below starts at -- shared so `FakeObserver`'s
+# default `state.json` mtime can name "written the moment the run began".
+_CLOCK_START = datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
+
+
 class FakeClock:
     def __init__(self) -> None:
         self.calls = 0
 
     def now(self) -> datetime:
         self.calls += 1
-        return datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
+        return _CLOCK_START
 
     def monotonic(self) -> float:
         # A frozen clock's monotonic reading is frozen too -- this fake
@@ -179,7 +184,7 @@ class AdvancingClock:
     once per tick and every read within that tick happens back-to-back."""
 
     def __init__(self, *, start: datetime | None = None) -> None:
-        self._now = start if start is not None else datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
+        self._now = start if start is not None else _CLOCK_START
         self.calls = 0
         # Advanced in LOCKSTEP with `_now` by default -- an ordinary host
         # where nothing suspends the process and nothing steps the wall
@@ -224,14 +229,17 @@ class FakeObserver:
         # are two DIFFERENT paths in the same tick, so sharing one counter/
         # constant between them would make every pre-existing test's
         # `mtime_calls`/`mtime_sequence` assertion (indexed by call count)
-        # silently start counting the WRONG query. Defaults to `float("inf")`
-        # -- an mtime infinitely in the future can never be "stale" relative
-        # to any `moment` a test's clock produces, so every pre-existing
-        # test (none of which configures this) sees the budget token
-        # ceilings stay perpetually fresh and unexercised, exactly like the
-        # large default ceiling constants above keep them at
-        # `CeilingStatus.NONE`.
-        state_json_mtime: float | None = float("inf"),
+        # silently start counting the WRONG query. Defaults to the fake
+        # clocks' shared START INSTANT (`_CLOCK_START`) -- a file written the
+        # moment the run began, so it is fresh for as long as a test's clock
+        # keeps it inside the staleness window, and every pre-existing test
+        # (none of which configures this) sees the budget token ceilings stay
+        # perpetually fresh and unexercised, exactly like the large default
+        # ceiling constants above keep them at `CeilingStatus.NONE`. NOT
+        # `float("inf")` any more (Story 82.5): an mtime ahead of the wall
+        # clock is now `unevaluable`, never fresh, so the old stand-in for
+        # "never stale" would skip both token ceilings with an MRS-SUPV-006.
+        state_json_mtime: float | None = _CLOCK_START.timestamp(),
     ) -> None:
         self.pane = pane
         self.pane_sequence = pane_sequence
@@ -2904,7 +2912,7 @@ def test_token_ceiling_breach_on_a_fresh_sample():
     stops the run exactly like a wall-clock breach does."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
-    # `state_json_mtime` defaults to `float("inf")` -- always fresh.
+    # `state_json_mtime` defaults to the clock's start instant -- always fresh.
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
     harness.usage_snapshot_result = UsageSnapshot(
@@ -3073,7 +3081,7 @@ def test_usage_read_failure_with_a_fresh_mtime_also_journals_stale_evidence():
     wall-clock remains binding -- is identical either way."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
-    # `state_json_mtime` defaults to `float("inf")` -- always FRESH.
+    # `state_json_mtime` defaults to the clock's start instant -- always FRESH.
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
     harness.usage_snapshot_result = None  # the read itself failed
