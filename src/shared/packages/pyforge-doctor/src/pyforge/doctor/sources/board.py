@@ -1509,8 +1509,10 @@ def _load_foreign_module(path: Path, mod_name: str):
 # from it let any caller that handed ``gather(target)`` another tree run that
 # tree's Python with Doctor's privileges (DW-FU-6-5-9, Story 40.1). ``target``
 # still supplies every byte of DATA the audit reads -- the loader re-points the
-# script's ``REPO_ROOT`` / ``DREAMS_DIR`` / ``_PIXI_TASKS`` at it -- and with no
-# checkout above Doctor the load raises ``FileNotFoundError``, which
+# script's ``REPO_ROOT`` / ``DREAMS_DIR`` / ``ARCHIVE_DREAMS_DIR`` /
+# ``_PIXI_TASKS`` at it (the script fixes the first three at import from the
+# checkout's own root, so a name missing from that list would silently read the
+# checkout's files) -- and with no checkout above Doctor the load raises ``FileNotFoundError``, which
 # ``_gather_chain_layers_audit`` reports as ``chain-layers-audit-unevaluable``.
 
 
@@ -1528,6 +1530,8 @@ def _load_dashboard_generate(target: Path):
     gen.REPO_ROOT = root
     if hasattr(gen, "DREAMS_DIR"):
         gen.DREAMS_DIR = root / "docs" / "dreams"
+    if hasattr(gen, "ARCHIVE_DREAMS_DIR"):
+        gen.ARCHIVE_DREAMS_DIR = root / "archive" / "docs" / "dreams"
     if hasattr(gen, "_PIXI_TASKS"):
         gen._PIXI_TASKS = None
     return gen

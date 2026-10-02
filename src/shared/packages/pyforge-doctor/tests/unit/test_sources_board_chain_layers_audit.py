@@ -248,6 +248,23 @@ def test_the_probe_runs_when_the_loader_resolves_from_target(tmp_path: Path, mon
     assert probe.read_text(encoding="utf-8") == "executed"
 
 
+def test_the_loader_points_every_data_path_at_the_target_not_the_checkout(tmp_path: Path) -> None:
+    """`fleet_scan.py` fixes `ARCHIVE_DREAMS_DIR` (like `DREAMS_DIR`) at import from the
+    checkout's own root; left alone, auditing another tree reads the checkout's archived Dreams."""
+    target = tmp_path / "target"
+    target.mkdir()
+    assert _REPO_ROOT is not None
+
+    gen = board._load_dashboard_generate(target)
+
+    root = target.resolve()
+    assert gen.REPO_ROOT == root
+    assert gen.DREAMS_DIR == root / "docs" / "dreams"
+    assert gen.ARCHIVE_DREAMS_DIR == root / "archive" / "docs" / "dreams"
+    assert gen.ARCHIVE_DREAMS_DIR.is_relative_to(root)
+    assert not gen.ARCHIVE_DREAMS_DIR.is_relative_to(_REPO_ROOT)
+
+
 def test_no_checkout_script_is_unevaluable_and_never_falls_back_to_target(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

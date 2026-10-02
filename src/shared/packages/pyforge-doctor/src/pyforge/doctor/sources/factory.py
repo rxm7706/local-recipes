@@ -1472,10 +1472,10 @@ def _load_pixi_env_matrix_module():
     byte the check judges. With no checkout above Doctor this raises
     ``FileNotFoundError`` (an ``OSError``), which the caller reports as unevaluable.
 
-    ``sys.path`` is snapshotted and restored and a half-initialised module is not
-    left in ``sys.modules`` when ``exec_module`` raises -- the same guards
-    ``board._load_foreign_module`` gives the Doctor process against a script it
-    does not own.
+    Two of ``board._load_foreign_module``'s guards apply here: ``sys.path`` is
+    snapshotted and restored, and a half-initialised module is not left in
+    ``sys.modules`` when ``exec_module`` raises. Its third, the ``SystemExit`` to
+    ``RuntimeError`` conversion, is not applied.
     """
     script = locate_checkout_script("pixi_env_matrix.py")
     mod_name = "pixi_env_matrix_doctor"
