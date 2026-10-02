@@ -208,7 +208,7 @@ EGRESS_PORTS: Mapping[str, bool] = {
     "HarnessPort": False,
     "VcsPort": False,
     "RecordPort": True,
-    "CommitPort": True,
+    "CommitPort": False,
     "ClockPort": False,
     "SessionObserverPort": False,
     "NotifyPort": True,

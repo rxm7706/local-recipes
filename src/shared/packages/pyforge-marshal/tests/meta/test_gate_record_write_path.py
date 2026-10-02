@@ -247,7 +247,10 @@ def test_guard_is_alive_a_name_bound_from_the_constant_is_followed():
         ("atomic_write_text(d / GATE_RECORD_FILENAME, text)\n", ["1:atomic_write_text"]),
         ("shutil.copy(src, d / GATE_RECORD_FILENAME)\n", ["1:copy"]),
         ("fs.append_line(d / GATE_RECORD_FILENAME, line, fsync=True)\n", ["1:append_line"]),
-        ("h = fs.open_append(d / GATE_RECORD_FILENAME)\nfs.append_held(h, line, fsync=True)\n", ["1:open_append", "2:append_held"]),
+        (
+            "h = fs.open_append(d / GATE_RECORD_FILENAME)\nfs.append_held(h, line, fsync=True)\n",
+            ["1:open_append", "2:append_held"],
+        ),
         ("fs.copy_file(src, d / GATE_RECORD_FILENAME)\n", ["1:copy_file"]),
         ("fs.repoint_symlink_atomic(d / GATE_RECORD_FILENAME, target)\n", ["1:repoint_symlink_atomic"]),
         ("os.symlink(target, d / GATE_RECORD_FILENAME)\n", ["1:symlink"]),

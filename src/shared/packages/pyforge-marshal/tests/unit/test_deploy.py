@@ -1487,9 +1487,7 @@ def test_land_story_text_projection_names_the_gate_record(tmp_path, capsys, monk
     assert "gate record: " in out and "(session namespace)" in out
 
 
-def test_land_story_resolves_the_record_port_through_the_one_helper_and_a_run_less_gate(
-    tmp_path, capsys, monkeypatch
-):
+def test_land_story_resolves_the_record_port_through_the_one_helper_and_a_run_less_gate(tmp_path, capsys, monkeypatch):
     """`land-story` hands `evaluate_gate` the helper's record port and a clock, and `run_id=None` (a `--run` would
     route the fold branch). A fake gate that appends `MRS-GATE-017`, as the real one does for a failed record
     write, leaves the landing clean."""
