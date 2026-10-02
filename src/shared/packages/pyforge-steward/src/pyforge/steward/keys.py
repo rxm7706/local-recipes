@@ -66,6 +66,8 @@ import argparse
 import ast
 import contextlib
 import fcntl
+import functools
+import importlib
 import json
 import os
 import re
@@ -77,6 +79,7 @@ import tokenize
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from types import ModuleType
 from urllib.parse import urlparse
 
 import yaml
@@ -110,14 +113,25 @@ def locate_http_module() -> Path:
     )
 
 
-_HTTP_SCRIPTS_DIR = str(locate_http_module().parent)
-if _HTTP_SCRIPTS_DIR not in sys.path:
-    sys.path.insert(0, _HTTP_SCRIPTS_DIR)
+@functools.cache
+def http_bridge() -> ModuleType:
+    """Resolve and return the real `_http.py` module, on first use, once.
 
-from _http import (  # noqa: E402  # the delegate target + host row (AD-1/AD-2/AD-9)
-    auth_headers_for,
-    resolve_github_api_urls,
-)
+    The delegate target + host row (AD-1/AD-2/AD-9). Locates `_http.py` through
+    `locate_http_module`, puts its directory on ``sys.path`` if absent and
+    imports it by name. Nothing here runs at import time, so importing this
+    module (or `sync.py`, which takes `open_url` through this function) works
+    in a package installed outside a local-recipes checkout and never depends
+    on import order, which ``ruff --select I`` rewrites. Outside a checkout the
+    first call raises `locate_http_module`'s ``RuntimeError`` naming the marker
+    path; ``functools.cache`` does not cache a raised exception, so every
+    call outside a checkout re-raises it.
+    """
+    scripts_dir = str(locate_http_module().parent)
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    return importlib.import_module("_http")
+
 
 # ── Host-scoped credential resolver (FR-7) ──────────────────────────────────
 
@@ -273,7 +287,8 @@ def resolve_headers(credential: HostScopedCredential, url: str) -> dict[str, str
     in_allowlist = host in {_canonical_host(h) for h in credential.hosts}
     if credential.bearer_token is not None:
         return {"Authorization": f"Bearer {credential.bearer_token}"} if in_allowlist else {}
-    return auth_headers_for(url, skip_auth=not in_allowlist)
+    headers: dict[str, str] = http_bridge().auth_headers_for(url, skip_auth=not in_allowlist)
+    return headers
 
 
 # ── Drift-detection primitive (FR-4) ────────────────────────────────────────
@@ -1087,7 +1102,7 @@ def enterprise_host() -> str | None:
         return None
     if not os.environ.get("GITHUB_API_BASE_URL"):
         return None
-    urls = resolve_github_api_urls()
+    urls = http_bridge().resolve_github_api_urls()
     if not urls:
         return None
     host = _canonical_host(urlparse(urls[0]).hostname or "")
@@ -1298,6 +1313,8 @@ def _run_exec(ns: argparse.Namespace) -> DutyResult:
 # ── KeysDuty (Duty-protocol adapter) ────────────────────────────────────────
 
 _KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate", "list", "audit", "revoke", "exec")
+# The two binaries `KeysDuty.run` reports as a duty failure when absent from PATH (Story 83.1).
+_AGE_BINARIES: tuple[str, ...] = ("age", "age-keygen")
 
 
 def _run_audit(ns: argparse.Namespace) -> DutyResult:
@@ -1389,6 +1406,10 @@ class KeysDuty:
     and a rejected `-` sentinel path as `ValueError` — both reported as
     duty-level failures (bad input, not a broken Steward), never conflated
     with an internal crash (AD-8: that boundary is `cli.main()`'s alone).
+    So is a missing binary (Story 83.1): `age` or `age-keygen` absent from
+    PATH raises `FileNotFoundError` from the subprocess spawn, caught here by
+    ``exc.filename`` and reported as `DutyResult(ok=False, ...)` naming the
+    binary (exit 1); a `FileNotFoundError` for any other name propagates.
     """
 
     name = "keys"
@@ -1441,5 +1462,15 @@ class KeysDuty:
             return DutyResult(
                 ok=False,
                 summary=f"keys {verb}: age exited {exc.returncode}: {stderr}",
+            )
+        except FileNotFoundError as exc:
+            # Only the `age` / `age-keygen` subprocess spawn is a duty failure; any other
+            # missing file (a bad input path is `age`'s own non-zero exit, above) is not
+            # this clause's to catch and propagates to `cli.main()`'s boundary unchanged.
+            if exc.filename not in _AGE_BINARIES:
+                raise
+            return DutyResult(
+                ok=False,
+                summary=f"keys {verb}: {exc.filename} not found on PATH -- install age (https://age-encryption.org) and retry",
             )
         return DutyResult(ok=True, summary=f"keys {verb}: wrote {ns.output}")

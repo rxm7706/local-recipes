@@ -186,16 +186,6 @@ BASELINE_UNDECLARED_IMPORTS: dict[str, dict[str, str]] = {
         ),
     },
     "pyforge-steward": {
-        "_http": (
-            "OPEN. keys.py locates .claude/skills/conda-forge-expert/scripts/"
-            "_http.py by walking up from itself and injects its parent onto "
-            "sys.path (AD-1/AD-2 delegate-target pattern), then imports it as "
-            "the plain top-level module `_http`. This is a repo-local sibling "
-            "script, not a distributable package, so it has no PyPI/conda-forge "
-            "name to declare in [project.dependencies] the normal way. Closing "
-            "it needs either promoting _http.py into a proper shared package or "
-            "making the import lazy, not a manifest line."
-        ),
         "django": (
             "OPEN. Story 9.1 (AD-1/AD-13): pyforge.steward.dashboard ships ONLY "
             "behind the [dashboard] extra, never a base dependency -- see "
@@ -228,8 +218,8 @@ BASELINE_UNDECLARED_IMPORTS: dict[str, dict[str, str]] = {
             "package (src/shared/packages/django-pyforge), not a distributable "
             "dependency this manifest can pin the normal way -- it reaches "
             "consumers.py only via a test-time PYTHONPATH override (pixi.toml's "
-            "pyforge-steward feature env, Story 48.6 comment) the same way "
-            "`_http` above reaches keys.py. Declaring it in [project.dependencies] "
+            "pyforge-steward feature env, Story 48.6 comment), not through a "
+            "declared dependency. Declaring it in [project.dependencies] "
             "or the [dashboard] extra would need django-pyforge packaged and "
             "published as a real distribution first, not a manifest line."
         ),

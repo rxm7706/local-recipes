@@ -78,10 +78,9 @@ from .interfaces import DutyResult
 
 # ── Repo-root resolution (mirrors `keys.py`'s `locate_http_module`/`repo_root`
 # walk-up precedent, keyed on a marker this duty actually cares about rather
-# than importing `keys.py` — that module's own top-level import reaches into
-# `.claude/skills/conda-forge-expert/scripts/_http.py` and refuses to load
-# outside a local-recipes checkout, which `cli.py`'s `resolve_duty` docstring
-# already flags as a reason NOT to import it eagerly from an unrelated duty) ──
+# than importing `keys.py` — that module resolves `_http` at first use through
+# `http_bridge()` and `cli.py`'s `resolve_duty` still imports it lazily, so an
+# unrelated duty has no reason to import it eagerly) ──
 
 _DASHBOARD_GENERATE_MARKER = Path("docs/dashboard/kedro-viz/index.html")
 _DASHBOARD_RELATIVE_PATH = Path("docs/dashboard")
