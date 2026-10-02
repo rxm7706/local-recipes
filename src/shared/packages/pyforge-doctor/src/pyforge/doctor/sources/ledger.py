@@ -404,6 +404,10 @@ def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tupl
     point is judged. A merge-base that fails to resolve (e.g. unrelated
     histories) degrades to a WARN rather than silently reverting to the
     bug this exists to fix.
+
+    ``head`` is probed exactly like ``base``: a ``head`` that does not resolve
+    is one WARN naming it, never a ``ledger-deleted`` FAIL for every ledger the
+    base held (DW-FU-6-4-3).
     """
     shown = display_ref(base)
     if _git(target, "rev-parse", "--verify", "--quiet", base) is None:
@@ -422,6 +426,23 @@ def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tupl
                 check="ledger-regression",
                 status=DoctorStatus.WARN,
                 message=message,
+                evidence={"base": shown, "head": head, "target": str(target)},
+            ),
+        )
+
+    # `head` gets the same probe `base` just did. Without it an unresolvable
+    # `head` leaves `head_sha` empty, neither comparison branch below runs, and
+    # `_check` lists NO ledgers at `head` -- so every `done` key the base ledger
+    # held reads as `ledger-deleted`, a FAIL for a ref that never resolved
+    # (DW-FU-6-4-3). `base` was already known good above, so a failure here is
+    # `head`'s alone.
+    if _git(target, "rev-parse", "--verify", "--quiet", head) is None:
+        return (
+            Finding(
+                source=Source.LEDGER_REGRESSION,
+                check="ledger-regression",
+                status=DoctorStatus.WARN,
+                message=f"head revision {head!r} not resolvable — ledger regression cannot be evaluated",
                 evidence={"base": shown, "head": head, "target": str(target)},
             ),
         )
