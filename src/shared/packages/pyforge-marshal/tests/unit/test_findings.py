@@ -222,6 +222,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-LAND-011",
             "MRS-STATUS-010",
             "MRS-STATUS-011",
+            "MRS-STATUS-014",
             "MRS-STATUS-012",
             "MRS-STATUS-013",
             "MRS-DEPLOY-024",

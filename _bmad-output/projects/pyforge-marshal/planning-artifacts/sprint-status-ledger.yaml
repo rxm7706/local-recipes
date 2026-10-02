@@ -375,7 +375,7 @@ development_status:
   82-5-budget-and-idle-signals-judge-staleness-monotonically-keep-a-story-s-breach-story-scoped-and-read-only-real-idleness: done
   82-6-a-resumed-run-escalates-against-the-ceilings-it-launched-under-and-journals-before-it-rewrites-policy: done
   82-7-factory-spin-refuses-a-second-live-run-and-reports-a-child-that-dies-before-it-starts: backlog
-  82-8-status-reads-landings-the-way-deploy-does-and-filters-findings-with-rows-and-teardown-keeps-nested-worktrees: backlog
+  82-8-status-reads-landings-the-way-deploy-does-and-filters-findings-with-rows-and-teardown-keeps-nested-worktrees: done
   82-9-vcs-commit-text-is-declared-egress-and-gate-evaluate-writes-a-redacted-gate-record: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done

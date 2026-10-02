@@ -783,6 +783,11 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # Boundaries forbid this signal from changing marshal status's exit code.
 # Both mirror MRS-STATUS-009's identical "the read failed, degrade every
 # affected value to unknown, never a hard failure" reasoning.
+# Story 82.8 adds MRS-STATUS-014 (DW-FU-4-14-10), also WARN: main's history
+# (with origin/main) is non-empty but no subject in it conforms to a
+# merge-subject pattern (a shallow or grafted clone), so it cannot show what
+# landed; reported per home with the examined and matched counts, in place of
+# one MRS-STATUS-010 per patch. The same "degrade to unknown" reasoning.
 # Story 5.9 (a story finished by hand is not invisible to the ledger,
 # AD-5/AD-6/AD-29/AD-33) adds four more MRS-DEPLOY-* codes for `marshal
 # deploy reconcile-completions`. MRS-DEPLOY-024 (the tracked sprint-status-
@@ -1002,6 +1007,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-LAND-011": Verdict.WARN,
     "MRS-STATUS-010": Verdict.WARN,
     "MRS-STATUS-011": Verdict.WARN,
+    "MRS-STATUS-014": Verdict.WARN,
     "MRS-STATUS-012": Verdict.WARN,
     "MRS-STATUS-013": Verdict.WARN,
     "MRS-DEPLOY-024": Verdict.WARN,
