@@ -267,3 +267,12 @@ def test_mrs_gate_017_pins_warn_never_a_rung_that_would_change_the_gate_exit_cod
     assert verdict.compute_verdict([finding]) is Verdict.WARN
     assert verdict.exit_code_for(verdict.compute_verdict([finding])) == 0
     assert verdict.classify("MRS-GATE-016") is Verdict.UNEVALUABLE
+
+
+@pytest.mark.parametrize("code", ["MRS-CHK-001", "MRS-CHK-002", "MRS-CHK-003"])
+def test_the_factory_checkpoint_precondition_codes_are_registered_and_classified_error(code):
+    """Story 34.2 built these findings without registering them, so `marshal factory checkpoint`'s
+    failure paths raised `UnregisteredFindingCodeError` instead of exiting non-zero."""
+    assert verdict.classify(code) is Verdict.ERROR
+    finding = Finding(code=code, severity=Severity.ERROR, message="a precondition failed")
+    assert verdict.exit_code_for(verdict.compute_verdict([finding])) != 0

@@ -1273,6 +1273,14 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # reached, so a missing loop home or a failed write must not turn a green gate red -- and
     # `evaluate_gate` appends the finding AFTER the verdict is computed, never recomputing it.
     "MRS-GATE-017": Verdict.WARN,
+    # Story 82.9 (found registering the touched-module coverage of `cli/checkpoint.py`):
+    # `marshal factory checkpoint`'s three precondition failures -- no dispatch worktree in
+    # the journal (001), not inside a git repository (002), no loop home (003). ERROR, the
+    # tier of MRS-SPIN-002/003 and MRS-DISP-001..008: the command was asked to commit a
+    # worktree that does not exist, which is neither a could-not-evaluate nor a warning.
+    "MRS-CHK-001": Verdict.ERROR,
+    "MRS-CHK-002": Verdict.ERROR,
+    "MRS-CHK-003": Verdict.ERROR,
     # Story 82.4 (spec-pyforge-marshal CAP-2): 011 an attach whose ownership the
     # journal could not prove (a quarantined line, no launch/resume entry), 012
     # a tampered journal that made the supervisor stop the watched run, 013 the

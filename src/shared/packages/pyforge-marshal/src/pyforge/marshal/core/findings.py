@@ -1995,6 +1995,16 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # unreadable tree revision, a failed write); WARN, because the record is evidence
         # about the verdict and never an input to it -- the verdict and exit code stand.
         "MRS-GATE-017",
+        # Story 34.2 shipped `marshal factory checkpoint` building these three findings
+        # without registering them, so every failure path of that command raised
+        # `UnregisteredFindingCodeError` out of `Finding(...)` instead of exiting non-zero
+        # (found by Story 82.9's touched-module coverage gate on `cli/checkpoint.py`).
+        # 001 -- the dispatch journal names no worktree or story to checkpoint; 002 -- the
+        # invocation directory is not inside a git repository; 003 -- the station's loop
+        # home does not exist, so no in-flight dispatch or spin worktree. All ERROR.
+        "MRS-CHK-001",
+        "MRS-CHK-002",
+        "MRS-CHK-003",
         # Story 82.4 (spec-pyforge-marshal CAP-2, DW-FU-3-4-3/6/7/8): the
         # supervisor stops being silenceable through its own journal, and the
         # run journal finally records the supervisor spawn. MRS-SUPV-011 --
