@@ -1781,6 +1781,11 @@ def reconcile_schedule_batch(
     candidate's own failed entry instead. Overall `ok` is `True` only if
     every candidate's own result was `ok`.
 
+    The CLI prints only `summary` (`sync reconcile` has no `--json`), so when any
+    candidate failed the summary carries one `<github_item_id>: <summary>` line
+    per failed candidate under the count line (DW-8-4-1); `details["candidates"]`
+    is unchanged.
+
     This story never builds Jira-side (JQL) candidate discovery (GitHub is
     the authoritative board per AD-4, and `reconcile()` already re-reads
     BOTH sides fresh regardless of entry identifier). The "named, greppable

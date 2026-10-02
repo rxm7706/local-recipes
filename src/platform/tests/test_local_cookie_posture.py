@@ -13,7 +13,7 @@ names whatever its environment says.
 Settings are loaded for real in a child process (the only way to observe a decision
 taken at settings-load), the same technique as `test_langflow_auth_posture.py`; the
 compose file is parsed. Removing the `is_local()` guard in `production.py` turns the
-two deployed rows red -- that is the mutation check this story's contract names.
+deployed-process rows red -- that is the mutation check this story's contract names.
 """
 
 from __future__ import annotations

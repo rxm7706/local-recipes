@@ -25,6 +25,7 @@ import pytest
 from pyforge.steward import sync
 from pyforge.steward.keys import HostScopedCredential
 from pyforge.steward.sync import (
+    JiraIssueState,
     SyncAPIError,
     SyncConfig,
     TransportResponse,
@@ -87,11 +88,11 @@ def slept(monkeypatch: pytest.MonkeyPatch) -> list[float]:
     return seen
 
 
-def _graphql(transport: Scripted) -> object:
+def _graphql(transport: Scripted) -> dict[str, object]:
     return github_graphql_request("query{x}", {}, credential=_GH, transport=transport)
 
 
-def _jira_issue(transport: Scripted) -> object:
+def _jira_issue(transport: Scripted) -> JiraIssueState:
     return get_jira_issue("PROJ-1", config=CONFIG, credential=_JIRA, transport=transport)
 
 
@@ -383,7 +384,8 @@ def test_default_transport_carries_the_headers_of_an_http_error_status(monkeypat
 
 def test_default_transport_tolerates_an_http_error_with_no_headers(monkeypatch):
     def open_url(request, timeout):
-        raise urllib.error.HTTPError(request.full_url, 503, "Unavailable", None, None)
+        # `HTTPError.headers` really can be None; typeshed declares it non-optional.
+        raise urllib.error.HTTPError(request.full_url, 503, "Unavailable", None, None)  # type: ignore[arg-type]
 
     monkeypatch.setattr(sync, "http_bridge", lambda: _FakeBridge(open_url))
 
