@@ -54,9 +54,11 @@ state through -- AD-26's "exactly one producer" rule, extended from
 ``EffectivePolicy``'s seed fields to the journal's own derived facts. This
 module still implements no CLI wiring (``cli/gate.py``'s ``--run`` stays
 the ``MRS-GATE-005`` stub Story 2.1 left it) and no session-scoped fold --
-AD-25's ``sessions/`` namespace remains entirely unimplemented (no session
-concept exists anywhere in this codebase today; logged as a follow-up in
-``deferred-work.md``).
+AD-25's ``sessions/`` namespace has no fold: nothing journals a session. Its
+one writer is Story 82.9's gate record (``cli/gate.py``: a run-less ``gate
+evaluate --story`` lands its record under ``<tier-3>/sessions/<minted
+id>/gate-records/``, carrying ``run_id`` when one was bound -- F-25); a
+session-scoped fold remains a follow-up in ``deferred-work.md``).
 
 Story 2.3 adds the first KIND-SPECIFIC query method, ``FoldResult.
 live_frozen_surfaces(seed)`` (AD-26/AD-27): the frozen-surface scope

@@ -256,3 +256,23 @@ def test_mrs_gate_016_pins_unevaluable_never_the_mrs_gate_004_warn():
     finding = Finding(code="MRS-GATE-016", severity=Severity.ERROR, message="no repository root")
     assert verdict.compute_verdict([finding]) is Verdict.UNEVALUABLE
     assert verdict.exit_code_for(verdict.compute_verdict([finding])) != 0
+
+
+def test_mrs_gate_017_pins_warn_never_a_rung_that_would_change_the_gate_exit_code():
+    """Story 82.9 (FR-25, DW-FU-2-6-2): a gate record that cannot be written is evidence about a
+    verdict already reached -- WARN (exit 0 on its own), never the MRS-GATE-016/002/003 could-not-evaluate
+    tier, so a missing loop home or a failed write cannot turn a green gate red."""
+    assert verdict.classify("MRS-GATE-017") is Verdict.WARN
+    finding = Finding(code="MRS-GATE-017", severity=Severity.WARN, message="no gate record was written")
+    assert verdict.compute_verdict([finding]) is Verdict.WARN
+    assert verdict.exit_code_for(verdict.compute_verdict([finding])) == 0
+    assert verdict.classify("MRS-GATE-016") is Verdict.UNEVALUABLE
+
+
+@pytest.mark.parametrize("code", ["MRS-CHK-001", "MRS-CHK-002", "MRS-CHK-003"])
+def test_the_factory_checkpoint_precondition_codes_are_registered_and_classified_error(code):
+    """Story 34.2 built these findings without registering them, so `marshal factory checkpoint`'s
+    failure paths raised `UnregisteredFindingCodeError` instead of exiting non-zero."""
+    assert verdict.classify(code) is Verdict.ERROR
+    finding = Finding(code=code, severity=Severity.ERROR, message="a precondition failed")
+    assert verdict.exit_code_for(verdict.compute_verdict([finding])) != 0

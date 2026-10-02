@@ -31,7 +31,7 @@ archive's own existing bytes (to decide "already promoted"), and
 ``VcsPort.commit_subjects`` -- then hands it to ``core.promotion``'s pure
 ``merged_story_keys``/``classify_promotion_candidates`` for classification.
 The only further impure step is executing the plan: ``FsPort.copy_file``
-per promoted spec, then one ``VcsPort.commit_paths`` call for the whole
+per promoted spec, then one ``CommitPort.commit_paths`` call for the whole
 batch (AD-29: "a single 'promote N specs' run is one paper-trail event",
 never one commit per file).
 
@@ -242,7 +242,8 @@ from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, promotion, status
-from ..core.egress import Redacted, to_redacted
+from ..core.commit_vcs import CommittingVcs
+from ..core.egress import Redacted, to_redacted, to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, render_filename_slug
 from ..core.journal import (
     FoldResult,
@@ -837,7 +838,7 @@ def _execute_promotion_plan(
     *,
     project_slug: str,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     root: Path,
     specs_dir: Path,
     deploy_run: "_DeployRun",
@@ -990,7 +991,7 @@ def _execute_promotion_plan(
                 payload={"action": "commit_paths", "story_keys": sorted(copied)},
             )
             try:
-                vcs.commit_paths(root, tuple(commit_targets), message)
+                vcs.commit_paths(root, tuple(commit_targets), to_redacted_text(message))
             except VcsCommandError as exc:
                 findings.append(
                     Finding(
@@ -1032,7 +1033,7 @@ def _execute_promotion_plan(
 def run_promote(
     args: argparse.Namespace,
     *,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     fs: FsPort | None = None,
 ) -> int:
     vcs = vcs if vcs is not None else GitVcs()
@@ -3580,7 +3581,7 @@ def _repair_tier3_feed(
 def run_reconcile_completions(
     args: argparse.Namespace,
     *,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     fs: FsPort | None = None,
     harness: HarnessPort | None = None,
 ) -> int:
@@ -3973,7 +3974,7 @@ def run_reconcile_completions(
                                     },
                                 )
                                 try:
-                                    vcs.commit_paths(root, (ledger_path,), message)
+                                    vcs.commit_paths(root, (ledger_path,), to_redacted_text(message))
                                 except VcsCommandError as exc:
                                     # Review fix, 2026-08-12, high-severity:
                                     # a failed commit after a successful

@@ -147,6 +147,26 @@ verify_commands`` (pure) -- the commands this invocation's own policy
 declares, independent of whether this particular run actually executed
 them.
 
+**The gate record (Story 82.9, FR-25, AD-34/AD-25 F-25; DW-FU-2-6-2).** Given
+``--story``, ``evaluate_gate`` also writes a durable, redacted gate record
+(``core.egress.build_gate_record`` shaped, ``to_redacted`` serialized, written
+through ``RecordPort.write_redacted_atomic`` only -- never ``FsPort``) from
+facts it already holds: the commands and their exit codes, the scope-check
+verdict, ``VcsPort.worktree_head_sha`` of the evaluated root, a UTC timestamp,
+and ``run_id`` when ``--run`` was given. It lands under the run's directory
+(``<run>/gate-records/<story slug>/gate-record.json``) when ``--run`` resolved,
+else under the loop home's AD-25 ``sessions/`` namespace
+(``<tier-3>/sessions/<minted id>/gate-records/<story slug>/``) so a run-less
+evaluation is still retrievable per story. ``data["gate_record"]`` names the
+path. The record is evidence ABOUT the verdict, never an input to it: the
+verdict is computed first and never recomputed, and a record that cannot be
+written (no loop home, an unreadable tree revision, a failed write) is ONE
+``MRS-GATE-017`` WARN -- the exit code never changes. The ports are optional
+parameters; ``run_evaluate`` supplies them (the real ``LocalFs`` and the system
+clock) only when its own ``fs`` is a ``LocalFs``, so a test's injected fake
+``fs`` writes nothing. ``cli/deploy.py``'s ``land-story`` re-run passes
+neither, so it still writes no record (``deferred`` on Story 82.9).
+
 **``evaluate_gate``/``run_evaluate`` split (Story 4.3, FR-27).** The
 original single ``run_evaluate`` body is now two functions: ``evaluate_gate``
 (the pure-envelope core -- gathers every impure input, runs every check,
@@ -167,21 +187,26 @@ import argparse
 import json
 import os
 import shlex
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+from datetime import timezone
 from pathlib import Path
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
+from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import gate, identity, journal, policy, spec_binding
+from ..core.egress import GATE_RECORD_FILENAME, build_gate_record, to_redacted
 from ..core.identity import StoryKey, render_filename_slug
 from ..core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from ..core.refs import local_branch_ref
 from ..core.spec_low_risk import LowRiskParseError, parse_declared_low_risk
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.verdict import compute_verdict, exit_code_for
+from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
+from ..ports.record import RecordPort
 from ..ports.vcs import VcsPort
 from .config import (
     ENV_ACTIVE_PROJECT,
@@ -193,7 +218,7 @@ from .config import (
     repo_root,
 )
 from .init import _home_path
-from .spin import _run_dir
+from .spin import _format_utc_compact, _random_token, _run_dir, _tier3_path
 
 # The run journal's own filename, under the run directory -- duplicated
 # verbatim from cli/spin.py/supervisor/__main__.py's own identical constant
@@ -207,6 +232,10 @@ _JOURNAL_FILENAME = "journal.jsonl"
 # the same `into="main"` this package's own `is_branch_merged`/teardown
 # callers already hardcode).
 _SCOPE_CHECK_BASE_BRANCH = "main"
+
+# The gate record's own timestamp spelling (Story 82.9): `schemas/gate-record.json`'s
+# canonical UTC form, seconds precision, a `Z` offset.
+_GATE_RECORD_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 def add_gate_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -716,6 +745,8 @@ def evaluate_gate(
     process: ProcessPort,
     vcs: VcsPort,
     fs: FsPort,
+    record: RecordPort | None = None,
+    clock: ClockPort | None = None,
 ) -> Envelope:
     """The pure-envelope core of ``marshal gate evaluate`` -- everything
     ``run_evaluate`` below does EXCEPT rendering/printing (Story 4.3, FR-27:
@@ -729,7 +760,14 @@ def evaluate_gate(
     constructs a bare ``argparse.Namespace`` with those four fields. This
     split is a minimal refactor of the original inline body -- no behavior
     change for ``run_evaluate``'s own existing callers/tests, which still
-    see the identical envelope, identical stdout, identical exit code."""
+    see the identical envelope, identical stdout, identical exit code.
+
+    ``record``/``clock`` (Story 82.9, FR-25): with ``--story`` resolved and
+    BOTH ports given, a redacted gate record is written (see this module's
+    docstring) and ``data["gate_record"]`` reports it. Omitted -- the default,
+    and what ``land-story``'s in-process re-run passes -- nothing is written
+    and ``data`` carries no ``gate_record`` key. Either way the verdict is
+    the one computed over the gate's own findings, before any record work."""
     # Same is-not-None precedence as cli/config.py::run_config -- an
     # explicit `--project ""` must win over BMAD_ACTIVE_PROJECT (Python
     # truthiness would otherwise treat an empty flag value as "omitted" and
@@ -855,6 +893,7 @@ def evaluate_gate(
     }
     command_findings: list[Finding] = []
     fold_result: journal.FoldResult | None = None
+    run_dir: Path | None = None
 
     if args.run_id is not None:
         # Story 2.3: a real fold, not a stub. Locating the run needs the
@@ -1006,6 +1045,7 @@ def evaluate_gate(
             if project_slug and policy._is_valid_project_slug(project_slug):
                 spec_text = _find_spec_text(root, project_slug, story_key)
 
+    scope_check_verdict: str | None = None
     if args.scope_check:
         scope_data, scope_findings = _run_scope_check(
             project_slug=project_slug,
@@ -1019,6 +1059,11 @@ def evaluate_gate(
         )
         if scope_data is not None:
             data["scope_check"] = scope_data
+            # Story 82.9: the verdict of the scope check ALONE, for the gate record. Recorded when
+            # the check evaluated, or failed to with a finding of its own; a check skipped with no
+            # finding (an unresolvable --story, already reported once as MRS-IDENT-001) says nothing.
+            if scope_data.get("checked") is True or scope_findings:
+                scope_check_verdict = compute_verdict(scope_findings).value
         command_findings.extend(scope_findings)
 
     # Story 2.7 (AD-4/AD-31/AD-49): whenever --story resolved to a real
@@ -1081,7 +1126,119 @@ def evaluate_gate(
     findings = [*findings, *command_findings]
 
     verdict_value = compute_verdict(findings)
+
+    # Story 82.9 (FR-25, DW-FU-2-6-2): the gate record is evidence ABOUT this verdict, written
+    # after it is computed and never an input to it -- a record that cannot be written appends ONE
+    # MRS-GATE-017 WARN below the already-fixed verdict, which is never recomputed.
+    if record is not None and clock is not None and story_key is not None:
+        gate_record_data, record_finding = _write_gate_record(
+            record=record,
+            clock=clock,
+            vcs=vcs,
+            fs=fs,
+            root=root,
+            project_slug=project_slug,
+            story_key=story_key,
+            commands=data["commands"],
+            scope_check_verdict=scope_check_verdict,
+            run_id=args.run_id,
+            run_dir=run_dir if fold_result is not None else None,
+        )
+        data["gate_record"] = gate_record_data
+        if record_finding is not None:
+            findings.append(record_finding)
     return build_envelope(command="gate evaluate", verdict=verdict_value, data=data, findings=tuple(findings))
+
+
+def _write_gate_record(
+    *,
+    record: RecordPort,
+    clock: ClockPort,
+    vcs: VcsPort,
+    fs: FsPort,
+    root: Path,
+    project_slug: str,
+    story_key: StoryKey,
+    commands: Sequence[Mapping[str, object]],
+    scope_check_verdict: str | None,
+    run_id: str | None,
+    run_dir: Path | None,
+) -> tuple[dict[str, object], Finding | None]:
+    """Write one story's gate record and report where (Story 82.9). Returns the
+    ``data["gate_record"]`` value and, when nothing could be written, the one
+    ``MRS-GATE-017`` WARN that says why -- this function never raises for an
+    environmental failure, and the caller never lets either result touch the
+    verdict.
+
+    The directory is ``<run_dir>/gate-records/<story slug>/`` when the run
+    resolved (``run_dir`` is not ``None``), else the project loop home's
+    AD-25 ``sessions/`` namespace, ``<tier-3>/sessions/<minted session id>/
+    gate-records/<story slug>/`` (F-25: carrying ``run_id`` when one was bound,
+    so a run that did not resolve is still attributable). One directory per
+    story, so two stories evaluated against one run never overwrite each
+    other. The file is ``core.egress.GATE_RECORD_FILENAME`` written through
+    ``RecordPort.write_redacted_atomic`` of ``to_redacted(...)``, nothing else."""
+
+    def not_written(reason: str) -> tuple[dict[str, object], Finding]:
+        return (
+            {"written": False, "reason": reason, "run_id": run_id},
+            Finding(
+                code="MRS-GATE-017",
+                severity=Severity.WARN,
+                message=f"no gate record was written for story {story_key}: {reason}",
+            ),
+        )
+
+    moment = clock.now()
+    if moment.tzinfo is not None:
+        moment = moment.astimezone(timezone.utc)
+    story_slug = render_filename_slug(story_key)
+
+    namespace: str
+    if run_dir is not None:
+        namespace = "run"
+        directory = run_dir / "gate-records" / story_slug
+    else:
+        if not project_slug or not policy._is_valid_project_slug(project_slug):
+            return not_written("there is no resolvable --project/active project, so no loop home to write into")
+        tier3 = _tier3_path(_home_path(project_slug), project_slug)
+        try:
+            tier3_is_dir = fs.is_dir(tier3)
+        except OSError:
+            tier3_is_dir = False
+        if not tier3_is_dir:
+            return not_written(f"no loop home is provisioned for {project_slug!r} ({str(tier3)!r} is not a directory)")
+        namespace = "session"
+        session_id = journal.mint_run_id(project_slug, _format_utc_compact(moment), _random_token())
+        directory = tier3 / "sessions" / session_id / "gate-records" / story_slug
+
+    try:
+        tree_revision = vcs.worktree_head_sha(root)
+    except VcsCommandError as exc:
+        return not_written(f"the tree revision of {str(root)!r} could not be read: {exc}")
+
+    path = directory / GATE_RECORD_FILENAME
+    try:
+        record.write_redacted_atomic(
+            path,
+            to_redacted(
+                build_gate_record(
+                    story_key=str(story_key),
+                    commands=commands,
+                    scope_check_verdict=scope_check_verdict,
+                    tree_revision=tree_revision,
+                    timestamp=moment.strftime(_GATE_RECORD_TIMESTAMP_FORMAT),
+                    run_id=run_id,
+                )
+            ),
+        )
+    except FsError as exc:
+        return not_written(f"the record could not be written to {str(path)!r}: {exc}")
+    except (OSError, TypeError, ValueError) as exc:
+        # The exception TYPE only: a message built from record content is exactly what redaction is for.
+        return not_written(f"the record could not be built or written ({type(exc).__name__})")
+
+    return {"written": True, "path": str(path), "namespace": namespace, "run_id": run_id}, None
 
 
 def run_evaluate(
@@ -1090,12 +1247,20 @@ def run_evaluate(
     process: ProcessPort | None = None,
     vcs: VcsPort | None = None,
     fs: FsPort | None = None,
+    record: RecordPort | None = None,
+    clock: ClockPort | None = None,
 ) -> int:
     process = process if process is not None else PosixProcess()
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
+    # Story 82.9: the gate record goes to the real filesystem only. An injected fake `fs`
+    # (a test's, or any caller's own) writes nothing unless the caller also hands a `record`.
+    if record is None and isinstance(fs, LocalFs):
+        record = fs
+    if clock is None:
+        clock = SystemClock()
 
-    envelope = evaluate_gate(args, process=process, vcs=vcs, fs=fs)
+    envelope = evaluate_gate(args, process=process, vcs=vcs, fs=fs, record=record, clock=clock)
 
     if args.format == "json":
         rendered = json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True)
@@ -1208,6 +1373,13 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         # --format json).
         spec_binding_data = data["spec_binding"]
         lines.append(f"spec binding: {spec_binding_data['story']} -- {spec_binding_data['violations']} violation(s)")
+    if "gate_record" in data:
+        # Story 82.9 (AD-14: this text projection carries the same data as --format json).
+        gate_record = data["gate_record"]
+        if gate_record["written"]:
+            lines.append(f"gate record: {str(gate_record['path'])!r} ({gate_record['namespace']} namespace)")
+        else:
+            lines.append(f"gate record: not written ({gate_record['reason']!r})")
     if "review_depth" in data:
         review_depth = data["review_depth"]
         if review_depth.get("checked"):

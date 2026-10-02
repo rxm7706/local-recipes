@@ -32,6 +32,7 @@ import pytest
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
+from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.journal import (
     JournalEntryId,
     Phase,
@@ -509,8 +510,8 @@ class FakeVcs:
     def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
         return ("dirty.txt",) if self.dirty_worktree else ()
 
-    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
-        self.checkpoint_commits.append((repo_root, paths, message))
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+        self.checkpoint_commits.append((repo_root, paths, message.text))
         self.dirty_worktree = False
         return "deadbeef"
 

@@ -105,7 +105,7 @@ the already-landed shortcut, and the full-merge path -- setting
 
     **Sprint-ledger promotion never writes the operator checkout (CAP-5).**
     ``_promote_sprint_ledger`` publishes onto ``origin/<base>`` through
-    ``VcsPort.commit_paths_onto_remote_tip`` (throwaway detached worktree +
+    ``CommitPort.commit_paths_onto_remote_tip`` (throwaway detached worktree +
     fast-forward push). It must not ``commit_paths`` on ``repo_root()`` --
     that leftover diverged local ``main`` after every ``gh pr merge``."""
 
@@ -125,6 +125,8 @@ from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import deferred_work, identity, policy, promotion
+from ..core.commit_vcs import CommittingVcs
+from ..core.egress import to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey
 from ..core.journal import Phase
 from ..core.landing import rule_applies
@@ -133,6 +135,7 @@ from ..core.refs import local_branch_ref, remote_tracking_ref
 from ..core.status import is_run_live, render_ledger_advancements
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.clock import ClockPort
+from ..ports.commit import VcsRef
 from ..ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -366,7 +369,7 @@ def _evaluate_required_checks(
 def run_land(
     args: argparse.Namespace,
     *,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     fs: FsPort | None = None,
     forge: ForgePort | None = None,
     harness: HarnessPort | None = None,
@@ -1107,7 +1110,7 @@ def run_land(
 
 def _promote_deferred_work(
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     root: Path,
     slug: str,
     wave_keys: list[StoryKey],
@@ -1252,7 +1255,7 @@ def _promote_deferred_work(
             payload={"action": "commit_paths", "promoted": list(promoted_ids)},
         )
         try:
-            vcs.commit_paths(root, (tracked_path,), message)
+            vcs.commit_paths(root, (tracked_path,), to_redacted_text(message))
         except VcsCommandError as exc:
             findings.append(
                 Finding(
@@ -1358,7 +1361,7 @@ def _land_feed_sync_refusal(
 
 def _promote_sprint_ledger(
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     root: Path,
     slug: str,
     wave_keys: list[StoryKey],
@@ -1544,11 +1547,11 @@ def _promote_sprint_ledger(
         try:
             vcs.commit_paths_onto_remote_tip(
                 root,
-                remote="origin",
-                ref=base,
+                remote=VcsRef("origin"),
+                ref=VcsRef(base),
                 writes=((ledger_rel, new_text),),
-                message=message,
-                preflight_skip_reason=f"marshal ledger promotion for {slug!r}, story {skip_stories}",
+                message=to_redacted_text(message),
+                preflight_skip_reason=to_redacted_text(f"marshal ledger promotion for {slug!r}, story {skip_stories}"),
             )
         except VcsCommandError as exc:
             # AD-6: an INTENT never stands without its OUTCOME -- a failed publish is journaled
