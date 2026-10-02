@@ -231,7 +231,9 @@ liquibase:
 # stock `postgres:17` fails it (DW-FU-41-3-9). `pgvector/pgvector:pg17` is the
 # official PostgreSQL 17 image plus the extension -- same layout, same `psql`,
 # same data dir -- and the image CI already runs as its service container. The
-# major stays 17 (fnd:CAP-12); `registry` still relocates it to a mirror.
+# major stays 17 (fnd:CAP-12); `registry` still relocates it to a mirror. Its
+# base OS can differ from stock `postgres:17`'s: an existing release upgrades
+# per docs/explanation/platform-deployment-architecture.md (Story 83.3 bullet).
 postgres:
   image:
     registry: ""
