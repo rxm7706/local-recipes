@@ -2,7 +2,7 @@
 title: '82.4: The supervisor attaches despite a quarantined launch, journals its spawn and every stop, and fails closed on tampering'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '7e2939beebd2a78fff6c0f962dc2aed85954bb64'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -236,3 +236,39 @@ Closes: DW-FU-3-4-3, DW-FU-3-4-6, DW-FU-3-4-7, DW-FU-3-4-8.
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Implementation complete; awaiting the separate adversarial review (nothing here has been reviewed).
+
+**What changed** (all under `src/shared/packages/pyforge-marshal/` unless rooted):
+
+- `ports/fs.py`, `adapters/fs_local.py` -- `AppendHandle`/`HeldFileState` and `open_append` / `append_held` / `held_file_state` / `close_append` on `FsPort`; `LocalFs` holds one `O_WRONLY | O_APPEND` descriptor (no `O_CREAT`), keeps `append_line`'s embedded-newline and short-write guards, and compares `fstat` with `stat` (dev+inode, path size, `os.access(W_OK)`).
+- `supervisor/__main__.py` -- D1 unproven attach (`MRS-SUPV-011`, `quarantined` count on `supervisor-attach`); D2 SIGTERM/SIGHUP/SIGINT handlers (raise only while sleeping, restored in `finally`, skipped off the main thread) giving `supervisor-detach` reason `signal-<NAME>`; D4/D5 held descriptor, per-tick `_classify_journal_state` check (`expected_size` floor), `_fail_closed` (`HarnessPort.stop`, stderr, best-effort final detach `journal-tampered` + `MRS-SUPV-012`, exit 1) and the no-run-id path (`MRS-SUPV-013` once, keeps watching, journaled best-effort as `supervisor-journal-fault`). Module docstring rewritten for all three.
+- `cli/spin.py` -- `_journal_supervisor_spawn`: one `supervisor-spawn` observation (counter 2) per spawn attempt for launch and resume; failure to journal it is `MRS-SPIN-018`; `_writer_id` docstring corrected.
+- `core/findings.py`, `core/verdict.py` -- `MRS-SUPV-011/012/013` and `MRS-SPIN-018`, all WARN.
+- Tests: `test_supervisor.py` (the `:922` and `:5200` pins rewritten, the append-failure pins extended, one test per criterion, plus real-`LocalFs` tamper tests), `test_publisher.py`, `test_spin.py` (the six launch/resume pins that counted two appends, plus the new spawn tests), `test_fs_local.py`, `test_findings.py`, and `tests/meta/test_ad11_write_boundary.py` (the spin write set is now five).
+- `deferred-work-ledger.md` -- `DW-FU-3-4-3`, `-6`, `-7`, `-8` closed with `resolved:` lines. Memlog `event` entries appended to `spec-pyforge-marshal` and `spec-pyforge-core` (the two Specs `spec-surface-check` named for `ports/fs.py` and `test_publisher.py`); no baseline stamp.
+
+**Verification** (exit codes read directly, no pipes):
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- exit 0, 9927 passed.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- exit 0, 130 passed.
+- `pixi run --frozen -e pyforge-guild lint-types` -- exit 0 (ruff, ruff format --check, mypy, target-version, precommit-config).
+- `python scripts/spec_surface_reconcile.py` -- exit 0 ("no drift"); `spec-surface-check` reports no `drift-presumed` after the two memlog entries.
+- `scripts/coverage_gates_ci.py` for marshal, unit suite -- OK, every touched module at or above 80% (`supervisor/__main__.py` 89%).
+
+**Mutation proof** (each fix edited out in place, its tests run, then restored; no `git stash`):
+
+1. Fix 1, unproven attach -- `unproven_ownership = False`: `test_a_quarantined_launch_line_attaches_with_unproven_ownership` and `test_a_missing_sidecar_blob_attaches_with_unproven_ownership` FAIL; widening the rescue to ignore another run's launch entry makes `test_a_launch_entry_for_another_run_plus_a_quarantined_line_stays_inert` FAIL.
+2. Fix 2, signals -- handlers not installed: `test_a_handled_signal_makes_the_last_journal_entry_a_detach_naming_it` and `test_a_signal_during_a_tick_ends_the_loop_when_that_tick_finishes` FAIL (a sentinel handler takes the signal, so the pytest process survives); dropping the `signal-<NAME>` reason also FAILS the first.
+3. Fix 3, spawn journaling -- the success call and the error call each removed: the `test_spin_journals_one_supervisor_spawn_observation_*` and `test_resume_journals_one_supervisor_spawn_observation_*` tests FAIL.
+4. Fix 4, tamper-evident journal -- per-tick check removed (`test_a_tampered_journal_between_ticks_...`, `test_a_tampered_journal_with_no_harness_run_id_...` FAIL); `HarnessPort.stop` removed from `_fail_closed` (`test_journal_append_failure_mid_loop_...`, the tamper test FAIL); a failed append back to print-and-exit (`test_journal_append_failure_*` FAIL); the no-run-id swallow removed (`test_a_failing_append_with_no_harness_run_id_...` FAILS); the `max(expected_size, state.size)` floor raise removed (`test_another_writer_growing_the_journal_...` FAILS).
+
+**Risks and notes for the reviewer:**
+
+- `MRS-SPIN-018` is also named by the blocked Story 47.1's spec (a scribe-recall WARN, never landed on `main`); whichever lands second renumbers.
+- Fail-closed is deliberately aggressive: any `FsError`/`ValueError` reaching the supervisor's handler with a harness run id stops the run (including a failed `open_append` at attach and a failed sidecar-blob write), per D5. A per-tick `held_file_state` read that itself fails is treated as tampered (`unverifiable`) -- an addition beyond D4's four kinds.
+- A tamper that leaves size, inode and mode intact (an in-place rewrite of the same bytes) is not detectable by this check; privilege separation stays out of scope per Boundaries.
+- The final `supervisor-detach` on the tamper path and the `supervisor-journal-fault` observation are best-effort and may land on an unlinked or truncated file; the stderr line in `supervisor.log` is the durable record.
+- The `finally` that completes the run-state publisher can still raise if the publisher's `on_finding` hook writes through a descriptor that has already failed (unchanged exposure; the handle close and signal-handler restore now sit in a nested `finally` so they always run).
