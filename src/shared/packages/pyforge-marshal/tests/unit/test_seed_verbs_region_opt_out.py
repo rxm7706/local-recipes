@@ -1029,9 +1029,7 @@ def test_an_old_shape_state_whose_only_recorded_region_was_deleted_neither_crash
 
 
 @_VERBS
-def test_deleting_every_region_of_an_artifact_beside_another_artifacts_apply_records_both_opt_outs(
-    clean_repo, verb
-):
+def test_deleting_every_region_of_an_artifact_beside_another_artifacts_apply_records_both_opt_outs(clean_repo, verb):
     """Review pass 2, the AC's mutating form: both regions of a two-region
     artifact deleted and a second artifact still to install, so the run applies
     something and writes state. The state it writes holds both opt-out keys and
@@ -1133,6 +1131,7 @@ def test_update_records_a_region_whose_markers_were_restored_by_hand(clean_repo)
     assert recovered is not None
     (claim,) = recovered.managed
     assert [span.name for span in claim.inserted_region_spans] == ["tiers", "model-badge", "portability-contract"]
+    assert recovered.opted_out == ("hybrid#tiers",)  # no reinstate verb yet: the key stays
 
 
 def test_adopt_refuses_a_region_restored_by_hand_until_force(clean_repo):

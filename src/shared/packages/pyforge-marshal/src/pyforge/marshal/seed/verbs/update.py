@@ -1240,10 +1240,7 @@ def run_update(
     # pattern reaches it. A record neither names is still checked: where it has
     # a wholesale action, rung 6 refusing its hand-edit guards a real overwrite.
     managed_records = managed_after_skips(
-        tuple(
-            record
-            for record in _managed_records(state, filtered_manifest, repo_root, escaping_ids)
-        ),
+        tuple(record for record in _managed_records(state, filtered_manifest, repo_root, escaping_ids)),
         plan,
         skip,
     )
