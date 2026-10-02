@@ -7859,3 +7859,47 @@ status: open
   severity: medium
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-82-3: Doctor reads `merge_subject_template` itself and still accepts a template marshal now rejects, so landing evidence may be classified against a template marshal no longer uses.
+
+- source_spec: `planning-artifacts/specs/spec-82-3-a-landing-claims-only-committed-promotions-rejects-a-malformed-merge-template-and-stamps-only-reconciled-drift.md`
+  summary: Doctor reads `merge_subject_template` itself and still accepts a template marshal now rejects, so landing evidence may be classified against a template marshal no longer uses.
+  evidence: `sources/marshal.py::_project_merge_subject_template` and `sources/ledger.py::_project_merge_subject_template` return any non-empty string from `marshal-policy.toml`; `pyforge.core.landing_evidence._split_template` returns None for a template without exactly one `{key}`, so the templated route never matches. Unverified: whether Doctor's other fallbacks recover the key. A Doctor fixture with a malformed template and a merge commit carrying the default subject would settle it. Doctor deliberately duplicates this reader, and this story's Never list excludes its `sources/chain.py`.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py:102
+  origin: spec-deferred bb74d48d809f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-82-3-2: `dispatch_land_finalize` decides whether the tracked spec still needs promoting from the planned Tier-3 keys, not from `_execute_promotion_plan`'s committed keys.
+
+- source_spec: `planning-artifacts/specs/spec-82-3-a-landing-claims-only-committed-promotions-rejects-a-malformed-merge-template-and-stamps-only-reconciled-drift.md`
+  summary: `dispatch_land_finalize` decides whether the tracked spec still needs promoting from the planned Tier-3 keys, not from `_execute_promotion_plan`'s committed keys.
+  evidence: `__main__.py:828` sets `tier3_promoted_keys` from `to_promote` and discards the helper's return value; the tracked-spec step at `:851` is skipped for those keys, so a failed Tier-3 commit (an `MRS-DEPLOY-003` finding) still skips it. Both lines are present at `454df87fbc` (Story 79.1), so this predates 82.3, whose contract names only `run_promote` and `run_reconcile_completions`. The fix derives the set from the helper's return and adds one failing-commit test in `test_dispatch_land_finalize.py`.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py:828
+  origin: spec-deferred 94145d09d8f0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-82-3-3: Doctor's `drift-presumed` remedy and AGENTS.md § Pre-PR item 5 name `--write-baseline --spec NAME` without `--accept`, which the scoped stamp now refuses when the memlog moved but does not name the path.
+
+- source_spec: `planning-artifacts/specs/spec-82-3-a-landing-claims-only-committed-promotions-rejects-a-malformed-merge-template-and-stamps-only-reconciled-drift.md`
+  summary: Doctor's `drift-presumed` remedy and AGENTS.md § Pre-PR item 5 name `--write-baseline --spec NAME` without `--accept`, which the scoped stamp now refuses when the memlog moved but does not name the path.
+  evidence: `chain.py` tells the operator to run `--write-baseline --spec {name}` for a `drift-presumed` row; the stamp now exits 1 for that case unless `--accept PATH` is passed. The refusal output prints the explicit `--accept` form, so the cost is a misleading remedy string. The fix edits `chain.py` (excluded by this story's Never list) and AGENTS.md (an agent-context file).
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:2074
+  origin: spec-deferred 6516db409e97 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-82-3-4: A renamed governed file's old path is never accepted by the landing reconcile, because `changed_files` keeps only a rename's new path.
+
+- source_spec: `planning-artifacts/specs/spec-82-3-a-landing-claims-only-committed-promotions-rejects-a-malformed-merge-template-and-stamps-only-reconciled-drift.md`
+  summary: A renamed governed file's old path is never accepted by the landing reconcile, because `changed_files` keeps only a rename's new path.
+  evidence: `adapters/vcs_git.py` runs `git diff -M --name-status` and keeps only the new path for an `R` row, so the old (removed) governed path is neither in `changed` nor accepted, and the foreign-drift check already refused such a landing before this story. Settling the fix needs a rename source on the VcsPort or an accept rule for removed paths of the stamped spec.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py:715
+  origin: spec-deferred 4c56de5eca00 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
