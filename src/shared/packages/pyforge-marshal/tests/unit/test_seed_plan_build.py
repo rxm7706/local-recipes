@@ -723,6 +723,39 @@ def test_the_repository_identity_is_reported_before_every_other_drift(tmp_path):
     assert any(line.startswith("git_head:") for line in drift)
 
 
+def test_a_subdirectory_of_a_working_tree_records_the_trees_git_directory(tmp_path):
+    """`git rev-parse --git-common-dir` answers relative to where it runs
+    (`../.git` from `sub/`), so the identity resolves it against `repo_root`
+    rather than the process's cwd -- and the parent working tree, another root
+    of the same clone, is told apart by the root alone."""
+    _init_git_repo(tmp_path)
+    sub = tmp_path / "sub"
+    sub.mkdir()
+
+    plan = _sample_plan(sub)
+
+    assert plan.repo_fingerprint.repo_root == str(sub.resolve())
+    assert plan.repo_fingerprint.git_common_dir == str((tmp_path / ".git").resolve())
+    assert fingerprint_drift(plan, sub) == ()
+    assert [line.split(":", 1)[0] for line in fingerprint_drift(plan, tmp_path)] == ["repo_root"]
+
+
+def test_a_plan_built_before_git_init_is_stale_against_the_same_directory_after_it(tmp_path):
+    """Same root, so the git directory is the only identity that moved: a plan
+    describing a directory that was not a repository is not a plan for it once
+    it is one."""
+    plan = _sample_plan(tmp_path)
+    assert plan.repo_fingerprint.git_common_dir is None
+    assert fingerprint_drift(plan, tmp_path) == ()
+
+    _init_git_repo(tmp_path)
+    drift = fingerprint_drift(plan, tmp_path)
+
+    assert drift[0].startswith("git_common_dir:")
+    assert str((tmp_path / ".git").resolve()) in drift[0]
+    assert not any(line.startswith("repo_root:") for line in drift)
+
+
 def test_fingerprint_drift_names_the_artifact_id_when_an_actioned_file_is_hand_edited(tmp_path):
     _init_git_repo(tmp_path)
     (tmp_path / "CLAUDE.md").write_text(_doc("no markers in this file at all"), encoding="utf-8")

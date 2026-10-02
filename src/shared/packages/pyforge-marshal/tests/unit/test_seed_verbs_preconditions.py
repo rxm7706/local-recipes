@@ -626,6 +626,22 @@ def test_an_empty_directory_at_an_actions_target_is_refused_too(clean_repo):
         _check(_plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo)
 
 
+@pytest.mark.parametrize("bypass", [{"dry_run": True}, {"force": True}, {"dry_run": True, "force": True}])
+def test_neither_dry_run_nor_force_bypasses_the_directory_target_refusal(clean_repo, bypass):
+    """`dry_run` bypasses rung 2 only and `force` rung 6 only: a directory at an
+    action's target is rung 5, so a dry run still refuses it (it would fail the
+    real run) and `--force` -- which means 'discard my hand-edit' -- never
+    reaches a directory."""
+    (clean_repo / "AGENTS.md").mkdir()
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        _check(_plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo, **bypass)
+
+    assert "directory-target" in excinfo.value.message
+    assert excinfo.value.exit_code == 3
+    assert excinfo.value.remedy.strip()
+
+
 def test_a_symlink_to_a_directory_still_reports_symlink_target(clean_repo):
     """`lstat()` does not follow the link, so a symlink to a directory is a
     symlink first -- its refusal and remedy keep their own name."""
