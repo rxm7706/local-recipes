@@ -7962,3 +7962,14 @@ status: open
   severity: medium
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-82-10: A member refused in one cycle and cleared by re-preflight stays a block in every later fold, because `_campaign_blocked_from_journal` never retracts a block on a later DISPATCHED or IN_FLIGHT outcome for the same story.
+
+- source_spec: `planning-artifacts/specs/spec-82-10-a-parallel-wave-journals-each-member-s-own-outcome-and-refuse-predicate.md`
+  summary: A member refused in one cycle and cleared by re-preflight stays a block in every later fold, because `_campaign_blocked_from_journal` never retracts a block on a later DISPATCHED or IN_FLIGHT outcome for the same story.
+  evidence: Edge Case Hunter, review of Story 82.10 (2026-10-02). The fold only adds a block from each REFUSED outcome. The same holds for every aggregate REFUSED row journaled before this story, so it predates it; member outcomes inherit it. Retracting changes fold semantics for every row and is its own CAP-135 story. What would settle it: a two-cycle test where a refused story's spec lands, re-preflight clears it, it dispatches, and the third cycle's fold is asserted to carry no block for it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
+  origin: spec-deferred b1efb7ceaa19 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
