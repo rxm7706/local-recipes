@@ -413,12 +413,18 @@ def test_spin_happy_path_mints_run_id_journals_and_spawns(home, capsys):
     assert spin_call["story"] is None
     assert spin_call["max_count"] is None
 
-    # Exactly two journal appends: intent (fsync=True) then outcome (fsync=False).
-    assert len(fs.appended_lines) == 2
-    (intent_path, intent_line, intent_fsync), (outcome_path, outcome_line, outcome_fsync) = fs.appended_lines
-    assert intent_path == outcome_path
+    # Exactly three journal appends: intent (fsync=True), outcome (fsync=False),
+    # then Story 82.4's `supervisor-spawn` observation (fsync=False).
+    assert len(fs.appended_lines) == 3
+    (
+        (intent_path, intent_line, intent_fsync),
+        (outcome_path, outcome_line, outcome_fsync),
+        (spawn_path, spawn_line, spawn_fsync),
+    ) = fs.appended_lines
+    assert intent_path == outcome_path == spawn_path
     assert intent_fsync is True
     assert outcome_fsync is False
+    assert spawn_fsync is False
 
     intent = json.loads(intent_line)
     outcome = json.loads(outcome_line)
@@ -441,6 +447,13 @@ def test_spin_happy_path_mints_run_id_journals_and_spawns(home, capsys):
     }
     assert outcome["run_id"] == intent["run_id"]
     assert intent["run_id"].startswith("acme-")
+
+    spawn = json.loads(spawn_line)
+    assert spawn["kind"] == "supervisor-spawn"
+    assert spawn["phase"] == "observation"
+    assert spawn["run_id"] == intent["run_id"]
+    assert spawn["id"] == {"writer_id": intent["id"]["writer_id"], "counter": 2}
+    assert spawn["payload"] == {"supervisor_pid": 999999, "watched_pid": 4242, "launched_via": "bmad-loop run"}
 
 
 def test_spin_writes_the_run_directory_under_the_local_tier3_store(home):
@@ -653,7 +666,9 @@ def test_spin_outcome_journal_write_failure_after_successful_spawn_is_mrs_spin_0
     assert "warn" in out.lower()
     # The spawn itself really happened -- distinct from the launch-failure
     # test above, where appended_lines still records the (failed) outcome.
-    assert len(fs.appended_lines) == 1  # only the intent actually landed
+    # only the intent actually landed -- plus Story 82.4's supervisor-spawn
+    # observation, which is a separate append and succeeds.
+    assert [json.loads(line)["kind"] for _, line, _ in fs.appended_lines] == ["run-launch", "supervisor-spawn"]
     [spin_call] = harness.spin_calls
     assert spin_call["project"] == home
 
@@ -1682,9 +1697,11 @@ def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spi
     spin_index = events.index("spin")
     spawn_index = events.index("spawn_detached")
     append_indices = [i for i, event in enumerate(events) if event == "append_line"]
-    assert len(append_indices) == 2  # intent, then outcome
+    assert len(append_indices) == 3  # intent, outcome, then the supervisor-spawn observation
     outcome_append_index = append_indices[1]
     assert spin_index < outcome_append_index < spawn_index
+    # Story 82.4: the spawn observation records the attempt, so it follows it.
+    assert spawn_index < append_indices[2]
 
 
 def test_spin_reports_the_supervisor_pid_in_json_and_text(home, capsys):
@@ -1725,8 +1742,9 @@ def test_spin_supervisor_spawn_failure_registers_mrs_spin_007_but_still_exits_ok
     assert "MRS-SPIN-007" in out
     assert "warn" in out.lower()
     # The harness run itself is entirely unaffected: both journal entries
-    # landed, and the harness was launched exactly once.
-    assert len(fs.appended_lines) == 2
+    # landed (plus Story 82.4's supervisor-spawn observation recording the
+    # failed spawn), and the harness was launched exactly once.
+    assert len(fs.appended_lines) == 3
     assert len(harness.spin_calls) == 1
     assert "pid: 4242" in out
 
@@ -2125,8 +2143,9 @@ def test_spin_still_spawns_the_supervisor_when_the_outcome_append_fails(home, ca
     assert f"supervisor_pid: {process.spawn_result}" in out
     # Only the intent actually landed, so the ONLY journal proof of Marshal
     # ownership the sidecar will find is the intent entry -- the exact state
-    # the widened inert-check exists to handle.
-    assert len(fs.appended_lines) == 1
+    # the widened inert-check exists to handle. (Story 82.4's supervisor-spawn
+    # observation is a separate append and lands after it.)
+    assert [json.loads(line)["kind"] for _, line, _ in fs.appended_lines] == ["run-launch", "supervisor-spawn"]
 
 
 def test_spin_reports_both_mrs_spin_006_and_mrs_spin_007_together(home, capsys):
@@ -2524,11 +2543,19 @@ def test_resume_happy_path_journals_ad45_fields_and_spawns(home):
 
     assert exit_code == EXIT_OK
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    assert [e["kind"] for e in entries] == ["run-resume", "run-resume"]
-    intent, outcome = entries
+    assert [e["kind"] for e in entries] == ["run-resume", "run-resume", "supervisor-spawn"]
+    intent, outcome, spawn = entries
     assert intent["phase"] == "intent"
     assert outcome["phase"] == "outcome"
     assert outcome["intent_id"] == intent["id"]
+    # Story 82.4: the resume journals the sidecar spawn too, naming the verb.
+    assert spawn["phase"] == "observation"
+    assert spawn["run_id"] == intent["run_id"]
+    assert spawn["payload"] == {
+        "supervisor_pid": process.spawn_result,
+        "watched_pid": harness.resume_result,
+        "launched_via": "bmad-loop resume",
+    }
     assert intent["payload"]["resumed_from_run"] == "acme-20260801T000000000Z-aaaa"
     assert intent["payload"]["harness_run_id"] == "acme-hh01"
     assert intent["payload"]["story_key"] == "3.7"
@@ -3934,3 +3961,139 @@ def test_spin_rapid_second_call_refuses_like_the_2026_09_10_race(home, capsys):
     assert "MRS-DISP-021" in out
     assert run_id in out
     assert len(harness.spin_calls) == 0
+
+
+# =============================================================================
+# Story 82.4 (DW-FU-3-4-7): the supervisor spawn is journaled, launch and resume
+# =============================================================================
+
+
+def _spawn_entries(fs: FakeFs) -> list[dict]:
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    return [entry for entry in entries if entry["kind"] == "supervisor-spawn"]
+
+
+def _resume_setup(home: Path) -> tuple[FakeFs, FakeHarness, FakeProcess]:
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
+    harness = FakeHarness()
+    harness.resolution_reference_result = None
+    return fs, harness, FakeProcess()
+
+
+def test_spin_journals_one_supervisor_spawn_observation_carrying_the_sidecar_pid(home):
+    """Given ``marshal factory spin`` When the sidecar spawn succeeds Then the
+    run journal holds exactly one entry recording the sidecar pid."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.spawn_result = 555555
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    [spawn] = _spawn_entries(fs)
+    assert spawn["phase"] == "observation"
+    assert spawn["payload"] == {"supervisor_pid": 555555, "watched_pid": 4242, "launched_via": "bmad-loop run"}
+    assert spawn["id"]["counter"] == 2
+
+
+def test_spin_journals_one_supervisor_spawn_observation_carrying_the_spawn_error(home):
+    """...and When the spawn raises, the one entry records the error instead
+    (``supervisor_pid: None``) -- the journal finally says "launched
+    unsupervised"."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    [spawn] = _spawn_entries(fs)
+    assert spawn["payload"]["supervisor_pid"] is None
+    assert "cannot launch: python not found" in spawn["payload"]["error"]
+    assert spawn["payload"]["watched_pid"] == 4242
+    assert spawn["payload"]["launched_via"] == "bmad-loop run"
+
+
+def test_resume_journals_one_supervisor_spawn_observation_carrying_the_sidecar_pid(home):
+    fs, harness, process = _resume_setup(home)
+    process.spawn_result = 565656
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    [spawn] = _spawn_entries(fs)
+    assert spawn["payload"] == {
+        "supervisor_pid": 565656,
+        "watched_pid": harness.resume_result,
+        "launched_via": "bmad-loop resume",
+    }
+
+
+def test_resume_journals_one_supervisor_spawn_observation_carrying_the_spawn_error(home):
+    fs, harness, process = _resume_setup(home)
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    [spawn] = _spawn_entries(fs)
+    assert spawn["payload"]["supervisor_pid"] is None
+    assert "cannot launch: python not found" in spawn["payload"]["error"]
+    assert spawn["payload"]["launched_via"] == "bmad-loop resume"
+
+
+def test_spin_a_failing_spawn_observation_append_is_mrs_spin_018_and_never_changes_the_outcome(home, capsys):
+    """A failure to journal the observation is a WARN paper-trail gap over an
+    already-live, already-supervised run: the exit code, ``supervisor_pid`` and
+    every earlier entry are unchanged."""
+    fs = FakeFs(dirs={home})
+    fs.fail_append_line_on_call = 3  # intent (#1) and outcome (#2) land; the spawn observation (#3) fails
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    envelope = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in envelope["findings"]]
+    assert "MRS-SPIN-018" in codes
+    assert "MRS-SPIN-006" not in codes  # the launch outcome itself journaled fine
+    assert envelope["data"]["supervisor_pid"] == process.spawn_result
+    assert [json.loads(line)["kind"] for _, line, _ in fs.appended_lines] == ["run-launch", "run-launch"]
+    finding = next(finding for finding in envelope["findings"] if finding["code"] == "MRS-SPIN-018")
+    assert finding["severity"] == "warn"
+
+
+def test_resume_a_failing_spawn_observation_append_is_mrs_spin_018_and_never_changes_the_outcome(home, capsys):
+    fs, harness, process = _resume_setup(home)
+    fs.fail_append_line_on_call = 3
+
+    exit_code = run_resume(_resume_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    envelope = json.loads(capsys.readouterr().out)
+    assert "MRS-SPIN-018" in [finding["code"] for finding in envelope["findings"]]
+    assert envelope["data"]["supervisor_pid"] == process.spawn_result
+
+
+def test_spin_the_spawn_error_and_its_unjournaled_observation_report_both_findings(home, capsys):
+    """MRS-SPIN-007 (the spawn failed) and MRS-SPIN-018 (and it could not be
+    journaled either) are two findings about one spawn, in that order."""
+    fs = FakeFs(dirs={home})
+    fs.fail_append_line_on_call = 3
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    codes = [finding["code"] for finding in json.loads(capsys.readouterr().out)["findings"]]
+    assert codes.index("MRS-SPIN-007") < codes.index("MRS-SPIN-018")
