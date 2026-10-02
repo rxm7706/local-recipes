@@ -1851,8 +1851,6 @@ def run_spin(
     refuse_launch, tier_plan = _resolve_model_tiering(fs, harness, home, slug, preview, findings, data)
     if refuse_launch:
         return _emit(args, data, findings)
-    if tier_plan is not None:
-        _write_tier_policy(tier_plan, home, findings)
 
     # --- Story 34.1: refuse a second spin against a live loop home ----------
     guard_story_key = render_feed_key(preview[0]) if preview else "34.1"
@@ -1946,6 +1944,8 @@ def run_spin(
     # only after the intent above -- naming it as `policy_change` -- reached
     # disk, so no model change exists without a record of why. A failed
     # write is MRS-SPIN-015 (WARN), never a refusal: the launch is viable.
+    if tier_plan is not None:
+        _write_tier_policy(tier_plan, home, findings)
 
     # --- the detached spawn itself --------------------------------------------
     # The log path is reported (review finding, Blind Hunter): it was
