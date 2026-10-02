@@ -2871,6 +2871,234 @@ def test_stories_supervisor_reinvocation_via_run_fleet_drain_carries_stories(
     assert "22-12-next,22-11-fleet" in campaign_argv
 
 
+# --------------------------------------------------------------------------
+# Story 81.3 -- the campaign supervisor keeps --retry-environment-blocks
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("retry", [True, False])
+def test_spawned_supervisor_argv_carries_retry_environment_blocks_only_when_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, retry: bool
+) -> None:
+    """The REAL ``run_fleet_drain`` -> ``_spawn_campaign_supervisor`` path:
+    a campaign launched with ``--retry-environment-blocks`` hands the flag to
+    its detached supervisor as the trailing argument (AC1); without it the
+    argv is the pre-81.3 one (AC3). Dropping ``retry_environment_blocks=`` at
+    the call site, or the flag append inside the spawn, fails the ``True``
+    case (AC4 mutation)."""
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["22-7-fleet"]})
+    monkeypatch.chdir(tmp_path)
+    process = FakeProcess(alive=False)
+    code = _run_drain(
+        tmp_path,
+        _drain_args(retry_environment_blocks=retry),
+        ledgers={"pyforge-marshal": (("22-7-fleet", "backlog"),)},
+        process=process,
+    )
+    assert code == EXIT_OK
+    [campaign_argv] = [argv for argv in process.spawned if "pyforge.marshal.dispatch_fleet_supervisor" in argv]
+    if retry:
+        assert campaign_argv.count("--retry-environment-blocks") == 1
+        assert campaign_argv[-1] == "--retry-environment-blocks"
+        # The ten positionals are untouched ahead of it: repo_root, run_id,
+        # mode, leave_remaining, max_cycles, tick_seconds, station, stories,
+        # harness, max_in_flight.
+        assert campaign_argv[3:-1][2] == "drain_to_zero"
+        assert len(campaign_argv[3:-1]) == 10
+    else:
+        assert "--retry-environment-blocks" not in campaign_argv
+        assert len(campaign_argv[3:]) == 10
+
+    # AC1, whole chain: the spawned argv (not a hand-written one) fed to the
+    # supervisor's own `main` runs a tick whose argv the real `marshal` parser
+    # reads back as the same flag value.
+    from pyforge.marshal.cli.main import _build_parser
+    from pyforge.marshal.dispatch_fleet_supervisor import __main__ as sup
+
+    ticks: list[list[str]] = []
+
+    class RecordingPosixProcess:
+        def run(self, argv, *, cwd):
+            ticks.append(list(argv))
+            return type("R", (), {"stdout": '{"data": {"complete": true}}', "stderr": ""})()
+
+    monkeypatch.setattr(sup.time, "sleep", lambda _s: None)
+    monkeypatch.setattr(sup, "PosixProcess", RecordingPosixProcess)
+    assert sup.main(campaign_argv[3:]) == 0
+    [tick_argv] = ticks
+    assert _build_parser().parse_args(tick_argv[3:]).retry_environment_blocks is retry
+
+
+def test_supervisor_main_parses_retry_environment_blocks(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The supervisor's own CLI reads the trailing flag true and defaults it
+    false, and hands it to ``run_fleet_campaign_supervisor`` (AC1, AC3)."""
+    from pyforge.marshal.dispatch_fleet_supervisor import __main__ as sup
+
+    seen: list[dict[str, object]] = []
+
+    def _capture(**kwargs: object) -> int:
+        seen.append(kwargs)
+        return 0
+
+    monkeypatch.setattr(sup, "run_fleet_campaign_supervisor", _capture)
+    positionals = ["/repo", "camp-1", "drain_to_zero", "1", "0", "60", "pyforge-marshal", "81-1-a", "", "2"]
+
+    assert sup.main(positionals + ["--retry-environment-blocks"]) == 0
+    assert sup.main(positionals) == 0
+    flagged, plain = seen
+    assert flagged["retry_environment_blocks"] is True
+    assert plain["retry_environment_blocks"] is False
+    # The flag does not disturb the positional contract.
+    for kwargs in (flagged, plain):
+        assert kwargs["station"] == "pyforge-marshal"
+        assert kwargs["stories"] == "81-1-a"
+        assert kwargs["harness"] is None
+        assert kwargs["max_in_flight"] == 2
+
+
+def test_supervisor_cycle_argv_carries_retry_environment_blocks_only_when_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``build_cycle_argv`` -- the command every supervised tick re-runs --
+    re-appends the flag when set and leaves the argv untouched otherwise."""
+    from pyforge.marshal.dispatch_fleet_supervisor.__main__ import build_cycle_argv
+
+    flagged = build_cycle_argv(
+        mode="drain_to_zero",
+        leave_remaining=0,
+        run_id="camp-1",
+        retry_environment_blocks=True,
+    )
+    plain = build_cycle_argv(mode="drain_to_zero", leave_remaining=0, run_id="camp-1")
+    assert flagged.count("--retry-environment-blocks") == 1
+    assert "--retry-environment-blocks" not in plain
+    assert [arg for arg in flagged if arg != "--retry-environment-blocks"] == plain
+
+    # run_fleet_campaign_supervisor threads it into every tick it runs.
+    from pyforge.marshal.dispatch_fleet_supervisor import __main__ as sup
+
+    monkeypatch.setattr(sup.time, "sleep", lambda _s: None)
+
+    class RecordingProcess:
+        def __init__(self) -> None:
+            self.argvs: list[list[str]] = []
+
+        def run(self, argv, *, cwd):
+            self.argvs.append(list(argv))
+            return type("R", (), {"stdout": '{"data": {"complete": true}}', "stderr": ""})()
+
+    for retry, expected in ((True, flagged), (False, plain)):
+        process = RecordingProcess()
+        code = sup.run_fleet_campaign_supervisor(
+            repo_root=Path("/tmp"),
+            run_id="camp-1",
+            mode="drain_to_zero",
+            leave_remaining=0,
+            max_cycles=0,
+            tick_seconds=1,
+            retry_environment_blocks=retry,
+            process=process,
+        )
+        assert code == 0
+        assert process.argvs == [expected]
+
+
+@pytest.mark.parametrize("retry", [True, False])
+def test_second_campaign_cycle_skips_an_environment_block_when_the_flag_rides_the_tick_argv(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    retry: bool,
+) -> None:
+    """The defect end to end (AC2, AC3): the argv a supervised tick re-runs,
+    parsed by the REAL ``marshal`` parser into the Namespace a cycle sees,
+    drives an existing campaign over an environment-blocked story. With the
+    flag on the tick argv the story is skipped (MRS-DRAIN-004) and the next
+    eligible one dispatches; without it the cycle stops on the block
+    (MRS-DRAIN-005) -- the pre-81.3 behaviour a flagless campaign keeps."""
+    from pyforge.marshal.cli.main import _build_parser
+    from pyforge.marshal.dispatch_fleet_supervisor.__main__ import build_cycle_argv
+
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["34-3-crashed", "34-4-next"]})
+    _seed_live_dispatch_journal(
+        tmp_path,
+        slug="pyforge-marshal",
+        run_id="run-crash",
+        story_key="34.3",
+        baseline_head_sha="baseline1234",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    # Cycle 1: the operator's foreground invocation. Every story is `done`
+    # here so it dispatches nothing -- it only mints the campaign directory
+    # the supervised tick then re-enters with `--campaign`.
+    _run_drain(
+        tmp_path,
+        _drain_args(once=True, retry_environment_blocks=retry),
+        ledgers={"pyforge-marshal": (("34-3-crashed", "done"), ("34-4-next", "done"))},
+    )
+    run_id = next(dispatch_fleet.fleet_runs_dir(tmp_path).iterdir()).name
+
+    # Cycle 2: the supervised tick, exactly as the supervisor would run it.
+    # argv[0:3] is `python -m pyforge.marshal.cli.main`; the rest is the CLI.
+    tick_argv = build_cycle_argv(
+        mode="drain_to_zero",
+        leave_remaining=0,
+        run_id=run_id,
+        retry_environment_blocks=retry,
+    )
+    tick = _build_parser().parse_args(tick_argv[3:])
+    assert tick.retry_environment_blocks is retry
+    harness = FakeBuildHarness()
+    capsys.readouterr()
+    _run_drain(
+        tmp_path,
+        tick,
+        ledgers={"pyforge-marshal": (("34-3-crashed", "backlog"), ("34-4-next", "backlog"))},
+        build_harness=harness,
+        process=FakeProcess(alive=False),
+    )
+    out = capsys.readouterr().out
+    if retry:
+        assert harness.dispatched == [("pyforge-marshal", "34.4")]
+        assert "MRS-DRAIN-004" in out
+        assert "MRS-DRAIN-005" not in out
+    else:
+        assert harness.dispatched == []
+        assert "MRS-DRAIN-005" in out
+
+
+def test_manual_resume_hint_repeats_retry_environment_blocks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """MRS-DRAIN-007: when the supervisor cannot be spawned, the recovery
+    command a human copies must keep the flag, as it keeps --station/--stories
+    and the spawn's own --harness/--max-in-flight."""
+    from pyforge.core.process import ProcessError
+
+    class UnspawnableProcess(FakeProcess):
+        def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
+            if "pyforge.marshal.dispatch_fleet_supervisor" in argv:
+                raise ProcessError("no fork")
+            return super().spawn_detached(argv, cwd=cwd, log_path=log_path)
+
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["22-7-fleet"]})
+    monkeypatch.chdir(tmp_path)
+    _run_drain(
+        tmp_path,
+        _drain_args(retry_environment_blocks=True, harness="claude", max_in_flight=2),
+        ledgers={"pyforge-marshal": (("22-7-fleet", "backlog"),)},
+        process=UnspawnableProcess(alive=False),
+    )
+    out = capsys.readouterr().out
+    assert "MRS-DRAIN-007" in out
+    # The spawn carries --harness and --max-in-flight, so the hint repeats them.
+    assert "--harness claude --max-in-flight 2 --retry-environment-blocks --campaign" in out
+
+
 def test_stale_campaign_id_with_stories_still_validates_unresolved_keys(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -56,6 +56,7 @@ def build_cycle_argv(
     stories: str | None = None,
     harness: str | None = None,
     max_in_flight: int | None = None,
+    retry_environment_blocks: bool = False,
 ) -> list[str]:
     """The documented one-cycle command this supervisor re-runs each tick.
 
@@ -64,6 +65,11 @@ def build_cycle_argv(
     must stay scoped/sequenced for its whole lifetime, not just its first
     cycle, or a supervised re-tick would silently widen back to fleet-wide
     ledger order.
+
+    Story 81.3: ``retry_environment_blocks`` is re-appended on every tick the
+    same way -- a campaign launched with ``--retry-environment-blocks`` must
+    keep skipping environment-classified blocks for its whole lifetime, not
+    just its foreground first cycle.
     """
     argv = [
         sys.executable,
@@ -89,6 +95,8 @@ def build_cycle_argv(
         argv += ["--harness", harness]
     if max_in_flight is not None:
         argv += ["--max-in-flight", str(max_in_flight)]
+    if retry_environment_blocks:
+        argv.append("--retry-environment-blocks")
     return argv
 
 
@@ -133,6 +141,7 @@ def run_fleet_campaign_supervisor(
     stories: str | None = None,
     harness: str | None = None,
     max_in_flight: int | None = None,
+    retry_environment_blocks: bool = False,
     process: ProcessPort | None = None,
 ) -> int:
     process = process if process is not None else PosixProcess()
@@ -144,6 +153,7 @@ def run_fleet_campaign_supervisor(
         stories=stories,
         harness=harness,
         max_in_flight=max_in_flight,
+        retry_environment_blocks=retry_environment_blocks,
     )
     tick = max(1, tick_seconds)
     cycles = 0
@@ -211,6 +221,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("stories", nargs="?", default="")
     parser.add_argument("harness", nargs="?", default="")
     parser.add_argument("max_in_flight", nargs="?", default="")
+    # Story 81.3: a boolean has no useful empty-string positional form, so it
+    # rides as an optional flag after the positionals, appended by
+    # `_spawn_campaign_supervisor` only when true.
+    parser.add_argument("--retry-environment-blocks", action="store_true", dest="retry_environment_blocks")
     args = parser.parse_args(argv)
     max_in_flight: int | None = None
     if args.max_in_flight:
@@ -226,6 +240,7 @@ def main(argv: list[str] | None = None) -> int:
         stories=args.stories or None,
         harness=args.harness or None,
         max_in_flight=max_in_flight,
+        retry_environment_blocks=args.retry_environment_blocks,
     )
 
 
