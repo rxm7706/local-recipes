@@ -558,6 +558,92 @@ def evaluate_ceiling(observed: float, limit: float) -> CeilingStatus:
     return CeilingStatus.NONE
 
 
+class UsageFreshness(StrEnum):
+    """Whether bmad-loop's ``state.json`` is fresh enough to evaluate the two
+    token ceilings from (Story 82.5, AD-32): ``FRESH`` (usable), ``STALE``
+    (older than the window, or missing -- a wedged session's frozen counter
+    must never be evidence) or ``UNEVALUABLE`` (an mtime that cannot be
+    judged: ahead of the wall clock, or not a finite number). Only ``FRESH``
+    lets a token ceiling act; the two wall-clock ceilings never depend on
+    this."""
+
+    FRESH = "fresh"
+    STALE = "stale"
+    UNEVALUABLE = "unevaluable"
+
+
+@dataclass(frozen=True)
+class MtimeSighting:
+    """The first time the supervisor SAW one distinct ``state.json`` mtime
+    (Story 82.5, DW-FU-3-6-5): ``mtime`` (the value, a wall-clock Unix
+    timestamp), ``first_seen_monotonic_s`` (``ClockPort.monotonic()`` at that
+    first sighting) and ``age_at_first_sight_s`` (how old the file already was
+    by the wall clock at that moment, clamped to zero). The caller holds one
+    and passes it in and out of ``judge_usage_freshness`` -- this module keeps
+    no state (AD-20)."""
+
+    mtime: float
+    first_seen_monotonic_s: float
+    age_at_first_sight_s: float
+
+
+def judge_usage_freshness(
+    *,
+    mtime: float | None,
+    wall_now_s: float,
+    monotonic_now_s: float,
+    window_s: float,
+    sighting: MtimeSighting | None,
+) -> tuple[UsageFreshness, MtimeSighting | None]:
+    """Pure: ``state.json``'s freshness and the sighting the caller carries
+    into the next tick. No port, no clock call, no I/O.
+
+    A filesystem mtime IS a wall-clock quantity, so there is no direct
+    monotonic comparison to make; the model is therefore anchored. At the
+    FIRST sighting of a distinct mtime the wall delta (``wall_now_s - mtime``,
+    clamped to zero) is taken ONCE as the file's age so far, and from then on
+    its age is that delta plus the MONOTONIC time since the sighting. A
+    forward NTP step or a suspend after the sighting therefore cannot make a
+    fresh sample stale, and a backward step cannot make a stale one fresh --
+    the wall clock is never consulted again for that mtime. A file already
+    old when first seen is stale at once.
+
+    ``STALE`` when the age exceeds ``window_s`` (strictly: exactly the window
+    is still fresh) or ``mtime`` is ``None`` (the file is missing -- the
+    pre-existing reading). ``UNEVALUABLE`` for a new mtime AHEAD of the wall
+    clock, or a non-finite one: such a file has no knowable age, and the old
+    shape's ``now - mtime`` came out negative and read as the freshest value
+    possible. An unevaluable mtime is not recorded, so the previous sighting
+    (if any) is returned unchanged. Raises ``ValueError`` for a non-positive
+    or non-finite ``window_s`` (negated ``>``, so NaN is rejected too) and
+    ``TypeError`` for a non-numeric or boolean one -- the guard
+    ``evaluate_idle`` applies to its own ``threshold_s``."""
+    if isinstance(window_s, bool) or not isinstance(window_s, (int, float)):
+        raise TypeError(f"window_s must be a number, got {window_s!r}")
+    if not (window_s > 0) or not math.isfinite(window_s):
+        raise ValueError(f"window_s must be positive and finite, got {window_s!r}")
+    if mtime is None:
+        return UsageFreshness.STALE, sighting
+    if not math.isfinite(mtime):
+        return UsageFreshness.UNEVALUABLE, sighting
+    if sighting is not None and sighting.mtime == mtime:
+        # A defensive floor: a monotonic reading that went backwards would
+        # shorten the age, and monotonic clocks do not -- but a caller
+        # replaying journalled readings is not obliged to be sorted.
+        age_s = sighting.age_at_first_sight_s + max(monotonic_now_s - sighting.first_seen_monotonic_s, 0.0)
+    else:
+        age_at_first_sight_s = wall_now_s - mtime
+        if age_at_first_sight_s < 0:
+            return UsageFreshness.UNEVALUABLE, sighting
+        sighting = MtimeSighting(
+            mtime=mtime,
+            first_seen_monotonic_s=monotonic_now_s,
+            age_at_first_sight_s=age_at_first_sight_s,
+        )
+        age_s = age_at_first_sight_s
+    return (UsageFreshness.STALE if age_s > window_s else UsageFreshness.FRESH), sighting
+
+
 # =============================================================================
 # Story 3.7: escalation detection (AD-20/AD-45, FR-15/16/17) -- a THIRD and
 # unrelated pure decision this module hosts, for the identical "no port, no

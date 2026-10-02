@@ -126,6 +126,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-SUPV-008",
             "MRS-SUPV-009",
             "MRS-SUPV-010",
+            "MRS-SUPV-011",
+            "MRS-SUPV-012",
             "MRS-GATE-007",
             "MRS-GATE-008",
             "MRS-GATE-009",

@@ -2,7 +2,9 @@
 architecture spine AD-9/AD-20/AD-25/AD-28/AD-30/AD-32): ``python -m
 pyforge.marshal.supervisor <home> <slug> <run_id> <watched_pid> <log_path>
 <idle_threshold_minutes> <max_tokens_per_story> <max_tokens_per_run>
-<max_wall_clock_minutes_per_story> <max_wall_clock_minutes_per_run>``.
+<max_wall_clock_minutes_per_story> <max_wall_clock_minutes_per_run>
+[<usage_staleness_window_minutes>]`` (Story 82.5 adds the optional eleventh
+value; when it is omitted the supervisor derives the same floor itself).
 ``cli/spin.py`` detach-spawns exactly this invocation (via ``ProcessPort.
 spawn_detached``) as the LAST step of a successful ``marshal factory spin``
 -- see that module's own docstring for why "last", after the ``run-launch``
@@ -129,12 +131,23 @@ findings. Escalation is clamped to ONE rung per tick (``rung_at``): the
 ladder is a fixed 3-rung sequence, but ``evaluate_idle`` floor-divides, so
 any threshold shorter than twice ``_TICK_SECONDS`` would otherwise let a
 single tick jump straight to ``defer`` and hard-stop a healthy run without
-ever nudging it. And a sample history in which NOTHING was ever observed
-(no pane AND no log mtime, for every sample) is treated as ``NONE`` rather
-than as idleness -- ``None != None`` is ``False``, so such a history never
-re-arms and reads as maximal idleness, which since ``defer`` gained its
-stop call would turn a broken observation channel into a killed HEALTHY
-run. The ladder acts only on evidence it actually has.
+ever nudging it. And a tick on which NOTHING was observed (no pane AND no
+log mtime) is never treated as idleness -- ``None != None`` is ``False``, so
+such a sample never re-arms and reads as maximal idleness, which since
+``defer`` gained its stop call would turn a broken observation channel into a
+killed HEALTHY run. Story 82.5 (DW-FU-3-5-6) makes that explicit: the tick is
+an unobservable ``core.supervise.Sample``, appends nothing to the history,
+HOLDS ``last_acted_rung`` (resetting it to ``NONE`` re-fired a nudge the moment
+observation resumed) and journals ONE ``"idle-unobservable"`` observation
+(``MRS-SUPV-012``) per dark episode. A dark PANE with a live log keeps its
+older shape exactly (sample dropped, ladder at rest). The ladder acts only on
+evidence it actually has.
+
+The pane the ladder compares is normalised first (Story 82.5, DW-FU-3-5-9):
+``core.supervise.shows_fresh_output`` strips digit runs and spinner glyphs, so
+a redrawing counter, spinner or token tally no longer re-arms the idle window
+every tick of a hung session. The history trim below uses the same predicate,
+so the trim and the scan cannot disagree.
 
 **Budget ceilings (Story 3.6, AD-20/AD-32, FR-13).** Four new externally-
 enforced ceilings -- per-story/per-run x tokens/wall-clock -- close the gap

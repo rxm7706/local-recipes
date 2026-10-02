@@ -311,6 +311,18 @@ network conditions, never a new refusal gate" -- a failed push never
 invalidates the run's own supervision, and the tick loop continues
 regardless.
 
+Story 82.5 (budget and idle signals, AD-8/AD-9/AD-32; DW-FU-3-6-8,
+DW-FU-3-5-6) adds two more codes to the same area, both ``Verdict.WARN``:
+``MRS-SUPV-011`` (a per-STORY budget ceiling -- tokens or wall-clock -- was
+breached: journaled once per (story, metric) with the story, the observed and
+the limit values, and the run CONTINUES; a per-story breach used to stop the
+whole run and abandon every remaining story of an overnight wave, and only a
+per-RUN ceiling still does) and ``MRS-SUPV-012`` (neither the session pane nor
+the harness log could be observed on a tick -- the observer is broken, not the
+session idle -- so the idle ladder holds its rung; journaled once per
+unobservable episode). WARN for the reason this area's own 001-010 are: each
+reports a condition the run survives, and neither invalidates supervision.
+
 Story 2.3 (frozen-surface scope check, narrowing only, AD-4/AD-26/AD-27)
 adds THREE more codes to ``cli/gate.py``/``core/gate.py``'s own area, the
 first real classifications into ``Verdict.SCOPE_VIOLATION`` (reserved
@@ -1476,6 +1488,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SUPV-008",
         "MRS-SUPV-009",
         "MRS-SUPV-010",
+        "MRS-SUPV-011",
+        "MRS-SUPV-012",
         "MRS-GATE-007",
         "MRS-GATE-008",
         "MRS-GATE-009",
