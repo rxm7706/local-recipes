@@ -773,9 +773,7 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
 
     current_root, current_common_dir = _repo_identity(process, repo_root)
     if current_root != fingerprint.repo_root:
-        drift.append(
-            f"repo_root: the plan was built for {fingerprint.repo_root!r}, the target is {current_root!r}"
-        )
+        drift.append(f"repo_root: the plan was built for {fingerprint.repo_root!r}, the target is {current_root!r}")
     if current_common_dir != fingerprint.git_common_dir:
         drift.append(
             f"git_common_dir: the plan was built against git directory {fingerprint.git_common_dir!r},"

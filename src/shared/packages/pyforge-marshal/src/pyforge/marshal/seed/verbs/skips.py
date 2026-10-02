@@ -366,9 +366,7 @@ class _HasArtifactId(Protocol):
 _RecordT = TypeVar("_RecordT", bound=_HasArtifactId)
 
 
-def managed_after_skips(
-    managed: Sequence[_RecordT], plan: Plan, patterns: Sequence[str] = ()
-) -> tuple[_RecordT, ...]:
+def managed_after_skips(managed: Sequence[_RecordT], plan: Plan, patterns: Sequence[str] = ()) -> tuple[_RecordT, ...]:
     """`managed` without the records for artifacts `plan` has SKIPPED, and
     without those whose path matches one of `patterns`.
 
@@ -417,5 +415,6 @@ def managed_after_skips(
     return tuple(
         record
         for record in managed
-        if record.artifact_id not in skipped_ids and first_match(normalized, _normalize_relative_posix(record.path)) is None
+        if record.artifact_id not in skipped_ids
+        and first_match(normalized, _normalize_relative_posix(record.path)) is None
     )

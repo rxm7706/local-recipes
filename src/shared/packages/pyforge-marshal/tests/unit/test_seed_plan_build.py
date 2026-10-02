@@ -699,9 +699,7 @@ def test_a_plan_is_stale_against_a_different_clone_even_when_every_other_field_a
     head_b = _git(clone_b, "rev-parse", "HEAD").stdout.strip()
     plan = dataclasses.replace(
         plan,
-        repo_fingerprint=dataclasses.replace(
-            plan.repo_fingerprint, repo_root=str(clone_b.resolve()), git_head=head_b
-        ),
+        repo_fingerprint=dataclasses.replace(plan.repo_fingerprint, repo_root=str(clone_b.resolve()), git_head=head_b),
     )
 
     drift = fingerprint_drift(plan, clone_b)

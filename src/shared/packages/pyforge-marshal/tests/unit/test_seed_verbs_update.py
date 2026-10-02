@@ -553,7 +553,9 @@ def test_three_source_merge_appears_correctly_merged_and_sorted(clean_repo, monk
     def migration_fn(view, state):
         return Plan(
             actions=(_absent_action("m-migrated", "M_MIGRATED.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -588,7 +590,9 @@ def test_collision_between_two_sources_raises_internal_error(clean_repo, monkeyp
     def migration_fn(view, state):
         return Plan(
             actions=(_absent_action("brand-new", "BRAND_NEW.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -876,7 +880,9 @@ def test_migration_offered_copied_seeded_is_skipped_by_default(clean_repo, monke
     def migration_fn(view, state):
         return Plan(
             actions=(_seeded_action("offer", "OFFER.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -891,6 +897,82 @@ def test_migration_offered_copied_seeded_is_skipped_by_default(clean_repo, monke
     assert skipped.pattern == migrate_registry._SEEDED_OFFER_PATTERN
 
 
+def _offer_migration(monkeypatch) -> None:
+    def migration_fn(view, state):
+        return Plan(
+            actions=(_seeded_action("offer", "OFFER.md"),),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
+        )
+
+    monkeypatch.setattr(migrate_registry, "MIGRATIONS", (Migration(from_version=_V1, to_version=_V2, fn=migration_fn),))
+
+
+def _unreachable_commit(action: Action) -> None:
+    raise AssertionError(f"commit() should not have been called for {action.artifact_id!r}")
+
+
+def _managed_record(artifact_id: str, path: str) -> ManagedArtifact:
+    return ManagedArtifact(
+        id=artifact_id,
+        path=path,
+        artifact_class="copied-managed",
+        body_sha="abc12345",
+        inserted_region_span=None,
+    )
+
+
+def test_rung_6_is_not_asked_about_an_artifact_the_plan_skipped(clean_repo, monkeypatch):
+    """DW-10-4-4. A migration-offered `copied-seeded` entry sits in
+    `plan.skipped` with no action, so it is not going to be written -- yet its
+    `state.managed[]` record used to be handed to rung 6, which refused a
+    hand-edit of a file this run would never touch."""
+    (clean_repo / "OFFER.md").write_text("hand-edited, not what state recorded\n", encoding="utf-8")
+    write_state(
+        _seed_state(managed=(_managed_record("offer", "OFFER.md"),)),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    _offer_migration(monkeypatch)
+
+    result = run_update(
+        clean_repo,
+        _manifest(model_version=_V2),
+        run=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_unreachable_commit,
+    )
+
+    assert [skipped.artifact_id for skipped in result.plan.skipped] == ["offer"]
+    assert result.plan.actions == ()
+    assert (clean_repo / "OFFER.md").read_text(encoding="utf-8") == "hand-edited, not what state recorded\n"
+
+
+def test_rung_6_still_refuses_a_hand_edit_of_a_managed_record_the_plan_did_not_skip(clean_repo, monkeypatch):
+    """The skip filter is narrow: a record whose artifact the plan did NOT skip
+    is still checked, because `update` regenerates every managed record and a
+    refusal there guards a real overwrite."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"), model_version=_V2)
+    (clean_repo / "OFFER.md").write_text("hand-edited offer\n", encoding="utf-8")
+    (clean_repo / "WHOLE.md").write_text("hand-edited whole\n", encoding="utf-8")
+    write_state(
+        _seed_state(managed=(_managed_record("offer", "OFFER.md"), _managed_record("whole", "WHOLE.md"))),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    _offer_migration(monkeypatch)
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as excinfo:
+        run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+
+    assert "whole:" in excinfo.value.message
+    assert "offer:" not in excinfo.value.message
+
+
 def test_include_seeded_applies_the_migration_offered_action(clean_repo, monkeypatch):
     write_state(_seed_state(), repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
     _commit_all(clean_repo)
@@ -898,7 +980,9 @@ def test_include_seeded_applies_the_migration_offered_action(clean_repo, monkeyp
     def migration_fn(view, state):
         return Plan(
             actions=(_seeded_action("offer", "OFFER.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -997,7 +1081,9 @@ def test_sc01_check_update_run_check_end_to_end(clean_repo, monkeypatch):
     def rename_migration(view, state):
         return Plan(
             actions=(_absent_action("renamed", "new-name.txt"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=rename_migration)

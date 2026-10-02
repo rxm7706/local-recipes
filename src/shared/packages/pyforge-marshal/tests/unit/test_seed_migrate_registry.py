@@ -258,7 +258,9 @@ def test_a_migration_function_performs_zero_filesystem_writes(tmp_path, monkeypa
         )
         return Plan(
             actions=(action,),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V1_1, fn=materializing_fn)
@@ -298,7 +300,9 @@ def _fn_returning(*actions: Action):
     def fn(_view, _state) -> Plan:
         return Plan(
             actions=actions,
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     return fn
@@ -481,7 +485,9 @@ def test_compose_merges_a_migrations_own_declared_skips_into_the_result(tmp_path
     def fn(_view, _state) -> Plan:
         return Plan(
             actions=(),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
             skipped=(registry.SkippedArtifact(artifact_id="own-skip", target_path="own.txt", pattern="*.txt"),),
         )
 
