@@ -458,6 +458,29 @@ def test_happy_path_opens_pr_polls_checks_and_merges(tmp_path, capsys, monkeypat
     assert payload["data"]["subject"] == expected_subject
 
 
+def test_a_malformed_merge_subject_template_lands_with_the_default_subject(tmp_path, capsys, monkeypatch):
+    """Story 82.3 (DW-5-10-1): a project ``merge_subject_template`` without exactly one ``{key}`` used
+    to compose cleanly and then raise a bare ``ValueError`` out of ``render_merge_subject`` -- an
+    uncaught traceback from a full merge. Composition now rejects it (``MRS-POLICY-002``) and the
+    landing renders the default template instead."""
+    policy_path = _write_project_policy(tmp_path, 'merge_subject_template = "Merge into main"\n' + _rule_policy())
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("pixi.toml",),
+    )
+    forge = _FakeForge(existing=None, check_status_map={"environment-yaml-sync": "success"})
+
+    land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert "MRS-POLICY-002" in [f["code"] for f in payload["findings"]]
+    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
+    assert payload["data"]["subject"] == expected_subject
+    assert forge.merge_calls[0][-1] == expected_subject
+
+
 def test_render_text_land_reports_subject_line_on_a_full_merge(tmp_path, capsys, monkeypatch):
     """Story 5.10: `_render_text_land` gains one `subject: ...` line, gated
     on `"subject" in data`, mirroring `cli/deploy.py::_render_text_land_

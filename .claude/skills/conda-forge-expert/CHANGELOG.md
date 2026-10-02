@@ -2,7 +2,14 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.91.1** (Sep 29, 2026, current) — **Host-gate tests made hermetic: a shared `clean_mirror_env` fixture clears ambient `*_BASE_URL` and npm mirror vars (PATCH; tests only, no script behaviour change).**
+**v8.91.2** (Oct 2, 2026, current) — **Stamp tests narrate their drift: `test_spec_surface_check.py` fixtures name each drifted path on the spec memlog before a scoped stamp (PATCH; tests only, no script behaviour change).** `scripts/spec_surface_check.py --write-baseline --spec NAME` now refuses (exit 1, baseline untouched) a path that differs from NAME's baseline entry unless the spec's memlog moved since the baseline and names it, or the path is passed with `--accept PATH` (marshal Story 82.3, DW-9-1-1; `spec-pyforge-marshal` CAP-235). Four S-13.1 / S-12.5 tests here drifted two fixture paths and scoped-stamped a spec with no memlog entry, which is exactly what the stamp now refuses: `test_scoped_stamp_leaves_every_other_spec_byte_identical`, `test_concurrent_scoped_stamps_neither_write_lost`, `test_write_baseline_blocks_while_lock_held` and `test_stamp_is_atomic_and_leaves_no_residue`.
+
+- **The change.** New `_narrate(repo, slug, path)` helper appends an event naming the path to the spec's `.memlog.md`, the same rule `gather_spec_surface` reads as reconciled (memlog moved AND names the path). Each of the four tests calls it after drifting its governed file and before its scoped stamp. The isolation test still drifts `b.py` without narrating it, so it still proves a scoped stamp leaves another spec byte-identical.
+- **Why here.** The stamp's own tests live in the marshal package (`tests/meta/test_spec_surface_stamp.py`), but this file also exercises the same script and `test-ci` runs it, so the four tests would red CI unchanged.
+- **Unchanged:** every script, the other six tests in the file, and the unscoped `--write-baseline`.
+- **Files:** `tests/meta/test_spec_surface_check.py`, `SKILL.md` (version, history), `config/skill-config.yaml` (8.91.1 → 8.91.2), `MANIFEST.yaml`, `CHANGELOG.md`.
+
+**v8.91.1** (Sep 29, 2026) — **Host-gate tests made hermetic: a shared `clean_mirror_env` fixture clears ambient `*_BASE_URL` and npm mirror vars (PATCH; tests only, no script behaviour change).**
 
 - **The failure.** A local `pixi run -e pyforge-guild pr-preflight` failed 1 of 9152 tests. `test_inventory_channel_auth_host_gate.py::TestInventoryChannelFallbackAuthHostGate::test_malformed_base_url_does_not_crash_the_allowlist_scan` asserted `_fallback_configured_enterprise_hosts() == {"good.example.com"}`, but the scan reads every `*_BASE_URL`. A Claude Code shell exports `ANTHROPIC_BASE_URL`, so the set also held `api.anthropic.com`. CI has no such var, so only local preflight runs from agent sessions failed, and the pre-push hook then blocked `git push`.
 - **The fix.** New `clean_mirror_env` fixture in `tests/conftest.py` removes every `*_BASE_URL` plus `_http._EXTRA_MIRROR_ENV_VARS`, read from `_http` rather than restated. It is opt-in, not suite-wide autouse, so `network`-marked tests keep an operator's real mirror routing.

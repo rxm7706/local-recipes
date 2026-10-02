@@ -162,6 +162,11 @@ services:
       # otherwise 301-redirect every request (including the /ht/ health
       # probe) to https, which this stack never serves.
       DJANGO_SECURE_SSL_REDIRECT: "False"
+      # Story 83.2 (DW-10-3-3): same plain-HTTP reason -- a browser drops `Secure`
+      # and `__Secure-` cookies over http, so login and CSRF POSTs would fail.
+      # Honoured only because COMPONENT_RUNTIME is `local` above; a deployed
+      # process composes Secure cookies whatever it sets.
+      DJANGO_INSECURE_LOCAL_COOKIES: "True"
       DATABASE_URL: postgres://platform:platform@postgres:5432/platform
       REDIS_URL: redis://redis:6379/0
       # config/object_storage.py's consumption seam (Story 50.3) -- same
@@ -242,6 +247,8 @@ services:
       COMPONENT_RUNTIME: local
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,platform
       DJANGO_SECURE_SSL_REDIRECT: "False"
+      # Story 83.2 (DW-10-3-3): same plain-HTTP local stack as `platform` above.
+      DJANGO_INSECURE_LOCAL_COOKIES: "True"
       DATABASE_URL: postgres://platform:platform@postgres:5432/platform
       REDIS_URL: redis://redis:6379/0
       OBJECT_STORAGE_ENDPOINT_URL: http://objectstorage:9000

@@ -2689,6 +2689,12 @@ def test_schedule_batch_with_one_unmapped_assignee_among_linked_items_fails_only
     assert "unmapped: github login 'ghost' has no user_mapping entry for jira" in candidates["ITEM_2"]["summary"]
     assert "1 failed" in result.summary
     assert "3 candidates" in result.summary
+    # Story 83.2 (DW-8-4-1): the count line, then one `<github_item_id>: <summary>`
+    # line per FAILED candidate -- the ok ones are not named; `details` is unchanged.
+    count_line, *failed_lines = result.summary.splitlines()
+    assert count_line == "sync reconcile --schedule: 3 candidates, 2 ok, 1 failed"
+    assert failed_lines == [f"ITEM_2: {candidates['ITEM_2']['summary']}"]
+    assert set(candidates["ITEM_2"]) == {"github_item_id", "updated_at", "ok", "summary"}
 
 
 def test_schedule_batch_composes_with_identity_link_self_heal():
@@ -2726,3 +2732,4 @@ def test_schedule_batch_composes_with_identity_link_self_heal():
     assert len(candidates) == 1
     assert candidates[0]["ok"] is True
     assert transport.jira_issues["PROJ-1"]["fields"]["jira_link"] == "ITEM_1"
+    assert "\n" not in result.summary  # no failure, so the count line stands alone

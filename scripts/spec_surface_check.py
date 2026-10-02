@@ -36,9 +36,22 @@ its own pre-lock live snapshot -- that is its documented accept-everything
 semantics, unchanged by the serialization; only the scoped path reads and
 merges.)
 
+Marshal Story 82.3 (DW-9-1-1): a SCOPED stamp no longer accepts a path
+nobody narrated. A `--spec NAME` stamp merges every file NAME's surface
+matches, so a drifted file under a broad glob was absorbed as reconciled with
+no trace. Now, under the same lock, a path that differs from NAME's baseline
+entry (changed, added or removed) is reconciled only when it is named with
+`--accept PATH`, or the spec's contract hash moved since the baseline AND the
+spec's `.memlog.md` text names the path (the rule `gather_spec_surface` reads
+as clean; a memlog that names the path but did not move reads as `drift`, so
+it does not count here either). Any other differing path refuses the whole
+stamp -- exit 1, baseline untouched, every path listed with the explicit form
+that accepts it. A spec with no usable baseline entry stamps as before, and
+the unscoped `--write-baseline` is unchanged.
+
 Usage (plain `python`, no pixi task -- the `spec-surface-check` pixi task
 invokes the dispatcher below instead, which does not understand this flag):
-        python scripts/spec_surface_check.py --write-baseline [--spec NAME ...]
+        python scripts/spec_surface_check.py --write-baseline [--spec NAME ...] [--accept PATH ...]
 Verdict (coverage/drift/blindness, unchanged behavior):
         pixi run -e local-recipes spec-surface-check
         python -m pyforge.doctor.sources spec-surface
@@ -216,9 +229,78 @@ def _write_baseline(merged: dict) -> None:
     os.replace(tmp, BASELINE)
 
 
-def _stamp_baseline(spec_names: list[str] | None, current: dict[str, dict]) -> str:
+class StampRefused(Exception):
+    """A scoped stamp found paths that differ from a spec's baseline entry and
+    are not reconciled (Story 82.3). Raised inside the locked section, before
+    any write, so the baseline is left byte-identical."""
+
+    def __init__(self, refusals: list[tuple[str, str, str]]) -> None:
+        super().__init__(f"{len(refusals)} unreconciled path(s)")
+        self.refusals = refusals
+
+    def render(self) -> str:
+        """The stderr text: one `NAME: PATH (what)` line per path, then, per
+        spec, the explicit command that accepts exactly those paths."""
+        by_name: dict[str, list[str]] = {}
+        lines = [
+            "refusing to stamp: these path(s) differ from the spec's baseline "
+            "and its memlog does not name them (the memlog must move AND name "
+            "the path):"
+        ]
+        for name, path, what in self.refusals:
+            lines.append(f"  {name}: {path} ({what})")
+            by_name.setdefault(name, []).append(path)
+        lines.append("reconcile the spec's memlog, or accept the path(s) explicitly:")
+        for name, paths in by_name.items():
+            accepts = " ".join(f"--accept {path}" for path in paths)
+            lines.append(
+                f"  python scripts/spec_surface_check.py --write-baseline --spec {name} {accepts}"
+            )
+        lines.append("baseline untouched")
+        return "\n".join(lines)
+
+
+def _memlog_text(name: str) -> str:
+    """The raw text of spec NAME's `.memlog.md` (`<project>/<spec-dir>`, the
+    file beside its SPEC.md) -- what `gather_spec_surface` tests a path's
+    mention against; absent or unreadable reads as empty."""
+    project, _, spec_dir = name.partition("/")
+    memlog = (REPO_ROOT / "_bmad-output" / "projects" / project
+              / "planning-artifacts" / "specs" / spec_dir / ".memlog.md")
+    try:
+        return memlog.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def _unreconciled_paths(name: str, base: dict, cur: dict,
+                        accept: frozenset[str]) -> list[tuple[str, str]]:
+    """`(path, changed|added|removed)` for every path where spec NAME's live
+    state differs from its baseline entry `base` and nothing reconciles it:
+    not `--accept`ed, and not (contract hash moved since the baseline AND the
+    memlog text names the path) -- the same clean-pass bar
+    `gather_spec_surface` applies, so "moved but silent" and "names it but did
+    not move" both stay unreconciled."""
+    base_files = base.get("files") if isinstance(base.get("files"), dict) else {}
+    moved = base["memlog"] != cur["memlog"]
+    named = _memlog_text(name) if moved else ""
+    out: list[tuple[str, str]] = []
+    for path in sorted(set(base_files) | set(cur["files"])):
+        old, new = base_files.get(path), cur["files"].get(path)
+        if old == new or path in accept:
+            continue
+        if moved and path in named:
+            continue
+        out.append((path, "changed" if old and new else ("added" if new else "removed")))
+    return out
+
+
+def _stamp_baseline(spec_names: list[str] | None, current: dict[str, dict],
+                    accept: frozenset[str] = frozenset()) -> str:
     """The locked critical section: read -> merge -> write, fully serialized
-    against every other concurrent stamp. Returns the scope message."""
+    against every other concurrent stamp. Returns the scope message. A scoped
+    stamp raises `StampRefused` (nothing written) when a named spec has a
+    differing path that is neither `accept`ed nor narrated on its memlog."""
     with _baseline_lock():
         # S-13.1 -- SCOPED stamping. Stamping every spec in one write made the
         # sanctioned fix for a single `[no-baseline]` unusable: it necessarily
@@ -229,6 +311,18 @@ def _stamp_baseline(spec_names: list[str] | None, current: dict[str, dict]) -> s
             # MERGE, never rewrite: building from `current` alone would
             # silently drop every spec this invocation did not name.
             merged = _read_baseline()
+            # Story 82.3 (DW-9-1-1): check EVERY named spec before writing
+            # any, so one refusal stamps none. A spec with no usable baseline
+            # entry has no per-path diff to judge and stamps as before.
+            refusals: list[tuple[str, str, str]] = []
+            for name in sorted(set(spec_names)):
+                base = merged.get(name)
+                if not isinstance(base, dict) or not isinstance(base.get("memlog"), str):
+                    continue
+                refusals.extend((name, path, what) for path, what
+                                in _unreconciled_paths(name, base, current[name], accept))
+            if refusals:
+                raise StampRefused(refusals)
             for name in spec_names:
                 merged[name] = current[name]
             scope = f"{len(set(spec_names))} spec(s): {', '.join(sorted(set(spec_names)))}"
@@ -247,10 +341,20 @@ def main() -> int:
                     help=("limit --write-baseline to this spec (repeatable). "
                           "WITHOUT it the stamp covers EVERY spec, which accepts "
                           "every other spec's pending drift as correct."))
+    ap.add_argument("--accept", action="append", metavar="PATH", default=None,
+                    help=("with --spec: accept this drifted path as reconciled "
+                          "although the spec's memlog does not name it (repeatable). "
+                          "A scoped stamp otherwise refuses any path that differs "
+                          "from its baseline and is not narrated on the memlog."))
     args = ap.parse_args()
 
     if args.spec and not args.write_baseline:
         ap.error("--spec only makes sense with --write-baseline")
+    if args.accept and not args.write_baseline:
+        ap.error("--accept only makes sense with --write-baseline")
+    if args.accept and not args.spec:
+        ap.error("--accept only makes sense with --spec (an unscoped stamp "
+                 "already accepts every path)")
 
     if not args.write_baseline:
         print(
@@ -273,7 +377,12 @@ def main() -> int:
                   f"known: {', '.join(sorted(current))}", file=sys.stderr)
             return 2
 
-    scope = _stamp_baseline(args.spec, current)
+    accept = frozenset(os.path.normpath(p) for p in args.accept or ())
+    try:
+        scope = _stamp_baseline(args.spec, current, accept)
+    except StampRefused as refused:
+        print(refused.render(), file=sys.stderr)
+        return 1
     print(f"baseline stamped: {BASELINE.relative_to(REPO_ROOT)} — {scope}")
     return 0
 

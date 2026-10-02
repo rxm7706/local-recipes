@@ -2,6 +2,7 @@ import sys
 
 from config.authorization.idp_userinfo import DEFAULT_CLAIMS_CACHE_SECONDS
 from config.authorization.idp_userinfo import fetch_current_userinfo
+from config.locality import is_local
 from config.observability.logging import build_logging_config
 from config.startup import run_stage_one
 from config.startup.stage_one import refuse_required_settings
@@ -45,14 +46,24 @@ CHANNEL_LAYERS = channel_layers_for_broker(REDIS_BROKER_URL)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # https://docs.djangoproject.com/en/dev/ref/settings/#secure-ssl-redirect
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
+# Story 83.2 (DW-10-3-3): a browser drops a `Secure` cookie, and any `__Secure-`
+# cookie, over plain HTTP -- so on the compose stack (no TLS terminator) login, the
+# admin and every CSRF-protected POST fail. The weaker posture needs BOTH an
+# explicit local process (`COMPONENT_RUNTIME=local`) and a request by name; the
+# `config.broker_tls.resolve_cert_reqs` precedent. A deployed process composes
+# `Secure` cookies and the `__Secure-` names whatever its environment says.
+_insecure_local_cookies = is_local() and env.bool(
+    "DJANGO_INSECURE_LOCAL_COOKIES",
+    default=False,
+)
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-secure
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = not _insecure_local_cookies
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-name
-SESSION_COOKIE_NAME = "__Secure-sessionid"
+SESSION_COOKIE_NAME = "sessionid" if _insecure_local_cookies else "__Secure-sessionid"
 # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-secure
-CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = not _insecure_local_cookies
 # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-name
-CSRF_COOKIE_NAME = "__Secure-csrftoken"
+CSRF_COOKIE_NAME = "csrftoken" if _insecure_local_cookies else "__Secure-csrftoken"
 # https://docs.djangoproject.com/en/dev/topics/security/#ssl-https
 # https://docs.djangoproject.com/en/dev/ref/settings/#secure-hsts-seconds
 # TODO: set this to 60 seconds first and then to 518400 once you prove the former works
