@@ -487,14 +487,14 @@ def test_resolve_max_parallel_is_serial_for_a_dispatch_block_that_omits_max_para
 
 class _FakeProcessForSessionAlive:
     """Test double for ProcessPort with controllable is_alive and process_start_time."""
-    
+
     def __init__(self, *, is_alive: bool = True, start_time: float | None = None):
         self.is_alive_result = is_alive
         self.start_time_result = start_time
-    
+
     def is_alive(self, pid: int) -> bool:
         return self.is_alive_result
-    
+
     def process_start_time(self, pid: int) -> float | None:
         return self.start_time_result
 

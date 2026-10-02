@@ -274,21 +274,20 @@ class PosixProcess:
                 stat_fields = f.read().split()
                 # Field 22 (0-indexed 21) is starttime in clock ticks since boot
                 start_ticks = int(stat_fields[21])
-                
+
             # Get system clock ticks per second and boot time
             clock_ticks_per_sec = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
-            
+
             with open("/proc/uptime", "r") as f:
                 uptime_seconds = float(f.read().split()[0])
-                
+
             # Calculate boot time
             import time
             boot_time = time.time() - uptime_seconds
-            
+
             # Convert start ticks to actual start time
             start_time = boot_time + (start_ticks / clock_ticks_per_sec)
             return start_time
-            
         except (OSError, IOError, ValueError, IndexError, KeyError):
             # Any failure reading /proc files or parsing values -> degrade gracefully
             return None

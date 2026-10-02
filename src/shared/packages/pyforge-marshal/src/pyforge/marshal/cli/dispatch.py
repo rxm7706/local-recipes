@@ -1399,7 +1399,6 @@ def _is_dispatch_session_alive(
             # But not significantly before it (which would indicate PID reuse)
             if time_diff < -tolerance_seconds or time_diff > tolerance_seconds:
                 return False
-                
     return True
 
 

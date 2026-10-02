@@ -296,37 +296,37 @@ def test_is_alive_false_on_an_unexpected_oserror(process, monkeypatch):
 
 
 def test_is_alive_false_for_thread_id_that_is_not_process_leader(process, monkeypatch):
-    """Story 83.1: A thread ID (that is not a thread group leader) should not 
+    """Story 83.1: A thread ID (that is not a thread group leader) should not
     be considered alive for dispatch session tracking purposes."""
     import pyforge.core.process as process_module
-    
+
     # Mock os.kill to succeed (indicating something exists at this PID)
     def _mock_kill(pid, sig):
         pass
-        
+
     # Mock _is_thread_group_leader to return False (it's a thread, not a process)
     def _mock_is_thread_group_leader(self, pid):
         return False
-    
+
     monkeypatch.setattr(process_module.os, "kill", _mock_kill)
     monkeypatch.setattr(process_module.PosixProcess, "_is_thread_group_leader", _mock_is_thread_group_leader)
     assert process.is_alive(12345) is False
 
 
 def test_is_alive_true_when_thread_leader_check_fails(process, monkeypatch):
-    """When we can't determine if a PID is a thread leader (e.g., /proc files 
+    """When we can't determine if a PID is a thread leader (e.g., /proc files
     unreadable), we degrade gracefully to True to maintain backward compatibility."""
     import pyforge.core.process as process_module
-    
+
     # Mock os.kill to succeed (indicating something exists at this PID)
     def _mock_kill(pid, sig):
         pass
-        
+
     # Mock _is_thread_group_leader to return True (assume it's a process when unsure)
     def _mock_is_thread_group_leader(self, pid):
         return True
-    
-    monkeypatch.setattr(process_module.os, "kill", _mock_kill) 
+
+    monkeypatch.setattr(process_module.os, "kill", _mock_kill)
     monkeypatch.setattr(process_module.PosixProcess, "_is_thread_group_leader", _mock_is_thread_group_leader)
     assert process.is_alive(os.getpid()) is True
 
