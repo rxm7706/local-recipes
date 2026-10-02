@@ -2871,6 +2871,217 @@ def test_stories_supervisor_reinvocation_via_run_fleet_drain_carries_stories(
     assert "22-12-next,22-11-fleet" in campaign_argv
 
 
+# --------------------------------------------------------------------------
+# Story 81.3 -- the campaign supervisor keeps --retry-environment-blocks
+# --------------------------------------------------------------------------
+
+
+def test_spawned_supervisor_argv_carries_retry_environment_blocks_only_when_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The REAL ``run_fleet_drain`` -> ``_spawn_campaign_supervisor`` path:
+    a campaign launched with ``--retry-environment-blocks`` hands the flag to
+    its detached supervisor (AC1); without it the argv is the pre-81.3 one
+    (AC3). Dropping ``retry_environment_blocks=`` at the call site, or the
+    flag append inside the spawn, fails this test (AC4 mutation)."""
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["22-7-fleet"]})
+    monkeypatch.chdir(tmp_path)
+    ledgers = {"pyforge-marshal": (("22-7-fleet", "backlog"),)}
+
+    with_flag = FakeProcess(alive=False)
+    code = _run_drain(
+        tmp_path,
+        _drain_args(retry_environment_blocks=True),
+        ledgers=ledgers,
+        process=with_flag,
+    )
+    assert code == EXIT_OK
+    [flagged] = [argv for argv in with_flag.spawned if "pyforge.marshal.dispatch_fleet_supervisor" in argv]
+    assert flagged[-1] == "--retry-environment-blocks"
+    assert flagged.count("--retry-environment-blocks") == 1
+
+    without_flag = FakeProcess(alive=False)
+    code = _run_drain(tmp_path, _drain_args(), ledgers=ledgers, process=without_flag)
+    assert code == EXIT_OK
+    [plain] = [argv for argv in without_flag.spawned if "pyforge.marshal.dispatch_fleet_supervisor" in argv]
+    assert "--retry-environment-blocks" not in plain
+    # Byte-identical to today's argv apart from the freshly minted run id
+    # (index 4): the flagged one is exactly the plain one plus the flag.
+    assert flagged[:-1][:4] + flagged[:-1][5:] == plain[:4] + plain[5:]
+
+
+def test_supervisor_main_parses_retry_environment_blocks(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The supervisor's own CLI reads the trailing flag true and defaults it
+    false, and hands it to ``run_fleet_campaign_supervisor`` (AC1, AC3)."""
+    from pyforge.marshal.dispatch_fleet_supervisor import __main__ as sup
+
+    seen: list[dict[str, object]] = []
+
+    def _capture(**kwargs: object) -> int:
+        seen.append(kwargs)
+        return 0
+
+    monkeypatch.setattr(sup, "run_fleet_campaign_supervisor", _capture)
+    positionals = ["/repo", "camp-1", "drain_to_zero", "1", "0", "60", "pyforge-marshal", "81-1-a", "", "2"]
+
+    assert sup.main(positionals + ["--retry-environment-blocks"]) == 0
+    assert sup.main(positionals) == 0
+    flagged, plain = seen
+    assert flagged["retry_environment_blocks"] is True
+    assert plain["retry_environment_blocks"] is False
+    # The flag does not disturb the positional contract.
+    for kwargs in (flagged, plain):
+        assert kwargs["station"] == "pyforge-marshal"
+        assert kwargs["stories"] == "81-1-a"
+        assert kwargs["harness"] is None
+        assert kwargs["max_in_flight"] == 2
+
+
+def test_supervisor_cycle_argv_carries_retry_environment_blocks_only_when_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``build_cycle_argv`` -- the command every supervised tick re-runs --
+    re-appends the flag when set and leaves the argv untouched otherwise."""
+    from pyforge.marshal.dispatch_fleet_supervisor.__main__ import build_cycle_argv
+
+    flagged = build_cycle_argv(
+        mode="drain_to_zero",
+        leave_remaining=0,
+        run_id="camp-1",
+        retry_environment_blocks=True,
+    )
+    plain = build_cycle_argv(mode="drain_to_zero", leave_remaining=0, run_id="camp-1")
+    assert flagged.count("--retry-environment-blocks") == 1
+    assert "--retry-environment-blocks" not in plain
+    assert [arg for arg in flagged if arg != "--retry-environment-blocks"] == plain
+
+    # run_fleet_campaign_supervisor threads it into every tick it runs.
+    from pyforge.marshal.dispatch_fleet_supervisor import __main__ as sup
+
+    monkeypatch.setattr(sup.time, "sleep", lambda _s: None)
+
+    class RecordingProcess:
+        def __init__(self) -> None:
+            self.argvs: list[list[str]] = []
+
+        def run(self, argv, *, cwd):
+            self.argvs.append(list(argv))
+            return type("R", (), {"stdout": '{"data": {"complete": true}}', "stderr": ""})()
+
+    for retry, expected in ((True, flagged), (False, plain)):
+        process = RecordingProcess()
+        code = sup.run_fleet_campaign_supervisor(
+            repo_root=Path("/tmp"),
+            run_id="camp-1",
+            mode="drain_to_zero",
+            leave_remaining=0,
+            max_cycles=0,
+            tick_seconds=1,
+            retry_environment_blocks=retry,
+            process=process,
+        )
+        assert code == 0
+        assert process.argvs == [expected]
+
+
+def test_second_campaign_cycle_skips_an_environment_block_when_the_flag_rides_the_tick_argv(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The defect end to end (AC2): the argv a supervised tick re-runs, parsed
+    by the REAL ``marshal`` parser into the Namespace a cycle sees, drives an
+    existing campaign over an environment-blocked story -- the story is skipped
+    (MRS-DRAIN-004) and the next eligible one dispatches. Without the flag on
+    the tick argv the same cycle stops on the block (MRS-DRAIN-005)."""
+    from pyforge.marshal.cli.main import _build_parser
+    from pyforge.marshal.dispatch_fleet_supervisor.__main__ import build_cycle_argv
+
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["34-3-crashed", "34-4-next"]})
+    _seed_live_dispatch_journal(
+        tmp_path,
+        slug="pyforge-marshal",
+        run_id="run-crash",
+        story_key="34.3",
+        baseline_head_sha="baseline1234",
+    )
+    monkeypatch.chdir(tmp_path)
+    ledgers = {"pyforge-marshal": (("34-3-crashed", "backlog"), ("34-4-next", "backlog"))}
+
+    # Cycle 1: the operator's foreground invocation, flag set.
+    _run_drain(
+        tmp_path,
+        _drain_args(once=True, retry_environment_blocks=True),
+        ledgers=ledgers,
+        build_harness=FakeBuildHarness(),
+    )
+    run_id = next(dispatch_fleet.fleet_runs_dir(tmp_path).iterdir()).name
+
+    def tick_namespace(*, retry: bool) -> argparse.Namespace:
+        argv = build_cycle_argv(
+            mode="drain_to_zero",
+            leave_remaining=0,
+            run_id=run_id,
+            retry_environment_blocks=retry,
+        )
+        # argv[0:3] is `python -m pyforge.marshal.cli.main`; the rest is the CLI.
+        return _build_parser().parse_args(argv[3:])
+
+    # Cycle 2 with the flag on the tick argv: skipped, next story dispatched.
+    kept = tick_namespace(retry=True)
+    assert kept.retry_environment_blocks is True
+    harness = FakeBuildHarness()
+    code = _run_drain(
+        tmp_path,
+        kept,
+        ledgers=ledgers,
+        build_harness=harness,
+        process=FakeProcess(alive=False),
+    )
+    assert code == EXIT_OK
+    assert harness.dispatched == [("pyforge-marshal", "34.4")]
+
+    # Cycle 2 as it ran before 81.3 (flag absent): stops on the same block.
+    dropped = tick_namespace(retry=False)
+    assert dropped.retry_environment_blocks is False
+    stopped = FakeBuildHarness()
+    _run_drain(
+        tmp_path,
+        dropped,
+        ledgers=ledgers,
+        build_harness=stopped,
+        process=FakeProcess(alive=False),
+    )
+    assert stopped.dispatched == []
+
+
+def test_manual_resume_hint_repeats_retry_environment_blocks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """MRS-DRAIN-007: when the supervisor cannot be spawned, the recovery
+    command a human copies must keep the flag, as it keeps --station/--stories."""
+    from pyforge.core.process import ProcessError
+
+    class UnspawnableProcess(FakeProcess):
+        def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
+            if "pyforge.marshal.dispatch_fleet_supervisor" in argv:
+                raise ProcessError("no fork")
+            return super().spawn_detached(argv, cwd=cwd, log_path=log_path)
+
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["22-7-fleet"]})
+    monkeypatch.chdir(tmp_path)
+    _run_drain(
+        tmp_path,
+        _drain_args(retry_environment_blocks=True),
+        ledgers={"pyforge-marshal": (("22-7-fleet", "backlog"),)},
+        process=UnspawnableProcess(alive=False),
+    )
+    out = capsys.readouterr().out
+    assert "MRS-DRAIN-007" in out
+    assert "--retry-environment-blocks --campaign" in out
+
+
 def test_stale_campaign_id_with_stories_still_validates_unresolved_keys(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

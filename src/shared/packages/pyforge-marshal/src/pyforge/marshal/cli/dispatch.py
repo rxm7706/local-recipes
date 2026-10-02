@@ -5139,6 +5139,7 @@ def _spawn_campaign_supervisor(
     stories: tuple[str, ...] | None = None,
     harness: str | None = None,
     max_in_flight: int | None = None,
+    retry_environment_blocks: bool = False,
 ) -> int:
     """Detach the campaign supervisor -- the loop that chains next stories.
 
@@ -5154,23 +5155,33 @@ def _spawn_campaign_supervisor(
     campaign -- omitting them here would silently widen a station-scoped or
     explicit-sequence campaign back to fleet-wide/ledger-order on its very
     first re-tick.
+
+    Story 81.3: ``retry_environment_blocks`` rides the same way, as a trailing
+    ``--retry-environment-blocks`` flag (a boolean has no useful empty-string
+    positional form) appended only when true -- the default argv is
+    byte-identical. Without it a campaign launched with the flag skips an
+    environment-classified block in its foreground cycle only, and every
+    supervised tick after it stops on the same block (MRS-DRAIN-005).
     """
+    argv = [
+        sys.executable,
+        "-m",
+        "pyforge.marshal.dispatch_fleet_supervisor",
+        str(repo_root),
+        run_id,
+        mode.value,
+        str(leave_remaining),
+        str(max_cycles),
+        str(tick_seconds),
+        station or "",
+        ",".join(stories) if stories else "",
+        harness or "",
+        str(max_in_flight) if max_in_flight is not None else "",
+    ]
+    if retry_environment_blocks:
+        argv.append("--retry-environment-blocks")
     return process.spawn_detached(
-        [
-            sys.executable,
-            "-m",
-            "pyforge.marshal.dispatch_fleet_supervisor",
-            str(repo_root),
-            run_id,
-            mode.value,
-            str(leave_remaining),
-            str(max_cycles),
-            str(tick_seconds),
-            station or "",
-            ",".join(stories) if stories else "",
-            harness or "",
-            str(max_in_flight) if max_in_flight is not None else "",
-        ],
+        argv,
         cwd=repo_root,
         log_path=run_dir / _FLEET_SUPERVISOR_LOG_FILENAME,
     )
@@ -5521,6 +5532,7 @@ def run_fleet_drain(
     findings.extend(report.findings)
 
     if not once and not report.complete:
+        retry_environment_blocks = bool(getattr(args, "retry_environment_blocks", False))
         try:
             data["supervisor_pid"] = _spawn_campaign_supervisor(
                 process=process,
@@ -5535,18 +5547,23 @@ def run_fleet_drain(
                 stories=explicit_stories,
                 harness=getattr(args, "harness", None),
                 max_in_flight=getattr(args, "max_in_flight", None),
+                retry_environment_blocks=retry_environment_blocks,
             )
             data["supervisor_log"] = str(run_dir / _FLEET_SUPERVISOR_LOG_FILENAME)
         except ProcessError as exc:
             # Story 22.11 patch pass: a station-scoped/sequenced campaign's
             # recovery command must repeat --station/--stories, or following
             # this message literally silently widens the resumed cycle back
-            # to fleet-wide/ledger-order (review finding).
+            # to fleet-wide/ledger-order (review finding). Story 81.3: the
+            # same holds for --retry-environment-blocks -- a manual resume
+            # without it stops on the block the campaign was told to skip.
             recovery_flags = ""
             if station:
                 recovery_flags += f" --station {station}"
             if explicit_stories:
                 recovery_flags += f" --stories {','.join(explicit_stories)}"
+            if retry_environment_blocks:
+                recovery_flags += " --retry-environment-blocks"
             findings.append(
                 Finding(
                     code="MRS-DRAIN-007",
