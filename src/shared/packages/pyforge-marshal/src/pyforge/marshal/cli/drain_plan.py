@@ -839,10 +839,12 @@ def run_drain_plan(
 
     # Story 73.2 (CAP-281): the follow-up reviews a fresh campaign's first cycle would queue -- the very read
     # `execute_fleet_cycle` makes (`--plan` has no campaign, so nothing is launched yet), and never under `--stories`.
+    # `fetch=False`: the drain refreshes `origin/main` before it re-reads a row, but a plan never writes a ref or
+    # reaches a remote (CAP-274), so it reads `origin/main` as this checkout holds it.
     followup_plan = dispatch_cli.FollowupPlan()
     if explicit_stories is None and cycle_slugs.slugs:
         followup_plan = dispatch_cli.plan_followup_reviews(
-            repo_root=repo_root, slugs=cycle_slugs.slugs, vcs=vcs, policy_flags=policy_flags
+            repo_root=repo_root, slugs=cycle_slugs.slugs, vcs=vcs, policy_flags=policy_flags, fetch=False
         )
         findings.extend(followup_plan.findings)
 

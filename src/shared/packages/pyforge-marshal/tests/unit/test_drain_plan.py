@@ -1973,6 +1973,9 @@ def test_the_plan_reads_but_never_writes_for_a_follow_up(
 
     assert _tree(tmp_path) == before
     assert vcs.writes == [] and _fu_ledger_rel(_FU_SLUG) in {path for _ref, path in vcs.reads}
+    # CAP-274: a plan reaches no remote and writes no ref either -- unlike the drain, it never fetches, so it
+    # reads origin/main as this checkout holds it.
+    assert vcs.fetched == []
 
 
 def test_the_plan_names_an_unreadable_deferred_work_ledger_and_still_plans_the_station(

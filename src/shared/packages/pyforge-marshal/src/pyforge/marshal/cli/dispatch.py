@@ -4132,22 +4132,29 @@ def plan_followup_reviews(
     vcs: VcsPort,
     launched: frozenset[tuple[str, StoryKey]] = frozenset(),
     policy_flags: dict[str, object] | None = None,
+    fetch: bool = True,
 ) -> FollowupPlan:
-    """The campaign's follow-up review decision for ``slugs`` -- READ-ONLY (Story 73.2, spec-pyforge-marshal CAP-281).
+    """The campaign's follow-up review decision for ``slugs`` (Story 73.2, spec-pyforge-marshal CAP-281).
 
     One campaign-wide read before the per-station loop, shared by ``execute_fleet_cycle`` and ``factory drain
     --plan`` so the plan cannot drift from the drain. For each station it reads the tracked deferred-work ledger
     AT ``origin/main`` (a row the finalize published and the primary has not pulled yet still counts; an absent
     ledger holds no rows, an unreadable one is a WARN and no follow-ups for that station) and each open
-    ``DW-FRR`` row's story spec at ``origin/main`` (``dispatch_core.spec_text_at_ref``). When any row is open it
-    fetches ``origin main`` first and reads again: a stale remote-tracking ref would show a row a landed review
-    already closed, and the drain would run the review a second time.
+    ``DW-FRR`` row's story spec at ``origin/main`` (``dispatch_core.spec_text_at_ref``).
+
+    ``fetch`` is the one thing here that is not a read. With ``fetch=True`` (the drain) and any row open, it runs
+    ``git fetch origin main`` and reads the ledger again: a stale remote-tracking ref would show a row a landed
+    review already closed, and the drain would run the review a second time. The fetch writes
+    ``refs/remotes/origin/main`` and uses the network, so it is best effort -- a failed fetch is tolerated, not
+    named, and the reads simply use the ref as it stands. ``factory drain --plan`` passes ``fetch=False``
+    (CAP-274: a plan writes nothing and touches no remote) and so reads ``origin/main`` as the checkout holds it.
 
     The pure core decides: ``station_followup_queue`` (row gate x spec ``done`` with the flag true; the rest
     stale), ``landing_positions`` (the newest-first position of each story's corroborated merge subject in
     ``commit_subjects(ORIGIN_MAIN)``) and ``select_campaign_followups`` (newest landing first, at most the cap
     minus ``launched``). ``launched`` is what the campaign journal says earlier cycles already launched
-    (``_followups_launched_from_journal``). Nothing here writes, and a git failure degrades to a named finding."""
+    (``_followups_launched_from_journal``). Apart from the optional fetch nothing here writes, and an unreadable
+    ledger or history degrades to a named finding."""
     findings: list[Finding] = []
     for slug in slugs:
         layer_path = _project_layer_followup_cap_path(slug)
@@ -4186,7 +4193,7 @@ def plan_followup_reviews(
         return rows
 
     rows = read_rows()
-    if any(isinstance(value, tuple) and value for value in rows.values()):
+    if fetch and any(isinstance(value, tuple) and value for value in rows.values()):
         try:
             vcs.fetch(repo_root, "origin", "main")
         except VcsCommandError:
