@@ -244,7 +244,23 @@ class _SurfaceFinding:
         self.evidence = {"path": path}
 
 
-def _install_fake_spec_surface(monkeypatch, findings: tuple) -> None:
+def _stamped_spec_names(process) -> set[str]:
+    """Every spec name a recorded ``spec_surface_check.py`` call named with ``--spec``."""
+    names: set[str] = set()
+    for tokens, _cwd in process.calls:
+        if len(tokens) > 1 and "spec_surface_check.py" in tokens[1]:
+            names.update(tokens[index + 1] for index, token in enumerate(tokens) if token == "--spec")
+    return names
+
+
+def _install_fake_spec_surface(
+    monkeypatch,
+    findings: tuple,
+    *,
+    process=None,
+    settles: bool = True,
+    reveal_after: dict[str, str] | None = None,
+) -> None:
     """Install a fake ``pyforge.doctor.sources.chain`` module into
     ``sys.modules`` so ``_reconcile_spec_surface_drift``'s own
     ``from pyforge.doctor.sources.chain import gather_spec_surface``
@@ -252,9 +268,32 @@ def _install_fake_spec_surface(monkeypatch, findings: tuple) -> None:
     ``pyforge.doctor`` is not on this package's own pixi env (confirmed
     live: a real dispatch worktree reaches it only via the ``sys.path``
     insert onto its OWN checked-out doctor source tree), so patching the
-    real module by dotted path isn't an option here."""
+    real module by dotted path isn't an option here.
+
+    Story 82.3: the verdict is STATEFUL when ``process`` (the fake the landing runs its stamp
+    through) is given -- the reconcile re-reads it after each stamp, as the real verdict moves once
+    a spec is stamped, so a spec's findings drop out once a recorded ``--spec NAME`` stamp call names
+    it. ``settles=False`` keeps them (a stamp that did not settle the spec). ``reveal_after`` maps a
+    spec to the spec that hides it, as Doctor's one-row-per-path collapse does for two co-governors of
+    one path: the hidden spec's findings show only once the hiding spec has been stamped. Without
+    ``process`` the verdict is fixed, which suits a test that never reaches a stamp."""
     fake_chain = types.ModuleType("pyforge.doctor.sources.chain")
-    fake_chain.gather_spec_surface = lambda target: findings  # noqa: ARG005
+
+    def gather_spec_surface(target):  # noqa: ARG001
+        stamped = _stamped_spec_names(process) if process is not None else set()
+        visible = []
+        for finding in findings:
+            match = _SPEC_SURFACE_NAME_RE.search(finding.message)
+            name = match.group(1) if match else None
+            hidden_by = (reveal_after or {}).get(name)
+            if hidden_by is not None and hidden_by not in stamped:
+                continue
+            if settles and name in stamped:
+                continue
+            visible.append(finding)
+        return tuple(visible)
+
+    fake_chain.gather_spec_surface = gather_spec_surface
     monkeypatch.setitem(sys.modules, "pyforge.doctor.sources.chain", fake_chain)
 
 
@@ -445,11 +484,11 @@ def test_reconcile_spec_surface_drift_reconciles_own_drift_across_specs(tmp_path
             "src/b.py",
         ),
     )
-    _install_fake_spec_surface(monkeypatch, findings)
+    process = FakeProcess()
+    _install_fake_spec_surface(monkeypatch, findings, process=process)
     worktree = tmp_path / "wt"
     worktree.mkdir()
     vcs = _ReconcileVcs(changed=("src/a.py", "src/b.py"))
-    process = FakeProcess()
     outcome = _reconcile_spec_surface_drift(
         git_repo_root=tmp_path,
         worktree=worktree,
@@ -531,11 +570,11 @@ def test_reconcile_spec_surface_drift_reconciles_cross_project_co_governor(tmp_p
             "src/a.py",
         ),
     )
-    _install_fake_spec_surface(monkeypatch, findings)
+    process = FakeProcess()
+    _install_fake_spec_surface(monkeypatch, findings, process=process)
     worktree = tmp_path / "wt"
     worktree.mkdir()
     vcs = _ReconcileVcs(changed=("src/a.py",))
-    process = FakeProcess()
     outcome = _reconcile_spec_surface_drift(
         git_repo_root=tmp_path,
         worktree=worktree,
@@ -758,7 +797,8 @@ def test_reconcile_spec_surface_drift_refuses_when_final_push_fails(tmp_path: Pa
             "src/a.py",
         ),
     )
-    _install_fake_spec_surface(monkeypatch, findings)
+    process = FakeProcess()
+    _install_fake_spec_surface(monkeypatch, findings, process=process)
     worktree = tmp_path / "wt"
     worktree.mkdir()
 
@@ -767,7 +807,6 @@ def test_reconcile_spec_surface_drift_refuses_when_final_push_fails(tmp_path: Pa
             raise VcsCommandError("push rejected")
 
     vcs = _PushFailsVcs(changed=("src/a.py",))
-    process = FakeProcess()
     outcome = _reconcile_spec_surface_drift(
         git_repo_root=tmp_path,
         worktree=worktree,
@@ -789,6 +828,7 @@ def test_execute_dispatch_land_refuses_when_resolve_ref_fails_after_reconcile_pu
     ``head_branch`` (a non-refusing MRS-DISP-047), but re-resolving the
     branch's tip afterward raises ``VcsCommandError`` -- refused
     (MRS-DISP-048) rather than merging on a stale, pre-reconcile sha."""
+    process = FakeProcess()
     _install_fake_spec_surface(
         monkeypatch,
         (
@@ -798,6 +838,7 @@ def test_execute_dispatch_land_refuses_when_resolve_ref_fails_after_reconcile_pu
                 "src/a.py",
             ),
         ),
+        process=process,
     )
     worktree = tmp_path / "wt"
     worktree.mkdir()
@@ -810,7 +851,6 @@ def test_execute_dispatch_land_refuses_when_resolve_ref_fails_after_reconcile_pu
             raise VcsCommandError("cannot resolve ref")
 
     vcs = _ResolveFailsAfterPushVcs(merged=False, changed=("src/a.py",))
-    process = FakeProcess()
     forge = _RecordingForge()
     result, envelope = execute_dispatch_land(
         project_slug="pyforge-marshal",
@@ -864,6 +904,7 @@ def test_execute_dispatch_land_reconciles_own_drift_before_merging(tmp_path: Pat
     ``forge.merge_pr`` (and reported in the envelope) is the POST-reconcile
     tip, not the sha resolved before the reconcile commit was pushed onto
     the branch."""
+    process = FakeProcess()
     _install_fake_spec_surface(
         monkeypatch,
         (
@@ -873,11 +914,11 @@ def test_execute_dispatch_land_reconciles_own_drift_before_merging(tmp_path: Pat
                 "src/a.py",
             ),
         ),
+        process=process,
     )
     worktree = tmp_path / "wt"
     worktree.mkdir()
     vcs = _ReconcileVcs(merged=False, changed=("src/a.py",))
-    process = FakeProcess()
     forge = _RecordingForge()
     result, envelope = execute_dispatch_land(
         project_slug="pyforge-marshal",
@@ -2315,7 +2356,8 @@ def _land_waiting(
     """Run the real landing. The spec-surface verdict is faked (``surface``, clean by default): the
     marshal env has no `pyforge.doctor`, so an unfaked reconcile adds a WARN MRS-DISP-047 to every
     landing -- noise these tests' exact finding-code assertions must not depend on."""
-    _install_fake_spec_surface(monkeypatch, surface)
+    process = FakeProcess()
+    _install_fake_spec_surface(monkeypatch, surface, process=process)
     worktree = tmp_path / "wt"
     worktree.mkdir(exist_ok=True)
     effective, findings = policy.compose(
@@ -2331,7 +2373,7 @@ def _land_waiting(
         effective=effective,
         vcs=vcs if vcs is not None else FakeVcs(merged=False),
         forge=forge,
-        process=FakeProcess(),
+        process=process,
         **({"sleep": clock.sleep, "monotonic": clock.monotonic} if seams else {}),
         on_wait_tick=on_wait_tick,
     )
