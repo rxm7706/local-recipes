@@ -5488,6 +5488,7 @@ def run_fleet_drain(
         )
         return _emit(args, data, findings, command="factory drain")
 
+    retry_environment_blocks = bool(getattr(args, "retry_environment_blocks", False))
     try:
         campaign_blocked, prior_predicates = _campaign_blocked_from_journal(fs, run_dir, run_id)
         followups_launched = _followups_launched_from_journal(fs, run_dir, run_id)
@@ -5517,7 +5518,7 @@ def run_fleet_drain(
             explicit_stories=explicit_stories,
             policy_flags=policy_flags or None,
             max_in_flight=getattr(args, "max_in_flight", None),
-            retry_environment_blocks=bool(getattr(args, "retry_environment_blocks", False)),
+            retry_environment_blocks=retry_environment_blocks,
             followups_launched=followups_launched,
         )
         _journal_fleet_cycle(fs, run_dir, run_id, report, findings)
@@ -5532,7 +5533,6 @@ def run_fleet_drain(
     findings.extend(report.findings)
 
     if not once and not report.complete:
-        retry_environment_blocks = bool(getattr(args, "retry_environment_blocks", False))
         try:
             data["supervisor_pid"] = _spawn_campaign_supervisor(
                 process=process,
@@ -5562,6 +5562,12 @@ def run_fleet_drain(
                 recovery_flags += f" --station {station}"
             if explicit_stories:
                 recovery_flags += f" --stories {','.join(explicit_stories)}"
+            # The supervisor spawn carries --harness and --max-in-flight, so
+            # the hint that literally resumes the campaign must too.
+            if getattr(args, "harness", None):
+                recovery_flags += f" --harness {args.harness}"
+            if getattr(args, "max_in_flight", None) is not None:
+                recovery_flags += f" --max-in-flight {args.max_in_flight}"
             if retry_environment_blocks:
                 recovery_flags += " --retry-environment-blocks"
             findings.append(

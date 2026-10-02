@@ -2910,6 +2910,25 @@ def test_spawned_supervisor_argv_carries_retry_environment_blocks_only_when_set(
         assert "--retry-environment-blocks" not in campaign_argv
         assert len(campaign_argv[3:]) == 10
 
+    # AC1, whole chain: the spawned argv (not a hand-written one) fed to the
+    # supervisor's own `main` runs a tick whose argv the real `marshal` parser
+    # reads back as the same flag value.
+    from pyforge.marshal.cli.main import _build_parser
+    from pyforge.marshal.dispatch_fleet_supervisor import __main__ as sup
+
+    ticks: list[list[str]] = []
+
+    class RecordingPosixProcess:
+        def run(self, argv, *, cwd):
+            ticks.append(list(argv))
+            return type("R", (), {"stdout": '{"data": {"complete": true}}', "stderr": ""})()
+
+    monkeypatch.setattr(sup.time, "sleep", lambda _s: None)
+    monkeypatch.setattr(sup, "PosixProcess", RecordingPosixProcess)
+    assert sup.main(campaign_argv[3:]) == 0
+    [tick_argv] = ticks
+    assert _build_parser().parse_args(tick_argv[3:]).retry_environment_blocks is retry
+
 
 def test_supervisor_main_parses_retry_environment_blocks(monkeypatch: pytest.MonkeyPatch) -> None:
     """The supervisor's own CLI reads the trailing flag true and defaults it
@@ -3055,7 +3074,8 @@ def test_manual_resume_hint_repeats_retry_environment_blocks(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """MRS-DRAIN-007: when the supervisor cannot be spawned, the recovery
-    command a human copies must keep the flag, as it keeps --station/--stories."""
+    command a human copies must keep the flag, as it keeps --station/--stories
+    and the spawn's own --harness/--max-in-flight."""
     from pyforge.core.process import ProcessError
 
     class UnspawnableProcess(FakeProcess):
@@ -3069,13 +3089,14 @@ def test_manual_resume_hint_repeats_retry_environment_blocks(
     monkeypatch.chdir(tmp_path)
     _run_drain(
         tmp_path,
-        _drain_args(retry_environment_blocks=True),
+        _drain_args(retry_environment_blocks=True, harness="claude", max_in_flight=2),
         ledgers={"pyforge-marshal": (("22-7-fleet", "backlog"),)},
         process=UnspawnableProcess(alive=False),
     )
     out = capsys.readouterr().out
     assert "MRS-DRAIN-007" in out
-    assert "--retry-environment-blocks --campaign" in out
+    # The spawn carries --harness and --max-in-flight, so the hint repeats them.
+    assert "--harness claude --max-in-flight 2 --retry-environment-blocks --campaign" in out
 
 
 def test_stale_campaign_id_with_stories_still_validates_unresolved_keys(
