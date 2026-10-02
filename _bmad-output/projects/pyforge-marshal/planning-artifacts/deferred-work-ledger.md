@@ -7959,3 +7959,14 @@ status: open
   severity: medium
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-82-9: `marshal deploy land-story` re-runs the full gate in-process (`evaluate_gate`) and still writes no gate record; F-25 names that re-run as the sole evidence for hand landings. This story wires `marshal gate evaluate` only (its ACs), and `evaluate_gate` takes its record and clock ports optionally so the land-story caller can opt in.
+
+- source_spec: `planning-artifacts/specs/spec-82-9-vcs-commit-text-is-declared-egress-and-gate-evaluate-writes-a-redacted-gate-record.md`
+  summary: `marshal deploy land-story` re-runs the full gate in-process (`evaluate_gate`) and still writes no gate record; F-25 names that re-run as the sole evidence for hand landings. This story wires `marshal gate evaluate` only (its ACs), and `evaluate_gate` takes its record and clock ports optionally so the land-story caller can opt in.
+  evidence: `cli/deploy.py:2115` calls `evaluate_gate(gate_args, process=process, vcs=vcs, fs=fs)` with no record port; `tests/unit/test_deploy.py:1243` `_fake_evaluate_gate` pins that call shape in about ten tests.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py
+  origin: spec-deferred 11693de9504a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
