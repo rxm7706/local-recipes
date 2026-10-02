@@ -86,6 +86,13 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-02** — **Phase 2 of the deferral burn-down: doctor's high deferrals.** Re-verified at HEAD, three
+  detector-correctness deferrals stand: the chain-layers audit `exec`s `scripts/fleet_scan.py` from the tree it judges
+  (`sources/factory.py` does the same with `scripts/pixi_env_matrix.py`), `ledger-regression` never verifies `head` and
+  reads an unresolvable one as every ledger deleted, and `score` grades a wholesale gather failure as a WARN axis, not
+  `incomplete`. **Constraints:** operator ruling 2026-10-02: start Phase 2 after the inflow wave. A fix story, no new
+  CAP, no flag; it closes its DW rows on landing. Owner `spec-pyforge-doctor`. → Epic 40 / Story 40.1, specced 2026-10-02.
+
 - **2026-10-01 (evening)** — **Found: the step Story 38.5 added to CI has no `pr-preflight` leg.** 38.5 moved the
   three aggregate tests of `tests/scripts/test_detectors_doctor_sources.py` onto a second Detectors `scripts-suite` step
   under `-e pyforge-doctor`, because they skip in `pyforge-ci`. `pr-preflight` runs the first step
