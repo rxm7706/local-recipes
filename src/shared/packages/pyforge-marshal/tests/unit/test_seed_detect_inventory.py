@@ -29,12 +29,14 @@ from pyforge.marshal.seed.detect.findings import FindingType, Severity
 from pyforge.marshal.seed.detect.inventory import (
     ArtifactState,
     Classification,
+    EscapeRecord,
     Inventory,
     LegacyRecord,
     classify,
     coverage_counts,
     coverage_findings,
     effective_never_write,
+    escape_findings,
     legacy_findings,
     writable_exemptions,
 )
@@ -122,12 +124,15 @@ def _one(inventory: Inventory) -> Classification:
 # --- ArtifactState shape -----------------------------------------------
 
 
-def test_artifact_state_is_exactly_the_four_epics_ac_members():
+def test_artifact_state_is_exactly_the_four_epics_ac_members_plus_escaping():
+    # The epics AC's four, plus Story 82.11's `escaping` (DW-10-3-9): an entry
+    # whose path resolves outside the repo is neither absent nor present.
     assert {member.value for member in ArtifactState} == {
         "absent",
         "present-conformant",
         "present-divergent",
         "present-legacy",
+        "escaping",
     }
 
 
@@ -284,21 +289,31 @@ def test_hybrid_entry_unreadable_file_is_present_divergent_not_raised(tmp_path):
 # --- path containment (never escape repo_root) ------------------------------
 
 
-def test_entry_with_absolute_path_is_absent_never_reads_outside_repo(tmp_path):
+def _forced_path(entry: ManifestEntry, path: str) -> ManifestEntry:
+    """``entry`` with ``path`` forced past ``ManifestEntry.__post_init__``
+    (Story 82.11 rejects an absolute or ``..`` path at load, so the
+    classify-level defense for a hand-built entry is only reachable this way
+    -- the technique this module's own tests already use)."""
+    object.__setattr__(entry, "path", path)
+    return entry
+
+
+def test_entry_with_absolute_path_is_escaping_never_reads_outside_repo(tmp_path):
     """``Path.__truediv__`` discards ``repo_root`` entirely when the right
     operand is absolute (documented ``pathlib`` behavior) -- confirmed by
     review to otherwise read an arbitrary host path. A real file OUTSIDE
     ``tmp_path`` proves the difference: without the guard this would read
-    it and report ``present-conformant``."""
+    it and report ``present-conformant``. It reports ``escaping`` (Story
+    82.11), not ``absent``."""
     with tempfile.TemporaryDirectory() as outside_dir:
         secret = Path(outside_dir) / "secret.txt"
         secret.write_text("outside the repo\n")
-        manifest = _manifest(_whole_file("a", str(secret), ArtifactClass.COPIED_MANAGED))
+        manifest = _manifest(_forced_path(_whole_file("a", "x.txt", ArtifactClass.COPIED_MANAGED), str(secret)))
         inventory = classify(manifest, tmp_path)
-    assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.ABSENT)
+    assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.ESCAPING)
 
 
-def test_entry_with_traversal_path_escaping_repo_root_is_absent(tmp_path):
+def test_entry_with_traversal_path_escaping_repo_root_is_escaping(tmp_path):
     """A ``../``-relative path that resolves outside ``repo_root`` is the
     same escape as an absolute path, just spelled differently -- also
     guarded by ``_resolve_within_repo``."""
@@ -306,12 +321,12 @@ def test_entry_with_traversal_path_escaping_repo_root_is_absent(tmp_path):
         secret = Path(outside_dir) / "secret.txt"
         secret.write_text("outside the repo\n")
         relative_escape = os.path.relpath(secret, tmp_path)
-        manifest = _manifest(_whole_file("a", relative_escape, ArtifactClass.COPIED_MANAGED))
+        manifest = _manifest(_forced_path(_whole_file("a", "x.txt", ArtifactClass.COPIED_MANAGED), relative_escape))
         inventory = classify(manifest, tmp_path)
-    assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.ABSENT)
+    assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.ESCAPING)
 
 
-def test_entry_path_through_a_symlink_escaping_repo_root_is_absent(tmp_path):
+def test_entry_path_through_a_symlink_escaping_repo_root_is_escaping(tmp_path):
     """A plain relative ``entry.path`` that resolves through an on-disk
     symlink pointing outside ``repo_root`` is a more realistic escape
     vector than a hand-crafted absolute/``../`` manifest string (a stray
@@ -325,7 +340,53 @@ def test_entry_path_through_a_symlink_escaping_repo_root_is_absent(tmp_path):
         link.symlink_to(secret)
         manifest = _manifest(_whole_file("a", "link.txt", ArtifactClass.COPIED_MANAGED))
         inventory = classify(manifest, tmp_path)
-    assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.ABSENT)
+        resolved_secret = str(secret.resolve())
+    assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.ESCAPING)
+    # Story 82.11 (DW-10-3-9): the escape is recorded, naming the entry, its
+    # declared path and where it actually resolves.
+    assert inventory.escaping == (EscapeRecord(entry_id="a", path="link.txt", resolves_to=resolved_secret),)
+
+
+def test_an_escaping_entry_does_not_hide_an_ordinary_one_in_the_same_inventory(tmp_path):
+    """The per-entry half of DW-10-3-9: one escaping entry is classified on
+    its own and every other entry is classified exactly as before."""
+    with tempfile.TemporaryDirectory() as outside_dir:
+        secret = Path(outside_dir) / "secret.txt"
+        secret.write_text("outside the repo\n")
+        (tmp_path / "bad.txt").symlink_to(secret)
+        manifest = _manifest(
+            _whole_file("bad", "bad.txt", ArtifactClass.COPIED_MANAGED),
+            _whole_file("good", "good.txt", ArtifactClass.COPIED_MANAGED),
+        )
+        inventory = classify(manifest, tmp_path)
+    assert inventory.classifications == (
+        Classification(entry_id="bad", state=ArtifactState.ESCAPING),
+        Classification(entry_id="good", state=ArtifactState.ABSENT),
+    )
+    assert [record.entry_id for record in inventory.escaping] == ["bad"]
+
+
+def test_escape_findings_name_the_entry_and_where_its_path_resolves(tmp_path):
+    with tempfile.TemporaryDirectory() as outside_dir:
+        secret = Path(outside_dir) / "secret.txt"
+        secret.write_text("outside the repo\n")
+        (tmp_path / "link.txt").symlink_to(secret)
+        inventory = classify(_manifest(_whole_file("a", "link.txt", ArtifactClass.COPIED_MANAGED)), tmp_path)
+        resolved_secret = str(secret.resolve())
+    (finding,) = escape_findings(inventory)
+    assert finding.severity is Severity.HARD
+    assert finding.type is FindingType.TARGET_ESCAPES_REPO
+    assert finding.path == "link.txt"
+    assert "a:" in finding.message
+    assert resolved_secret in finding.message
+    assert finding.remedy
+
+
+def test_escape_findings_is_empty_when_nothing_escapes(tmp_path):
+    (tmp_path / "ok.txt").write_text("x\n")
+    inventory = classify(_manifest(_whole_file("a", "ok.txt", ArtifactClass.COPIED_MANAGED)), tmp_path)
+    assert inventory.escaping == ()
+    assert escape_findings(inventory) == ()
 
 
 # --- excluded-dir carve-out / tree exclusion ------------------------------
@@ -702,6 +763,24 @@ def test_writable_exemptions_excludes_every_other_artifact_class(tmp_path):
     assert writable_exemptions(manifest, inventory) == frozenset()
 
 
+def test_writable_exemptions_includes_the_two_manifest_declared_bmad_symlink_entries_by_id(tmp_path):
+    """Story 82.11 (DW-FU-7-5-5): the never-write set now matches a directory
+    node, so the two ``generated-derived`` symlink entries are exempted by
+    declaration (their id), not writable only because a pattern missed. A
+    ``generated-derived`` entry under any OTHER id stays un-exempted."""
+    manifest = _manifest(
+        _whole_file("planning-artifacts-symlink", "_bmad-output/planning-artifacts", ArtifactClass.GENERATED_DERIVED),
+        _whole_file(
+            "implementation-artifacts-symlink", "_bmad-output/implementation-artifacts", ArtifactClass.GENERATED_DERIVED
+        ),
+        _whole_file("other-derived", "_bmad-output/other-artifacts", ArtifactClass.GENERATED_DERIVED),
+    )
+    inventory = classify(manifest, tmp_path)
+    assert writable_exemptions(manifest, inventory) == frozenset(
+        {"_bmad-output/planning-artifacts", "_bmad-output/implementation-artifacts"}
+    )
+
+
 def test_writable_exemptions_subtracts_a_path_that_is_also_present_legacy(tmp_path):
     """AD-59 still wins: a path recognized as ``present-legacy`` is never
     exempted, even though its own entry is a ``copied-managed`` class that
@@ -778,6 +857,13 @@ def test_classification_is_frozen_and_hashable():
 
 def test_legacy_record_is_frozen_and_hashable():
     record = LegacyRecord(entry_id="a", path="old.txt", legacy_of="succ")
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        record.path = "new.txt"  # type: ignore[misc]
+    assert isinstance(hash(record), int)
+
+
+def test_escape_record_is_frozen_and_hashable():
+    record = EscapeRecord(entry_id="a", path="link.txt", resolves_to="/elsewhere/secret.txt")
     with pytest.raises(dataclasses.FrozenInstanceError):
         record.path = "new.txt"  # type: ignore[misc]
     assert isinstance(hash(record), int)
