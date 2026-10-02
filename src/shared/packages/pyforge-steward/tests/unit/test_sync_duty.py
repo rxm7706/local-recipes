@@ -202,6 +202,90 @@ def test_sync_reconcile_schedule_dry_run_via_cli_threads_through_with_no_writes(
     assert write_calls == []  # --dry-run: computed the decision for every candidate, wrote nothing
 
 
+def _two_candidate_board(failing_item: str):
+    """A `--schedule` board with ITEM_1 and ITEM_2, both linked and both already
+    converged except that the single-item read of `failing_item` answers HTTP 404 --
+    so exactly that candidate fails (`reconcile` folds the `SyncAPIError` into its own
+    `ok=False` result) and the batch carries on."""
+
+    links = {"ITEM_1": "PROJ-1", "ITEM_2": "PROJ-2"}
+
+    def fake_transport(request):
+        url = request.full_url
+        if url == "https://api.github.com/graphql":
+            variables = json.loads(request.data)["variables"]
+            if "itemId" in variables:
+                if variables["itemId"] == failing_item:
+                    return TransportResponse(status=404, body=b"not found")
+                node = {
+                    "id": variables["itemId"],
+                    "fieldValues": {
+                        "nodes": [
+                            {"text": links[variables["itemId"]], "field": {"id": "gh_link"}},
+                            {"text": "To Do", "field": {"id": "gh_status"}},
+                            {"text": '{"status": "To Do"}', "field": {"id": "gh_baseline"}},
+                        ]
+                    },
+                }
+                return TransportResponse(status=200, body=json.dumps({"data": {"node": node}}).encode())
+            nodes = [
+                {
+                    "id": item_id,
+                    "updatedAt": "2026-08-13T00:00:00Z",
+                    "fieldValues": {"nodes": [{"text": link, "field": {"id": "gh_link"}}]},
+                }
+                for item_id, link in links.items()
+            ]
+            page = {"nodes": nodes, "pageInfo": {"hasNextPage": False, "endCursor": None}}
+            return TransportResponse(status=200, body=json.dumps({"data": {"node": {"items": page}}}).encode())
+        item_id = next(item for item, key in links.items() if f"/issue/{key}" in url)
+        payload = {
+            "fields": {
+                "status": {"name": "To Do"},
+                "jira_link": item_id,
+                "jira_baseline": '{"status": "To Do"}',
+            }
+        }
+        return TransportResponse(status=200, body=json.dumps(payload).encode())
+
+    return fake_transport
+
+
+def test_sync_reconcile_schedule_failure_names_the_failed_candidate_on_stderr(tmp_path, monkeypatch, capsys):
+    """DW-8-4-1 / Story 83.2: a partial `--schedule` failure used to print only the
+    count line, so the operator could not tell WHICH candidate failed. stderr now
+    carries one `<github_item_id>: <summary>` line per failed candidate under the count
+    line -- and names no candidate that succeeded. No new flag."""
+    config_path = tmp_path / "sync-config.yaml"
+    config_path.write_text(_VALID_CONFIG, encoding="utf-8")
+    monkeypatch.setattr("pyforge.steward.sync._default_transport", _two_candidate_board("ITEM_1"))
+
+    rc = main(["sync", "reconcile", "--schedule", "--config", str(config_path), "--dry-run"])
+
+    assert rc == EXIT_FAILED
+    captured = capsys.readouterr()
+    lines = captured.err.splitlines()
+    assert lines[0] == "sync reconcile --schedule: 2 candidates, 1 ok, 1 failed"
+    assert len(lines) == 2, captured.err
+    assert lines[1].startswith("ITEM_1: sync reconcile:")
+    assert "HTTP 404" in lines[1]
+    assert "ITEM_2" not in captured.err
+    assert captured.out == ""
+
+
+def test_sync_reconcile_schedule_success_prints_the_count_line_alone(tmp_path, monkeypatch, capsys):
+    config_path = tmp_path / "sync-config.yaml"
+    config_path.write_text(_VALID_CONFIG, encoding="utf-8")
+    monkeypatch.setattr("pyforge.steward.sync._default_transport", _two_candidate_board("ITEM_NONE"))
+
+    rc = main(["sync", "reconcile", "--schedule", "--config", str(config_path), "--dry-run"])
+
+    assert rc == EXIT_OK
+    captured = capsys.readouterr()
+    assert captured.out.splitlines() == ["sync reconcile --schedule: 2 candidates, 2 ok, 0 failed"]
+    assert captured.err == ""
+
+
 def test_sync_reconcile_schedule_is_mutually_exclusive_with_github_item(capsys):
     """`--schedule` joined the SAME mutually-exclusive group as
     `--github-item`/`--jira-issue` (Boundaries & Constraints) -- argparse
