@@ -132,6 +132,7 @@ def http_bridge() -> ModuleType:
         sys.path.insert(0, scripts_dir)
     return importlib.import_module("_http")
 
+
 # ── Host-scoped credential resolver (FR-7) ──────────────────────────────────
 
 # A bearer token becomes an HTTP header value and an environment value: printable
