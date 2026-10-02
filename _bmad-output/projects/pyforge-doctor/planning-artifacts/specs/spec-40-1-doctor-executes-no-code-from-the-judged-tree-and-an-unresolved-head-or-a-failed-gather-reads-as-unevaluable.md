@@ -2,7 +2,7 @@
 title: "40.1: Doctor executes no code from the judged tree, and an unresolved head or a failed gather reads as unevaluable"
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '885f2a1de1a0963b4abb788c15d03be134001dd5'
 review_loop_iteration: 0
 followup_review_recommended: false
