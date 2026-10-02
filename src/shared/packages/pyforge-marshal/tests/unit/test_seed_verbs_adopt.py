@@ -726,13 +726,25 @@ def _adopt_hybrid_once(repo: Path, manifest: Manifest) -> None:
     _commit_all(repo)
 
 
+def _hand_edit_region_body(repo: Path, region: str = "tiers") -> None:
+    """Edit a managed region's BODY, markers intact -- a hand-edit, which rung
+    6 refuses. (Deleting the markers is FR-112's sanctioned opt-out and is not
+    a hand-edit; see the opt-out tests below.)"""
+    target = repo / "HYBRID.md"
+    text = target.read_text(encoding="utf-8")
+    assert f"body for {region}\n" in text
+    target.write_text(text.replace(f"body for {region}\n", "hand edited, markers intact\n"), encoding="utf-8")
+    _commit_all(repo)
+
+
 def test_hand_edited_managed_content_on_reapply_is_refused_without_force(clean_repo):
     manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
     _adopt_hybrid_once(clean_repo, manifest)
 
-    # Mangle the managed region beyond recognition -- markers gone entirely.
-    (clean_repo / "HYBRID.md").write_text("no markers here at all\n", encoding="utf-8")
-    _commit_all(clean_repo)
+    # A hand-edit to the managed region's body. (This used to mangle the file
+    # until the markers were gone entirely; that is a deleted region, which
+    # FR-112 makes a permanent opt-out rather than a hand-edit -- Story 82.13.)
+    _hand_edit_region_body(clean_repo)
 
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):
         run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
@@ -848,8 +860,7 @@ def test_skip_glob_is_recorded_into_state_skips_and_the_artifact_is_left_alone(c
 def test_skip_protects_a_hand_edited_artifact_from_rung_6_refusal(clean_repo):
     manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
     _adopt_hybrid_once(clean_repo, manifest)
-    (clean_repo / "HYBRID.md").write_text("mangled beyond recognition\n", encoding="utf-8")
-    _commit_all(clean_repo)
+    _hand_edit_region_body(clean_repo)
 
     # Without --skip, this run refuses at rung 6.
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):

@@ -1065,11 +1065,14 @@ def test_a_whole_file_entry_is_never_suppressed_by_an_empty_pending_set(tmp_path
 
 
 def test_a_manifest_id_the_opt_out_grammar_cannot_spell_still_plans(tmp_path):
-    """`ManifestEntry` requires only a non-blank `id`, so an id carrying an
-    interior space is legal while `state.opted_out`'s grammar cannot spell
-    it. Such an entry must plan exactly as it did before this story -- never
-    raise the `ValueError` `opt_out_key` reserves for a caller minting a
-    key.
+    """`ManifestEntry` used to require only a non-blank `id`, so an id
+    carrying an interior space was legal while `state.opted_out`'s grammar
+    cannot spell it (Story 82.13 closed that at the manifest and the schema:
+    such an id no longer loads). `build_plan` keeps its own answer for a
+    value built around the manifest -- the entry here has its `id` overwritten
+    after construction -- and such an entry must plan exactly as it did
+    before: never raise the `ValueError` `opt_out_key` reserves for a caller
+    minting a key.
 
     The key set here holds an admissible key for an unrelated artifact. It
     used to hold `"has a space#tiers"` -- the very key the grammar refuses
@@ -1079,7 +1082,9 @@ def test_a_manifest_id_the_opt_out_grammar_cannot_spell_still_plans(tmp_path):
     is about the ENTRY's id, not the set's contents: `_is_opted_out` must
     answer "not opted out" for a pair it cannot spell rather than raise,
     and it still does."""
-    manifest = _manifest(_hybrid("has a space", "CLAUDE.md", "tiers"))
+    entry = _hybrid("placeholder", "CLAUDE.md", "tiers")
+    object.__setattr__(entry, "id", "has a space")
+    manifest = _manifest(entry)
     inventory = classify(manifest, tmp_path)
 
     plan = build_plan(manifest, inventory, opted_out=frozenset({"unrelated#tiers"}))
