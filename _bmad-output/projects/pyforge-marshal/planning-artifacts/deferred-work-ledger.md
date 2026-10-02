@@ -7920,3 +7920,25 @@ status: open
   severity: medium
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-82-6: A chained resume judges a story deferred during an earlier resume against the launch run's recorded ceilings, not the ceilings that resume ran under.
+
+- source_spec: `planning-artifacts/specs/spec-82-6-a-resumed-run-escalates-against-the-ceilings-it-launched-under-and-journals-before-it-rewrites-policy.md`
+  summary: A chained resume judges a story deferred during an earlier resume against the launch run's recorded ceilings, not the ceilings that resume ran under.
+  evidence: Only the run-launch intent records `limits` (read back by `_launch_limits_for_resume`); the run-resume intent records none. If policy.toml is re-rendered between the launch and the first resume, a story that defers during that resume has counters accrued under the re-rendered ceilings but is judged against the launch's. Unverified: whether `bmad-loop resume` re-reads `.bmad-loop/policy.toml` or reuses the run's own policy snapshot. Settle by reading bmad_loop's resume path, or by a live two-resume run with a ceiling re-rendered between the resumes.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py:2240
+  origin: spec-deferred 16d5628b6224 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-82-6-2: `run_spin` still writes the wire-layer profile overlay inside `_resolve_model_tiering`, before the launch intent and the in-flight guard.
+
+- source_spec: `planning-artifacts/specs/spec-82-6-a-resumed-run-escalates-against-the-ceilings-it-launched-under-and-journals-before-it-rewrites-policy.md`
+  summary: `run_spin` still writes the wire-layer profile overlay inside `_resolve_model_tiering`, before the launch intent and the in-flight guard.
+  evidence: `attempt_spin_wire_layer` runs at the end of `_resolve_model_tiering`, ahead of `mint_run_id`, run-directory creation and the intent append. A failed intent append or a refused spin guard leaves that overlay rewritten with no journal record: the DW-3-12-3 pattern for a different file. Pre-existing, and outside this story's policy.toml scope; moving it after the intent changes when `data["wire"]` is set for the outcome payload, which the wire-layer capability's own contract owns.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py:875
+  origin: spec-deferred 9a017541a31e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

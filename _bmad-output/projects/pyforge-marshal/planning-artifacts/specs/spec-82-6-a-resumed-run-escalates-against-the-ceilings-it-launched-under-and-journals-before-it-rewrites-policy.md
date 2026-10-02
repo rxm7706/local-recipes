@@ -220,7 +220,7 @@ A resumed run now escalates against the ceilings its own launch recorded, and ne
 
 ### Review findings
 
-34 findings from four layers. Patched (3 entries): VG2 (medium, write-before-spawn ordering now pinned), VG1 with BH9's spawn-failure part (low, launch-failure outcome now pinned), BH7 with EC11 (low, stale docstring). Deferred (2): BH2 (maybe-false, medium unverified) and EC6 (low), both under `deferred` in the frontmatter. Rejected: every other finding, each with its recorded reason in the Review Triage Log.
+34 findings from four layers. Patched (3 entries): VG2 (medium, write-before-spawn ordering now pinned), VG1 with BH9's spawn-failure part (low, launch-failure outcome now pinned), BH7 with EC11 (low, stale docstring). Deferred (2): BH2 (maybe-false, medium unverified) and EC6 (low), both under `deferred` in the frontmatter, with ledger twins `DW-marshal-82-6` and `DW-marshal-82-6-2` in `deferred-work-ledger.md` (ingested by `scripts/deferred_work_intake.py --fix --project marshal`, which the `deferred-work` detector requires). Rejected: every other finding, each with its recorded reason in the Review Triage Log.
 
 ### Follow-up review recommendation
 
