@@ -344,7 +344,9 @@ def _default_transport(request: urllib.request.Request) -> TransportResponse:
     try:
         with http_bridge().open_url(request, timeout=30) as resp:
             status = getattr(resp, "status", None) or resp.getcode()
-            return TransportResponse(status=status, body=resp.read(), headers=_header_dict(getattr(resp, "headers", None)))
+            return TransportResponse(
+                status=status, body=resp.read(), headers=_header_dict(getattr(resp, "headers", None))
+            )
     except urllib.error.HTTPError as exc:
         return TransportResponse(status=exc.code, body=exc.read(), headers=_header_dict(exc.headers))
     except urllib.error.URLError as exc:
@@ -396,7 +398,7 @@ def _retry_delay(response: TransportResponse, attempt: int) -> float:
     back to the exponential backoff."""
     try:
         seconds = float(_lower_headers(response)["retry-after"])
-    except (KeyError, TypeError, ValueError):
+    except KeyError, TypeError, ValueError:
         seconds = math.nan
     if math.isfinite(seconds) and seconds >= 0:
         return min(seconds, _RETRY_AFTER_CAP_SECONDS)
