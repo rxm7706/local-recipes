@@ -311,7 +311,11 @@ def add_gate_subparser(subparsers: argparse._SubParsersAction) -> None:
             "The story whose epic's policy surface --scope-check checks "
             "against. Also binds the gate to this story's own tracked spec "
             "Success signal (Story 2.7, AD-49), with or without "
-            "--scope-check."
+            "--scope-check. Also writes the story's redacted gate record "
+            "(Story 82.9, FR-25) into the --run directory when it "
+            "resolves, else the loop home's sessions/ namespace; "
+            "data.gate_record names it, and MRS-GATE-017 (warn) says why "
+            "none was written -- the verdict and exit code never change."
         ),
     )
     evaluate_parser.add_argument(

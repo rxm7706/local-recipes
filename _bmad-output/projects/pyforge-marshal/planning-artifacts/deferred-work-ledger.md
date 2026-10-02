@@ -7959,3 +7959,36 @@ status: open
   severity: medium
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-82-9: The gate record under-describes the evaluation it is evidence for: it carries no overall verdict or finding codes, so an unevaluable or errored evaluation writes a record indistinguishable from a clean one with no commands; it records HEAD only for a tree that may be dirty; and its scope-check verdict is gathered from the loop home while its tree revision is the repository root's.
+
+- source_spec: `planning-artifacts/specs/spec-82-9-vcs-commit-text-is-declared-egress-and-gate-evaluate-writes-a-redacted-gate-record.md`
+  summary: The gate record under-describes the evaluation it is evidence for: it carries no overall verdict or finding codes, so an unevaluable or errored evaluation writes a record indistinguishable from a clean one with no commands; it records HEAD only for a tree that may be dirty; and its scope-check verdict is gathered from the loop home while its tree revision is the repository root's.
+  evidence: Verified by the Blind Hunter, Edge Case Hunter and Verification Gap layers at cli/gate.py (_write_gate_record, _run_scope_check): schemas/gate-record.json is Story 2.6's frozen shape (additionalProperties false, five required keys), a --run record carries commands [] by design, and the scope check reads _home_path(slug) while worktree_head_sha reads repo_root() (Story 82.1's anchor). Adding verdict, finding_codes or a dirty flag is a new public contract the intent never asked for.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/gate-record.json
+  origin: spec-deferred 549d372681e6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-82-9-2: Merge-commit text still reaches git as a bare str on the non-egress VcsPort: merge_branch takes subject str and passes it to git merge -m.
+
+- source_spec: `planning-artifacts/specs/spec-82-9-vcs-commit-text-is-declared-egress-and-gate-evaluate-writes-a-redacted-gate-record.md`
+  summary: Merge-commit text still reaches git as a bare str on the non-egress VcsPort: merge_branch takes subject str and passes it to git merge -m.
+  evidence: ports/vcs.py merge_branch(repo_root, branch, *, into, subject) and its adapter in adapters/vcs_git.py. The subject is rendered by core.identity.render_merge_subject from the policy template, never from session text, and the intent names exactly three commit-writing methods, so Story 82.9 leaves it; AD-34 still names commit text as egress, so it belongs on CommitPort with a Redacted subject.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py
+  origin: spec-deferred 4803addf0b6f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-82-9-3: The governed spec, architecture spine and PRD still name VcsPort for the three moved commit methods and do not list CommitPort among the AD-34 egress ports.
+
+- source_spec: `planning-artifacts/specs/spec-82-9-vcs-commit-text-is-declared-egress-and-gate-evaluate-writes-a-redacted-gate-record.md`
+  summary: The governed spec, architecture spine and PRD still name VcsPort for the three moved commit methods and do not list CommitPort among the AD-34 egress ports.
+  evidence: SPEC.md, ARCHITECTURE-SPINE.md (AD-34 registry text) and the PRD name VcsPort.merge_ref_resolving and VcsPort.commit_paths_onto_remote_tip; a SPEC.md is re-derived with bmad-spec, never hand-edited, so the prose fix is a spine amendment plus a re-derive, not part of this code story.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md
+  origin: spec-deferred 97167a5e4575 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
