@@ -35,6 +35,8 @@ If markers are **absent** but the region was never opted out, `managed-region-mi
 
 Removing markers is the supported way to say "this repo owns this section now." Do not delete markers casually — the opt-out is durable until reinstated.
 
+The opt-out is per region: an artifact that declares several regions (`AGENTS.md` declares three) records one span, with its own hash, for each region installed, so deleting some markers opts out of exactly those regions and leaves the others managed. A deleted region is not a hand-edit — `adopt` and `update` do not refuse it, and no `--force` is needed — whereas a region whose markers are still present and whose body was edited is still refused.
+
 ## What Genesis never does
 
 - Infer structure beyond literal anchor matchers (FR-111).

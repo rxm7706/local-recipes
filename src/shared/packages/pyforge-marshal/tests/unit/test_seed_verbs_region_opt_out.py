@@ -15,7 +15,7 @@ maintainer would, and the verbs are asked what they make of it:
   State now holds a span (with its own hash) per installed region.
 
 Every test here fails when the fix it names is reverted; the mutation checks
-are recorded in the story spec's Review Triage Log.
+are recorded in the story spec's Auto Run Result.
 """
 
 from __future__ import annotations
