@@ -637,7 +637,7 @@ def _state_with_opt_outs(
     hybrids = tuple(
         (entry, _read_text_or_blank(repo_root / entry.path))
         for entry in manifest.entries
-        if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION
+        if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION and entry.id not in escaping_ids
     )
     for entry, text in hybrids:
         for artifact_id, region in opt_outs_to_record(classify_regions(entry, text, state), state):

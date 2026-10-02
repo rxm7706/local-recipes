@@ -541,7 +541,7 @@ class ManagedArtifact:
             if legacy_span is None:
                 spans = ()
             elif isinstance(legacy_span, dict):
-                spans = (RegionSpanRecord.from_json_dict({**legacy_span, "body_sha": body_sha}),)
+                spans = ()
             else:
                 raise ValueError(
                     f"ManagedArtifact.inserted_region_span: expected a JSON object or null, got {_abbreviate(legacy_span)}"
