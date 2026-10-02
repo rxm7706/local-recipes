@@ -1268,6 +1268,11 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # tree to gate, so there is no gate answer to report either way, and it
     # is never the bare-defaults MRS-GATE-004 warn (exit 0) false green.
     "MRS-GATE-016": Verdict.UNEVALUABLE,
+    # Story 82.9 (FR-25, DW-FU-2-6-2): the redacted gate record could not be written. WARN,
+    # never UNEVALUABLE or an error: the record is evidence about a verdict the gate already
+    # reached, so a missing loop home or a failed write must not turn a green gate red -- and
+    # `evaluate_gate` appends the finding AFTER the verdict is computed, never recomputing it.
+    "MRS-GATE-017": Verdict.WARN,
     # Story 82.4 (spec-pyforge-marshal CAP-2): 011 an attach whose ownership the
     # journal could not prove (a quarantined line, no launch/resume entry), 012
     # a tampered journal that made the supervisor stop the watched run, 013 the

@@ -1990,6 +1990,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # checkout), so no gate was evaluated; UNEVALUABLE, never the bare
         # defaults + MRS-GATE-004 false green.
         "MRS-GATE-016",
+        # Story 82.9 (FR-25, DW-FU-2-6-2): MRS-GATE-017 -- `marshal gate evaluate --story`
+        # could not write its redacted gate record (no loop home provisioned, an
+        # unreadable tree revision, a failed write); WARN, because the record is evidence
+        # about the verdict and never an input to it -- the verdict and exit code stand.
+        "MRS-GATE-017",
         # Story 82.4 (spec-pyforge-marshal CAP-2, DW-FU-3-4-3/6/7/8): the
         # supervisor stops being silenceable through its own journal, and the
         # run journal finally records the supervisor spawn. MRS-SUPV-011 --

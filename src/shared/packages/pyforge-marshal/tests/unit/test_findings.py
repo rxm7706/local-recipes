@@ -421,6 +421,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-GATE-015",
             # Story 82.1 (DW-FU-2-1-7): the repository root could not be resolved.
             "MRS-GATE-016",
+            # Story 82.9 (FR-25, DW-FU-2-6-2): the redacted gate record could not be written.
+            "MRS-GATE-017",
             "MRS-SUPV-011",
             "MRS-SUPV-012",
             "MRS-SUPV-013",
