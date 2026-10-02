@@ -93,6 +93,16 @@ the already-landed shortcut, and the full-merge path -- setting
         dirty tree, a held lock) is a new WARN finding (``MRS-LAND-009``), never
         escalated and never affecting this command's own exit.
 
+    **A live run's home is neither retired nor resynced (Story 82.2).** The
+    liveness verdict above counts a confirmed-alive engine as live even when
+    its supervisor sidecar is dead (``is_run_live``; DW-5-8-1/DW-FU-4-11), and
+    ``run_land`` shares that ONE lazily-gathered verdict (``home_run_live``)
+    between the retirement gate and all three ``_resync_home_branch`` exits:
+    while the run is live the resync neither fetches nor fast-forwards -- a
+    live run's untouched tracked files must not be rewritten from outside it
+    mid-turn (DW-FU-4-12) -- and reports one ``MRS-LAND-009`` WARN naming the
+    run instead.
+
     **Sprint-ledger promotion never writes the operator checkout (CAP-5).**
     ``_promote_sprint_ledger`` publishes onto ``origin/<base>`` through
     ``VcsPort.commit_paths_onto_remote_tip`` (throwaway detached worktree +
