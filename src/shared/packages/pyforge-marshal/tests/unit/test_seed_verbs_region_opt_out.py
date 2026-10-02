@@ -1029,6 +1029,41 @@ def test_an_old_shape_state_whose_only_recorded_region_was_deleted_neither_crash
 
 
 @_VERBS
+def test_an_old_shape_hybrid_the_plan_does_not_touch_keeps_its_present_siblings_in_the_written_state(
+    clean_repo, verb
+):
+    """Recording the derived opt-out drops an old-shape record whole (its only
+    span was the deleted region's). When `--skip` names its file the plan leaves
+    the artifact alone, so nothing rebuilds it -- and the state the run writes for
+    ANOTHER artifact's apply used to lose the hybrid's present siblings, where the
+    baseline carried the record over. The record is rebuilt from the file: every
+    declared region still there, at its current hash, and the opt-out key held."""
+    base = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge", "portability-contract"))
+    _adopt_with_human_text(clean_repo, base)
+    _write_old_shape_state(clean_repo)
+    _delete_regions(clean_repo, "tiers")
+    manifest = _manifest(*base.entries, _hybrid(*_EXTRA))
+    before = (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
+
+    result = _mutating_run(verb, clean_repo, manifest, skip=("HYBRID.md",))
+
+    assert [action.artifact_id for action in result.plan.actions] == ["extra"]
+    text = (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
+    assert text == before
+    recovered = read_state(clean_repo)
+    assert recovered is not None
+    assert recovered.opted_out == ("hybrid#tiers",)
+    assert [artifact.id for artifact in recovered.managed] == ["extra", "hybrid"]
+    claim = next(artifact for artifact in recovered.managed if artifact.id == "hybrid")
+    assert [span.name for span in claim.inserted_region_spans] == ["model-badge", "portability-contract"]
+    parsed = {span.name: span for span in parse_regions(text, RegionFormat.HTML)}
+    for span in claim.inserted_region_spans:
+        assert (span.start, span.end) == parsed[span.name].body_span
+        assert span.body_sha == hash_content(region_body_text(text, parsed[span.name]))
+    assert claim.body_sha == claim.inserted_region_spans[0].body_sha
+
+
+@_VERBS
 def test_deleting_every_region_of_an_artifact_beside_another_artifacts_apply_records_both_opt_outs(clean_repo, verb):
     """Review pass 2, the AC's mutating form: both regions of a two-region
     artifact deleted and a second artifact still to install, so the run applies
@@ -1134,18 +1169,33 @@ def test_update_records_a_region_whose_markers_were_restored_by_hand(clean_repo)
     assert recovered.opted_out == ("hybrid#tiers",)  # no reinstate verb yet: the key stays
 
 
-def test_adopt_refuses_a_region_restored_by_hand_until_force(clean_repo):
+def test_adopt_refuses_a_region_restored_by_hand_until_force_and_then_records_nothing(clean_repo):
     """`adopt` builds rung 6's input from the recorded spans alone, so the
     restored region is 'present in the file but never recorded' while its
-    siblings are recorded -- a refusal only `--force` lifts. Pinned, not endorsed:
-    the verb-level reinstate is Story 10.6."""
+    siblings are recorded -- a refusal only `--force` lifts. Lifting it does not
+    record the region: every declared region is in the file, the plan is empty,
+    and an empty plan writes no state, so the region stays unrecorded (and its
+    `opted_out` key stays) -- `update --run` is the verb that records it. Pinned,
+    not endorsed: the verb-level reinstate is Story 10.6."""
     manifest = _repo_whose_opted_out_region_was_restored_by_hand(clean_repo)
+    state_file = state_path(clean_repo)
+    written = state_file.read_bytes()
 
     with pytest.raises(PreconditionFailure, match="never recorded") as excinfo:
         _dry_run("adopt", clean_repo, manifest)
-
     assert "HYBRID.md#tiers" in excinfo.value.message
-    run_adopt(clean_repo, manifest, force=True, confirm=_unreachable_confirm)
+
+    result = _mutating_run("adopt", clean_repo, manifest, force=True)
+
+    assert result.plan.actions == ()
+    assert result.applied == ()
+    assert state_file.read_bytes() == written
+    recovered = read_state(clean_repo)
+    assert recovered is not None
+    assert recovered.opted_out == ("hybrid#tiers",)
+    (claim,) = recovered.managed
+    assert [span.name for span in claim.inserted_region_spans] == ["model-badge", "portability-contract"]
+    assert "region=tiers" in (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
 
 
 # --- opted_out_regions: the pure set rung 6 is handed -------------------------
