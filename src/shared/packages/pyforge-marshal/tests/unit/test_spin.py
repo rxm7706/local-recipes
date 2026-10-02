@@ -3897,7 +3897,6 @@ def test_a_resume_reads_back_the_ceilings_a_spin_journaled(home, tmp_path, monke
     assert _outcome_payload_of(resume_fs)["escalation_applied"] is True
 
 
-
 # --- Story 6.1: profile-driven adapter selection, project-scoped (FR-48/FR-51/AD-19) ---
 
 
