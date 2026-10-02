@@ -2,7 +2,7 @@
 title: '82.1: Gate evaluate finds the real repository under an installed package and never passes having run nothing'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'e537a533144fd0b5f65586ddb5a42b74eb65b62c'
 review_loop_iteration: 0
 followup_review_recommended: false
