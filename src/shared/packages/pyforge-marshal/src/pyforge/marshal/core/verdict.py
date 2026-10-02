@@ -522,6 +522,10 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # because AD-46 forbids durability becoming a new refusal gate.
 # Story 82.4 adds MRS-SUPV-011/012/013 and MRS-SPIN-018 to the same two
 # areas, all WARN (see their rows below).
+# Story 82.5's supervisor/__main__.py adds MRS-SUPV-014 (a per-story budget
+# ceiling was breached; the run continues) and MRS-SUPV-015 (neither idle
+# channel could be observed, so the ladder holds its rung), both WARN: each is
+# a reported condition the run survives, like this area's own 001-013.
 # Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008 at
 # SCOPE_VIOLATION (this table's first use of that rung) and MRS-GATE-009
 # at UNEVALUABLE, alongside MRS-GATE-002/003/005.
@@ -879,6 +883,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SUPV-008": Verdict.WARN,
     "MRS-SUPV-009": Verdict.WARN,
     "MRS-SUPV-010": Verdict.WARN,
+    "MRS-SUPV-014": Verdict.WARN,
+    "MRS-SUPV-015": Verdict.WARN,
     "MRS-GATE-007": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-008": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-009": Verdict.UNEVALUABLE,

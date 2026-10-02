@@ -34,6 +34,23 @@ to its own review-stage model before relaunching (see that function's own
 docstring for the full mechanism -- reading and rewriting ``policy.toml`` is
 I/O this module never performs itself, AD-4).
 
+Story 82.5 (deferred-work DW-FU-3-5-6, DW-FU-3-5-9, DW-FU-3-6-5/6) hardens
+the same two decisions against the observer's own failures and against clocks
+that jump. ``Sample`` now says whether each channel was OBSERVED
+(``pane_observed``/``log_observed``/``observable``): a sample on which
+neither channel was observed is unobservable, never idleness --
+``evaluate_idle`` holds the rung it is told to hold (``held=``) and the scan
+skips it, so ``None`` read against ``None`` can no longer read as "no fresh
+output". The pane comparison goes through ``shows_fresh_output``, which
+normalises away volatile redraws (``normalise_pane``: digit runs and spinner
+glyphs) so an elapsed-seconds counter, a spinner or a token tally cannot
+re-arm the window on every tick of a hung session; the log mtime still
+re-arms it exactly as before. ``judge_usage_freshness`` is the third pure
+decision added here: whether bmad-loop's ``state.json`` mtime is fresh enough
+to evaluate the two token ceilings from, judged on a monotonic basis the
+CALLER carries (an ``MtimeSighting``) so that a wall-clock step or a
+suspend cannot flip a sample's freshness.
+
 **Why this is pure (AD-20).** The decision itself must be a function over a
 ``Sequence[Sample]`` alone: no port, no clock call, no I/O -- every value it
 needs (the moment each sample was taken, what was observed) is a fact the
@@ -72,6 +89,7 @@ code on either side.
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -177,26 +195,127 @@ class Sample:
     #: whenever either endpoint lacks a monotonic reading, and uses the
     #: monotonic pair whenever both carry one.
     monotonic_s: float | None = None
+    #: Whether each channel was actually OBSERVED on this tick (Story 82.5,
+    #: DW-FU-3-5-6). ``None`` -- the default every caller that predates the
+    #: field takes -- derives the answer from the reading itself (``pane_content
+    #: is not None`` / ``log_mtime is not None``), so existing synthetic
+    #: sequences keep their meaning. A caller that knows better says so
+    #: explicitly. The distinction matters because ``None`` read against
+    #: ``None`` compares EQUAL: a broken ``tmux``, a permissions error or a
+    #: transiently missing log made two consecutive unobservable samples look
+    #: like two identical observations, i.e. maximal idleness, and drove the
+    #: ladder against a healthy session purely because the observer failed.
+    pane_observed: bool | None = None
+    log_observed: bool | None = None
+
+    def __post_init__(self) -> None:
+        # A frozen dataclass: resolve the derived defaults through
+        # ``object.__setattr__`` (the documented escape hatch), once, at
+        # construction, so every reader sees a plain ``bool``.
+        if self.pane_observed is None:
+            object.__setattr__(self, "pane_observed", self.pane_content is not None)
+        if self.log_observed is None:
+            object.__setattr__(self, "log_observed", self.log_mtime is not None)
+
+    @property
+    def observable(self) -> bool:
+        """``True`` when at least one channel was observed. A sample that is
+        NOT observable carries no evidence in either direction -- it can
+        neither show fresh output nor count toward idleness."""
+        return bool(self.pane_observed or self.log_observed)
 
 
-def _anchor_index(samples: Sequence[Sample]) -> int:
-    """The index of the most recent sample that showed fresh output --
-    ``0`` when no change was ever observed. Assumes a NON-EMPTY ``samples``
-    (both public callers guard first). Private: the single scan
-    ``idle_since`` and ``evaluate_idle`` share, so the anchor they each
-    derive genuinely cannot disagree."""
-    anchor = 0
-    for index, (previous, current) in enumerate(zip(samples, samples[1:]), start=1):
-        if current.pane_content != previous.pane_content or current.log_mtime != previous.log_mtime:
+#: Spinner and progress glyphs a TUI redraws in place (Story 82.5,
+#: DW-FU-3-5-9): the Braille block (the common ``⠋⠙⠹...`` spinner), the
+#: quarter-circle and four-corner glyphs, and the dingbat asterisk/star run.
+#: Private: callers reach the normalisation only through ``normalise_pane``.
+_SPINNER_GLYPHS = "⠀-⣿◐-◓◴-◷✢-❋"
+
+_VOLATILE_PANE_TEXT = re.compile(rf"\d+|[{_SPINNER_GLYPHS}]")
+
+
+def normalise_pane(pane: str) -> str:
+    """Pure: ``pane`` with its volatile redraws removed -- every run of digits
+    and every spinner glyph (``_SPINNER_GLYPHS``). What is left is the text a
+    session had to WRITE to change, so an elapsed-seconds counter, a spinner
+    frame or a live token tally no longer reads as output.
+
+    Deliberately not a similarity threshold or a trailing-line diff (the
+    alternatives DW-FU-3-5-9 weighed): those need a tuned cut-off, while
+    "digits and spinner frames are redraw noise" is a fixed, explainable rule.
+    The cost is an honest one -- a session whose ONLY change is a number
+    (``3 files`` to ``4 files``) is treated as quiet; the harness-log mtime
+    still re-arms the window independently."""
+    return _VOLATILE_PANE_TEXT.sub("", pane)
+
+
+def shows_fresh_output(previous: Sample, current: Sample) -> bool:
+    """Pure: whether ``current`` shows the session producing output relative
+    to ``previous`` -- the one predicate the idle scan (``_anchor_index``) and
+    the supervisor's history trim share, so the two cannot disagree.
+
+    The pane counts only when it was observed on BOTH sides and its
+    ``normalise_pane`` forms differ; the log counts only when it was observed
+    on both sides and its mtime differs. A channel unobserved on either side
+    carries no evidence either way: an observation failure is not output, and
+    it is not silence either."""
+    previous_pane, current_pane = previous.pane_content, current.pane_content
+    if (
+        previous.pane_observed
+        and current.pane_observed
+        and previous_pane is not None
+        and current_pane is not None
+        and normalise_pane(previous_pane) != normalise_pane(current_pane)
+    ):
+        return True
+    return bool(previous.log_observed and current.log_observed and previous.log_mtime != current.log_mtime)
+
+
+def _carry_baseline(baseline: Sample | None, current: Sample) -> Sample:
+    """What was last actually observed on each channel, after ``current``.
+    A channel ``current`` could not observe keeps the value an earlier sample
+    did, so output that appears on the far side of an observation gap is still
+    compared against the last reading actually taken -- the supervisor's own
+    doctrine for a flaky capture (real output re-arms by differing from the
+    last sample ACTUALLY observed; the gap itself is neither output nor
+    silence)."""
+    if baseline is None:
+        return current
+    return Sample(
+        moment=current.moment,
+        pane_content=current.pane_content if current.pane_observed else baseline.pane_content,
+        log_mtime=current.log_mtime if current.log_observed else baseline.log_mtime,
+        pane_observed=bool(current.pane_observed or baseline.pane_observed),
+        log_observed=bool(current.log_observed or baseline.log_observed),
+    )
+
+
+def _anchor_index(samples: Sequence[Sample]) -> int | None:
+    """The index of the most recent observable sample that showed fresh
+    output -- the first observable sample when no change was ever observed --
+    or ``None`` when no sample in ``samples`` was observable at all. Unobservable
+    samples are skipped: they are never the anchor and never compared against.
+    Private: the single scan ``idle_since``, ``idle_anchor`` and
+    ``evaluate_idle`` share, so the anchor they each derive genuinely cannot
+    disagree."""
+    anchor: int | None = None
+    baseline: Sample | None = None
+    for index, current in enumerate(samples):
+        if not current.observable:
+            continue
+        if baseline is None or shows_fresh_output(baseline, current):
             anchor = index
+        baseline = _carry_baseline(baseline, current)
     return anchor
 
 
 def idle_since(samples: Sequence[Sample]) -> datetime | None:
     """The moment ``samples`` last showed fresh output -- the reference point
-    the idle window is measured FROM. ``samples[0].moment`` when no change
-    was ever observed across the whole sequence, and ``None`` for an empty
-    ``samples``. Pure; no validation beyond what the scan itself needs.
+    the idle window is measured FROM. The first observable sample's moment
+    when no change was ever observed across the whole sequence, and ``None``
+    for an empty ``samples`` or one in which nothing was observable (there is
+    no observation to measure idleness from). Pure; no validation beyond what
+    the scan itself needs.
 
     Factored out of ``evaluate_idle`` (which delegates to it, so the two can
     never disagree) because the CALLER needs the same anchor for a reason
@@ -227,8 +346,9 @@ def idle_since(samples: Sequence[Sample]) -> datetime | None:
 
 def idle_anchor(samples: Sequence[Sample]) -> Sample | None:
     """The whole ``Sample`` ``idle_since`` reports the ``moment`` of --
-    ``samples[0]`` when no change was ever observed, ``None`` for an empty
-    ``samples``. Same guards, same scan.
+    the first observable sample when no change was ever observed, ``None``
+    for an empty ``samples`` or one with nothing observable. Same guards,
+    same scan.
 
     Public alongside ``idle_since`` because the supervisor's post-nudge
     rebase must preserve BOTH of the anchor's time readings, not just its
@@ -242,25 +362,40 @@ def idle_anchor(samples: Sequence[Sample]) -> Sample | None:
         raise TypeError(f"samples must be a sequence of Sample (not a bare str/bytes), got {samples!r}")
     if not samples:
         return None
-    return samples[_anchor_index(samples)]
+    index = _anchor_index(samples)
+    return None if index is None else samples[index]
 
 
-def evaluate_idle(samples: Sequence[Sample], *, threshold_s: float) -> LadderRung:
+def evaluate_idle(
+    samples: Sequence[Sample],
+    *,
+    threshold_s: float,
+    held: LadderRung = LadderRung.NONE,
+) -> LadderRung:
     """Pure: the ladder rung ``samples`` justifies, given ``threshold_s``
     (seconds) as the per-rung idle window. No port, no clock call, no I/O.
 
-    Walks ``samples`` once to find the most recent index at which
-    ``pane_content`` OR ``log_mtime`` differs from its immediate
-    predecessor -- fresh output, which re-arms the idle window (the spec's
-    own Always bullet) -- and takes the reference "idle since" moment as
-    that sample's own ``moment`` (or ``samples[0].moment`` if no change was
-    ever observed across the whole sequence). The rung is
+    Walks ``samples`` once to find the most recent observable sample that
+    showed fresh output (``shows_fresh_output``: a pane whose
+    ``normalise_pane`` form changed, OR a log mtime that changed) -- which
+    re-arms the idle window (the spec's own Always bullet) -- and takes the
+    reference "idle since" moment as that sample's own ``moment`` (or the
+    first observable sample's if no change was ever observed across the
+    whole sequence). The rung is
     ``min(idle_elapsed // threshold_s, DEFER)``: 0 (``NONE``) below one
     threshold, 1 (``NUDGE``) at one, 2 (``STOP_AND_RETRY``) at two, 3
     (``DEFER``, terminal) at three or more -- floor-divided and capped, never
     stepping past ``DEFER`` regardless of how far elapsed exceeds it.
 
-    An empty ``samples`` (nothing observed yet) returns ``LadderRung.NONE``.
+    ``held`` is the rung to REPORT when the sequence offers no evidence to
+    move it (Story 82.5, DW-FU-3-5-6): an empty ``samples``, or one whose
+    LATEST sample is unobservable (neither channel was observed -- the
+    observer is broken, not the session idle). Unobservable is not idle: the
+    ladder neither climbs on it nor falls back to ``NONE`` on it (a fall to
+    ``NONE`` is what made a nudge fire AGAIN the moment observation
+    resumed). It defaults to ``LadderRung.NONE``, the resting position, so a
+    caller with no rung to hold behaves exactly as before.
+
     Raises ``TypeError`` for a ``samples`` that is a bare ``str``/``bytes``
     (satisfies ``Sequence`` but shreds per character/byte -- the same
     footgun ``core/journal.py::fold``/``core/identity.py::resolve_feed``
@@ -283,11 +418,19 @@ def evaluate_idle(samples: Sequence[Sample], *, threshold_s: float) -> LadderRun
     # ones exactly as before.
     if not (threshold_s > 0):
         raise ValueError(f"threshold_s must be positive, got {threshold_s!r}")
+    if not isinstance(held, LadderRung):
+        raise TypeError(f"held must be a LadderRung, got {held!r}")
     if not samples:
-        return LadderRung.NONE
+        return held
 
-    anchor = samples[_anchor_index(samples)]
     latest = samples[-1]
+    # An unobservable latest sample is the observer failing, not the session
+    # idling -- nothing to climb on, nothing to reset: hold (Story 82.5).
+    if not latest.observable:
+        return held
+    anchor_index = _anchor_index(samples)
+    # `latest` is observable, so the scan found at least that one sample.
+    anchor = latest if anchor_index is None else samples[anchor_index]
 
     # MONOTONIC when both endpoints carry one, wall-clock otherwise (review
     # finding). `moment` is a wall-clock reading and wall clocks JUMP -- a
@@ -413,6 +556,92 @@ def evaluate_ceiling(observed: float, limit: float) -> CeilingStatus:
     if observed >= _APPROACH_RATIO * limit:
         return CeilingStatus.APPROACHING
     return CeilingStatus.NONE
+
+
+class UsageFreshness(StrEnum):
+    """Whether bmad-loop's ``state.json`` is fresh enough to evaluate the two
+    token ceilings from (Story 82.5, AD-32): ``FRESH`` (usable), ``STALE``
+    (older than the window, or missing -- a wedged session's frozen counter
+    must never be evidence) or ``UNEVALUABLE`` (an mtime that cannot be
+    judged: ahead of the wall clock, or not a finite number). Only ``FRESH``
+    lets a token ceiling act; the two wall-clock ceilings never depend on
+    this."""
+
+    FRESH = "fresh"
+    STALE = "stale"
+    UNEVALUABLE = "unevaluable"
+
+
+@dataclass(frozen=True)
+class MtimeSighting:
+    """The first time the supervisor SAW one distinct ``state.json`` mtime
+    (Story 82.5, DW-FU-3-6-5): ``mtime`` (the value, a wall-clock Unix
+    timestamp), ``first_seen_monotonic_s`` (``ClockPort.monotonic()`` at that
+    first sighting) and ``age_at_first_sight_s`` (how old the file already was
+    by the wall clock at that moment, clamped to zero). The caller holds one
+    and passes it in and out of ``judge_usage_freshness`` -- this module keeps
+    no state (AD-20)."""
+
+    mtime: float
+    first_seen_monotonic_s: float
+    age_at_first_sight_s: float
+
+
+def judge_usage_freshness(
+    *,
+    mtime: float | None,
+    wall_now_s: float,
+    monotonic_now_s: float,
+    window_s: float,
+    sighting: MtimeSighting | None,
+) -> tuple[UsageFreshness, MtimeSighting | None]:
+    """Pure: ``state.json``'s freshness and the sighting the caller carries
+    into the next tick. No port, no clock call, no I/O.
+
+    A filesystem mtime IS a wall-clock quantity, so there is no direct
+    monotonic comparison to make; the model is therefore anchored. At the
+    FIRST sighting of a distinct mtime the wall delta (``wall_now_s - mtime``,
+    clamped to zero) is taken ONCE as the file's age so far, and from then on
+    its age is that delta plus the MONOTONIC time since the sighting. A
+    forward NTP step or a suspend after the sighting therefore cannot make a
+    fresh sample stale, and a backward step cannot make a stale one fresh --
+    the wall clock is never consulted again for that mtime. A file already
+    old when first seen is stale at once.
+
+    ``STALE`` when the age exceeds ``window_s`` (strictly: exactly the window
+    is still fresh) or ``mtime`` is ``None`` (the file is missing -- the
+    pre-existing reading). ``UNEVALUABLE`` for a new mtime AHEAD of the wall
+    clock, or a non-finite one: such a file has no knowable age, and the old
+    shape's ``now - mtime`` came out negative and read as the freshest value
+    possible. An unevaluable mtime is not recorded, so the previous sighting
+    (if any) is returned unchanged. Raises ``ValueError`` for a non-positive
+    or non-finite ``window_s`` (negated ``>``, so NaN is rejected too) and
+    ``TypeError`` for a non-numeric or boolean one -- the guard
+    ``evaluate_idle`` applies to its own ``threshold_s``."""
+    if isinstance(window_s, bool) or not isinstance(window_s, (int, float)):
+        raise TypeError(f"window_s must be a number, got {window_s!r}")
+    if not (window_s > 0) or not math.isfinite(window_s):
+        raise ValueError(f"window_s must be positive and finite, got {window_s!r}")
+    if mtime is None:
+        return UsageFreshness.STALE, sighting
+    if not math.isfinite(mtime):
+        return UsageFreshness.UNEVALUABLE, sighting
+    if sighting is not None and sighting.mtime == mtime:
+        # A defensive floor: a monotonic reading that went backwards would
+        # shorten the age, and monotonic clocks do not -- but a caller
+        # replaying journalled readings is not obliged to be sorted.
+        age_s = sighting.age_at_first_sight_s + max(monotonic_now_s - sighting.first_seen_monotonic_s, 0.0)
+    else:
+        age_at_first_sight_s = wall_now_s - mtime
+        if age_at_first_sight_s < 0:
+            return UsageFreshness.UNEVALUABLE, sighting
+        sighting = MtimeSighting(
+            mtime=mtime,
+            first_seen_monotonic_s=monotonic_now_s,
+            age_at_first_sight_s=age_at_first_sight_s,
+        )
+        age_s = age_at_first_sight_s
+    return (UsageFreshness.STALE if age_s > window_s else UsageFreshness.FRESH), sighting
 
 
 # =============================================================================

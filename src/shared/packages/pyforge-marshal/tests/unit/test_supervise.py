@@ -18,7 +18,9 @@ from pyforge.marshal.core.supervise import (
     CeilingStatus,
     EscalationStatus,
     LadderRung,
+    MtimeSighting,
     Sample,
+    UsageFreshness,
     evaluate_ceiling,
     evaluate_compression_ladder,
     evaluate_escalation,
@@ -26,8 +28,11 @@ from pyforge.marshal.core.supervise import (
     evaluate_retry_escalation,
     idle_anchor,
     idle_since,
+    judge_usage_freshness,
+    normalise_pane,
     rung_at,
     rung_index,
+    shows_fresh_output,
 )
 from pyforge.marshal.ports.harness import DeferredStory
 
@@ -595,3 +600,286 @@ def test_compression_escalation_decision_names_wire_aggressiveness_only():
     field_names = {f.name for f in dataclasses.fields(decision)}
     assert field_names == {"observed", "limit", "threshold", "declared", "target"}
     assert decision.target in {"low", "medium", "high"}
+
+
+# =============================================================================
+# Story 82.5 -- unobservable samples, redraw-proof pane comparison, and the
+# monotonic usage-freshness judgement (DW-FU-3-5-6, DW-FU-3-5-9, DW-FU-3-6-5)
+# =============================================================================
+
+
+def _dark_sample(offset_ms: int) -> Sample:
+    """A tick on which NEITHER channel was observed."""
+    return Sample(moment=_T0 + timedelta(milliseconds=offset_ms), pane_content=None, log_mtime=None)
+
+
+# --- Sample: which channels were observed ---------------------------------------
+
+
+def test_sample_observed_flags_default_to_whether_a_reading_exists():
+    sample = _sample(0, pane="text", mtime=1.0)
+    assert (sample.pane_observed, sample.log_observed, sample.observable) == (True, True, True)
+
+    pane_only = _sample(0, pane="text", mtime=None)
+    assert (pane_only.pane_observed, pane_only.log_observed, pane_only.observable) == (True, False, True)
+
+    log_only = _sample(0, pane=None, mtime=1.0)
+    assert (log_only.pane_observed, log_only.log_observed, log_only.observable) == (False, True, True)
+
+    dark = _dark_sample(0)
+    assert (dark.pane_observed, dark.log_observed, dark.observable) == (False, False, False)
+
+
+def test_an_empty_pane_is_an_observation_not_a_missing_one():
+    """``""`` is a pane that was captured and was blank; only ``None`` is a
+    capture that did not happen."""
+    assert _sample(0, pane="", mtime=None).observable is True
+
+
+def test_explicit_observed_flags_override_the_derived_defaults():
+    sample = Sample(moment=_T0, pane_content="text", log_mtime=1.0, pane_observed=False, log_observed=False)
+    assert sample.observable is False
+
+
+# --- normalise_pane / shows_fresh_output -----------------------------------------
+
+
+@pytest.mark.parametrize(
+    "glyph",
+    ["⠋", "⠿", "◐", "◓", "◴", "◷", "✢", "❋"],
+    ids=[
+        "braille-first",
+        "braille-last",
+        "quarter-first",
+        "quarter-last",
+        "corner-first",
+        "corner-last",
+        "star-first",
+        "star-last",
+    ],
+)
+def test_normalise_pane_removes_every_spinner_glyph_class(glyph):
+    assert normalise_pane(f"Thinking {glyph}") == "Thinking "
+
+
+def test_normalise_pane_removes_digit_runs_and_keeps_the_words():
+    assert normalise_pane("Elapsed 1234s, 56 tokens") == "Elapsed s,  tokens"
+    assert normalise_pane("no volatile content") == "no volatile content"
+
+
+def test_two_panes_that_differ_only_in_a_counter_or_a_spinner_normalise_equal():
+    assert normalise_pane("Working (12s) ⠋") == normalise_pane("Working (13s) ⠙")
+
+
+def test_shows_fresh_output_ignores_a_redrawing_counter_and_spinner():
+    before = Sample(moment=_T0, pane_content="Working (12s) ⠋", log_mtime=1.0)
+    after = Sample(moment=_T0 + timedelta(seconds=1), pane_content="Working (13s) ⠙", log_mtime=1.0)
+    assert shows_fresh_output(before, after) is False
+
+
+def test_shows_fresh_output_sees_substantive_text():
+    before = Sample(moment=_T0, pane_content="Working (12s) ⠋", log_mtime=1.0)
+    after = Sample(moment=_T0 + timedelta(seconds=1), pane_content="Working (13s) ⠙\nRan the tests", log_mtime=1.0)
+    assert shows_fresh_output(before, after) is True
+
+
+def test_shows_fresh_output_still_re_arms_on_a_log_mtime_change():
+    """The log channel is unchanged by the pane normalisation."""
+    before = Sample(moment=_T0, pane_content="same", log_mtime=1.0)
+    after = Sample(moment=_T0 + timedelta(seconds=1), pane_content="same", log_mtime=2.0)
+    assert shows_fresh_output(before, after) is True
+
+
+def test_shows_fresh_output_reads_an_unobserved_channel_as_no_evidence_either_way():
+    seen = Sample(moment=_T0, pane_content="text", log_mtime=1.0)
+    pane_dark = Sample(moment=_T0 + timedelta(seconds=1), pane_content=None, log_mtime=1.0)
+    assert shows_fresh_output(seen, pane_dark) is False
+    assert shows_fresh_output(pane_dark, seen) is False
+    assert shows_fresh_output(_dark_sample(0), _dark_sample(1000)) is False
+
+
+# --- evaluate_idle: unobservable samples hold, redraws do not re-arm -------------
+
+
+def test_two_unobservable_samples_hold_the_rung_instead_of_reading_as_idleness():
+    """AC 6 (DW-FU-3-5-6). ``None`` read against ``None`` compares equal, so
+    two dark samples used to read as no fresh output -- maximal idleness."""
+    samples = [_dark_sample(0), _dark_sample(1_000_000)]
+    assert evaluate_idle(samples, threshold_s=0.1) == LadderRung.NONE
+    assert evaluate_idle(samples, threshold_s=0.1, held=LadderRung.NUDGE) == LadderRung.NUDGE
+    assert evaluate_idle(samples, threshold_s=0.1, held=LadderRung.STOP_AND_RETRY) == LadderRung.STOP_AND_RETRY
+
+
+def test_an_unobservable_latest_sample_holds_the_rung_however_idle_the_history_was():
+    samples = [_sample(0), _sample(1_000_000), _dark_sample(1_000_100)]
+    assert evaluate_idle(samples, threshold_s=0.1) == LadderRung.NONE
+    assert evaluate_idle(samples, threshold_s=0.1, held=LadderRung.NUDGE) == LadderRung.NUDGE
+    # ...and the same history WITHOUT the dark tail does escalate.
+    assert evaluate_idle(samples[:2], threshold_s=0.1, held=LadderRung.NUDGE) == LadderRung.DEFER
+
+
+def test_an_empty_sequence_holds_the_rung_it_is_given():
+    assert evaluate_idle([], threshold_s=1.0, held=LadderRung.STOP_AND_RETRY) == LadderRung.STOP_AND_RETRY
+
+
+def test_an_observable_latest_sample_ignores_held():
+    """``held`` is only what to report when there is no evidence -- never a
+    floor under a real reading."""
+    samples = [_sample(0), _sample(50)]
+    assert evaluate_idle(samples, threshold_s=0.1, held=LadderRung.DEFER) == LadderRung.NONE
+
+
+def test_evaluate_idle_rejects_a_non_rung_held():
+    with pytest.raises(TypeError):
+        evaluate_idle([_sample(0)], threshold_s=1.0, held="nudge")  # type: ignore[arg-type]
+
+
+def test_dark_samples_are_skipped_by_the_scan_and_never_become_the_anchor():
+    """A dark tick in the middle neither re-arms the window nor resets its
+    origin: idleness accrues straight across the gap."""
+    samples = [_sample(0), _dark_sample(100), _dark_sample(200), _sample(300)]
+    assert evaluate_idle(samples, threshold_s=0.1) == LadderRung.DEFER
+    anchor = idle_anchor(samples)
+    assert anchor is not None and anchor.moment == samples[0].moment
+
+
+def test_output_on_the_far_side_of_a_dark_gap_re_arms_by_differing_from_the_last_observed_sample():
+    """The supervisor's own doctrine for a flaky capture: the gap is neither
+    output nor silence, and real output after it still counts."""
+    samples = [_sample(0, pane="before"), _dark_sample(100), _sample(300, pane="after")]
+    assert evaluate_idle(samples, threshold_s=0.1) == LadderRung.NONE
+    anchor = idle_anchor(samples)
+    assert anchor is not None and anchor.moment == samples[2].moment
+
+
+def test_a_pane_dark_sample_with_a_live_log_is_skipped_for_the_pane_comparison_only():
+    samples = [_sample(0, pane="same"), _sample(100, pane=None, mtime=1.0), _sample(300, pane="same")]
+    assert evaluate_idle(samples, threshold_s=0.1) == LadderRung.DEFER
+
+
+def test_idle_since_and_idle_anchor_are_none_when_nothing_was_ever_observable():
+    samples = [_dark_sample(0), _dark_sample(100)]
+    assert idle_since(samples) is None
+    assert idle_anchor(samples) is None
+
+
+def test_panes_that_differ_only_in_a_counter_or_spinner_escalate_past_the_threshold():
+    """AC 7 (DW-FU-3-5-9). The raw ``!=`` re-armed the window on every tick
+    of a hung session whose CLI redraws a counter."""
+    samples = [
+        Sample(moment=_T0, pane_content="Running tool 1s ⠋", log_mtime=1.0),
+        Sample(moment=_T0 + timedelta(milliseconds=60), pane_content="Running tool 2s ⠙", log_mtime=1.0),
+        Sample(moment=_T0 + timedelta(milliseconds=120), pane_content="Running tool 3s ⠹", log_mtime=1.0),
+    ]
+    assert evaluate_idle(samples, threshold_s=0.1) == LadderRung.NUDGE
+    assert evaluate_idle(samples, threshold_s=0.06) == LadderRung.STOP_AND_RETRY
+
+
+def test_substantive_pane_output_still_re_arms_the_window():
+    samples = [
+        Sample(moment=_T0, pane_content="Running tool 1s", log_mtime=1.0),
+        Sample(moment=_T0 + timedelta(milliseconds=500), pane_content="Running tool 2s", log_mtime=1.0),
+        Sample(moment=_T0 + timedelta(milliseconds=520), pane_content="Running tool 3s\nTests passed", log_mtime=1.0),
+    ]
+    assert evaluate_idle(samples, threshold_s=0.1) == LadderRung.NONE
+
+
+# --- judge_usage_freshness ---------------------------------------------------------
+
+_WINDOW_S = 180 * 60.0
+_NOW_S = 1_785_000_000.0
+
+
+def _judge(mtime, *, wall=_NOW_S, mono=1000.0, window=_WINDOW_S, sighting=None):
+    return judge_usage_freshness(mtime=mtime, wall_now_s=wall, monotonic_now_s=mono, window_s=window, sighting=sighting)
+
+
+def test_a_just_written_mtime_is_fresh_and_recorded_with_its_first_sighting():
+    freshness, sighting = _judge(_NOW_S - 30.0)
+    assert freshness is UsageFreshness.FRESH
+    assert sighting == MtimeSighting(mtime=_NOW_S - 30.0, first_seen_monotonic_s=1000.0, age_at_first_sight_s=30.0)
+
+
+def test_a_file_already_older_than_the_window_when_first_seen_is_stale_at_once():
+    freshness, sighting = _judge(_NOW_S - _WINDOW_S - 1.0)
+    assert freshness is UsageFreshness.STALE
+    assert sighting is not None and sighting.age_at_first_sight_s == _WINDOW_S + 1.0
+
+
+def test_a_sample_ages_on_the_monotonic_clock_from_its_first_sighting():
+    """AC 1 (DW-FU-3-6-6)/(DW-FU-3-6-5): first seen 40 minutes ago, inside a
+    180-minute window -- fresh; the same sample is stale once the monotonic
+    time since the sighting passes the window."""
+    _, sighting = _judge(_NOW_S)
+    freshness, _ = _judge(_NOW_S, wall=_NOW_S + 40 * 60.0, mono=1000.0 + 40 * 60.0, sighting=sighting)
+    assert freshness is UsageFreshness.FRESH
+    freshness, _ = _judge(_NOW_S, mono=1000.0 + _WINDOW_S + 1.0, sighting=sighting)
+    assert freshness is UsageFreshness.STALE
+
+
+def test_exactly_the_window_is_still_fresh_and_one_second_more_is_stale():
+    _, sighting = _judge(_NOW_S)
+    assert _judge(_NOW_S, mono=1000.0 + _WINDOW_S, sighting=sighting)[0] is UsageFreshness.FRESH
+    assert _judge(_NOW_S, mono=1000.0 + _WINDOW_S + 1.0, sighting=sighting)[0] is UsageFreshness.STALE
+
+
+def test_a_wall_clock_step_after_the_sighting_cannot_change_the_verdict():
+    """AC 2 (DW-FU-3-6-5): the wall delta is taken ONCE, at first sight."""
+    _, sighting = _judge(_NOW_S)
+    forward, _ = _judge(_NOW_S, wall=_NOW_S + 3600.0 * 24, mono=1060.0, sighting=sighting)
+    backward, _ = _judge(_NOW_S, wall=_NOW_S - 3600.0 * 24, mono=1060.0, sighting=sighting)
+    assert forward is UsageFreshness.FRESH
+    assert backward is UsageFreshness.FRESH
+
+    _, stale_sighting = _judge(_NOW_S - 2 * _WINDOW_S)
+    stepped_back, _ = _judge(_NOW_S - 2 * _WINDOW_S, wall=_NOW_S - 10 * _WINDOW_S, mono=1060.0, sighting=stale_sighting)
+    assert stepped_back is UsageFreshness.STALE
+
+
+def test_an_mtime_ahead_of_the_wall_clock_is_unevaluable_and_not_recorded():
+    """AC 3 (DW-FU-3-6-5): no knowable age -- not fresh."""
+    freshness, sighting = _judge(_NOW_S + 5.0)
+    assert freshness is UsageFreshness.UNEVALUABLE
+    assert sighting is None
+
+
+def test_an_unevaluable_mtime_leaves_the_previous_sighting_untouched():
+    _, earlier = _judge(_NOW_S - 10.0)
+    freshness, sighting = _judge(_NOW_S + 500.0, sighting=earlier)
+    assert freshness is UsageFreshness.UNEVALUABLE
+    assert sighting is earlier
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+def test_a_non_finite_mtime_is_unevaluable(bad):
+    assert _judge(bad)[0] is UsageFreshness.UNEVALUABLE
+
+
+def test_a_missing_file_is_stale_as_before():
+    freshness, sighting = _judge(None)
+    assert freshness is UsageFreshness.STALE
+    assert sighting is None
+    _, earlier = _judge(_NOW_S - 10.0)
+    assert _judge(None, sighting=earlier) == (UsageFreshness.STALE, earlier)
+
+
+def test_a_new_mtime_starts_a_fresh_sighting():
+    """bmad-loop rewrote the file: the age restarts from the new write."""
+    _, sighting = _judge(_NOW_S - 100.0)
+    freshness, newer = _judge(_NOW_S + 7_200.0 - 20.0, wall=_NOW_S + 7_200.0, mono=1000.0 + 7_200.0, sighting=sighting)
+    assert freshness is UsageFreshness.FRESH
+    assert newer is not None
+    assert newer.first_seen_monotonic_s == 1000.0 + 7_200.0
+    assert newer.age_at_first_sight_s == 20.0
+
+
+@pytest.mark.parametrize("bad", [0, -1.0, float("nan"), float("inf")])
+def test_judge_usage_freshness_rejects_a_bad_window(bad):
+    with pytest.raises(ValueError):
+        _judge(_NOW_S, window=bad)
+
+
+@pytest.mark.parametrize("bad", ["60", True, None])
+def test_judge_usage_freshness_rejects_a_non_numeric_window(bad):
+    with pytest.raises(TypeError):
+        _judge(_NOW_S, window=bad)

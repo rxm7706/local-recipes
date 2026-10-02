@@ -2,7 +2,9 @@
 architecture spine AD-9/AD-20/AD-25/AD-28/AD-30/AD-32): ``python -m
 pyforge.marshal.supervisor <home> <slug> <run_id> <watched_pid> <log_path>
 <idle_threshold_minutes> <max_tokens_per_story> <max_tokens_per_run>
-<max_wall_clock_minutes_per_story> <max_wall_clock_minutes_per_run>``.
+<max_wall_clock_minutes_per_story> <max_wall_clock_minutes_per_run>
+[<usage_staleness_window_minutes>]`` (Story 82.5 adds the optional eleventh
+value; when it is omitted the supervisor derives the same floor itself).
 ``cli/spin.py`` detach-spawns exactly this invocation (via ``ProcessPort.
 spawn_detached``) as the LAST step of a successful ``marshal factory spin``
 -- see that module's own docstring for why "last", after the ``run-launch``
@@ -136,12 +138,23 @@ findings. Escalation is clamped to ONE rung per tick (``rung_at``): the
 ladder is a fixed 3-rung sequence, but ``evaluate_idle`` floor-divides, so
 any threshold shorter than twice ``_TICK_SECONDS`` would otherwise let a
 single tick jump straight to ``defer`` and hard-stop a healthy run without
-ever nudging it. And a sample history in which NOTHING was ever observed
-(no pane AND no log mtime, for every sample) is treated as ``NONE`` rather
-than as idleness -- ``None != None`` is ``False``, so such a history never
-re-arms and reads as maximal idleness, which since ``defer`` gained its
-stop call would turn a broken observation channel into a killed HEALTHY
-run. The ladder acts only on evidence it actually has.
+ever nudging it. And a tick on which NOTHING was observed (no pane AND no
+log mtime) is never treated as idleness -- ``None != None`` is ``False``, so
+such a sample never re-arms and reads as maximal idleness, which since
+``defer`` gained its stop call would turn a broken observation channel into a
+killed HEALTHY run. Story 82.5 (DW-FU-3-5-6) makes that explicit: the tick is
+an unobservable ``core.supervise.Sample``, appends nothing to the history,
+HOLDS ``last_acted_rung`` (resetting it to ``NONE`` re-fired a nudge the moment
+observation resumed) and journals ONE ``"idle-unobservable"`` observation
+(``MRS-SUPV-015``) per dark episode. A dark PANE with a live log keeps its
+older shape exactly (sample dropped, ladder at rest). The ladder acts only on
+evidence it actually has.
+
+The pane the ladder compares is normalised first (Story 82.5, DW-FU-3-5-9):
+``core.supervise.shows_fresh_output`` strips digit runs and spinner glyphs, so
+a redrawing counter, spinner or token tally no longer re-arms the idle window
+every tick of a hung session. The history trim below uses the same predicate,
+so the trim and the scan cannot disagree.
 
 **Budget ceilings (Story 3.6, AD-20/AD-32, FR-13).** Four new externally-
 enforced ceilings -- per-story/per-run x tokens/wall-clock -- close the gap
@@ -172,28 +185,42 @@ be read):
   ``max_tokens_per_run``/``max_tokens_per_story``, gated by a STALENESS
   check: ``SessionObserverPort.mtime`` against bmad-loop's own
   ``state.json`` (``<home>/.bmad-loop/runs/<harness_run_id>/state.json``),
-  compared to the SAME ``threshold_s`` the idle ladder already computes
-  (reused, never a second threshold). A sample older than that window is
-  classified ``stale-evidence`` (``MRS-SUPV-006``, journaled ONCE per
+  judged by ``core.supervise.judge_usage_freshness`` over a window of its OWN
+  (Story 82.5: ``staleness_window_s``, never shorter than the rendered
+  ``session_timeout_min`` -- bmad-loop rewrites ``state.json`` only at session
+  boundaries, so the 25-minute idle threshold this gate used to reuse left
+  both token ceilings dark from minute 25 of every healthy session). Freshness
+  is MONOTONIC: the supervisor records the monotonic reading at which it first
+  saw each distinct mtime (``state_sighting``) and ages the sample from there,
+  so a wall-clock step or a suspend cannot flip it, and an mtime AHEAD of the
+  wall clock is ``unevaluable``, never fresh. A sample older than the window
+  is classified ``stale-evidence`` (``MRS-SUPV-006``, journaled ONCE per
   transition into staleness, kind ``"budget-usage-stale"``) -- never
-  ``unevaluable`` (AD-32's own amendment, F-24: that label is AD-8-blocking
-  and fires on the ordinary idle case the ladder above already handles
-  gracefully) -- and BOTH token ceilings are skipped for that tick; the two
-  wall-clock ceilings remain the binding constraint.
+  ``unevaluable`` as a ceiling verdict (AD-32's own amendment, F-24: that
+  label is AD-8-blocking and fires on the ordinary idle case the ladder above
+  already handles gracefully) -- and BOTH token ceilings are skipped for that
+  tick; the two wall-clock ceilings remain the binding constraint.
 
 Each ceiling's own last-observed ``CeilingStatus`` is tracked separately (4
 variables, one per scope+metric pair); a rising edge from ``NONE`` to
 ``APPROACHING`` journals one ``"budget-warn"`` observation
-(``MRS-SUPV-004``), and any transition INTO ``BREACHED`` fires the terminal
-action -- mirroring the idle ladder's own terminal ``defer``, never
-``stop-and-retry`` (retrying the same story/run would immediately re-hit the
+(``MRS-SUPV-004``). A transition INTO ``BREACHED`` of a per-RUN ceiling fires
+the terminal action -- mirroring the idle ladder's own terminal ``defer``,
+never ``stop-and-retry`` (retrying the same run would immediately re-hit the
 same ceiling): one ``intent``/``outcome`` pair (kind ``"budget-stop"``), a
 best-effort ``HarnessPort.stop`` (tolerant of ``HarnessError``, registering
 ``MRS-SUPV-005`` on failure -- the same tier and reasoning as the idle
 ladder's own ``MRS-SUPV-002``), and the tick loop ends via the SAME
 ``supervisor-detach`` mechanism the idle ladder uses, with
 ``reason=f"budget-{scope}-{metric}-exceeded"`` (e.g.
-``"budget-run-wall_clock-exceeded"``). On a story-key transition, one
+``"budget-run-wall_clock-exceeded"``). A BREACH of a per-STORY ceiling does
+not (Story 82.5, DW-FU-3-6-8): ``HarnessPort.stop`` ends the whole bmad-loop
+run, so stopping on one outlier story abandoned every remaining story of an
+overnight wave under a story-scoped reason. It journals one
+``"budget-story-breach"`` observation (``MRS-SUPV-014``: the story, the
+metric, the observed and the limit values), once per (story, metric), and the
+run continues -- bmad-loop exposes run-level stop only, so the per-run
+ceilings stay the binding constraint. On a story-key transition, one
 ``"budget-usage"`` observation attributes the OUTGOING story's last known
 weighted tokens as its own ``cost_estimate`` (no dollar-denominated pricing
 table exists or is introduced, so the weighted-token total itself IS the
@@ -404,7 +431,7 @@ from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
+from ..adapters.harness_bmadloop import RENDERED_SESSION_TIMEOUT_MIN, HarnessError, resolve_loop_runner
 from ..adapters.notify_file_desktop import FileDesktopNotifier
 from ..adapters.observer_mux import MultiplexerObserver
 from ..adapters.publisher_host import HostPublisher
@@ -432,14 +459,18 @@ from ..core.supervise import (
     CeilingStatus,
     EscalationStatus,
     LadderRung,
+    MtimeSighting,
     Sample,
+    UsageFreshness,
     evaluate_ceiling,
     evaluate_compression_ladder,
     evaluate_escalation,
     evaluate_idle,
     idle_anchor,
+    judge_usage_freshness,
     rung_at,
     rung_index,
+    shows_fresh_output,
 )
 from ..core.worktree_checkpoint import commit_worktree_checkpoint
 from ..ports.clock import ClockPort
@@ -484,6 +515,9 @@ _NUDGE_KIND = "idle-nudge"
 _STOP_AND_RETRY_KIND = "idle-stop-and-retry"
 _DEFER_KIND = "idle-defer"
 _HARNESS_RUN_ID_UNAVAILABLE_KIND = "idle-harness-run-id-unavailable"
+# Story 82.5: neither the pane nor the harness log could be observed on a tick
+# (MRS-SUPV-015) -- one Phase.OBSERVATION per unobservable episode.
+_IDLE_UNOBSERVABLE_KIND = "idle-unobservable"
 
 # Story 3.6's own budget-ceiling journal kinds. "budget-stop" fires as one
 # Phase.INTENT then one Phase.OUTCOME entry (mirroring the idle ladder's own
@@ -493,6 +527,9 @@ _BUDGET_WARN_KIND = "budget-warn"
 _BUDGET_STOP_KIND = "budget-stop"
 _BUDGET_USAGE_KIND = "budget-usage"
 _BUDGET_USAGE_STALE_KIND = "budget-usage-stale"
+# Story 82.5: a per-STORY ceiling breach (MRS-SUPV-014) -- a single
+# Phase.OBSERVATION per (story, metric); the run continues.
+_BUDGET_STORY_BREACH_KIND = "budget-story-breach"
 
 
 def _layer_savings_payload(layer_savings: object) -> dict[str, object]:
@@ -948,6 +985,13 @@ def run_supervisor(
     max_tokens_per_run: float,
     max_wall_clock_minutes_per_story: float,
     max_wall_clock_minutes_per_run: float,
+    # Story 82.5 (DW-FU-3-6-6): the usage-staleness window, in minutes -- its
+    # OWN value, no shorter than the rendered session timeout (see the
+    # module docstring's "Budget ceilings" section). Optional so a direct
+    # caller never regains the 25-minute trap: omitted, it is derived here
+    # as `max(idle_threshold_minutes, RENDERED_SESSION_TIMEOUT_MIN)`, the
+    # same floor `cli/spin.py` passes as the optional eleventh argv value.
+    staleness_window_minutes: float | None = None,
     *,
     fs: FsPort | None = None,
     process: ProcessPort | None = None,
@@ -1051,6 +1095,28 @@ def run_supervisor(
         if policy._valid_positive_number(_budget_value) is None:
             print(
                 f"supervisor: {_budget_label} must be a positive finite number, got {_budget_value!r}",
+                file=sys.stderr,
+            )
+            return 1
+
+    # The usage-staleness window (Story 82.5), validated at this same entry
+    # point and for the same reason as the threshold above: a bad value would
+    # otherwise surface a tick later as `judge_usage_freshness`'s own
+    # `ValueError`, misreported by the journal-write handler as "cannot append
+    # to journal". Omitted, it is the larger of the idle threshold and the
+    # rendered session timeout -- never shorter than one session.
+    if staleness_window_minutes is None:
+        staleness_window_s = max(threshold_s, RENDERED_SESSION_TIMEOUT_MIN * 60.0)
+    else:
+        try:
+            staleness_window_s = float(staleness_window_minutes) * 60.0
+        except TypeError, ValueError:
+            staleness_window_s = float("nan")
+        if not (staleness_window_s > 0) or not math.isfinite(staleness_window_s):
+            print(
+                f"supervisor: usage staleness window minutes must resolve to a "
+                f"positive finite number of seconds, got {staleness_window_minutes} "
+                f"({staleness_window_s}s)",
                 file=sys.stderr,
             )
             return 1
@@ -1486,6 +1552,16 @@ def run_supervisor(
         # the run" posture would be defeated by a flood of identical
         # findings otherwise).
         usage_stale = False
+        # Story 82.5 (DW-FU-3-6-5): the sighting of the CURRENT `state.json`
+        # mtime -- when this supervisor first saw that distinct value, on the
+        # MONOTONIC clock. `judge_usage_freshness` ages the sample from it, so
+        # a wall-clock step or a suspend cannot flip a sample's freshness.
+        state_sighting: MtimeSighting | None = None
+        # Story 82.5 (DW-FU-3-6-8): the (story, metric) pairs whose per-story
+        # breach was already journaled -- a story that stays over its ceiling
+        # is reported ONCE, not every tick, and not again if its status
+        # bookkeeping is reset by a later story transition.
+        reported_story_breaches: set[tuple[str, str]] = set()
 
         # Story 3.7's own deferral-capture bookkeeping (FR-16): every story
         # key this run has already journaled a `"story-deferred"`
@@ -1739,6 +1815,10 @@ def run_supervisor(
 
         samples: list[Sample] = []
         last_acted_rung = LadderRung.NONE
+        # Story 82.5 (DW-FU-3-5-6): whether the PREVIOUS tick was unobservable
+        # (neither the pane nor the harness log could be read) -- gates the
+        # `idle-unobservable` WARN to once per dark EPISODE, never every tick.
+        idle_unobservable = False
         deferred = False
         # The `supervisor-detach` reason this loop will carry when it ends,
         # or `None` for the ordinary "the watched process exited" case
@@ -1858,13 +1938,16 @@ def run_supervisor(
             is a RISING edge over ``status_before`` (``_CEILING_RANK``,
             since ``CeilingStatus`` carries no intrinsic ordering).
             ``NONE``->``APPROACHING`` journals one ``"budget-warn"``
-            observation (``MRS-SUPV-004``); any transition INTO
-            ``BREACHED`` fires the terminal action -- mirroring the idle
-            ladder's own terminal ``defer`` above: one ``intent``/
+            observation (``MRS-SUPV-004``); a transition INTO ``BREACHED``
+            of a per-RUN ceiling fires the terminal action -- mirroring the
+            idle ladder's own terminal ``defer`` above: one ``intent``/
             ``outcome`` pair (kind ``"budget-stop"``), a best-effort
             ``HarnessPort.stop`` (tolerant of failure, registering
             ``MRS-SUPV-005``), and ending the tick loop via the SAME
             ``detach_reason``/``deferred`` mechanism the idle ladder uses.
+            A per-STORY breach (Story 82.5) journals one
+            ``"budget-story-breach"`` observation (``MRS-SUPV-014``) and
+            leaves the run going.
             A second ceiling breaching -- or merely approaching -- in the
             SAME tick after a DIFFERENT ceiling already breached is a no-op
             here (``deferred`` is already ``True``, checked BEFORE either
@@ -1925,6 +2008,43 @@ def run_supervisor(
             # now sits at the TOP of this function (see the docstring's own
             # review-finding note) -- this branch is only ever reached with
             # `deferred` still `False`.
+            if scope == "story":
+                # A per-STORY breach is an OBSERVATION, never a stop (Story
+                # 82.5, DW-FU-3-6-8). `HarnessPort.stop` ends the whole
+                # bmad-loop run -- bmad-loop exposes run-level stop, not a
+                # story-level skip, and this package may not invent one -- so
+                # answering one outlier story with it abandoned every
+                # remaining story of an overnight wave under a story-scoped
+                # detach reason. The per-RUN ceilings stay the binding
+                # constraint (a story that never ends still ends the run
+                # through them). One journal entry per (story, metric): the
+                # status trackers above already make this a rising edge, and
+                # the set additionally survives a story-transition reset.
+                breach_key = (current_story_key or "", metric)
+                if breach_key in reported_story_breaches:
+                    return
+                reported_story_breaches.add(breach_key)
+                breach_finding = Finding(
+                    code="MRS-SUPV-014",
+                    severity=Severity.WARN,
+                    message=(
+                        f"story budget ceiling breached: {scope}/{metric} at "
+                        f"{observed!r} (limit {limit!r}) -- the run continues; "
+                        "only a per-run ceiling stops it"
+                    ),
+                )
+                _append(
+                    _BUDGET_STORY_BREACH_KIND,
+                    {
+                        "scope": scope,
+                        "metric": metric,
+                        **story_context,
+                        "observed": observed,
+                        "limit": limit,
+                        "finding": breach_finding.to_json_dict(),
+                    },
+                )
+                return
             intent_id = _append_intent(
                 _BUDGET_STOP_KIND,
                 {
@@ -2234,17 +2354,39 @@ def run_supervisor(
                         story_wall_clock_status = new_story_wall_clock_status
 
                     # --- staleness gate for the TWO TOKEN ceilings only -----
-                    # A usage sample older than `threshold_s` (the SAME
-                    # threshold the idle ladder already computes, reused
-                    # rather than a second knob) is `stale-evidence`
-                    # (`MRS-SUPV-006`), never `unevaluable` (AD-32's own
-                    # amendment, F-24) -- journaled once per transition into
-                    # staleness, and both token ceilings are skipped for
-                    # this tick; the two wall-clock ceilings above remain
-                    # the binding constraint.
+                    # A usage sample older than `staleness_window_s` is
+                    # `stale-evidence` (`MRS-SUPV-006`), never `unevaluable`
+                    # (AD-32's own amendment, F-24) -- journaled once per
+                    # transition into staleness, and both token ceilings are
+                    # skipped for this tick; the two wall-clock ceilings
+                    # above remain the binding constraint.
+                    #
+                    # Story 82.5 changes BOTH halves of how that is judged
+                    # (DW-FU-3-6-5, DW-FU-3-6-6). The window is its own value,
+                    # no shorter than the rendered session timeout: bmad-loop
+                    # writes `state.json` only at session boundaries, and
+                    # reusing the idle threshold (25 minutes) here classified
+                    # every healthy sample `stale-evidence` from minute 25 of
+                    # a session that may legitimately run 180. And the age is
+                    # MONOTONIC: `moment.timestamp() - state_mtime` was a
+                    # wall-clock delta, so a forward NTP step or a suspend
+                    # marked a fresh sample stale and a backward step marked a
+                    # stale one fresh -- on exactly the evidence a hard
+                    # `harness.stop` rests on. `judge_usage_freshness` takes
+                    # the wall delta ONCE, at the mtime's first sighting, and
+                    # ages the sample on the monotonic clock thereafter; an
+                    # mtime ahead of the wall clock is `unevaluable`, never
+                    # the freshest value possible.
                     state_json_path = _bmad_loop_state_json_path(home, harness_run_id)
                     state_mtime = observer.mtime(state_json_path)
-                    is_stale = state_mtime is None or (moment.timestamp() - state_mtime) > threshold_s
+                    state_freshness, state_sighting = judge_usage_freshness(
+                        mtime=state_mtime,
+                        wall_now_s=moment.timestamp(),
+                        monotonic_now_s=monotonic_now,
+                        window_s=staleness_window_s,
+                        sighting=state_sighting,
+                    )
+                    is_stale = state_freshness is not UsageFreshness.FRESH
                     # Widened to ALSO cover `usage is None` with a fresh
                     # mtime (review finding): a torn concurrent write, a
                     # transient `bmad_loop` import failure, or any other
@@ -2267,7 +2409,9 @@ def run_supervisor(
                         pass
                     elif unevaluable_this_tick:
                         if not usage_stale:
-                            if is_stale:
+                            if state_freshness is UsageFreshness.UNEVALUABLE:
+                                reason = f"unevaluable (state.json mtime {state_mtime!r} cannot be judged against the wall clock)"
+                            elif is_stale:
                                 reason = f"stale (state.json mtime {state_mtime!r})"
                             else:
                                 reason = (
@@ -2342,6 +2486,17 @@ def run_supervisor(
                 # function itself.
                 pane_content = observer.pane_content(session_name)
                 log_mtime = observer.mtime(harness_log_path)
+                # One `Sample` per tick, built before any decision is made
+                # (Story 82.5): it knows which channels were OBSERVED, so
+                # "neither" is a first-class state (`tick_sample.observable`)
+                # rather than a pair of `None`s the pure core would compare
+                # equal and read as maximal idleness.
+                tick_sample = Sample(
+                    moment=moment,
+                    pane_content=pane_content,
+                    log_mtime=log_mtime,
+                    monotonic_s=monotonic_now,
+                )
                 if pane_content is not None:
                     # UNOBSERVABLE is not IDLE, keyed on the PANE (review
                     # finding -- and the defect three prior passes each
@@ -2385,14 +2540,7 @@ def run_supervisor(
                     # still producing nothing), and real output on the far
                     # side still re-arms by differing from the last sample
                     # actually observed.
-                    samples.append(
-                        Sample(
-                            moment=moment,
-                            pane_content=pane_content,
-                            log_mtime=log_mtime,
-                            monotonic_s=monotonic_now,
-                        )
-                    )
+                    samples.append(tick_sample)
                 # Bound the history (review finding): `evaluate_idle` needs
                 # only the most recent CHANGE point and the latest sample, so
                 # once this tick observed a change, everything before the
@@ -2403,10 +2551,14 @@ def run_supervisor(
                 # CHANGE keeps the semantics identical: the retained pair
                 # still pins the same reference moment `idle_since` would
                 # have found in the full history.
-                if len(samples) > 2 and (
-                    samples[-1].pane_content != samples[-2].pane_content
-                    or samples[-1].log_mtime != samples[-2].log_mtime
-                ):
+                #
+                # The change test is `shows_fresh_output` -- the SAME predicate
+                # `evaluate_idle`'s scan applies (Story 82.5, DW-FU-3-5-9) --
+                # never a raw comparison of its own: a trim that treated a
+                # redrawing counter as a change while the scan did not (or the
+                # reverse) would pin a different anchor than the full history
+                # does, which is the one thing the trim promises not to do.
+                if len(samples) > 2 and shows_fresh_output(samples[-2], samples[-1]):
                     del samples[:-2]
                 elif len(samples) > 3:
                     # The NO-change half of the same bound (review finding):
@@ -2426,7 +2578,47 @@ def run_supervisor(
                     # sample still supplies the elapsed-time endpoint.
                     del samples[2:-1]
 
-                if pane_content is None or not samples:
+                if not tick_sample.observable:
+                    # NEITHER channel was observed (Story 82.5, DW-FU-3-5-6):
+                    # the observer is broken, not the session idle -- a
+                    # missing `tmux`, a permissions error, a log that is
+                    # transiently absent. The tick is unobservable, which is
+                    # not idleness: nothing is appended (the append guard above
+                    # already drops it), the rung is HELD rather than reset,
+                    # and the condition is journaled once per dark episode.
+                    #
+                    # HELD, not `NONE` (the pane-dark branch below resets,
+                    # exactly as it always did): resetting
+                    # `last_acted_rung` to `NONE` made the first observable
+                    # tick after a dark gap re-fire a nudge the ladder had
+                    # already sent. `evaluate_idle` is asked rather than the
+                    # hold being spelled out here, so the pure core remains
+                    # the one place that decides what an unobservable sample
+                    # means.
+                    if not idle_unobservable:
+                        idle_unobservable = True
+                        unobservable_finding = Finding(
+                            code="MRS-SUPV-015",
+                            severity=Severity.WARN,
+                            message=(
+                                f"neither the pane of session {session_name!r} nor "
+                                f"the harness log {str(harness_log_path)!r} could be "
+                                "observed -- the idle ladder holds its current rung "
+                                f"({last_acted_rung.value}) and takes no action until "
+                                "an observation succeeds"
+                            ),
+                        )
+                        _append(
+                            _IDLE_UNOBSERVABLE_KIND,
+                            {
+                                "session": session_name,
+                                "held_rung": last_acted_rung.value,
+                                "finding": unobservable_finding.to_json_dict(),
+                            },
+                        )
+                    rung = evaluate_idle([tick_sample], threshold_s=threshold_s, held=last_acted_rung)
+                elif pane_content is None or not samples:
+                    idle_unobservable = False
                     # This tick could not observe the run, so it has no
                     # evidence to act on -- see the append guard above for
                     # why the PANE alone answers that question and why the
@@ -2441,7 +2633,8 @@ def run_supervisor(
                     # going silent in the journal.
                     rung = LadderRung.NONE
                 else:
-                    rung = evaluate_idle(samples, threshold_s=threshold_s)
+                    idle_unobservable = False
+                    rung = evaluate_idle(samples, threshold_s=threshold_s, held=last_acted_rung)
 
                 # One rung per tick, never a jump (review finding): the
                 # ladder is a FIXED 3-rung sequence (this story's own Never
@@ -2457,7 +2650,13 @@ def run_supervisor(
                 if rung_index(rung) > rung_index(last_acted_rung) + 1:
                     rung = rung_at(rung_index(last_acted_rung) + 1)
 
-                if watched_alive and not deferred and samples and rung_index(rung) >= rung_index(LadderRung.NUDGE):
+                if (
+                    watched_alive
+                    and not deferred
+                    and samples
+                    and tick_sample.observable
+                    and rung_index(rung) >= rung_index(LadderRung.NUDGE)
+                ):
                     story_label = _feed_key_form(current_story_key) if current_story_key is not None else slug
                     commit_worktree_checkpoint(
                         vcs,
@@ -3112,7 +3311,9 @@ def run_supervisor(
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse ``sys.argv`` (or an injected ``argv`` for testing) into
-    ``run_supervisor``'s ten positional arguments and relay its exit code.
+    ``run_supervisor``'s ten positional arguments -- plus the optional
+    eleventh, the usage-staleness window (Story 82.5) -- and relay its exit
+    code.
     This is the ONLY place this module reads its own command line -- AD-9's
     "reads argv once at start and touches no other externally-writable
     input for its own control flow" is literal here: no further read of
@@ -3138,13 +3339,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 1
     args = list(sys.argv[1:]) if argv is None else list(argv)
-    if len(args) != 10 or not all(isinstance(arg, str) for arg in args):
+    if len(args) not in (10, 11) or not all(isinstance(arg, str) for arg in args):
         print(
             "usage: python -m pyforge.marshal.supervisor <home> <slug> "
             "<run_id> <watched_pid> <log_path> <idle_threshold_minutes> "
             "<max_tokens_per_story> <max_tokens_per_run> "
             "<max_wall_clock_minutes_per_story> "
-            "<max_wall_clock_minutes_per_run>",
+            "<max_wall_clock_minutes_per_run> "
+            "[<usage_staleness_window_minutes>]",
             file=sys.stderr,
         )
         return 1
@@ -3159,7 +3361,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         max_tokens_per_run_text,
         max_wall_clock_minutes_per_story_text,
         max_wall_clock_minutes_per_run_text,
+        *optional_args,
     ) = args
+    staleness_window_text = optional_args[0] if optional_args else None
     # `home` is the ROOT of the very path `slug` and `run_id` are guarded as
     # segments of, and was the one argv element validated nowhere (review
     # finding). A relative value resolves the journal against this process's
@@ -3290,6 +3494,39 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return 1
         budget_values[_name] = _value
+    # Story 82.5's optional eleventh value, guarded exactly like the others.
+    # Absent, `run_supervisor` is called with its ten positionals alone and
+    # derives the window itself -- a caller that predates the eleventh value
+    # (and a launcher older than this supervisor) keeps working.
+    if staleness_window_text is not None:
+        try:
+            staleness_window_minutes = float(staleness_window_text)
+        except ValueError:
+            print(
+                f"supervisor: invalid usage staleness window minutes {staleness_window_text!r}",
+                file=sys.stderr,
+            )
+            return 1
+        if not (staleness_window_minutes > 0) or not math.isfinite(staleness_window_minutes):
+            print(
+                f"supervisor: usage staleness window minutes must be a positive finite number, "
+                f"got {staleness_window_minutes}",
+                file=sys.stderr,
+            )
+            return 1
+        return run_supervisor(
+            Path(home),
+            slug,
+            run_id,
+            watched_pid,
+            Path(log_path_text),
+            idle_threshold_minutes,
+            budget_values["max_tokens_per_story"],
+            budget_values["max_tokens_per_run"],
+            budget_values["max_wall_clock_minutes_per_story"],
+            budget_values["max_wall_clock_minutes_per_run"],
+            staleness_window_minutes,
+        )
     return run_supervisor(
         Path(home),
         slug,

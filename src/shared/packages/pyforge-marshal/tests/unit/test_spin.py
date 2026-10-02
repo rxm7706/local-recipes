@@ -1459,6 +1459,11 @@ def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
         "500000000",
         "1440",
         "2880",
+        # Story 82.5's 11th positional: the usage-staleness window,
+        # `max(idle_threshold_minutes, RENDERED_SESSION_TIMEOUT_MIN)` -- the
+        # rendered 180-minute session timeout, not the 25-minute idle
+        # threshold that used to double as the window.
+        "180",
     ]
     assert call["cwd"] == home
     assert call["log_path"].name == "supervisor.log"
@@ -1473,9 +1478,10 @@ def test_spin_introduces_no_new_argv_surface_for_durability(home):
     interval-watcher fallback) is wired entirely inside
     ``run_supervisor``'s own defaults (station branch derives from the
     already-passed ``slug`` positional; the interval cadence reuses the
-    already-passed ``idle_threshold_minutes`` positional) -- the argv this
-    command spawns the supervisor with stays EXACTLY 10 positionals, the
-    same shape Story 3.6 last grew it to."""
+    already-passed ``idle_threshold_minutes`` positional) -- durability adds
+    NO positional. The argv this command spawns the supervisor with stays
+    EXACTLY 11 positionals, the shape Story 82.5 last grew it to (its optional
+    usage-staleness window)."""
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -1485,8 +1491,50 @@ def test_spin_introduces_no_new_argv_surface_for_durability(home):
 
     assert exit_code == EXIT_OK
     [call] = process.spawn_calls
-    # 3 fixed tokens (python, -m, module) + 10 positionals.
-    assert len(call["argv"]) == 13
+    # 3 fixed tokens (python, -m, module) + 11 positionals.
+    assert len(call["argv"]) == 14
+
+
+def test_spin_passes_the_idle_threshold_as_the_staleness_window_when_it_exceeds_the_session_timeout(
+    home, tmp_path, monkeypatch
+):
+    """Story 82.5 (DW-FU-3-6-6): the window is ``max(idle_threshold_minutes,
+    RENDERED_SESSION_TIMEOUT_MIN)`` -- an operator who tunes the idle ladder
+    PAST the session timeout does not get a shorter staleness window than the
+    ladder window."""
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text("idle_threshold_minutes = 240\n", encoding="utf-8")
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
+    fs = FakeFs(dirs={home})
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=FakeHarness(), process=process)
+
+    assert exit_code == EXIT_OK
+    [call] = process.spawn_calls
+    assert call["argv"][8] == "240"  # the idle ladder's own window
+    assert call["argv"][13] == "240"  # the staleness window follows it
+
+
+def test_spin_floors_the_staleness_window_at_the_session_timeout_for_a_short_idle_threshold(
+    home, tmp_path, monkeypatch
+):
+    """The 25-minute default (and anything shorter) used to double as the
+    window, leaving both token ceilings dark from minute 25 of a session that
+    may run 180: the window the supervisor is spawned with is floored at the
+    rendered session timeout while the idle ladder keeps its own threshold."""
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text("idle_threshold_minutes = 0.5\n", encoding="utf-8")
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
+    fs = FakeFs(dirs={home})
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=FakeHarness(), process=process)
+
+    assert exit_code == EXIT_OK
+    [call] = process.spawn_calls
+    assert call["argv"][8] == "0.5"
+    assert call["argv"][13] == str(spin_module.RENDERED_SESSION_TIMEOUT_MIN)
 
 
 def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding(home, tmp_path, monkeypatch, capsys):
@@ -1590,7 +1638,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     inert exit 0 rather than an error.
 
     This drives the argv ``run_spin`` genuinely produced through the
-    supervisor's OWN ``main()`` and asserts the ten values it recovers
+    supervisor's OWN ``main()`` and asserts the eleven values it recovers
     compose the SAME run directory ``run_spin`` wrote its journal into.
     ``run_supervisor`` is stubbed out, so this stays pure parsing --
     ``test_supervisor_run_path_agreement.py`` pins the path helpers
@@ -1614,7 +1662,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     # argv launches must find its own run-launch entry in.
     journal_path = fs.appended_lines[0][0]
 
-    recovered: list[tuple[Path, str, str, int, Path, float, float, float, float, float]] = []
+    recovered: list[tuple[Path, str, str, int, Path, float, float, float, float, float, float]] = []
 
     def _fake_run_supervisor(
         home,
@@ -1627,6 +1675,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
         max_tokens_per_run,
         max_wall_clock_minutes_per_story,
         max_wall_clock_minutes_per_run,
+        staleness_window_minutes,
     ):
         recovered.append(
             (
@@ -1640,6 +1689,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
                 max_tokens_per_run,
                 max_wall_clock_minutes_per_story,
                 max_wall_clock_minutes_per_run,
+                staleness_window_minutes,
             )
         )
         return 0
@@ -1663,6 +1713,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
             got_max_tokens_per_run,
             got_max_wall_clock_minutes_per_story,
             got_max_wall_clock_minutes_per_run,
+            got_staleness_window_minutes,
         )
     ] = recovered
     assert supervisor_main._run_dir(got_home, got_slug, got_run_id) / supervisor_main._JOURNAL_FILENAME == journal_path
@@ -1673,6 +1724,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     assert got_max_tokens_per_run == 500_000_000.0
     assert got_max_wall_clock_minutes_per_story == 1_440.0
     assert got_max_wall_clock_minutes_per_run == 2_880.0
+    assert got_staleness_window_minutes == 180.0
 
 
 def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spin(home):

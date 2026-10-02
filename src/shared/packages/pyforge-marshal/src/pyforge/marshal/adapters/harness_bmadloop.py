@@ -1032,6 +1032,18 @@ def attempt_spin_wire_layer(
 # never user input).
 ADAPTER_REVIEW_MODEL_STOCK_DEFAULT: str = tomlkit.parse(_POLICY_TEMPLATE)["adapter"]["review"]["model"]
 
+# Story 82.5 (DW-FU-3-6-6) -- the longest a single bmad-loop session may run,
+# in minutes: the rendered policy's ``[limits].session_timeout_min``. bmad-loop
+# rewrites ``state.json`` only at session boundaries, so the supervisor's
+# usage-staleness window (``supervisor/__main__.py``, ``cli/spin.py``) may not
+# be shorter than this or both token ceilings go dark partway through a
+# perfectly healthy session. ``_POLICY_TEMPLATE`` is the ONE source: the key is
+# a hardcoded repo-wide override that ``render_policy_toml`` never overwrites
+# from ``EffectivePolicy`` (see that function's own docstring), so deriving it
+# here, exactly as ``ADAPTER_REVIEW_MODEL_STOCK_DEFAULT`` above is derived,
+# cannot desync from the file the harness actually reads.
+RENDERED_SESSION_TIMEOUT_MIN: int = int(tomlkit.parse(_POLICY_TEMPLATE)["limits"]["session_timeout_min"])
+
 
 def write_policy_document(doc: tomlkit.TOMLDocument, loop_home: Path) -> Path:
     """Story 3.12's own narrow sibling to ``write_policy_toml`` (retry

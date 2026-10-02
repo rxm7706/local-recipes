@@ -107,6 +107,15 @@ a rendered string form (review finding -- matching on the rendered forms
 made both halves unreachable on real data; see ``_prior_attempt_keys`` and
 ``_large_spec_bytes``).
 
+Story 82.5 (DW-FU-3-6-6) grows the argv once more, 10 -> 11, with one OPTIONAL
+trailing value: the usage-staleness window in minutes, ``max(idle_threshold_
+minutes, RENDERED_SESSION_TIMEOUT_MIN)``. bmad-loop rewrites ``state.json``
+only at session boundaries and the rendered policy lets a session run
+``session_timeout_min`` (180) minutes, so reusing the 25-minute idle threshold
+as the window left both token ceilings dark from minute 25 of any session. The
+floor is derived from the rendered policy template itself, never a second
+literal.
+
 **``--foreground``.** Calls the synchronous, stdio-inheriting
 ``HarnessPort.run_foreground`` INSTEAD of the detached ``spin`` path and
 relays its result, bypassing the envelope entirely (mirrors
@@ -277,6 +286,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
     ADAPTER_REVIEW_MODEL_STOCK_DEFAULT,
+    RENDERED_SESSION_TIMEOUT_MIN,
     HarnessError,
     HarnessPolicyWriteError,
     attempt_spin_wire_layer,
@@ -1270,6 +1280,11 @@ def _spawn_supervisor_sidecar(
     max_tokens_per_run = effective_policy.seed_view()["max_tokens_per_run"].value
     max_wall_clock_minutes_per_story = effective_policy.seed_view()["max_wall_clock_minutes_per_story"].value
     max_wall_clock_minutes_per_run = effective_policy.seed_view()["max_wall_clock_minutes_per_run"].value
+    # Story 82.5 (DW-FU-3-6-6): the usage-staleness window is its OWN value --
+    # never shorter than the longest session the rendered policy allows, since
+    # bmad-loop writes `state.json` only at session boundaries. The 11th argv
+    # positional; the idle threshold stays the idle ladder's window alone.
+    usage_staleness_window_minutes = max(idle_threshold_minutes, RENDERED_SESSION_TIMEOUT_MIN)
 
     # Story 28.6 (CAP-8): sidecar the supervisor reads once at attach --
     # threshold + wire layer from the same composition site as dispatch.
@@ -1318,6 +1333,7 @@ def _spawn_supervisor_sidecar(
                 str(max_tokens_per_run),
                 str(max_wall_clock_minutes_per_story),
                 str(max_wall_clock_minutes_per_run),
+                str(usage_staleness_window_minutes),
             ],
             cwd=home,
             log_path=supervisor_log,

@@ -223,13 +223,18 @@ class _ExitTrackingProcess(FakeProcess):
         return self.last_alive
 
 
+# The instant every fake clock below starts at -- shared so `FakeObserver`'s
+# default `state.json` mtime can name "written the moment the run began".
+_CLOCK_START = datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
+
+
 class FakeClock:
     def __init__(self) -> None:
         self.calls = 0
 
     def now(self) -> datetime:
         self.calls += 1
-        return datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
+        return _CLOCK_START
 
     def monotonic(self) -> float:
         # A frozen clock's monotonic reading is frozen too -- this fake
@@ -250,7 +255,7 @@ class AdvancingClock:
     once per tick and every read within that tick happens back-to-back."""
 
     def __init__(self, *, start: datetime | None = None) -> None:
-        self._now = start if start is not None else datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
+        self._now = start if start is not None else _CLOCK_START
         self.calls = 0
         # Advanced in LOCKSTEP with `_now` by default -- an ordinary host
         # where nothing suspends the process and nothing steps the wall
@@ -295,14 +300,17 @@ class FakeObserver:
         # are two DIFFERENT paths in the same tick, so sharing one counter/
         # constant between them would make every pre-existing test's
         # `mtime_calls`/`mtime_sequence` assertion (indexed by call count)
-        # silently start counting the WRONG query. Defaults to `float("inf")`
-        # -- an mtime infinitely in the future can never be "stale" relative
-        # to any `moment` a test's clock produces, so every pre-existing
-        # test (none of which configures this) sees the budget token
-        # ceilings stay perpetually fresh and unexercised, exactly like the
-        # large default ceiling constants above keep them at
-        # `CeilingStatus.NONE`.
-        state_json_mtime: float | None = float("inf"),
+        # silently start counting the WRONG query. Defaults to the fake
+        # clocks' shared START INSTANT (`_CLOCK_START`) -- a file written the
+        # moment the run began, so it is fresh for as long as a test's clock
+        # keeps it inside the staleness window, and every pre-existing test
+        # (none of which configures this) sees the budget token ceilings stay
+        # perpetually fresh and unexercised, exactly like the large default
+        # ceiling constants above keep them at `CeilingStatus.NONE`. NOT
+        # `float("inf")` any more (Story 82.5): an mtime ahead of the wall
+        # clock is now `unevaluable`, never fresh, so the old stand-in for
+        # "never stale" would skip both token ceilings with an MRS-SUPV-006.
+        state_json_mtime: float | None = _CLOCK_START.timestamp(),
     ) -> None:
         self.pane = pane
         self.pane_sequence = pane_sequence
@@ -625,6 +633,22 @@ def _harness_log_path() -> Path:
 
 def _state_json_path() -> Path:
     return supervisor_main._bmad_loop_state_json_path(_HOME, _HARNESS_RUN_ID)
+
+
+def _usage(story_key: str | None, story_tokens: float | None, run_tokens: float) -> UsageSnapshot:
+    """A ``UsageSnapshot`` over this module's one harness run -- the three
+    values every budget test varies and nothing else."""
+    return UsageSnapshot(
+        story_key=story_key,
+        story_weighted_tokens=story_tokens,
+        run_weighted_tokens=run_tokens,
+        sample_path=_state_json_path(),
+    )
+
+
+def _journal_entries(fs: FakeFs) -> list[dict[str, object]]:
+    """Every journal line the supervisor appended, parsed."""
+    return [json.loads(line) for _, line, _ in fs.appended_lines]
 
 
 # --- normal attach: attach, heartbeat until the harness exits, then detach ----
@@ -2995,20 +3019,22 @@ def test_run_wall_clock_ceiling_breach_with_a_failed_stop_still_detaches():
     assert entries[-1]["payload"]["reason"] == "budget-run-wall_clock-exceeded"
 
 
-def test_story_wall_clock_ceiling_breach_uses_the_story_scope_reason():
-    """The per-story sibling of the two tests above -- ``harness_run_id``
-    must resolve a current story (via ``usage_snapshot``) before the
-    per-story wall-clock ceiling has anything to measure from."""
+def test_story_wall_clock_ceiling_breach_is_observed_and_the_run_continues():
+    """Story 82.5 (DW-FU-3-6-8): the per-story sibling of the per-run
+    wall-clock breach above no longer stops anything. ``HarnessPort.stop``
+    ends the WHOLE bmad-loop run, so answering one outlier story with it
+    abandoned every remaining story of an overnight wave under a
+    story-scoped reason. The breach is journaled once, naming the story with
+    its observed and limit values, and the tick loop carries on -- only a
+    per-RUN ceiling still stops the run
+    (``test_run_wall_clock_ceiling_breach_stops_and_detaches``).
+    ``harness_run_id`` must resolve a current story (via ``usage_snapshot``)
+    before the per-story wall-clock ceiling has anything to measure from."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
-    harness.usage_snapshot_result = UsageSnapshot(
-        story_key="3.6",
-        story_weighted_tokens=100,
-        run_weighted_tokens=100,
-        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
-    )
+    harness.usage_snapshot_result = _usage("3.6", 100, 100)
 
     rc = run_supervisor(
         _HOME,
@@ -3030,29 +3056,82 @@ def test_story_wall_clock_ceiling_breach_uses_the_story_scope_reason():
     )
 
     assert rc == 0
-    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
-    assert stop_intent["payload"]["scope"] == "story"
-    assert stop_intent["payload"]["metric"] == "wall_clock"
-    assert entries[-1]["payload"]["reason"] == "budget-story-wall_clock-exceeded"
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
+    assert "budget-stop" not in kinds
+    assert harness.stop_calls == []
+    [breach] = [e for e in entries if e["kind"] == "budget-story-breach"]
+    assert breach["phase"] == "observation"
+    assert breach["payload"]["scope"] == "story"
+    assert breach["payload"]["metric"] == "wall_clock"
+    assert breach["payload"]["story_key"] == "3.6"
+    assert breach["payload"]["observed"] >= 1.5
+    assert breach["payload"]["limit"] == 1.5
+    assert breach["payload"]["finding"]["code"] == "MRS-SUPV-014"
+    assert breach["payload"]["finding"]["severity"] == "warn"
+    # The loop carried on past the breach and ended its own way.
+    assert kinds[kinds.index("budget-story-breach") :].count("supervisor-heartbeat") >= 3
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
 
 
-def test_token_ceiling_breach_on_a_fresh_sample():
-    """I/O matrix: "Per-story token ceiling, fresh sample" -- a resolved
-    current story, ``state.json`` mtime within ``idle_threshold_minutes`` ->
-    weighted per-story tokens compared to ``max_tokens_per_story``; breach
-    stops the run exactly like a wall-clock breach does."""
+def test_run_token_ceiling_breach_on_a_fresh_sample():
+    """I/O matrix: "Per-run token ceiling, fresh sample" -- a resolved
+    ``state.json`` mtime inside the staleness window -> weighted per-run
+    tokens compared to ``max_tokens_per_run``; a breach stops the run exactly
+    like a wall-clock breach does. (The per-STORY token breach no longer
+    stops it -- see
+    ``test_story_token_ceiling_breach_is_observed_and_the_run_continues``.)"""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
-    # `state_json_mtime` defaults to `float("inf")` -- always fresh.
+    # `state_json_mtime` defaults to the clock's start instant -- fresh.
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
-    harness.usage_snapshot_result = UsageSnapshot(
-        story_key="3.6",
-        story_weighted_tokens=150,
-        run_weighted_tokens=150,
-        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
+    harness.usage_snapshot_result = _usage("3.6", 150, 150)
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        100.0,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["payload"]["scope"] == "run"
+    assert stop_intent["payload"]["metric"] == "tokens"
+    assert stop_intent["payload"]["observed"] == 150
+    assert stop_intent["payload"]["limit"] == 100.0
+    assert "story_key" not in stop_intent["payload"]
+    assert entries[-1]["payload"]["reason"] == "budget-run-tokens-exceeded"
+    # The state.json staleness query itself was made (path-aware, separate
+    # from the idle ladder's own harness.log query).
+    assert observer.state_json_mtime_calls
+
+
+def test_story_token_ceiling_breach_is_observed_and_the_run_continues():
+    """Story 82.5 (DW-FU-3-6-8): a per-story TOKEN breach on a fresh sample
+    is journaled as a story-scoped observation -- the story, the metric, the
+    observed and the limit -- and the run is left going. Reported once, not
+    once per tick, although the story stays over its ceiling for the rest of
+    the run."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.usage_snapshot_result = _usage("3.6", 150, 150)
 
     rc = run_supervisor(
         _HOME,
@@ -3074,21 +3153,28 @@ def test_token_ceiling_breach_on_a_fresh_sample():
     )
 
     assert rc == 0
-    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
-    assert stop_intent["payload"]["scope"] == "story"
-    assert stop_intent["payload"]["metric"] == "tokens"
-    assert stop_intent["payload"]["observed"] == 150
-    assert stop_intent["payload"]["limit"] == 100.0
-    assert entries[-1]["payload"]["reason"] == "budget-story-tokens-exceeded"
-    # The state.json staleness query itself was made (path-aware, separate
-    # from the idle ladder's own harness.log query).
-    assert observer.state_json_mtime_calls
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
+    assert "budget-stop" not in kinds
+    assert harness.stop_calls == []
+    [breach] = [e for e in entries if e["kind"] == "budget-story-breach"]
+    assert breach["payload"]["scope"] == "story"
+    assert breach["payload"]["metric"] == "tokens"
+    assert breach["payload"]["story_key"] == "3.6"
+    assert breach["payload"]["observed"] == 150
+    assert breach["payload"]["limit"] == 100.0
+    assert breach["payload"]["finding"]["code"] == "MRS-SUPV-014"
+    # Four live ticks, every one over the ceiling (plus the tick that finds
+    # the watched process gone) -- and still one breach entry.
+    assert kinds.count("supervisor-heartbeat") == 5
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
 
 
-def test_compression_escalation_journals_before_story_budget_stop_on_same_tick():
-    """Story 28.6 (CAP-8): ``compression-escalation`` strictly precedes
-    ``budget-stop`` when both fire on the same per-story token tick."""
+def test_compression_escalation_journals_before_the_story_breach_on_same_tick():
+    """Story 28.6 (CAP-8): ``compression-escalation`` strictly precedes the
+    budget action on the same per-story token tick. Since Story 82.5 that
+    action is the per-story ``budget-story-breach`` observation -- a per-story
+    breach no longer stops the run -- and the ordering is unchanged."""
     run_dir = _run_dir()
     fs = FakeFs(
         journal_text=_launch_outcome_line("acme-run-1") + "\n",
@@ -3106,12 +3192,7 @@ def test_compression_escalation_journals_before_story_budget_stop_on_same_tick()
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
-    harness.usage_snapshot_result = UsageSnapshot(
-        story_key="3.6",
-        story_weighted_tokens=100.0,
-        run_weighted_tokens=100.0,
-        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
-    )
+    harness.usage_snapshot_result = _usage("3.6", 100.0, 100.0)
 
     rc = run_supervisor(
         _HOME,
@@ -3133,11 +3214,12 @@ def test_compression_escalation_journals_before_story_budget_stop_on_same_tick()
     )
 
     assert rc == 0
-    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    kinds = [entry["kind"] for entry in entries]
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
     assert "compression-escalation" in kinds
-    assert "budget-stop" in kinds
-    assert kinds.index("compression-escalation") < kinds.index("budget-stop")
+    assert "budget-story-breach" in kinds
+    assert kinds.index("compression-escalation") < kinds.index("budget-story-breach")
+    assert harness.stop_calls == []
     comp_entry = next(e for e in entries if e["kind"] == "compression-escalation")
     assert comp_entry["payload"]["threshold"] == 0.8
     assert comp_entry["payload"]["declared_aggressiveness"] == "low"
@@ -3213,7 +3295,7 @@ def test_usage_read_failure_with_a_fresh_mtime_also_journals_stale_evidence():
     wall-clock remains binding -- is identical either way."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
-    # `state_json_mtime` defaults to `float("inf")` -- always FRESH.
+    # `state_json_mtime` defaults to the clock's start instant -- always FRESH.
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
     harness.usage_snapshot_result = None  # the read itself failed
@@ -3402,12 +3484,11 @@ def test_budget_usage_journals_the_canonical_feed_key_not_the_harness_slug():
     assert usage_entries[-1]["payload"]["story_key"] == "3.6"
 
 
-def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
+def test_a_per_story_breach_names_the_story_in_its_warn_and_breach_payloads():
     """REGRESSION (review finding): a ``scope="story"`` transition journaled
     ``scope``/``metric``/``observed``/``limit`` and nothing else, so the
-    ``budget-warn``/``budget-stop`` pair -- and the
-    ``budget-story-tokens-exceeded`` detach reason derived from it -- said
-    WHAT was exceeded but never WHICH story exceeded it.
+    ``budget-warn`` and the breach entry said WHAT was exceeded but never
+    WHICH story exceeded it.
 
     The only per-story identity anywhere in the run's evidence was the
     adjacent ``budget-usage`` entry, so a consumer building FR-13's
@@ -3416,20 +3497,15 @@ def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
 
     The key is journaled in ``render_feed_key``'s dot form for the same
     reason ``budget-usage`` is: one story must never appear under two
-    spellings in one run's evidence."""
+    spellings in one run's evidence. (Since Story 82.5 the breach is a
+    ``budget-story-breach`` observation, not a ``budget-stop`` pair.)"""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
-    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
-    harness.usage_snapshot_sequence = [
-        UsageSnapshot(
-            story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
-            story_weighted_tokens=1_000,
-            run_weighted_tokens=1_000,
-            sample_path=sample_path,
-        ),
-    ]
+    story = "3-6-budget-ceilings-and-the-heaviest-story-advisory"
+    # 450 / 500 is approaching (>= 0.8), then 1_000 breaches.
+    harness.usage_snapshot_sequence = [_usage(story, 450, 450), _usage(story, 1_000, 1_000)]
 
     rc = run_supervisor(
         _HOME,
@@ -3443,7 +3519,7 @@ def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
         _MAX_WALL_CLOCK_MINUTES_PER_STORY,
         _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs,
-        process=FakeProcess(alive_for=3),
+        process=FakeProcess(alive_for=4),
         clock=clock,
         observer=observer,
         harness=harness,
@@ -3451,12 +3527,15 @@ def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
     )
 
     assert rc == 0
-    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
-    assert stop_intent["payload"]["scope"] == "story"
-    assert stop_intent["payload"]["metric"] == "tokens"
-    assert stop_intent["payload"]["story_key"] == "3.6"
-    assert stop_outcome["payload"]["story_key"] == "3.6"
+    entries = _journal_entries(fs)
+    [warn] = [e for e in entries if e["kind"] == "budget-warn"]
+    [breach] = [e for e in entries if e["kind"] == "budget-story-breach"]
+    for entry in (warn, breach):
+        assert entry["payload"]["scope"] == "story"
+        assert entry["payload"]["metric"] == "tokens"
+        assert entry["payload"]["story_key"] == "3.6"
+    assert warn["payload"]["observed"] == 450
+    assert breach["payload"]["observed"] == 1_000
 
 
 def test_a_per_run_breach_never_attributes_itself_to_a_story():
@@ -6197,6 +6276,574 @@ def test_default_vcs_construction_never_crashes_when_no_boundary_or_interval_fir
     assert rc == 0
 
 
+# =============================================================================
+# Story 82.5 -- budget and idle signals judge staleness monotonically, keep a
+# story's breach story-scoped, and read only real idleness (DW-FU-3-6-5/6/8,
+# DW-FU-3-5-6/9). One failing-on-revert test per fix.
+# =============================================================================
+
+
+def _supervise_budget(
+    fs: FakeFs,
+    *,
+    clock: AdvancingClock,
+    observer: FakeObserver,
+    harness: FakeHarness,
+    alive_for: int,
+    idle_minutes: float = _IDLE_THRESHOLD_MINUTES,
+    run_tokens: float = _MAX_TOKENS_PER_RUN,
+    staleness_window_minutes: float | None = None,
+    sleep=None,
+) -> int:
+    """``run_supervisor`` with this module's inert ceilings, varying only
+    what the Story 82.5 tests vary. ``staleness_window_minutes`` is passed
+    only when given, so the omitted-window default is exercised too."""
+    kwargs: dict[str, object] = {}
+    if staleness_window_minutes is not None:
+        kwargs["staleness_window_minutes"] = staleness_window_minutes
+    return run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        idle_minutes,
+        _MAX_TOKENS_PER_STORY,
+        run_tokens,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=alive_for),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=sleep if sleep is not None else clock.sleep,
+        **kwargs,
+    )
+
+
+def test_a_usage_sample_first_seen_forty_minutes_ago_is_usable_under_the_session_timeout():
+    """AC 1 (DW-FU-3-6-6). bmad-loop writes ``state.json`` only at session
+    boundaries and the rendered policy lets a session run 180 minutes, but the
+    staleness window used to be the 25-minute idle threshold -- so from minute
+    25 of any healthy session every sample was ``stale-evidence``, both token
+    ceilings were skipped, and ``MRS-SUPV-006`` was journaled.
+
+    The per-run token ceiling here is crossed on tick 41, when the sample's
+    mtime was first seen 40 minutes earlier: it must be judged usable (and so
+    stop the run) rather than skipped. The log mtime moves every tick, so the
+    idle ladder stays at rest for the whole scenario."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle", mtime_sequence=[1.0 + tick for tick in range(100)])
+    harness = FakeHarness()
+    harness.usage_snapshot_sequence = [_usage("3.6", 10, 10)] * 40 + [_usage("3.6", 10, 500)]
+
+    rc = _supervise_budget(fs, clock=clock, observer=observer, harness=harness, alive_for=80, run_tokens=100.0)
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
+    assert "budget-usage-stale" not in kinds, "a 40-minute-old sample is inside a 180-minute window"
+    stop_intent, _stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["payload"]["scope"] == "run"
+    assert stop_intent["payload"]["metric"] == "tokens"
+    assert entries[-1]["payload"]["reason"] == "budget-run-tokens-exceeded"
+
+
+def test_an_explicit_staleness_window_is_honoured_over_the_session_timeout_floor():
+    """The window is its own value (Story 82.5): a caller that passes one gets
+    exactly that window. The scenario of the test above under a 30-minute
+    window goes stale on tick 31, journals ``MRS-SUPV-006`` ONCE, and the
+    token ceiling that would have fired on tick 41 stays skipped."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle", mtime_sequence=[1.0 + tick for tick in range(100)])
+    harness = FakeHarness()
+    harness.usage_snapshot_sequence = [_usage("3.6", 10, 10)] * 40 + [_usage("3.6", 10, 500)]
+
+    rc = _supervise_budget(
+        fs,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        alive_for=50,
+        run_tokens=100.0,
+        staleness_window_minutes=30.0,
+    )
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
+    assert kinds.count("budget-usage-stale") == 1
+    stale = next(e for e in entries if e["kind"] == "budget-usage-stale")
+    assert stale["payload"]["finding"]["code"] == "MRS-SUPV-006"
+    assert "budget-stop" not in kinds
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_forward_wall_clock_step_does_not_make_a_fresh_usage_sample_stale():
+    """AC 2 (DW-FU-3-6-5), forward direction. The staleness gate used to
+    subtract a wall-clock mtime from the wall-clock ``moment``, so an NTP step
+    or a suspend marked a genuinely fresh sample stale and both token ceilings
+    went dark. The wall clock steps four hours forward between ticks 2 and 3
+    with ``state.json`` unchanged; the per-run token ceiling crossed on tick 5
+    must still be evaluated."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.usage_snapshot_sequence = [_usage("3.6", 10, 10)] * 4 + [_usage("3.6", 10, 500)]
+    ticks = {"n": 0}
+
+    def _sleep_then_step_the_wall_clock(seconds: float) -> None:
+        clock.sleep(seconds)
+        ticks["n"] += 1
+        if ticks["n"] == 2:
+            clock.jump_wall_clock(4 * 3600.0)
+
+    rc = _supervise_budget(
+        fs,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        alive_for=8,
+        run_tokens=100.0,
+        sleep=_sleep_then_step_the_wall_clock,
+    )
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
+    assert "budget-usage-stale" not in kinds, "a wall-clock step is not elapsed time"
+    assert any(e["kind"] == "budget-stop" for e in entries), "the token ceiling was still evaluated"
+    assert entries[-1]["payload"]["reason"] == "budget-run-tokens-exceeded"
+
+
+def test_a_backward_wall_clock_step_does_not_make_a_stale_usage_sample_fresh():
+    """AC 2 (DW-FU-3-6-5), backward direction. A ``state.json`` twelve hours
+    old is stale the moment it is first seen. Stepping the wall clock a day
+    BACK used to make ``now - mtime`` negative -- the freshest value possible
+    -- so a token breach, i.e. a hard ``harness.stop``, was decided on exactly
+    the evidence the gate exists to reject."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle", state_json_mtime=_CLOCK_START.timestamp() - 12 * 3600.0)
+    harness = FakeHarness()
+    harness.usage_snapshot_result = _usage("3.6", 10, 500)
+    ticks = {"n": 0}
+
+    def _sleep_then_step_back(seconds: float) -> None:
+        clock.sleep(seconds)
+        ticks["n"] += 1
+        if ticks["n"] == 2:
+            clock.jump_wall_clock(-24 * 3600.0)
+
+    rc = _supervise_budget(
+        fs,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        alive_for=8,
+        run_tokens=100.0,
+        sleep=_sleep_then_step_back,
+    )
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
+    assert "budget-stop" not in kinds, "a stale sample never decides a stop"
+    assert kinds.count("budget-usage-stale") == 1
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_state_json_mtime_ahead_of_the_wall_clock_is_unevaluable_not_fresh():
+    """AC 3 (DW-FU-3-6-5). An mtime later than the wall clock has no knowable
+    age. The old shape computed a negative age for it, which read as the
+    freshest sample possible, so a token breach was acted on. It is
+    ``unevaluable``: both token ceilings are skipped, and it is reported
+    (once) with the same ``MRS-SUPV-006`` a stale sample earns."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle", state_json_mtime=_CLOCK_START.timestamp() + 3600.0)
+    harness = FakeHarness()
+    harness.usage_snapshot_result = _usage("3.6", 10, 500)
+
+    rc = _supervise_budget(fs, clock=clock, observer=observer, harness=harness, alive_for=5, run_tokens=100.0)
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
+    assert "budget-stop" not in kinds
+    assert kinds.count("budget-usage-stale") == 1
+    finding = next(e for e in entries if e["kind"] == "budget-usage-stale")["payload"]["finding"]
+    assert finding["code"] == "MRS-SUPV-006"
+    assert "unevaluable" in finding["message"]
+
+
+def test_a_story_breach_is_reported_once_per_story_not_once_per_tick():
+    """AC 4 (DW-FU-3-6-8). Each story that exceeds its ceiling is reported
+    exactly once -- including a story that is back on the clock after another
+    one (the per-story status trackers reset on every story transition, so
+    the tracker alone would report it twice)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    over_a, over_b = _usage("3.6", 150, 150), _usage("3.7", 150, 150)
+    harness.usage_snapshot_sequence = [over_a, over_a, over_b, over_b, over_a, over_a]
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        100.0,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=8),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    breaches = [e for e in entries if e["kind"] == "budget-story-breach"]
+    assert [b["payload"]["story_key"] for b in breaches] == ["3.6", "3.7"]
+    assert harness.stop_calls == []
+
+
+def test_a_per_run_breach_still_stops_and_detaches_beside_a_story_breach():
+    """AC 5 (DW-FU-3-6-8). Only the per-STORY ceilings became observations:
+    a per-run breach in the same tick as a story breach still stops the run
+    and detaches under the run-scoped reason, as before."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.usage_snapshot_result = _usage("3.6", 150, 150)
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        100.0,
+        100.0,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    stop_intent, _stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["payload"]["scope"] == "run"
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+    assert entries[-1]["payload"]["reason"] == "budget-run-tokens-exceeded"
+
+
+class _DarkWindowObserver(FakeObserver):
+    """A ``FakeObserver`` whose pane read AND harness-log read both come back
+    ``None`` on the ticks in ``dark_ticks`` -- the observer failing (a broken
+    ``tmux``, a permissions error), not the session going quiet. The
+    ``state.json`` query is unaffected. ``tick_counter["n"]`` is advanced by
+    the test's own ``sleep`` callable, so tick 1 is the first tick."""
+
+    def __init__(self, *, dark_ticks: set[int], tick_counter: dict[str, int], **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.dark_ticks = dark_ticks
+        self.tick_counter = tick_counter
+
+    def pane_content(self, session: str) -> str | None:
+        if self.tick_counter["n"] in self.dark_ticks:
+            self.pane_content_calls.append(session)
+            return None
+        return super().pane_content(session)
+
+    def mtime(self, path: Path) -> float | None:
+        if path.name != "state.json" and self.tick_counter["n"] in self.dark_ticks:
+            self.mtime_calls.append(path)
+            return None
+        return super().mtime(path)
+
+
+def _supervise_idle(
+    fs: FakeFs,
+    *,
+    clock: AdvancingClock,
+    observer: FakeObserver,
+    harness: FakeHarness,
+    alive_for: int,
+    idle_minutes: float = 1.0,
+    sleep=None,
+) -> int:
+    """``run_supervisor`` at a one-minute idle threshold by default -- one
+    tick per rung."""
+    return run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        idle_minutes,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=alive_for),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=sleep if sleep is not None else clock.sleep,
+    )
+
+
+def test_ticks_with_neither_channel_observable_hold_the_ladder_and_journal_one_warn():
+    """AC 6 (DW-FU-3-5-6). A broken ``tmux`` AND a missing harness log leave
+    two consecutive samples that are both ``None``/``None`` -- which compare
+    equal, so they used to read as maximal idleness. They must neither climb
+    the ladder nor be journaled tick after tick: one unobservable WARN per
+    dark episode, no ladder action however long it lasts."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane=None, mtime=None)
+    harness = FakeHarness()
+
+    rc = _supervise_idle(fs, clock=clock, observer=observer, harness=harness, alive_for=12)
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
+    assert not any(kind in ("idle-nudge", "idle-stop-and-retry", "idle-defer") for kind in kinds)
+    assert harness.stop_calls == []
+    assert observer.send_text_calls == []
+    [unobservable] = [e for e in entries if e["kind"] == "idle-unobservable"]
+    assert unobservable["phase"] == "observation"
+    assert unobservable["payload"]["finding"]["code"] == "MRS-SUPV-015"
+    assert unobservable["payload"]["finding"]["severity"] == "warn"
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_dark_gap_holds_the_rung_instead_of_re_firing_the_nudge_when_observation_resumes():
+    """AC 6 (DW-FU-3-5-6), the rung half. A wedged session is nudged on tick
+    2; the observer then goes dark for ticks 3-5 and returns on tick 6 with
+    the very same wedged pane. A dark tick used to reset the supervisor's
+    ``last_acted_rung`` to ``NONE``, so tick 6 -- five idle thresholds in --
+    fired the NUDGE again instead of moving on to ``stop-and-retry``."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    ticks = {"n": 0}
+    observer = _DarkWindowObserver(dark_ticks={3, 4, 5}, tick_counter=ticks, pane="stuck", mtime=1.0)
+    harness = FakeHarness()
+
+    def _sleep(seconds: float) -> None:
+        clock.sleep(seconds)
+        ticks["n"] += 1
+
+    rc = _supervise_idle(fs, clock=clock, observer=observer, harness=harness, alive_for=7, sleep=_sleep)
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    ladder = [e["kind"] for e in entries if e["kind"].startswith("idle-") and e["kind"] != "idle-unobservable"]
+    assert ladder[:4] == ["idle-nudge", "idle-nudge", "idle-stop-and-retry", "idle-stop-and-retry"], (
+        "the nudge fired once; resuming observation moves on to the next rung"
+    )
+    assert [e["kind"] for e in entries].count("idle-unobservable") == 1
+
+
+def test_each_unobservable_episode_journals_its_own_warn():
+    """One WARN per dark EPISODE -- not one for the whole run: the observer
+    recovering and failing again is a second condition, reported again."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    ticks = {"n": 0}
+    # A session that keeps writing (the pane gains text every capture), so
+    # the ladder has no reason to act and only the dark ticks are in play.
+    observer = _DarkWindowObserver(
+        dark_ticks={2, 3, 6},
+        tick_counter=ticks,
+        pane_sequence=["a", "ab", "abc", "abcd", "abcde", "abcdef", "abcdefg"],
+        mtime=1.0,
+    )
+    harness = FakeHarness()
+
+    def _sleep(seconds: float) -> None:
+        clock.sleep(seconds)
+        ticks["n"] += 1
+
+    rc = _supervise_idle(fs, clock=clock, observer=observer, harness=harness, alive_for=7, sleep=_sleep)
+
+    assert rc == 0
+    kinds = [e["kind"] for e in _journal_entries(fs)]
+    assert kinds.count("idle-unobservable") == 2
+
+
+class _RedrawingObserver(FakeObserver):
+    """A pane whose ONLY change from one capture to the next is a redrawing
+    elapsed-seconds counter and a spinner frame -- what a hung agent CLI
+    still paints. The log mtime stays put."""
+
+    _SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+    def pane_content(self, session: str) -> str | None:
+        self.pane_content_calls.append(session)
+        n = len(self.pane_content_calls)
+        return f"Running tool (waiting)... {n}s {self._SPINNER[n % len(self._SPINNER)]}"
+
+
+def test_a_pane_that_only_redraws_a_counter_and_a_spinner_does_not_re_arm_the_idle_window():
+    """AC 7 (DW-FU-3-5-9). The ladder's input was byte-identity of
+    successive captures, so ANY continuously redrawing element -- an elapsed
+    counter, a spinner, a token tally -- re-armed the window every tick of a
+    genuinely hung session and the ladder never left ``NONE``."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = _RedrawingObserver(mtime=1.0)
+    harness = FakeHarness()
+
+    # A two-minute threshold, so the first rung needs THREE samples of history
+    # (ticks 1-3): the idle anchor must survive the history trim as well as
+    # the scan, which is what makes the trim's change test part of this fix.
+    rc = _supervise_idle(fs, clock=clock, observer=observer, harness=harness, alive_for=5, idle_minutes=2.0)
+
+    assert rc == 0
+    kinds = [e["kind"] for e in _journal_entries(fs)]
+    assert "idle-nudge" in kinds, "a redrawing counter is not output"
+
+
+def test_a_pane_that_gains_substantive_output_still_re_arms_the_idle_window():
+    """The control for the test above: the normalisation must not have
+    blinded the ladder. A pane that gains new TEXT every tick is a working
+    session and never reaches the first rung."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane_sequence=["a", "ab", "abc", "abcd", "abcde", "abcdef"], mtime=1.0)
+    harness = FakeHarness()
+
+    rc = _supervise_idle(fs, clock=clock, observer=observer, harness=harness, alive_for=5)
+
+    assert rc == 0
+    kinds = [e["kind"] for e in _journal_entries(fs)]
+    assert not any(kind.startswith("idle-") for kind in kinds)
+
+
+# --- main(): the optional eleventh argv value (Story 82.5) ----------------------
+
+
+def test_main_dispatches_the_optional_staleness_window_as_the_eleventh_positional(monkeypatch):
+    calls: list[tuple[object, ...]] = []
+
+    def _fake_run_supervisor(*args: object, **kwargs: object) -> int:
+        assert not kwargs
+        calls.append(args)
+        return 0
+
+    monkeypatch.setattr(supervisor_main, "run_supervisor", _fake_run_supervisor)
+
+    rc = main(
+        [
+            "/home/acme-loop",
+            "acme",
+            "acme-run-1",
+            "4242",
+            "/home/acme-loop/supervisor.log",
+            "25",
+            "4000000",
+            "40000000",
+            "240",
+            "600",
+            "180",
+        ]
+    )
+
+    assert rc == 0
+    [args] = calls
+    assert len(args) == 11
+    assert args[5] == 25.0
+    assert args[10] == 180.0
+
+
+def test_main_without_the_eleventh_value_calls_run_supervisor_with_ten_positionals(monkeypatch):
+    """A launcher older than this supervisor still works: ten argv values in,
+    ten positionals out, and ``run_supervisor`` derives the window itself."""
+    calls: list[tuple[object, ...]] = []
+
+    def _fake_run_supervisor(*args: object, **kwargs: object) -> int:
+        assert not kwargs
+        calls.append(args)
+        return 0
+
+    monkeypatch.setattr(supervisor_main, "run_supervisor", _fake_run_supervisor)
+
+    rc = main(["/home/acme-loop", "acme", "acme-run-1", "4242", "/home/l.log", "25", "4", "40", "240", "600"])
+
+    assert rc == 0
+    assert [len(args) for args in calls] == [10]
+
+
+@pytest.mark.parametrize("bad_window", ["0", "-5", "nan", "inf", "-inf", "soon", ""])
+def test_main_rejects_a_bad_staleness_window(bad_window, capsys):
+    rc = main(
+        ["/home/acme-loop", "acme", "acme-run-1", "4242", "/home/l.log", "25", "4", "40", "240", "600", bad_window]
+    )
+
+    assert rc == 1
+    assert "staleness window" in capsys.readouterr().err
+
+
+def test_main_rejects_a_twelfth_argument(capsys):
+    rc = main(
+        ["/home/acme-loop", "acme", "acme-run-1", "4242", "/home/l.log", "25", "4", "40", "240", "600", "180", "x"]
+    )
+
+    assert rc != 0
+    assert "usage" in capsys.readouterr().err.lower()
+
+
+@pytest.mark.parametrize("bad_window", [0, -1.0, float("nan"), float("inf"), "soon"])
+def test_run_supervisor_rejects_a_bad_staleness_window_before_journaling(bad_window, capsys):
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        bad_window,
+        fs=fs,
+        process=FakeProcess(alive_for=2),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=FakeHarness(),
+        sleep=_no_sleep,
+    )
+
+    assert rc == 1
+    assert fs.appended_lines == [], "nothing journaled -- no dangling attach"
+    assert "staleness window" in capsys.readouterr().err
+
+
 # --- Story 82.4: signals, the tamper-evident journal, and fail-closed ----------
 #
 # One test per acceptance criterion, each named for its criterion (see the
@@ -6349,8 +6996,9 @@ def test_a_signal_never_overrides_a_budget_stop_reason(_sentinel_signal_handlers
     """SIGTERM arrives while the tick's budget stop is running (the handler
     only records it mid-tick) and the watched process is still alive after
     the stop. The detach reason stays the more specific
-    ``budget-story-tokens-exceeded``; only a detach with no reason of its own
-    takes ``signal-SIGTERM``."""
+    ``budget-run-tokens-exceeded``; only a detach with no reason of its own
+    takes ``signal-SIGTERM``. (A per-RUN breach: since Story 82.5 a per-story
+    breach is an observation that never stops the run.)"""
     _, received = _sentinel_signal_handlers
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
@@ -6376,7 +7024,7 @@ def test_a_signal_never_overrides_a_budget_stop_reason(_sentinel_signal_handlers
         _LOG_PATH,
         _IDLE_THRESHOLD_MINUTES,
         100.0,
-        _MAX_TOKENS_PER_RUN,
+        100.0,
         _MAX_WALL_CLOCK_MINUTES_PER_STORY,
         _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs,
@@ -6390,7 +7038,7 @@ def test_a_signal_never_overrides_a_budget_stop_reason(_sentinel_signal_handlers
     assert rc == 0
     assert received == []
     assert harness.stop_calls
-    assert _entries(fs)[-1]["payload"]["reason"] == "budget-story-tokens-exceeded"
+    assert _entries(fs)[-1]["payload"]["reason"] == "budget-run-tokens-exceeded"
 
 
 def test_a_signal_during_the_sleep_after_the_watched_process_exited_keeps_the_natural_exit_reason(

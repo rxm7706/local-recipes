@@ -21,6 +21,7 @@ import tomlkit
 
 from pyforge.marshal.adapters.harness_bmadloop import (
     _SURFACE_RECONCILE_COMMAND,
+    RENDERED_SESSION_TIMEOUT_MIN,
     HarnessPolicyWriteError,
     _load_model_cost_catalog,
     _plain_json,
@@ -958,3 +959,18 @@ def test_usage_dollar_fields_savings_none_when_layer_savings_is_all_none():
         layer_savings=LayerSavings(),
     )
     assert savings is None
+
+
+def test_rendered_session_timeout_constant_is_the_value_the_rendered_policy_carries():
+    """Story 82.5 (DW-FU-3-6-6): the supervisor's usage-staleness window may
+    not be shorter than the longest session the harness allows, and
+    ``RENDERED_SESSION_TIMEOUT_MIN`` is that floor. It is DERIVED from the
+    policy template, so it can never disagree with the ``policy.toml`` the
+    harness actually reads -- pinned here against a real render rather than
+    against a second literal."""
+    effective, _findings = compose(project_slug="acme", project={}, flags={})
+    doc = tomllib.loads(render_policy_toml(effective))
+
+    assert RENDERED_SESSION_TIMEOUT_MIN == doc["limits"]["session_timeout_min"]
+    assert isinstance(RENDERED_SESSION_TIMEOUT_MIN, int)
+    assert not isinstance(RENDERED_SESSION_TIMEOUT_MIN, bool)
