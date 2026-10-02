@@ -2023,20 +2023,20 @@ def run_status(
                             severity=Severity.WARN,
                             message=(
                                 f"{slug}: this project's own merge-subject "
-                            "policy did not resolve cleanly "
-                            f"({', '.join(withheld_codes)}, withheld here so "
-                            "a policy problem cannot change this command's "
-                            "exit code -- `marshal status --project "
-                            f"{slug} --reconcile-ledger` surfaces the "
-                            "finding itself, once that project has a "
-                            "readable tracked ledger), so its failed-story "
-                            "patches cannot be "
-                            "classified against a trusted template: "
-                            f"{_name_patches([(slug, e) for e in failed_patches])} "
-                            "report done: null (landed-status unknown)"
+                                "policy did not resolve cleanly "
+                                f"({', '.join(withheld_codes)}, withheld here so "
+                                "a policy problem cannot change this command's "
+                                "exit code -- `marshal status --project "
+                                f"{slug} --reconcile-ledger` surfaces the "
+                                "finding itself, once that project has a "
+                                "readable tracked ledger), so its failed-story "
+                                "patches cannot be "
+                                "classified against a trusted template: "
+                                f"{_name_patches([(slug, e) for e in failed_patches])} "
+                                "report done: null (landed-status unknown)"
+                            ),
+                            path=slug,
                         ),
-                        path=slug,
-                    )
                     ),
                 )
             # Story 82.8 (DW-FU-4-14-10): the one per-home finding that
@@ -2123,25 +2123,25 @@ def run_status(
                     (
                         slug,
                         Finding(
-                        code=_MRS_STATUS_010,
-                        severity=Severity.WARN,
-                        message=(
-                            f"{slug}: failed-story patch for story "
-                            f"{_one_line(entry.get('story_key'))} (run "
-                            f"{_one_line(entry.get('run_id'))}) at "
-                            f"{_one_line(entry.get('path'))} "
-                            f"({entry.get('size_bytes')} bytes) has no "
-                            "confirming durable merge on "
-                            f"{_MERGE_BASE_BRANCH!r} -- UNCONFIRMED, not "
-                            "proof it never landed: the merge-subject "
-                            "classifier still cannot read GitHub squash-merge "
-                            "prose, and a story-dir name that does not "
-                            "parse as a story key can never match at all, "
-                            "so verify before recovering or discarding "
-                            "this patch"
+                            code=_MRS_STATUS_010,
+                            severity=Severity.WARN,
+                            message=(
+                                f"{slug}: failed-story patch for story "
+                                f"{_one_line(entry.get('story_key'))} (run "
+                                f"{_one_line(entry.get('run_id'))}) at "
+                                f"{_one_line(entry.get('path'))} "
+                                f"({entry.get('size_bytes')} bytes) has no "
+                                "confirming durable merge on "
+                                f"{_MERGE_BASE_BRANCH!r} -- UNCONFIRMED, not "
+                                "proof it never landed: the merge-subject "
+                                "classifier still cannot read GitHub squash-merge "
+                                "prose, and a story-dir name that does not "
+                                "parse as a story key can never match at all, "
+                                "so verify before recovering or discarding "
+                                "this patch"
+                            ),
+                            path=str(entry.get("path")),
                         ),
-                        path=str(entry.get("path")),
-                    )
                     ),
                 )
 
@@ -2159,9 +2159,7 @@ def run_status(
     # an empty table beside alarms naming homes it filtered out. Without the
     # flag every home is kept, so the output is exactly what the loop raised.
     kept_slugs = {str(row["slug"]) for row in rows}
-    findings.extend(
-        finding for slug, finding in home_findings if not escalations_only or slug in kept_slugs
-    )
+    findings.extend(finding for slug, finding in home_findings if not escalations_only or slug in kept_slugs)
     unavailable = [(slug, entry) for slug, entry in main_unavailable if not escalations_only or slug in kept_slugs]
 
     # Story 4.14: `_MRS_STATUS_011`'s cause 1 (an unreadable `main`), the
