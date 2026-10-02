@@ -2,7 +2,7 @@
 title: '81.3: The campaign supervisor keeps --retry-environment-blocks across its cycles'
 type: 'fix'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '6f444ca2edf47a292ae77461ffc8c36eb063dd4c'
 review_loop_iteration: 0
 followup_review_recommended: false
