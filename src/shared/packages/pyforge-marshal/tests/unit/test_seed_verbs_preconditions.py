@@ -678,9 +678,10 @@ def test_a_directory_target_is_reported_before_a_hand_edited_managed_file(clean_
         )
 
 
-def test_a_directory_target_is_reported_by_rung_5_not_a_later_action_s_rung_3(clean_repo):
-    """Rungs 3-5 are three passes: the directory (rung 5) on the first-sorted
-    action must not pre-empt a later action's escaping path (rung 3)."""
+def test_a_directory_target_does_not_pre_empt_a_later_actions_escaping_path(clean_repo):
+    """Rungs 3-5 are three passes: a directory target (rung 5) on the
+    first-sorted action does not pre-empt a later action's escaping path
+    (rung 3), which is reported instead."""
     (clean_repo / "AGENTS.md").mkdir()
     plan = _plan(
         _action(artifact_id="aaa-directory", target_path="AGENTS.md"),

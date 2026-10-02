@@ -11,7 +11,22 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md
 warnings: [oversized]
-deferred: []
+deferred:
+  - summary: >-
+      An `update --skip` that moves a migration's action into `plan.skipped` still records that migration in
+      `migrations_applied`, so the skipped artifact is never migrated and the migration is not offered again.
+    evidence: |-
+      Read at `verbs/update.py::_build_state_after_apply`: `newly_applied` is every chain migration's `to_version`, and the
+      state is written whenever `plan.actions` is non-empty, with no look at `plan.skipped`. Since this story,
+      `run_update` runs `apply_skips` over the merged plan, so an operator `--skip` can reach a migration action. The
+      module already treats the default-skipped migration-offered `copied-seeded` entries (in `plan.skipped`, no action)
+      as consumed once offered, so whether an explicit `--skip` should leave the migration unrecorded (re-offered next
+      run), refuse a skip that names a migration-claimed artifact, or be accepted as consumed like the offers is a
+      semantics question, not a verified defect. Marked unverified. What would settle it: an operator ruling on that
+      semantics, then a test that skips one migration action, applies another, and reads `migrations_applied` back.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py:955
+    severity: medium (unverified)
 declared_low_risk: false
 ---
 

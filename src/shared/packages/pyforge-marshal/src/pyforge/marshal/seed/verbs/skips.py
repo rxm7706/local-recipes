@@ -347,8 +347,8 @@ def apply_skips(plan: Plan, patterns: Sequence[str]) -> Plan:
     return dataclasses.replace(plan, actions=tuple(kept), repo_fingerprint=fingerprint, skipped=skipped)
 
 
-class _HasArtifactId(Protocol):
-    """The two attributes `managed_after_skips` needs.
+class _ManagedLike(Protocol):
+    """A managed record as `managed_after_skips` sees it: the two attributes it needs.
 
     A structural type rather than a `preconditions.ManagedRecord` import:
     `preconditions` is the verbs-layer module that owns the record, so naming
@@ -363,7 +363,7 @@ class _HasArtifactId(Protocol):
     def path(self) -> str: ...
 
 
-_RecordT = TypeVar("_RecordT", bound=_HasArtifactId)
+_RecordT = TypeVar("_RecordT", bound=_ManagedLike)
 
 
 def managed_after_skips(managed: Sequence[_RecordT], plan: Plan, patterns: Sequence[str] = ()) -> tuple[_RecordT, ...]:
@@ -394,8 +394,9 @@ def managed_after_skips(managed: Sequence[_RecordT], plan: Plan, patterns: Seque
     `adopt` and `update` both pass their `--skip` patterns; a caller with no
     patterns passes none and gets the `plan.skipped` filter alone.
 
-    Pure and total: preserves `managed`'s order, never mutates it, and
-    matches a plan-skipped artifact on `artifact_id` only (a `SkippedArtifact`
+    Pure: reads no disk, preserves `managed`'s order, never mutates it, and
+    raises `UsageError` for a bad `patterns` (see below) even when `managed`
+    is empty. It matches a plan-skipped artifact on `artifact_id` only (a `SkippedArtifact`
     and a `ManagedRecord` for the same artifact may legitimately name
     different paths -- state records where the artifact IS, the plan's action
     names where it WOULD go). A record naming an artifact this plan never
