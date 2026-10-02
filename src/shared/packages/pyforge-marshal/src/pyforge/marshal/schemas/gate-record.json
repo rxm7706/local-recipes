@@ -18,7 +18,7 @@
       "description": "One entry per configured verify command, mirroring core.gate.classify_outcome's own report shape."
     },
     "scope_check_verdict": {
-      "description": "The scope-check verdict (Story 2.3, not shipped yet), or null -- the only value any real caller can supply today.",
+      "description": "The scope-check verdict (Story 2.3: compute_verdict over the scope check's own findings), or null when no scope check ran.",
       "enum": ["clean", "warn", "unevaluable", "scope-violation", "gate-failed", "error", null]
     },
     "tree_revision": {
