@@ -1252,7 +1252,7 @@ def _promote_deferred_work(
             payload={"action": "commit_paths", "promoted": list(promoted_ids)},
         )
         try:
-            vcs.commit_paths(root, (tracked_path,), message)
+            vcs.commit_paths(root, (tracked_path,), to_redacted_text(message))
         except VcsCommandError as exc:
             findings.append(
                 Finding(
@@ -1544,11 +1544,11 @@ def _promote_sprint_ledger(
         try:
             vcs.commit_paths_onto_remote_tip(
                 root,
-                remote="origin",
-                ref=base,
+                remote=VcsRef("origin"),
+                ref=VcsRef(base),
                 writes=((ledger_rel, new_text),),
-                message=message,
-                preflight_skip_reason=f"marshal ledger promotion for {slug!r}, story {skip_stories}",
+                message=to_redacted_text(message),
+                preflight_skip_reason=to_redacted_text(f"marshal ledger promotion for {slug!r}, story {skip_stories}"),
             )
         except VcsCommandError as exc:
             # AD-6: an INTENT never stands without its OUTCOME -- a failed publish is journaled

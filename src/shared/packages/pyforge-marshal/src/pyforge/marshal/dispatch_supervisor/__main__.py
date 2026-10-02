@@ -173,7 +173,7 @@ def _commit_pre_verify_wip(
         vcs.commit_paths(
             worktree,
             tuple(Path(path) for path in changed),
-            "marshal: pre-verify WIP checkpoint",
+            to_redacted_text("marshal: pre-verify WIP checkpoint"),
         )
     except VcsCommandError as exc:
         print(
@@ -766,7 +766,7 @@ def _commit_and_journal_blocked_halt(
         vcs.commit_paths(
             worktree,
             paths_to_commit,
-            "marshal: supervisor blocked halt (Story 51.11)",
+            to_redacted_text("marshal: supervisor blocked halt (Story 51.11)"),
         )
     except VcsCommandError:
         return counter, False
@@ -838,11 +838,11 @@ def _promote_blocked_twin(
     try:
         vcs.commit_paths_onto_remote_tip(
             canonical_root,
-            remote="origin",
-            ref="main",
+            remote=VcsRef("origin"),
+            ref=VcsRef("main"),
             writes=((relative.as_posix(), promoted),),
-            message="marshal: promote blocked spec twin (Story 51.11)",
-            preflight_skip_reason=f"marshal blocked-twin promotion for story {story_key}",
+            message=to_redacted_text("marshal: promote blocked spec twin (Story 51.11)"),
+            preflight_skip_reason=to_redacted_text(f"marshal blocked-twin promotion for story {story_key}"),
         )
     except VcsCommandError as exc:
         finding = Finding(
@@ -908,7 +908,7 @@ def _run_supervisor_finalize_sequence(
                 vcs.commit_paths(
                     worktree,
                     tuple(Path(path) for path in changed),
-                    "marshal: supervisor finalize (Story 28.24)",
+                    to_redacted_text("marshal: supervisor finalize (Story 28.24)"),
                 )
                 committed = True
     except VcsCommandError as exc:

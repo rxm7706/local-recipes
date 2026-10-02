@@ -255,7 +255,7 @@ def _try_union_heal(
     what = " and ".join(name for name, present in (("sprint ledger", has_ledger), ("memlogs", has_memlogs)) if present)
     message = f"marshal: union {what} for {project_slug!r} while merging the base (CAP-4 heal)"
     try:
-        vcs.merge_ref_resolving(worktree, probe, resolutions=resolutions, message=message)
+        vcs.merge_ref_resolving(worktree, VcsRef(probe), resolutions=resolutions, message=to_redacted_text(message))
         vcs.push(git_repo_root, head_branch)
         new_sha = vcs.resolve_ref(git_repo_root, head_branch)
     except VcsCommandError:

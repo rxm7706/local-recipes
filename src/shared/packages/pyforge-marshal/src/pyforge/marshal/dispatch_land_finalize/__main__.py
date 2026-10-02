@@ -401,13 +401,13 @@ def _run_deferred_work_intake(
         try:
             vcs.commit_paths_onto_remote_tip(
                 root,
-                remote="origin",
-                ref="main",
+                remote=VcsRef("origin"),
+                ref=VcsRef("main"),
                 writes=((tracked_rel, publish_text or ""),),
-                message=commit_message,
+                message=to_redacted_text(commit_message),
                 # Story 68.1 (CAP-277): a planning-artifacts-only publish, named by its story;
                 # the adapter proves the commit's paths before it sets the journaled opt-out.
-                preflight_skip_reason=skip_reason,
+                preflight_skip_reason=to_redacted_text(skip_reason),
             )
         except VcsCommandError as exc:
             commit_finding = Finding(
@@ -725,12 +725,12 @@ def _promote_tracked_spec(
     try:
         vcs.commit_paths_onto_remote_tip(
             root,
-            remote="origin",
-            ref="main",
+            remote=VcsRef("origin"),
+            ref=VcsRef("main"),
             writes=((rel, promotion.set_spec_status(text, promotion.SPEC_STATUS_DONE)),),
-            message=f"marshal: promote story {key}'s tracked spec to done",
+            message=to_redacted_text(f"marshal: promote story {key}'s tracked spec to done"),
             # The adapter proves this is a planning-artifacts-only commit before it sets the opt-out.
-            preflight_skip_reason=f"marshal tracked-spec promotion for {project_slug!r}, story {key}",
+            preflight_skip_reason=to_redacted_text(f"marshal tracked-spec promotion for {project_slug!r}, story {key}"),
         )
     except VcsCommandError as exc:
         return _warn(f"story {key}'s tracked spec {rel!r} could not be promoted to done on {ORIGIN_MAIN_SHORT}: {exc}")

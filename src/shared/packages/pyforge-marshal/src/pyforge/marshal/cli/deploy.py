@@ -990,7 +990,7 @@ def _execute_promotion_plan(
                 payload={"action": "commit_paths", "story_keys": sorted(copied)},
             )
             try:
-                vcs.commit_paths(root, tuple(commit_targets), message)
+                vcs.commit_paths(root, tuple(commit_targets), to_redacted_text(message))
             except VcsCommandError as exc:
                 findings.append(
                     Finding(
@@ -3973,7 +3973,7 @@ def run_reconcile_completions(
                                     },
                                 )
                                 try:
-                                    vcs.commit_paths(root, (ledger_path,), message)
+                                    vcs.commit_paths(root, (ledger_path,), to_redacted_text(message))
                                 except VcsCommandError as exc:
                                     # Review fix, 2026-08-12, high-severity:
                                     # a failed commit after a successful
