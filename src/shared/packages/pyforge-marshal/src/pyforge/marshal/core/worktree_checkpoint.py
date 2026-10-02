@@ -59,7 +59,7 @@ def commit_worktree_checkpoint(
         head_sha = vcs.commit_paths(
             worktree,
             tuple(Path(path) for path in changed),
-            to_redacted_text(auto_checkpoint_message(story_key)),
+            auto_checkpoint_message(story_key),
         )
     except Exception as exc:
         return WorktreeCheckpointResult(committed=False, skipped_reason=str(exc))

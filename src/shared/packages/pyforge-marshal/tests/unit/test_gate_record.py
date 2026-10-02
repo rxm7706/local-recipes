@@ -18,8 +18,8 @@ from pathlib import Path
 
 import jsonschema
 import pytest
-
 from pyforge.core.process import ProcessResult
+
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import config as config_module
@@ -195,7 +195,9 @@ def test_with_no_run_the_record_lands_in_the_sessions_namespace_and_names_the_co
     record = _read(envelope)
     jsonschema.validate(instance=record, schema=_schema())
     assert "run_id" not in record  # a genuinely run-less evaluation carries none
-    assert record["commands"] == [{"command": "true", "returncode": 0, "resolvable": True, "stdout": "all green", "stderr": ""}]
+    assert record["commands"] == [
+        {"command": "true", "returncode": 0, "resolvable": True, "stdout": "all green", "stderr": ""}
+    ]
     assert process.calls == [["true"]]
 
 
