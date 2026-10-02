@@ -1914,12 +1914,17 @@ def station_story_block_facts(
 
     ``followup_entry`` (Story 73.2, CAP-281): the queue entry is a follow-up review of an already-landed story,
     judged by its open ``DW-FRR`` row and never by the story's first landing -- so Part B's already-landed
-    advance below does not apply to it. A follow-up that failed is a block like any story's.
+    advance below does not apply to it. Only the follow-up's OWN runs judge it: a run whose launch journal
+    carries no follow-up review marker is the story's first life (a failed implementation that later landed
+    another way), and reading it as the follow-up's failure would block the entry on every cycle and campaign.
+    A follow-up run that failed is a block like any story's.
     """
     feed_story = render_feed_key(normalize(story_key))
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
         if journal.story_key != feed_story:
+            continue
+        if followup_entry and journal.followup_review is None:
             continue
 
         # Story 51.4 (CAP-252): resolve the worktree's own tracked spec once

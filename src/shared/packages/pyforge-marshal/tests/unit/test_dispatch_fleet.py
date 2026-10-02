@@ -51,6 +51,7 @@ from pyforge.marshal.core.dispatch_fleet import (
     plan_station_queue,
     station_backlog,
 )
+from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.identity import StoryKey, normalize, render_merge_subject
 from pyforge.marshal.core.journal import (
     JournalEntryId,
@@ -591,6 +592,7 @@ def _seed_live_dispatch_journal(
     story_key: str,
     session_pid: int = 42,
     baseline_head_sha: str = "aaa111",
+    followup_review: FollowupReview | None = None,
 ) -> Path:
     """Seed a per-story dispatch journal.
 
@@ -599,9 +601,19 @@ def _seed_live_dispatch_journal(
     (the default) and the run reads as LIVE-by-git-progress; pass the SAME
     sha and a dead session reads as FAILED -- the HALTed story this story's
     ``skip_on_blocked`` matrix row is about.
+
+    ``followup_review`` (Story 73.2) stamps the launch INTENT with the follow-up review marker, as
+    ``dispatch_once`` does for a launch on a ``done`` spec; without it the run is a normal story run.
     """
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
+    intent_payload: dict[str, object] = {
+        "story_key": story_key,
+        "worktree_path": str(tmp_path / ".worktrees" / f"dispatch-{slug}"),
+        "baseline_head_sha": baseline_head_sha,
+    }
+    if followup_review is not None:
+        intent_payload.update(followup_review.to_intent_payload())
     intent = prepare_for_write(
         build_entry(
             id=JournalEntryId("w", 0),
@@ -609,11 +621,7 @@ def _seed_live_dispatch_journal(
             run_id=run_id,
             kind=dispatch_core.KIND_DISPATCH_LAUNCH,
             phase=Phase.INTENT,
-            payload={
-                "story_key": story_key,
-                "worktree_path": str(tmp_path / ".worktrees" / f"dispatch-{slug}"),
-                "baseline_head_sha": baseline_head_sha,
-            },
+            payload=intent_payload,
         )
     ).line
     outcome = prepare_for_write(
@@ -3395,6 +3403,7 @@ def _seed_already_landed_self_refusal(
     run_id: str,
     story_key: str,
     session_log: str = _ALREADY_LANDED_LOG,
+    followup_review: FollowupReview | None = None,
 ) -> Path:
     """A dead session with zero git progress that refused itself as merged."""
     run_dir = _seed_live_dispatch_journal(
@@ -3403,6 +3412,7 @@ def _seed_already_landed_self_refusal(
         run_id=run_id,
         story_key=story_key,
         baseline_head_sha="baseline1234",
+        followup_review=followup_review,
     )
     (run_dir / "session.log").write_text(session_log, encoding="utf-8")
     return run_dir
@@ -4800,34 +4810,107 @@ def test_a_conditional_fetch_refreshes_origin_main_only_when_a_row_is_open(
 # -- a follow-up is judged by its row, not by the story's first landing ------------------------------------
 
 
+def _followup_marker() -> FollowupReview:
+    """The marker ``dispatch_once`` journals on a follow-up review run's launch INTENT."""
+    return FollowupReview(dw_id="DW-FRR-23-6", launch_origin_main_sha=_FU_TIP)
+
+
+def _block_facts(tmp_path: Path, slug: str, *, followup_entry: bool):
+    return cli_dispatch.station_story_block_facts(
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        process=FakeProcess(alive=False),
+        repo_root=tmp_path,
+        slug=slug,
+        story_key="23.6",
+        effective_policy=cli_dispatch._compose_policy(slug),
+        followup_entry=followup_entry,
+    )
+
+
 def test_the_already_landed_advance_does_not_apply_to_a_follow_up_entry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Story 50.1 Part B: a failed run with zero changed paths and merged evidence in its log reads
-    already-landed -- for a story entry. A follow-up entry is a `done` story by design: its failed run blocks."""
+    already-landed -- for a story entry. A follow-up entry is a `done` story by design: its own failed run
+    (the one whose launch INTENT carries the follow-up marker) blocks."""
     _init_git_repo(tmp_path)
     slug = "pyforge-herald"
     _seed_fleet(tmp_path, stories={slug: ["23-6-landing-fallout"]})
-    _seed_already_landed_self_refusal(tmp_path, slug=slug, run_id="run-follow-up", story_key="23.6")
+    _seed_already_landed_self_refusal(
+        tmp_path, slug=slug, run_id="run-follow-up", story_key="23.6", followup_review=_followup_marker()
+    )
     monkeypatch.chdir(tmp_path)
 
-    def facts(*, followup_entry: bool):
-        return cli_dispatch.station_story_block_facts(
-            fs=FakeFs(),
-            vcs=FakeVcs(tmp_path),
-            process=FakeProcess(alive=False),
-            repo_root=tmp_path,
-            slug=slug,
-            story_key="23.6",
-            effective_policy=cli_dispatch._compose_policy(slug),
-            followup_entry=followup_entry,
-        )
-
-    story_entry = facts(followup_entry=False)
+    story_entry = _block_facts(tmp_path, slug, followup_entry=False)
     assert story_entry is not None and story_entry.reason.startswith(ALREADY_LANDED_ADVANCE_PREFIX)
-    follow_up = facts(followup_entry=True)
+    follow_up = _block_facts(tmp_path, slug, followup_entry=True)
     assert follow_up is not None and not follow_up.reason.startswith(ALREADY_LANDED_ADVANCE_PREFIX)
     assert "ended 'failed'" in follow_up.reason
+
+
+def test_a_follow_up_entry_is_not_blocked_by_the_stories_unmarked_first_life_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The story's own earlier run (a FAILED implementation that later landed another way) carries no follow-up
+    marker. It is not the follow-up's run, so it must not block the follow-up entry on every cycle and campaign."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    _seed_fleet(tmp_path, stories={slug: ["23-6-landing-fallout"]})
+    _seed_already_landed_self_refusal(
+        tmp_path, slug=slug, run_id="run-first-life", story_key="23.6", session_log="the harness crashed\n"
+    )
+    monkeypatch.chdir(tmp_path)
+
+    # As a story entry the unmarked failed run still blocks (unchanged) ...
+    assert _block_facts(tmp_path, slug, followup_entry=False) is not None
+    # ... but the follow-up entry has no run of its own yet, so nothing blocks it.
+    assert _block_facts(tmp_path, slug, followup_entry=True) is None
+
+
+def test_a_follow_up_entry_is_blocked_by_its_own_marked_failed_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    _seed_fleet(tmp_path, stories={slug: ["23-6-landing-fallout"]})
+    _seed_already_landed_self_refusal(
+        tmp_path,
+        slug=slug,
+        run_id="run-follow-up",
+        story_key="23.6",
+        session_log="the harness crashed\n",
+        followup_review=_followup_marker(),
+    )
+    monkeypatch.chdir(tmp_path)
+
+    blocked = _block_facts(tmp_path, slug, followup_entry=True)
+    assert blocked is not None and "ended 'failed'" in blocked.reason
+
+
+def test_an_unmarked_run_after_a_marked_one_is_skipped_so_the_follow_ups_own_run_still_judges(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Newest-first walk: the unmarked first-life run is stepped over, the older marked run is the follow-up's."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    _seed_fleet(tmp_path, stories={slug: ["23-6-landing-fallout"]})
+    _seed_already_landed_self_refusal(
+        tmp_path,
+        slug=slug,
+        run_id=f"{slug}-20260101T000000000Z-aaaa",
+        story_key="23.6",
+        session_log="the harness crashed\n",
+        followup_review=_followup_marker(),
+    )
+    _seed_already_landed_self_refusal(
+        tmp_path, slug=slug, run_id=f"{slug}-20260201T000000000Z-bbbb", story_key="23.6", session_log="x\n"
+    )
+    monkeypatch.chdir(tmp_path)
+
+    blocked = _block_facts(tmp_path, slug, followup_entry=True)
+    assert blocked is not None and "ended 'failed'" in blocked.reason
+    assert "20260101" in blocked.reason
 
 
 class _ReconcileVcs(FakeVcs):
