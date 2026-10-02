@@ -263,6 +263,60 @@ def test_an_escaping_entry_is_reported_and_left_out_while_every_other_action_app
     assert (outside / "target.md").read_text() == "elsewhere\n"
 
 
+def test_a_previously_managed_entry_that_became_an_escaping_symlink_is_left_out_not_refused(clean_repo, monkeypatch):
+    """The wholesale-regenerate pass builds an action for every
+    ``state.managed`` record. A managed entry whose path LATER became an
+    in-repo symlink pointing outside the repo used to get one anyway: its
+    escaped file was read and hashed, and rung 3 refused the WHOLE plan. It is
+    now skipped before the action is built, named in ``escape_findings``, and
+    its escaped path is never read."""
+    outside = clean_repo.parent / f"{clean_repo.name}-outside"
+    outside.mkdir()
+    (outside / "target.md").write_text("elsewhere\n", encoding="utf-8")
+    (clean_repo / "ESCAPER.md").symlink_to(outside / "target.md")
+    (clean_repo / "GOOD.md").write_text("good\n", encoding="utf-8")
+    write_state(
+        _seed_state(
+            managed=(
+                ManagedArtifact(
+                    id="bad",
+                    path="ESCAPER.md",
+                    artifact_class="copied-managed",
+                    body_sha=hash_content("elsewhere\n"),
+                    inserted_region_span=None,
+                ),
+                ManagedArtifact(
+                    id="good",
+                    path="GOOD.md",
+                    artifact_class="copied-managed",
+                    body_sha=hash_content("good\n"),
+                    inserted_region_span=None,
+                ),
+            )
+        ),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+    read_targets: list[Path] = []
+    real_read = update_module._read_text_or_blank
+
+    def spy(target: Path) -> str:
+        read_targets.append(target)
+        return real_read(target)
+
+    monkeypatch.setattr(update_module, "_read_text_or_blank", spy)
+
+    result = run_update(clean_repo, manifest, confirm=_unreachable_confirm)
+
+    assert [action.artifact_id for action in result.plan.actions] == ["good"]
+    assert [finding.path for finding in result.escape_findings] == ["ESCAPER.md"]
+    assert "bad:" in result.escape_findings[0].message
+    assert clean_repo / "ESCAPER.md" not in read_targets
+    assert (outside / "target.md").read_text() == "elsewhere\n"
+
+
 def test_no_escape_findings_when_nothing_escapes(clean_repo):
     write_state(_seed_state(), repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
     _commit_all(clean_repo)

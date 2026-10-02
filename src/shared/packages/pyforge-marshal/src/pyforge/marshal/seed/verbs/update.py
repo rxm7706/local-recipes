@@ -442,11 +442,19 @@ def _wholesale_regenerate_actions(
     if state is None:
         return (), ()
     entries_by_id = {entry.id: entry for entry in manifest.entries}
+    escaping_ids = {escape.entry_id for escape in inventory.escaping}
     actions: list[Action] = []
     hashes: list[tuple[str, str]] = []
     for record in state.managed:
         entry = entries_by_id.get(record.id)
         if entry is None or entry.artifact_class not in _WHOLESALE_CLASSES:
+            continue
+        if entry.id in escaping_ids:
+            # Story 82.11: a previously managed entry whose path has since
+            # become a symlink pointing outside the repo. No action, and its
+            # escaped target is never read or hashed below -- the entry is
+            # reported through `escape_findings` instead of refusing the whole
+            # plan at rung 3.
             continue
         chosen_anchor: tuple[tuple[str, str | None], ...] = ()
         is_hybrid = entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION
@@ -1062,7 +1070,16 @@ def run_update(
         repo_fingerprint=base_plan.repo_fingerprint,
     )
 
-    managed_records = _managed_records(state, filtered_manifest, repo_root)
+    # Rung 6 refuses a record whose path does not resolve inside the repo, so a
+    # previously managed entry that is now an escaping symlink would still
+    # refuse the whole run there (Story 82.11) -- it is already reported in
+    # `escape_findings` and planned for nothing, so it is not handed to rung 6.
+    escaping_ids = {escape.entry_id for escape in inventory.escaping}
+    managed_records = tuple(
+        record
+        for record in _managed_records(state, filtered_manifest, repo_root)
+        if record.artifact_id not in escaping_ids
+    )
     check_preconditions(
         plan,
         repo_root=repo_root,
