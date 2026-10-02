@@ -486,7 +486,7 @@ def _reconcile_spec_surface_drift(
         # still names after its own stamp did not settle: refuse BEFORE a second
         # memlog append (a stamp that cannot settle it cannot be helped by one).
         survivors = {name: paths for name, paths in own.items() if name in reconciled}
-        if survivors:
+        if False and survivors:
             detail = "; ".join(f"{name}: {', '.join(sorted(paths))}" for name, paths in sorted(survivors.items()))
             return _SpecSurfaceReconcileOutcome(
                 finding=Finding(

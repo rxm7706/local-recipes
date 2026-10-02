@@ -594,6 +594,232 @@ def test_reconcile_spec_surface_drift_reconciles_cross_project_co_governor(tmp_p
     assert "other-project/spec-zeta" in stamp_calls[0][0]
 
 
+# Story 82.3 (DW-FU-53-2-3): Doctor's verdict keeps one row per path, so for a station `src/` edit only
+# `spec-pyforge-core` is named and the station's own spec stays hidden until the first is stamped.
+_CORE_SPEC = "pyforge-steward/spec-pyforge-core"
+_STATION_SPEC = "pyforge-marshal/spec-pyforge-marshal"
+_BRANCH = "dispatch/pyforge-marshal/82.3"
+_BASELINE_PATH = "scripts/.spec-surface-baseline.json"
+
+
+def _memlog_rel(spec: str) -> str:
+    project, _, spec_dir = spec.partition("/")
+    return f"_bmad-output/projects/{project}/planning-artifacts/specs/{spec_dir}/.memlog.md"
+
+
+def _drift_on(spec: str, path: str) -> _SurfaceFinding:
+    return _SurfaceFinding(
+        "drift",
+        f"{spec}: {path} changed but the spec's memlog did not move — reconcile the spec, then "
+        f"--write-baseline --spec {spec}",
+        path,
+    )
+
+
+def _reconcile(tmp_path: Path, vcs, process):
+    worktree = tmp_path / "wt"
+    worktree.mkdir(exist_ok=True)
+    return _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch=_BRANCH,
+        key=normalize("82-3-example"),
+        run_id="run-82",
+        vcs=vcs,
+        process=process,
+    )
+
+
+def _calls(process, script: str) -> list[list[str]]:
+    return [tokens for tokens, _cwd in process.calls if script in tokens[1]]
+
+
+def _spec_args(tokens: list[str]) -> list[str]:
+    return [tokens[index + 1] for index, token in enumerate(tokens) if token == "--spec"]
+
+
+def _accepted(tokens: list[str]) -> set[str]:
+    return {tokens[index + 1] for index, token in enumerate(tokens) if token == "--accept"}
+
+
+def test_reconcile_spec_surface_drift_reconciles_the_co_governor_the_first_read_hid(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A station `src/` edit drifts both `spec-pyforge-core` and the station's own spec; the verdict names
+    only core until it is stamped. The reconcile re-reads after the stamp and reconciles the station's spec
+    too: each gets a memlog entry and its own scoped stamp, and the baseline is committed and pushed ONCE."""
+    process = FakeProcess()
+    _install_fake_spec_surface(
+        monkeypatch,
+        (_drift_on(_CORE_SPEC, "src/a.py"), _drift_on(_STATION_SPEC, "src/a.py")),
+        process=process,
+        reveal_after={_STATION_SPEC: _CORE_SPEC},
+    )
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+
+    outcome = _reconcile(tmp_path, vcs, process)
+
+    assert outcome.refuse is False
+    assert outcome.finding is not None and outcome.finding.code == "MRS-DISP-047"
+    assert _CORE_SPEC in outcome.finding.message and _STATION_SPEC in outcome.finding.message
+    memlogs = _calls(process, "memlog.py")
+    stamps = _calls(process, "spec_surface_check.py")
+    assert [Path(tokens[tokens.index("--path") + 1]).parent.name for tokens in memlogs] == [
+        "spec-pyforge-core",
+        "spec-pyforge-marshal",
+    ]
+    assert [_spec_args(tokens) for tokens in stamps] == [[_CORE_SPEC], [_STATION_SPEC]]
+    # core is memlogged and stamped before the station's spec is even read
+    order = [("memlog" if "memlog.py" in tokens[1] else "stamp") for tokens, _cwd in process.calls]
+    assert order == ["memlog", "stamp", "memlog", "stamp"]
+    # two memlog commits and ONE baseline commit; one push
+    assert len(vcs.committed) == 3
+    assert vcs.committed[-1][1] == (Path(_BASELINE_PATH),)
+    assert vcs.pushed == [_BRANCH]
+
+
+def test_every_stamp_accepts_the_branchs_own_paths_and_what_the_loop_wrote(tmp_path: Path, monkeypatch) -> None:
+    """The scoped stamp refuses a differing path its memlog does not name (DW-9-1-1), so each pass
+    `--accept`s the branch's own changed paths plus the memlogs and baseline the loop itself wrote -- and
+    nothing the branch did not touch."""
+    process = FakeProcess()
+    _install_fake_spec_surface(
+        monkeypatch,
+        (_drift_on(_CORE_SPEC, "src/a.py"), _drift_on(_STATION_SPEC, "src/a.py")),
+        process=process,
+        reveal_after={_STATION_SPEC: _CORE_SPEC},
+    )
+    vcs = _ReconcileVcs(changed=("src/a.py", "src/b.py"))
+
+    assert _reconcile(tmp_path, vcs, process).refuse is False
+
+    first, second = _calls(process, "spec_surface_check.py")
+    assert _accepted(first) == {"src/a.py", "src/b.py", _BASELINE_PATH, _memlog_rel(_CORE_SPEC)}
+    assert _accepted(second) == {
+        "src/a.py",
+        "src/b.py",
+        _BASELINE_PATH,
+        _memlog_rel(_CORE_SPEC),
+        _memlog_rel(_STATION_SPEC),
+    }
+
+
+def test_a_stamp_that_does_not_settle_its_spec_refuses_with_no_second_memlog_append(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Own-path drift that survives the bound: the verdict still names the spec after its own stamp, so
+    the reconcile refuses (MRS-DISP-048) rather than append to it again or loop."""
+    process = FakeProcess()
+    _install_fake_spec_surface(
+        monkeypatch, (_drift_on(_CORE_SPEC, "src/a.py"),), process=process, settles=False
+    )
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+
+    outcome = _reconcile(tmp_path, vcs, process)
+
+    assert outcome.refuse is True
+    assert outcome.finding is not None and outcome.finding.code == "MRS-DISP-048"
+    assert _CORE_SPEC in outcome.finding.message and "src/a.py" in outcome.finding.message
+    assert len(_calls(process, "memlog.py")) == 1
+    assert len(_calls(process, "spec_surface_check.py")) == 1
+    assert vcs.pushed == []
+    assert all(committed[2] != "marshal: reconcile spec-surface drift for 82.3" for committed in vcs.committed)
+
+
+def test_a_verdict_re_read_that_raises_after_a_stamp_refuses(tmp_path: Path, monkeypatch) -> None:
+    """The post-stamp state is unverified, so it is MRS-DISP-048 -- never a quiet success."""
+    process = FakeProcess()
+    reads: list[int] = []
+    fake_chain = types.ModuleType("pyforge.doctor.sources.chain")
+
+    def gather_spec_surface(target):  # noqa: ARG001
+        reads.append(1)
+        if len(reads) > 1:
+            raise RuntimeError("doctor crashed mid-read")
+        return (_drift_on(_CORE_SPEC, "src/a.py"),)
+
+    fake_chain.gather_spec_surface = gather_spec_surface
+    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources.chain", fake_chain)
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+
+    outcome = _reconcile(tmp_path, vcs, process)
+
+    assert outcome.refuse is True
+    assert outcome.finding is not None and outcome.finding.code == "MRS-DISP-048"
+    assert "unverified" in outcome.finding.message and "doctor crashed mid-read" in outcome.finding.message
+    assert vcs.pushed == []
+
+
+def test_a_memlog_the_loop_wrote_is_the_branchs_own_on_a_re_read(tmp_path: Path, monkeypatch) -> None:
+    """A spec that governs the memlog the loop just appended drifts on a path `changed` (read once, before
+    any commit) never held; it must read as own, not foreign, and be reconciled in a later pass."""
+    broad_spec = "pyforge-marshal/spec-broad"
+    process = FakeProcess()
+    _install_fake_spec_surface(
+        monkeypatch,
+        (_drift_on(_CORE_SPEC, "src/a.py"), _drift_on(broad_spec, _memlog_rel(_CORE_SPEC))),
+        process=process,
+        reveal_after={broad_spec: _CORE_SPEC},
+    )
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+
+    outcome = _reconcile(tmp_path, vcs, process)
+
+    assert outcome.refuse is False
+    assert outcome.finding is not None and broad_spec in outcome.finding.message
+    assert [_spec_args(tokens) for tokens in _calls(process, "spec_surface_check.py")] == [
+        [_CORE_SPEC],
+        [broad_spec],
+    ]
+    assert vcs.pushed == [_BRANCH]
+
+
+def test_foreign_drift_the_re_read_reveals_refuses_and_pushes_nothing(tmp_path: Path, monkeypatch) -> None:
+    """The foreign-drift refusal stays: the station's spec, hidden behind core, also drifts on a path the
+    branch did not touch -- refused naming that path, never absorbed into its scoped stamp."""
+    process = FakeProcess()
+    _install_fake_spec_surface(
+        monkeypatch,
+        (
+            _drift_on(_CORE_SPEC, "src/a.py"),
+            _drift_on(_STATION_SPEC, "src/a.py"),
+            _drift_on(_STATION_SPEC, "src/not-mine.py"),
+        ),
+        process=process,
+        reveal_after={_STATION_SPEC: _CORE_SPEC},
+    )
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+
+    outcome = _reconcile(tmp_path, vcs, process)
+
+    assert outcome.refuse is True
+    assert outcome.finding is not None and outcome.finding.code == "MRS-DISP-048"
+    assert "src/not-mine.py" in outcome.finding.message
+    assert len(_calls(process, "spec_surface_check.py")) == 1  # only core was stamped
+    assert vcs.pushed == []
+
+
+def test_a_chain_of_hidden_co_governors_is_reconciled_one_pass_each(tmp_path: Path, monkeypatch) -> None:
+    """Three co-governors of one path, each hidden behind the previous: one pass each, bounded by the
+    number of specs, one push."""
+    specs = ("p/spec-one", "p/spec-two", "p/spec-three")
+    process = FakeProcess()
+    _install_fake_spec_surface(
+        monkeypatch,
+        tuple(_drift_on(spec, "src/a.py") for spec in specs),
+        process=process,
+        reveal_after={specs[1]: specs[0], specs[2]: specs[1]},
+    )
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+
+    outcome = _reconcile(tmp_path, vcs, process)
+
+    assert outcome.refuse is False
+    assert [_spec_args(tokens) for tokens in _calls(process, "spec_surface_check.py")] == [[spec] for spec in specs]
+    assert len(_calls(process, "memlog.py")) == 3
+    assert vcs.pushed == [_BRANCH]
+
+
 def test_reconcile_spec_surface_drift_refuses_foreign_drift(tmp_path: Path, monkeypatch) -> None:
     """A spec's drift names a path this branch did NOT change -- foreign
     drift is refused (MRS-DISP-048) naming the foreign path, never absorbed
@@ -941,6 +1167,72 @@ def test_execute_dispatch_land_reconciles_own_drift_before_merging(tmp_path: Pat
     # fixture, not one batched commit.
     assert len(vcs.committed) == 2
     assert vcs.pushed.count("dispatch/pyforge-marshal/22.4") == 2
+
+
+def test_execute_dispatch_land_reconciles_both_co_governors_before_merging(tmp_path: Path, monkeypatch) -> None:
+    """Story 82.3: a branch whose station-`src/` edit drifts both `spec-pyforge-core` and the station's own
+    spec lands only after BOTH specs have a memlog entry and a scoped stamp."""
+    process = FakeProcess()
+    _install_fake_spec_surface(
+        monkeypatch,
+        (_drift_on(_CORE_SPEC, "src/a.py"), _drift_on(_STATION_SPEC, "src/a.py")),
+        process=process,
+        reveal_after={_STATION_SPEC: _CORE_SPEC},
+    )
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    forge = _RecordingForge()
+    stamps_before_merge: list[list[str]] = []
+    real_merge = forge.merge_pr
+
+    def merge_pr(*args, **kwargs):
+        stamps_before_merge.extend(_calls(process, "spec_surface_check.py"))
+        return real_merge(*args, **kwargs)
+
+    forge.merge_pr = merge_pr
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=_ReconcileVcs(merged=False, changed=("src/a.py",)),
+        forge=forge,
+        process=process,
+    )
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert [_spec_args(tokens) for tokens in stamps_before_merge] == [[_CORE_SPEC], [_STATION_SPEC]]
+    findings_047 = [f for f in envelope.findings if f.code == "MRS-DISP-047"]
+    assert len(findings_047) == 1
+    assert _CORE_SPEC in findings_047[0].message and _STATION_SPEC in findings_047[0].message
+
+
+def test_execute_dispatch_land_refuses_own_drift_that_survives_the_stamp(tmp_path: Path, monkeypatch) -> None:
+    """Story 82.3: own-path drift the verdict still names after its spec's stamp refuses the landing
+    (MRS-DISP-048) and never reaches `forge.merge_pr`."""
+    process = FakeProcess()
+    _install_fake_spec_surface(
+        monkeypatch, (_drift_on(_CORE_SPEC, "src/a.py"),), process=process, settles=False
+    )
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    forge = _RecordingForge()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=_ReconcileVcs(merged=False, changed=("src/a.py",)),
+        forge=forge,
+        process=process,
+    )
+
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert [f.code for f in envelope.findings if f.code == "MRS-DISP-048"] == ["MRS-DISP-048"]
+    assert forge.merge_calls == []
+    assert len(_calls(process, "memlog.py")) == 1
 
 
 def test_execute_dispatch_land_refuses_on_foreign_spec_surface_drift(tmp_path: Path, monkeypatch) -> None:
