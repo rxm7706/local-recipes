@@ -2,7 +2,7 @@
 title: '82.11: Seed apply refuses an escaping manifest path per entry and guards never-write paths through symlinks and directories'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'dfddcecdaf9ec0e9dfcd602e4f2bab9a066cef23'
 review_loop_iteration: 0
 followup_review_recommended: false
