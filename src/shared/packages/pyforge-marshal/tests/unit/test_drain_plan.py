@@ -2012,3 +2012,36 @@ def test_the_plan_row_carries_the_followups_key_on_an_unevaluable_station_too(
     )
     assert _station(envelope, _FU_OTHER_SLUG)["followups"] == []
     assert _station(envelope, _FU_SLUG)["followups"] == [_FU_STORY]
+
+
+def test_the_plan_lists_the_follow_ups_a_two_wide_wave_would_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The pyforge-marshal station's own tracked policy runs waves (`max_parallel = 2`): `--max-in-flight 2` plans
+    the wave branch, and the follow-ups appear on the row as queue entries AND as the stories the wave launches."""
+    _pin_repository_layers(monkeypatch, tmp_path)
+    vcs = _FollowupPlanVcs(tmp_path)
+    stories = ("70-1-oldest-review", "70-2-middle-review", "70-3-newest-review")
+    statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(story, _fu_spec(), "open") for story in stories])
+    specs = dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG)
+    for story in stories:  # each spec declares its own surface (what the wave admits) and binds trivially
+        (specs / f"spec-{story}.md").write_text(
+            f'---\nstatus: done\nfollowup_review_recommended: true\nsurface: ["src/{story}/**"]\n---\n'
+            + _BOUND_SPEC_BODY,
+            encoding="utf-8",
+        )
+    vcs.subjects = tuple(_fu_subject(_FU_SLUG, story) for story in reversed(stories))
+
+    code, envelope, _out = _plan_followups(tmp_path, capsys, vcs, statuses, "--max-in-flight", "2")
+
+    row = _station(envelope, _FU_SLUG)
+    newest_two = ["70-3-newest-review", "70-2-middle-review"]
+    assert row["parallel_cap"] == 2
+    assert row["followups"] == newest_two  # the cap (2), newest landing first
+    assert row["stories"] == newest_two
+    assert row["wave"]["members"] == newest_two and row["wave"]["refused"] == []
+    assert row["outcome"] == "dispatch" and row["would_dispatch"] is True and row["refusals"] == []
+    (waiting,) = _findings(envelope, "MRS-DRAIN-019")
+    assert "1 follow-up review(s) wait for a later campaign" in waiting["message"]
+    assert vcs.fetched == []
+    assert code == 0

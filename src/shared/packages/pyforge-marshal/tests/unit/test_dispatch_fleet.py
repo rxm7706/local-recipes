@@ -5084,3 +5084,172 @@ def test_a_follow_up_landed_but_not_yet_closed_reads_in_flight_and_is_not_launch
     assert harness.dispatched == []
     assert _status_by_station(report)[_FU_SLUG] is StationCycleStatus.IN_FLIGHT
     assert _fu_codes(report, "MRS-DRAIN-006")
+
+
+# -- wave mode (`dispatch.max_parallel` > 1): the pyforge-marshal station's own tracked policy ----------------
+
+_FU_WAVE_STORIES = ("70-1-oldest-review", "70-2-middle-review", "70-3-newest-review")
+
+
+def _fu_wave_station(tmp_path: Path, vcs: _FollowupVcs, stories=_FU_WAVE_STORIES, *, surfaces: bool = True):
+    """Open rows for ``stories`` (oldest first); the newest landing is the last. With ``surfaces`` each story's
+    tracked spec declares its own disjoint surface -- what lets the parallel wave admit it."""
+    statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(story, _fu_spec(), "open") for story in stories])
+    if surfaces:
+        specs = dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG)
+        for story in stories:
+            (specs / f"spec-{story}.md").write_text(
+                f'---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\nsurface: ["src/{story}/**"]\n---\n',
+                encoding="utf-8",
+            )
+    vcs.subjects = tuple(_fu_subject(_FU_SLUG, story) for story in reversed(stories))
+    return {_FU_SLUG: statuses}
+
+
+def _fu_plan_cycle(tmp_path: Path, vcs: _FollowupVcs, ledgers, followups, **kwargs):
+    return cli_dispatch.plan_station_cycle(
+        repo_root=tmp_path,
+        slug=_FU_SLUG,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        leave_remaining=1,
+        campaign_blocked={},
+        order_override=None,
+        station_skips={},
+        explicit_stories=None,
+        policy_flags={"dispatch": {"max_parallel": 2}},
+        max_in_flight=None,
+        retry_environment_blocks=False,
+        fs=FakeFs(),
+        vcs=vcs,
+        process=FakeProcess(alive=False),
+        harness=FakeHarness(ledgers),
+        mint_wave_id=lambda: "wave-test",
+        followups=followups,
+        **kwargs,
+    )
+
+
+def test_the_wave_admits_the_selected_follow_ups_as_members(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _fu_env(tmp_path, monkeypatch)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = _fu_wave_station(tmp_path, vcs)
+    plan = cli_dispatch.plan_followup_reviews(
+        repo_root=tmp_path, slugs=(_FU_SLUG,), vcs=vcs, policy_flags={"dispatch": {"max_parallel": 2}}
+    )
+
+    cycle = _fu_plan_cycle(tmp_path, vcs, ledgers, plan.selected[_FU_SLUG])
+
+    # The cap (2) took the two newest landings, newest first; the wave admits both.
+    assert cycle.followup_stories == ("70-3-newest-review", "70-2-middle-review")
+    assert cycle.parallel_cap == 2 and cycle.wave is not None
+    assert cycle.wave.members == ("70-3-newest-review", "70-2-middle-review")
+    assert cycle.wave.refused == ()
+    assert cycle.stories_to_dispatch == cycle.wave.members
+    assert cli_dispatch.wave_held_stories(cycle) == ()
+
+
+def test_a_follow_up_whose_spec_declares_no_surface_is_held_out_of_the_wave_not_dispatched(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A wave only fans out over specs with a known, disjoint surface -- a follow-up is no exception: it is held,
+    named by MRS-DRAIN-016, and nothing launches."""
+    _fu_env(tmp_path, monkeypatch)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = _fu_wave_station(tmp_path, vcs, ("70-3-newest-review",), surfaces=False)
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(
+        tmp_path,
+        ledgers=ledgers,
+        vcs=vcs,
+        harness=harness,
+        station=_FU_SLUG,
+        policy_flags={"dispatch": {"max_parallel": 2}},
+    )
+
+    assert harness.dispatched == []
+    (row,) = report.results
+    assert row.status is StationCycleStatus.HELD
+    assert row.followup_reviews == ()
+    assert any(f.code == "MRS-DRAIN-016" and "70-3-newest-review" in f.message for f in report.findings)
+
+
+def test_a_wave_cycle_dispatches_every_selected_follow_up_and_journals_each_for_the_next_cycle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _fu_env(tmp_path, monkeypatch)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = _fu_wave_station(tmp_path, vcs)
+    build_harness = FakeBuildHarness()
+    process = FakeProcess(alive=True)
+    args = _drain_args(once=True, campaign="camp-wave", max_in_flight=2, station=_FU_SLUG)
+
+    code = _run_drain(tmp_path, args, ledgers=ledgers, vcs=vcs, build_harness=build_harness, process=process)
+
+    assert code == EXIT_OK
+    assert sorted(build_harness.dispatched) == [(_FU_SLUG, "70.2"), (_FU_SLUG, "70.3")]
+    # The cycle's station row lists every follow-up the wave launched, in the journal the cap is folded from.
+    run_dir = dispatch_fleet.fleet_run_dir(tmp_path, "camp-wave")
+    expected = frozenset({(_FU_SLUG, normalize("70-3-newest-review")), (_FU_SLUG, normalize("70-2-middle-review"))})
+    launched = cli_dispatch._followups_launched_from_journal(FakeFs(), run_dir, "camp-wave")
+    assert launched == expected
+    entries = [json.loads(line) for line in (run_dir / "journal.jsonl").read_text(encoding="utf-8").splitlines()]
+    (outcome,) = [e for e in entries if e["kind"] == "dispatch-fleet-cycle" and e["phase"] == "outcome"]
+    (row,) = outcome["payload"]["stations"]
+    assert sorted(row["followup_reviews"]) == ["70-2-middle-review", "70-3-newest-review"]
+
+    # The next cycle of the campaign counts them: no further follow-up joins -- 70.1 keeps waiting.
+    plan = cli_dispatch.plan_followup_reviews(
+        repo_root=tmp_path,
+        slugs=(_FU_SLUG,),
+        vcs=vcs,
+        launched=launched,
+        policy_flags={"dispatch": {"max_parallel": 2}},
+    )
+    assert {(c.slug, c.key) for c in plan.selected[_FU_SLUG]} == expected
+    assert [str(c.key) for c in plan.waiting] == ["70.1"] and plan.launched == 2
+    second = _run_drain(tmp_path, args, ledgers=ledgers, vcs=vcs, build_harness=build_harness, process=process)
+    assert second == EXIT_OK
+    assert len(build_harness.dispatched) == 2  # the same two; the third never launched
+
+
+# -- campaign modes: a follow-up is a queue entry, so `leave_one` accounts for it like any story ---------------
+
+
+def test_leave_one_leaves_a_station_whose_only_queue_entry_is_a_follow_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Pinned as true today: `leave_one` keeps the station's tail, and a lone follow-up IS the tail."""
+    _fu_env(tmp_path, monkeypatch)
+    vcs = _FollowupVcs(tmp_path)
+    ledgers = {_FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])}
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(
+        tmp_path, mode=FleetCampaignMode.LEAVE_ONE, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG
+    )
+
+    assert harness.dispatched == []
+    (row,) = report.results
+    assert row.status is StationCycleStatus.LEFT_REMAINING
+    assert row.remaining == 1 and row.followup_reviews == ()
+
+
+def test_leave_one_dispatches_the_implementable_backlog_head_before_a_follow_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _fu_env(tmp_path, monkeypatch)
+    vcs = _FollowupVcs(tmp_path)
+    done_statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(_FU_STORY, _fu_spec(), "open")])
+    _seed_fleet(tmp_path, stories={_FU_SLUG: ["52-1-implementable"]})
+    ledgers = {_FU_SLUG: (("52-1-implementable", "backlog"), *done_statuses)}
+    harness = FakeBuildHarness()
+
+    report = _fu_cycle(
+        tmp_path, mode=FleetCampaignMode.LEAVE_ONE, ledgers=ledgers, vcs=vcs, harness=harness, station=_FU_SLUG
+    )
+
+    assert harness.dispatched == [(_FU_SLUG, "52.1")]
+    (row,) = report.results
+    assert row.status is StationCycleStatus.DISPATCHED
+    assert row.remaining == 2 and row.followup_reviews == ()
