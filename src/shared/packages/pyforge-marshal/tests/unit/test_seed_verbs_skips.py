@@ -511,6 +511,8 @@ def test_apply_skips_carries_an_unknown_repo_fingerprint_field_through():
             git_head="abc123",
             dirty=False,
             artifact_hashes=(("a", "aaaaaaaa"), ("b", "bbbbbbbb"), ("c", "cccccccc")),
+            repo_root="/work/repo",
+            git_common_dir="/work/repo/.git",
         ),
     )
 
@@ -518,6 +520,9 @@ def test_apply_skips_carries_an_unknown_repo_fingerprint_field_through():
 
     assert isinstance(result.repo_fingerprint, _FutureFingerprint)
     assert result.repo_fingerprint.provenance == "recorded-by-a-later-story"
+    # The repository identity (Story 82.12) rides through a skip like any other field.
+    assert result.repo_fingerprint.repo_root == "/work/repo"
+    assert result.repo_fingerprint.git_common_dir == "/work/repo/.git"
     assert result.repo_fingerprint.artifact_hashes == (("a", "aaaaaaaa"), ("b", "bbbbbbbb"))
 
 
