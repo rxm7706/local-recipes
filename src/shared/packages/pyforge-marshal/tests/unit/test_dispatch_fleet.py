@@ -3300,6 +3300,56 @@ def test_harness_done_040_advances_to_next_backlog_same_cycle(tmp_path: Path, mo
     assert any(f.code == "MRS-DRAIN-004" for f in report.findings)
 
 
+def test_harness_done_040_serial_advance_journals_the_refused_head_and_the_dispatched_next_as_members(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 82.10: a SERIAL cycle (``max_parallel`` 1) that attempts two stories -- the MRS-DISP-040 head refused,
+    then the next backlog story dispatched -- journals both as members, and the fold keeps the head's block. 040 is
+    not a re-preflightable gate, so the head carries no predicate; the sibling that dispatched is no block."""
+    from pyforge.marshal.cli import dispatch as dispatch_cli
+    from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-steward"
+    done_head = "43-4-query-plane"
+    next_story = "43-5-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [done_head, next_story]})
+    _seed_done_worktree_spec(tmp_path, slug, done_head)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        dispatch_cli,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (
+            DispatchLandingVerdict.REFUSED,
+            "https://github.com/rxm7706/local-recipes/pull/1033",
+            None,
+        ),
+    )
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((done_head, "backlog"), (next_story, "backlog"))},
+        build_harness=harness,
+        station=slug,
+        policy_flags=_CYCLE_POLICY_SERIAL,
+    )
+
+    assert harness.dispatched == [(slug, "43.5")]
+    (row,) = report.results
+    assert row.status is StationCycleStatus.DISPATCHED and row.story == done_head
+    head, nxt = row.members
+    assert (head.story, head.status) == (done_head, StationCycleStatus.REFUSED)
+    assert head.detail is not None and head.detail.startswith(f"{HARNESS_DONE_ADVANCE_CODE}:")
+    assert head.refuse_predicate is None
+    assert (nxt.story, nxt.status) == (next_story, StationCycleStatus.DISPATCHED)
+    assert nxt.detail is None and nxt.refuse_predicate is None
+
+    blocked, predicates = _journal_then_fold(tmp_path, report)
+    assert blocked == {slug: {done_head: head.detail}}
+    assert predicates == {}
+
+
 def test_harness_done_040_second_cycle_does_not_block_the_station(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -3576,6 +3626,37 @@ def test_two_refused_members_each_journal_a_predicate_from_their_own_detail_and_
         _W_PRIMARY: "MRS-GATE-010",
         _W_SECOND: "MRS-DISP-052",
     }
+    assert _W_SPECS[_W_SECOND][0] in predicates[_W_SLUG][_W_SECOND].spec_fingerprint
+
+
+def test_a_dispatched_primary_beside_a_refused_second_member_journals_only_the_seconds_block_and_predicate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The mirror of DW-FU-28-18-7: the primary launches and a NON-primary member is refused at a re-preflightable
+    gate. The station reads DISPATCHED with no aggregate predicate (the old code kept no trace of the second's
+    refusal either); the second's own outcome carries its predicate, and only its block is rebuilt next cycle."""
+    launches = _wave_station(tmp_path, monkeypatch, refusals={_W_SECOND: _W_GATE_FLAG})
+
+    report = _wave_cycle(tmp_path)
+
+    assert launches == [_W_PRIMARY, _W_SECOND]
+    (row,) = report.results
+    assert row.status is StationCycleStatus.DISPATCHED and row.story == _W_PRIMARY
+    assert row.refuse_predicate is None
+    primary, second = row.members
+    assert (primary.story, primary.status) == (_W_PRIMARY, StationCycleStatus.DISPATCHED)
+    assert primary.detail is None and primary.refuse_predicate is None
+    assert (second.story, second.status) == (_W_SECOND, StationCycleStatus.REFUSED)
+    assert second.detail == "MRS-DISP-052: the flag gate reds the spec"
+    assert second.refuse_predicate is not None
+    assert second.refuse_predicate["gate"] == "MRS-DISP-052"
+    assert _W_SPECS[_W_SECOND][0] in second.refuse_predicate["spec_fingerprint"]
+    assert _W_SPECS[_W_PRIMARY][0] not in second.refuse_predicate["spec_fingerprint"]
+
+    blocked, predicates = _journal_then_fold(tmp_path, report)
+    assert blocked == {_W_SLUG: {_W_SECOND: second.detail}}
+    assert set(predicates[_W_SLUG]) == {_W_SECOND}
+    assert predicates[_W_SLUG][_W_SECOND].gate == "MRS-DISP-052"
     assert _W_SPECS[_W_SECOND][0] in predicates[_W_SLUG][_W_SECOND].spec_fingerprint
 
 
