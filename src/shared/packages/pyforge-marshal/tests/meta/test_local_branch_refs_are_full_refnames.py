@@ -19,7 +19,9 @@ flagged. The reverse holds too: a parameter that takes a branch *name* and quali
 (``_NAME_ARGS``) must never receive a template starting ``refs/`` or a ``*_ref`` name, which would
 read ``refs/heads/refs/heads/<branch>`` (``fetch`` is one: the adapter names the remote's branch
 ``refs/heads/<ref>`` itself). Every parameter of every ``VcsPort`` method whose type mentions
-``str`` is classified in one of the three tables, so a new port parameter cannot slip past the scan.
+``str`` -- or a ``VcsRef``, the typed reference the commit-writing ``CommitPort`` wraps its branch and remote names
+in (Story 82.9) -- is classified in one of the three tables, so a new port parameter cannot slip past the scan. The
+scan reads a ``VcsRef(<expr>)`` argument as ``<expr>``: the wrapper changes the type, never what the name means.
 
 Not scanned, by design: git argv lists built outside ``adapters/vcs_git.py`` (AD-4 makes the
 adapter the git seam; the few direct shell-outs carry no branch names, per Story 61.1's reviews),
@@ -40,6 +42,7 @@ from pathlib import Path
 import pyforge.marshal
 from pyforge.marshal.core import dispatch as core_dispatch
 from pyforge.marshal.core import worktree_checkpoint
+from pyforge.marshal.ports.commit import CommitPort
 from pyforge.marshal.ports.vcs import VcsPort
 
 _PACKAGE = Path(pyforge.marshal.__file__).parent
@@ -76,17 +79,14 @@ _NAME_ARGS: dict[str, tuple[tuple[int | None, str], ...]] = {
     "fetch": ((2, "ref"),),
     "commit_paths_onto_remote_tip": ((None, "ref"),),
 }
-#: `str` parameters that are no ref at all.
+#: `str` (or `VcsRef`) parameters that are no ref at all. A commit `message` and a
+#: `preflight_skip_reason` are `Redacted` since Story 82.9 (AD-34), so neither is a `str` parameter.
 _NOT_A_REF = {
     ("tracked_paths_matching", "pathspec"),
     ("merge_branch", "subject"),
     ("fetch", "remote"),
     ("file_text_at_ref", "path"),
-    ("merge_ref_resolving", "message"),
-    ("commit_paths", "message"),
-    ("commit_paths_onto_remote_tip", "remote"),
-    ("commit_paths_onto_remote_tip", "message"),
-    ("commit_paths_onto_remote_tip", "preflight_skip_reason"),  # prose the hook's skip journal records
+    ("commit_paths_onto_remote_tip", "remote"),  # a remote's NAME, wrapped in a VcsRef
     ("push", "proven_on_main_sha"),  # a sha the adapter re-proves against the full origin/main ref
     ("spec_text_at_ref", "slug"),
     ("spec_text_at_ref", "story"),
@@ -94,6 +94,8 @@ _NOT_A_REF = {
     ("commit_paths_onto_remote_tip", "writes"),  # (path, text) pairs
     ("merge_ref_resolving", "resolutions"),  # path -> text
 }
+#: The ports a method may be declared on: reads and ref operations on `VcsPort`, commit text on `CommitPort`.
+_PORTS = (VcsPort, CommitPort)
 #: A revision parameter handed straight through to one of the reads above; its callers are
 #: scanned in turn (`commit_worktree_checkpoint` defaults `base` to "HEAD").
 _PASS_THROUGH = {("core/worktree_checkpoint.py", "base")}
@@ -317,14 +319,24 @@ def _names_a_bare_branch(template: str) -> bool:
     return False
 
 
+def _unwrap_vcs_ref(expr: ast.expr) -> ast.expr:
+    """``VcsRef(<expr>)`` -> ``<expr>`` (Story 82.9): the typed wrapper a `CommitPort` ref/remote argument
+    arrives in changes its type, never what the name inside it means."""
+    if isinstance(expr, ast.Call) and len(expr.args) == 1 and not expr.keywords:
+        func = expr.func
+        if (func.id if isinstance(func, ast.Name) else func.attr if isinstance(func, ast.Attribute) else "") == "VcsRef":
+            return expr.args[0]
+    return expr
+
+
 def _args_for(call: ast.Call, spec: tuple[tuple[int | None, str], ...]) -> list[ast.expr]:
     found = []
     keywords = {kw.arg: kw.value for kw in call.keywords if kw.arg}
     for index, name in spec:
         if name in keywords:
-            found.append(keywords[name])
+            found.append(_unwrap_vcs_ref(keywords[name]))
         elif index is not None and index < len(call.args):
-            found.append(call.args[index])
+            found.append(_unwrap_vcs_ref(call.args[index]))
     return found
 
 
@@ -353,20 +365,28 @@ def _findings(tree: ast.Module, rel: str, package: dict[str, set[str]] | None = 
     return sorted(bare), sorted(doubled)
 
 
+def _port_method(method: str):
+    """``method`` as declared on whichever port carries it."""
+    for port in _PORTS:
+        if hasattr(port, method):
+            return getattr(port, method)
+    raise AttributeError(method)
+
+
 def _str_params(method: str) -> list[str]:
     if method in _NON_PORT:
         func = _NON_PORT[method] or worktree_checkpoint.commit_worktree_checkpoint
         params = inspect.signature(func).parameters
     else:
-        params = dict(list(inspect.signature(getattr(VcsPort, method)).parameters.items())[1:])  # drop self
-    return [name for name, p in params.items() if "str" in str(p.annotation)]
+        params = dict(list(inspect.signature(_port_method(method)).parameters.items())[1:])  # drop self
+    return [name for name, p in params.items() if "str" in str(p.annotation) or "VcsRef" in str(p.annotation)]
 
 
 def test_every_str_parameter_of_every_port_method_is_classified() -> None:
     """A new or renamed `VcsPort` parameter must not silently drop out of the scan."""
-    port_methods = [
-        name for name, member in inspect.getmembers(VcsPort, inspect.isfunction) if not name.startswith("_")
-    ]
+    port_methods = sorted(
+        {name for port in _PORTS for name, _member in inspect.getmembers(port, inspect.isfunction) if not name.startswith("_")}
+    )
     classified = {(m, n) for table in (_REVISION_ARGS, _NAME_ARGS) for m, spec in table.items() for _i, n in spec}
     classified |= _NOT_A_REF
     missing = [(m, n) for m in [*port_methods, *_NON_PORT] for n in _str_params(m) if (m, n) not in classified]
@@ -382,7 +402,7 @@ def test_the_positional_indexes_match_the_signatures() -> None:
                 func = _NON_PORT[method] or worktree_checkpoint.commit_worktree_checkpoint
                 params = list(inspect.signature(func).parameters)
             else:
-                params = list(inspect.signature(getattr(VcsPort, method)).parameters)[1:]
+                params = list(inspect.signature(_port_method(method)).parameters)[1:]
             for index, name in spec:
                 if index is not None:
                     assert params[index] == name, (method, index, name)
@@ -441,11 +461,14 @@ def test_the_scan_catches_every_spelling_and_spares_the_rest() -> None:
             'vcs.commit_paths_onto_remote_tip(root, remote="origin", ref=local_branch_ref("main"), w=w, message=m)',  # 33
             "vcs.resolve_ref(root, head_branch)",  # 34: a name-taker given a name
             'vcs.fetch(root, "origin", "main")',  # 35: likewise
+            "vcs.merge_ref_resolving(wt, VcsRef(head_branch), resolutions=r, message=m)",  # 36: Story 82.9 -- the wrapper is read through
+            'vcs.commit_paths_onto_remote_tip(root, remote=VcsRef("origin"), ref=VcsRef("main"), w=w, message=m)',  # 37: a name in a VcsRef
+            'vcs.commit_paths_onto_remote_tip(root, remote=VcsRef("origin"), ref=VcsRef(local_branch_ref("main")), w=w)',  # 38: a ref in a VcsRef
         ]
     )
     bare, doubled = _findings(ast.parse(source), "scratch.py", {"IMPORTED_BASE": {"main"}})
-    assert bare == [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
-    assert doubled == [28, 29, 30, 31, 32, 33]
+    assert bare == [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 36]
+    assert doubled == [28, 29, 30, 31, 32, 33, 38]
 
 
 def test_an_imported_constant_is_resolved_across_modules() -> None:
