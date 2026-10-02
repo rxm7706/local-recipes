@@ -42,17 +42,17 @@ cheaper has passed.
 about the worktree's cleanliness, not about whether git exists at all or
 whether the plan is even coherent, so a dry run still refuses a non-repo,
 an escaping path, a never-write target, a symlink, and a directory target.
-`force=True` bypasses rung 6 ONLY -- it is the operator's explicit "yes, discard my
-hand-edit". Its real bound, stated rather than implied (found in review):
-because `force` returns before rung 6 runs AT ALL, and because
-`_read_managed_text` is the only code path in this module that ever looks
-at a `ManagedRecord`'s own path, under `--force` NO rung validates a
-managed record's path -- not its containment, not whether it is a symlink.
-Every path the PLAN names is still fully checked, by rungs 3-5, which
-`force` does not touch; the unchecked surface is exactly the caller-
-supplied record set, whose paths this run is not going to write through
-anyway. Rung 4, `never_write`, is bypassable by NEITHER FLAG: it is
-the frozen guard (AD-61), and a guard with an override is a suggestion.
+`force=True` bypasses rung 6 ONLY -- it is the operator's explicit "yes,
+discard my hand-edit". Its real bound, stated rather than implied (found in
+review): because `force` returns before rung 6 runs AT ALL, and because
+`_read_managed_text` is the only code path in this module that ever looks at
+a `ManagedRecord`'s own path, under `--force` NO rung validates a managed
+record's path -- not its containment, not whether it is a symlink. Every
+path the PLAN names is still fully checked, by rungs 3-5, which `force` does
+not touch; the unchecked surface is exactly the caller- supplied record set,
+whose paths this run is not going to write through anyway. Rung 4,
+`never_write`, is bypassable by NEITHER FLAG: it is the frozen guard
+(AD-61), and a guard with an override is a suggestion.
 
 **Stated bounds, not aspirations.** Rungs 3 and 5 evaluate a target the same
 way `fs._guard` does -- `Path.resolve()` on both sides -- and rung 4 does not
@@ -62,9 +62,9 @@ disagree about the same path (Story 82.11). That helper matches the target as
 the operator WROTE it and in its resolved form, and a refusal on either wins,
 so a symlinked ancestor (`docs -> real/`) no longer hides `docs/dreams/x.md`
 from `docs/dreams/*.md`; a directory target is also matched as `dir/`. Rung
-5's `lstat()` still inspects the LEAF only, and refuses two kinds of node there:
-a symlink (the write would go through it) and an existing directory (the
-runner's final `os.replace(tmp, target)` would fail with an untyped
+5's `lstat()` still inspects the LEAF only, and refuses two kinds of node
+there: a symlink (the write would go through it) and an existing directory
+(the runner's final `os.replace(tmp, target)` would fail with an untyped
 `IsADirectoryError` outside the `SeedError` taxonomy -- Story 82.12), the
 second as a `PreconditionFailure` (`directory-target`) like every other
 refusal in this ladder, inside the same rung rather than a seventh.
@@ -90,12 +90,12 @@ artifact should therefore NOT be supplied to `managed` -- filter it out
 with `skips.managed_after_skips(managed, plan, patterns)` first, passing the
 operator's skip patterns as well as the plan (Story 82.12): the plan holds
 only artifacts that had an action, and a hand-edited `copied-managed` file
-never has one, so only the patterns reach it. Otherwise `--skip`
-cannot protect a hand-edit at all: the artifact stays refused by rung 6,
-and the refusal's only offered remedy is `--force`, which discards every
-hand-edit in the repo including the one the operator was protecting. The
-filtering lives on the caller's side deliberately -- rung 6's contract is
-that it checks every record it is handed.
+never has one, so only the patterns reach it. Otherwise `--skip` cannot
+protect a hand-edit at all: the artifact stays refused by rung 6, and the
+refusal's only offered remedy is `--force`, which discards every hand-edit
+in the repo including the one the operator was protecting. The filtering
+lives on the caller's side deliberately -- rung 6's contract is that it
+checks every record it is handed.
 
 **Import surface.** This module reads `plan.types`, `fs.NeverWrite`,
 `detect.hashes`, `regions.parse`/`regions.markers`, `errors`, and
@@ -511,18 +511,19 @@ def check_preconditions(
     and -- where a region is at fault -- `path#region`.
 
     **Pass `managed` through `skips.managed_after_skips(managed, plan,
-    patterns)` if this run has skips, handing it the operator's skip patterns
-    as well as the plan.** Rung 6 checks EVERY record in `managed`, by
-    contract, and cannot tell that one of them was skipped -- so a record
+    patterns)` if this run has skips, handing it the operator's skip
+    patterns as well as the plan.** Rung 6 checks EVERY record in `managed`,
+    by contract, and cannot tell that one of them was skipped -- so a record
     for a skipped artifact refuses the run, and the refusal offers only
     `--force`, which discards every hand-edit in the repo including the one
     the operator skipped to protect. The plan alone is not enough: it holds
     only artifacts that had an action, and a hand-edited `copied-managed`
     file has none (Story 82.12), so only the patterns reach it. Rungs 3-5
     need no such care: they walk `plan.actions`, from which `apply_skips`
-    already removed the skipped artifacts. Filtering is the caller's job precisely because rung 6's
-    "check everything you are handed" contract is what makes it trustworthy
-    -- this function does not second-guess its own input.
+    already removed the skipped artifacts. Filtering is the caller's job
+    precisely because rung 6's "check everything you are handed" contract is
+    what makes it trustworthy -- this function does not second-guess its own
+    input.
 
     `process` defaults to a real `PosixProcess`; it is a parameter so a test
     can inject a fake that raises `ProcessError` for the git-absent row

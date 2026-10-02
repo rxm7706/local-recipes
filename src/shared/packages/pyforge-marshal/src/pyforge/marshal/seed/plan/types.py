@@ -11,8 +11,9 @@ current state, target state, and rationale"), `RepoFingerprint` (AD-57's
 tamper-evidence: a git HEAD + dirty flag + per-artifact content hash + the
 repository's own identity -- its resolved root and git common directory,
 Story 82.12 -- so a later `apply` story can refuse a `Plan` whose
-fingerprint no longer matches, or that was built for another repository), and `Plan` itself (P-04: "`Plan` is a serializable dataclass.
-Apply consumes only a `Plan` -- never re-derives state").
+fingerprint no longer matches, or that was built for another repository),
+and `Plan` itself (P-04: "`Plan` is a serializable dataclass. Apply consumes
+only a `Plan` -- never re-derives state").
 
 `seed.plan.build.build_plan` is this module's one producer; nothing here
 computes a `Plan` itself (P-03's purity discipline, mirrored across every
@@ -48,10 +49,10 @@ caller-contract violation on load, the same class `manifest.py::
 load_manifest`'s own `_require_text` reports before wrapping as
 `ManifestError` one layer up -- there is no such wrapping layer for a plan,
 so the plain `ValueError` is the final word here). The one exception is a
-`repo_fingerprint` written before it named its repository (Story 82.12): that
-is not a corrupt document but a stale one, which `RepoFingerprint.
-from_json_dict` reports as a `PreconditionFailure` (`stale-plan`) whose
-remedy is to re-run the plan.
+`repo_fingerprint` written before it named its repository (Story 82.12):
+that is not a corrupt document but a stale one, which
+`RepoFingerprint.from_json_dict` reports as a `PreconditionFailure`
+(`stale-plan`) whose remedy is to re-run the plan.
 
 No `__post_init__` validation on `Action`/`RepoFingerprint`/`Plan`
 themselves, for the same reason `Classification`/`LegacyRecord`

@@ -938,7 +938,12 @@ def test_skip_of_a_hand_edit_in_a_run_that_applies_something_else_keeps_the_stat
     the edited bytes would turn `--skip` into "protect it once"."""
     adopted = _manifest(_copied_managed("a", "A.md"))
     run_adopt(
-        clean_repo, adopted, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(adopted, clean_repo)
+        clean_repo,
+        adopted,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(adopted, clean_repo),
     )
     _commit_all(clean_repo)
     original_sha = next(record.body_sha for record in read_state(clean_repo).managed if record.id == "a")
