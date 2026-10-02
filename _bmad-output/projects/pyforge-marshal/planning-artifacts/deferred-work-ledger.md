@@ -6387,7 +6387,8 @@ status: open
   origin: spec-deferred 9408b40499a7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolved: 2026-10-02 (Story 82.10, spec-pyforge-marshal CAP-135) — a station row whose wave attempted more than one story now carries a `members` list beside its unchanged aggregate fields: each member's story, status and detail, and for a REFUSED member at a re-preflightable gate its refuse predicate, computed from that member's own detail for that member's own story (`cli/dispatch.py::_member_outcome`, `core/dispatch_fleet.MemberOutcome`). `_campaign_blocked_from_journal` folds a row that has members from them alone and rebuilds a block and predicate from every REFUSED one whatever the station's aggregate status, so a refused primary beside a dispatched sibling survives into the next cycle and re-preflight rate-limits it instead of being bypassed; a row without members (an older journal, a single-story wave) folds as before. Pinned by the mixed-wave tests in `tests/unit/test_dispatch_fleet.py`, including a two-cycle drain and a mutation that reduces the journal to the aggregate row.
   verified: 2026-10-01 — STANDS — cli/dispatch.py:4410-4417 sets cycle_status DISPATCHED if any wave member dispatched, and refuse_predicate is computed only when cycle_status is REFUSED (:4418-4427); one StationCycleResult per station (story=primary_story). A refused member's block lives only in the in-memory campaign_blocked (:4366), while the next cycle rebuilds blocks from the journal and reads only rows whose status is REFUSED (_campaign_blocked_from_journal, :4503-4525), so the refusal is lost and re-preflight rate-limiting is bypassed. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
@@ -6403,7 +6404,8 @@ status: open
   origin: spec-deferred fc48349c1968 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolved: 2026-10-02 (Story 82.10, spec-pyforge-marshal CAP-135) — with two refused members each one's predicate is now computed from its own detail for its own story and journaled on its member outcome, and both blocks are rebuilt next cycle; the aggregate row's predicate is the primary member's own, no longer the last member's gate read against the primary's story. The mixed-refuse wave the ledger said had no coverage is now `test_two_refused_members_each_journal_a_predicate_from_their_own_detail_and_story`.
   verified: 2026-10-01 — STANDS — cli/dispatch.py:4406-4427 parses the gate from last_detail (whichever member wrote a detail last) but computes the predicate for primary_story, and the single row records story=primary_story with that detail; with two refused members the predicate can describe another story's gate/spec, and the second story's block is not journaled at all. No test covers a mixed-refuse wave (refuse_predicate appears only in tests/unit/test_dispatch_fleet.py:957 and test_dispatch_hotfix.py, single-story). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic

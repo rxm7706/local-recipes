@@ -3965,6 +3965,34 @@ def _classify_attempt(
     )
 
 
+def _member_outcome(
+    *,
+    repo_root: Path,
+    slug: str,
+    story: str,
+    status: dispatch_fleet.StationCycleStatus,
+    detail: str | None,
+    verify_commands: Sequence[str],
+) -> dispatch_fleet.MemberOutcome:
+    """One wave member's own outcome (Story 82.10): its story, status and detail, and for a REFUSED member at a
+    re-preflightable gate the refuse predicate computed from THAT detail for THAT story -- never another member's."""
+    predicate_payload: dict[str, str] | None = None
+    if status is dispatch_fleet.StationCycleStatus.REFUSED and detail:
+        gate = dispatch_re_preflight.parse_refuse_gate(detail)
+        if dispatch_re_preflight.is_re_preflightable_gate(gate):
+            assert gate is not None
+            predicate_payload = _predicate_payload(
+                dispatch_re_preflight.compute_refuse_predicate(
+                    repo_root=repo_root,
+                    slug=slug,
+                    story=story,
+                    gate=gate,
+                    verify_commands=verify_commands,
+                )
+            )
+    return dispatch_fleet.MemberOutcome(story=story, status=status, detail=detail, refuse_predicate=predicate_payload)
+
+
 def _mint_wave_id(slug: str) -> str:
     """A fresh dispatch-wave id for ``slug`` (the cycle's own; a plan never mints one)."""
     return mint_run_id(slug, _format_utc_compact(_now_utc()), _random_token())
@@ -4850,6 +4878,7 @@ def execute_fleet_cycle(
         primary_story = stories_to_dispatch[0]
         pending = list(stories_to_dispatch)
         seen_dispatch: set[str] = set()
+        member_outcomes: list[dispatch_fleet.MemberOutcome] = []
         while pending:
             story = pending.pop(0)
             if story in seen_dispatch:
@@ -4882,9 +4911,29 @@ def execute_fleet_cycle(
                 campaign_blocked.setdefault(slug, {})[story] = reason
                 refused_any = True
                 last_detail = reason
+                member_outcomes.append(
+                    _member_outcome(
+                        repo_root=repo_root,
+                        slug=slug,
+                        story=story,
+                        status=dispatch_fleet.StationCycleStatus.REFUSED,
+                        detail=reason,
+                        verify_commands=effective_policy.verify_commands.value,
+                    )
+                )
                 continue
             status, detail, attempt_findings = _classify_attempt(slug, story, attempt)
             findings.extend(attempt_findings)
+            member_outcomes.append(
+                _member_outcome(
+                    repo_root=repo_root,
+                    slug=slug,
+                    story=story,
+                    status=status,
+                    detail=detail,
+                    verify_commands=effective_policy.verify_commands.value,
+                )
+            )
             if status is dispatch_fleet.StationCycleStatus.REFUSED:
                 campaign_blocked.setdefault(slug, {})[story] = detail or "dispatch refused"
                 refused_any = True
@@ -4943,19 +4992,12 @@ def execute_fleet_cycle(
             cycle_status = dispatch_fleet.StationCycleStatus.REFUSED
         else:
             cycle_status = dispatch_fleet.StationCycleStatus.IN_FLIGHT
+        # Story 82.10: the aggregate predicate is the PRIMARY member's own -- the old `last_detail` + `primary_story`
+        # pairing described another story's gate once a second member refused. A REFUSED station refused every
+        # attempted member, the primary (always attempted first) included.
         refuse_predicate_payload: dict[str, str] | None = None
-        if cycle_status is dispatch_fleet.StationCycleStatus.REFUSED and last_detail:
-            gate = dispatch_re_preflight.parse_refuse_gate(last_detail)
-            if dispatch_re_preflight.is_re_preflightable_gate(gate):
-                assert gate is not None
-                predicate = dispatch_re_preflight.compute_refuse_predicate(
-                    repo_root=repo_root,
-                    slug=slug,
-                    story=primary_story,
-                    gate=gate,
-                    verify_commands=effective_policy.verify_commands.value,
-                )
-                refuse_predicate_payload = _predicate_payload(predicate)
+        if cycle_status is dispatch_fleet.StationCycleStatus.REFUSED and member_outcomes:
+            refuse_predicate_payload = member_outcomes[0].refuse_predicate
         results.append(
             dispatch_fleet.StationCycleResult(
                 slug=slug,
@@ -4966,6 +5008,7 @@ def execute_fleet_cycle(
                 skipped=plan.skipped,
                 refuse_predicate=refuse_predicate_payload,
                 followup_reviews=tuple(followup_dispatched),
+                members=tuple(member_outcomes) if len(member_outcomes) > 1 else (),
             )
         )
 
@@ -4996,6 +5039,10 @@ def _campaign_blocked_from_journal(
     detached supervisor, and without this a station whose queued story was
     refused for a non-liveness reason (no tracked spec, an unlaunchable
     harness) would be retried on every single tick forever.
+
+    Story 82.10: a station row that carries per-member outcomes (a wave attempted more than one story) yields a
+    block and its refuse predicate for every REFUSED member, whatever the row's aggregate status -- a refused
+    primary beside a dispatched sibling is still blocked next cycle. A row without members is its own outcome.
     """
     blocked: dict[str, dict[str, str]] = {}
     predicates: dict[str, dict[str, dispatch_re_preflight.RefusePredicate]] = {}
@@ -5011,17 +5058,28 @@ def _campaign_blocked_from_journal(
         for row in stations:
             if not isinstance(row, dict):
                 continue
-            if row.get("status") != dispatch_fleet.StationCycleStatus.REFUSED.value:
-                continue
             slug = row.get("station")
-            story = row.get("story")
-            if not isinstance(slug, str) or not isinstance(story, str):
+            if not isinstance(slug, str):
                 continue
-            detail = row.get("detail")
-            blocked.setdefault(slug, {})[story] = detail if isinstance(detail, str) and detail else "dispatch refused"
-            predicate = _predicate_from_payload(row.get("refuse_predicate"))
-            if predicate is not None:
-                predicates.setdefault(slug, {})[story] = predicate
+            # Story 82.10: a row that carries member outcomes is folded from them alone (its aggregate `story` is
+            # the primary and its `detail` the last member's, so reading both would pin one story's block to another
+            # story's detail); an older row, or a single-story one, is its own one outcome. Either way every
+            # REFUSED outcome is a block, whatever the station's aggregate status.
+            raw_members = row.get(dispatch_fleet.MEMBERS_PAYLOAD_KEY)
+            members = [m for m in raw_members if isinstance(m, dict)] if isinstance(raw_members, list) else []
+            for outcome in members or [row]:
+                if outcome.get("status") != dispatch_fleet.StationCycleStatus.REFUSED.value:
+                    continue
+                story = outcome.get("story")
+                if not isinstance(story, str):
+                    continue
+                detail = outcome.get("detail")
+                blocked.setdefault(slug, {})[story] = (
+                    detail if isinstance(detail, str) and detail else "dispatch refused"
+                )
+                predicate = _predicate_from_payload(outcome.get("refuse_predicate"))
+                if predicate is not None:
+                    predicates.setdefault(slug, {})[story] = predicate
     return blocked, predicates
 
 
