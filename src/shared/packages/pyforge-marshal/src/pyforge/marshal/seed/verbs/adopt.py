@@ -209,7 +209,11 @@ the filtered view is the same set on every re-adopt).
 
 **Ordering, and why it is this order** (the Always bullets' own sequencing,
 restated as code): resolve (``_manifest_for_adopt``) -> detect (``classify``)
--> plan (``build_plan``) -> augment (``_augment_plan_with_first_claims``,
+-> record derived opt-outs in memory (``_state_with_opt_outs``, Story 82.13:
+a region whose markers were deleted is opted out per FR-112, and the plan and
+rung 6 must read that ONE answer, so it is recorded BEFORE the plan is built;
+the recorded state is written only where state is written today, below) ->
+plan (``build_plan``) -> augment (``_augment_plan_with_first_claims``,
 FR-83) -> skip (``skips.apply_skips``) -> preconditions
 (``verbs.preconditions.check_preconditions``, BEFORE any write, ``dry_run=
 not apply``) -> write ``.marshal/plan.json`` (ALWAYS, both dry-run and
@@ -243,8 +247,11 @@ itself), ``plan.types`` (``Action``, ``Plan``), ``apply.run`` (``run_apply``,
 (``check_preconditions``, ``ManagedRecord``), ``verbs.skips``
 (``apply_skips``, ``managed_after_skips``), ``state`` (``read_state``,
 ``write_state``, ``SeedState``, ``ManagedArtifact``, ``LegacyArtifact``,
-``RegionSpanRecord``, ``utc_timestamp``, ``seed_model_version``),
-``detect.hashes`` (``hash_content``, ``region_body_text``), ``regions.parse``
+``RegionSpanRecord``, ``record_opt_out``, ``utc_timestamp``,
+``seed_model_version``),
+``detect.hashes`` (``hash_content``, ``region_body_text``), ``detect.optout``
+(``classify_regions``, ``opt_outs_to_record``, ``opted_out_regions``, Story
+82.13), ``regions.parse``
 (``parse_regions``), ``regions.apply`` (``insert_region``), ``engine``
 (``materialize``, ``MaterializeRequest``, ``MaterializeVerb``,
 ``MaterializeResult``), ``model.manifest`` (``AppliesTo``, ``ArtifactClass``,
@@ -285,7 +292,7 @@ from ..detect.inventory import (
     escape_findings,
     writable_exemptions,
 )
-from ..detect.optout import opted_out_regions
+from ..detect.optout import classify_regions, opt_outs_to_record, opted_out_regions
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
 from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry
@@ -300,6 +307,7 @@ from ..state import (
     RegionSpanRecord,
     SeedState,
     read_state,
+    record_opt_out,
     seed_model_version,
     utc_timestamp,
     write_state,
@@ -596,30 +604,44 @@ def _managed_records(state: SeedState | None, manifest: Manifest) -> tuple[Manag
     return tuple(records)
 
 
-def _opted_out_pairs(
+def _state_with_opt_outs(
     manifest: Manifest, state: SeedState | None, repo_root: Path, escaping_ids: set[str]
-) -> frozenset[tuple[str, str]]:
-    """Every ``(artifact_id, region)`` the repository has opted out of --
-    recorded in ``state.opted_out`` or derived from a surviving claim whose
-    markers are gone -- for ``check_preconditions``' rung 6 (Story 82.13,
-    ``DW-FU-8-5-5``).
+) -> tuple[SeedState | None, frozenset[tuple[str, str]]]:
+    """``state`` with every DERIVED opt-out recorded in memory, and every
+    ``(artifact_id, region)`` the repository has opted out of -- recorded or
+    derived -- as pairs (Story 82.13, ``DW-FU-8-5-5``/``DW-FU-8-5-6``).
 
-    Rung 6 would otherwise report a deleted region as a hand-edit and offer
-    ``--force``, contradicting FR-112 and ``build_plan``, which already honours
-    the recorded half. Only HYBRID entries have regions, and an entry in
-    ``escaping_ids`` is not read (its target resolves outside the repo and the
-    run refuses to touch it); each file is read with this module's own
-    ``_read_text_or_blank``, so an absent or unreadable one is ``""`` and
-    derives nothing. ``detect.optout.opted_out_regions`` does the
-    classification, so this carries no second spelling of either source."""
-    return opted_out_regions(
-        (
-            (entry, _read_text_or_blank(repo_root / entry.path))
-            for entry in manifest.entries
-            if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION and entry.id not in escaping_ids
-        ),
-        state,
+    This is ``detect/optout.py``'s sequencing contract, applied: a region whose
+    markers the maintainer deleted is only a DERIVED opt-out until something
+    records it, and ``build_plan`` suppresses insertion on the RECORDED keys
+    alone, so a verb that plans first re-inserts the region the operator left
+    on purpose (FR-112). The run therefore records every derived pair, via
+    ``opt_outs_to_record`` and ``record_opt_out``, BEFORE it plans, and hands
+    ONE answer to both consumers -- ``frozenset(state.opted_out)`` of the
+    returned state to ``build_plan`` and the returned pairs to
+    ``check_preconditions``' rung 6 -- so the plan and the gate cannot disagree.
+
+    Nothing is written here. The returned state is in memory; the run persists
+    it exactly where it persists state today (after a non-empty apply), and a
+    dry run, a declined run and an empty-plan run write nothing.
+
+    Only HYBRID entries have regions, and an entry in ``escaping_ids`` is not
+    read (its target resolves outside the repo and the run refuses to touch
+    it); each file is read with this module's own ``_read_text_or_blank``, so an
+    absent or unreadable one is ``""`` and derives nothing. A never-adopted
+    repo (``state is None``) has no claim to derive from, so it records
+    nothing. ``detect.optout`` does the classification, so this carries no
+    second spelling of either source."""
+    hybrids = tuple(
+        (entry, _read_text_or_blank(repo_root / entry.path))
+        for entry in manifest.entries
+        if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION and entry.id not in escaping_ids
     )
+    if state is not None:
+        for entry, text in hybrids:
+            for artifact_id, region in opt_outs_to_record(classify_regions(entry, text, state), state):
+                state = record_opt_out(state, artifact_id, region)
+    return state, opted_out_regions(hybrids, state)
 
 
 def _merge_agents(existing: tuple[str, ...], requested: Sequence[str]) -> tuple[str, ...]:
@@ -919,7 +941,8 @@ def _managed_artifact_after_apply(
         assert entry.format is not None
         text = target.read_text(encoding="utf-8")
         spans = {span.name: span for span in parse_regions(text, entry.format)}
-        named = {name for name, _anchor in action.chosen_anchor}
+        action_named = {name for name, _anchor in action.chosen_anchor}
+        named = set(action_named)
         if prior is not None and prior.path == entry.path:
             named |= {recorded.name for recorded in prior.inserted_region_spans}
         recorded_spans = tuple(
@@ -946,7 +969,7 @@ def _managed_artifact_after_apply(
             # is no region to record.
             raise InternalError(
                 f"no managed region of {entry.path!r} was found to record immediately after the write"
-                f" (action named {[name for name in sorted(named)]!r})",
+                f" (action named {sorted(action_named)!r})",
                 remedy=(
                     "this indicates insert_region silently failed to insert the region it"
                     " was asked to -- a broken installation, not a problem with the"
@@ -1061,6 +1084,16 @@ def run_adopt(
     state = read_state(repo_root)
     inventory = classify(filtered_manifest, repo_root)
     escapes = escape_findings(inventory)
+    # Rung 6 refuses a record whose path does not resolve inside the repo, so a
+    # previously adopted entry that is now an escaping symlink would still
+    # refuse the whole run there (Story 82.11) -- it is already reported in
+    # `escape_findings` and planned for nothing, so it is neither handed to
+    # rung 6 nor read for opt-outs.
+    escaping_ids = {escape.entry_id for escape in inventory.escaping}
+    # From here `state` is the run's state WITH the derived opt-outs recorded
+    # (in memory; see `_state_with_opt_outs`), so the plan, rung 6 and the
+    # state this run writes all read the one opt-out set (Story 82.13).
+    state, opted_out_pairs = _state_with_opt_outs(filtered_manifest, state, repo_root, escaping_ids)
     opted_out = frozenset(state.opted_out) if state is not None else frozenset()
     plan = build_plan(filtered_manifest, inventory, opted_out=opted_out)
     plan = _augment_plan_with_first_claims(plan, inventory, filtered_manifest, state)
@@ -1070,11 +1103,6 @@ def run_adopt(
         patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory))),
         exempt=writable_exemptions(filtered_manifest, inventory),
     )
-    # Rung 6 refuses a record whose path does not resolve inside the repo, so a
-    # previously adopted entry that is now an escaping symlink would still
-    # refuse the whole run there (Story 82.11) -- it is already reported in
-    # `escape_findings` and planned for nothing, so it is not handed to rung 6.
-    escaping_ids = {escape.entry_id for escape in inventory.escaping}
     # `skip` is passed as patterns as well as `plan.skipped` carrying the
     # actioned ones: a hand-edited `copied-managed` file has no action to move
     # into `plan.skipped`, so only its path matching the pattern reaches it
@@ -1092,7 +1120,7 @@ def run_adopt(
         repo_root=repo_root,
         never_write=never_write,
         managed=managed_records,
-        opted_out=_opted_out_pairs(filtered_manifest, state, repo_root, escaping_ids),
+        opted_out=opted_out_pairs,
         force=force,
         dry_run=not apply,
     )
