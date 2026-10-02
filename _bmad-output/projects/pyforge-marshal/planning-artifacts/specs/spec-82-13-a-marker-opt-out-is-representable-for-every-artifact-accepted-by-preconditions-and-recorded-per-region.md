@@ -2,7 +2,7 @@
 title: '82.13: A marker opt-out is representable for every artifact, accepted by preconditions, and recorded per region'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'dfd5482b46238c5745573fbfccd19e439f99e8df'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -149,3 +149,34 @@ Closes: DW-FU-8-5-2, DW-FU-8-5-5, DW-FU-8-5-6.
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+**Status:** in-review (implemented; adversarial review has not run)
+
+**What changed.** Three defects of the Story 8.5 family, closed: DW-FU-8-5-2, DW-FU-8-5-5, DW-FU-8-5-6 (their rows in `deferred-work-ledger.md` are `closed` with a `resolved:` line).
+
+- One artifact-id grammar (no whitespace, no `#`): `model/manifest.py::ARTIFACT_ID_PATTERN` checked in `ManifestEntry.__post_init__` after the strip, and `state/schema.json` `$defs/artifactId` for `managed[].id`; the `opted_out` description no longer claims the artifact half is "as permissive as managed[].id". `legacy[].id` and `legacy_of` are untouched.
+- Per-region spans: `RegionSpanRecord` gains `body_sha`; `ManagedArtifact.inserted_region_span` became `inserted_region_spans` (non-empty iff hybrid, names unique, a hybrid's `body_sha` is its first span's); the wire shape is an array (`[]` for a non-hybrid); the schema accepts exactly one of the new key and the old one-span key (read-only), each coupled to `class`; the old shape reads as a one-region list and the next `write_state` emits the new one. `_without_region_claim` drops only the named span (the entry goes when none remain).
+- `detect/optout.py`: `_claims_region` matches any recorded span; new `opted_out_regions(entries_and_texts, state)` (recorded and derived alike, pure).
+- `verbs/preconditions.py`: `check_preconditions(..., opted_out=frozenset())`; rung 6 skips a recorded region ABSENT from the file whose pair is in the set. A present region is still hash-checked, an unparseable file is still a divergence, `force` and `init` are unchanged, and the module still imports nothing from `seed.state`.
+- `verbs/adopt.py` and `verbs/update.py`: rung 6 gets `opted_out_regions` over the hybrid entries (never an escaping one); `region_shas` come from every recorded span; `_managed_artifact_after_apply` records every declared region present after the write that the action named or the replaced record (same `path`) carried, each with its own offsets and body hash. `update._region_shas_for_record` keeps its synthesized current-hash pairs only for a declared region with no recorded span (an old-shape state). `verbs/check.py` checks every recorded span against its own hash.
+- Tests: a new `tests/unit/test_seed_verbs_region_opt_out.py` (both verbs, end to end) plus additions to the state-store, manifest, shipped-manifest, optout, preconditions and init tests; the two "at most one span" and two "as permissive" tests are retargeted, and every `inserted_region_span=` construction is migrated.
+
+**Tests retargeted because they pinned the contradiction this story removes.** `test_hand_edited_managed_content_on_reapply_is_refused_without_force` and `test_skip_protects_a_hand_edited_artifact_from_rung_6_refusal` (`test_seed_verbs_adopt.py`) deleted the markers and expected a rung-6 refusal; they now hand-edit the region body with the markers intact. Two tests that built a manifest entry with the id `has a space` (`test_seed_detect_optout.py`, `test_seed_plan_build.py`) now overwrite the id after construction, since the manifest refuses it; they keep pinning the defence-in-depth gates in rung 3 and `build_plan`.
+
+**Verification** (all from the run worktree, exit codes read directly).
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: 10770 passed, 1 skipped (10677 at the baseline).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: 130 passed, 3 skipped.
+- `pixi run -e pyforge-guild lint-types`: exit 0 (ruff, `ruff format --check`, mypy over the ten packages).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate`: OK, 80% floor.
+- `python scripts/spec_surface_reconcile.py`: exit 0; `spec-surface-check` names no drift once `spec-pyforge-marshal` and `spec-pyforge-core` memlogs name the changed governed paths (no `--write-baseline`).
+- `deferred-work-check`, `story-status-check`, `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`, `ledger-regression-check`, `governance-currency`: exit 0.
+- Mutation checks, each fix reverted in turn and only its tests failing: manifest id grammar; schema `managed[].id` ref; rung 6 ignoring the set; `adopt` and `update` not passing it; derived opt-outs left out of `opted_out_regions`; `adopt` and `update` recording only the first region; `adopt` and `update` not carrying the prior record; `_without_region_claim` dropping the whole entry; `_claims_region` matching the first span only; `check` checking the first span only; the old shape not reading; `adopt._managed_records` using one span; the first-span `body_sha` rule; the duplicate-span-name rule; the schema `oneOf`. One mutant survived once (`update` not carrying the prior record: the wholesale pass names every declared region, so no end-to-end run distinguishes it) and is now killed by a direct test of both `_managed_artifact_after_apply` helpers.
+
+**Residual risks.**
+
+- A DERIVED opt-out (markers gone, nothing recorded) now clears rung 6, but no mutating verb records it, `adopt` hands `build_plan` only `state.opted_out`, and `update`'s wholesale pass names every declared region (DW-FU-11-4, out of scope per the Design Notes): a mutating `adopt --apply` or `update --run` therefore re-inserts such a region rather than refusing. Before this story the refusal at rung 6 blocked that by accident (with a remedy that told the operator to undo the deletion). Recording the derivation in a verb is the follow-up; `--force` behaves as before.
+- State written by this release is not readable by an older marshal (the schema is closed); `seed_model_version` records which release wrote it.
+- `detect/optout.py::_claims_region` compares `path` and `state/store.py::_without_region_claim` does not (DW-FU-8-5-9, still open and untouched).
