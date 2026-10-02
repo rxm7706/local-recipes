@@ -323,7 +323,7 @@ development_status:
   82-1-the-session-check-s-kit-remedy-applies-the-kit: done
   83-1-steward-keys-resolves-its-http-bridge-on-first-use-and-reports-a-missing-age-as-a-duty-failure: done
   83-2-login-works-on-the-plain-http-local-stack-and-sync-retries-rate-limits-and-names-each-failed-candidate: backlog
-  83-3-the-platform-chart-and-the-compose-stack-run-a-postgres-image-that-carries-pgvector: backlog
+  83-3-the-platform-chart-and-the-compose-stack-run-a-postgres-image-that-carries-pgvector: done
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
