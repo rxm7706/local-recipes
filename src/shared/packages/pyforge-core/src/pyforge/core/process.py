@@ -253,7 +253,68 @@ class PosixProcess:
             # platform quirk) reports the conservative "not confirmed alive"
             # answer rather than escaping raw.
             return False
+
+        # Additional check: verify this is a process (thread group leader), not just a thread.
+        # A thread ID that is not a process leader should not be considered "alive" for dispatch
+        # session tracking purposes.
+        if not self._is_thread_group_leader(pid):
+            return False
+
         return True
+
+    def process_start_time(self, pid: int) -> float | None:
+        """Return the start time of the process with the given ``pid`` as
+        seconds since epoch, or ``None`` if the process does not exist or
+        cannot be read. This is used to verify process identity across PID
+        reuse. NEVER raises -- degraded hosts that cannot answer return
+        ``None`` rather than crashing the caller's liveness check."""
+        try:
+            # Read from /proc/pid/stat to get process start time
+            with open(f"/proc/{pid}/stat", "r") as f:
+                stat_fields = f.read().split()
+                # Field 22 (0-indexed 21) is starttime in clock ticks since boot
+                start_ticks = int(stat_fields[21])
+                
+            # Get system clock ticks per second and boot time
+            clock_ticks_per_sec = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
+            
+            with open("/proc/uptime", "r") as f:
+                uptime_seconds = float(f.read().split()[0])
+                
+            # Calculate boot time
+            import time
+            boot_time = time.time() - uptime_seconds
+            
+            # Convert start ticks to actual start time
+            start_time = boot_time + (start_ticks / clock_ticks_per_sec)
+            return start_time
+            
+        except (OSError, IOError, ValueError, IndexError, KeyError):
+            # Any failure reading /proc files or parsing values -> degrade gracefully
+            return None
+        except ZeroDivisionError:
+            # Pathological case where clock ticks per second is 0
+            return None
+
+    def _is_thread_group_leader(self, pid: int) -> bool:
+        """Check if the given PID is a thread group leader (i.e., a process, not just a thread).
+        Returns True if it's a process leader, False if it's a thread or if we can't determine."""
+        try:
+            # Read /proc/pid/status to check if Tgid == Pid
+            with open(f"/proc/{pid}/status", "r") as f:
+                for line in f:
+                    if line.startswith("Tgid:"):
+                        tgid = int(line.split()[1])
+                    elif line.startswith("Pid:"):
+                        actual_pid = int(line.split()[1])
+                        # If we have both values, check if they match
+                        if 'tgid' in locals():
+                            return tgid == actual_pid
+            return False  # Couldn't find both Tgid and Pid
+        except (OSError, IOError, ValueError, IndexError):
+            # If we can't read /proc files, degrade to True (assume it's a process)
+            # to maintain backward compatibility
+            return True
 
     def spawn_detached(self, argv: Sequence[str], *, cwd: Path, log_path: Path) -> int:
         if not argv:
