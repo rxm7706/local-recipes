@@ -218,8 +218,8 @@ BASELINE_UNDECLARED_IMPORTS: dict[str, dict[str, str]] = {
             "package (src/shared/packages/django-pyforge), not a distributable "
             "dependency this manifest can pin the normal way -- it reaches "
             "consumers.py only via a test-time PYTHONPATH override (pixi.toml's "
-            "pyforge-steward feature env, Story 48.6 comment) the same way "
-            "`_http` above reaches keys.py. Declaring it in [project.dependencies] "
+            "pyforge-steward feature env, Story 48.6 comment), not through a "
+            "declared dependency. Declaring it in [project.dependencies] "
             "or the [dashboard] extra would need django-pyforge packaged and "
             "published as a real distribution first, not a manifest line."
         ),
