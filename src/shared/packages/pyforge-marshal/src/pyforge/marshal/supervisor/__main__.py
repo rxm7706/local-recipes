@@ -24,7 +24,12 @@ outcome-entry append succeeded (``MRS-SPIN-006``), and AD-6's write-before-
 act ordering guarantees the intent entry lands BEFORE any spawn is even
 attempted -- so on the outcome-append-failure branch the intent entry is
 the ONLY proof of Marshal ownership that exists, and an outcome-only check
-would exit inert on a live run Marshal genuinely started. Then: append one
+would exit inert on a live run Marshal genuinely started. (Story 82.4 adds
+the one exception to "inert": a journal with NO run-launch/run-resume entry
+for ANY run id but at least one quarantined line cannot prove the run is
+someone else's, so the supervisor attaches anyway -- see "Unproven
+ownership" below.) Then: open the journal ONCE for appending (see "Held
+descriptor" below) and append one
 ``observation`` entry (``kind="supervisor-attach"``, payload ``{pid,
 watched_pid}``) -> resolve ``harness_run_id`` once, from that SAME
 run-launch outcome entry's own payload (Story 3.5 -- see "Idle-strand
@@ -46,7 +51,9 @@ one final ``observation`` (``kind="supervisor-detach"``, payload ``{pid,
 reason}`` -- ``"watched-process-exited"``, Story 3.5's own terminal ladder
 rung ``"idle-deferred"``, or ``"idle-retry-failed"`` when a
 ``stop-and-retry``'s ``resume`` failed after its ``stop`` had already
-succeeded) and exit 0.
+succeeded; since Story 82.4 also ``"signal-<NAME>"`` for SIGTERM/SIGHUP/
+SIGINT, and ``"journal-tampered"`` on the fail-closed path, which exits 1)
+and exit 0.
 
 **Idle-strand detection (Story 3.5, AD-9/AD-20, FR-12).** The two
 placeholder gaps Story 3.4 explicitly left for this story are closed here:
@@ -273,11 +280,65 @@ entry, a heartbeat, a ladder action, or the final detach -- is fatal to
 this process: it prints a diagnostic to its own stderr (already redirected
 to ``log_path`` by the parent's ``spawn_detached`` call -- this module
 never opens ``log_path`` itself) and exits non-zero rather than looping
-forever against a journal it cannot durably write to. A dead supervisor
-with no further heartbeats is itself a later-detectable condition (AD-9: "a
-dead supervisor is a reported condition ... never silence") -- surfacing it
-as a `status` finding is a later epic's own FR-36..40 scope, explicitly out
-of this story's Surface.
+forever against a journal it cannot durably write to -- and, since Story
+82.4, stops the watched run first when a harness run id is known (see
+"Tamper-evident journal" below), because exiting with the run still alive
+left it unsupervised behind a journal that read like a healthy one mid-tick.
+A dead supervisor with no further heartbeats is itself a later-detectable
+condition (AD-9: "a dead supervisor is a reported condition ... never
+silence") -- surfacing it as a `status` finding is a later epic's own
+FR-36..40 scope, explicitly out of this story's Surface.
+
+**Unproven ownership (Story 82.4, DW-FU-3-4-3).** The inert-check above reads
+the ``run-launch``/``run-resume`` entries ``fold`` could EVALUATE. A line
+``fold`` quarantined (a torn append, a corrupt byte, an unresolvable sidecar
+ref) never reaches ``by_kind``, so a run Marshal genuinely started could read
+as "not ours" and go unsupervised behind one stderr line. The decision is now
+three-way: a launch/resume entry naming this run id is proof of ownership
+(attach, payload unchanged); a launch/resume entry naming ONLY OTHER run ids
+proves the run is someone else's, so quarantine does not rescue it (inert);
+and a journal with no launch/resume entry for any run id but at least one
+quarantined line proves nothing either way -- the supervisor attaches, its
+``supervisor-attach`` carries ``quarantined: <count>`` and an ``MRS-SUPV-011``
+finding, and ``harness_run_id`` resolves to ``None`` (``MRS-SUPV-003``,
+heartbeat-only supervision). A journal with neither stays inert, as before.
+
+**Signals (Story 82.4, DW-FU-3-4-6).** SIGTERM, SIGHUP and SIGINT journal one
+final ``supervisor-detach`` whose ``reason`` names the signal
+(``"signal-SIGTERM"`` ...) and then end the run of this process normally
+(exit 0, like every other deliberate detach reason). ``signal`` is not an AD-9
+control channel -- the session cannot send this process a signal it could not
+already kill it with -- but the handler never acts mid-tick: it records the
+signal and raises a private exception only while the loop is SLEEPING, since a
+handler that returns lets ``time.sleep`` resume, and one that raised inside a
+``harness.stop``/``push`` subprocess call would kill the child half-way.
+Handlers are installed immediately before the attach append and the previous
+ones restored on every exit path; off the main thread (``signal.signal``
+raises ``ValueError``) none are installed. SIGKILL and a host crash stay
+detectable by heartbeat ABSENCE, as above -- no handler can see them.
+
+**Held descriptor, tamper-evident journal (Story 82.4, DW-FU-3-4-8).** The
+agent session reaches ``journal.jsonl`` through the Tier-3 backlink, so it can
+make the file unwritable, replace it, truncate it or remove it -- and every
+later ``append_line`` would then take the ``FsError`` branch and end this
+process with the run alive and a journal byte-identical to a healthy one
+mid-tick. The supervisor therefore opens the journal ONCE at attach
+(``FsPort.open_append``: ``O_APPEND``, never ``O_CREAT``) and writes every
+later entry through that descriptor, which keeps accepting appends however the
+path is treated. Each tick -- right after the liveness reading, only while the
+watched process is alive -- it compares the held file with what the path names
+now (``FsPort.held_file_state``): ``removed``, ``replaced`` (another file),
+``truncated`` (smaller than everything this process read and wrote, other
+writers only ever grow it) or ``read-only`` (a held descriptor does not notice
+``chmod``). Any of those, or an append that FAILS, makes the supervisor stop
+the watched run through ``HarnessPort.stop`` (``_fail_closed``), record why on
+its own stderr and, when the held descriptor still accepts it, in a final
+``supervisor-detach`` (``reason: "journal-tampered"``, ``MRS-SUPV-012``), and
+exit 1. With no harness run id there is nothing to stop against: it reports
+``MRS-SUPV-013`` once and KEEPS WATCHING, the ``MRS-SUPV-003``/``005``
+precedent for the identical "cannot act" condition, never exiting with the run
+alive. Privilege separation (a different uid, IPC) stays out of scope: it
+would contradict the journal being this process's only durable write target.
 
 **Why the read side DOES load sidecars.** ``core.journal.fold`` accepts an
 optional ``sidecars`` mapping for large, sidecar-referenced payloads, and
