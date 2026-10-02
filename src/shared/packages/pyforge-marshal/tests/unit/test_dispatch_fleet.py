@@ -4426,9 +4426,7 @@ def test_the_harness_done_re_plan_judges_the_next_follow_up_by_its_own_runs_only
     vcs = _FollowupVcs(tmp_path)
     head, second = _FU_STORY, "52-1-second-review"
     ledgers = {
-        _FU_SLUG: _fu_seed_station(
-            tmp_path, vcs, _FU_SLUG, [(head, _fu_spec(), "open"), (second, _fu_spec(), "open")]
-        )
+        _FU_SLUG: _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(head, _fu_spec(), "open"), (second, _fu_spec(), "open")])
     }
     vcs.subjects = (_fu_subject(_FU_SLUG, head), _fu_subject(_FU_SLUG, second))  # the head landed newest
     _seed_done_worktree_spec(tmp_path, _FU_SLUG, head)  # a harness-done worktree: dispatch_once refuses MRS-DISP-040
@@ -5100,8 +5098,7 @@ _FU_MARSHAL_TREE = "src/shared/packages/pyforge-marshal/**"
 def _fu_write_surface(tmp_path: Path, story: str, surface: str) -> None:
     """The primary checkout's tracked spec for ``story``: still a qualifying follow-up, declaring ``surface``."""
     (dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG) / f"spec-{story}.md").write_text(
-        "---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\n"
-        f'surface: ["{surface}"]\n---\n',
+        f'---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\nsurface: ["{surface}"]\n---\n',
         encoding="utf-8",
     )
 

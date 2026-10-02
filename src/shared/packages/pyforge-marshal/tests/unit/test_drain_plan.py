@@ -2028,8 +2028,7 @@ def test_the_plan_lists_the_follow_ups_a_two_wide_wave_would_launch(
         # Each spec declares its own glob, one marshal's default policy surface carries literally (the wave's
         # effective surface is the intersection of the two), so the surfaces are real and disjoint; it binds trivially.
         (specs / f"spec-{story}.md").write_text(
-            f'---\nstatus: done\nfollowup_review_recommended: true\nsurface: ["{surface}"]\n---\n'
-            + _BOUND_SPEC_BODY,
+            f'---\nstatus: done\nfollowup_review_recommended: true\nsurface: ["{surface}"]\n---\n' + _BOUND_SPEC_BODY,
             encoding="utf-8",
         )
     vcs.subjects = tuple(_fu_subject(_FU_SLUG, story) for story in reversed(stories))
