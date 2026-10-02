@@ -2,7 +2,7 @@
 title: '82.6: A resumed run escalates against the ceilings it launched under and journals before it rewrites policy'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 baseline_revision: '1a2ef172558d19a460e24731cc1eed9856444c0c'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -11,7 +11,21 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md
-deferred: []
+deferred:
+  - summary: >-
+      A chained resume judges a story deferred during an earlier resume against the launch run's recorded ceilings, not the ceilings that resume ran under.
+    evidence: |-
+      Only the run-launch intent records `limits` (read back by `_launch_limits_for_resume`); the run-resume intent records none. If policy.toml is re-rendered between the launch and the first resume, a story that defers during that resume has counters accrued under the re-rendered ceilings but is judged against the launch's. Unverified: whether `bmad-loop resume` re-reads `.bmad-loop/policy.toml` or reuses the run's own policy snapshot. Settle by reading bmad_loop's resume path, or by a live two-resume run with a ceiling re-rendered between the resumes.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py:2240
+    severity: medium (unverified)
+  - summary: >-
+      `run_spin` still writes the wire-layer profile overlay inside `_resolve_model_tiering`, before the launch intent and the in-flight guard.
+    evidence: |-
+      `attempt_spin_wire_layer` runs at the end of `_resolve_model_tiering`, ahead of `mint_run_id`, run-directory creation and the intent append. A failed intent append or a refused spin guard leaves that overlay rewritten with no journal record: the DW-3-12-3 pattern for a different file. Pre-existing, and outside this story's policy.toml scope; moving it after the intent changes when `data["wire"]` is set for the outcome payload, which the wire-layer capability's own contract owns.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py:875
+    severity: low
 declared_low_risk: false
 ---
 
@@ -149,4 +163,80 @@ All under `src/shared/packages/pyforge-marshal/`.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-02 — Review pass
+- verdicts: 34 findings — high 0, medium 1, low 25, false 7, maybe-false 1
+- findings:
+  - `[low]` `[reject]` BH1 launch ceilings can be recorded for a policy.toml that was never written (MRS-SPIN-015) — needs a failed write after a durable intent AND ceilings that differ from the file on disk; an unwritable loop home also defeats the later resume's own write (MRS-SPIN-016); the fix adds a journal field and a branch; accepted in Design Notes and carried to Auto Run Result as a residual risk.
+  - `[maybe-false]` `[defer]` BH2 a chained resume judges counters against the launch's ceilings, not those the earlier resume ran under — would settle on whether `bmad-loop resume` re-reads policy.toml or keeps the run's snapshot; if true, medium (unverified); recorded under `deferred`.
+  - `[low]` `[reject]` BH3 the resume intent's `escalated` now means "planned" — the intent mandated by this story is write-ahead by definition and `escalation_applied` on the outcome carries the fact; no consumer reads the field (dispatch.py's `escalated` is its own entry); a rename is public surface.
+  - `[low]` `[reject]` BH4 spin has no `escalation_applied` equivalent — before this story the spin write left no journal record at all; the finding stays in the report as MRS-SPIN-015; a new outcome field is public surface for an unlikely failure.
+  - `[low]` `[reject]` BH5 `policy_change` appears when nothing changes and names only the dev stage — a from==to record is accurate, and the outcome entry already journals `resolved_models` for every stage; the contract asks for "from and to model".
+  - `[false]` `[reject]` BH6 no recorded evidence for AC6 or the verification commands in the spec — the Triage Log and Auto Run Result are written by this step; the evidence is recorded below.
+  - `[low]` `[patch]` BH7 stale references to `_apply_retry_escalation` — the only live one was the docstring at test_spin.py:3239, fixed; the ledger rows, epics.md story sections, change-history and the dream are dated history and stay.
+  - `[low]` `[reject]` BH8 `_launch_limits_for_resume` reads journals before the cheap short-circuits and repeats an existing scan — resumes are rare and journals small; no named harm.
+  - `[low]` `[patch]` BH9 test gaps on the journal-reading path — the spawn-failure outcome assertion was real and is fixed with VG1's test; the run_id filter, an unmatched or unreadable journal falling back, and splitting one test are rejected: defensive branches that fall back to today's on-disk read.
+  - `[false]` `[reject]` BH10 spec-surface stamp left pending — `scripts/spec_surface_reconcile.py` and `spec-surface-check` both exit 0; the run forbids `--write-baseline`; both memlogs name every governed path changed.
+  - `[low]` `[reject]` BH11 API-shape nits (tuple return, frozen dataclass holding dicts, a second policy read, a redundant `int()`) — cosmetic; no caller can diverge.
+  - `[false]` `[reject]` EC1 `tier_plan.limits` None falls back to the on-disk file while a rewrite is pending — `render_policy_toml` seeds both `[limits]` keys unconditionally and refuses a value below 1, so `limits` is non-None whenever a plan exists.
+  - `[low]` `[reject]` EC2 a failed `_write_tier_policy` leaves limits and `policy_change` journaled with no spin outcome field — same root cause as BH1 and BH4.
+  - `[low]` `[reject]` EC3 policy.toml edited between the plan read and the write — a read-modify-write race that existed before; the window grew by one directory creation and one append; the fix re-reads and compares.
+  - `[low]` `[reject]` EC4 `from_model` is read at plan time, not at the write — same root cause as EC3.
+  - `[low]` `[reject]` EC5 a crash between the resume intent and the write leaves `escalated: true` unapplied — inherent in a write-ahead intent; same root cause as BH3.
+  - `[low]` `[defer]` EC6 `attempt_spin_wire_layer` still writes the wire overlay before the intent — pre-existing, a different file from policy.toml; recorded under `deferred`.
+  - `[low]` `[reject]` EC7 a non-`HarnessPolicyWriteError` raised by the writer escapes after a durable intent — already tracked as open DW-3-12-4; `_resolve_model_tiering` rendered the same inputs moments earlier, so the unwrapped path is not reachable in practice.
+  - `[false]` `[reject]` EC8 `policy_change` is journaled even when no model moved — the record is accurate and no consumer reads it; the contract requires the record when the model changes, not only then.
+  - `[low]` `[reject]` EC9 `policy_change` names only the dev stage — same root cause as BH5.
+  - `[low]` `[reject]` EC10 `_launch_limits_for_resume` reads every sidecar newest-first — same root cause as BH8.
+  - `[low]` `[patch]` EC11 stale references after deleting `_apply_retry_escalation` — same root cause as BH7; the test docstring was fixed.
+  - `[low]` `[reject]` EC12 the intent records the render's ceilings though the write may fail — same root cause as BH1.
+  - `[low]` `[reject]` EC13 the Design Notes sentence "the same loop home could not run it either way" is imprecise — the fix is editing this build's spec; the underlying mismatch is BH1.
+  - `[low]` `[reject]` EC14 "no model change exists without a record" overstates, since `policy_change` is dev-only — the outcome's `resolved_models` records every stage; same root cause as BH5.
+  - `[low]` `[patch]` VG1 the resume launch-failure outcome's `escalation_applied` is unpinned (removing it left test_spin.py green, mutation-demonstrated by the layer) — fixed: `test_resume_launch_failure_outcome_carries_escalation_applied` (write took effect, write failed); mutation D (the field removed from that branch) fails both cases on two runs.
+  - `[medium]` `[patch]` VG2 nothing pins that the policy.toml write lands before `harness.spin` / `harness.resume` (deferring both writes past the spawn left the suite green, mutation-demonstrated by the layer) — fixed: the two ordering tests log the write to the shared `events` list and assert it precedes "spin" / "resume".
+  - `[low]` `[reject]` IA1 `escalated` means "attempted" in the intent and spin has no applied flag — same root cause as BH3 and BH4.
+  - `[false]` `[reject]` IA2 `policy_change` attaches whenever a plan exists, not only when the model changes — same as EC8.
+  - `[low]` `[reject]` IA3 spin's from/to model is dev-stage only and `stories` is the whole preview — same root cause as BH5; the story spec's "stories that triggered it" are the selected stories the render was resolved for.
+  - `[low]` `[reject]` IA4 recorded ceilings may not be what the harness ran under after a degraded write — same root cause as BH1.
+  - `[low]` `[reject]` IA5 other policy.toml writers (config, refresh, adapters) stay unjournaled — pre-existing, operator-initiated re-renders; the Approach scopes the journaling to the two launching commands.
+  - `[false]` `[reject]` IA6 AC6 mutation evidence is prose only — re-verified this pass: mutations A (ceilings from the on-disk file only), B (resume writes at plan time) and C (spin writes inside the tiering decision) fail 4, 5 and 3 tests in test_spin.py; D fails the 2 new cases.
+  - `[false]` `[reject]` IA7 AC1 and AC2 are tested at `run_resume`, not through argparse — `test_resume_cli_accepts_slug_and_format` asserts `args.handler is run_resume` (test_spin.py:3124), a one-hop mapping.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+### Summary of implemented change
+
+A resumed run now escalates against the ceilings its own launch recorded, and neither `policy.toml` rewrite precedes its own journaled intent. The launch intent records `limits` (`max_dev_attempts`, `max_review_cycles`) and, when tiering would rewrite the file, `policy_change`. `_plan_retry_escalation` judges deferred stories against the ceilings of the `run-launch` entry whose outcome carries the resumed `harness_run_id`, and reads the on-disk file only for a launch that recorded none or a malformed record. `_resolve_model_tiering` and `_plan_retry_escalation` now return plans; `run_spin` and `run_resume` apply them (`_write_tier_policy`, `_write_retry_escalation`) only after the intent is durable. The resume outcomes gain `escalation_applied`. DW-3-12-1 and DW-3-12-3 are closed.
+
+### Files changed
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` -- plan/write split for both rewrites, launch-ceiling recording and read-back, `policy_change`, `escalation_applied`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py` -- two comments naming where the ceilings now come from (no behaviour change).
+- `src/shared/packages/pyforge-marshal/tests/unit/test_spin.py` -- one test per acceptance criterion plus the review-pass tests (launch-failure outcome, write-before-spawn ordering); the MRS-SPIN-016 test amended.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` -- DW-3-12-1 and DW-3-12-3 `status: closed` with `resolved:` lines.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` and `spec-pyforge-core/.memlog.md` -- surface-reconcile events naming `cli/spin.py`, `core/supervise.py` and `tests/unit/test_spin.py`; no baseline stamped.
+
+### Review findings
+
+34 findings from four layers. Patched (3 entries): VG2 (medium, write-before-spawn ordering now pinned), VG1 with BH9's spawn-failure part (low, launch-failure outcome now pinned), BH7 with EC11 (low, stale docstring). Deferred (2): BH2 (maybe-false, medium unverified) and EC6 (low), both under `deferred` in the frontmatter. Rejected: every other finding, each with its recorded reason in the Review Triage Log.
+
+### Follow-up review recommendation
+
+`followup_review_recommended: false`. Patched entries by verdict: medium 1, low 2. No high, and fewer than two medium; the patches are test-only and mutation-verified, so no unverified risk is named.
+
+### Verification performed
+
+All exit codes read directly, never through a pipe, on the patched tree:
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- exit 0, 10033 passed, 1 skipped, 12 deselected.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- exit 0, 130 passed, 3 skipped.
+- `pixi run --frozen -e pyforge-guild lint-types`, `spec-surface-check`, `story-status-check`, `deferred-work-check` -- exit 0 each; `python scripts/spec_surface_reconcile.py` -- exit 0 ("every tracked file governed or allowlisted; no drift").
+- Mutation checks (AC6), each applied to `cli/spin.py`, `test_spin.py` run, source restored and byte-compared: A (ceilings from the on-disk file only) 4 failed; B (resume writes at plan time) 5 failed; C (spin writes inside the tiering decision) 3 failed; D (`escalation_applied` dropped from the launch-failure outcome) 2 failed on two runs.
+
+### Residual risks
+
+- **Degraded spin write.** If `_write_tier_policy` fails (MRS-SPIN-015) after the durable intent, the journaled `limits` and `policy_change` describe a render that never landed, the harness runs on the prior file, and no spin outcome field says so. Rejected as low (BH1, BH4, EC2, EC12, IA4): it needs a failed write plus differing ceilings, and a loop home too broken to write is too broken for the later resume's own write. The Design Notes sentence "the same loop home could not run it either way" overstates this; it does not hold when the failure is transient.
+- **Wire overlay and chained-resume ceilings** are the two deferred items above.
+- **Review-pass history.** An auto-checkpoint commit (`b0673f5108`) captured mutation A while it was applied; the next checkpoint (`144c224471`) holds the restored file. `HEAD` has no tree difference against the last pre-mutation commit (`af06ac1750`).
