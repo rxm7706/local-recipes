@@ -5148,14 +5148,22 @@ def test_the_wave_admits_the_selected_follow_ups_as_members(tmp_path: Path, monk
     assert cli_dispatch.wave_held_stories(cycle) == ()
 
 
-def test_a_follow_up_whose_spec_declares_no_surface_is_held_out_of_the_wave_not_dispatched(
+def test_a_follow_up_the_wave_refuses_is_named_and_never_counted_as_launched(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A wave only fans out over specs with a known, disjoint surface -- a follow-up is no exception: it is held,
-    named by MRS-DRAIN-016, and nothing launches."""
+    """Two selected follow-ups with overlapping surfaces: the wave admits the newest and refuses the other
+    (`surface-overlap`, MRS-DRAIN-016). Only what was dispatched is recorded as launched, so the refused one
+    spends no cap in the campaign journal."""
     _fu_env(tmp_path, monkeypatch)
     vcs = _FollowupVcs(tmp_path)
-    ledgers = _fu_wave_station(tmp_path, vcs, ("70-3-newest-review",), surfaces=False)
+    stories = ("70-2-middle-review", "70-3-newest-review")
+    ledgers = _fu_wave_station(tmp_path, vcs, stories)
+    specs = dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG)
+    for story in stories:  # the same surface: the two reviews cannot run side by side
+        (specs / f"spec-{story}.md").write_text(
+            '---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\nsurface: ["src/shared/**"]\n---\n',
+            encoding="utf-8",
+        )
     harness = FakeBuildHarness()
 
     report = _fu_cycle(
@@ -5167,11 +5175,12 @@ def test_a_follow_up_whose_spec_declares_no_surface_is_held_out_of_the_wave_not_
         policy_flags={"dispatch": {"max_parallel": 2}},
     )
 
-    assert harness.dispatched == []
+    assert harness.dispatched == [(_FU_SLUG, "70.3")]
     (row,) = report.results
-    assert row.status is StationCycleStatus.HELD
-    assert row.followup_reviews == ()
-    assert any(f.code == "MRS-DRAIN-016" and "70-3-newest-review" in f.message for f in report.findings)
+    assert row.status is StationCycleStatus.DISPATCHED
+    assert row.followup_reviews == ("70-3-newest-review",)
+    (refused,) = [f for f in report.findings if f.code == "MRS-DRAIN-016"]
+    assert "70-2-middle-review" in refused.message and "surface-overlap" in refused.message
 
 
 def test_a_wave_cycle_dispatches_every_selected_follow_up_and_journals_each_for_the_next_cycle(
