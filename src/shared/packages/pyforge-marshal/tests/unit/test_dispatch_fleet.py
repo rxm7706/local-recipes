@@ -5089,6 +5089,21 @@ def test_a_follow_up_landed_but_not_yet_closed_reads_in_flight_and_is_not_launch
 # -- wave mode (`dispatch.max_parallel` > 1): the pyforge-marshal station's own tracked policy ----------------
 
 _FU_WAVE_STORIES = ("70-1-oldest-review", "70-2-middle-review", "70-3-newest-review")
+#: One declared glob per story: disjoint from each other, and each literally in marshal's default policy surface.
+#: The wave's effective surface is the spec's declared tuple INTERSECTED with the policy's (`set(a) & set(b)`,
+#: `gate.compute_effective_surface`), so a glob the policy does not carry reads as an empty surface.
+_FU_WAVE_SURFACES = ("pixi.toml", "pixi.lock", "environment.yaml")
+#: A glob the policy carries and two specs can both declare: their effective surfaces overlap.
+_FU_MARSHAL_TREE = "src/shared/packages/pyforge-marshal/**"
+
+
+def _fu_write_surface(tmp_path: Path, story: str, surface: str) -> None:
+    """The primary checkout's tracked spec for ``story``: still a qualifying follow-up, declaring ``surface``."""
+    (dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG) / f"spec-{story}.md").write_text(
+        "---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\n"
+        f'surface: ["{surface}"]\n---\n',
+        encoding="utf-8",
+    )
 
 
 def _fu_wave_station(tmp_path: Path, vcs: _FollowupVcs, stories=_FU_WAVE_STORIES, *, surfaces: bool = True):
@@ -5096,12 +5111,8 @@ def _fu_wave_station(tmp_path: Path, vcs: _FollowupVcs, stories=_FU_WAVE_STORIES
     tracked spec declares its own disjoint surface -- what lets the parallel wave admit it."""
     statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(story, _fu_spec(), "open") for story in stories])
     if surfaces:
-        specs = dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG)
-        for story in stories:
-            (specs / f"spec-{story}.md").write_text(
-                f'---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\nsurface: ["src/{story}/**"]\n---\n',
-                encoding="utf-8",
-            )
+        for story, surface in zip(stories, _FU_WAVE_SURFACES, strict=False):
+            _fu_write_surface(tmp_path, story, surface)
     vcs.subjects = tuple(_fu_subject(_FU_SLUG, story) for story in reversed(stories))
     return {_FU_SLUG: statuses}
 
@@ -5158,12 +5169,8 @@ def test_a_follow_up_the_wave_refuses_is_named_and_never_counted_as_launched(
     vcs = _FollowupVcs(tmp_path)
     stories = ("70-2-middle-review", "70-3-newest-review")
     ledgers = _fu_wave_station(tmp_path, vcs, stories)
-    specs = dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG)
-    for story in stories:  # the same surface: the two reviews cannot run side by side
-        (specs / f"spec-{story}.md").write_text(
-            '---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\nsurface: ["src/shared/**"]\n---\n',
-            encoding="utf-8",
-        )
+    for story in stories:  # the same glob: the two reviews cannot run side by side
+        _fu_write_surface(tmp_path, story, _FU_MARSHAL_TREE)
     harness = FakeBuildHarness()
 
     report = _fu_cycle(

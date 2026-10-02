@@ -2024,9 +2024,11 @@ def test_the_plan_lists_the_follow_ups_a_two_wide_wave_would_launch(
     stories = ("70-1-oldest-review", "70-2-middle-review", "70-3-newest-review")
     statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(story, _fu_spec(), "open") for story in stories])
     specs = dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG)
-    for story in stories:  # each spec declares its own surface (what the wave admits) and binds trivially
+    for story, surface in zip(stories, ("pixi.toml", "pixi.lock", "environment.yaml"), strict=True):
+        # Each spec declares its own glob, one marshal's default policy surface carries literally (the wave's
+        # effective surface is the intersection of the two), so the surfaces are real and disjoint; it binds trivially.
         (specs / f"spec-{story}.md").write_text(
-            f'---\nstatus: done\nfollowup_review_recommended: true\nsurface: ["src/{story}/**"]\n---\n'
+            f'---\nstatus: done\nfollowup_review_recommended: true\nsurface: ["{surface}"]\n---\n'
             + _BOUND_SPEC_BODY,
             encoding="utf-8",
         )
