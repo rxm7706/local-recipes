@@ -2946,6 +2946,39 @@ also depends on, and a doctor meta-test reds any `scripts-suite` step that is no
 **And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test` passes with no skip; `environment.yaml`
 is unchanged (a task-only `pixi.toml` change); `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
 
+## Epic 40: Phase 2 of the deferral burn-down: doctor's high deferrals
+
+Minted 2026-10-02 from the station Dream's entry of the same date and the operator's ruling to start Phase 2 after the
+inflow wave. The story fixes defects of shipped detector behaviour, so no CAP is minted and no flag is needed; a new epic
+because the epics that shipped them (4, 6, 17) are `done`. The story closes its deferred-work rows on landing.
+
+### Story 40.1: Doctor executes no code from the judged tree, and an unresolved head or a failed gather reads as unevaluable
+
+As an operator or CI lane reading Doctor's detector verdicts,
+I want Doctor to run only its own code, to read an unresolvable `head` as "cannot evaluate", and to grade a gather that
+failed outright as `incomplete`,
+So that a judged tree cannot run code in Doctor's process, and no verdict claims a measurement that never happened.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** FR-15 (Stories 6.4–6.6), marshal Story 17.3 (the chain-layers
+audit), steward Story 43.5 (the env-matrix check, canopy:AD-23), CAP-5 (an incomplete axis grades `incomplete`) •
+DW-FU-6-5-9, DW-FU-6-4-3, DW-FU-6-6-11 • **Surface:**
+`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py` (`_load_dashboard_generate`),
+`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py` (`_load_pixi_env_matrix_module`),
+`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py` (`gather`),
+`src/shared/packages/pyforge-doctor/src/pyforge/doctor/score.py` (`_is_gather_failure`), and their unit tests
+(`test_sources_board_chain_layers_audit.py`, `test_sources_factory.py`, `test_sources_ledger.py`, `test_score.py`)
+**Given** `board.py:1524-1538` `exec_module`s `target/scripts/fleet_scan.py` for the live chain-layers audit and
+`factory.py:1464-1473` `exec_module`s `target/scripts/pixi_env_matrix.py`; `ledger.gather` verifies only `base`
+(`ledger.py:409`), so an unresolvable `head` reaches `_check` (`:494`), which reports every `done` key `ledger-deleted`;
+and `score._is_gather_failure` (`score.py:51`, `:123-124`) recognises only the atlas shape
+**When** this story lands
+**Then** both loaders execute the copy in Doctor's own checkout (resolved from Doctor's own location, never from
+`target`), with `target` supplying only the data they read; an unresolvable `head` yields one `ledger-regression` WARN
+naming it and no FAIL; and a `degrade_on_exception` WARN (evidence carrying `exception`) makes its axis, and the
+composite, `incomplete`
+**And** the story closes DW-FU-6-5-9, DW-FU-6-4-3 and DW-FU-6-6-11 in the station's `deferred-work-ledger.md`;
+`pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

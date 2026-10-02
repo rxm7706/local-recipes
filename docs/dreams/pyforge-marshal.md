@@ -893,6 +893,16 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   and `"28"` `epic_surfaces` entries stay: their station-wide globs are what every later epic declares, and Epic 73's
   follow-up reviews of done 22.x/28.x stories need them; only their stale "stopgap" comments go (DW-FU-28-14-4,
   DW-OPS-2026-10-01-3). Owner `spec-pyforge-marshal`. → Epic 79 / Stories 79.1–79.2, specced 2026-10-01.
+- **2026-10-02** — **Phase 2 of the deferral burn-down: marshal's critical and high deferrals.**
+  The 2026-09-30 triage re-verified every open marshal deferral against `main`; 39 still stand (one critical, 36 high,
+  and two medium that share the parallel-wave code), grouped into 13 bundles by the code they share: the gate's
+  repository anchor, run liveness at landing, landing and ledger integrity, the supervisor's journal, budget and idle
+  signals, retry escalation, spin guards, status and teardown, egress and gate evidence, parallel-wave journaling, and
+  seed apply safety in three parts. Operator ruling 2026-10-02: start Phase 2 after the inflow wave, marshal first,
+  most severe first, on two dispatch lanes.
+  **Constraints:** each bundle is one `fix` story under the CAP that shipped the behaviour, so no new CAP and no flag;
+  each story closes its DW rows in `deferred-work-ledger.md` when it lands.
+  Owner `spec-pyforge-marshal`. → Epic 82 / Stories 82.1–82.13, specced 2026-10-02.
 - **2026-10-01 (night)** — **Found: a campaign forgets `--retry-environment-blocks` after its first cycle.**
   `_spawn_campaign_supervisor` hands the detached supervisor the station, the story list, the harness and the in-flight
   cap, but not `retry_environment_blocks`. A campaign launched with the flag skipped 81.1 (an OAuth-refresh race at

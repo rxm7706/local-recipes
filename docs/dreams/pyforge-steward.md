@@ -517,6 +517,14 @@ Drift — orphaned between stations.
   **What it looks like when fixed:** the printed remedy is the command that fixes the finding.
   **Constraints:** no new CAP (a defect of the session check's remedy text, CAP-5 / Story 63.4). Operator ruling 2026-10-01: fix it now.
   Owner: steward. → Epic 82 / Story 82.1, specced 2026-10-01.
+- **2026-10-02 — Phase 2 of the deferral burn-down: steward's high deferrals.**
+  Re-verified at HEAD: `steward keys` resolves its `_http` bridge at import (a fresh `import pyforge.steward.sync` trips
+  it too) and crashes on a missing `age`; the plain-HTTP compose stack drops its secure-only cookies; `steward sync` never
+  retries a rate limit and never prints a failed candidate; the chart runs stock `postgres:17`, with no pgvector.
+  **Constraints:** operator ruling 2026-10-02: start Phase 2 after the inflow wave. Fix stories, no new CAP, no flag; each
+  closes its DW rows on landing. Six already-fixed rows close without a story (DW-FU-11-1, DW-FU-26-1: Story 78.1;
+  DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1: Story 80.1).
+  Owner: steward. → Epic 83 / Stories 83.1–83.3, specced 2026-10-02.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

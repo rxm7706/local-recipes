@@ -5266,6 +5266,80 @@ So that running it clears the finding instead of printing a dry-run plan.
 **Then** the finding's remedy reads `pixi run -e pyforge-guild marshal seed kit --apply`
 **And** `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 
+## Epic 83: Phase 2 of the deferral burn-down: steward's high deferrals
+
+Minted 2026-10-02 from the station Dream's entry of the same date and the operator's ruling to start Phase 2 after the
+inflow wave. Each story fixes a defect of shipped behaviour under an existing capability, so no CAP is minted and no flag
+is needed; a new epic because the epics that shipped them (1, 8, 10, 41) are `done`. Each story closes its deferred-work
+rows on landing; six already-fixed rows were closed without a story (Stories 78.1 and 80.1).
+
+### Story 83.1: `steward keys` resolves its `_http` bridge on first use and reports a missing `age` as a duty failure
+
+As the operator running `steward keys` or `steward sync`,
+I want the `_http.py` bridge resolved when a verb first needs it, and a missing `age` reported as a duty failure,
+So that importing either module never crashes, and a missing tool reads as a named `keys <verb>` failure, not exit 70.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** CAP-1 (Epic 1, Stories 1.2–1.3); AD-8 • DW-1-3-14, DW-1-3-5
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py` (`locate_http_module`, the module-level
+bridge at :113-120, `KeysDuty.run`), `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py` (its `_http`
+import at :58-61), `src/shared/packages/pyforge-steward/tests/unit/` (the `test_keys_*` and `test_sync_*` modules)
+**Given** `keys.py:113-120` resolves `_http.py` at import time and raises `RuntimeError` outside a checkout, `sync.py:61`
+imports `_http` before `.keys` (so a fresh `import pyforge.steward.sync` raises `ModuleNotFoundError` and
+`steward sync reconcile` exits 70), and `KeysDuty.run` (`keys.py:1437-1444`) catches only `ValueError` and
+`CalledProcessError`
+**When** this story lands
+**Then** `import pyforge.steward.keys` and a fresh `import pyforge.steward.sync` succeed with no `_http.py` reachable, the
+bridge resolving when `resolve_headers`, `resolve_github_api_urls` or `open_url` is first called (and raising a named
+error there outside a checkout); `steward keys encrypt`, `decrypt`, `rotate` or `exec` with `age` or `age-keygen` absent
+returns `ok=False` naming the missing binary, exit 1, no traceback
+**And** the story closes DW-1-3-14 and DW-1-3-5 in the station's `deferred-work-ledger.md`;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
+### Story 83.2: Login works on the plain-HTTP local stack, and `sync` retries rate limits and names each failed candidate
+
+As the operator bringing up the local compose stack and running `steward sync reconcile --schedule`,
+I want login and CSRF-protected forms to work over the stack's plain HTTP, and sync to ride out a rate limit and name
+what failed,
+So that the documented local stack works past its health probe, and a partial sync failure is diagnosable from the CLI.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** pap:CAP-1 (Story 10.1's settings), pap:CAP-6 (Story 10.3's
+compose stack); CAP-57 (FR-27, Story 8.1's transport), CAP-60 (Story 8.4's batch) • DW-10-3-3, DW-FU-8-1-3, DW-8-4-1
+**Surface:** `src/platform/config/settings/production.py` (:47-55), `src/platform/compose/compose.yml` (the `platform` and
+`worker` environments), `src/platform/tests/`, `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py` (the
+transport seam, :307-349, and `reconcile_schedule_batch`, :1699-1762), `src/shared/packages/pyforge-steward/tests/unit/test_sync_*.py`
+**Given** `production.py:49-55` hardcodes `SESSION_COOKIE_SECURE`/`CSRF_COOKIE_SECURE = True` and the `__Secure-` cookie
+names while `compose.yml` serves plain HTTP (`DJANGO_SECURE_SSL_REDIRECT: "False"`, :160 and :240); every GitHub/Jira
+call in `sync.py` raises `SyncAPIError` on the first non-2xx status, a 429 included; and `reconcile_schedule_batch` keeps
+per-candidate detail in `details["candidates"]`, which `cli.py:1456-1457` never prints
+**When** this story lands
+**Then** the compose stack's `platform` service issues session and CSRF cookies a browser keeps over plain HTTP, the
+insecure posture honoured only when `COMPONENT_RUNTIME=local` (a deployed process keeps `Secure` cookies and the
+`__Secure-` names whatever its environment says); a 429, a rate-limited 403 or a 502/503/504 is retried a bounded number
+of times with backoff that honours `Retry-After`, then fails as today; and a `--schedule` run with a failed candidate
+prints one line per failed candidate naming its `github_item_id` and its summary
+**And** the story closes DW-10-3-3, DW-FU-8-1-3 and DW-8-4-1 in the station's `deferred-work-ledger.md`;
+`pixi run -e pyforge-guild platform-ci-local -- --test` and `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
+### Story 83.3: The platform chart and the compose stack run a Postgres image that carries pgvector
+
+As the operator installing or upgrading the platform chart,
+I want the bundled PostgreSQL image to carry the `vector` extension,
+So that the Liquibase hook's `pyforge-scribe:1` changeset applies instead of failing the release.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** `spec-pyforge-unifying-strategy` CAP-9, CAP-14 (Story 41.3);
+canopy:AD-9 • DW-FU-41-3-9
+**Surface:** `src/platform/deploy/charts/platform/values.yaml` (`postgres.image`, :229-234),
+`src/platform/compose/compose.yml` (`postgres`, :43), `src/platform/tests/test_chart_invariants.py`
+**Given** `values.yaml:229-234` defaults `postgres.image` to `repository: postgres`, `tag: "17"`, `compose.yml:43` runs
+`postgres:17`, neither image ships pgvector, and the `post-install,pre-upgrade` Liquibase hook
+(`templates/liquibase-job.yaml:14`) applies `pyforge-scribe:1` (`CREATE EXTENSION IF NOT EXISTS vector;`)
+**When** this story lands
+**Then** the chart's default `postgres.image` and the compose `postgres` service are the PostgreSQL 17 pgvector image
+(`pgvector/pgvector:pg17`, which `.github/workflows/pyforge-station-tests.yml:284` already runs), still overridable through
+`postgres.image.registry`/`repository`/`tag`, and a chart test pins the rendered PostgreSQL image to it
+**And** the story closes DW-FU-41-3-9 in the station's `deferred-work-ledger.md`;
+`pixi run -e pyforge-guild platform-ci-local -- --test` and `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

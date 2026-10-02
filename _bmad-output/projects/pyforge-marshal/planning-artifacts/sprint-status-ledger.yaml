@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 514
+# stories: 529
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -364,6 +364,19 @@ development_status:
   81-1-a-drain-cycle-whose-wave-holds-every-story-reports-held-instead-of-crashing: done
   81-2-the-drain-plan-reads-a-prose-park-only-where-one-is-written-never-in-a-story-s-own-rules: done
   81-3-the-campaign-supervisor-keeps-retry-environment-blocks-across-its-cycles: done
+  82-1-gate-evaluate-finds-the-real-repository-under-an-installed-package-and-never-passes-having-run-nothing: backlog
+  82-10-a-parallel-wave-journals-each-member-s-own-outcome-and-refuse-predicate: backlog
+  82-11-seed-apply-refuses-an-escaping-manifest-path-per-entry-and-guards-never-write-paths-through-symlinks-and-directories: backlog
+  82-12-seed-apply-binds-a-plan-to-its-repository-refuses-a-directory-target-with-a-remedy-and-honours-a-skip-on-a-hand-edit: backlog
+  82-13-a-marker-opt-out-is-representable-for-every-artifact-accepted-by-preconditions-and-recorded-per-region: backlog
+  82-2-marshal-land-keeps-a-live-run-s-branch-and-home-while-its-engine-is-alive-even-when-its-supervisor-is-dead: backlog
+  82-3-a-landing-claims-only-committed-promotions-rejects-a-malformed-merge-template-and-stamps-only-reconciled-drift: backlog
+  82-4-the-supervisor-attaches-despite-a-quarantined-launch-journals-its-spawn-and-every-stop-and-fails-closed-on-tampering: backlog
+  82-5-budget-and-idle-signals-judge-staleness-monotonically-keep-a-story-s-breach-story-scoped-and-read-only-real-idleness: backlog
+  82-6-a-resumed-run-escalates-against-the-ceilings-it-launched-under-and-journals-before-it-rewrites-policy: backlog
+  82-7-factory-spin-refuses-a-second-live-run-and-reports-a-child-that-dies-before-it-starts: backlog
+  82-8-status-reads-landings-the-way-deploy-does-and-filters-findings-with-rows-and-teardown-keeps-nested-worktrees: backlog
+  82-9-vcs-commit-text-is-declared-egress-and-gate-evaluate-writes-a-redacted-gate-record: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done
@@ -526,5 +539,7 @@ development_status:
   epic-80-retrospective: optional
   epic-81: done
   epic-81-retrospective: optional
+  epic-82: backlog
+  epic-82-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional

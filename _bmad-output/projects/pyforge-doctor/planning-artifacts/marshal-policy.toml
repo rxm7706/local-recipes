@@ -309,6 +309,18 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"40" = [  # Phase 2 of the deferral burn-down: doctor's high deferrals (a fix story, no new CAP), added 2026-10-02
+  # 40.1 touches only sources/board.py, sources/factory.py, sources/ledger.py, score.py and their tests, inside the
+  # default surface; restated here with the ledger rows it closes and every Spec memlog.
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+  # co-governor reconciles (spec-pyforge-core governs every station's src)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "39" = [  # pr-preflight runs every step of the Detectors scripts lane (CAP-42, CAP-43), added 2026-10-01
   # 39.1 adds a pixi task and a pr-preflight leg and renames a detectors.yml step; the meta-test is in the default surface.
   "src/shared/packages/pyforge-doctor/**",
