@@ -209,6 +209,9 @@ class FakeProcess:
             return False
         return self.calls <= self.alive_for
 
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
+
 
 class _ExitTrackingProcess(FakeProcess):
     """``FakeProcess`` that remembers its own LAST ``is_alive`` answer, so a
@@ -222,6 +225,9 @@ class _ExitTrackingProcess(FakeProcess):
     def is_alive(self, pid: int) -> bool:
         self.last_alive = super().is_alive(pid)
         return self.last_alive
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
 
 
 # The instant every fake clock below starts at -- shared so `FakeObserver`'s
@@ -2520,6 +2526,9 @@ class _AliveUntilStopped:
     def is_alive(self, pid: int) -> bool:
         self.calls += 1
         return len(self.harness.stop_calls) < self.after
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
 
 
 def test_a_channel_that_breaks_mid_run_is_never_treated_as_idle():
@@ -6959,6 +6968,9 @@ def test_a_signal_during_a_tick_ends_the_loop_when_that_tick_finishes(_sentinel_
                 signal.raise_signal(signal.SIGTERM)
             return alive
 
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
+
     process = _SignallingProcess(alive_for=10)
 
     rc = _supervise(fs, process=process)
@@ -6986,6 +6998,9 @@ def test_a_signal_never_overrides_a_natural_exit(_sentinel_signal_handlers):
             if self.calls == 2:
                 signal.raise_signal(signal.SIGTERM)
             return alive
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
 
     rc = _supervise(fs, process=_SignallingProcess(alive_for=1))
 

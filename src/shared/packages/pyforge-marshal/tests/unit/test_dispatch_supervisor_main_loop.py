@@ -329,6 +329,9 @@ class FakeProcess:
             return self._script.pop(0)
         return self._script[0]
 
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
+
     def run(self, argv, *, cwd=None, env=None, timeout=None):  # pragma: no cover - never reached
         raise AssertionError("no verify command may run in a unit test")
 

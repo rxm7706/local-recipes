@@ -916,6 +916,7 @@ def _merge_dispatch_overlay(
     """Story 22.1/22.2: overlay ``marshal factory dispatch`` session facts."""
     from .dispatch import (
         _compose_policy,
+        _is_dispatch_session_alive,
         gather_dispatch_journal_facts,
         latest_dispatch_run_dir,
         resolve_dispatch_session_verdict,
@@ -927,7 +928,7 @@ def _merge_dispatch_overlay(
     journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
     if journal.session_pid is None and journal.completion_verdict is None and journal.story_key is None:
         return facts
-    alive = journal.session_pid is not None and process.is_alive(journal.session_pid)
+    alive = _is_dispatch_session_alive(process, journal)
     supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     elapsed: float | None = None
     if journal.launched_at is not None:

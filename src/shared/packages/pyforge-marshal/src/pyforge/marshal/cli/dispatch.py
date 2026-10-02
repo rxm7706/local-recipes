@@ -1361,6 +1361,45 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     )
 
 
+def _is_dispatch_session_alive(
+    process: ProcessPort,
+    journal: dispatch_core.DispatchJournalFacts,
+) -> bool:
+    """Check if a dispatch session is genuinely alive, not just a reused PID.
+
+    Returns True only if:
+    1. The journal has a session PID
+    2. That PID is alive according to ProcessPort.is_alive (which now checks it's a process, not thread)
+    3. The process start time is consistent with the journal launch time (within tolerance)
+
+    Story 83.1: Fix the defect where a reused PID or thread ID can hold a wave
+    on a story that finished weeks ago.
+    """
+    if journal.session_pid is None:
+        return False
+
+    if not process.is_alive(journal.session_pid):
+        return False
+
+    # Additional verification: check process start time matches launch time within tolerance
+    if journal.launched_at is not None:
+        process_start_time = process.process_start_time(journal.session_pid)
+        if process_start_time is not None:
+            # Convert journal launch time to timestamp
+            journal_timestamp = journal.launched_at.timestamp()
+
+            # Allow up to 30 seconds tolerance for the process to start after the journal entry
+            # This accounts for the time between journaling the launch and the process actually starting
+            tolerance_seconds = 30.0
+            time_diff = process_start_time - journal_timestamp
+
+            # Process should have started within tolerance after the journal launch time
+            # But not significantly before it (which would indicate PID reuse)
+            if time_diff < -tolerance_seconds or time_diff > tolerance_seconds:
+                return False
+    return True
+
+
 def resolve_dispatch_session_verdict(
     *,
     fs: FsPort,
@@ -1389,7 +1428,7 @@ def resolve_dispatch_session_verdict(
         return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
-    session_alive = journal.session_pid is not None and process.is_alive(journal.session_pid)
+    session_alive = _is_dispatch_session_alive(process, journal)
     if journal.baseline_head_sha is None:
         return DispatchSessionVerdict.LIVE if session_alive else None
     try:
@@ -1446,7 +1485,7 @@ def _live_dispatch_evidence(
                     branch_merged=False,
                     story_merged_on_main=False,
                 ),
-                session_alive=journal.session_pid is not None and process.is_alive(journal.session_pid),
+                session_alive=_is_dispatch_session_alive(process, journal),
                 harness_reported_failure=harness_reported_failure,
             )
             or f"story {story_key!r} dispatch session is still live"
@@ -1467,7 +1506,7 @@ def _live_dispatch_evidence(
             story_key=story_key,
             verdict=verdict,
             git=git_facts,
-            session_alive=journal.session_pid is not None and process.is_alive(journal.session_pid),
+            session_alive=_is_dispatch_session_alive(process, journal),
             harness_reported_failure=harness_reported_failure,
         )
         or f"story {story_key!r} dispatch session is still live"
@@ -1609,7 +1648,7 @@ def station_finalize_pending_story(
             continue
     supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     landing_complete = landing_journal_indicates_complete(journal.landing_verdict)
-    session_alive = journal.session_pid is not None and process.is_alive(journal.session_pid)
+    session_alive = _is_dispatch_session_alive(process, journal)
     if session_alive and not landing_complete:
         # A session still running is plain in-flight, not finalize-pending:
         # CAP-2's own verdict already reads LIVE and the MRS-DISP-011 relay
@@ -3059,7 +3098,7 @@ def _ensure_dispatch_supervision(
         "run_id": run_id,
         "story_key": journal.story_key,
     }
-    session_alive = journal.session_pid is not None and process.is_alive(journal.session_pid)
+    session_alive = _is_dispatch_session_alive(process, journal)
     supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     verdict = resolve_dispatch_session_verdict(
         fs=fs,

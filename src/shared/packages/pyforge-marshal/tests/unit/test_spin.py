@@ -315,6 +315,9 @@ class FakeProcess:
     def is_alive(self, pid: int) -> bool:
         return pid in self.alive_pids
 
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
+
     def spawn_detached(self, argv: list[str], *, cwd: Path, log_path: Path) -> int:
         self.calls.append("spawn_detached")
         self._events.append("spawn_detached")
@@ -342,6 +345,9 @@ class _StubProcess:
 
     def is_alive(self, pid: int) -> bool:
         return False
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
 
 
 @pytest.fixture(autouse=True)

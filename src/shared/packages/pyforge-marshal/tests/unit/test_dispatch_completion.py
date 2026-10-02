@@ -109,6 +109,9 @@ def test_resolve_verdict_completed_when_land_journal_succeeded() -> None:
         def is_alive(self, _pid: int) -> bool:
             return False
 
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
+
     effective = SimpleNamespace(merge_subject_template=SimpleNamespace(value="Merge {key} into main"))
 
     verdict = resolve_dispatch_session_verdict(
@@ -144,6 +147,9 @@ def test_resolve_verdict_blocked_short_circuits_before_git_facts() -> None:
     class ExplodingProcess:
         def is_alive(self, _pid: int) -> bool:
             raise AssertionError("must not consult process facts")
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
 
     from types import SimpleNamespace
 
@@ -326,6 +332,9 @@ class FakeProcess:
 
     def is_alive(self, _pid: int) -> bool:
         return self.alive
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
 
     def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
         self.spawned.append(list(argv))

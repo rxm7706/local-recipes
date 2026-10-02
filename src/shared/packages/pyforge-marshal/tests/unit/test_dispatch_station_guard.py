@@ -148,6 +148,9 @@ class FakeProcess:
     def is_alive(self, _pid: int) -> bool:
         return self.alive
 
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
+
     def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
         return 6061
 
