@@ -2,10 +2,10 @@
 title: '82.4: The supervisor attaches despite a quarantined launch, journals its spawn and every stop, and fails closed on tampering'
 type: 'fix'
 created: '2026-10-02'
-status: 'done'
+status: 'in-review'
 baseline_revision: '7e2939beebd2a78fff6c0f962dc2aed85954bb64'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
