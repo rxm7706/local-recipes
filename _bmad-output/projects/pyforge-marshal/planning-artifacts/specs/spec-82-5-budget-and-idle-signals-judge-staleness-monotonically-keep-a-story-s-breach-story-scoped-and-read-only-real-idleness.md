@@ -2,7 +2,7 @@
 title: '82.5: Budget and idle signals judge staleness monotonically, keep a story''s breach story-scoped, and read only real idleness'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '3df4ea57b77418a4307b0d0ab54fb681a80e2a14'
 review_loop_iteration: 0
 followup_review_recommended: false
