@@ -399,6 +399,7 @@ from datetime import datetime
 from pathlib import Path
 from types import FrameType
 
+from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.clock_system import SystemClock
@@ -788,7 +789,7 @@ _JOURNAL_TAMPERED_DETACH_REASON = "journal-tampered"
 _JOURNAL_FAULT_KIND = "supervisor-journal-fault"
 
 
-class _SupervisorSignal(Exception):
+class _SupervisorSignal(PyforgeError, Exception):
     """Raised by the signal handler ONLY while the tick loop is sleeping, to
     cut the sleep short -- never mid-tick (see ``_make_signal_handler``)."""
 

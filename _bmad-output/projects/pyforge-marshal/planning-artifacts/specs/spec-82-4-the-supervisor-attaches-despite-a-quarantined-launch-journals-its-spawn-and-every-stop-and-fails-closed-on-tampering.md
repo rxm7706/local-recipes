@@ -337,6 +337,10 @@ Closes: DW-FU-3-4-3, DW-FU-3-4-6, DW-FU-3-4-7, DW-FU-3-4-8.
   - `[low]` `[reject]` (Edge Case Hunter 13, claim) The comment says an `open_append` that failed at attach keeps print-and-exit, but with a run id it calls `_fail_closed` — The comment lists what reaches the print-and-exit branch, which applies only without a run id; with a run id the stop is the intent's designed response to an append that fails, and a test pins it.
   - `[low]` `[reject]` (Edge Case Hunter 14, claim) `HarnessPort.stop` is called once only when no earlier action already stopped the run — Same analysis as Edge Case Hunter 2 and 10: a second stop on a stopped or finished run is idempotent and its outcome is recorded.
 
+### 2026-10-02 — Landing refused on CI (operator fix)
+- PR #1739's `core-test` failed: `pyforge-core/tests/meta/test_exception_root_sole_ownership.py` (spec-pyforge-core CAP-5) rejects the new `_SupervisorSignal(Exception)` as an exception root not reparented under `PyforgeError`. Marshal's `verify_commands` do not run pyforge-core's suite, so the session's own verification passed and the landing refused (MRS-DISP-056).
+  - `[high]` `[patch]` `_SupervisorSignal` now subclasses `PyforgeError, Exception`, the pattern `supervisor/intent_gap_preserve.py:64` already uses. Its only catch site is the named `except _SupervisorSignal:` in the tick loop, and no handler in the supervisor catches `PyforgeError` broadly, so the cut-short-sleep behaviour is unchanged. `pixi run --frozen -e pyforge-ci python -m pytest src/shared/packages/pyforge-core/tests/meta/test_exception_root_sole_ownership.py` exit 0; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` exit 0; `pixi run --frozen -e pyforge-guild lint-types` exit 0.
+
 ## Auto Run Result
 
 Status: done
