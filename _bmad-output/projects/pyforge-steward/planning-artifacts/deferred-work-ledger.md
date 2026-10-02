@@ -5685,3 +5685,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FRR-83-3: Follow-up review still recommended for story 83.3
+
+- source_spec: `planning-artifacts/specs/spec-83-3-the-platform-chart-and-the-compose-stack-run-a-postgres-image-that-carries-pgvector.md`
+  summary: Story 83.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 83.3 landed on origin/main with its tracked spec reading `status: done` and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-83-3-the-platform-chart-and-the-compose-stack-run-a-postgres-image-that-carries-pgvector.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-02 — dispatch-land finalize
+  status: open
