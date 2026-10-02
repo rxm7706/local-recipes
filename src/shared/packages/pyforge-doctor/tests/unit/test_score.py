@@ -151,6 +151,57 @@ def test_gather_failure_sentinel_with_a_different_check_name_is_not_mistaken_for
     assert result.grade is Grade.F  # a real, computed grade -- not incomplete
 
 
+def _degrade_warn(source, check="dream-chain", exception="OSError"):
+    """The shape ``sources.degrade_on_exception`` leaves behind when a gather raised
+    outright: the source's OWN ``check`` plus ``evidence={"exception": <class name>}``."""
+    return Finding(
+        source=source,
+        check=check,
+        status=DoctorStatus.WARN,
+        message=f"{check} could not be evaluated here",
+        evidence={"exception": exception},
+    )
+
+
+def test_a_degrade_on_exception_warn_grades_its_axis_incomplete():
+    # DW-FU-6-6-11: this finding failed BOTH halves of the old atlas-only predicate and
+    # graded the axis C -- a letter standing in for a gather that never completed.
+    result = grade([_degrade_warn(Source.DREAM_CHAIN)])
+    assert result.grade is Grade.INCOMPLETE
+    assert result.axis_scores == (AxisScore(axis="dream-chain", ok=0, warn=0, fail=0, grade=Grade.INCOMPLETE),)
+    assert "dream-chain" in result.reason
+
+
+def test_a_degrade_on_exception_warn_poisons_the_composite_beside_healthy_axes():
+    result = grade(
+        [
+            _finding(Source.STALENESS_REPORT, status=DoctorStatus.OK),
+            _degrade_warn(Source.SPEC_SURFACE, check="spec-surface"),
+        ]
+    )
+    assert result.grade is Grade.INCOMPLETE
+    axis_grades = {axis.axis: axis.grade for axis in result.axis_scores}
+    assert axis_grades["spec-surface"] is Grade.INCOMPLETE
+    assert axis_grades["staleness-report"] is Grade.A
+
+
+def test_an_ordinary_warn_with_no_exception_evidence_still_takes_a_letter_grade():
+    result = grade([_finding(Source.DREAM_CHAIN, check="dream-chain", status=DoctorStatus.WARN, evidence={"x": 1})])
+    assert result.grade is Grade.C
+    assert result.axis_scores == (AxisScore(axis="dream-chain", ok=0, warn=1, fail=0, grade=Grade.C),)
+
+
+def test_an_ordinary_warn_with_empty_evidence_still_takes_a_letter_grade():
+    assert grade([_finding(Source.DREAM_CHAIN, check="dream-chain", status=DoctorStatus.WARN)]).grade is Grade.C
+
+
+def test_a_fail_carrying_exception_evidence_is_a_real_finding_not_a_gather_failure():
+    # `degrade_on_exception` only ever emits a WARN; a FAIL that happens to mention an
+    # exception is a verdict about the subject, and keeps its letter.
+    fail = _finding(Source.DREAM_CHAIN, check="dream-chain", status=DoctorStatus.FAIL, evidence={"exception": "X"})
+    assert grade([fail]).grade is Grade.F
+
+
 # --- JSON round trip ---------------------------------------------------------
 
 

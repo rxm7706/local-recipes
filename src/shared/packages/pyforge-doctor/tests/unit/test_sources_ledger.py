@@ -226,6 +226,48 @@ def test_unresolvable_base_ref_reports_warn(tmp_path: Path) -> None:
     assert "origin/main" in finding.message
 
 
+# --- Head ref unresolvable --------------------------------------------------
+
+
+def test_unresolvable_head_ref_reports_one_warn_naming_it_and_no_fail(tmp_path: Path) -> None:
+    """DW-FU-6-4-3: with `base` resolvable and `head` not, `head_sha` was empty, neither
+    comparison branch ran, `_check` listed no ledgers at `head`, and every `done` key the
+    base ledger held read as a `ledger-deleted` FAIL -- for a ref that never resolved."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done", "1-2-bar": "done"})
+    base_sha = _commit_all(repo, "seed ledger")
+    _origin_main_at(repo, base_sha)
+
+    findings = ledger.gather(repo, base="origin/main", head="no-such-ref")
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.source is Source.LEDGER_REGRESSION
+    assert finding.check == "ledger-regression"
+    assert finding.status is DoctorStatus.WARN
+    assert "no-such-ref" in finding.message
+    assert finding.evidence == {"base": "origin/main", "head": "no-such-ref", "target": str(repo)}
+    assert not [f for f in findings if f.status is DoctorStatus.FAIL]
+
+
+def test_resolvable_head_is_still_judged_after_the_head_probe(tmp_path: Path) -> None:
+    """The probe is a gate, not a verdict: a `head` that resolves reaches the same comparison
+    it always did, and a genuinely deleted ledger is still a `ledger-deleted` FAIL."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done"})
+    base_sha = _commit_all(repo, "seed ledger")
+    _origin_main_at(repo, base_sha)
+    _delete_ledger(repo, "doctor")
+    _commit_all(repo, "delete the ledger")
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert [f.check for f in findings] == ["ledger-deleted"]
+    assert findings[0].status is DoctorStatus.FAIL
+
+
 # --- base == head, no parent ------------------------------------------------
 
 
