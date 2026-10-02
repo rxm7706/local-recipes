@@ -1029,9 +1029,7 @@ def test_an_old_shape_state_whose_only_recorded_region_was_deleted_neither_crash
 
 
 @_VERBS
-def test_an_old_shape_hybrid_the_plan_does_not_touch_keeps_its_present_siblings_in_the_written_state(
-    clean_repo, verb
-):
+def test_an_old_shape_hybrid_the_plan_does_not_touch_keeps_its_present_siblings_in_the_written_state(clean_repo, verb):
     """Recording the derived opt-out drops an old-shape record whole (its only
     span was the deleted region's). When `--skip` names its file the plan leaves
     the artifact alone, so nothing rebuilds it -- and the state the run writes for
@@ -1061,6 +1059,33 @@ def test_an_old_shape_hybrid_the_plan_does_not_touch_keeps_its_present_siblings_
         assert (span.start, span.end) == parsed[span.name].body_span
         assert span.body_sha == hash_content(region_body_text(text, parsed[span.name]))
     assert claim.body_sha == claim.inserted_region_spans[0].body_sha
+
+
+@_VERBS
+def test_an_escaping_entry_is_never_read_to_carry_its_record_back(clean_repo, monkeypatch, verb):
+    """The carry-back reads the file of the record it rebuilds, so an escaping
+    entry (Story 82.11) is offered to it never: its id is excluded and its path
+    is not read, where an id outside that set is rebuilt from the file."""
+    module = adopt_module if verb == "adopt" else update_module
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
+    (entry,) = manifest.entries
+    state = _adopt_with_human_text(clean_repo, manifest)
+    dropped = dataclasses.replace(state, managed=())
+    read_targets: list[Path] = []
+    real_read = module._read_text_or_blank
+
+    def spy(target: Path) -> str:
+        read_targets.append(target)
+        return real_read(target)
+
+    monkeypatch.setattr(module, "_read_text_or_blank", spy)
+    args = (state, dropped, frozenset(), {"hybrid": entry}, clean_repo)
+
+    assert module._carried_back_records(args[0], args[1], args[2], {"hybrid"}, args[3], args[4]) == ()
+    assert read_targets == []
+    (rebuilt,) = module._carried_back_records(args[0], args[1], args[2], set(), args[3], args[4])
+    assert [span.name for span in rebuilt.inserted_region_spans] == ["tiers", "model-badge"]
+    assert read_targets == [clean_repo / "HYBRID.md"]
 
 
 @_VERBS

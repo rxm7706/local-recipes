@@ -949,7 +949,11 @@ def _carried_hybrid_record(
     manifest, is not hybrid, or whose recorded ``path`` moved (that record
     describes another file). The caller never offers an escaping entry: its path
     is not read."""
-    if entry is None or entry.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION or not prior.inserted_region_spans:
+    if (
+        entry is None
+        or entry.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION
+        or not prior.inserted_region_spans
+    ):
         return None
     assert entry.format is not None
     text = _read_text_or_blank(repo_root / entry.path)
