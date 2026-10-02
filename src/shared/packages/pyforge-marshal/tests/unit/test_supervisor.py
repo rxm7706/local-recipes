@@ -35,6 +35,7 @@ from pyforge.marshal.core.journal import (
     build_entry,
     prepare_for_write,
 )
+from pyforge.marshal.ports.fs import AppendHandle, HeldFileState
 from pyforge.marshal.ports.harness import (
     DeferredStory,
     RunStatusSnapshot,
@@ -92,6 +93,12 @@ class FakeFs:
         # test_spin.py's own FakeFs.fail_append_line_on_call convention).
         self.fail_append_line_on_call: int | None = None
         self._append_line_call_count = 0
+        # Story 82.4: the held-descriptor family's own recorders/hooks.
+        self.open_append_calls: list[Path] = []
+        self.fail_open_append: Exception | None = None
+        self.held_file_state_calls = 0
+        self.held_state_override: HeldFileState | None = None
+        self.close_append_calls = 0
 
     def read_text(self, path: Path) -> str | None:
         self.read_text_calls.append(path)
@@ -114,6 +121,35 @@ class FakeFs:
 
     def ensure_dir(self, path: Path) -> None:
         pass
+
+    # --- Story 82.4: the held-descriptor append family ----------------------
+    # `append_held` delegates to `append_line` so `appended_lines` and
+    # `fail_append_line_on_call` keep working unchanged; `held_file_state`
+    # derives the healthy state from the journal text plus every appended
+    # byte, and `held_state_override` is the tamper hook a test flips from
+    # inside its injected `sleep` to model a replaced/truncated/removed/
+    # read-only journal between ticks.
+
+    def open_append(self, path: Path) -> AppendHandle:
+        self.open_append_calls.append(path)
+        if self.fail_open_append is not None:
+            raise self.fail_open_append
+        return AppendHandle(path=path, handle=object())
+
+    def append_held(self, handle: AppendHandle, line: str, *, fsync: bool) -> None:
+        self.append_line(handle.path, line, fsync=fsync)
+
+    def held_file_state(self, handle: AppendHandle) -> HeldFileState:
+        self.held_file_state_calls += 1
+        if self.held_state_override is not None:
+            return self.held_state_override
+        size = len((self.journal_text or "").encode("utf-8")) + sum(
+            len(line.encode("utf-8")) + 1 for _, line, _ in self.appended_lines
+        )
+        return HeldFileState(present=True, same_file=True, size=size, writable=True)
+
+    def close_append(self, handle: AppendHandle) -> None:
+        self.close_append_calls += 1
 
 
 class FakeProcess:
@@ -919,10 +955,13 @@ def test_sidecar_refs_skips_unparseable_and_non_placeholder_lines():
     assert supervisor_main._sidecar_refs(lines) == ()
 
 
-def test_a_missing_sidecar_blob_still_leaves_the_supervisor_inert():
+def test_a_missing_sidecar_blob_attaches_with_unproven_ownership():
     """An unreadable/absent blob maps to ``None``, which ``fold`` treats
-    exactly as it already treats an absent one -- the line quarantines and
-    the sidecar stays inert (and now SAYS so), rather than crashing."""
+    exactly as it already treats an absent one -- the line quarantines. Story
+    82.4 (DW-FU-3-4-3): that is a run-launch line the supervisor could not
+    evaluate, which proves nothing about who owns the run, so it ATTACHES (and
+    carries the quarantine count and ``MRS-SUPV-011`` on its attach entry)
+    instead of staying inert on a run Marshal genuinely started."""
     prepared = _big_intent_prepared("acme-run-1")
     fs = FakeFs(journal_text=prepared.line + "\n", blobs={})
     fs.blobs = {Path("/nowhere.json"): "{}"}  # non-empty, but not the real ref
@@ -939,14 +978,18 @@ def test_a_missing_sidecar_blob_still_leaves_the_supervisor_inert():
         _MAX_WALL_CLOCK_MINUTES_PER_STORY,
         _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs,
-        process=FakeProcess(alive_for=5),
+        process=FakeProcess(alive_for=1),
         clock=FakeClock(),
         observer=FakeObserver(),
+        harness=FakeHarness(),
         sleep=_no_sleep,
     )
 
     assert rc == 0
-    assert fs.appended_lines == []
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[0]["kind"] == "supervisor-attach"
+    assert entries[0]["payload"]["quarantined"] == 1
+    assert entries[0]["payload"]["finding"]["code"] == "MRS-SUPV-011"
 
 
 def test_inert_when_the_journal_read_raises_a_plain_value_error():
@@ -5197,14 +5240,15 @@ def test_inert_exit_prints_a_diagnostic_naming_the_run(capsys):
     assert "not a run marshal started" in err.lower()
 
 
-def test_inert_exit_on_a_quarantined_journal_says_so_distinctly(capsys):
-    """The half of the already-deferred quarantine finding that IS this
-    story's to fix: when ``fold`` cannot evaluate the run-launch line (a
-    torn append, a stray non-JSON byte), ``by_kind`` comes back empty and
-    this sidecar stays inert on a run Marshal genuinely DID start. Making
-    such a line recoverable is the separately-logged deferred item; making
-    the two causes distinguishable in the log is not, and used to be
-    impossible -- both exits printed nothing at all."""
+def test_a_quarantined_launch_line_attaches_with_unproven_ownership(capsys):
+    """Story 82.4 (DW-FU-3-4-3), the acceptance criterion verbatim: a run
+    directory whose only ``run-launch`` line is unparseable and whose watched
+    pid is alive. ``fold`` quarantines the line, ``by_kind`` comes back empty,
+    and the supervisor used to stay inert on a run Marshal genuinely DID
+    start -- a live run, unsupervised, behind one stderr line. It now journals
+    a ``supervisor-attach`` carrying the quarantine count and an ``MRS-SUPV-011``
+    WARN, and keeps heartbeating. With no recoverable harness run id the
+    ``MRS-SUPV-003`` branch applies unchanged (heartbeat-only supervision)."""
     fs = FakeFs(journal_text="{not valid json at all\n")
 
     rc = run_supervisor(
@@ -5219,17 +5263,139 @@ def test_inert_exit_on_a_quarantined_journal_says_so_distinctly(capsys):
         _MAX_WALL_CLOCK_MINUTES_PER_STORY,
         _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs,
-        process=FakeProcess(alive_for=1),
+        process=FakeProcess(alive_for=2),
         clock=FakeClock(),
         observer=FakeObserver(),
+        harness=FakeHarness(),
+        sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    # attach (with the WARN), the MRS-SUPV-003 record (no harness run id is
+    # recoverable), one live heartbeat, the exit heartbeat, detach.
+    assert [entry["kind"] for entry in entries] == [
+        "supervisor-attach",
+        "idle-harness-run-id-unavailable",
+        "supervisor-heartbeat",
+        "supervisor-heartbeat",
+        "supervisor-detach",
+    ]
+    attach_payload = entries[0]["payload"]
+    supervisor_pid = attach_payload["pid"]
+    assert attach_payload["watched_pid"] == 4242
+    assert attach_payload["quarantined"] == 1
+    assert attach_payload["finding"]["code"] == "MRS-SUPV-011"
+    assert attach_payload["finding"]["severity"] == "warn"
+    assert "could not be proven" in attach_payload["finding"]["message"]
+    assert entries[1]["payload"]["finding"]["code"] == "MRS-SUPV-003"
+    assert [entry["payload"]["watched_alive"] for entry in entries[2:4]] == [True, False]
+    assert entries[-1]["payload"] == {"pid": supervisor_pid, "reason": "watched-process-exited"}
+    err = capsys.readouterr().err
+    assert "MRS-SUPV-011" in err
+    assert "1 journal line" in err.lower()
+
+
+def test_a_proven_attach_keeps_the_two_field_payload():
+    """The quarantine fields belong to the UNPROVEN attach only: a journal
+    whose launch outcome evaluates cleanly attaches with exactly the
+    historical ``{pid, watched_pid}`` payload, byte for byte."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=0),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=FakeHarness(),
+        sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    attach = json.loads(fs.appended_lines[0][1])
+    assert attach["kind"] == "supervisor-attach"
+    assert sorted(attach["payload"]) == ["pid", "watched_pid"]
+
+
+def test_a_journal_with_neither_a_launch_entry_nor_a_quarantined_line_stays_inert(capsys):
+    """The other half of the Story 82.4 decision: a journal that holds
+    well-formed entries but no run-launch/run-resume line for ANY run id, and
+    no quarantined line, proves nothing and invites nothing -- inert with no
+    journal write, exactly as before."""
+    stray = build_entry(
+        id=JournalEntryId("spin-1", 0),
+        ts="2026-08-03T05:45:00.000Z",
+        run_id="acme-run-1",
+        kind="gate-record",
+        phase=Phase.OBSERVATION,
+        payload={},
+    )
+    fs = FakeFs(journal_text=prepare_for_write(stray).line + "\n")
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=FakeHarness(),
         sleep=_no_sleep,
     )
 
     assert rc == 0
     assert fs.appended_lines == []
-    err = capsys.readouterr().err
-    assert "unevaluable" in err.lower()
-    assert "1 journal line" in err.lower()
+    assert fs.open_append_calls == []
+    assert "not a run marshal started" in capsys.readouterr().err.lower()
+
+
+def test_a_launch_entry_for_another_run_plus_a_quarantined_line_stays_inert(capsys):
+    """A valid ``run-launch`` for a DIFFERENT run id is proof the run is
+    someone else's: one quarantined line beside it must not rescue ownership
+    (Boundaries: never attach to a journal that proves the run is someone
+    else's)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("some-other-run") + "\n{not valid json at all\n")
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=FakeHarness(),
+        sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    assert fs.appended_lines == []
+    assert "not a run marshal started" in capsys.readouterr().err.lower()
 
 
 # --- Story 3.8: stage-bound durability, and fleet-launch wiring (AD-46/FR-61) ----
