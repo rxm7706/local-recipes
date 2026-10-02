@@ -231,6 +231,23 @@ def test_exit_code_2_on_a_non_empty_target_without_force(tmp_path, capsys):
     assert not (target / ".git").exists()
 
 
+def test_exit_code_2_on_a_slug_that_renders_a_path_outside_the_repo(tmp_path, capsys):
+    """Story 82.11: an absolute or ``..`` path is refused when a manifest
+    entry is built, and the slug is spliced into a path -- so a ``--slug``
+    carrying one is the operator's usage error (exit 2, naming the flag),
+    not an unanticipated internal failure (exit 10)."""
+    target = tmp_path / "fresh"
+    target.mkdir()
+    manifest = _manifest(_copied_managed("dream", "docs/dreams/{{ slug }}.md", applies_to=AppliesTo.INIT))
+
+    code = seed_cli.run_init(_args(path=str(target), slug="../../x"), manifest=manifest)
+
+    out = capsys.readouterr().out
+    assert code == UsageError.exit_code == 2
+    assert "--slug" in out
+    assert "unanticipated" not in out
+
+
 def test_exit_code_2_on_a_target_that_is_a_plain_file(tmp_path, capsys):
     target_file = tmp_path / "not-a-directory"
     target_file.write_text("i am a file\n", encoding="utf-8")

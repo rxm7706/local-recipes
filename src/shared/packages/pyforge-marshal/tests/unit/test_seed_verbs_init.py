@@ -378,6 +378,34 @@ def test_applies_to_init_only_entries_are_included(fresh_target):
 # --- _manifest_for_init: filter AND slug resolution, generally -------------
 
 
+@pytest.mark.parametrize("slug", ["../../x", "a/../../b", "..\\x"])
+def test_manifest_for_init_refuses_a_slug_that_renders_a_non_repo_relative_path_as_a_usage_error(slug):
+    """Story 82.11 (DW-FU-7-4): ``ManifestEntry`` now refuses an absolute or
+    ``..`` path, and ``dataclasses.replace`` re-runs that check on the
+    slug-rendered path. The slug is the operator's own flag, so the refusal is
+    a ``UsageError`` (exit 2) naming it -- not a bare ``ValueError`` that the
+    CLI would report as an unanticipated internal failure (exit 10)."""
+    manifest = Manifest(
+        model_version=_VERSION,
+        never_write=(),
+        entries=(
+            ManifestEntry(
+                id="dream",
+                artifact_class=ArtifactClass.COPIED_SEEDED,
+                path="docs/dreams/{{ slug }}.md",
+                applies_to=AppliesTo.INIT,
+                rationale="test",
+            ),
+        ),
+    )
+
+    with pytest.raises(UsageError, match="--slug") as excinfo:
+        _manifest_for_init(manifest, slug)
+
+    assert excinfo.value.exit_code == 2
+    assert excinfo.value.remedy.strip()
+
+
 def test_manifest_for_init_filters_and_resolves_every_slug_placeholder():
     """The substitution is general, not hardcoded to the five packaged
     entries that carry `{{ slug }}` today -- exercised here against a

@@ -383,11 +383,21 @@ def _manifest_for_init(manifest: Manifest, slug: str) -> Manifest:
     every filtered entry rather than a hardcoded list of the five entries
     that carry one in the packaged manifest today -- a future manifest
     addition needs no code change here."""
-    entries = tuple(
-        dataclasses.replace(entry, path=entry.path.replace("{{ slug }}", slug))
-        for entry in manifest.entries
-        if entry.applies_to in (AppliesTo.INIT, AppliesTo.BOTH)
-    )
+    try:
+        entries = tuple(
+            dataclasses.replace(entry, path=entry.path.replace("{{ slug }}", slug))
+            for entry in manifest.entries
+            if entry.applies_to in (AppliesTo.INIT, AppliesTo.BOTH)
+        )
+    except ValueError as exc:
+        # `dataclasses.replace` re-runs `ManifestEntry.__post_init__`, which
+        # (Story 82.11, DW-FU-7-4) refuses an absolute path or a `..` segment.
+        # The slug is the one caller-supplied string spliced into a path, so
+        # that refusal is the operator's flag, not an internal failure.
+        raise UsageError(
+            f"--slug {slug!r} renders a manifest path that is not repo-relative: {exc}",
+            remedy="pass a --slug that is a plain name -- it must not contain a '..' segment",
+        ) from exc
     return Manifest(model_version=manifest.model_version, never_write=manifest.never_write, entries=entries)
 
 
