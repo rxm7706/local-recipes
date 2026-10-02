@@ -389,6 +389,41 @@ def test_a_hybrid_action_with_no_region_to_record_is_an_internal_error_not_a_bar
         adopt_module._managed_artifact_after_apply(action, entry, clean_repo)
 
 
+@pytest.mark.parametrize("verb", ["adopt", "update"])
+def test_the_new_record_carries_what_the_replaced_one_attested_to_beside_what_the_action_names(clean_repo, verb):
+    """A touched id's old record is replaced outright. An action that names only
+    one region (an adopt's pending one; any update source narrower than the
+    wholesale pass) must not drop the regions the prior record attested to --
+    and a prior record at a MOVED path describes a different file, so it is not
+    carried."""
+    from pyforge.marshal.seed.detect.inventory import ArtifactState
+    from pyforge.marshal.seed.verbs import adopt as adopt_module
+    from pyforge.marshal.seed.verbs import update as update_module
+
+    function = (adopt_module if verb == "adopt" else update_module)._managed_artifact_after_apply
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
+    (entry,) = manifest.entries
+    (prior,) = _adopt_with_human_text(clean_repo, manifest).managed
+    action = Action(
+        artifact_id="hybrid",
+        artifact_class=ArtifactClass.HYBRID_MANAGED_REGION,
+        current_state=ArtifactState.PRESENT_DIVERGENT,
+        target_state=ArtifactState.PRESENT_CONFORMANT,
+        target_path="HYBRID.md",
+        chosen_anchor=(("model-badge", None),),
+        rationale="test",
+    )
+
+    carried = function(action, entry, clean_repo, prior)
+    assert [span.name for span in carried.inserted_region_spans] == ["tiers", "model-badge"]
+    assert carried.inserted_region_spans == prior.inserted_region_spans
+    assert carried.body_sha == carried.inserted_region_spans[0].body_sha
+
+    assert [span.name for span in function(action, entry, clean_repo).inserted_region_spans] == ["model-badge"]
+    moved = dataclasses.replace(prior, path="OLD.md")
+    assert [span.name for span in function(action, entry, clean_repo, moved).inserted_region_spans] == ["model-badge"]
+
+
 # --- DW-FU-8-5-5: rung 6 and an opt-out ---------------------------------------
 
 
