@@ -204,8 +204,9 @@ def _matches(never_write: NeverWrite, relative_posix_str: str) -> str | None:
     ``relative_posix_str``, or ``None`` if none does -- but ``None``
     IMMEDIATELY, before any pattern is even considered, when
     ``relative_posix_str`` is itself a member of ``never_write.exempt``
-    (Story 10.8). The exempt check is a membership test against exact,
-    already-resolved paths -- cheap, and deliberately evaluated first so an
+    (Story 10.8). The exempt check is a membership test against exact
+    repo-relative forms (``never_write_match`` calls this once per form: as
+    written, then resolved) -- cheap, and deliberately evaluated first so an
     exempt artifact never pays for, or risks disagreeing with, the glob loop
     below.
 
