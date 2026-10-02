@@ -8026,3 +8026,14 @@ status: open
   severity: low
   promoted: 2026-10-02 — dispatch-land finalize
   status: open
+
+### DW-marshal-82-12: An `update --skip` that moves a migration's action into `plan.skipped` still records that migration in `migrations_applied`, so the skipped artifact is never migrated and the migration is not offered again.
+
+- source_spec: `planning-artifacts/specs/spec-82-12-seed-apply-binds-a-plan-to-its-repository-refuses-a-directory-target-with-a-remedy-and-honours-a-skip-on-a-hand-edit.md`
+  summary: An `update --skip` that moves a migration's action into `plan.skipped` still records that migration in `migrations_applied`, so the skipped artifact is never migrated and the migration is not offered again.
+  evidence: Read at `verbs/update.py::_build_state_after_apply`: `newly_applied` is every chain migration's `to_version`, and the state is written whenever `plan.actions` is non-empty, with no look at `plan.skipped`. Since this story, `run_update` runs `apply_skips` over the merged plan, so an operator `--skip` can reach a migration action. The module already treats the default-skipped migration-offered `copied-seeded` entries (in `plan.skipped`, no action) as consumed once offered, so whether an explicit `--skip` should leave the migration unrecorded (re-offered next run), refuse a skip that names a migration-claimed artifact, or be accepted as consumed like the offers is a semantics question, not a verified defect. Marked unverified. What would settle it: an operator ruling on that semantics, then a test that skips one migration action, applies another, and reads `migrations_applied` back.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py:955
+  origin: spec-deferred e9974b68057f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
