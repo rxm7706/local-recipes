@@ -11,7 +11,9 @@ line with no test failing -- the AD-34 boundary was one method call wide. ``FsPo
     prose, not a path, and is skipped) -- the name is reachable only through the constant, so (b) can see it;
 (b) any call that passes the constant, or a name bound from it, to a writer other than
     ``write_redacted_atomic`` -- ``FsPort.write_text_atomic``, ``Path.write_text``/``write_bytes``, ``open``,
-    ``atomic_write_text`` and the like, whether the name sits in an argument or in the receiver.
+    ``atomic_write_text`` and the like, whether the name sits in an argument or in the receiver. The writer set
+    names every ``FsPort`` write that takes a path (``write_text_atomic``, ``append_line``, ``open_append``,
+    ``append_held``, ``copy_file``, ``repoint_symlink_atomic``) and the ``os``/``pathlib`` link and symlink calls.
 
 Bounds (stated, not aspirational): a best-effort STATIC check like its AD-34 siblings. Taint is tracked per
 module through assignments (``path = directory / GATE_RECORD_FILENAME``), an ``import ... as`` alias and
@@ -54,6 +56,16 @@ _WRITER_NAMES = frozenset(
         "rename",
         "touch",
         "dump",
+        # Every other `FsPort` write that takes a path (`write_text_atomic` is caught by the `write` prefix) ...
+        "append_line",
+        "open_append",
+        "append_held",
+        "repoint_symlink_atomic",
+        # ... and the `os`/`pathlib` link and symlink calls, which can alias or replace the record's file.
+        "symlink",
+        "symlink_to",
+        "link",
+        "hardlink_to",
     }
 )
 
@@ -234,6 +246,14 @@ def test_guard_is_alive_a_name_bound_from_the_constant_is_followed():
         ("p = egress.GATE_RECORD_FILENAME\nopen(p, 'w')\n", ["2:open"]),
         ("atomic_write_text(d / GATE_RECORD_FILENAME, text)\n", ["1:atomic_write_text"]),
         ("shutil.copy(src, d / GATE_RECORD_FILENAME)\n", ["1:copy"]),
+        ("fs.append_line(d / GATE_RECORD_FILENAME, line, fsync=True)\n", ["1:append_line"]),
+        ("h = fs.open_append(d / GATE_RECORD_FILENAME)\nfs.append_held(h, line, fsync=True)\n", ["1:open_append", "2:append_held"]),
+        ("fs.copy_file(src, d / GATE_RECORD_FILENAME)\n", ["1:copy_file"]),
+        ("fs.repoint_symlink_atomic(d / GATE_RECORD_FILENAME, target)\n", ["1:repoint_symlink_atomic"]),
+        ("os.symlink(target, d / GATE_RECORD_FILENAME)\n", ["1:symlink"]),
+        ("(d / GATE_RECORD_FILENAME).symlink_to(target)\n", ["1:symlink_to"]),
+        ("os.link(target, d / GATE_RECORD_FILENAME)\n", ["1:link"]),
+        ("(d / GATE_RECORD_FILENAME).hardlink_to(target)\n", ["1:hardlink_to"]),
     ],
 )
 def test_guard_is_alive_every_plain_writer_spelling_fails(source, expected):
