@@ -25,7 +25,7 @@ from pyforge.core.process import ProcessError
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from pyforge.marshal.adapters.fs_local import FsError
-from pyforge.marshal.adapters.harness_bmadloop import HarnessError, render_policy_toml
+from pyforge.marshal.adapters.harness_bmadloop import HarnessError, HarnessPolicyWriteError, render_policy_toml
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_resume, run_spin
@@ -3051,6 +3051,42 @@ def test_resume_launch_failure_journals_a_failed_outcome(home, capsys):
     assert process.spawn_calls == []
 
 
+@pytest.mark.parametrize("write_succeeds", [True, False], ids=["write-took-effect", "write-failed"])
+def test_resume_launch_failure_outcome_carries_escalation_applied(home, monkeypatch, write_succeeds):
+    """Story 82.6: the FAILED launch outcome (``harness.resume`` raising)
+    reports, like the successful one, whether the planned floor-raise took
+    effect -- the intent named it, so the outcome must say what became of it."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.fail_resume = HarnessError("cannot launch: bmad-loop not found")
+    process = FakeProcess()
+    _seed_resume_over_launched_run(
+        home,
+        fs,
+        harness,
+        limits=_LAUNCH_LIMITS,
+        deferred=(_deferred_story("3.6", attempt=2),),
+        policy_toml=_BASELINE_POLICY_TOML,
+    )
+    if not write_succeeds:
+
+        def failing_write(document, loop_home):
+            raise HarnessPolicyWriteError("cannot write policy.toml: disk full")
+
+        monkeypatch.setattr(spin_module, "write_policy_document", failing_write)
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert [e["kind"] for e in entries] == ["run-resume", "run-resume"]
+    assert entries[0]["payload"]["escalated"] is True
+    assert entries[1]["phase"] == "outcome"
+    assert entries[1]["payload"]["pid"] is None
+    assert entries[1]["payload"]["escalation_applied"] is write_succeeds
+    assert process.spawn_calls == []
+
+
 def test_resume_outcome_write_failure_registers_a_warn_but_still_spawns(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
@@ -3236,7 +3272,7 @@ def test_resume_escalates_on_a_review_cycle_ceiling_through_the_full_pipeline(ho
     the ``review_cycle >= max_review_cycles`` branch in isolation, but every
     ``run_resume``-level scenario until now triggered only via ``attempt``
     -- this exercises the review-cycle axis end to end through
-    ``_apply_retry_escalation``/the journal payload."""
+    ``_plan_retry_escalation``/``_write_retry_escalation``/the journal payload."""
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     process = FakeProcess()
@@ -3708,8 +3744,9 @@ def test_resume_journals_the_floor_raise_before_it_writes_policy_toml(home, monk
     """Story 82.6, AC 5 (resume half): at the moment ``policy.toml`` is
     written, the durable (fsynced) intent already names the change -- from and
     to model and the stories that triggered it."""
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
+    events: list[str] = []
+    fs = FakeFs(dirs={home}, events=events)
+    harness = FakeHarness(events=events)
     process = FakeProcess()
     _seed_resume_over_launched_run(
         home,
@@ -3723,6 +3760,7 @@ def test_resume_journals_the_floor_raise_before_it_writes_policy_toml(home, monk
     real_write = spin_module.write_policy_document
 
     def spy(document, loop_home):
+        events.append("write-policy")
         seen.append([(json.loads(line), fsync) for _, line, fsync in fs.appended_lines])
         return real_write(document, loop_home)
 
@@ -3739,22 +3777,33 @@ def test_resume_journals_the_floor_raise_before_it_writes_policy_toml(home, monk
     assert intent["payload"]["escalated_stories"] == ["3.6"]
     assert (intent["payload"]["from_model"], intent["payload"]["to_model"]) == ("sonnet", "opus")
     assert harness.resume_calls, "the resume itself still ran after the write"
+    # The rewrite lands before the harness is told to resume -- `bmad-loop
+    # resume` reads policy.toml once, at start-up, so a later write is moot.
+    assert events.index("write-policy") < events.index("resume")
     assert _outcome_payload_of(fs)["escalation_applied"] is True
 
 
-def _tier_policy_launch(home, tmp_path, monkeypatch, *, on_disk: str | None = _BASELINE_POLICY_TOML):
+def _tier_policy_launch(
+    home,
+    tmp_path,
+    monkeypatch,
+    *,
+    on_disk: str | None = _BASELINE_POLICY_TOML,
+    events: list[str] | None = None,
+):
     """A ``run_spin`` fixture whose tiering decision WOULD rewrite
     ``policy.toml`` (one story declaring ``difficulty: heavy`` against a real
     ``model_tier_map``), with ``on_disk`` already in place as the file it
-    would replace. Returns ``(fs, harness, policy_path)``."""
+    would replace. ``events`` is the shared ordering log ``FakeFs`` and
+    ``FakeHarness`` append to. Returns ``(fs, harness, policy_path)``."""
     _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
     monkeypatch.setattr(
         spin_module,
         "conventional_project_policy_path",
         lambda slug: _model_tier_map_policy_path(tmp_path),
     )
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
+    fs = FakeFs(dirs={home}, events=events)
+    harness = FakeHarness(events=events)
     harness.feed_keys = ("1-1-first-story",)
     policy_path = home / ".bmad-loop" / "policy.toml"
     if on_disk is not None:
@@ -3793,11 +3842,13 @@ def test_spin_journals_the_policy_change_before_it_writes_policy_toml(home, tmp_
     """Story 82.6, AC 5 (spin half): when ``policy.toml`` is written, the
     durable launch intent already carries ``policy_change`` -- the dev model
     from and to, the governing difficulty and the selected stories."""
-    fs, harness, policy_path = _tier_policy_launch(home, tmp_path, monkeypatch)
+    events: list[str] = []
+    fs, harness, policy_path = _tier_policy_launch(home, tmp_path, monkeypatch, events=events)
     seen: list[list[tuple[dict[str, object], bool]]] = []
     real_write = spin_module.write_policy_toml
 
     def spy(*args, **kwargs):
+        events.append("write-policy")
         seen.append([(json.loads(line), fsync) for _, line, fsync in fs.appended_lines])
         return real_write(*args, **kwargs)
 
@@ -3817,8 +3868,10 @@ def test_spin_journals_the_policy_change_before_it_writes_policy_toml(home, tmp_
         "governing_difficulty": "heavy",
         "stories": ["1.1"],
     }
-    # ...and the write really happened, after it.
+    # ...and the write really happened, after it -- and before the harness
+    # process that reads the file is spawned.
     assert tomllib.loads(policy_path.read_text(encoding="utf-8"))["adapter"]["dev"]["model"] == "opus"
+    assert events.index("write-policy") < events.index("spin")
 
 
 def test_spin_launch_intent_records_the_ceilings_the_run_starts_under(home, tmp_path, monkeypatch):
