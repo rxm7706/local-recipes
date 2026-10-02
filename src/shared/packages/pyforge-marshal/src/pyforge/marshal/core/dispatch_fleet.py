@@ -38,6 +38,10 @@ KIND_FLEET_CYCLE = "dispatch-fleet-cycle"
 #: written only when non-empty, so a drain with no follow-ups journals byte-identical rows.
 FOLLOWUP_REVIEWS_PAYLOAD_KEY = "followup_reviews"
 
+#: A station row's payload key naming each wave member's own outcome (Story 82.10); written only when the
+#: station attempted more than one story, so a single-story row journals byte-identical to before.
+MEMBERS_PAYLOAD_KEY = "members"
+
 #: The campaign journal lives under the marshal station's own run store --
 #: the Spec's "in-repo under ``pyforge-marshal``, never session-local
 #: ``.cursor/``" subsumption target. A DEDICATED directory, never the
@@ -318,6 +322,25 @@ class FinalizeEscalation:
 
 
 @dataclass(frozen=True)
+class MemberOutcome:
+    """One wave member's own outcome for one cycle (Story 82.10; journal payload shape).
+
+    ``refuse_predicate`` is set only for a REFUSED member at a re-preflightable gate, computed from this member's
+    own detail for this member's own story -- never the station's aggregate detail."""
+
+    story: str
+    status: StationCycleStatus
+    detail: str | None = None
+    refuse_predicate: dict[str, str] | None = None
+
+    def to_payload(self) -> dict[str, object]:
+        payload: dict[str, object] = {"story": self.story, "status": self.status.value, "detail": self.detail}
+        if self.refuse_predicate is not None:
+            payload["refuse_predicate"] = dict(self.refuse_predicate)
+        return payload
+
+
+@dataclass(frozen=True)
 class StationCycleResult:
     """One station's observed outcome for one cycle (journal payload shape)."""
 
@@ -331,6 +354,10 @@ class StationCycleResult:
     #: The follow-up review runs (Story 73.2, CAP-281) this cycle LAUNCHED for the station -- what the
     #: campaign journal's fleet-cycle entries carry so the per-campaign cap holds across every cycle.
     followup_reviews: tuple[str, ...] = field(default=())
+    #: Every story the station attempted this cycle, each with its own status, detail and refuse predicate
+    #: (Story 82.10); empty unless more than one story was attempted -- the aggregate fields above are then the
+    #: one outcome. The next cycle's block rebuild reads these, so a refused member is never lost to a sibling.
+    members: tuple[MemberOutcome, ...] = field(default=())
 
     def to_payload(self) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -345,6 +372,8 @@ class StationCycleResult:
             payload["refuse_predicate"] = dict(self.refuse_predicate)
         if self.followup_reviews:
             payload[FOLLOWUP_REVIEWS_PAYLOAD_KEY] = list(self.followup_reviews)
+        if self.members:
+            payload[MEMBERS_PAYLOAD_KEY] = [member.to_payload() for member in self.members]
         return payload
 
 

@@ -3965,6 +3965,34 @@ def _classify_attempt(
     )
 
 
+def _member_outcome(
+    *,
+    repo_root: Path,
+    slug: str,
+    story: str,
+    status: dispatch_fleet.StationCycleStatus,
+    detail: str | None,
+    verify_commands: Sequence[str],
+) -> dispatch_fleet.MemberOutcome:
+    """One wave member's own outcome (Story 82.10): its story, status and detail, and for a REFUSED member at a
+    re-preflightable gate the refuse predicate computed from THAT detail for THAT story -- never another member's."""
+    predicate_payload: dict[str, str] | None = None
+    if status is dispatch_fleet.StationCycleStatus.REFUSED and detail:
+        gate = dispatch_re_preflight.parse_refuse_gate(detail)
+        if dispatch_re_preflight.is_re_preflightable_gate(gate):
+            assert gate is not None
+            predicate_payload = _predicate_payload(
+                dispatch_re_preflight.compute_refuse_predicate(
+                    repo_root=repo_root,
+                    slug=slug,
+                    story=story,
+                    gate=gate,
+                    verify_commands=verify_commands,
+                )
+            )
+    return dispatch_fleet.MemberOutcome(story=story, status=status, detail=detail, refuse_predicate=predicate_payload)
+
+
 def _mint_wave_id(slug: str) -> str:
     """A fresh dispatch-wave id for ``slug`` (the cycle's own; a plan never mints one)."""
     return mint_run_id(slug, _format_utc_compact(_now_utc()), _random_token())
