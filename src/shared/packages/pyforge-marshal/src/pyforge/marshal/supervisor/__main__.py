@@ -52,8 +52,8 @@ reason}`` -- ``"watched-process-exited"``, Story 3.5's own terminal ladder
 rung ``"idle-deferred"``, or ``"idle-retry-failed"`` when a
 ``stop-and-retry``'s ``resume`` failed after its ``stop`` had already
 succeeded; since Story 82.4 also ``"signal-<NAME>"`` for SIGTERM/SIGHUP/
-SIGINT, and ``"journal-tampered"`` on the fail-closed path, which exits 1)
-and exit 0.
+SIGINT, and ``"journal-tampered"`` on the fail-closed path) and exit 0 --
+every detach reason exits 0 except ``"journal-tampered"``, which exits 1.
 
 **Idle-strand detection (Story 3.5, AD-9/AD-20, FR-12).** The two
 placeholder gaps Story 3.4 explicitly left for this story are closed here:
@@ -1374,6 +1374,14 @@ def run_supervisor(
 
     try:
         journal_handle = fs.open_append(journal_path)
+        if text and not text.endswith("\n"):
+            # A torn append (the very case `unproven_ownership` exists for)
+            # leaves the last line without its newline, so the attach line
+            # would be written onto the end of the fragment and be
+            # quarantined itself. A lone terminator closes the fragment off;
+            # `fold` skips the blank line it leaves.
+            fs.append_held(journal_handle, "", fsync=False)
+            expected_size += 1
         attach_payload: dict[str, object] = {"pid": pid, "watched_pid": watched_pid}
         if unproven_ownership:
             # The attach on a quarantined launch (D1): carry the count and the
@@ -2025,6 +2033,12 @@ def run_supervisor(
             except _SupervisorSignal:
                 pass
             if signal_state.name is not None:
+                # One fresh reading before leaving (the watched process may
+                # have exited during the very sleep the signal cut short):
+                # without it `watched_alive` is last tick's `True`, and a
+                # natural exit would be labelled `signal-<NAME>` and skip the
+                # retry-verify and escalation-detection paths below.
+                watched_alive = process.is_alive(watched_pid)
                 break
             moment = clock.now()
             # Both readings, taken together (review finding): `moment` is the

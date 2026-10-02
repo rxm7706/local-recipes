@@ -36,6 +36,7 @@ from pyforge.marshal.core.journal import (
     JournalEntryId,
     Phase,
     build_entry,
+    fold,
     prepare_for_write,
 )
 from pyforge.marshal.ports.fs import AppendHandle, HeldFileState
@@ -99,6 +100,7 @@ class FakeFs:
         # journal, where `fail_append_line_on_call` models one transient error.
         self.fail_append_line_from_call: int | None = None
         self._append_line_call_count = 0
+        self.direct_append_line_calls = 0
         # Story 82.4: the held-descriptor family's own recorders/hooks.
         self.open_append_calls: list[Path] = []
         self.fail_open_append: Exception | None = None
@@ -119,6 +121,16 @@ class FakeFs:
         return self.journal_text
 
     def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+        # The path-based append the supervisor must NOT use any more (Story
+        # 82.4): counted, so a test can prove nothing reaches it directly.
+        self.direct_append_line_calls += 1
+        self._append(path, line, fsync=fsync)
+
+    def _append(self, path: Path, line: str, *, fsync: bool) -> None:
+        """The one recording path both ``append_line`` and ``append_held``
+        share, so ``appended_lines`` and the two failure hooks behave
+        identically for either -- only ``direct_append_line_calls`` tells them
+        apart."""
         self._append_line_call_count += 1
         if self.fail_append_line_on_call == self._append_line_call_count:
             raise FsError(f"simulated failure on append_line call #{self._append_line_call_count}")
@@ -136,7 +148,8 @@ class FakeFs:
         pass
 
     # --- Story 82.4: the held-descriptor append family ----------------------
-    # `append_held` delegates to `append_line` so `appended_lines` and
+    # `append_held` shares `append_line`'s recording helper (without bumping
+    # `direct_append_line_calls`) so `appended_lines` and
     # `fail_append_line_on_call` keep working unchanged; `held_file_state`
     # derives the healthy state from the journal text plus every appended
     # byte, and `held_state_override` is the tamper hook a test flips from
@@ -150,7 +163,7 @@ class FakeFs:
         return AppendHandle(path=path, handle=object())
 
     def append_held(self, handle: AppendHandle, line: str, *, fsync: bool) -> None:
-        self.append_line(handle.path, line, fsync=fsync)
+        self._append(handle.path, line, fsync=fsync)
 
     def held_file_state(self, handle: AppendHandle) -> HeldFileState:
         self.held_file_state_calls += 1
@@ -6332,6 +6345,34 @@ def test_a_signal_never_overrides_a_natural_exit(_sentinel_signal_handlers):
     assert _entries(fs)[-1]["payload"]["reason"] == "watched-process-exited"
 
 
+def test_a_signal_during_the_sleep_after_the_watched_process_exited_keeps_the_natural_exit_reason(
+    _sentinel_signal_handlers,
+):
+    """The watched process exits DURING the sleep the signal cuts short. The
+    loop must take one fresh liveness reading before it leaves, or
+    ``watched_alive`` is last tick's ``True`` and the exit is mislabelled
+    ``signal-SIGTERM`` (and the post-loop retry-verify/escalation paths a
+    natural exit runs are skipped)."""
+    _, received = _sentinel_signal_handlers
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    def _sleep(seconds: float) -> None:
+        signal.raise_signal(signal.SIGTERM)
+
+    # alive_for=1: the pre-loop reading is True, the fresh one after the
+    # interrupted sleep is False.
+    process = FakeProcess(alive_for=1)
+
+    rc = _supervise(fs, process=process, sleep=_sleep)
+
+    assert rc == 0
+    assert received == []
+    entries = _entries(fs)
+    assert entries[-1]["kind"] == "supervisor-detach"
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+    assert process.calls == 2
+
+
 def test_the_signal_handlers_are_restored_on_the_fail_closed_exit_too(_sentinel_signal_handlers):
     """``finally`` restores them on EVERY exit, not just the happy path."""
     sentinel, _ = _sentinel_signal_handlers
@@ -6611,20 +6652,13 @@ def test_every_entry_goes_through_the_one_held_descriptor():
     and the handle is released exactly once -- ``append_line`` (which
     re-resolves the path on every call) is never used by the supervisor."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
-    used_append_line_directly: list[str] = []
-    original = fs.append_line
-
-    def _recording_append_line(path, line, *, fsync):
-        used_append_line_directly.append(line)
-        original(path, line, fsync=fsync)
-
-    # `append_held` delegates to `append_line` on the fake, so count the open
-    # and close instead: one of each, however many entries were written.
-    fs.append_line = _recording_append_line  # type: ignore[method-assign]
 
     rc = _supervise(fs, process=FakeProcess(alive_for=3))
 
     assert rc == 0
+    # Entries landed, and none of them through the path-based `append_line`.
+    assert fs.appended_lines
+    assert fs.direct_append_line_calls == 0
     assert fs.open_append_calls == [_run_dir() / supervisor_main._JOURNAL_FILENAME]
     assert fs.close_append_calls == 1
     assert fs.held_file_state_calls == 2  # one per live tick; the exit tick is not checked
@@ -6776,3 +6810,43 @@ def test_real_fs_an_untouched_journal_runs_to_completion_through_the_held_descri
     assert kinds[-1] == "supervisor-detach"
     assert json.loads(lines[-1])["payload"]["reason"] == "watched-process-exited"
     assert kinds.count("supervisor-heartbeat") == 4
+
+
+def test_real_fs_a_torn_last_line_is_terminated_so_the_attach_entry_is_not_swallowed(tmp_path):
+    """A torn append -- the very case the unproven-ownership attach exists for
+    -- leaves the journal's last line without its newline. The attach line must
+    not be written onto the end of that fragment (it would be quarantined
+    itself, taking ``quarantined`` and ``MRS-SUPV-011`` with it): the supervisor
+    first writes a lone terminator through the held handle."""
+    home = tmp_path / "loop-home"
+    journal = supervisor_main._run_dir(home, "acme", "acme-run-1") / supervisor_main._JOURNAL_FILENAME
+    journal.parent.mkdir(parents=True)
+    fragment = '{"id": {"writer_id": "spin-1", "counter": 0}, "kind": "run-launch", "ph'
+    journal.write_text(fragment, encoding="utf-8")  # NO trailing newline
+    harness = FakeHarness()
+
+    rc = _supervise_real(home, process=FakeProcess(alive_for=1), harness=harness, sleep=_no_sleep)
+
+    assert rc == 0
+    text = journal.read_text(encoding="utf-8")
+    assert text.startswith(fragment + "\n")  # the fragment is closed off, not extended
+    result = fold(text.split("\n"))
+    # The fragment is the ONLY quarantined line...
+    assert [record.raw for record in result.quarantined] == [fragment]
+    # ...and the attach entry parses, carrying the unproven-ownership fields.
+    [attach] = result.by_kind("supervisor-attach")
+    assert attach.payload["quarantined"] == 1
+    assert attach.payload["finding"]["code"] == "MRS-SUPV-011"
+    assert result.by_kind("supervisor-detach")
+
+
+def test_a_journal_that_already_ends_in_a_newline_gets_no_extra_terminator():
+    """The terminator is written ONLY for a torn last line: a healthy journal
+    (and an empty one) must not gain a stray blank line."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=0))
+
+    assert rc == 0
+    assert [json.loads(line)["kind"] for _, line, _ in fs.appended_lines][0] == "supervisor-attach"
+    assert all(line != "" for _, line, _ in fs.appended_lines)
