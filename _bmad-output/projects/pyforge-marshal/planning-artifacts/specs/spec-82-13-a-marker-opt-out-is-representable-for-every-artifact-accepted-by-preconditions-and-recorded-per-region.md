@@ -2,14 +2,50 @@
 title: '82.13: A marker opt-out is representable for every artifact, accepted by preconditions, and recorded per region'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'dfd5482b46238c5745573fbfccd19e439f99e8df'
 review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md
 warnings: [oversized]
-deferred: []
+deferred:
+  - summary: >-
+      The architecture spine, the Story 82.13 body in epics.md and the spec-pyforge-marshal SPEC.md still describe
+      managed[] as carrying one `inserted_region_span`, the S-10.2 shape; the state now records `inserted_region_spans`,
+      one span with its own body_sha per installed region.
+    evidence: |-
+      Read at ARCHITECTURE-SPINE.md (AD-58, `id`, `path`, `class`, `body_sha`, and `inserted_region_span` where
+      applicable), epics.md (the managed[] field list in the state story) and SPEC.md (AD-58). A spine edit ripples the
+      planning chain (spine, then epics currency), a SPEC.md is never hand-edited (re-derive with bmad-spec after a
+      memlog entry), and the epics.md Story 82.13 body predates the plan-side scope this story grew into. Recorded in
+      review passes 1, 2 and 3.
+    location: >-
+      _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md:1065
+    severity: low
+  - summary: >-
+      Operator-facing text still sends operators to `marshal seed adopt --reinstate <artifact>#<region>`, a flag no verb
+      or CLI declares yet.
+    evidence: |-
+      Read at detect/findings.py (the `opted-out` remedy), docs/adoption-guide.md and docs/finding-remedy-reference.md.
+      The flag is Story 10.6's surface and DW-FU-8-5-4 tracks the missing clear_opt_out caller, so this predates Story
+      82.13; managed-region-contract.md now says there is no reinstate verb yet and describes the manual path.
+    location: >-
+      src/shared/packages/pyforge-marshal/docs/adoption-guide.md:61
+    severity: low
+  - summary: >-
+      `update`'s wholesale pass takes its opt-out pairs from `classify_regions`, which returns nothing for a hybrid file
+      `parse_regions` refuses, so under `--force` it could name a region the state records as opted out.
+    evidence: |-
+      Not verified. `opted_out_regions` goes through `classify_regions`, whose degrade rule returns `()` for an
+      unparseable file, and `_wholesale_regenerate_actions` takes only those pairs. Whether `update --run --force` then
+      inserts into the unparseable file, or the commit path refuses it, was not run. Marked unverified. What would
+      settle it: a test with a recorded `opted_out` key, an unparseable hybrid file and `force=True`, asserting the
+      plan's chosen_anchor and the file afterwards; the one-line guard is also checking `is_opted_out(state, ...)` in
+      the wholesale pass.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py:556
+    severity: medium (unverified)
 declared_low_risk: false
 ---
 
@@ -318,51 +354,80 @@ Closes: DW-FU-8-5-2, DW-FU-8-5-5, DW-FU-8-5-6.
     - `[low]` `[reject]` The tests that fail when the rung-6 skip is reverted are the seam and claim-present tests, not the production-shaped verb tests -- the same fact as the rung-6 row above; the mutation criterion is met (a mutant ignoring the set is killed).
     - `[false]` `[reject]` The cited green runs are the author's own and were not re-run -- they were re-run by the orchestrator from the run worktree with exit codes read directly (`pyforge-marshal-test` 10784 passed, `pyforge-deps-test` 130 passed, `lint-types` 0, `spec_surface_reconcile.py` 0).
 
+### 2026-10-02 -- Review pass 3
+- verdicts: 35 findings -- high 0, medium 5, low 27, false 1, maybe-false 2
+- findings:
+  - Blind Hunter
+    - `[medium]` `[patch]` An old-shape hybrid record the in-memory opt-out recording dropped is lost from the written state when the plan does not touch the artifact (`--skip` names it while another artifact applies), so its present siblings lose their claim; no DW row for it or for the stale AD-58 wording -- reproduced by the Verification Gap Reviewer running both verbs (written managed held only the other artifact; baseline `dfd5482b46` kept the hybrid record) and confirmed in `_build_state_after_apply`, which took carried-over records from the in-memory state only. Fix applied: `_carried_back_records` in `verbs/adopt.py` and `verbs/update.py` rebuilds, from the state as read and the file, every record the in-memory state no longer holds, the plan did not touch and that is not an escaping entry (shared tail `_hybrid_record`; none present means no record), with a per-verb test over a `--skip` run and a direct test of the escaping guard. The AD-58 half is recorded under `deferred`.
+    - `[low]` `[defer]` carried: `--reinstate` is advertised by `detect/findings.py`, `docs/adoption-guide.md` and `docs/finding-remedy-reference.md` though no verb declares it -- pre-existing; Story 10.6 is the named blocker. Recorded under `deferred`.
+    - `[low]` `[reject]` `--force` no longer re-inserts a deleted region and its test was inverted, with no regression note -- that is the contract ("permanent until an explicit reinstate"): the old behaviour was an accident of the rung-6 refusal, and the contract page and the DW-FU-8-5-5 `resolved:` line state it.
+    - `[low]` `[reject]` A hand-restored region ends with an `opted_out` key and a managed span, which the pass-1 log listed as known-bad -- benign: a present region wins over its key, deleting the markers again is an opt-out again (permanent, as the contract says), and what pass 1 meant was a region re-inserted despite its key. The coexistence is pinned and documented until Story 10.6.
+    - `[low]` `[reject]` The claim rule over-claims on a new-shape record (a region a human wrote is claimed on the next write) -- the rule is "when a replaced record exists at the same path", exactly as the Design Notes state; rung 6 refuses an unrecorded present region without `--force`, and `update`'s wholesale pass already names every declared region.
+    - `[low]` `[reject]` carried: a whole-file replacement now reads as a permanent opt-out, silently -- rung 3 is Story 8.5's derivation (FR-112: deleting the markers is the opt-out), `check` reports it as `opted-out`, and the written plan shows no insertion.
+    - `[low]` `[reject]` Several verb tests assert only that nothing raises -- pass 2 added the mutating-run tests that assert the outcome (markers stay absent, the key and spans in the written state); the dry-run tests pin the rung-6 gate and say so in their docstrings.
+    - `[low]` `[patch]` The documented recovery for a hand-restored region (`adopt` refuses until `--force`) is exercised only as a dry run; a fully present file may give an empty plan -- the layer's claim, then probed by the implementer: `adopt --apply --force` passes rung 6, plans nothing and writes no state. Fix applied: the test now runs it mutating and asserts an empty plan, a byte-identical state file and the unchanged key and spans; the contract page says `update --run` is what records the region and what `adopt --force` does.
+    - `[low]` `[patch]` The all-opted-out branch of `_wholesale_regenerate_actions` is described as carrying the record over "so rung 6 and check still see it", but in real runs `record_opt_out` has already dropped it -- verified (`managed == ['extra']` in the verb test). Fix applied: the docstring and the `if not wanted:` comment say it is reached only for a state holding both the key and the spans. Same finding as the Edge Case Hunter's last row.
+    - `[low]` `[reject]` carried: the wire break has no marker and no notice -- the contract writes the new shape and keeps `$id`; the break and its true remedy are documented in the contract page; the package has no changelog that records state shapes.
+    - `[low]` `[patch]` The contract page cites test function and file names -- verified. Fix applied: the names are removed.
+    - `[low]` `[patch]` `run_update` wraps an already-tuple in `tuple(...)` -- verified. Fix applied: removed.
+    - `[low]` `[patch]` `run_update` carries a redundant `state_as_read is not None` guard, and `_state_claiming` in the shipped-manifest test takes a `manifest` argument it never uses -- verified. Fix applied: the guard moves into the builder (mypy), the unused argument and its callers are dropped.
+    - `[low]` `[patch]` `adopt.py`'s module docstring keeps a bracketed "[Story 82.13 CLOSED THIS ...]" as numbered limitation (4) -- verified. Fix applied: the closed limitation is removed and the numbering kept.
+    - `[maybe-false]` `[reject]` `test_legacy_of_and_a_legacy_entrys_own_id_keep_their_looser_grammar` covers only `legacy_of`, not a legacy entry's own id -- could not tell without running it against `ManifestEntry`; a test-name nit, low if true.
+  - Edge Case Hunter
+    - `[medium]` `[patch]` An old-shape hybrid with its record dropped and the artifact untouched by the plan loses its siblings' claim -- same defect, verdict and fix as the first Blind Hunter row.
+    - `[maybe-false]` `[defer]` With an unparseable hybrid file `classify_regions` returns nothing, so the wholesale pass can name a recorded opted-out region under `--force` -- could not settle it without running `update --run --force` over a mangled file; if true it re-inserts an opt-out, so medium. Recorded under `deferred` as unverified.
+    - `[false]` `[reject]` The removed `if not action.chosen_anchor` branch left a `parse_regions` error escaping after the write -- the baseline called `parse_regions(text, ...)` unguarded on the line before that branch, and the branch itself built a hybrid record with no span, which `ManagedArtifact.__post_init__` refuses; an unparseable file raised at the same place before this story.
+    - `[low]` `[patch]` The contract page says `update` rewrites every declared region for an old-shape state, but with the one recorded region deleted the siblings are recorded at their current hashes, not rewritten -- verified by the layer running `update`. Fix applied: the page says which case does which.
+    - `[low]` `[patch]` The `_wholesale_regenerate_actions` all-opted-out wording -- same finding, verdict and fix as the second Blind Hunter patch row.
+  - Verification Gap
+    - `[medium]` `[patch]` A mutating `adopt`/`update` over an old-shape state whose recorded region was deleted, with `skip` naming the hybrid file and another artifact to install, is untested and loses the record -- pre-verified (the layer ran it, and the baseline). Fix applied: as the first row, with the per-verb tests the layer described.
+    - `[medium]` `[patch]` (other) The behaviour above is a defect, not only a test gap -- same defect and fix as the first row.
+    - `[low]` `[patch]` (other) The contract page's "update rewrites every declared region" is wrong for an old-shape state whose recorded region was deleted -- same finding, verdict and fix as the Edge Case Hunter's contract-page row.
+  - Intent Alignment
+    - `[low]` `[reject]` carried: in the verbs the rung-6 skip is not what produces the outcome for the intent's own scenario (the derived pair is recorded, and its claim dropped, before the records are built) -- the skip gates any state that holds both the key and the claim, pinned at the seam and by the claim-present verb test; a mutant ignoring the set is killed there.
+    - `[low]` `[reject]` carried: the verb change goes past "pass the set alongside the managed records" -- the plan, wholesale-pass and state-write changes are what "permanent until an explicit reinstate" and "neither is planned for insertion" require; descriptive, not a defect.
+    - `[low]` `[reject]` carried: `init` is untouched and only spied -- it reads no state and passes `managed=()`, so there is no record for rung 6 to excuse.
+    - `[low]` `[reject]` carried: no test drives `cli/seed.py` for an opt-out scenario -- the CLI wrappers call the same `run_*` functions, and the argv path is pinned elsewhere.
+    - `[low]` `[reject]` AC 4's "written and read back" is a hand-composed library sequence, and a verb writes the opt-out only after a non-empty apply -- the verb-level test beside another artifact's apply covers the written half; an empty plan writing no state is the pre-existing "as today" rule, tested and documented.
+    - `[low]` `[reject]` carried: the wire shape is an array with a per-span hash under a new key, one-way -- required by "a span per installed region" and documented; descriptive.
+    - `[low]` `[reject]` `managed[].id` is rejected by the schema and the manifest constant but not by the in-memory `ManagedArtifact`, and `opted_out` keeps a third spelling -- the intent asks for "once in the schema and once in code", the schema validates on every read and write, and a probe-set test ties the three spellings.
+    - `[low]` `[reject]` AC 2 is exercised at the store surface with synthetic spans built from the shipped manifest -- "the state validates" is the store's surface.
+    - `[low]` `[reject]` carried: the mutation evidence is prose in the Auto Run Result, and two verb tests pass with the skip reverted -- the tests that fail on a revert exist for every fix; descriptive.
+    - `[low]` `[reject]` carried: ledger and doc edits beyond the three rows (DW-FU-11-4, the contract page, memlogs) -- each follows from the plan-side scope; descriptive.
+    - `[medium]` `[patch]` The `--skip` interaction sits on a surface the intent says not to change, and the diff states it as unresolved -- not a change to `--skip` (`skips.py` is untouched): the loss was in the state carried across a skipped artifact. Fix applied: same as the first row.
+    - `[low]` `[reject]` Hand-restored markers: the "explicit reinstate" half of the boundary is described, not exercised, since no reinstate verb exists -- Story 10.6 owns it; the contract is met by there being no implicit reinstate, and the manual path is pinned and documented.
+
 ## Auto Run Result
 
-**Status:** in-review (re-derivation after review pass 2, `bad_spec`, iteration 2; implementation complete, review not yet run).
+**Status:** done. Reviewed three times: pass 1 and pass 2 each ended in a `bad_spec` loopback (see the Spec Change Log); pass 3 found no spec-level gap and one demonstrated defect, patched.
 
-**Summary of the change.** The KEEP list of both Spec Change Log entries was restored from the last checkpoint
-(`git diff dfd5482b46 2d9ea56211`) and checked against the Tasks rather than trusted: the full station suite passes and the
-mutation checks below were re-run. On top of it, the pass-2 amendments:
+**Summary of the change.** Three defects of the Story 8.5 family are closed (DW-FU-8-5-2, DW-FU-8-5-5, DW-FU-8-5-6; their ledger rows are `closed` with a `resolved:` line each).
 
-- `adopt` and `update` read the REPLACED record from the state AS READ (`run_adopt` / `run_update` keep `state_as_read`
-  before `_state_with_opt_outs` records derived opt-outs in memory); the in-memory state still supplies carried-over records and
-  `opted_out`. This closes the pass-2 wedge: a state in the pre-82.13 one-span shape whose only recorded region was deleted
-  (FR-112) used to exit 10 after writing.
-- `_managed_artifact_after_apply` (both verbs) claims every declared region present after the write when a replaced record
-  exists at the same `path`, else only the regions `action.chosen_anchor` named; raises `InternalError` naming the missing
-  region when one the action named is absent after the write (even if others were recorded); returns `None` when nothing is
-  named and nothing is present. `_build_state_after_apply` (both verbs) and `init`'s state builder omit a `None`.
-- `update._managed_records` takes `escaping_ids` and drops an escaping record before `_region_shas_for_record` can read its
-  path, for an old-shape state too (Story 82.11).
-- `docs/managed-region-contract.md`: the old-shape, empty-plan, older-marshal (true remedy: upgrade that marshal) and
-  hand-restored-marker conditions; item 3's `--reinstate` now says Story 10.6 ships it.
-- Ledger: DW-FU-11-4 gets one em-dash `verified: 2026-10-02 -- NEEDS-DECISION` line after the older ones, citing
-  `seed/verbs/update.py:551-552`, and its `decision:` is narrowed to the `state.skips` half; DW-FU-8-5-6's `resolved:` states the
-  new claim rule; DW-FU-8-5-2, -5 and -6 are `closed`.
-- Tests (`test_seed_verbs_region_opt_out.py`, `test_seed_templates_manifest.py`): old-shape mutating runs through both verbs,
-  both-regions-deleted beside another artifact's apply, the helper's raise / `None` / claim-all outcomes, the state builder
-  omitting an unclaimed artifact, the escaping hybrid under an old-shape state (read spy), hand-restored markers through both
-  verbs, the old-shape rewrite seeded through `_as_old_shape`, and the shipped-manifest test no longer hard-coding region counts.
+- One artifact-id grammar, no whitespace and no `#`: `ARTIFACT_ID_PATTERN` in `ManifestEntry.__post_init__` (after the strip) and `$defs/artifactId` for `managed[].id`; the `opted_out` description no longer claims the artifact half is "as permissive as managed[].id". `legacy[]` ids are untouched.
+- State records a span per installed region: `RegionSpanRecord` gains `body_sha`; `ManagedArtifact.inserted_region_span` became `inserted_region_spans` (non-empty iff hybrid, unique names, a hybrid's `body_sha` is its first span's); the wire shape is an array, the schema accepts exactly one of it and the old read-only one-span key, the old shape reads as a one-region list and the next write emits the new shape. `_without_region_claim` drops one span.
+- `detect/optout.py`: `_claims_region` matches any span; `opted_out_regions` returns recorded and derived opt-outs as pairs.
+- `verbs/preconditions.py`: `check_preconditions(..., opted_out=...)`; rung 6 excuses a recorded region that is ABSENT from its file and opted out. A present region is still hash-checked.
+- `adopt` and `update` apply `detect/optout.py`'s sequencing contract: `_state_with_opt_outs` records derived opt-outs in memory before planning and gives ONE set to `build_plan`, rung 6 and the written state; `update`'s wholesale pass never names an opted-out region. `_build_state_after_apply` reads the replaced records from the state as read, `_managed_artifact_after_apply` claims every declared region present when a replaced record exists at the same path, raises when a region the action named is absent, and returns no record when nothing is claimable; `_carried_back_records` keeps the record of an untouched artifact the opt-out recording dropped. `check` compares every span to its own hash.
+- `docs/managed-region-contract.md` states the behaviour and its conditions (old-shape state, empty-plan runs, hand-restored markers, the older-marshal break).
 
-**Verification** (from the run worktree, exit codes read directly):
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: 10800 passed, 1 skipped, 14 deselected.
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: 130 passed, 3 skipped.
-- `pixi run -e pyforge-guild lint-types`: exit 0 (ruff, ruff format, mypy).
-- `python scripts/spec_surface_reconcile.py`: exit 0; `spec-surface-check`, `deferred-work-check`: exit 0. No baseline stamped.
-- Mutation checks, each reverted and watched fail: replaced record from the in-memory state (both verbs); claim only the named
-  regions (both verbs); per-region `InternalError` removed (both verbs); `None` return replaced by a raise; `None` records kept
-  in state (both verbs); escaping filter applied after `_managed_records`; in-memory opt-out recording removed (both verbs);
-  wholesale pass ignoring the opt-out set; manifest id grammar check; rung 6 opt-out skip; schema `managed[].id` back to
-  `nonBlankString`; `_claims_region` over the first span only; `_without_region_claim` matching on id alone.
+**Files changed.** Under `src/shared/packages/pyforge-marshal/`: `seed/model/manifest.py`, `seed/state/schema.json`, `seed/state/store.py`, `seed/detect/optout.py`, `seed/verbs/{preconditions,adopt,update,check,init}.py`, `docs/managed-region-contract.md`, and the unit and meta tests (a new `tests/unit/test_seed_verbs_region_opt_out.py`, with additions to the state-store, manifest, shipped-manifest, optout, preconditions, adopt, update, check and init tests). Planning: this spec, `deferred-work-ledger.md` (DW-FU-8-5-2, -5, -6 closed; DW-FU-11-4 narrowed) and the `spec-pyforge-marshal` and `spec-pyforge-core` memlogs.
+
+**Review findings.** Pass 3 triaged 35 rows: 14 `patch` (one medium entry, the `--skip` record loss, whose members share a root cause, and low rows for the rest), 2 `defer`, and 19 `reject`, each with its refutation in the Review Triage Log (that count includes the 1 `false` and 1 of the 2 `maybe-false`; the other `maybe-false` is a `defer`). Three entries are recorded under `deferred`: the stale AD-58 wording, from the first patched row, the `--reinstate` text, and an unverified `--force` wholesale case. Passes 1 and 2 are logged above, each ending in a `bad_spec` loopback.
+
+**Follow-up review recommendation:** `false`. One medium group was patched and no high; the patched `_carried_back_records` path has its own tests.
+
+**Verification** (from the run worktree, exit codes read directly after the last edit).
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0, 10804 passed, 1 skipped.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 0, 130 passed, 3 skipped.
+- `pixi run -e pyforge-guild lint-types`: exit 0.
+- `python scripts/spec_surface_reconcile.py`: exit 0 (no `--write-baseline`).
+- `deferred-work-check`, `story-status-check`, `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`, `ledger-regression-check`, `governance-currency`, `spec-surface-check`: exit 0, run after the last edit to this file.
+- Mutation checks: each fix reverted in turn with its tests failing, run by the implementer after each derivation; the one survivor (F15, `_without_region_claim` rebuilding an entry from the same spans) is an equivalent mutant.
 
 **Residual risks.**
-- A state in the old one-span shape, with `adopt --skip` naming the hybrid file while another artifact applies: the hybrid's
-  Action is skipped, so the artifact is not touched, and its record (dropped from the in-memory state by the opt-out recording)
-  is not carried over -- the siblings lose their claim until a later `update` or unskipped `adopt` re-records them. The Tasks
-  fix carried-over records to the in-memory state; closing this needs a rule for what an untouched old-shape record carries.
-- `init`'s state builder now omits a hybrid action that names no region (it used to raise); unreachable from `build_plan`.
-- A hand-restored region keeps its `opted_out` key beside a recorded span until Story 10.6's reinstate (pinned, documented).
-- AD-58 (`ARCHITECTURE-SPINE.md`), `epics.md` and `SPEC.md` still name `inserted_region_span`; a spine edit ripples the
-  planning chain and a Spec is never hand-edited -- left for the finalize pass's `deferred`.
+
+- State written by this release is not readable by an older marshal; the contract page says so and gives the true remedy.
+- A derived opt-out is recorded only by a run that writes state; an empty-plan run leaves it derived, and it holds while the claim's `path` matches the manifest.
+- A hand-restored region keeps its `opted_out` key beside its recorded span until Story 10.6's reinstate.
+- The stale `inserted_region_span` wording in the spine, `epics.md` and `SPEC.md`, the `--reinstate` text and the unverified `--force` wholesale case are under `deferred`.
