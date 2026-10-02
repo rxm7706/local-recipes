@@ -2,7 +2,7 @@
 title: '82.7: Factory spin refuses a second live run and reports a child that dies before it starts'
 type: 'fix'
 created: '2026-10-02'
-status: 'blocked'
+status: 'backlog'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -82,21 +82,3 @@ Closes: DW-FU-3-3-4 (DW-FU-3-3-2 closed by the 2026-10-02 ruling).
 ## Review Triage Log
 
 - No review has run yet.
-
-## Auto Run Result
-
-Status: blocked
-Blocking condition: intent gap -- the Problem's first premise is false at HEAD 80fb2fe128 (a spin-vs-spin guard already ships), and the Approach's `is_run_live` reuse contradicts AC2 on two edge arms. No code was changed.
-
-**Evidence (read from the tree, not executed):**
-
-- `cli/spin.py::run_spin` already refuses a second spin against a live loop home: the "Story 34.1" block (`cli/spin.py:1856-1878`) calls `spin_loop_home_in_flight_conflict` (`cli/dispatch.py:1774-1831`) before the run id is minted (`:1883`). It exits non-zero with `MRS-DISP-021`, names the run and its pids, creates no run directory and spawns nothing. Shipped in `c1c794797e9` (Story 28.24, 2026-09-10). Tests: `tests/unit/test_spin.py:4416-4528` (refuses while live, allows when the snapshot is finished, allows for another station, rapid second call).
-- AC1's observable behaviour therefore exists today. What differs is (a) the code, `MRS-DISP-021` against the spec's new `MRS-SPIN-*`, and (b) the liveness model: 34.1 walks every run's launch and supervisor pid plus the harness snapshot; the spec requires `is_run_live`. Both the DW-FU-3-3-2 "STANDS 2026-10-01" verification and the team-memory note `factory spin does not serialize` (2026-08-15) miss or predate that guard. The spec's line anchors (`run_spin :1335`, mint `:1673`) are also stale (now `:1540`, `:1883`).
-- `is_run_live` as written contradicts AC2 ("pids both dead -> launches as today"). Its conservative arms report live with no live pid: `journal_unreadable` and `run_state_retired` (`core/status.py:1288-1303`). `_gather_home_facts` (`cli/status.py:983-1011`) returns `journal_unreadable=True` for a latest run whose launch outcome carries `pid: None`, unless the harness reports that run terminal. A failed launch is exactly the run Part 2 now leaves behind. A gate on `is_run_live` alone would refuse every retry after a failed launch, and after a retired run, with no way out: the refusal mints no newer run directory. 34.1's pid walk refuses neither case.
-- Part 2 is still valid and unambiguous: `adapters/harness_bmadloop.py:1526` `_poll_for_harness_run_id(self, log_path)` takes only the log path, and `spin` calls it at `:1588` with no child liveness.
-
-**Unanswered questions (settle in this spec, then re-dispatch):**
-
-1. Relation of the new `MRS-SPIN-*` gate to the shipped 34.1 spin-run guard. Replace it (the spin-run half of `spin_loop_home_in_flight_conflict` goes; `MRS-DISP-021` stops appearing for spin-vs-spin; `test_spin.py:4438`, `:4526` and the code lists in `test_findings.py` change), keep it and drop Part 1 (AC1 already holds under `MRS-DISP-021`; DW-FU-3-3-2 closes as resolved by Story 28.24/34.1), or layer the new gate behind it (fires only where 34.1 does not, so AC1's own scenario still reports `MRS-DISP-021`)? Each gives a different observable code for AC1 and a different mutation target for the last AC.
-2. Should `journal_unreadable` and `run_state_retired` count as live for spin? Under `is_run_live` as it stands they do, and they deadlock a home after a failed or retired run; under AC2 they must not refuse.
-3. Is Part 2 (child liveness in the poll, `MRS-SPIN-003` with the log tail, a non-zero exit) to ship alone as this story once Part 1 is settled?
