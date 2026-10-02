@@ -63,6 +63,16 @@ degrades to an unsupervised run ... never to a corrupted one").
 (the detached sidecar's only diagnostic channel, needed whether or not the
 spawn succeeded); ``data["supervisor_pid"]`` joins it on success.
 
+Story 82.4 (DW-FU-3-4-7) adds the one journal entry that records the spawn
+itself: ``_spawn_supervisor_sidecar`` -- for ``marshal factory spin`` and
+``marshal factory resume`` alike -- appends one ``observation`` of kind
+``"supervisor-spawn"`` (counter 2 under this invocation's own writer id,
+after the launch's intent 0 and outcome 1) carrying the sidecar's pid, or its
+spawn error. Until then "this run was launched unsupervised" survived only as
+the transient stdout of a fire-and-forget command. A failure to journal that
+entry registers ``MRS-SPIN-018`` (``Verdict.WARN``) and never changes the
+launch's own outcome or exit code.
+
 Story 3.5 (idle-strand detection, AD-9/AD-20, FR-12) grows the supervisor
 spawn's argv from 5 to 6 positionals: the effective ``idle_threshold_minutes``
 (``core.policy.EffectivePolicy.seed_view()``'s own 10th SEED key, resolved by
@@ -342,6 +352,13 @@ _LAUNCH_KIND = "run-launch"
 # though both mint a fresh Marshal run id and spawn a supervisor sidecar the
 # same way).
 _RESUME_KIND = "run-resume"
+# Story 82.4 (DW-FU-3-4-7): the ONE observation both launch verbs journal about
+# the supervisor sidecar spawn -- its pid, or the error that stopped it. An
+# observation, not an intent/outcome pair: the spawn is a fire-and-forget side
+# effect whose only durable fact is "supervision was attempted, and how it went".
+_SPAWN_KIND = "supervisor-spawn"
+# Its counter under `_writer_id()`: after the launch intent (0) and outcome (1).
+_SPAWN_COUNTER = 2
 
 # Story 3.6's FR-14 preflight advisory (MRS-SPIN-009) -- a fixed "this spec
 # is large" threshold, calibrated against this repo's own existing story
@@ -857,9 +874,10 @@ def _writer_id() -> str:
     Always bullet): ``f"spin-{os.getpid()}"`` -- always matches
     ``core.journal``'s ``_WRITER_ID_PATTERN`` (a pid is digits-only). One
     CLI invocation is a bounded, sequential, single-process writer, so its
-    own ``counter`` (0 for the intent, 1 for the outcome -- this module
-    never appends a third entry) can never collide with another writer's by
-    construction, without any coordination."""
+    own ``counter`` (0 for the intent, 1 for the outcome, and -- since Story
+    82.4 -- 2 for the one ``supervisor-spawn`` observation
+    ``_spawn_supervisor_sidecar`` appends; never a fourth) can never collide
+    with another writer's by construction, without any coordination."""
     return f"spin-{os.getpid()}"
 
 
@@ -1133,7 +1151,15 @@ def _spawn_supervisor_sidecar(
     report, and a supervisor that attached before the outcome landed would
     interleave its own observation entries with this module's own append,
     two writers racing one journal file with no ordering guarantee between
-    them."""
+    them.
+
+    Story 82.4 adds one entry AFTER the spawn itself -- the
+    ``supervisor-spawn`` observation (``_journal_supervisor_spawn``) -- so
+    from that point the sidecar may already be appending too. "Last" now
+    means last of THIS module's launch-pair entries: the two writers are
+    distinct writer ids, ``append_line`` is line-atomic, and AD-28 orders by
+    ``(ts, writer_id, counter)`` rather than file position, so the
+    interleaving costs the journal nothing it relied on."""
     supervisor_log = run_dir / _SUPERVISOR_LOG_FILENAME
     # Reported unconditionally, BEFORE the spawn attempt (review finding,
     # preserved from run_spin's own original tail): this file is the
@@ -1328,8 +1354,93 @@ def _spawn_supervisor_sidecar(
                 ),
             )
         )
+        # Story 82.4: the failed spawn is recorded in the run journal too, not
+        # only on stdout (see `_journal_supervisor_spawn`) -- after the
+        # MRS-SPIN-007 finding, so a failure to journal it (MRS-SPIN-018)
+        # reads as the second finding about the same spawn.
+        _journal_supervisor_spawn(
+            fs,
+            findings,
+            run_dir=run_dir,
+            run_id=run_id,
+            watched_pid=watched_pid,
+            launched_via=launched_via,
+            supervisor_pid=None,
+            error=str(exc),
+        )
     else:
         data["supervisor_pid"] = supervisor_pid
+        _journal_supervisor_spawn(
+            fs,
+            findings,
+            run_dir=run_dir,
+            run_id=run_id,
+            watched_pid=watched_pid,
+            launched_via=launched_via,
+            supervisor_pid=supervisor_pid,
+            error=None,
+        )
+
+
+def _journal_supervisor_spawn(
+    fs: FsPort,
+    findings: list[Finding],
+    *,
+    run_dir: Path,
+    run_id: str,
+    watched_pid: int,
+    launched_via: str,
+    supervisor_pid: int | None,
+    error: str | None,
+) -> None:
+    """Story 82.4 (DW-FU-3-4-7): journal the supervisor spawn -- exactly one
+    ``supervisor-spawn`` observation per attempt, for launch and resume alike.
+    Before this, a spawn that succeeded reached only ``data["supervisor_pid"]``
+    on stdout and one that failed only ``MRS-SPIN-007`` there, so a later
+    reader of the run journal could not tell "supervision was never attempted"
+    from "it was attempted and went wrong" -- the very condition (a supervisor
+    that dies before its own first write) that makes a run unsupervised.
+
+    Payload: ``{supervisor_pid, watched_pid, launched_via}`` on success, the
+    same with ``supervisor_pid: None`` plus ``error`` when the spawn raised.
+    Written under ``JournalEntryId(_writer_id(), 2)``. The sidecar may already
+    be running and appending when this lands, so the order of the two writers'
+    entries is undefined; they are distinct writer ids and ``append_line`` is
+    line-atomic, which is the property the journal relies on (AD-28's order is
+    by ``(ts, writer_id, counter)``, never by file position).
+
+    A failure to journal it (``FsError``) registers ``MRS-SPIN-018`` (WARN)
+    and never changes the launch's outcome or exit code -- the harness process
+    is already live and the observation is only the paper trail."""
+    payload: dict[str, object] = {
+        "supervisor_pid": supervisor_pid,
+        "watched_pid": watched_pid,
+        "launched_via": launched_via,
+    }
+    if error is not None:
+        payload["error"] = error
+    try:
+        entry = build_entry(
+            id=JournalEntryId(_writer_id(), _SPAWN_COUNTER),
+            ts=_format_entry_ts(_now_utc()),
+            run_id=run_id,
+            kind=_SPAWN_KIND,
+            phase=Phase.OBSERVATION,
+            payload=payload,
+        )
+        _append_entry(fs, run_dir, entry, fsync=False)
+    except (FsError, ValueError) as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-018",
+                severity=Severity.WARN,
+                message=(
+                    f"the supervisor spawn ({launched_via}, watched pid {watched_pid}) could not be "
+                    f"journaled in {str(run_dir)!r}: {exc} -- the launch itself is unaffected, but "
+                    "this run's journal does not record that supervision was attempted"
+                ),
+            )
+        )
 
 
 def run_spin(
@@ -1827,7 +1938,10 @@ def run_spin(
     # cli/spin.py's own outcome append -- two writers appending to one
     # journal with no ordering guarantee between them. Keeping the spawn
     # last means the launch's own intent/outcome pair is closed before a
-    # second writer ever opens the file.
+    # second writer ever opens the file. (Story 82.4: the one entry written
+    # AFTER the spawn is the `supervisor-spawn` observation, journaled inside
+    # `_spawn_supervisor_sidecar` -- by then the sidecar may be appending too,
+    # which is fine: distinct writer ids, line-atomic appends.)
     _spawn_supervisor_sidecar(
         process,
         findings,
