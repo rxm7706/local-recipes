@@ -2,7 +2,7 @@
 title: '82.3: A landing claims only committed promotions, rejects a malformed merge template, and stamps only reconciled drift'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '2b69320bf65ccc518adecb258d6dbeb8b2d1d387'
 review_loop_iteration: 0
 followup_review_recommended: false
