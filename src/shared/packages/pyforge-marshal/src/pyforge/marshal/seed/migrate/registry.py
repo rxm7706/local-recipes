@@ -172,9 +172,11 @@ class Migration:
     caller-supplied ``repo_fingerprint`` argument, matching the epics AC's
     "composed into a single ``Plan``". ``fn`` may therefore construct any
     well-typed placeholder there (this module's own tests use
-    ``RepoFingerprint(git_head=None, dirty=True, artifact_hashes=())``, the
-    same non-git-target fallback ``plan/build.py::build_plan`` itself
-    produces) -- it is discarded, never validated.
+    ``RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(),
+    repo_root="/repo", git_common_dir=None)``: the first three fields are the
+    non-git-target fallback ``plan/build.py::build_plan`` itself produces, and
+    the last two, which name the repository, are required since Story 82.12)
+    -- it is discarded, never validated.
 
     ``__post_init__`` requires ``from_version < to_version`` (review finding,
     verified by execution): without this, a self-referencing entry

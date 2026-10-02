@@ -709,14 +709,15 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
 
     Covers every `RepoFingerprint` field, in this order: the repository's
     identity first -- `repo_root` and `git_common_dir` (against a fresh
-    `_repo_identity`; Story 82.12) -- so a plan built for one repository is
-    refused for naming another before anything about its contents is
-    weighed; then `git_head` (against a fresh `_git_head`), `dirty` (against
-    a fresh `_repo_is_dirty`), and every `artifact_hashes` pair (against a
-    fresh `hash_content` of that artifact's target). The identity check is
-    what separates two empty non-git directories, which agree on every other
-    field (both degrade to `git_head=None, dirty=True` and an artifact set
-    that hashes alike). The correspondence between
+    `_repo_identity`; Story 82.12) -- then `git_head` (against a fresh
+    `_git_head`), `dirty` (against a fresh `_repo_is_dirty`), and every
+    `artifact_hashes` pair (against a fresh `hash_content` of that
+    artifact's target). Identity is LISTED first so a plan built for one
+    repository reads as naming another before anything about its contents;
+    it does not short-circuit, so every divergence is still reported. The
+    identity check is what separates two empty non-git directories, which
+    agree on every other field (both degrade to `git_head=None, dirty=True`
+    and an artifact set that hashes alike). The correspondence between
     `actions` and `artifact_hashes` is checked in BOTH directions, and a
     mismatch either way is itself reported as a divergence: `build_plan`
     emits exactly one hash per action, so an orphan pair -- or an action
@@ -923,6 +924,12 @@ def load_plan(path: Path) -> Plan:
     no translation here -- and `Plan.from_json_dict` (and the `Action`/
     `RepoFingerprint` calls it makes) raise a plain `ValueError` for a
     missing key, a wrong-shaped value, or an unrecognized enum value.
+
+    The one exception is a plan written before its `repo_fingerprint` named
+    the repository it was built for (Story 82.12): that is a stale plan, not
+    a malformed one, so `RepoFingerprint.from_json_dict` raises
+    `PreconditionFailure` (`stale-plan`, exit 3) with a remedy to re-run the
+    plan -- nothing in such a file says which repository it describes.
 
     A missing, unreadable, or directory `path` raises `read_text`'s own
     `OSError` (e.g. `FileNotFoundError`, `IsADirectoryError`) UNCHANGED --

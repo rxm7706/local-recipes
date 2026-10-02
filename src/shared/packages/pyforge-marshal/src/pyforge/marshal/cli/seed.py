@@ -35,8 +35,8 @@ module docstring). ``run_init`` resolves ``<path>``/``--slug``/``--agents``/
 ``--force`` and delegates to ``seed.verbs.init.run_init`` -- unlike
 ``run_adopt``, it supplies no confirmation seam at all (``init`` never
 confirms; see that module's own docstring). ``run_update`` resolves
-``--repo-root``/``--run``/``--force``/``--include-seeded``/``--yes`` and
-delegates to ``seed.verbs.update.run_update``, the SAME confirmation seam
+``--repo-root``/``--run``/``--force``/``--include-seeded``/``--skip``/``--yes``
+(Story 82.12 added ``--skip``) and delegates to ``seed.verbs.update.run_update``, the SAME confirmation seam
 ``run_adopt`` supplies -- and gains its own plan renderer
 (``_render_update_plan_text``), fixing ``DW-FU-11-3`` (a migration-offered
 ``copied-seeded`` skip renders as an explicit offer, never a false

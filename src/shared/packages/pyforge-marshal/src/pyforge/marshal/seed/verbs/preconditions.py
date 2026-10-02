@@ -507,14 +507,17 @@ def check_preconditions(
     `remedy`) at the FIRST one that fails, naming the offending artifact id
     and -- where a region is at fault -- `path#region`.
 
-    **Pass `managed` through `skips.managed_after_skips(managed, plan)` if
-    this run has skips.** Rung 6 checks EVERY record in `managed`, by
+    **Pass `managed` through `skips.managed_after_skips(managed, plan,
+    patterns)` if this run has skips, handing it the operator's skip patterns
+    as well as the plan.** Rung 6 checks EVERY record in `managed`, by
     contract, and cannot tell that one of them was skipped -- so a record
     for a skipped artifact refuses the run, and the refusal offers only
     `--force`, which discards every hand-edit in the repo including the one
-    the operator skipped to protect. Rungs 3-5 need no such care: they walk
-    `plan.actions`, from which `apply_skips` already removed the skipped
-    artifacts. Filtering is the caller's job precisely because rung 6's
+    the operator skipped to protect. The plan alone is not enough: it holds
+    only artifacts that had an action, and a hand-edited `copied-managed`
+    file has none (Story 82.12), so only the patterns reach it. Rungs 3-5
+    need no such care: they walk `plan.actions`, from which `apply_skips`
+    already removed the skipped artifacts. Filtering is the caller's job precisely because rung 6's
     "check everything you are handed" contract is what makes it trustworthy
     -- this function does not second-guess its own input.
 
@@ -577,7 +580,9 @@ def check_preconditions(
         # The repo root itself is not a write target (found in review).
         # `_relative_within` maps both `""` and `"."` to `"."`, which is not
         # `None` (rung 3 clears), matches no realistic never-write glob
-        # (rung 4 clears) and is not a symlink (rung 5 clears) -- so an
+        # (rung 4 clears) and is not a symlink (rung 5 clears; it would now
+        # refuse the root as a directory too, but this check names the root
+        # first, as its own refusal, before rung 5 runs) -- so an
         # action naming the whole repo reached the apply runner having
         # passed every structural rung. `Action.target_path` is only
         # `_require_str`-checked at the `plan.json` boundary, so `""` is
