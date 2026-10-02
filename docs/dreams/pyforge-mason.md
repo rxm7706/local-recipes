@@ -415,6 +415,17 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   scope. Kinships: [[one-chain-per-station]] (CAP-11, the same day), CFE G53 (re-merge co-maintainers)
   and G96 (a bump's dependency authority is the feedstock). Owner: mason. → `spec-pyforge-mason`
   CAP-35 / Epic 25 / Stories 25.1–25.2 (FR-57), specced 2026-09-29.
+- **2026-10-02 — Proposed: CFE's tests never ask GitHub whether a recipe maintainer exists.** The CFE
+  regression lane (`cfe-regression-net`) failed twice on one PR and passed on a re-run, in a different test each time.
+  `tests/integration/test_workflow_npm.py` validates recipes through conda-smithy's linter, whose maintainer check
+  (`lint_recipe._maintainer_exists`, and `_team_exists` for a team) asks github.com whether the maintainer exists.
+  With no `GH_TOKEN` in that lane it asks unauthenticated, from a runner, and when the answer is not a 200 the lint
+  reports `Recipe maintainer "rxm7706" does not exist`. The same request from a workstation returns 200.
+  **What it looks like when real:** CFE's tests answer the maintainer and team lookups locally unless a test is marked
+  `network`, so the lane's verdict no longer depends on how GitHub treats an unauthenticated runner.
+  **Constraints:** tests only; CFE's validator keeps calling conda-smithy's real lint at runtime. The change lands in
+  one `retro(cfe):` commit with a CHANGELOG bump (AD-15). Same class as Story 24.1 (a test whose verdict depends on
+  its environment). Owner: mason. → `spec-pyforge-mason` CAP-34 / Epic 26 / Story 26.1 (FR-56), specced 2026-10-02.
 
 ## One-chain fold — 2026-09-17
 
