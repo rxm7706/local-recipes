@@ -2,7 +2,7 @@
 title: '82.1: Gate evaluate finds the real repository under an installed package and never passes having run nothing'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'e537a533144fd0b5f65586ddb5a42b74eb65b62c'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -175,6 +175,6 @@ Status: done
 
 **Follow-up review recommended:** `false` (no high patched, no two medium patched; patched by verdict: high 0, medium 0, low 3 groups).
 
-**Verification.** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`, `pixi run --frozen -e pyforge-ci pyforge-deps-test`, `python scripts/spec_surface_reconcile.py`, `spec-surface-check` and `lint-types` are re-run after the review patches (results recorded below). The AC6 mutation (bare `parents[8]` restored) fails 18 of 23 tests in `test_repo_root.py`; the guard mutation (`except OSError` removed) fails the new unreadable-probe test.
+**Verification.** Run after the review patches, exit codes read directly: `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` exit 0 (9789 passed, 1 skipped, 12 deselected); `pixi run --frozen -e pyforge-ci pyforge-deps-test` exit 0 (130 passed, 3 skipped); `python scripts/spec_surface_reconcile.py` exit 0; `spec-surface-check`, `lint-types`, `story-status-check` and `deferred-work-check` exit 0. One earlier full-suite run under heavy machine load (374 s against 84 s) failed `tests/integration/test_dispatch_structure_graph_real.py::test_a_damaged_copied_index_is_cleared_and_rebuilt_with_init`; that file passes alone (4 passed) and the next full run is green, so it is load-related, not this change. The AC6 mutation (bare `Path(__file__).resolve().parents[8]` restored in `repo_root()`) fails 18 of 23 tests in `test_repo_root.py`; the guard mutation (`except OSError` removed) fails the added unreadable-probe test. The deferral was promoted to the tracked ledger with `python scripts/deferred_work_intake.py --fix --project marshal` (`DW-marshal-82-1`).
 
 **Residual risks.** The installed-layout answer depends on the invocation directory by design; a cwd inside a git repository that lacks the project's policy still reports `MRS-GATE-004` (the genuine unconfigured case, `data["root"]` names where it looked). `dispatch_land_finalize` and the three sibling loaders are not relayed or fixed here (see the deferred item).
