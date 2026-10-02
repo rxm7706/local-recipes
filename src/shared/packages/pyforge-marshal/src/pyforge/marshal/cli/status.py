@@ -485,7 +485,9 @@ def add_status_subparser(subparsers: argparse._SubParsersAction) -> None:
         action="store_true",
         help=(
             "Fleet-summary only (ignored with --run): filter data.homes to "
-            "rows currently paused-on-escalation (Story 5.3, FR-38)."
+            "rows currently paused-on-escalation (Story 5.3, FR-38), and the "
+            "findings with them -- sweep-wide findings stay, a per-home "
+            "finding stays only while its home is listed."
         ),
     )
     parser.add_argument(
@@ -2112,7 +2114,8 @@ def run_status(
         # landed comparison could not be made at all) never fires this
         # per-patch WARN; that case is already named by `_MRS_STATUS_011`
         # above, once per sweep or once per affected slug depending on which
-        # of its two causes fired.
+        # of its two causes fired -- or, when the history was read but shows
+        # nothing (Story 82.8), by the one per-home `_MRS_STATUS_014`.
         #
         # The message states the UNCONFIRMED direction and WHY, never "has
         # not landed" as an established fact (review finding, 2026-08-10,
