@@ -118,9 +118,11 @@ factory spin``/``attach``, FR-9/FR-17) adds six more codes.
 classifies ``Verdict.UNEVALUABLE``, the same tier as every sibling pre-I/O
 shape gate (``MRS-INIT-001``/``MRS-PREFLIGHT-010``/``MRS-TEARDOWN-001``):
 Marshal cannot determine what to launch. ``MRS-SPIN-002`` (the loop home is
-not provisioned), ``MRS-SPIN-003`` (NO harness process was started and none
-can have been -- shared by ``spin``'s detached launch, ``run_foreground``'s
-synchronous one and ``attach``'s exec failing to launch, AND by
+not provisioned), ``MRS-SPIN-003`` (nothing is running, so a retry is safe --
+no harness process was started, or (Story 82.7) one was started and exited
+before its starting line appeared -- shared by ``spin``'s detached launch,
+``run_foreground``'s synchronous one and ``attach``'s exec failing to
+launch, AND by
 ``run_spin``'s two pre-spawn filesystem setup failures, which abort before
 ``HarnessPort.spin`` is called; see ``core/findings.py`` for why one code
 serves them all), and ``MRS-SPIN-005`` (the story feed is missing or

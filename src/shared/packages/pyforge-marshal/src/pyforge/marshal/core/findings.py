@@ -166,7 +166,9 @@ any I/O -- the same pre-I/O shape gate every sibling command's own
 ``MRS-INIT-001``/``MRS-PREFLIGHT-010``/``MRS-TEARDOWN-001`` applies),
 ``MRS-SPIN-002`` (the loop home is not provisioned -- ``fs.is_dir(home)`` is
 ``False``, its Tier-3 backlink is absent, or that backlink dangles),
-``MRS-SPIN-003`` (NO harness process was started, and none can have been --
+``MRS-SPIN-003`` (nothing is running, so a retry is safe -- either NO harness
+process was started, or (Story 82.7) one was started and exited before its
+starting line appeared, the message quoting the tail of ``harness.log`` --
 covers ``spin``'s detached launch, ``run_foreground``'s synchronous one, and
 ``attach``'s exec failing to launch at all (a missing binary, a launch-time
 ``OSError``), AND ``run_spin``'s two pre-spawn filesystem setup failures,

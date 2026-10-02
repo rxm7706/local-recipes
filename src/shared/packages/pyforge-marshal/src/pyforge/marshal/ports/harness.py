@@ -665,11 +665,13 @@ class HarnessPort(Protocol):
         waited on, returns as soon as the process starts. Makes a bounded,
         best-effort attempt to recover the harness's own self-minted run id
         from ``log_path`` before returning; ``SpinResult.harness_run_id`` is
-        ``None`` if that window elapses first. Raises ``HarnessError`` only
-        when the process could not be LAUNCHED at all (missing binary, a
-        launch-time ``OSError``) -- distinct from every other method on this
-        Protocol except ``attach``/``run_foreground``, which share this
-        convention."""
+        ``None`` if that window elapses first. Raises ``HarnessError`` when
+        the process could not be LAUNCHED at all (missing binary, a
+        launch-time ``OSError``) and when it was spawned but exited before
+        its starting line appeared (Story 82.7: nothing is running, the
+        message quotes the log's tail) -- distinct from every other method on
+        this Protocol except ``attach``/``run_foreground``, which share the
+        launch-failure convention."""
         ...
 
     def attach(self, project: Path) -> int:
