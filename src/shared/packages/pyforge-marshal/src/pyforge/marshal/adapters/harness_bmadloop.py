@@ -1192,6 +1192,45 @@ _SPIN_LOG_POLL_TIMEOUT_S = 5.0
 # (anchors at line start) against each line of `spin`'s own redirected log.
 _RUN_STARTING_RE = re.compile(r"^run (\S+) starting\b")
 
+# Story 82.7 (DW-FU-3-3-4): how much of ``harness.log`` an early-exit launch
+# error quotes -- the last few non-blank lines, joined onto ONE line (the
+# message is interpolated verbatim into a finding and a journal ``error``
+# field, so an embedded newline or an ANSI escape would forge extra report
+# lines or drive the operator's terminal), then cut to the trailing
+# characters. The caller redacts the WHOLE log text first, so a token the cut
+# would split is never left half-matched.
+_SPIN_LOG_TAIL_LINES = 5
+_SPIN_LOG_TAIL_CHARS = 500
+_SPIN_LOG_WITHHELD = "(withheld: redaction failed)"
+_CONTROL_RUN_RE = re.compile(r"[\x00-\x1f\x7f]+")
+
+
+def _child_exited(pid: int) -> bool:
+    """Whether the child ``spin`` spawned has exited (Story 82.7). ``spawn_detached``
+    drops its ``Popen``, so an exited child stays an unreaped zombie and
+    ``PosixProcess.is_alive`` (``os.kill(pid, 0)``) reports it ALIVE; this
+    process is the parent, so ``waitpid(WNOHANG)`` is the one party that can
+    tell -- and reaps it, so a zombie counts as exited. ``ChildProcessError``
+    (the pid is not our child, or was already reaped) falls back to
+    ``PosixProcess.is_alive`` -- the one liveness model this package has."""
+    try:
+        reaped, _status = os.waitpid(pid, os.WNOHANG)
+    except ChildProcessError:
+        return not PosixProcess().is_alive(pid)
+    return reaped == pid
+
+
+def _log_tail(text: str) -> str:
+    """The bounded, single-line tail of ``text`` for an early-exit launch error
+    (empty log -> a stated absence, never an empty quote). Each run of control
+    characters (ANSI escapes, NUL, DEL, ...) collapses to one space."""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    tail = _CONTROL_RUN_RE.sub(" ", " | ".join(lines[-_SPIN_LOG_TAIL_LINES:])).strip()
+    if len(tail) > _SPIN_LOG_TAIL_CHARS:
+        tail = "..." + tail[-_SPIN_LOG_TAIL_CHARS:]
+    return tail or "(empty)"
+
+
 # Story 3.5's `stop` -- a synchronous SIGTERM-then-force-kill against a
 # possibly-wedged engine plus its tmux session teardown, confirmed live
 # against the installed 0.9.0 `cmd_stop`/`runs.stop_run`. Bounded rather than
@@ -1523,7 +1562,7 @@ class BmadLoopHarness:
             argv += ["--max-stories", str(max_count)]
         return argv
 
-    def _poll_for_harness_run_id(self, log_path: Path) -> str | None:
+    def _poll_for_harness_run_id(self, log_path: Path, pid: int) -> str | None:
         """A bounded poll (``_SPIN_LOG_POLL_INTERVAL_S`` steps, never past
         ``_SPIN_LOG_POLL_TIMEOUT_S``) of ``log_path`` for ``_RUN_STARTING_RE``
         -- never indefinite (the spec's own Never clause). Re-reads the whole
@@ -1531,9 +1570,18 @@ class BmadLoopHarness:
         line appears -- `bmad-loop run` prints it before any per-story
         adapter output); a missing/unreadable file at any step is treated
         the same as "not there yet", not a fatal error -- the file may not
-        exist for the first instant after ``Popen`` returns."""
+        exist for the first instant after ``Popen`` returns.
+
+        Story 82.7 (DW-FU-3-3-4): each step asks whether the spawned child
+        ``pid`` has exited BEFORE it reads the log, so output the child wrote
+        before exiting is always seen -- a match returns the run id; an exit
+        with no match raises ``HarnessError`` (the child is gone and can never
+        print the line; `cmd_run`'s own ``worktree_clean`` refusal is the usual
+        cause) quoting the log's tail. A child still alive at the deadline
+        keeps the old degrade: ``None``."""
         deadline = time.monotonic() + _SPIN_LOG_POLL_TIMEOUT_S
         while True:
+            exited = _child_exited(pid)
             try:
                 text = log_path.read_text(encoding="utf-8", errors="replace")
             except OSError:
@@ -1542,6 +1590,16 @@ class BmadLoopHarness:
                 match = _RUN_STARTING_RE.match(line)
                 if match:
                     return match.group(1)
+            if exited:
+                # The tail lands in a finding, stdout and the durable journal:
+                # redact the WHOLE text first (AD-34's redaction-at-capture),
+                # so a token cut by the tail's truncation cannot slip the
+                # regex; a failed redaction quotes nothing.
+                redacted = self._redact_text(text)
+                tail = _SPIN_LOG_WITHHELD if redacted is None else _log_tail(redacted)
+                raise HarnessError(
+                    f"the process (pid {pid}) exited before printing its starting line; {log_path} tail: {tail}"
+                )
             if time.monotonic() >= deadline:
                 return None
             time.sleep(_SPIN_LOG_POLL_INTERVAL_S)
@@ -1585,7 +1643,7 @@ class BmadLoopHarness:
                 raise HarnessError(f"cannot open spin log {log_path}: {cause or exc}") from (cause or exc)
             raise HarnessError(f"cannot launch bmad-loop run: {cause or exc}") from (cause or exc)
 
-        harness_run_id = self._poll_for_harness_run_id(log_path)
+        harness_run_id = self._poll_for_harness_run_id(log_path, pid)
         return SpinResult(pid=pid, harness_run_id=harness_run_id)
 
     @staticmethod

@@ -15,6 +15,7 @@ import argparse
 import builtins
 import errno
 import json
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -24,8 +25,14 @@ import pytest
 from pyforge.core.process import ProcessError
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
+from pyforge.marshal.adapters import harness_bmadloop as harness_module
 from pyforge.marshal.adapters.fs_local import FsError
-from pyforge.marshal.adapters.harness_bmadloop import HarnessError, HarnessPolicyWriteError, render_policy_toml
+from pyforge.marshal.adapters.harness_bmadloop import (
+    BmadLoopHarness,
+    HarnessError,
+    HarnessPolicyWriteError,
+    render_policy_toml,
+)
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_resume, run_spin
@@ -611,6 +618,63 @@ def test_spin_detached_launch_failure_journals_a_failed_outcome(home, capsys):
     assert outcome["phase"] == "outcome"
     assert outcome["payload"]["pid"] is None
     assert outcome["payload"]["harness_run_id"] is None
+
+
+def test_spin_a_child_that_exits_before_its_starting_line_is_a_failed_launch(home, capsys, monkeypatch):
+    """Story 82.7 / DW-FU-3-3-4, AC1 at the command surface: ``harness.spin``
+    delegates to the REAL ``BmadLoopHarness.spin`` against a real child that
+    prints an error and exits 1 before any starting line (``cmd_run``'s own
+    ``worktree_clean`` refusal is the usual cause). Only the argv of the
+    detached ``Popen`` is substituted; the redirected log, the detach flags
+    and the real ``_child_exited`` probe are the production ones."""
+    monkeypatch.setattr(harness_module, "_SPIN_LOG_POLL_TIMEOUT_S", 10.0)
+    monkeypatch.setattr(harness_module, "_SPIN_LOG_POLL_INTERVAL_S", 0.01)
+    home.mkdir(parents=True)
+    script = home / "fake_bmad_loop_run.py"
+    script.write_text(
+        "import sys\nprint('error: worktree is not clean', file=sys.stderr)\nsys.exit(1)\n",
+        encoding="utf-8",
+    )
+    real_popen = subprocess.Popen  # captured before patching
+
+    def _argv_only_popen(argv, **kwargs):
+        return real_popen(
+            [sys.executable, str(script)],
+            cwd=kwargs["cwd"],
+            stdout=kwargs["stdout"],
+            stderr=kwargs["stderr"],
+            stdin=kwargs["stdin"],
+            env=kwargs["env"],
+            start_new_session=True,
+        )
+
+    monkeypatch.setattr(subprocess, "Popen", _argv_only_popen)
+
+    class _RealSpinHarness(FakeHarness):
+        def spin(self, project, *, epic, story, max_count, log_path):
+            self.calls.append("spin")
+            log_path.parent.mkdir(parents=True, exist_ok=True)  # FakeFs creates no real run directory
+            return BmadLoopHarness().spin(project, epic=epic, story=story, max_count=max_count, log_path=log_path)
+
+    fs = FakeFs(dirs={home})
+    harness = _RealSpinHarness()
+    harness.feed_keys = ("1-1-a",)
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-003" in out
+    assert "exited before printing its starting line" in out
+    assert "error: worktree is not clean" in out
+    assert "MRS-SPIN-004" not in out
+    # journaled as a FAILED outcome that says the process exited, never as a launch.
+    assert len(fs.appended_lines) == 2
+    outcome = json.loads(fs.appended_lines[1][1])
+    assert outcome["phase"] == "outcome"
+    assert outcome["payload"]["pid"] is None
+    assert outcome["payload"]["harness_run_id"] is None
+    assert "exited" in outcome["payload"]["error"]
 
 
 def test_spin_uncaught_story_feed_keys_error_exits_cleanly_as_mrs_spin_005(home, capsys):
