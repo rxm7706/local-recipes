@@ -212,6 +212,23 @@ verify_commands = [
   "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
 ]
 
+"26" = [  # CFE's tests never ask GitHub whether a recipe maintainer exists (fix under spec-pyforge-mason CAP-34), added 2026-10-02
+  # Station default, plus the CFE surface Story 26.1's one retro(cfe) commit writes (tests/conftest.py, a new
+  # regression test, CHANGELOG.md and the version carriers), every Spec memlog (spec-packaging-factory governs the
+  # CFE surface), and the station ledger each story writes its own status to.
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/conda-forge-expert/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+]
+
 "19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
   "src/shared/packages/pyforge-mason/**",
   "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
