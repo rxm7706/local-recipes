@@ -15,7 +15,9 @@ import pytest
 
 from pyforge.marshal.adapters import vcs_git as vcs_git_module
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
+from pyforge.marshal.core.egress import to_redacted_text
 from pyforge.marshal.core.refs import ORIGIN_MAIN
+from pyforge.marshal.ports.commit import VcsRef
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
 
@@ -1896,7 +1898,9 @@ def test_merge_ref_resolving_commits_a_two_parent_merge_with_the_given_resolutio
     _git(repo, "commit", "-am", "only README differs")
     main_sha = _git(repo, "rev-parse", "main").stdout.strip()
     # main also touched b c.txt / d.txt / e.txt, which this branch never did -> they merge cleanly
-    sha = vcs.merge_ref_resolving(repo, VcsRef("main"), resolutions={"README.md": "resolved\n"}, message=to_redacted_text("union heal"))
+    sha = vcs.merge_ref_resolving(
+        repo, VcsRef("main"), resolutions={"README.md": "resolved\n"}, message=to_redacted_text("union heal")
+    )
 
     parents = _git(repo, "rev-list", "--parents", "-n", "1", sha).stdout.split()[1:]
     assert parents[1] == main_sha
@@ -1912,7 +1916,9 @@ def test_merge_ref_resolving_aborts_on_a_conflict_it_cannot_resolve(vcs, repo):
     before = _git(repo, "rev-parse", "HEAD").stdout.strip()
 
     with pytest.raises(VcsCommandError, match="conflicts outside the resolvable paths: .*README.md"):
-        vcs.merge_ref_resolving(repo, VcsRef("main"), resolutions={"b c.txt": "x\n"}, message=to_redacted_text("union heal"))
+        vcs.merge_ref_resolving(
+            repo, VcsRef("main"), resolutions={"b c.txt": "x\n"}, message=to_redacted_text("union heal")
+        )
 
     assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
     assert _git(repo, "status", "--porcelain").stdout == ""
@@ -1934,7 +1940,9 @@ def test_merge_ref_resolving_reports_an_unwritable_resolution_as_a_vcs_error_and
 
     monkeypatch.setattr(Path, "write_text", _refuse)
     with pytest.raises(VcsCommandError, match="cannot write the resolution of README.md"):
-        vcs.merge_ref_resolving(repo, VcsRef("main"), resolutions={"README.md": "resolved\n"}, message=to_redacted_text("union heal"))
+        vcs.merge_ref_resolving(
+            repo, VcsRef("main"), resolutions={"README.md": "resolved\n"}, message=to_redacted_text("union heal")
+        )
     monkeypatch.undo()
 
     assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
@@ -1950,7 +1958,9 @@ def test_merge_ref_resolving_refuses_and_leaves_a_merge_already_in_progress(vcs,
     theirs = _git(repo, "rev-parse", "MERGE_HEAD").stdout.strip()
 
     with pytest.raises(VcsCommandError, match="already in progress"):
-        vcs.merge_ref_resolving(repo, VcsRef("main"), resolutions={"README.md": "x\n"}, message=to_redacted_text("union heal"))
+        vcs.merge_ref_resolving(
+            repo, VcsRef("main"), resolutions={"README.md": "x\n"}, message=to_redacted_text("union heal")
+        )
 
     assert _git(repo, "rev-parse", "MERGE_HEAD").stdout.strip() == theirs
 
@@ -2021,7 +2031,9 @@ def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(vcs, repo
 
 def test_commit_paths_onto_remote_tip_refuses_empty_writes(vcs, repo):
     with pytest.raises(VcsCommandError, match="at least one write"):
-        vcs.commit_paths_onto_remote_tip(repo, remote=VcsRef("origin"), ref=VcsRef("main"), writes=(), message=to_redacted_text("nope"))
+        vcs.commit_paths_onto_remote_tip(
+            repo, remote=VcsRef("origin"), ref=VcsRef("main"), writes=(), message=to_redacted_text("nope")
+        )
 
 
 # --- commit_paths_onto_remote_tip: the proof-carrying pre-push opt-out (Story 68.1, CAP-277) ----

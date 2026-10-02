@@ -23,8 +23,10 @@ from pyforge.marshal.adapters.vcs_git import GitVcs
 from pyforge.marshal.cli import deploy as cli_deploy
 from pyforge.marshal.cli import dispatch as cli_dispatch
 from pyforge.marshal.core import dispatch as core_dispatch
+from pyforge.marshal.core.egress import to_redacted_text
 from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT, display_ref, remote_tracking_ref
 from pyforge.marshal.dispatch_supervisor import __main__ as dispatch_supervisor
+from pyforge.marshal.ports.commit import VcsRef
 
 
 def test_remote_tracking_ref_is_the_full_refname() -> None:
@@ -136,7 +138,11 @@ def test_publishing_onto_the_remote_tip_never_carries_a_shadow(repo, kind: str) 
     shadow = _shadow(clone, "main", kind=kind)
 
     GitVcs().commit_paths_onto_remote_tip(
-        clone, remote=VcsRef("origin"), ref=VcsRef("main"), writes=(("ledger.yaml", "development_status: {}\n"),), message=to_redacted_text("promote")
+        clone,
+        remote=VcsRef("origin"),
+        ref=VcsRef("main"),
+        writes=(("ledger.yaml", "development_status: {}\n"),),
+        message=to_redacted_text("promote"),
     )
 
     remote_log = _git(remote, "log", "--format=%H", "main").split()
