@@ -94,14 +94,14 @@ def _sample_state(**overrides: Any) -> SeedState:
                 path="AGENTS.md",
                 artifact_class="hybrid-managed-region",
                 body_sha="0123abcd",
-                inserted_region_span=RegionSpanRecord(name="tiers", start=7, end=20),
+                inserted_region_spans=(RegionSpanRecord(name="tiers", start=7, end=20, body_sha="0123abcd"),),
             ),
             ManagedArtifact(
                 id="dream-template",
                 path="docs/dreams/example.md",
                 artifact_class="copied-seeded",
                 body_sha="deadbeef",
-                inserted_region_span=None,
+                inserted_region_spans=(),
             ),
         ),
         "skips": ("docs/legacy/*.md",),
@@ -146,8 +146,9 @@ def test_schema_is_closed_at_every_object_level():
     assert schema["additionalProperties"] is False
     assert schema["$defs"]["managedArtifact"]["additionalProperties"] is False
     assert schema["$defs"]["legacyArtifact"]["additionalProperties"] is False
-    span = schema["$defs"]["managedArtifact"]["properties"]["inserted_region_span"]
-    assert span["additionalProperties"] is False
+    assert schema["$defs"]["regionSpan"]["additionalProperties"] is False
+    legacy_span = schema["$defs"]["managedArtifact"]["properties"]["inserted_region_span"]
+    assert legacy_span["additionalProperties"] is False
 
 
 def test_schema_requires_exactly_the_eleven_top_level_keys():
@@ -170,8 +171,9 @@ def test_schema_class_enum_matches_artifact_class_exactly():
 
 def test_schema_body_sha_pattern_is_hash_contents_shipped_shape():
     schema = store._load_schema()
-    pattern = schema["$defs"]["managedArtifact"]["properties"]["body_sha"]["pattern"]
-    assert pattern == "^[0-9a-f]{8}(?![\\s\\S])"
+    assert schema["$defs"]["managedArtifact"]["properties"]["body_sha"]["$ref"] == "#/$defs/bodySha"
+    assert schema["$defs"]["regionSpan"]["properties"]["body_sha"]["$ref"] == "#/$defs/bodySha"
+    assert schema["$defs"]["bodySha"]["pattern"] == "^[0-9a-f]{8}(?![\\s\\S])"
 
 
 def test_schema_mode_enum_is_the_two_materializing_verbs():
