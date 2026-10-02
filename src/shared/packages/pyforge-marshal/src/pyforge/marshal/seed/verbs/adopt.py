@@ -1017,7 +1017,17 @@ def run_adopt(
         patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory))),
         exempt=writable_exemptions(filtered_manifest, inventory),
     )
-    managed_records = managed_after_skips(_managed_records(state, filtered_manifest), plan)
+    # Rung 6 refuses a record whose path does not resolve inside the repo, so a
+    # previously adopted entry that is now an escaping symlink would still
+    # refuse the whole run there (Story 82.11) -- it is already reported in
+    # `escape_findings` and planned for nothing, so it is not handed to rung 6.
+    escaping_ids = {escape.entry_id for escape in inventory.escaping}
+    managed_records = managed_after_skips(
+        tuple(
+            record for record in _managed_records(state, filtered_manifest) if record.artifact_id not in escaping_ids
+        ),
+        plan,
+    )
 
     check_preconditions(
         plan,
