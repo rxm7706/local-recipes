@@ -759,7 +759,12 @@ def test_an_escaping_hybrid_entry_is_never_read_for_opt_outs(clean_repo, monkeyp
         (clean_repo / name).write_text(_HUMAN_TEXT, encoding="utf-8")
     _commit_all(clean_repo)
     run_adopt(
-        clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(manifest, clean_repo)
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo),
     )
     _commit_all(clean_repo)
     # ESCAPER.md later becomes a symlink to a file outside the repository.
