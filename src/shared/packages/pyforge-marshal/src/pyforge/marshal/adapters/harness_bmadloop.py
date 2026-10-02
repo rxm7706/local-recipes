@@ -1225,6 +1225,7 @@ def _log_tail(text: str) -> str:
         tail = "..." + tail[-_SPIN_LOG_TAIL_CHARS:]
     return tail or "(empty)"
 
+
 # Story 3.5's `stop` -- a synchronous SIGTERM-then-force-kill against a
 # possibly-wedged engine plus its tmux session teardown, confirmed live
 # against the installed 0.9.0 `cmd_stop`/`runs.stop_run`. Bounded rather than
@@ -1575,7 +1576,7 @@ class BmadLoopHarness:
         keeps the old degrade: ``None``."""
         deadline = time.monotonic() + _SPIN_LOG_POLL_TIMEOUT_S
         while True:
-            exited = False
+            exited = _child_exited(pid)
             try:
                 text = log_path.read_text(encoding="utf-8", errors="replace")
             except OSError:

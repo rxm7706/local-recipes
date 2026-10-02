@@ -30,7 +30,6 @@ import pytest
 import pyforge.marshal.adapters.harness_bmadloop as module
 from pyforge.marshal.adapters.harness_bmadloop import BmadLoopHarness, HarnessError
 
-
 # The real probe, captured before the autouse fixture below stubs it out.
 _REAL_CHILD_EXITED = module._child_exited
 
@@ -333,9 +332,7 @@ def test_spin_raises_harness_error_at_once_when_the_child_exits_before_its_start
     _spawn_real_child(
         monkeypatch,
         tmp_path,
-        "import sys\n"
-        "print('error: worktree is not clean', file=sys.stderr)\n"
-        "sys.exit(1)\n",
+        "import sys\nprint('error: worktree is not clean', file=sys.stderr)\nsys.exit(1)\n",
     )
     started = time.monotonic()
     with pytest.raises(HarnessError, match=r"exited before printing its starting line") as excinfo:
