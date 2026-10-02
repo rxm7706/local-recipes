@@ -295,7 +295,7 @@ from ..model.version import ModelVersion
 from ..plan.build import build_plan, default_plan_path, write_plan
 from ..plan.types import Action, Plan
 from ..regions.apply import insert_region
-from ..regions.parse import parse_regions
+from ..regions.parse import RegionSpan, parse_regions
 from ..state import (
     LegacyArtifact,
     ManagedArtifact,
@@ -901,6 +901,87 @@ def _default_commit(
     return commit
 
 
+def _hybrid_record(
+    entry: ManifestEntry, text: str, spans: Mapping[str, RegionSpan], *, named: set[str], claim_every_present: bool
+) -> ManagedArtifact | None:
+    """The ``ManagedArtifact`` for a hybrid ``entry`` whose file now reads
+    ``text`` (``spans``, parsed from it): one ``RegionSpanRecord`` per declared
+    region present in the file, in declared order, each with its own offsets and
+    the ``hash_content`` of its body. A region is claimed when ``named`` holds
+    it or ``claim_every_present`` says the tool installed this file; ``None``
+    when that leaves nothing, because a hybrid claim with no span is invalid and
+    an artifact with no region of its own is not claimed (Story 82.13)."""
+    recorded_spans = tuple(
+        RegionSpanRecord(
+            name=region.name,
+            start=spans[region.name].body_span[0],
+            end=spans[region.name].body_span[1],
+            body_sha=hash_content(region_body_text(text, spans[region.name])),
+        )
+        for region in entry.regions
+        if region.name in spans and (claim_every_present or region.name in named)
+    )
+    if not recorded_spans:
+        return None
+    return ManagedArtifact(
+        id=entry.id,
+        path=entry.path,
+        artifact_class=entry.artifact_class.value,
+        body_sha=recorded_spans[0].body_sha,
+        inserted_region_spans=recorded_spans,
+    )
+
+
+def _carried_hybrid_record(
+    prior: ManagedArtifact, entry: ManifestEntry | None, repo_root: Path
+) -> ManagedArtifact | None:
+    """The record for a hybrid artifact the plan did NOT touch but whose record
+    the run's in-memory opt-out recording dropped (Story 82.13): a state in the
+    pre-82.13 one-span shape whose only recorded region's markers were deleted,
+    while its siblings are still in the file and a ``--skip`` (or a plan with
+    nothing to write there) left the artifact alone. Without it the siblings
+    would silently lose their claim, where the baseline carried the record over.
+
+    ``prior`` is the record as read. Same rule as ``_managed_artifact_after_apply``
+    for a replaced record: every declared region present in the file is claimed
+    at its CURRENT hash (nothing was rewritten), and ``None`` when none is -- the
+    caller omits the artifact. ``None`` too for an entry that is gone from the
+    manifest, is not hybrid, or whose recorded ``path`` moved (that record
+    describes another file). The caller never offers an escaping entry: its path
+    is not read."""
+    if entry is None or entry.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION or not prior.inserted_region_spans:
+        return None
+    assert entry.format is not None
+    text = _read_text_or_blank(repo_root / entry.path)
+    spans = {span.name: span for span in parse_regions(text, entry.format)}
+    return _hybrid_record(entry, text, spans, named=set(), claim_every_present=prior.path == entry.path)
+
+
+def _carried_back_records(
+    state_as_read: SeedState | None,
+    state: SeedState | None,
+    touched_ids: frozenset[str],
+    escaping_ids: set[str],
+    entries_by_id: Mapping[str, ManifestEntry],
+    repo_root: Path,
+) -> tuple[ManagedArtifact, ...]:
+    """Every record of ``state_as_read`` that the in-memory ``state`` no longer
+    holds (recording a derived opt-out dropped it), the plan did not touch and
+    that is not an escaping entry -- rebuilt by ``_carried_hybrid_record``, so a
+    hybrid artifact's present siblings keep their claim. An escaping entry is
+    never read (Story 82.11); in practice the opt-out recording skips it too, so
+    its record is never dropped, and the check here keeps that true on its own."""
+    if state_as_read is None:
+        return ()
+    held = {record.id for record in state.managed} if state is not None else set()
+    rebuilt = (
+        _carried_hybrid_record(prior, entries_by_id.get(prior.id), repo_root)
+        for prior in state_as_read.managed
+        if prior.id not in held and prior.id not in touched_ids and prior.id not in escaping_ids
+    )
+    return tuple(record for record in rebuilt if record is not None)
+
+
 def _managed_artifact_after_apply(
     action: Action, entry: ManifestEntry, repo_root: Path, prior: ManagedArtifact | None = None
 ) -> ManagedArtifact | None:
@@ -964,25 +1045,7 @@ def _managed_artifact_after_apply(
                 ),
             )
         installed_by_the_tool = prior is not None and prior.path == entry.path
-        recorded_spans = tuple(
-            RegionSpanRecord(
-                name=region.name,
-                start=spans[region.name].body_span[0],
-                end=spans[region.name].body_span[1],
-                body_sha=hash_content(region_body_text(text, spans[region.name])),
-            )
-            for region in entry.regions
-            if region.name in spans and (installed_by_the_tool or region.name in named)
-        )
-        if not recorded_spans:
-            return None
-        return ManagedArtifact(
-            id=entry.id,
-            path=entry.path,
-            artifact_class=entry.artifact_class.value,
-            body_sha=recorded_spans[0].body_sha,
-            inserted_region_spans=recorded_spans,
-        )
+        return _hybrid_record(entry, text, spans, named=named, claim_every_present=installed_by_the_tool)
     content = target.read_text(encoding="utf-8")
     return ManagedArtifact(
         id=entry.id,
@@ -1019,10 +1082,17 @@ def _build_state_after_apply(
     would leave the siblings of a deleted region with nothing to be claimed by
     (``_managed_artifact_after_apply``). A record it returns ``None`` for (every
     region deleted, nothing named) is omitted: the artifact is no longer
-    claimed."""
+    claimed.
+
+    A hybrid record the in-memory recording dropped that the plan did not touch
+    (a ``--skip``, an empty action) is rebuilt by ``_carried_back_records`` from the
+    siblings still in the file, so it does not silently leave state."""
     touched_ids = frozenset(action.artifact_id for action in plan.actions)
     carried_over = tuple(
         record for record in (state.managed if state is not None else ()) if record.id not in touched_ids
+    )
+    carried_back = _carried_back_records(
+        state_as_read, state, touched_ids, {escape.entry_id for escape in inventory.escaping}, entries_by_id, repo_root
     )
     prior_by_id = {record.id: record for record in state_as_read.managed} if state_as_read is not None else {}
     built = (
@@ -1032,7 +1102,7 @@ def _build_state_after_apply(
         for action in plan.actions
     )
     new_records = tuple(record for record in built if record is not None)
-    managed = tuple(sorted((*carried_over, *new_records), key=lambda record: record.id))
+    managed = tuple(sorted((*carried_over, *carried_back, *new_records), key=lambda record: record.id))
     legacy = tuple(
         LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of) for record in inventory.legacy
     )
