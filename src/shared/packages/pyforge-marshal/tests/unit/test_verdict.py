@@ -245,3 +245,14 @@ def test_ad8_every_real_unevaluable_code_never_projects_to_clean(code):
     result = verdict.compute_verdict([finding])
     assert result is not Verdict.CLEAN
     assert status_for(result) is Status.ERROR
+
+
+def test_mrs_gate_016_pins_unevaluable_never_the_mrs_gate_004_warn():
+    """Story 82.1 (DW-FU-2-1-7): an unresolvable repository root is the could-not-evaluate rung
+    (the MRS-GATE-002/003/005/009 tier) with a non-zero exit -- never `MRS-GATE-004`'s warn,
+    whose exit 0 is the false green this code replaces."""
+    assert verdict.classify("MRS-GATE-016") is Verdict.UNEVALUABLE
+    assert verdict.classify("MRS-GATE-004") is Verdict.WARN
+    finding = Finding(code="MRS-GATE-016", severity=Severity.ERROR, message="no repository root")
+    assert verdict.compute_verdict([finding]) is Verdict.UNEVALUABLE
+    assert verdict.exit_code_for(verdict.compute_verdict([finding])) != 0

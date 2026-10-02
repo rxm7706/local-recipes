@@ -1944,6 +1944,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 22.12 (shared-surface cross-suite gate, CAP-12):
         # MRS-GATE-015 -- cross-surface verify failed (platform-ci-local).
         "MRS-GATE-015",
+        # Story 82.1 (DW-FU-2-1-7): MRS-GATE-016 -- the repository root could
+        # not be resolved (an installed package invoked outside any git
+        # checkout), so no gate was evaluated; UNEVALUABLE, never the bare
+        # defaults + MRS-GATE-004 false green.
+        "MRS-GATE-016",
         # Story 28.8 (derived context recomputes only on source change,
         # SPEC-marshal-token-economy CAP-5): `marshal context refresh`'s
         # own two codes -- 001 UNEVALUABLE (the declaration itself could

@@ -54,6 +54,15 @@ by this fold either way (see ``run_evaluate``'s own ``--run`` branch): a
 matching Story 2.1's original shape -- re-running commands live under
 ``--run`` is a separate concern this story does not open.
 
+**An unresolvable root (Story 82.1, DW-FU-2-1-7).** The repo root is resolved
+before anything else (``cli/config.py::repo_root()``: the ``__file__``-derived
+checkout, else the git common root of the invocation directory under an
+installed package). When neither yields a repository the evaluation stops
+there with ONE ``MRS-GATE-016`` finding (``unevaluable``, non-zero exit):
+``data["scope"] == "root-unresolved"``, ``data["root"]`` and
+``data["policy_source"]`` are ``None``, ``data["commands"]`` is ``[]``, and
+no verify command runs -- never bare defaults plus ``MRS-GATE-004``.
+
 **The pure/impure split.** All ``shlex.split`` + ``ProcessPort.run`` I/O
 happens HERE, at the CLI boundary; the per-command classification (pass,
 fail, unresolvable, malformed) is delegated to ``core.gate.classify_outcome``
@@ -177,6 +186,7 @@ from ..ports.vcs import VcsPort
 from .config import (
     ENV_ACTIVE_PROJECT,
     PolicyIOError,
+    RepoRootUnresolvedError,
     _read_project_policy,
     _suppress_downstream_pipe_close,
     conventional_project_policy_path,
@@ -389,8 +399,10 @@ def _resolve_policy_source(candidate: Path, project_slug: str) -> tuple[Path | N
     ``real_projects_root`` the out-of-tree directory too, so containment
     trivially held and an out-of-repo policy's commands ran ``clean``, exit
     0. The project directory is therefore also required to resolve inside
-    ``repo_root()`` itself -- the one anchor that is not attacker-relocatable
-    (it is derived from ``__file__``).
+    ``repo_root()`` itself -- the one anchor that is not relocatable from
+    inside the tree (derived from ``__file__`` in the source layout, from the
+    invocation directory's git common root under an installed package --
+    Story 82.1).
 
     Returns the RESOLVED path (recorded in the envelope as
     ``data["policy_source"]``, so a contained-but-symlinked policy is still
@@ -724,6 +736,32 @@ def evaluate_gate(
     # silently fall through to the env var).
     project_slug = args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
 
+    # Story 82.1 (DW-FU-2-1-7): resolve the repo root FIRST. It is the policy
+    # lookup's anchor, the spawned commands' `cwd` and the containment fence
+    # below (`conventional_project_policy_path` and `_resolve_policy_source`
+    # call `repo_root()` again; the invocation directory is constant, so the
+    # answer is the same), so a root that cannot be resolved must stop the
+    # evaluation here -- never fall through to bare defaults, which
+    # compose no `verify_commands` and report MRS-GATE-004 (warn, exit 0)
+    # having run no gate: a false green. One could-not-evaluate finding
+    # (UNEVALUABLE, non-zero exit), nothing run.
+    try:
+        root = repo_root()
+    except RepoRootUnresolvedError as exc:
+        return build_envelope(
+            command="gate evaluate",
+            verdict=compute_verdict((exc.finding,)),
+            data={
+                "slug": project_slug,
+                "root": None,
+                "policy_source": None,
+                "scope": "root-unresolved",
+                "scope_note": "the repository root could not be resolved; no gate was evaluated",
+                "commands": [],
+            },
+            findings=(exc.finding,),
+        )
+
     # The CONVENTIONAL path is the only policy source this command will
     # read -- `run_config`'s `--project-policy` override is deliberately not
     # offered here (see the module docstring). Resolution itself is reused,
@@ -803,13 +841,13 @@ def evaluate_gate(
     findings: list[Finding] = [*io_findings, *policy_findings]
 
     # PROVENANCE (review finding). `slug` alone does not say what was
-    # evaluated: `repo_root()` is derived from `__file__`, so WHICH tree
-    # gets gated depends on which copy of the package is importable, and the
+    # evaluated: `repo_root()` is derived from `__file__` (from the
+    # invocation directory's git root under an installed package), so WHICH
+    # tree gets gated depends on which copy of the package is importable, and the
     # conventional path can be a symlink, so the slug plus the convention do
     # NOT determine the file that was read. An envelope asserting `clean`
     # must say where and from what. Both are recorded here and rendered by
     # BOTH formats (AD-14: text is a projection of this same data).
-    root = repo_root()
     data: dict[str, object] = {
         "slug": project_slug,
         "root": str(root),
@@ -1132,7 +1170,7 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
     # `_resolve_policy_source` and `cli/config.py::_read_project_policy`).
     lines = [
         f"gate evaluate: {slug!r}",
-        f"root: {str(data['root'])!r}",
+        f"root: {str(data['root'])!r}" if data["root"] is not None else "root: (unresolved)",
         f"policy source: {str(data['policy_source'])!r}" if data["policy_source"] else "policy source: (none read)",
         f"scope: {data['scope']} ({data['scope_note']})",
     ]

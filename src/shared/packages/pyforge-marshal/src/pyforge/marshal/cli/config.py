@@ -49,6 +49,7 @@ from pyforge.core.atomic_write import atomic_write_bytes
 from pyforge.core.errors import PyforgeError
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
+from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
 from ..core.harness_profile import bmadloop_adapter_for_preference
 from ..core.landing import LandingRule, landing_rule_to_dict
@@ -56,6 +57,13 @@ from ..core.model import Finding, Severity, Status, build_envelope, status_for
 from ..core.verdict import compute_verdict, exit_code_for
 
 ENV_ACTIVE_PROJECT = "BMAD_ACTIVE_PROJECT"
+
+# `repo_root()`'s editable-layout anchor (Story 82.1): the ancestor of this
+# file that is the repository root when running from a source checkout, and the
+# path under it that proves the ancestor really is that checkout (an installed
+# layout has no such tree above `__file__`).
+_EDITABLE_ROOT_PARENT_INDEX = 8
+_PACKAGE_SOURCE_RELPATH = Path("src/shared/packages/pyforge-marshal")
 
 # Only these 3 of the 5 --set-eligible scalar keys are int-typed; the other
 # two (gate_mode, merge_subject_template) stay plain strings.
@@ -478,19 +486,58 @@ def read_repo_policy_defaults() -> tuple[Mapping[str, object], Finding | None]:
 
 
 def repo_root() -> Path:
-    """The repo root, resolved from this module's own location.
+    """The repo root: this module's own checkout when it IS the repository,
+    else the git common root of the invocation directory.
 
     `cli/config.py` -> ... -> `<repo>/src/shared/packages/pyforge-marshal/src/
-    pyforge/marshal/cli/config.py`, so the root is 8 parents up. Derived rather
-    than taken from CWD: `marshal config` is run from a loop home, from the main
-    checkout, and from a story worktree, and a CWD-relative root would silently
-    resolve to a different project's policy in two of the three.
+    pyforge/marshal/cli/config.py`, so in the editable source layout the root is
+    8 parents up. Derived rather than taken from CWD: `marshal config` is run
+    from a loop home, from the main checkout, and from a story worktree, and a
+    CWD-relative root would silently resolve to a different project's policy in
+    two of the three.
 
-    The index is asserted by `test_conventional_project_policy_path_lands_on_the_repo_root`
+    That index is right ONLY for the editable layout (Story 82.1, DW-FU-2-1-7).
+    Under an installed package -- the wheel, sdist or conda artifact the build
+    tasks produce -- `__file__` sits in an environment prefix, where the same
+    index lands somewhere inside the prefix (or past its ancestors): every
+    policy lookup missed, `verify_commands` composed to `()`, and `gate
+    evaluate` reported `MRS-GATE-004` (warn, exit 0) having run no gate.
+    So the `__file__`-derived root is kept ONLY when it carries this package's
+    own source tree (`_PACKAGE_SOURCE_RELPATH`); otherwise the root is the git
+    common root of the invocation directory -- the `repo_common_root` anchor
+    `cli/init.py` already uses, which resolves a loop home or story worktree to
+    the one main checkout, as the editable install does. Never indexed past the
+    path's own ancestors, and never silent: when neither anchor yields a
+    repository this raises `RepoRootUnresolvedError`, never an `IndexError` and
+    never a guessed root.
+
+    The installed branch is cwd-dependent by design, so it is not cached: a
+    cache would pin the first caller's worktree.
+
+    The editable index is asserted by `test_conventional_project_policy_path_lands_on_the_repo_root`
     -- an off-by-one here resolves to `<repo>/src` and every lookup silently
-    misses, falling back to bare defaults with no verify command.
+    misses, falling back to bare defaults with no verify command. The installed
+    branch is asserted by `tests/unit/test_repo_root.py`.
     """
-    return Path(__file__).resolve().parents[8]
+    ancestors = Path(__file__).resolve().parents
+    if len(ancestors) > _EDITABLE_ROOT_PARENT_INDEX:
+        candidate = ancestors[_EDITABLE_ROOT_PARENT_INDEX]
+        try:
+            is_repo = (candidate / _PACKAGE_SOURCE_RELPATH).is_dir()
+        except OSError:
+            # Python 3.12 pathlib propagates PermissionError for an
+            # unsearchable ancestor; an unreadable candidate is not the repo.
+            is_repo = False
+        if is_repo:
+            return candidate
+    try:
+        return GitVcs().repo_common_root(Path.cwd())
+    except (OSError, VcsCommandError) as exc:
+        raise RepoRootUnresolvedError(
+            f"cannot resolve the repository root: {str(Path(__file__))!r} is not inside "
+            f"a source checkout of {str(_PACKAGE_SOURCE_RELPATH)!r}, and the invocation "
+            f"directory is not inside a git repository ({exc})"
+        ) from exc
 
 
 def conventional_project_policy_path(slug: str) -> Path:
@@ -513,6 +560,22 @@ class PolicyIOError(PyforgeError, Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
         self.finding = Finding(code="MRS-POLICY-004", severity=Severity.ERROR, message=message)
+
+
+class RepoRootUnresolvedError(PyforgeError, Exception):
+    """Raised by ``repo_root()`` when neither anchor yields a repository: this
+    package is not running from a source checkout (an installed layout) AND
+    the invocation directory is not inside a git repository (Story 82.1,
+    DW-FU-2-1-7). Registers as ``MRS-GATE-016`` (``Verdict.UNEVALUABLE``) --
+    Marshal cannot say WHICH tree to gate or read policy from, so every
+    consumer reports it could not evaluate rather than composing bare
+    defaults. ``cli/gate.py::evaluate_gate`` turns it into its one
+    could-not-evaluate finding; ``cli/main.py::main`` relays it from any
+    other consumer as one stderr line plus the UNEVALUABLE exit."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.finding = Finding(code="MRS-GATE-016", severity=Severity.ERROR, message=message)
 
 
 def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> Path:

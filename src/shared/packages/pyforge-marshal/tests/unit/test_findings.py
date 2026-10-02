@@ -416,6 +416,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-GATE-014",
             # Story 22.12 (shared-surface cross-suite gate, CAP-12).
             "MRS-GATE-015",
+            # Story 82.1 (DW-FU-2-1-7): the repository root could not be resolved.
+            "MRS-GATE-016",
             # Story 28.8 (derived context recomputes only on source change,
             # SPEC-marshal-token-economy CAP-5): `marshal context refresh`'s
             # own area. 001 UNEVALUABLE (the derived-context declaration
