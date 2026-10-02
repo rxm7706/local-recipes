@@ -1362,6 +1362,18 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # degrade every affected value to unknown, never a hard failure"
 # reasoning.
 #
+# Story 82.8 adds `MRS-STATUS-014` beside them (DW-FU-4-14-10): the history
+# `main` (with `origin/main`) yielded is non-empty but NOT ONE subject
+# conforms to any merge-subject pattern `core.promotion.merged_story_keys`
+# reads -- a shallow `--depth` clone, a grafted or truncated history, or one
+# predating the merge-subject convention. It carries the examined and matched
+# counts `marshal deploy promote` reports as `subjects_examined` /
+# `subjects_matched`, and takes the place of one `MRS-STATUS-010` per patch:
+# the history cannot show what landed, so no patch is told "unlanded". PER
+# HOME like `MRS-STATUS-011`'s second cause (the count is per slug), and
+# `Verdict.WARN` for the same "degrade to unknown, never a hard failure"
+# reason.
+#
 # Story 5.9 (a story finished by hand is not invisible to the ledger,
 # AD-5/AD-6/AD-29/AD-33) adds four more MRS-DEPLOY-* codes for `marshal
 # deploy reconcile-completions`: MRS-DEPLOY-024 (the tracked ledger could
@@ -1588,6 +1600,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-LAND-011",
         "MRS-STATUS-010",
         "MRS-STATUS-011",
+        # Story 82.8 (DW-FU-4-14-10): a non-empty history in which nothing
+        # conforms to a merge-subject pattern -- WARN, replacing the
+        # per-patch MRS-STATUS-010s with one finding carrying the counts.
+        "MRS-STATUS-014",
         # A run whose journal read fine but whose harness snapshot is gone --
         # the retired/cleaned-run shape (DW-STATUS-2026-09-08-1). WARN: the home
         # is reported free rather than `unknown`, and the unresolvable run is
