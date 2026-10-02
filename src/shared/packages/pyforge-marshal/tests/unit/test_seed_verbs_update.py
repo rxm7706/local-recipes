@@ -36,7 +36,7 @@ import pytest
 
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState
-from pyforge.marshal.seed.errors import InternalError, PreconditionFailure
+from pyforge.marshal.seed.errors import InternalError, PreconditionFailure, UsageError
 from pyforge.marshal.seed.fs import NeverWrite
 from pyforge.marshal.seed.migrate import registry as migrate_registry
 from pyforge.marshal.seed.migrate.registry import Migration
@@ -971,6 +971,151 @@ def test_rung_6_still_refuses_a_hand_edit_of_a_managed_record_the_plan_did_not_s
 
     assert "whole:" in excinfo.value.message
     assert "offer:" not in excinfo.value.message
+
+
+# --- update --skip (Story 82.12, DW-10-4-4) ---------------------------------
+
+
+def _write_hand_edited_managed_files(repo: Path, *paths: str) -> tuple[ManagedArtifact, ...]:
+    """Each of `paths` hand-edited since `state` recorded it (a body_sha that
+    matches nothing on disk), committed so the worktree is clean."""
+    records = []
+    for path in paths:
+        (repo / path).write_text(f"hand-edited {path}\n", encoding="utf-8")
+        records.append(_managed_record(path.removesuffix(".md").lower(), path))
+    write_state(_seed_state(managed=tuple(records)), repo_root=repo, never_write=_NO_NEVER_WRITE)
+    _commit_all(repo)
+    return tuple(records)
+
+
+def test_skip_keeps_a_hand_edited_managed_file_without_force(clean_repo):
+    """Update emits a wholesale-regenerate action for every managed
+    `copied-managed` record, so `--skip` has to do both halves: move that
+    action into `plan.skipped` (nothing is written) and drop the record from
+    rung 6 (no refusal). The commit double raises if anything is applied."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
+    before = (clean_repo / "WHOLE.md").read_bytes()
+
+    result = run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        skip=("WHOLE.md",),
+        confirm=_unreachable_confirm,
+        commit=_unreachable_commit,
+    )
+
+    assert result.plan.actions == ()
+    assert [(entry.artifact_id, entry.pattern) for entry in result.plan.skipped] == [("whole", "WHOLE.md")]
+    assert result.applied == ()
+    assert (clean_repo / "WHOLE.md").read_bytes() == before
+
+
+def test_without_skip_the_same_hand_edit_is_refused(clean_repo):
+    """The mutation partner: nothing but `--skip` separates the test above from
+    a refusal, and `--force` is not involved."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified"):
+        run_update(
+            clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
+        )
+
+
+def test_skip_does_not_excuse_a_hand_edit_it_does_not_name(clean_repo):
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"), _copied_managed("other", "OTHER.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md", "OTHER.md")
+    before = {name: (clean_repo / name).read_bytes() for name in ("WHOLE.md", "OTHER.md")}
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as excinfo:
+        run_update(
+            clean_repo,
+            manifest,
+            run=True,
+            yes=True,
+            skip=("WHOLE.md",),
+            confirm=_unreachable_confirm,
+            commit=_unreachable_commit,
+        )
+
+    assert "other:" in excinfo.value.message
+    assert "whole:" not in excinfo.value.message
+    assert {name: (clean_repo / name).read_bytes() for name in before} == before
+
+
+def test_skip_reaches_a_managed_record_that_has_no_wholesale_action(clean_repo):
+    """A record whose entry was retired from the manifest has no wholesale
+    action (so `apply_skips` has nothing to move), yet rung 6 still checks its
+    file: only the pattern matching the record's path can reach it."""
+    manifest = _manifest()
+    _write_hand_edited_managed_files(clean_repo, "RETIRED.md")
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified"):
+        run_update(clean_repo, manifest, confirm=_unreachable_confirm)
+
+    result = run_update(clean_repo, manifest, skip=("RETIRED.md",), confirm=_unreachable_confirm)
+
+    assert result.plan.actions == ()
+    assert result.plan.skipped == ()
+    assert (clean_repo / "RETIRED.md").read_text(encoding="utf-8") == "hand-edited RETIRED.md\n"
+
+
+def test_skip_leaves_the_state_it_carries_unchanged(clean_repo):
+    """`update` does not write the pattern into `state.skips`, and a skipped run
+    that applies nothing writes no state at all."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
+    before = read_state(clean_repo)
+
+    run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        skip=("WHOLE.md",),
+        confirm=_unreachable_confirm,
+        commit=_unreachable_commit,
+    )
+
+    assert read_state(clean_repo) == before
+
+
+@pytest.mark.parametrize("bad", ["WHOLE.md", ("   ",)])
+def test_skip_rejects_a_bare_string_or_blank_pattern_before_anything_is_written(clean_repo, bad):
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
+
+    with pytest.raises(UsageError):
+        run_update(
+            clean_repo, manifest, run=True, yes=True, skip=bad, confirm=_unreachable_confirm, commit=_unreachable_commit
+        )
+
+    assert not (clean_repo / ".marshal" / "plan.json").exists()
+
+
+def test_force_still_discards_a_hand_edit_a_skip_does_not_name(clean_repo):
+    """`--force` keeps its meaning: the unnamed hand-edit is regenerated."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"), _copied_managed("other", "OTHER.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md", "OTHER.md")
+    calls: list[str] = []
+
+    result = run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        force=True,
+        skip=("WHOLE.md",),
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    assert calls == ["other"]
+    assert result.applied == ("other",)
+    assert (clean_repo / "WHOLE.md").read_text(encoding="utf-8") == "hand-edited WHOLE.md\n"
 
 
 def test_include_seeded_applies_the_migration_offered_action(clean_repo, monkeypatch):
