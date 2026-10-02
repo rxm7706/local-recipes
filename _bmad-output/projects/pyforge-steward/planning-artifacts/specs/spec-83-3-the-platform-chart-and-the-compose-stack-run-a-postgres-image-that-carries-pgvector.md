@@ -2,7 +2,7 @@
 title: "83.3: The platform chart and the compose stack run a Postgres image that carries pgvector"
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '454df87fbce80f0f67bcdbc8af7b6e0ccafa149a'
 review_loop_iteration: 0
 followup_review_recommended: false
