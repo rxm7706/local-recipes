@@ -237,6 +237,25 @@ all, so this reads straight off ``status_snapshot.deferred``, never
 mirroring ``MRS-SPIN-015``'s identical "an already-viable resume is never
 aborted over a best-effort policy write" precedent.
 
+Story 82.6 (DW-3-12-1, DW-3-12-3) tightens both ``policy.toml`` rewrites
+this module makes -- the model-tiering write of ``run_spin`` and the retry-
+escalation floor-raise of ``run_resume``. (1) The launch intent records the
+``[limits]`` ceilings the run starts under (``max_dev_attempts``,
+``max_review_cycles``), and ``_plan_retry_escalation`` judges a deferred
+story's accumulated counters against the ceilings the resumed run's OWN
+launch recorded (``_launch_limits_for_resume``) -- a ``policy.toml``
+re-rendered since cannot cancel an escalation the story earned; only a launch
+that recorded none falls back to the on-disk file, as before. (2) Both
+commands DECIDE the rewrite first (``_resolve_model_tiering`` returns a
+``_TierPolicyWrite`` plan, ``_plan_retry_escalation`` a
+``_RetryEscalationPlan``), name it in their intent entry (``policy_change``;
+the resume intent's ``escalated``/``from_model``/``to_model``), and write
+``policy.toml`` (``_write_tier_policy`` / ``_write_retry_escalation``) only
+after that intent is durable -- so a failed run-directory creation or intent
+append leaves the file untouched, and no model change exists without a record
+of it. The resume outcome's ``escalation_applied`` says whether the write then
+took effect.
+
 Registers ``MRS-SPIN-001`` through ``MRS-SPIN-012`` (``core/findings.py``/
 ``core/verdict.py``) -- see those modules' own docstrings for the full
 per-code rationale. ``MRS-SPIN-006`` joined the original five in review,
@@ -2249,12 +2268,13 @@ def _launch_limits_for_resume(fs: FsPort, home: Path, slug: str, harness_run_id:
         lines = text.split("\n")
         folded = fold(
             lines,
-            sidecars=sidecar_texts_for_lines(lines, read_sidecar=lambda ref, run_dir=run_dir: _read_sidecar(run_dir, ref)),
+            sidecars=sidecar_texts_for_lines(
+                lines, read_sidecar=lambda ref, run_dir=run_dir: _read_sidecar(run_dir, ref)
+            ),
         )
         launches = [entry for entry in folded.by_kind(_LAUNCH_KIND) if entry.run_id == run_dir.name]
         if not any(
-            entry.phase is Phase.OUTCOME and entry.payload.get("harness_run_id") == harness_run_id
-            for entry in launches
+            entry.phase is Phase.OUTCOME and entry.payload.get("harness_run_id") == harness_run_id for entry in launches
         ):
             continue
         for entry in launches:
@@ -2642,16 +2662,17 @@ def run_resume(
     # task_phase. status_snapshot is None exactly when MRS-SPIN-012 already
     # fired above -- escalation is skipped too, the same "proceed without
     # having confirmed anything" degrade that finding already describes.
-    escalated, escalated_stories, from_model, to_model = (
-        _apply_retry_escalation(fs, home, status_snapshot.deferred, findings)
+    #
+    # Story 82.6 (DW-3-12-1/3): this DECIDES the floor-raise against the
+    # ceilings the run was launched under and writes nothing; the write
+    # follows the resume intent below (which names it), and `escalated` in
+    # the report turns true only once that write took effect.
+    escalation_plan = (
+        _plan_retry_escalation(fs, home, slug, harness_run_id, status_snapshot.deferred)
         if status_snapshot is not None
-        else (False, [], None, None)
+        else None
     )
-    data["escalated"] = escalated
-    if escalated:
-        data["escalated_stories"] = escalated_stories
-        data["from_model"] = from_model
-        data["to_model"] = to_model
+    data["escalated"] = False
 
     # --- mint a NEW Marshal run id, journal "run-resume" intent (AD-25/AD-45) ---
     writer_id = _writer_id()
@@ -2688,10 +2709,13 @@ def run_resume(
             "spec_file": spec_file,
             "resolution_reference": resolution_reference,
             "resolver": resolver,
-            "escalated": escalated,
-            "escalated_stories": escalated_stories if escalated else None,
-            "from_model": from_model if escalated else None,
-            "to_model": to_model if escalated else None,
+            # The intent is the write-ahead record (AD-6): it names the
+            # floor-raise ABOUT to be written; the outcome's
+            # `escalation_applied` says whether the write took effect.
+            "escalated": escalation_plan is not None,
+            "escalated_stories": list(escalation_plan.stories) if escalation_plan is not None else None,
+            "from_model": escalation_plan.from_model if escalation_plan is not None else None,
+            "to_model": escalation_plan.to_model if escalation_plan is not None else None,
         },
     )
     try:
@@ -2705,6 +2729,21 @@ def run_resume(
             )
         )
         return _emit(args, data, findings)
+
+    # --- apply the floor-raise, now that its intent is durable --------------
+    # Story 82.6 (DW-3-12-3): the `policy.toml` rewrite lands only after the
+    # intent above named it. A failed write is MRS-SPIN-016 (WARN) and the
+    # resume proceeds un-escalated: `escalation_applied` is false in both
+    # outcome payloads and the report says `escalated: False`.
+    escalation_outcome: dict[str, object] = {}
+    if escalation_plan is not None:
+        escalation_applied = _write_retry_escalation(escalation_plan, home, findings)
+        escalation_outcome["escalation_applied"] = escalation_applied
+        if escalation_applied:
+            data["escalated"] = True
+            data["escalated_stories"] = list(escalation_plan.stories)
+            data["from_model"] = escalation_plan.from_model
+            data["to_model"] = escalation_plan.to_model
 
     # --- the detached resume itself -------------------------------------------
     log_path = run_dir / _LOG_FILENAME
@@ -2729,7 +2768,7 @@ def run_resume(
             kind=_RESUME_KIND,
             phase=Phase.OUTCOME,
             intent_id=intent_id,
-            payload={"pid": None, "harness_run_id": None, "error": str(exc)},
+            payload={"pid": None, "harness_run_id": None, "error": str(exc), **escalation_outcome},
         )
         try:
             _append_entry(fs, run_dir, outcome_entry, fsync=False)
@@ -2746,7 +2785,7 @@ def run_resume(
         kind=_RESUME_KIND,
         phase=Phase.OUTCOME,
         intent_id=intent_id,
-        payload={"pid": pid, "harness_run_id": harness_run_id},
+        payload={"pid": pid, "harness_run_id": harness_run_id, **escalation_outcome},
     )
     try:
         _append_entry(fs, run_dir, outcome_entry, fsync=False)
