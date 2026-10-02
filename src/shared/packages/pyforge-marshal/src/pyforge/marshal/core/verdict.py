@@ -1108,6 +1108,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DRAIN-016": Verdict.WARN,
     # Story 28.18 (CAP-1): unchanged refuse predicate -- rate-limited skip.
     "MRS-DRAIN-017": Verdict.WARN,
+    # Story 73.2 (CAP-281): follow-up review scheduling. Both report the queue's own
+    # state over a drain that is otherwise proceeding -- a stale row, an unreadable
+    # ledger or a station layer's ignored cap (018), the follow-ups waiting on the
+    # per-campaign cap (019, emitted at INFO severity; the lattice has no INFO rung,
+    # and exit 0 is the same one WARN projects to). Never a refusal.
+    "MRS-DRAIN-018": Verdict.WARN,
+    "MRS-DRAIN-019": Verdict.WARN,
     # Story 28.2 (wire compression at the harness seam,
     # SPEC-marshal-token-economy CAP-2): both codes report a token-economy
     # LAYER that did not engage over a launch that is otherwise entirely

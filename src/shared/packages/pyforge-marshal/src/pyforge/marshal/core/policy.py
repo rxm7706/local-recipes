@@ -419,12 +419,21 @@ _DEFAULT_COMPRESSION_ESCALATION_THRESHOLD = 0.8
 DEFAULT_LANDING_CHECK_POLL_SECONDS = 60
 DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES = 45
 DEFAULT_LANDING_CHECK_GRACE_SECONDS = 120
+# Story 73.2 (spec-pyforge-marshal CAP-281, operator ruling 2026-09-28): a drain
+# campaign queues at most this many follow-up reviews (a landed story's recommended
+# review, an open `DW-FRR` row), newest landings first; ``0`` turns follow-up
+# scheduling off. Read at the consumer (`resolve_followup_review_cap`) like the
+# `landing_check_*` knobs: `_merge_field` replaces a `dispatch` block whole, so a
+# block that declares only `max_parallel` reads this default.
+DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN = 2
+MAX_FOLLOWUP_REVIEWS_KEY = "max_followup_reviews_per_campaign"
 _DISPATCH_BLOCK_KEYS: frozenset[str] = frozenset(
     {
         "max_parallel",
         "landing_check_poll_seconds",
         "landing_check_timeout_minutes",
         "landing_check_grace_seconds",
+        MAX_FOLLOWUP_REVIEWS_KEY,
     }
 )
 # Story 4.7's closed vocabulary for `landing_merge_strategy` -- "merge" is
@@ -647,11 +656,14 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # keeps pre-33.8 behavior byte-identical until a project declares more.
     # Story 80.1 (CAP-284) adds the three `landing_check_*` knobs: the landing
     # waits for its PR head's check runs (see DEFAULT_LANDING_CHECK_* above).
+    # Story 73.2 (CAP-281) adds `max_followup_reviews_per_campaign`: at most 2
+    # follow-up reviews per drain campaign (0 = off).
     "dispatch": {
         "max_parallel": 1,
         "landing_check_poll_seconds": DEFAULT_LANDING_CHECK_POLL_SECONDS,
         "landing_check_timeout_minutes": DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES,
         "landing_check_grace_seconds": DEFAULT_LANDING_CHECK_GRACE_SECONDS,
+        MAX_FOLLOWUP_REVIEWS_KEY: DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN,
     },
 }
 
@@ -948,18 +960,20 @@ def _valid_harness_preference(value: object) -> tuple[str, ...] | None:
 
 
 def _valid_dispatch_block(value: object) -> dict[str, object] | None:
-    """``dispatch`` (Story 33.8, CAP-6; Story 80.1, CAP-284): a ``Mapping`` over
-    a closed key set -- ``max_parallel`` (the factory-dispatch wave cap,
+    """``dispatch`` (Story 33.8, CAP-6; Story 80.1, CAP-284; Story 73.2, CAP-281): a
+    ``Mapping`` over a closed key set -- ``max_parallel`` (the factory-dispatch wave cap,
     independent of bmad-loop scm ``max_parallel`` (SEED); ``_valid_parallel_count``)
     and the landing's check-wait knobs ``landing_check_poll_seconds`` and
     ``landing_check_timeout_minutes`` (``_valid_positive_number``) and
     ``landing_check_grace_seconds`` (``_valid_landing_grace_seconds``: ``0`` is a real
-    "no grace", and a magnitude too large for ``float()`` is rejected). Any NON-EMPTY
-    subset of the four keys is valid -- ``_merge_field`` replaces a block whole, and
-    the tracked ``marshal-policy.toml`` declares only ``max_parallel``, so a key a
-    block omits reads as its default at the consumer
-    (``resolve_landing_check_settings``), never as a validation failure. An unknown
-    key, an empty block or one invalid value rejects the whole block."""
+    "no grace", and a magnitude too large for ``float()`` is rejected) and the drain's
+    ``max_followup_reviews_per_campaign`` (``_valid_followup_review_cap``: ``0`` turns
+    follow-up scheduling off). Any NON-EMPTY subset of the five keys is valid --
+    ``_merge_field`` replaces a block whole, and the tracked ``marshal-policy.toml``
+    declares only ``max_parallel``, so a key a block omits reads as its default at the
+    consumer (``resolve_landing_check_settings``, ``resolve_followup_review_cap``),
+    never as a validation failure. An unknown key, an empty block or one invalid value
+    rejects the whole block."""
     if not isinstance(value, Mapping):
         return None
     if not value or not set(value.keys()) <= _DISPATCH_BLOCK_KEYS:
@@ -969,6 +983,7 @@ def _valid_dispatch_block(value: object) -> dict[str, object] | None:
         "landing_check_poll_seconds": _valid_positive_number,
         "landing_check_timeout_minutes": _valid_positive_number,
         "landing_check_grace_seconds": _valid_landing_grace_seconds,
+        MAX_FOLLOWUP_REVIEWS_KEY: _valid_followup_review_cap,
     }
     validated: dict[str, object] = {}
     for key in value:
@@ -1480,6 +1495,15 @@ def _valid_landing_grace_seconds(value: object) -> int | None:
     except OverflowError:
         return None
     return grace
+
+
+def _valid_followup_review_cap(value: object) -> int | None:
+    """``dispatch.max_followup_reviews_per_campaign`` (Story 73.2, CAP-281): a plain
+    ``int``, not ``bool``, ``>= 0`` (``0`` turns follow-up scheduling off) -- the same
+    non-negative-int-with-a-magnitude-probe shape as ``_valid_landing_grace_seconds``,
+    so a value no ``float()`` can hold is the ordinary ``MRS-POLICY-002`` finding naming
+    ``dispatch``, never a crash in the drain's arithmetic."""
+    return _valid_landing_grace_seconds(value)
 
 
 def _valid_positive_number(value: object) -> int | float | None:
@@ -2023,6 +2047,18 @@ def resolve_landing_check_settings(effective: EffectivePolicy) -> LandingCheckSe
         timeout_minutes=float(timeout if timeout is not None else DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES),
         grace_seconds=float(grace if grace is not None else DEFAULT_LANDING_CHECK_GRACE_SECONDS),
     )
+
+
+def resolve_followup_review_cap(effective: EffectivePolicy) -> int:
+    """Story 73.2 (CAP-281): at most this many follow-up reviews per drain campaign. A
+    ``dispatch`` block that omits the key -- or one whose value fails its validator, which
+    ``compose`` already refused (``MRS-POLICY-002``) so it cannot normally reach here --
+    reads ``DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN``; never raises. ``0`` is a real
+    "off", not "unset"."""
+    declared = effective.dispatch.value
+    block: Mapping[str, object] = declared if isinstance(declared, Mapping) else {}
+    cap = _valid_followup_review_cap(block.get(MAX_FOLLOWUP_REVIEWS_KEY, DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN))
+    return cap if cap is not None else DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN
 
 
 def resolve_compression_escalation_threshold(effective: EffectivePolicy) -> float:

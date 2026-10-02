@@ -1747,6 +1747,19 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # tick because its refuse predicate is unchanged -- rate-limited,
         # never silently looped.
         "MRS-DRAIN-017",
+        # Story 73.2 (spec-pyforge-marshal CAP-281): a drain schedules the
+        # follow-up review a landed story recommended. 018 WARN: a fact about
+        # the follow-up queue the operator should see -- an open `DW-FRR` row
+        # whose story spec no longer qualifies (named, never dispatched), a
+        # station's deferred-work ledger or `origin/main`'s history that could
+        # not be read (no follow-ups for it this cycle), or a station project
+        # layer that sets `dispatch.max_followup_reviews_per_campaign` (not
+        # applied: the cap bounds a campaign, not a station); 019 (emitted at
+        # INFO severity, classified WARN -- the lattice has no INFO rung): how
+        # many qualifying follow-up reviews wait for a later campaign because
+        # the per-campaign cap is spent.
+        "MRS-DRAIN-018",
+        "MRS-DRAIN-019",
         # Story 28.2 (wire compression at the harness seam,
         # SPEC-marshal-token-economy CAP-2): the declared `[context]`
         # `wire` layer was ENABLED but could not be applied to this launch

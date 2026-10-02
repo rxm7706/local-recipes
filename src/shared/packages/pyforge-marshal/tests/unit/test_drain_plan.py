@@ -15,11 +15,19 @@ from pathlib import Path
 
 import pytest
 from test_dispatch_fleet import (
+    _FU_OTHER_SLUG,
+    _FU_SLUG,
+    _FU_STORY,
     FakeBuildHarness,
     FakeFs,
     FakeHarness,
     FakeProcess,
     FakeVcs,
+    _FollowupVcs,
+    _fu_ledger_rel,
+    _fu_seed_station,
+    _fu_spec,
+    _fu_subject,
     _init_git_repo,
 )
 
@@ -1398,6 +1406,7 @@ _STATION_ROW_KEYS = (
     "stories",
     "wave",
     "held",
+    "followups",
     "would_dispatch",
     "land_only",
     "refusals",
@@ -1803,3 +1812,237 @@ def test_a_verify_command_with_an_unbalanced_quote_is_gate_003_cannot_parse(
     assert len(hits) == 1
     assert "cannot parse verify command" in hits[0]["message"] and "never closed" in hits[0]["message"]
     assert code == 4
+
+
+# --------------------------------------------------------------------------
+# Story 73.2 (CAP-281) -- the follow-up reviews a drain would queue
+# --------------------------------------------------------------------------
+
+
+class _FollowupPlanVcs(RecordingVcs, _FollowupVcs):
+    """The plan's write-forbidding vcs, with what a follow-up plan reads at ``origin/main``."""
+
+
+def _pin_repository_layers(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, cap: int | None = None) -> None:
+    """The drain reads the repository's policy layers from the real checkout; pin them so the cap is Marshal's
+    default (2) -- or ``cap`` set as `_bmad-output/policy-defaults.toml` would."""
+    defaults: dict[str, object] = {} if cap is None else {"dispatch": {"max_followup_reviews_per_campaign": cap}}
+    monkeypatch.setattr(dispatch_cli, "read_repo_policy_defaults", lambda: (defaults, None))
+    monkeypatch.setattr(dispatch_cli, "conventional_project_policy_path", lambda slug: tmp_path / f"{slug}-none.toml")
+
+
+def _seed_followup_station(tmp_path: Path, vcs: _FollowupPlanVcs, entries) -> tuple[tuple[str, str], ...]:
+    """``_fu_seed_station``, with the primary's tracked specs bound (a `## Verification` section) so the plan's
+    own launch checks (MRS-GATE-010) have nothing to say about them."""
+    statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, entries)
+    for story, _text, _row in entries:
+        path = dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG) / f"spec-{story}.md"
+        path.write_text(_fu_spec() + _BOUND_SPEC_BODY, encoding="utf-8")
+    return statuses
+
+
+def _plan_followups(tmp_path: Path, capsys: pytest.CaptureFixture[str], vcs: _FollowupPlanVcs, ledgers, *extra: str):
+    return _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        _FU_SLUG,
+        *extra,
+        ledgers={_FU_SLUG: ledgers},
+        vcs=vcs,
+        capsys=capsys,
+    )
+
+
+def test_the_plan_lists_the_follow_up_review_of_an_open_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _pin_repository_layers(monkeypatch, tmp_path)
+    vcs = _FollowupPlanVcs(tmp_path)
+    ledgers = _seed_followup_station(tmp_path, vcs, [(_FU_STORY, _fu_spec(), "open")])
+    # The story's first landing is on origin/main -- which does NOT make its follow-up "already landed".
+    vcs.subjects = (_fu_subject(_FU_SLUG, _FU_STORY),)
+
+    code, envelope, _out = _plan_followups(tmp_path, capsys, vcs, ledgers)
+
+    row = _station(envelope, _FU_SLUG)
+    assert row["followups"] == [_FU_STORY]
+    assert row["backlog"] == [_FU_STORY]
+    assert row["next_story"] == _FU_STORY
+    assert row["outcome"] == "dispatch" and row["stories"] == [_FU_STORY]
+    assert row["would_dispatch"] is True and row["refusals"] == []
+    assert not _findings(envelope, "MRS-DRAINPLAN-001")
+    assert code == 0
+
+
+def test_the_plan_text_names_the_follow_up_review(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _pin_repository_layers(monkeypatch, tmp_path)
+    vcs = _FollowupPlanVcs(tmp_path)
+    ledgers = _seed_followup_station(tmp_path, vcs, [(_FU_STORY, _fu_spec(), "open")])
+
+    _code, _envelope, out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        _FU_SLUG,
+        ledgers={_FU_SLUG: ledgers},
+        vcs=vcs,
+        capsys=capsys,
+        text=True,
+    )
+    assert f"follow-up review {_FU_STORY}" in out
+
+
+def test_the_plan_names_a_stale_row_and_how_many_follow_ups_wait(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _pin_repository_layers(monkeypatch, tmp_path, cap=1)
+    vcs = _FollowupPlanVcs(tmp_path)
+    ledgers = _seed_followup_station(
+        tmp_path,
+        vcs,
+        [
+            ("60-1-oldest", _fu_spec(), "open"),
+            ("60-2-newest", _fu_spec(), "open"),
+            ("60-3-middle", _fu_spec(), "open"),
+            ("60-4-turned-false", _fu_spec(flag=False), "open"),
+        ],
+    )
+    vcs.subjects = (
+        _fu_subject(_FU_SLUG, "60-2-newest"),
+        _fu_subject(_FU_SLUG, "60-3-middle"),
+        _fu_subject(_FU_SLUG, "60-1-oldest"),
+    )
+
+    code, envelope, _out = _plan_followups(tmp_path, capsys, vcs, ledgers)
+
+    row = _station(envelope, _FU_SLUG)
+    assert row["followups"] == ["60-2-newest"]  # the cap (1), newest landing first
+    (stale,) = _findings(envelope, "MRS-DRAIN-018")
+    assert "DW-FRR-60-4" in stale["message"] and "followup_review_recommended" in stale["message"]
+    (waiting,) = _findings(envelope, "MRS-DRAIN-019")
+    assert "2 follow-up review(s) wait for a later campaign" in waiting["message"]
+    assert "is 1" in waiting["message"]
+    assert code == 0  # both are advisory: exit 0
+
+
+def test_the_plan_with_no_follow_up_rows_is_unchanged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _pin_repository_layers(monkeypatch, tmp_path)
+    vcs = _FollowupPlanVcs(tmp_path)
+    _write_spec(tmp_path, _FU_SLUG, "52-1-implementable")
+
+    _code, envelope, _out = _plan_followups(tmp_path, capsys, vcs, (("52-1-implementable", "backlog"),))
+
+    row = _station(envelope, _FU_SLUG)
+    assert row["followups"] == [] and row["backlog"] == ["52-1-implementable"]
+    assert not _findings(envelope, "MRS-DRAIN-018") and not _findings(envelope, "MRS-DRAIN-019")
+
+
+def test_the_plan_never_lists_a_follow_up_under_stories(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _pin_repository_layers(monkeypatch, tmp_path)
+    vcs = _FollowupPlanVcs(tmp_path)
+    statuses = _seed_followup_station(tmp_path, vcs, [(_FU_STORY, _fu_spec(), "open")])
+    _write_spec(tmp_path, _FU_SLUG, "52-1-implementable")
+
+    _code, envelope, _out = _plan_followups(
+        tmp_path, capsys, vcs, (("52-1-implementable", "backlog"), *statuses), "--stories", "52-1-implementable"
+    )
+
+    row = _station(envelope, _FU_SLUG)
+    assert row["followups"] == [] and row["backlog"] == ["52-1-implementable"]
+    assert not _findings(envelope, "MRS-DRAIN-019")
+
+
+def test_the_plan_reads_but_never_writes_for_a_follow_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _pin_repository_layers(monkeypatch, tmp_path)
+    vcs = _FollowupPlanVcs(tmp_path)
+    ledgers = _seed_followup_station(tmp_path, vcs, [(_FU_STORY, _fu_spec(), "open")])
+    before = _tree(tmp_path)
+
+    _plan_followups(tmp_path, capsys, vcs, ledgers)
+
+    assert _tree(tmp_path) == before
+    assert vcs.writes == [] and _fu_ledger_rel(_FU_SLUG) in {path for _ref, path in vcs.reads}
+    # CAP-274: a plan reaches no remote and writes no ref either -- unlike the drain, it never fetches, so it
+    # reads origin/main as this checkout holds it.
+    assert vcs.fetched == []
+
+
+def test_the_plan_names_an_unreadable_deferred_work_ledger_and_still_plans_the_station(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _pin_repository_layers(monkeypatch, tmp_path)
+    vcs = _FollowupPlanVcs(tmp_path)
+    ledgers = _seed_followup_station(tmp_path, vcs, [(_FU_STORY, _fu_spec(), "open")])
+    vcs.unreadable.add(_fu_ledger_rel(_FU_SLUG))
+
+    _code, envelope, _out = _plan_followups(tmp_path, capsys, vcs, ledgers)
+
+    (warning,) = _findings(envelope, "MRS-DRAIN-018")
+    assert _fu_ledger_rel(_FU_SLUG) in warning["message"]
+    row = _station(envelope, _FU_SLUG)
+    assert row["followups"] == [] and row["outcome"] == "drained"
+
+
+def test_the_plan_row_carries_the_followups_key_on_an_unevaluable_station_too(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _pin_repository_layers(monkeypatch, tmp_path)
+    (tmp_path / "_bmad-output" / "projects" / _FU_OTHER_SLUG).mkdir(parents=True)
+    vcs = _FollowupPlanVcs(tmp_path)
+    ledgers = _seed_followup_station(tmp_path, vcs, [(_FU_STORY, _fu_spec(), "open")])
+
+    _code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        ledgers={_FU_SLUG: ledgers},  # pyforge-doctor's ledger cannot be read
+        vcs=vcs,
+        capsys=capsys,
+    )
+    assert _station(envelope, _FU_OTHER_SLUG)["followups"] == []
+    assert _station(envelope, _FU_SLUG)["followups"] == [_FU_STORY]
+
+
+def test_the_plan_lists_the_follow_ups_a_two_wide_wave_would_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The pyforge-marshal station's own tracked policy runs waves (`max_parallel = 2`): `--max-in-flight 2` plans
+    the wave branch, and the follow-ups appear on the row as queue entries AND as the stories the wave launches."""
+    _pin_repository_layers(monkeypatch, tmp_path)
+    vcs = _FollowupPlanVcs(tmp_path)
+    stories = ("70-1-oldest-review", "70-2-middle-review", "70-3-newest-review")
+    statuses = _fu_seed_station(tmp_path, vcs, _FU_SLUG, [(story, _fu_spec(), "open") for story in stories])
+    specs = dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG)
+    for story, surface in zip(stories, ("pixi.toml", "pixi.lock", "environment.yaml"), strict=True):
+        # Each spec declares its own glob, one marshal's default policy surface carries literally (the wave's
+        # effective surface is the intersection of the two), so the surfaces are real and disjoint; it binds trivially.
+        (specs / f"spec-{story}.md").write_text(
+            f'---\nstatus: done\nfollowup_review_recommended: true\nsurface: ["{surface}"]\n---\n' + _BOUND_SPEC_BODY,
+            encoding="utf-8",
+        )
+    vcs.subjects = tuple(_fu_subject(_FU_SLUG, story) for story in reversed(stories))
+
+    code, envelope, _out = _plan_followups(tmp_path, capsys, vcs, statuses, "--max-in-flight", "2")
+
+    row = _station(envelope, _FU_SLUG)
+    newest_two = ["70-3-newest-review", "70-2-middle-review"]
+    assert row["parallel_cap"] == 2
+    assert row["followups"] == newest_two  # the cap (2), newest landing first
+    assert row["stories"] == newest_two
+    assert row["wave"]["members"] == newest_two and row["wave"]["refused"] == []
+    assert row["outcome"] == "dispatch" and row["would_dispatch"] is True and row["refusals"] == []
+    (waiting,) = _findings(envelope, "MRS-DRAIN-019")
+    assert "1 follow-up review(s) wait for a later campaign" in waiting["message"]
+    assert vcs.fetched == []
+    assert code == 0

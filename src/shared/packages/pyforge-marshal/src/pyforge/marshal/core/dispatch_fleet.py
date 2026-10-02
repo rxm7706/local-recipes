@@ -17,19 +17,26 @@ decides WHICH story a station should be handed next.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
 
+from .deferred_work import followup_review_id
 from .dispatch import canonical_repo_root, find_declared_surface_overlaps
-from .identity import MalformedStoryKeyError, StoryKey, normalize
+from .dispatch_harness_done import is_followup_review_spec, parse_spec_status
+from .identity import MalformedStoryKeyError, StoryKey, normalize, render_feed_key
+from .promotion import SPEC_STATUS_DONE, SpecStatusReader, corroborated_merged_story_keys
 from .spec_deps import ready_backlog, story_transitively_depends_on
 
 #: Journal kind for one fleet-drain cycle (intent/outcome pair).
 KIND_FLEET_CYCLE = "dispatch-fleet-cycle"
+
+#: A station row's payload key naming the follow-up review runs the cycle launched (Story 73.2, CAP-281);
+#: written only when non-empty, so a drain with no follow-ups journals byte-identical rows.
+FOLLOWUP_REVIEWS_PAYLOAD_KEY = "followup_reviews"
 
 #: The campaign journal lives under the marshal station's own run store --
 #: the Spec's "in-repo under ``pyforge-marshal``, never session-local
@@ -321,6 +328,9 @@ class StationCycleResult:
     detail: str | None = None
     skipped: tuple[tuple[str, str], ...] = field(default=())
     refuse_predicate: dict[str, str] | None = None
+    #: The follow-up review runs (Story 73.2, CAP-281) this cycle LAUNCHED for the station -- what the
+    #: campaign journal's fleet-cycle entries carry so the per-campaign cap holds across every cycle.
+    followup_reviews: tuple[str, ...] = field(default=())
 
     def to_payload(self) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -333,6 +343,8 @@ class StationCycleResult:
         }
         if self.refuse_predicate is not None:
             payload["refuse_predicate"] = dict(self.refuse_predicate)
+        if self.followup_reviews:
+            payload[FOLLOWUP_REVIEWS_PAYLOAD_KEY] = list(self.followup_reviews)
         return payload
 
 
@@ -730,6 +742,200 @@ def classify_fleet_block(
     if changed_path_count == 0 and not has_review_verify_evidence:
         return FleetBlockClass.ENVIRONMENT
     return FleetBlockClass.STORY
+
+
+# -- follow-up review scheduling (Story 73.2, spec-pyforge-marshal CAP-281) ------------------------------
+#
+# A landed story whose tracked spec still reads ``followup_review_recommended: true`` leaves an open
+# ``DW-FRR-<story>`` row in its station's deferred-work ledger (CAP-275). ``station_backlog`` never lists a
+# ``done`` key, so nothing ran the review. The row is the gate (a closed or absent row is never dispatched),
+# the spec on ``origin/main`` is the second condition, and a campaign queues at most
+# ``dispatch.max_followup_reviews_per_campaign`` of them, newest landing first. Every function below is pure
+# (AD-4): the reads that feed them live in ``cli/dispatch.py::plan_followup_reviews``.
+
+
+@dataclass(frozen=True)
+class FollowupCandidate:
+    """An open follow-up review row whose story's spec still asks for the review (Story 73.2).
+
+    ``slug`` is the owning station, ``key`` the story and ``row_id`` the ``DW-FRR-<story>`` row that gates it."""
+
+    slug: str
+    key: StoryKey
+    row_id: str
+
+
+@dataclass(frozen=True)
+class StaleFollowupRow:
+    """An open row that is NOT dispatched, and why (Story 73.2): its spec no longer qualifies."""
+
+    slug: str
+    row_id: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class FollowupSelection:
+    """One campaign's follow-up decision (Story 73.2): ``selected`` queue now, ``waiting`` wait for a later
+    campaign. Both are newest landing first."""
+
+    selected: tuple[FollowupCandidate, ...] = ()
+    waiting: tuple[FollowupCandidate, ...] = ()
+
+
+def _stale_followup_reason(spec_text: str | None) -> str:
+    """Why an open row's story spec is not a follow-up review (``spec_text`` is not one)."""
+    if spec_text is None:
+        return "its story's tracked spec cannot be read on origin/main"
+    status = parse_spec_status(spec_text)
+    if status != SPEC_STATUS_DONE:
+        return f"its story's spec reads status {status!r} on origin/main, not 'done'"
+    return "its story's spec no longer carries followup_review_recommended: true on origin/main"
+
+
+def station_followup_queue(
+    slug: str,
+    row_keys: Iterable[StoryKey],
+    spec_texts: Mapping[StoryKey, str | None],
+) -> tuple[tuple[FollowupCandidate, ...], tuple[StaleFollowupRow, ...]]:
+    """One station's follow-up candidates and stale rows (Story 73.2): ``(candidates, stale)``.
+
+    ``row_keys`` is the story key of every OPEN ``DW-FRR`` row of the station's deferred-work ledger, in ledger
+    order (``core.deferred_work.open_followup_review_story_keys``) -- the row gate: no row, no candidate, so a
+    ``done`` spec with no row is never listed and a closed row never returns. ``spec_texts`` maps each key to its
+    story spec as ``origin/main`` holds it (``None`` when unreadable). A row is a candidate only when that spec
+    reads ``status: done`` with ``followup_review_recommended`` an explicit truthy (``is_followup_review_spec``,
+    the pairing Story 29.2 and Story 73.1 use); every other open row is returned as stale, never dispatched."""
+    candidates: list[FollowupCandidate] = []
+    stale: list[StaleFollowupRow] = []
+    for key in row_keys:
+        row_id = followup_review_id(key)
+        text = spec_texts.get(key)
+        if text is not None and is_followup_review_spec(text):
+            candidates.append(FollowupCandidate(slug=slug, key=key, row_id=row_id))
+        else:
+            stale.append(StaleFollowupRow(slug=slug, row_id=row_id, reason=_stale_followup_reason(text)))
+    return tuple(candidates), tuple(stale)
+
+
+def landing_positions(
+    subjects: Sequence[str],
+    template: str,
+    slug: str,
+    *,
+    wanted: Collection[StoryKey],
+    spec_status_for: SpecStatusReader,
+) -> dict[StoryKey, int]:
+    """The newest-first position of each ``wanted`` story's corroborated merge subject (Story 73.2).
+
+    ``subjects`` is ``commit_subjects(ORIGIN_MAIN)``, newest first, so a smaller position is a newer landing. Each
+    subject goes through ``promotion.corroborated_merged_story_keys`` one at a time (one subject in, at most one
+    key out) -- the classifier a landing is judged by everywhere else, never a second one. A story with no
+    corroborated subject is absent from the result. Stops once every wanted story has a position."""
+    remaining = set(wanted)
+    positions: dict[StoryKey, int] = {}
+    for index, subject in enumerate(subjects):
+        if not remaining:
+            break
+        for key in corroborated_merged_story_keys((subject,), template, slug, spec_status_for=spec_status_for):
+            if key in remaining:
+                positions[key] = index
+                remaining.discard(key)
+    return positions
+
+
+def select_campaign_followups(
+    candidates: Sequence[FollowupCandidate],
+    positions: Mapping[tuple[str, StoryKey], int],
+    *,
+    cap: int,
+    launched: Collection[tuple[str, StoryKey]] = (),
+) -> FollowupSelection:
+    """The campaign's follow-ups across every station's ``candidates`` (Story 73.2, operator ruling 2026-09-28).
+
+    Newest landing first: ``positions`` maps ``(slug, key)`` to ``landing_positions``' value; a candidate with no
+    position sorts after every matched one, in the order ``candidates`` arrived (ledger order, stations in order).
+    ``launched`` is every ``(slug, key)`` the campaign's journal says it already launched: those stay queued while
+    their row is open (a live one then reads in-flight, a failed one blocks, as any story's) and cost nothing, and
+    ``cap`` minus how many were launched is the budget for new ones -- so the cap holds across every cycle of one
+    campaign. ``cap`` ``0`` selects nothing new. The candidates beyond the budget are ``waiting`` for a later
+    campaign."""
+    ordered = sorted(
+        enumerate(candidates),
+        key=lambda pair: (
+            (0, positions[(pair[1].slug, pair[1].key)]) if (pair[1].slug, pair[1].key) in positions else (1, pair[0])
+        ),
+    )
+    already = frozenset(launched)
+    budget = max(0, cap - len(already))
+    selected: list[FollowupCandidate] = []
+    waiting: list[FollowupCandidate] = []
+    for _index, candidate in ordered:
+        if (candidate.slug, candidate.key) in already:
+            selected.append(candidate)
+        elif budget > 0:
+            selected.append(candidate)
+            budget -= 1
+        else:
+            waiting.append(candidate)
+    return FollowupSelection(selected=tuple(selected), waiting=tuple(waiting))
+
+
+def followup_backlog_entries(
+    candidates: Sequence[FollowupCandidate],
+    statuses: Iterable[tuple[str, str]],
+    backlog: Sequence[str],
+) -> tuple[str, ...]:
+    """The queue entry for each of one station's selected follow-ups, in ``candidates`` order (Story 73.2).
+
+    The station ledger's own key for the story when its tracked ledger names it (what every other queue entry
+    is), else the story's canonical feed key. A story the implementable ``backlog`` already carries is not queued
+    a second time. Nothing here reads or changes a ledger status: the story stays ``done``."""
+    ledger_keys: dict[StoryKey, str] = {}
+    for raw_key, _raw_status in statuses:
+        if not isinstance(raw_key, str):
+            continue
+        try:
+            ledger_keys.setdefault(normalize(raw_key), raw_key)
+        except MalformedStoryKeyError:
+            continue
+    queued: set[StoryKey] = set()
+    for raw in backlog:
+        try:
+            queued.add(normalize(raw))
+        except MalformedStoryKeyError:
+            continue
+    entries: list[str] = []
+    for candidate in candidates:
+        if candidate.key in queued:
+            continue
+        queued.add(candidate.key)
+        entries.append(ledger_keys.get(candidate.key, render_feed_key(candidate.key)))
+    return tuple(entries)
+
+
+def followups_launched(station_rows: Iterable[object]) -> frozenset[tuple[str, StoryKey]]:
+    """Every ``(slug, story)`` follow-up review the campaign's journalled station rows say it launched (Story 73.2).
+
+    ``station_rows`` is the ``stations`` list of each fleet-cycle OUTCOME entry (``StationCycleResult.to_payload``
+    rows); a row without ``followup_reviews``, a malformed row and an entry that does not normalize are skipped,
+    never raised -- the journal is read the way ``_campaign_blocked_from_journal`` reads campaign blocks."""
+    launched: set[tuple[str, StoryKey]] = set()
+    for row in station_rows:
+        if not isinstance(row, dict):
+            continue
+        slug = row.get("station")
+        reviews = row.get(FOLLOWUP_REVIEWS_PAYLOAD_KEY)
+        if not isinstance(slug, str) or not isinstance(reviews, list):
+            continue
+        for story in reviews:
+            if not isinstance(story, str):
+                continue
+            try:
+                launched.add((slug, normalize(story)))
+            except MalformedStoryKeyError:
+                continue
+    return frozenset(launched)
 
 
 def plan_station_queue(
