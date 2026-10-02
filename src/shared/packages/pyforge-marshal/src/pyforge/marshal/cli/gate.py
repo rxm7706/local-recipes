@@ -177,6 +177,7 @@ from ..ports.vcs import VcsPort
 from .config import (
     ENV_ACTIVE_PROJECT,
     PolicyIOError,
+    RepoRootUnresolvedError,
     _read_project_policy,
     _suppress_downstream_pipe_close,
     conventional_project_policy_path,
@@ -724,6 +725,30 @@ def evaluate_gate(
     # silently fall through to the env var).
     project_slug = args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
 
+    # Story 82.1 (DW-FU-2-1-7): resolve the repo root FIRST and ONCE. It is
+    # the policy lookup's anchor, the spawned commands' `cwd` and the
+    # containment fence below, so a root that cannot be resolved must stop
+    # the evaluation here -- never fall through to bare defaults, which
+    # compose no `verify_commands` and report MRS-GATE-004 (warn, exit 0)
+    # having run no gate: a false green. One could-not-evaluate finding
+    # (UNEVALUABLE, non-zero exit), nothing run.
+    try:
+        root = repo_root()
+    except RepoRootUnresolvedError as exc:
+        return build_envelope(
+            command="gate evaluate",
+            verdict=compute_verdict((exc.finding,)),
+            data={
+                "slug": project_slug,
+                "root": None,
+                "policy_source": None,
+                "scope": "root-unresolved",
+                "scope_note": "the repository root could not be resolved; no gate was evaluated",
+                "commands": [],
+            },
+            findings=(exc.finding,),
+        )
+
     # The CONVENTIONAL path is the only policy source this command will
     # read -- `run_config`'s `--project-policy` override is deliberately not
     # offered here (see the module docstring). Resolution itself is reused,
@@ -809,7 +834,6 @@ def evaluate_gate(
     # NOT determine the file that was read. An envelope asserting `clean`
     # must say where and from what. Both are recorded here and rendered by
     # BOTH formats (AD-14: text is a projection of this same data).
-    root = repo_root()
     data: dict[str, object] = {
         "slug": project_slug,
         "root": str(root),
@@ -1132,7 +1156,7 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
     # `_resolve_policy_source` and `cli/config.py::_read_project_policy`).
     lines = [
         f"gate evaluate: {slug!r}",
-        f"root: {str(data['root'])!r}",
+        f"root: {str(data['root'])!r}" if data["root"] is not None else "root: (unresolved)",
         f"policy source: {str(data['policy_source'])!r}" if data["policy_source"] else "policy source: (none read)",
         f"scope: {data['scope']} ({data['scope_note']})",
     ]
