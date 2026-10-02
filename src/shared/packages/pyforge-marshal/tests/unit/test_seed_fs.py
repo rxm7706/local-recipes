@@ -740,3 +740,206 @@ def test_symlink_guard_checks_the_links_own_path_not_a_preexisting_symlinks_curr
     fs.symlink(link_path, tmp_path / "somewhere-else", repo_root=tmp_path, never_write=never_write)
 
     assert Path(link_path.readlink()) == tmp_path / "somewhere-else"
+
+
+# --- never_write_match: as written AND resolved, directory nodes (Story 82.11) ---
+#
+# DW-10-4-1: `_guard` used to match only the RESOLVED path, so a symlinked
+# ancestor (`docs -> real/`) hid `docs/dreams/x.md` from `docs/dreams/*.md`.
+# DW-FU-7-5-5: `**/planning-artifacts/**` needs a segment after the directory,
+# so the directory node itself passed the guard.
+
+_DREAMS = NeverWrite(("docs/dreams/*.md",))
+
+
+def _docs_symlinked_to_real(tmp_path: Path) -> None:
+    """``docs -> real/`` with ``real/dreams/`` present."""
+    (tmp_path / "real" / "dreams").mkdir(parents=True)
+    (tmp_path / "docs").symlink_to("real")
+
+
+def test_a_symlinked_ancestor_does_not_hide_a_never_write_path_from_write(tmp_path):
+    _docs_symlinked_to_real(tmp_path)
+    target = tmp_path / "docs" / "dreams" / "x.md"
+
+    with pytest.raises(NeverWriteViolation, match=r"docs/dreams/\*\.md"):
+        fs.write(target, b"hi", repo_root=tmp_path, never_write=_DREAMS)
+
+    assert not (tmp_path / "real" / "dreams" / "x.md").exists()
+
+
+def test_a_symlinked_ancestor_does_not_hide_a_never_write_path_from_remove_or_replace_span(tmp_path):
+    _docs_symlinked_to_real(tmp_path)
+    existing = tmp_path / "real" / "dreams" / "x.md"
+    existing.write_bytes(b"keep")
+    target = tmp_path / "docs" / "dreams" / "x.md"
+
+    with pytest.raises(NeverWriteViolation):
+        fs.remove(target, repo_root=tmp_path, never_write=_DREAMS)
+    with pytest.raises(NeverWriteViolation):
+        fs.replace_span(target, 0, 0, b"x", repo_root=tmp_path, never_write=_DREAMS)
+
+    assert existing.read_bytes() == b"keep"
+
+
+def test_never_write_match_reports_the_pattern_and_the_form_that_matched(tmp_path):
+    _docs_symlinked_to_real(tmp_path)
+
+    hit = fs.never_write_match(
+        tmp_path / "docs" / "dreams" / "x.md", repo_root=tmp_path, never_write=_DREAMS
+    )
+
+    # The WRITTEN form matched; the resolved one (`real/dreams/x.md`) would not have.
+    assert hit == ("docs/dreams/*.md", "docs/dreams/x.md")
+    assert fs.never_write_match(tmp_path / "real" / "dreams" / "x.md", repo_root=tmp_path, never_write=_DREAMS) is None
+
+
+def test_a_path_that_only_resolves_into_the_protected_set_still_refuses(tmp_path):
+    """The other direction: ``alias -> docs/dreams`` hides the path from the
+    WRITTEN form (``alias/x.md``); the resolved one still matches."""
+    (tmp_path / "docs" / "dreams").mkdir(parents=True)
+    (tmp_path / "alias").symlink_to("docs/dreams")
+
+    hit = fs.never_write_match(tmp_path / "alias" / "x.md", repo_root=tmp_path, never_write=_DREAMS)
+
+    assert hit == ("docs/dreams/*.md", "docs/dreams/x.md")
+
+
+def test_a_lexical_dotdot_in_the_written_path_is_folded_before_matching(tmp_path):
+    (tmp_path / "docs" / "dreams").mkdir(parents=True)
+
+    hit = fs.never_write_match(
+        tmp_path / "docs" / "other" / ".." / "dreams" / "x.md", repo_root=tmp_path, never_write=_DREAMS
+    )
+
+    assert hit is not None
+
+
+def test_exempt_is_judged_per_form_so_a_declared_writable_path_stays_writable_under_a_symlinked_ancestor(tmp_path):
+    _docs_symlinked_to_real(tmp_path)
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
+
+    fs.write(tmp_path / "docs" / "dreams" / "README.md", b"ok", repo_root=tmp_path, never_write=never_write)
+
+    assert (tmp_path / "real" / "dreams" / "README.md").read_bytes() == b"ok"
+    with pytest.raises(NeverWriteViolation):
+        fs.write(tmp_path / "docs" / "dreams" / "other.md", b"no", repo_root=tmp_path, never_write=never_write)
+
+
+def test_never_write_match_agrees_with_the_guard_on_the_exempt_short_circuit(tmp_path):
+    """The old `_matches` rule is unchanged: an exempt path matches nothing."""
+    never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
+    assert fs.never_write_match(tmp_path / "docs" / "dreams" / "README.md", repo_root=tmp_path, never_write=never_write) is None
+    assert fs.never_write_match(tmp_path / "docs" / "dreams" / "x.md", repo_root=tmp_path, never_write=never_write) is not None
+
+
+def test_never_write_match_rejects_a_nonexistent_repo_root(tmp_path):
+    with pytest.raises(ValueError, match="does not resolve to an existing directory"):
+        fs.never_write_match(tmp_path / "x.md", repo_root=tmp_path / "nope", never_write=_DREAMS)
+
+
+@pytest.mark.parametrize(
+    "directory",
+    [
+        "_bmad-output/projects/demo/planning-artifacts",
+        "_bmad-output/projects/demo/implementation-artifacts",
+        "_bmad-output/planning-artifacts",
+        "_bmad-output/implementation-artifacts",
+        "_bmad/bmm",
+    ],
+)
+def test_the_shipped_patterns_cover_the_directory_node_itself_for_write(tmp_path, directory):
+    (tmp_path / directory).mkdir(parents=True)
+
+    with pytest.raises(NeverWriteViolation):
+        fs.write(tmp_path / directory, b"x", repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
+
+
+def test_the_shipped_patterns_refuse_to_remove_the_planning_artifacts_directory(tmp_path):
+    planning = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts"
+    planning.mkdir(parents=True)
+    (planning / "PRD.md").write_bytes(b"keep")
+
+    with pytest.raises(NeverWriteViolation):
+        fs.remove(planning, repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
+
+    assert (planning / "PRD.md").read_bytes() == b"keep"
+
+
+def test_the_shipped_patterns_refuse_to_repoint_the_planning_artifacts_node(tmp_path):
+    """Replace / remove / RE-POINT: a symlink standing in for the tier tree,
+    dangling or not, is the directory node and `symlink()` may not move it."""
+    projects = tmp_path / "_bmad-output" / "projects"
+    (projects / "demo").mkdir(parents=True)
+    (projects / "other" / "planning-artifacts").mkdir(parents=True)
+    node = projects / "demo" / "planning-artifacts"
+    node.symlink_to(projects / "other" / "planning-artifacts")
+
+    with pytest.raises(NeverWriteViolation):
+        fs.symlink(node, projects / "demo" / "elsewhere", repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
+    assert node.readlink() == projects / "other" / "planning-artifacts"
+
+    dangling = projects / "demo" / "implementation-artifacts"
+    dangling.symlink_to(projects / "nowhere")
+    with pytest.raises(NeverWriteViolation):
+        fs.symlink(dangling, projects / "demo", repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
+
+
+def test_a_regular_file_at_the_same_depth_is_not_swept_up_by_the_directory_probe(tmp_path):
+    """The `/` form is tried only for a directory: a file whose NAME merely
+    ends like the directory is matched as it always was."""
+    target = tmp_path / "notes" / "planning-artifacts.md"
+    fs.write(target, b"ok", repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
+    assert target.read_bytes() == b"ok"
+
+
+_BMAD_LINK_EXEMPT = NeverWrite(
+    _REAL_NEVER_WRITE.patterns,
+    exempt=frozenset({"_bmad-output/planning-artifacts", "_bmad-output/implementation-artifacts"}),
+)
+
+
+def test_the_two_declared_symlink_entries_stay_writable_through_exempt_by_declaration(tmp_path):
+    """They are creatable, and re-runnable once the link (a directory node) exists."""
+    for name in ("planning-artifacts", "implementation-artifacts"):
+        (tmp_path / "_bmad-output" / "projects" / "demo" / name).mkdir(parents=True)
+    for _ in range(2):
+        for name in ("planning-artifacts", "implementation-artifacts"):
+            fs.symlink(
+                tmp_path / "_bmad-output" / name,
+                Path("projects") / "demo" / name,
+                repo_root=tmp_path,
+                never_write=_BMAD_LINK_EXEMPT,
+            )
+
+    assert (tmp_path / "_bmad-output" / "planning-artifacts").readlink() == Path("projects/demo/planning-artifacts")
+
+
+def test_the_exemption_covers_the_link_and_not_what_it_points_at(tmp_path):
+    """Per form: written `_bmad-output/planning-artifacts` is exempt, but a
+    write THROUGH the link resolves into the real, un-exempt tier tree."""
+    real = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts"
+    real.mkdir(parents=True)
+    (tmp_path / "_bmad-output" / "planning-artifacts").symlink_to("projects/demo/planning-artifacts")
+
+    with pytest.raises(NeverWriteViolation):
+        fs.write(tmp_path / "_bmad-output" / "planning-artifacts" / "PRD.md", b"x", repo_root=tmp_path, never_write=_BMAD_LINK_EXEMPT)
+    with pytest.raises(NeverWriteViolation):
+        fs.write(tmp_path / "_bmad-output" / "planning-artifacts", b"x", repo_root=tmp_path, never_write=_BMAD_LINK_EXEMPT)
+    with pytest.raises(NeverWriteViolation):
+        fs.remove(tmp_path / "_bmad-output" / "planning-artifacts", repo_root=tmp_path, never_write=_BMAD_LINK_EXEMPT)
+    assert (tmp_path / "_bmad-output" / "planning-artifacts").is_symlink()
+
+
+def test_an_exempt_link_stays_creatable_when_its_parent_is_itself_a_symlinked_ancestor(tmp_path):
+    """`_bmad-output -> vol/bmad`: the link is the same node reached through a
+    resolved ancestor, so its directory probe is not repeated on the resolved
+    form (which would refuse an exempt declaration)."""
+    (tmp_path / "vol" / "bmad" / "projects" / "demo" / "planning-artifacts").mkdir(parents=True)
+    (tmp_path / "_bmad-output").symlink_to("vol/bmad")
+    link = tmp_path / "_bmad-output" / "planning-artifacts"
+
+    fs.symlink(link, Path("projects/demo/planning-artifacts"), repo_root=tmp_path, never_write=_BMAD_LINK_EXEMPT)
+    fs.symlink(link, Path("projects/demo/planning-artifacts"), repo_root=tmp_path, never_write=_BMAD_LINK_EXEMPT)
+
+    assert link.readlink() == Path("projects/demo/planning-artifacts")

@@ -7,6 +7,7 @@ offending id/field), and the ``since``/``until`` version-range filter.
 from __future__ import annotations
 
 import dataclasses
+import json
 from pathlib import Path
 from textwrap import dedent
 
@@ -309,7 +310,7 @@ def test_an_absolute_or_dotdot_path_raises_manifest_error_naming_the_entry_id(tm
         artifacts:
           - id: escaper
             class: copied-seeded
-            path: {yaml.safe_dump(bad_path).strip()}
+            path: {json.dumps(bad_path)}
             applies_to: init
             rationale: r
     """
