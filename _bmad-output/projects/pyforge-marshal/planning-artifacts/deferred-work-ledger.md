@@ -7829,3 +7829,14 @@ status: open
   severity: low
   promoted: 2026-10-01 — dispatch-land finalize
   status: open
+
+### DW-FRR-73-2: Follow-up review still recommended for story 73.2
+
+- source_spec: `planning-artifacts/specs/spec-73-2-a-drain-schedules-the-follow-up-review-a-landed-story-recommended.md`
+  summary: Story 73.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 73.2 landed on origin/main with its tracked spec reading `status: done` and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-73-2-a-drain-schedules-the-follow-up-review-a-landed-story-recommended.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-02 — dispatch-land finalize
+  status: open
