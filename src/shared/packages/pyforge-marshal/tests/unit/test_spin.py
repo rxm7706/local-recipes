@@ -3412,8 +3412,14 @@ def test_resume_policy_write_failure_registers_mrs_spin_016_and_proceeds(home, c
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-SPIN-016" in out
+    # Story 82.6: the intent is the write-ahead record -- it names the
+    # escalation that was ATTEMPTED; the outcome says it was not applied and
+    # the report says `escalated: False`.
     intent = json.loads(fs.appended_lines[0][1])
-    assert intent["payload"]["escalated"] is False
+    assert intent["payload"]["escalated"] is True
+    assert (intent["payload"]["from_model"], intent["payload"]["to_model"]) == ("sonnet", "opus")
+    assert _outcome_payload_of(fs)["escalation_applied"] is False
+    assert "escalated: False" in out
     assert harness.resume_calls, "the resume must still proceed"
     assert process.spawn_calls, "a supervisor must still be spawned"
 
@@ -3435,6 +3441,461 @@ def test_resume_missing_status_snapshot_skips_escalation(home, capsys):
     intent = json.loads(fs.appended_lines[0][1])
     assert intent["payload"]["escalated"] is False
     assert not (home / ".bmad-loop" / "policy.toml").exists()
+
+
+# --- Story 82.6: launch-time ceilings + journal-before-policy-write (DW-3-12-1, DW-3-12-3) ---
+
+
+_PRIOR_RUN_ID = "acme-20260801T000000000Z-aaaa"
+_RERENDERED_POLICY_TOML = _BASELINE_POLICY_TOML.replace("max_dev_attempts = 2", "max_dev_attempts = 4")
+_LAUNCH_LIMITS = {"max_dev_attempts": 2, "max_review_cycles": 3}
+
+
+def _launch_intent_line(run_id: str, *, limits: object | None, preview: list[str] | None = None) -> str:
+    """A ``run-launch`` INTENT journal line the way ``run_spin`` writes one,
+    carrying ``limits`` verbatim (``None`` omits the field -- a launch from
+    before Story 82.6). Its id is the ``spin-1``/0 pair ``_outcome_line``'s
+    outcome already names as its ``intent_id``."""
+    payload: dict[str, object] = {"epic": None, "story": None, "max_count": None, "preview": preview or ["3.6"]}
+    if limits is not None:
+        payload["limits"] = limits
+    entry = build_entry(
+        id=JournalEntryId("spin-1", 0),
+        ts="2026-08-01T00:00:00.000Z",
+        run_id=run_id,
+        kind="run-launch",
+        phase=Phase.INTENT,
+        payload=payload,
+    )
+    return prepare_for_write(entry).line
+
+
+def _seed_launched_run(
+    home: Path, fs: FakeFs, *, run_id: str = _PRIOR_RUN_ID, harness_run_id: str = "acme-hh01", limits: object | None
+) -> Path:
+    """A prior Marshal run whose journal holds a launch intent recording
+    ``limits`` and the launch outcome naming ``harness_run_id``."""
+    prior_dir = _seed_prior_run(home, "acme", run_id)
+    fs.read_text_contents[prior_dir / spin_module._JOURNAL_FILENAME] = (
+        _launch_intent_line(run_id, limits=limits) + "\n" + _outcome_line(run_id, harness_run_id=harness_run_id) + "\n"
+    )
+    return prior_dir
+
+
+def _seed_resume_over_launched_run(
+    home: Path,
+    fs: FakeFs,
+    harness: FakeHarness,
+    *,
+    limits: object | None,
+    deferred: tuple[DeferredStory, ...],
+    policy_toml: str,
+) -> None:
+    """``_seed_resume_with_deferred``'s sibling for a prior run that journaled
+    a launch intent: the on-disk ``policy.toml`` is both what ``run_resume``
+    reads (through ``fs``) and a real file for the write to land on."""
+    _seed_launched_run(home, fs, limits=limits)
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=deferred,
+    )
+    _seed_policy_file(home, fs, policy_toml)
+
+
+def _seed_policy_file(home: Path, fs: FakeFs, policy_toml: str) -> Path:
+    """Put ``policy_toml`` on disk at the loop home's ``policy.toml`` -- a real
+    file (what the writers replace) and the ``fs`` read the commands plan from."""
+    policy_path = home / ".bmad-loop" / "policy.toml"
+    policy_path.parent.mkdir(parents=True, exist_ok=True)
+    policy_path.write_text(policy_toml, encoding="utf-8")
+    fs.read_text_contents[policy_path] = policy_toml
+    return policy_path
+
+
+def _outcome_payload_of(fs: FakeFs) -> dict[str, object]:
+    return json.loads(fs.appended_lines[1][1])["payload"]
+
+
+def test_resume_escalates_against_the_ceilings_the_launch_recorded_not_the_rerendered_policy(home):
+    """Story 82.6, AC 1 (DW-3-12-1): a run launched under
+    ``max_dev_attempts = 2`` whose story deferred at attempt 2, with the loop
+    home's ``policy.toml`` re-rendered since to say 4 -- escalation still
+    fires, because the counters are judged against the ceilings the launch
+    journaled. (Reverted to the on-disk read, attempt 2 < 4 and nothing
+    escalates.)"""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_over_launched_run(
+        home,
+        fs,
+        harness,
+        limits=_LAUNCH_LIMITS,
+        deferred=(_deferred_story("3.6", attempt=2),),
+        policy_toml=_RERENDERED_POLICY_TOML,
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])["payload"]
+    assert intent["escalated"] is True
+    assert intent["escalated_stories"] == ["3.6"]
+    assert (intent["from_model"], intent["to_model"]) == ("sonnet", "opus")
+    assert _outcome_payload_of(fs)["escalation_applied"] is True
+    written = tomllib.loads((home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8"))
+    assert written["adapter"]["model"] == "opus"
+    # The re-rendered ceiling is untouched: only the model was floor-raised.
+    assert written["limits"]["max_dev_attempts"] == 4
+
+
+def test_resume_chained_off_a_resume_still_reads_the_launch_runs_ceilings(home):
+    """The run a resume chains off is usually itself a ``run-resume`` (the
+    newest run directory), whose journal records no launch -- the ceilings
+    come from the OLDER run whose ``run-launch`` outcome names the same
+    ``harness_run_id``."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_over_launched_run(
+        home,
+        fs,
+        harness,
+        limits=_LAUNCH_LIMITS,
+        deferred=(_deferred_story("3.6", attempt=2),),
+        policy_toml=_RERENDERED_POLICY_TOML,
+    )
+    chained_id = "acme-20260802T000000000Z-bbbb"
+    chained_dir = _seed_prior_run(home, "acme", chained_id)
+    fs.read_text_contents[chained_dir / spin_module._JOURNAL_FILENAME] = (
+        _outcome_line(chained_id, kind="run-resume", harness_run_id="acme-hh01") + "\n"
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert json.loads(fs.appended_lines[0][1])["payload"]["resumed_from_run"] == chained_id
+    assert json.loads(fs.appended_lines[0][1])["payload"]["escalated"] is True
+    assert _outcome_payload_of(fs)["escalation_applied"] is True
+
+
+def test_resume_reads_the_ceilings_from_a_launch_intent_offloaded_to_a_sidecar(home):
+    """An intent past AD-30's 4 KiB threshold journals only a ``sidecar_ref``
+    -- the recorded ceilings must still be recovered from the blob."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    prior_dir = _seed_prior_run(home, "acme", _PRIOR_RUN_ID)
+    big_intent = build_entry(
+        id=JournalEntryId("spin-1", 0),
+        ts="2026-08-01T00:00:00.000Z",
+        run_id=_PRIOR_RUN_ID,
+        kind="run-launch",
+        phase=Phase.INTENT,
+        payload={
+            "epic": None,
+            "story": None,
+            "max_count": None,
+            "preview": [f"1.{n}" for n in range(1, 701)],
+            "limits": _LAUNCH_LIMITS,
+        },
+    )
+    prepared = prepare_for_write(big_intent)
+    assert prepared.sidecar_relative_path is not None, "the fixture must exceed the sidecar threshold"
+    fs.read_text_contents[prior_dir / prepared.sidecar_relative_path] = prepared.sidecar_content
+    fs.read_text_contents[prior_dir / spin_module._JOURNAL_FILENAME] = (
+        prepared.line + "\n" + _outcome_line(_PRIOR_RUN_ID, harness_run_id="acme-hh01") + "\n"
+    )
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(_deferred_story("3.6", attempt=2),),
+    )
+    _seed_policy_file(home, fs, _RERENDERED_POLICY_TOML)
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert _outcome_payload_of(fs)["escalation_applied"] is True
+
+
+@pytest.mark.parametrize(
+    "recorded",
+    [
+        pytest.param(None, id="launch-recorded-nothing"),
+        pytest.param({"max_dev_attempts": 0, "max_review_cycles": 3}, id="non-positive"),
+        pytest.param({"max_dev_attempts": True, "max_review_cycles": 3}, id="boolean"),
+        pytest.param({"max_dev_attempts": 2}, id="missing-key"),
+        pytest.param("two-and-three", id="not-a-mapping"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("on_disk_policy", "escalates"),
+    [
+        pytest.param(_BASELINE_POLICY_TOML, True, id="on-disk-ceiling-reached"),
+        pytest.param(_RERENDERED_POLICY_TOML, False, id="on-disk-ceiling-not-reached"),
+    ],
+)
+def test_resume_with_no_usable_recorded_ceilings_reads_the_on_disk_policy(home, recorded, on_disk_policy, escalates):
+    """Story 82.6, AC 2: a run whose launch entry records no (valid)
+    ceilings escalates against the on-disk ``policy.toml``, exactly as before
+    -- a malformed record counts as none."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_over_launched_run(
+        home,
+        fs,
+        harness,
+        limits=recorded,
+        deferred=(_deferred_story("3.6", attempt=2),),
+        policy_toml=on_disk_policy,
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert json.loads(fs.appended_lines[0][1])["payload"]["escalated"] is escalates
+    written = tomllib.loads((home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8"))
+    assert (written["adapter"]["model"] == "opus") is escalates
+
+
+@pytest.mark.parametrize(
+    ("failure", "message"),
+    [
+        pytest.param("fail_create_dir_exclusive", "cannot create run directory", id="run-directory-creation"),
+        pytest.param("fail_append_line", "cannot journal the resume intent", id="intent-append"),
+    ],
+)
+def test_resume_failing_before_its_intent_is_durable_leaves_policy_toml_unchanged(home, capsys, failure, message):
+    """Story 82.6, AC 4 (DW-3-12-3): with an escalation to apply, a failure
+    creating the run directory (or appending the intent) leaves
+    ``policy.toml`` byte-identical -- the floor-raise is written only after
+    its intent. (Reverted to the old ordering, the file already says opus.)"""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_over_launched_run(
+        home,
+        fs,
+        harness,
+        limits=_LAUNCH_LIMITS,
+        deferred=(_deferred_story("3.6", attempt=2),),
+        policy_toml=_BASELINE_POLICY_TOML,
+    )
+    policy_path = home / ".bmad-loop" / "policy.toml"
+    before = policy_path.read_bytes()
+    setattr(fs, failure, FsError("disk full"))
+
+    exit_code = run_resume(_resume_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    envelope = json.loads(capsys.readouterr().out)
+    assert any(f["code"] == "MRS-SPIN-003" and message in f["message"] for f in envelope["findings"])
+    assert envelope["data"]["escalated"] is False
+    assert policy_path.read_bytes() == before
+    assert not harness.resume_calls
+
+
+def test_resume_journals_the_floor_raise_before_it_writes_policy_toml(home, monkeypatch):
+    """Story 82.6, AC 5 (resume half): at the moment ``policy.toml`` is
+    written, the durable (fsynced) intent already names the change -- from and
+    to model and the stories that triggered it."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_over_launched_run(
+        home,
+        fs,
+        harness,
+        limits=_LAUNCH_LIMITS,
+        deferred=(_deferred_story("3.6", attempt=2), _deferred_story("3.7", attempt=1)),
+        policy_toml=_BASELINE_POLICY_TOML,
+    )
+    seen: list[list[tuple[dict[str, object], bool]]] = []
+    real_write = spin_module.write_policy_document
+
+    def spy(document, loop_home):
+        seen.append([(json.loads(line), fsync) for _, line, fsync in fs.appended_lines])
+        return real_write(document, loop_home)
+
+    monkeypatch.setattr(spin_module, "write_policy_document", spy)
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert len(seen) == 1
+    ((intent, intent_fsync),) = seen[0]
+    assert intent["phase"] == "intent"
+    assert intent_fsync is True
+    assert intent["payload"]["escalated"] is True
+    assert intent["payload"]["escalated_stories"] == ["3.6"]
+    assert (intent["payload"]["from_model"], intent["payload"]["to_model"]) == ("sonnet", "opus")
+    assert harness.resume_calls, "the resume itself still ran after the write"
+    assert _outcome_payload_of(fs)["escalation_applied"] is True
+
+
+def _tier_policy_launch(home, tmp_path, monkeypatch, *, on_disk: str | None = _BASELINE_POLICY_TOML):
+    """A ``run_spin`` fixture whose tiering decision WOULD rewrite
+    ``policy.toml`` (one story declaring ``difficulty: heavy`` against a real
+    ``model_tier_map``), with ``on_disk`` already in place as the file it
+    would replace. Returns ``(fs, harness, policy_path)``."""
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _model_tier_map_policy_path(tmp_path),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    policy_path = home / ".bmad-loop" / "policy.toml"
+    if on_disk is not None:
+        _seed_policy_file(home, fs, on_disk)
+    return fs, harness, policy_path
+
+
+@pytest.mark.parametrize(
+    ("failure", "message"),
+    [
+        pytest.param("fail_append_line", "cannot journal the launch intent", id="intent-append"),
+        pytest.param("fail_create_dir_exclusive", "cannot create run directory", id="run-directory-creation"),
+    ],
+)
+def test_spin_failing_before_its_intent_is_durable_leaves_policy_toml_byte_identical(
+    home, tmp_path, monkeypatch, capsys, failure, message
+):
+    """Story 82.6, AC 3 (DW-3-12-3): model tiering that WOULD change the
+    model, an intent append (or run-directory creation) that fails -- the
+    file is byte-identical to before and the failure is reported. (Reverted
+    to the old ordering, the tiered render has already replaced it.)"""
+    fs, harness, policy_path = _tier_policy_launch(home, tmp_path, monkeypatch)
+    before = policy_path.read_bytes()
+    setattr(fs, failure, FsError("disk full"))
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    envelope = json.loads(capsys.readouterr().out)
+    assert any(f["code"] == "MRS-SPIN-003" and message in f["message"] for f in envelope["findings"])
+    assert policy_path.read_bytes() == before
+    assert not harness.spin_calls
+
+
+def test_spin_journals_the_policy_change_before_it_writes_policy_toml(home, tmp_path, monkeypatch):
+    """Story 82.6, AC 5 (spin half): when ``policy.toml`` is written, the
+    durable launch intent already carries ``policy_change`` -- the dev model
+    from and to, the governing difficulty and the selected stories."""
+    fs, harness, policy_path = _tier_policy_launch(home, tmp_path, monkeypatch)
+    seen: list[list[tuple[dict[str, object], bool]]] = []
+    real_write = spin_module.write_policy_toml
+
+    def spy(*args, **kwargs):
+        seen.append([(json.loads(line), fsync) for _, line, fsync in fs.appended_lines])
+        return real_write(*args, **kwargs)
+
+    monkeypatch.setattr(spin_module, "write_policy_toml", spy)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    assert len(seen) == 1
+    ((intent, intent_fsync),) = seen[0]
+    assert intent["phase"] == "intent"
+    assert intent["kind"] == "run-launch"
+    assert intent_fsync is True
+    assert intent["payload"]["policy_change"] == {
+        "from_model": "sonnet",
+        "to_model": "opus",
+        "governing_difficulty": "heavy",
+        "stories": ["1.1"],
+    }
+    # ...and the write really happened, after it.
+    assert tomllib.loads(policy_path.read_text(encoding="utf-8"))["adapter"]["dev"]["model"] == "opus"
+
+
+def test_spin_launch_intent_records_the_ceilings_the_run_starts_under(home, tmp_path, monkeypatch):
+    """Story 82.6: the launch intent's ``limits`` are the rendered
+    ``[limits]`` ceilings of the policy the harness will read."""
+    fs, harness, policy_path = _tier_policy_launch(home, tmp_path, monkeypatch, on_disk=_RERENDERED_POLICY_TOML)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])["payload"]
+    written_limits = tomllib.loads(policy_path.read_text(encoding="utf-8"))["limits"]
+    assert intent["limits"] == {
+        "max_dev_attempts": written_limits["max_dev_attempts"],
+        "max_review_cycles": written_limits["max_review_cycles"],
+    }
+    # The rendered ceilings, not the stale 4 the file said before.
+    assert intent["limits"]["max_dev_attempts"] == 2
+
+
+def test_spin_without_a_tiering_write_records_the_on_disk_ceilings_and_no_policy_change(home):
+    """No story selected (so nothing to tier): the policy file is not
+    touched, the intent records the ceilings that file already carries and
+    names no ``policy_change``; with no file there is nothing to record."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    _seed_policy_file(home, fs, _RERENDERED_POLICY_TOML)
+
+    assert run_spin(_spin_namespace("acme", story="9.9", fmt="json"), fs=fs, harness=harness) == EXIT_OK
+
+    intent = json.loads(fs.appended_lines[0][1])["payload"]
+    assert intent["limits"] == {"max_dev_attempts": 4, "max_review_cycles": 3}
+    assert "policy_change" not in intent
+    assert (home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8") == _RERENDERED_POLICY_TOML
+
+    bare_fs = FakeFs(dirs={home})
+    (home / ".bmad-loop" / "policy.toml").unlink()
+    assert run_spin(_spin_namespace("acme", story="9.9", fmt="json"), fs=bare_fs, harness=harness) == EXIT_OK
+    bare_intent = json.loads(bare_fs.appended_lines[0][1])["payload"]
+    assert "limits" not in bare_intent
+    assert "policy_change" not in bare_intent
+
+
+def test_a_resume_reads_back_the_ceilings_a_spin_journaled(home, tmp_path, monkeypatch):
+    """Producer and consumer agree: the ``limits`` ``run_spin`` journals are
+    exactly what ``run_resume`` judges a deferred story against, after the
+    loop home's ``policy.toml`` is re-rendered with a higher ceiling."""
+    spin_fs, spin_harness, _policy_path = _tier_policy_launch(home, tmp_path, monkeypatch)
+    spin_harness.spin_result = SpinResult(pid=4242, harness_run_id="acme-hh01")
+    assert run_spin(_spin_namespace("acme", fmt="json"), fs=spin_fs, harness=spin_harness) == EXIT_OK
+    spin_entries = [json.loads(line) for _, line, _ in spin_fs.appended_lines]
+    run_id = spin_entries[0]["run_id"]
+
+    prior_dir = _seed_prior_run(home, "acme", run_id)
+    resume_fs = FakeFs(dirs={home})
+    resume_fs.read_text_contents[prior_dir / spin_module._JOURNAL_FILENAME] = "".join(
+        line + "\n" for _, line, _ in spin_fs.appended_lines[:2]
+    )
+    # The operator re-rendered the home's policy between deferral and resume.
+    resume_fs.read_text_contents[home / ".bmad-loop" / "policy.toml"] = _RERENDERED_POLICY_TOML
+    resume_harness = FakeHarness()
+    resume_harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(_deferred_story("1.1", attempt=2),),
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=resume_fs, harness=resume_harness, process=FakeProcess())
+
+    assert exit_code == EXIT_OK
+    assert json.loads(resume_fs.appended_lines[0][1])["payload"]["escalated"] is True
+    assert _outcome_payload_of(resume_fs)["escalation_applied"] is True
+
 
 
 # --- Story 6.1: profile-driven adapter selection, project-scoped (FR-48/FR-51/AD-19) ---
