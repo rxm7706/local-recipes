@@ -20,6 +20,7 @@ from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
 from ..core import gate as gate_core
 from ..core import promotion as promotion_core
+from ..core.commit_vcs import CommittingVcs
 from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
@@ -62,6 +63,7 @@ from ..core.dispatch_verification import (
     judge_dispatch_verification,
     primary_gate_failure,
 )
+from ..core.egress import to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
     LAND_FINDINGS_FIELD,
@@ -89,6 +91,7 @@ from ..dispatch_verify import (
     evaluate_dispatch_verification,
     resolve_spec_text_for_story,
 )
+from ..ports.commit import VcsRef
 from ..ports.fs import FsPort
 from ..ports.publisher import RunPublisherPort
 from ..ports.vcs import VcsPort
@@ -159,7 +162,7 @@ def _maybe_fetch_origin_main(vcs: VcsPort, repo_root: Path, *, tick: int) -> Non
 
 
 def _commit_pre_verify_wip(
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     *,
     repo_root: Path,
     worktree: Path,
@@ -734,7 +737,7 @@ def _attempted_change_patch_paths(worktree: Path) -> tuple[Path, ...]:
 def _commit_and_journal_blocked_halt(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     run_dir: Path,
     run_id: str,
     writer_id: str,
@@ -786,7 +789,7 @@ def _commit_and_journal_blocked_halt(
 def _promote_blocked_twin(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     run_dir: Path,
     run_id: str,
     writer_id: str,
@@ -875,7 +878,7 @@ def _promote_blocked_twin(
 def _run_supervisor_finalize_sequence(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     process: ProcessPort,
     run_dir: Path,
     run_id: str,

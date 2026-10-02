@@ -1236,10 +1236,14 @@ class GitVcs:
             return probe.stdout.strip() if probe.returncode == 0 else None
 
         if merge_head() is not None:
-            raise VcsCommandError(f"a merge is already in progress in {worktree_path}; refusing to merge {ref_name} over it")
+            raise VcsCommandError(
+                f"a merge is already in progress in {worktree_path}; refusing to merge {ref_name} over it"
+            )
         target = _run(["git", "-C", wt, "rev-parse", "--verify", "--end-of-options", f"{ref_name}^{{commit}}"])
         if target.returncode != 0:
-            raise VcsCommandError(f"git merge --no-commit {ref_name} failed in {worktree_path}: {target.stderr.strip()}")
+            raise VcsCommandError(
+                f"git merge --no-commit {ref_name} failed in {worktree_path}: {target.stderr.strip()}"
+            )
         target_sha = target.stdout.strip()
         try:
             # --no-rerere-autoupdate: a recorded rerere resolution must not stage itself and slip

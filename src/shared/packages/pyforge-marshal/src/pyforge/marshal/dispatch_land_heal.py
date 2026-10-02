@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .adapters.vcs_git import VcsCommandError
 from .core.chain_regen import parse_ledger_statuses, render_ledger_statuses
+from .core.commit_vcs import CommittingVcs
 from .core.dispatch_landing import (
     is_mechanical_conflict_path,
     is_memlog_path,
@@ -22,8 +23,10 @@ from .core.dispatch_landing import (
     union_memlog_texts,
     unknown_conflict_paths,
 )
+from .core.egress import to_redacted_text
 from .core.model import Finding
 from .core.refs import local_branch_ref
+from .ports.commit import VcsRef
 from .ports.forge import ForgeCommandError, ForgePort, ForgeRef, PrInfo
 from .ports.fs import FsPort
 from .ports.vcs import VcsPort
@@ -238,7 +241,7 @@ def _try_union_heal(
     resolutions: Mapping[str, str],
     has_ledger: bool,
     has_memlogs: bool,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     forge: ForgePort,
     await_checks: Callable[[str], Finding | None] | None = None,
 ) -> tuple[bool, Finding | None]:

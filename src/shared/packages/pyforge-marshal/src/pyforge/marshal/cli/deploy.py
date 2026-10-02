@@ -242,7 +242,8 @@ from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, promotion, status
-from ..core.egress import Redacted, to_redacted
+from ..core.commit_vcs import CommittingVcs
+from ..core.egress import Redacted, to_redacted, to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, render_filename_slug
 from ..core.journal import (
     FoldResult,
@@ -837,7 +838,7 @@ def _execute_promotion_plan(
     *,
     project_slug: str,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     root: Path,
     specs_dir: Path,
     deploy_run: "_DeployRun",
@@ -3580,7 +3581,7 @@ def _repair_tier3_feed(
 def run_reconcile_completions(
     args: argparse.Namespace,
     *,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     fs: FsPort | None = None,
     harness: HarnessPort | None = None,
 ) -> int:

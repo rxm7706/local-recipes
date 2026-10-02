@@ -35,12 +35,15 @@ from pyforge.marshal.cli.land import (
 )
 from pyforge.marshal.core import deferred_work, promotion
 from pyforge.marshal.core import dispatch as dispatch_core
+from pyforge.marshal.core.commit_vcs import CommittingVcs
+from pyforge.marshal.core.egress import to_redacted_text
 from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT
 from pyforge.marshal.core.status import render_ledger_advancements
 from pyforge.marshal.ports.clock import ClockPort
+from pyforge.marshal.ports.commit import VcsRef
 from pyforge.marshal.ports.fs import FsPort
 from pyforge.marshal.ports.vcs import VcsPort
 
@@ -257,7 +260,7 @@ def _close_followup_row(
 def _run_deferred_work_intake(
     process: ProcessPort,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     root: Path,
     project_slug: str,
     story_key: str,
@@ -676,7 +679,7 @@ def _followup_review_carry(
 
 
 def _promote_tracked_spec(
-    vcs: VcsPort, root: Path, project_slug: str, key: StoryKey, worktree: Path | None
+    vcs: CommittingVcs, root: Path, project_slug: str, key: StoryKey, worktree: Path | None
 ) -> tuple[bool, Finding | None]:
     """Story 79.1 (spec-pyforge-marshal CAP-229/CAP-261b, DW-FU-53-2-4): set the landed story's TRACKED spec
     ``status: done`` on ``origin/main``. The Tier-3 promotion (``_execute_promotion_plan``) only reaches a

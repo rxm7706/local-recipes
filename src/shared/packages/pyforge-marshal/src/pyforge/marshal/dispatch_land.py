@@ -31,6 +31,7 @@ from .adapters.fs_local import LocalFs
 from .adapters.vcs_git import GitVcs, VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import identity, promotion
+from .core.commit_vcs import CommittingVcs
 from .core.dispatch_harness_done import FollowupReview
 from .core.dispatch_landing import (
     DispatchLandingVerdict,
@@ -290,7 +291,7 @@ def _reconcile_spec_surface_drift(
     head_branch: str,
     key: StoryKey,
     run_id: str | None,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     process: ProcessPort,
 ) -> _SpecSurfaceReconcileOutcome:
     """Story 53.2 (spec-pyforge-marshal CAP-261b): before ``forge.merge_pr``,
