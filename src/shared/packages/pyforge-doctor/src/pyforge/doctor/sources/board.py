@@ -52,7 +52,7 @@ import sys
 from pathlib import Path
 
 from ..models import DoctorStatus, Finding, Source
-from . import degrade_on_exception
+from . import degrade_on_exception, locate_checkout_script
 
 __all__ = (
     "gather_chain_completeness",
@@ -1435,11 +1435,12 @@ _DRIFT_DONE = frozenset({"done"})
 
 
 def _load_foreign_module(path: Path, mod_name: str):
-    """``exec_module`` an arbitrary ``target``-relative Python file and return
-    it -- the body behind ``_load_dashboard_generate``, the same
+    """``exec_module`` the Python file at ``path`` and return it -- the body
+    behind ``_load_dashboard_generate``, the same
     ``importlib.util.spec_from_file_location`` dynamic load the original
     ``dashboard_drift_check.py`` already used (Boundaries: preserve, don't
-    redesign).
+    redesign). WHICH file is the caller's call, and it must never be one from
+    the tree being judged (``locate_checkout_script``, Story 40.1).
 
     Sole caller since Story 6.9: ``gather_check_layout`` used to share this
     helper via its own ``_load_check_layout`` (dynamically loading
@@ -1494,39 +1495,33 @@ def _load_foreign_module(path: Path, mod_name: str):
     return mod
 
 
-# --- the one surviving retired-Guildhall reader -------------------------------
+# --- the one loader of a script Doctor executes ------------------------------
 #
-# ``_load_dashboard_generate`` imports ``docs/dashboard/generate.py``, which is
-# gone -- and ``retired-console-check`` FAILS CI if it returns. So this body can
-# only execute in a state the estate forbids, and its sole caller
-# (``_gather_chain_layers_audit``) catches the failure and degrades to an
-# honest unevaluable Finding, which IS covered.
+# ``_load_dashboard_generate`` ``exec_module``s ``scripts/fleet_scan.py`` -- the
+# parsers extracted from the retired Guildhall generator -- and it is LIVE: its
+# caller ``_gather_chain_layers_audit`` runs on every
+# ``chain-completeness --layers --project <slug>`` (Story 17.3 / 21.1), and the
+# fixture tests in ``test_sources_board_chain_layers_audit.py`` cover it.
 #
-# It keeps ``# pragma: no cover`` for that reason, not for convenience: it is
-# reachable code whose reachable path is closed by policy rather than by
-# structure, so a test could only assert the failure branch its caller already
-# covers. Everything ELSE that carried this pragma on 2026-09-14 -- the layout
-# orchestration island and the dashboard-drift helper island, 494 lines across
-# ten functions and ten constants -- had no live caller at all and was deleted
-# outright the same day (DW-DASHBOARD-DEAD-CODE-1). That deletion moved this
-# module from 72% to 95% on real code, with findings byte-identical before and
-# after.
-#
-# Worth recording, because the ledger entry had it wrong: deleting that code
-# was NOT "a behaviour change to two registered detector sources plus their
-# taxonomy and schema entries". An AST call-graph pass showed the islands were
-# private orphans -- both gathers, their DISPATCH entries, their ``Source``
-# members and ``report-schema.json`` were untouched. The scope was over-stated
-# when the entry was written, which is why it had been deferred as needing its
-# own Dream when it was in fact hygiene.
+# The file it executes comes from the CHECKOUT Doctor lives in
+# (``locate_checkout_script``), never from ``target``. ``target`` is the tree
+# being JUDGED, and a judged tree's ``scripts/*.py`` is data: resolving the code
+# from it let any caller that handed ``gather(target)`` another tree run that
+# tree's Python with Doctor's privileges (DW-FU-6-5-9, Story 40.1). ``target``
+# still supplies every byte of DATA the audit reads -- the loader re-points the
+# script's ``REPO_ROOT`` / ``DREAMS_DIR`` / ``_PIXI_TASKS`` at it -- and with no
+# checkout above Doctor the load raises ``FileNotFoundError``, which
+# ``_gather_chain_layers_audit`` reports as ``chain-layers-audit-unevaluable``.
 
 
-def _load_dashboard_generate(target: Path):  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
-    """Import ``target/scripts/fleet_scan.py`` (parsers extracted from the
-    retired Guildhall generator) and point it at ``target``.
+def _load_dashboard_generate(target: Path):
+    """Import the checkout's ``scripts/fleet_scan.py`` and point it at ``target``.
+
+    The code is Doctor's own checkout's, the data is ``target``'s (see the block
+    comment above).
     """
     gen = _load_foreign_module(
-        target / "scripts" / "fleet_scan.py",
+        locate_checkout_script("fleet_scan.py"),
         "_doctor_board_fleet_scan",
     )
     root = target.resolve()
