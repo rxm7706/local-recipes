@@ -285,6 +285,38 @@ def test_keys_rotate_via_the_cli_round_trips(tmp_path):
     assert {e.name for e in entries} == {"jfrog", "jfrog-2"}
 
 
+def test_keys_rotate_without_age_keygen_on_path_is_a_duty_failure_not_a_crash(tmp_path, monkeypatch, capsys):
+    """Story 83.1 (DW-1-3-5): `rotate` generates the new identity first, so a missing
+    `age-keygen` fails before any file moves -- reported as a duty failure (exit 1)
+    naming the binary, with the inventory untouched."""
+    inventory_path, _old_identity = _make_scope(tmp_path, "jfrog", n_secrets=1)
+    before = load_inventory(inventory_path)
+    empty = tmp_path / "empty-bin"
+    empty.mkdir()
+    monkeypatch.setenv("PATH", str(empty))
+    new_identity_path = tmp_path / "new-identity.txt"
+
+    rc = main(
+        [
+            "keys",
+            "rotate",
+            "--scope",
+            "jfrog",
+            "--new-identity",
+            str(new_identity_path),
+            "--inventory",
+            str(inventory_path),
+        ]
+    )
+
+    err = capsys.readouterr().err
+    assert rc == EXIT_FAILED
+    assert "keys rotate: age-keygen not found on PATH" in err
+    assert "Traceback" not in err
+    assert load_inventory(inventory_path) == before
+    assert not new_identity_path.exists()
+
+
 def test_keys_rotate_via_the_cli_projects_unknown_scope_to_exit_failed(tmp_path):
     inventory_path, _old_identity = _make_scope(tmp_path, "jfrog", n_secrets=1)
 

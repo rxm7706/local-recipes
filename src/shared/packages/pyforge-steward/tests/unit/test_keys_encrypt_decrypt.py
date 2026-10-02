@@ -10,13 +10,15 @@ story's spec, "Never" — identity generation is a Story 1.4+ concern).
 
 from __future__ import annotations
 
+import argparse
 import subprocess
 from pathlib import Path
 
 import pytest
 
+from pyforge.steward import keys as keys_module
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
-from pyforge.steward.keys import decrypt_file, encrypt_file
+from pyforge.steward.keys import KeysDuty, decrypt_file, encrypt_file
 
 AGE_MAGIC = b"age-encryption.org/v1"
 
@@ -162,11 +164,72 @@ def test_bare_keys_names_the_available_verbs_and_still_exits_ok(capsys):
     assert "decrypt" in out
 
 
+@pytest.fixture
+def no_age_on_path(tmp_path, monkeypatch):
+    """`PATH` points at an empty directory: neither `age` nor `age-keygen` resolves."""
+    empty = tmp_path / "empty-bin"
+    empty.mkdir()
+    monkeypatch.setenv("PATH", str(empty))
+
+
+def test_encrypt_without_age_on_path_is_a_duty_failure_not_a_crash(tmp_path, no_age_on_path, capsys):
+    """Story 83.1 (DW-1-3-5): a missing `age` binary is `FileNotFoundError` from the
+    spawn; `KeysDuty.run` reports it as a duty failure (exit 1) naming the binary,
+    rather than leaving it to `cli.main()`'s crash boundary (a traceback and 70)."""
+    plaintext = tmp_path / "plaintext.txt"
+    plaintext.write_bytes(b"synthetic payload")
+
+    rc = main(["keys", "encrypt", str(plaintext), "--recipient", "age1fixture", "--output", str(tmp_path / "out.age")])
+
+    err = capsys.readouterr().err
+    assert rc == EXIT_FAILED
+    assert "keys encrypt: age not found on PATH" in err
+    assert "Traceback" not in err
+
+
+def test_decrypt_without_age_on_path_is_a_duty_failure_not_a_crash(tmp_path, no_age_on_path, capsys):
+    ciphertext = tmp_path / "in.age"
+    ciphertext.write_bytes(AGE_MAGIC)
+
+    rc = main(
+        [
+            "keys",
+            "decrypt",
+            str(ciphertext),
+            "--identity",
+            str(tmp_path / "identity.txt"),
+            "--output",
+            str(tmp_path / "back.txt"),
+        ]
+    )
+
+    err = capsys.readouterr().err
+    assert rc == EXIT_FAILED
+    assert "keys decrypt: age not found on PATH" in err
+    assert "Traceback" not in err
+
+
+def test_a_file_not_found_for_any_other_name_propagates_unchanged(monkeypatch):
+    """The clause is for the `age` / `age-keygen` spawn only: a missing file anywhere
+    else in the `try` is not its to swallow."""
+
+    def _raise(*_args, **_kwargs):
+        raise FileNotFoundError(2, "No such file or directory", "not-an-age-binary")
+
+    monkeypatch.setattr(keys_module, "encrypt_file", _raise)
+    ns = argparse.Namespace(keys_verb="encrypt", file="in.txt", recipient="age1fixture", output="out.age")
+
+    with pytest.raises(FileNotFoundError) as excinfo:
+        KeysDuty().run(ns)
+
+    assert excinfo.value.filename == "not-an-age-binary"
+
+
 def test_cli_module_import_does_not_trigger_the_keys_bridge():
-    """Importing `cli` must not import `keys` — keys.py refuses to load
-    outside a local-recipes checkout (its `_http.py` bridge resolves at import
-    time), so a top-level `cli -> keys` import would take `steward --help`/
-    `--version` and every other duty down with it in an installed package.
+    """Importing `cli` must not import `keys` — only the `keys` duty needs
+    keys.py (and, at first use, its `_http.py` bridge, which refuses outside a
+    local-recipes checkout), so a top-level `cli -> keys` import would load it
+    for `steward --help`/`--version` and every other duty.
     """
     import sys as _sys
 
