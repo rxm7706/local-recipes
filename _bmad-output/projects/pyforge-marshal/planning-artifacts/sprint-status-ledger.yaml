@@ -363,7 +363,7 @@ development_status:
   80-1-a-dispatch-landing-waits-for-its-pr-s-checks-and-refuses-on-a-red-one: done
   81-1-a-drain-cycle-whose-wave-holds-every-story-reports-held-instead-of-crashing: done
   81-2-the-drain-plan-reads-a-prose-park-only-where-one-is-written-never-in-a-story-s-own-rules: done
-  81-3-the-campaign-supervisor-keeps-retry-environment-blocks-across-its-cycles: backlog
+  81-3-the-campaign-supervisor-keeps-retry-environment-blocks-across-its-cycles: done
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done
