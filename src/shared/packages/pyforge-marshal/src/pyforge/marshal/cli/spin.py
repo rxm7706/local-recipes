@@ -237,6 +237,25 @@ all, so this reads straight off ``status_snapshot.deferred``, never
 mirroring ``MRS-SPIN-015``'s identical "an already-viable resume is never
 aborted over a best-effort policy write" precedent.
 
+Story 82.6 (DW-3-12-1, DW-3-12-3) tightens both ``policy.toml`` rewrites
+this module makes -- the model-tiering write of ``run_spin`` and the retry-
+escalation floor-raise of ``run_resume``. (1) The launch intent records the
+``[limits]`` ceilings the run starts under (``max_dev_attempts``,
+``max_review_cycles``), and ``_plan_retry_escalation`` judges a deferred
+story's accumulated counters against the ceilings the resumed run's OWN
+launch recorded (``_launch_limits_for_resume``) -- a ``policy.toml``
+re-rendered since cannot cancel an escalation the story earned; only a launch
+that recorded none falls back to the on-disk file, as before. (2) Both
+commands DECIDE the rewrite first (``_resolve_model_tiering`` returns a
+``_TierPolicyWrite`` plan, ``_plan_retry_escalation`` a
+``_RetryEscalationPlan``), name it in their intent entry (``policy_change``;
+the resume intent's ``escalated``/``from_model``/``to_model``), and write
+``policy.toml`` (``_write_tier_policy`` / ``_write_retry_escalation``) only
+after that intent is durable -- so a failed run-directory creation or intent
+append leaves the file untouched, and no model change exists without a record
+of it. The resume outcome's ``escalation_applied`` says whether the write then
+took effect.
+
 Registers ``MRS-SPIN-001`` through ``MRS-SPIN-012`` (``core/findings.py``/
 ``core/verdict.py``) -- see those modules' own docstrings for the full
 per-code rationale. ``MRS-SPIN-006`` joined the original five in review,
@@ -276,7 +295,9 @@ import secrets
 import sys
 import tomllib
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -312,11 +333,12 @@ from ..core.journal import (
     fold,
     mint_run_id,
     prepare_for_write,
+    sidecar_texts_for_lines,
 )
 from ..core.model import Finding, Severity, build_envelope
 from ..core.spec_difficulty import DifficultyParseError, parse_declared_difficulty
 from ..core.supervise import EscalationStatus, evaluate_escalation, evaluate_retry_escalation
-from ..core.tier_routing import resolve_tier_launch
+from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import DeferredStory, HarnessPort
@@ -644,14 +666,75 @@ def _compose_spin_policy(
     return effective, list(findings)
 
 
+@dataclass(frozen=True)
+class _TierPolicyWrite:
+    """Story 82.6 (DW-3-12-3): the model-tiering ``policy.toml`` write
+    ``_resolve_model_tiering`` DECIDED but did not perform -- everything
+    ``_write_tier_policy`` needs to apply it later (``write_policy_toml``'s
+    own inputs: the effective policy, the governing difficulty, the adapter
+    name and the tier resolution), plus what ``run_spin``'s launch intent
+    records ahead of it: ``limits`` (the rendered ``[limits]`` ceilings, the
+    ones this launch will run under) and ``change`` (the ``policy_change``
+    record -- ``from_model``/``to_model`` are the DEV stage's effective model
+    before and after the render, ``governing_difficulty``, and the selected
+    ``stories`` the render was resolved for). Frozen: it is evidence of a
+    decision, never state to patch."""
+
+    effective_policy: policy.EffectivePolicy
+    difficulty: str | None
+    adapter: str | None
+    tier_resolution: TierLaunchResolution
+    limits: Mapping[str, int] | None
+    change: Mapping[str, object]
+
+
+def _write_tier_policy(plan: _TierPolicyWrite, home: Path, findings: list[Finding]) -> None:
+    """Apply ``plan`` to the loop home's own ``.bmad-loop/policy.toml`` via
+    ``write_policy_toml`` -- the file ``bmad-loop run`` (spawned by this
+    function's caller, right after this call returns) actually reads.
+    Without this write the resolution would be journaled/reported only,
+    never applied to the launched process. A write failure degrades the SAME
+    way every other non-critical I/O step in a launch does (MRS-SPIN-007's
+    supervisor-spawn precedent): the harness launch is already viable, so
+    losing the persisted tier override registers ``MRS-SPIN-015`` (WARN) and
+    the launch proceeds on whatever baseline policy is already on disk, never
+    aborts an otherwise-viable launch.
+
+    Called by ``run_spin`` only AFTER the launch intent -- which names this
+    very change (``policy_change``) -- is durable, never from
+    ``_resolve_model_tiering`` (Story 82.6)."""
+    try:
+        write_policy_toml(
+            plan.effective_policy,
+            home,
+            difficulty=plan.difficulty,
+            adapter=plan.adapter,
+            tier_resolution=plan.tier_resolution,
+        )
+    except HarnessPolicyWriteError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-015",
+                severity=Severity.WARN,
+                message=(
+                    f"could not persist the resolved model-tier policy to "
+                    f"{home}: {exc} -- this run's model resolution is "
+                    "reported but was not applied; the harness will use "
+                    "whatever policy.toml was already on disk"
+                ),
+            )
+        )
+
+
 def _resolve_model_tiering(
+    fs: FsPort,
     harness: HarnessPort,
     home: Path,
     slug: str,
     preview: Sequence[StoryKey],
     findings: list[Finding],
     data: dict[str, object],
-) -> bool:
+) -> tuple[bool, _TierPolicyWrite | None]:
     """Story 6.1's own FR-48/FR-51/AD-19 model-tier resolution: the
     governing difficulty among ``preview``'s in-scope stories
     (``_resolve_governing_difficulty``), the resolved per-stage models for
@@ -664,14 +747,18 @@ def _resolve_model_tiering(
     resolution -- never a second mechanism). Echoes ``adapter_name``/
     ``resolved_models``/``model_tier_batching`` (when applicable) into
     ``data`` -- this function's caller copies the same fields into the
-    outcome journal entry. Once the adapter itself resolves, ALSO persists
-    the same rendered, difficulty-tiered policy to the loop home's own
-    ``.bmad-loop/policy.toml`` via ``write_policy_toml`` -- the file
-    ``bmad-loop run`` (spawned by this function's caller, right after this
-    call returns) actually reads. Without this write the resolution would be
-    journaled/reported only, never applied to the launched process -- a
-    write failure degrades to ``MRS-SPIN-015`` (WARN) rather than aborting
-    an already-viable launch.
+    outcome journal entry. Once the adapter itself resolves, ALSO decides to
+    persist the same rendered, difficulty-tiered policy to the loop home's
+    own ``.bmad-loop/policy.toml`` -- but never writes it (Story 82.6,
+    DW-3-12-3): it returns the decision as a ``_TierPolicyWrite`` plan, which
+    ``run_spin`` journals in its launch intent and only THEN applies via
+    ``_write_tier_policy`` (a write failure degrades to ``MRS-SPIN-015``
+    (WARN) rather than aborting an already-viable launch). This function
+    reads the on-disk file (through ``fs``) only to name the model the
+    change starts from.
+
+    Returns ``(refuse, plan)``: ``refuse`` is the ``MRS-SPIN-014`` verdict
+    below; ``plan`` is ``None`` for every case that would not write.
 
     An empty ``preview`` (nothing selected for this launch) is a no-op --
     there is nothing to resolve tiering for.
@@ -706,7 +793,7 @@ def _resolve_model_tiering(
     all) returns ``False`` -- resolution simply could not complete, and the
     launch proceeds without it."""
     if not preview:
-        return False
+        return False, None
     governing, batching_report = _resolve_governing_difficulty(preview, home, slug, findings)
     if batching_report is not None:
         data["model_tier_batching"] = batching_report
@@ -732,13 +819,13 @@ def _resolve_model_tiering(
         # unrelated to difficulty/adapter resolution, already surfaced (or
         # about to be) elsewhere; this function simply cannot resolve the
         # configured adapter from a render that failed.
-        return False
+        return False, None
     parsed_policy = tomllib.loads(rendered)
     adapter_name = tier_resolution.adapter_name
     if not isinstance(adapter_name, str) or not adapter_name:
         adapter_name = parsed_policy.get("adapter", {}).get("name")
     if not isinstance(adapter_name, str) or not adapter_name:
-        return False
+        return False, None
     data["adapter_name"] = adapter_name
 
     try:
@@ -751,43 +838,34 @@ def _resolve_model_tiering(
                 message=f"cannot resolve configured adapter {adapter_name!r}: {exc}",
             )
         )
-        return True
+        return True, None
 
     # The resolved, difficulty-tiered policy must reach the loop home's own
     # `.bmad-loop/policy.toml` -- the ONE file `bmad-loop run` (spawned
     # below by `harness.spin`) actually reads. Everything above this point
     # only rendered the policy in-memory to recover `adapter_name`; without
-    # this write, the outcome journal's own `resolved_models` field would
+    # a write the outcome journal's own `resolved_models` field would
     # describe a tiering the launched process never applies (the harness
     # would keep reading whatever `difficulty=None` baseline `marshal config
     # --write-harness-policy` last persisted, silently diverging from what
-    # this run reports). A write failure here degrades the SAME way every
-    # other non-critical I/O step in this launch already does (MRS-SPIN-007's
-    # supervisor-spawn precedent): the harness launch is already viable, so
-    # losing the persisted tier override registers MRS-SPIN-015 (WARN) and
-    # the launch proceeds on whatever baseline policy is already on disk,
-    # never aborts an otherwise-viable launch.
-    try:
-        write_policy_toml(
-            effective_policy,
-            home,
-            difficulty=governing,
-            adapter=tier_resolution.adapter_name,
-            tier_resolution=tier_resolution,
-        )
-    except HarnessPolicyWriteError as exc:
-        findings.append(
-            Finding(
-                code="MRS-SPIN-015",
-                severity=Severity.WARN,
-                message=(
-                    f"could not persist the resolved model-tier policy to "
-                    f"{home}: {exc} -- this run's model resolution is "
-                    "reported but was not applied; the harness will use "
-                    "whatever policy.toml was already on disk"
-                ),
-            )
-        )
+    # this run reports). The write itself is NOT made here (Story 82.6,
+    # DW-3-12-3): the plan below rides back to `run_spin`, whose launch
+    # intent names the change before `_write_tier_policy` applies it, so a
+    # failed run-directory creation or intent append leaves the file as it
+    # was.
+    plan = _TierPolicyWrite(
+        effective_policy=effective_policy,
+        difficulty=governing,
+        adapter=tier_resolution.adapter_name,
+        tier_resolution=tier_resolution,
+        limits=_ceilings_record(_ceilings_of(parsed_policy.get("limits"))),
+        change={
+            "from_model": _stage_model(_read_policy_document(fs, home), "dev"),
+            "to_model": _stage_model(parsed_policy, "dev"),
+            "governing_difficulty": governing,
+            "stories": [render_feed_key(key) for key in preview],
+        },
+    )
 
     adapter_for_wire = tier_resolution.adapter_name
     if not isinstance(adapter_for_wire, str) or not adapter_for_wire:
@@ -802,7 +880,7 @@ def _resolve_model_tiering(
         )
         data["wire"] = wire.journal_payload()
 
-    return False
+    return False, plan
 
 
 def _tiering_journal_fields(data: Mapping[str, object]) -> dict[str, object]:
@@ -1767,7 +1845,12 @@ def run_spin(
     # an unresolvable configured adapter (MRS-SPIN-014) refuses the launch
     # here, with NO journal entries at all, the same precondition-gate
     # precedent every check above it already follows.
-    if _resolve_model_tiering(harness, home, slug, preview, findings, data):
+    #
+    # Story 82.6 (DW-3-12-3): this call DECIDES the `policy.toml` write and
+    # returns it as `tier_plan`; it is applied below, after the launch intent
+    # -- which names the change -- is durable and before `harness.spin`.
+    refuse_launch, tier_plan = _resolve_model_tiering(fs, harness, home, slug, preview, findings, data)
+    if refuse_launch:
         return _emit(args, data, findings)
 
     # --- Story 34.1: refuse a second spin against a live loop home ----------
@@ -1815,19 +1898,35 @@ def run_spin(
         return _emit(args, data, findings)
 
     # --- write-before-act: intent BEFORE the spawn (AD-6) --------------------
+    # Story 82.6: the intent also records the `[limits]` ceilings this run
+    # starts under (DW-3-12-1 -- `marshal factory resume` judges a deferred
+    # story's counters against THESE, not against a `policy.toml` re-rendered
+    # since) and, when the tiering decision above would rewrite `policy.toml`,
+    # that pending change (DW-3-12-3). The ceilings are the plan's rendered
+    # ones, else the file already on disk's, else absent.
+    launch_limits = tier_plan.limits if tier_plan is not None else None
+    if launch_limits is None:
+        on_disk_policy = _read_policy_document(fs, home)
+        if on_disk_policy is not None:
+            launch_limits = _ceilings_record(_ceilings_of(on_disk_policy.get("limits")))
     intent_id = JournalEntryId(writer_id, 0)
+    intent_payload: dict[str, object] = {
+        "epic": args.epic,
+        "story": args.story,
+        "max_count": args.max_count,
+        "preview": list(data["preview"]),
+    }
+    if launch_limits is not None:
+        intent_payload["limits"] = dict(launch_limits)
+    if tier_plan is not None:
+        intent_payload["policy_change"] = dict(tier_plan.change)
     intent_entry = build_entry(
         id=intent_id,
         ts=_format_entry_ts(mint_moment),
         run_id=run_id,
         kind=_LAUNCH_KIND,
         phase=Phase.INTENT,
-        payload={
-            "epic": args.epic,
-            "story": args.story,
-            "max_count": args.max_count,
-            "preview": list(data["preview"]),
-        },
+        payload=intent_payload,
     )
     try:
         _append_entry(fs, run_dir, intent_entry, fsync=True)
@@ -1840,6 +1939,14 @@ def run_spin(
             )
         )
         return _emit(args, data, findings)
+
+    # --- apply the tiering decision, now that its intent is durable ---------
+    # Story 82.6 (DW-3-12-3): the one `policy.toml` write of a launch lands
+    # only after the intent above -- naming it as `policy_change` -- reached
+    # disk, so no model change exists without a record of why. A failed
+    # write is MRS-SPIN-015 (WARN), never a refusal: the launch is viable.
+    if tier_plan is not None:
+        _write_tier_policy(tier_plan, home, findings)
 
     # --- the detached spawn itself --------------------------------------------
     # The log path is reported (review finding, Blind Hunter): it was
@@ -2035,6 +2142,148 @@ def _render_story_key_best_effort(raw: str | None) -> str | None:
 _POLICY_TOML_RELATIVE_PATH = Path(".bmad-loop") / "policy.toml"
 
 
+def _read_policy_document(fs: FsPort, home: Path) -> tomlkit.TOMLDocument | None:
+    """The loop home's ALREADY-ON-DISK ``.bmad-loop/policy.toml`` parsed with
+    ``tomlkit`` (comment-preserving, so a caller that patches one key can hand
+    the same document back to ``write_policy_document``), read through the
+    injected ``FsPort``. ``None`` -- never an exception -- for an unreadable,
+    absent or malformed file: every caller treats "no usable file" as "nothing
+    to compare against / nothing to patch"."""
+    try:
+        text = fs.read_text(home / _POLICY_TOML_RELATIVE_PATH)
+    except FsError:
+        return None
+    if text is None:
+        return None
+    try:
+        return tomlkit.parse(text)
+    except tomlkit.exceptions.ParseError:
+        return None
+
+
+def _valid_ceilings(max_dev_attempts: object, max_review_cycles: object) -> tuple[int, int] | None:
+    """``(max_dev_attempts, max_review_cycles)`` when BOTH are a plain ``int``
+    of at least ``1``, else ``None`` -- the one guard both ceiling sources
+    share (``_ceilings_of``: the on-disk ``[limits]`` table and the ceilings a
+    launch journaled).
+
+    ``bool`` is an ``int`` subclass in Python, and ``render_policy_toml``
+    itself refuses to render either key below 1 (its own load-time floor
+    mirrors bmad_loop's own loader) -- but that guard lives in the RENDER
+    path, never in a READ-BACK of an on-disk file that could have been
+    hand-edited since, nor of a journal line. Rejecting both a non-``int`` and
+    a non-positive value here is the same "a malformed source degrades to no
+    escalation, never a crash or a spurious fire" discipline Story 3.12's
+    review settled on (an unguarded ``max_dev_attempts = 0`` would make
+    ``story.attempt >= 0`` trivially true for every deferred story,
+    escalating on every resume regardless of real struggle; an unguarded
+    ``= true`` would silently become ceiling ``1``)."""
+    if (
+        not isinstance(max_dev_attempts, int)
+        or isinstance(max_dev_attempts, bool)
+        or max_dev_attempts < 1
+        or not isinstance(max_review_cycles, int)
+        or isinstance(max_review_cycles, bool)
+        or max_review_cycles < 1
+    ):
+        return None
+    return int(max_dev_attempts), int(max_review_cycles)
+
+
+def _ceilings_of(limits: object) -> tuple[int, int] | None:
+    """``_valid_ceilings`` over a ``[limits]``-shaped table -- a rendered or
+    on-disk policy's own, or the ``limits`` mapping a launch intent carries
+    (the same two key names). ``None`` for anything that is not a mapping."""
+    if not isinstance(limits, Mapping):
+        return None
+    return _valid_ceilings(limits.get("max_dev_attempts"), limits.get("max_review_cycles"))
+
+
+def _ceilings_record(ceilings: tuple[int, int] | None) -> dict[str, int] | None:
+    """The journal spelling of a ceiling pair -- the launch intent's
+    ``limits`` field (Story 82.6) -- or ``None`` when there is nothing to
+    record."""
+    if ceilings is None:
+        return None
+    return {"max_dev_attempts": ceilings[0], "max_review_cycles": ceilings[1]}
+
+
+def _stage_model(document: Mapping[str, object] | None, stage: str) -> str | None:
+    """The model ``stage`` runs under per a rendered or on-disk policy: its
+    own ``[adapter.<stage>].model`` override when set, else the
+    ``[adapter].model`` default every stage without one inherits. ``None``
+    for a missing document or a model that is not a non-empty string."""
+    if document is None:
+        return None
+    adapter_table = document.get("adapter")
+    if not isinstance(adapter_table, Mapping):
+        return None
+    stage_table = adapter_table.get(stage)
+    if isinstance(stage_table, Mapping):
+        override = stage_table.get("model")
+        if isinstance(override, str) and override:
+            return override
+    default = adapter_table.get("model")
+    return default if isinstance(default, str) and default else None
+
+
+def _read_text_or_none(fs: FsPort, run_dir: Path, relative: str) -> str | None:
+    """``run_dir / relative`` read through ``fs``, ``None`` for an absent or
+    unreadable file -- ``_launch_limits_for_resume``'s one read primitive, for
+    a run's journal and for the sidecar blobs it references."""
+    try:
+        return fs.read_text(run_dir / relative)
+    except FsError:
+        return None
+
+
+def _launch_limits_for_resume(fs: FsPort, home: Path, slug: str, harness_run_id: str) -> tuple[int, int] | None:
+    """The ``[limits]`` ceilings the run being resumed was LAUNCHED under
+    (Story 82.6, DW-3-12-1), as its own launch intent journaled them -- the
+    counters a deferred story accumulated (``DeferredStory.attempt``/
+    ``.review_cycle``) are judged against THESE, never against whatever
+    ``policy.toml`` says now (a later ``marshal config --write-harness-
+    policy`` or ``factory spin`` in the same home may have re-rendered it).
+
+    Scans every Marshal run directory for ``slug`` (newest first -- the run
+    this resume chains off may itself be a ``run-resume``, whose journal
+    records no launch) for the ``run-launch`` OUTCOME whose ``harness_run_id``
+    is ``harness_run_id``, and returns that run's launch-INTENT ``limits``.
+    ``None`` -- the caller then falls back to the on-disk file -- when no such
+    run is found, its journal cannot be read, or the launch recorded no valid
+    ceilings (a launch from before this story, or a malformed record).
+
+    A plain ``Path.glob`` for the run directories, journals read through
+    ``fs`` with sidecar blobs resolved (an intent past AD-30's 4 KiB
+    threshold carries only a ``sidecar_ref``): mirrors ``_latest_run_dir`` and
+    ``_resolve_harness_run_id_for_resume`` just above."""
+    runs_dir = _tier3_path(home, slug) / "runs"
+    try:
+        run_dirs = sorted((path for path in runs_dir.glob(f"{slug}-*") if path.is_dir()), reverse=True)
+    except OSError:
+        return None
+
+    for run_dir in run_dirs:
+        text = _read_text_or_none(fs, run_dir, _JOURNAL_FILENAME)
+        if text is None:
+            continue
+        lines = text.split("\n")
+        folded = fold(
+            lines,
+            sidecars=sidecar_texts_for_lines(lines, read_sidecar=partial(_read_text_or_none, fs, run_dir)),
+        )
+        launches = [entry for entry in folded.by_kind(_LAUNCH_KIND) if entry.run_id == run_dir.name]
+        if not any(
+            entry.phase is Phase.OUTCOME and entry.payload.get("harness_run_id") == harness_run_id for entry in launches
+        ):
+            continue
+        for entry in launches:
+            if entry.phase is Phase.INTENT:
+                return _ceilings_of(entry.payload.get("limits"))
+        return None
+    return None
+
+
 def _crossing_deferred_story_keys(
     deferred: Sequence[DeferredStory], max_dev_attempts: int, max_review_cycles: int
 ) -> list[str]:
@@ -2055,33 +2304,51 @@ def _crossing_deferred_story_keys(
     ]
 
 
-def _apply_retry_escalation(
+@dataclass(frozen=True)
+class _RetryEscalationPlan:
+    """Story 82.6 (DW-3-12-3): the retry-escalation floor-raise
+    ``_plan_retry_escalation`` DECIDED but did not write -- ``document`` is the
+    on-disk ``policy.toml`` already patched in memory (``[adapter].model``
+    set to ``to_model``), what ``_write_retry_escalation`` hands to
+    ``write_policy_document`` once ``run_resume``'s intent naming this very
+    change is durable. ``stories`` are the crossing deferred stories in
+    Marshal's dot form (the AC's own "naming the trigger")."""
+
+    document: tomlkit.TOMLDocument
+    policy_path: Path
+    from_model: str
+    to_model: str
+    stories: tuple[str, ...]
+
+
+def _plan_retry_escalation(
     fs: FsPort,
     home: Path,
+    slug: str,
+    harness_run_id: str,
     deferred: Sequence[DeferredStory],
-    findings: list[Finding],
-) -> tuple[bool, list[str], str | None, str | None]:
-    """Story 3.12's own CAP-2 mechanism (AD-26): reads the loop home's
-    ALREADY-ON-DISK ``.bmad-loop/policy.toml`` (never a fresh
+) -> _RetryEscalationPlan | None:
+    """Story 3.12's own CAP-2 mechanism (AD-26), DECISION half (Story 82.6
+    split the write off as ``_write_retry_escalation``): reads the loop
+    home's ALREADY-ON-DISK ``.bmad-loop/policy.toml`` (never a fresh
     ``policy.compose()`` -- see ``run_resume``'s own module-docstring
     paragraph for why reading is the faithful source here), and if any
     ``deferred`` story has reached its own run's configured ceiling
-    (``core.supervise.evaluate_retry_escalation``, read off that SAME
-    on-disk file's ``[limits]`` table) AND the on-disk ``[adapter].model``
-    does not already equal ``[adapter.review].model``, floor-raises the
-    former to the latter and persists it via
-    ``adapters.harness_bmadloop.write_policy_document``.
+    (``core.supervise.evaluate_retry_escalation``) AND the on-disk
+    ``[adapter].model`` does not already equal ``[adapter.review].model``,
+    returns the floor-raise as a plan -- ``[adapter].model`` set to the
+    latter in memory only. Nothing is written here.
 
-    Returns ``(escalated, escalated_stories, from_model, to_model)`` --
-    ``escalated_stories``/``from_model``/``to_model`` are only ever non-empty/
-    non-``None`` when ``escalated`` is ``True``, mirroring the journal
-    payload's own "populate the detail fields only when true" shape.
-    ``escalated`` is ``False`` (never raises, never registers a finding) for
-    every degrading case that is NOT a write failure: an empty ``deferred``
-    (nothing to evaluate -- checked first, before any I/O, mirroring
-    ``_resolve_model_tiering``'s own "an empty preview is a no-op" guard),
-    an unreadable or malformed on-disk ``policy.toml``, a ``[limits]`` table
-    missing either ceiling key as a plain ``int``, no story actually
+    The ceilings are the ones the resumed run was LAUNCHED under
+    (``_launch_limits_for_resume``, Story 82.6 / DW-3-12-1); only a run whose
+    launch recorded none falls back to the on-disk file's own ``[limits]``
+    table, as before.
+
+    Returns ``None`` -- never raises, never registers a finding -- for every
+    degrading case: an empty ``deferred`` (nothing to evaluate -- checked
+    first, before any I/O, mirroring ``_resolve_model_tiering``'s own "an
+    empty preview is a no-op" guard), an unreadable or malformed on-disk
+    ``policy.toml``, no valid ceilings from either source, no story actually
     crossing its ceiling, an ``[adapter].model`` that cannot be read as a
     non-empty string, or the floor-raise already being applied
     (``from_model == to_model`` -- the mechanism's own "bounded, never
@@ -2089,66 +2356,30 @@ def _apply_retry_escalation(
     falls back to ``ADAPTER_REVIEW_MODEL_STOCK_DEFAULT`` (``_POLICY_TEMPLATE``'s
     own baseline) -- never expected on a real rendered file (see that
     constant's own docstring), but this read-back must not crash on one that
-    somehow lacks it.
-
-    A genuine write failure (``HarnessPolicyWriteError``) is the ONE case
-    that registers a finding here -- ``MRS-SPIN-016`` (``WARN``), naming the
-    attempted ``from_model -> to_model`` transition, mirroring
-    ``MRS-SPIN-015``'s identical "an already-viable resume/launch is never
-    aborted over a best-effort policy write" precedent -- and still returns
-    ``escalated=False``: the write did not actually take effect, so the
-    resume proceeds on whatever model was already on disk, exactly as the
-    spec's own I/O matrix names."""
+    somehow lacks it."""
     if not deferred:
-        return False, [], None, None
+        return None
 
-    policy_path = home / _POLICY_TOML_RELATIVE_PATH
-    try:
-        text = fs.read_text(policy_path)
-    except FsError:
-        return False, [], None, None
-    if text is None:
-        return False, [], None, None
-    try:
-        doc = tomlkit.parse(text)
-    except tomlkit.exceptions.ParseError:
-        return False, [], None, None
+    doc = _read_policy_document(fs, home)
+    if doc is None:
+        return None
 
-    limits = doc.get("limits")
-    if not isinstance(limits, Mapping):
-        return False, [], None, None
-    max_dev_attempts = limits.get("max_dev_attempts")
-    max_review_cycles = limits.get("max_review_cycles")
-    # `bool` is an `int` subclass in Python, and `render_policy_toml` itself
-    # refuses to render either key below 1 (its own load-time floor mirrors
-    # bmad_loop's own loader) -- but that guard lives in the RENDER path,
-    # never in this READ-BACK of an on-disk file that could have been
-    # hand-edited since. Reject both a non-`int` and a non-positive value
-    # here too, the same "a malformed file degrades to no escalation, never
-    # a crash or a spurious fire" discipline every other guard in this
-    # function already uses (review finding: an unguarded `max_dev_attempts
-    # = 0` would make `story.attempt >= 0` trivially true for every
-    # deferred story, escalating on every resume regardless of real
-    # struggle; an unguarded `= true` would silently become ceiling `1`).
-    if (
-        not isinstance(max_dev_attempts, int)
-        or isinstance(max_dev_attempts, bool)
-        or max_dev_attempts < 1
-        or not isinstance(max_review_cycles, int)
-        or isinstance(max_review_cycles, bool)
-        or max_review_cycles < 1
-    ):
-        return False, [], None, None
+    ceilings = _launch_limits_for_resume(fs, home, slug, harness_run_id)
+    if ceilings is None:
+        ceilings = _ceilings_of(doc.get("limits"))
+    if ceilings is None:
+        return None
+    max_dev_attempts, max_review_cycles = ceilings
 
     if not evaluate_retry_escalation(deferred, max_dev_attempts, max_review_cycles):
-        return False, [], None, None
+        return None
 
     adapter_table = doc.get("adapter")
     if not isinstance(adapter_table, Mapping):
-        return False, [], None, None
+        return None
     from_model = adapter_table.get("model")
     if not isinstance(from_model, str) or not from_model:
-        return False, [], None, None
+        return None
     review_table = adapter_table.get("review")
     to_model = review_table.get("model") if isinstance(review_table, Mapping) else None
     if not isinstance(to_model, str) or not to_model:
@@ -2158,11 +2389,36 @@ def _apply_retry_escalation(
         # Already escalated (or the two coincidentally already agree) --
         # floor-raise-only, idempotent: no write, no re-fire (the spec's own
         # "bounded" AC).
-        return False, [], None, None
+        return None
 
     doc["adapter"]["model"] = to_model
+
+    crossing = _crossing_deferred_story_keys(deferred, max_dev_attempts, max_review_cycles)
+    return _RetryEscalationPlan(
+        document=doc,
+        policy_path=home / _POLICY_TOML_RELATIVE_PATH,
+        from_model=from_model,
+        to_model=to_model,
+        stories=tuple(_render_story_key_best_effort(key) or key for key in crossing),
+    )
+
+
+def _write_retry_escalation(plan: _RetryEscalationPlan, home: Path, findings: list[Finding]) -> bool:
+    """Story 3.12's own CAP-2 mechanism, WRITE half: persists ``plan``'s
+    patched document via ``adapters.harness_bmadloop.write_policy_document``
+    -- called by ``run_resume`` only AFTER its ``run-resume`` intent, which
+    names this very floor-raise, is durable (Story 82.6, DW-3-12-3).
+
+    ``True`` when the write took effect. A genuine write failure
+    (``HarnessPolicyWriteError``) is the ONE case that registers a finding
+    here -- ``MRS-SPIN-016`` (``WARN``), naming the attempted
+    ``from_model -> to_model`` transition, mirroring ``MRS-SPIN-015``'s
+    identical "an already-viable resume/launch is never aborted over a
+    best-effort policy write" precedent -- and returns ``False``: the write
+    did not actually take effect, so the resume proceeds on whatever model
+    was already on disk, exactly as the spec's own I/O matrix names."""
     try:
-        write_policy_document(doc, home)
+        write_policy_document(plan.document, home)
     except HarnessPolicyWriteError as exc:
         findings.append(
             Finding(
@@ -2170,16 +2426,13 @@ def _apply_retry_escalation(
                 severity=Severity.WARN,
                 message=(
                     f"could not persist the retry-escalation floor-raise "
-                    f"({from_model!r} -> {to_model!r}) to {policy_path}: "
+                    f"({plan.from_model!r} -> {plan.to_model!r}) to {plan.policy_path}: "
                     f"{exc} -- resuming un-escalated"
                 ),
             )
         )
-        return False, [], None, None
-
-    crossing = _crossing_deferred_story_keys(deferred, max_dev_attempts, max_review_cycles)
-    escalated_stories = [_render_story_key_best_effort(key) or key for key in crossing]
-    return True, escalated_stories, from_model, to_model
+        return False
+    return True
 
 
 def run_resume(
@@ -2409,16 +2662,17 @@ def run_resume(
     # task_phase. status_snapshot is None exactly when MRS-SPIN-012 already
     # fired above -- escalation is skipped too, the same "proceed without
     # having confirmed anything" degrade that finding already describes.
-    escalated, escalated_stories, from_model, to_model = (
-        _apply_retry_escalation(fs, home, status_snapshot.deferred, findings)
+    #
+    # Story 82.6 (DW-3-12-1/3): this DECIDES the floor-raise against the
+    # ceilings the run was launched under and writes nothing; the write
+    # follows the resume intent below (which names it), and `escalated` in
+    # the report turns true only once that write took effect.
+    escalation_plan = (
+        _plan_retry_escalation(fs, home, slug, harness_run_id, status_snapshot.deferred)
         if status_snapshot is not None
-        else (False, [], None, None)
+        else None
     )
-    data["escalated"] = escalated
-    if escalated:
-        data["escalated_stories"] = escalated_stories
-        data["from_model"] = from_model
-        data["to_model"] = to_model
+    data["escalated"] = False
 
     # --- mint a NEW Marshal run id, journal "run-resume" intent (AD-25/AD-45) ---
     writer_id = _writer_id()
@@ -2455,10 +2709,13 @@ def run_resume(
             "spec_file": spec_file,
             "resolution_reference": resolution_reference,
             "resolver": resolver,
-            "escalated": escalated,
-            "escalated_stories": escalated_stories if escalated else None,
-            "from_model": from_model if escalated else None,
-            "to_model": to_model if escalated else None,
+            # The intent is the write-ahead record (AD-6): it names the
+            # floor-raise ABOUT to be written; the outcome's
+            # `escalation_applied` says whether the write took effect.
+            "escalated": escalation_plan is not None,
+            "escalated_stories": list(escalation_plan.stories) if escalation_plan is not None else None,
+            "from_model": escalation_plan.from_model if escalation_plan is not None else None,
+            "to_model": escalation_plan.to_model if escalation_plan is not None else None,
         },
     )
     try:
@@ -2472,6 +2729,21 @@ def run_resume(
             )
         )
         return _emit(args, data, findings)
+
+    # --- apply the floor-raise, now that its intent is durable --------------
+    # Story 82.6 (DW-3-12-3): the `policy.toml` rewrite lands only after the
+    # intent above named it. A failed write is MRS-SPIN-016 (WARN) and the
+    # resume proceeds un-escalated: `escalation_applied` is false in both
+    # outcome payloads and the report says `escalated: False`.
+    escalation_outcome: dict[str, object] = {}
+    if escalation_plan is not None:
+        escalation_applied = _write_retry_escalation(escalation_plan, home, findings)
+        escalation_outcome["escalation_applied"] = escalation_applied
+        if escalation_applied:
+            data["escalated"] = True
+            data["escalated_stories"] = list(escalation_plan.stories)
+            data["from_model"] = escalation_plan.from_model
+            data["to_model"] = escalation_plan.to_model
 
     # --- the detached resume itself -------------------------------------------
     log_path = run_dir / _LOG_FILENAME
@@ -2496,7 +2768,7 @@ def run_resume(
             kind=_RESUME_KIND,
             phase=Phase.OUTCOME,
             intent_id=intent_id,
-            payload={"pid": None, "harness_run_id": None, "error": str(exc)},
+            payload={"pid": None, "harness_run_id": None, "error": str(exc), **escalation_outcome},
         )
         try:
             _append_entry(fs, run_dir, outcome_entry, fsync=False)
@@ -2513,7 +2785,7 @@ def run_resume(
         kind=_RESUME_KIND,
         phase=Phase.OUTCOME,
         intent_id=intent_id,
-        payload={"pid": pid, "harness_run_id": harness_run_id},
+        payload={"pid": pid, "harness_run_id": harness_run_id, **escalation_outcome},
     )
     try:
         _append_entry(fs, run_dir, outcome_entry, fsync=False)
