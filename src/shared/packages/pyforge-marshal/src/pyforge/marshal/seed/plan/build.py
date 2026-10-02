@@ -505,6 +505,28 @@ def _repo_is_dirty(process: PosixProcess, repo_root: Path) -> bool:
     return bool(result.stdout)
 
 
+def _repo_identity(process: PosixProcess, repo_root: Path) -> tuple[str, str | None]:
+    """`(repo_root, git_common_dir)` as strings: which repository this is.
+
+    `repo_root` is the resolved root. `git_common_dir` is `git rev-parse
+    --git-common-dir` resolved against that root -- the directory every
+    worktree of one clone shares, so two worktrees of a clone agree on it and
+    a different clone does not -- or `None` on a non-zero exit (not a git repo,
+    the same degradation `_git_head` makes). Both are resolved before they
+    are compared, because `git` answers `.git`, `../.git` or an absolute path
+    depending on where it is run from.
+
+    Without this a non-git target is indistinguishable from any other: both
+    git fields degrade to the same `None`/`True` in every directory, so a plan
+    built for one directory looked fresh against another (DW-10-3-7)."""
+    resolved_root = repo_root.resolve()
+    result = process.run(["git", "rev-parse", "--git-common-dir"], cwd=repo_root, timeout_s=_GIT_TIMEOUT_S)
+    common_dir = result.stdout.strip() if result.returncode == 0 else ""
+    if not common_dir:
+        return str(resolved_root), None
+    return str(resolved_root), str((resolved_root / common_dir).resolve())
+
+
 def build_plan(manifest: Manifest, inventory: Inventory, *, opted_out: frozenset[str] = frozenset()) -> Plan:
     """Map each qualifying `Classification` in `inventory` to one `Action`,
     plus a `RepoFingerprint` of `inventory.repo_root` (`inventory.
@@ -669,10 +691,13 @@ def build_plan(manifest: Manifest, inventory: Inventory, *, opted_out: frozenset
         )
     )
     process = PosixProcess()
+    identity_root, identity_common_dir = _repo_identity(process, inventory.repo_root)
     repo_fingerprint = RepoFingerprint(
         git_head=_git_head(process, inventory.repo_root),
         dirty=_repo_is_dirty(process, inventory.repo_root),
         artifact_hashes=artifact_hashes,
+        repo_root=identity_root,
+        git_common_dir=identity_common_dir,
     )
     return Plan(actions=actions, repo_fingerprint=repo_fingerprint)
 
@@ -682,10 +707,16 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
     was built against -- one human-readable line per divergence, `()` when
     the plan is still a true description of the repo (AD-57).
 
-    Covers all three `RepoFingerprint` fields, in that order: `git_head`
-    (against a fresh `_git_head`), `dirty` (against a fresh
-    `_repo_is_dirty`), and every `artifact_hashes` pair (against a fresh
-    `hash_content` of that artifact's target). The correspondence between
+    Covers every `RepoFingerprint` field, in this order: the repository's
+    identity first -- `repo_root` and `git_common_dir` (against a fresh
+    `_repo_identity`; Story 82.12) -- so a plan built for one repository is
+    refused for naming another before anything about its contents is
+    weighed; then `git_head` (against a fresh `_git_head`), `dirty` (against
+    a fresh `_repo_is_dirty`), and every `artifact_hashes` pair (against a
+    fresh `hash_content` of that artifact's target). The identity check is
+    what separates two empty non-git directories, which agree on every other
+    field (both degrade to `git_head=None, dirty=True` and an artifact set
+    that hashes alike). The correspondence between
     `actions` and `artifact_hashes` is checked in BOTH directions, and a
     mismatch either way is itself reported as a divergence: `build_plan`
     emits exactly one hash per action, so an orphan pair -- or an action
@@ -739,6 +770,17 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
     fingerprint = plan.repo_fingerprint
     process = PosixProcess()
     drift: list[str] = []
+
+    current_root, current_common_dir = _repo_identity(process, repo_root)
+    if current_root != fingerprint.repo_root:
+        drift.append(
+            f"repo_root: the plan was built for {fingerprint.repo_root!r}, the target is {current_root!r}"
+        )
+    if current_common_dir != fingerprint.git_common_dir:
+        drift.append(
+            f"git_common_dir: the plan was built against git directory {fingerprint.git_common_dir!r},"
+            f" the target's is {current_common_dir!r}"
+        )
 
     current_head = _git_head(process, repo_root)
     if current_head != fingerprint.git_head:
