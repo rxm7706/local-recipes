@@ -2,7 +2,8 @@
 title: "40.1: Doctor executes no code from the judged tree, and an unresolved head or a failed gather reads as unevaluable"
 type: 'fix'
 created: '2026-10-02'
-status: 'draft'
+status: 'in-progress'
+baseline_revision: '885f2a1de1a0963b4abb788c15d03be134001dd5'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -13,6 +14,7 @@ context:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/score.py
+warnings: [multiple-goals, oversized]
 deferred: []
 declared_low_risk: false
 ---
@@ -89,6 +91,51 @@ Type / Effort / Deps: fix / M / —.
 - Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
 
 </intent-contract>
+
+## Code Map
+
+Package root `src/shared/packages/pyforge-doctor/` (`P` below = `src/pyforge/doctor/`; tests under `tests/unit/`).
+
+- `P/sources/board.py:1181-1198` `_gather_chain_layers_audit` -- already turns any loader `Exception` into the `chain-layers-audit-unevaluable` WARN; no change.
+- `P/sources/board.py:1437-1494` `_load_foreign_module(path, mod_name)` -- keep the signature (`test_fleet_scan_pitch_roster.py`, `test_fleet_scan_currency_feeds.py` call it with an explicit path).
+- `P/sources/board.py:1524-1538` `_load_dashboard_generate(target)` -- the fix site: `target / "scripts" / "fleet_scan.py"` becomes the located checkout script; the `REPO_ROOT` / `DREAMS_DIR` / `_PIXI_TASKS` re-point at `target` stays. Its `# pragma: no cover -- retired Guildhall console` and the comment block above it (`:1497-1522`) are stale (the loader is live and covered); correct them.
+- `P/sources/factory.py:1464-1473` `_load_pixi_env_matrix_module(target)` -- the second fix site; `:1476-1498` `check_pixi_env_matrix` already passes `target`'s dream and lock to `mod.matrix_is_stale(dream, lock)` and maps `OSError` to `_unevaluable`.
+- `P/sources/__init__.py:578-620` `degrade_on_exception` -- sole producer of `evidence={"exception": <class name>}`; the home for the shared locator, next to it.
+- `P/sources/ledger.py:376-494` `gather` -- base probe `:409`, plain `rev-parse` of base/head `:429-430`; `_git` (`:102`) returns `None` on any failure.
+- `P/score.py:44-51`, `:123-124`, `:181` -- `_GATHER_FAILURE_CHECK`, `_is_gather_failure`, the per-axis `any(...)`.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py:97-113` `locate_http_module` -- the walk-up-from-`__file__` pattern to mirror (read-only; never import it).
+- `scripts/fleet_scan.py:81-95` (`_discover_repo_root`, import-time `sys.path.insert`) and `scripts/pixi_env_matrix.py:29` (`REPO_ROOT` from its own file) -- the scripts being located; read-only, never copied.
+- `tests/unit/test_sources_board_chain_layers_audit.py` (`_install_generate` copies the real `fleet_scan.py` into a tmp target; `_live_scan()` `:296` passes the live root), `test_sources_factory.py` (no env-matrix test today), `test_sources_ledger.py:212` (`test_unresolvable_base_ref_reports_warn`, the model for the head test), `test_score.py` (`_gather_failure`, `_finding`).
+
+## Tasks & Acceptance
+
+**Execution:**
+- `P/sources/__init__.py` -- add `locate_checkout_script(name)`: walk `Path(__file__).resolve().parents` for `scripts/<name>` as a file; no match raises `FileNotFoundError` (an `OSError`) naming the file -- one locator both loaders share, never `target`
+- `P/sources/board.py` -- `_load_dashboard_generate` loads `locate_checkout_script("fleet_scan.py")`; drop the stale pragma, fix the comment block
+- `P/sources/factory.py` -- `_load_pixi_env_matrix_module` loads `locate_checkout_script("pixi_env_matrix.py")`, snapshots and restores `sys.path`, pops `sys.modules` on a failed `exec_module`
+- `P/sources/ledger.py` -- probe `head` with `rev-parse --verify --quiet` after the base probe; unresolvable returns one `ledger-regression` WARN naming it (evidence `base`, `head`, `target`)
+- `P/score.py` -- `_is_gather_failure` also true for a WARN whose evidence carries `exception`; atlas shape still matches; update the docstring/comment that names the sentinel
+- `tests/unit/test_sources_board_chain_layers_audit.py`, `test_sources_factory.py`, `test_sources_ledger.py`, `test_score.py` -- one test per contract AC (probe-file tests for both loaders, each with a sensitivity twin that re-points the locator at `target` and sees the probe; the head WARN; the exception-evidence `incomplete`; the ordinary WARN still graded); existing tests untouched
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md` -- close DW-FU-6-5-9, DW-FU-6-4-3, DW-FU-6-6-11 in the file's own row format
+- Spec `.memlog.md` -- name every governed path changed on `spec-pyforge-doctor` and each co-governor `spec-surface` names, before the reconcile guard runs
+
+**Acceptance Criteria:**
+- The seven Given/When/Then rows in the intent contract's own `## Acceptance Criteria`; `python scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` exit 0.
+
+## Spec Change Log
+
+## Design Notes
+
+Why the checkout and not `target`: Doctor judges trees it does not own, so a judged `scripts/*.py` must stay data. The only legitimate source of a script Doctor runs is the checkout Doctor itself lives in; outside any checkout (an installed wheel) the locator raises and both callers already report "unevaluable".
+
+```python
+def locate_checkout_script(name: str) -> Path:
+    for ancestor in Path(__file__).resolve().parents:
+        candidate = ancestor / "scripts" / name
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(f"scripts/{name} not found above {Path(__file__).resolve()}")
+```
 
 ## Binding
 
