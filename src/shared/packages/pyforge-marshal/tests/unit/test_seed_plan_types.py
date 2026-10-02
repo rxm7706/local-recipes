@@ -22,6 +22,7 @@ import json
 import pytest
 
 from pyforge.marshal.seed.detect.inventory import ArtifactState
+from pyforge.marshal.seed.errors import PreconditionFailure
 from pyforge.marshal.seed.model.manifest import ArtifactClass
 from pyforge.marshal.seed.plan.types import Action, Plan, RepoFingerprint, SkippedArtifact
 
@@ -223,7 +224,7 @@ def test_fingerprint_round_trips_with_git_head_none_and_empty_artifact_hashes():
     assert restored.artifact_hashes == ()
 
 
-@pytest.mark.parametrize("missing_key", ["git_head", "dirty", "artifact_hashes"])
+@pytest.mark.parametrize("missing_key", ["git_head", "dirty", "artifact_hashes", "git_common_dir"])
 def test_fingerprint_from_json_dict_raises_value_error_naming_a_missing_key(missing_key):
     data = _valid_fingerprint_dict()
     del data[missing_key]
@@ -264,6 +265,89 @@ def test_fingerprint_from_json_dict_raises_value_error_when_artifact_hashes_is_n
 def test_fingerprint_from_json_dict_raises_value_error_when_data_is_not_a_mapping():
     with pytest.raises(ValueError):
         RepoFingerprint.from_json_dict(["not", "a", "dict"])  # type: ignore[arg-type]
+
+
+# --- RepoFingerprint: the repository identity (Story 82.12, DW-10-3-7) ----
+
+
+def test_fingerprint_serializes_the_repository_identity():
+    data = _fingerprint(repo_root="/work/repo", git_common_dir="/work/repo/.git").to_json_dict()
+    assert data["repo_root"] == "/work/repo"
+    assert data["git_common_dir"] == "/work/repo/.git"
+
+
+@pytest.mark.parametrize("git_common_dir", ["/work/repo/.git", None])
+def test_fingerprint_round_trips_the_repository_identity(git_common_dir):
+    """`git_common_dir` is `None` outside git -- and `null` must come back as
+    `None`, not be dropped."""
+    fingerprint = _fingerprint(repo_root="/work/repo", git_common_dir=git_common_dir)
+    restored = RepoFingerprint.from_json_dict(json.loads(json.dumps(fingerprint.to_json_dict())))
+    assert restored == fingerprint
+    assert restored.repo_root == "/work/repo"
+    assert restored.git_common_dir == git_common_dir
+
+
+def _legacy_fingerprint_dict() -> dict:
+    """What a `plan.json` written before the repository was recorded holds."""
+    data = _valid_fingerprint_dict()
+    del data["repo_root"]
+    del data["git_common_dir"]
+    return data
+
+
+def test_a_fingerprint_written_before_the_repository_field_is_a_stale_plan_with_a_replan_remedy():
+    with pytest.raises(PreconditionFailure) as excinfo:
+        RepoFingerprint.from_json_dict(_legacy_fingerprint_dict())
+
+    assert "stale-plan" in str(excinfo.value)
+    assert excinfo.value.exit_code == 3
+    assert "re-run the plan" in excinfo.value.remedy
+
+
+def test_a_plan_whose_fingerprint_lacks_the_repository_field_is_refused_with_a_replan_remedy():
+    """The refusal reaches `Plan.from_json_dict` (hence `load_plan`) too, not
+    only the fingerprint's own codec."""
+    data = _valid_plan_dict()
+    data["repo_fingerprint"] = _legacy_fingerprint_dict()
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        Plan.from_json_dict(data)
+
+    assert "stale-plan" in str(excinfo.value)
+    assert excinfo.value.remedy.strip()
+
+
+def test_a_fingerprint_missing_other_keys_besides_the_repository_field_stays_a_value_error():
+    """Only the exact legacy shape (all three legacy keys, no `repo_root`) is a
+    stale plan; a fingerprint missing anything else is still malformed."""
+    data = _legacy_fingerprint_dict()
+    del data["artifact_hashes"]
+
+    with pytest.raises(ValueError, match="artifact_hashes"):
+        RepoFingerprint.from_json_dict(data)
+
+
+def test_a_fingerprint_with_repo_root_but_no_git_common_dir_is_malformed_not_stale():
+    data = _valid_fingerprint_dict()
+    del data["git_common_dir"]
+
+    with pytest.raises(ValueError, match="git_common_dir"):
+        RepoFingerprint.from_json_dict(data)
+
+
+@pytest.mark.parametrize("bad", [None, 7, ["/work/repo"]])
+def test_fingerprint_from_json_dict_raises_value_error_when_repo_root_is_not_a_string(bad):
+    data = _valid_fingerprint_dict()
+    data["repo_root"] = bad
+    with pytest.raises(ValueError, match="repo_root"):
+        RepoFingerprint.from_json_dict(data)
+
+
+def test_fingerprint_from_json_dict_raises_value_error_when_git_common_dir_is_not_a_string_or_null():
+    data = _valid_fingerprint_dict()
+    data["git_common_dir"] = 12345
+    with pytest.raises(ValueError, match="git_common_dir"):
+        RepoFingerprint.from_json_dict(data)
 
 
 def test_fingerprint_is_frozen_and_hashable():
