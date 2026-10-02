@@ -147,6 +147,26 @@ verify_commands`` (pure) -- the commands this invocation's own policy
 declares, independent of whether this particular run actually executed
 them.
 
+**The gate record (Story 82.9, FR-25, AD-34/AD-25 F-25; DW-FU-2-6-2).** Given
+``--story``, ``evaluate_gate`` also writes a durable, redacted gate record
+(``core.egress.build_gate_record`` shaped, ``to_redacted`` serialized, written
+through ``RecordPort.write_redacted_atomic`` only -- never ``FsPort``) from
+facts it already holds: the commands and their exit codes, the scope-check
+verdict, ``VcsPort.worktree_head_sha`` of the evaluated root, a UTC timestamp,
+and ``run_id`` when ``--run`` was given. It lands under the run's directory
+(``<run>/gate-records/<story slug>/gate-record.json``) when ``--run`` resolved,
+else under the loop home's AD-25 ``sessions/`` namespace
+(``<tier-3>/sessions/<minted id>/gate-records/<story slug>/``) so a run-less
+evaluation is still retrievable per story. ``data["gate_record"]`` names the
+path. The record is evidence ABOUT the verdict, never an input to it: the
+verdict is computed first and never recomputed, and a record that cannot be
+written (no loop home, an unreadable tree revision, a failed write) is ONE
+``MRS-GATE-017`` WARN -- the exit code never changes. The ports are optional
+parameters; ``run_evaluate`` supplies them (the real ``LocalFs`` and the system
+clock) only when its own ``fs`` is a ``LocalFs``, so a test's injected fake
+``fs`` writes nothing. ``cli/deploy.py``'s ``land-story`` re-run passes
+neither, so it still writes no record (``deferred`` on Story 82.9).
+
 **``evaluate_gate``/``run_evaluate`` split (Story 4.3, FR-27).** The
 original single ``run_evaluate`` body is now two functions: ``evaluate_gate``
 (the pure-envelope core -- gathers every impure input, runs every check,
@@ -167,21 +187,26 @@ import argparse
 import json
 import os
 import shlex
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+from datetime import timezone
 from pathlib import Path
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
+from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import gate, identity, journal, policy, spec_binding
+from ..core.egress import GATE_RECORD_FILENAME, build_gate_record, to_redacted
 from ..core.identity import StoryKey, render_filename_slug
 from ..core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from ..core.refs import local_branch_ref
 from ..core.spec_low_risk import LowRiskParseError, parse_declared_low_risk
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.verdict import compute_verdict, exit_code_for
+from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
+from ..ports.record import RecordPort
 from ..ports.vcs import VcsPort
 from .config import (
     ENV_ACTIVE_PROJECT,
@@ -193,7 +218,7 @@ from .config import (
     repo_root,
 )
 from .init import _home_path
-from .spin import _run_dir
+from .spin import _format_utc_compact, _random_token, _run_dir, _tier3_path
 
 # The run journal's own filename, under the run directory -- duplicated
 # verbatim from cli/spin.py/supervisor/__main__.py's own identical constant
@@ -207,6 +232,10 @@ _JOURNAL_FILENAME = "journal.jsonl"
 # the same `into="main"` this package's own `is_branch_merged`/teardown
 # callers already hardcode).
 _SCOPE_CHECK_BASE_BRANCH = "main"
+
+# The gate record's own timestamp spelling (Story 82.9): `schemas/gate-record.json`'s
+# canonical UTC form, seconds precision, a `Z` offset.
+_GATE_RECORD_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 def add_gate_subparser(subparsers: argparse._SubParsersAction) -> None:
