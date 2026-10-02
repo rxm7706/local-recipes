@@ -410,6 +410,19 @@ _MRS_STATUS_009 = "MRS-STATUS-009"
 _MRS_STATUS_010 = "MRS-STATUS-010"
 _MRS_STATUS_011 = "MRS-STATUS-011"
 
+# Story 82.8 (DW-FU-4-14-10): `_MRS_STATUS_014` names a home whose history
+# read SUCCEEDED and is non-empty, yet not one subject conforms to any
+# merge-subject pattern `core.promotion.merged_story_keys` reads (a shallow
+# `--depth` clone, a grafted or truncated history, one predating the
+# convention). Such a history cannot show what landed, so it replaces the
+# per-patch `MRS-STATUS-010`s -- which would each read "unlanded" off a
+# history that proves nothing -- with ONE per-home finding carrying the
+# examined and matched counts `marshal deploy promote` reports as
+# `subjects_examined`/`subjects_matched`. Its patches report `done: null`.
+# An EMPTY history is not this case (nothing was examined) and keeps the
+# `done: false` reading.
+_MRS_STATUS_014 = "MRS-STATUS-014"
+
 # The tracked ledger's own conventional, fixed path (Story 5.4) -- NEVER
 # the gitignored Tier-3 feed AD-5 forbids this command's other views from
 # ever reading (see this module's own docstring's closing paragraph).
@@ -1404,10 +1417,13 @@ def _merged_keys_for_slug(
     main_subjects: tuple[str, ...],
     *,
     spec_status_for: promotion.SpecStatusReader | None = None,
-) -> tuple[frozenset[str], tuple[Finding, ...]]:
+) -> tuple[frozenset[str], tuple[Finding, ...], int]:
     """``slug``'s own durably-merged story keys, as canonical dot-form
     ``str``s, plus every ``Finding`` raised while resolving ``slug``'s own
-    ``merge_subject_template`` (Story 4.14) -- the ONE policy-read-then-
+    ``merge_subject_template`` (Story 4.14), plus how many of
+    ``main_subjects`` conform to any merge-subject pattern (Story 82.8, the
+    raw ``promotion.count_conforming_subjects`` count ``cli/deploy.py``
+    reports as ``subjects_matched``) -- the ONE policy-read-then-
     ``promotion.merged_story_keys`` sequence, shared by both
     ``_reconcile_ledger`` below (an explicit ``--project`` diagnostic view,
     which surfaces every returned finding, including a policy ERROR, at
@@ -1447,7 +1463,13 @@ def _merged_keys_for_slug(
     ``promotion.corroborated_merged_story_keys`` -- the form ``dispatch
     land`` uses for ALREADY_LANDED, where a station-branch PR merge counts
     only if the key's tracked spec reads ``done`` on ``origin/main`` (Story
-    51.7/CAP-255). Omitted, the uncorroborated form is unchanged."""
+    51.7/CAP-255). Omitted, the uncorroborated form is unchanged.
+
+    The count is what tells "``main_subjects`` examined, none conformed" (a
+    shallow or grafted history) from "nothing has merged": a caller whose
+    history is non-empty and whose count is ``0`` holds a history that
+    cannot show what landed, and an empty ``merged`` set from it proves
+    nothing."""
     findings: list[Finding] = []
     project_data: Mapping[str, object] = {}
     if policy_core._is_valid_project_slug(slug):
@@ -1469,12 +1491,37 @@ def _merged_keys_for_slug(
     else:
         keys = promotion.corroborated_merged_story_keys(main_subjects, template, slug, spec_status_for=spec_status_for)
     merged = frozenset(str(key) for key in keys)
-    return merged, tuple(findings)
+    conforming = promotion.count_conforming_subjects(main_subjects, template, slug)
+    return merged, tuple(findings), conforming
+
+
+def _read_landing_subjects(vcs: VcsPort, root: Path) -> tuple[str, ...]:
+    """The commit subjects every "did this story land" question in this
+    module is judged from (Story 82.8, DW-FU-4-14-9): ``origin/main`` then
+    local ``main``, concatenated exactly as ``cli/deploy.py``'s
+    ``_scan_promotions`` builds its ``combined_subjects`` for the same
+    ``core.promotion.merged_story_keys`` owner. A story whose merge reached
+    ``origin/main`` but whose local ``main`` has not fast-forwarded yet --
+    live and recurring, 20-35 minutes at a time -- is durable to ``deploy
+    promote`` and must be durable here too.
+
+    ``origin/main`` is best-effort: a missing or unfetched one is the
+    ordinary "no push route available" case ``deploy`` already tolerates.
+    Local ``main`` is REQUIRED -- its ``VcsCommandError`` propagates, so no
+    caller ever reads a silently-empty history as "nothing merged". Reads
+    only the refs the checkout already holds; never fetches (AD-5)."""
+    try:
+        origin_subjects = vcs.commit_subjects(root, ORIGIN_MAIN)
+    except VcsCommandError:
+        origin_subjects = ()
+    main_subjects = vcs.commit_subjects(root, local_branch_ref(_MERGE_BASE_BRANCH))
+    return tuple(origin_subjects) + tuple(main_subjects)
 
 
 @dataclass
 class _MainSubjects:
-    """``main``'s commit subjects, read at most once per status sweep and
+    """The landing history (``origin/main`` plus ``main``,
+    ``_read_landing_subjects``), read at most once per status sweep and
     shared by every consumer in it: Story 4.14's failed-patch check and
     Story 56.1's landing-superseded check. ``subjects`` is ``None`` until a
     read succeeds; ``error`` keeps a failed read's cause for the caller that
@@ -1488,7 +1535,7 @@ class _MainSubjects:
         if not self.attempted:
             self.attempted = True
             try:
-                self.subjects = vcs.commit_subjects(root, local_branch_ref(_MERGE_BASE_BRANCH))
+                self.subjects = _read_landing_subjects(vcs, root)
             except VcsCommandError as exc:
                 self.error = exc
         return self.subjects
@@ -1511,7 +1558,8 @@ def _landing_superseded(
     needs the tracked ledger too, which this summary must not read (AD-5)
     and ``fleet-picture`` does.
 
-    Reads ``main`` only for a row that carries a refusal. Fails closed: an
+    Reads the landing history (``origin/main`` plus ``main``) only for a row
+    that carries a refusal. Fails closed: an
     unparseable story key, an unreadable ``main``, or a policy finding that
     would change the exit code all answer ``False``, so the refusal stays
     actionable rather than being hidden on a guess. The spec-status reader
@@ -1554,7 +1602,7 @@ def _landing_superseded(
             return None
         return promotion.read_spec_status(spec_text)
 
-    merged, keys_findings = _merged_keys_for_slug(slug, subjects, spec_status_for=_spec_status_for)
+    merged, keys_findings, _ = _merged_keys_for_slug(slug, subjects, spec_status_for=_spec_status_for)
     if any(classify(f.code) not in (Verdict.CLEAN, Verdict.WARN) for f in keys_findings):
         return False
     return dispatch_landing.landing_refusal_superseded(
@@ -1751,6 +1799,12 @@ def run_status(
     # the sweep are not yet known there.
     main_read_error: VcsCommandError | None = None
     main_unavailable: list[tuple[str, dict[str, object]]] = []
+    # Story 82.8 (DW-FU-4-14-12): every finding the per-home loop raises is
+    # kept with the slug of the home it is about, so `--escalations` can
+    # filter findings with the rows it filters. `findings` itself holds only
+    # the sweep-wide ones raised before the loop (`MRS-STATUS-009`); the
+    # per-home ones join it, in order, once the rows are final.
+    home_findings: list[tuple[str, Finding]] = []
 
     rows: list[dict[str, object]] = []
     for slug, home in fleet:
@@ -1828,10 +1882,11 @@ def run_status(
                 main_read_error = main.error
 
             merged_keys: frozenset[str] = frozenset()
+            conforming_subjects = 0
             keys_available = main_subjects is not None
             withheld_codes: tuple[str, ...] = ()
             if main_subjects is not None:
-                merged_keys, keys_findings = _merged_keys_for_slug(slug, main_subjects)
+                merged_keys, keys_findings, conforming_subjects = _merged_keys_for_slug(slug, main_subjects)
                 # `_MRS_STATUS_011`'s cause 2 (review finding, 2026-08-10,
                 # Blind Hunter): a malformed project-policy file for `slug`
                 # -- entirely unrelated to this durability check -- used to
@@ -1881,9 +1936,22 @@ def run_status(
                     # withheld (review finding, 2026-08-10, pass 3: the
                     # branch used to discard `keys_findings` wholesale, so
                     # an unrelated WARN accompanying an ERROR vanished).
-                    findings.extend(f for f in keys_findings if f not in blocking)
+                    home_findings.extend((slug, f) for f in keys_findings if f not in blocking)
                 else:
-                    findings.extend(keys_findings)
+                    home_findings.extend((slug, f) for f in keys_findings)
+
+            # Story 82.8 (DW-FU-4-14-10): a history that was read, is
+            # non-empty, and has no subject conforming to any merge-subject
+            # pattern cannot show what landed -- every patch of this home
+            # then reads `done: null` and ONE `MRS-STATUS-014` carrying the
+            # counts replaces the per-patch `MRS-STATUS-010`s. Only when the
+            # comparison itself is available: a withheld policy already
+            # degraded this home through `MRS-STATUS-011`, and its template
+            # is not one the count may be taken against. An EMPTY history
+            # examined nothing and keeps its `done: false` reading.
+            history_shows_nothing = keys_available and bool(main_subjects) and conforming_subjects == 0
+            if history_shows_nothing:
+                keys_available = False
 
             failed_patches: list[dict[str, object]] = []
             for patch, size_bytes in patch_paths:
@@ -1947,12 +2015,14 @@ def run_status(
                 # that fell back to the default), but asserting the wrong
                 # reason for it is not. Naming the withheld codes is what
                 # makes the suppressed diagnostic findable at all.
-                findings.append(
-                    Finding(
-                        code=_MRS_STATUS_011,
-                        severity=Severity.WARN,
-                        message=(
-                            f"{slug}: this project's own merge-subject "
+                home_findings.append(
+                    (
+                        slug,
+                        Finding(
+                            code=_MRS_STATUS_011,
+                            severity=Severity.WARN,
+                            message=(
+                                f"{slug}: this project's own merge-subject "
                             "policy did not resolve cleanly "
                             f"({', '.join(withheld_codes)}, withheld here so "
                             "a policy problem cannot change this command's "
@@ -2319,7 +2389,7 @@ def _reconcile_ledger(
     main_subjects: tuple[str, ...] = ()
     git_error: VcsCommandError | None = None
     try:
-        main_subjects = vcs.commit_subjects(root, local_branch_ref(_MERGE_BASE_BRANCH))
+        main_subjects = _read_landing_subjects(vcs, root)
     except VcsCommandError as exc:
         git_error = exc
 
@@ -2342,7 +2412,7 @@ def _reconcile_ledger(
     # path `main_subjects` is empty, so the returned `merged_keys` is
     # meaningless and deliberately unused: the view reports no
     # discrepancies at all when git could not be read.
-    merged_keys, keys_findings = _merged_keys_for_slug(slug, main_subjects)
+    merged_keys, keys_findings, _ = _merged_keys_for_slug(slug, main_subjects)
     findings.extend(keys_findings)
 
     if git_error is not None:
