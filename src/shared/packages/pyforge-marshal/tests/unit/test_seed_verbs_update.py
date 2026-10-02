@@ -1094,6 +1094,57 @@ def test_skip_rejects_a_bare_string_or_blank_pattern_before_anything_is_written(
     assert not (clean_repo / ".marshal" / "plan.json").exists()
 
 
+def test_skip_of_a_hand_edit_in_a_run_that_applies_something_else_keeps_the_state_record(clean_repo):
+    """The skip protects the edit on every later run, not just this one: a run
+    that skips hand-edited A AND regenerates B writes state, and A's record
+    must come through it with its ORIGINAL `body_sha` -- recording the edited
+    bytes would turn `--skip` into "protect it once"."""
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("b", "B.md"))
+    (clean_repo / "A.md").write_text("hand-edited A\n", encoding="utf-8")
+    (clean_repo / "B.md").write_text("current B\n", encoding="utf-8")
+    write_state(
+        _seed_state(
+            managed=(
+                _managed_record("a", "A.md"),
+                ManagedArtifact(
+                    id="b",
+                    path="B.md",
+                    artifact_class="copied-managed",
+                    body_sha=hash_content("current B\n"),
+                    inserted_region_span=None,
+                ),
+            )
+        ),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    original_sha = _managed_record("a", "A.md").body_sha
+
+    result = run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        skip=("A.md",),
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo),
+    )
+
+    assert result.applied == ("b",)
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+    state_after = read_state(clean_repo)
+    assert state_after is not None
+    assert {record.id: record.body_sha for record in state_after.managed}["a"] == original_sha
+
+    # Without `--skip` and without `--force` the edit is still refused.
+    _commit_all(clean_repo)
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as refused:
+        run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+    assert "a:" in refused.value.message
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+
+
 def test_force_still_discards_a_hand_edit_a_skip_does_not_name(clean_repo):
     """`--force` keeps its meaning: the unnamed hand-edit is regenerated."""
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"), _copied_managed("other", "OTHER.md"))

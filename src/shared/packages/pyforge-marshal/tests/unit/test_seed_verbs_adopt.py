@@ -931,6 +931,45 @@ def test_skip_does_not_excuse_a_hand_edited_managed_file_it_does_not_name(clean_
     assert (clean_repo / "B.md").read_text(encoding="utf-8") == "hand-edited B\n"
 
 
+def test_skip_of_a_hand_edit_in_a_run_that_applies_something_else_keeps_the_state_record(clean_repo):
+    """The skip protects the edit on every later run, not just this one: a
+    run that skips hand-edited A AND applies a new artifact C writes state, and
+    A's record must come through it with its ORIGINAL `body_sha` -- recording
+    the edited bytes would turn `--skip` into "protect it once"."""
+    adopted = _manifest(_copied_managed("a", "A.md"))
+    run_adopt(
+        clean_repo, adopted, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(adopted, clean_repo)
+    )
+    _commit_all(clean_repo)
+    original_sha = next(record.body_sha for record in read_state(clean_repo).managed if record.id == "a")
+    (clean_repo / "A.md").write_text("hand-edited A\n", encoding="utf-8")
+    _commit_all(clean_repo)
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("c", "C.md"))
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        skip=("A.md",),
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo),
+    )
+
+    assert result.applied == ("c",)
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+    state_after = read_state(clean_repo)
+    assert state_after is not None
+    assert {record.id: record.body_sha for record in state_after.managed}["a"] == original_sha
+
+    # Without `--skip` and without `--force` the edit is still refused.
+    _commit_all(clean_repo)
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as refused:
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+    assert "a:" in refused.value.message
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+
+
 # --- applies_to manifest filter ------------------------------------------
 
 
