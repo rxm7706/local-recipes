@@ -2037,6 +2037,34 @@ def run_status(
                         ),
                         path=slug,
                     )
+                    ),
+                )
+            # Story 82.8 (DW-FU-4-14-10): the one per-home finding that
+            # replaces this home's per-patch `MRS-STATUS-010`s (their
+            # `done` is `None` above, so none fires) when its history was
+            # read but shows nothing. `examined` is the concatenated read's
+            # length -- the same figure `marshal deploy promote` reports as
+            # `subjects_examined` -- and `matched` the raw conforming count.
+            if history_shows_nothing:
+                home_findings.append(
+                    (
+                        slug,
+                        Finding(
+                            code=_MRS_STATUS_014,
+                            severity=Severity.WARN,
+                            message=(
+                                f"{slug}: the commit history read from {ORIGIN_MAIN!r} and "
+                                f"{_MERGE_BASE_BRANCH!r} cannot show what landed -- examined "
+                                f"{len(main_subjects or ())}, matched {conforming_subjects} against any "
+                                "merge-subject pattern (a shallow or grafted clone, or a history "
+                                "that predates the merge-subject convention), so this project's "
+                                "failed-story patches cannot be classified: "
+                                f"{_name_patches([(slug, e) for e in failed_patches])} "
+                                "report done: null (landed-status unknown)"
+                            ),
+                            path=slug,
+                        ),
+                    )
                 )
             if main_read_error is not None:
                 main_unavailable.extend((slug, entry) for entry in failed_patches)
@@ -2044,7 +2072,7 @@ def run_status(
         row, finding = status_core.build_fleet_row(facts)
         rows.append(row)
         if finding is not None:
-            findings.append(finding)
+            home_findings.append((slug, finding))
         # Story 5.5's own Always bullet: a home with unpushed work is
         # NEVER reported clean -- gated on the RESULTING row (never on
         # `matched` directly), since `build_fleet_row` itself hardcodes
@@ -2053,16 +2081,19 @@ def run_status(
         # identical precedent (`budget_consumed`, `escalation_reason`).
         if row.get("unpushed_work") is not None:
             unpushed = row["unpushed_work"]
-            findings.append(
-                Finding(
-                    code=_MRS_STATUS_008,
-                    severity=Severity.WARN,
-                    message=(
-                        f"{slug}: branch {facts.branch!r} carries "
-                        f"{unpushed.get('files')} file(s) not on origin "
-                        f"({unpushed.get('stat')}) -- {unpushed.get('remedy')}"
+            home_findings.append(
+                (
+                    slug,
+                    Finding(
+                        code=_MRS_STATUS_008,
+                        severity=Severity.WARN,
+                        message=(
+                            f"{slug}: branch {facts.branch!r} carries "
+                            f"{unpushed.get('files')} file(s) not on origin "
+                            f"({unpushed.get('stat')}) -- {unpushed.get('remedy')}"
+                        ),
+                        path=facts.branch,
                     ),
-                    path=facts.branch,
                 )
             )
         # Story 4.14's own Always bullet: ONE `MRS-STATUS-010` WARN per
@@ -2088,8 +2119,10 @@ def run_status(
         # three run dirs).
         for entry in row.get("failed_patches") or ():
             if entry.get("done") is False:
-                findings.append(
-                    Finding(
+                home_findings.append(
+                    (
+                        slug,
+                        Finding(
                         code=_MRS_STATUS_010,
                         severity=Severity.WARN,
                         message=(
@@ -2109,7 +2142,27 @@ def run_status(
                         ),
                         path=str(entry.get("path")),
                     )
+                    ),
                 )
+
+    # Story 5.3 (FR-38): escalated rows sort first, stable otherwise --
+    # ALWAYS applied to the fleet summary (never gated on --escalations,
+    # which only additionally FILTERS the same already-sorted list).
+    rows = status_core.sort_fleet_rows(rows)
+    escalations_only = bool(getattr(args, "escalations", False))
+    if escalations_only:
+        rows = [row for row in rows if row.get("state") == "paused-on-escalation"]
+
+    # Story 82.8 (DW-FU-4-14-12): findings follow the rows. Under
+    # `--escalations` an operator asking "what needs me right now?" gets the
+    # sweep-wide findings and the findings of the homes still listed -- never
+    # an empty table beside alarms naming homes it filtered out. Without the
+    # flag every home is kept, so the output is exactly what the loop raised.
+    kept_slugs = {str(row["slug"]) for row in rows}
+    findings.extend(
+        finding for slug, finding in home_findings if not escalations_only or slug in kept_slugs
+    )
+    unavailable = [(slug, entry) for slug, entry in main_unavailable if not escalations_only or slug in kept_slugs]
 
     # Story 4.14: `_MRS_STATUS_011`'s cause 1 (an unreadable `main`), the
     # ONE WARN for the WHOLE sweep its own I/O matrix row specifies --
@@ -2119,7 +2172,7 @@ def run_status(
     # landed-status "could not be determined" raises "exactly one WARN
     # naming it"). The git read itself was still attempted at most once,
     # lazily, on the first home found to carry a reportable patch.
-    if main_read_error is not None:
+    if main_read_error is not None and unavailable:
         findings.append(
             Finding(
                 code=_MRS_STATUS_011,
@@ -2141,18 +2194,11 @@ def run_status(
                     # `MRS-STATUS-010`'s operands and left the arm whose
                     # trigger is the ordinary, non-adversarial one open.
                     f"{_one_line(main_read_error)} -- "
-                    f"{_name_patches(main_unavailable)} found this sweep "
+                    f"{_name_patches(unavailable)} found this sweep "
                     "report done: null (landed-status unknown)"
                 ),
             )
         )
-
-    # Story 5.3 (FR-38): escalated rows sort first, stable otherwise --
-    # ALWAYS applied to the fleet summary (never gated on --escalations,
-    # which only additionally FILTERS the same already-sorted list).
-    rows = status_core.sort_fleet_rows(rows)
-    if getattr(args, "escalations", False):
-        rows = [row for row in rows if row.get("state") == "paused-on-escalation"]
 
     data["homes"] = rows
     # Story 46.5 (CAP-193): the per-harness savings rollup -- scoped-project
