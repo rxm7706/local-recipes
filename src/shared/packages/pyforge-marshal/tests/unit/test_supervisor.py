@@ -564,6 +564,22 @@ def _state_json_path() -> Path:
     return supervisor_main._bmad_loop_state_json_path(_HOME, _HARNESS_RUN_ID)
 
 
+def _usage(story_key: str | None, story_tokens: float | None, run_tokens: float) -> UsageSnapshot:
+    """A ``UsageSnapshot`` over this module's one harness run -- the three
+    values every budget test varies and nothing else."""
+    return UsageSnapshot(
+        story_key=story_key,
+        story_weighted_tokens=story_tokens,
+        run_weighted_tokens=run_tokens,
+        sample_path=_state_json_path(),
+    )
+
+
+def _journal_entries(fs: FakeFs) -> list[dict[str, object]]:
+    """Every journal line the supervisor appended, parsed."""
+    return [json.loads(line) for _, line, _ in fs.appended_lines]
+
+
 # --- normal attach: attach, heartbeat until the harness exits, then detach ----
 
 
@@ -2863,20 +2879,22 @@ def test_run_wall_clock_ceiling_breach_with_a_failed_stop_still_detaches():
     assert entries[-1]["payload"]["reason"] == "budget-run-wall_clock-exceeded"
 
 
-def test_story_wall_clock_ceiling_breach_uses_the_story_scope_reason():
-    """The per-story sibling of the two tests above -- ``harness_run_id``
-    must resolve a current story (via ``usage_snapshot``) before the
-    per-story wall-clock ceiling has anything to measure from."""
+def test_story_wall_clock_ceiling_breach_is_observed_and_the_run_continues():
+    """Story 82.5 (DW-FU-3-6-8): the per-story sibling of the per-run
+    wall-clock breach above no longer stops anything. ``HarnessPort.stop``
+    ends the WHOLE bmad-loop run, so answering one outlier story with it
+    abandoned every remaining story of an overnight wave under a
+    story-scoped reason. The breach is journaled once, naming the story with
+    its observed and limit values, and the tick loop carries on -- only a
+    per-RUN ceiling still stops the run
+    (``test_run_wall_clock_ceiling_breach_stops_and_detaches``).
+    ``harness_run_id`` must resolve a current story (via ``usage_snapshot``)
+    before the per-story wall-clock ceiling has anything to measure from."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
-    harness.usage_snapshot_result = UsageSnapshot(
-        story_key="3.6",
-        story_weighted_tokens=100,
-        run_weighted_tokens=100,
-        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
-    )
+    harness.usage_snapshot_result = _usage("3.6", 100, 100)
 
     rc = run_supervisor(
         _HOME,
@@ -2898,29 +2916,82 @@ def test_story_wall_clock_ceiling_breach_uses_the_story_scope_reason():
     )
 
     assert rc == 0
-    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
-    assert stop_intent["payload"]["scope"] == "story"
-    assert stop_intent["payload"]["metric"] == "wall_clock"
-    assert entries[-1]["payload"]["reason"] == "budget-story-wall_clock-exceeded"
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
+    assert "budget-stop" not in kinds
+    assert harness.stop_calls == []
+    [breach] = [e for e in entries if e["kind"] == "budget-story-breach"]
+    assert breach["phase"] == "observation"
+    assert breach["payload"]["scope"] == "story"
+    assert breach["payload"]["metric"] == "wall_clock"
+    assert breach["payload"]["story_key"] == "3.6"
+    assert breach["payload"]["observed"] >= 1.5
+    assert breach["payload"]["limit"] == 1.5
+    assert breach["payload"]["finding"]["code"] == "MRS-SUPV-011"
+    assert breach["payload"]["finding"]["severity"] == "warn"
+    # The loop carried on past the breach and ended its own way.
+    assert kinds[kinds.index("budget-story-breach") :].count("supervisor-heartbeat") >= 3
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
 
 
-def test_token_ceiling_breach_on_a_fresh_sample():
-    """I/O matrix: "Per-story token ceiling, fresh sample" -- a resolved
-    current story, ``state.json`` mtime within ``idle_threshold_minutes`` ->
-    weighted per-story tokens compared to ``max_tokens_per_story``; breach
-    stops the run exactly like a wall-clock breach does."""
+def test_run_token_ceiling_breach_on_a_fresh_sample():
+    """I/O matrix: "Per-run token ceiling, fresh sample" -- a resolved
+    ``state.json`` mtime inside the staleness window -> weighted per-run
+    tokens compared to ``max_tokens_per_run``; a breach stops the run exactly
+    like a wall-clock breach does. (The per-STORY token breach no longer
+    stops it -- see
+    ``test_story_token_ceiling_breach_is_observed_and_the_run_continues``.)"""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
-    # `state_json_mtime` defaults to the clock's start instant -- always fresh.
+    # `state_json_mtime` defaults to the clock's start instant -- fresh.
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
-    harness.usage_snapshot_result = UsageSnapshot(
-        story_key="3.6",
-        story_weighted_tokens=150,
-        run_weighted_tokens=150,
-        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
+    harness.usage_snapshot_result = _usage("3.6", 150, 150)
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        100.0,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
+
+    assert rc == 0
+    entries = _journal_entries(fs)
+    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["payload"]["scope"] == "run"
+    assert stop_intent["payload"]["metric"] == "tokens"
+    assert stop_intent["payload"]["observed"] == 150
+    assert stop_intent["payload"]["limit"] == 100.0
+    assert "story_key" not in stop_intent["payload"]
+    assert entries[-1]["payload"]["reason"] == "budget-run-tokens-exceeded"
+    # The state.json staleness query itself was made (path-aware, separate
+    # from the idle ladder's own harness.log query).
+    assert observer.state_json_mtime_calls
+
+
+def test_story_token_ceiling_breach_is_observed_and_the_run_continues():
+    """Story 82.5 (DW-FU-3-6-8): a per-story TOKEN breach on a fresh sample
+    is journaled as a story-scoped observation -- the story, the metric, the
+    observed and the limit -- and the run is left going. Reported once, not
+    once per tick, although the story stays over its ceiling for the rest of
+    the run."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.usage_snapshot_result = _usage("3.6", 150, 150)
 
     rc = run_supervisor(
         _HOME,
@@ -2942,21 +3013,27 @@ def test_token_ceiling_breach_on_a_fresh_sample():
     )
 
     assert rc == 0
-    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
-    assert stop_intent["payload"]["scope"] == "story"
-    assert stop_intent["payload"]["metric"] == "tokens"
-    assert stop_intent["payload"]["observed"] == 150
-    assert stop_intent["payload"]["limit"] == 100.0
-    assert entries[-1]["payload"]["reason"] == "budget-story-tokens-exceeded"
-    # The state.json staleness query itself was made (path-aware, separate
-    # from the idle ladder's own harness.log query).
-    assert observer.state_json_mtime_calls
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
+    assert "budget-stop" not in kinds
+    assert harness.stop_calls == []
+    [breach] = [e for e in entries if e["kind"] == "budget-story-breach"]
+    assert breach["payload"]["scope"] == "story"
+    assert breach["payload"]["metric"] == "tokens"
+    assert breach["payload"]["story_key"] == "3.6"
+    assert breach["payload"]["observed"] == 150
+    assert breach["payload"]["limit"] == 100.0
+    assert breach["payload"]["finding"]["code"] == "MRS-SUPV-011"
+    # Four ticks, every one over the ceiling -- and still one entry.
+    assert kinds.count("supervisor-heartbeat") == 4
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
 
 
-def test_compression_escalation_journals_before_story_budget_stop_on_same_tick():
-    """Story 28.6 (CAP-8): ``compression-escalation`` strictly precedes
-    ``budget-stop`` when both fire on the same per-story token tick."""
+def test_compression_escalation_journals_before_the_story_breach_on_same_tick():
+    """Story 28.6 (CAP-8): ``compression-escalation`` strictly precedes the
+    budget action on the same per-story token tick. Since Story 82.5 that
+    action is the per-story ``budget-story-breach`` observation -- a per-story
+    breach no longer stops the run -- and the ordering is unchanged."""
     run_dir = _run_dir()
     fs = FakeFs(
         journal_text=_launch_outcome_line("acme-run-1") + "\n",
@@ -2974,12 +3051,7 @@ def test_compression_escalation_journals_before_story_budget_stop_on_same_tick()
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
-    harness.usage_snapshot_result = UsageSnapshot(
-        story_key="3.6",
-        story_weighted_tokens=100.0,
-        run_weighted_tokens=100.0,
-        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
-    )
+    harness.usage_snapshot_result = _usage("3.6", 100.0, 100.0)
 
     rc = run_supervisor(
         _HOME,
@@ -3001,11 +3073,12 @@ def test_compression_escalation_journals_before_story_budget_stop_on_same_tick()
     )
 
     assert rc == 0
-    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    kinds = [entry["kind"] for entry in entries]
+    entries = _journal_entries(fs)
+    kinds = [e["kind"] for e in entries]
     assert "compression-escalation" in kinds
-    assert "budget-stop" in kinds
-    assert kinds.index("compression-escalation") < kinds.index("budget-stop")
+    assert "budget-story-breach" in kinds
+    assert kinds.index("compression-escalation") < kinds.index("budget-story-breach")
+    assert harness.stop_calls == []
     comp_entry = next(e for e in entries if e["kind"] == "compression-escalation")
     assert comp_entry["payload"]["threshold"] == 0.8
     assert comp_entry["payload"]["declared_aggressiveness"] == "low"
@@ -3270,12 +3343,11 @@ def test_budget_usage_journals_the_canonical_feed_key_not_the_harness_slug():
     assert usage_entries[-1]["payload"]["story_key"] == "3.6"
 
 
-def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
+def test_a_per_story_breach_names_the_story_in_its_warn_and_breach_payloads():
     """REGRESSION (review finding): a ``scope="story"`` transition journaled
     ``scope``/``metric``/``observed``/``limit`` and nothing else, so the
-    ``budget-warn``/``budget-stop`` pair -- and the
-    ``budget-story-tokens-exceeded`` detach reason derived from it -- said
-    WHAT was exceeded but never WHICH story exceeded it.
+    ``budget-warn`` and the breach entry said WHAT was exceeded but never
+    WHICH story exceeded it.
 
     The only per-story identity anywhere in the run's evidence was the
     adjacent ``budget-usage`` entry, so a consumer building FR-13's
@@ -3284,20 +3356,15 @@ def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
 
     The key is journaled in ``render_feed_key``'s dot form for the same
     reason ``budget-usage`` is: one story must never appear under two
-    spellings in one run's evidence."""
+    spellings in one run's evidence. (Since Story 82.5 the breach is a
+    ``budget-story-breach`` observation, not a ``budget-stop`` pair.)"""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
-    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
-    harness.usage_snapshot_sequence = [
-        UsageSnapshot(
-            story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
-            story_weighted_tokens=1_000,
-            run_weighted_tokens=1_000,
-            sample_path=sample_path,
-        ),
-    ]
+    story = "3-6-budget-ceilings-and-the-heaviest-story-advisory"
+    # 450 / 500 is approaching (>= 0.8), then 1_000 breaches.
+    harness.usage_snapshot_sequence = [_usage(story, 450, 450), _usage(story, 1_000, 1_000)]
 
     rc = run_supervisor(
         _HOME,
@@ -3311,7 +3378,7 @@ def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
         _MAX_WALL_CLOCK_MINUTES_PER_STORY,
         _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs,
-        process=FakeProcess(alive_for=3),
+        process=FakeProcess(alive_for=4),
         clock=clock,
         observer=observer,
         harness=harness,
@@ -3319,12 +3386,15 @@ def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
     )
 
     assert rc == 0
-    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
-    assert stop_intent["payload"]["scope"] == "story"
-    assert stop_intent["payload"]["metric"] == "tokens"
-    assert stop_intent["payload"]["story_key"] == "3.6"
-    assert stop_outcome["payload"]["story_key"] == "3.6"
+    entries = _journal_entries(fs)
+    [warn] = [e for e in entries if e["kind"] == "budget-warn"]
+    [breach] = [e for e in entries if e["kind"] == "budget-story-breach"]
+    for entry in (warn, breach):
+        assert entry["payload"]["scope"] == "story"
+        assert entry["payload"]["metric"] == "tokens"
+        assert entry["payload"]["story_key"] == "3.6"
+    assert warn["payload"]["observed"] == 450
+    assert breach["payload"]["observed"] == 1_000
 
 
 def test_a_per_run_breach_never_attributes_itself_to_a_story():
