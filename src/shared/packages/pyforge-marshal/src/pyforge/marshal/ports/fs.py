@@ -73,6 +73,18 @@ scoped to whatever ``run_promote`` (this story's sole caller) needs
 serialized. The journal's own two-writer case (``append_line`` above) is a
 DIFFERENT, already-shipped concurrency answer (per-run-directory isolation
 plus a single ``O_APPEND`` write) and stays untouched by this pair.
+
+Story 82.4 (``spec-pyforge-marshal`` CAP-2, DW-FU-3-4-8) adds a held-descriptor
+append family -- ``open_append``/``append_held``/``held_file_state``/
+``close_append`` -- for the one writer that must outlive tampering with its own
+journal: the supervisor sidecar. ``append_line`` re-resolves the path on every
+call, so a journal the agent session replaced, removed or made read-only simply
+turns the NEXT append into an error (or, worse, silently recreates it); a
+descriptor opened once at attach keeps writing to the file the supervisor
+attached to, and ``held_file_state`` lets it compare that file with whatever
+the path names NOW. Like ``AdvisoryLock``, the handle is a plain
+acquire/release pair with no context manager; ``append_held`` keeps
+``append_line``'s AD-30 write protocol (one ``os.write``, no buffered stream).
 """
 
 from __future__ import annotations
@@ -94,6 +106,37 @@ class AdvisoryLock:
 
     path: Path
     handle: object
+
+
+@dataclass(frozen=True)
+class AppendHandle:
+    """Opaque handle returned by ``FsPort.open_append`` (Story 82.4), passed
+    back verbatim to ``append_held``/``held_file_state``/``close_append``.
+    ``path`` is the path the caller opened (what ``held_file_state`` compares
+    the held file against); ``handle`` is the adapter-owned OS-level
+    primitive (``LocalFs`` stores the open file descriptor there) -- callers
+    must treat it as opaque, never inspect or mutate it."""
+
+    path: Path
+    handle: object
+
+
+@dataclass(frozen=True)
+class HeldFileState:
+    """What ``FsPort.held_file_state`` reports about an ``AppendHandle``'s file
+    versus what its path names right now (Story 82.4). ``present`` is
+    ``False`` when nothing is at the path any more (``same_file``, ``size``
+    and ``writable`` are then ``False``/``0``/``False``); ``same_file`` is
+    ``True`` when the path still names the very file the handle holds (same
+    device and inode); ``size`` is the byte size of the file AT THE PATH;
+    ``writable`` is whether the path is currently writable by this process --
+    a held descriptor keeps accepting appends after the path goes read-only,
+    so the supervisor reads that fact here rather than from a failing write."""
+
+    present: bool
+    same_file: bool
+    size: int
+    writable: bool
 
 
 class FsPort(Protocol):
@@ -209,6 +252,43 @@ class FsPort(Protocol):
         or on any other I/O failure. The concurrency guarantee is a
         LOCAL-filesystem property of ``O_APPEND``; not guaranteed atomic on
         every network filesystem."""
+        ...
+
+    def open_append(self, path: Path) -> AppendHandle:
+        """Story 82.4: open ``path`` once for appending and return an opaque
+        ``AppendHandle`` for ``append_held``/``held_file_state``/
+        ``close_append``. Opened ``O_WRONLY | O_APPEND`` and deliberately NOT
+        ``O_CREAT`` -- unlike ``append_line``: a journal that has been removed
+        must never be silently recreated by the one writer whose job is to
+        notice that. Raises ``FsError`` on any I/O failure, including a
+        missing ``path``. The handle holds one descriptor for its whole life:
+        pair every successful call with exactly one ``close_append``."""
+        ...
+
+    def append_held(self, handle: AppendHandle, line: str, *, fsync: bool) -> None:
+        """Story 82.4: ``append_line``'s AD-30 write protocol on the
+        descriptor ``handle`` already holds -- a single ``os.write()`` of
+        ``(line + "\\n").encode("utf-8")``, ``fsync``ed only when
+        ``fsync=True``. Raises ``FsError`` if ``line`` contains an embedded
+        newline, on a short write (never retried), or on any other I/O
+        failure. It writes to the file the handle was opened on, which is not
+        necessarily the one ``handle.path`` names now -- see
+        ``held_file_state``."""
+        ...
+
+    def held_file_state(self, handle: AppendHandle) -> HeldFileState:
+        """Story 82.4: compare the file ``handle`` holds with whatever
+        ``handle.path`` names right now (see ``HeldFileState``). Raises
+        ``FsError`` when the state cannot be determined at all (an I/O error
+        other than the path being absent)."""
+        ...
+
+    def close_append(self, handle: AppendHandle) -> None:
+        """Story 82.4: close the descriptor ``open_append`` opened. Best
+        effort and never raises. Call at most ONCE per successful
+        ``open_append`` -- a second call operates on a descriptor number the
+        OS may already have reassigned (the same caller-bug caveat as
+        ``release_advisory_lock``)."""
         ...
 
     def create_dir_exclusive(self, path: Path) -> None:
