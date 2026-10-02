@@ -938,6 +938,45 @@ def test_a_replaced_record_at_the_same_path_claims_every_present_region_and_one_
     assert function(_action_naming(), entry, clean_repo) is None
 
 
+@pytest.mark.parametrize("verb", ["adopt", "update"])
+def test_a_state_built_after_apply_omits_an_artifact_whose_every_region_was_deleted(clean_repo, verb):
+    """The AC at the state builder: a replaced record whose every declared region
+    is absent from the file, and an action naming none. Neither verb's planner
+    produces such an action today (`build_plan` suppresses a hybrid with nothing
+    pending and nothing retained, and the wholesale pass skips an all-opted-out
+    record), so the plan is hand-built -- the builder must still leave the
+    artifact out of state rather than carry a hybrid record with no span, and the
+    state it writes must validate."""
+    module = adopt_module if verb == "adopt" else update_module
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
+    state = _adopt_with_human_text(clean_repo, manifest)
+    _delete_regions(clean_repo, "tiers", "model-badge")
+    in_memory = record_opt_out(record_opt_out(state, "hybrid", "tiers"), "hybrid", "model-badge")
+    assert in_memory.managed == ()
+    inventory = classify(manifest, clean_repo)
+    plan = dataclasses.replace(build_plan(manifest, inventory), actions=(_action_naming(),))
+    common = {
+        "plan": plan,
+        "state": in_memory,
+        "state_as_read": state,
+        "inventory": inventory,
+        "entries_by_id": {entry.id: entry for entry in manifest.entries},
+        "repo_root": clean_repo,
+        "manifest": manifest,
+    }
+
+    built = (
+        module._build_state_after_apply(**common, agents=(), skip=())
+        if verb == "adopt"
+        else module._build_state_after_apply(**common, migrations=())
+    )
+
+    assert built.managed == ()
+    assert built.opted_out == ("hybrid#model-badge", "hybrid#tiers")
+    write_state(built, repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
+    assert read_state(clean_repo) == built
+
+
 # --- review pass 2: a state written before 82.13 -------------------------------
 
 

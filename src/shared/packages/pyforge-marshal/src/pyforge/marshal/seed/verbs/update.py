@@ -968,7 +968,7 @@ def _managed_artifact_after_apply(
                 body_sha=hash_content(region_body_text(text, spans[region.name])),
             )
             for region in entry.regions
-            if region.name in spans and region.name in named
+            if region.name in spans and (installed_by_the_tool or region.name in named)
         )
         if not recorded_spans:
             return None
