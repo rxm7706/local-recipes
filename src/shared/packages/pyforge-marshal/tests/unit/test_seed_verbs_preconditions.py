@@ -1245,6 +1245,122 @@ def test_a_whole_file_managed_record_needs_no_region_format():
     assert record.region_format is None
 
 
+# --- rung 6: an opted-out region is not a hand-edit (Story 82.13) ------------
+
+
+def test_a_recorded_region_that_is_opted_out_is_not_reported_missing(clean_repo):
+    """DW-FU-8-5-5. Deleting a managed region's markers is FR-112's permanent
+    opt-out, yet rung 6 reported the deleted region as "recorded managed region
+    is missing from the file" and offered `--force` or undoing the deletion.
+    A caller that passes the opt-out set beside `managed` is no longer
+    refused."""
+    _managed_file(clean_repo, "HYBRID.md", _hybrid_text("tiers", "first body\n"))
+    _commit_all(clean_repo)
+    record = ManagedRecord(
+        artifact_id="hybrid",
+        path="HYBRID.md",
+        region_shas=(("tiers", hash_content("first body\n")), ("model-badge", "12345678")),
+        region_format=RegionFormat.HTML,
+    )
+
+    with pytest.raises(PreconditionFailure, match="HYBRID.md#model-badge"):
+        _check(_plan(), clean_repo, managed=(record,))
+
+    assert _check(_plan(), clean_repo, managed=(record,), opted_out=frozenset({("hybrid", "model-badge")})) is None
+
+
+def test_the_opt_out_set_is_keyed_by_artifact_id_and_region_name_both(clean_repo):
+    """A pair for another artifact, or for another region of this one, excuses
+    nothing."""
+    _managed_file(clean_repo, "HYBRID.md", _hybrid_text("tiers", "body\n"))
+    _commit_all(clean_repo)
+    record = ManagedRecord(
+        artifact_id="hybrid",
+        path="HYBRID.md",
+        region_shas=(("model-badge", "12345678"),),
+        region_format=RegionFormat.HTML,
+    )
+
+    for other in ({("another", "model-badge")}, {("hybrid", "tiers")}):
+        with pytest.raises(PreconditionFailure, match="HYBRID.md#model-badge"):
+            _check(_plan(), clean_repo, managed=(record,), opted_out=frozenset(other))
+
+
+def test_an_opted_out_region_that_is_present_and_modified_is_still_refused(clean_repo):
+    """Only ABSENCE is excused. A region the file still contains is
+    hash-checked whether or not its pair is in the set, so the set never
+    weakens detection of a hand-edit."""
+    _managed_file(clean_repo, "HYBRID.md", _hybrid_text("tiers", "hand edited\n"))
+    _commit_all(clean_repo)
+    record = ManagedRecord(
+        artifact_id="hybrid",
+        path="HYBRID.md",
+        region_shas=(("tiers", hash_content("original\n")),),
+        region_format=RegionFormat.HTML,
+    )
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        _check(_plan(), clean_repo, managed=(record,), opted_out=frozenset({("hybrid", "tiers")}))
+
+    assert "HYBRID.md#tiers" in excinfo.value.message
+
+
+def test_an_opt_out_does_not_excuse_an_unparseable_file_or_an_unrecorded_region(clean_repo):
+    fmt = RegionFormat.HTML
+    unclosed = f"intro\n{render_begin(fmt, 'tiers', _VERSION, '12345678')}\nbody\n"
+    _managed_file(clean_repo, "UNPARSEABLE.md", unclosed)
+    _managed_file(clean_repo, "HYBRID.md", _two_region_text())
+    _commit_all(clean_repo)
+    opted_out = frozenset({("unparseable", "tiers"), ("hybrid", "tiers")})
+
+    unparseable = ManagedRecord(
+        artifact_id="unparseable",
+        path="UNPARSEABLE.md",
+        region_shas=(("tiers", "12345678"),),
+        region_format=fmt,
+    )
+    with pytest.raises(PreconditionFailure, match="cannot be parsed"):
+        _check(_plan(), clean_repo, managed=(unparseable,), opted_out=opted_out)
+
+    # `model-badge` is present in the file but was never recorded: still refused.
+    unrecorded = ManagedRecord(
+        artifact_id="hybrid",
+        path="HYBRID.md",
+        region_shas=(("tiers", hash_content("first body\n")),),
+        region_format=fmt,
+    )
+    with pytest.raises(PreconditionFailure, match="never recorded in state"):
+        _check(_plan(), clean_repo, managed=(unrecorded,), opted_out=opted_out)
+
+
+def test_force_still_bypasses_rung_6_with_or_without_an_opt_out_set(clean_repo):
+    _managed_file(clean_repo, "HYBRID.md", _hybrid_text("tiers", "hand edited\n"))
+    _commit_all(clean_repo)
+    record = ManagedRecord(
+        artifact_id="hybrid",
+        path="HYBRID.md",
+        region_shas=(("tiers", hash_content("original\n")),),
+        region_format=RegionFormat.HTML,
+    )
+
+    assert _check(_plan(), clean_repo, managed=(record,), force=True) is None
+    assert _check(_plan(), clean_repo, managed=(record,), opted_out=frozenset({("x", "y")}), force=True) is None
+
+
+def test_the_module_still_imports_nothing_from_seed_state():
+    """The opt-out set arrives as plain `(artifact_id, region)` pairs, so this
+    module holds no competing opt-out model and no `<id>#<region>` spelling."""
+    import ast
+
+    tree = ast.parse(Path(preconditions.__file__).read_text(encoding="utf-8"))
+    imported = [
+        node.module or ""
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom) and node.level >= 1
+    ]
+    assert not [module for module in imported if module == "state" or module.startswith("state.")]
+
+
 # --- ladder order ----------------------------------------------------------
 
 
