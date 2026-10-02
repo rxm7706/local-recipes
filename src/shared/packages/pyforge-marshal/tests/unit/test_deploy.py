@@ -1393,6 +1393,34 @@ def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(tmp_pat
     assert merge_outcomes[0]["payload"]["merge_sha"] == "merge-sha-456"
 
 
+def test_land_story_with_a_malformed_merge_subject_template_merges_with_the_default_subject(
+    tmp_path, capsys, monkeypatch
+):
+    """Story 82.3 (DW-5-10-1): a project ``merge_subject_template`` without exactly one ``{key}`` is
+    rejected at composition (``MRS-POLICY-002``); ``land-story`` renders the default template and never
+    raises the bare ``ValueError`` it used to."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
+    policy_path = tmp_path / "bad-template-marshal-policy.toml"
+    policy_path.write_text('merge_subject_template = "Merge {key} and {key}"\n', encoding="utf-8")
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        window_subjects=("Merge acme/4.3 into main",),
+    )
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert "MRS-POLICY-002" in [finding["code"] for finding in payload["findings"]]
+    expected_subject = render_merge_subject(normalize("4.3"), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
+    assert payload["data"]["subject"] == expected_subject
+    assert vcs.merge_branch_calls == [("branch-tip-sha", "main", expected_subject)]
+    # The rejected layer is reported (an error-tier MRS-POLICY-002), so the envelope is not clean.
+    assert payload["verdict"] == "unevaluable"
+    assert exit_code == 1
+
+
 def test_land_story_reports_non_conforming_merges_without_blocking(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
