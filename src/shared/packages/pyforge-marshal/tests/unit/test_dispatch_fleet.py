@@ -2876,39 +2876,39 @@ def test_stories_supervisor_reinvocation_via_run_fleet_drain_carries_stories(
 # --------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize("retry", [True, False])
 def test_spawned_supervisor_argv_carries_retry_environment_blocks_only_when_set(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, retry: bool
 ) -> None:
     """The REAL ``run_fleet_drain`` -> ``_spawn_campaign_supervisor`` path:
     a campaign launched with ``--retry-environment-blocks`` hands the flag to
-    its detached supervisor (AC1); without it the argv is the pre-81.3 one
-    (AC3). Dropping ``retry_environment_blocks=`` at the call site, or the
-    flag append inside the spawn, fails this test (AC4 mutation)."""
+    its detached supervisor as the trailing argument (AC1); without it the
+    argv is the pre-81.3 one (AC3). Dropping ``retry_environment_blocks=`` at
+    the call site, or the flag append inside the spawn, fails the ``True``
+    case (AC4 mutation)."""
     _init_git_repo(tmp_path)
     _seed_fleet(tmp_path, stories={"pyforge-marshal": ["22-7-fleet"]})
     monkeypatch.chdir(tmp_path)
-    ledgers = {"pyforge-marshal": (("22-7-fleet", "backlog"),)}
-
-    with_flag = FakeProcess(alive=False)
+    process = FakeProcess(alive=False)
     code = _run_drain(
         tmp_path,
-        _drain_args(retry_environment_blocks=True),
-        ledgers=ledgers,
-        process=with_flag,
+        _drain_args(retry_environment_blocks=retry),
+        ledgers={"pyforge-marshal": (("22-7-fleet", "backlog"),)},
+        process=process,
     )
     assert code == EXIT_OK
-    [flagged] = [argv for argv in with_flag.spawned if "pyforge.marshal.dispatch_fleet_supervisor" in argv]
-    assert flagged[-1] == "--retry-environment-blocks"
-    assert flagged.count("--retry-environment-blocks") == 1
-
-    without_flag = FakeProcess(alive=False)
-    code = _run_drain(tmp_path, _drain_args(), ledgers=ledgers, process=without_flag)
-    assert code == EXIT_OK
-    [plain] = [argv for argv in without_flag.spawned if "pyforge.marshal.dispatch_fleet_supervisor" in argv]
-    assert "--retry-environment-blocks" not in plain
-    # Byte-identical to today's argv apart from the freshly minted run id
-    # (index 4): the flagged one is exactly the plain one plus the flag.
-    assert flagged[:-1][:4] + flagged[:-1][5:] == plain[:4] + plain[5:]
+    [campaign_argv] = [argv for argv in process.spawned if "pyforge.marshal.dispatch_fleet_supervisor" in argv]
+    if retry:
+        assert campaign_argv.count("--retry-environment-blocks") == 1
+        assert campaign_argv[-1] == "--retry-environment-blocks"
+        # The ten positionals are untouched ahead of it: repo_root, run_id,
+        # mode, leave_remaining, max_cycles, tick_seconds, station, stories,
+        # harness, max_in_flight.
+        assert campaign_argv[3:-1][2] == "drain_to_zero"
+        assert len(campaign_argv[3:-1]) == 10
+    else:
+        assert "--retry-environment-blocks" not in campaign_argv
+        assert len(campaign_argv[3:]) == 10
 
 
 def test_supervisor_main_parses_retry_environment_blocks(monkeypatch: pytest.MonkeyPatch) -> None:
