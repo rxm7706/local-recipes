@@ -11,11 +11,11 @@ report, an already-selected scope-check verdict, an already-known tree
 revision, an already-obtained UTC timestamp) into the one dict shape
 ``schemas/gate-record.json`` describes, mirroring ``core.gate.
 classify_outcome``'s own "caller already gathered the fact" convention:
-this module does no I/O, no VCS call, no clock read (AD-4) -- ``cli/gate.py``
-wiring a real caller is explicitly deferred (see ``deferred-work.md``; the
-epics.md Surface line for this story omits ``cli/gate.py``/``core/gate.py``,
-mirroring Story 2.4's identical "shipped a fully-tested pure function with
-zero CLI wiring" precedent).
+this module does no I/O, no VCS call, no clock read (AD-4). Story 2.6 shipped
+the function without a caller; Story 82.9 (DW-FU-2-6-2) wired it:
+``cli/gate.py::evaluate_gate`` builds the record from facts it already holds
+and writes it through ``RecordPort.write_redacted_atomic`` under
+``GATE_RECORD_FILENAME`` -- the one place the file name is spelled.
 
 **Why two redaction mechanisms coexist.** ``core.policy.redact()`` (Story
 1.3) redacts by field NAME for policy-VALUE DISPLAY (``cli/config.py``) --
@@ -223,8 +223,10 @@ EGRESS_PORTS: Mapping[str, bool] = {
 @dataclass(frozen=True)
 class Redacted:
     """An already-redacted, already-serialized payload (AD-34) -- the ONLY
-    value type an egress-classified port (``RecordPort``) may accept, never
-    a bare ``str``. The sole legitimate constructor is ``to_redacted()``;
+    value type an egress-classified port (``RecordPort``, ``CommitPort``, ...)
+    may accept for its payload, never a bare ``str``. The legitimate
+    constructors are ``to_redacted()`` (a ``Mapping`` payload, serialized as
+    JSON) and ``to_redacted_text()`` (plain text, a commit message);
     ``Redacted`` itself performs no redaction -- it is a type boundary, not
     a mechanism, so nothing stops a caller from wrapping already-secret text
     directly. What DOES stop that is structural: every real write path goes
