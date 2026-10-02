@@ -2,7 +2,7 @@
 title: '82.12: Seed apply binds a plan to its repository, refuses a directory target with a remedy, and honours a skip on a hand-edit'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: 'c34cbda1919e96c2a9691404e0e794672d8b90b9'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -113,6 +113,20 @@ Paths below are under `src/shared/packages/pyforge-marshal/`; `seed/` is `src/py
 
 ## Spec Change Log
 
+### 2026-10-02 — review pass 1 (bad_spec, iteration 1)
+
+- **Triggering finding:** Blind Hunter, Edge Case Hunter and Intent Alignment Auditor each found, independently, that `update` was given no `--skip`, so the criterion "`--skip <pattern>` matching a hand-edited managed file exempts it from rung 6 in `adopt` and `update` alike" (`epics.md` Story 82.12) was delivered for `adopt` only. Verified: the `update` subparser in `cli/seed.py` declares no `--skip`, `run_update` takes no `skip`, and the first-pass Design Note justified this as "a flag is out of scope".
+- **Root cause:** the Design Note, the Code Map line and the Tasks line (all outside the `<intent-contract>`) read "no flag" in the contract's CAP line as "no CLI option". In this epic "no flag" means no feature flag (`epics.md` Epic 82 intro; Story 82.1 cites `spec-feature-flag-governance` Q1).
+- **Amended:** Code Map (the `--skip` line, a new stale-text line, the test list), Tasks (a `cli/seed.py` + `update.py` task for `update --skip`, a stale-text task, extra test pins, the memlog task), the acceptance bullet for `update`, and the `update` Design Note. The `<intent-contract>` is unchanged.
+- **Known-bad state avoided:** dropping a hand-edited file's record from rung 6 on `update` without moving its wholesale-regenerate action into `plan.skipped` would let `update` overwrite the edit with no `--force`. Both halves ship together.
+- **KEEP (worked in pass 1, must survive re-derivation):**
+  - `RepoFingerprint` gains required `repo_root: str` and `git_common_dir: str | None`, serialized in `plan.json`; `plan/build.py::_repo_identity` resolves the root and resolves `git rev-parse --git-common-dir` against it (`None` on a non-zero exit); `fingerprint_drift` reports root, then common-dir, then `git_head`/`dirty`/hashes.
+  - A fingerprint with the three legacy keys and no `repo_root` raises `PreconditionFailure` `stale-plan` (re-plan remedy) from `RepoFingerprint.from_json_dict`; any other malformed shape stays `ValueError`.
+  - Rung 5 refuses `S_ISDIR` as `directory-target` inside the same rung, after the `S_ISLNK` branch; no seventh rung.
+  - `managed_after_skips(managed, plan, patterns=())` matches a record's normalized `path` with `first_match` and validates patterns with `_require_patterns`; `adopt` passes `skip`.
+  - The tests added in pass 1: apply A-to-B refusal, drift ordering, symlinked-alias-of-same-root is not drift, two worktrees of one clone agree and two clones differ, legacy-fingerprint refusal and round trip, directory/empty-directory/symlink-to-directory/`--skip`/rung-order pins, `managed_after_skips` pattern and normalization pins, the `run_adopt` two-hand-edits pins, the `run_update` plan-skipped pins.
+  - Mutation evidence: revert each fix in turn and run its new test; the pass-1 implementation recorded that every one failed.
+
 ## Design Notes
 
 - **Why `update` needs both halves of a skip.** Its wholesale-regenerate pass emits an action for every managed `copied-managed`, `generated-derived` and `hybrid-managed-region` record, so dropping a hand-edited file's record from rung 6 without also moving that file's action into `plan.skipped` would let `update` overwrite the edit with no `--force` -- worse than the refusal. `apply_skips` moves the action; `managed_after_skips` drops the record by id (for the moved action) and by path (for a record no action exists for). A record whose entry was retired or reclassified has no wholesale action, so only the path match can reach it. This replaces the first-pass design note that left `update` without a pattern: that note read "no flag" in the contract's CAP line as "no CLI option", but it means no feature flag, and `epics.md` requires the exemption in `adopt` and `update` alike.
@@ -135,4 +149,37 @@ Closes: DW-10-3-7, DW-10-4-5, DW-10-4-4.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-02 — Review pass
+- verdicts: 26 findings — high 0, medium 3, low 18, false 5, maybe-false 0
+- Layers: Blind Hunter (13), Edge Case Hunter (7), Verification Gap (0 gaps, 2 other findings), Intent Alignment Auditor (4 divergences extracted from its descriptive report). Routing: one `bad_spec` group (3 members), so every `patch` row below is moot for this pass and is folded into the amended Tasks so the re-derivation carries it.
+- findings:
+  - Blind Hunter
+    - `[low]` `[patch]` `migrate/registry.py` docstring still gives `RepoFingerprint(git_head=None, dirty=True, artifact_hashes=())` as a valid placeholder — verified at `registry.py:174-177`: the call now raises `TypeError` (two required fields). Folded into Tasks (stale text).
+    - `[low]` `[patch]` `load_plan` / `types.py` docstrings do not say a pre-82.12 fingerprint raises `PreconditionFailure` and that a fingerprint names its repository — verified: only the `types.py` module paragraph was amended. Folded into Tasks (stale text).
+    - `[low]` `[patch]` the rung-3 repo-root comment in `preconditions.py` says the root "is not a symlink (rung 5 clears)"; rung 5 now also refuses a directory — verified; rung 3's loop runs to completion before rung 5, so the named refusal is still `target-is-repo-root`, only the comment is dated. Folded into Tasks (stale text).
+    - `[low]` `[patch]` `fingerprint_drift` docstring says identity is checked "before anything about its contents is weighed" but the function does not short-circuit — verified at `build.py` (all drift lines are appended). Reword to "listed first". Folded into Tasks (stale text).
+    - `[low]` `[reject]` a skip honoured on a hand-edited managed file is invisible in the plan text and JSON, and a mistyped pattern still no-ops — real, but consistent with the existing contract (`apply_skips`: "a pattern matching nothing is not an error"), the operator typed the pattern, and showing it needs a new `Plan` field or renderer, which is more than a direct correction.
+    - `[low]` `[patch]` the new `dry_run` / `force` claims for `directory-target` have no test — the code is correct (rung 5 is gated by neither) but nothing pins it, and `force` not bypassing it is a boundary of the contract. Folded into Tasks (test pins).
+    - `[low]` `[patch]` identity edge cases untested (`repo_root` a subdirectory of a working tree; a plan built before `git init` applied after) — the code resolves `--git-common-dir` against the `cwd` it ran in, so `../.git` resolves correctly, but no test says so. The sub-claim that `_fresh_plan` breaks in a linked worktree is `false`: it is used only with `tmp_path` repositories and the worktree cases compare against git directly in `test_seed_plan_build.py`. Folded into Tasks (test pins).
+    - `[false]` `[reject]` the wire format has no version marker and the legacy heuristic can mislabel a plan — the legacy shape needs all three legacy keys and no `repo_root`, a plan with other defects also needs a re-plan, and `RepoFingerprint(` is constructed in `src/` only by `build_plan` (Verification Gap layer checked this), so no external construction breaks.
+    - `[low]` `[reject]` the absolute `repo_root` in `plan.json` leaks a host path and makes the file location-specific — the intent says to record the resolved root in `plan.json`; the file is `.marshal/plan.json`, covered by the packaged `.gitignore` region; the `RepoFingerprint` docstring already says a moved repo takes a re-plan.
+    - `[false]` `[reject]` `managed_after_skips` matches the record's `path` while `apply_skips` matches the action's `target_path`, so a pattern could drop the rung 6 guard for an artifact still written — an action writes only at its own `target_path`; a record whose path differs from every action target is never written by this run, and where they are equal both filters match the same pattern.
+    - `[false]` `[reject]` the spec's Review Triage Log, Spec Change Log and verification record are empty — those sections are written by this step, and the finding's fix is to edit this build's spec.
+    - `[medium]` `[bad_spec]` the `update` half of the skip criterion was narrowed without being logged, and DW-10-4-4 is closed although `update` still has no pattern exemption — verified against `epics.md` ("in `adopt` and `update` alike") and the `update` subparser. Amendment: `update` gains `--skip`; see the Spec Change Log. Grouped with the two other members of this root cause.
+    - `[false]` `[reject]` surface stamping is left pending, so `spec-surface-check` stays red — `python scripts/spec_surface_reconcile.py` exits 0 ("no drift") on this tree, and this run is forbidden from passing `--write-baseline`.
+  - Edge Case Hunter
+    - `[low]` `[reject]` a repo path with non-UTF-8 bytes puts surrogates in `repo_root`, and `write_plan` raises a raw `UnicodeEncodeError` — real but rare on a manifest-driven tool; a guard adds a new branch and a new typed failure, more than a direct correction.
+    - `[low]` `[reject]` a pattern-exempted record appears nowhere in the output — same finding and same reason as the Blind Hunter visibility row.
+    - `[low]` `[reject]` the `directory-target` remedy offers `--skip` where `init` has no such option — the existing `symlink-target` and `target-escapes-repo` remedies make the same offer to every verb, the first half of the remedy works everywhere, and `update` gains `--skip` in this pass.
+    - `[low]` `[patch]` `load_plan` docstring says only `ValueError` — same as the Blind Hunter docstring row. Folded into Tasks (stale text).
+    - `[low]` `[patch]` `registry.py` placeholder docstring — same as the Blind Hunter row. Folded into Tasks (stale text).
+    - `[medium]` `[bad_spec]` the acceptance criterion's `update` half is unmet — `update` has no `--skip`, so the criterion cannot be exercised on it. Same root cause as the Blind Hunter row; one amendment.
+    - `[low]` `[patch]` the `update.py` comment says the wholesale pass emits an action for every managed record, but `_wholesale_regenerate_actions` skips a record whose entry is retired, reclassified, escaping or migration-claimed — verified; the comment is wrong in those cases (the pre-existing behaviour that rung 6 can still refuse such a record is unchanged, and the path match in the amended design now reaches it). Folded into Tasks (stale text).
+  - Verification Gap
+    - `[low]` `[patch]` the `preconditions.py` module docstring and the `check_preconditions` docstring still tell a caller to filter with `managed_after_skips(managed, plan)` and say nothing can tell a record was skipped — verified; a caller following that text misses the pattern argument and meets DW-10-4-4 again. Folded into Tasks (stale text).
+    - `[low]` `[patch]` `registry.py` stale constructor — same as the Blind Hunter row. Folded into Tasks (stale text).
+  - Intent Alignment Auditor
+    - `[medium]` `[bad_spec]` the diff implements the `update` half of the skip criterion only as a plan-skipped filter, which `update` cannot reach with a hand-edited file — the clearest divergence between the criterion's surface and the diff's; same root cause as the two rows above.
+    - `[low]` `[reject]` the first two criteria are exercised through library seams (`run_apply` with a `_fresh_plan` fixture, `load_plan`) and no verb-level or CLI-level test — the verbs never load a `plan.json`, so `run_apply` is the surface the criterion names; the producer half (`build_plan` records identity) has its own tests in `test_seed_plan_build.py`, and `run_apply` calls `fingerprint_drift` unchanged.
+    - `[low]` `[reject]` the directory-target criterion is tested at `check_preconditions` and not through a full verb — the ladder is the surface the criterion names; a real plan reaches rung 5 with a directory target through `update`'s wholesale action on a path the operator replaced with a directory, which the unit test models.
+    - `[false]` `[reject]` the mutation criterion has no evidence in the patch — a revert-and-run property cannot appear in a diff; the pass-1 implementation reported running each revert, and the Verification Gap layer read each new test and found it would fail. Not independently re-run in this pass; the re-derivation records it again.

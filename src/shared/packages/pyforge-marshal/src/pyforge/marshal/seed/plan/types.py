@@ -46,11 +46,7 @@ bullet: nothing here is a `seed/verbs`-level operational failure, it is a
 caller-contract violation on load, the same class `manifest.py::
 load_manifest`'s own `_require_text` reports before wrapping as
 `ManifestError` one layer up -- there is no such wrapping layer for a plan,
-so the plain `ValueError` is the final word here). The one exception is a
-`repo_fingerprint` written before it named its repository (Story 82.12): that
-is not a corrupt document but a stale one, which `RepoFingerprint.
-from_json_dict` reports as a `PreconditionFailure` (`stale-plan`) whose
-remedy is to re-run the plan.
+so the plain `ValueError` is the final word here).
 
 No `__post_init__` validation on `Action`/`RepoFingerprint`/`Plan`
 themselves, for the same reason `Classification`/`LegacyRecord`
@@ -66,7 +62,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..detect.inventory import ArtifactState
-from ..errors import PreconditionFailure
 from ..model.manifest import ArtifactClass
 
 
@@ -221,12 +216,6 @@ class Action:
         )
 
 
-# The keys a `repo_fingerprint` carried before Story 82.12 added the repository
-# identity -- present all together and with no `repo_root`, they mark a plan
-# written by an older build rather than a corrupt document.
-_LEGACY_FINGERPRINT_KEYS = frozenset({"git_head", "dirty", "artifact_hashes"})
-
-
 @dataclass(frozen=True)
 class RepoFingerprint:
     """A tamper-evident snapshot of the repo state a `Plan` was computed
@@ -249,53 +238,23 @@ class RepoFingerprint:
     purpose, and would make an empty plan's fingerprint needlessly
     expensive to compute. Sorted by artifact id, matching `Plan.actions`'s
     own determinism requirement -- two `build_plan()` calls against
-    identical repo state must produce byte-identical `plan.json`.
-
-    `repo_root` and `git_common_dir` (Story 82.12) name WHICH repository the
-    plan was built for. Without them a non-git target degrades to the same
-    `git_head=None, dirty=True` in every directory, so a plan built against
-    directory A applied to a different directory B whose actioned artifacts
-    hash the same -- most easily two empty greenfield directories -- reported
-    no drift at all. `repo_root` is the resolved root as a string;
-    `git_common_dir` is the resolved `git rev-parse --git-common-dir`, `None`
-    outside git. Both are resolved paths compared as strings, so moving a
-    repo, or applying a plan to another clone of it, is drift and takes a
-    re-plan."""
+    identical repo state must produce byte-identical `plan.json`."""
 
     git_head: str | None
     dirty: bool
     artifact_hashes: tuple[tuple[str, str], ...]
-    repo_root: str
-    git_common_dir: str | None
 
     def to_json_dict(self) -> dict[str, Any]:
         return {
             "git_head": self.git_head,
             "dirty": self.dirty,
             "artifact_hashes": [[artifact_id, sha] for artifact_id, sha in self.artifact_hashes],
-            "repo_root": self.repo_root,
-            "git_common_dir": self.git_common_dir,
         }
 
     @classmethod
     def from_json_dict(cls, data: dict[str, Any]) -> RepoFingerprint:
-        """Rebuild a fingerprint from its JSON object.
-
-        A `plan.json` written before the repository was recorded carries the
-        three legacy keys and no `repo_root`: that is a STALE plan, not a
-        malformed one, so it raises `PreconditionFailure` (`stale-plan`, exit
-        3) with a remedy to re-run the plan -- it cannot be applied safely,
-        because nothing in it says which repository it was built for. Every
-        other malformed shape stays the plain `ValueError` the rest of this
-        module raises."""
         if not isinstance(data, dict):
             raise ValueError(f"RepoFingerprint: expected a JSON object, got {data!r}")
-        if "repo_root" not in data and _LEGACY_FINGERPRINT_KEYS <= data.keys():
-            raise PreconditionFailure(
-                "stale-plan: the plan's repo_fingerprint predates the repository identity"
-                " (no 'repo_root'), so it cannot say which repository it was built for",
-                remedy="re-run the plan against the current repo and review the fresh plan before applying it",
-            )
         raw_pairs = _require_pair_list(
             _require_key(data, "artifact_hashes", context="RepoFingerprint"),
             context="RepoFingerprint.artifact_hashes",
@@ -317,14 +276,6 @@ class RepoFingerprint:
                 context="RepoFingerprint.dirty",
             ),
             artifact_hashes=artifact_hashes,
-            repo_root=_require_str(
-                _require_key(data, "repo_root", context="RepoFingerprint"),
-                context="RepoFingerprint.repo_root",
-            ),
-            git_common_dir=_require_optional_str(
-                _require_key(data, "git_common_dir", context="RepoFingerprint"),
-                context="RepoFingerprint.git_common_dir",
-            ),
         )
 
 

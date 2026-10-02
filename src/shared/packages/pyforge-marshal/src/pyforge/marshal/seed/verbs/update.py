@@ -138,16 +138,6 @@ special for it (the check is entirely on the CLI side, against
 ``Plan.skipped`` this module already produces via ``migrate.compose``
 unchanged).
 
-**Rung 6 and ``Plan.skipped`` (Story 82.12).** Those same migration-offered
-``copied-seeded`` entries sit in ``Plan.skipped`` with no action, but their
-``state.managed[]`` records were still handed to ``check_preconditions``'s rung
-6, which would refuse a hand-edit of a file this run was never going to write.
-The records now go through ``skips.managed_after_skips`` with the plan (and no
-patterns: ``update`` has no ``--skip``), so rung 6 is not asked about an
-artifact the plan skipped. A managed record WITHOUT a skip is still checked --
-``_wholesale_regenerate_actions`` emits an action for every one, so a refusal
-there guards a real overwrite.
-
 **Ordering** (the Always bullets' own sequencing, restated as code):
 resolve (``_manifest_for_update``) -> detect (``classify``) -> plan (build +
 migrate + wholesale, merged via ``_merge_plan_sources``) -> preconditions
@@ -215,7 +205,6 @@ from ..state import (
     write_state,
 )
 from .preconditions import ManagedRecord, check_preconditions
-from .skips import managed_after_skips
 
 # The classes `_wholesale_regenerate_actions` ever fires for -- FR-98/FR-99's
 # own named classes. `copied-seeded` and `referenced` are deliberately
@@ -1086,19 +1075,10 @@ def run_update(
     # refuse the whole run there (Story 82.11) -- it is already reported in
     # `escape_findings` and planned for nothing, so it is not handed to rung 6.
     escaping_ids = {escape.entry_id for escape in inventory.escaping}
-    # An artifact the plan skipped (a migration-offered `copied-seeded` entry
-    # sits in `plan.skipped` with no action) is not going to be written, so its
-    # record is not handed to rung 6 either (Story 82.12, DW-10-4-4). No
-    # patterns: `update` has no `--skip`, and its wholesale-regenerate pass emits
-    # an action for every managed record, so rung 6 refusing a hand-edit here
-    # still guards a real overwrite.
-    managed_records = managed_after_skips(
-        tuple(
-            record
-            for record in _managed_records(state, filtered_manifest, repo_root)
-            if record.artifact_id not in escaping_ids
-        ),
-        plan,
+    managed_records = tuple(
+        record
+        for record in _managed_records(state, filtered_manifest, repo_root)
+        if record.artifact_id not in escaping_ids
     )
     check_preconditions(
         plan,

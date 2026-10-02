@@ -409,9 +409,7 @@ def test_migration_offered_copied_seeded_renders_as_an_explicit_offer_never_matc
         )
         return Plan(
             actions=(offer,),
-            repo_fingerprint=RepoFingerprint(
-                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
-            ),
+            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -433,9 +431,7 @@ def test_render_update_plan_text_directly_proves_the_dw_fu_11_3_fix():
 
     plan = Plan(
         actions=(),
-        repo_fingerprint=RepoFingerprint(
-            git_head=None, dirty=False, artifact_hashes=(), repo_root="/repo", git_common_dir=None
-        ),
+        repo_fingerprint=RepoFingerprint(git_head=None, dirty=False, artifact_hashes=()),
         skipped=(
             SkippedArtifact(
                 artifact_id="offer",
@@ -456,9 +452,7 @@ def test_render_update_plan_text_still_renders_an_ordinary_skip_pattern():
 
     plan = Plan(
         actions=(),
-        repo_fingerprint=RepoFingerprint(
-            git_head=None, dirty=False, artifact_hashes=(), repo_root="/repo", git_common_dir=None
-        ),
+        repo_fingerprint=RepoFingerprint(git_head=None, dirty=False, artifact_hashes=()),
         skipped=(SkippedArtifact(artifact_id="x", target_path="X.md", pattern="X.md"),),
     )
 
@@ -487,9 +481,7 @@ def test_include_seeded_flag_reaches_the_verb(clean_repo, monkeypatch, capsys):
         )
         return Plan(
             actions=(offer,),
-            repo_fingerprint=RepoFingerprint(
-                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
-            ),
+            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)

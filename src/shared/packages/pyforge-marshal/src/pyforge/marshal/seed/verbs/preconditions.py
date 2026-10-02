@@ -26,7 +26,7 @@ content structurally cannot live there.
 2. The worktree is dirty.
 3. An action's target escapes `repo_root`.
 4. An action's target matches a `never_write` pattern.
-5. An action's target exists and is a symlink or a directory.
+5. An action's target exists and is a symlink.
 6. Managed content on disk diverges from what state recorded.
 
 The order is not cosmetic -- the AC pins it, so a repo failing two rungs
@@ -41,7 +41,7 @@ cheaper has passed.
 `dry_run=True` bypasses rung 2 ONLY: "reading is always safe" is a claim
 about the worktree's cleanliness, not about whether git exists at all or
 whether the plan is even coherent, so a dry run still refuses a non-repo,
-an escaping path, a never-write target, a symlink, and a directory target. `force=True`
+an escaping path, a never-write target, and a symlink. `force=True`
 bypasses rung 6 ONLY -- it is the operator's explicit "yes, discard my
 hand-edit". Its real bound, stated rather than implied (found in review):
 because `force` returns before rung 6 runs AT ALL, and because
@@ -62,12 +62,7 @@ disagree about the same path (Story 82.11). That helper matches the target as
 the operator WROTE it and in its resolved form, and a refusal on either wins,
 so a symlinked ancestor (`docs -> real/`) no longer hides `docs/dreams/x.md`
 from `docs/dreams/*.md`; a directory target is also matched as `dir/`. Rung
-5's `lstat()` still inspects the LEAF only, and refuses two kinds of node there:
-a symlink (the write would go through it) and an existing directory (the
-runner's final `os.replace(tmp, target)` would fail with an untyped
-`IsADirectoryError` outside the `SeedError` taxonomy -- Story 82.12), the
-second as a `PreconditionFailure` (`directory-target`) like every other
-refusal in this ladder, inside the same rung rather than a seventh.
+5's `lstat()` still inspects the LEAF only.
 
 **Why rung 6 iterates the caller's state records, not the plan's actions.**
 `detect.inventory.classify` marks a present `copied-managed` artifact
@@ -114,7 +109,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from stat import S_ISDIR, S_ISLNK
+from stat import S_ISLNK
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
@@ -653,16 +648,6 @@ def check_preconditions(
                 remedy=(
                     "replace the symlink with a regular file if seed should own it,"
                     f" or leave it alone with --skip {action.target_path!r}"
-                ),
-            )
-        if S_ISDIR(mode):
-            raise PreconditionFailure(
-                f"directory-target: action {action.artifact_id!r} targets"
-                f" {action.target_path!r} (resolved: {relative!r}), which is an existing"
-                " directory -- seed writes a file there, and cannot replace a directory",
-                remedy=(
-                    "remove or rename the directory if seed should own a file at this"
-                    f" path, or leave it alone with --skip {action.target_path!r}"
                 ),
             )
 

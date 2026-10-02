@@ -59,8 +59,6 @@ def _fingerprint(**overrides) -> RepoFingerprint:
         "git_head": "abc123",
         "dirty": False,
         "artifact_hashes": (("a", "aaaaaaaa"), ("b", "bbbbbbbb"), ("c", "cccccccc")),
-        "repo_root": "/work/repo",
-        "git_common_dir": "/work/repo/.git",
     }
     fields.update(overrides)
     return RepoFingerprint(**fields)
@@ -511,8 +509,6 @@ def test_apply_skips_carries_an_unknown_repo_fingerprint_field_through():
             git_head="abc123",
             dirty=False,
             artifact_hashes=(("a", "aaaaaaaa"), ("b", "bbbbbbbb"), ("c", "cccccccc")),
-            repo_root="/work/repo",
-            git_common_dir="/work/repo/.git",
         ),
     )
 
@@ -520,9 +516,6 @@ def test_apply_skips_carries_an_unknown_repo_fingerprint_field_through():
 
     assert isinstance(result.repo_fingerprint, _FutureFingerprint)
     assert result.repo_fingerprint.provenance == "recorded-by-a-later-story"
-    # The repository identity (Story 82.12) rides through a skip like any other field.
-    assert result.repo_fingerprint.repo_root == "/work/repo"
-    assert result.repo_fingerprint.git_common_dir == "/work/repo/.git"
     assert result.repo_fingerprint.artifact_hashes == (("a", "aaaaaaaa"), ("b", "bbbbbbbb"))
 
 
@@ -591,77 +584,6 @@ def test_managed_after_skips_never_mutates_its_arguments():
 
     assert [record.artifact_id for record in records] == ["a", "b", "c"]
     assert [entry.artifact_id for entry in plan.skipped] == ["a", "b", "c"]
-
-
-def _plan_with_no_actions() -> Plan:
-    """What `build_plan` yields when every managed file is `PRESENT_CONFORMANT`:
-    a hand-edited `copied-managed` file is one, so it has no action and can
-    never reach `plan.skipped` (DW-10-4-4)."""
-    return Plan(actions=(), repo_fingerprint=_fingerprint())
-
-
-def test_managed_after_skips_drops_a_record_whose_path_matches_a_pattern_the_plan_never_skipped():
-    plan = _plan_with_no_actions()
-    assert plan.skipped == ()
-    records = (_record("a"), _record("b"))
-
-    assert managed_after_skips(records, plan, ("a.md",)) == (_record("b"),)
-
-
-def test_managed_after_skips_without_patterns_still_keeps_a_record_the_plan_did_not_skip():
-    """The mutation partner of the test above: with no pattern the helper is
-    the `plan.skipped` filter alone, so nothing here is dropped."""
-    records = (_record("a"), _record("b"))
-
-    assert managed_after_skips(records, _plan_with_no_actions()) == records
-    assert managed_after_skips(records, _plan_with_no_actions(), ()) == records
-
-
-def test_managed_after_skips_matches_a_pattern_as_a_glob_over_the_record_path():
-    records = (
-        ManagedRecord(artifact_id="x", path="docs/x/y.md", body_sha="deadbeef"),
-        ManagedRecord(artifact_id="z", path="CLAUDE.md", body_sha="deadbeef"),
-    )
-
-    assert managed_after_skips(records, _plan_with_no_actions(), ("docs/*",)) == (records[1],)
-
-
-def test_managed_after_skips_normalizes_a_record_path_the_way_apply_skips_normalizes_a_target():
-    """One `--skip` glob must mean the same thing to an action and to a
-    managed record: a leading `./` and doubled `/` are cosmetic to both."""
-    record = ManagedRecord(artifact_id="a", path="./docs//a.md", body_sha="deadbeef")
-
-    assert managed_after_skips((record,), _plan_with_no_actions(), ("docs/a.md",)) == ()
-
-
-def test_managed_after_skips_applies_the_plan_skips_and_the_patterns_together():
-    plan = apply_skips(_three_action_plan(), ("docs/a.md",))
-    records = (_record("a"), _record("b"), _record("c"))
-
-    assert managed_after_skips(records, plan, ("c.md",)) == (_record("b"),)
-
-
-def test_managed_after_skips_strips_a_padded_pattern_like_every_other_entry_point():
-    assert managed_after_skips((_record("a"),), _plan_with_no_actions(), ("  a.md  ",)) == ()
-
-
-def test_managed_after_skips_rejects_a_bare_string_pattern():
-    """A bare `str` iterates into characters, and `*` is very often one of them."""
-    with pytest.raises(UsageError):
-        managed_after_skips((_record("a"),), _plan_with_no_actions(), "a.md")  # type: ignore[arg-type]
-
-
-def test_managed_after_skips_rejects_a_blank_pattern():
-    with pytest.raises(UsageError):
-        managed_after_skips((_record("a"),), _plan_with_no_actions(), ("   ",))
-
-
-def test_managed_after_skips_never_mutates_the_records_when_a_pattern_drops_one():
-    records = (_record("a"), _record("b"))
-
-    managed_after_skips(records, _plan_with_no_actions(), ("a.md",))
-
-    assert [record.artifact_id for record in records] == ["a", "b"]
 
 
 def test_a_skipped_plan_round_trips_through_json():

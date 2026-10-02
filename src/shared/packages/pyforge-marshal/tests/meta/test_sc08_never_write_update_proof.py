@@ -127,9 +127,7 @@ def _absent_action(artifact_id: str, path: str) -> Action:
 def _migration_plan(*actions: Action) -> Plan:
     return Plan(
         actions=actions,
-        repo_fingerprint=RepoFingerprint(
-            git_head=None, dirty=False, artifact_hashes=(), repo_root="/repo", git_common_dir=None
-        ),
+        repo_fingerprint=RepoFingerprint(git_head=None, dirty=False, artifact_hashes=()),
     )
 
 

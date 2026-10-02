@@ -35,7 +35,6 @@ import pytest
 
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState, classify
-from pyforge.marshal.seed.errors import PreconditionFailure
 from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
     ArtifactClass,
@@ -454,23 +453,6 @@ def test_load_plan_raises_value_error_naming_a_missing_key(tmp_path):
         load_plan(path)
 
 
-def test_load_plan_refuses_a_plan_json_written_before_the_repository_was_recorded(tmp_path):
-    """Story 82.12: such a file says nothing about which repository it was
-    built for, so it is a stale plan with a re-plan remedy -- not a
-    `ValueError`, and never silently loaded."""
-    path = tmp_path / "plan.json"
-    data = _sample_plan(tmp_path).to_json_dict()
-    del data["repo_fingerprint"]["repo_root"]
-    del data["repo_fingerprint"]["git_common_dir"]
-    path.write_text(json.dumps(data))
-
-    with pytest.raises(PreconditionFailure) as excinfo:
-        load_plan(path)
-
-    assert "stale-plan" in str(excinfo.value)
-    assert "re-run the plan" in excinfo.value.remedy
-
-
 def test_load_plan_raises_value_error_for_syntactically_invalid_json(tmp_path):
     path = tmp_path / "plan.json"
     path.write_text("{not valid json")
@@ -614,113 +596,6 @@ def test_fingerprint_drift_names_dirty_once_the_worktree_is_dirtied(tmp_path):
     drift = fingerprint_drift(plan, tmp_path)
     assert len(drift) == 1
     assert "dirty" in drift[0]
-
-
-# --- the repository identity (Story 82.12, DW-10-3-7) -----------------------
-
-
-def test_build_plan_records_the_resolved_root_and_no_git_directory_for_a_non_git_target(tmp_path):
-    fingerprint = _sample_plan(tmp_path).repo_fingerprint
-
-    assert fingerprint.repo_root == str(tmp_path.resolve())
-    assert fingerprint.git_common_dir is None
-
-
-def test_build_plan_records_the_git_common_directory_for_a_git_target(tmp_path):
-    _init_git_repo(tmp_path)
-
-    fingerprint = _sample_plan(tmp_path).repo_fingerprint
-
-    assert fingerprint.repo_root == str(tmp_path.resolve())
-    assert fingerprint.git_common_dir == str((tmp_path / ".git").resolve())
-
-
-def test_a_plan_for_one_empty_non_git_directory_is_stale_against_another(tmp_path):
-    """DW-10-3-7: both directories degrade to `git_head=None, dirty=True` and
-    hold nothing at the actioned path, so before the repository was recorded
-    nothing separated them and apply seeded the wrong directory."""
-    directory_a = tmp_path / "a"
-    directory_b = tmp_path / "b"
-    directory_a.mkdir()
-    directory_b.mkdir()
-    plan = _sample_plan(directory_a)
-    assert fingerprint_drift(plan, directory_a) == ()
-
-    drift = fingerprint_drift(plan, directory_b)
-
-    assert len(drift) == 1
-    assert drift[0].startswith("repo_root:")
-    assert str(directory_a.resolve()) in drift[0]
-    assert str(directory_b.resolve()) in drift[0]
-
-
-def test_a_plan_is_not_stale_against_its_own_repository_reached_through_a_symlink(tmp_path):
-    """The identity is the RESOLVED root, so a different spelling of the same
-    directory is not drift."""
-    real = tmp_path / "real"
-    real.mkdir()
-    alias = tmp_path / "alias"
-    alias.symlink_to(real, target_is_directory=True)
-    plan = _sample_plan(real)
-
-    assert fingerprint_drift(plan, alias) == ()
-
-
-def test_a_plan_built_in_one_worktree_is_stale_in_another_though_they_share_a_git_directory(tmp_path):
-    """Two worktrees of one clone share a git common directory, so only the
-    root separates them -- and `git` answers that directory as a relative path
-    in one and an absolute one in the other, so the comparison is only
-    meaningful if each is resolved against its own root first."""
-    main = tmp_path / "main"
-    main.mkdir()
-    _init_git_repo(main)
-    linked = tmp_path / "linked"
-    _git(main, "worktree", "add", "-b", "other", str(linked))
-    plan = _sample_plan(main)
-    assert fingerprint_drift(plan, main) == ()
-
-    drift = fingerprint_drift(plan, linked)
-
-    assert [line.split(":", 1)[0] for line in drift] == ["repo_root"]
-    assert plan.repo_fingerprint.git_common_dir == _sample_plan(linked).repo_fingerprint.git_common_dir
-
-
-def test_a_plan_is_stale_against_a_different_clone_even_when_every_other_field_agrees(tmp_path):
-    """The common-directory leg on its own: give the plan clone B's root and
-    HEAD, and the one thing left to separate it from B is clone A's git
-    directory."""
-    clone_a = tmp_path / "a"
-    clone_b = tmp_path / "b"
-    clone_a.mkdir()
-    clone_b.mkdir()
-    _init_git_repo(clone_a)
-    _init_git_repo(clone_b)
-    plan = _sample_plan(clone_a)
-    head_b = _git(clone_b, "rev-parse", "HEAD").stdout.strip()
-    plan = dataclasses.replace(
-        plan,
-        repo_fingerprint=dataclasses.replace(plan.repo_fingerprint, repo_root=str(clone_b.resolve()), git_head=head_b),
-    )
-
-    drift = fingerprint_drift(plan, clone_b)
-
-    assert len(drift) == 1
-    assert drift[0].startswith("git_common_dir:")
-    assert str((clone_a / ".git").resolve()) in drift[0]
-
-
-def test_the_repository_identity_is_reported_before_every_other_drift(tmp_path):
-    directory_a = tmp_path / "a"
-    directory_b = tmp_path / "b"
-    directory_a.mkdir()
-    directory_b.mkdir()
-    _init_git_repo(directory_b)
-    plan = _sample_plan(directory_a)
-
-    drift = fingerprint_drift(plan, directory_b)
-
-    assert drift[0].startswith("repo_root:")
-    assert any(line.startswith("git_head:") for line in drift)
 
 
 def test_fingerprint_drift_names_the_artifact_id_when_an_actioned_file_is_hand_edited(tmp_path):
