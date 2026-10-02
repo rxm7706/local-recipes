@@ -29,8 +29,10 @@ import dataclasses
 import re
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
+import yaml
 
 from pyforge.marshal.seed.detect.findings import FindingType
 from pyforge.marshal.seed.detect.hashes import hash_content, region_body_text
@@ -62,6 +64,7 @@ from pyforge.marshal.seed.state import (
     SeedState,
     read_state,
     record_opt_out,
+    state_path,
     write_state,
 )
 from pyforge.marshal.seed.verbs import adopt as adopt_module
@@ -182,6 +185,32 @@ def _hand_edit_body(repo: Path, region: str, *, path: str = "HYBRID.md") -> None
     text = target.read_text(encoding="utf-8")
     assert f"body for {region}\n" in text
     target.write_text(text.replace(f"body for {region}\n", "hand edited, markers intact\n"), encoding="utf-8")
+    _commit_all(repo)
+
+
+def _as_old_shape(document: dict[str, Any]) -> dict[str, Any]:
+    """``document`` rewritten the way every state file written before Story
+    82.13 reads: ONE nullable ``inserted_region_span`` per artifact -- an object
+    (``name``/``start``/``end``, no hash of its own; the artifact's ``body_sha``
+    was that region's) for a hybrid claim and ``None`` for any other. The one
+    span is the FIRST recorded one, which is what the artifact's own hash stands
+    for. Mirrors ``test_seed_state_store.py::_as_old_shape``."""
+    for artifact in document["managed"]:
+        spans = artifact.pop("inserted_region_spans")
+        artifact["inserted_region_span"] = (
+            None if not spans else {key: spans[0][key] for key in ("name", "start", "end")}
+        )
+    return document
+
+
+def _write_old_shape_state(repo: Path) -> None:
+    """Rewrite the state file ON DISK in the pre-82.13 one-span shape and commit
+    it, so the legacy ``inserted_region_span`` -- not the new array -- is what
+    the next verb reads."""
+    path = state_path(repo)
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    path.write_text(yaml.safe_dump(_as_old_shape(document), sort_keys=False), encoding="utf-8")
+    assert "inserted_region_spans" not in path.read_text(encoding="utf-8")
     _commit_all(repo)
 
 
@@ -321,21 +350,35 @@ def test_opting_out_of_one_deleted_region_leaves_the_siblings_claim_and_check_st
 
 def test_a_state_in_the_old_one_span_shape_is_rewritten_in_full_by_the_next_update(clean_repo):
     """Reading never rejects an old file, and the next apply re-records every
-    region (update's wholesale pass names them all) in the new shape."""
+    region (update's wholesale pass names them all) in the new shape, each with
+    its own offsets and hash. The old shape is seeded through `_as_old_shape`, so
+    the legacy `inserted_region_span` is what is on disk -- `write_state` would
+    emit the new array whatever the in-memory record held."""
     manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
-    state = _adopt_with_human_text(clean_repo, manifest)
-    (claim,) = state.managed
-    # The pre-82.13 shape: one span, the artifact's hash standing for it.
-    old_shape = dataclasses.replace(claim, inserted_region_spans=claim.inserted_region_spans[:1])
-    write_state(dataclasses.replace(state, managed=(old_shape,)), repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
-    _commit_all(clean_repo)
+    _adopt_with_human_text(clean_repo, manifest)
+    _write_old_shape_state(clean_repo)
+    document = yaml.safe_load(state_path(clean_repo).read_text(encoding="utf-8"))
+    assert document["managed"][0]["inserted_region_span"]["name"] == "tiers"
+    before = read_state(clean_repo)
+    assert before is not None
+    assert [span.name for span in before.managed[0].inserted_region_spans] == ["tiers"]
 
     run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm)
 
+    on_disk = state_path(clean_repo).read_text(encoding="utf-8")
+    assert "inserted_region_spans:" in on_disk
+    assert "inserted_region_span:" not in on_disk
     recovered = read_state(clean_repo)
     assert recovered is not None
     (rewritten,) = recovered.managed
     assert [span.name for span in rewritten.inserted_region_spans] == ["tiers", "model-badge"]
+    text = (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
+    parsed = {span.name: span for span in parse_regions(text, RegionFormat.HTML)}
+    for span in rewritten.inserted_region_spans:
+        assert (span.start, span.end) == parsed[span.name].body_span
+        assert span.body_sha == hash_content(region_body_text(text, parsed[span.name]))
+    assert len({span.body_sha for span in rewritten.inserted_region_spans}) == 2
+    assert rewritten.body_sha == rewritten.inserted_region_spans[0].body_sha
 
 
 def test_a_later_adopt_that_inserts_one_more_region_keeps_the_regions_already_recorded(clean_repo):
@@ -388,7 +431,7 @@ def test_an_opted_out_region_is_not_resurrected_by_the_next_adopt_write(clean_re
     assert claim.body_sha == claim.inserted_region_spans[0].body_sha
 
 
-def test_a_hybrid_action_with_no_region_to_record_is_an_internal_error_not_a_bare_value_error(clean_repo):
+def test_a_region_the_action_named_and_the_file_lacks_is_an_internal_error_not_a_bare_value_error(clean_repo):
     """Reachable only through a broken `commit` (it returned having written
     nothing the action named): the constructor would raise a bare `ValueError`
     for a hybrid claim with no span, after `run_apply` has already written."""
@@ -409,7 +452,7 @@ def test_a_hybrid_action_with_no_region_to_record_is_an_internal_error_not_a_bar
         rationale="test",
     )
 
-    with pytest.raises(InternalError, match="no managed region"):
+    with pytest.raises(InternalError, match=r"managed region\(s\) \['tiers'\]"):
         adopt_module._managed_artifact_after_apply(action, entry, clean_repo)
 
 
@@ -823,6 +866,248 @@ def test_the_no_region_to_record_error_names_only_the_regions_the_action_named(c
 
     assert "['tiers']" in excinfo.value.message
     assert "model-badge" not in excinfo.value.message
+
+
+def _action_naming(*regions: str):
+    from pyforge.marshal.seed.detect.inventory import ArtifactState
+
+    return Action(
+        artifact_id="hybrid",
+        artifact_class=ArtifactClass.HYBRID_MANAGED_REGION,
+        current_state=ArtifactState.PRESENT_DIVERGENT,
+        target_state=ArtifactState.PRESENT_CONFORMANT,
+        target_path="HYBRID.md",
+        chosen_anchor=tuple((region, None) for region in regions),
+        rationale="test",
+    )
+
+
+@pytest.mark.parametrize("verb", ["adopt", "update"])
+def test_a_named_region_absent_after_the_write_is_an_internal_error_although_the_prior_record_carried_others(
+    clean_repo, verb
+):
+    """Review pass 2: the per-region check pass 1 dropped. `model-badge` is in
+    the file and in the replaced record, so something is recorded -- but the
+    action NAMED `tiers` and the file lacks it, which is `insert_region`
+    failing, never FR-112 (a deleted region is one nobody named)."""
+    function = (adopt_module if verb == "adopt" else update_module)._managed_artifact_after_apply
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
+    (entry,) = manifest.entries
+    (prior,) = _adopt_with_human_text(clean_repo, manifest).managed
+    _delete_regions(clean_repo, "tiers")
+
+    with pytest.raises(InternalError) as excinfo:
+        function(_action_naming("tiers"), entry, clean_repo, prior)
+
+    assert "['tiers']" in excinfo.value.message
+    assert "model-badge" not in excinfo.value.message
+
+
+@pytest.mark.parametrize("verb", ["adopt", "update"])
+def test_a_claimed_artifact_with_no_region_present_and_none_named_has_no_record(clean_repo, verb):
+    """Review pass 2: every region of a claimed artifact was deleted (FR-112) and
+    the action names none -- the artifact is no longer claimed, so there is no
+    record, not an `InternalError` and not a hybrid record with no span."""
+    function = (adopt_module if verb == "adopt" else update_module)._managed_artifact_after_apply
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
+    (entry,) = manifest.entries
+    (prior,) = _adopt_with_human_text(clean_repo, manifest).managed
+    _delete_regions(clean_repo, "tiers", "model-badge")
+
+    assert function(_action_naming(), entry, clean_repo, prior) is None
+    assert function(_action_naming(), entry, clean_repo) is None
+
+
+@pytest.mark.parametrize("verb", ["adopt", "update"])
+def test_a_replaced_record_at_the_same_path_claims_every_present_region_and_one_without_it_claims_none(
+    clean_repo, verb
+):
+    """The rule's two halves with nothing named: a replaced record says the tool
+    installed this file, so every declared region present is the tool's; with no
+    record, a region that is merely in the file is a human's and is not claimed."""
+    function = (adopt_module if verb == "adopt" else update_module)._managed_artifact_after_apply
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
+    (entry,) = manifest.entries
+    (prior,) = _adopt_with_human_text(clean_repo, manifest).managed
+    old_shape_prior = dataclasses.replace(prior, inserted_region_spans=prior.inserted_region_spans[:1])
+
+    claimed = function(_action_naming(), entry, clean_repo, old_shape_prior)
+
+    assert claimed is not None
+    assert [span.name for span in claimed.inserted_region_spans] == ["tiers", "model-badge"]
+    assert function(_action_naming(), entry, clean_repo) is None
+
+
+# --- review pass 2: a state written before 82.13 -------------------------------
+
+
+@_VERBS
+def test_an_old_shape_state_whose_only_recorded_region_was_deleted_neither_crashes_nor_forgets_its_siblings(
+    clean_repo, verb
+):
+    """The pass-2 wedge, through both verbs. Every repo adopted before 82.13 holds
+    ONE span per artifact; deleting that region's markers (FR-112) while its
+    siblings stay used to exit 10 AFTER the run had written -- recording the
+    opt-out dropped the artifact's only record, nothing was left to claim the
+    siblings with, and the hybrid record would have had no span. Now the replaced
+    record is read from the state AS READ: the run completes, the markers stay
+    absent, the opt-out is recorded, and every present sibling is recorded with
+    its own offsets and hash."""
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge", "portability-contract"))
+    _adopt_with_human_text(clean_repo, manifest)
+    _write_old_shape_state(clean_repo)
+    _delete_regions(clean_repo, "tiers")
+
+    result = _mutating_run(verb, clean_repo, manifest)
+
+    (action,) = result.plan.actions
+    assert action.artifact_id == "hybrid"
+    if verb == "adopt":
+        assert action.chosen_anchor == ()  # nothing pending, the siblings retained
+    text = (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
+    assert "region=tiers" not in text
+    recovered = read_state(clean_repo)
+    assert recovered is not None
+    assert recovered.opted_out == ("hybrid#tiers",)
+    (claim,) = recovered.managed
+    assert [span.name for span in claim.inserted_region_spans] == ["model-badge", "portability-contract"]
+    parsed = {span.name: span for span in parse_regions(text, RegionFormat.HTML)}
+    for span in claim.inserted_region_spans:
+        assert (span.start, span.end) == parsed[span.name].body_span
+        assert span.body_sha == hash_content(region_body_text(text, parsed[span.name]))
+    assert claim.body_sha == claim.inserted_region_spans[0].body_sha
+    assert "inserted_region_span:" not in state_path(clean_repo).read_text(encoding="utf-8")
+
+    # The repo is clean afterwards: `check` reports only the INFO opt-out, and a
+    # following `update --run` neither refuses nor re-inserts the region.
+    _commit_all(clean_repo)
+    assert [finding.type for finding in run_check(clean_repo, manifest).findings] == [FindingType.OPTED_OUT]
+    run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm)
+    assert "region=tiers" not in (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
+    again = read_state(clean_repo)
+    assert again is not None
+    assert again.opted_out == ("hybrid#tiers",)
+
+
+@_VERBS
+def test_deleting_every_region_of_an_artifact_beside_another_artifacts_apply_records_both_opt_outs(
+    clean_repo, verb
+):
+    """Review pass 2, the AC's mutating form: both regions of a two-region
+    artifact deleted and a second artifact still to install, so the run applies
+    something and writes state. The state it writes holds both opt-out keys and
+    no record for the now-unclaimed artifact, and neither region comes back."""
+    base = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
+    _adopt_with_human_text(clean_repo, base)
+    _delete_regions(clean_repo, "tiers", "model-badge")
+    manifest = _manifest(*base.entries, _hybrid(*_EXTRA))
+
+    result = _mutating_run(verb, clean_repo, manifest)
+
+    assert [action.artifact_id for action in result.plan.actions] == ["extra"]
+    assert "marshal-seed" not in (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
+    assert "region=portability-contract" in (clean_repo / "EXTRA.md").read_text(encoding="utf-8")
+    recovered = read_state(clean_repo)
+    assert recovered is not None
+    assert recovered.opted_out == ("hybrid#model-badge", "hybrid#tiers")
+    assert [artifact.id for artifact in recovered.managed] == ["extra"]
+    assert [finding.type for finding in run_check(clean_repo, manifest).findings] == [
+        FindingType.OPTED_OUT,
+        FindingType.OPTED_OUT,
+    ]
+
+
+@pytest.mark.parametrize("verb", ["adopt", "update"])
+def test_an_escaping_hybrid_entry_is_never_read_even_when_state_is_in_the_old_one_span_shape(
+    clean_repo, monkeypatch, verb
+):
+    """Story 82.11 says an escaped target is never read. For an old-shape record
+    every sibling of the one recorded region is a region state does not record,
+    and `update._region_shas_for_record` reads the file for exactly those -- so
+    the escaping record must be dropped BEFORE `_managed_records` builds rung 6's
+    input, not after."""
+    module = adopt_module if verb == "adopt" else update_module
+    manifest = _manifest(_hybrid("escaper", "ESCAPER.md", "tiers", "model-badge"), _hybrid("good", "GOOD.md", "tiers"))
+    for name in ("ESCAPER.md", "GOOD.md"):
+        (clean_repo / name).write_text(_HUMAN_TEXT, encoding="utf-8")
+    _commit_all(clean_repo)
+    run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo),
+    )
+    _commit_all(clean_repo)
+    _write_old_shape_state(clean_repo)
+    outside = clean_repo.parent / f"{clean_repo.name}-outside-old-shape"
+    outside.mkdir()
+    escaper = clean_repo / "ESCAPER.md"
+    (outside / "target.md").write_text(escaper.read_text(encoding="utf-8"), encoding="utf-8")
+    escaper.unlink()
+    escaper.symlink_to(outside / "target.md")
+    _commit_all(clean_repo)
+    read_targets: list[Path] = []
+    real_read = module._read_text_or_blank
+
+    def spy(target: Path) -> str:
+        read_targets.append(target)
+        return real_read(target)
+
+    monkeypatch.setattr(module, "_read_text_or_blank", spy)
+
+    result = _dry_run(verb, clean_repo, manifest)
+
+    assert [finding.path for finding in result.escape_findings] == ["ESCAPER.md"]
+    assert escaper not in read_targets
+    assert clean_repo / "GOOD.md" in read_targets
+
+
+# --- review pass 2: restoring the markers by hand -------------------------------
+
+
+def _repo_whose_opted_out_region_was_restored_by_hand(repo: Path) -> Manifest:
+    """`adopt` installs three regions, `tiers` is deleted and recorded as opted
+    out (its span dropped, its siblings' kept), then the operator puts the
+    markers back by hand. There is no reinstate verb yet (Story 10.6)."""
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge", "portability-contract"))
+    state = _adopt_with_human_text(repo, manifest)
+    original = (repo / "HYBRID.md").read_text(encoding="utf-8")
+    _delete_regions(repo, "tiers")
+    write_state(record_opt_out(state, "hybrid", "tiers"), repo_root=repo, never_write=_NO_NEVER_WRITE)
+    (repo / "HYBRID.md").write_text(original, encoding="utf-8")
+    _commit_all(repo)
+    return manifest
+
+
+def test_update_records_a_region_whose_markers_were_restored_by_hand(clean_repo):
+    """`update` synthesises the current hash of a declared region state does not
+    record, so rung 6 does not refuse, and the wholesale pass (the region is
+    present, so not opted out) re-records it with the others."""
+    manifest = _repo_whose_opted_out_region_was_restored_by_hand(clean_repo)
+
+    _mutating_run("update", clean_repo, manifest)
+
+    assert "region=tiers" in (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
+    recovered = read_state(clean_repo)
+    assert recovered is not None
+    (claim,) = recovered.managed
+    assert [span.name for span in claim.inserted_region_spans] == ["tiers", "model-badge", "portability-contract"]
+
+
+def test_adopt_refuses_a_region_restored_by_hand_until_force(clean_repo):
+    """`adopt` builds rung 6's input from the recorded spans alone, so the
+    restored region is 'present in the file but never recorded' while its
+    siblings are recorded -- a refusal only `--force` lifts. Pinned, not endorsed:
+    the verb-level reinstate is Story 10.6."""
+    manifest = _repo_whose_opted_out_region_was_restored_by_hand(clean_repo)
+
+    with pytest.raises(PreconditionFailure, match="never recorded") as excinfo:
+        _dry_run("adopt", clean_repo, manifest)
+
+    assert "HYBRID.md#tiers" in excinfo.value.message
+    run_adopt(clean_repo, manifest, force=True, confirm=_unreachable_confirm)
 
 
 # --- opted_out_regions: the pure set rung 6 is handed -------------------------
