@@ -35,7 +35,9 @@ If markers are **absent** but the region was never opted out, `managed-region-mi
 
 Removing markers is the supported way to say "this repo owns this section now." Do not delete markers casually — the opt-out is durable until reinstated.
 
-The opt-out is per region: an artifact that declares several regions (`AGENTS.md` declares three) records one span, with its own hash, for each region installed, so deleting some markers opts out of exactly those regions and leaves the others managed. A deleted region is not a hand-edit — `adopt` and `update` do not refuse it, and no `--force` is needed — whereas a region whose markers are still present and whose body was edited is still refused.
+The opt-out is per region. State records one span, with its own hash, for each region of an artifact that was installed, so deleting some of an artifact's markers opts out of exactly those regions and leaves the others managed. A deleted region is not a hand-edit: `adopt` and `update` neither refuse the run nor re-insert it, and no `--force` is needed (`--force` is not a reinstate). A region whose markers are still present and whose body was edited is still refused. The mutating-run tests in `tests/unit/test_seed_verbs_region_opt_out.py` assert this for both verbs, over a recorded opt-out and over one the run derives from the deleted markers.
+
+State written by this release is not readable by an older marshal. The seed-state schema is closed and the package version is unchanged, so `seed_model_version` cannot tell the two apart; an older marshal reports `state-invalid`, whose remedy restores `.marshal/seed-state.yml` from version control or re-runs `marshal seed adopt`.
 
 ## What Genesis never does
 

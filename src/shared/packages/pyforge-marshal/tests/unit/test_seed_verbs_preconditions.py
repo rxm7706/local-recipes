@@ -1353,7 +1353,17 @@ def test_the_module_still_imports_nothing_from_seed_state():
     import ast
 
     tree = ast.parse(Path(preconditions.__file__).read_text(encoding="utf-8"))
-    imported = [node.module or "" for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) and node.level >= 1]
+    imported: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.level >= 1:
+            if node.module:
+                imported.append(node.module)  # `from ..state import x`
+            else:
+                imported.extend(alias.name for alias in node.names)  # `from .. import state`
+        elif isinstance(node, ast.ImportFrom):
+            imported.append((node.module or "").removeprefix("pyforge.marshal.seed."))  # absolute spelling
+        elif isinstance(node, ast.Import):
+            imported.extend(alias.name.removeprefix("pyforge.marshal.seed.") for alias in node.names)
     assert not [module for module in imported if module == "state" or module.startswith("state.")]
 
 

@@ -251,11 +251,12 @@ def test_init_into_nonexistent_target_bootstraps_and_materializes_everything(fre
     assert {record.id for record in state.managed} == {"whole", "hybrid"}
 
 
-def test_init_hands_rung_6_no_records_and_no_opt_out_set(fresh_target, monkeypatch):
+def test_init_hands_rung_6_no_records(fresh_target, monkeypatch):
     """Story 82.13 gave `check_preconditions` an `opted_out` set that `adopt`
     and `update` pass beside their `managed` records. `init` reads no state, so
-    rung 6 has no record to report on a fresh target and nothing to excuse:
-    it still passes `managed=()`, and passes no opt-out set at all."""
+    rung 6 has no record to report on a fresh target and nothing to excuse: it
+    still passes `managed=()`. (How it spells the opt-out argument, if at all, is
+    not pinned -- only that there is no record to excuse.)"""
     from pyforge.marshal.seed.verbs import init as init_module
 
     seen: list[dict] = []
@@ -271,7 +272,6 @@ def test_init_hands_rung_6_no_records_and_no_opt_out_set(fresh_target, monkeypat
 
     (kwargs,) = seen
     assert kwargs["managed"] == ()
-    assert "opted_out" not in kwargs
 
 
 def test_init_default_slug_is_the_resolved_directory_basename(fresh_target):

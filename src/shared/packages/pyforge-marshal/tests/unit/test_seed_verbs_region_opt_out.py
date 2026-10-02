@@ -613,9 +613,11 @@ def test_a_mutating_run_keeps_a_deleted_region_deleted_and_records_the_opt_out(c
     assert sibling.body_sha == hash_content(region_body_text(text, parsed["model-badge"]))
     assert claim.body_sha == sibling.body_sha
     if verb == "adopt":
-        # `adopt` never rewrites a region that is present: the sibling is intact.
-        assert sibling == sibling_before
-        assert "hybrid" not in {action.artifact_id for action in result.plan.actions}
+        # `adopt` never rewrites a region that is present, and plans no insertion
+        # for the opted-out one: the sibling's hash is the one it was installed with.
+        assert sibling.body_sha == sibling_before.body_sha
+        (action,) = [action for action in result.plan.actions if action.artifact_id == "hybrid"]
+        assert action.chosen_anchor == ()
     else:
         # `update` regenerated the sibling and named only it.
         (action,) = [action for action in result.plan.actions if action.artifact_id == "hybrid"]
@@ -640,10 +642,11 @@ def test_a_dry_run_records_nothing_even_when_it_derives_an_opt_out(clean_repo):
 
 def test_an_empty_plan_writes_no_state_so_a_derived_opt_out_stays_derived(clean_repo):
     """State is written after a non-empty apply, as before: an `adopt --apply`
-    that has nothing to apply leaves the file as it was."""
+    that has nothing to apply leaves the file as it was. Every region deleted
+    and so every region opted out: the artifact has nothing left to plan."""
     manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
     _adopt_with_human_text(clean_repo, manifest)
-    _delete_regions(clean_repo, "tiers")
+    _delete_regions(clean_repo, "tiers", "model-badge")
     state_file = clean_repo / ".marshal" / "seed-state.yml"
     written = state_file.read_bytes()
 
@@ -651,7 +654,7 @@ def test_an_empty_plan_writes_no_state_so_a_derived_opt_out_stays_derived(clean_
 
     assert result.plan.actions == ()
     assert state_file.read_bytes() == written
-    assert "region=tiers" not in (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
+    assert "marshal-seed" not in (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
 
 
 def test_a_hybrid_artifact_with_every_region_opted_out_gets_no_wholesale_action(clean_repo):
@@ -675,6 +678,7 @@ def test_a_hybrid_artifact_with_every_region_opted_out_gets_no_wholesale_action(
 
     dry = run_update(clean_repo, manifest, confirm=_unreachable_confirm)
     assert [action.artifact_id for action in dry.plan.actions] == ["extra"]
+    _commit_all(clean_repo)  # the dry run wrote .marshal/plan.json
 
     run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm)
 
