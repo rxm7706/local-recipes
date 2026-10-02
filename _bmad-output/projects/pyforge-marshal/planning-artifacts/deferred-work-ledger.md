@@ -8088,3 +8088,14 @@ status: open
   severity: low
   promoted: 2026-10-02 — dispatch-land finalize
   status: open
+
+### DW-marshal-83-1: Integration tests don't verify enhanced session liveness behavior
+
+- source_spec: `planning-artifacts/specs/spec-83-1-dispatch-liveness-proves-a-pid-is-the-session-it-launched.md`
+  summary: Integration tests don't verify enhanced session liveness behavior
+  evidence: Test doubles in dispatch integration tests only implement basic is_alive() behavior, missing verification of process start time validation and thread group leader checking. Regressions in _is_dispatch_session_alive() logic could ship undetected.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_completion.py
+  origin: spec-deferred bca93fbfa289 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
