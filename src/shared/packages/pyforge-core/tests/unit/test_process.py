@@ -295,6 +295,100 @@ def test_is_alive_false_on_an_unexpected_oserror(process, monkeypatch):
     assert process.is_alive(1) is False
 
 
+def test_is_alive_false_for_thread_id_that_is_not_process_leader(process, monkeypatch):
+    """Story 83.1: A thread ID (that is not a thread group leader) should not 
+    be considered alive for dispatch session tracking purposes."""
+    import pyforge.core.process as process_module
+    
+    # Mock os.kill to succeed (indicating something exists at this PID)
+    def _mock_kill(pid, sig):
+        pass
+        
+    # Mock _is_thread_group_leader to return False (it's a thread, not a process)
+    def _mock_is_thread_group_leader(self, pid):
+        return False
+    
+    monkeypatch.setattr(process_module.os, "kill", _mock_kill)
+    monkeypatch.setattr(process_module.PosixProcess, "_is_thread_group_leader", _mock_is_thread_group_leader)
+    assert process.is_alive(12345) is False
+
+
+def test_is_alive_true_when_thread_leader_check_fails(process, monkeypatch):
+    """When we can't determine if a PID is a thread leader (e.g., /proc files 
+    unreadable), we degrade gracefully to True to maintain backward compatibility."""
+    import pyforge.core.process as process_module
+    
+    # Mock os.kill to succeed (indicating something exists at this PID)
+    def _mock_kill(pid, sig):
+        pass
+        
+    # Mock _is_thread_group_leader to return True (assume it's a process when unsure)
+    def _mock_is_thread_group_leader(self, pid):
+        return True
+    
+    monkeypatch.setattr(process_module.os, "kill", _mock_kill) 
+    monkeypatch.setattr(process_module.PosixProcess, "_is_thread_group_leader", _mock_is_thread_group_leader)
+    assert process.is_alive(os.getpid()) is True
+
+
+# --- process_start_time: never raises, returns timestamp or None ---------------
+
+
+def test_process_start_time_returns_float_for_this_process(process):
+    """Should return a reasonable timestamp for this process."""
+    start_time = process.process_start_time(os.getpid())
+    assert isinstance(start_time, float)
+    assert start_time > 0
+    # Should be within the last hour (reasonable for a test process)
+    import time
+    now = time.time()
+    assert start_time < now
+    assert start_time > now - 3600
+
+
+def test_process_start_time_none_for_nonexistent_process(process):
+    """Should return None for a process that doesn't exist."""
+    # Use a PID that's very unlikely to exist
+    fake_pid = 99999999
+    assert process.process_start_time(fake_pid) is None
+
+
+def test_process_start_time_none_on_proc_read_failure(process, monkeypatch):
+    """Should return None when /proc files can't be read."""
+    import builtins
+    
+    original_open = builtins.open
+    def _mock_open_failure(path, *args, **kwargs):
+        if "/proc/" in str(path):
+            raise OSError("Permission denied")
+        return original_open(path, *args, **kwargs)
+    
+    monkeypatch.setattr(builtins, "open", _mock_open_failure)
+    assert process.process_start_time(os.getpid()) is None
+
+
+# --- _is_thread_group_leader: checks if PID is process leader ------------------
+
+
+def test_is_thread_group_leader_true_for_process_leader(process):
+    """This process should be its own thread group leader."""
+    assert process._is_thread_group_leader(os.getpid()) is True
+
+
+def test_is_thread_group_leader_degrades_to_true_on_proc_failure(process, monkeypatch):
+    """When /proc files can't be read, assume it's a process leader for backward compatibility."""
+    import builtins
+    
+    original_open = builtins.open
+    def _mock_open_failure(path, *args, **kwargs):
+        if "/proc/" in str(path):
+            raise OSError("Permission denied") 
+        return original_open(path, *args, **kwargs)
+        
+    monkeypatch.setattr(builtins, "open", _mock_open_failure)
+    assert process._is_thread_group_leader(12345) is True
+
+
 # --- spawn_detached: detached launch + log redirection -----------------------
 
 
