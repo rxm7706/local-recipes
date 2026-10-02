@@ -2271,7 +2271,7 @@ def _commit_everything(self, repo_root, paths, message):
     """A stand-in `commit_paths` that sweeps in whatever else is in the worktree -- the shape the
     adapter's post-commit path proof exists to catch (the real `commit_paths` commits only `paths`)."""
     _git(repo_root, "add", "-A")
-    _git(repo_root, "commit", "-m", message)
+    _git(repo_root, "commit", "-m", message.text)
     return _git(repo_root, "rev-parse", "HEAD").stdout.strip()
 
 
@@ -2465,3 +2465,158 @@ def test_add_worktree_for_tree_raises_vcs_command_error_on_an_unresolvable_paren
     home = tmp_path / "merge-tree-preview-home"
     with pytest.raises(VcsCommandError):
         vcs.add_worktree_for_tree(repo, home, tree_oid, parent="no-such-ref")
+
+
+# --- Story 82.9 (DW-FU-2-6-4): commit text is declared egress ------------------
+#
+# `CommitPort` is classified egress (AD-34): the message is `Redacted`, every other text
+# parameter a `VcsRef`, and `GitVcs` refuses anything else with a `TypeError` BEFORE any git
+# invocation -- the type only, never the value. Real git throughout: what is asserted is what
+# `git log` stores.
+
+_SECRET = "ghp_" + "a" * 36
+_REDACTED = "***REDACTED***"
+
+
+def _head(repo: Path) -> str:
+    return _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+
+def _stored_message(repo: Path, sha: str) -> str:
+    return _git(repo, "log", "-1", "--format=%B", sha).stdout
+
+
+def test_commit_paths_stores_the_redacted_form_of_a_token_shaped_message(vcs, repo):
+    (repo / "promoted.txt").write_text("promoted\n", encoding="utf-8")
+
+    sha = vcs.commit_paths(repo, (repo / "promoted.txt",), to_redacted_text(f"marshal: carry {_SECRET} forward"))
+
+    stored = _stored_message(repo, sha)
+    assert _REDACTED in stored
+    assert _SECRET not in stored
+    assert "ghp_" not in stored
+
+
+def test_merge_ref_resolving_stores_the_redacted_form_of_a_token_shaped_message(vcs, repo):
+    _conflicting_branch(repo)
+    _git(repo, "checkout", "-q", "-b", "readme-only", "feature/conflict~1")
+    (repo / "README.md").write_text("readme-only version\n", encoding="utf-8")
+    _git(repo, "commit", "-am", "only README differs")
+
+    sha = vcs.merge_ref_resolving(
+        repo,
+        VcsRef("main"),
+        resolutions={"README.md": "resolved\n"},
+        message=to_redacted_text(f"union heal {_SECRET}"),
+    )
+
+    stored = _stored_message(repo, sha)
+    assert _REDACTED in stored
+    assert _SECRET not in stored
+
+
+def test_commit_paths_onto_remote_tip_stores_the_redacted_form_of_a_token_shaped_message(vcs, repo, remote):
+    _publish_setup(repo, remote)
+
+    sha = _publish_text(vcs, repo, f"marshal: promote {_SECRET}")
+
+    stored = _stored_message(repo, sha)
+    assert _REDACTED in stored
+    assert _SECRET not in stored
+    assert _SECRET not in _git(remote, "log", "-1", "--format=%B", "main").stdout
+
+
+def _publish_text(vcs: GitVcs, repo: Path, text: str) -> str:
+    return vcs.commit_paths_onto_remote_tip(
+        repo,
+        remote=VcsRef("origin"),
+        ref=VcsRef("main"),
+        writes=((_LEDGER_REL, _LEDGER_TEXT),),
+        message=to_redacted_text(text),
+    )
+
+
+def test_commit_paths_rejects_a_bare_str_message_and_commits_nothing(vcs, repo):
+    (repo / "promoted.txt").write_text("promoted\n", encoding="utf-8")
+    before = _head(repo)
+
+    with pytest.raises(TypeError, match="message must be a Redacted") as excinfo:
+        vcs.commit_paths(repo, (repo / "promoted.txt",), f"carry {_SECRET}")  # type: ignore[arg-type]
+
+    assert _SECRET not in str(excinfo.value)  # the type only, never the value
+    assert _head(repo) == before
+    assert "promoted.txt" not in _git(repo, "ls-files").stdout  # refused before `git add`
+
+
+def test_merge_ref_resolving_rejects_a_bare_str_message_and_a_bare_str_ref(vcs, repo):
+    _conflicting_branch(repo)
+    before = _head(repo)
+
+    with pytest.raises(TypeError, match="message must be a Redacted") as excinfo:
+        vcs.merge_ref_resolving(repo, VcsRef("main"), resolutions={}, message=f"heal {_SECRET}")  # type: ignore[arg-type]
+    assert _SECRET not in str(excinfo.value)
+    with pytest.raises(TypeError, match="ref must be a VcsRef"):
+        vcs.merge_ref_resolving(repo, "main", resolutions={}, message=to_redacted_text("heal"))  # type: ignore[arg-type]
+
+    assert _head(repo) == before
+    assert not (repo / ".git" / "MERGE_HEAD").exists()  # refused before any merge started
+
+
+@pytest.mark.parametrize(
+    ("override", "match"),
+    [
+        ({"message": "plain"}, "message must be a Redacted"),
+        ({"preflight_skip_reason": "plain"}, "preflight_skip_reason must be a Redacted"),
+        ({"remote": "origin"}, "remote must be a VcsRef"),
+        ({"ref": "main"}, "ref must be a VcsRef"),
+    ],
+)
+def test_commit_paths_onto_remote_tip_rejects_a_bare_str_for_every_text_parameter(vcs, repo, remote, override, match):
+    _publish_setup(repo, remote)
+    before = _git(remote, "rev-parse", "main").stdout.strip()
+    kwargs = {
+        "remote": VcsRef("origin"),
+        "ref": VcsRef("main"),
+        "writes": ((_LEDGER_REL, _LEDGER_TEXT),),
+        "message": to_redacted_text("marshal: promote"),
+        **override,
+    }
+
+    with pytest.raises(TypeError, match=match):
+        vcs.commit_paths_onto_remote_tip(repo, **kwargs)
+
+    assert _git(remote, "rev-parse", "main").stdout.strip() == before
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))  # no scratch worktree was made
+
+
+def test_a_vcs_ref_is_a_non_empty_str():
+    assert VcsRef("origin").value == "origin"
+    for bad in ("", None, 3):
+        with pytest.raises(ValueError, match="non-empty str"):
+            VcsRef(bad)  # type: ignore[arg-type]
+
+
+def test_to_redacted_text_redacts_shape_and_rejects_a_non_str():
+    wrapped = to_redacted_text(f"a {_SECRET} b")
+    assert wrapped.text == f"a {_REDACTED} b"
+    assert to_redacted_text("nothing secret here").text == "nothing secret here"
+    with pytest.raises(TypeError, match="text must be a str") as excinfo:
+        to_redacted_text(b"bytes")  # type: ignore[arg-type]
+    assert "bytes" not in str(excinfo.value).replace("text must be a str, got bytes", "")
+
+
+def test_the_worktree_checkpoint_call_site_commits_the_redacted_form_of_its_story_key(vcs, repo):
+    """The call-site half of the acceptance criterion: `commit_worktree_checkpoint` builds its subject
+    from a caller-supplied story key and routes it through `to_redacted_text` itself, so a credential
+    in the key never reaches `git log`. Reverting the wrap makes `CommitPort` refuse the bare `str`
+    (a `TypeError` the checkpoint reports as skipped), so `committed` is `False` and this fails."""
+    from pyforge.marshal.core.worktree_checkpoint import commit_worktree_checkpoint
+
+    (repo / "wip.txt").write_text("work in progress\n", encoding="utf-8")
+
+    result = commit_worktree_checkpoint(vcs, repo_root=repo, worktree=repo, story_key=f"82.9 {_SECRET}")
+
+    assert result.committed is True, result.skipped_reason
+    stored = _stored_message(repo, result.head_sha)
+    assert _REDACTED in stored
+    assert _SECRET not in stored
