@@ -41,8 +41,8 @@ cheaper has passed.
 `dry_run=True` bypasses rung 2 ONLY: "reading is always safe" is a claim
 about the worktree's cleanliness, not about whether git exists at all or
 whether the plan is even coherent, so a dry run still refuses a non-repo,
-an escaping path, a never-write target, a symlink, and a directory target. `force=True`
-bypasses rung 6 ONLY -- it is the operator's explicit "yes, discard my
+an escaping path, a never-write target, a symlink, and a directory target.
+`force=True` bypasses rung 6 ONLY -- it is the operator's explicit "yes, discard my
 hand-edit". Its real bound, stated rather than implied (found in review):
 because `force` returns before rung 6 runs AT ALL, and because
 `_read_managed_text` is the only code path in this module that ever looks
@@ -87,7 +87,10 @@ rung a skip does not reach on its own: rungs 3-5 walk `plan.actions`, which
 `skips.apply_skips` has already emptied of every skipped artifact, but
 nothing this module does can tell that a record was skipped. A skipped
 artifact should therefore NOT be supplied to `managed` -- filter it out
-with `skips.managed_after_skips(managed, plan)` first. Otherwise `--skip`
+with `skips.managed_after_skips(managed, plan, patterns)` first, passing the
+operator's skip patterns as well as the plan (Story 82.12): the plan holds
+only artifacts that had an action, and a hand-edited `copied-managed` file
+never has one, so only the patterns reach it. Otherwise `--skip`
 cannot protect a hand-edit at all: the artifact stays refused by rung 6,
 and the refusal's only offered remedy is `--force`, which discards every
 hand-edit in the repo including the one the operator was protecting. The
@@ -580,9 +583,10 @@ def check_preconditions(
         # The repo root itself is not a write target (found in review).
         # `_relative_within` maps both `""` and `"."` to `"."`, which is not
         # `None` (rung 3 clears), matches no realistic never-write glob
-        # (rung 4 clears) and is not a symlink (rung 5 clears; it would now
-        # refuse the root as a directory too, but this check names the root
-        # first, as its own refusal, before rung 5 runs) -- so an
+        # (rung 4 clears) and is not a symlink (rung 5 once cleared it on
+        # that ground alone; it now also refuses any directory, the root
+        # included, but this loop finishes first, so the root is named here
+        # as its own refusal) -- so an
         # action naming the whole repo reached the apply runner having
         # passed every structural rung. `Action.target_path` is only
         # `_require_str`-checked at the `plan.json` boundary, so `""` is

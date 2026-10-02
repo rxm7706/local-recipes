@@ -8,9 +8,10 @@ STATE, not a proposed CHANGE, and it carries no record of what repo state
 it was computed against. This module is that artifact's shape --
 `Action` (P-05: "Every `Action` in a `Plan` names its artifact id, class,
 current state, target state, and rationale"), `RepoFingerprint` (AD-57's
-tamper-evidence: a git HEAD + dirty flag + per-artifact content hash, so a
-later `apply` story can refuse a `Plan` whose fingerprint no longer
-matches), and `Plan` itself (P-04: "`Plan` is a serializable dataclass.
+tamper-evidence: a git HEAD + dirty flag + per-artifact content hash + the
+repository's own identity -- its resolved root and git common directory,
+Story 82.12 -- so a later `apply` story can refuse a `Plan` whose
+fingerprint no longer matches, or that was built for another repository), and `Plan` itself (P-04: "`Plan` is a serializable dataclass.
 Apply consumes only a `Plan` -- never re-derives state").
 
 `seed.plan.build.build_plan` is this module's one producer; nothing here

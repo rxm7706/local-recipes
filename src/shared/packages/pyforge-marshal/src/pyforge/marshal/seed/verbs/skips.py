@@ -390,9 +390,9 @@ def managed_after_skips(managed: Sequence[_RecordT], plan: Plan, patterns: Seque
     override. So a record is ALSO dropped when its `path` matches a pattern
     the operator passed, by the identical lexical rule `apply_skips` applies
     to an action's `target_path` (`_normalize_relative_posix`, then
-    `first_match`), so one `--skip` glob means the same thing to both. A
-    caller with no patterns (`update` has no `--skip`) passes none and gets
-    the `plan.skipped` filter alone.
+    `first_match`), so one `--skip` glob means the same thing to both.
+    `adopt` and `update` both pass their `--skip` patterns; a caller with no
+    patterns passes none and gets the `plan.skipped` filter alone.
 
     Pure and total: preserves `managed`'s order, never mutates it, and
     matches a plan-skipped artifact on `artifact_id` only (a `SkippedArtifact`
