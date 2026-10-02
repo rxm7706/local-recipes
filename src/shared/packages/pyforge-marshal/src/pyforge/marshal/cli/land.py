@@ -93,6 +93,16 @@ the already-landed shortcut, and the full-merge path -- setting
         dirty tree, a held lock) is a new WARN finding (``MRS-LAND-009``), never
         escalated and never affecting this command's own exit.
 
+    **A live run's home is neither retired nor resynced (Story 82.2).** The
+    liveness verdict above counts a confirmed-alive engine as live even when
+    its supervisor sidecar is dead (``is_run_live``; DW-5-8-1/DW-FU-4-11), and
+    ``run_land`` shares that ONE lazily-gathered verdict (``home_run_live``)
+    between the retirement gate and all three ``_resync_home_branch`` exits:
+    while the run is live the resync neither fetches nor fast-forwards -- a
+    live run's untouched tracked files must not be rewritten from outside it
+    mid-turn (DW-FU-4-12) -- and reports one ``MRS-LAND-009`` WARN naming the
+    run instead.
+
     **Sprint-ledger promotion never writes the operator checkout (CAP-5).**
     ``_promote_sprint_ledger`` publishes onto ``origin/<base>`` through
     ``VcsPort.commit_paths_onto_remote_tip`` (throwaway detached worktree +
@@ -495,6 +505,57 @@ def run_land(
     resync_enabled = effective.landing_resync.value
     data["base"] = base
 
+    # Story 82.2: the ONE liveness verdict for this slug's own bmad-loop run,
+    # shared by the retirement gate (Story 4.11) and the three
+    # `_resync_home_branch` exits (DW-FU-4-12) -- gathered at most once, and
+    # only when a caller actually needs it (a project with retirement off and
+    # resync off triggers no new I/O). It gathers the SAME facts `marshal
+    # status` already gathers (`cli/status.py::_gather_home_facts`, reused
+    # verbatim, never re-derived independently here) and checks them with
+    # `core/status.py::is_run_live`. `_gather_home_facts`/`_latest_run_dir`/
+    # `_resolve_harness_run_id_for_resume` are imported LOCALLY, the same
+    # load-order-cycle reason every other cross-module import in this
+    # function already documents.
+    run_live_verdict: list[bool] = []
+
+    def home_run_live() -> bool:
+        if not run_live_verdict:
+            from .spin import _latest_run_dir, _resolve_harness_run_id_for_resume
+            from .status import _gather_home_facts
+
+            run_live_verdict.append(
+                is_run_live(
+                    _gather_home_facts(
+                        fs=fs,
+                        harness=harness,
+                        process=process,
+                        clock=clock,
+                        home=home,
+                        slug=slug,
+                        branch=head_branch,
+                        latest_run_dir=_latest_run_dir,
+                        resolve_harness_run_id=_resolve_harness_run_id_for_resume,
+                    )
+                )
+            )
+        return run_live_verdict[0]
+
+    def resync_home() -> bool | None:
+        # `run_live` is only computed once `_resync_home_branch` would act
+        # at all (resync on, `merge` strategy) -- the same early return the
+        # function itself keeps -- so a no-op resync never gathers.
+        return _resync_home_branch(
+            vcs,
+            resync_enabled,
+            merge_strategy,
+            git_repo_root,
+            home,
+            base,
+            head_branch,
+            findings,
+            run_live=resync_enabled and merge_strategy == "merge" and home_run_live(),
+        )
+
     # --- wave discovery (byte-for-byte batch-pr's own sequence) ---------
     # Both branches by their full refname (Story 61.1): a tag named like
     # either would otherwise stand in for it.
@@ -530,9 +591,7 @@ def run_land(
         # (FR-173, Story 4.12) -- this is the story's own PRIMARY scenario:
         # between-runs drift accumulates unobserved exactly here, whether
         # or not this invocation finds anything new to land.
-        home_current = _resync_home_branch(
-            vcs, resync_enabled, merge_strategy, git_repo_root, home, base, head_branch, findings
-        )
+        home_current = resync_home()
         if home_current is not None:
             data["home_current"] = home_current
         return _emit(args, data, findings)
@@ -613,9 +672,7 @@ def run_land(
         sprint_promoted = _promote_sprint_ledger(fs, vcs, root, slug, wave_keys, deploy_run, findings, base=base)
         if sprint_promoted:
             data["sprint_ledger_promoted"] = list(sprint_promoted)
-        home_current = _resync_home_branch(
-            vcs, resync_enabled, merge_strategy, git_repo_root, home, base, head_branch, findings
-        )
+        home_current = resync_home()
         if home_current is not None:
             data["home_current"] = home_current
         return _emit(args, data, findings)
@@ -897,15 +954,13 @@ def run_land(
     # --- liveness gate (Story 4.11): a policy-true delete_branch is never
     # honored while THIS slug's own bmad-loop run is still using
     # head_branch -- confirmed 2026-08-09 against a live 9-story run,
-    # avoided only because a human read the source first. Gathers the SAME
-    # facts `marshal status` already gathers (`cli/status.py::
-    # _gather_home_facts`, reused verbatim, never re-derived independently
-    # here) ONLY when `delete_branch` is already True -- a project whose
+    # avoided only because a human read the source first. Asks
+    # `home_run_live()` (defined above -- the SAME facts `marshal status`
+    # already gathers, never re-derived independently here) ONLY when
+    # `delete_branch` is already True -- a project whose
     # `landing_branch_retirement` is False triggers no new I/O and no new
-    # finding, unchanged from before this story. `_gather_home_facts`/
-    # `_latest_run_dir`/`_resolve_harness_run_id_for_resume` are imported
-    # LOCALLY, the same load-order-cycle reason every other cross-module
-    # import in this function already documents.
+    # finding from this gate, unchanged from before this story. Since Story
+    # 82.2 the same memoised verdict also feeds `resync_home()`.
     #
     # This check-then-act window (code review, 2026-08-09, both reviewers
     # independently) is intentionally left OPEN rather than re-verified
@@ -919,21 +974,7 @@ def run_land(
     # `merge_pr` is invoked -- as tight as this function's own established
     # intent-before/outcome-after ordering (AD-6) already places it.
     if delete_branch and not args.retire_live_branch:
-        from .spin import _latest_run_dir, _resolve_harness_run_id_for_resume
-        from .status import _gather_home_facts
-
-        home_facts = _gather_home_facts(
-            fs=fs,
-            harness=harness,
-            process=process,
-            clock=clock,
-            home=home,
-            slug=slug,
-            branch=head_branch,
-            latest_run_dir=_latest_run_dir,
-            resolve_harness_run_id=_resolve_harness_run_id_for_resume,
-        )
-        if is_run_live(home_facts):
+        if home_run_live():
             # Downgraded for THIS invocation's merge_pr call/journal payload
             # only -- never writes back to the on-disk `landing_branch_
             # retirement` policy value itself.
@@ -1057,9 +1098,7 @@ def run_land(
         harness=harness,
         process=process,
     )
-    home_current = _resync_home_branch(
-        vcs, resync_enabled, merge_strategy, git_repo_root, home, base, head_branch, findings
-    )
+    home_current = resync_home()
     if home_current is not None:
         data["home_current"] = home_current
 
@@ -1576,6 +1615,8 @@ def _resync_home_branch(
     base: str,
     head_branch: str,
     findings: list[Finding],
+    *,
+    run_live: bool = False,
 ) -> bool | None:
     """FR-173 (Story 4.12): fast-forwards the loop-home's own checked-out
     station branch (``head_branch``, at ``home``) to ``origin/<base>`` --
@@ -1612,6 +1653,24 @@ def _resync_home_branch(
     exactly like any other resync failure -- one ``MRS-LAND-009`` WARN, no
     fast-forward attempted.
 
+    ``run_live`` (Story 82.2, DW-FU-4-12) is ``run_land``'s own verdict from
+    ``core/status.py::is_run_live`` for this home's bmad-loop run. While it is
+    ``True`` the resync does NOTHING to the home -- no ``resolve_ref``, no
+    ``fetch``, no ``fast_forward`` -- because this function runs from OUTSIDE
+    the run with no lock, and a fast-forward rewrites tracked files the live
+    run's own turn may be reading or editing. It reports one ``MRS-LAND-009``
+    WARN naming the live run (the code's existing "resync did not happen"
+    signal, no new code) and returns ``False``, so ``home_current`` stays
+    honest. ``is_run_live``'s conservative arms count here exactly as they do
+    for retirement: a run whose journal is unreadable, or whose state was
+    retired (so a clean finish cannot be proven), also skips the resync --
+    which is why the WARN says "live, or ... could not be proven finished"
+    rather than claiming a live run. Keyword-only and defaulting to ``False``
+    so a caller with no loop home (``dispatch_land_finalize`` resyncs the
+    primary checkout) is unchanged. Checked AFTER the ``resync_enabled``/
+    ``merge`` early return, which keeps ``None`` (key absent) when no resync
+    was ever in play.
+
     Otherwise runs ``VcsPort.fetch`` (updates ONLY ``refs/remotes/origin/
     <base>``, a network read) then ``VcsPort.fast_forward`` (``git merge
     --ff-only``, never a forced merge/``--no-ff``/rebase/``reset --hard``)
@@ -1635,6 +1694,15 @@ def _resync_home_branch(
     def _warn(message: str) -> bool:
         findings.append(Finding(code=_MRS_LAND_009, severity=Severity.WARN, message=message))
         return False
+
+    if run_live:
+        return _warn(
+            f"{head_branch!r}'s bmad-loop run in {home} is live, or its state could "
+            f"not be proven finished -- skipping the resync with 'origin/{base}' "
+            "(no fetch, no fast-forward) so a working tree a run may still be using "
+            "is not rewritten from outside it; re-run land once the run is confirmed "
+            "finished"
+        )
 
     try:
         expected_sha = vcs.resolve_ref(git_repo_root, head_branch)

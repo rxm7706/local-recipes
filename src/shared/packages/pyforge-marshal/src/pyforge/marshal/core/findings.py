@@ -1266,6 +1266,12 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # is `"squash"`/`"rebase"` (a fast-forward is impossible BY CONSTRUCTION
 # under either of those two strategies, every single landing, so the resync
 # step is skipped entirely rather than firing a WARN that can never clear).
+# Story 82.2 (DW-FU-4-12) adds one DELIBERATE-skip meaning to the same code:
+# while `core.status.is_run_live` says the home's run is live (an engine
+# alive behind a dead supervisor counts), or could not be proven finished
+# (an unreadable journal, a retired run), `_resync_home_branch` attempts no
+# fetch and no fast-forward and fires this WARN instead -- no attempt was
+# made, so nothing failed; the message says which.
 # Deliberately a NEW code, not a reuse of `MRS-LAND-008`: that code is
 # reserved by Story 4.11 (`is_run_live`/`--retire-live-branch`), a sibling
 # effort against the same `MRS-LAND-*` area.

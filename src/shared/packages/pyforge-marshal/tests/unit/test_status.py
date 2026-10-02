@@ -937,6 +937,72 @@ class TestIsRunLive:
         )
         assert status.is_run_live(facts) is False
 
+    # Story 82.2 (DW-5-8-1 / DW-FU-4-11): the engine term. A supervisor
+    # sidecar that crashed behind a still-working harness reads dead on
+    # `supervisor_alive` alone; `is_run_live` must count the confirmed-alive
+    # engine the same way `derive_home_state` has since Story 5.8.
+
+    def test_dead_supervisor_with_live_engine_is_live(self):
+        """The 2026-08-11 incident's shape: sidecar dead, harness running --
+        removing the `engine_alive` term from `is_run_live` fails this."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            supervisor_alive=False,
+            engine_alive=True,
+            tasks=(_task(phase="dev-running"),),
+        )
+        assert status.is_run_live(facts) is True
+
+    def test_dead_supervisor_with_live_engine_between_stories_is_live(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            supervisor_alive=False,
+            engine_alive=True,
+            tasks=(_task(phase="done"),),
+        )
+        assert status.is_run_live(facts) is True
+
+    def test_finished_run_with_live_engine_is_not_live(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=True,
+            supervisor_alive=False,
+            engine_alive=True,
+        )
+        assert status.is_run_live(facts) is False
+
+    def test_supervisor_and_engine_both_dead_is_not_live(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            supervisor_alive=False,
+            engine_alive=False,
+        )
+        assert status.is_run_live(facts) is False
+
+    def test_engine_alive_none_adds_nothing(self):
+        """Only a CONFIRMED-alive engine counts; an unprobed `None` never
+        promotes a dead supervisor to live."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            supervisor_alive=False,
+            engine_alive=None,
+        )
+        assert status.is_run_live(facts) is False
+
 
 class TestBuildFleetRow:
     def test_no_run_yet_is_idle_no_finding(self):
