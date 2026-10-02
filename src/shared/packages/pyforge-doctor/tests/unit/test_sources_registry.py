@@ -14,14 +14,19 @@ remaining two I/O matrix rows.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from pyforge.doctor import sources
 from pyforge.doctor.models import DoctorStatus, Finding, Source
+from pyforge.doctor.score import Grade, grade
 from pyforge.doctor.sources import (
     REGISTRY,
     SourceRegistration,
     degrade_on_exception,
     list_sources,
+    locate_checkout_script,
     scope_for,
 )
 
@@ -227,3 +232,68 @@ def test_degrade_on_exception_lets_a_base_exception_propagate_uncaught():
 
     with pytest.raises(KeyboardInterrupt):
         degrade_on_exception(Source.MARSHAL_DURABILITY, "dashboard-drift", _boom)
+
+
+# --- locate_checkout_script (Story 40.1, DW-FU-6-5-9) ---------------------------
+#
+# The one locator both script loaders (board's fleet_scan, factory's pixi_env_matrix) share:
+# Doctor's OWN checkout, found by walking up from this package's own file -- never the tree
+# a caller asks Doctor to judge.
+
+_CHECKOUT_FLEET_SCAN = next(
+    (
+        a / "scripts" / "fleet_scan.py"
+        for a in Path(__file__).resolve().parents
+        if (a / "scripts" / "fleet_scan.py").is_file()
+    ),
+    None,
+)
+_needs_checkout = pytest.mark.skipif(_CHECKOUT_FLEET_SCAN is None, reason="not run from inside a checkout")
+
+
+@_needs_checkout
+def test_locate_checkout_script_finds_the_script_above_the_package() -> None:
+    found = locate_checkout_script("fleet_scan.py")
+
+    assert found == _CHECKOUT_FLEET_SCAN
+    assert found.parent.name == "scripts"
+    assert Path(sources.__file__).resolve().is_relative_to(found.parent.parent)
+
+
+@_needs_checkout
+def test_locate_checkout_script_ignores_the_working_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "fleet_scan.py").write_text("raise SystemExit('judged tree')\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert locate_checkout_script("fleet_scan.py") == _CHECKOUT_FLEET_SCAN
+
+
+def test_locate_checkout_script_raises_an_oserror_naming_a_missing_file() -> None:
+    with pytest.raises(FileNotFoundError, match=r"scripts/no-such-script-40-1\.py not found above") as excinfo:
+        locate_checkout_script("no-such-script-40-1.py")
+
+    assert isinstance(excinfo.value, OSError)
+
+
+def test_locate_checkout_script_outside_any_checkout_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # An installed wheel: nothing above the package holds a scripts/ directory.
+    installed = tmp_path / "site-packages" / "pyforge" / "doctor" / "sources" / "__init__.py"
+    monkeypatch.setattr(sources, "__file__", str(installed))
+
+    with pytest.raises(FileNotFoundError, match=r"scripts/fleet_scan\.py not found above"):
+        locate_checkout_script("fleet_scan.py")
+
+
+def test_a_real_degrade_on_exception_warn_grades_its_axis_incomplete() -> None:
+    """The evidence key `score` keys on is the one `degrade_on_exception` really writes
+    (`score` cannot import `sources`, so nothing else ties the two literals together)."""
+
+    def _boom() -> tuple[Finding, ...]:
+        raise OSError("scripts/fleet_scan.py not found")
+
+    degraded = degrade_on_exception(Source.CHAIN_LAYERS_AUDIT, "chain-layers-audit", _boom)
+
+    result = grade(degraded)
+    assert result.grade is Grade.INCOMPLETE
+    assert [axis.grade for axis in result.axis_scores] == [Grade.INCOMPLETE]

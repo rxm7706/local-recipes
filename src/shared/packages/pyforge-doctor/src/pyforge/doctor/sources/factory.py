@@ -156,7 +156,7 @@ from pathlib import Path
 
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
-from . import degrade_on_exception
+from . import degrade_on_exception, locate_checkout_script
 
 __all__ = ("gather", "ground_truth")
 
@@ -1461,15 +1461,37 @@ def check_dream_owners(target: Path) -> list[Finding]:
     return out
 
 
-def _load_pixi_env_matrix_module(target: Path):
-    script = target / "scripts" / "pixi_env_matrix.py"
+def _load_pixi_env_matrix_module():
+    """``exec_module`` the checkout's ``scripts/pixi_env_matrix.py``.
+
+    The code is the CHECKOUT Doctor lives in (``locate_checkout_script``), never
+    the judged ``target``'s: a judged tree's ``scripts/*.py`` is data, and
+    resolving the code from it ran that tree's Python with Doctor's privileges
+    (DW-FU-6-5-9, Story 40.1). ``check_pixi_env_matrix`` hands the script
+    ``target``'s Dream and lock as arguments, so ``target`` still supplies every
+    byte the check judges. With no checkout above Doctor this raises
+    ``FileNotFoundError`` (an ``OSError``), which the caller reports as unevaluable.
+
+    Two of ``board._load_foreign_module``'s guards apply here: ``sys.path`` is
+    snapshotted and restored, and a half-initialised module is not left in
+    ``sys.modules`` when ``exec_module`` raises. Its third, the ``SystemExit`` to
+    ``RuntimeError`` conversion, is not applied.
+    """
+    script = locate_checkout_script("pixi_env_matrix.py")
     mod_name = "pixi_env_matrix_doctor"
     spec = importlib.util.spec_from_file_location(mod_name, script)
     if spec is None or spec.loader is None:
         raise OSError(f"cannot load {script}")
     mod = importlib.util.module_from_spec(spec)
     sys.modules[mod_name] = mod
-    spec.loader.exec_module(mod)
+    saved_path = list(sys.path)
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException:
+        sys.modules.pop(mod_name, None)
+        raise
+    finally:
+        sys.path[:] = saved_path
     return mod
 
 
@@ -1481,7 +1503,7 @@ def check_pixi_env_matrix(target: Path) -> list[Finding]:
     if not dream.is_file() or not lock.is_file():
         return out
     try:
-        mod = _load_pixi_env_matrix_module(target)
+        mod = _load_pixi_env_matrix_module()
         if mod.matrix_is_stale(dream, lock):
             out.append(
                 _finding(

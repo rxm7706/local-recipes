@@ -199,6 +199,93 @@ def test_unknown_project_is_unevaluable(tmp_path: Path) -> None:
     assert findings[0].check == "chain-layers-audit-unevaluable"
 
 
+# --- the audit executes Doctor's own checkout's script, never the judged tree's -------
+#
+# `target` is the tree being JUDGED, so its `scripts/fleet_scan.py` is data. Resolving the
+# loader's file from `target` ran any caller-supplied tree's Python with Doctor's privileges
+# (DW-FU-6-5-9, Story 40.1). Each test below plants a script in `target` that writes a probe
+# file when executed; the probe lives OUTSIDE `target` so the audit's own reads cannot touch it.
+
+
+def _plant_probe_script(target: Path, probe: Path, *, then_raise: bool = False) -> None:
+    body = f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\n"
+    if then_raise:
+        # The sensitivity twin runs the planted script; raising afterwards makes the
+        # loader drop the half-built module instead of leaving a probe in sys.modules.
+        body += "raise RuntimeError('probe ran')\n"
+    (target / "scripts" / "fleet_scan.py").write_text(body, encoding="utf-8")
+
+
+def test_the_judged_trees_fleet_scan_is_data_never_executed(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    probe = tmp_path / "probe.txt"
+    _install_generate(target)
+    _write_project_skeleton(target, "pyforge-marshal", dream=True, spec=True, brief=True)
+    _plant_probe_script(target, probe)
+
+    findings = board.gather_chain_layers_audit(target, "pyforge-marshal")
+
+    assert not probe.exists(), "the judged tree's scripts/fleet_scan.py was executed"
+    # The layers still come from `target`'s own files: the checkout's code, the target's data.
+    summary = next(f for f in findings if f.check == "chain-layers-audit")
+    assert {"dream", "spec", "brief"} <= set(summary.evidence["present"])
+    assert "prd" in summary.evidence["missing"]
+
+
+def test_the_probe_runs_when_the_loader_resolves_from_target(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sensitivity twin (mutation): re-point the locator at `target` -- the pre-fix
+    behaviour -- and the same planted script runs, so the test above can fail."""
+    target = tmp_path / "target"
+    target.mkdir()
+    probe = tmp_path / "probe.txt"
+    _install_generate(target)
+    _plant_probe_script(target, probe, then_raise=True)
+    monkeypatch.setattr(board, "locate_checkout_script", lambda name: target / "scripts" / name)
+
+    board.gather_chain_layers_audit(target, "pyforge-marshal")
+
+    assert probe.read_text(encoding="utf-8") == "executed"
+
+
+def test_the_loader_points_every_data_path_at_the_target_not_the_checkout(tmp_path: Path) -> None:
+    """`fleet_scan.py` fixes `ARCHIVE_DREAMS_DIR` (like `DREAMS_DIR`) at import from the
+    checkout's own root; left alone, auditing another tree reads the checkout's archived Dreams."""
+    target = tmp_path / "target"
+    target.mkdir()
+    assert _REPO_ROOT is not None
+
+    gen = board._load_dashboard_generate(target)
+
+    root = target.resolve()
+    assert gen.REPO_ROOT == root
+    assert gen.DREAMS_DIR == root / "docs" / "dreams"
+    assert gen.ARCHIVE_DREAMS_DIR == root / "archive" / "docs" / "dreams"
+    assert gen.ARCHIVE_DREAMS_DIR.is_relative_to(root)
+    assert not gen.ARCHIVE_DREAMS_DIR.is_relative_to(_REPO_ROOT)
+
+
+def test_no_checkout_script_is_unevaluable_and_never_falls_back_to_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    _install_generate(target)  # `target` carries its own, perfectly loadable fleet_scan.py
+    _write_project_skeleton(target, "pyforge-marshal", dream=True, spec=True)
+
+    def _no_checkout(name: str) -> Path:
+        raise FileNotFoundError(f"scripts/{name} not found above /nowhere")
+
+    monkeypatch.setattr(board, "locate_checkout_script", _no_checkout)
+
+    findings = board.gather_chain_layers_audit(target, "pyforge-marshal")
+
+    assert len(findings) == 1
+    assert findings[0].check == "chain-layers-audit-unevaluable"
+    assert findings[0].status is DoctorStatus.WARN
+    assert "scripts/fleet_scan.py not found" in findings[0].evidence["detail"]
+
+
 def test_cap3_checkpoint_findings_use_pass_fail(tmp_path: Path) -> None:
     """Story 21.1: each CAP-3 checkpoint is OK or FAIL, not warn-only."""
     _install_generate(tmp_path)

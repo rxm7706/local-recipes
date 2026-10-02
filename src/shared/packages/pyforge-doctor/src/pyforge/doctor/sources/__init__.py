@@ -63,6 +63,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 from ..models import DoctorStatus, Finding, Source
 
@@ -71,6 +72,7 @@ __all__ = (
     "SourceRegistration",
     "degrade_on_exception",
     "list_sources",
+    "locate_checkout_script",
     "scope_for",
 )
 
@@ -618,3 +620,26 @@ def degrade_on_exception(
                 evidence={"exception": exc.__class__.__name__},
             ),
         )
+
+
+def locate_checkout_script(name: str) -> Path:
+    """Return ``scripts/<name>`` of the checkout Doctor itself lives in.
+
+    Doctor judges trees it does not own, so a judged tree's ``scripts/*.py``
+    must stay DATA: the only legitimate source of a script Doctor ``exec``s is
+    the checkout this package was installed from, never the ``target`` a caller
+    hands a ``gather`` (DW-FU-6-5-9). The search walks up from this file's own
+    resolved location -- the pattern ``pyforge.steward.keys.locate_http_module``
+    uses -- rather than hardcoding a number of ``.parent`` hops, so it holds for
+    whatever depth an editable install sits at.
+
+    Outside any checkout (an installed wheel) nothing matches and this raises
+    ``FileNotFoundError`` (an ``OSError``) naming the file; every caller already
+    maps that to its own "cannot evaluate here" finding.
+    """
+    here = Path(__file__).resolve()
+    for ancestor in here.parents:
+        candidate = ancestor / "scripts" / name
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(f"scripts/{name} not found above {here}")
