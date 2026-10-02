@@ -2,7 +2,7 @@
 title: '82.9: VCS commit text is declared egress and gate evaluate writes a redacted gate record'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 baseline_revision: '785fff8eb841d85a64b155f12a5e8b5686719fc5'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -264,3 +264,57 @@ Closes: DW-FU-2-6-4, DW-FU-2-6-2.
   - `[low]` `[defer]` `carried` Intent Alignment: the scope verdict reads the loop home while the tree revision reads the repository root, and the diff records this itself — same root cause as the first row; deferred with it.
   - `[low]` `[reject]` Intent Alignment: the `FsPort`-bypass criterion is proven by synthetic source strings and a clean real tree, since no real violating call site exists — that is how the intent's "meta-test fails" criterion can be shown at all, and the second synthetic source covers `append_line`.
   - `[low]` `[reject]` `carried` Intent Alignment: changes beyond the intent's named surfaces (`land-story` wiring, `MRS-CHK-001/002/003`, the autouse conftest, `describe_gate_record`) — each is written into the amended Tasks as outside the intent-contract, and the `MRS-CHK` codes were a broken window in a file the diff touches.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+### Summary of the implemented change
+
+Commit text is now declared egress, and `marshal gate evaluate --story` writes a redacted gate record. Two review passes ran; pass 1 sent the story back once for a `bad_spec` (the `land-story` caller was left out), and pass 2 found only two cosmetic patches.
+
+- **Commit text (DW-FU-2-6-4).** The three commit-writing methods (`commit_paths`, `merge_ref_resolving`, `commit_paths_onto_remote_tip`) moved from `VcsPort` onto a new egress `CommitPort` (`EGRESS_PORTS["CommitPort"] = True`). The message and the preflight skip reason are `Redacted`; `ref` and `remote` are `VcsRef`. `GitVcs` serves both ports and raises `TypeError` for a bare `str` before any git call. `to_redacted_text` is the plain-text sibling of `to_redacted` over the same `_redact_string`. All 14 call sites wrap their text, and callers keep one `vcs` parameter through `CommittingVcs(VcsPort, CommitPort, Protocol)` in `core/commit_vcs.py`.
+- **Gate record (DW-FU-2-6-2).** `evaluate_gate(..., record=None, clock=None)` builds the record from facts it already holds and writes it through `RecordPort.write_redacted_atomic` of `to_redacted(...)` into `<run_dir>/gate-records/<story slug>/` when `--run` resolves, else `<tier-3>/sessions/<minted id>/gate-records/<story slug>/` (with `run_id` when one was given). `data["gate_record"]` names the outcome. A record that cannot be written is one `MRS-GATE-017` WARN appended after the verdict is computed, so the verdict and exit code never move. `marshal deploy land-story`'s in-process gate re-run writes a run-less session record through the same helper (`_default_record_port`) and keeps `MRS-GATE-017` out of its own findings.
+- **Write-path guard.** `GATE_RECORD_FILENAME` is spelled once, in `core/egress.py`; `tests/meta/test_gate_record_write_path.py` fails any other module that spells it and any `FsPort` writer or link call handed it.
+- **Ledger.** `DW-FU-2-6-2` and `DW-FU-2-6-4` are `closed` with `resolved:` lines; three open rows (`DW-marshal-82-9`, `-2`, `-3`) carry the review deferrals.
+
+### Files changed
+
+Code under `src/shared/packages/pyforge-marshal/src/pyforge/marshal/`:
+- `ports/commit.py` (new) -- `CommitPort` and `VcsRef`; `core/commit_vcs.py` (new) -- `CommittingVcs`; `ports/vcs.py` -- the three methods removed, docstring rewritten.
+- `core/egress.py` -- `CommitPort` registered, `to_redacted_text`, `GATE_RECORD_FILENAME`, optional `run_id` in `build_gate_record`; `schemas/gate-record.json` -- optional `run_id`.
+- `adapters/vcs_git.py` -- `GitVcs` implements both ports with type-only `TypeError` guards.
+- `cli/gate.py` -- the record write, `_default_record_port`, `describe_gate_record`; `cli/deploy.py` -- `land-story` re-run writes a session record.
+- `core/findings.py`, `core/verdict.py` -- `MRS-GATE-017` (WARN) and `MRS-CHK-001/002/003` (ERROR, Story 34.2 had built them unregistered); `cli/checkpoint.py`, `cli/land.py`, `cli/dispatch.py`, `core/worktree_checkpoint.py`, `dispatch_land.py`, `dispatch_land_finalize/__main__.py`, `dispatch_land_heal.py`, `dispatch_supervisor/__main__.py`, `supervisor/__main__.py` -- messages wrapped, `vcs` retyped; `adapters/forge_gh.py`, `core/journal.py`, `core/promotion.py`, `core/status.py` -- docstring references only.
+
+Tests under `src/shared/packages/pyforge-marshal/tests/`: new `meta/test_commit_text_is_redacted_at_every_call_site.py`, `meta/test_gate_record_write_path.py`, `unit/test_gate_record.py`, `unit/test_checkpoint_cli.py`, `unit/conftest.py` (pins the loop-home root under `tmp_path`); updated the AD-34, local-branch-refs and AD-11 meta-tests, `test_vcs_git.py`, `test_deploy.py`, `test_egress.py`, `test_findings.py`, `test_verdict.py`, `test_cli.py` and the fakes in the other unit modules.
+
+Planning: `deferred-work-ledger.md` (two closures, three new rows), the `.memlog.md` of `spec-pyforge-marshal` and `spec-pyforge-core` (surface-reconcile entries naming every governed path changed), and this spec.
+
+### Review findings breakdown
+
+- **Pass 1 (39 findings):** 1 `bad_spec` (the `land-story` caller), 7 patches, 8 deferred, 23 rejected. The `bad_spec` and the verified patches were folded into the spec, the code was reverted and re-derived.
+- **Pass 2 (36 findings, 22 carried from pass 1):** 3 patch rows for 2 fixes (a stale `str | None` annotation on a test fake, reported twice, and the schema's root `description` missing `run_id`), both low and both applied; 6 deferred (all already covered by the three `deferred:` entries); 27 rejected, each with its reason in the Review Triage Log. No `high`, no `intent_gap`, no second `bad_spec`.
+- **Deferred (frontmatter and ledger):** the gate record's missing verdict and finding codes, HEAD-only revision and loop-home versus repository-root mismatch; `merge_branch`'s policy-rendered `subject` still a bare `str` on `VcsPort`; the governed `SPEC.md`, spine and PRD prose that still name `VcsPort` for the moved methods.
+
+### Follow-up review recommendation
+
+`followup_review_recommended: false`. This pass patched 2 entries, both `low`; no `high`, and fewer than two `medium`.
+
+### Verification performed
+
+All exit codes read directly, never through a pipe:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- exit 0, 10539 passed, 1 skipped, 14 deselected.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- exit 0, 130 passed, 3 skipped.
+- `python scripts/spec_surface_reconcile.py` -- exit 0, no drift; no baseline stamped.
+- `lint-types`, `deferred-work-check`, `story-status-check`, `spec-surface-check` (all `pyforge-guild`) -- exit 0 each, re-run after the last patch. `chain-completeness-check` and `pyforge-marshal-coverage-gate` (18 touched modules at or above 80%) were exit 0 on the re-derived tree before the two cosmetic patches.
+- The implementer ran 12 mutants (a revert of each fix, plus the scope verdict, record-port wiring and filter, and call-site wrapping); all were killed.
+
+### Residual risks
+
+- `pr-preflight`, the full `detectors-ci` lane and the `-m slow` suites were not run; no push was made.
+- The spec-surface baselines are not stamped; whoever lands this stamps scoped, after `git add`, from a clean tree.
+- `pyforge-steward`'s `track.py` reads `<run_dir>/gate-record.json`, but records land at `<run_dir>/gate-records/<story slug>/gate-record.json`. It degrades to "absent"; a follow-up should point it at the new path.
+- Two `-m slow` tests (`test_init_worktree.py::test_preflight_end_to_end_converges_seeds_and_acknowledges` and `test_local_recipes_empty_plan.py::test_local_recipes_adopt_dry_run_yields_empty_plan_excluding_deferred`) failed in the first derivation on a `bmad-loop` version string and a seed-symlink precondition; they look environmental but were not confirmed on a clean baseline.
+- The harness auto-checkpoints the worktree, so the `wip:` history on this branch contains transient mutated states from the mutation checks; the final tree is correct.
