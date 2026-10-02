@@ -303,15 +303,17 @@ class PosixProcess:
         Returns True if it's a process leader, False if it's a thread or if we can't determine."""
         try:
             # Read /proc/pid/status to check if Tgid == Pid
+            tgid = None
+            actual_pid = None
             with open(f"/proc/{pid}/status", "r") as f:
                 for line in f:
                     if line.startswith("Tgid:"):
                         tgid = int(line.split()[1])
                     elif line.startswith("Pid:"):
                         actual_pid = int(line.split()[1])
-                        # If we have both values, check if they match
-                        if "tgid" in locals():
-                            return tgid == actual_pid
+                    # If we have both values, check if they match
+                    if tgid is not None and actual_pid is not None:
+                        return tgid == actual_pid
             return False  # Couldn't find both Tgid and Pid
         except (OSError, IOError, ValueError, IndexError):
             # If we can't read /proc files, degrade to True (assume it's a process)
