@@ -825,6 +825,7 @@ def run_update(
             run=args.run,
             force=args.force,
             include_seeded=args.include_seeded,
+            skip=tuple(args.skip) if args.skip else (),
             yes=args.yes,
             confirm=confirm if confirm is not None else _real_confirm,
         )
@@ -1286,6 +1287,14 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         action="store_true",
         default=False,
         help="Also apply a migration-offered copied-seeded action (skipped by default).",
+    )
+    update_parser.add_argument(
+        "--skip",
+        dest="skip",
+        action="append",
+        default=None,
+        metavar="GLOB",
+        help="Glob naming an artifact path to leave untouched (repeatable).",
     )
     update_parser.add_argument(
         "--yes",
