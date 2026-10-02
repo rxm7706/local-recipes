@@ -239,7 +239,7 @@ class PosixProcess:
             # existence, not ownership, is the question, so this is a live
             # process, not an absent one.
             return True
-        except OverflowError, ValueError:
+        except (OverflowError, ValueError):
             # NOT an OSError: `os.kill` raises a bare `OverflowError` for a
             # pid outside C `int` range (and a `ValueError` for other
             # unconvertible integer inputs), so neither is caught by the
@@ -273,6 +273,8 @@ class PosixProcess:
             with open(f"/proc/{pid}/stat", "r") as f:
                 stat_fields = f.read().split()
                 # Field 22 (0-indexed 21) is starttime in clock ticks since boot
+                if len(stat_fields) <= 21:
+                    return None
                 start_ticks = int(stat_fields[21])
 
             # Get system clock ticks per second and boot time
@@ -289,7 +291,7 @@ class PosixProcess:
             # Convert start ticks to actual start time
             start_time = boot_time + (start_ticks / clock_ticks_per_sec)
             return start_time
-        except OSError, IOError, ValueError, IndexError, KeyError:
+        except (OSError, IOError, ValueError, IndexError, KeyError):
             # Any failure reading /proc files or parsing values -> degrade gracefully
             return None
         except ZeroDivisionError:
@@ -311,7 +313,7 @@ class PosixProcess:
                         if "tgid" in locals():
                             return tgid == actual_pid
             return False  # Couldn't find both Tgid and Pid
-        except OSError, IOError, ValueError, IndexError:
+        except (OSError, IOError, ValueError, IndexError):
             # If we can't read /proc files, degrade to True (assume it's a process)
             # to maintain backward compatibility
             return True
