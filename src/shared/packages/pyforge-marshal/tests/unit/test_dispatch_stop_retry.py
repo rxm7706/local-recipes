@@ -506,6 +506,7 @@ def test_is_dispatch_session_alive_false_when_no_session_pid() -> None:
         session_pid=None,
         model="test-model", 
         launched_at=datetime.fromisoformat("2026-10-02T12:00:00+00:00"),
+        worktree_path="/tmp/test-worktree",
     )
     process = _FakeProcessForSessionAlive(is_alive=True)
     assert _is_dispatch_session_alive(process, journal) is False
@@ -518,6 +519,7 @@ def test_is_dispatch_session_alive_false_when_process_not_alive() -> None:
         session_pid=12345,
         model="test-model",
         launched_at=datetime.fromisoformat("2026-10-02T12:00:00+00:00"),
+        worktree_path="/tmp/test-worktree",
     )
     process = _FakeProcessForSessionAlive(is_alive=False)
     assert _is_dispatch_session_alive(process, journal) is False
@@ -530,6 +532,7 @@ def test_is_dispatch_session_alive_true_when_no_launch_time() -> None:
         session_pid=12345,
         model="test-model",
         launched_at=None,
+        worktree_path="/tmp/test-worktree",
     )
     process = _FakeProcessForSessionAlive(is_alive=True, start_time=1672531200.0)
     assert _is_dispatch_session_alive(process, journal) is True
@@ -543,6 +546,7 @@ def test_is_dispatch_session_alive_true_when_process_start_time_matches() -> Non
         session_pid=12345,
         model="test-model",
         launched_at=launch_time,
+        worktree_path="/tmp/test-worktree",
     )
     # Process started 10 seconds after launch (within 30s tolerance)
     process_start = launch_time.timestamp() + 10.0
@@ -558,6 +562,7 @@ def test_is_dispatch_session_alive_false_when_process_started_too_late() -> None
         session_pid=12345, 
         model="test-model",
         launched_at=launch_time,
+        worktree_path="/tmp/test-worktree",
     )
     # Process started 60 seconds after launch (outside 30s tolerance)
     process_start = launch_time.timestamp() + 60.0
@@ -573,6 +578,7 @@ def test_is_dispatch_session_alive_false_when_process_started_too_early() -> Non
         session_pid=12345,
         model="test-model", 
         launched_at=launch_time,
+        worktree_path="/tmp/test-worktree",
     )
     # Process started 60 seconds before launch (outside tolerance)
     process_start = launch_time.timestamp() - 60.0
@@ -587,6 +593,7 @@ def test_is_dispatch_session_alive_true_when_start_time_unavailable() -> None:
         session_pid=12345,
         model="test-model", 
         launched_at=datetime.fromisoformat("2026-10-02T12:00:00+00:00"),
+        worktree_path="/tmp/test-worktree",
     )
     # start_time returns None (e.g., /proc files unreadable)
     process = _FakeProcessForSessionAlive(is_alive=True, start_time=None)
