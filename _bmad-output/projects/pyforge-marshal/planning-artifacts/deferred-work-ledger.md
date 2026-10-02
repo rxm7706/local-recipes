@@ -8042,3 +8042,36 @@ status: open
   severity: medium (unverified)
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-82-13: The architecture spine, the Story 82.13 body in epics.md and the spec-pyforge-marshal SPEC.md still describe managed[] as carrying one `inserted_region_span`, the S-10.2 shape; the state now records `inserted_region_spans`, one span with its own body_sha per installed region.
+
+- source_spec: `planning-artifacts/specs/spec-82-13-a-marker-opt-out-is-representable-for-every-artifact-accepted-by-preconditions-and-recorded-per-region.md`
+  summary: The architecture spine, the Story 82.13 body in epics.md and the spec-pyforge-marshal SPEC.md still describe managed[] as carrying one `inserted_region_span`, the S-10.2 shape; the state now records `inserted_region_spans`, one span with its own body_sha per installed region.
+  evidence: Read at ARCHITECTURE-SPINE.md (AD-58, `id`, `path`, `class`, `body_sha`, and `inserted_region_span` where applicable), epics.md (the managed[] field list in the state story) and SPEC.md (AD-58). A spine edit ripples the planning chain (spine, then epics currency), a SPEC.md is never hand-edited (re-derive with bmad-spec after a memlog entry), and the epics.md Story 82.13 body predates the plan-side scope this story grew into. Recorded in review passes 1, 2 and 3.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md:1065
+  origin: spec-deferred 4bace87b2ee8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-82-13-2: Operator-facing text still sends operators to `marshal seed adopt --reinstate <artifact>#<region>`, a flag no verb or CLI declares yet.
+
+- source_spec: `planning-artifacts/specs/spec-82-13-a-marker-opt-out-is-representable-for-every-artifact-accepted-by-preconditions-and-recorded-per-region.md`
+  summary: Operator-facing text still sends operators to `marshal seed adopt --reinstate <artifact>#<region>`, a flag no verb or CLI declares yet.
+  evidence: Read at detect/findings.py (the `opted-out` remedy), docs/adoption-guide.md and docs/finding-remedy-reference.md. The flag is Story 10.6's surface and DW-FU-8-5-4 tracks the missing clear_opt_out caller, so this predates Story 82.13; managed-region-contract.md now says there is no reinstate verb yet and describes the manual path.
+  location: src/shared/packages/pyforge-marshal/docs/adoption-guide.md:61
+  origin: spec-deferred 5945fe20f6b3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-82-13-3: `update`'s wholesale pass takes its opt-out pairs from `classify_regions`, which returns nothing for a hybrid file `parse_regions` refuses, so under `--force` it could name a region the state records as opted out.
+
+- source_spec: `planning-artifacts/specs/spec-82-13-a-marker-opt-out-is-representable-for-every-artifact-accepted-by-preconditions-and-recorded-per-region.md`
+  summary: `update`'s wholesale pass takes its opt-out pairs from `classify_regions`, which returns nothing for a hybrid file `parse_regions` refuses, so under `--force` it could name a region the state records as opted out.
+  evidence: Not verified. `opted_out_regions` goes through `classify_regions`, whose degrade rule returns `()` for an unparseable file, and `_wholesale_regenerate_actions` takes only those pairs. Whether `update --run --force` then inserts into the unparseable file, or the commit path refuses it, was not run. Marked unverified. What would settle it: a test with a recorded `opted_out` key, an unparseable hybrid file and `force=True`, asserting the plan's chosen_anchor and the file afterwards; the one-line guard is also checking `is_opted_out(state, ...)` in the wholesale pass.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py:556
+  origin: spec-deferred 127ce71c89cd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
