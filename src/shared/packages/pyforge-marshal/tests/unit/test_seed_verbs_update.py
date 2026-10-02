@@ -1020,9 +1020,7 @@ def test_without_skip_the_same_hand_edit_is_refused(clean_repo):
     _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
 
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):
-        run_update(
-            clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
-        )
+        run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
 
 
 def test_skip_does_not_excuse_a_hand_edit_it_does_not_name(clean_repo):
