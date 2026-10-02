@@ -287,15 +287,30 @@ def test_no_loop_home_is_one_warn_and_the_verdict_and_exit_code_do_not_move(worl
     assert not (world / "loop-homes").exists()  # nothing was created on the way to failing
 
 
+def _write_binding_spec(world: Path, key: str = "2-3") -> None:
+    """A tracked spec whose Success signal declares exactly the policy's one verify command, so
+    `--story` finds nothing wrong with the gate itself."""
+    specs = world / "_bmad-output" / "projects" / _SLUG / "planning-artifacts" / "specs"
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{key}.md").write_text(
+        "---\ntitle: 'x'\n---\n\n<intent-contract>\n\n## Verification\n\n**Commands:**\n- `true` -- expected: ok.\n",
+        encoding="utf-8",
+    )
+
+
 def test_a_clean_gate_with_an_unwritable_record_stays_clean_and_exits_zero(world):
-    # `verify_commands = ["true"]`, no --story-spec binding findings of its own: a gate that passes
-    clean = _evaluate(_args(story=None))
-    assert clean.verdict.value in {"clean", "warn"}
+    """The verdict is computed over the gate's own findings and NEVER recomputed to include MRS-GATE-017:
+    a gate that passed stays `clean` (exit 0) however the record write went."""
+    _write_binding_spec(world)
+    portless = _evaluate(_args())
+    assert portless.verdict.value == "clean", [f.code for f in portless.findings]
 
-    envelope = _evaluate_recording(_args())  # no loop home -> MRS-GATE-017
+    envelope = _evaluate_recording(_args())  # no loop home provisioned -> MRS-GATE-017
 
-    assert _codes(envelope).count("MRS-GATE-017") == 1
-    assert exit_code_for(envelope.verdict) == exit_code_for(_evaluate(_args()).verdict)
+    assert _codes(envelope) == ["MRS-GATE-017"]
+    assert envelope.verdict.value == "clean"
+    assert exit_code_for(envelope.verdict) == 0
+    assert envelope.status == portless.status
 
 
 @pytest.mark.parametrize(
