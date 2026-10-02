@@ -33,6 +33,7 @@ from pyforge.marshal.core.journal import (
 )
 from pyforge.marshal.core.model import Severity
 from pyforge.marshal.core.policy import DEFAULT_POLICY
+from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.ports.harness import (
     DeferredStory,
     HarnessRunTerminalVerdict,
@@ -1852,6 +1853,8 @@ class _FakeVcs:
         commit_subjects_value: tuple[str, ...] = (),
         commit_subjects_raises: bool = False,
         commit_subjects_error: str = "cannot read commit history",
+        origin_subjects_value: tuple[str, ...] = (),
+        origin_subjects_raises: bool = False,
     ) -> None:
         self.repo_root_value = repo_root_value
         self.repo_root_raises = repo_root_raises
@@ -1878,6 +1881,13 @@ class _FakeVcs:
         # log` per sweep into one per home. Counted here, mirroring
         # `_FakeHarness.calls`'s own convention in this same file.
         self.commit_subjects_calls: list[tuple[Path, str]] = []
+        # Story 82.8 (DW-FU-4-14-9): `origin/main` is a SECOND history, read
+        # before local `main` -- empty by default (nothing fetched beyond
+        # `main`), so a test that sets only `commit_subjects_value` still
+        # models one history; `origin_subjects_raises` is the ordinary
+        # "no origin/main fetched" case a read must tolerate.
+        self.origin_subjects_value = origin_subjects_value
+        self.origin_subjects_raises = origin_subjects_raises
 
     def repo_common_root(self, start):
         if self.repo_root_raises:
@@ -1891,6 +1901,10 @@ class _FakeVcs:
 
     def commit_subjects(self, repo_root, ref):
         self.commit_subjects_calls.append((repo_root, ref))
+        if ref == ORIGIN_MAIN:
+            if self.origin_subjects_raises:
+                raise VcsCommandError("fatal: bad revision 'refs/remotes/origin/main'")
+            return self.origin_subjects_value
         if self.commit_subjects_raises:
             raise VcsCommandError(self.commit_subjects_error)
         return self.commit_subjects_value
@@ -5416,7 +5430,7 @@ class TestFailedPatches:
             clock=_FakeClock(now=_FIXED_NOW),
         )
 
-        assert [ref for _, ref in vcs.commit_subjects_calls] == ["refs/heads/main"]
+        assert [ref for _, ref in vcs.commit_subjects_calls] == [ORIGIN_MAIN, "refs/heads/main"]
         assert exit_code == 0
 
     def test_main_is_never_read_when_no_home_carries_a_patch(self, tmp_path, capsys, monkeypatch):
@@ -6356,7 +6370,7 @@ class TestLandingRefusalSupersededInTheSweep:
         exit_code, _payload_, home = self._home(tmp_path, capsys, monkeypatch, vcs)
         assert home["dispatch_landing_findings"] == [self._REFUSAL]
         assert home["dispatch_landing_superseded"] is True
-        assert [ref for _, ref in vcs.commit_subjects_calls] == ["refs/heads/main"]
+        assert [ref for _, ref in vcs.commit_subjects_calls] == [ORIGIN_MAIN, "refs/heads/main"]
         assert exit_code == 0
 
     def test_a_refusal_whose_story_has_not_landed_is_not_marked(self, tmp_path, capsys, monkeypatch):
@@ -6430,7 +6444,7 @@ class TestLandingRefusalSupersededInTheSweep:
             monkeypatch,
             {"commit_subjects_value": ("Merge pull request #7 from rxm7706/dispatch/acme/30.3",)},
         )
-        assert [ref for _, ref in vcs.commit_subjects_calls] == ["refs/heads/main"]
+        assert [ref for _, ref in vcs.commit_subjects_calls] == [ORIGIN_MAIN, "refs/heads/main"]
         assert home["dispatch_landing_superseded"] is True
         assert home["dispatch_story"] == "30.3"
         assert len(home["failed_patches"]) == 1
@@ -6442,7 +6456,7 @@ class TestLandingRefusalSupersededInTheSweep:
         vcs, exit_code, payload, home = self._run_with_patch_home(
             tmp_path, capsys, monkeypatch, {"commit_subjects_raises": True}
         )
-        assert [ref for _, ref in vcs.commit_subjects_calls] == ["refs/heads/main"]
+        assert [ref for _, ref in vcs.commit_subjects_calls] == [ORIGIN_MAIN, "refs/heads/main"]
         assert "dispatch_landing_superseded" not in home
         assert [f["code"] for f in payload["findings"]].count("MRS-STATUS-011") == 1
         assert home["failed_patches"][0]["done"] is None
