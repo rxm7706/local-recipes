@@ -59,15 +59,24 @@ class _Process:
 class _Vcs:
     """The reads ``evaluate_gate`` makes for ``--story``/``--scope-check``, plus the tree revision."""
 
-    def __init__(self, *, head: str | None = _HEAD, changed: tuple[str, ...] = ()) -> None:
+    def __init__(
+        self,
+        *,
+        head: str | None = _HEAD,
+        changed: tuple[str, ...] = (),
+        changed_error: VcsCommandError | None = None,
+    ) -> None:
         self._head = head
         self._changed = changed
+        self._changed_error = changed_error
         self.head_calls: list[Path] = []
 
     def repo_common_root(self, start):
         return start
 
     def changed_files(self, repo_root, worktree_path, *, base):
+        if self._changed_error is not None:
+            raise self._changed_error
         return self._changed
 
     def worktree_head_sha(self, worktree_path):
@@ -229,13 +238,76 @@ def test_one_directory_per_story_so_two_stories_in_one_run_never_overwrite(world
     assert _read(second)["story"] == "2.4"
 
 
-def test_the_scope_check_verdict_is_recorded_when_the_check_ran(world):
-    _provision_home(world)
+def _write_scope_policy(world: Path, epic_surfaces: str = '{ "2" = ["recipes/x/**"] }') -> None:
+    """The project policy, now also declaring epic 2's surface and the hard enforcement mode (the default is
+    `warn`, which would turn a violation into a WARN and hide the `scope-violation` rung)."""
+    policy_file = world / "_bmad-output" / "projects" / _SLUG / "planning-artifacts" / "marshal-policy.toml"
+    policy_file.write_text(
+        f'verify_commands = ["true"]\nepic_surfaces = {epic_surfaces}\nscope_violation_mode = "hard"\n',
+        encoding="utf-8",
+    )
 
-    envelope = _evaluate_recording(_args(scope_check=True), vcs=_Vcs(changed=()))
+
+def test_a_clean_scope_check_is_recorded_as_exactly_clean(world):
+    _provision_home(world)
+    _write_scope_policy(world)
+
+    envelope = _evaluate_recording(_args(scope_check=True), vcs=_Vcs(changed=("recipes/x/recipe.yaml",)))
 
     assert envelope.data["scope_check"]["checked"] is True
-    assert _read(envelope)["scope_check_verdict"] in {"clean", "warn"}
+    assert envelope.data["scope_check"]["violations"] == 0
+    assert _read(envelope)["scope_check_verdict"] == "clean"
+
+
+def test_a_hard_mode_scope_violation_is_recorded_as_scope_violation(world):
+    _provision_home(world)
+    _write_scope_policy(world)
+
+    envelope = _evaluate_recording(_args(scope_check=True), vcs=_Vcs(changed=("recipes/y/recipe.yaml",)))
+
+    assert "MRS-GATE-007" in _codes(envelope)
+    assert envelope.verdict.value == "scope-violation"
+    record = _read(envelope)
+    jsonschema.validate(instance=record, schema=_schema())
+    assert record["scope_check_verdict"] == "scope-violation"
+
+
+def test_a_scope_check_that_could_not_evaluate_is_recorded_with_its_own_verdict(world):
+    """`MRS-GATE-009` classifies `unevaluable` (`core.verdict._CLASSIFY_TABLE`), and the record carries
+    `compute_verdict` over the scope check's own findings -- neither `clean` nor a skipped `None`."""
+    _provision_home(world)
+    _write_scope_policy(world)
+    broken = _Vcs(changed_error=VcsCommandError("git diff failed: not a git repository"))
+
+    envelope = _evaluate_recording(_args(scope_check=True), vcs=broken)
+
+    assert "MRS-GATE-009" in _codes(envelope)
+    assert envelope.data["scope_check"]["checked"] is False
+    record = _read(envelope)
+    jsonschema.validate(instance=record, schema=_schema())
+    assert record["scope_check_verdict"] == "unevaluable"
+
+
+def test_a_scope_check_not_requested_is_recorded_as_none(world):
+    _provision_home(world)
+
+    envelope = _evaluate_recording(_args(scope_check=False))
+
+    assert "scope_check" not in envelope.data
+    assert _read(envelope)["scope_check_verdict"] is None
+
+
+def test_a_scope_check_skipped_with_no_finding_of_its_own_is_recorded_as_none(world):
+    """`--run` that does not resolve skips the scope check outright (`MRS-GATE-005` already says why), so the
+    check contributes no finding and no verdict -- `None`, never `clean`."""
+    _provision_home(world)
+    _write_scope_policy(world)
+
+    envelope = _evaluate_recording(_args(run_id="run-missing", scope_check=True), vcs=_Vcs(changed=()))
+
+    assert "scope_check" not in envelope.data
+    assert "MRS-GATE-005" in _codes(envelope)
+    assert _read(envelope)["scope_check_verdict"] is None
 
 
 # --- what the record holds ----------------------------------------------------------------------------------------
@@ -447,6 +519,28 @@ def test_run_evaluate_wires_the_record_only_when_fs_is_a_local_fs(world, monkeyp
     assert spy.kwargs["record"] is None  # an injected fake fs writes nothing
     payload = json.loads(capsys.readouterr().out)
     assert "gate_record" not in payload["data"]
+
+
+def test_gate_evaluate_story_at_the_command_writes_a_record_read_back_from_disk(world, capsys):
+    """The wiring in `run_evaluate`, observed at the command: a real `LocalFs`, a loop home under `tmp_path`, a
+    fake process and VCS -- the printed envelope names the record, and the file is on disk, schema-valid."""
+    tier3 = _provision_home(world)
+    _write_binding_spec(world)
+
+    exit_code = gate_module.run_evaluate(_args(), process=_Process(stdout="all green"), vcs=_Vcs(), fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    info = payload["data"]["gate_record"]
+    assert info["written"] is True and info["namespace"] == "session"
+    path = Path(info["path"])
+    assert path.is_file() and path.is_relative_to(tier3 / "sessions")
+    record = json.loads(path.read_text(encoding="utf-8"))
+    jsonschema.validate(instance=record, schema=_schema())
+    assert record["story"] == "2.3"
+    assert record["tree_revision"] == _HEAD
+    assert record["commands"][0]["stdout"] == "all green"
+    assert exit_code == 0
+    assert payload["verdict"] == "clean"
 
 
 def test_run_evaluate_exit_code_is_the_gates_even_when_the_record_cannot_be_written(world, capsys):
