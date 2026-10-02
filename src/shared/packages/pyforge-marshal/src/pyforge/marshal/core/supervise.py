@@ -624,6 +624,7 @@ def judge_usage_freshness(
         raise ValueError(f"window_s must be positive and finite, got {window_s!r}")
     if mtime is None:
         return UsageFreshness.STALE, sighting
+    return (UsageFreshness.STALE if (wall_now_s - mtime) > window_s else UsageFreshness.FRESH), sighting
     if not math.isfinite(mtime):
         return UsageFreshness.UNEVALUABLE, sighting
     if sighting is not None and sighting.mtime == mtime:

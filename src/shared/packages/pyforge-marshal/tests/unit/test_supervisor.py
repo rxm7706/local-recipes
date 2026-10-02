@@ -6319,16 +6319,24 @@ class _DarkWindowObserver(FakeObserver):
 
 
 def _supervise_idle(
-    fs: FakeFs, *, clock: AdvancingClock, observer: FakeObserver, harness: FakeHarness, alive_for: int, sleep=None
+    fs: FakeFs,
+    *,
+    clock: AdvancingClock,
+    observer: FakeObserver,
+    harness: FakeHarness,
+    alive_for: int,
+    idle_minutes: float = 1.0,
+    sleep=None,
 ) -> int:
-    """``run_supervisor`` at a one-minute idle threshold -- one tick per rung."""
+    """``run_supervisor`` at a one-minute idle threshold by default -- one
+    tick per rung."""
     return run_supervisor(
         _HOME,
         "acme",
         "acme-run-1",
         4242,
         _LOG_PATH,
-        1.0,
+        idle_minutes,
         _MAX_TOKENS_PER_STORY,
         _MAX_TOKENS_PER_RUN,
         _MAX_WALL_CLOCK_MINUTES_PER_STORY,
@@ -6445,7 +6453,10 @@ def test_a_pane_that_only_redraws_a_counter_and_a_spinner_does_not_re_arm_the_id
     observer = _RedrawingObserver(mtime=1.0)
     harness = FakeHarness()
 
-    rc = _supervise_idle(fs, clock=clock, observer=observer, harness=harness, alive_for=4)
+    # A two-minute threshold, so the first rung needs THREE samples of history
+    # (ticks 1-3): the idle anchor must survive the history trim as well as
+    # the scan, which is what makes the trim's change test part of this fix.
+    rc = _supervise_idle(fs, clock=clock, observer=observer, harness=harness, alive_for=5, idle_minutes=2.0)
 
     assert rc == 0
     kinds = [e["kind"] for e in _journal_entries(fs)]
