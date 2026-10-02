@@ -342,9 +342,11 @@ verify_commands = [
 dev = { harness = "cursor", model = "composer-2.5-fast" }
 review = { harness = "cursor", model = "composer-2.5-fast" }
 
+# 2026-10-02 (operator ruling): `grok-4.6` is no longer a Cursor model id (the live list names
+# `cursor-grok-4.6-*` and the newer `grok-4.7-*`); the medium tier moves to `grok-4.7-high`.
 [model_tier_map.medium]
-dev = { harness = "cursor", model = "grok-4.6" }
-review = { harness = "cursor", model = "grok-4.6" }
+dev = { harness = "cursor", model = "grok-4.7-high" }
+review = { harness = "cursor", model = "grok-4.7-high" }
 
 [model_tier_map.easy]
 dev = { harness = "cursor", model = "composer-2.5" }
