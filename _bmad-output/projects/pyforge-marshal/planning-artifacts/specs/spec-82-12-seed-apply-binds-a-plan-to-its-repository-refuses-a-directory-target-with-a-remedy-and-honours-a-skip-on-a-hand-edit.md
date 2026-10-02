@@ -2,13 +2,14 @@
 title: '82.12: Seed apply binds a plan to its repository, refuses a directory target with a remedy, and honours a skip on a hand-edit'
 type: 'fix'
 created: '2026-10-02'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md
+warnings: [oversized]
 deferred: []
 declared_low_risk: false
 ---
@@ -71,6 +72,45 @@ not name. Close DW-10-3-7, DW-10-4-5 and DW-10-4-4 in `deferred-work-ledger.md` 
 matching or manifest path validation (Story 82.11's surface) or opt-out handling (Story 82.13's).
 
 </intent-contract>
+
+## Code Map
+
+Paths below are under `src/shared/packages/pyforge-marshal/`; `seed/` is `src/pyforge/marshal/seed/`.
+
+- `seed/plan/types.py:219-279` -- `RepoFingerprint`: add `repo_root: str` and `git_common_dir: str | None` (required, no default, like its siblings), both in `to_json_dict`/`from_json_dict`. `from_json_dict` has no PreconditionFailure today; `_require_key` raises `ValueError`.
+- `seed/plan/build.py:481-505` -- `_git_head`/`_repo_is_dirty`: add the identity probe beside them; `:671-677` is the one producer; `:680-852` `fingerprint_drift` gains the identity comparison; `:877` `load_plan` has no production caller (adopt/update only write `plan.json`).
+- `seed/apply/run.py:364-378` -- turns any drift line into the `stale-plan` `PreconditionFailure`; unchanged, so identity drift refuses apply for free.
+- `seed/verbs/preconditions.py:616-652` -- rung 5 `lstat` loop; add the `S_ISDIR` refusal there (no seventh rung). Module docstring still says rung 5 refuses only a symlink.
+- `seed/verbs/skips.py:344-386` -- `managed_after_skips` + `_HasArtifactId`; reuse `first_match`, `_normalize_relative_posix`, `_require_patterns` from the same file. `apply_skips` (`:333`) uses `dataclasses.replace`, so new fingerprint fields survive it.
+- `seed/verbs/adopt.py:1025` and `seed/verbs/update.py:1078-1090` -- call sites. `--skip` exists only on the adopt subparser (`cli/seed.py:1141-1190`); `run_update` takes no `skip`.
+- Tests: `tests/unit/test_seed_{plan_types,plan_build,apply_run,verbs_preconditions,verbs_skips,verbs_update,verbs_adopt}.py`; about 25 direct `RepoFingerprint(...)` constructions need the two new fields.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md:1220,1313,1328` -- DW-10-3-7, DW-10-4-4, DW-10-4-5 rows to close.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `seed/plan/types.py` -- add the two fields and their codec; a fingerprint dict with the three legacy keys and no `repo_root` raises `PreconditionFailure` (`stale-plan`, remedy: re-run the plan), any other malformed shape stays `ValueError` -- the rest of `from_json_dict` is untouched.
+- `seed/plan/build.py` -- `_repo_identity(process, repo_root)` (resolved root; `git rev-parse --git-common-dir` resolved against the root, `None` on non-zero exit); `build_plan` records it; `fingerprint_drift` reports a root or common-dir mismatch first, before `git_head`; update its docstring.
+- `seed/verbs/preconditions.py` -- in rung 5, `S_ISDIR(mode)` raises `PreconditionFailure` `directory-target` naming the action, path and a remedy (remove or rename the directory, or `--skip` the artifact); update the module docstring.
+- `seed/verbs/skips.py` -- `managed_after_skips(managed, plan, patterns=())` also drops a record whose normalized `path` matches a pattern; the Protocol gains `path`; docstrings say the helper takes patterns because a hand-edited managed file never has an action.
+- `seed/verbs/adopt.py` -- pass `skip` to the helper. `seed/verbs/update.py` -- route managed records through the helper with the plan (no patterns; see Design Notes).
+- the tests above -- update direct constructions; add one test per AC, each failing when its fix is reverted.
+- `deferred-work-ledger.md` -- close the three rows (`status: closed`, `resolved:` line naming Story 82.12).
+
+**Acceptance Criteria:**
+- Given a plan built in empty non-git directory A, when `run_apply` targets empty non-git directory B, then `fingerprint_drift` names the repository mismatch and apply raises `stale-plan` before any write.
+- Given a plan whose repo is moved or replaced by another clone, when it is applied, then the git common directory differs and apply refuses.
+- Given a `plan.json` whose fingerprint lacks `repo_root`, when `Plan.from_json_dict`/`load_plan` reads it, then it raises `PreconditionFailure` with a re-plan remedy; a plan round-trips unchanged.
+- Given an action whose target is an existing directory, when `check_preconditions` runs, then it raises `PreconditionFailure` (`directory-target`, exit 3, non-blank remedy) and nothing is written; a symlink still reports `symlink-target`.
+- Given a hand-edited managed file with no action and `--skip <its path>`, when `run_adopt` runs without `--force`, then rung 6 does not refuse and the file is unchanged; a second hand-edited file the pattern does not name still refuses.
+- Given `run_update` with a managed record for an artifact in `plan.skipped`, then rung 6 is not asked about it.
+
+## Spec Change Log
+
+## Design Notes
+
+- **Why `update` gets the plan only.** `update` has no `--skip` (a flag is out of scope), and its wholesale-regenerate pass emits an action for every managed record -- so rung 6 refusing a hand-edit there guards a real overwrite. A pattern skip on `update` would have to drop that action too (`apply_skips`) and record the pattern; that is a feature, not this defect. What `update` lacked was the helper at all: migration-offered `copied-seeded` skips sit in `plan.skipped` with no action, and their records were still handed to rung 6.
+- **Identity is compared, not hashed into `dirty`.** Both fields are resolved paths, compared as strings; moving a repo is drift and takes a re-plan. A common directory is `None` outside git, so for a non-git target the root alone separates A from B.
 
 ## Binding
 
