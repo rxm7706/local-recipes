@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli.dispatch import (
+    _is_dispatch_session_alive,
     _policy_flags_from_harness_arg,
     _surface_worktree_wip_before_dispatch,
     gather_dispatch_journal_facts,
@@ -478,3 +480,114 @@ def test_resolve_max_parallel_is_serial_for_a_dispatch_block_that_omits_max_para
     assert findings == ()
     assert "max_parallel" not in effective.dispatch.value
     assert resolve_max_parallel(effective) == 1
+
+
+# --- tests for _is_dispatch_session_alive (Story 83.1) -------------------------
+
+
+class _FakeProcessForSessionAlive:
+    """Test double for ProcessPort with controllable is_alive and process_start_time."""
+    
+    def __init__(self, *, is_alive: bool = True, start_time: float | None = None):
+        self.is_alive_result = is_alive
+        self.start_time_result = start_time
+    
+    def is_alive(self, pid: int) -> bool:
+        return self.is_alive_result
+    
+    def process_start_time(self, pid: int) -> float | None:
+        return self.start_time_result
+
+
+def test_is_dispatch_session_alive_false_when_no_session_pid() -> None:
+    """Should return False when journal has no session_pid."""
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="test",
+        session_pid=None,
+        model="test-model", 
+        launched_at=datetime.fromisoformat("2026-10-02T12:00:00+00:00"),
+    )
+    process = _FakeProcessForSessionAlive(is_alive=True)
+    assert _is_dispatch_session_alive(process, journal) is False
+
+
+def test_is_dispatch_session_alive_false_when_process_not_alive() -> None:
+    """Should return False when the process is not alive."""
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="test",
+        session_pid=12345,
+        model="test-model",
+        launched_at=datetime.fromisoformat("2026-10-02T12:00:00+00:00"),
+    )
+    process = _FakeProcessForSessionAlive(is_alive=False)
+    assert _is_dispatch_session_alive(process, journal) is False
+
+
+def test_is_dispatch_session_alive_true_when_no_launch_time() -> None:
+    """Should return True when process is alive but no launch time to verify against."""
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="test",
+        session_pid=12345,
+        model="test-model",
+        launched_at=None,
+    )
+    process = _FakeProcessForSessionAlive(is_alive=True, start_time=1672531200.0)
+    assert _is_dispatch_session_alive(process, journal) is True
+
+
+def test_is_dispatch_session_alive_true_when_process_start_time_matches() -> None:
+    """Should return True when process start time is within tolerance of launch time."""
+    launch_time = datetime.fromisoformat("2026-10-02T12:00:00+00:00")  # 1696248000.0
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="test", 
+        session_pid=12345,
+        model="test-model",
+        launched_at=launch_time,
+    )
+    # Process started 10 seconds after launch (within 30s tolerance)
+    process_start = launch_time.timestamp() + 10.0
+    process = _FakeProcessForSessionAlive(is_alive=True, start_time=process_start)
+    assert _is_dispatch_session_alive(process, journal) is True
+
+
+def test_is_dispatch_session_alive_false_when_process_started_too_late() -> None:
+    """Should return False when process started too long after launch time (PID reuse)."""
+    launch_time = datetime.fromisoformat("2026-10-02T12:00:00+00:00")
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="test",
+        session_pid=12345, 
+        model="test-model",
+        launched_at=launch_time,
+    )
+    # Process started 60 seconds after launch (outside 30s tolerance)
+    process_start = launch_time.timestamp() + 60.0
+    process = _FakeProcessForSessionAlive(is_alive=True, start_time=process_start)
+    assert _is_dispatch_session_alive(process, journal) is False
+
+
+def test_is_dispatch_session_alive_false_when_process_started_too_early() -> None:
+    """Should return False when process started too long before launch time (PID reuse)."""
+    launch_time = datetime.fromisoformat("2026-10-02T12:00:00+00:00")
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="test",
+        session_pid=12345,
+        model="test-model", 
+        launched_at=launch_time,
+    )
+    # Process started 60 seconds before launch (outside tolerance)
+    process_start = launch_time.timestamp() - 60.0
+    process = _FakeProcessForSessionAlive(is_alive=True, start_time=process_start)
+    assert _is_dispatch_session_alive(process, journal) is False
+
+
+def test_is_dispatch_session_alive_true_when_start_time_unavailable() -> None:
+    """Should return True when process is alive but start time can't be determined (degrade gracefully)."""
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="test",
+        session_pid=12345,
+        model="test-model", 
+        launched_at=datetime.fromisoformat("2026-10-02T12:00:00+00:00"),
+    )
+    # start_time returns None (e.g., /proc files unreadable)
+    process = _FakeProcessForSessionAlive(is_alive=True, start_time=None)
+    assert _is_dispatch_session_alive(process, journal) is True
