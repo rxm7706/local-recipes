@@ -2,7 +2,7 @@
 title: '82.13: A marker opt-out is representable for every artifact, accepted by preconditions, and recorded per region'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'dfd5482b46238c5745573fbfccd19e439f99e8df'
 review_loop_iteration: 2
 followup_review_recommended: false
@@ -320,4 +320,49 @@ Closes: DW-FU-8-5-2, DW-FU-8-5-5, DW-FU-8-5-6.
 
 ## Auto Run Result
 
-Pass 2 was reviewed and sent back (`bad_spec`, iteration 2): see the Spec Change Log. The pass-2 result is superseded; the next pass rewrites this section.
+**Status:** in-review (re-derivation after review pass 2, `bad_spec`, iteration 2; implementation complete, review not yet run).
+
+**Summary of the change.** The KEEP list of both Spec Change Log entries was restored from the last checkpoint
+(`git diff dfd5482b46 2d9ea56211`) and checked against the Tasks rather than trusted: the full station suite passes and the
+mutation checks below were re-run. On top of it, the pass-2 amendments:
+
+- `adopt` and `update` read the REPLACED record from the state AS READ (`run_adopt` / `run_update` keep `state_as_read`
+  before `_state_with_opt_outs` records derived opt-outs in memory); the in-memory state still supplies carried-over records and
+  `opted_out`. This closes the pass-2 wedge: a state in the pre-82.13 one-span shape whose only recorded region was deleted
+  (FR-112) used to exit 10 after writing.
+- `_managed_artifact_after_apply` (both verbs) claims every declared region present after the write when a replaced record
+  exists at the same `path`, else only the regions `action.chosen_anchor` named; raises `InternalError` naming the missing
+  region when one the action named is absent after the write (even if others were recorded); returns `None` when nothing is
+  named and nothing is present. `_build_state_after_apply` (both verbs) and `init`'s state builder omit a `None`.
+- `update._managed_records` takes `escaping_ids` and drops an escaping record before `_region_shas_for_record` can read its
+  path, for an old-shape state too (Story 82.11).
+- `docs/managed-region-contract.md`: the old-shape, empty-plan, older-marshal (true remedy: upgrade that marshal) and
+  hand-restored-marker conditions; item 3's `--reinstate` now says Story 10.6 ships it.
+- Ledger: DW-FU-11-4 gets one em-dash `verified: 2026-10-02 -- NEEDS-DECISION` line after the older ones, citing
+  `seed/verbs/update.py:551-552`, and its `decision:` is narrowed to the `state.skips` half; DW-FU-8-5-6's `resolved:` states the
+  new claim rule; DW-FU-8-5-2, -5 and -6 are `closed`.
+- Tests (`test_seed_verbs_region_opt_out.py`, `test_seed_templates_manifest.py`): old-shape mutating runs through both verbs,
+  both-regions-deleted beside another artifact's apply, the helper's raise / `None` / claim-all outcomes, the state builder
+  omitting an unclaimed artifact, the escaping hybrid under an old-shape state (read spy), hand-restored markers through both
+  verbs, the old-shape rewrite seeded through `_as_old_shape`, and the shipped-manifest test no longer hard-coding region counts.
+
+**Verification** (from the run worktree, exit codes read directly):
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: 10800 passed, 1 skipped, 14 deselected.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: 130 passed, 3 skipped.
+- `pixi run -e pyforge-guild lint-types`: exit 0 (ruff, ruff format, mypy).
+- `python scripts/spec_surface_reconcile.py`: exit 0; `spec-surface-check`, `deferred-work-check`: exit 0. No baseline stamped.
+- Mutation checks, each reverted and watched fail: replaced record from the in-memory state (both verbs); claim only the named
+  regions (both verbs); per-region `InternalError` removed (both verbs); `None` return replaced by a raise; `None` records kept
+  in state (both verbs); escaping filter applied after `_managed_records`; in-memory opt-out recording removed (both verbs);
+  wholesale pass ignoring the opt-out set; manifest id grammar check; rung 6 opt-out skip; schema `managed[].id` back to
+  `nonBlankString`; `_claims_region` over the first span only; `_without_region_claim` matching on id alone.
+
+**Residual risks.**
+- A state in the old one-span shape, with `adopt --skip` naming the hybrid file while another artifact applies: the hybrid's
+  Action is skipped, so the artifact is not touched, and its record (dropped from the in-memory state by the opt-out recording)
+  is not carried over -- the siblings lose their claim until a later `update` or unskipped `adopt` re-records them. The Tasks
+  fix carried-over records to the in-memory state; closing this needs a rule for what an untouched old-shape record carries.
+- `init`'s state builder now omits a hybrid action that names no region (it used to raise); unreachable from `build_plan`.
+- A hand-restored region keeps its `opted_out` key beside a recorded span until Story 10.6's reinstate (pinned, documented).
+- AD-58 (`ARCHITECTURE-SPINE.md`), `epics.md` and `SPEC.md` still name `inserted_region_span`; a spine edit ripples the
+  planning chain and a Spec is never hand-edited -- left for the finalize pass's `deferred`.
