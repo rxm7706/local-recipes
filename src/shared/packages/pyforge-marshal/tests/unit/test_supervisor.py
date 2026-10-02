@@ -6382,7 +6382,7 @@ def test_a_dark_gap_holds_the_rung_instead_of_re_firing_the_nudge_when_observati
         clock.sleep(seconds)
         ticks["n"] += 1
 
-    rc = _supervise_idle(fs, clock=clock, observer=observer, harness=harness, alive_for=6, sleep=_sleep)
+    rc = _supervise_idle(fs, clock=clock, observer=observer, harness=harness, alive_for=7, sleep=_sleep)
 
     assert rc == 0
     entries = _journal_entries(fs)
@@ -6399,9 +6399,14 @@ def test_each_unobservable_episode_journals_its_own_warn():
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
     ticks = {"n": 0}
-    observer = _DarkWindowObserver(dark_ticks={2, 3, 6}, tick_counter=ticks, pane_sequence=[], mtime=1.0)
-    observer.pane_sequence = None
-    observer.pane = "alive and writing"
+    # A session that keeps writing (the pane gains text every capture), so
+    # the ladder has no reason to act and only the dark ticks are in play.
+    observer = _DarkWindowObserver(
+        dark_ticks={2, 3, 6},
+        tick_counter=ticks,
+        pane_sequence=["a", "ab", "abc", "abcd", "abcde", "abcdef", "abcdefg"],
+        mtime=1.0,
+    )
     harness = FakeHarness()
 
     def _sleep(seconds: float) -> None:
