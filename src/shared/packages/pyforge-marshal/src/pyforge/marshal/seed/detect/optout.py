@@ -39,7 +39,7 @@ design; each rung is a different fact about the same name.
    is precisely the state ``record_opt_out`` leaves behind, and it is what
    makes the opt-out permanent rather than re-derived.
 3. State carries a ``managed[]`` entry for ``entry.id`` AND ``entry.path``
-   whose ``inserted_region_span.name`` is this name, AND ``text`` has real
+   one of whose ``inserted_region_spans`` is named this name, AND ``text`` has real
    content, AND no ``marshal-seed`` marker line for this name survives
    anywhere in ``text``, AND the opt-out grammar can spell the pair ->
    ``OPTED_OUT``. Genesis installed this region once and the markers are
@@ -92,17 +92,22 @@ records nothing at all -- FR-88 forbids ``check`` writing anything, state
 included -- so it reports the derivation and leaves the recording to the
 next mutating run.
 
-**A known limitation of rung 3: one recorded region span per artifact.**
-``SeedState.__post_init__`` rejects duplicate ``managed[].id``, so one
-artifact carries at most one ``ManagedArtifact`` and therefore at most one
-``inserted_region_span``. For a hybrid entry declaring several regions,
-state can attest to only ONE of them having been installed; rung 3 can fire
-for that one, and every other declared region falls through to ``MISSING``
-and stays eligible for insertion no matter how many were really installed
-and then deleted. That is a pre-existing property of the schema S-10.2
-shipped, which Story 8.5 does not change -- recorded in both places (see
-``state/store.py::record_opt_out``) so nobody reads rung 3 as covering every
-declared region.
+**Rung 3 covers every region state recorded, one by one (Story 82.13).**
+A ``managed[]`` entry holds one ``RegionSpanRecord`` per installed region, so
+for a hybrid entry declaring several regions the claim is per region and so is
+the derivation: each region whose own markers were deleted is opted out on its
+own, and a sibling whose markers survive stays ``PRESENT``. Until 82.13 state
+held at most ONE span per artifact (``SeedState.__post_init__`` rejects a
+duplicate ``managed[].id``), so rung 3 could fire for one region and every
+other deleted sibling fell through to ``MISSING`` and was re-inserted --
+FR-112 honoured for one region of an artifact and silently undone for the
+rest (``DW-FU-8-5-6``). A state file in the old one-span shape still reads as
+a one-region list, so for it the old limit holds until the next write
+re-records every region.
+
+``opted_out_regions`` is the same answer for a caller that needs it as a set:
+rung 6 of ``verbs/preconditions.py`` skips a recorded region that is opted out
+rather than reporting it missing.
 
 **Why ``MISSING`` is ``DRIFT`` and ``OPTED_OUT`` is ``INFO``.** ``HARD`` is
 reserved for corruption and refusals (``managed-*-modified``,
@@ -148,6 +153,7 @@ granularity lives beside them rather than inside them.
 from __future__ import annotations
 
 import unicodedata
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -363,17 +369,19 @@ def _disposition(
     **Rung 3 also requires a pair the opt-out grammar can spell.** Rung 2
     already has that property for free -- ``is_opted_out`` answers through
     ``opt_out_key_or_none``, so an inadmissible pair can never match a
-    schema-valid ``opted_out`` entry. Rung 3 derived from the raw
-    ``managed[].id``, which is the LOOSER grammar (``SeedState`` accepts an
-    id the ``opted_out`` item pattern rejects -- e.g. one carrying a space),
-    so a derived ``OPTED_OUT`` could name a pair ``record_opt_out`` refuses.
-    That broke the sanctioned verb sequence at its own seam:
-    ``opt_outs_to_record`` handed the caller a pair, and feeding it straight
-    to ``record_opt_out`` -- the exact loop this module documents -- raised
-    ``ValueError``. It also disagreed three ways with ``plan/build.py``,
-    which degrades the same pair to "not opted out" and re-inserts the
-    region regardless. Gating here makes all three layers apply the ONE
-    grammar, and an unspellable pair falls through to ``MISSING`` -- the
+    schema-valid ``opted_out`` entry. Rung 3 derives from the raw
+    ``managed[].id``. Until Story 82.13 that was the LOOSER grammar -- a
+    ``managed[].id`` was any non-blank string, so a derived ``OPTED_OUT``
+    could name a pair ``record_opt_out`` refuses (an id carrying a space),
+    breaking the sanctioned verb sequence at its own seam and disagreeing
+    three ways with ``plan/build.py``, which degrades the same pair to "not
+    opted out" and re-inserts the region regardless. ``managed[].id`` and the
+    manifest's ``ManifestEntry.id`` now carry the artifact half's own grammar
+    (no whitespace, no ``#``), so no id state or the manifest can hold is
+    unspellable and the gap is closed at its source. The gate stays as the
+    cheap, local statement of the invariant -- all three layers apply the ONE
+    grammar, and a pair it somehow could not spell (a hand-built
+    ``SeedState`` bypassing the schema) falls through to ``MISSING``, the
     non-destructive direction, matching the empty-``text`` rule above."""
     if region_name in present_names:
         return RegionDisposition.PRESENT
@@ -395,12 +403,14 @@ def _claims_region(state: SeedState, entry: ManifestEntry, region_name: str) -> 
     exact region of this exact artifact, at the path the manifest declares
     for it today.
 
-    All three halves of the match are required -- the ``id``, the recorded
+    All three halves of the match are required -- the ``id``, one recorded
     span's ``name``, AND the recorded ``path`` -- never a subset: an
     artifact's whole-file claim, or its claim on a DIFFERENT region, says
-    nothing about this region. The span-present-iff-hybrid invariant
-    ``ManagedArtifact.__post_init__`` enforces means the ``is not None``
-    guard below is also the class check.
+    nothing about this region. The span-non-empty-iff-hybrid invariant
+    ``ManagedArtifact.__post_init__`` enforces means a whole-file claim has
+    no span to match, so the name test is also the class check. A hybrid
+    entry records one span per installed region (Story 82.13), so ANY of its
+    spans may carry the name.
 
     **Why the path is compared too** (review finding, confirmed by
     execution). AD-55 makes ``id``, not ``path``, the stable address, so a
@@ -431,8 +441,7 @@ def _claims_region(state: SeedState, entry: ManifestEntry, region_name: str) -> 
     return any(
         artifact.id == entry.id
         and artifact.path == entry.path
-        and artifact.inserted_region_span is not None
-        and artifact.inserted_region_span.name == region_name
+        and any(span.name == region_name for span in artifact.inserted_region_spans)
         for artifact in state.managed
     )
 
@@ -570,12 +579,14 @@ def region_findings(statuses: tuple[RegionStatus, ...]) -> tuple[Finding, ...]:
                     FindingType.MANAGED_REGION_MISSING,
                     status.path,
                     # "and was never installed" used to follow, and was a
-                    # claim this code cannot make: the one-span-per-artifact
-                    # limit above means a region whose artifact's single
-                    # claim slot is occupied by a SIBLING region reaches this
-                    # branch having been installed, deleted, and forgotten,
-                    # and the message would have asserted otherwise. What is
-                    # actually known is what is now said.
+                    # claim this code cannot make: a region reaches this
+                    # branch having been installed and then deleted whenever
+                    # state no longer records it -- a state file in the old
+                    # one-span shape (Story 82.13) attests to one region of a
+                    # multi-region artifact, and a claim an earlier opt-out
+                    # dropped is gone too -- and the message would have
+                    # asserted otherwise. What is actually known is what is
+                    # now said.
                     f"{status.path}#{status.region}: declared managed region is not present",
                 )
             )
@@ -639,4 +650,37 @@ def opt_outs_to_record(statuses: tuple[RegionStatus, ...], state: SeedState | No
         for status in statuses
         if status.disposition is RegionDisposition.OPTED_OUT
         and not is_opted_out(state, status.artifact_id, status.region)
+    )
+
+
+def opted_out_regions(
+    entries_and_texts: Iterable[tuple[ManifestEntry, str]], state: SeedState | None
+) -> frozenset[tuple[str, str]]:
+    """Every ``(artifact_id, region)`` that ``classify_regions`` answers
+    ``OPTED_OUT`` for, across the hybrid entries handed in -- recorded
+    opt-outs (rung 2) and derived ones (rung 3) alike, as plain pairs.
+
+    Exists for ``verbs/preconditions.py``, whose rung 6 reports a recorded
+    region that is missing from its file as a hand-edit (Story 82.13,
+    ``DW-FU-8-5-5``) and must not do so for a region FR-112 says the
+    maintainer left on purpose. Pairs, not rendered ``opt_out_key`` strings,
+    for the reason ``opt_outs_to_record`` returns pairs: that module imports
+    nothing from ``seed.state`` and must not re-spell the ``<id>#<region>``
+    key. Going through ``classify_regions`` means the recorded case (no file
+    needed) and the derived case (claim survives, markers gone) are ONE
+    answer, and a caller needs no second spelling of either. The derived case
+    is the real scenario: no mutating verb records a derived opt-out yet, so
+    a set read from ``state.opted_out`` alone would still refuse it.
+
+    Pure, like the rest of this module: each entry arrives with its file's
+    text already read (``""`` for an absent or unreadable one, which switches
+    rung 3 off -- see ``classify_regions``), and nothing is written. A
+    non-hybrid entry contributes nothing, as does a file ``parse_regions``
+    refuses (``classify_regions``' degrade rule), so a structural defect never
+    retires a region here either."""
+    return frozenset(
+        (status.artifact_id, status.region)
+        for entry, text in entries_and_texts
+        for status in classify_regions(entry, text, state)
+        if status.disposition is RegionDisposition.OPTED_OUT
     )

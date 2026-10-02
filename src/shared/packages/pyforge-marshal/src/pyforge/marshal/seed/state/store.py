@@ -180,10 +180,11 @@ _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 _SCHEMA_FILENAME = "schema.json"
 
-# The one `class` value that carries an `inserted_region_span`. A WIRE
-# string, not `model.manifest.ArtifactClass.HYBRID_MANAGED_REGION` -- this
-# module may not import `model.manifest` (module docstring's import
-# surface), and `schema.json`'s own enum is the contract either way.
+# The one `class` value that carries `inserted_region_spans` (one span per
+# installed region, Story 82.13). A WIRE string, not
+# `model.manifest.ArtifactClass.HYBRID_MANAGED_REGION` -- this module may not
+# import `model.manifest` (module docstring's import surface), and
+# `schema.json`'s own enum is the contract either way.
 _REGION_ARTIFACT_CLASS = "hybrid-managed-region"
 
 
@@ -340,21 +341,30 @@ def _reject_duplicates(values: tuple[str, ...], *, context: str) -> None:
 
 @dataclass(frozen=True)
 class RegionSpanRecord:
-    """A managed region's identity and body extent, as recorded in state:
-    the region ``name`` plus the UTF-8 BYTE offsets of its body, markers
-    excluded -- mirroring ``regions/parse.py``'s ``RegionSpan.name`` +
-    ``RegionSpan.body_span``.
+    """A managed region's identity, body extent and body hash, as recorded
+    in state: the region ``name``, the UTF-8 BYTE offsets of its body
+    (markers excluded -- mirroring ``regions/parse.py``'s
+    ``RegionSpan.name`` + ``RegionSpan.body_span``), and the ``body_sha`` of
+    that body.
 
     Deliberately NOT a serialization of the whole ``RegionSpan``: AD-58
     needs only enough to withdraw the tool's claim (strip the region
     without touching surrounding content), and a recorded
     ``begin_span``/``end_span``/declared ``sha`` would be three more
     values to keep true across every subsequent hand-edit of the
-    surrounding file."""
+    surrounding file.
+
+    ``body_sha`` is ``detect/hashes.py::hash_content``'s shipped shape (8
+    lowercase hex), enforced by the schema's own ``pattern`` rather than
+    re-checked here, exactly as ``ManagedArtifact.body_sha`` is (Story
+    82.13). It is per region because rung 6 compares each region body to its
+    own recorded value: with one artifact-level hash, every sibling of the
+    one region state could attest to had nothing to compare against."""
 
     name: str
     start: int
     end: int
+    body_sha: str
 
     def __post_init__(self) -> None:
         """Reject a negative or INVERTED span at construction, the same
@@ -375,7 +385,7 @@ class RegionSpanRecord:
             )
 
     def to_json_dict(self) -> dict[str, Any]:
-        return {"name": self.name, "start": self.start, "end": self.end}
+        return {"name": self.name, "start": self.start, "end": self.end, "body_sha": self.body_sha}
 
     @classmethod
     def from_json_dict(cls, data: dict[str, Any]) -> RegionSpanRecord:
@@ -394,6 +404,10 @@ class RegionSpanRecord:
                 _require_key(data, "end", context="RegionSpanRecord"),
                 context="RegionSpanRecord.end",
             ),
+            body_sha=_require_str(
+                _require_key(data, "body_sha", context="RegionSpanRecord"),
+                context="RegionSpanRecord.body_sha",
+            ),
         )
 
 
@@ -401,8 +415,9 @@ class RegionSpanRecord:
 class ManagedArtifact:
     """One artifact the tool currently claims (AD-58): its manifest
     ``id``, its repo-relative ``path``, its class, the ``body_sha`` last
-    recorded for it, and -- for a ``hybrid-managed-region`` claim -- the
-    region span inserted into an otherwise human-owned file.
+    recorded for it, and -- for a ``hybrid-managed-region`` claim -- one
+    ``RegionSpanRecord`` per region installed into an otherwise human-owned
+    file.
 
     ``artifact_class`` (not ``class`` -- a reserved word) serializes to
     the YAML key literally spelled ``class``, matching
@@ -417,59 +432,120 @@ class ManagedArtifact:
     malformed recorded hash a ``StateInvalid`` at READ time, so it can
     never reach ``check_managed_file``/``check_managed_region`` at all.
 
-    ``inserted_region_span`` is present for a ``hybrid-managed-region``
-    claim and ``None`` for every other class -- an IFF, enforced in
+    ``inserted_region_spans`` is non-empty for a ``hybrid-managed-region``
+    claim and ``()`` for every other class -- an IFF, enforced in
     ``__post_init__`` and mirrored by ``schema.json``'s own
-    ``if``/``then``/``else`` on ``class``."""
+    ``if``/``then``/``else`` on ``class``. It holds one span per installed
+    region (Story 82.13), so a hybrid artifact declaring several regions can
+    attest to each of them: the opt-out of one deleted region no longer
+    leaves its siblings unrecorded. A hybrid's ``body_sha`` is its FIRST
+    span's, so the two cannot disagree about the one region both name."""
 
     id: str
     path: str
     artifact_class: str
     body_sha: str
-    inserted_region_span: RegionSpanRecord | None
+    inserted_region_spans: tuple[RegionSpanRecord, ...]
 
     def __post_init__(self) -> None:
-        """Couple ``class`` to ``inserted_region_span``: present if and
-        only if the class is ``hybrid-managed-region`` (review finding).
+        """Couple ``class`` to ``inserted_region_spans``: non-empty if and
+        only if the class is ``hybrid-managed-region``, with unique region
+        names and a ``body_sha`` that is the first span's.
 
-        Both halves were previously uncoupled -- a hybrid entry with a null
-        span and a ``referenced`` entry with a populated one both validated
-        and round-tripped, contradicting this class's own docstring and the
-        schema's. Each is a real failure: a hybrid claim with no span is one
-        an eject cannot withdraw at all (AD-58 needs the byte offsets), and
-        a whole-file claim carrying a span invites an eject to splice a file
-        it was supposed to remove outright. The schema states the same rule
-        so a hand-edited file is rejected at READ time, before this
-        constructor is ever reached; this check is what keeps a
-        code-constructed value honest too."""
-        has_span = self.inserted_region_span is not None
-        if self.artifact_class == _REGION_ARTIFACT_CLASS and not has_span:
+        Each rule is one a JSON Schema keyword cannot state (a uniqueness
+        BY A FIELD, an equality between two fields) or one the schema states
+        and this constructor must keep true for a code-constructed value
+        too. A hybrid claim with no span is one an eject cannot withdraw at
+        all (AD-58 needs the byte offsets); a whole-file claim carrying a
+        span invites an eject to splice a file it was supposed to remove
+        outright; two spans of one name leave a recorded-hash lookup
+        order-dependent, the failure ``_reject_duplicates`` exists for. A
+        ``list`` is accepted and frozen to a ``tuple``, as ``SeedState``
+        does for its own sequences."""
+        spans = self.inserted_region_spans
+        if not isinstance(spans, (list, tuple)) or not all(isinstance(span, RegionSpanRecord) for span in spans):
+            raise ValueError(
+                f"ManagedArtifact {self.id!r}: inserted_region_spans must be a sequence of"
+                f" RegionSpanRecord, got {_abbreviate(spans)}"
+            )
+        object.__setattr__(self, "inserted_region_spans", tuple(spans))
+        spans = self.inserted_region_spans
+        if self.artifact_class == _REGION_ARTIFACT_CLASS and not spans:
             raise ValueError(
                 f"ManagedArtifact {self.id!r}: class {_REGION_ARTIFACT_CLASS!r} requires an"
-                " inserted_region_span (an eject cannot withdraw the claim without it)"
+                " inserted_region_spans entry (an eject cannot withdraw the claim without it)"
             )
-        if has_span and self.artifact_class != _REGION_ARTIFACT_CLASS:
+        if spans and self.artifact_class != _REGION_ARTIFACT_CLASS:
             raise ValueError(
-                f"ManagedArtifact {self.id!r}: inserted_region_span belongs only to class"
+                f"ManagedArtifact {self.id!r}: inserted_region_spans belongs only to class"
                 f" {_REGION_ARTIFACT_CLASS!r}, got {self.artifact_class!r}"
+            )
+        _reject_duplicates(
+            tuple(span.name for span in spans),
+            context=f"ManagedArtifact {self.id!r}: inserted_region_spans[].name",
+        )
+        if spans and self.body_sha != spans[0].body_sha:
+            raise ValueError(
+                f"ManagedArtifact {self.id!r}: body_sha {self.body_sha!r} must equal its first"
+                f" inserted_region_spans entry's body_sha ({spans[0].body_sha!r}, region {spans[0].name!r})"
             )
 
     def to_json_dict(self) -> dict[str, Any]:
+        """Always the new shape: ``inserted_region_spans`` as an array
+        (``[]`` for a non-hybrid claim). The old one-span key is never
+        emitted -- it is read-only (see ``from_json_dict``)."""
         return {
             "id": self.id,
             "path": self.path,
             "class": self.artifact_class,
             "body_sha": self.body_sha,
-            "inserted_region_span": (
-                None if self.inserted_region_span is None else self.inserted_region_span.to_json_dict()
-            ),
+            "inserted_region_spans": [span.to_json_dict() for span in self.inserted_region_spans],
         }
 
     @classmethod
     def from_json_dict(cls, data: dict[str, Any]) -> ManagedArtifact:
+        """The inverse of ``to_json_dict``, which also reads the shape every
+        state file written before Story 82.13 carries.
+
+        That shape had ONE nullable ``inserted_region_span`` (an object for a
+        hybrid claim, ``None`` otherwise) and no hash of its own, because the
+        artifact's ``body_sha`` was that region's. It loads as a one-element
+        ``inserted_region_spans`` whose ``body_sha`` is the artifact's, or
+        ``()`` for ``None`` -- so no old file is rejected, and the next
+        ``write_state`` rewrites it in the new shape. Carrying both keys, or
+        neither, is a shape violation (the schema's ``oneOf`` already refuses
+        it at read time; this is the same rule for a direct caller)."""
         if not isinstance(data, dict):
             raise ValueError(f"ManagedArtifact: expected a JSON object, got {_abbreviate(data)}")
-        raw_span = _require_key(data, "inserted_region_span", context="ManagedArtifact")
+        body_sha = _require_str(
+            _require_key(data, "body_sha", context="ManagedArtifact"),
+            context="ManagedArtifact.body_sha",
+        )
+        has_spans = "inserted_region_spans" in data
+        has_legacy_span = "inserted_region_span" in data
+        if has_spans == has_legacy_span:
+            raise ValueError(
+                "ManagedArtifact: carries exactly one of 'inserted_region_spans' and"
+                f" 'inserted_region_span', got {'both' if has_spans else 'neither'}"
+            )
+        spans: tuple[RegionSpanRecord, ...]
+        if has_spans:
+            spans = tuple(
+                RegionSpanRecord.from_json_dict(item)
+                for item in _require_object_list(
+                    data["inserted_region_spans"], context="ManagedArtifact.inserted_region_spans"
+                )
+            )
+        else:
+            legacy_span = data["inserted_region_span"]
+            if legacy_span is None:
+                spans = ()
+            elif isinstance(legacy_span, dict):
+                spans = (RegionSpanRecord.from_json_dict({**legacy_span, "body_sha": body_sha}),)
+            else:
+                raise ValueError(
+                    f"ManagedArtifact.inserted_region_span: expected a JSON object or null, got {_abbreviate(legacy_span)}"
+                )
         return cls(
             id=_require_str(
                 _require_key(data, "id", context="ManagedArtifact"),
@@ -483,11 +559,8 @@ class ManagedArtifact:
                 _require_key(data, "class", context="ManagedArtifact"),
                 context="ManagedArtifact.class",
             ),
-            body_sha=_require_str(
-                _require_key(data, "body_sha", context="ManagedArtifact"),
-                context="ManagedArtifact.body_sha",
-            ),
-            inserted_region_span=(None if raw_span is None else RegionSpanRecord.from_json_dict(raw_span)),
+            body_sha=body_sha,
+            inserted_region_spans=spans,
         )
 
 
@@ -819,7 +892,9 @@ def opt_out_key(artifact_id: str, region: str) -> str:
     each must be a ``str`` (see ``opt_out_key_or_none`` on why a non-``str``
     half is refused BEFORE it is interpolated rather than after), the
     artifact half must carry no whitespace and no ``#`` (the separator
-    itself), while the region half is ``regions.markers``'s marker-safe
+    itself -- the grammar every manifest id and ``managed[].id`` is held to
+    too, Story 82.13, so any id state can hold is spellable here), while the
+    region half is ``regions.markers``'s marker-safe
     token -- lowercase alnum, then alnum or hyphen -- so an opted-out region
     name can always be rendered back into a real marker."""
     key = opt_out_key_or_none(artifact_id, region)
@@ -897,26 +972,29 @@ def _require_state(state: SeedState | None, *, context: str) -> SeedState:
 
 
 def _without_region_claim(state: SeedState, artifact_id: str, region: str) -> tuple[ManagedArtifact, ...]:
-    """``state.managed`` minus the entry whose ``id`` is ``artifact_id`` AND
-    whose ``inserted_region_span.name`` is ``region`` -- both conditions,
-    never either alone.
+    """``state.managed`` minus the claim on ONE region of ONE artifact: the
+    span named ``region`` is dropped from the entry whose ``id`` is
+    ``artifact_id``, and the entry itself goes only when no span is left.
 
     THE one spelling of that filter, consumed by both mutators, so the claim
     ``record_opt_out`` drops and the claim ``clear_opt_out`` drops can never
-    become two subtly different rules. A whole-file claim on the same id
-    (no recorded span at all) and a claim on a different ARTIFACT id are
-    both left untouched. See ``record_opt_out``'s docstring for why the
-    "different REGION of the same id" case, though written into the filter,
-    is defence in depth rather than a match state can actually present."""
-    return tuple(
-        artifact
-        for artifact in state.managed
-        if not (
-            artifact.id == artifact_id
-            and artifact.inserted_region_span is not None
-            and artifact.inserted_region_span.name == region
-        )
-    )
+    become two subtly different rules. A hybrid entry holds one span per
+    installed region (Story 82.13), so opting out of one region leaves its
+    siblings' claims standing: the entry is rebuilt with the remaining spans,
+    and its ``body_sha`` follows the new first span (``ManagedArtifact`` keeps
+    the two equal). Dropping the whole entry is forced only when the last span
+    goes, by the span-present-iff-hybrid invariant, which forbids a hybrid
+    claim with no span. A whole-file claim on the same id (no span at all), an
+    entry that does not record ``region``, and a claim on a different
+    ARTIFACT id are all left untouched."""
+    kept: list[ManagedArtifact] = []
+    for artifact in state.managed:
+        remaining = tuple(span for span in artifact.inserted_region_spans if span.name != region)
+        if artifact.id != artifact_id or len(remaining) == len(artifact.inserted_region_spans):
+            kept.append(artifact)
+        elif remaining:
+            kept.append(dataclasses.replace(artifact, body_sha=remaining[0].body_sha, inserted_region_spans=remaining))
+    return tuple(kept)
 
 
 def record_opt_out(state: SeedState, artifact_id: str, region: str) -> SeedState:
@@ -930,32 +1008,23 @@ def record_opt_out(state: SeedState, artifact_id: str, region: str) -> SeedState
     state -- and so calling this twice is a no-op the second time.
 
     ``managed`` LOSES the artifact's claim on that region, through
-    ``_without_region_claim``'s two-condition filter. Relinquishing the
-    claim is what makes ``clear_opt_out`` real: were it retained, the
-    "installed once, markers now deleted" derivation would re-derive this
-    opt-out on every later run, so a reinstate could never take effect and
-    ``--reinstate`` would be inert. Dropping the whole entry -- rather than
-    nulling its span -- is forced by ``ManagedArtifact``'s
-    span-present-iff-hybrid invariant, which forbids a hybrid claim with no
-    span. AD-58 reads the same way: ``managed[]`` is Genesis's claim on an
+    ``_without_region_claim``. Relinquishing the claim is what makes
+    ``clear_opt_out`` real: were it retained, the "installed once, markers
+    now deleted" derivation would re-derive this opt-out on every later run,
+    so a reinstate could never take effect and ``--reinstate`` would be
+    inert. AD-58 reads the same way: ``managed[]`` is Genesis's claim on an
     artifact, and an opt-out withdraws it; the next apply's insertion
     re-establishes it.
 
-    **What the filter's two conditions do and do not buy.** A whole-file
-    claim on the same ``id`` (no recorded span at all) is untouched, and so
-    is any claim on a DIFFERENT artifact id -- both reachable, both tested.
-    The third case the filter also covers -- a claim on a different REGION
-    of the same id -- is UNREACHABLE, and saying otherwise would be a false
-    promise: ``SeedState.__post_init__`` runs ``_reject_duplicates`` over
-    ``managed[].id``, so one artifact carries at most one ``ManagedArtifact``
-    and therefore at most one ``inserted_region_span``. State can record
-    exactly ONE installed region per hybrid artifact, even though
-    ``model.manifest.ManifestEntry`` lets one declare several (verified by
-    execution: a second entry sharing an id raises ``SeedState.managed[].id:
-    must be unique``). That is a pre-existing property of the schema S-10.2
-    shipped, which this story deliberately does not change -- so the span
-    half of the filter is defence in depth against a future schema that
-    allows several, not a selective match it can exercise today.
+    **Only that region's claim goes.** A hybrid artifact records one span per
+    installed region (Story 82.13, DW-FU-8-5-6), so opting out of one of
+    several leaves the others' claims -- and their hashes, which rung 6 and
+    ``check`` compare against -- standing, and the entry goes whole only when
+    its last span does. Until 82.13 state held at most ONE span per artifact:
+    an opt-out of a deleted region could be honoured for one region of a
+    multi-region artifact, and its siblings fell to ``MISSING`` and were
+    re-inserted. A whole-file claim on the same ``id`` and a claim on a
+    DIFFERENT artifact id are untouched.
 
     **PRECONDITION, and it is the caller's to check: the region must not be
     PRESENT in the file.** Identical to ``clear_opt_out``'s, for the
