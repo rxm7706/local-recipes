@@ -180,6 +180,7 @@ from ..detect.inventory import (
     Inventory,
     classify,
     effective_never_write,
+    escape_findings,
     writable_exemptions,
 )
 from ..detect.referenced_deps import referenced_dep_findings
@@ -237,6 +238,9 @@ class UpdateResult:
     applied: tuple[str, ...] | None
     declined: bool
     referenced_dep_findings: tuple[Finding, ...] = ()
+    #: Story 82.11: every manifest entry whose path resolves outside the repo --
+    #: no action is planned for it, every other action applies.
+    escape_findings: tuple[Finding, ...] = ()
 
 
 def _git_status_porcelain(repo_root: Path, *extra_pathspec: str) -> str | None:
@@ -987,6 +991,7 @@ def run_update(
     ref_findings = referenced_dep_findings(filtered_manifest, repo_root)
     state = read_state(repo_root)
     inventory = classify(filtered_manifest, repo_root)
+    escapes = escape_findings(inventory)
 
     never_write = fs.NeverWrite(
         patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory))),
@@ -1070,10 +1075,14 @@ def run_update(
     write_plan(plan, default_plan_path(repo_root))
 
     if not run:
-        return UpdateResult(plan=plan, applied=None, declined=False, referenced_dep_findings=ref_findings)
+        return UpdateResult(
+            plan=plan, applied=None, declined=False, referenced_dep_findings=ref_findings, escape_findings=escapes
+        )
 
     if not yes and not confirm():
-        return UpdateResult(plan=plan, applied=None, declined=True, referenced_dep_findings=ref_findings)
+        return UpdateResult(
+            plan=plan, applied=None, declined=True, referenced_dep_findings=ref_findings, escape_findings=escapes
+        )
 
     entries_by_id = {entry.id: entry for entry in filtered_manifest.entries}
 
@@ -1119,4 +1128,10 @@ def run_update(
         )
         write_state(new_state, repo_root=repo_root, never_write=never_write)
 
-    return UpdateResult(plan=plan, applied=result.applied, declined=False, referenced_dep_findings=ref_findings)
+    return UpdateResult(
+        plan=plan,
+        applied=result.applied,
+        declined=False,
+        referenced_dep_findings=ref_findings,
+        escape_findings=escapes,
+    )

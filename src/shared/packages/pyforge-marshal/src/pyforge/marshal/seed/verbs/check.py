@@ -53,6 +53,13 @@ one finding a legacy artifact ever produces is `legacy_findings`'s own INFO
 ``legacy-present``, unconditionally, via `detect.inventory.legacy_findings`
 composed with everything else below.
 
+**Why `ESCAPING` short-circuits too (Story 82.11).** An entry whose path
+resolves outside the repo (an in-repo symlink pointing out) is never opened
+-- reading `repo_root / entry.path` would read the escaped location -- and
+reports one HARD ``target-escapes-repo`` finding from
+`detect.inventory.escape_findings`, so the same entry that `adopt`/`update`
+leave out of their plan is named by `check` instead of vanishing.
+
 **Why `ArtifactClass.REFERENCED` short-circuits too.** `classify()` itself
 never inspects a referenced entry's filesystem state -- `model/artifact.py`'s
 ``CLASS_BEHAVIOR`` calls the class "not materialized" -- so it always
@@ -189,7 +196,7 @@ from pyforge.core.process import PosixProcess
 
 from ..detect.findings import Finding, FindingType, Severity
 from ..detect.hashes import check_managed_file, check_managed_region
-from ..detect.inventory import ArtifactState, classify, legacy_findings
+from ..detect.inventory import ArtifactState, classify, escape_findings, legacy_findings
 from ..detect.kit import KitCheck, kit_checks, kit_findings
 from ..detect.optout import classify_regions, region_findings
 from ..detect.referenced_deps import referenced_dep_findings
@@ -408,6 +415,14 @@ def run_check(
                 )
             continue
 
+        if classification.state is ArtifactState.ESCAPING:
+            # Story 82.11: the entry's path resolves OUTSIDE the repo, so
+            # nothing below may read it -- `repo_root / entry.path` would
+            # open a file this run has no business touching. Its one
+            # finding (HARD target-escapes-repo) comes from
+            # `escape_findings` below, built from `inventory.escaping`.
+            continue
+
         if classification.state is ArtifactState.PRESENT_LEGACY:
             # AD-59: never written to, never inspected again -- its one
             # finding (INFO legacy-present) comes from `legacy_findings`
@@ -480,6 +495,7 @@ def run_check(
                 findings.append(finding)
 
     findings.extend(legacy_findings(inventory))
+    findings.extend(escape_findings(inventory))
     findings.extend(referenced_dep_findings(manifest, repo_root))
 
     # Story 28.3's three token-economy-kit checks. Computed even when every

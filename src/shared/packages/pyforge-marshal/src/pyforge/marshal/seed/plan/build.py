@@ -27,11 +27,11 @@ nothing not-present in the first place is deliberately not on it (see
 **Why this module resolves paths directly rather than re-deriving
 `detect.inventory._resolve_within_repo`'s containment check.** `classify()`
 has ALREADY run that check once, for every entry, to produce the very
-`ArtifactState` this module switches on: an entry classified `ABSENT`
-because its path escapes `repo_root` is indistinguishable here from one
-genuinely missing (both are `ABSENT`, and this module's own
-`_current_text_verbose` never touches the filesystem for that state at all
--- see below). An entry
+`ArtifactState` this module switches on: an entry whose path escapes
+`repo_root` is classified `ESCAPING` (Story 82.11), which is no actionable
+state, so it yields no `Action` at all -- it is no longer mistaken for one
+genuinely missing (`ABSENT`, for which `_current_text_verbose` never touches
+the filesystem -- see below). An entry
 classified `PRESENT_DIVERGENT` can ONLY be `hybrid-managed-region`, and
 `_classify_entry` can only reach that state once the SAME containment
 check has already confirmed the path resolves within `repo_root` -- so a
@@ -135,9 +135,8 @@ def _current_text_verbose(state: ArtifactState, repo_root: Path, entry_path: str
 
     `ABSENT` never touches the filesystem and answers `("", True)`: the
     blank is `classify()`'s own reported truth about this artifact
-    (genuinely missing, or resolving outside `repo_root` -- either way,
-    nothing safe to read), so it is a fact about the file and a consumer
-    may reason from it. A present-but-non-regular-file, unreadable, or
+    (genuinely missing -- nothing to read), so it is a fact about the file
+    and a consumer may reason from it. A present-but-non-regular-file, unreadable, or
     non-UTF-8 target degrades to `''` too, but answers `False` -- the
     identical fallback `detect.inventory._classify_hybrid` already applies
     when its own read hits the same failure (this story's Always bullet:

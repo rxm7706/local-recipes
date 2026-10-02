@@ -59,7 +59,8 @@ class Severity(StrEnum):
 class FindingType(StrEnum):
     """The closed conformance-problem vocabulary every later detect/plan
     story emits against -- the 12 members the epics AC names plus Story
-    28.3's three token-economy-kit members, kebab-case wire values matching
+    28.3's three token-economy-kit members and Story 82.11's
+    ``target-escapes-repo``, kebab-case wire values matching
     this package's existing `ArtifactClass` convention
     (`model/manifest.py`).
 
@@ -90,6 +91,7 @@ class FindingType(StrEnum):
     KIT_ITEM_MISSING = "kit-item-missing"
     KIT_ITEM_STALE = "kit-item-stale"
     KIT_INSTRUMENT_UNAVAILABLE = "kit-instrument-unavailable"
+    TARGET_ESCAPES_REPO = "target-escapes-repo"
 
 
 # Read-only, and with NO module-level mutable name behind it -- same reason
@@ -155,6 +157,11 @@ REMEDIES: Mapping[FindingType, str] = MappingProxyType(
         FindingType.KIT_INSTRUMENT_UNAVAILABLE: (
             "Advisory -- install the named instrument (or accept the platform "
             "gap); the layer stays off and nothing is blocked."
+        ),
+        FindingType.TARGET_ESCAPES_REPO: (
+            "Fix the manifest entry's path, or the in-repo symlink it resolves "
+            "through, so it stays inside the repository; every other artifact "
+            "is applied regardless."
         ),
     }
 )

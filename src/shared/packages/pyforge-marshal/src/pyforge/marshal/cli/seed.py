@@ -628,7 +628,11 @@ def run_adopt(
         status = "dry-run"
         footer = "adopt: dry-run; re-run with --apply to execute this plan."
 
-    text = f"{_render_plan_text(result.plan)}\n{footer}"
+    text_lines = [_render_plan_text(result.plan)]
+    if result.escape_findings:
+        text_lines.append(_render_escape_findings_text(result.escape_findings))
+    text_lines.append(footer)
+    text = "\n".join(text_lines)
     _emit_success(
         verb="adopt",
         as_json=_flag(args, "json"),
@@ -638,6 +642,7 @@ def run_adopt(
             "plan": _plan_result_dict(result.plan),
             "applied": list(result.applied) if result.applied is not None else None,
             "declined": result.declined,
+            "escape_findings": [finding.to_json_dict() for finding in result.escape_findings],
         },
         text=text,
     )
@@ -767,6 +772,17 @@ def _render_update_plan_text(plan: Plan) -> str:
     return "\n".join(lines)
 
 
+def _render_escape_findings_text(findings: tuple) -> str:
+    """HARD ``target-escapes-repo`` findings for ``adopt``/``update`` (Story
+    82.11): the manifest entries left out of the plan because their path
+    resolves outside the repository, one line each, with the remedy once."""
+    lines = [f"entries left out of the plan ({len(findings)} target-escapes-repo finding(s)):"]
+    for finding in findings:
+        lines.append(f"  {finding.path}: {finding.message}")
+    lines.append(f"  remedy: {findings[0].remedy}")
+    return "\n".join(lines)
+
+
 def _render_referenced_dep_findings_text(findings: tuple) -> str:
     """DRIFT-only referenced-dependency findings for ``marshal seed update``."""
     lines = [f"referenced dependencies ({len(findings)} DRIFT finding(s)):"]
@@ -839,6 +855,8 @@ def run_update(
 
     status: str
     lines = [_render_update_plan_text(result.plan)]
+    if result.escape_findings:
+        lines.append(_render_escape_findings_text(result.escape_findings))
     if result.referenced_dep_findings:
         lines.append(_render_referenced_dep_findings_text(result.referenced_dep_findings))
     if result.declined:
@@ -864,6 +882,7 @@ def run_update(
             "applied": list(result.applied) if result.applied is not None else None,
             "declined": result.declined,
             "referenced_dep_findings": [finding.to_json_dict() for finding in result.referenced_dep_findings],
+            "escape_findings": [finding.to_json_dict() for finding in result.escape_findings],
         },
         text="\n".join(lines),
     )
