@@ -255,7 +255,7 @@ class GhForge:
     def add_labels(self, repo: ForgeRef, number: int, labels: tuple[str, ...]) -> None:
         if not labels:
             # Nothing to apply -- no fired label rule this run. Never call
-            # `gh` for a no-op (mirrors VcsPort.commit_paths's own "refuse
+            # `gh` for a no-op (mirrors CommitPort.commit_paths's own "refuse
             # before any invocation" discipline for an equivalently empty
             # write).
             return

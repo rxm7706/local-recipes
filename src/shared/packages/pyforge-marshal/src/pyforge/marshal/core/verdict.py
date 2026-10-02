@@ -212,7 +212,7 @@ F-17 unclosed-``intent`` precedent): named so it is never passed over
 silently, but never itself failing the whole run when other candidates
 promote cleanly. ``MRS-DEPLOY-003`` (``VcsPort.commit_subjects`` could not
 read local ``main``'s commit history, or the promotion write path --
-copying a spec's bytes or ``VcsPort.commit_paths``'s stage-and-commit --
+copying a spec's bytes or ``CommitPort.commit_paths``'s stage-and-commit --
 failed) classifies ``Verdict.UNEVALUABLE``: Marshal could not positively
 confirm this run's promotion, the same "could not determine" tier as
 ``MRS-GATE-002``/``003``/``005``/``009`` -- AD-31 forbids classifying the
@@ -748,7 +748,7 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # Story 4.13 (the loop's deferred work reaches the tracked ledger, FR-175)
 # adds a TENTH MRS-LAND-* code, MRS-LAND-010 (`_promote_deferred_work`'s own
 # advisory-lock contention on the tracked deferred-work ledger, or a
-# `VcsPort.commit_paths` failure committing a promoted entry). Classifies
+# `CommitPort.commit_paths` failure committing a promoted entry). Classifies
 # WARN, the same tier as MRS-LAND-003/008/009: reported, never blocking --
 # a landing story's Tier-3 followup deferral simply stays unpromoted for
 # this run, re-attempted on the next.

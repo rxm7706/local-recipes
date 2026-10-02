@@ -105,7 +105,7 @@ the already-landed shortcut, and the full-merge path -- setting
 
     **Sprint-ledger promotion never writes the operator checkout (CAP-5).**
     ``_promote_sprint_ledger`` publishes onto ``origin/<base>`` through
-    ``VcsPort.commit_paths_onto_remote_tip`` (throwaway detached worktree +
+    ``CommitPort.commit_paths_onto_remote_tip`` (throwaway detached worktree +
     fast-forward push). It must not ``commit_paths`` on ``repo_root()`` --
     that leftover diverged local ``main`` after every ``gh pr merge``."""
 

@@ -31,7 +31,7 @@ archive's own existing bytes (to decide "already promoted"), and
 ``VcsPort.commit_subjects`` -- then hands it to ``core.promotion``'s pure
 ``merged_story_keys``/``classify_promotion_candidates`` for classification.
 The only further impure step is executing the plan: ``FsPort.copy_file``
-per promoted spec, then one ``VcsPort.commit_paths`` call for the whole
+per promoted spec, then one ``CommitPort.commit_paths`` call for the whole
 batch (AD-29: "a single 'promote N specs' run is one paper-trail event",
 never one commit per file).
 
