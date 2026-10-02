@@ -340,28 +340,29 @@ def test_a_later_adopt_that_inserts_one_more_region_keeps_the_regions_already_re
     assert claim.body_sha == claim.inserted_region_spans[0].body_sha
 
 
-def test_a_region_the_prior_record_carried_but_the_file_no_longer_holds_is_not_re_recorded(clean_repo):
-    """An opt-out is not resurrected by the next write: a region absent from the
-    file after the apply is left out of the new record rather than invented."""
+def test_an_opted_out_region_is_not_resurrected_by_the_next_adopt_write(clean_repo):
+    """A region absent from the file after the apply is left out of the new
+    record rather than invented, and an opt-out already recorded keeps
+    suppressing its insertion: a later adopt that adds a THIRD region records
+    the surviving second and the new one, never the deleted first."""
     first = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
-    _adopt_with_human_text(clean_repo, first)
+    state = _adopt_with_human_text(clean_repo, first)
     _delete_regions(clean_repo, "tiers")
+    write_state(record_opt_out(state, "hybrid", "tiers"), repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
+    _commit_all(clean_repo)
     second = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge", "portability-contract"))
 
-    run_adopt(
-        clean_repo,
-        second,
-        apply=True,
-        yes=True,
-        confirm=_unreachable_confirm,
-        commit=_fake_commit(second, clean_repo),
-        force=True,
+    result = run_adopt(
+        clean_repo, second, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(second, clean_repo)
     )
 
-    state = read_state(clean_repo)
-    assert state is not None
-    (claim,) = state.managed
-    assert "portability-contract" in [span.name for span in claim.inserted_region_spans]
+    assert result.applied == ("hybrid",)
+    recovered = read_state(clean_repo)
+    assert recovered is not None
+    (claim,) = recovered.managed
+    assert [span.name for span in claim.inserted_region_spans] == ["model-badge", "portability-contract"]
+    assert recovered.opted_out == ("hybrid#tiers",)
+    assert "region=tiers" not in (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
     assert claim.body_sha == claim.inserted_region_spans[0].body_sha
 
 
