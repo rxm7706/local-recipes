@@ -1195,10 +1195,14 @@ _RUN_STARTING_RE = re.compile(r"^run (\S+) starting\b")
 # Story 82.7 (DW-FU-3-3-4): how much of ``harness.log`` an early-exit launch
 # error quotes -- the last few non-blank lines, joined onto ONE line (the
 # message is interpolated verbatim into a finding and a journal ``error``
-# field, so an embedded newline would forge extra report lines), then cut to
-# the trailing characters.
+# field, so an embedded newline or an ANSI escape would forge extra report
+# lines or drive the operator's terminal), then cut to the trailing
+# characters. The caller redacts the WHOLE log text first, so a token the cut
+# would split is never left half-matched.
 _SPIN_LOG_TAIL_LINES = 5
 _SPIN_LOG_TAIL_CHARS = 500
+_SPIN_LOG_WITHHELD = "(withheld: redaction failed)"
+_CONTROL_RUN_RE = re.compile(r"[\x00-\x1f\x7f]+")
 
 
 def _child_exited(pid: int) -> bool:
@@ -1218,9 +1222,10 @@ def _child_exited(pid: int) -> bool:
 
 def _log_tail(text: str) -> str:
     """The bounded, single-line tail of ``text`` for an early-exit launch error
-    (empty log -> a stated absence, never an empty quote)."""
+    (empty log -> a stated absence, never an empty quote). Each run of control
+    characters (ANSI escapes, NUL, DEL, ...) collapses to one space."""
     lines = [line.strip() for line in text.splitlines() if line.strip()]
-    tail = " | ".join(lines[-_SPIN_LOG_TAIL_LINES:])
+    tail = _CONTROL_RUN_RE.sub(" ", " | ".join(lines[-_SPIN_LOG_TAIL_LINES:])).strip()
     if len(tail) > _SPIN_LOG_TAIL_CHARS:
         tail = "..." + tail[-_SPIN_LOG_TAIL_CHARS:]
     return tail or "(empty)"
@@ -1586,9 +1591,14 @@ class BmadLoopHarness:
                 if match:
                     return match.group(1)
             if exited:
+                # The tail lands in a finding, stdout and the durable journal:
+                # redact the WHOLE text first (AD-34's redaction-at-capture),
+                # so a token cut by the tail's truncation cannot slip the
+                # regex; a failed redaction quotes nothing.
+                redacted = self._redact_text(text)
+                tail = _SPIN_LOG_WITHHELD if redacted is None else _log_tail(redacted)
                 raise HarnessError(
-                    f"the process (pid {pid}) exited before printing its starting line; "
-                    f"{log_path} tail: {_log_tail(text)}"
+                    f"the process (pid {pid}) exited before printing its starting line; {log_path} tail: {tail}"
                 )
             if time.monotonic() >= deadline:
                 return None

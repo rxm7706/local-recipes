@@ -351,7 +351,7 @@ def test_spin_reports_an_empty_log_tail_when_the_child_exits_silently(harness, t
         harness.spin(tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log")
 
 
-def test_spin_bounds_the_quoted_log_tail(harness, tmp_path, monkeypatch):
+def test_spin_quotes_the_end_of_the_log_not_its_head(harness, tmp_path, monkeypatch):
     monkeypatch.setattr(module, "_SPIN_LOG_POLL_TIMEOUT_S", 10.0)
     _spawn_real_child(
         monkeypatch,
@@ -365,15 +365,106 @@ def test_spin_bounds_the_quoted_log_tail(harness, tmp_path, monkeypatch):
     with pytest.raises(HarnessError) as excinfo:
         harness.spin(tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log")
     message = str(excinfo.value)
-    assert "the real error" in message  # the END of the log, not its head
+    assert "the real error" in message
     assert "noise line 0 " not in message
-    assert len(message) < module._SPIN_LOG_TAIL_CHARS + 400
+
+
+def test_spin_redacts_a_token_in_the_quoted_log_tail(harness, tmp_path, monkeypatch):
+    """The tail lands in a finding, stdout and the durable journal: a token-shaped
+    string the child printed (``core/egress.py``'s GitHub PAT shape) is redacted."""
+    monkeypatch.setattr(module, "_SPIN_LOG_POLL_TIMEOUT_S", 10.0)
+    _spawn_real_child(
+        monkeypatch,
+        tmp_path,
+        "import sys\n"
+        "print('git push failed: https://x-access-token:' + 'ghp_' + 'a' * 36 + '@github.com/o/r.git', file=sys.stderr)\n"
+        "sys.exit(1)\n",
+    )
+    with pytest.raises(HarnessError) as excinfo:
+        harness.spin(tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log")
+    message = str(excinfo.value)
+    assert "ghp_" + "a" * 36 not in message
+    assert "git push failed" in message  # the rest of the line is still quoted
+
+
+def test_spin_withholds_the_log_tail_when_redaction_fails(harness, tmp_path, monkeypatch):
+    monkeypatch.setattr(module, "_SPIN_LOG_POLL_TIMEOUT_S", 10.0)
+    monkeypatch.setattr(BmadLoopHarness, "_redact_text", staticmethod(lambda text: None))
+    _spawn_real_child(monkeypatch, tmp_path, "import sys\nprint('a raw secret line', file=sys.stderr)\nsys.exit(1)\n")
+    with pytest.raises(HarnessError) as excinfo:
+        harness.spin(tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log")
+    message = str(excinfo.value)
+    assert "tail: (withheld: redaction failed)" in message
+    assert "a raw secret line" not in message
+
+
+def test_spin_strips_control_characters_from_the_quoted_log_tail(harness, tmp_path, monkeypatch):
+    monkeypatch.setattr(module, "_SPIN_LOG_POLL_TIMEOUT_S", 10.0)
+    _spawn_real_child(
+        monkeypatch,
+        tmp_path,
+        "import sys\nprint('\\x1b[31merror\\x1b[0m', file=sys.stderr)\nsys.exit(1)\n",
+    )
+    with pytest.raises(HarnessError) as excinfo:
+        harness.spin(tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log")
+    message = str(excinfo.value)
+    assert "\x1b" not in message
+    assert "error" in message
+
+
+# --- _log_tail: the caps pinned by literal number, not by the constants --------
+
+
+def test_log_tail_keeps_only_the_last_five_lines():
+    text = "\n".join(f"line{n}" for n in range(10))
+    assert module._log_tail(text) == "line5 | line6 | line7 | line8 | line9"
+
+
+def test_log_tail_cuts_a_long_line_to_its_last_500_characters_behind_an_ellipsis():
+    tail = module._log_tail("a" * 1500 + "b" * 500)
+    assert tail.startswith("...")
+    assert len(tail) == 503
+    assert tail[3:] == "b" * 500
+
+
+def test_log_tail_does_not_cut_a_line_at_exactly_500_characters():
+    assert module._log_tail("c" * 500) == "c" * 500
+
+
+def test_log_tail_of_empty_or_blank_text_is_a_stated_absence():
+    assert module._log_tail("") == "(empty)"
+    assert module._log_tail("\n  \n\t\n") == "(empty)"
+
+
+def test_log_tail_collapses_each_run_of_control_characters_to_one_space():
+    assert module._log_tail("\x1b[31merror\x1b[0m") == "[31merror [0m"
+    assert module._log_tail("a\x00\x01\x7fb") == "a b"
+    assert module._log_tail("\x1b\x1b") == "(empty)"
+
+
+# --- the exit probe is read BEFORE the log (Story 82.7's one subtle ordering) ---
+
+
+def test_poll_reads_the_exit_probe_before_the_log(harness, tmp_path, monkeypatch):
+    """A child that prints its starting line and exits between the two reads
+    must read as a launch. The stub writes the line and reports "exited" only
+    when it is called, so a poll that read the log FIRST would have seen no
+    line, then seen the exit, and raised."""
+    log = tmp_path / "harness.log"
+
+    def _probe(pid):
+        log.write_text("run acme-1 starting (attach: bmad-loop attach)\n", encoding="utf-8")
+        return True
+
+    monkeypatch.setattr(module, "_child_exited", _probe)
+    assert harness._poll_for_harness_run_id(log, 4242) == "acme-1"
 
 
 def test_spin_returns_the_run_id_of_a_child_that_prints_its_line_and_exits(harness, tmp_path, monkeypatch):
     """The exit probe is read BEFORE the log, so output written before the
     exit is always seen: a short-lived child that DID print its starting line
     is a launch (the run id), never the early-exit error."""
+    monkeypatch.setattr(module, "_SPIN_LOG_POLL_TIMEOUT_S", 10.0)  # a loaded box must not pass the deadline first
     _spawn_real_child(
         monkeypatch,
         tmp_path,
