@@ -8077,3 +8077,14 @@ status: open
   severity: medium (unverified)
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FRR-82-7: Follow-up review still recommended for story 82.7
+
+- source_spec: `planning-artifacts/specs/spec-82-7-factory-spin-refuses-a-second-live-run-and-reports-a-child-that-dies-before-it-starts.md`
+  summary: Story 82.7 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 82.7 landed on origin/main with its tracked spec reading `status: done` and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-82-7-factory-spin-refuses-a-second-live-run-and-reports-a-child-that-dies-before-it-starts.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-02 — dispatch-land finalize
+  status: open
