@@ -317,9 +317,10 @@ def _reconcile_spec_surface_drift(
     station's own spec stays drifted until a later pass. The reconcile is
     therefore a bounded loop: stamp the specs the verdict names, RE-READ the
     verdict, and reconcile any further spec that names one of the branch's own
-    paths, until none does; it then commits the baseline and pushes once. Each
-    pass reconciles a spec no earlier pass did, and a reconciled spec governs a
-    path of the branch, so the loop is bounded by the number of specs governing
+    paths, until none does. Each pass commits its own memlogs and its stamped
+    baseline as it goes, so a later refusal strands nothing uncommitted; the
+    branch is pushed once, after the loop. Each pass reconciles a spec no
+    earlier pass did, and a reconciled spec governs a path of the branch, so the loop is bounded by the number of specs governing
     those paths: a spec still named after its own stamp (the stamp did not
     settle it), or a re-read that raises, refuses (``MRS-DISP-048``). The
     scoped stamp itself refuses a differing path its spec's memlog does not
@@ -626,6 +627,29 @@ def _reconcile_spec_surface_drift(
                 refuse=True,
             )
 
+        # Commit the stamped baseline NOW, not after the loop (the Story 53.2
+        # B4/E2 reasoning, applied to the baseline): a refusal in a later pass
+        # would otherwise strand a stamped, uncommitted baseline that a retry
+        # reads as clean and never re-commits, landing a stale baseline on main.
+        # The push stays one, after the loop.
+        try:
+            vcs.commit_paths(
+                worktree,
+                (Path(baseline_rel),),
+                f"marshal: reconcile spec-surface drift for {key}",
+            )
+        except VcsCommandError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot commit/push the spec-surface reconcile for {head_branch!r}: {exc} — refusing to land"
+                    ),
+                ),
+                refuse=True,
+            )
+
         # Re-read the verdict over the stamped tree: a co-governor the first
         # read hid behind this pass's specs shows now. A re-read that raises
         # leaves the post-stamp state unverified, so it refuses.
@@ -650,11 +674,6 @@ def _reconcile_spec_surface_drift(
         return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
 
     try:
-        vcs.commit_paths(
-            worktree,
-            (Path(baseline_rel),),
-            f"marshal: reconcile spec-surface drift for {key}",
-        )
         vcs.push(git_repo_root, head_branch)
     except VcsCommandError as exc:
         return _SpecSurfaceReconcileOutcome(

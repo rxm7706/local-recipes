@@ -642,12 +642,18 @@ def _accepted(tokens: list[str]) -> set[str]:
     return {tokens[index + 1] for index, token in enumerate(tokens) if token == "--accept"}
 
 
+def _committed_paths(vcs) -> list[tuple[Path, ...]]:
+    """The paths of every commit the reconcile made, in order."""
+    return [paths for _worktree, paths, _message in vcs.committed]
+
+
 def test_reconcile_spec_surface_drift_reconciles_the_co_governor_the_first_read_hid(
     tmp_path: Path, monkeypatch
 ) -> None:
     """A station `src/` edit drifts both `spec-pyforge-core` and the station's own spec; the verdict names
     only core until it is stamped. The reconcile re-reads after the stamp and reconciles the station's spec
-    too: each gets a memlog entry and its own scoped stamp, and the baseline is committed and pushed ONCE."""
+    too: each gets a memlog entry and its own scoped stamp, each pass commits its memlog and then its stamped
+    baseline, and the branch is pushed ONCE after the loop."""
     process = FakeProcess()
     _install_fake_spec_surface(
         monkeypatch,
@@ -672,9 +678,13 @@ def test_reconcile_spec_surface_drift_reconciles_the_co_governor_the_first_read_
     # core is memlogged and stamped before the station's spec is even read
     order = [("memlog" if "memlog.py" in tokens[1] else "stamp") for tokens, _cwd in process.calls]
     assert order == ["memlog", "stamp", "memlog", "stamp"]
-    # two memlog commits and ONE baseline commit; one push
-    assert len(vcs.committed) == 3
-    assert vcs.committed[-1][1] == (Path(_BASELINE_PATH),)
+    # per pass: one memlog commit, then one baseline commit; ONE push after the loop
+    assert _committed_paths(vcs) == [
+        (Path(_memlog_rel(_CORE_SPEC)),),
+        (Path(_BASELINE_PATH),),
+        (Path(_memlog_rel(_STATION_SPEC)),),
+        (Path(_BASELINE_PATH),),
+    ]
     assert vcs.pushed == [_BRANCH]
 
 
@@ -720,8 +730,11 @@ def test_a_stamp_that_does_not_settle_its_spec_refuses_with_no_second_memlog_app
     assert _CORE_SPEC in outcome.finding.message and "src/a.py" in outcome.finding.message
     assert len(_calls(process, "memlog.py")) == 1
     assert len(_calls(process, "spec_surface_check.py")) == 1
+    # The pass that did stamp committed its baseline before the refusal, so no stamped baseline is left
+    # uncommitted for a retry to read as clean; nothing is pushed.
+    assert _committed_paths(vcs) == [(Path(_memlog_rel(_CORE_SPEC)),), (Path(_BASELINE_PATH),)]
+    assert vcs.committed[-1][2] == "marshal: reconcile spec-surface drift for 82.3"
     assert vcs.pushed == []
-    assert all(committed[2] != "marshal: reconcile spec-surface drift for 82.3" for committed in vcs.committed)
 
 
 def test_a_verdict_re_read_that_raises_after_a_stamp_refuses(tmp_path: Path, monkeypatch) -> None:
@@ -794,6 +807,8 @@ def test_foreign_drift_the_re_read_reveals_refuses_and_pushes_nothing(tmp_path: 
     assert outcome.finding is not None and outcome.finding.code == "MRS-DISP-048"
     assert "src/not-mine.py" in outcome.finding.message
     assert len(_calls(process, "spec_surface_check.py")) == 1  # only core was stamped
+    # core's stamped baseline was committed before the refusal (nothing left stamped but uncommitted); no push
+    assert _committed_paths(vcs) == [(Path(_memlog_rel(_CORE_SPEC)),), (Path(_BASELINE_PATH),)]
     assert vcs.pushed == []
 
 
@@ -815,6 +830,10 @@ def test_a_chain_of_hidden_co_governors_is_reconciled_one_pass_each(tmp_path: Pa
     assert outcome.refuse is False
     assert [_spec_args(tokens) for tokens in _calls(process, "spec_surface_check.py")] == [[spec] for spec in specs]
     assert len(_calls(process, "memlog.py")) == 3
+    # one baseline commit per pass, each right after that pass's memlog commit; one push
+    assert _committed_paths(vcs) == [
+        path for spec in specs for path in ((Path(_memlog_rel(spec)),), (Path(_BASELINE_PATH),))
+    ]
     assert vcs.pushed == [_BRANCH]
 
 
