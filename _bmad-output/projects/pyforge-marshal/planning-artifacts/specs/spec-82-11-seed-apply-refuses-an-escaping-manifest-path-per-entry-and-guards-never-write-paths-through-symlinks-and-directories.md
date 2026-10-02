@@ -2,10 +2,10 @@
 title: '82.11: Seed apply refuses an escaping manifest path per entry and guards never-write paths through symlinks and directories'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'dfddcecdaf9ec0e9dfcd602e4f2bab9a066cef23'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -178,3 +178,63 @@ Directory node: when a form names a directory, `form + "/"` is matched too, so `
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
+
+## Auto Run Result
+
+Status: done
+
+### Summary of implemented change
+
+The seed's containment and never-write guards each lose a hole (DW-FU-7-4, DW-10-3-9, DW-10-4-1, DW-FU-7-5-5).
+
+- `ManifestEntry` refuses an absolute path (POSIX, drive-letter, backslash-rooted, UNC) or a `..` segment at load; `load_manifest` names the entry id.
+- An entry that resolves outside the repo through an in-repo symlink is classified `ArtifactState.ESCAPING`, no longer `ABSENT`. `build_plan` plans nothing for it, a HARD `target-escapes-repo` finding names the entry and where it resolves, and every other action applies. The finding is reported by `check`, on `AdoptResult` and `UpdateResult`, and in the adopt and update text and `--json`.
+- `fs.never_write_match` is the one never-write decision, called by `_guard` and by rung 4. It matches the path as written and as resolved, refuses on either, judges `NeverWrite.exempt` per form, and matches a directory node (a symlink leaf included) with a trailing `/`, so `**/planning-artifacts/**` covers the node itself. The two manifest-declared symlink entries stay writable through `writable_exemptions` by id. The manifest and the shipped patterns are unchanged.
+- Review round: `update` and `adopt` no longer let an escaping entry's `state.managed` record refuse the whole run (wholesale pass and rung 6); `seed init` keeps its refusal for an escaping entry instead of dropping it silently, and builds the slug-rendered manifest before it bootstraps git.
+
+### Files changed
+
+All under `src/shared/packages/pyforge-marshal/` unless noted.
+
+- `src/pyforge/marshal/seed/model/manifest.py` -- load-time repo-relative path check
+- `src/pyforge/marshal/seed/fs.py` -- `never_write_match`, per-form exempt, directory-node probe
+- `src/pyforge/marshal/seed/verbs/preconditions.py` -- rung 4 calls the helper; docstring corrected
+- `src/pyforge/marshal/seed/detect/inventory.py` -- `ESCAPING`, `EscapeRecord`, `Inventory.escaping`, `escape_findings`, `writable_exemptions` ids
+- `src/pyforge/marshal/seed/detect/findings.py` -- `FindingType.TARGET_ESCAPES_REPO` and its remedy
+- `src/pyforge/marshal/seed/verbs/adopt.py` -- `AdoptResult.escape_findings`; escaping ids dropped before rung 6
+- `src/pyforge/marshal/seed/verbs/update.py` -- `UpdateResult.escape_findings`; escaping ids skipped in the wholesale pass and rung 6
+- `src/pyforge/marshal/seed/verbs/check.py` -- skips an escaping entry and reports it, still read-only
+- `src/pyforge/marshal/seed/verbs/init.py` -- slug `UsageError`, escaping-entry refusal, manifest built before git bootstrap
+- `src/pyforge/marshal/seed/plan/build.py`, `src/pyforge/marshal/seed/verbs/skips.py` -- comment and docstring corrections only
+- `src/pyforge/marshal/cli/seed.py` -- renders escape findings in adopt and update text and `--json`
+- `docs/finding-remedy-reference.md` -- one row for `target-escapes-repo`
+- `tests/unit/test_seed_*.py` (14 files, listed on the memlogs) -- new tests per fix, pins updated
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` -- DW-10-3-9, DW-FU-7-4, DW-10-4-1, DW-FU-7-5-5 closed, each with a `resolved:` line naming 82.11
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md`, `.../spec-pyforge-core/.memlog.md` -- surface-reconcile entries naming every changed path in full; no baseline stamped
+
+### Review findings breakdown
+
+31 findings: high 4, medium 3, low 23, false 1.
+
+- Patched: 13 rows in 6 entries (high 1, medium 2, low 3). The high entry is the escaping managed record under `update`, extended to `adopt` after I reproduced it. The medium entries are the memlog paths and the `seed init` silent drop.
+- Deferred: none.
+- Rejected: 18 rows, each with its recorded reason in the Review Triage Log above.
+
+### Follow-up review recommendation
+
+`followup_review_recommended: true` -- a high entry was patched on a first pass. The unverified risk: the patches changed rung-6 inputs in `run_update` and `run_adopt` (an escaping entry's managed record is dropped) and widened `fs._names_a_directory` to any symlink leaf; each is covered only by its own new test and no review layer has read the patched diff.
+
+### Verification performed
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- exit 0, 10137 passed, 1 skipped, 14 deselected (after the patches).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- exit 0, 130 passed, 3 skipped.
+- `pixi run --frozen -e pyforge-guild lint-types` -- exit 0.
+- `python scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` -- exit 0, no drift; no baseline stamped.
+- Mutation: 12 reversions in the first pass and 8 in the patch rounds, each applied to a fresh copy of the package and restored by hash; every new test failed on its reversion.
+- By hand: reproduced the `adopt` rung-6 refusal with a managed record for an escaping entry before it was patched.
+
+### Residual risks
+
+- AC5 is not observed at `seed init`: no verb creates the two artifact symlinks, and `seed init` into a fresh git directory exits 2 at the baseline revision for an unrelated packaged-template reason. The guard is proven at `fs.symlink` and `ensure_symlinks` with the shipped patterns.
+- `adopt` and `update` exit 0 with a HARD `target-escapes-repo` finding; only `check` fails on it. The intent does not ask for a non-zero exit.
+- `pr-preflight`, the coverage-gates lane and `seed init` end to end were not run.
