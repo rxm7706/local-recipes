@@ -2,7 +2,7 @@
 title: '82.2: Marshal land keeps a live run''s branch and home while its engine is alive, even when its supervisor is dead'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'cc9d6a78188a27c7734d2872c1721e5d212ad57b'
 review_loop_iteration: 0
 followup_review_recommended: false
