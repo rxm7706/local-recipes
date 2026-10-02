@@ -2,9 +2,10 @@
 title: "83.2: Login works on the plain-HTTP local stack, and `sync` retries rate limits and names each failed candidate"
 type: 'fix'
 created: '2026-10-02'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
+warnings: [multiple-goals, oversized]
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - docs/dreams/pyforge-steward.md
@@ -89,6 +90,35 @@ Type / Effort / Deps: fix / M / —.
 
 </intent-contract>
 
+## Code Map
+
+- `src/platform/config/settings/production.py:47-55` -- the four cookie literals (`SESSION_COOKIE_SECURE`, `SESSION_COOKIE_NAME`, `CSRF_COOKIE_SECURE`, `CSRF_COOKIE_NAME`) beside the env-driven `SECURE_SSL_REDIRECT`; the edit site.
+- `src/platform/config/locality.py:39` -- `is_local()` (true only for exactly `COMPONENT_RUNTIME=local`; unset or unrecognised is deployed). Import it into `production.py`.
+- `src/platform/config/broker_tls.py:349-383` -- the precedent: a weaker posture is honoured only when `is_local()` and asked for by name; a deployed process composes the strong value.
+- `src/platform/compose/compose.yml:155-160` (`platform`) and `:238-240` (`worker`) -- both set `COMPONENT_RUNTIME: local` and `DJANGO_SECURE_SSL_REDIRECT: "False"`; the switch goes beside the latter in both.
+- `src/platform/tests/test_langflow_auth_posture.py:29-78,181-190` -- model for the new test: settings loaded in a child process under a controlled env (`_DEPLOYED_ENV`), and `_compose_environments()` parsing `compose.yml`.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py:310-344` -- `TransportResponse(status, body)` and `_default_transport`; `headers` is added here and filled from `resp.headers` / `exc.headers`.
+- `sync.py:495,845,857,906,949,976,1005` -- the seven `transport(request)` call sites (GraphQL, Jira user lookup, Jira issue GET, Jira fields PUT, transitions GET and POST); each becomes `_send(transport, request)`.
+- `sync.py:1694-1757` -- `reconcile_schedule_batch`; the summary gains one `<github_item_id>: <summary>` line per failed entry. `details["candidates"]` is unchanged.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py:1456-1457` -- `main()` prints `result.summary` to stderr when `not result.ok`, so the extra lines reach stderr with no CLI change.
+- `src/shared/packages/pyforge-steward/tests/unit/test_sync_reconcile_propagation.py:71,2348-2722` -- `FakeTransport` and the batch tests; `tests/unit/test_sync_duty.py:95-205` -- the CLI `--schedule` tests (they assert substrings, so extra lines do not break them).
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` -- DW-10-3-3, DW-8-4-1, DW-FU-8-1-3 are closed here (`status: closed`, `resolution:`, `verified:`) once the code lands.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/platform/config/settings/production.py` -- one local-only switch `DJANGO_INSECURE_LOCAL_COOKIES` (`env.bool`, default `False`), honoured only under `is_local()`; the two `*_COOKIE_SECURE` flags and the two `__Secure-` names follow it (plain `sessionid` / `csrftoken` when on) -- login and CSRF POSTs work over plain HTTP, and a deployed process cannot switch Secure off.
+- `src/platform/compose/compose.yml` -- set `DJANGO_INSECURE_LOCAL_COOKIES: "True"` on `platform` and `worker`, beside `DJANGO_SECURE_SSL_REDIRECT: "False"`, with a comment naming the plain-HTTP reason.
+- `src/platform/tests/test_local_cookie_posture.py` (new) -- child-process settings tests for the local, deployed and switch-off rows, plus the compose assertion; the deployed row fails if the `is_local()` guard is removed.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py` -- `TransportResponse.headers` (empty default); `_default_transport` fills it; `_send` retries 429, a rate-limited 403 and 502/503/504 a bounded number of times through the injectable `_sleep`; the seven call sites use it; `reconcile_schedule_batch` appends one line per failed candidate.
+- `src/shared/packages/pyforge-steward/tests/unit/test_sync_retry.py` (new) and `tests/unit/test_sync_duty.py` -- retry rows (429 then 200 with `Retry-After`, 429 forever, 404/401 not retried, rate-limited 403, 502, backoff without `Retry-After`) and the failed-candidate lines through `main(["sync", "reconcile", "--schedule", ...])`.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` -- close DW-10-3-3, DW-8-4-1, DW-FU-8-1-3 with resolution and verified lines.
+
+**Acceptance Criteria:**
+- Given the eight Acceptance Criteria in the intent contract, when the station suite, the platform settings tests and the mutation check run, then every one passes and the mutation (guard removed) turns the deployed-process test red.
+
+## Spec Change Log
+
 ## Binding
 
 Parent capabilities: pap:CAP-1, pap:CAP-6 (Stories 10.1, 10.3); CAP-57, CAP-60 (Stories 8.1, 8.4) (defects of shipped
@@ -99,6 +129,12 @@ Ledger key: `83-2-login-works-on-the-plain-http-local-stack-and-sync-retries-rat
 Ledger status at mint: `backlog`.
 Deps: —.
 Minted 2026-10-02 by operator ruling: start Phase 2 of the deferral burn-down after the inflow wave.
+
+## Design Notes
+
+- The cookie switch is `DJANGO_INSECURE_LOCAL_COOKIES` (the contract's "for example", fixed here). `production.py` composes `_insecure_local_cookies = is_local() and env.bool("DJANGO_INSECURE_LOCAL_COOKIES", default=False)`; the flags are `not _insecure_local_cookies`, and the names fall back to Django's own `sessionid` / `csrftoken` when it is on. A deployed process that sets the switch composes Secure cookies and no refusal is added: the contract says "whatever its environment says".
+- Retry: 4 attempts in total (1 call + 3 retries), backoff `1s, 2s, 4s` without `Retry-After`, `Retry-After` honoured as seconds and capped at 60s (an unparsable or non-finite value falls back to the backoff). `_sleep` is a module attribute resolved at call time (`time.sleep` by default); tests replace it. `_send(transport, request)` wraps the seam at the call sites, not at the entry points, so `github_graphql_request` and the Jira functions retry when a fake is passed to them directly.
+- 403 retries only when `Retry-After` is present or `x-ratelimit-remaining` is `0` (header names matched case-insensitively); a plain 403 (permission) and every other 4xx are returned on the first answer. After the last attempt the last response goes to the caller, which raises `SyncAPIError` as today.
 
 ## Verification
 
