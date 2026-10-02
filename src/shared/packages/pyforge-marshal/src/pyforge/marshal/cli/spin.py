@@ -297,6 +297,7 @@ import tomllib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -2226,6 +2227,16 @@ def _stage_model(document: Mapping[str, object] | None, stage: str) -> str | Non
     return default if isinstance(default, str) and default else None
 
 
+def _read_text_or_none(fs: FsPort, run_dir: Path, relative: str) -> str | None:
+    """``run_dir / relative`` read through ``fs``, ``None`` for an absent or
+    unreadable file -- ``_launch_limits_for_resume``'s one read primitive, for
+    a run's journal and for the sidecar blobs it references."""
+    try:
+        return fs.read_text(run_dir / relative)
+    except FsError:
+        return None
+
+
 def _launch_limits_for_resume(fs: FsPort, home: Path, slug: str, harness_run_id: str) -> tuple[int, int] | None:
     """The ``[limits]`` ceilings the run being resumed was LAUNCHED under
     (Story 82.6, DW-3-12-1), as its own launch intent journaled them -- the
@@ -2252,25 +2263,14 @@ def _launch_limits_for_resume(fs: FsPort, home: Path, slug: str, harness_run_id:
     except OSError:
         return None
 
-    def _read_sidecar(run_dir: Path, ref: str) -> str | None:
-        try:
-            return fs.read_text(run_dir / ref)
-        except FsError:
-            return None
-
     for run_dir in run_dirs:
-        try:
-            text = fs.read_text(run_dir / _JOURNAL_FILENAME)
-        except FsError:
-            continue
+        text = _read_text_or_none(fs, run_dir, _JOURNAL_FILENAME)
         if text is None:
             continue
         lines = text.split("\n")
         folded = fold(
             lines,
-            sidecars=sidecar_texts_for_lines(
-                lines, read_sidecar=lambda ref, run_dir=run_dir: _read_sidecar(run_dir, ref)
-            ),
+            sidecars=sidecar_texts_for_lines(lines, read_sidecar=partial(_read_text_or_none, fs, run_dir)),
         )
         launches = [entry for entry in folded.by_kind(_LAUNCH_KIND) if entry.run_id == run_dir.name]
         if not any(
