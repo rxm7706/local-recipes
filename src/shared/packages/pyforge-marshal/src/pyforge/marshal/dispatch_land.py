@@ -608,9 +608,7 @@ def _reconcile_spec_surface_drift(
                 finding=Finding(
                     code="MRS-DISP-048",
                     severity=Severity.ERROR,
-                    message=(
-                        f"scoped spec-surface baseline stamp failed on {head_branch!r}: {exc} — refusing to land"
-                    ),
+                    message=(f"scoped spec-surface baseline stamp failed on {head_branch!r}: {exc} — refusing to land"),
                 ),
                 refuse=True,
             )

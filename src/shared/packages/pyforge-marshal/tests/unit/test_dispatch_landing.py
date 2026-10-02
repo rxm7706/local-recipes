@@ -710,9 +710,7 @@ def test_a_stamp_that_does_not_settle_its_spec_refuses_with_no_second_memlog_app
     """Own-path drift that survives the bound: the verdict still names the spec after its own stamp, so
     the reconcile refuses (MRS-DISP-048) rather than append to it again or loop."""
     process = FakeProcess()
-    _install_fake_spec_surface(
-        monkeypatch, (_drift_on(_CORE_SPEC, "src/a.py"),), process=process, settles=False
-    )
+    _install_fake_spec_surface(monkeypatch, (_drift_on(_CORE_SPEC, "src/a.py"),), process=process, settles=False)
     vcs = _ReconcileVcs(changed=("src/a.py",))
 
     outcome = _reconcile(tmp_path, vcs, process)
@@ -1212,9 +1210,7 @@ def test_execute_dispatch_land_refuses_own_drift_that_survives_the_stamp(tmp_pat
     """Story 82.3: own-path drift the verdict still names after its spec's stamp refuses the landing
     (MRS-DISP-048) and never reaches `forge.merge_pr`."""
     process = FakeProcess()
-    _install_fake_spec_surface(
-        monkeypatch, (_drift_on(_CORE_SPEC, "src/a.py"),), process=process, settles=False
-    )
+    _install_fake_spec_surface(monkeypatch, (_drift_on(_CORE_SPEC, "src/a.py"),), process=process, settles=False)
     worktree = tmp_path / "wt"
     worktree.mkdir()
     forge = _RecordingForge()

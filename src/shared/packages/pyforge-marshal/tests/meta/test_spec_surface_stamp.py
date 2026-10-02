@@ -61,9 +61,7 @@ def repo(tmp_path: Path) -> Path:
 def _checker(repo: Path) -> Path:
     """The script loaded by path, with ``REPO_ROOT`` repointed at ``repo``."""
     source = CHECKER.read_text(encoding="utf-8")
-    patched = source.replace(
-        "REPO_ROOT = Path(__file__).resolve().parent.parent", f"REPO_ROOT = Path({str(repo)!r})"
-    )
+    patched = source.replace("REPO_ROOT = Path(__file__).resolve().parent.parent", f"REPO_ROOT = Path({str(repo)!r})")
     assert patched != source, "the script's REPO_ROOT line moved; update this harness"
     destination = repo / "scripts" / "checker.py"
     destination.write_text(patched, encoding="utf-8")
