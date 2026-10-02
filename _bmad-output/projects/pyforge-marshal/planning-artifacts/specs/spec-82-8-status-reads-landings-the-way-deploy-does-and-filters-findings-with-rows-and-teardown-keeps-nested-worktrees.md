@@ -2,7 +2,7 @@
 title: '82.8: Status reads landings the way deploy does and filters findings with rows, and teardown keeps nested worktrees'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '80fb2fe128e547ab06fc37540084e86061f26c84'
 warnings: [oversized]
 review_loop_iteration: 0
