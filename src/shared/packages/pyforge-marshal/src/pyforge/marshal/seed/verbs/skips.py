@@ -55,9 +55,10 @@ uses for its own duplicated helpers.
 **Lexical here, resolution-based there -- a stated, guarded difference.**
 `apply_skips` matches an `Action.target_path` after a purely LEXICAL POSIX
 normalization (a leading `./` stripped, duplicate `/` collapsed); the
-never-write rung in `preconditions.py` matches the same action's path after
-`Path.resolve()` has made it repo-relative. The two therefore see the same
-string for every ordinary manifest path, and the normalization exists
+never-write rung in `preconditions.py` (via `fs.never_write_match`) matches the
+same action's path both as written (lexically normalized the same way) and
+after `Path.resolve()` has made it repo-relative. The two therefore see the
+same string for every ordinary manifest path, and the normalization exists
 precisely so the ONE cheap way they used to disagree is closed: without it,
 `target_path="./AGENTS.md"` was not skipped by `--skip AGENTS.md` while the
 never-write rung refused it naming `resolved: 'AGENTS.md'` -- so an operator
@@ -344,9 +345,9 @@ class _HasArtifactId(Protocol):
     """The one attribute `managed_after_skips` needs.
 
     A structural type rather than a `preconditions.ManagedRecord` import:
-    `preconditions` imports `first_match` from THIS module, so naming its
-    record type here would close an import cycle for the sake of a single
-    string field. Declared as a read-only property so a frozen dataclass
+    `preconditions` is the verbs-layer module that owns the record, so naming
+    its type here would couple this pure module to it for the sake of a
+    single string field. Declared as a read-only property so a frozen dataclass
     (which `ManagedRecord` is) satisfies it."""
 
     @property

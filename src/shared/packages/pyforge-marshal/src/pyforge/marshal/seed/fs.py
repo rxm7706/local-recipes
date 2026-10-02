@@ -4,9 +4,12 @@
 Every module under ``seed/`` that ever touches a target repo's filesystem is
 expected to go through exactly this module: an immutable ``NeverWrite``
 pattern set plus three guarded functions -- ``write``, ``replace_span``, and
-``remove`` -- each resolving its target path to an absolute, symlink-
-resolved form and checking it against ``NeverWrite`` *before* touching the
-filesystem at all, raising ``NeverWriteViolation`` (Story 7.2) on a match.
+``remove`` -- each checking its target path against ``NeverWrite`` *before*
+touching the filesystem at all, raising ``NeverWriteViolation`` (Story 7.2)
+on a match. The check (``never_write_match``, Story 82.11) matches the path
+as the caller wrote it (repo-relative, no symlink followed) AND in its
+absolute, symlink-resolved form, and a directory also as ``dir/``; a hit on
+either refuses.
 FR-71's never-write set (Tier-0 Dreams, Tier-2 planning artifacts, Tier-3,
 legacy specs, BMAD installer files) has no enforcement mechanism anywhere
 else in this package; this module IS that mechanism. Story 8.3
@@ -234,22 +237,139 @@ def _matches(never_write: NeverWrite, relative_posix_str: str) -> str | None:
     return None
 
 
+def _resolve_target(path: Path, *, resolve_leaf: bool) -> Path:
+    """``path`` in its resolved form: in full (``resolve_leaf=True``, every
+    symlink in the chain followed, the leaf included), or with only its PARENT
+    resolved and the leaf's own name re-appended unresolved
+    (``resolve_leaf=False`` -- see ``_guard``'s docstring for why)."""
+    return path.resolve() if resolve_leaf else (path.parent.resolve() / path.name)
+
+
+def _written_form(path: Path, repo_root: Path, resolved_root: Path) -> str:
+    """``path`` as the caller WROTE it, repo-relative and POSIX-separated: made
+    absolute and lexically normalized (``os.path.abspath`` -- ``.``/``..``
+    folded, NO symlink followed) and taken relative to ``repo_root`` as given,
+    else to its resolved form (a path built from the resolved root while the
+    root was passed unresolved, or the reverse). Falls back to the absolute
+    POSIX string when ``path`` is under neither, exactly as the resolved form
+    does for a repo-external target (Story 82.11, DW-10-4-1)."""
+    lexical = Path(os.path.abspath(path))
+    for root in (Path(os.path.abspath(repo_root)), resolved_root):
+        try:
+            return lexical.relative_to(root).as_posix()
+        except ValueError:
+            continue
+    return lexical.as_posix()
+
+
+def _names_a_directory(path: Path, *, resolve_leaf: bool) -> bool:
+    """Whether ``path`` is a directory NODE for the never-write match (Story
+    82.11, DW-FU-7-5-5): an existing directory, or -- when the leaf is left
+    unresolved (``symlink()``) -- a symlink standing in for one, dangling or
+    not, since re-pointing the link is exactly the operation on the tree."""
+    return path.is_dir() or (not resolve_leaf and path.is_symlink())
+
+
+def _match_form(never_write: NeverWrite, form: str, *, is_directory: bool) -> tuple[str, str] | None:
+    """``(pattern, matched_form)`` for one repo-relative ``form``, or ``None``.
+
+    ``form`` is matched as it stands; when it names a directory it is matched
+    again with a trailing ``/``, so ``dir/**`` covers the directory node
+    itself and not only what sits under it (``fnmatchcase`` needs a segment
+    after the ``/``). An exempt ``form`` is never refused -- the directory
+    probe included, since it is the same node (``_matches`` already returned
+    ``None`` for the plain form)."""
+    matched = _matches(never_write, form)
+    if matched is not None:
+        return matched, form
+    if is_directory and form not in never_write.exempt:
+        matched = _matches(never_write, f"{form}/")
+        if matched is not None:
+            return matched, f"{form}/"
+    return None
+
+
+def never_write_match(
+    path: Path,
+    *,
+    repo_root: Path,
+    never_write: NeverWrite,
+    resolve_leaf: bool = True,
+) -> tuple[str, str] | None:
+    """``(pattern, matched_form)`` when writing to ``path`` is never-write
+    protected, else ``None`` -- the ONE place the never-write decision is made
+    (Story 82.11): ``_guard`` (so ``write``/``replace_span``/``remove``/
+    ``symlink``/``check_never_write``) and the precondition ladder's rung 4
+    both call it, so the gate and the write primitive cannot disagree.
+
+    Two forms of ``path`` are matched: the repo-relative path AS WRITTEN
+    (lexical, no symlink followed) and the RESOLVED one (``resolve_leaf`` as
+    in ``_guard``). A match on EITHER refuses -- a symlinked ancestor
+    (``docs -> real/``) hides ``docs/dreams/x.md`` from the resolved form
+    (``real/dreams/x.md``), and an alias into the protected set
+    (``alias -> docs/dreams``) hides it from the written one. Each form is
+    also matched with a trailing ``/`` when it names a directory
+    (``_match_form``). ``NeverWrite.exempt`` is judged per form, never across
+    them: an exempt written form stays writable under a symlinked ancestor,
+    while a path that only RESOLVES into the protected set still refuses. One
+    carve-out: with ``resolve_leaf=False`` (``symlink()``) the resolved form is
+    the SAME node reached through resolved ancestors, so when the written form
+    is exempt its directory probe is not repeated -- an exempt link at
+    ``_bmad-output/planning-artifacts`` stays creatable when ``_bmad-output``
+    itself is a symlink to another volume.
+
+    Raises ``ValueError`` upfront if ``repo_root`` does not resolve to an
+    existing directory (see ``_guard``). ``matched_form`` is the string that
+    matched, trailing ``/`` included when the directory probe did."""
+    resolved_root = repo_root.resolve()
+    if not resolved_root.is_dir():
+        raise ValueError(
+            f"repo_root {repo_root} does not resolve to an existing directory"
+            f" ({resolved_root}) -- refusing to guard against a repo root that may be"
+            " wrong, since every repo-relative never-write pattern would silently stop"
+            " matching"
+        )
+    resolved_path = _resolve_target(path, resolve_leaf=resolve_leaf)
+    try:
+        resolved_form = resolved_path.relative_to(resolved_root).as_posix()
+    except ValueError:
+        resolved_form = resolved_path.as_posix()
+    written_form = _written_form(path, repo_root, resolved_root)
+
+    written_hit = _match_form(
+        never_write,
+        written_form,
+        is_directory=_names_a_directory(Path(os.path.abspath(path)), resolve_leaf=resolve_leaf),
+    )
+    if written_hit is not None:
+        return written_hit
+    if resolved_form == written_form:
+        return None
+    same_node_exempt = not resolve_leaf and written_form in never_write.exempt
+    return _match_form(
+        never_write,
+        resolved_form,
+        is_directory=not same_node_exempt and _names_a_directory(resolved_path, resolve_leaf=resolve_leaf),
+    )
+
+
 def _guard(path: Path, *, repo_root: Path, never_write: NeverWrite, resolve_leaf: bool = True) -> None:
     """The one check ``write``, ``replace_span``, and ``remove`` all share,
     run before any of them touches the filesystem.
 
-    Resolves both ``path`` and ``repo_root`` via ``Path.resolve()``
-    (non-strict, symlink-following -- matching ``ports/fs.py::resolve_path``'s
-    own documented convention, see the module docstring's second Design
-    Note), computes the resolved path relative to the resolved
-    ``repo_root`` in POSIX form, and falls back to the resolved path's own
-    absolute POSIX string when ``path`` is not under ``repo_root`` at all
-    (no pattern is repo-external today, but this must not crash). Raises
-    ``NeverWriteViolation`` naming the matched pattern AND both the
-    caller-supplied and resolved paths in its message on a hit (review
-    finding: the message previously showed only the unresolved ``path`` --
-    unhelpful for exactly the symlink-indirect case resolution exists to
-    catch, where the caller-visible path gives no hint which real,
+    Delegates the decision to ``never_write_match`` (Story 82.11): ``path`` is
+    matched as the caller wrote it AND resolved -- ``Path.resolve()`` on both
+    ``path`` and ``repo_root`` (non-strict, symlink-following -- matching
+    ``ports/fs.py::resolve_path``'s own documented convention, see the module
+    docstring's second Design Note) -- each repo-relative in POSIX form, with
+    a directory also matched as ``dir/``; a path under neither the repo nor
+    its resolved form falls back to its own absolute POSIX string (no pattern
+    is repo-external today, but this must not crash). Raises
+    ``NeverWriteViolation`` naming the matched pattern AND the matched form
+    AND both the caller-supplied and resolved paths in its message on a hit
+    (review finding: the message previously showed only the unresolved
+    ``path`` -- unhelpful for exactly the symlink-indirect case resolution
+    exists to catch, where the caller-visible path gives no hint which real,
     resolved location actually matched); returns ``None`` silently
     otherwise.
 
@@ -278,24 +398,12 @@ def _guard(path: Path, *, repo_root: Path, never_write: NeverWrite, resolve_leaf
     misconfiguration this codebase's own history flags as a recurring
     failure mode. Failing loudly here converts that into an immediate,
     diagnosable error instead."""
-    resolved_root = repo_root.resolve()
-    if not resolved_root.is_dir():
-        raise ValueError(
-            f"repo_root {repo_root} does not resolve to an existing directory"
-            f" ({resolved_root}) -- refusing to guard against a repo root that may be"
-            " wrong, since every repo-relative never-write pattern would silently stop"
-            " matching"
-        )
-    resolved_path = path.resolve() if resolve_leaf else (path.parent.resolve() / path.name)
-    try:
-        relative_posix_str = resolved_path.relative_to(resolved_root).as_posix()
-    except ValueError:
-        relative_posix_str = resolved_path.as_posix()
-
-    matched = _matches(never_write, relative_posix_str)
-    if matched is not None:
+    hit = never_write_match(path, repo_root=repo_root, never_write=never_write, resolve_leaf=resolve_leaf)
+    if hit is not None:
+        matched, form = hit
+        resolved_path = _resolve_target(path, resolve_leaf=resolve_leaf)
         raise NeverWriteViolation(
-            f"{path} (resolved: {resolved_path}) matches never-write pattern {matched!r}",
+            f"{path} (resolved: {resolved_path}) matches never-write pattern {matched!r} (as {form!r})",
             remedy=(
                 "choose a target path outside the never-write set, or update the"
                 " manifest's never-write patterns if this file is meant to be writable"
