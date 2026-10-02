@@ -3410,6 +3410,296 @@ def test_execute_fleet_cycle_forms_two_member_wave_with_dispatch_max_parallel(
 
 
 # --------------------------------------------------------------------------
+# Story 82.10 -- a parallel wave journals each member's own outcome and refuse predicate
+# --------------------------------------------------------------------------
+
+_W_SLUG = "pyforge-marshal"
+_W_PRIMARY = "33-8"
+_W_SECOND = "33-9"
+#: Two disjoint-surface probe specs (the 33.8 wave test's own), one per story the wave admits.
+_W_SPECS: dict[str, tuple[str, str]] = {
+    _W_PRIMARY: ("spec-33-8-wave-probe-a.md", "scripts/bmad_loop_baseline_drift_check.py"),
+    _W_SECOND: ("spec-33-9-wave-probe-b.md", "scripts/missing_preserve_check.py"),
+}
+_W_WAVE_POLICY: dict[str, object] = {"dispatch": {"max_parallel": 2}}
+#: A refusal is ``(code, message)``; both codes are re-preflightable, at different gates.
+_W_GATE_VERIFY = ("MRS-GATE-010", "verify commands red")
+_W_GATE_FLAG = ("MRS-DISP-052", "the flag gate reds the spec")
+
+
+def _wave_ledgers(stories: tuple[str, ...]) -> dict[str, tuple[tuple[str, str], ...]]:
+    return {_W_SLUG: tuple((story, "backlog") for story in stories)}
+
+
+def _wave_station(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    stories: tuple[str, ...] = (_W_PRIMARY, _W_SECOND),
+    refusals: dict[str, tuple[str, str]] | None = None,
+    raises: dict[str, Exception] | None = None,
+) -> list[str]:
+    """Seed one station's tracked probe specs and stub ``dispatch_once``: a story in ``refusals`` comes back refused
+    with that ``(code, message)``, one in ``raises`` raises, every other launches. Returns the launch order."""
+    from pyforge.marshal.cli.dispatch import DispatchAttempt
+    from pyforge.marshal.core.model import Finding
+
+    _init_git_repo(tmp_path)
+    specs = dispatch_core.planning_specs_dir(tmp_path, _W_SLUG)
+    specs.mkdir(parents=True, exist_ok=True)
+    for story in stories:
+        name, surface = _W_SPECS[story]
+        (specs / name).write_text(f'---\nstatus: backlog\nsurface: ["{surface}"]\n---\n', encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    launches: list[str] = []
+
+    def stub(*, story: str, **kwargs):
+        launches.append(story)
+        if story in (raises or {}):
+            raise (raises or {})[story]
+        if story in (refusals or {}):
+            code, message = (refusals or {})[story]
+            return DispatchAttempt(data={}, findings=(Finding(code=code, severity=Severity.ERROR, message=message),))
+        return DispatchAttempt(data={"session_pid": 7070, "story": story}, findings=())
+
+    monkeypatch.setattr(cli_dispatch, "dispatch_once", stub)
+    return launches
+
+
+def _wave_cycle(tmp_path: Path, *, stories: tuple[str, ...] = (_W_PRIMARY, _W_SECOND), policy_flags=_W_WAVE_POLICY):
+    return _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers=_wave_ledgers(stories),
+        station=_W_SLUG,
+        policy_flags=policy_flags,
+    )
+
+
+def _journal_then_fold(tmp_path: Path, report, run_name: str = "campaign"):
+    """The report journaled as one fleet cycle, then folded the way the NEXT cycle (its own process) rebuilds blocks."""
+    fs = FakeFs()
+    run_dir = tmp_path / run_name
+    run_dir.mkdir()
+    cli_dispatch._journal_fleet_cycle(fs, run_dir, run_name, report, [])
+    return cli_dispatch._campaign_blocked_from_journal(fs, run_dir, run_name)
+
+
+def test_a_refused_primary_beside_a_dispatched_sibling_journals_its_own_outcome_and_predicate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DW-FU-28-18-7: the station reads DISPATCHED, but the entry carries the refused primary's own outcome."""
+    launches = _wave_station(tmp_path, monkeypatch, refusals={_W_PRIMARY: _W_GATE_VERIFY})
+
+    report = _wave_cycle(tmp_path)
+
+    assert launches == [_W_PRIMARY, _W_SECOND]
+    (row,) = report.results
+    assert row.status is StationCycleStatus.DISPATCHED and row.story == _W_PRIMARY
+    assert row.refuse_predicate is None  # the aggregate row is as it always was
+    primary, second = row.members
+    assert (primary.story, primary.status) == (_W_PRIMARY, StationCycleStatus.REFUSED)
+    assert primary.detail == "MRS-GATE-010: verify commands red"
+    assert primary.refuse_predicate is not None
+    assert primary.refuse_predicate["gate"] == "MRS-GATE-010"
+    assert _W_SPECS[_W_PRIMARY][0] in primary.refuse_predicate["spec_fingerprint"]
+    assert (second.story, second.status) == (_W_SECOND, StationCycleStatus.DISPATCHED)
+    assert second.detail is None and second.refuse_predicate is None
+    members = row.to_payload()["members"]
+    assert isinstance(members, list) and [m["story"] for m in members] == [_W_PRIMARY, _W_SECOND]
+    assert [m["status"] for m in members] == ["refused", "dispatched"]
+
+
+def test_the_next_cycle_rebuilds_the_refused_primarys_block_and_predicate_from_the_journal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _wave_station(tmp_path, monkeypatch, refusals={_W_PRIMARY: _W_GATE_VERIFY})
+    report = _wave_cycle(tmp_path)
+
+    blocked, predicates = _journal_then_fold(tmp_path, report)
+
+    # Only the refused member is a block; the sibling that dispatched is not.
+    assert blocked == {_W_SLUG: {_W_PRIMARY: "MRS-GATE-010: verify commands red"}}
+    predicate = predicates[_W_SLUG][_W_PRIMARY]
+    assert predicate.gate == "MRS-GATE-010"
+    assert _W_SPECS[_W_PRIMARY][0] in predicate.spec_fingerprint
+    assert _W_SECOND not in predicates[_W_SLUG]
+
+
+def test_the_next_drain_cycle_rate_limits_a_refused_primary_instead_of_relaunching_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """DW-FU-28-18-7 end to end, two real cycles under one campaign id: the refusal that used to vanish with the
+    in-memory block now stands, re-preflight sees an unchanged predicate and rate-limits it (MRS-DRAIN-017)."""
+    launches = _wave_station(tmp_path, monkeypatch, refusals={_W_PRIMARY: _W_GATE_VERIFY})
+    args = _drain_args(once=True, campaign="camp-82-10", max_in_flight=2, station=_W_SLUG)
+
+    _run_drain(tmp_path, args, ledgers=_wave_ledgers((_W_PRIMARY, _W_SECOND)))
+    assert launches == [_W_PRIMARY, _W_SECOND]
+    capsys.readouterr()
+    _run_drain(tmp_path, args, ledgers=_wave_ledgers((_W_PRIMARY, _W_SECOND)))
+    out = capsys.readouterr().out
+
+    assert launches == [_W_PRIMARY, _W_SECOND]  # the refused primary was not launched again
+    assert "MRS-DRAIN-017" in out and "MRS-DRAIN-005" in out
+
+
+def test_two_refused_members_each_journal_a_predicate_from_their_own_detail_and_story(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DW-FU-28-18-8: a mixed-refuse wave. The old row held the LAST member's detail beside a predicate computed for
+    the primary, so the predicate could describe another story's gate and the second block was never journaled."""
+    _wave_station(tmp_path, monkeypatch, refusals={_W_PRIMARY: _W_GATE_VERIFY, _W_SECOND: _W_GATE_FLAG})
+
+    report = _wave_cycle(tmp_path)
+
+    (row,) = report.results
+    assert row.status is StationCycleStatus.REFUSED and row.story == _W_PRIMARY
+    primary, second = row.members
+    assert primary.refuse_predicate is not None and second.refuse_predicate is not None
+    assert primary.refuse_predicate["gate"] == "MRS-GATE-010"
+    assert _W_SPECS[_W_PRIMARY][0] in primary.refuse_predicate["spec_fingerprint"]
+    assert second.refuse_predicate["gate"] == "MRS-DISP-052"
+    assert _W_SPECS[_W_SECOND][0] in second.refuse_predicate["spec_fingerprint"]
+    # The aggregate row keeps its detail (the last member's); its predicate is the primary's own, not a hybrid.
+    assert row.detail == second.detail
+    assert row.refuse_predicate == primary.refuse_predicate
+
+    blocked, predicates = _journal_then_fold(tmp_path, report)
+    assert blocked == {_W_SLUG: {_W_PRIMARY: primary.detail, _W_SECOND: second.detail}}
+    assert {story: predicate.gate for story, predicate in predicates[_W_SLUG].items()} == {
+        _W_PRIMARY: "MRS-GATE-010",
+        _W_SECOND: "MRS-DISP-052",
+    }
+    assert _W_SPECS[_W_SECOND][0] in predicates[_W_SLUG][_W_SECOND].spec_fingerprint
+
+
+def test_a_member_whose_dispatch_raised_journals_its_own_refused_outcome(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The ``except`` path records an outcome too: a raise is a refused member (never a re-preflightable gate), and
+    the block survives the process the sibling's launch ended in."""
+    _wave_station(tmp_path, monkeypatch, raises={_W_PRIMARY: ValueError("boom")})
+
+    report = _wave_cycle(tmp_path)
+
+    (row,) = report.results
+    assert row.status is StationCycleStatus.DISPATCHED
+    primary, second = row.members
+    assert (primary.story, primary.status) == (_W_PRIMARY, StationCycleStatus.REFUSED)
+    assert primary.detail == "dispatch raised ValueError: boom" and primary.refuse_predicate is None
+    assert (second.story, second.status) == (_W_SECOND, StationCycleStatus.DISPATCHED)
+    blocked, predicates = _journal_then_fold(tmp_path, report)
+    assert blocked == {_W_SLUG: {_W_PRIMARY: "dispatch raised ValueError: boom"}}
+    assert predicates == {}
+
+
+@pytest.mark.parametrize("policy_flags", [_W_WAVE_POLICY, _CYCLE_POLICY_SERIAL], ids=["wave", "serial"])
+@pytest.mark.parametrize("refused", [True, False], ids=["refused", "dispatched"])
+def test_a_single_story_station_row_journals_exactly_as_before(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, policy_flags: dict[str, object], refused: bool
+) -> None:
+    """A single-story wave and a serial cycle that attempts one story: no ``members`` key, the row's own fields
+    carry the outcome, and a refusal's predicate is the one computed for that story from that detail."""
+    from pyforge.marshal.core import dispatch_re_preflight
+
+    refusals = {_W_PRIMARY: _W_GATE_VERIFY} if refused else {}
+    launches = _wave_station(tmp_path, monkeypatch, stories=(_W_PRIMARY,), refusals=refusals)
+
+    report = _wave_cycle(tmp_path, stories=(_W_PRIMARY,), policy_flags=policy_flags)
+
+    assert launches == [_W_PRIMARY]
+    (row,) = report.results
+    assert row.members == ()
+    payload = row.to_payload()
+    assert "members" not in payload
+    if not refused:
+        assert row.status is StationCycleStatus.DISPATCHED and row.refuse_predicate is None
+        assert set(payload) == {"station", "status", "remaining", "story", "detail", "skipped"}
+        return
+    assert row.status is StationCycleStatus.REFUSED
+    assert (row.story, row.detail) == (_W_PRIMARY, "MRS-GATE-010: verify commands red")
+    expected = cli_dispatch._predicate_payload(
+        dispatch_re_preflight.compute_refuse_predicate(
+            repo_root=tmp_path,
+            slug=_W_SLUG,
+            story=_W_PRIMARY,
+            gate="MRS-GATE-010",
+            verify_commands=cli_dispatch._compose_policy(_W_SLUG, flags=policy_flags).verify_commands.value,
+        )
+    )
+    assert row.refuse_predicate == expected
+    assert set(payload) == {"station", "status", "remaining", "story", "detail", "skipped", "refuse_predicate"}
+
+
+def test_an_older_journal_without_members_still_folds(tmp_path: Path) -> None:
+    """Rows journaled before Story 82.10 carry no ``members``: a REFUSED row is its own one outcome, a DISPATCHED
+    row blocks nothing, and the row's payload is byte-identical to what those journals hold."""
+    from pyforge.marshal.cli.dispatch import FleetCycleReport
+    from pyforge.marshal.core.dispatch_re_preflight import RefusePredicate
+
+    predicate_payload = {"gate": "MRS-GATE-010", "spec_fingerprint": "spec:missing", "verify_fingerprint": "verify:x"}
+    refused = dispatch_fleet.StationCycleResult(
+        slug=_W_SLUG,
+        status=StationCycleStatus.REFUSED,
+        remaining=2,
+        story=_W_PRIMARY,
+        detail="MRS-GATE-010: verify commands red",
+        refuse_predicate=predicate_payload,
+    )
+    dispatched = dispatch_fleet.StationCycleResult(
+        slug="pyforge-doctor", status=StationCycleStatus.DISPATCHED, remaining=1, story="1-1"
+    )
+    assert refused.to_payload() == {
+        "station": _W_SLUG,
+        "status": "refused",
+        "remaining": 2,
+        "story": _W_PRIMARY,
+        "detail": "MRS-GATE-010: verify commands red",
+        "skipped": [],
+        "refuse_predicate": predicate_payload,
+    }
+    assert "members" not in dispatched.to_payload()
+    report = FleetCycleReport(results=(refused, dispatched), findings=(), data={"mode": "drain_to_zero"})
+
+    blocked, predicates = _journal_then_fold(tmp_path, report)
+
+    assert blocked == {_W_SLUG: {_W_PRIMARY: "MRS-GATE-010: verify commands red"}}
+    assert predicates == {
+        _W_SLUG: {
+            _W_PRIMARY: RefusePredicate(
+                gate="MRS-GATE-010", spec_fingerprint="spec:missing", verify_fingerprint="verify:x"
+            )
+        }
+    }
+
+
+def test_mutation_the_journal_reduced_to_the_aggregate_row_loses_the_refused_primary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The members left out of the journaled row -- the one aggregate row this story replaced. The refused primary
+    beside a dispatched sibling then reads DISPATCHED and its block is gone, which is exactly what
+    `test_the_next_cycle_rebuilds_the_refused_primarys_block_and_predicate_from_the_journal` fails on."""
+    _wave_station(tmp_path, monkeypatch, refusals={_W_PRIMARY: _W_GATE_VERIFY})
+    report = _wave_cycle(tmp_path)
+    assert _journal_then_fold(tmp_path, report, "with-members")[0] == {
+        _W_SLUG: {_W_PRIMARY: "MRS-GATE-010: verify commands red"}
+    }
+    real_to_payload = dispatch_fleet.StationCycleResult.to_payload
+
+    def aggregate_only(self):
+        payload = real_to_payload(self)
+        payload.pop(dispatch_fleet.MEMBERS_PAYLOAD_KEY, None)
+        return payload
+
+    monkeypatch.setattr(dispatch_fleet.StationCycleResult, "to_payload", aggregate_only)
+
+    blocked, predicates = _journal_then_fold(tmp_path, report, "aggregate-only")
+
+    assert blocked == {} and predicates == {}
+
+
+# --------------------------------------------------------------------------
 # Story 50.1 (CAP-244) -- a landing never re-dispatches the story it landed
 # --------------------------------------------------------------------------
 
