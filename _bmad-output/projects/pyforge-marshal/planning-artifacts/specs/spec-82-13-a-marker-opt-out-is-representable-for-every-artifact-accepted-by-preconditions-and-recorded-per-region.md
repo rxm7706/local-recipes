@@ -2,7 +2,7 @@
 title: '82.13: A marker opt-out is representable for every artifact, accepted by preconditions, and recorded per region'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'dfd5482b46238c5745573fbfccd19e439f99e8df'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -239,4 +239,76 @@ Closes: DW-FU-8-5-2, DW-FU-8-5-5, DW-FU-8-5-6.
 
 ## Auto Run Result
 
-Pass 1 was reviewed and sent back (`bad_spec`, iteration 1): see the Spec Change Log. The pass-1 result is superseded; the next pass rewrites this section.
+Review pass 1 sent the story back (`bad_spec`, iteration 1). This pass re-derived it from `baseline_revision` `dfd5482b46`
+with the pass-1 implementation (`git diff dfd5482b46 99cf0a50d8`) as the reference for everything the Spec Change Log marks KEEP,
+and added the amendments. The `<intent-contract>` is unchanged.
+
+**What changed in this pass (on top of the KEEP set):**
+
+- `verbs/adopt.py`, `verbs/update.py` -- `_state_with_opt_outs` replaces `_opted_out_pairs`: before `build_plan`, the run
+  classifies every non-escaping hybrid entry (`_read_text_or_blank`), records the DERIVED pairs in memory with `record_opt_out`
+  (`opt_outs_to_record`; the sequencing contract), and returns the recorded state and the opt-out pairs. `run_adopt` and
+  `run_update` rebind `state` to it, so `build_plan(opted_out=frozenset(state.opted_out))`, `check_preconditions(opted_out=...)`,
+  the wholesale pass and the state the run writes (after a non-empty apply, as before) all read one answer. A dry run, a
+  declined run and an empty-plan run write nothing. A never-adopted repo (`state is None`) reads and records nothing.
+- `verbs/update.py` -- `_wholesale_regenerate_actions` takes the pairs: an opted-out region is not named in `chosen_anchor`,
+  and a hybrid record whose every declared region is opted out gets no action and no hash (its record is carried over).
+- Both `_managed_artifact_after_apply` `InternalError` messages name `sorted(action_named)`, not the regions a prior record carried.
+- `detect/optout.py` -- docstrings only (the sequencing contract is now applied by both verbs).
+- `docs/managed-region-contract.md` -- no hard-coded region count; the per-region opt-out is stated for both verbs and tied to the
+  mutating-run tests; a plain statement that state written by this release is not readable by an older marshal and that
+  `seed_model_version` cannot tell the two apart.
+- `deferred-work-ledger.md` -- the DW-FU-8-5-5 `resolved:` line says the verbs honour the set in their plan as well as at rung 6;
+  the DW-FU-8-5-6 line no longer claims `seed_model_version` records the writing release; DW-FU-11-4 gains a
+  `verified: 2026-10-02 -- NARROWED --` line (status stays NEEDS-DECISION; only the `skips` half remains open).
+- Tests (`test_seed_verbs_region_opt_out.py`): mutating `adopt --apply` / `update --run` over a DERIVED and a RECORDED opt-out
+  (markers still absent, `opted_out` holds the key, `managed[]` holds no span for it, the sibling keeps its span and its hash,
+  `check` reports only `opted-out`); a dry run and an empty-plan run write no state; a hybrid with every region opted out gets
+  no wholesale action and its record is carried over; mutating `--force` runs for both verbs (update rewrites the hand-edited
+  sibling, adopt records it as the baseline, the opted-out region stays deleted); an escaping hybrid entry through both verbs
+  with a `_read_text_or_blank` spy; the rung 6 skip for a DERIVED pair pinned at the seam
+  (`test_a_derived_opt_out_is_excused_at_rung_6_while_its_claim_still_stands`); the `InternalError` message. The init test no
+  longer pins the `check_preconditions` keyword shape, the import guard also refuses `from .. import state` and the absolute
+  spellings, and the claim-dropped test's docstring says it pins the outcome. `test_seed_verbs_adopt.py`'s
+  `test_force_on_hand_edited_content_reinserts_the_managed_region` deleted a region's markers and expected `--force` to put the
+  region back; that is the contradiction this story removes (a deleted region is the permanent opt-out, and `--force` is not a
+  reinstate), so it is retargeted to a hand-edited body beside a newly declared region.
+
+**Verification (all read from exit codes, from the worktree root):**
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0, 10784 passed, 1 skipped, 14 deselected.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 0, 130 passed, 3 skipped.
+- `pixi run -e pyforge-guild lint-types`: exit 0 (ruff, `ruff format --check`, mypy over the ten packages).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate`: exit 0 (80% floor, 7 touched modules).
+- `python scripts/spec_surface_reconcile.py`: exit 0 ("every tracked file governed or allowlisted; no drift"); `spec-surface-check`
+  exit 0 (both `.memlog.md` files name this pass's paths; no `--write-baseline`).
+- `deferred-work-check`, `story-status-check`, `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`,
+  `ledger-regression-check`, `governance-currency`: each exit 0.
+
+**Mutation evidence (each fix reverted in turn; the named new test fails):** adopt and update not recording the derived pair
+(`test_a_mutating_run_keeps_a_deleted_region_deleted_and_records_the_opt_out`); the run ignoring the recorded state, in each
+verb (same test); the wholesale pass ignoring the set, and acting when every region is opted out
+(`test_a_hybrid_artifact_with_every_region_opted_out_gets_no_wholesale_action`); the escaping guard removed from each helper
+(`test_an_escaping_hybrid_entry_is_never_read_for_opt_outs`); the rung 6 skip removed
+(`test_a_recorded_opt_out_with_its_claim_still_present_is_not_refused_without_force`, the seam test, the preconditions tests); each verb
+passing no pairs to rung 6; `from .. import state` added to `preconditions.py`
+(`test_the_module_still_imports_nothing_from_seed_state`); a dry run writing state, and an empty-plan run writing state
+(`test_a_dry_run_records_nothing_even_when_it_derives_an_opt_out`, `test_an_empty_plan_writes_no_state_so_a_derived_opt_out_stays_derived`);
+either `InternalError` message naming carried regions; and the pass-1 mutations (manifest id grammar, schema `artifactId` ref,
+first-span-only records, claims, check and `region_shas`; the old shape not read; the first-span `body_sha` and duplicate-name
+rules; the schema `oneOf`; `_without_region_claim` keeping the entry) all fail their tests. One pass-1 mutant, `F15` (`_without_region_claim`
+taking the removal path for an artifact whose id matches but none of whose spans does), survives: it rebuilds the entry from the
+same spans, so it is equivalent.
+
+**Known risks.**
+
+- `--force` no longer puts back a region whose markers were deleted: it is the permanent opt-out, and `marshal seed adopt
+  --reinstate` is not declared yet (Story 10.6's flag; `clear_opt_out` still has no verb caller), so today an operator who wants the
+  region back restores the markers by hand. This is the contract's own ("permanent until an explicit reinstate"), not a new gap.
+- A derived opt-out is written only when the run writes state (after a non-empty apply), as the Tasks say; an empty-plan run
+  leaves it derived, so a later run re-derives it from the surviving claim.
+- State written by this release is not readable by an older marshal (`state-invalid`), as the contract page now says.
+- AD-58 (`ARCHITECTURE-SPINE.md:1065`), `epics.md:2352` and `SPEC.md:1127` still name `inserted_region_span`; the review log
+  records that as a deferral for the finalize pass, and nothing here edits them.
+- The harness auto-checkpoint committed two transient mutants during the mutation runs (`adopt.py` with the escaping guard removed,
+  `store.py` with `F15`); the working tree was restored after each, and the tip of the branch carries the intended code.

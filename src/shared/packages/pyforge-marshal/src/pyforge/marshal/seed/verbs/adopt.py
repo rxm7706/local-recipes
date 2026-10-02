@@ -630,8 +630,8 @@ def _state_with_opt_outs(
     it); each file is read with this module's own ``_read_text_or_blank``, so an
     absent or unreadable one is ``""`` and derives nothing. A never-adopted
     repo (``state is None``) has no claim to derive from and no opt-out
-    recorded, so it reads nothing and records nothing. ``detect.optout`` does the classification, so this carries no
-    second spelling of either source."""
+    recorded, so it reads nothing and records nothing. ``detect.optout`` does
+    the classification, so this carries no second spelling of either source."""
     if state is None:
         return None, frozenset()
     hybrids = tuple(
