@@ -1170,7 +1170,7 @@ def run_update(
         repo_root=repo_root,
         never_write=never_write,
         managed=managed_records,
-        opted_out=frozenset(),
+        opted_out=_opted_out_pairs(filtered_manifest, state, repo_root, escaping_ids),
         force=force,
         dry_run=not run,
     )
