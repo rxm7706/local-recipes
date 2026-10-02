@@ -303,9 +303,7 @@ def test_a_state_in_the_old_one_span_shape_is_rewritten_in_full_by_the_next_upda
     (claim,) = state.managed
     # The pre-82.13 shape: one span, the artifact's hash standing for it.
     old_shape = dataclasses.replace(claim, inserted_region_spans=claim.inserted_region_spans[:1])
-    write_state(
-        dataclasses.replace(state, managed=(old_shape,)), repo_root=clean_repo, never_write=_NO_NEVER_WRITE
-    )
+    write_state(dataclasses.replace(state, managed=(old_shape,)), repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
     _commit_all(clean_repo)
 
     run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm)
@@ -399,9 +397,7 @@ def test_a_recorded_opt_out_with_its_claim_dropped_is_not_refused_without_force(
     manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
     state = _adopt_with_human_text(clean_repo, manifest)
     _delete_regions(clean_repo, "tiers")
-    write_state(
-        record_opt_out(state, "hybrid", "tiers"), repo_root=clean_repo, never_write=_NO_NEVER_WRITE
-    )
+    write_state(record_opt_out(state, "hybrid", "tiers"), repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
 
     _dry_run(verb, clean_repo, manifest)
 

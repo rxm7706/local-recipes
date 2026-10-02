@@ -1353,11 +1353,7 @@ def test_the_module_still_imports_nothing_from_seed_state():
     import ast
 
     tree = ast.parse(Path(preconditions.__file__).read_text(encoding="utf-8"))
-    imported = [
-        node.module or ""
-        for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom) and node.level >= 1
-    ]
+    imported = [node.module or "" for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) and node.level >= 1]
     assert not [module for module in imported if module == "state" or module.startswith("state.")]
 
 

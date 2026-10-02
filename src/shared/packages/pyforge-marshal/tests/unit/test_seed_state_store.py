@@ -1767,7 +1767,9 @@ def test_record_opt_out_of_one_region_keeps_the_claim_on_its_sibling():
 def test_record_opt_out_of_the_last_recorded_region_drops_the_whole_entry():
     """A hybrid claim with no span is not constructible, so the entry goes
     when its last span does."""
-    after = record_opt_out(record_opt_out(_clean_state(managed=(_two_region_claim(),)), "agents-md", "tiers"), "agents-md", "model-badge")
+    after = record_opt_out(
+        record_opt_out(_clean_state(managed=(_two_region_claim(),)), "agents-md", "tiers"), "agents-md", "model-badge"
+    )
     assert after.managed == ()
     assert after.opted_out == ("agents-md#model-badge", "agents-md#tiers")
 

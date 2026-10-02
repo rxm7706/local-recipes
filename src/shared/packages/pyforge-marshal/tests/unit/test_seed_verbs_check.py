@@ -272,9 +272,7 @@ def test_fully_conformant_adopted_repo_reports_zero_findings(clean_repo):
                 artifact_class="hybrid-managed-region",
                 body_sha=hash_content(region_body),
                 inserted_region_spans=(
-                    RegionSpanRecord(
-                        name="tiers", start=0, end=len(region_body), body_sha=hash_content(region_body)
-                    ),
+                    RegionSpanRecord(name="tiers", start=0, end=len(region_body), body_sha=hash_content(region_body)),
                 ),
             ),
         )

@@ -343,7 +343,9 @@ def test_wholesale_regenerate_action_produced_for_a_conformant_hybrid_entry(clea
                     path="WHOLE.md",
                     artifact_class="hybrid-managed-region",
                     body_sha=hash_content("old body\n"),
-                    inserted_region_spans=(RegionSpanRecord(name="tiers", start=0, end=0, body_sha=hash_content("old body\n")),),
+                    inserted_region_spans=(
+                        RegionSpanRecord(name="tiers", start=0, end=0, body_sha=hash_content("old body\n")),
+                    ),
                 ),
             ),
         ),
@@ -429,7 +431,9 @@ def test_hybrid_wholesale_regenerate_replaces_only_the_marked_span_not_the_whole
                     path="WHOLE.md",
                     artifact_class="hybrid-managed-region",
                     body_sha=hash_content("old body\n"),
-                    inserted_region_spans=(RegionSpanRecord(name="tiers", start=0, end=0, body_sha=hash_content("old body\n")),),
+                    inserted_region_spans=(
+                        RegionSpanRecord(name="tiers", start=0, end=0, body_sha=hash_content("old body\n")),
+                    ),
                 ),
             ),
         ),
@@ -1383,7 +1387,9 @@ def test_default_commit_substitutes_a_hybrid_region_via_the_real_packaged_fragme
                     path="CLAUDE.md",
                     artifact_class="hybrid-managed-region",
                     body_sha=hash_content("stale tiers content\n"),
-                    inserted_region_spans=(RegionSpanRecord(name="tiers", start=0, end=0, body_sha=hash_content("stale tiers content\n")),),
+                    inserted_region_spans=(
+                        RegionSpanRecord(name="tiers", start=0, end=0, body_sha=hash_content("stale tiers content\n")),
+                    ),
                 ),
             ),
         ),
