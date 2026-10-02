@@ -2,9 +2,9 @@
 title: '82.9: VCS commit text is declared egress and gate evaluate writes a redacted gate record'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'ready-for-dev'
 baseline_revision: 'd016f196bf14e259ff8bd819eb3d504998f94dee'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -14,10 +14,24 @@ context:
 warnings:
   - oversized
 deferred:
-  - summary: "`marshal deploy land-story` re-runs the full gate in-process (`evaluate_gate`) and still writes no gate record; F-25 names that re-run as the sole evidence for hand landings. This story wires `marshal gate evaluate` only (its ACs), and `evaluate_gate` takes its record and clock ports optionally so the land-story caller can opt in."
-    evidence: "`cli/deploy.py:2115` calls `evaluate_gate(gate_args, process=process, vcs=vcs, fs=fs)` with no record port; `tests/unit/test_deploy.py:1243` `_fake_evaluate_gate` pins that call shape in about ten tests."
-    location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py
+  - summary: >-
+      The gate record under-describes the evaluation it is evidence for: it carries no overall verdict or finding codes, so an unevaluable or errored evaluation writes a record indistinguishable from a clean one with no commands; it records HEAD only for a tree that may be dirty; and its scope-check verdict is gathered from the loop home while its tree revision is the repository root's.
+    evidence: |-
+      Verified by the Blind Hunter, Edge Case Hunter and Verification Gap layers at cli/gate.py (_write_gate_record, _run_scope_check): schemas/gate-record.json is Story 2.6's frozen shape (additionalProperties false, five required keys), a --run record carries commands [] by design, and the scope check reads _home_path(slug) while worktree_head_sha reads repo_root() (Story 82.1's anchor). Adding verdict, finding_codes or a dirty flag is a new public contract the intent never asked for.
+    location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/gate-record.json
     severity: medium
+  - summary: >-
+      Merge-commit text still reaches git as a bare str on the non-egress VcsPort: merge_branch takes subject str and passes it to git merge -m.
+    evidence: |-
+      ports/vcs.py merge_branch(repo_root, branch, *, into, subject) and its adapter in adapters/vcs_git.py. The subject is rendered by core.identity.render_merge_subject from the policy template, never from session text, and the intent names exactly three commit-writing methods, so Story 82.9 leaves it; AD-34 still names commit text as egress, so it belongs on CommitPort with a Redacted subject.
+    location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py
+    severity: low
+  - summary: >-
+      The governed spec, architecture spine and PRD still name VcsPort for the three moved commit methods and do not list CommitPort among the AD-34 egress ports.
+    evidence: |-
+      SPEC.md, ARCHITECTURE-SPINE.md (AD-34 registry text) and the PRD name VcsPort.merge_ref_resolving and VcsPort.commit_paths_onto_remote_tip; a SPEC.md is re-derived with bmad-spec, never hand-edited, so the prose fix is a spine amendment plus a re-derive, not part of this code story.
+    location: _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md
+    severity: low
 declared_low_risk: false
 ---
 
@@ -96,7 +110,8 @@ Package root `P` = `src/shared/packages/pyforge-marshal/src/pyforge/marshal`; te
 - `P/cli/gate.py` -- `evaluate_gate` `:713` (the `--run` fold `:859-889`, `run_dir` `:868`, scope check `:1009`, verdict `:1083`), `run_evaluate` `:1087`, `_render_text` `:1135`; the `--run` branch reports `data["commands"] = []`. Helpers to reuse: `cli/init.py` `_loop_home_root` `:359`, `_home_path` `:373`; `cli/spin.py` `_run_dir` `:1008`, `_format_utc_compact` `:981`, `_random_token`; `core/journal.py` `mint_run_id` `:180`; `ports/clock.py` `ClockPort.now`; `adapters/clock_system.py`.
 - `P/schemas/gate-record.json` -- `additionalProperties: false`, five required keys, no `run_id`. `T/unit/test_egress.py` pins the schema and `build_gate_record` together.
 - `P/core/findings.py` `REGISTERED_CODES` (`MRS-GATE-016` at `:1947`), `P/core/verdict.py` `_CLASSIFY_TABLE` (`:1253`), `T/unit/test_findings.py` `:419`, `T/unit/test_verdict.py`: the four places a new code lands (the 82.1 landing, `6d4de8e4845`, is the template).
-- Commit-writing call sites (15; `message` becomes `Redacted`): `cli/deploy.py:993,3976`; `cli/land.py:1255,1545`; `core/worktree_checkpoint.py:58`; `dispatch_land.py:573,636`; `dispatch_land_finalize/__main__.py:402,726`; `dispatch_land_heal.py:258`; `dispatch_supervisor/__main__.py:173,766,839,908`.
+- `P/cli/deploy.py:2115` -- `land-story`'s in-process gate re-run, `evaluate_gate(gate_args, process=process, vcs=vcs, fs=fs)` with `gate_args = Namespace(project=slug, run_id=None, scope_check=True, story=str(story_key))`: the one other caller of `evaluate_gate`; F-25 names it the sole gate evidence for hand landings. `T/unit/test_deploy.py:1243` `_fake_evaluate_gate(args, *, process, vcs, fs)` stands in for it in about ten tests.
+- Commit-writing call sites (14; `message` becomes `Redacted`): `cli/deploy.py:993,3976`; `cli/land.py:1255,1545`; `core/worktree_checkpoint.py:58`; `dispatch_land.py:573,636`; `dispatch_land_finalize/__main__.py:402,726`; `dispatch_land_heal.py:258`; `dispatch_supervisor/__main__.py:173,766,839,908`.
 - Guards that name these methods: `T/meta/test_ad34_egress_registry_completeness.py` (guard 1 needs the registry entry; guard 2 flags `str`, `str | None`, `Any`, unannotated; containers pass), `T/meta/test_local_branch_refs_are_full_refnames.py:48-96` (`_REVISION_ARGS`, `_NAME_ARGS`, `_NOT_A_REF` name the three methods and their `ref`/`remote`/`message`), `T/meta/test_remote_refs_are_full_refnames.py`, `T/meta/test_ad11_write_boundary.py:150`.
 - Fakes defining the three methods (take `Redacted` now): `T/unit/test_land.py`, `test_dispatch_landing.py`, `test_dispatch_supervisor_blocked_halt.py`, `test_dispatch_supervisor_main_loop.py`, `test_deploy.py`, `test_init.py`, `test_dispatch_land_finalize.py`, `test_dispatch_land_heal.py`, `test_supervisor.py`; real-git coverage in `T/unit/test_vcs_git.py` (`:1235-1280`, `:1890-1970`, `:1993-2090`), `test_refs.py:138`, `test_local_branch_refs.py:164`.
 - `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` -- `DW-FU-2-6-2` `:2969`, `DW-FU-2-6-4` `:2997`: close both.
@@ -104,10 +119,10 @@ Package root `P` = `src/shared/packages/pyforge-marshal/src/pyforge/marshal`; te
 ## Tasks & Acceptance
 
 **Execution:**
-- `P/core/egress.py` -- add `GATE_RECORD_FILENAME = "gate-record.json"` beside `build_gate_record`; give `build_gate_record` an optional `run_id` (omitted from the dict when `None`); add `to_redacted_text(text: str) -> Redacted`, the plain-text sibling of `to_redacted` over the same `_redact_string`; register `"CommitPort": True`; rewrite the `VcsPort` registry comment -- non-egress because it now carries only reads and ref operations -- and drop "self-evidently non-egress" -- the commit text is why a second port exists.
+- `P/core/egress.py` -- add `GATE_RECORD_FILENAME = "gate-record.json"` beside `build_gate_record`; give `build_gate_record` an optional `run_id` (omitted from the dict when `None`); add `to_redacted_text(text: str) -> Redacted`, the plain-text sibling of `to_redacted` over the same `_redact_string`; register `"CommitPort": True`; rewrite the `VcsPort` registry comment -- non-egress because its reads and ref operations carry no session text -- and drop "self-evidently non-egress" -- the commit text is why a second port exists. The comment names `merge_branch`'s `subject` (rendered from the policy template, never session text) as the one commit-text parameter that stays a bare `str` on `VcsPort`, recorded `deferred`; it never claims `VcsPort` carries no commit text.
 - `P/ports/commit.py` (new) -- `VcsRef` (frozen dataclass, non-empty `str` `value`, the `ForgeRef` shape) and `CommitPort` with the three methods moved verbatim from `VcsPort`: `message: Redacted`, `ref`/`remote: VcsRef`, `preflight_skip_reason: Redacted | None`; `writes` and `resolutions` stay containers (file bodies are repository content, not commit text). No parameter is `str`, `str | None`, `Any` or unannotated.
-- `P/ports/vcs.py` -- delete the three methods and their prose; rewrite the docstring: `VcsPort` reads and ref operations (and `push`/`fetch`, which move git objects the callers already hold), and commit text goes through `CommitPort`; stop claiming nothing leaves the repository.
-- `P/adapters/vcs_git.py` -- `GitVcs` implements both ports; each commit method rejects a non-`Redacted` message and a non-`VcsRef` ref with `TypeError` (type only, never the value -- the `LocalFs` rule), then unwraps `.text`/`.value`; `commit_paths_onto_remote_tip` hands its `Redacted` straight to `commit_paths`.
+- `P/ports/vcs.py` -- delete the three methods and their prose; rewrite the docstring: `VcsPort` keeps reads and ref operations (and `push`/`fetch`, which move git objects the callers already hold), commit text goes through `CommitPort`, and `merge_branch`'s policy-rendered `subject` is the named exception that stays here (deferred); stop claiming nothing leaves the repository, and never claim `VcsPort` carries no commit text.
+- `P/adapters/vcs_git.py` -- `GitVcs` implements both ports; each commit method rejects a non-`Redacted` message and a non-`VcsRef` ref with `TypeError` (type only, never the value -- the `LocalFs` rule), then unwraps `.text`/`.value`; `commit_paths_onto_remote_tip` hands its `Redacted` straight to `commit_paths`, and the local that holds a `Redacted` is not named `commit_text`.
 - Every call site in the Code Map -- wrap each message and skip reason with `to_redacted_text(...)`, each ref/remote with `VcsRef(...)`; retype the committing callers' `vcs` annotation to a name that is both ports (`Protocol` composed outside `ports/`, e.g. `core/commit_vcs.py` `CommittingVcs(VcsPort, CommitPort, Protocol)`), following the chain up as far as `pixi run -e pyforge-guild lint-types` demands; do not thread a second parameter.
 - `P/schemas/gate-record.json` -- additive optional `run_id` (non-empty string); `T/unit/test_egress.py` pins it both ways.
 - `P/core/findings.py`, `P/core/verdict.py`, `T/unit/test_findings.py`, `T/unit/test_verdict.py` -- `MRS-GATE-017` (WARN: no gate record written, reason named), classified `Verdict.WARN`, registered; a test pins the classification.
