@@ -7,6 +7,7 @@ offending id/field), and the ``since``/``until`` version-range filter.
 from __future__ import annotations
 
 import dataclasses
+import json
 from pathlib import Path
 from textwrap import dedent
 
@@ -280,6 +281,75 @@ def test_wrong_type_required_field_raises_manifest_error(tmp_path, bad_type_fiel
     path.write_text(yaml.safe_dump(document), encoding="utf-8")
     with pytest.raises(ManifestError, match=expected_message):
         load_manifest(path)
+
+
+@pytest.mark.parametrize(
+    ("bad_path", "expected"),
+    [
+        # Absolute: POSIX-rooted, a Windows drive (either separator), a
+        # backslash-rooted path and a UNC share -- `Path.__truediv__` would
+        # discard the repo root for every one of them.
+        ("/etc/passwd", r"not absolute"),
+        ("C:\\Windows\\x", r"not absolute"),
+        ("C:/Windows/x", r"not absolute"),
+        ("\\\\server\\share\\x", r"not absolute"),
+        # A `..` segment in either separator dialect, anywhere in the path.
+        ("../outside.txt", r"'\.\.' segment"),
+        ("../../../etc/cron.d/pwn", r"'\.\.' segment"),
+        ("docs/../../outside.txt", r"'\.\.' segment"),
+        ("docs\\..\\outside.txt", r"'\.\.' segment"),
+    ],
+)
+def test_an_absolute_or_dotdot_path_raises_manifest_error_naming_the_entry_id(tmp_path, bad_path, expected):
+    """Story 82.11 (DW-FU-7-4): the manifest is the one input that can name a
+    location outside the repo being seeded, so `path` is refused at LOAD --
+    a load-time error naming the entry's id, not an apply-time refusal of
+    the whole plan."""
+    text = f"""\
+        model_version: "1.0.0"
+        artifacts:
+          - id: escaper
+            class: copied-seeded
+            path: {json.dumps(bad_path)}
+            applies_to: init
+            rationale: r
+    """
+    with pytest.raises(ManifestError, match=rf"^escaper: path must .*{expected}"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_a_dotdot_inside_a_name_is_not_a_dotdot_segment(tmp_path):
+    """Only a whole `..` segment walks out of the repo: `a..b` and `..hidden`
+    are ordinary names and keep loading."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: a
+            class: copied-seeded
+            path: "dir/a..b"
+            applies_to: init
+            rationale: r
+          - id: b
+            class: copied-seeded
+            path: "dir/..hidden"
+            applies_to: init
+            rationale: r
+    """
+    manifest = load_manifest(_write(tmp_path, text))
+    assert [entry.path for entry in manifest.entries] == ["dir/a..b", "dir/..hidden"]
+
+
+def test_manifest_entry_constructed_directly_also_rejects_an_escaping_path():
+    """The load-time check lives in `ManifestEntry.__post_init__`, so a
+    hand-built entry cannot smuggle one in either."""
+    with pytest.raises(ValueError, match="not absolute"):
+        ManifestEntry(
+            id="x",
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            path="/etc/passwd",
+            applies_to=AppliesTo.BOTH,
+            rationale="r",
+        )
 
 
 def test_invalid_applies_to_raises_manifest_error(tmp_path):

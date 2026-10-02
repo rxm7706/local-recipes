@@ -277,12 +277,14 @@ from .. import fs
 from ..apply.run import ApplyResult, CommitAction, run_apply
 from ..derive import adapters as derive_adapters
 from ..derive import projects_index as derive_projects_index
+from ..detect.findings import Finding
 from ..detect.hashes import hash_content, region_body_text
 from ..detect.inventory import (
     ArtifactState,
     Inventory,
     classify,
     effective_never_write,
+    escape_findings,
     writable_exemptions,
 )
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
@@ -340,11 +342,17 @@ class AdoptResult:
     ``True`` only when ``--apply`` was requested, ``--yes`` was not, and
     ``confirm()`` returned ``False`` -- distinguishing "nothing was applied
     because the operator said no" from "nothing was applied because this was
-    a dry-run", which a renderer needs different words for."""
+    a dry-run", which a renderer needs different words for.
+
+    ``escape_findings`` (Story 82.11) names every manifest entry whose path
+    resolves outside the repository: the plan holds no action for it, every
+    other action applies, and a renderer reports it here rather than the run
+    refusing as a whole."""
 
     plan: Plan
     applied: tuple[str, ...] | None
     declined: bool
+    escape_findings: tuple[Finding, ...] = ()
 
 
 # Query-style git call (never a checkout/push) -- the identical value
@@ -999,6 +1007,7 @@ def run_adopt(
     filtered_manifest = _manifest_for_adopt(manifest)
     state = read_state(repo_root)
     inventory = classify(filtered_manifest, repo_root)
+    escapes = escape_findings(inventory)
     opted_out = frozenset(state.opted_out) if state is not None else frozenset()
     plan = build_plan(filtered_manifest, inventory, opted_out=opted_out)
     plan = _augment_plan_with_first_claims(plan, inventory, filtered_manifest, state)
@@ -1008,7 +1017,17 @@ def run_adopt(
         patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory))),
         exempt=writable_exemptions(filtered_manifest, inventory),
     )
-    managed_records = managed_after_skips(_managed_records(state, filtered_manifest), plan)
+    # Rung 6 refuses a record whose path does not resolve inside the repo, so a
+    # previously adopted entry that is now an escaping symlink would still
+    # refuse the whole run there (Story 82.11) -- it is already reported in
+    # `escape_findings` and planned for nothing, so it is not handed to rung 6.
+    escaping_ids = {escape.entry_id for escape in inventory.escaping}
+    managed_records = managed_after_skips(
+        tuple(
+            record for record in _managed_records(state, filtered_manifest) if record.artifact_id not in escaping_ids
+        ),
+        plan,
+    )
 
     check_preconditions(
         plan,
@@ -1022,10 +1041,10 @@ def run_adopt(
     write_plan(plan, default_plan_path(repo_root))
 
     if not apply:
-        return AdoptResult(plan=plan, applied=None, declined=False)
+        return AdoptResult(plan=plan, applied=None, declined=False, escape_findings=escapes)
 
     if not yes and not confirm():
-        return AdoptResult(plan=plan, applied=None, declined=True)
+        return AdoptResult(plan=plan, applied=None, declined=True, escape_findings=escapes)
 
     entries_by_id = {entry.id: entry for entry in filtered_manifest.entries}
     new_agents = _merge_agents(state.agents if state is not None else (), agents)
@@ -1080,4 +1099,4 @@ def run_adopt(
         )
         write_state(new_state, repo_root=repo_root, never_write=never_write)
 
-    return AdoptResult(plan=plan, applied=result.applied, declined=False)
+    return AdoptResult(plan=plan, applied=result.applied, declined=False, escape_findings=escapes)

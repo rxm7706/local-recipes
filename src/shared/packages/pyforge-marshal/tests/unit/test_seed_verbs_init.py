@@ -73,7 +73,7 @@ from pyforge.marshal.seed.detect.inventory import (
     effective_never_write,
     writable_exemptions,
 )
-from pyforge.marshal.seed.errors import UsageError
+from pyforge.marshal.seed.errors import PreconditionFailure, UsageError
 from pyforge.marshal.seed.fs import NeverWrite
 from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
@@ -376,6 +376,77 @@ def test_applies_to_init_only_entries_are_included(fresh_target):
 
 
 # --- _manifest_for_init: filter AND slug resolution, generally -------------
+
+
+@pytest.mark.parametrize("slug", ["../../x", "a/../../b", "..\\x"])
+def test_manifest_for_init_refuses_a_slug_that_renders_a_non_repo_relative_path_as_a_usage_error(slug):
+    """Story 82.11 (DW-FU-7-4): ``ManifestEntry`` now refuses an absolute or
+    ``..`` path, and ``dataclasses.replace`` re-runs that check on the
+    slug-rendered path. The slug is the operator's own flag, so the refusal is
+    a ``UsageError`` (exit 2) naming it -- not a bare ``ValueError`` that the
+    CLI would report as an unanticipated internal failure (exit 10)."""
+    manifest = Manifest(
+        model_version=_VERSION,
+        never_write=(),
+        entries=(
+            ManifestEntry(
+                id="dream",
+                artifact_class=ArtifactClass.COPIED_SEEDED,
+                path="docs/dreams/{{ slug }}.md",
+                applies_to=AppliesTo.INIT,
+                rationale="test",
+            ),
+        ),
+    )
+
+    with pytest.raises(UsageError, match="--slug") as excinfo:
+        _manifest_for_init(manifest, slug)
+
+    assert excinfo.value.exit_code == 2
+    assert excinfo.value.remedy.strip()
+
+
+def test_a_bad_slug_is_refused_before_the_target_is_created_or_git_initialised(fresh_target):
+    """``_manifest_for_init`` reads only the manifest and the slug, so it runs
+    BEFORE the bootstrap: a ``--slug`` usage error leaves the target exactly as
+    it was -- not created, not ``git init``-ed."""
+    manifest = _manifest(_copied_seeded("dream", "docs/dreams/{{ slug }}.md", applies_to=AppliesTo.INIT))
+    assert not fresh_target.exists()
+
+    with pytest.raises(UsageError, match="--slug"):
+        run_init(fresh_target, manifest, slug="../../x", commit=_unreachable_commit)
+
+    assert not fresh_target.exists()
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_an_escaping_entry_in_a_forced_non_empty_target_is_refused_not_silently_dropped(tmp_path, dry_run):
+    """Story 82.11: ``classify`` gives an in-repo symlink pointing outside the
+    repo its own state and ``build_plan`` plans nothing for it, so ``init
+    --force`` into a non-empty target holding one would exit 0 having dropped
+    the entry, where rung 3 used to refuse it. ``InitResult`` carries no
+    finding, so ``init`` refuses (exit 3) naming ``target-escapes-repo``, the
+    entry, its path and where it resolves -- before ``write_plan``."""
+    target = tmp_path / "target"
+    target.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    secret = outside / "target.md"
+    secret.write_text("elsewhere\n", encoding="utf-8")
+    (target / "ESCAPER.md").symlink_to(secret)
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+
+    with pytest.raises(PreconditionFailure, match="target-escapes-repo") as excinfo:
+        run_init(target, manifest, force=True, dry_run=dry_run, commit=_unreachable_commit)
+
+    assert excinfo.value.exit_code == 3
+    assert "bad:" in excinfo.value.message
+    assert "'ESCAPER.md'" in excinfo.value.message
+    assert str(secret.resolve()) in excinfo.value.message
+    assert excinfo.value.remedy.strip()
+    assert not (target / ".marshal").exists()
+    assert not (target / "GOOD.md").exists()
+    assert secret.read_text(encoding="utf-8") == "elsewhere\n"
 
 
 def test_manifest_for_init_filters_and_resolves_every_slug_placeholder():

@@ -211,6 +211,33 @@ def test_present_legacy_entry_produces_no_action_regardless_of_manifest_state(tm
     assert plan.actions == ()
 
 
+def test_escaping_entry_gets_no_action_while_an_ordinary_absent_entry_still_does(tmp_path):
+    """Story 82.11 (DW-10-3-9): an entry whose path resolves outside the repo
+    (an in-repo symlink pointing out) used to classify ``absent`` and become an
+    ordinary action carrying the escaping path -- which made ``run_apply``
+    refuse the WHOLE plan. It is its own state now, so the plan holds no
+    action for it and every other entry is planned as before."""
+    outside = tmp_path.parent / f"{tmp_path.name}-outside"
+    outside.mkdir()
+    (outside / "target.txt").write_text("elsewhere\n")
+    (tmp_path / "escaper.txt").symlink_to(outside / "target.txt")
+    manifest = _manifest(
+        _whole_file("bad", "escaper.txt", ArtifactClass.COPIED_MANAGED),
+        _whole_file("good", "good.txt", ArtifactClass.COPIED_SEEDED),
+    )
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory)
+
+    assert [classification.state for classification in inventory.classifications] == [
+        ArtifactState.ESCAPING,
+        ArtifactState.ABSENT,
+    ]
+    assert [action.artifact_id for action in plan.actions] == ["good"]
+    assert all("escaper.txt" not in action.target_path for action in plan.actions)
+    assert [artifact_id for artifact_id, _sha in plan.repo_fingerprint.artifact_hashes] == ["good"]
+
+
 def test_referenced_entry_never_gets_an_action_even_when_its_path_is_absent(tmp_path):
     manifest = _manifest(_referenced("dep", "does-not-exist"))
     inventory = classify(manifest, tmp_path)

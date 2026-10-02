@@ -29,6 +29,7 @@ Severity ladder (AD-54, borrowed from `bmad_drift_check.py`):
 | `kit-item-missing` | DRIFT | Run `marshal seed kit --apply` in the loop home to provision it, or turn its `[context]` layer off if this home does not want it. |
 | `kit-item-stale` | DRIFT | Run `marshal seed kit --apply` to refresh it; the item is there but no longer matches what produced it. |
 | `kit-instrument-unavailable` | INFO | Advisory -- install the named instrument (or accept the platform gap); the layer stays off and nothing is blocked. |
+| `target-escapes-repo` | HARD | Fix the manifest entry's path, or the in-repo symlink it resolves through, so it stays inside the repository; every other artifact is applied regardless. |
 
 ## Related commands
 

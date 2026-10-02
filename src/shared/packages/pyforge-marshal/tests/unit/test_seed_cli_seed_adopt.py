@@ -23,6 +23,7 @@ tests construct by hand."""
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 from pathlib import Path
 
@@ -200,6 +201,64 @@ def test_first_claim_action_is_visually_marked_in_the_printed_plan(clean_repo, c
     out = capsys.readouterr().out
     assert code == 0
     assert "[OVERWRITES EXISTING FILE] whole" in out
+
+
+def _commit_escaping_symlink(repo: Path, name: str) -> Path:
+    """An in-repo symlink ``repo/<name>`` pointing at a file OUTSIDE the repo,
+    committed so the worktree stays clean. Returns the outside file."""
+    outside = repo.parent / f"{repo.name}-outside"
+    outside.mkdir()
+    target = outside / "target.md"
+    target.write_text("elsewhere\n", encoding="utf-8")
+    (repo / name).symlink_to(target)
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "escaping symlink")
+    return target
+
+
+def test_an_escaping_entry_is_named_in_the_printed_plan_and_the_run_still_exits_0(clean_repo, capsys):
+    """Story 82.11 (DW-10-3-9): the plan is not refused as a whole -- the one
+    entry that resolves outside the repo is named as left out, with the entry
+    id and where it resolves, and the ordinary entry stays in the plan."""
+    outside_file = _commit_escaping_symlink(clean_repo, "ESCAPER.md")
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+
+    code = seed_cli.run_adopt(_args(repo_root=str(clean_repo)), manifest=manifest)
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "good (GOOD.md)" in out
+    assert "entries left out of the plan (1 target-escapes-repo finding(s))" in out
+    assert "ESCAPER.md: bad:" in out
+    assert str(outside_file.resolve()) in out
+    assert "remedy:" in out
+
+
+def test_an_escaping_entry_is_in_the_json_envelope(clean_repo, capsys):
+    _commit_escaping_symlink(clean_repo, "ESCAPER.md")
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+    args = _args(repo_root=str(clean_repo))
+    args.json = True
+
+    code = seed_cli.run_adopt(args, manifest=manifest)
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert code == 0
+    result = envelope["result"]
+    assert [finding["type"] for finding in result["escape_findings"]] == ["target-escapes-repo"]
+    assert result["escape_findings"][0]["path"] == "ESCAPER.md"
+    assert [action["artifact_id"] for action in result["plan"]["actions"]] == ["good"]
+
+
+def test_no_escape_section_is_printed_and_the_json_list_is_empty_when_nothing_escapes(clean_repo, capsys):
+    manifest = _manifest(_copied_managed("good", "GOOD.md"))
+    seed_cli.run_adopt(_args(repo_root=str(clean_repo)), manifest=manifest)
+    assert "left out of the plan" not in capsys.readouterr().out
+
+    args = _args(repo_root=str(clean_repo))
+    args.json = True
+    seed_cli.run_adopt(args, manifest=manifest)
+    assert json.loads(capsys.readouterr().out)["result"]["escape_findings"] == []
 
 
 def test_exit_code_0_on_an_applied_run(clean_repo, capsys):

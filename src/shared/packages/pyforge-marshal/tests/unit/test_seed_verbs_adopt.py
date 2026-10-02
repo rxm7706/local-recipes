@@ -280,6 +280,118 @@ def test_apply_yes_materializes_every_planned_artifact_and_writes_state_last(cle
     assert {record.id for record in state.managed} == {"whole", "hybrid"}
 
 
+def _escaping_symlink(repo: Path, name: str) -> Path:
+    """An in-repo symlink ``repo/<name>`` pointing at a real file OUTSIDE the
+    repo, committed so the worktree stays clean. Returns the outside file."""
+    outside = repo.parent / f"{repo.name}-outside"
+    outside.mkdir()
+    target = outside / "target.md"
+    target.write_text("elsewhere\n", encoding="utf-8")
+    (repo / name).symlink_to(target)
+    _commit_all(repo)
+    return target
+
+
+def test_an_escaping_entry_is_reported_per_entry_while_every_other_action_applies(clean_repo):
+    """Story 82.11 (DW-10-3-9): one manifest entry whose path resolves
+    outside the repo (an in-repo symlink pointing out) used to become an
+    ordinary action carrying the escaping path, so ``run_apply`` refused the
+    WHOLE plan -- and re-planning reproduced it. It is now left out of the
+    plan with a finding naming it, and the ordinary entry is written."""
+    outside_file = _escaping_symlink(clean_repo, "ESCAPER.md")
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+    calls: list[str] = []
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    assert [action.artifact_id for action in result.plan.actions] == ["good"]
+    assert calls == ["good"]
+    assert set(result.applied) == {"good"}
+    assert (clean_repo / "GOOD.md").read_text() == "materialized good\n"
+    assert outside_file.read_text() == "elsewhere\n"
+    (finding,) = result.escape_findings
+    assert finding.type.value == "target-escapes-repo"
+    assert finding.path == "ESCAPER.md"
+    assert "bad:" in finding.message
+    assert str(outside_file.resolve()) in finding.message
+    state = read_state(clean_repo)
+    assert state is not None
+    assert {record.id for record in state.managed} == {"good"}
+
+
+def test_an_escaping_entry_is_reported_on_a_dry_run_and_a_declined_apply_too(clean_repo):
+    _escaping_symlink(clean_repo, "ESCAPER.md")
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+
+    dry = run_adopt(clean_repo, manifest, confirm=_unreachable_confirm)
+    _commit_all(clean_repo)  # the dry run left `.marshal/plan.json`; an apply wants a clean worktree
+    declined = run_adopt(clean_repo, manifest, apply=True, confirm=lambda: False)
+
+    for result in (dry, declined):
+        assert [action.artifact_id for action in result.plan.actions] == ["good"]
+        assert [finding.path for finding in result.escape_findings] == ["ESCAPER.md"]
+    assert dry.applied is None
+    assert declined.declined is True
+
+
+def test_a_previously_adopted_entry_that_became_an_escaping_symlink_is_left_out_not_refused(clean_repo):
+    """Rung 6 refuses a ``state.managed`` record whose path does not resolve
+    inside the repo, so an entry adopted earlier whose path LATER became an
+    in-repo symlink pointing outside refused the WHOLE run
+    (``managed-content-modified``) and its ``escape_findings`` entry was never
+    reached. Its record is no longer handed to rung 6: only the ordinary entry
+    is applied, the escaping one is named, and the outside file is untouched."""
+    outside_file = _escaping_symlink(clean_repo, "ESCAPER.md")
+    write_state(
+        _state(
+            managed=(
+                ManagedArtifact(
+                    id="bad",
+                    path="ESCAPER.md",
+                    artifact_class="copied-managed",
+                    body_sha="deadbeef",
+                    inserted_region_span=None,
+                ),
+            )
+        ),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+    calls: list[str] = []
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    assert [action.artifact_id for action in result.plan.actions] == ["good"]
+    assert calls == ["good"]
+    assert set(result.applied) == {"good"}
+    assert (clean_repo / "GOOD.md").read_text() == "materialized good\n"
+    assert [finding.path for finding in result.escape_findings] == ["ESCAPER.md"]
+    assert "bad:" in result.escape_findings[0].message
+    assert outside_file.read_text() == "elsewhere\n"
+    assert (clean_repo / "ESCAPER.md").is_symlink()
+
+
+def test_a_manifest_with_no_escaping_entry_carries_no_escape_finding(clean_repo):
+    manifest = _manifest(_copied_managed("good", "GOOD.md"))
+    assert run_adopt(clean_repo, manifest, confirm=_unreachable_confirm).escape_findings == ()
+
+
 def test_state_is_not_written_when_apply_fails_mid_run(clean_repo):
     """State is written LAST, only after ``run_apply`` returns
     successfully -- a mid-run failure must leave no ``seed-state.yml`` at

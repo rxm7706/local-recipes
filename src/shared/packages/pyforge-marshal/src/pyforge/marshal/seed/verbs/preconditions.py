@@ -54,18 +54,15 @@ supplied record set, whose paths this run is not going to write through
 anyway. Rung 4, `never_write`, is bypassable by NEITHER FLAG: it is
 the frozen guard (AD-61), and a guard with an override is a suggestion.
 
-**Stated bounds, not aspirations.** Rungs 3-5 evaluate a target the same
-way `fs._guard` does -- `Path.resolve()` on both sides, match the resolved
-repo-relative string -- so this gate and the write primitive behind it
-can never disagree about the same path. That deliberately inherits
-`fs.py`'s own documented bound: resolution follows PARENT symlinks, so a
-symlinked ancestor (`docs/dreams -> real/`) is evaluated at its
-destination, and rung 5's `lstat()` inspects the LEAF only. Matching
-the unresolved path instead would close that shape here while opening a
-disagreement with `fs.py`, which is the worse trade -- a guard that
-answers differently from the primitive it guards is a guard nobody can
-reason about. Narrowing it for real means narrowing `fs._guard`, which is
-that module's story, not this one's.
+**Stated bounds, not aspirations.** Rungs 3 and 5 evaluate a target the same
+way `fs._guard` does -- `Path.resolve()` on both sides -- and rung 4 does not
+evaluate it at all: it calls `fs.never_write_match`, the one helper `fs._guard`
+itself calls, so this gate and the write primitive behind it can never
+disagree about the same path (Story 82.11). That helper matches the target as
+the operator WROTE it and in its resolved form, and a refusal on either wins,
+so a symlinked ancestor (`docs -> real/`) no longer hides `docs/dreams/x.md`
+from `docs/dreams/*.md`; a directory target is also matched as `dir/`. Rung
+5's `lstat()` still inspects the LEAF only.
 
 **Why rung 6 iterates the caller's state records, not the plan's actions.**
 `detect.inventory.classify` marks a present `copied-managed` artifact
@@ -93,9 +90,9 @@ filtering lives on the caller's side deliberately -- rung 6's contract is
 that it checks every record it is handed.
 
 **Import surface.** This module reads `plan.types`, `fs.NeverWrite`,
-`detect.hashes`, `regions.parse`/`regions.markers`, `errors`, and the
-`skips.first_match` glob semantic, plus `pyforge.core.process` for the git
-seam. It imports NOTHING from `seed.state` (`ManagedRecord` and the
+`detect.hashes`, `regions.parse`/`regions.markers`, `errors`, and
+`fs.never_write_match`, plus `pyforge.core.process` for the git seam. It
+imports NOTHING from `seed.state` (`ManagedRecord` and the
 `never_write` set are INPUTS, supplied by whoever loaded state -- this
 module holds no competing state model), nothing from `seed.apply`,
 `seed.engine`, or `copier`, and it performs no write of any kind: its
@@ -118,11 +115,10 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..detect.hashes import check_managed_file, check_managed_region
 from ..errors import PreconditionFailure
-from ..fs import NeverWrite
+from ..fs import NeverWrite, never_write_match
 from ..plan.types import Action, Plan
 from ..regions.markers import MarkerError, RegionFormat
 from ..regions.parse import RegionParseError, parse_regions
-from .skips import first_match
 
 # Query-style git calls (never a checkout/push) -- the identical value
 # `plan/build.py::_GIT_TIMEOUT_S` uses for the identical class of call, so a
@@ -290,10 +286,10 @@ def _relative_within(repo_root: Path, target_path: str) -> str | None:
     escapes `repo_root`.
 
     Resolves both sides with `Path.resolve()` -- non-strict, symlink-
-    following -- exactly as `fs._guard` does, so the relative string this
-    returns is the SAME string `fs.write` would later evaluate its
-    never-write patterns against. Any other derivation here would let rung 4
-    clear a path `fs.py` would then refuse (or, worse, the reverse).
+    following -- exactly as `fs._guard` does: it answers containment (rung 3)
+    and names the resolved location in refusal messages. It no longer feeds
+    rung 4's pattern match, which `fs.never_write_match` owns (it matches the
+    path as written as well as this resolved string).
 
     An absolute `target_path` is handled by `Path.__truediv__`'s own
     semantics: `repo_root / "/etc/passwd"` is `/etc/passwd`, which does not
@@ -597,34 +593,19 @@ def check_preconditions(
         contained.append((action, relative))
 
     for action, relative in contained:
-        # `relative in never_write.exempt` is rung 4's OWN short-circuit
-        # (Story 10.8), evaluated before `first_match` ever runs for this
-        # action -- a manifest-declared writable artifact (`copied-managed`/
-        # `copied-seeded`) can match a broader deny glob that must otherwise
-        # keep refusing every other path under it (`fs.NeverWrite`'s own
-        # docstring: `docs/dreams/README.md` under `docs/dreams/*.md`).
-        # `fs._matches` carries the identical short-circuit, ahead of its own
-        # pattern loop, for the same reason: rung 4 must re-derive the same
-        # never-write decision `fs._guard` will make on the eventual write,
-        # exactly as it already does for the pattern loop below (see the
-        # module docstring's "Stated bounds, not aspirations" paragraph).
-        if relative in never_write.exempt:
-            continue
-        matched = first_match(never_write.patterns, relative)
-        if matched is not None:
+        # One helper, one decision (Story 82.11): `fs.never_write_match` is
+        # what `fs._guard` calls on the eventual write, so rung 4 holds no
+        # match logic of its own and cannot disagree with it. It judges the
+        # target as written AND resolved (a symlinked ancestor no longer
+        # hides a pattern), a directory also as `dir/`, and
+        # `NeverWrite.exempt` per form (Story 10.8).
+        hit = never_write_match(repo_root / action.target_path, repo_root=repo_root, never_write=never_write)
+        if hit is not None:
+            matched, form = hit
             raise PreconditionFailure(
                 f"never-write-target: action {action.artifact_id!r} targets"
                 f" {action.target_path!r} (resolved: {relative!r}), which matches"
-                f" never-write pattern {matched!r}",
-                # States the guarantee this rung actually provides -- no flag
-                # overrides it -- rather than the stronger "not overridable,
-                # by --force or otherwise" it used to claim (found in
-                # review). A symlinked ancestor directory still routes a
-                # write past the pattern, because rungs 3-5 resolve parent
-                # links exactly as `fs._guard` does (see the module
-                # docstring's stated bounds); promising more protection than
-                # `fs.py` delivers would be the wrong kind of reassurance in
-                # the one message an operator reads about it.
+                f" never-write pattern {matched!r}" + (f" (as {form!r})" if form != relative else ""),
                 remedy=(
                     "no flag overrides the never-write set -- not --force, not"
                     " --dry-run; remove this artifact from the manifest, or"

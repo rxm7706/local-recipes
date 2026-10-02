@@ -30,6 +30,7 @@ from pathlib import Path
 import pytest
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
+from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.errors import PreconditionFailure
@@ -396,10 +397,10 @@ def test_the_never_write_rung_is_not_bypassable_by_dry_run(clean_repo):
 
 def test_the_never_write_remedy_claims_only_the_guarantee_the_code_provides(clean_repo):
     """The remedy used to read "not overridable, by --force or otherwise",
-    which overclaims: a symlinked ANCESTOR directory does route a write past
-    the pattern, because rungs 3-5 resolve parent links exactly as
-    ``fs._guard`` does. The real guarantee -- no FLAG overrides it -- is
-    what the message must say."""
+    which overclaims: it states a guarantee beyond the one the code provides.
+    The real guarantee -- no FLAG overrides it -- is what the message must
+    say (a symlinked ancestor no longer routes a write past the pattern since
+    Story 82.11, but the claim stays exactly as narrow)."""
     with pytest.raises(PreconditionFailure) as excinfo:
         _check(
             _plan(_action(artifact_id="dream", target_path="docs/dreams/x.md")),
@@ -410,6 +411,69 @@ def test_the_never_write_remedy_claims_only_the_guarantee_the_code_provides(clea
     assert "no flag overrides" in excinfo.value.remedy
     assert "--force" in excinfo.value.remedy
     assert "or otherwise" not in excinfo.value.remedy
+
+
+def test_rung_4_refuses_a_never_write_path_hidden_behind_a_symlinked_ancestor(clean_repo):
+    """Story 82.11 (DW-10-4-1): with ``docs -> real/`` the resolved path is
+    ``real/dreams/x.md``, which ``docs/dreams/*.md`` never matched, so the
+    action cleared every rung. Rung 4 now matches the path as written too."""
+    (clean_repo / "real" / "dreams").mkdir(parents=True)
+    (clean_repo / "real" / "dreams" / ".keep").write_text("", encoding="utf-8")
+    (clean_repo / "docs").symlink_to("real")
+    _commit_all(clean_repo)
+
+    with pytest.raises(PreconditionFailure, match="never-write-target") as excinfo:
+        _check(
+            _plan(_action(artifact_id="dream", target_path="docs/dreams/x.md")),
+            clean_repo,
+            never_write=NeverWrite(patterns=("docs/dreams/*.md",)),
+        )
+
+    # The message names the pattern, the resolved location AND the form that
+    # actually matched -- the written one, which is not the resolved one.
+    assert (
+        "(resolved: 'real/dreams/x.md'), which matches never-write pattern 'docs/dreams/*.md' (as 'docs/dreams/x.md')"
+        in excinfo.value.message
+    )
+    assert excinfo.value.exit_code == 3
+
+
+def test_rung_4_and_the_write_primitive_agree_under_a_symlinked_ancestor(clean_repo):
+    """One helper, one decision: whatever rung 4 refuses, ``fs.write`` refuses,
+    and whatever it clears, ``fs.write`` writes -- for the exempt, the
+    protected and the unprotected target alike."""
+    (clean_repo / "real" / "dreams").mkdir(parents=True)
+    (clean_repo / "real" / "dreams" / ".keep").write_text("", encoding="utf-8")
+    (clean_repo / "docs").symlink_to("real")
+    _commit_all(clean_repo)
+    never_write = NeverWrite(patterns=("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
+
+    for target_path in ("docs/dreams/x.md", "docs/dreams/README.md", "docs/other/y.md", "real/dreams/z.md"):
+        rung_4_refuses = False
+        try:
+            _check(_plan(_action(artifact_id="a", target_path=target_path)), clean_repo, never_write=never_write)
+        except PreconditionFailure as exc:
+            rung_4_refuses = "never-write-target" in exc.message
+        assert (
+            fs.never_write_match(clean_repo / target_path, repo_root=clean_repo, never_write=never_write) is not None
+        ) == rung_4_refuses, target_path
+
+
+def test_rung_4_refuses_the_planning_artifacts_directory_node(clean_repo):
+    """Story 82.11 (DW-FU-7-5-5): ``**/planning-artifacts/**`` matched only
+    what sat UNDER the directory."""
+    (clean_repo / "_bmad-output" / "projects" / "demo" / "planning-artifacts").mkdir(parents=True)
+    (clean_repo / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "PRD.md").write_text(
+        "x", encoding="utf-8"
+    )
+    _commit_all(clean_repo)
+
+    with pytest.raises(PreconditionFailure, match="never-write-target"):
+        _check(
+            _plan(_action(artifact_id="p", target_path="_bmad-output/projects/demo/planning-artifacts")),
+            clean_repo,
+            never_write=NeverWrite(patterns=("**/planning-artifacts/**",)),
+        )
 
 
 def test_an_exempt_action_target_bypasses_a_matching_never_write_pattern(clean_repo):
