@@ -2,7 +2,7 @@
 title: '82.4: The supervisor attaches despite a quarantined launch, journals its spawn and every stop, and fails closed on tampering'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 baseline_revision: '7e2939beebd2a78fff6c0f962dc2aed85954bb64'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -372,7 +372,17 @@ Status: done
   - `MRS-SPIN-018` also appears in Story 47.1's never-landed review log. There is no collision on `main`.
   - Findings that restate an intent requirement: a heartbeat-only unproven attach, any quarantined line counting, a signal detach, and a failed `stop` recorded rather than retried.
 
-**Follow-up review recommendation:** `followup_review_recommended: true`. Two medium entries were patched. The unverified risk no layer could settle is that no test delivers a real signal to a separate supervisor process or races a live sidecar's `supervisor-spawn` append against the parent's: signals are raised in-process against sentinel handlers, and the held-descriptor tamper tests run `LocalFs` in-process with a fake process and harness.
+**Follow-up review pass (2026-10-02).** The first pass recommended this one: it patched two medium entries and named one unverified risk, that no test delivers a real signal to a separate supervisor process or races a live sidecar's `supervisor-spawn` append against the parent's.
+
+- Four layers reported 40 findings: high 0, medium 3, low 28, false 9. Twenty-five rows were carried, wholly or in part, from the first pass's log. There was no intent gap and no bad spec.
+- Patched, by entry verdict (2 low, no medium, no high):
+  - low: the module docstring said any append failure is fatal and exits non-zero, which contradicted the no-run-id path (reported once, supervision goes on). The paragraph now says the failure is fatal when a harness run id is known and names the other case.
+  - low: no test pinned `detach_reason is None and` in the signal detach condition. `test_a_signal_never_overrides_a_budget_stop_reason` raises SIGTERM from inside the tick's `harness.stop`; with the conjunct removed it fails with `'signal-SIGTERM' == 'budget-story-tokens-exceeded'`, and it passes with the conjunct restored.
+- Deferred (one `deferred:` entry, medium, three findings sharing one root cause): a journal that is not valid UTF-8 still makes `run_supervisor` exit 0 inert on a Marshal-started run, because `LocalFs.read_text` raises `FsError` before `fold` runs. The branch is unchanged by this story and the fix reverses Story 3.4's recorded policy for an unreadable journal, so it needs a decision before code. `location:` is `src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py:1061`.
+- Rejected: 35 rows, each with its reason in the Review Triage Log. The larger groups: non-journal `ValueError`/`FsError` and a second `stop` on an already stopped run (fail-closed is the intent's design, and `stop` is idempotent and recorded); a mid-tick or repeated signal (bounded by the subprocess timeouts); tamper residuals (the intent's stated limits); and findings that restate an intent requirement.
+- The named unverified risk is half settled. A real `python -m pyforge.marshal.supervisor` subprocess was sent SIGTERM, SIGHUP and SIGINT during its real sleep, from a throwaway script outside the repo: each exited 0 in 0.03 s and left `supervisor-detach` with `signal-<NAME>` as its last journal entry. The race between a live sidecar's appends and the parent's `supervisor-spawn` append was reasoned about (one `O_APPEND` write per line, and the per-tick size floor only absorbs growth), not run.
+
+**Follow-up review recommendation:** `followup_review_recommended: false`. This was the single allowed follow-up pass and it patched no high entry, so the work has converged; the one open item is the deferred non-UTF-8 journal above, which waits on a decision rather than on review.
 
 **Verification** (exit codes read directly, never through a pipe), on the patched tree:
 
@@ -382,6 +392,15 @@ Status: done
 - `python scripts/spec_surface_reconcile.py` -- exit 0, "no drift". `--write-baseline` was never run.
 - The marshal unit coverage gate passed with every touched module at or above 80% (`supervisor/__main__.py` 89%). That was measured before the review patches and not repeated after them.
 
+**Verification, follow-up pass** (exit codes read directly, never through a pipe), on the tree after this pass's patches:
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- exit 0, 9931 passed, 1 skipped, 12 deselected.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- exit 0, 130 passed, 3 skipped.
+- `pixi run --frozen -e pyforge-guild lint-types` -- exit 0.
+- `python scripts/spec_surface_reconcile.py` -- exit 0, "no drift"; `pixi run --frozen -e pyforge-guild spec-surface-check` -- exit 0. Both memlogs (`spec-pyforge-marshal`, `spec-pyforge-core`) name the two files this pass changed. `--write-baseline` was never run.
+- The new test's mutation (conjunct removed) failed as recorded above and the conjunct was restored; `git diff` shows it present at `supervisor/__main__.py:2824`.
+- Coverage was not re-measured: this pass changed one docstring and added one test.
+
 **Mutation proof** (each fix edited out in place, its tests run, then restored; `git stash` was never used). Fix 1: `unproven_ownership = False`, and widening the rescue over another run's launch entry. Fix 2: handlers not installed, the `signal-<NAME>` reason dropped, and the post-sleep liveness re-read removed. Fix 3: the success call and the error call each removed. Fix 4: per-tick check removed, `HarnessPort.stop` removed from `_fail_closed`, a failed append back to print-and-exit, the no-run-id swallow removed, the `max(expected_size, state.size)` floor raise removed, and the torn-tail terminator removed. Every removal failed its named test.
 
 **Residual risks:**
@@ -390,3 +409,4 @@ Status: done
 - The final `supervisor-detach` and the `supervisor-journal-fault` observation are best-effort and may land on an unlinked or truncated file. The stderr line in `supervisor.log` is the durable record, and detection lags up to one 60 s tick.
 - `MRS-SPIN-018` is also named in blocked Story 47.1's review log. Whichever story lands second takes the next free code.
 - A tamper that leaves the journal replaced while no harness run id is known is reported but cannot be acted on.
+- A journal that is not valid UTF-8 still leaves the supervisor inert on a run Marshal started (deferred, medium; see `deferred:`). DW-FU-3-4-3 is closed for lines `fold` quarantines, not for this path: the ledger's `resolved:` line says what was fixed and does not claim it.
