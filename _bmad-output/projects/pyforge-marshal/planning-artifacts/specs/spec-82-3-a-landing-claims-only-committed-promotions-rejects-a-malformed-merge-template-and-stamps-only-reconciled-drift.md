@@ -2,7 +2,8 @@
 title: '82.3: A landing claims only committed promotions, rejects a malformed merge template, and stamps only reconciled drift'
 type: 'fix'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '2b69320bf65ccc518adecb258d6dbeb8b2d1d387'
 review_loop_iteration: 0
 followup_review_recommended: false
 warnings: [oversized]
@@ -108,7 +109,7 @@ Paths are under `src/shared/packages/pyforge-marshal/` (`M/`) unless rooted. Lin
 - `scripts/spec_surface_check.py` -- scoped stamp refuses unreconciled paths and gains the repeatable `--accept PATH`, per Design Notes D1 -- fix 4. Update the module docstring's Usage block.
 - `M/tests/unit/test_deploy.py`, `M/tests/unit/test_policy.py`, `M/tests/unit/test_dispatch_landing.py` -- extend with one new test per acceptance criterion below. Make `_install_fake_spec_surface` stateful (a spec's findings drop out once a recorded `--spec NAME` stamp call names it) and move every existing reconcile test that relied on the fixed verdict onto it; add a `settles=False` variant for the survives-the-bound case.
 - `M/tests/meta/test_spec_surface_stamp.py` (new) -- loads `scripts/spec_surface_check.py` by path with `REPO_ROOT` repointed at a fixture git repo (the harness shape in `.claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py:82-109`); covers refusal (exit non-zero, path listed, `--accept` form named, baseline byte-identical), `--accept`, memlog-named, no-baseline-entry, and unscoped-unchanged.
-- `.claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py` -- minimal fixture edit so the existing stamp tests narrate their drift in the spec memlog before a scoped stamp; do NOT touch the tree's CHANGELOG, `SKILL.md`, `MANIFEST.yaml` or `config/` and do NOT commit: the parent lands this file in its own `retro(cfe):` commit.
+- `.claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py` -- DO NOT EDIT. Any commit touching `.claude/skills/conda-forge-expert/` must be a `retro(cfe):` commit that also moves that skill's CHANGELOG, and an idle `wip:` checkpoint would break that. The parent updates this file's fixtures to narrate their drift in a separate `retro(cfe):` commit after you finish. Do not touch anything under `.claude/skills/conda-forge-expert/`.
 - `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` -- close `DW-5-9-2`, `DW-FU-53-2-3`, `DW-5-10-1`, `DW-9-1-1` (`status: closed`, a `resolved:` line naming Story 82.3 and the pinning test).
 - Surface reconcile -- run `python scripts/spec_surface_reconcile.py`; for every Spec it names, append an `event` memlog entry naming each governed path you changed (`python _bmad/scripts/memlog.py append --workspace <spec-folder> --type event --text "..."`). Never pass `--write-baseline`.
 
@@ -147,7 +148,7 @@ Closes: DW-5-9-2, DW-FU-53-2-3, DW-5-10-1, DW-9-1-1.
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0 (ruff, `ruff format --check`, mypy over the touched packages).
 - `python scripts/spec_surface_reconcile.py` — expected: exit 0 once every governed path you changed is named on its Spec's `.memlog.md` (never `--write-baseline`).
-- the conda-forge-expert stamp tests, `.claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py`, run with any pytest (`python -m pytest <file> -q`) — expected: pass.
+- `python -m pytest .claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py -q` — expected: the only failure is `test_scoped_stamp_leaves_every_other_spec_byte_identical` (unnarrated drift, which fix 4 refuses); the parent fixes that fixture. Report any other failure.
 
 ## Review Triage Log
 
