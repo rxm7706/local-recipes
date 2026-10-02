@@ -53,6 +53,7 @@ from pyforge.marshal.seed.regions.markers import RegionFormat
 from pyforge.marshal.seed.regions.parse import parse_regions
 from pyforge.marshal.seed.state import (
     ManagedArtifact,
+    RegionSpanRecord,
     SeedState,
     read_state,
     record_opt_out,
@@ -246,7 +247,8 @@ def test_both_deleted_regions_are_opted_out_recorded_and_neither_is_planned_agai
     state = _adopt_with_human_text(clean_repo, manifest)
     _delete_regions(clean_repo, "tiers", "model-badge")
     text = (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
-    assert text == _HUMAN_TEXT
+    assert text.strip() == _HUMAN_TEXT.strip()
+    assert "marshal-seed" not in text
 
     statuses = classify_regions(entry, text, state)
     assert [status.disposition for status in statuses] == [RegionDisposition.OPTED_OUT] * 2
@@ -312,6 +314,80 @@ def test_a_state_in_the_old_one_span_shape_is_rewritten_in_full_by_the_next_upda
     assert recovered is not None
     (rewritten,) = recovered.managed
     assert [span.name for span in rewritten.inserted_region_spans] == ["tiers", "model-badge"]
+
+
+def test_a_later_adopt_that_inserts_one_more_region_keeps_the_regions_already_recorded(clean_repo):
+    """A touched id's old record is replaced outright, so the new one must carry
+    what the old one attested to as well as what this run wrote -- otherwise
+    the first adopt's regions would fall out of state the moment a second one
+    ran."""
+    first = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
+    _adopt_with_human_text(clean_repo, first)
+    second = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
+
+    run_adopt(
+        clean_repo, second, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(second, clean_repo)
+    )
+
+    state = read_state(clean_repo)
+    assert state is not None
+    (claim,) = state.managed
+    assert [span.name for span in claim.inserted_region_spans] == ["tiers", "model-badge"]
+    text = (clean_repo / "HYBRID.md").read_text(encoding="utf-8")
+    parsed = {span.name: span for span in parse_regions(text, RegionFormat.HTML)}
+    for recorded in claim.inserted_region_spans:
+        assert recorded.body_sha == hash_content(region_body_text(text, parsed[recorded.name]))
+    assert claim.body_sha == claim.inserted_region_spans[0].body_sha
+
+
+def test_a_region_the_prior_record_carried_but_the_file_no_longer_holds_is_not_re_recorded(clean_repo):
+    """An opt-out is not resurrected by the next write: a region absent from the
+    file after the apply is left out of the new record rather than invented."""
+    first = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
+    _adopt_with_human_text(clean_repo, first)
+    _delete_regions(clean_repo, "tiers")
+    second = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge", "portability-contract"))
+
+    run_adopt(
+        clean_repo,
+        second,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(second, clean_repo),
+        force=True,
+    )
+
+    state = read_state(clean_repo)
+    assert state is not None
+    (claim,) = state.managed
+    assert "portability-contract" in [span.name for span in claim.inserted_region_spans]
+    assert claim.body_sha == claim.inserted_region_spans[0].body_sha
+
+
+def test_a_hybrid_action_with_no_region_to_record_is_an_internal_error_not_a_bare_value_error(clean_repo):
+    """Reachable only through a broken `commit` (it returned having written
+    nothing the action named): the constructor would raise a bare `ValueError`
+    for a hybrid claim with no span, after `run_apply` has already written."""
+    from pyforge.marshal.seed.detect.inventory import ArtifactState
+    from pyforge.marshal.seed.errors import InternalError
+    from pyforge.marshal.seed.verbs import adopt as adopt_module
+
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
+    (entry,) = manifest.entries
+    (clean_repo / "HYBRID.md").write_text(_HUMAN_TEXT, encoding="utf-8")
+    action = Action(
+        artifact_id="hybrid",
+        artifact_class=ArtifactClass.HYBRID_MANAGED_REGION,
+        current_state=ArtifactState.PRESENT_DIVERGENT,
+        target_state=ArtifactState.PRESENT_CONFORMANT,
+        target_path="HYBRID.md",
+        chosen_anchor=(("tiers", None),),
+        rationale="test",
+    )
+
+    with pytest.raises(InternalError, match="no managed region"):
+        adopt_module._managed_artifact_after_apply(action, entry, clean_repo)
 
 
 # --- DW-FU-8-5-5: rung 6 and an opt-out ---------------------------------------
@@ -439,14 +515,30 @@ def test_opted_out_regions_is_empty_for_present_missing_and_non_hybrid_input():
 
 def test_opted_out_regions_does_not_derive_from_a_claim_when_the_file_has_no_content():
     """`classify_regions`' own guard: an absent or emptied file is not a
-    deletion of markers, so nothing is derived."""
+    deletion of markers, so nothing is derived from the surviving claim."""
     hybrid = _hybrid("hybrid", "HYBRID.md", "tiers")
-    claim = ManagedArtifact(
-        id="hybrid",
-        path="HYBRID.md",
-        artifact_class="hybrid-managed-region",
-        body_sha="0123abcd",
-        inserted_region_spans=(),
-    ) if False else None
-    assert claim is None
-    assert opted_out_regions([(hybrid, "")], None) == frozenset()
+    state = SeedState(
+        model_version=_VERSION,
+        seed_model_version="0.1.0",
+        adopted_at="2026-10-02T00:00:00Z",
+        last_update="2026-10-02T00:00:00Z",
+        mode="adopt",
+        agents=(),
+        managed=(
+            ManagedArtifact(
+                id="hybrid",
+                path="HYBRID.md",
+                artifact_class="hybrid-managed-region",
+                body_sha="0123abcd",
+                inserted_region_spans=(RegionSpanRecord(name="tiers", start=0, end=4, body_sha="0123abcd"),),
+            ),
+        ),
+        skips=(),
+        legacy=(),
+        migrations_applied=(),
+        opted_out=(),
+    )
+
+    assert opted_out_regions([(hybrid, "")], state) == frozenset()
+    assert opted_out_regions([(hybrid, "\n")], state) == frozenset()
+    assert opted_out_regions([(hybrid, _HUMAN_TEXT)], state) == frozenset({("hybrid", "tiers")})
