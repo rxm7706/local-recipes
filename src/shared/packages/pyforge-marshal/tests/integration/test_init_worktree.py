@@ -456,3 +456,101 @@ def test_teardown_end_to_end_recognizes_a_real_squash_merge(tmp_path, monkeypatc
     assert "forced" not in out  # no --force needed or given
     assert not home.exists()
     assert _git(repo, "branch", "--list", f"loop/{slug}").stdout.strip() == ""
+
+
+def _seed_nested_worktree(repo: Path, home: Path, name: str, *, dirty: bool) -> Path:
+    """Register a REAL worktree inside ``home`` at bmad-loop's own layout
+    (``<home>/.bmad-loop/runs/<run>/worktrees/<story>``), on its own
+    ``bmad-loop/<name>`` branch; ``dirty`` leaves an uncommitted file in it.
+    ``.bmad-loop/`` is gitignored in the home, as in the real fleet, so the
+    home's own ``git status`` never sees it."""
+    nested = home / ".bmad-loop" / "runs" / "20260930-120000-abcd" / "worktrees" / name
+    nested.parent.mkdir(parents=True, exist_ok=True)
+    _git(repo, "worktree", "add", "-b", f"bmad-loop/{name}", str(nested), "main")
+    if dirty:
+        (nested / "uncommitted-story-work.txt").write_text("real uncommitted work\n", encoding="utf-8")
+    return nested
+
+
+def _seed_bmad_loop_ignore(repo: Path) -> None:
+    gitignore = repo / ".gitignore"
+    gitignore.write_text(gitignore.read_text(encoding="utf-8") + ".bmad-loop/\n", encoding="utf-8")
+    _git(repo, "add", ".gitignore")
+    _git(repo, "commit", "-m", "ignore bmad-loop run state")
+
+
+@pytest.mark.slow
+def test_teardown_end_to_end_refuses_a_dirty_nested_worktree_then_force_removes_and_prunes(
+    tmp_path, monkeypatch, capsys
+):
+    """DW-1-8-5 (Story 82.8), live-verified shape: an unforced ``git worktree
+    remove <home>`` over a nested registered worktree succeeds, deletes its
+    uncommitted file and leaves a prunable orphan. Teardown must refuse
+    first, naming it, and --force must leave no prunable entry behind."""
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    _seed_real_gitignore(repo)
+    _seed_bmad_loop_ignore(repo)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+    nested = _seed_nested_worktree(repo, home, "2-1-story", dirty=True)
+    # The home itself is clean: only the nested worktree holds uncommitted work.
+    assert _git(home, "status", "--porcelain").stdout.strip() == ""
+
+    refused_exit = main(["teardown", slug])
+    refused_out = capsys.readouterr().out
+    assert refused_exit != 0
+    assert "MRS-TEARDOWN-003" in refused_out
+    assert str(nested.resolve()) in refused_out
+    assert (nested / "uncommitted-story-work.txt").is_file()  # nothing removed
+    assert home.is_dir()
+    assert _git(repo, "branch", "--list", f"loop/{slug}").stdout.strip() != ""
+
+    forced_exit = main(["teardown", slug, "--force"])
+    forced_out = capsys.readouterr().out
+    assert forced_exit == 0, forced_out
+    assert "forced: True" in forced_out
+    assert not home.exists()
+    worktrees = _git(repo, "worktree", "list", "--porcelain").stdout
+    assert "prunable" not in worktrees
+    assert str(home) not in worktrees
+
+
+@pytest.mark.slow
+def test_teardown_end_to_end_with_only_clean_nested_worktrees_removes_and_leaves_no_prunable_entry(
+    tmp_path, monkeypatch, capsys
+):
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    _seed_real_gitignore(repo)
+    _seed_bmad_loop_ignore(repo)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+    _seed_nested_worktree(repo, home, "2-1-story", dirty=False)
+    _seed_nested_worktree(repo, home, "2-2-story", dirty=False)
+    assert _git(repo, "worktree", "list", "--porcelain").stdout.count("worktree ") == 4
+
+    exit_code = main(["teardown", slug])
+    out = capsys.readouterr().out
+    assert exit_code == 0, out
+    assert "removed: True" in out
+    assert "forced" not in out  # a clean nested worktree needs no --force
+    assert not home.exists()
+
+    worktrees = _git(repo, "worktree", "list", "--porcelain").stdout
+    assert "prunable" not in worktrees
+    assert str(home) not in worktrees
+    assert worktrees.count("worktree ") == 1  # only the main checkout remains
+    assert _git(repo, "branch", "--list", f"loop/{slug}").stdout.strip() == ""
+    # Committed nested work survives as its branch ref, as the ledger row notes.
+    assert _git(repo, "branch", "--list", "bmad-loop/2-1-story").stdout.strip() != ""

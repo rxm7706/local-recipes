@@ -903,6 +903,13 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   **Constraints:** each bundle is one `fix` story under the CAP that shipped the behaviour, so no new CAP and no flag;
   each story closes its DW rows in `deferred-work-ledger.md` when it lands.
   Owner `spec-pyforge-marshal`. → Epic 82 / Stories 82.1–82.13, specced 2026-10-02.
+- **2026-10-02 (later)** — **Ruling: Story 82.7 ships its second half only.** Its dispatch blocked on an intent gap:
+  the guard its first half asked for (refuse a second `factory spin` while the project's run is live) already ships,
+  as Story 34.1's `spin_loop_home_in_flight_conflict` (MRS-DISP-021, from Story 28.24's 2026-09-10 fix). The deferral
+  that asked for it (DW-FU-3-3-2) was last re-verified by a grep that missed the guard. Operator ruling: keep that
+  guard, add no second gate and no second liveness model, and narrow 82.7 to the launch poll that never asks whether
+  its child is alive (DW-FU-3-3-4). DW-FU-3-3-2 closes as resolved by Stories 28.24 and 34.1.
+  Owner `spec-pyforge-marshal`. → Story 82.7 re-specced 2026-10-02.
 - **2026-10-01 (night)** — **Found: a campaign forgets `--retry-environment-blocks` after its first cycle.**
   `_spawn_campaign_supervisor` hands the detached supervisor the station, the story list, the harness and the in-flight
   cap, but not `retry_environment_blocks`. A campaign launched with the flag skipped 81.1 (an OAuth-refresh race at

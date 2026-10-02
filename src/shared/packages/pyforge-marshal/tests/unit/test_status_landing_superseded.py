@@ -22,6 +22,7 @@ from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import status as status_cli
 from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.model import Finding, Severity
+from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 
 # The journal payloads and `main` subjects, verbatim from the live runs
@@ -63,15 +64,25 @@ class _Vcs:
         *,
         raises: bool = False,
         spec_texts: dict[str, str] | None = None,
+        origin_subjects: tuple[str, ...] = (),
+        origin_raises: bool = False,
     ) -> None:
         self.subjects = subjects
         self.raises = raises
         self.spec_texts = spec_texts or {}
+        # Story 82.8: `origin/main` is read first and best-effort; it carries
+        # nothing unless a test puts a merge there, so one history is modelled.
+        self.origin_subjects = origin_subjects
+        self.origin_raises = origin_raises
         self.commit_subjects_calls: list[str] = []
         self.file_reads: list[tuple[str, str]] = []
 
     def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
         self.commit_subjects_calls.append(ref)
+        if ref == ORIGIN_MAIN:
+            if self.origin_raises:
+                raise VcsCommandError("fatal: bad revision 'refs/remotes/origin/main'")
+            return self.origin_subjects
         if self.raises:
             raise VcsCommandError("fatal: ambiguous argument 'main': unknown revision")
         return self.subjects
@@ -115,12 +126,30 @@ def _superseded(
 def test_doctor_30_3_refusal_is_superseded_once_pr_1585_is_on_main(tmp_path: Path) -> None:
     vcs = _Vcs((_UNRELATED[0], _DOCTOR_MERGE, _UNRELATED[1]))
     assert _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), vcs, tmp_path)
-    assert vcs.commit_subjects_calls == ["refs/heads/main"]
+    assert vcs.commit_subjects_calls == [ORIGIN_MAIN, "refs/heads/main"]
 
 
 def test_marshal_46_6_refusal_is_superseded_once_pr_1597_is_on_main(tmp_path: Path) -> None:
     vcs = _Vcs((_MARSHAL_MERGE, *_UNRELATED))
     assert _superseded(_facts("pyforge-marshal", "46.6", _MARSHAL_REFUSAL), vcs, tmp_path)
+
+
+def test_a_merge_only_on_origin_main_supersedes_before_local_main_catches_up(tmp_path: Path) -> None:
+    """Story 82.8 (DW-FU-4-14-9): the history is `origin/main` plus `main`, as `deploy` reads it, so a merge in the
+    fetch-versus-fast-forward window already counts; an unfetched `origin/main` is the ordinary case."""
+    vcs = _Vcs(_UNRELATED, origin_subjects=(_DOCTOR_MERGE,))
+    assert _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), vcs, tmp_path)
+    assert vcs.commit_subjects_calls == [ORIGIN_MAIN, "refs/heads/main"]
+
+    unfetched = _Vcs((_DOCTOR_MERGE,), origin_raises=True)
+    assert _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), unfetched, tmp_path)
+
+
+def test_a_readable_origin_main_does_not_excuse_an_unreadable_local_main(tmp_path: Path) -> None:
+    vcs = _Vcs(raises=True, origin_subjects=(_DOCTOR_MERGE,))
+    main = status_cli._MainSubjects()
+    assert not _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), vcs, tmp_path, main)
+    assert main.attempted and main.subjects is None
 
 
 def test_a_refusal_whose_story_is_not_on_main_stays_a_refusal(tmp_path: Path) -> None:
@@ -166,13 +195,15 @@ def test_main_is_read_once_for_every_refused_row_in_a_sweep(tmp_path: Path) -> N
     main = status_cli._MainSubjects()
     assert _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), vcs, tmp_path, main)
     assert _superseded(_facts("pyforge-marshal", "46.6", _MARSHAL_REFUSAL), vcs, tmp_path, main)
-    assert vcs.commit_subjects_calls == ["refs/heads/main"]
+    assert vcs.commit_subjects_calls == [ORIGIN_MAIN, "refs/heads/main"]
 
 
 def test_a_policy_error_leaves_the_marker_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     def _merged_with_policy_error(slug, main_subjects, *, spec_status_for=None):
-        return frozenset({"30.3"}), (
-            Finding(code="MRS-POLICY-004", severity=Severity.ERROR, message="unreadable project policy"),
+        return (
+            frozenset({"30.3"}),
+            (Finding(code="MRS-POLICY-004", severity=Severity.ERROR, message="unreadable project policy"),),
+            1,
         )
 
     monkeypatch.setattr(status_cli, "_merged_keys_for_slug", _merged_with_policy_error)
@@ -234,6 +265,8 @@ class _RangeVcs(_Vcs):
             if self.range_raises:
                 raise VcsCommandError("fatal: bad revision (test double)")
             return (_DOCTOR_MERGE,) if self.own_merge else ()
+        if ref == ORIGIN_MAIN:
+            return ()
         return (_DOCTOR_MERGE,)
 
 
@@ -263,7 +296,7 @@ def test_the_same_refusal_without_the_marker_is_still_superseded_by_the_stories_
     vcs = _RangeVcs()
 
     assert _superseded(_followup_facts(None), vcs, tmp_path)
-    assert vcs.commit_subjects_calls == ["refs/heads/main"]
+    assert vcs.commit_subjects_calls == [ORIGIN_MAIN, "refs/heads/main"]
 
 
 def test_a_follow_up_refusal_with_no_recorded_tip_is_never_superseded_and_reads_nothing(tmp_path: Path) -> None:
