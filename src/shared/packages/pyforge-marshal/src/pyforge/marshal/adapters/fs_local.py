@@ -42,6 +42,15 @@ file, opened once and held open for the ``AdvisoryLock``'s own lifetime --
 another genuinely new primitive (this package's first use of ``fcntl``),
 not a variant of the temp-file-then-``os.replace`` idiom every write method
 above uses.
+
+Story 82.4 adds ``open_append``/``append_held``/``held_file_state``/
+``close_append`` (``ports.fs.AppendHandle``/``HeldFileState``, DW-FU-3-4-8):
+``append_line``'s AD-30 write protocol on ONE descriptor held for the
+handle's life, opened without ``O_CREAT`` so a removed file is never
+recreated, plus an ``fstat``-versus-``stat`` comparison of the held file with
+whatever its path names now -- the supervisor's tamper check. The same
+"descriptor held open across calls, closed by an explicit release" shape as
+``AdvisoryLock``.
 """
 
 from __future__ import annotations
@@ -58,7 +67,7 @@ from pyforge.core.atomic_write import atomic_write_text
 from pyforge.core.errors import PyforgeError
 
 from ..core.egress import Redacted
-from ..ports.fs import AdvisoryLock
+from ..ports.fs import AdvisoryLock, AppendHandle, HeldFileState
 
 
 class FsError(PyforgeError, Exception):
@@ -342,6 +351,86 @@ class LocalFs:
                 os.close(fd)
         except OSError as exc:
             raise FsError(f"cannot append to {path}: {exc}") from exc
+
+    def open_append(self, path: Path) -> AppendHandle:
+        """Story 82.4: one ``os.open(path, O_WRONLY | O_APPEND)`` whose
+        descriptor lives until ``close_append``. No ``O_CREAT`` (unlike
+        ``append_line``): the journal's one long-lived writer must never
+        paper over a removed journal by recreating it. A NUL in ``path``
+        raises a plain ``ValueError`` out of ``os.open``, which -- like every
+        other method here -- is let through rather than translated. Python's
+        descriptors are non-inheritable by default, so the held descriptor
+        never leaks into a child the supervisor spawns."""
+        try:
+            fd = os.open(path, os.O_WRONLY | os.O_APPEND)
+        except OSError as exc:
+            raise FsError(f"cannot open {path} for appending: {exc}") from exc
+        return AppendHandle(path=path, handle=fd)
+
+    def append_held(self, handle: AppendHandle, line: str, *, fsync: bool) -> None:
+        """Story 82.4: ``append_line``'s protocol -- same embedded-newline and
+        short-write guards, same single ``os.write()`` -- on the descriptor
+        ``handle`` holds. Writes to the file the handle was opened on, which
+        keeps accepting appends after its path was replaced, truncated or made
+        read-only (that is the point of holding it)."""
+        path = handle.path
+        if "\n" in line:
+            raise FsError(f"cannot append to {path}: line must not contain an embedded newline")
+        fd = handle.handle
+        if not isinstance(fd, int):
+            raise FsError(f"cannot append to {path}: not an open append handle")
+        try:
+            data = (line + "\n").encode("utf-8")
+            written = os.write(fd, data)
+            if written != len(data):
+                raise OSError(
+                    f"short write: wrote {written} of {len(data)} bytes -- never retried (see append_line's docstring)"
+                )
+            if fsync:
+                os.fsync(fd)
+        except OSError as exc:
+            raise FsError(f"cannot append to {path}: {exc}") from exc
+
+    def held_file_state(self, handle: AppendHandle) -> HeldFileState:
+        """Story 82.4: ``os.fstat`` on the held descriptor against ``os.stat``
+        on its path. ``present`` is ``False`` when the path names nothing
+        (``FileNotFoundError`` / ``NotADirectoryError``); ``same_file`` is
+        ``(st_dev, st_ino)`` equality; ``size`` is the PATH's ``st_size``;
+        ``writable`` is ``os.access(path, os.W_OK)`` -- a held descriptor
+        keeps accepting appends after a ``chmod 0o444``, so a read-only
+        journal shows up here and never as a failing write. Any other
+        ``OSError`` is an ``FsError``: the state could not be determined."""
+        path = handle.path
+        fd = handle.handle
+        if not isinstance(fd, int):
+            raise FsError(f"cannot stat {path}: not an open append handle")
+        try:
+            held = os.fstat(fd)
+        except OSError as exc:
+            raise FsError(f"cannot stat the file held for {path}: {exc}") from exc
+        try:
+            current = os.stat(path)
+        except (FileNotFoundError, NotADirectoryError):
+            return HeldFileState(present=False, same_file=False, size=0, writable=False)
+        except OSError as exc:
+            raise FsError(f"cannot stat {path}: {exc}") from exc
+        return HeldFileState(
+            present=True,
+            same_file=(held.st_dev, held.st_ino) == (current.st_dev, current.st_ino),
+            size=current.st_size,
+            writable=os.access(path, os.W_OK),
+        )
+
+    def close_append(self, handle: AppendHandle) -> None:
+        """Story 82.4: close the held descriptor; best effort, never raises
+        (mirrors ``release_advisory_lock``). At most once per ``open_append``."""
+        fd = handle.handle
+        if not isinstance(fd, int):
+            return
+        try:
+            os.close(fd)
+        except OSError:
+            pass
 
     def create_dir_exclusive(self, path: Path) -> None:
         """AD-25's ``mkdir``, not ``O_EXCL`` (Story 3.1, F-31): a bare
