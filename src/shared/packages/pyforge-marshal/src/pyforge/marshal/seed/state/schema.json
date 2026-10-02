@@ -72,7 +72,7 @@
     "opted_out": {
       "type": "array",
       "uniqueItems": true,
-      "description": "`<artifact-id>#<region>` pairs the operator opted out of (Story 8.5's own shape). The two halves use DIFFERENT grammars on purpose. The region half matches regions.markers.REGION_NAME_PATTERN exactly, so an opted-out region name can always be rendered into a marker. The artifact half is any non-blank token carrying no `#` (the separator) and no whitespace -- deliberately as permissive as managed[].id, which is a nonBlankString because model/manifest.py imposes no kebab rule on entry ids: a stricter grammar here would make a legally-named entry's opt-out UNREPRESENTABLE, which is the one thing this field must never do.",
+      "description": "`<artifact-id>#<region>` pairs the operator opted out of (Story 8.5's own shape). The two halves use DIFFERENT grammars on purpose. The region half matches regions.markers.REGION_NAME_PATTERN exactly, so an opted-out region name can always be rendered into a marker. The artifact half is `$defs/artifactId` -- one token carrying no `#` (the separator) and no whitespace -- and is the SAME grammar `managed[].id` and model/manifest.py's ManifestEntry.id are held to (Story 82.13): an id the manifest accepts is therefore always a representable opt-out, which is the one thing this field must never fail to be. (Until 82.13 the description claimed the artifact half was 'deliberately as permissive as managed[].id'; it was stricter, so an id with a space could be claimed but never opted out of.)",
       "items": {
         "type": "string",
         "pattern": "^[^\\s#]+#[a-z0-9][a-z0-9-]*(?![\\s\\S])"
@@ -101,24 +101,74 @@
       "pattern": "\\S",
       "description": "A string carrying actual content. The \\S pattern rejects a whitespace-only value that minLength alone admits, matching journal.json's own convention and model/manifest.py::_require_text's .strip() check."
     },
+    "artifactId": {
+      "type": "string",
+      "pattern": "^[^\\s#]+(?![\\s\\S])",
+      "description": "A manifest entry id (AD-55's stable address): one token with no whitespace and no `#`. This is the artifact half of the `opted_out` item pattern (the `#` is that key's separator), spelled once here and once as model/manifest.py::ARTIFACT_ID_PATTERN; tests/unit/test_seed_state_store.py pins the three spellings to one probe set. Used by managed[].id only -- legacy[].id keeps `nonBlankString`, its own grammar."
+    },
+    "bodySha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}(?![\\s\\S])",
+      "description": "detect/hashes.py::hash_content's shipped output shape: sha256 over line-ending-normalized UTF-8, truncated to 8 lowercase hex, no prefix. Enforced HERE so a shape-invalid recorded hash is a StateInvalid at read time and can never reach check_managed_file/check_managed_region at all (closes DW-FU-9-3 by construction)."
+    },
+    "regionName": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(?![\\s\\S])",
+      "description": "regions.markers.REGION_NAME_PATTERN verbatim -- a name this schema accepts always round-trips through a rendered marker. markers.py itself matches with .fullmatch() and carries no anchors for exactly the reason the `(?![\\s\\S])` terminator here exists (see `timestamp`): the `$`-anchored spelling this pattern used to carry admitted 'tiers\\n', which REGION_NAME_PATTERN.fullmatch rejects -- so the two disagreed on the one value the description claims can never happen."
+    },
+    "byteOffset": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "regionSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "start", "end", "body_sha"],
+      "description": "One installed region of a hybrid-managed-region claim (Story 82.13): the region name, the UTF-8 BYTE offsets of its body (markers excluded -- mirroring regions/parse.py::RegionSpan.name + .body_span, which is exactly what AD-58's eject needs to strip the claim without touching surrounding content), and the hash of that body. The hash is per region because rung 6 compares each region to its own recorded value; one artifact-level hash left every sibling region with nothing to compare against.",
+      "properties": {
+        "name": { "$ref": "#/$defs/regionName" },
+        "start": {
+          "$ref": "#/$defs/byteOffset",
+          "description": "First body byte, counted in UTF-8 bytes from the start of the file."
+        },
+        "end": {
+          "$ref": "#/$defs/byteOffset",
+          "description": "One past the last body byte. Equal to start for an empty region body."
+        },
+        "body_sha": {
+          "$ref": "#/$defs/bodySha",
+          "description": "hash_content of this region's body, as read back from the file after the write."
+        }
+      }
+    },
     "managedArtifact": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "path", "class", "body_sha", "inserted_region_span"],
-      "description": "One claimed artifact (AD-58). `inserted_region_span` is required but nullable rather than omissible: a null says 'this claim covers the whole file', an absent key would say nothing at all, and the two must not be spelled the same way. Which of the two it must be is NOT free: the if/then/else below couples it to `class` as an iff -- an object exactly when the class is hybrid-managed-region, null for every other class. Uncoupled, a hybrid entry with a null span (an eject could not withdraw it -- no offsets) and a `referenced` entry carrying a span (an eject would splice a file it was meant to remove outright) both validated, contradicting this very description. store.py's ManagedArtifact.__post_init__ states the same rule for a code-constructed value.",
+      "required": ["id", "path", "class", "body_sha"],
+      "description": "One claimed artifact (AD-58). The region claim is `inserted_region_spans` (Story 82.13): an array of one `regionSpan` per installed region, non-empty exactly when the class is hybrid-managed-region and `[]` for every other class -- an empty array, never an omitted key, says 'this claim covers the whole file'. The array's own `class` coupling is the if/then/else below. A hybrid's `body_sha` is its FIRST span's, enforced in store.py (a schema cannot compare two fields). Exactly one of `inserted_region_spans` and `inserted_region_span` is present: the latter is the one-span shape every state file written before Story 82.13 carries -- an object for a hybrid claim, null otherwise -- kept readable so no old file is rejected, never written (`write_state` always emits `inserted_region_spans`). Uncoupled, a hybrid entry with no span (an eject could not withdraw it -- no offsets) and a `referenced` entry carrying one (an eject would splice a file it was meant to remove outright) both validated, contradicting this very description. store.py's ManagedArtifact.__post_init__ states the same rule for a code-constructed value.",
+      "oneOf": [
+        { "required": ["inserted_region_spans"] },
+        { "required": ["inserted_region_span"] }
+      ],
       "if": {
         "required": ["class"],
         "properties": { "class": { "const": "hybrid-managed-region" } }
       },
       "then": {
-        "properties": { "inserted_region_span": { "type": "object" } }
+        "properties": {
+          "inserted_region_spans": { "minItems": 1 },
+          "inserted_region_span": { "type": "object" }
+        }
       },
       "else": {
-        "properties": { "inserted_region_span": { "type": "null" } }
+        "properties": {
+          "inserted_region_spans": { "maxItems": 0 },
+          "inserted_region_span": { "type": "null" }
+        }
       },
       "properties": {
         "id": {
-          "$ref": "#/$defs/nonBlankString",
+          "$ref": "#/$defs/artifactId",
           "description": "The manifest entry id this claim belongs to (AD-55's stable addressing)."
         },
         "path": {
@@ -137,31 +187,23 @@
           "description": "The artifact's class, as a WIRE value. Hardcoded rather than generated from model.manifest.ArtifactClass: a schema is a wire contract, not a mirror of a Python enum. tests/unit/test_seed_state_store.py asserts the two agree, so the duplication cannot drift."
         },
         "body_sha": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{8}(?![\\s\\S])",
-          "description": "detect/hashes.py::hash_content's shipped output shape: sha256 over line-ending-normalized UTF-8, truncated to 8 lowercase hex, no prefix. Enforced HERE so a shape-invalid recorded hash is a StateInvalid at read time and can never reach check_managed_file/check_managed_region at all (closes DW-FU-9-3 by construction)."
+          "$ref": "#/$defs/bodySha",
+          "description": "The artifact's recorded hash: the whole file's for a non-hybrid claim, the first region's body for a hybrid one (see inserted_region_spans)."
+        },
+        "inserted_region_spans": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/regionSpan" },
+          "description": "For a hybrid-managed-region claim: one regionSpan per installed region, in the manifest's declared order; region names are unique within the artifact (checked in store.py). `[]` for every other class."
         },
         "inserted_region_span": {
           "type": ["object", "null"],
           "additionalProperties": false,
           "required": ["name", "start", "end"],
-          "description": "For a hybrid-managed-region claim: the region name plus the UTF-8 BYTE offsets of its body, markers excluded -- mirroring regions/parse.py::RegionSpan.name + .body_span, which is exactly what AD-58's eject needs to strip the claim without touching surrounding content. Null for every non-region claim.",
+          "description": "READ-ONLY, the shape written before Story 82.13: at most one region span per artifact, with no hash of its own (the artifact's body_sha was that region's). store.py reads it as a one-element inserted_region_spans whose body_sha is the artifact's, and the next write_state emits the new shape. Never emitted.",
           "properties": {
-            "name": {
-              "type": "string",
-              "pattern": "^[a-z0-9][a-z0-9-]*(?![\\s\\S])",
-              "description": "regions.markers.REGION_NAME_PATTERN verbatim -- a name this schema accepts always round-trips through a rendered marker. markers.py itself matches with .fullmatch() and carries no anchors for exactly the reason the `(?![\\s\\S])` terminator here exists (see `timestamp`): the `$`-anchored spelling this pattern used to carry admitted 'tiers\\n', which REGION_NAME_PATTERN.fullmatch rejects -- so the two disagreed on the one value the description claims can never happen."
-            },
-            "start": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "First body byte, counted in UTF-8 bytes from the start of the file."
-            },
-            "end": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "One past the last body byte. Equal to start for an empty region body."
-            }
+            "name": { "$ref": "#/$defs/regionName" },
+            "start": { "$ref": "#/$defs/byteOffset" },
+            "end": { "$ref": "#/$defs/byteOffset" }
           }
         }
       }

@@ -357,7 +357,7 @@ def test_a_previously_adopted_entry_that_became_an_escaping_symlink_is_left_out_
                     path="ESCAPER.md",
                     artifact_class="copied-managed",
                     body_sha="deadbeef",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             )
         ),
@@ -526,7 +526,7 @@ def test_first_claim_reclaims_when_a_stale_record_names_a_different_path(clean_r
                     path="OLD.md",  # stale -- the manifest entry's path has since moved
                     artifact_class="generated-derived",
                     body_sha="deadbeef",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             )
         ),
@@ -726,24 +726,43 @@ def _adopt_hybrid_once(repo: Path, manifest: Manifest) -> None:
     _commit_all(repo)
 
 
+def _hand_edit_region_body(repo: Path, region: str = "tiers") -> None:
+    """Edit a managed region's BODY, markers intact -- a hand-edit, which rung
+    6 refuses. (Deleting the markers is FR-112's sanctioned opt-out and is not
+    a hand-edit; see the opt-out tests below.)"""
+    target = repo / "HYBRID.md"
+    text = target.read_text(encoding="utf-8")
+    assert f"body for {region}\n" in text
+    target.write_text(text.replace(f"body for {region}\n", "hand edited, markers intact\n"), encoding="utf-8")
+    _commit_all(repo)
+
+
 def test_hand_edited_managed_content_on_reapply_is_refused_without_force(clean_repo):
     manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
     _adopt_hybrid_once(clean_repo, manifest)
 
-    # Mangle the managed region beyond recognition -- markers gone entirely.
-    (clean_repo / "HYBRID.md").write_text("no markers here at all\n", encoding="utf-8")
-    _commit_all(clean_repo)
+    # A hand-edit to the managed region's body. (This used to mangle the file
+    # until the markers were gone entirely; that is a deleted region, which
+    # FR-112 makes a permanent opt-out rather than a hand-edit -- Story 82.13.)
+    _hand_edit_region_body(clean_repo)
 
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):
         run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
 
 
-def test_force_on_hand_edited_content_reinserts_the_managed_region(clean_repo):
-    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
-    _adopt_hybrid_once(clean_repo, manifest)
+def test_force_on_hand_edited_content_inserts_the_pending_region_beside_it(clean_repo):
+    """``--force`` discards the hand-edit refusal and the run still inserts what
+    it owes. (This used to delete the region's markers and expect ``--force`` to
+    put the region back; a deleted region is FR-112's permanent opt-out, which
+    ``--force`` is not the reinstate for -- Story 82.13, and
+    ``test_seed_verbs_region_opt_out.py`` pins that. A hand-edited body beside a
+    newly declared region is the hand-edit ``--force`` is for.)"""
+    _adopt_hybrid_once(clean_repo, _manifest(_hybrid("hybrid", "HYBRID.md", "tiers")))
+    _hand_edit_region_body(clean_repo)
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
 
-    (clean_repo / "HYBRID.md").write_text("no markers here at all\n", encoding="utf-8")
-    _commit_all(clean_repo)
+    with pytest.raises(PreconditionFailure, match="managed-content-modified"):
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
 
     result = run_adopt(
         clean_repo,
@@ -756,7 +775,7 @@ def test_force_on_hand_edited_content_reinserts_the_managed_region(clean_repo):
     )
 
     assert result.applied == ("hybrid",)
-    assert "marshal-seed:begin region=tiers" in (clean_repo / "HYBRID.md").read_text()
+    assert "marshal-seed:begin region=model-badge" in (clean_repo / "HYBRID.md").read_text()
 
 
 # --- present-legacy artifacts ------------------------------------------
@@ -848,8 +867,7 @@ def test_skip_glob_is_recorded_into_state_skips_and_the_artifact_is_left_alone(c
 def test_skip_protects_a_hand_edited_artifact_from_rung_6_refusal(clean_repo):
     manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
     _adopt_hybrid_once(clean_repo, manifest)
-    (clean_repo / "HYBRID.md").write_text("mangled beyond recognition\n", encoding="utf-8")
-    _commit_all(clean_repo)
+    _hand_edit_region_body(clean_repo)
 
     # Without --skip, this run refuses at rung 6.
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):

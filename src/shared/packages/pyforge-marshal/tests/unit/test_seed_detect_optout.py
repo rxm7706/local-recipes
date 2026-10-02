@@ -128,7 +128,22 @@ def _region_claim(entry_id: str, path: str, region: str, *, start: int = 7, end:
         path=path,
         artifact_class="hybrid-managed-region",
         body_sha="0123abcd",
-        inserted_region_span=RegionSpanRecord(name=region, start=start, end=end),
+        inserted_region_spans=(RegionSpanRecord(name=region, start=start, end=end, body_sha="0123abcd"),),
+    )
+
+
+def _regions_claim(entry_id: str, path: str, *regions: str) -> ManagedArtifact:
+    """ONE ``managed[]`` entry recording one span per region of a hybrid
+    artifact (Story 82.13) -- the first span's hash is the artifact's."""
+    return ManagedArtifact(
+        id=entry_id,
+        path=path,
+        artifact_class="hybrid-managed-region",
+        body_sha="0123abcd",
+        inserted_region_spans=tuple(
+            RegionSpanRecord(name=region, start=7 * index, end=7 * index + 5, body_sha="0123abcd")
+            for index, region in enumerate(regions)
+        ),
     )
 
 
@@ -223,30 +238,47 @@ def test_an_opt_out_recorded_for_another_artifact_does_not_leak():
     assert status.disposition is RegionDisposition.MISSING
 
 
-def test_state_records_at_most_one_region_span_per_artifact():
-    """What replaced a VACUOUS test. This slot used to assert that a claim
-    on ANOTHER region of the same artifact does not leak into this one --
-    a state ``SeedState`` forbids, so it passed by construction and proved
-    nothing about rung 3.
+def test_one_artifact_records_one_span_per_region_but_never_two_entries():
+    """What replaced a VACUOUS test, and then the one-span limit it documented
+    (Story 82.13). A hybrid artifact is ONE ``managed[]`` entry holding a span
+    per installed region; two ENTRIES for one artifact id are still refused
+    (``SeedState`` keys the recorded-hash lookup on the id), and so are two
+    spans of one NAME inside an entry."""
+    both = _regions_claim("agents-md", "AGENTS.md", "tiers", "model-badge")
+    assert [span.name for span in both.inserted_region_spans] == ["tiers", "model-badge"]
 
-    The real, now-documented constraint is this one (module docstring):
-    duplicate ``managed[].id`` is rejected, so one artifact carries at most
-    one recorded ``inserted_region_span``."""
     claim = _region_claim("agents-md", "AGENTS.md", "tiers")
     sibling = dataclasses.replace(
         claim,
         path="AGENTS-2.md",
-        inserted_region_span=RegionSpanRecord(name="model-badge", start=30, end=40),
+        inserted_region_spans=(RegionSpanRecord(name="model-badge", start=30, end=40, body_sha="0123abcd"),),
     )
     with pytest.raises(ValueError, match=r"SeedState\.managed\[\]\.id: must be unique"):
         _state(managed=(claim, sibling))
 
+    with pytest.raises(ValueError, match=r"inserted_region_spans\[\]\.name: must be unique"):
+        _regions_claim("agents-md", "AGENTS.md", "tiers", "tiers")
 
-def test_the_one_recorded_span_retires_its_region_and_leaves_its_siblings_missing():
-    """That limitation stated as behavior, so nobody reads rung 3 as
-    covering every declared region: both regions were deleted from the file,
-    state can attest to only one of them, and the other stays eligible for
-    insertion."""
+
+def test_every_recorded_span_retires_its_own_region_when_its_markers_are_deleted():
+    """FR-112 for a multi-region artifact (Story 82.13, DW-FU-8-5-6): both
+    regions were installed and both were deleted from the file, and state
+    attests to both -- so BOTH are opted out, not the first alone. Until 82.13
+    the second fell to ``MISSING`` and was re-inserted."""
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers", "model-badge")
+    state = _state(managed=(_regions_claim("agents-md", "AGENTS.md", "tiers", "model-badge"),))
+
+    statuses = classify_regions(entry, _doc("intro", "outro"), state)
+
+    assert [status.disposition for status in statuses] == [
+        RegionDisposition.OPTED_OUT,
+        RegionDisposition.OPTED_OUT,
+    ]
+
+
+def test_a_region_state_never_recorded_still_classifies_missing_beside_a_retired_one():
+    """The span is per region: state that attests to ``tiers`` only says
+    nothing about ``model-badge``, which stays eligible for insertion."""
     entry = _hybrid("agents-md", "AGENTS.md", "tiers", "model-badge")
     state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
 
@@ -255,6 +287,19 @@ def test_the_one_recorded_span_retires_its_region_and_leaves_its_siblings_missin
     assert [status.disposition for status in statuses] == [
         RegionDisposition.OPTED_OUT,
         RegionDisposition.MISSING,
+    ]
+
+
+def test_a_sibling_whose_markers_survive_stays_present_beside_a_deleted_one():
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers", "model-badge")
+    state = _state(managed=(_regions_claim("agents-md", "AGENTS.md", "tiers", "model-badge"),))
+    text = _doc("intro", *_rendered_region("model-badge"), "outro")
+
+    statuses = classify_regions(entry, text, state)
+
+    assert [(status.region, status.disposition) for status in statuses] == [
+        ("tiers", RegionDisposition.OPTED_OUT),
+        ("model-badge", RegionDisposition.PRESENT),
     ]
 
 
@@ -279,7 +324,7 @@ def test_a_whole_file_claim_on_the_same_artifact_never_retires_a_region():
         path="AGENTS.md",
         artifact_class="copied-managed",
         body_sha="0123abcd",
-        inserted_region_span=None,
+        inserted_region_spans=(),
     )
     state = _state(managed=(whole_file_claim,))
 
@@ -566,15 +611,27 @@ def test_a_claim_recorded_against_a_different_path_is_never_derived_from():
     assert same_path.disposition is RegionDisposition.OPTED_OUT
 
 
+def _hybrid_bypassing_the_id_grammar(entry_id: str, path: str, *region_names: str) -> ManifestEntry:
+    """A hybrid entry whose ``id`` the manifest would refuse (Story 82.13: no
+    whitespace, no ``#``), built by overwriting a legal one -- the same
+    ``object.__setattr__`` bypass this package's tests use elsewhere. The
+    manifest can no longer produce such an entry; rung 3's own gate is what
+    these tests keep honest for a hand-built value."""
+    entry = _hybrid("placeholder", path, *region_names)
+    object.__setattr__(entry, "id", entry_id)
+    return entry
+
+
 def test_a_pair_the_opt_out_grammar_cannot_spell_is_never_derived_opted_out():
-    """Rung 3 read the raw ``managed[].id``, which is the LOOSER grammar --
-    ``SeedState`` accepts an id the ``opted_out`` item pattern rejects. So a
-    derived ``OPTED_OUT`` could name a pair ``record_opt_out`` REFUSES, and
-    the sanctioned verb sequence this module documents broke at its own
-    seam: ``opt_outs_to_record`` handed the caller the pair and feeding it
-    straight to ``record_opt_out`` raised ``ValueError``. Rung 3 now applies
-    the same grammar rung 2 gets for free through ``is_opted_out``."""
-    entry = _hybrid("has a space", "AGENTS.md", "tiers")
+    """Rung 3 reads the raw ``managed[].id``. Until Story 82.13 that was the
+    LOOSER grammar -- ``SeedState`` accepted an id the ``opted_out`` item
+    pattern rejects, so a derived ``OPTED_OUT`` could name a pair
+    ``record_opt_out`` REFUSES, and the sanctioned verb sequence this module
+    documents broke at its own seam. The gap is now closed at its source
+    (manifest and schema both refuse such an id), and rung 3 keeps the same
+    grammar gate rung 2 gets for free through ``is_opted_out`` as defence for
+    a value built around both -- which is what this test builds."""
+    entry = _hybrid_bypassing_the_id_grammar("has a space", "AGENTS.md", "tiers")
     state = _state(managed=(_region_claim("has a space", "AGENTS.md", "tiers"),))
 
     (status,) = classify_regions(entry, _doc("intro"), state)
@@ -595,7 +652,7 @@ def test_every_pair_opt_outs_to_record_returns_is_one_record_opt_out_accepts():
         )
     )
     statuses = classify_regions(_hybrid("agents-md", "AGENTS.md", "tiers"), _doc("intro"), state) + classify_regions(
-        _hybrid("has a space", "OTHER.md", "tiers"), _doc("intro"), state
+        _hybrid_bypassing_the_id_grammar("has a space", "OTHER.md", "tiers"), _doc("intro"), state
     )
 
     pairs = opt_outs_to_record(statuses, state)
@@ -731,9 +788,9 @@ def test_findings_carry_their_types_documented_remedy():
 
 def test_the_missing_finding_message_claims_only_what_is_known():
     """The message used to end "and was never installed" -- a fact this code
-    cannot establish. A region whose artifact's single claim slot is held by
-    a SIBLING region reaches this exact branch having been installed and
-    then deleted (see the one-span-per-artifact limitation above), and the
+    cannot establish. A region state does not record -- one an earlier
+    opt-out dropped, or one a pre-82.13 one-span state never attested to --
+    reaches this exact branch having been installed and then deleted, and the
     message asserted the opposite."""
     entry = _hybrid("agents-md", "AGENTS.md", "tiers", "model-badge")
     state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
