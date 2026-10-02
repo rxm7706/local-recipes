@@ -160,7 +160,11 @@ violation is MRS-POLICY-003.**
 
 **Never** (see the spec's Boundaries & Constraints for the full list): no
 ``core/identity.py`` import -- ``merge_subject_template`` is validated as a
-non-empty ``str`` only, never for placeholder shape. No ``shutil.which``/PATH
+``str`` with exactly one ``{key}`` and at most one ``{slug}`` (Story 82.3;
+the two placeholder literals are held locally below, a test pins them equal to
+``identity``'s), so a template ``identity.render_merge_subject`` would refuse
+with a bare ``ValueError`` is rejected here as ``MRS-POLICY-002`` instead of
+crashing ``marshal land``. No ``shutil.which``/PATH
 check for ``verify_commands`` (FR-53 assigns that to preflight, Story 1.7).
 No modeling of the harness's full ``.bmad-loop/policy.toml`` key surface. No
 ``policy_surface ∩ spec_surface`` allowlist (Story 2.3's concern). No
@@ -1314,8 +1318,31 @@ def _to_plain(value: object) -> object:
     return value
 
 
+# The two placeholders ``core/identity.py`` owns (``_KEY_PLACEHOLDER`` /
+# ``_SLUG_PLACEHOLDER``, AD-24, Story 50.4). Held here as literals because this
+# module never imports ``core/identity.py``; a meta-test pins them equal.
+_TEMPLATE_KEY_PLACEHOLDER = "{key}"
+_TEMPLATE_SLUG_PLACEHOLDER = "{slug}"
+
+
 def _valid_merge_subject_template(value: object) -> str | None:
-    if isinstance(value, str) and value != "":
+    """``merge_subject_template``: a ``str`` carrying exactly one ``{key}`` and
+    at most one ``{slug}`` -- the exact shape ``identity.render_merge_subject``
+    and ``parse_merge_subject`` accept (Story 82.3, DW-5-10-1).
+
+    A template of any other shape used to pass composition cleanly and then
+    raise a bare ``ValueError`` out of ``identity._split_template`` /
+    ``_instantiate_slug``, uncaught, from ``marshal land`` and ``deploy
+    land-story``. Rejecting it here reports the layer's value as
+    ``MRS-POLICY-002`` (``_merge_field``'s own rejected-value finding) and falls
+    back to the default template, so no landing path can reach that
+    ``ValueError``. An empty string needs no case of its own: it carries no
+    ``{key}``."""
+    if (
+        isinstance(value, str)
+        and value.count(_TEMPLATE_KEY_PLACEHOLDER) == 1
+        and value.count(_TEMPLATE_SLUG_PLACEHOLDER) <= 1
+    ):
         return value
     return None
 

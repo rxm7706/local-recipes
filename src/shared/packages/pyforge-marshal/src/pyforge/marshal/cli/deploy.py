@@ -890,11 +890,18 @@ def _execute_promotion_plan(
     shapes, same tier"), never a new code -- unchanged from
     ``run_promote``'s own pre-extraction behavior.
 
-    Returns the promoted story-key ``str``\\ s in ``to_promote``'s OWN
-    input order (possibly empty, including when ``to_promote`` is empty or
-    the lock could not be acquired) -- never raises. This function never
-    sorts the result itself (docstring fix, review, 2026-08-12, low-
-    severity: it used to claim otherwise); both current call sites
+    Returns the story-key ``str``\\ s whose promotion is DURABLE -- copied
+    into ``specs_dir`` AND covered by a ``commit_paths`` that returned --
+    in ``to_promote``'s OWN input order (possibly empty, including when
+    ``to_promote`` is empty, the lock could not be acquired, or the batch
+    commit failed) -- never raises. A key whose copy landed but whose commit
+    raised is NOT returned: it is an uncommitted working-tree copy, not a
+    promotion (Story 82.3, DW-5-9-2; ``spec-pyforge-marshal`` CAP-4), and
+    the batch's ``MRS-DEPLOY-003`` finding names every such key instead (the
+    next run retries it, since ``_already_promoted_keys`` asks git, not the
+    disk). A partial promotion is reported as partial, never as complete.
+    This function never sorts the result itself (docstring fix, review,
+    2026-08-12, low-severity: it used to claim otherwise); both current call sites
     (``run_promote``, ``run_reconcile_completions``) already apply their
     own ``sorted(...)`` before publishing the result in their envelope, so
     today's output happens to be sorted only because both callers already
@@ -929,6 +936,12 @@ def _execute_promotion_plan(
         return promoted
 
     commit_targets: list[Path] = []
+    # Keys whose bytes are copied into the tracked archive but not yet
+    # committed. Only a `commit_paths` that returns moves them into
+    # `promoted` (Story 82.3): the copy loop alone makes an uncommitted
+    # working-tree file, never a durable promotion (spec-pyforge-marshal
+    # CAP-4).
+    copied: list[str] = []
     try:
         for spec_candidate in to_promote:
             # Preserve the Tier-3 file's own descriptive filename (e.g.
@@ -954,7 +967,7 @@ def _execute_promotion_plan(
                 )
                 continue
             commit_targets.append(dest)
-            promoted.append(str(spec_candidate.story_key))
+            copied.append(str(spec_candidate.story_key))
 
         if commit_targets:
             message = f"marshal: promote {len(commit_targets)} story spec(s) to tracked artifacts"
@@ -974,7 +987,7 @@ def _execute_promotion_plan(
                 findings,
                 kind=_PROMOTE_COMMIT_KIND,
                 phase=Phase.INTENT,
-                payload={"action": "commit_paths", "story_keys": sorted(promoted)},
+                payload={"action": "commit_paths", "story_keys": sorted(copied)},
             )
             try:
                 vcs.commit_paths(root, tuple(commit_targets), message)
@@ -983,10 +996,16 @@ def _execute_promotion_plan(
                     Finding(
                         code=_MRS_DEPLOY_003,
                         severity=Severity.ERROR,
-                        message=f"cannot commit promoted specs: {exc}",
+                        message=(
+                            f"cannot commit promoted specs: {exc}; the copy of "
+                            f"{', '.join(sorted(copied))} is an uncommitted "
+                            f"working-tree file, not a promotion (nothing was "
+                            f"promoted for those keys this run)"
+                        ),
                     )
                 )
             else:
+                promoted.extend(copied)
                 if intent_id is not None:
                     deploy_run.write(
                         findings,

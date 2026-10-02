@@ -380,6 +380,80 @@ def test_promote_reports_unevaluable_when_commit_paths_fails(tmp_path, capsys, m
     assert exit_code == 1
 
 
+def test_promote_a_failed_batch_commit_reports_no_promoted_key(tmp_path, capsys, monkeypatch):
+    """Story 82.3 (DW-5-9-2, spec-pyforge-marshal CAP-4): the copy loop alone
+    leaves an uncommitted working-tree file, never a durable promotion. When
+    the batched ``commit_paths`` raises after every copy succeeded, the
+    envelope reports NO promoted key, and the ``MRS-DEPLOY-003`` finding names
+    each uncommitted key instead."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "8-4", _VALID_SPEC)
+    _write_tier3_spec(tmp_path, "acme", "8-5", _VALID_SPEC)
+    vcs = _FakeVcs(
+        main_subjects=("Merge acme/8-4 into main", "Merge acme/8-5 into main"),
+        commit_raises=True,
+    )
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["promoted"] == []
+    assert payload["data"]["promoted_count"] == 0
+    commit_findings = [
+        finding
+        for finding in payload["findings"]
+        if finding["code"] == "MRS-DEPLOY-003" and "cannot commit promoted specs" in finding["message"]
+    ]
+    assert len(commit_findings) == 1
+    assert "8.4" in commit_findings[0]["message"]
+    assert "8.5" in commit_findings[0]["message"]
+    assert payload["verdict"] == "unevaluable"
+    assert exit_code == 1
+    # The copies exist on disk (uncommitted), which is exactly why they must not
+    # read as promoted; the INTENT keeps the copied keys and no OUTCOME follows.
+    assert _tracked_path(tmp_path, "acme", "8-4").exists()
+    assert _tracked_path(tmp_path, "acme", "8-5").exists()
+    journal = [line for line in _find_land_journal_lines(tmp_path, "acme") if line["kind"] == "deploy-promote-commit"]
+    assert [line["phase"] for line in journal] == ["intent"]
+    assert journal[0]["payload"]["story_keys"] == ["8.4", "8.5"]
+
+
+class _CopyFailingFs(LocalFs):
+    """A ``FsPort`` wrapper (real ``LocalFs`` otherwise) whose ``copy_file``
+    raises ``FsError`` for one named destination file."""
+
+    def __init__(self, failing_name: str) -> None:
+        super().__init__()
+        self._failing_name = failing_name
+
+    def copy_file(self, src, dest):
+        if Path(dest).name == self._failing_name:
+            raise FsError("simulated: disk full")
+        super().copy_file(src, dest)
+
+
+def test_promote_a_copy_failure_for_one_of_three_still_promotes_the_two_that_committed(tmp_path, capsys, monkeypatch):
+    """Story 82.3 (D4): a copy failure never blocks the keys that did copy;
+    only keys covered by a ``commit_paths`` that returned are promoted."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    for key in ("1-1", "1-2", "1-3"):
+        _write_tier3_spec(tmp_path, "acme", key, _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=tuple(f"Merge acme/{key} into main" for key in ("1-1", "1-2", "1-3")))
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=_CopyFailingFs("spec-1-2.md"))
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["promoted"] == ["1.1", "1.3"]
+    assert payload["data"]["promoted_count"] == 2
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert codes.count("MRS-DEPLOY-003") == 1
+    assert len(vcs.commit_calls) == 1
+    assert exit_code == 1
+    journal = [line for line in _find_land_journal_lines(tmp_path, "acme") if line["kind"] == "deploy-promote-commit"]
+    assert [line["phase"] for line in journal] == ["intent", "outcome"]
+    assert journal[1]["payload"]["story_keys"] == ["1.1", "1.3"]
+
+
 def test_promote_zero_candidates_is_a_clean_empty_run(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(parents=True, exist_ok=True)
@@ -1317,6 +1391,34 @@ def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(tmp_pat
     assert len(merge_outcomes) == 1
     assert merge_outcomes[0]["intent_id"] == merge_intents[0]["id"]
     assert merge_outcomes[0]["payload"]["merge_sha"] == "merge-sha-456"
+
+
+def test_land_story_with_a_malformed_merge_subject_template_merges_with_the_default_subject(
+    tmp_path, capsys, monkeypatch
+):
+    """Story 82.3 (DW-5-10-1): a project ``merge_subject_template`` without exactly one ``{key}`` is
+    rejected at composition (``MRS-POLICY-002``); ``land-story`` renders the default template and never
+    raises the bare ``ValueError`` it used to."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN))
+    policy_path = tmp_path / "bad-template-marshal-policy.toml"
+    policy_path.write_text('merge_subject_template = "Merge {key} and {key}"\n', encoding="utf-8")
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        window_subjects=("Merge acme/4.3 into main",),
+    )
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert "MRS-POLICY-002" in [finding["code"] for finding in payload["findings"]]
+    expected_subject = render_merge_subject(normalize("4.3"), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
+    assert payload["data"]["subject"] == expected_subject
+    assert vcs.merge_branch_calls == [("branch-tip-sha", "main", expected_subject)]
+    # The rejected layer is reported (an error-tier MRS-POLICY-002), so the envelope is not clean.
+    assert payload["verdict"] == "unevaluable"
+    assert exit_code == 1
 
 
 def test_land_story_reports_non_conforming_merges_without_blocking(tmp_path, capsys, monkeypatch):

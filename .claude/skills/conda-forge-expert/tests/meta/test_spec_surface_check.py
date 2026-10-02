@@ -109,6 +109,18 @@ def _patched_checker(repo: Path) -> Path:
     return dst
 
 
+def _narrate(repo: Path, slug: str, path: str) -> None:
+    """Name `path` on the spec's memlog, as a real reconcile does. A scoped
+    stamp (Story 82.3, DW-9-1-1) refuses a drifted path its spec's memlog does
+    not name, so a test that drifts a governed file and then scoped-stamps its
+    spec must narrate the drift first -- the memlog must move AND name the path,
+    the rule `gather_spec_surface` reads as reconciled."""
+    memlog = (repo / "_bmad-output" / "projects" / "proj"
+              / "planning-artifacts" / "specs" / slug / ".memlog.md")
+    memlog.write_text(memlog.read_text(encoding="utf-8")
+                      + f"- (event) reconciled {path}\n", encoding="utf-8")
+
+
 def test_scoped_stamp_leaves_every_other_spec_byte_identical(tmp_path: Path):
     """S-13.1's whole point. Stamping all specs in one write made the sanctioned
     fix for one `[no-baseline]` accept every OTHER spec's pending drift — so the
@@ -124,6 +136,7 @@ def test_scoped_stamp_leaves_every_other_spec_byte_identical(tmp_path: Path):
     # Both governed files drift.
     (repo / "a.py").write_text("x = 2\n", encoding="utf-8")
     (repo / "b.py").write_text("y = 2\n", encoding="utf-8")
+    _narrate(repo, "spec-alpha", "a.py")
 
     r = subprocess.run([sys.executable, str(checker), "--write-baseline",
                         "--spec", "proj/spec-alpha"],
@@ -269,6 +282,8 @@ def test_concurrent_scoped_stamps_neither_write_lost(tmp_path: Path):
     # c.py stays put, so gamma's entry must not.
     (repo / "a.py").write_text("x = 2\n", encoding="utf-8")
     (repo / "b.py").write_text("y = 2\n", encoding="utf-8")
+    _narrate(repo, "spec-alpha", "a.py")
+    _narrate(repo, "spec-beta", "b.py")
 
     mod = _load_checker_module(checker)
     current = mod._live_state()  # computed once -- identical input for both
@@ -335,6 +350,7 @@ def _run_cli_against_held_lock(tmp_path: Path, extra_args: list[str]):
     baseline = repo / "scripts" / ".spec-surface-baseline.json"
     lock_path = repo / "scripts" / ".spec-surface-baseline.json.lock"
     (repo / "a.py").write_text("x = 2\n", encoding="utf-8")
+    _narrate(repo, "spec-alpha", "a.py")
     stale = baseline.read_bytes()
 
     # The test itself plays the concurrent holder. Everything that can raise
@@ -392,6 +408,7 @@ def test_stamp_is_atomic_and_leaves_no_residue(tmp_path: Path):
     subprocess.run([sys.executable, str(checker), "--write-baseline"],
                    capture_output=True, text=True, cwd=repo, check=True)
     (repo / "a.py").write_text("x = 2\n", encoding="utf-8")
+    _narrate(repo, "spec-alpha", "a.py")
     subprocess.run([sys.executable, str(checker), "--write-baseline",
                     "--spec", "proj/spec-alpha"],
                    capture_output=True, text=True, cwd=repo, check=True)

@@ -2788,3 +2788,82 @@ def test_content_hash_distinguishes_repo_defaults_provenance():
     )
     assert via_repo.harness_preference.value == via_project.harness_preference.value
     assert via_repo.content_hash != via_project.content_hash
+
+
+# --- merge_subject_template shape (Story 82.3, DW-5-10-1) --------------------
+
+_BAD_MERGE_SUBJECT_TEMPLATES = [
+    pytest.param("Merge into main", id="no-key"),
+    pytest.param("Merge {key} and {key} into main", id="two-key"),
+    pytest.param("Merge {slug}/{slug}/{key} into main", id="two-slug"),
+    pytest.param("Merge {slug} into main", id="slug-only"),
+    pytest.param("", id="empty"),
+]
+
+_GOOD_MERGE_SUBJECT_TEMPLATES = [
+    "{key}",
+    "Story {key}",
+    "Merge {key} into main",
+    "Merge {slug}/{key} into main",
+    "{slug}: {key}",
+]
+
+
+@pytest.mark.parametrize("template", _BAD_MERGE_SUBJECT_TEMPLATES)
+@pytest.mark.parametrize("layer", ["repo_defaults", "project", "flags"])
+def test_a_malformed_merge_subject_template_is_rejected_and_the_default_applies(layer, template):
+    """A template without exactly one ``{key}`` (or with two ``{slug}``) used to compose cleanly and
+    then raise a bare ``ValueError`` out of ``identity.render_merge_subject`` -- uncaught -- from
+    ``marshal land`` and ``deploy land-story``. Composition now rejects it as ``MRS-POLICY-002`` and
+    keeps the default, so no landing path can reach that ``ValueError``."""
+    from pyforge.marshal.core import identity
+
+    layers = {"repo_defaults": {}, "project": {}, "flags": {}}
+    layers[layer] = {"merge_subject_template": template}
+    effective, findings = compose(project_slug="acme", **layers)
+
+    assert [f.code for f in findings] == ["MRS-POLICY-002"]
+    assert "merge_subject_template" in findings[0].message
+    assert effective.merge_subject_template.value == DEFAULT_POLICY["merge_subject_template"]
+    assert effective.merge_subject_template.layer is PolicyLayer.DEFAULT
+    # The composed value renders: the exact call both landing commands make.
+    identity.render_merge_subject(identity.StoryKey(4, 4), effective.merge_subject_template.value, "acme")
+
+
+def test_a_malformed_flag_template_keeps_the_valid_project_template():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"merge_subject_template": "Story {key}"},
+        flags={"merge_subject_template": "no placeholder here"},
+    )
+    assert [f.code for f in findings] == ["MRS-POLICY-002"]
+    assert findings[0].path == "flag"
+    assert effective.merge_subject_template.value == "Story {key}"
+    assert effective.merge_subject_template.layer is PolicyLayer.PROJECT
+
+
+@pytest.mark.parametrize("template", _GOOD_MERGE_SUBJECT_TEMPLATES)
+def test_a_well_formed_merge_subject_template_is_accepted(template):
+    effective, findings = compose(project_slug="acme", project={"merge_subject_template": template}, flags={})
+    assert not findings
+    assert effective.merge_subject_template.value == template
+    assert effective.merge_subject_template.layer is PolicyLayer.PROJECT
+
+
+def test_the_template_placeholder_literals_match_identity_and_every_accepted_template_renders():
+    """``core/policy.py`` never imports ``core/identity.py``, so it holds the two placeholder literals
+    itself; this pins them equal, and checks the validator accepts nothing ``render_merge_subject`` or
+    ``parse_merge_subject`` would refuse with a ``ValueError``."""
+    from pyforge.marshal.core import identity
+
+    assert policy._TEMPLATE_KEY_PLACEHOLDER == identity._KEY_PLACEHOLDER
+    assert policy._TEMPLATE_SLUG_PLACEHOLDER == identity._SLUG_PLACEHOLDER
+
+    key = identity.StoryKey(4, 4)
+    for template in _GOOD_MERGE_SUBJECT_TEMPLATES + [str(DEFAULT_POLICY["merge_subject_template"])]:
+        assert policy._valid_merge_subject_template(template) == template
+        subject = identity.render_merge_subject(key, template, "acme")
+        assert identity.parse_merge_subject(subject, template, "acme") == key
+    for param in _BAD_MERGE_SUBJECT_TEMPLATES:
+        template = param.values[0]
+        assert policy._valid_merge_subject_template(template) is None

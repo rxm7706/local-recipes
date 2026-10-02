@@ -52,7 +52,7 @@
     },
     "merge_subject_template": {
       "$ref": "#/$defs/policyField",
-      "description": "STATIC. The merge-subject template string (AD-24) -- validated as a non-empty str only; placeholder-shape conformance is core/identity.py's own concern."
+      "description": "STATIC. The merge-subject template string (AD-24) -- validated as a str carrying exactly one {key} placeholder and at most one {slug} (Story 82.3), the shape core/identity.py's render_merge_subject accepts; any other value is rejected with MRS-POLICY-002 and the default template applies."
     },
     "model_tier_map": {
       "$ref": "#/$defs/policyField",

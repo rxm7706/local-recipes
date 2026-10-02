@@ -9,6 +9,7 @@ FAIL LOUDLY on any write: the plan's whole contract is that it reads only.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import re
 from pathlib import Path
@@ -704,12 +705,26 @@ def test_a_verify_command_with_bare_shell_syntax_is_gate_003(
     assert code == 4
 
 
+def _with_unvalidated_template(monkeypatch: pytest.MonkeyPatch, template: str) -> None:
+    """Hand a template to the plan WITHOUT composition's validation. Since Story 82.3 ``compose`` rejects a
+    template without exactly one ``{key}``, so a malformed one can no longer arrive through a policy layer;
+    the plan's own render guard (``MRS-DISP-019``) stays as defense in depth for a policy built any other way."""
+    real = dispatch_cli._compose_policy
+
+    def _compose(slug, *, flags=None):
+        effective = real(slug, flags=flags)
+        field = policy.PolicyField(value=template, layer=policy.PolicyLayer.PROJECT, raw_source=template)
+        return dataclasses.replace(effective, merge_subject_template=field)
+
+    monkeypatch.setattr(dispatch_cli, "_compose_policy", _compose)
+
+
 def test_a_merge_subject_template_that_is_not_marshal_native_is_disp_019(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     slug = "pyforge-marshal"
     _write_spec(tmp_path, slug, "22-7-fleet")
-    _with_policy_flags(monkeypatch, merge_subject_template="Merge to main")  # no {key}: cannot render
+    _with_unvalidated_template(monkeypatch, "Merge to main")  # no {key}: cannot render
     code, envelope, _out = _plan(
         tmp_path,
         "--mode",
@@ -723,6 +738,27 @@ def test_a_merge_subject_template_that_is_not_marshal_native_is_disp_019(
     hits = [f for f in _findings(envelope, "MRS-DRAINPLAN-001") if "MRS-DISP-019" in f["message"]]
     assert len(hits) == 1
     assert code == 4
+
+
+def test_a_template_without_a_key_placeholder_never_reaches_the_plan_as_disp_019(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 82.3: a ``merge_subject_template`` flag with no ``{key}`` is rejected at composition
+    (``MRS-POLICY-002``) and the default applies, so the plan sees a template that renders."""
+    slug = "pyforge-marshal"
+    _write_spec(tmp_path, slug, "22-7-fleet")
+    _with_policy_flags(monkeypatch, merge_subject_template="Merge to main")
+    _code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        slug,
+        ledgers={slug: (("22-7-fleet", "backlog"),)},
+        capsys=capsys,
+    )
+
+    assert [f for f in _findings(envelope, "MRS-DRAINPLAN-001") if "MRS-DISP-019" in f["message"]] == []
 
 
 def test_a_declared_command_outside_verify_commands_is_gate_011(
