@@ -2,7 +2,8 @@
 title: '82.12: Seed apply binds a plan to its repository, refuses a directory target with a remedy, and honours a skip on a hand-edit'
 type: 'fix'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'c34cbda1919e96c2a9691404e0e794672d8b90b9'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
