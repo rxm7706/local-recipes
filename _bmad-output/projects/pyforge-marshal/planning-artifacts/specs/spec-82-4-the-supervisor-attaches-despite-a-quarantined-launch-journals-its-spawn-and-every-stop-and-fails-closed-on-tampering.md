@@ -11,7 +11,22 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md
 warnings: [oversized]
-deferred: []
+deferred:
+  - summary: >-
+      A journal that is not valid UTF-8 makes run_supervisor exit 0 inert on a Marshal-started run, the same silent
+      unsupervised outcome DW-FU-3-4-3 described for a quarantined launch line.
+    evidence: |-
+      LocalFs.read_text raises FsError on UnicodeDecodeError (adapters/fs_local.py:129-138), and run_supervisor treats
+      every read failure as "cannot prove ownership, stay inert" (return 0, one stderr line, no journal write) before
+      fold runs, so the quarantine rescue added in Story 82.4 never sees the line. The read-failure branch is unchanged
+      by 82.4 (it is Story 3.4's recorded policy for an unreadable journal) and no test writes invalid bytes through a
+      real LocalFs (test_inert_when_the_journal_read_itself_fails uses FakeFs.fail_read_text). Settling it needs a
+      decision first: whether a readable but undecodable journal counts as unproven ownership (attach, MRS-SUPV-011)
+      or stays inert, which reverses the recorded 3.4 policy for unreadable journals, plus either a decode-tolerant
+      FsPort read or a second read path.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py:1061
+    severity: medium
 declared_low_risk: false
 ---
 
