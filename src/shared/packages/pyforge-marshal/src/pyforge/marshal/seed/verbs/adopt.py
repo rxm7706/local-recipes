@@ -1031,7 +1031,6 @@ def run_adopt(
             record for record in _managed_records(state, filtered_manifest) if record.artifact_id not in escaping_ids
         ),
         plan,
-        skip,
     )
 
     check_preconditions(

@@ -652,6 +652,7 @@ def test_a_skip_clears_the_directory_target_refusal_it_offers(clean_repo):
 def test_a_directory_target_is_reported_before_a_hand_edited_managed_file(clean_repo):
     (clean_repo / "AGENTS.md").mkdir()
     _managed_file(clean_repo, "MANAGED.md", "hand edited\n")
+    _commit_all(clean_repo)
 
     with pytest.raises(PreconditionFailure, match="directory-target"):
         _check(
