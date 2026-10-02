@@ -251,6 +251,29 @@ def test_init_into_nonexistent_target_bootstraps_and_materializes_everything(fre
     assert {record.id for record in state.managed} == {"whole", "hybrid"}
 
 
+def test_init_hands_rung_6_no_records_and_no_opt_out_set(fresh_target, monkeypatch):
+    """Story 82.13 gave `check_preconditions` an `opted_out` set that `adopt`
+    and `update` pass beside their `managed` records. `init` reads no state, so
+    rung 6 has no record to report on a fresh target and nothing to excuse:
+    it still passes `managed=()`, and passes no opt-out set at all."""
+    from pyforge.marshal.seed.verbs import init as init_module
+
+    seen: list[dict] = []
+
+    def spy(plan, **kwargs):
+        seen.append(kwargs)
+        return check_preconditions(plan, **kwargs)
+
+    monkeypatch.setattr(init_module, "check_preconditions", spy)
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
+
+    run_init(fresh_target, manifest, commit=_fake_commit(manifest, fresh_target))
+
+    (kwargs,) = seen
+    assert kwargs["managed"] == ()
+    assert "opted_out" not in kwargs
+
+
 def test_init_default_slug_is_the_resolved_directory_basename(fresh_target):
     manifest = _manifest(_copied_seeded("starter-dream", "docs/dreams/{{ slug }}.md", applies_to=AppliesTo.INIT))
 
