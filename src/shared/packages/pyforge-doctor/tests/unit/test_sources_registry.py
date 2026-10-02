@@ -241,7 +241,11 @@ def test_degrade_on_exception_lets_a_base_exception_propagate_uncaught():
 # a caller asks Doctor to judge.
 
 _CHECKOUT_FLEET_SCAN = next(
-    (a / "scripts" / "fleet_scan.py" for a in Path(__file__).resolve().parents if (a / "scripts" / "fleet_scan.py").is_file()),
+    (
+        a / "scripts" / "fleet_scan.py"
+        for a in Path(__file__).resolve().parents
+        if (a / "scripts" / "fleet_scan.py").is_file()
+    ),
     None,
 )
 _needs_checkout = pytest.mark.skipif(_CHECKOUT_FLEET_SCAN is None, reason="not run from inside a checkout")
