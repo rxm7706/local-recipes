@@ -750,12 +750,19 @@ def test_hand_edited_managed_content_on_reapply_is_refused_without_force(clean_r
         run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
 
 
-def test_force_on_hand_edited_content_reinserts_the_managed_region(clean_repo):
-    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
-    _adopt_hybrid_once(clean_repo, manifest)
+def test_force_on_hand_edited_content_inserts_the_pending_region_beside_it(clean_repo):
+    """``--force`` discards the hand-edit refusal and the run still inserts what
+    it owes. (This used to delete the region's markers and expect ``--force`` to
+    put the region back; a deleted region is FR-112's permanent opt-out, which
+    ``--force`` is not the reinstate for -- Story 82.13, and
+    ``test_seed_verbs_region_opt_out.py`` pins that. A hand-edited body beside a
+    newly declared region is the hand-edit ``--force`` is for.)"""
+    _adopt_hybrid_once(clean_repo, _manifest(_hybrid("hybrid", "HYBRID.md", "tiers")))
+    _hand_edit_region_body(clean_repo)
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
 
-    (clean_repo / "HYBRID.md").write_text("no markers here at all\n", encoding="utf-8")
-    _commit_all(clean_repo)
+    with pytest.raises(PreconditionFailure, match="managed-content-modified"):
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
 
     result = run_adopt(
         clean_repo,
@@ -768,7 +775,7 @@ def test_force_on_hand_edited_content_reinserts_the_managed_region(clean_repo):
     )
 
     assert result.applied == ("hybrid",)
-    assert "marshal-seed:begin region=tiers" in (clean_repo / "HYBRID.md").read_text()
+    assert "marshal-seed:begin region=model-badge" in (clean_repo / "HYBRID.md").read_text()
 
 
 # --- present-legacy artifacts ------------------------------------------
