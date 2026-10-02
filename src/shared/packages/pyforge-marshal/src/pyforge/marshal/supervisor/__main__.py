@@ -412,6 +412,7 @@ from ..core.identity import normalize, render_feed_key
 from ..core.journal import (
     JournalEntryId,
     Phase,
+    PreparedWrite,
     build_entry,
     fold,
     prepare_for_write,
@@ -1163,19 +1164,15 @@ def run_supervisor(
     # stop against (MRS-SUPV-013): the report happens once, supervision goes on.
     journal_fault_reported = False
 
-    def _emit_entry(
+    def _prepare_entry(
         kind: str,
         phase: Phase,
         payload: Mapping[str, object],
-        *,
-        intent_id: JournalEntryId | None = None,
-        fsync: bool,
-    ) -> JournalEntryId:
-        """Build one entry and write it -- the optional sidecar blob first,
-        then the line through the held descriptor. Raises ``FsError`` /
-        ``ValueError`` untranslated: ``_write_entry`` decides what a failure
-        means, and the best-effort callers swallow it."""
-        nonlocal counter, expected_size
+        intent_id: JournalEntryId | None,
+    ) -> tuple[JournalEntryId, PreparedWrite]:
+        """Build one entry and decide its sidecar split -- pure, no I/O. A
+        failure here is a bug in the payload, never a journal fault."""
+        nonlocal counter
         entry_id = JournalEntryId(writer_id, counter)
         entry = build_entry(
             id=entry_id,
@@ -1187,14 +1184,29 @@ def run_supervisor(
             payload=payload,
         )
         counter += 1
-        prepared = prepare_for_write(entry)
+        return entry_id, prepare_for_write(entry)
+
+    def _write_prepared(prepared: PreparedWrite, *, fsync: bool) -> None:
+        """Write one prepared entry -- the optional sidecar blob first, then
+        the line through the held descriptor. Raises ``FsError`` /
+        ``ValueError`` untranslated: ``_write_entry`` decides what a failure
+        means, and the best-effort callers swallow it."""
+        nonlocal expected_size
         if journal_handle is None:
             raise FsError(f"cannot append to {journal_path}: the journal was never opened")
         if prepared.sidecar_relative_path is not None:
             fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
         fs.append_held(journal_handle, prepared.line, fsync=fsync)
         expected_size += len(prepared.line.encode("utf-8")) + 1
-        return entry_id
+
+    def _best_effort_append(kind: str, payload: Mapping[str, object]) -> None:
+        """One observation through the held descriptor, any journal failure
+        ignored -- for the entries a fault path writes about the fault."""
+        try:
+            _, prepared = _prepare_entry(kind, Phase.OBSERVATION, payload, None)
+            _write_prepared(prepared, fsync=False)
+        except (FsError, ValueError):
+            pass
 
     def _fault_line(fault_kind: str, detail: str) -> str:
         """The one stderr line a journal fault earns: the historical
@@ -1225,15 +1237,7 @@ def run_supervisor(
         )
         print(_fault_line(fault_kind, detail), file=sys.stderr)
         print(f"supervisor: {finding.code}: {finding.message}", file=sys.stderr)
-        try:
-            _emit_entry(
-                _JOURNAL_FAULT_KIND,
-                Phase.OBSERVATION,
-                {"fault": fault_kind, "finding": finding.to_json_dict()},
-                fsync=False,
-            )
-        except (FsError, ValueError):
-            pass
+        _best_effort_append(_JOURNAL_FAULT_KIND, {"fault": fault_kind, "finding": finding.to_json_dict()})
 
     def _write_entry(
         kind: str,
@@ -1250,13 +1254,14 @@ def run_supervisor(
         # an entry to a broken journal costs nothing a continued heartbeat
         # could recover, and a swallowed INTENT is safe because with no run id
         # the only intent ever written is `budget-stop`, which stops nothing.
+        entry_id, prepared = _prepare_entry(kind, phase, payload, intent_id)
         try:
-            return _emit_entry(kind, phase, payload, intent_id=intent_id, fsync=fsync)
+            _write_prepared(prepared, fsync=fsync)
         except (FsError, ValueError) as exc:
             if harness_run_id is not None:
                 raise
             _report_unactionable_fault("append", str(exc))
-            return JournalEntryId(writer_id, counter - 1)
+        return entry_id
 
     def _append(kind: str, payload: Mapping[str, object]) -> None:
         _write_entry(kind, Phase.OBSERVATION, payload, fsync=False)
@@ -1266,6 +1271,80 @@ def run_supervisor(
 
     def _append_outcome(kind: str, intent_id: JournalEntryId, payload: Mapping[str, object]) -> None:
         _write_entry(kind, Phase.OUTCOME, payload, intent_id=intent_id, fsync=False)
+
+    def _fail_closed(fault_kind: str, detail: str) -> int:
+        """The journal can no longer be trusted (an append failed, or the
+        per-tick check found it removed/replaced/truncated/read-only) and a
+        harness run id IS known: stop the watched run rather than leave it
+        alive and unwatched behind a journal that reads like a healthy one
+        mid-tick (Story 82.4, DW-FU-3-4-8). In order, and without a second
+        liveness reading: ``HarnessPort.stop`` (a ``HarnessError`` or a
+        ``False`` result is recorded, never raised -- the
+        ``_act_on_budget_transition`` idiom); the fault on this process's own
+        stderr (the ``supervisor.log`` an operator reads), plus the stop
+        outcome; and a best-effort final ``supervisor-detach`` through the
+        held descriptor, ignoring any failure (a replaced or truncated journal
+        usually still takes it; an unwritable one does not). Returns the exit
+        code, 1."""
+        stopped = False
+        if harness_run_id is None:
+            # Callers check first; defensive so this can never raise a
+            # confusing `stop(None)` -- the unactionable path reports instead.
+            _report_unactionable_fault(fault_kind, detail)
+            return 1
+        try:
+            stopped = harness.stop(home, harness_run_id)
+        except HarnessError as exc:
+            stop_note = f"could not stop harness run {harness_run_id!r}: {exc}"
+        else:
+            stop_note = (
+                f"stopped harness run {harness_run_id!r}"
+                if stopped
+                else f"bmad-loop reported harness run {harness_run_id!r} was not stopped"
+            )
+        finding = Finding(
+            code="MRS-SUPV-012",
+            severity=Severity.WARN,
+            message=f"journal {fault_kind} ({detail}) -- {stop_note}",
+        )
+        print(_fault_line(fault_kind, detail), file=sys.stderr)
+        print(f"supervisor: {finding.code}: {finding.message}", file=sys.stderr)
+        _best_effort_append(
+            "supervisor-detach",
+            {
+                "pid": pid,
+                "reason": _JOURNAL_TAMPERED_DETACH_REASON,
+                "journal_fault": fault_kind,
+                "stopped": stopped,
+                "finding": finding.to_json_dict(),
+            },
+        )
+        return 1
+
+    def _check_journal_integrity() -> tuple[str, str] | None:
+        """The per-tick tamper check (D4): compare the journal the held
+        descriptor writes to with what its path names now. ``(kind, detail)``
+        on a fault, else ``None`` -- and then ``expected_size`` is raised to
+        the size just observed, so a legitimate second writer's lines are
+        absorbed instead of letting a later truncation hide under them."""
+        nonlocal expected_size
+        if journal_handle is None:
+            return None
+        try:
+            state = fs.held_file_state(journal_handle)
+        except (FsError, ValueError) as exc:
+            return "unverifiable", str(exc)
+        fault = _classify_journal_state(state, expected_size)
+        if fault is None:
+            expected_size = max(expected_size, state.size)
+            return None
+        details = {
+            "removed": f"{journal_path} no longer exists",
+            "replaced": f"{journal_path} is no longer the file this supervisor attached to",
+            "truncated": f"{journal_path} shrank to {state.size} bytes (at least {expected_size} expected)",
+            "read-only": f"{journal_path} is no longer writable",
+        }
+        return fault, details[fault]
 
     def _journal_publish_finding(operation: str, message: str) -> None:
         finding = Finding(
@@ -1288,8 +1367,32 @@ def run_supervisor(
     run_publish_handle: str | None = None
     run_publish_completed = False
 
+    # Story 82.4 (DW-FU-3-4-6): SIGTERM/SIGHUP/SIGINT journal a detach instead
+    # of vanishing. Installed immediately before the attach append -- a signal
+    # that arrives earlier kills the process before anything is journaled, so
+    # nothing dangles -- and restored in the `finally` below.
+    signal_state = _SignalState()
+    previous_signal_handlers = _install_signal_handlers(signal_state)
+
     try:
-        _append("supervisor-attach", {"pid": pid, "watched_pid": watched_pid})
+        journal_handle = fs.open_append(journal_path)
+        attach_payload: dict[str, object] = {"pid": pid, "watched_pid": watched_pid}
+        if unproven_ownership:
+            # The attach on a quarantined launch (D1): carry the count and the
+            # WARN, so a reader of the journal alone can see ownership was
+            # never proven. A proven attach keeps the two-field payload.
+            attach_payload["quarantined"] = quarantined_count
+            attach_payload["finding"] = Finding(
+                code="MRS-SUPV-011",
+                severity=Severity.WARN,
+                message=(
+                    f"no run-launch or run-resume entry exists in the journal "
+                    f"and {quarantined_count} line(s) were unevaluable, so "
+                    f"ownership of run {run_id} could not be proven from the "
+                    "journal -- supervising it anyway"
+                ),
+            ).to_json_dict()
+        _append("supervisor-attach", attach_payload)
 
         attach_snapshot: RunStatusSnapshot | None = None
         if harness_run_id is not None:
@@ -1904,8 +2007,27 @@ def run_supervisor(
             watched_alive = process.is_alive(watched_pid)
 
         watched_alive = process.is_alive(watched_pid)
-        while watched_alive and not deferred:
-            sleep(_TICK_SECONDS)
+        while watched_alive and not deferred and signal_state.name is None:
+            # Story 82.4 (DW-FU-3-4-6): the handler raises `_SupervisorSignal`
+            # only while `signal_state.sleeping`, to cut the sleep short; a
+            # signal that lands mid-tick is caught by the `while` re-check
+            # above once the tick finishes, never mid-action. The inner
+            # `finally` clears the flag BEFORE the outer `except` can run, and
+            # the outer `try` also covers the window between the flag being set
+            # and the sleep starting; the `name is None` guard covers a signal
+            # that arrived just before `sleeping` was set (the handler only
+            # recorded it then, and a full sleep must not follow).
+            try:
+                signal_state.sleeping = True
+                try:
+                    if signal_state.name is None:
+                        sleep(_TICK_SECONDS)
+                finally:
+                    signal_state.sleeping = False
+            except _SupervisorSignal:
+                pass
+            if signal_state.name is not None:
+                break
             moment = clock.now()
             # Both readings, taken together (review finding): `moment` is the
             # wall-clock instant the journal records, `monotonic_now` is the
@@ -1914,6 +2036,17 @@ def run_supervisor(
             # cannot be the same reading.
             monotonic_now = clock.monotonic()
             watched_alive = process.is_alive(watched_pid)
+
+            # Story 82.4 (DW-FU-3-4-8): the tamper check, right after the
+            # liveness reading and only while the watched process is alive
+            # (a run that already exited needs no stopping), and not again
+            # once a no-run-id fault has been reported.
+            if watched_alive and not journal_fault_reported:
+                journal_fault = _check_journal_integrity()
+                if journal_fault is not None:
+                    if harness_run_id is not None:
+                        return _fail_closed(*journal_fault)
+                    _report_unactionable_fault(*journal_fault)
 
             if retry_verify_pending and watched_alive:
                 # The resumed engine survived a whole tick, so bmad-loop
@@ -2674,6 +2807,14 @@ def run_supervisor(
             if run_publish_handle is not None:
                 _publisher.heartbeat(run_publish_handle)
 
+        if signal_state.name is not None and detach_reason is None and watched_alive:
+            # Story 82.4: the loop ended on SIGTERM/SIGHUP/SIGINT while the
+            # watched process was still alive (a natural exit keeps
+            # `watched-process-exited`; an idle/budget action keeps its own,
+            # more specific reason). Concatenated, never an f-string -- the
+            # AD-23 guard's precedent, see `_SIGNAL_DETACH_REASON_PREFIX`.
+            detach_reason = _SIGNAL_DETACH_REASON_PREFIX + signal_state.name
+
         if retry_verify_pending and not watched_alive:
             # The resumed engine never survived a tick -- see
             # `retry_verify_pending`'s own declaration for why the pid
@@ -2923,15 +3064,33 @@ def run_supervisor(
         # An uncaught one here kills the sidecar with a raw traceback AFTER
         # `supervisor-attach` is journaled -- the dangling attach with no
         # matching detach AD-9 says must never happen.
+        #
+        # Story 82.4 (DW-FU-3-4-8): with a harness run id the run is STOPPED
+        # first (`_fail_closed`) -- exiting non-zero alone left it alive and
+        # unwatched behind a journal the agent session could break at will.
+        # Without one there is nothing to stop against and this branch keeps
+        # its print-and-exit (an `open_append` that failed at attach, or any
+        # other `FsError`/`ValueError` that reached here).
+        if harness_run_id is not None:
+            return _fail_closed("append", str(exc))
         print(f"supervisor: cannot append to journal {journal_path}: {exc}", file=sys.stderr)
         return 1
     finally:
-        if run_publish_handle is not None and not run_publish_completed:
-            _publisher.complete(
-                run_publish_handle,
-                status="supervisor-exited",
-                result=loop_complete_result(detach_reason="supervisor-exited"),
-            )
+        try:
+            if run_publish_handle is not None and not run_publish_completed:
+                _publisher.complete(
+                    run_publish_handle,
+                    status="supervisor-exited",
+                    result=loop_complete_result(detach_reason="supervisor-exited"),
+                )
+        finally:
+            # After the publisher: its `on_finding` hook journals through the
+            # held descriptor. Handlers last, so a signal during teardown
+            # still lands on this process's own (recording) handler rather
+            # than the default disposition.
+            if journal_handle is not None:
+                fs.close_append(journal_handle)
+            _restore_signal_handlers(previous_signal_handlers)
 
     return 0
 
