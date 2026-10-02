@@ -401,7 +401,7 @@ def test_referenced_pins_match_the_live_environment_exactly(manifest):
 # --- Story 82.13: every shipped id is a representable opt-out (DW-FU-8-5-2) ---
 
 
-def _state_claiming(manifest, *, entries) -> SeedState:
+def _state_claiming(*, entries) -> SeedState:
     """A schema-valid state claiming each of ``entries``: a hybrid one with a
     span per declared region, any other class as a whole file."""
     claims = []
@@ -447,7 +447,7 @@ def test_a_state_claiming_every_shipped_artifact_validates(manifest, tmp_path):
     # `referenced` entries are never materialized, so never claimed (and share
     # the sentinel path "n/a", which `managed[].path` uniqueness would refuse).
     materialized = [entry for entry in manifest.entries if entry.artifact_class is not ArtifactClass.REFERENCED]
-    state = _state_claiming(manifest, entries=materialized)
+    state = _state_claiming(entries=materialized)
     write_state(state, repo_root=tmp_path, never_write=NeverWrite(patterns=()))
     assert read_state(tmp_path) == state
 
@@ -464,11 +464,11 @@ def test_an_opt_out_for_every_region_of_every_shipped_hybrid_entry_validates(man
     never_write = NeverWrite(patterns=())
     for entry in hybrids:
         for region in entry.regions:
-            state = record_opt_out(_state_claiming(manifest, entries=hybrids), entry.id, region.name)
+            state = record_opt_out(_state_claiming(entries=hybrids), entry.id, region.name)
             write_state(state, repo_root=tmp_path, never_write=never_write)
             assert read_state(tmp_path) == state
             assert f"{entry.id}#{region.name}" in state.opted_out
-        everything = _state_claiming(manifest, entries=[entry])
+        everything = _state_claiming(entries=[entry])
         for region in entry.regions:
             everything = record_opt_out(everything, entry.id, region.name)
         write_state(everything, repo_root=tmp_path, never_write=never_write)

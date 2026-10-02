@@ -183,12 +183,7 @@ placeholder (e.g. ``project-config``, ``deck-scaffolding`` -- both
 belongs to ``seed init``, Story 10.7) -- ``classify()`` treats the
 placeholder as a literal path segment, which is a PRE-EXISTING gap in
 ``detect.inventory``/``plan.build`` (both already shipped, neither touched
-by this story), not one this module introduces or is scoped to close. (4)
-[Story 82.13 CLOSED THIS: ``state.managed[]`` records ONE ``RegionSpanRecord``
-per installed region of a hybrid artifact, each with its own ``body_sha``, so
-an artifact declaring several regions is recorded in full -- see
-``_managed_artifact_after_apply``. A state file written before 82.13 holds at
-most one span per artifact and reads as a one-region list.]
+by this story), not one this module introduces or is scoped to close.
 
 **Filtering the manifest by ``applies_to`` (AD-55).** ``AppliesTo`` has three
 members -- ``init``/``adopt``/``both`` -- and the packaged manifest already
