@@ -2,7 +2,7 @@
 title: "83.2: Login works on the plain-HTTP local stack, and `sync` retries rate limits and names each failed candidate"
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '43bb288d2a022f8bbe1195e49b76472b236ac756'
 review_loop_iteration: 0
 followup_review_recommended: false
