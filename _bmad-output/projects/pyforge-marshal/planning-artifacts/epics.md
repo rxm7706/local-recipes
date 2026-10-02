@@ -8303,26 +8303,25 @@ entry is journaled, and that intent names the pending policy change; a run-direc
 ### Story 82.7: Factory spin refuses a second live run and reports a child that dies before it starts
 
 As the operator launching `marshal factory spin`,
-I want a second launch refused while the project's run is live, and a launch whose child dies before starting reported as
-failed,
-So that two engines never drive one project and a CI wrapper never reads a dead launch as success.
+I want a launch whose child dies before it starts reported as failed,
+So that a CI wrapper never reads a dead launch as success.
 
-**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 3.3 (FR-9, FR-10, FR-52; AD-3, AD-22); `spec-pyforge-marshal`
-CAP-2 • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` (`run_spin`),
-`src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` (`spin`,
-`_poll_for_harness_run_id`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`,
-`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`,
-`src/shared/packages/pyforge-marshal/tests/unit/` (the spin and harness-adapter tests)
-**Given** a project whose loop home already holds a live, unfinished run (its supervisor or engine pid alive)
-**When** `marshal factory spin <slug>` runs
-**Then** it refuses before minting a run id or spawning, with a new MRS-SPIN ERROR naming the live run and the remedy
-(attach, stop, or wait); no `MRS-SPIN-*` code covers this today (`MRS-SPIN-001` through `MRS-SPIN-017`)
-**And** a `bmad-loop run` child that exits before printing its starting line ends the poll at once (today
-`_poll_for_harness_run_id(self, log_path)`, `adapters/harness_bmadloop.py:1514`, never asks whether the child is alive) and
-is reported as a failed launch quoting the log's tail, with a non-zero exit and an `outcome` entry that says the process
-exited; a slow but live child keeps today's `MRS-SPIN-004` WARN; removing either check fails its new test (mutation); the
-story closes DW-FU-3-3-2 and DW-FU-3-3-4 in `deferred-work-ledger.md` (status `closed`, a `resolved:` line naming this
-story); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 3.3 (FR-9, FR-10, FR-52; AD-3, AD-22); `spec-pyforge-marshal`
+CAP-2 • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` (`spin`,
+`_poll_for_harness_run_id`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` (`run_spin`'s launch
+outcome), `src/shared/packages/pyforge-marshal/tests/unit/` (the spin and harness-adapter tests)
+**Scope ruling (2026-10-02):** the title's first half already ships. Story 34.1's guard (`cli/spin.py::run_spin` calls
+`cli/dispatch.py::spin_loop_home_in_flight_conflict`, MRS-DISP-021) refuses a second spin against a live loop home; this
+story keeps it unchanged and adds no second gate (DW-FU-3-3-2 is closed as resolved by Stories 28.24 and 34.1).
+**Given** a `bmad-loop run` child that exits before printing its starting line
+**When** `marshal factory spin <slug>` polls for its run id
+**Then** the poll ends at once (today `_poll_for_harness_run_id(self, log_path)` never asks whether the child is alive) and
+spin reports a failed launch (`MRS-SPIN-003`) quoting the tail of `harness.log`, with a non-zero exit and an `outcome`
+entry that says the process exited
+**And** a slow but live child keeps today's `MRS-SPIN-004` WARN; a second spin against a live run still refuses with
+MRS-DISP-021; removing the liveness check fails its new test (mutation); the story closes DW-FU-3-3-4 in
+`deferred-work-ledger.md` (status `closed`, a `resolution:` line naming this story); `pixi run --frozen -e
+pyforge-marshal pyforge-marshal-test` green
 
 ### Story 82.8: Status reads landings the way deploy does and filters findings with rows, and teardown keeps nested worktrees
 
