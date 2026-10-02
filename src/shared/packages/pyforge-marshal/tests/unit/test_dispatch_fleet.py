@@ -3508,6 +3508,11 @@ def test_a_refused_primary_beside_a_dispatched_sibling_journals_its_own_outcome_
     members = row.to_payload()["members"]
     assert isinstance(members, list) and [m["story"] for m in members] == [_W_PRIMARY, _W_SECOND]
     assert [m["status"] for m in members] == ["refused", "dispatched"]
+    # The journaled entry carries the refused member's own detail and predicate, not only its story and status.
+    assert members[0]["detail"] == "MRS-GATE-010: verify commands red"
+    assert members[0]["refuse_predicate"]["gate"] == "MRS-GATE-010"
+    assert members[0]["refuse_predicate"] == primary.refuse_predicate
+    assert members[1]["detail"] is None and "refuse_predicate" not in members[1]
 
 
 def test_the_next_cycle_rebuilds_the_refused_primarys_block_and_predicate_from_the_journal(
