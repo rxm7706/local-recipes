@@ -18,7 +18,7 @@ from pyforge.marshal.adapters.fs_local import (
     LocalFs,
 )
 from pyforge.marshal.core.egress import Redacted
-from pyforge.marshal.ports.fs import AdvisoryLock
+from pyforge.marshal.ports.fs import AdvisoryLock, AppendHandle, HeldFileState
 
 
 @pytest.fixture
@@ -796,3 +796,189 @@ def test_release_advisory_lock_never_raises_and_closes_the_descriptor(fs, tmp_pa
     # at the OS level, not merely "didn't crash".
     second = fs.acquire_advisory_lock(target, timeout_s=1.0)
     fs.release_advisory_lock(second)
+
+
+# --- open_append / append_held / held_file_state / close_append (Story 82.4) ----
+#
+# The supervisor's held-descriptor journal writer (DW-FU-3-4-8): one descriptor
+# opened at attach, written through for the run's life, and compared against
+# whatever the path names NOW.
+
+_running_as_root = hasattr(os, "geteuid") and os.geteuid() == 0
+
+
+@pytest.fixture
+def held(fs, tmp_path):
+    """An ``AppendHandle`` on a journal that already holds one line, closed
+    after the test."""
+    journal = tmp_path / "journal.jsonl"
+    journal.write_text('{"seed": 1}\n', encoding="utf-8")
+    handle = fs.open_append(journal)
+    try:
+        yield handle
+    finally:
+        fs.close_append(handle)
+
+
+def test_open_append_returns_a_handle_on_the_path_and_appends_through_it(fs, tmp_path):
+    journal = tmp_path / "journal.jsonl"
+    journal.write_text('{"seed": 1}\n', encoding="utf-8")
+
+    handle = fs.open_append(journal)
+    try:
+        assert isinstance(handle, AppendHandle)
+        assert handle.path == journal
+        fs.append_held(handle, '{"a": 1}', fsync=False)
+        fs.append_held(handle, '{"a": 2}', fsync=True)
+    finally:
+        fs.close_append(handle)
+
+    assert journal.read_text(encoding="utf-8") == '{"seed": 1}\n{"a": 1}\n{"a": 2}\n'
+
+
+def test_open_append_never_creates_a_missing_file(fs, tmp_path):
+    """No ``O_CREAT``: a journal that was removed must never be silently
+    recreated by the one writer whose job is to notice that."""
+    missing = tmp_path / "gone.jsonl"
+
+    with pytest.raises(FsError):
+        fs.open_append(missing)
+
+    assert not missing.exists()
+
+
+def test_open_append_raises_fs_error_for_an_unwritable_file(fs, tmp_path):
+    if _running_as_root:
+        pytest.skip("root bypasses file permissions")
+    journal = tmp_path / "journal.jsonl"
+    journal.write_text("seed\n", encoding="utf-8")
+    journal.chmod(0o444)
+
+    with pytest.raises(FsError):
+        fs.open_append(journal)
+
+
+def test_append_held_refuses_an_embedded_newline_and_writes_nothing(fs, held):
+    with pytest.raises(FsError, match="embedded newline"):
+        fs.append_held(held, "a\nb", fsync=False)
+
+    assert held.path.read_text(encoding="utf-8") == '{"seed": 1}\n'
+
+
+def test_append_held_raises_fs_error_on_a_short_write(fs, held, monkeypatch):
+    monkeypatch.setattr(os, "write", lambda fd, data: len(data) - 1)
+
+    with pytest.raises(FsError, match="short write"):
+        fs.append_held(held, '{"a": 1}', fsync=False)
+
+
+def test_append_held_calls_os_fsync_only_when_requested(fs, held, monkeypatch):
+    calls: list[int] = []
+    real_fsync = os.fsync
+    monkeypatch.setattr(os, "fsync", lambda fd: (calls.append(fd), real_fsync(fd))[1])
+
+    fs.append_held(held, '{"a": 1}', fsync=False)
+    assert calls == []
+    fs.append_held(held, '{"a": 2}', fsync=True)
+    assert len(calls) == 1
+
+
+def test_append_held_after_close_raises_fs_error_not_a_raw_oserror(fs, tmp_path):
+    journal = tmp_path / "journal.jsonl"
+    journal.write_text("seed\n", encoding="utf-8")
+    handle = fs.open_append(journal)
+    fs.close_append(handle)
+
+    with pytest.raises(FsError):
+        fs.append_held(handle, "x", fsync=False)
+
+
+def test_close_append_never_raises_even_when_the_descriptor_is_already_closed(fs, tmp_path):
+    journal = tmp_path / "journal.jsonl"
+    journal.write_text("seed\n", encoding="utf-8")
+    handle = fs.open_append(journal)
+    fs.close_append(handle)
+
+    fs.close_append(handle)  # a second close must be a no-op, never an exception
+    fs.close_append(AppendHandle(path=journal, handle="not-a-descriptor"))
+
+
+def test_held_file_state_is_healthy_for_an_untouched_journal(fs, held):
+    state = fs.held_file_state(held)
+
+    assert state == HeldFileState(present=True, same_file=True, size=len('{"seed": 1}\n'), writable=True)
+
+
+def test_held_file_state_stays_the_same_file_after_other_writers_append(fs, held):
+    """Other writers (a ``supervisor-spawn`` entry, a landing) only GROW the
+    journal: same file, larger size."""
+    before = fs.held_file_state(held)
+    fs.append_line(held.path, '{"other": "writer"}', fsync=False)
+
+    after = fs.held_file_state(held)
+
+    assert after.present and after.same_file and after.writable
+    assert after.size == before.size + len('{"other": "writer"}\n')
+
+
+def test_held_file_state_counts_bytes_appended_through_the_handle_itself(fs, held):
+    fs.append_held(held, '{"mine": 1}', fsync=False)
+
+    assert fs.held_file_state(held).size == len('{"seed": 1}\n{"mine": 1}\n')
+
+
+def test_held_file_state_reports_not_the_same_file_after_a_rename_over(fs, held, tmp_path):
+    """The agent session replacing the journal -- ``mv`` a lookalike over it --
+    leaves the supervisor holding the OLD inode."""
+    impostor = tmp_path / "impostor.jsonl"
+    impostor.write_text("x" * 5000, encoding="utf-8")
+    os.replace(impostor, held.path)
+
+    state = fs.held_file_state(held)
+
+    assert state.present is True
+    assert state.same_file is False
+    assert state.size == 5000  # the PATH's size, not the held file's
+
+
+def test_held_file_state_reports_absent_after_the_file_is_unlinked(fs, held):
+    held.path.unlink()
+
+    assert fs.held_file_state(held) == HeldFileState(present=False, same_file=False, size=0, writable=False)
+
+
+def test_held_file_state_reports_a_smaller_size_after_a_truncate(fs, held):
+    fs.append_held(held, '{"mine": 1}', fsync=False)
+    full = fs.held_file_state(held).size
+
+    os.truncate(held.path, 3)
+    state = fs.held_file_state(held)
+
+    assert state.same_file is True  # truncation keeps the inode
+    assert state.size == 3 < full
+
+
+@pytest.mark.skipif(_running_as_root, reason="root bypasses file permissions")
+def test_held_file_state_reports_read_only_while_the_held_descriptor_still_accepts_appends(fs, held):
+    """A held descriptor does not notice ``chmod``: the append below succeeds,
+    which is exactly why read-only is read from ``writable`` and never from a
+    failing write."""
+    held.path.chmod(0o444)
+
+    state = fs.held_file_state(held)
+    fs.append_held(held, '{"still": "writes"}', fsync=False)  # must not raise
+
+    assert state.present is True
+    assert state.same_file is True
+    assert state.writable is False
+    assert held.path.read_text(encoding="utf-8").endswith('{"still": "writes"}\n')
+
+
+def test_held_file_state_raises_fs_error_when_the_path_cannot_be_inspected(fs, held, monkeypatch):
+    def _boom(path, *args, **kwargs):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(os, "stat", _boom)
+
+    with pytest.raises(FsError):
+        fs.held_file_state(held)

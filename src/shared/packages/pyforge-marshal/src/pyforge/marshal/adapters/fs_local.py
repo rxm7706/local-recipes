@@ -410,7 +410,7 @@ class LocalFs:
             raise FsError(f"cannot stat the file held for {path}: {exc}") from exc
         try:
             current = os.stat(path)
-        except (FileNotFoundError, NotADirectoryError):
+        except FileNotFoundError, NotADirectoryError:
             return HeldFileState(present=False, same_file=False, size=0, writable=False)
         except OSError as exc:
             raise FsError(f"cannot stat {path}: {exc}") from exc

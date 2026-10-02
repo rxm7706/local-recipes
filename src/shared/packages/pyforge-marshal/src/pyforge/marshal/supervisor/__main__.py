@@ -841,7 +841,7 @@ def _install_signal_handlers(state: _SignalState) -> dict[int, _PreviousHandler]
             continue
         try:
             previous[int(signum)] = signal.signal(signum, handler)
-        except (ValueError, OSError):
+        except ValueError, OSError:
             break
     return previous
 
@@ -853,7 +853,7 @@ def _restore_signal_handlers(previous: Mapping[int, _PreviousHandler]) -> None:
     for signum, old in previous.items():
         try:
             signal.signal(signum, signal.SIG_DFL if old is None else old)
-        except (ValueError, OSError):
+        except ValueError, OSError:
             pass
 
 
@@ -1100,9 +1100,7 @@ def run_supervisor(
     # BEFORE any spawn is even attempted, independent of whatever happens to
     # the LATER outcome write, so an intent entry alone already proves this
     # run was Marshal-started.
-    launch_resume_entries = [
-        entry for kind in (_LAUNCH_KIND, _RESUME_KIND) for entry in fold_result.by_kind(kind)
-    ]
+    launch_resume_entries = [entry for kind in (_LAUNCH_KIND, _RESUME_KIND) for entry in fold_result.by_kind(kind)]
     started_by_marshal = any(
         entry.phase in (Phase.INTENT, Phase.OUTCOME) and entry.run_id == run_id for entry in launch_resume_entries
     )
@@ -1205,7 +1203,7 @@ def run_supervisor(
         try:
             _, prepared = _prepare_entry(kind, Phase.OBSERVATION, payload, None)
             _write_prepared(prepared, fsync=False)
-        except (FsError, ValueError):
+        except FsError, ValueError:
             pass
 
     def _fault_line(fault_kind: str, detail: str) -> str:
