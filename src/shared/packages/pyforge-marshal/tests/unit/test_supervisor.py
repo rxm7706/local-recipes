@@ -92,6 +92,9 @@ class FakeFs:
         # 1-indexed across every append_line call this fake sees (mirrors
         # test_spin.py's own FakeFs.fail_append_line_on_call convention).
         self.fail_append_line_on_call: int | None = None
+        # Story 82.4: every append from call N on fails -- an unwritable
+        # journal, where `fail_append_line_on_call` models one transient error.
+        self.fail_append_line_from_call: int | None = None
         self._append_line_call_count = 0
         # Story 82.4: the held-descriptor family's own recorders/hooks.
         self.open_append_calls: list[Path] = []
@@ -113,6 +116,11 @@ class FakeFs:
     def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
         self._append_line_call_count += 1
         if self.fail_append_line_on_call == self._append_line_call_count:
+            raise FsError(f"simulated failure on append_line call #{self._append_line_call_count}")
+        if (
+            self.fail_append_line_from_call is not None
+            and self._append_line_call_count >= self.fail_append_line_from_call
+        ):
             raise FsError(f"simulated failure on append_line call #{self._append_line_call_count}")
         self.appended_lines.append((path, line, fsync))
 
@@ -1160,10 +1168,17 @@ def test_watched_process_already_dead_journals_attach_then_immediately_detach():
 
 
 def test_journal_append_failure_mid_loop_exits_nonzero_and_stops_looping():
+    """Story 82.4 (DW-FU-3-4-8) extends the original pin: a failed append
+    still ends the loop at the FIRST failure with a non-zero exit, and now
+    ALSO stops the watched run through ``HarnessPort.stop`` -- exiting with the
+    run alive left it unsupervised behind a journal that read like a healthy
+    one mid-tick."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
-    # append #1 (attach) succeeds; append #2 (the first heartbeat) fails.
-    fs.fail_append_line_on_call = 2
+    # append #1 (attach) succeeds; append #2 (the first heartbeat) and every
+    # one after it fails -- an unwritable journal.
+    fs.fail_append_line_from_call = 2
     process = FakeProcess(alive_for=10)
+    harness = FakeHarness()
 
     rc = run_supervisor(
         _HOME,
@@ -1180,6 +1195,7 @@ def test_journal_append_failure_mid_loop_exits_nonzero_and_stops_looping():
         process=process,
         clock=FakeClock(),
         observer=FakeObserver(),
+        harness=harness,
         sleep=_no_sleep,
     )
 
@@ -1192,13 +1208,60 @@ def test_journal_append_failure_mid_loop_exits_nonzero_and_stops_looping():
     # check that admits the first tick, then the one fresh reading taken
     # inside that tick (now doubling as both the heartbeat's own
     # `watched_alive` value and the loop's continuation decision) whose
-    # resulting heartbeat append is the one that fails.
+    # resulting heartbeat append is the one that fails. The fail-closed path
+    # takes no third reading.
     assert process.calls == 2
+    # ...and the watched run was stopped, exactly once.
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+    # The held descriptor was released.
+    assert fs.close_append_calls == 1
+
+
+def test_a_single_failed_append_stops_the_run_and_a_still_working_descriptor_takes_the_detach():
+    """The failed append and the final ``supervisor-detach`` are different
+    writes: when the held descriptor recovers (here: only call #2 fails), the
+    fail-closed path records WHY in a final ``supervisor-detach`` carrying the
+    ``MRS-SUPV-012`` finding -- the best-effort half of Story 82.4's D5."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    fs.fail_append_line_on_call = 2
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=10),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=harness,
+        sleep=_no_sleep,
+    )
+
+    assert rc == 1
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert [entry["kind"] for entry in entries] == ["supervisor-attach", "supervisor-detach"]
+    detach = entries[-1]["payload"]
+    assert detach["reason"] == "journal-tampered"
+    assert detach["journal_fault"] == "append"
+    assert detach["stopped"] is True
+    assert detach["finding"]["code"] == "MRS-SUPV-012"
+    for entry in entries:
+        jsonschema.validate(instance=entry, schema=_journal_schema())
 
 
 def test_journal_append_failure_prints_a_diagnostic_to_stderr(capsys):
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     fs.fail_append_line_on_call = 1  # even the attach entry itself fails
+    harness = FakeHarness()
 
     rc = run_supervisor(
         _HOME,
@@ -1215,12 +1278,19 @@ def test_journal_append_failure_prints_a_diagnostic_to_stderr(capsys):
         process=FakeProcess(alive_for=5),
         clock=FakeClock(),
         observer=FakeObserver(),
+        harness=harness,
         sleep=_no_sleep,
     )
 
     assert rc != 0
     err = capsys.readouterr().err
     assert "cannot append" in err.lower()
+    # Story 82.4: the historical line is unchanged, the stop outcome follows
+    # it, and the run was stopped even though the failure was the attach entry.
+    journal_path = _run_dir() / supervisor_main._JOURNAL_FILENAME
+    assert f"supervisor: cannot append to journal {journal_path}: " in err
+    assert "MRS-SUPV-012" in err
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
 
 
 # --- multiplexer pane unavailable ----------------------------------------------
