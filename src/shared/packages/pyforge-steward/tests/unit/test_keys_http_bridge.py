@@ -147,3 +147,12 @@ def test_sync_default_transport_goes_through_the_bridge(monkeypatch):
     assert response.status == 200
     assert response.body == b"{}"
     assert seen == [(request, 30)]
+
+
+def test_real_bridge_exposes_every_name_keys_and_sync_delegate_to():
+    """The real `_http.py`, not a fake: `keys.py` / `sync.py` reach these three names only at first
+    use now, so a rename in the delegate would no longer fail at import time -- it fails here."""
+    bridge = http_bridge()
+
+    for name in ("auth_headers_for", "resolve_github_api_urls", "open_url"):
+        assert callable(getattr(bridge, name, None)), f"_http.{name} is missing or not callable"

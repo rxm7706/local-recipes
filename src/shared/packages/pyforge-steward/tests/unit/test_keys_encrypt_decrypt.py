@@ -225,7 +225,7 @@ def test_a_file_not_found_for_any_other_name_propagates_unchanged(monkeypatch):
     assert excinfo.value.filename == "not-an-age-binary"
 
 
-def test_cli_module_import_does_not_trigger_the_keys_bridge():
+def test_cli_module_import_does_not_import_keys():
     """Importing `cli` must not import `keys` — only the `keys` duty needs
     keys.py (and, at first use, its `_http.py` bridge, which refuses outside a
     local-recipes checkout), so a top-level `cli -> keys` import would load it
