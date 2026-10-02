@@ -455,15 +455,16 @@ def _state_with_opt_outs(
     the sequencing contract it applies and why nothing is written here. Only
     hybrid entries, and never one in ``escaping_ids``; each file is read with
     this module's own ``_read_text_or_blank``."""
+    if state is None:
+        return None, frozenset()
     hybrids = tuple(
         (entry, _read_text_or_blank(repo_root / entry.path))
         for entry in manifest.entries
         if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION and entry.id not in escaping_ids
     )
-    if state is not None:
-        for entry, text in hybrids:
-            for artifact_id, region in opt_outs_to_record(classify_regions(entry, text, state), state):
-                state = record_opt_out(state, artifact_id, region)
+    for entry, text in hybrids:
+        for artifact_id, region in opt_outs_to_record(classify_regions(entry, text, state), state):
+            state = record_opt_out(state, artifact_id, region)
     return state, opted_out_regions(hybrids, state)
 
 
