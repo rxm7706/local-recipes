@@ -2,7 +2,9 @@
 title: '82.8: Status reads landings the way deploy does and filters findings with rows, and teardown keeps nested worktrees'
 type: 'fix'
 created: '2026-10-02'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '80fb2fe128e547ab06fc37540084e86061f26c84'
+warnings: [oversized]
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -73,6 +75,38 @@ story).
 `status` (it reads the refs the checkout holds). Do not change `MRS-STATUS-008`'s own shipped findings.
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py` -- `_MainSubjects.read` (reads local `main` only), `_merged_keys_for_slug` (the one policy-read-then-`merged_story_keys` sequence), the failed-patch fold and the `--escalations` filter inside `run_status`, `_reconcile_ledger`'s own `commit_subjects` read. `_landing_superseded` also reads through `_MainSubjects`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py` -- read-only reference: `_scan_promotions` builds `combined_subjects = origin + main` (origin best-effort, `main` required) and reports `subjects_examined` / `subjects_matched` from `core.promotion.count_conforming_subjects`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py` -- read-only: `merged_story_keys` stays the one owner of "landed"; `count_conforming_subjects(subjects, template, slug)` is a raw per-subject count.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `core/verdict.py` -- register the new `MRS-STATUS-014` (WARN) beside `MRS-STATUS-010` / `-011`; `tests/unit/test_findings.py` pins the registry.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py` -- `run_teardown`: the dirty probe for the home, the `reasons` list feeding `MRS-TEARDOWN-003`, and the `remove_worktree` call; no `list_worktrees` / `prune_worktrees` use today.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py` -- `list_worktrees`, `has_uncommitted_changes`, `prune_worktrees` already exist on `VcsPort`; no port change.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_status.py`, `test_status_landing_superseded.py`, `test_init.py` -- fakes (`_FakeVcs`, `FakeVcs`) and the tests whose `commit_subjects_calls == ["refs/heads/main"]` assertions become `[ORIGIN_MAIN, "refs/heads/main"]`.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` -- close DW-FU-4-14-9, DW-FU-4-14-10, DW-FU-4-14-12, DW-1-8-5.
+
+## Tasks & Acceptance
+
+**Execution:**
+- `cli/status.py` -- add `_read_landing_subjects(vcs, root)` (`ORIGIN_MAIN` best-effort, then local `main`, required, concatenated as `deploy` does); `_MainSubjects.read` and `_reconcile_ledger` both call it -- one read, never two views
+- `cli/status.py` -- `_merged_keys_for_slug` also returns the conforming-subject count; the fold sets every patch of a home to `done: None` and emits one `MRS-STATUS-014` (examined N, matched 0) instead of the per-patch `MRS-STATUS-010`s when the history is non-empty and nothing conforms
+- `cli/status.py` -- collect each home's findings as `(slug, finding)`; under `--escalations` keep fleet-wide findings and the findings of homes still in `rows`, and name only kept homes in the sweep-wide `MRS-STATUS-011` (omit it when none are left)
+- `core/findings.py`, `core/verdict.py`, `tests/unit/test_findings.py` -- register `MRS-STATUS-014` as WARN
+- `cli/init.py` -- `run_teardown`: list registered worktrees under the home's registered path; a dirty one joins `reasons` (existing `MRS-TEARDOWN-003`, naming each) and a clean one blocks nothing; after `remove_worktree`, `prune_worktrees` when nested worktrees were found
+- `tests/unit/test_status.py`, `test_status_landing_superseded.py`, `test_init.py` -- one test per intent AC (origin-only landing, 50-subject history, `--escalations` with no escalated home, dirty nested refuses, clean nested prunes); update the read-order assertions; each new test fails with its fix reverted
+- `deferred-work-ledger.md` -- the four rows to `status: closed` with a `resolved:` line naming Story 82.8
+
+**Acceptance Criteria:** the six in the intent contract.
+
+## Spec Change Log
+
+## Design Notes
+
+- The count is per slug (template and slug are `count_conforming_subjects`' inputs), so `MRS-STATUS-014` is per home, like `MRS-STATUS-011`'s second cause; a home with no patches never pays for it. An empty history is not this case: it keeps today's `done: false` reading.
+- `done: None` (not `false`) is what stops `MRS-STATUS-010`: the fold already treats `None` as "landed-status could not be determined" and the finding names why.
+- Dirty-nested refusal reuses `MRS-TEARDOWN-003`, appended after the home's own dirty reason so existing refusals keep their relative order; `--force` carries past it exactly as it carries past the home's own dirt.
 
 ## Binding
 
